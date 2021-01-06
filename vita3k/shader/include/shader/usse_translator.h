@@ -152,6 +152,11 @@ private:
                 return repeat_index;
             }
         }
+        // GPI operand can only get repeat offset with INTERNAL repeat mode.
+        // Intentionally put this here so that INTERNAL is checked with every FPINTERNAL, even if not GPI.
+        if (op.flags & RegisterFlags::GPI) {
+            return 0;
+        }
         if (repeat_mode == RepeatMode::BOTH) {
             if (bank == RegisterBank::FPINTERNAL) {
                 return repeat_index;

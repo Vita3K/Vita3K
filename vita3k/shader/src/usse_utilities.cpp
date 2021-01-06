@@ -664,6 +664,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         }
 
         op.num <<= 2;
+        shift_offset <<= 2;
     }
 
     const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
@@ -963,6 +964,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     if (dest.bank == RegisterBank::FPINTERNAL) {
         dest.type = DataType::F32;
         dest.num <<= 2;
+        off <<= 2;
     }
 
     spv::Id bank_base = *get_reg_bank(params, dest.bank);
