@@ -42,7 +42,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
     assert(name != nullptr);
     assert(type != 0);
 
-    if (size < 0x1000 || (size & ~0xFFF) != 0) {
+    if (size < 0x1000 || (size & 0xFFF) != 0) {
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
 
@@ -74,7 +74,7 @@ EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, SceSize size) {
     MemState &mem = host.mem;
     assert(name != nullptr);
 
-    if (size < 0x1000 || (size & ~0xFFF) != 0) {
+    if (size < 0x1000 || (size & 0xFFF) != 0) {
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
 
