@@ -37,11 +37,14 @@ struct SceKernelFreeMemorySizeInfo {
     int size_phycont; //!< Free memory size for USER_MAIN_PHYCONT_*_RW memory
 };
 
-EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, int size, SceKernelAllocMemBlockOpt *optp) {
+EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOpt *optp) {
     MemState &mem = host.mem;
     assert(name != nullptr);
     assert(type != 0);
-    assert(size != 0);
+
+    if (size < 0x1000 || (size & ~0xFFF) != 0) {
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    }
 
     Ptr<void> address;
     if (optp == nullptr) {
@@ -67,10 +70,13 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
     return uid;
 }
 
-EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, int size) {
+EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, SceSize size) {
     MemState &mem = host.mem;
     assert(name != nullptr);
-    assert(size != 0);
+
+    if (size < 0x1000 || (size & ~0xFFF) != 0) {
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    }
 
     const Ptr<void> address(alloc(mem, size, name));
     if (!address) {
