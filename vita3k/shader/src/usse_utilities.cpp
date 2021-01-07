@@ -564,14 +564,15 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
 
         // Load constants. Ignore mask
         if (op.type == DataType::F32) {
-            auto get_f32_from_bank = [&](const int num, const int bank) -> spv::Id {
-                switch (bank) {
+            auto get_f32_from_bank = [&](const int num) -> spv::Id {
+                int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X);
+                switch (swizz_val >> 1) {
                 case 0: {
-                    return b.makeFloatConstant(*reinterpret_cast<const float *>(&usse::f32_constant_table_bank_0_raw[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]));
+                    return b.makeFloatConstant(*reinterpret_cast<const float *>(&usse::f32_constant_table_bank_0_raw[op.num + (swizz_val & 1)]));
                 }
 
                 case 1: {
-                    return b.makeFloatConstant(*reinterpret_cast<const float *>(&usse::f32_constant_table_bank_1_raw[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]));
+                    return b.makeFloatConstant(*reinterpret_cast<const float *>(&usse::f32_constant_table_bank_1_raw[op.num + (swizz_val & 1)]));
                 }
 
                 default:
@@ -583,34 +584,32 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
 
             for (int i = 0; i < 4; i++) {
                 if (dest_mask & (1 << i)) {
-                    if (i == 1 && op.index == 0) {
-                        consts.push_back(get_f32_from_bank(i, 1));
-                    } else {
-                        consts.push_back(get_f32_from_bank(i, 0));
-                    }
+                    consts.push_back(get_f32_from_bank(i));
                 }
             }
         } else if (op.type == DataType::F16) {
-            auto get_f16_from_bank = [&](const int num, const int bank) -> spv::Id {
-                switch (bank) {
+            auto get_f16_from_bank = [&](const int num) -> spv::Id {
+                const int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X);
+
+                switch (swizz_val & 3) {
                 case 0: {
                     return b.makeFloatConstant(
-                        usse::f16_constant_table_bank0[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                        usse::f16_constant_table_bank0[op.num]);
                 }
 
                 case 1: {
                     return b.makeFloatConstant(
-                        usse::f16_constant_table_bank1[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                        usse::f16_constant_table_bank1[op.num]);
                 }
 
                 case 2: {
                     return b.makeFloatConstant(
-                        usse::f16_constant_table_bank2[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                        usse::f16_constant_table_bank2[op.num]);
                 }
 
                 case 3: {
                     return b.makeFloatConstant(
-                        usse::f16_constant_table_bank3[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                        usse::f16_constant_table_bank3[op.num]);
                 }
 
                 default:
@@ -622,11 +621,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
 
             for (int i = 0; i < 4; i++) {
                 if (dest_mask & (1 << i)) {
-                    if (i >= 1 && op.index == 0) {
-                        consts.push_back(get_f16_from_bank(i, i));
-                    } else {
-                        consts.push_back(get_f16_from_bank(i, 0));
-                    }
+                    consts.push_back(get_f16_from_bank(i));
                 }
             }
         }
