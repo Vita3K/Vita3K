@@ -362,7 +362,10 @@ bool USSETranslatorVisitor::vdp(
 
     spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
 
-    store(inst.opr.dest, result, write_mask, current_repeat);
+    store(inst.opr.dest, result, write_mask, 0);
+
+    // Rotate write mask
+    write_mask = (write_mask << 1) | (write_mask >> 3);
     END_REPEAT()
 
     return true;

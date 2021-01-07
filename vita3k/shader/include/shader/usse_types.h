@@ -181,8 +181,8 @@ enum class RegisterBank {
 
 // TODO: Make this a std::set?
 enum RegisterFlags : uint32_t {
-    Absolute = 1 << 0,  ///< Absolute the value
-    Negative = 1 << 1,  ///< Negate the value
+    Absolute = 1 << 0, ///< Absolute the value
+    Negative = 1 << 1, ///< Negate the value
     GPI = 1 << 2 ///< Register is GPI type.
 };
 

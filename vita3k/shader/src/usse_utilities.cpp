@@ -251,8 +251,7 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
             b.makeCompositeConstant(output_type, constants));
         spv::Id bias_vec = b.makeCompositeConstant(output_type, constant_bias);
 
-        output = b.createTriOp(spv::OpSelect, output_type, sign_check_vec, output, b.createBinOp(spv::OpISub, output_type,
-            output, bias_vec));
+        output = b.createTriOp(spv::OpSelect, output_type, sign_check_vec, output, b.createBinOp(spv::OpISub, output_type, output, bias_vec));
     }
 
     b.makeReturn(false, output);

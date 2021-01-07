@@ -137,7 +137,6 @@ private:
 #define BEGIN_REPEAT(repeat_count)                           \
     const auto repeat_count_num = (uint8_t)repeat_count + 1; \
     for (auto current_repeat = 0; current_repeat < repeat_count_num; current_repeat++) {
-
 #define END_REPEAT() }
 
 #define GET_REPEAT(inst, repeat_mode)                                                                           \
@@ -172,7 +171,7 @@ private:
 
             if (((bank >= RegisterBank::TEMP) && (bank <= RegisterBank::SECATTR)) || bank == RegisterBank::PREDICATE)
                 inc *= repeat_multiplier[op.index];
-            
+
             return inc;
         }
         return 0;
