@@ -155,6 +155,9 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
 
     const KernelWaitingThreadStates::const_iterator waiting = kernel.waiting_threads.find(thid);
     if (waiting == kernel.waiting_threads.end()) {
+        if (kernel.running_threads.find(thid) != kernel.running_threads.end()) {
+            return SCE_KERNEL_ERROR_RUNNING;
+        }
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
