@@ -70,10 +70,12 @@ bool USSETranslatorVisitor::vbw(
     inst.opr.src2.type = DataType::UINT32;
     inst.opr.dest.type = DataType::UINT32;
 
+    set_repeat_multiplier(1, 1, 1, 1);
+
     BEGIN_REPEAT(repeat_count)
     GET_REPEAT(inst, RepeatMode::SLMSI);
 
-    spv::Id src1 = load(inst.opr.src1, 0b0001, src1_repeat_offset / 2);
+    spv::Id src1 = load(inst.opr.src1, 0b0001, src1_repeat_offset);
     spv::Id src2 = 0;
 
     if (src1 == spv::NoResult) {
@@ -92,7 +94,7 @@ bool USSETranslatorVisitor::vbw(
         value = src2_n | (static_cast<uint32_t>(src2_sel) << 7) | (static_cast<uint32_t>(src2_exth) << 14);
         src2 = m_b.makeUintConstant(src2_invert ? ~value : value);
     } else {
-        src2 = load(inst.opr.src2, 0b0001, src2_repeat_offset / 2);
+        src2 = load(inst.opr.src2, 0b0001, src2_repeat_offset);
 
         if (src2 == spv::NoResult) {
             LOG_ERROR("Source 2 not loaded");
@@ -125,13 +127,15 @@ bool USSETranslatorVisitor::vbw(
         result = m_b.createUnaryOp(spv::Op::OpBitcast, type_f32, src2);
     }
 
-    store(inst.opr.dest, result, 0b0001, dest_repeat_offset / 2);
+    store(inst.opr.dest, result, 0b0001, dest_repeat_offset);
 
     LOG_DISASM("{:016x}: {}{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode),
-        disasm::operand_to_str(inst.opr.dest, 0b0001, dest_repeat_offset / 2), disasm::operand_to_str(inst.opr.src1, 0b0001, src1_repeat_offset / 2),
-        immediate ? log_hex(value) : disasm::operand_to_str(inst.opr.src2, 0b0001, src2_repeat_offset / 2));
+        disasm::operand_to_str(inst.opr.dest, 0b0001, dest_repeat_offset), disasm::operand_to_str(inst.opr.src1, 0b0001, src1_repeat_offset),
+        immediate ? log_hex(value) : disasm::operand_to_str(inst.opr.src2, 0b0001, src2_repeat_offset));
 
     END_REPEAT()
+
+    reset_repeat_multiplier();
 
     return true;
 }
@@ -184,15 +188,37 @@ bool USSETranslatorVisitor::i32mad(
     inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_bank_ext, false, 7, m_second_program);
 
     const DataType inst_dt = is_signed ? DataType::INT32 : DataType::UINT32;
+    const DataType inst_dt_16 = is_signed ? DataType::INT16 : DataType::UINT16;
+
+    shader::usse::Imm4 src0_mask = 0b1;
+    shader::usse::Imm4 src1_mask = 0b1;
+    shader::usse::Imm4 src2_mask = 0b1;
 
     inst.opr.dest.type = inst_dt;
-    inst.opr.src0.type = inst_dt;
-    inst.opr.src1.type = inst_dt;
-    inst.opr.src2.type = inst_dt;
+    inst.opr.src0.type = inst_dt_16;
+    inst.opr.src1.type = inst_dt_16;
 
-    spv::Id vsrc0 = load(inst.opr.src0, 0b1, 0);
-    spv::Id vsrc1 = load(inst.opr.src1, 0b1, 0);
-    spv::Id vsrc2 = load(inst.opr.src2, 0b1, 0);
+    if (src2_type == 2) {
+        inst.opr.src2.type = inst_dt;
+    } else {
+        inst.opr.src2.type = inst_dt_16;
+    }
+
+    if (src0_high) {
+        src0_mask = 0b10;
+    }
+
+    if (src1_high) {
+        src1_mask = 0b10;
+    }
+
+    if (src2_type != 2 && src2_high) {
+        src2_mask = 0b10;
+    }
+
+    spv::Id vsrc0 = load(inst.opr.src0, src0_mask, 0);
+    spv::Id vsrc1 = load(inst.opr.src1, src1_mask, 0);
+    spv::Id vsrc2 = load(inst.opr.src2, src2_mask, 0);
 
     auto mul_result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
     auto add_result = m_b.createBinOp(spv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);

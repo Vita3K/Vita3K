@@ -181,35 +181,35 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     std::string func_name;
     spv::Id output_type;
     int comp_count;
-    int bias;
+    bool is_signed;
 
     switch (source_type) {
     case DataType::UINT16: {
         func_name = "unpack2xU16";
         output_type = b.makeVectorType(type_ui32, 2);
         comp_count = 2;
-        bias = 0;
+        is_signed = false;
         break;
     }
     case DataType::INT16: {
         func_name = "unpack2xS16";
         output_type = b.makeVectorType(type_i32, 2);
         comp_count = 2;
-        bias = 32768;
+        is_signed = true;
         break;
     }
     case DataType::UINT8: {
         func_name = "unpack4xU8";
         output_type = b.makeVectorType(type_ui32, 4);
         comp_count = 4;
-        bias = 0;
+        is_signed = false;
         break;
     }
     case DataType::INT8: {
         func_name = "unpack4xS8";
         output_type = b.makeVectorType(type_i32, 4);
         comp_count = 4;
-        bias = 128;
+        is_signed = true;
         break;
     }
     default:
@@ -220,35 +220,38 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
         decorations, &unpack_func_block);
     spv::Id extracted = unpack_func->getParamId(0);
 
-    extracted = b.createUnaryOp(spv::OpBitcast, type_ui32, extracted);
+    extracted = b.createUnaryOp(spv::OpBitcast, is_signed ? type_i32 : type_ui32, extracted);
 
-    const auto make_mask = [](int n) {
-        uint32_t out = 0;
-        for (int i = 0; i < n; ++i) {
-            out = (out << 2) | 0xFF;
-        }
-        return out;
-    };
-
-    const auto bias_id = b.makeIntConstant(bias);
     std::vector<spv::Id> comps;
     std::vector<spv::Id> bias_comps;
 
+    const auto comp_bits = 32 / comp_count;
+
     for (int i = 0; i < comp_count; ++i) {
-        const auto mask = make_mask(4 / comp_count);
-        const auto mask_id = b.makeUintConstant(mask);
-        const auto comp = b.createBinOp(spv::OpBitwiseAnd, type_ui32, extracted, mask_id);
-        extracted = b.createBinOp(spv::OpShiftRightLogical, type_ui32, extracted, b.makeIntConstant(32 / comp_count));
+        spv::Id comp;
+
+        if (is_signed) {
+            comp = b.createTriOp(spv::OpBitFieldSExtract, type_i32, extracted, b.makeIntConstant(comp_bits * i), b.makeIntConstant(comp_bits));
+        } else {
+            comp = b.createTriOp(spv::OpBitFieldUExtract, type_ui32, extracted, b.makeIntConstant(comp_bits * i), b.makeIntConstant(comp_bits));
+        }
+
         comps.push_back(comp);
-        bias_comps.push_back(bias_id);
     }
 
-    auto output = b.createCompositeConstruct(b.makeVectorType(type_ui32, comp_count), comps);
-    if (bias != 0) {
-        // TODO: we might want to use OpSatConvertUToS
-        output = b.createUnaryOp(spv::OpSConvert, b.makeVectorType(type_i32, comp_count), output);
-        const auto bias_vec = b.createCompositeConstruct(b.makeVectorType(type_i32, comp_count), bias_comps);
-        output = b.createBinOp(spv::OpISub, b.makeVectorType(type_i32, comp_count), output, bias_vec);
+    auto output = b.createCompositeConstruct(output_type, comps);
+
+    if (is_signed) {
+        // Sign extended them. Thanks kd-11 for method.
+        spv::Id sign_check_vec_type = b.makeVectorType(b.makeBoolType(), comp_count);
+        std::vector<std::uint32_t> constants(comp_count, b.makeIntConstant(1 << (comp_bits - 1)));
+        std::vector<std::uint32_t> constant_bias(comp_count, b.makeIntConstant(1 << comp_bits));
+
+        spv::Id sign_check_vec = b.createBinOp(spv::OpSLessThan, sign_check_vec_type, output,
+            b.makeCompositeConstant(output_type, constants));
+        spv::Id bias_vec = b.makeCompositeConstant(output_type, constant_bias);
+
+        output = b.createTriOp(spv::OpSelect, output_type, sign_check_vec, output, b.createBinOp(spv::OpISub, output_type, output, bias_vec));
     }
 
     b.makeReturn(false, output);
@@ -270,34 +273,35 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     std::string func_name;
     spv::Id input_type;
     int comp_count;
-    int bias;
+    bool is_signed;
+
     switch (source_type) {
     case DataType::UINT16: {
         func_name = "pack2xU16";
         input_type = b.makeVectorType(type_ui32, 2);
         comp_count = 2;
-        bias = 0;
+        is_signed = false;
         break;
     }
     case DataType::INT16: {
         func_name = "pack2xS16";
         input_type = b.makeVectorType(type_i32, 2);
         comp_count = 2;
-        bias = 32768;
+        is_signed = true;
         break;
     }
     case DataType::UINT8: {
         func_name = "pack4xU8";
         input_type = b.makeVectorType(type_ui32, 4);
         comp_count = 4;
-        bias = 0;
+        is_signed = false;
         break;
     }
     case DataType::INT8: {
         func_name = "pack4xS8";
         input_type = b.makeVectorType(type_i32, 4);
         comp_count = 4;
-        bias = 128;
+        is_signed = true;
         break;
     }
     default:
@@ -306,39 +310,18 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
 
     spv::Function *pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { input_type },
         decorations, &pack_func_block);
+
     spv::Id extracted = pack_func->getParamId(0);
-
-    const auto make_mask = [](int n) {
-        uint32_t out = 0;
-        for (int i = 0; i < n; ++i) {
-            out = (out << 2) | 0xFF;
-        }
-        return out;
-    };
-
-    if (bias != 0) {
-        std::vector<spv::Id> bias_comps;
-        const auto bias_id = b.makeIntConstant(bias);
-        for (int i = 0; i < comp_count; ++i) {
-            bias_comps.push_back(bias_id);
-        }
-        const auto bias_vec = b.createCompositeConstruct(b.makeVectorType(type_i32, comp_count), bias_comps);
-        extracted = b.createBinOp(spv::OpIAdd, b.makeVectorType(type_i32, comp_count), extracted, bias_vec);
-        // TODO: we might want to use OpSatConvertSToU
-        extracted = b.createUnaryOp(spv::OpUConvert, b.makeVectorType(type_ui32, comp_count), extracted);
-    }
+    const int comp_bits = 32 / comp_count;
 
     auto output = b.makeUintConstant(0);
     for (int i = 0; i < comp_count; ++i) {
-        const auto mask = make_mask(4 / comp_count);
-        const auto mask_id = b.makeUintConstant(mask);
-        auto comp = b.createBinOp(spv::OpVectorExtractDynamic, type_ui32, extracted, b.makeIntConstant(comp_count - i - 1));
-        comp = b.createBinOp(spv::OpBitwiseAnd, type_ui32, comp, mask_id);
-        // or this
-        //comp = b.createBuiltinCall(type_ui32, b.import("GLSL.std.450"), GLSLstd450UMin, { comp, mask_id });
-        output = b.createBinOp(spv::OpBitwiseOr, type_ui32, output, comp);
-        if (i != comp_count - 1) {
-            output = b.createBinOp(spv::OpShiftLeftLogical, type_ui32, output, b.makeIntConstant(32 / comp_count));
+        auto comp = b.createBinOp(spv::OpVectorExtractDynamic, type_ui32, extracted, b.makeIntConstant(i));
+        output = b.createOp(spv::OpBitFieldInsert, type_ui32, { output, comp, b.makeIntConstant(comp_bits * i), b.makeIntConstant(comp_bits - (is_signed ? 1 : 0)) });
+
+        if (is_signed) {
+            auto sign_bit = b.createBinOp(spv::OpShiftRightLogical, type_ui32, comp, b.makeIntConstant(31));
+            output = b.createOp(spv::OpBitFieldInsert, type_ui32, { output, sign_bit, b.makeIntConstant(comp_bits * i + comp_bits - 1), b.makeIntConstant(1) });
         }
     }
 
@@ -581,14 +564,15 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
 
         // Load constants. Ignore mask
         if (op.type == DataType::F32) {
-            auto get_f32_from_bank = [&](const int num, const int bank) -> spv::Id {
-                switch (bank) {
+            auto get_f32_from_bank = [&](const int num) -> spv::Id {
+                int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X);
+                switch (swizz_val >> 1) {
                 case 0: {
-                    return b.makeFloatConstant(*reinterpret_cast<const float *>(&usse::f32_constant_table_bank_0_raw[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]));
+                    return b.makeFloatConstant(*reinterpret_cast<const float *>(&usse::f32_constant_table_bank_0_raw[op.num + (swizz_val & 1)]));
                 }
 
                 case 1: {
-                    return b.makeFloatConstant(*reinterpret_cast<const float *>(&usse::f32_constant_table_bank_1_raw[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]));
+                    return b.makeFloatConstant(*reinterpret_cast<const float *>(&usse::f32_constant_table_bank_1_raw[op.num + (swizz_val & 1)]));
                 }
 
                 default:
@@ -600,34 +584,32 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
 
             for (int i = 0; i < 4; i++) {
                 if (dest_mask & (1 << i)) {
-                    if (i == 1 && op.index == 0) {
-                        consts.push_back(get_f32_from_bank(i, 1));
-                    } else {
-                        consts.push_back(get_f32_from_bank(i, 0));
-                    }
+                    consts.push_back(get_f32_from_bank(i));
                 }
             }
         } else if (op.type == DataType::F16) {
-            auto get_f16_from_bank = [&](const int num, const int bank) -> spv::Id {
-                switch (bank) {
+            auto get_f16_from_bank = [&](const int num) -> spv::Id {
+                const int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X);
+
+                switch (swizz_val & 3) {
                 case 0: {
                     return b.makeFloatConstant(
-                        usse::f16_constant_table_bank0[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                        usse::f16_constant_table_bank0[op.num]);
                 }
 
                 case 1: {
                     return b.makeFloatConstant(
-                        usse::f16_constant_table_bank1[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                        usse::f16_constant_table_bank1[op.num]);
                 }
 
                 case 2: {
                     return b.makeFloatConstant(
-                        usse::f16_constant_table_bank2[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                        usse::f16_constant_table_bank2[op.num]);
                 }
 
                 case 3: {
                     return b.makeFloatConstant(
-                        usse::f16_constant_table_bank3[op.num + static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X)]);
+                        usse::f16_constant_table_bank3[op.num]);
                 }
 
                 default:
@@ -639,11 +621,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
 
             for (int i = 0; i < 4; i++) {
                 if (dest_mask & (1 << i)) {
-                    if (i >= 1 && op.index == 0) {
-                        consts.push_back(get_f16_from_bank(i, i));
-                    } else {
-                        consts.push_back(get_f16_from_bank(i, 0));
-                    }
+                    consts.push_back(get_f16_from_bank(i));
                 }
             }
         }
@@ -680,6 +658,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         }
 
         op.num <<= 2;
+        shift_offset <<= 2;
     }
 
     const auto dest_comp_count = dest_mask_to_comp_count(dest_mask);
@@ -979,6 +958,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     if (dest.bank == RegisterBank::FPINTERNAL) {
         dest.type = DataType::F32;
         dest.num <<= 2;
+        off <<= 2;
     }
 
     spv::Id bank_base = *get_reg_bank(params, dest.bank);

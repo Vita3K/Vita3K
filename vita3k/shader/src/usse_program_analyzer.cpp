@@ -79,7 +79,6 @@ std::uint8_t get_predicate(const std::uint64_t inst) {
 
         return 0;
     }
-
     // VMAD normal version, predicates only occupied two bits
     case 0b00100:
     case 0b00101: {
@@ -97,8 +96,9 @@ std::uint8_t get_predicate(const std::uint64_t inst) {
             return 0;
         }
     }
-    // SOP2
-    case 0b10000: {
+    // SOP2, I32MAD
+    case 0b10000:
+    case 0b10101: {
         uint8_t predicate = ((inst >> 32) & ~0xF9FFFFFF) >> 25;
         return static_cast<uint8_t>(short_predicate_to_ext(static_cast<ShortPredicate>(predicate)));
     }

@@ -731,6 +731,7 @@ void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count)
     count = _count;
     cache.clear();
     avail_blocks.clear();
+    visitor.reset_for_new_session();
 
     usse::analyze(
         static_cast<shader::usse::USSEOffset>(_count - 1), [&](usse::USSEOffset off) -> std::uint64_t { return inst[off]; },
