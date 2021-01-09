@@ -53,6 +53,8 @@ static int io_error_impl(const int retval, const char *export_name, const char *
 #define IO_ERROR(retval) io_error_impl(retval, export_name, __func__)
 #define IO_ERROR_UNK() IO_ERROR(-1)
 
+constexpr bool log_file_op = true;
+
 namespace vfs {
 
 bool read_file(const VitaIoDevice device, FileBuffer &buf, const std::wstring &pref_path, const fs::path &vfs_file_path) {
@@ -233,8 +235,7 @@ SceUID open_file(IOState &io, const char *path, const int flags, const std::wstr
         const auto fd = io.next_fd++;
         io.tty_files.emplace(fd, tty_type);
 
-        LOG_TRACE("{}: Opening terminal {}:", export_name, device._to_string());
-
+        LOG_TRACE_IF(log_file_op, "{}: Opening terminal {}:", export_name, device._to_string());
         return fd;
     }
 
@@ -263,8 +264,7 @@ SceUID open_file(IOState &io, const char *path, const int flags, const std::wstr
     const auto fd = io.next_fd++;
     io.std_files.emplace(fd, f);
 
-    LOG_TRACE("{}: Opening file {} ({}), fd: {}", export_name, path, normalized_path, log_hex(fd));
-
+    LOG_TRACE_IF(log_file_op, "{}: Opening file {} ({}), fd: {}", export_name, path, normalized_path, log_hex(fd));
     return fd;
 }
 
@@ -275,7 +275,7 @@ int read_file(void *data, IOState &io, const SceUID fd, const SceSize size, cons
     const auto file = io.std_files.find(fd);
     if (file != io.std_files.end()) {
         const auto read = file->second.read(data, 1, size);
-        LOG_TRACE("{}: Reading {} bytes of fd {}", export_name, read, log_hex(fd));
+        LOG_TRACE_IF(log_file_op, "{}: Reading {} bytes of fd {}", export_name, read, log_hex(fd));
         return static_cast<int>(read);
     }
 
@@ -283,7 +283,7 @@ int read_file(void *data, IOState &io, const SceUID fd, const SceSize size, cons
     if (tty_file != io.tty_files.end()) {
         if (tty_file->second == TTY_IN) {
             std::cin.read(reinterpret_cast<char *>(data), size);
-            LOG_TRACE("{}: Reading terminal fd: {}, size: {}", export_name, log_hex(fd), size);
+            LOG_TRACE_IF(log_file_op, "{}: Reading terminal fd: {}, size: {}", export_name, log_hex(fd), size);
             return size;
         }
         return IO_ERROR_UNK();
@@ -312,7 +312,7 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
             } else {
                 if (s.back() == '\n')
                     s.pop_back();
-                LOG_TRACE("*** TTY: {}", s);
+                LOG_TRACE_IF(log_file_op, "*** TTY: {}", s);
             }
 
             return size;
@@ -328,7 +328,7 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
 
     if (file->second.can_write_file()) {
         const auto written = file->second.write(data, 1, size);
-        LOG_TRACE("{}: Writing to fd: {}, size: {}", export_name, log_hex(fd), size);
+        LOG_TRACE_IF(log_file_op, "{}: Writing to fd: {}, size: {}", export_name, log_hex(fd), size);
         return static_cast<int>(written);
     }
 
@@ -341,7 +341,7 @@ int truncate_file(const SceUID fd, unsigned long long length, const IOState &io,
 
     const auto file = io.std_files.find(fd);
     auto trunc = file->second.truncate(length);
-    LOG_TRACE("{}: Truncating fd: {}, to size: {}", export_name, log_hex(fd), length);
+    LOG_TRACE_IF(log_file_op, "{}: Truncating fd: {}, to size: {}", export_name, log_hex(fd), length);
     return trunc;
 }
 
@@ -366,8 +366,7 @@ SceOff seek_file(const SceUID fd, const SceOff offset, const SceIoSeekMode whenc
         }
     };
 
-    LOG_TRACE("{}: Seeking fd: {}, offset: {}, whence: {}", export_name, log_hex(fd), log_hex(offset), log_mode(whence));
-
+    LOG_TRACE_IF(log_file_op, "{}: Seeking fd: {}, offset: {}, whence: {}", export_name, log_hex(fd), log_hex(offset), log_mode(whence));
     return file->second.tell();
 }
 
@@ -405,14 +404,14 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::wstrin
             return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
         }
 
-        LOG_TRACE("{}: Statting file: {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
+        LOG_TRACE_IF(log_file_op, "{}: Statting file: {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
     } else { // We have previously opened and defined the location
         const auto fd_file = io.std_files.find(fd);
         if (fd_file == io.std_files.end())
             return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
         file_path = fd_file->second.get_system_location();
-        LOG_TRACE("{}: Statting fd: {}", export_name, log_hex(fd));
+        LOG_TRACE_IF(log_file_op, "{}: Statting fd: {}", export_name, log_hex(fd));
 
         statp->st_attr = fd_file->second.get_file_mode();
     }
@@ -479,7 +478,7 @@ int close_file(IOState &io, const SceUID fd, const char *export_name) {
     if (fd < 0)
         return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
 
-    LOG_TRACE("{}: Closing file fd: {}", export_name, log_hex(fd));
+    LOG_TRACE_IF(log_file_op, "{}: Closing file fd: {}", export_name, log_hex(fd));
 
     io.tty_files.erase(fd);
     io.std_files.erase(fd);
@@ -505,7 +504,7 @@ int remove_file(IOState &io, const char *file, const std::wstring &pref_path, co
         LOG_ERROR("File does not exist at path: {} (target path: {})", emulated_path.string(), file);
     }
 
-    LOG_TRACE("{}: Removing file {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
+    LOG_TRACE_IF(log_file_op, "{}: Removing file {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
 
     if (!fs::remove(emulated_path)) {
         LOG_ERROR("Cannot remove file: {} ({})", file, device::construct_normalized_path(device, translated_path));
@@ -536,7 +535,7 @@ SceUID open_dir(IOState &io, const char *path, const std::wstring &pref_path, co
     const auto fd = io.next_fd++;
     io.dir_entries.emplace(fd, d);
 
-    LOG_TRACE("{}: Opening dir {} ({}), fd: {}", export_name, path, normalized, log_hex(fd));
+    LOG_TRACE_IF(log_file_op, "{}: Opening dir {} ({}), fd: {}", export_name, path, normalized, log_hex(fd));
 
     return fd;
 }
@@ -564,7 +563,7 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const std::wstr
         if (!(cur_path.filename_is_dot() || cur_path.filename_is_dot_dot())) {
             const auto file_path = std::string(dir->second.get_vita_loc()) + '/' + d_name_utf8;
 
-            LOG_TRACE("{}: Reading entry {} of fd: {}", export_name, file_path, log_hex(fd));
+            LOG_TRACE_IF(log_file_op, "{}: Reading entry {} of fd: {}", export_name, file_path, log_hex(fd));
             if (stat_file(io, file_path.c_str(), &dent->d_stat, pref_path, base_tick, export_name) < 0)
                 return IO_ERROR(SCE_ERROR_ERRNO_EMFILE);
             else
@@ -594,7 +593,7 @@ int create_dir(IOState &io, const char *dir, int mode, const std::wstring &pref_
     if (!fs::exists(parent_path)) // Vita cannot recursively create directories
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
 
-    LOG_TRACE("{}: Creating new dir {} ({})", export_name, dir, device::construct_normalized_path(device, translated_path));
+    LOG_TRACE_IF(log_file_op, "{}: Creating new dir {} ({})", export_name, dir, device::construct_normalized_path(device, translated_path));
 
     if (!fs::create_directory(emulated_path)) {
         LOG_ERROR("Failed to create directory at {} (target path: {})", emulated_path.string(), dir);
@@ -610,7 +609,7 @@ int close_dir(IOState &io, const SceUID fd, const char *export_name) {
 
     const auto erased_entries = io.dir_entries.erase(fd);
 
-    LOG_TRACE("{}: Closing dir fd: {}", export_name, log_hex(fd));
+    LOG_TRACE_IF(log_file_op, "{}: Closing dir fd: {}", export_name, log_hex(fd));
 
     if (erased_entries == 0)
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
@@ -631,7 +630,7 @@ int remove_dir(IOState &io, const char *dir, const std::wstring &pref_path, cons
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    LOG_TRACE("{}: Removing dir {} ({})", export_name, dir, device::construct_normalized_path(device, translated_path));
+    LOG_TRACE_IF(log_file_op, "{}: Removing dir {} ({})", export_name, dir, device::construct_normalized_path(device, translated_path));
 
     if (!fs::remove(device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio))) {
         LOG_ERROR("Cannot remove dir: {} ({})", dir, device::construct_normalized_path(device, translated_path));
