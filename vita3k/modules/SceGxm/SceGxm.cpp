@@ -655,7 +655,7 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
         const auto vertex_program = context->record.vertex_program.get(host.mem);
         const auto program = vertex_program->program.get(host.mem);
 
-        const size_t size = program->default_uniform_buffer_count * 4;
+        const size_t size = (size_t)program->default_uniform_buffer_count * 4;
         const size_t next_used = context->state.vertex_ring_buffer_used + size;
         assert(next_used <= context->state.params.vertexRingBufferMemSize);
         if (next_used > context->state.params.vertexRingBufferMemSize) {
@@ -669,7 +669,7 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
         const auto fragment_program = context->record.fragment_program.get(host.mem);
         const auto program = fragment_program->program.get(host.mem);
 
-        const size_t size = program->default_uniform_buffer_count * 4;
+        const size_t size = (size_t)program->default_uniform_buffer_count * 4;
         const size_t next_used = context->state.fragment_ring_buffer_used + size;
         assert(next_used <= context->state.params.fragmentRingBufferMemSize);
         if (next_used > context->state.params.fragmentRingBufferMemSize) {
