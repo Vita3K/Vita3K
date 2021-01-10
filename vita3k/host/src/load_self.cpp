@@ -446,15 +446,17 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         entry_point = Ptr<const void>(0);
     //unk30
     if (module_info->module_stop != 0xffffffff && module_info->module_stop != 0)
-        sceKernelModuleInfo->module_stop = module_info_segment_address + module_info->module_stop;
+        sceKernelModuleInfo->stop_entry = module_info_segment_address + module_info->module_stop;
 
     const Ptr<const void> exidx_top = Ptr<const void>(module_info->exidx_top);
-    sceKernelModuleInfo->exidxTop = exidx_top;
+    sceKernelModuleInfo->exidx_top = exidx_top;
     const Ptr<const void> exidx_btm = Ptr<const void>(module_info->exidx_end);
-    sceKernelModuleInfo->exidxBtm = exidx_btm;
+    sceKernelModuleInfo->exidx_btm = exidx_btm;
+    const Ptr<const void> extab_top = Ptr<const void>(module_info->extab_top);
+    sceKernelModuleInfo->extab_top = extab_top;
+    const Ptr<const void> extab_end = Ptr<const void>(module_info->extab_end);
+    sceKernelModuleInfo->extab_btm = extab_end;
 
-    //unk40
-    //unk44
     sceKernelModuleInfo->tlsInit = Ptr<const void>((!module_info->tls_start ? 0 : (module_info_segment_address.address() + module_info->tls_start)));
     sceKernelModuleInfo->tlsInitSize = module_info->tls_filesz;
     sceKernelModuleInfo->tlsAreaSize = module_info->tls_memsz;
@@ -465,8 +467,6 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         kernel.tls_msize = sceKernelModuleInfo->tlsAreaSize;
     }
 
-    //SceSize tlsInitSize;
-    //SceSize tlsAreaSize;
     strncpy(sceKernelModuleInfo->path, self_path.c_str(), 255);
 
     for (Elf_Half segment_index = 0; segment_index < elf.e_phnum; ++segment_index) {
@@ -484,9 +484,10 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         segment.size = sizeof(segment);
         segment.vaddr = it->second.addr;
         segment.memsz = segments[segment_index].p_memsz;
+        segment.filesz = segments[segment_index].p_filesz;
     }
 
-    sceKernelModuleInfo->type = module_info->type;
+    sceKernelModuleInfo->state = module_info->type;
 
     LOG_INFO("Loading symbols for SELF: {}", self_path);
 
@@ -498,12 +499,12 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         return -1;
     }
 
-    sceKernelModuleInfo->module_start = entry_point;
+    sceKernelModuleInfo->start_entry = entry_point;
     // TODO: module_stop
 
     const std::lock_guard<std::mutex> lock(kernel.mutex);
     const SceUID uid = kernel.get_next_uid();
-    sceKernelModuleInfo->handle = uid;
+    sceKernelModuleInfo->modid = uid;
     kernel.loaded_modules.emplace(uid, sceKernelModuleInfo);
 
     return uid;
