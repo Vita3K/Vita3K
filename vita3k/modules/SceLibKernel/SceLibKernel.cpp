@@ -1101,7 +1101,7 @@ EXPORT(int, sceKernelGetThreadEventInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetThreadExitStatus, SceUID thid) {
+EXPORT(int, sceKernelGetThreadExitStatus, SceUID thid, SceInt32 *pExitStatus) {
     const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
@@ -1109,7 +1109,10 @@ EXPORT(int, sceKernelGetThreadExitStatus, SceUID thid) {
     if (thread->to_do != ThreadToDo::exit) {
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     }
-    return thread->returned_value;
+    if (pExitStatus) {
+        *pExitStatus = thread->returned_value;
+    }
+    return 0;
 }
 
 EXPORT(int, sceKernelGetThreadId) {
