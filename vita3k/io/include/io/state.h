@@ -106,6 +106,7 @@ struct IOState {
     std::string title_id;
 
     std::string user_id;
+    std::string user_name;
 
     bool redirect_stdio;
 

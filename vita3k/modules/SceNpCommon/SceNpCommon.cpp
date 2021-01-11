@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -59,8 +59,7 @@ EXPORT(int, sceNpAuthTerm) {
 
 EXPORT(int, sceNpCmpNpId, np::NpId *npid1, np::NpId *npid2) {
     STUBBED("assume single user");
-    auto username = host.cfg.online_id[host.cfg.user_id];
-    if (std::string(npid1->online_id.name) == username && std::string(npid2->online_id.name) == username) {
+    if (std::string(npid1->online_id.name) == host.io.user_name && std::string(npid2->online_id.name) == host.io.user_name) {
         return 0;
     }
     return 0x80550605; // INVALID NP ID

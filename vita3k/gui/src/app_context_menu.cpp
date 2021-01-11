@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2019 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -99,7 +99,7 @@ static auto information = false;
 void draw_app_context_menu(GuiState &gui, HostState &host) {
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / host.app_title_id };
     const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / host.app_title_id };
-    const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user/00/savedata" / host.app_title_id };
+    const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / host.app_title_id };
     const auto SHADER_LOG_PATH{ fs::path(host.base_path) / "shaderlog" / host.app_title_id };
 
     // App Context Menu

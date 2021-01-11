@@ -80,6 +80,7 @@ struct LiveAreaState {
     bool theme_background = false;
     bool trophy_collection = false;
     bool start_screen = false;
+    bool user_management = false;
 };
 
 struct FileMenuState {
@@ -103,7 +104,6 @@ struct DebugMenuState {
 };
 
 struct ConfigurationMenuState {
-    bool profiles_manager_dialog = false;
     bool settings_dialog = false;
 };
 

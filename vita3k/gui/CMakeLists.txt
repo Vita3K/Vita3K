@@ -35,13 +35,13 @@ add_library(
 	src/perf_overlay.cpp
 	src/pkg_install_dialog.cpp
 	src/private.h
-	src/profiles_manager_dialog.cpp
 	src/reinstall.cpp
 	src/semaphores_dialog.cpp
 	src/settings_dialog.cpp
 	src/threads_dialog.cpp
 	src/themes.cpp
-	src/trophy.cpp
+	src/trophy_collection.cpp
+	src/user_management.cpp
 	src/controls_dialog.cpp
 	src/allocations_dialog.cpp
 	src/disassembly_dialog.cpp

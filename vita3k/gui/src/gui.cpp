@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -140,9 +140,12 @@ static void init_live_area_font(GuiState &gui, HostState &host) {
 
     // check existence of font file
     if (!fs::exists(font_path)) {
-        LOG_WARN("Could not find firmware font file at \"{}\", using defaut vita3k font.", font_path.string());
-        gui.live_area_font = gui.normal_font;
-        gui.live_area_font_large = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(gui.font_data.size()), 124.f, &font_config, large_font_chars);
+        if (!gui.font_data.empty()) {
+            LOG_WARN("Could not find firmware font file at \"{}\", using defaut vita3k font, install firmware fonts package for fix this.", font_path.string());
+            gui.live_area_font = gui.normal_font;
+            gui.live_area_font_large = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(gui.font_data.size()), 124.f, &font_config, large_font_chars);
+        } else
+            LOG_WARN("Could not find firmware font file at \"{}\", using defaut imgui font.", font_path.string());
         return;
     }
 
@@ -440,6 +443,7 @@ void init(GuiState &gui, HostState &host) {
     init_style();
     init_font(gui, host);
     init_live_area_font(gui, host);
+    init_user(gui, host, fmt::format("{:0>2d}", host.cfg.user_id));
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);
@@ -514,6 +518,9 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (gui.live_area.content_manager)
         draw_content_manager(gui, host);
 
+    if (gui.live_area.user_management)
+        draw_user_management(gui, host);
+
     ImGui::PopFont();
 }
 
@@ -549,8 +556,6 @@ void draw_ui(GuiState &gui, HostState &host) {
     if (gui.debug_menu.disassembly_dialog)
         draw_disassembly_dialog(gui, host);
 
-    if (gui.configuration_menu.profiles_manager_dialog)
-        draw_profiles_manager_dialog(gui, host);
     if (gui.configuration_menu.settings_dialog)
         draw_settings_dialog(gui, host);
 

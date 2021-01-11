@@ -53,7 +53,6 @@ void draw_condvars_dialog(GuiState &gui, HostState &host);
 void draw_event_flags_dialog(GuiState &gui, HostState &host);
 void draw_allocations_dialog(GuiState &gui, HostState &host);
 void draw_disassembly_dialog(GuiState &gui, HostState &host);
-void draw_profiles_manager_dialog(GuiState &gui, HostState &host);
 void draw_settings_dialog(GuiState &gui, HostState &host);
 void draw_controls_dialog(GuiState &gui, HostState &host);
 void draw_about_dialog(GuiState &gui);
@@ -66,6 +65,7 @@ void draw_manual(GuiState &gui, HostState &host);
 void draw_start_screen(GuiState &gui, HostState &host);
 void draw_themes_selection(GuiState &gui, HostState &host);
 void draw_trophy_collection(GuiState &gui, HostState &host);
+void draw_user_management(GuiState &gui, HostState &host);
 
 void reevaluate_code(GuiState &gui, HostState &host);
 

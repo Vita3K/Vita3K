@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -401,14 +401,6 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 bool selected = false;
                 if (!gui.app_search_bar.PassFilter(app.title.c_str()) && !gui.app_search_bar.PassFilter(app.title_id.c_str()))
                     continue;
-                if (app.title_id.find("NPXS") == std::string::npos) {
-                    if (!fs::exists(fs::path(host.pref_path) / "ux0/app" / app.title_id)) {
-                        host.app_title = app.title;
-                        host.app_title_id = app.title_id;
-                        LOG_ERROR("Application not found: {} [{}], deleting the entry for it.", app.title_id, app.title);
-                        delete_app(gui, host);
-                    }
-                }
                 const auto POS_ICON = ImGui::GetCursorPosY();
                 const auto GRID_INIT_POS = ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE / 2.f) - 10.f;
                 if (apps_icon.find(app.title_id) != apps_icon.end()) {
@@ -423,15 +415,14 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::SetCursorPosY(POS_ICON);
                 ImGui::PushID(app.title_id.c_str());
                 ImGui::Selectable("##icon", &selected, host.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
-                ImGui::PopID();
                 if (ImGui::IsItemHovered()) {
                     host.app_version = app.app_ver;
                     host.app_short_title = app.stitle;
                     host.app_title = app.title;
                     host.app_title_id = app.title_id;
                 }
-                if (host.app_title_id == app.title_id)
-                    draw_app_context_menu(gui, host);
+                draw_app_context_menu(gui, host);
+                ImGui::PopID();
                 if (!host.cfg.apps_list_grid) {
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
