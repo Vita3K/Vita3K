@@ -584,49 +584,51 @@ struct SceKernelThreadInfo {
     /** Size of the structure */
     SceSize size;
     /** The UID of the process where the thread belongs */
-    SceUID processId; //Needs confirmation
+    SceUID processId;
     /** Nul terminated name of the thread */
     char name[32];
     /** Thread attributes */
-    SceUInt attr;
+    SceUInt32 attr;
     /** Thread status */
-    int status;
+    SceUInt32 status;
     /** Thread entry point */
     SceKernelThreadEntry entry;
     /** Thread stack pointer */
     Ptr<void> stack;
     /** Thread stack size */
-    int stackSize;
+    SceInt32 stackSize;
     /** Initial priority */
-    int initPriority;
+    SceInt32 initPriority;
     /** Current priority */
-    int currentPriority;
+    SceInt32 currentPriority;
     /** Initial CPU affinity mask */
-    int initCpuAffinityMask;
+    SceInt32 initCpuAffinityMask;
     /** Current CPU affinity mask */
-    int currentCpuAffinityMask;
+    SceInt32 currentCpuAffinityMask;
     /** Current CPU ID */
-    int currentCpuId;
+    SceInt32 currentCpuId;
     /** Last executed CPU ID */
-    int lastExecutedCpuId;
+    SceInt32 lastExecutedCpuId;
     /** Wait type */
-    int waitType;
+    SceUInt32 waitType;
     /** Wait id */
     SceUID waitId;
     /** Exit status of the thread */
-    int exitStatus;
+    SceInt32 exitStatus;
     /** Number of clock cycles run */
     SceKernelSysClock runClocks;
     /** Interrupt preemption count */
-    SceUInt intrPreemptCount;
+    SceUInt32 intrPreemptCount;
     /** Thread preemption count */
-    SceUInt threadPreemptCount;
+    SceUInt32 threadPreemptCount;
     /** Thread release count */
-    SceUInt threadReleaseCount;
+    SceUInt32 threadReleaseCount;
+    /** Number of CPUs to which the thread is moved */
+    SceInt32 changeCpuCount;
     /** Function notify callback UID */
-    SceUID fNotifyCallback;
+    SceInt32 fNotifyCallback;
     /** Reserved */
-    int reserved;
+    SceInt32 reserved;
 };
 
 struct SceKernelThreadOptParam {
