@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2019 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,9 +23,14 @@
 
 namespace gui {
 
-void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
+void init_user(GuiState &gui, HostState &host, const std::string &user_id) {
+    host.io.user_id = user_id;
+    host.io.user_name = host.cfg.online_id[std::stoi(user_id)];
+}
+
+void draw_user_management(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    ImGui::Begin("Profiles Manager", &gui.configuration_menu.profiles_manager_dialog, ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("User Management", &gui.live_area.user_management, ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::PopStyleColor();
 
     const auto update_online_id = std::find(host.cfg.online_id.begin(), host.cfg.online_id.end(), gui.online_id);
@@ -212,14 +217,11 @@ void draw_profiles_manager_dialog(GuiState &gui, HostState &host) {
     } else
         ImGui::PopStyleColor();
 
-    if (static_cast<int>(host.cfg.online_id.size()) - 1 < host.cfg.user_id)
-        --host.cfg.user_id;
-
-    if (host.io.user_id.empty() || std::stoi(host.io.user_id) != host.cfg.user_id)
-        host.io.user_id = fmt::format("{:0>2d}", host.cfg.user_id);
-
-    if (host.cfg.overwrite_config)
-        config::serialize_config(host.cfg, host.cfg.config_path);
+    if (host.cfg.user_id != std::stoi(host.io.user_id)) {
+        init_user(gui, host, fmt::format("{:0>2d}", host.cfg.user_id));
+        if (host.cfg.overwrite_config)
+            config::serialize_config(host.cfg, host.cfg.config_path);
+    }
 
     ImGui::End();
 }

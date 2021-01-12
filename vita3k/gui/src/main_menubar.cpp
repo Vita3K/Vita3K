@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -71,8 +71,8 @@ static void draw_debug_menu(DebugMenuState &state) {
 
 static void draw_config_menu(GuiState &gui, HostState &host) {
     if (ImGui::BeginMenu("Configuration")) {
-        ImGui::MenuItem("Profiles Manager", nullptr, &gui.configuration_menu.profiles_manager_dialog);
         ImGui::MenuItem("Settings", nullptr, &gui.configuration_menu.settings_dialog);
+        ImGui::MenuItem("User Management", nullptr, &gui.live_area.user_management);
         ImGui::EndMenu();
     }
 }

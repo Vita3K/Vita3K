@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -487,142 +487,150 @@ void init_live_area(GuiState &gui, HostState &host) {
             target[title_id].clear();
 
             for (const auto &livearea : doc.child("livearea")) {
-                if (livearea.attribute("id")) {
+                if (!livearea.attribute("id").empty()) {
                     frames[title_id].push_back({ livearea.attribute("id").as_string(), livearea.attribute("multi").as_string(), livearea.attribute("autoflip").as_uint() });
 
                     std::string frame = frames[title_id].back().id;
 
                     // Position background
-                    if (livearea.child("liveitem").child("background")) {
-                        if (livearea.child("liveitem").child("background").attribute("x"))
+                    if (!livearea.child("liveitem").child("background").empty()) {
+                        if (!livearea.child("liveitem").child("background").attribute("x").empty())
                             liveitem[title_id][frame]["background"]["x"].first = livearea.child("liveitem").child("background").attribute("x").as_int();
-                        if (livearea.child("liveitem").child("background").attribute("y"))
+                        if (!livearea.child("liveitem").child("background").attribute("y").empty())
                             liveitem[title_id][frame]["background"]["y"].first = livearea.child("liveitem").child("background").attribute("y").as_int();
-                        if (livearea.child("liveitem").child("background").attribute("align"))
+                        if (!livearea.child("liveitem").child("background").attribute("align").empty())
                             liveitem[title_id][frame]["background"]["align"].second = livearea.child("liveitem").child("background").attribute("align").as_string();
-                        if (livearea.child("liveitem").child("background").attribute("valign"))
+                        if (!livearea.child("liveitem").child("background").attribute("valign").empty())
                             liveitem[title_id][frame]["background"]["valign"].second = livearea.child("liveitem").child("background").attribute("valign").as_string();
                     }
 
                     // Position image
-                    if (livearea.child("liveitem").child("image")) {
-                        if (livearea.child("liveitem").child("image").attribute("x"))
+                    if (!livearea.child("liveitem").child("image").empty()) {
+                        if (!livearea.child("liveitem").child("image").attribute("x").empty())
                             liveitem[title_id][frame]["image"]["x"].first = livearea.child("liveitem").child("image").attribute("x").as_int();
-                        if (livearea.child("liveitem").child("image").attribute("y"))
+                        if (!livearea.child("liveitem").child("image").attribute("y").empty())
                             liveitem[title_id][frame]["image"]["y"].first = livearea.child("liveitem").child("image").attribute("y").as_int();
-                        if (livearea.child("liveitem").child("image").attribute("align"))
+                        if (!livearea.child("liveitem").child("image").attribute("align").empty())
                             liveitem[title_id][frame]["image"]["align"].second = livearea.child("liveitem").child("image").attribute("align").as_string();
-                        if (livearea.child("liveitem").child("image").attribute("valign"))
+                        if (!livearea.child("liveitem").child("image").attribute("valign").empty())
                             liveitem[title_id][frame]["image"]["valign"].second = livearea.child("liveitem").child("image").attribute("valign").as_string();
-                        if (livearea.child("liveitem").child("image").attribute("origin"))
+                        if (!livearea.child("liveitem").child("image").attribute("origin").empty())
                             liveitem[title_id][frame]["image"]["origin"].second = livearea.child("liveitem").child("image").attribute("origin").as_string();
                     }
 
-                    if (livearea.child("liveitem").child("text")) {
+                    if (!livearea.child("liveitem").child("text").empty()) {
                         // SceInt32
-                        if (livearea.child("liveitem").child("text").attribute("width"))
+                        if (!livearea.child("liveitem").child("text").attribute("width").empty())
                             liveitem[title_id][frame]["text"]["width"].first = livearea.child("liveitem").child("text").attribute("width").as_int();
-                        if (livearea.child("liveitem").child("text").attribute("height"))
+                        if (!livearea.child("liveitem").child("text").attribute("height").empty())
                             liveitem[title_id][frame]["text"]["height"].first = livearea.child("liveitem").child("text").attribute("height").as_int();
-                        if (livearea.child("liveitem").child("text").attribute("x"))
+                        if (!livearea.child("liveitem").child("text").attribute("x").empty())
                             liveitem[title_id][frame]["text"]["x"].first = livearea.child("liveitem").child("text").attribute("x").as_int();
-                        if (livearea.child("liveitem").child("text").attribute("y"))
+                        if (!livearea.child("liveitem").child("text").attribute("y").empty())
                             liveitem[title_id][frame]["text"]["y"].first = livearea.child("liveitem").child("text").attribute("y").as_int();
-                        if (livearea.child("liveitem").child("text").attribute("margin-top"))
+                        if (!livearea.child("liveitem").child("text").attribute("margin-top").empty())
                             liveitem[title_id][frame]["text"]["margin-top"].first = livearea.child("liveitem").child("text").attribute("margin-top").as_int();
-                        if (livearea.child("liveitem").child("text").attribute("margin-buttom"))
+                        if (!livearea.child("liveitem").child("text").attribute("margin-buttom").empty())
                             liveitem[title_id][frame]["text"]["margin-buttom"].first = livearea.child("liveitem").child("text").attribute("margin-buttom").as_int();
-                        if (livearea.child("liveitem").child("text").attribute("margin-left"))
+                        if (!livearea.child("liveitem").child("text").attribute("margin-left").empty())
                             liveitem[title_id][frame]["text"]["margin-left"].first = livearea.child("liveitem").child("text").attribute("margin-left").as_int();
-                        if (livearea.child("liveitem").child("text").attribute("margin-right"))
+                        if (!livearea.child("liveitem").child("text").attribute("margin-right").empty())
                             liveitem[title_id][frame]["text"]["margin-right"].first = livearea.child("liveitem").child("text").attribute("margin-right").as_int();
 
                         // String
-                        if (livearea.child("liveitem").child("text").attribute("align"))
+                        if (!livearea.child("liveitem").child("text").attribute("align").empty())
                             liveitem[title_id][frame]["text"]["align"].second = livearea.child("liveitem").child("text").attribute("align").as_string();
-                        if (livearea.child("liveitem").child("text").attribute("valign"))
+                        if (!livearea.child("liveitem").child("text").attribute("valign").empty())
                             liveitem[title_id][frame]["text"]["valign"].second = livearea.child("liveitem").child("text").attribute("valign").as_string();
-                        if (livearea.child("liveitem").child("text").attribute("origin"))
+                        if (!livearea.child("liveitem").child("text").attribute("origin").empty())
                             liveitem[title_id][frame]["text"]["origin"].second = livearea.child("liveitem").child("text").attribute("origin").as_string();
-                        if (livearea.child("liveitem").child("text").attribute("line-align"))
+                        if (!livearea.child("liveitem").child("text").attribute("line-align").empty())
                             liveitem[title_id][frame]["text"]["line-align"].second = livearea.child("liveitem").child("text").attribute("line-align").as_string();
-                        if (livearea.child("liveitem").child("text").attribute("text-align"))
+                        if (!livearea.child("liveitem").child("text").attribute("text-align").empty())
                             liveitem[title_id][frame]["text"]["text-align"].second = livearea.child("liveitem").child("text").attribute("text-align").as_string();
-                        if (livearea.child("liveitem").child("text").attribute("text-valign"))
+                        if (!livearea.child("liveitem").child("text").attribute("text-valign").empty())
                             liveitem[title_id][frame]["text"]["text-valign"].second = livearea.child("liveitem").child("text").attribute("text-valign").as_string();
-                        if (livearea.child("liveitem").child("text").attribute("word-wrap"))
+                        if (!livearea.child("liveitem").child("text").attribute("word-wrap").empty())
                             liveitem[title_id][frame]["text"]["word-wrap"].second = livearea.child("liveitem").child("text").attribute("word-wrap").as_string();
-                        if (livearea.child("liveitem").child("text").attribute("word-scroll"))
+                        if (!livearea.child("liveitem").child("text").attribute("word-scroll").empty())
                             liveitem[title_id][frame]["text"]["word-scroll"].second = livearea.child("liveitem").child("text").attribute("word-scroll").as_string();
-                        if (livearea.child("liveitem").child("text").attribute("ellipsis"))
+                        if (!livearea.child("liveitem").child("text").attribute("ellipsis").empty())
                             liveitem[title_id][frame]["text"]["ellipsis"].second = livearea.child("liveitem").child("text").attribute("ellipsis").as_string();
                     }
 
                     for (const auto &frame_id : livearea) {
-                        if ((strncmp(frame_id.name(), "liveitem", 8) == 0) && (frame_id.child("cntry"))) {
-                            for (const auto &cntry : frame_id) {
-                                if ((strncmp(cntry.name(), "cntry", 5) == 0) && (cntry.attribute("lang").as_string() == user_lang)) {
-                                    if (frame_id.child("background"))
+                        if (frame_id.name() == std::string("liveitem")) {
+                            if (!frame_id.child("cntry").empty()) {
+                                for (const auto &cntry : frame_id) {
+                                    if ((cntry.name() == std::string("cntry")) && (cntry.attribute("lang").as_string() == user_lang)) {
+                                        if (!frame_id.child("background").text().empty())
+                                            items_name[frame]["background"].push_back({ frame_id.child("background").text().as_string() });
+                                        if (!frame_id.child("image").text().empty())
+                                            items_name[frame]["image"].push_back({ frame_id.child("image").text().as_string() });
+                                        if (!frame_id.child("target").text().empty())
+                                            target[title_id][frame] = frame_id.child("target").text().as_string();
+                                        if (!frame_id.child("text").child("str").text().empty()) {
+                                            for (const auto &str_child : frame_id.child("text"))
+                                                str[title_id][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
+                                        }
+                                        break;
+                                    }
+                                }
+                            } else if (!frame_id.child("exclude-lang").empty()) {
+                                bool exclude_lang = false;
+                                for (const auto &liveitem : frame_id)
+                                    if ((liveitem.name() == std::string("exclude-lang")) && (liveitem.text().as_string() == user_lang)) {
+                                        exclude_lang = true;
+                                        break;
+                                    }
+                                if (!exclude_lang) {
+                                    if (!frame_id.child("background").text().empty())
                                         items_name[frame]["background"].push_back({ frame_id.child("background").text().as_string() });
-                                    if (frame_id.child("image"))
+                                    if (!frame_id.child("image").text().empty())
                                         items_name[frame]["image"].push_back({ frame_id.child("image").text().as_string() });
-                                    if (frame_id.child("target"))
+                                    if (!frame_id.child("target").text().empty())
                                         target[title_id][frame] = frame_id.child("target").text().as_string();
-                                    if (frame_id.child("text").child("str")) {
+                                    if (!frame_id.child("text").child("str").text().empty()) {
                                         for (const auto &str_child : frame_id.child("text"))
                                             str[title_id][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
                                     }
                                     break;
                                 }
-                            }
-                        } else if ((strncmp(frame_id.name(), "liveitem", 8) == 0) && frame_id.child("exclude-lang")) {
-                            bool exclude_lang = false;
-                            for (const auto &liveitem : frame_id)
-                                if ((strncmp(liveitem.name(), "exclude-lang", 12) == 0) && (liveitem.text().as_string() == user_lang)) {
-                                    exclude_lang = true;
-                                    break;
-                                }
-                            if (!exclude_lang) {
-                                if (frame_id.child("background"))
+                            } else if (frame_id.child("lang").text().as_string() == user_lang) {
+                                if (!frame_id.child("background").text().empty())
                                     items_name[frame]["background"].push_back({ frame_id.child("background").text().as_string() });
-                                if (frame_id.child("image"))
+                                if (!frame_id.child("image").text().empty())
                                     items_name[frame]["image"].push_back({ frame_id.child("image").text().as_string() });
-                                if (frame_id.child("target"))
+                                if (!frame_id.child("target").text().empty())
                                     target[title_id][frame] = frame_id.child("target").text().as_string();
-                                if (frame_id.child("text").child("str")) {
+                                if (!frame_id.child("text").child("str").text().empty()) {
                                     for (const auto &str_child : frame_id.child("text"))
                                         str[title_id][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
                                 }
                                 break;
                             }
-                        } else if ((strncmp(frame_id.name(), "liveitem", 8) == 0) && (frame_id.child("lang").text().as_string() == user_lang)) {
-                            if (frame_id.child("background"))
-                                items_name[frame]["background"].push_back({ frame_id.child("background").text().as_string() });
-                            if (frame_id.child("image"))
-                                items_name[frame]["image"].push_back({ frame_id.child("image").text().as_string() });
-                            if (frame_id.child("target"))
-                                target[title_id][frame] = frame_id.child("target").text().as_string();
-                            if (frame_id.child("text").child("str")) {
-                                for (const auto &str_child : frame_id.child("text"))
-                                    str[title_id][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
-                            }
-                            break;
-                        } else if ((strncmp(frame_id.name(), "liveitem", 8) == 0) && !frame_id.child("exclude-lang") && !frame_id.child("lang") && !frame_id.child("cntry")) {
-                            if (frame_id.child("background"))
-                                items_name[frame]["background"].push_back({ frame_id.child("background").text().as_string() });
-                            if (frame_id.child("image"))
-                                items_name[frame]["image"].push_back({ frame_id.child("image").text().as_string() });
-                            if (frame_id.child("target"))
-                                target[title_id][frame] = frame_id.child("target").text().as_string();
-                            if (frame_id.child("text").child("str")) {
-                                for (const auto &str_child : frame_id.child("text"))
-                                    str[title_id][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
-                            }
                         }
                     }
-                    if (target[title_id][frame].find('\n') != std::string::npos)
-                        target[title_id][frame].erase(remove(target[title_id][frame].begin(), target[title_id][frame].end(), '\n'), target[title_id][frame].end());
-                    target[title_id][frame].erase(remove_if(target[title_id][frame].begin(), target[title_id][frame].end(), isspace), target[title_id][frame].end());
+
+                    // if empty
+                    const auto liveitem = livearea.child("liveitem");
+                    if (items_name[frame]["background"].empty() && !liveitem.child("background").text().empty())
+                        items_name[frame]["background"].push_back({ liveitem.child("background").text().as_string() });
+                    if (items_name[frame]["image"].empty() && !liveitem.child("image").text().empty())
+                        items_name[frame]["image"].push_back({ liveitem.child("image").text().as_string() });
+                    if (target[title_id][frame].empty() && !liveitem.child("target").text().empty())
+                        target[title_id][frame] = liveitem.child("target").text().as_string();
+                    if (str[title_id][frame].empty() && !liveitem.child("text").child("str").text().empty()) {
+                        for (const auto &str_child : liveitem.child("text"))
+                            str[title_id][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
+                    }
+
+                    // Remove space or return line if exist on target
+                    if (!target[title_id][frame].empty()) {
+                        if (target[title_id][frame].find('\n') != std::string::npos)
+                            target[title_id][frame].erase(remove(target[title_id][frame].begin(), target[title_id][frame].end(), '\n'), target[title_id][frame].end());
+                        target[title_id][frame].erase(remove_if(target[title_id][frame].begin(), target[title_id][frame].end(), isspace), target[title_id][frame].end());
+                    }
                 }
             }
 

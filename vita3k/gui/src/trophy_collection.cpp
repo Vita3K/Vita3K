@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ struct NPComId {
 };
 
 struct NPComIdSort {
-    std::string np_com_id;
+    std::string id;
     std::string name;
     uint32_t progress;
     time_t updated;
@@ -124,8 +124,6 @@ static bool load_trophy_progress(IOState &io, const SceUID &progress_input_file,
 static std::string np_com_id_sort;
 
 void get_trophy_np_com_id_list(GuiState &gui, HostState &host) {
-    host.io.user_id = fmt::format("{:0>2d}", host.cfg.user_id);
-
     const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "trophy" };
     const auto TROPHY_CONF_PATH = TROPHY_PATH / "conf";
 
@@ -371,8 +369,8 @@ static void get_trophy_list(GuiState &gui, HostState &host, const std::string &n
     }
 }
 
-static std::string np_com_id_selected, np_com_id_hovered, group_id_selected, trophy_id_selected, delete_np_com_id, scroll_type;
-static bool detail_np_com_id, delete_trophy, set_scroll_pos;
+static std::string np_com_id_selected, group_id_selected, trophy_id_selected, delete_np_com_id, scroll_type;
+static bool detail_np_com_id, set_scroll_pos;
 static ImGuiTextFilter search_bar;
 static std::map<std::string, float> scroll_pos;
 
@@ -450,51 +448,78 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
             set_scroll_pos = false;
         }
 
-        // Delete Trophy
-        if (!delete_np_com_id.empty()) {
-            const auto np_com_id_index = std::find_if(np_com_id_list.begin(), np_com_id_list.end(), [&](const NPComIdSort &np) {
-                return np.np_com_id == delete_np_com_id;
-            });
-            np_com_id_list.erase(np_com_id_index);
-            np_com_id_info.erase(delete_np_com_id);
-            gui.trophy_np_com_id_list.erase(delete_np_com_id);
-            np_com_id_hovered.clear();
-            delete_np_com_id.clear();
-        }
-
         // Select Np Com ID
         if (np_com_id_selected.empty()) {
+            // Ask Delete Trophy Popup
+            if (!delete_np_com_id.empty()) {
+                ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+                ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
+                ImGui::Begin("##trophy_delete", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+                ImGui::SetNextWindowBgAlpha(0.999f);
+                ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+                ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
+                ImGui::BeginChild("##trophy_delete_child", POPUP_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
+                ImGui::SetCursorPos(ImVec2(48.f * SCAL.x, 28.f * SCAL.y));
+                ImGui::Image(gui.trophy_np_com_id_list[delete_np_com_id]["000"], SIZE_ICON_LIST);
+                ImGui::SameLine();
+                ImGui::SetWindowFontScale(1.5f * SCAL.x);
+                const auto CALC_TITLE = ImGui::CalcTextSize(np_com_id_info[delete_np_com_id].name["000"].c_str(), nullptr, false, POPUP_SIZE.x - SIZE_ICON_LIST.x - 48.f).y / 2.f;
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (SIZE_ICON_LIST.y / 2.f) - CALC_TITLE);
+                ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + POPUP_SIZE.x - SIZE_ICON_LIST.x - (55.f * SCAL.x));
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", np_com_id_info[delete_np_com_id].name["000"].c_str());
+                ImGui::SetWindowFontScale(1.2f * SCAL.x);
+                ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize("This trophy information saved on this user will be deleted.").x / 2.f), POPUP_SIZE.y / 2.f));
+                ImGui::TextColored(GUI_COLOR_TEXT, "This trophy information saved on this user will be deleted.");
+                ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCAL.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCAL.y)));
+                if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
+                    delete_np_com_id.clear();
+                ImGui::SameLine(0, 20.f * SCAL.x);
+                if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+                    fs::remove_all(TROPHY_PATH / "conf" / delete_np_com_id);
+                    fs::remove_all(TROPHY_PATH / "data" / delete_np_com_id);
+                    const auto np_com_id_index = std::find_if(np_com_id_list.begin(), np_com_id_list.end(), [&](const NPComIdSort &np) {
+                        return np.id == delete_np_com_id;
+                    });
+                    np_com_id_list.erase(np_com_id_index);
+                    np_com_id_info.erase(delete_np_com_id);
+                    gui.trophy_np_com_id_list[delete_np_com_id]["000"] = {};
+                    gui.trophy_np_com_id_list.erase(delete_np_com_id);
+                    delete_np_com_id.clear();
+                }
+            }
+
             ImGui::Columns(3, nullptr, false);
             ImGui::SetColumnWidth(0, SIZE_ICON_LIST.x + (10.f * SCAL.x));
             ImGui::SetColumnWidth(1, 385.f * SCAL.x);
             for (const auto &np_com : np_com_id_list) {
+                ImGui::PushID(np_com.id.c_str());
                 if (!search_bar.PassFilter(np_com.name.c_str()))
                     continue;
-                if (gui.trophy_np_com_id_list.find(np_com.np_com_id) != gui.trophy_np_com_id_list.end())
-                    ImGui::Image(gui.trophy_np_com_id_list[np_com.np_com_id]["000"], SIZE_ICON_LIST);
+                if (gui.trophy_np_com_id_list.find(np_com.id) != gui.trophy_np_com_id_list.end())
+                    ImGui::Image(gui.trophy_np_com_id_list[np_com.id]["000"], SIZE_ICON_LIST);
                 ImGui::NextColumn();
                 ImGui::SetWindowFontScale(1.3f * SCAL.x);
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.2f));
                 const auto Title_POS = ImGui::GetCursorPosY();
                 if (ImGui::Selectable(np_com.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y))) {
-                    np_com_id_selected = np_com.np_com_id;
+                    np_com_id_selected = np_com.id;
                     if (!np_com_id_info[np_com_id_selected].context.group_count) {
                         group_id_selected = "000";
-                        get_trophy_list(gui, host, np_com.np_com_id, "000");
+                        get_trophy_list(gui, host, np_com.id, "000");
                     }
                     scroll_pos["np_com"] = ImGui::GetScrollY();
                     ImGui::SetScrollY(0.f);
                 }
                 ImGui::PopStyleVar();
-                if (ImGui::IsItemHovered())
-                    np_com_id_hovered = np_com.np_com_id;
+
                 // Trophy Context Menu
-                if (np_com_id_hovered == np_com.np_com_id) {
-                    if (ImGui::BeginPopupContextItem("##trophy_context_menu")) {
-                        ImGui::MenuItem("Detete Trophy", nullptr, &delete_trophy);
-                        ImGui::EndPopup();
-                    }
+                if (ImGui::BeginPopupContextItem("##trophy_context_menu")) {
+                    if (ImGui::MenuItem("Detete Trophy"))
+                        delete_np_com_id = np_com.id;
+                    ImGui::EndPopup();
                 }
+
                 ImGui::SetCursorPosY(Title_POS + (50.f * SCAL.y));
                 ImGui::SetWindowFontScale(1.f * SCAL.x);
                 ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
@@ -506,46 +531,12 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::NextColumn();
                 ImGui::SetWindowFontScale(1.4f * SCAL.x);
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-                ImGui::Selectable(np_com_id_info[np_com.np_com_id].unlocked_type_count["global"]["general"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
+                ImGui::Selectable(np_com_id_info[np_com.id].unlocked_type_count["global"]["general"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
+                ImGui::PopID();
                 ImGui::PopStyleVar();
                 ImGui::NextColumn();
             }
             ImGui::Columns(1);
-            // Ask Delete Trophy Popup
-            if (delete_trophy) {
-                ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
-                ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-                ImGui::Begin("##trophy_delete", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-                ImGui::SetNextWindowBgAlpha(0.999f);
-                ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-                ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
-                ImGui::BeginChild("##trophy_delete_child", POPUP_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
-                ImGui::SetCursorPos(ImVec2(48.f * SCAL.x, 28.f * SCAL.y));
-                ImGui::Image(gui.trophy_np_com_id_list[np_com_id_hovered]["000"], SIZE_ICON_LIST);
-                ImGui::SameLine();
-                ImGui::SetWindowFontScale(1.5f * SCAL.x);
-                const auto CALC_TITLE = ImGui::CalcTextSize(np_com_id_info[np_com_id_hovered].name["000"].c_str(), nullptr, false, POPUP_SIZE.x - SIZE_ICON_LIST.x - 48.f).y / 2.f;
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (SIZE_ICON_LIST.y / 2.f) - CALC_TITLE);
-                ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + POPUP_SIZE.x - SIZE_ICON_LIST.x - (55.f * SCAL.x));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", np_com_id_info[np_com_id_hovered].name["000"].c_str());
-                ImGui::SetWindowFontScale(1.2f * SCAL.x);
-                ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize("This trophy information saved on this user will be deleted.").x / 2.f), POPUP_SIZE.y / 2.f));
-                ImGui::TextColored(GUI_COLOR_TEXT, "This trophy information saved on this user will be deleted.");
-                ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCAL.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCAL.y)));
-                if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
-                    delete_trophy = false;
-                ImGui::SameLine(0, 20.f * SCAL.x);
-                if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
-                    fs::remove_all(TROPHY_PATH / "conf" / np_com_id_hovered);
-                    fs::remove_all(TROPHY_PATH / "data" / np_com_id_hovered);
-                    delete_np_com_id = np_com_id_hovered;
-                    delete_trophy = false;
-                }
-                ImGui::PopStyleVar(2);
-                ImGui::EndChild();
-                ImGui::End();
-            }
         } else {
             // Select Group ID
             if (group_id_selected.empty()) {

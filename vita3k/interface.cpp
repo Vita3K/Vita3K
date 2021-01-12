@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,7 +17,6 @@
 
 #include "interface.h"
 
-#include <config/functions.h>
 #include <gui/functions.h>
 #include <host/functions.h>
 #include <host/load_self.h>
@@ -303,14 +302,10 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         host.app_version = host.app_category = "N/A";
     }
 
-    if (static_cast<int>(host.cfg.online_id.size()) - 1 < host.cfg.user_id || host.cfg.user_id < 0) {
-        host.cfg.user_id = 0;
-        if (host.cfg.overwrite_config)
-            config::serialize_config(host.cfg, host.cfg.config_path);
-    }
-
-    if (host.io.user_id.empty())
+    if (std::stoi(host.io.user_id) != host.cfg.user_id) {
         host.io.user_id = fmt::format("{:0>2d}", host.cfg.user_id);
+        host.io.user_name = host.cfg.online_id[host.cfg.user_id];
+    }
 
     if (host.cfg.archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
@@ -429,7 +424,7 @@ bool handle_events(HostState &host, GuiState &gui) {
                 }
             }
             // toggle gui state
-            if (!host.io.title_id.empty() && !gui.configuration_menu.profiles_manager_dialog && !gui.configuration_menu.settings_dialog && !gui.captured_key) {
+            if (!host.io.title_id.empty() && !gui.live_area.user_management && !gui.configuration_menu.settings_dialog && !gui.captured_key) {
                 if (event.key.keysym.sym == SDLK_g)
                     host.display.imgui_render = !host.display.imgui_render;
             }

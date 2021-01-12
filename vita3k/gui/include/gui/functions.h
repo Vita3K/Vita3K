@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2020 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ void init_live_area(GuiState &gui, HostState &host);
 bool init_manual(GuiState &gui, HostState &host);
 bool init_theme(GuiState &gui, HostState &host, const std::string &content_id);
 void init_theme_start_background(GuiState &gui, HostState &host, const std::string &content_id);
+void init_user(GuiState &gui, HostState &host, const std::string &user_id);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
 void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_com_id, const std::string &trophy_id);
 void pre_load_app(GuiState &gui, HostState &host, bool live_area);
