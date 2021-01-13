@@ -108,7 +108,7 @@ int peek_touch(const HostState &host, const SceUInt32 &port, SceTouchData *pData
     memset(pData, 0, sizeof(*pData));
     pData->timeStamp = timestamp++; // TODO Use the real time and units.
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_NONE) {
+    if (host.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return 0;
     }
 
