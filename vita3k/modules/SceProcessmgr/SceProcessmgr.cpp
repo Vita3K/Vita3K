@@ -44,6 +44,16 @@ struct VitaTimezone {
 
 using VitaTime = std::uint32_t;
 
+struct SceLibkernelAddresses {
+    uint32_t size;
+    Ptr<void> sceKernelExitThread;
+    Ptr<void> sceKernelExitDeleteThread;
+    Ptr<void> _sceKernelExitCallback;
+    Ptr<void> field_0x10;
+    Ptr<void> field_0x14;
+    Ptr<void> field_0x18;
+};
+
 EXPORT(int, _sceKernelExitProcessForUser) {
     return UNIMPLEMENTED();
 }
@@ -54,7 +64,7 @@ EXPORT(int, _sceKernelGetTimer5Reg, Ptr<uint64_t> *timer) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelRegisterLibkernelAddresses) {
+EXPORT(int, _sceKernelRegisterLibkernelAddresses, SceLibkernelAddresses *addresses) {
     return UNIMPLEMENTED();
 }
 
