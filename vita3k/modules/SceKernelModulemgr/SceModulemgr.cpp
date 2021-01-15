@@ -151,8 +151,20 @@ EXPORT(int, sceKernelGetLibraryInfoByNID) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetModuleIdByAddr) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetModuleIdByAddr, Ptr<void> addr) {
+    KernelState *const state = &host.kernel;
+
+    for (const auto &module : state->loaded_modules) {
+        for (int n = 0; n < MODULE_INFO_NUM_SEGMENTS; n++) {
+            const auto segment_address_begin = module.second->segments[n].vaddr.address();
+            const auto segment_address_end = segment_address_begin + module.second->segments[n].memsz;
+            if (addr.address() > segment_address_begin && addr.address() < segment_address_end) {
+                return module.first;
+            }
+        }
+    }
+
+    return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NOENT);
 }
 
 EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
