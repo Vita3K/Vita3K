@@ -117,6 +117,40 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
     }
 }
 
+// Encode code taken from https://github.com/yifanlu/UVLoader/blob/master/resolve.c
+
+#define INSTRUCTION_UNKNOWN 0 ///< Unknown/unsupported instruction
+#define INSTRUCTION_MOVW 1 ///< MOVW Rd, \#imm instruction
+#define INSTRUCTION_MOVT 2 ///< MOVT Rd, \#imm instruction
+#define INSTRUCTION_SYSCALL 3 ///< SVC \#imm instruction
+#define INSTRUCTION_BRANCH 4 ///< BX Rn instruction
+
+static uint32_t encode_arm_inst(uint8_t type, uint16_t immed, uint16_t reg) {
+    switch (type) {
+    case INSTRUCTION_MOVW:
+        // 1110 0011 0000 XXXX YYYY XXXXXXXXXXXX
+        // where X is the immediate and Y is the register
+        // Upper bits == 0xE30
+        return ((uint32_t)0xE30 << 20) | ((uint32_t)(immed & 0xF000) << 4) | (immed & 0xFFF) | (reg << 12);
+    case INSTRUCTION_MOVT:
+        // 1110 0011 0100 XXXX YYYY XXXXXXXXXXXX
+        // where X is the immediate and Y is the register
+        // Upper bits == 0xE34
+        return ((uint32_t)0xE34 << 20) | ((uint32_t)(immed & 0xF000) << 4) | (immed & 0xFFF) | (reg << 12);
+    case INSTRUCTION_SYSCALL:
+        // Syscall does not have any immediate value, the number should
+        // already be in R12
+        return (uint32_t)0xEF000000;
+    case INSTRUCTION_BRANCH:
+        // 1110 0001 0010 111111111111 0001 YYYY
+        // BX Rn has 0xE12FFF1 as top bytes
+        return ((uint32_t)0xE12FFF1 << 4) | reg;
+    case INSTRUCTION_UNKNOWN:
+    default:
+        return 0;
+    }
+}
+
 void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id) {
     Address export_pc = resolve_export(host.kernel, nid);
 
@@ -144,6 +178,14 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
                 host.missing_nids.insert(nid);
         }
     } else {
+        auto pc = read_pc(cpu);
+
+        uint32_t *const stub = Ptr<uint32_t>(Address(pc)).get(host.mem);
+
+        stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)export_pc, 12);
+        stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(export_pc >> 16), 12);
+        stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
+
         // LLE - directly run ARM code imported from some loaded module
         if (is_returning(cpu)) {
             LOG_TRACE("[LLE] TID: {:<3} FUNC: {} returned {}", thread_id, import_name(nid), log_hex(read_reg(cpu, 0)));
@@ -151,7 +193,6 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         }
 
         const std::unordered_set<uint32_t> lle_nid_blacklist = {};
-        auto pc = read_pc(cpu);
         log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
         const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
