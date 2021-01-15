@@ -80,9 +80,10 @@
     code(int, "keyboard-rightstick-up", 12, keyboard_rightstick_up)										\
     code(int, "keyboard-rightstick-down", 14, keyboard_rightstick_down)									\
     code(int, "keyboard-button-psbutton", 19, keyboard_button_psbutton)									\
-    code(std::string, "user-id", std::string{}, user_id)            									\
+    code(std::string, "user-id", std::string{}, user_id)												\
     code(bool, "user-auto-connect", false, auto_user_login)												\
-    code(bool, "dump-textures", false, dump_textures)
+    code(bool, "dump-textures", false, dump_textures)													\
+    code(bool, "show_welcome", true, show_welcome)
 
 
 // Vector members produced in the config file

@@ -416,6 +416,9 @@ void init(GuiState &gui, HostState &host) {
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);
 
+    if (host.cfg.show_welcome)
+        gui.help_menu.welcome_dialog = true;
+
     get_modules_list(gui, host);
     get_user_apps_title(gui, host);
     get_sys_apps_title(gui, host);
@@ -526,6 +529,8 @@ void draw_ui(GuiState &gui, HostState &host) {
 
     if (gui.help_menu.about_dialog)
         draw_about_dialog(gui);
+    if (gui.help_menu.welcome_dialog)
+        draw_welcome_dialog(gui, host);
 
     ImGui::PopFont();
 }

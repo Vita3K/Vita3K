@@ -90,6 +90,7 @@ static void draw_controls_menu(ControlMenuState &state) {
 static void draw_help_menu(HelpMenuState &state) {
     if (ImGui::BeginMenu("Help")) {
         ImGui::MenuItem("About", nullptr, &state.about_dialog);
+        ImGui::MenuItem("Welcome", nullptr, &state.welcome_dialog);
         ImGui::EndMenu();
     }
 }

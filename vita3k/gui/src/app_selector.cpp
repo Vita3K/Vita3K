@@ -421,7 +421,8 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     host.app_title = app.title;
                     host.app_title_id = app.title_id;
                 }
-                draw_app_context_menu(gui, host);
+                if (host.app_title_id == app.title_id)
+                    draw_app_context_menu(gui, host);
                 ImGui::PopID();
                 if (!host.cfg.apps_list_grid) {
                     ImGui::NextColumn();
