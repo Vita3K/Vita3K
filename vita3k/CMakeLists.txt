@@ -1,6 +1,6 @@
 set(VITA3K_ORG_NAME "Vita3K")
 set(VITA3K_APP_NAME "Vita3K")
-set(VITA3K_APP_VERSION "v0.1")
+set(VITA3K_APP_VERSION "v0.1.2")
 
 execute_process(
 	COMMAND git rev-list HEAD --count

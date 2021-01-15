@@ -113,6 +113,7 @@ struct ControlMenuState {
 
 struct HelpMenuState {
     bool about_dialog = false;
+    bool welcome_dialog = false;
 };
 
 } // namespace gui

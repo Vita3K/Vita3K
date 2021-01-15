@@ -47,6 +47,7 @@ add_library(
 	src/disassembly_dialog.cpp
 	src/about_dialog.cpp
 	src/trophy_unlocked.cpp
+	src/welcome_dialog.cpp
 )
 
 target_include_directories(gui PUBLIC include ${CMAKE_SOURCE_DIR}/vita3k)
