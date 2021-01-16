@@ -371,9 +371,9 @@ bool USSETranslatorVisitor::vdp(
     return true;
 }
 
-spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask) {
-    spv::Id vsrc1 = load(inst.opr.src1, dest_mask, 0);
-    spv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
+spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_mask) {
+    spv::Id vsrc1 = load(inst.opr.src1, source_mask, 0);
+    spv::Id vsrc2 = load(inst.opr.src2, source_mask, 0);
     std::vector<spv::Id> ids;
     ids.push_back(vsrc1);
 
@@ -454,7 +454,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 dest_mask
     case Opcode::VF16FRC: {
         // Dest = Source1 - Floor(Source2)
         // If two source are identical, let's use the fractional function
-        if (inst.opr.src1.is_same(inst.opr.src2, dest_mask)) {
+        if (inst.opr.src1.is_same(inst.opr.src2, source_mask)) {
             result = m_b.createBuiltinCall(source_type, std_builtins, GLSLstd450Fract, { vsrc1 });
         } else {
             // We need to floor source 2
@@ -542,6 +542,7 @@ bool USSETranslatorVisitor::v32nmad(
 
     // Decode operands
     // TODO: modifiers
+    inst.opcode = opcode;
 
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank_sel, dest_bank_ext, true, 7, m_second_program);
     inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank_sel, src1_bank_ext, true, 7, m_second_program);
@@ -564,15 +565,19 @@ bool USSETranslatorVisitor::v32nmad(
     inst.opr.src2.swizzle = decode_vec34_swizzle(src2_swiz, false, 2);
 
     // TODO: source modifiers
+    Imm4 source_mask = dest_mask;
+
+    // Dot only produces one result. But use full components
+    if ((inst.opcode == Opcode::VF16DP) || (inst.opcode == Opcode::VDP)) {
+        source_mask = 0b1111;
+    }
 
     LOG_DISASM("{:016x}: {}{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(opcode), disasm::operand_to_str(inst.opr.dest, dest_mask),
-        disasm::operand_to_str(inst.opr.src1, dest_mask), disasm::operand_to_str(inst.opr.src2, dest_mask));
+        disasm::operand_to_str(inst.opr.src1, source_mask), disasm::operand_to_str(inst.opr.src2, source_mask));
 
     // Recompile
     m_b.setLine(m_recompiler.cur_pc);
-
-    inst.opcode = opcode;
-    spv::Id result = do_alu_op(inst, dest_mask);
+    spv::Id result = do_alu_op(inst, source_mask);
 
     if (result != spv::NoResult) {
         store(inst.opr.dest, result, dest_mask, 0);
