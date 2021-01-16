@@ -47,7 +47,11 @@ private:
     // Use this function when the YAML file is updated before the members.
     void update_members() {
 #define UPDATE_MEMBERS(option_type, option_name, option_default, member_name) \
-    member_name = get_member<option_type>(option_name);
+    if (yaml_node[option_name].IsDefined()) {                                 \
+        member_name = get_member<option_type>(option_name);                   \
+    } else {                                                                  \
+        member_name = option_default;                                         \
+    }
 
         CONFIG_LIST(UPDATE_MEMBERS)
 #undef UPDATE_MEMBERS
