@@ -20,6 +20,8 @@
 #include <kernel/state.h>
 #include <kernel/types.h>
 
+#include <util/align.h>
+
 struct SceKernelAllocMemBlockOpt {
     SceSize size;
     SceUInt32 attr;
@@ -156,10 +158,10 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
 }
 
 EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
-    Address free_memory = mem_available(host.mem);
-    info->size_cdram = free_memory / 3;
-    info->size_user = free_memory / 3;
-    info->size_phycont = free_memory / 3;
+    const auto free_memory = align(mem_available(host.mem) / 3, 0x1000);
+    info->size_cdram = free_memory;
+    info->size_user = free_memory;
+    info->size_phycont = free_memory;
     return STUBBED("Single pool");
 }
 
