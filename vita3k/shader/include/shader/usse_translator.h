@@ -204,7 +204,7 @@ private:
 
     bool m_second_program{ false };
 
-    spv::Id do_alu_op(Instruction &inst, const Imm4 dest_mask);
+    spv::Id do_alu_op(Instruction &inst, const Imm4 source_mask);
 
 public:
     void set_secondary_program(const bool is_it) {
