@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<app_context>
+	<update_history>アップデート履歴</update_history>
+	<information>情報</information>
+	<app_delete>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</app_delete>
+	<save_delete>このセーブデータを削除しますか？</save_delete>
+	<name>名前</name>
+	<trophy_earning eligible="権利あり" ineligible="権利なし">トロフィー獲得</trophy_earning>
+	<parental_Controls level="レベル">ペアレンタルコントロール</parental_Controls>
+	<updated>更新日</updated>
+	<size>サイズ</size>
+	<version>バージョン</version>
+</app_context>
+
+<live_area>
+	<start>はじめる</start>
+	<continue>つづける</continue>
+</live_area>
+
+<settings name="設定">
+	<theme_background name="テーマ&背景" default="オリジナル">
+		<theme name="テーマ">
+			<information name="情報">
+				<name>名前</name>
+				<provider>提供者</provider>
+				<updated>更新日</updated>
+				<size>サイズ</size>
+				<version>バージョン</version>
+			</information>
+			<delete>このテーマを削除します。</delete>
+		</theme>
+		<start_screen name="スタート画面">
+			<image>画像</image>
+		</start_screen>
+		<home_screen_backgrounds>ホーム画面の背景</home_screen_backgrounds>
+	</theme_background>
+	<language name="言語">
+		<system_language>システム言語</system_language>
+	</language>
+</settings>

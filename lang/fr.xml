@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<main_menubar>
+	<file name="Fichier">
+		<open_pref_path>Ouvrir le Dossier Pref</open_pref_path>
+		<install_firmware>Installer le Firmware</install_firmware>
+		<install_pkg>Installer un .pkg</install_pkg>
+		<install_zip>Installer un .zip, .vpk</install_zip>
+	</file>
+	<emulation name="Émulation">
+		<load_last_app>Charger la Dernière App</load_last_app>
+	</emulation>
+	<configuration name="Configuration">
+		<settings>Paramètres</settings>
+		<user_management>Gestion des Utilisateurs</user_management>
+	</configuration>
+	<controls name="Commandes">
+		<keyboard_controls>Commandes du Clavier</keyboard_controls>
+	</controls>
+	<help name="Aide">
+		<about>À Propos</about>
+		<welcome>Bienvenue</welcome>
+	</help>
+</main_menubar>
+
+<app_context>
+	<update_history>Historique de mise à jour</update_history>
+	<information>Informations</information>
+	<app_delete>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</app_delete>
+	<save_delete>Supprimer ces données sauvegardées ?</save_delete>
+	<name>Nom</name>
+	<trophy_earning eligible="Autorisé" ineligible="Non autorisé">Obtention de trophées</trophy_earning>
+	<parental_Controls level="Niveau">Contrôle parental</parental_Controls>
+	<updated>Mis à jour</updated>
+	<size>Taille</size>
+	<version>Version</version>
+</app_context>
+
+<live_area>
+	<start>Démarrer</start>
+	<continue>Continuer</continue>
+</live_area>
+
+<settings name="Paramètres">
+	<theme_background name="Thème et Arrière-plan" default="Par défaut">
+		<theme name="Thème">
+			<information name="Informations">
+				<name>Nom</name>
+				<provider>Prestataire</provider>
+				<updated>Mis à jour</updated>
+				<size>Taille</size>
+				<version>Version</version>
+			</information>
+			<delete>Ce thème va être supprimé.</delete>
+		</theme>
+		<start_screen name="Écran de démarrage">
+			<image>Image</image>
+		</start_screen>
+		<home_screen_backgrounds>Arrière-plans d'écran d'accueil</home_screen_backgrounds>
+	</theme_background>
+	<language name="Langue">
+		<system_language>Langue système</system_language>
+	</language>
+</settings>
+
+<user_management>
+	<create_user>Créer un utilisateur</create_user>
+	<edit_user>Modifier un utilisateur</edit_user>
+	<delete_user>Supprimer un utilisateur</delete_user>
+	<change_avatar>Changer d'avatar</change_avatar>
+	<name>Nom</name>
+	<user>Utilisateur</user>
+	<confirm>Confirmer</confirm>
+</user_management>
+
+<start>
+	<wday>
+		<day>Dimanche</day>
+		<day>Lundi</day>
+		<day>Mardi</day>
+		<day>Mercredi</day>
+		<day>Jeudi</day>
+		<day>Vendredi</day>
+		<day>Samedi</day>
+	</wday>
+
+	<ymonth>
+		<month>Janvier</month>
+		<month>Février</month>
+		<month>Mars</month>
+		<month>Avril</month>
+		<month>Mai</month>
+		<month>Juin</month>
+		<month>Juillet</month>
+		<month>Août</month>
+		<month>Septembre</month>
+		<month>Octobre</month>
+		<month>Novembre</month>
+		<month>Décembre</month>
+	</ymonth>
+</start>

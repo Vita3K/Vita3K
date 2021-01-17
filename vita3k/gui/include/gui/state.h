@@ -146,6 +146,16 @@ struct User {
     std::vector<std::string> backgrounds;
 };
 
+struct Lang {
+    std::string user_lang;
+    std::map<std::string, std::string> settings;
+    std::map<std::string, std::string> main_menubar;
+    std::map<std::string, std::string> app_context;
+    std::map<std::string, std::string> user_management;
+    std::vector<std::string> wday;
+    std::vector<std::string> ymonth;
+};
+
 struct GuiState {
     std::unique_ptr<ImGui_State> imgui_state;
 
@@ -157,6 +167,8 @@ struct GuiState {
     gui::HelpMenuState help_menu;
     gui::LiveAreaState live_area;
     gui::AppsSelector app_selector;
+
+    Lang lang;
 
     std::map<std::string, User> users;
     std::map<std::string, ImGui_Texture> users_avatar;

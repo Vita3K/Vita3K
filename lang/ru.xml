@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<live_area>
+	<start>Запуск</start>
+	<continue>Продолжить</continue>
+</live_area>
+
+<main_menubar>
+	<file name="Файл">
+		<open_pref_path>Открыть предпочтенный путь файлов</open_pref_path>
+		<install_firmware>Установить прошивку</install_firmware>
+		<install_pkg>Установить файл .pkg</install_pkg>
+		<install_zip>Установить файл .zip или .vpk</install_zip>
+	</file>
+
+	<emulation name="Эмуляция">
+		<load_last_app>Загрузить последнее приложение</load_last_app>
+	</emulation>
+
+	<configuration name="Конфигурация">
+		<settings>Настройки</settings>
+		<user_management>Управление пользователями</user_management>
+	</configuration>
+
+	<controls name="Управление">
+		<keyboard_controls>Элементы управления клавиатурой</keyboard_controls>
+	</controls>
+
+	<help name="Справка">
+		<about>О программе</about>
+		<welcome>Добро пожаловать</welcome>
+	</help>
+
+</main_menubar>
+
+<app_context>
+	<update_history>Хронология обновлений</update_history>
+	<information>Информация</information>
+	<app_delete>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</app_delete>
+	<save_delete>Удалить эти сохраненные данные?</save_delete>
+	<name>Название</name>
+	<trophy_earning eligible="Допущен" ineligible="Не допущен">Полученные призы</trophy_earning>
+	<parental_Controls level="Уровень">Родительский контроль</parental_Controls>
+	<updated>Обновлен</updated>
+	<size>Размер</size>
+	<version>Версия</version>
+</app_context>
+
+<settings name="Настройки">
+	<theme_background name="Тема и Фон" default="По умолчанию">
+		<theme name="Тема">
+			<information name="Информация">
+				<name>Название</name>
+				<provider>Поставщик</provider>
+				<updated>Обновлен</updated>
+				<size>Размер</size>
+				<version>Версия</version>
+			</information>
+			<delete>Эта тема будет удалена.</delete>
+		</theme>
+		<start_screen name="Экран запуска">
+			<image>Изображение</image>
+		</start_screen>
+		<home_screen_backgrounds>Фон начального экрана</home_screen_backgrounds>
+	</theme_background>
+	<language name="Язык">
+		<system_language>Язык системы</system_language>
+	</language>
+</settings>
+
+<start>
+	<wday>
+		<day>Воскресенье</day>
+		<day>Понедельник</day>
+		<day>Вторник</day>
+		<day>Среда</day>
+		<day>Четверг</day>
+		<day>Пятница</day>
+		<day>Суббота</day>
+	</wday>
+
+	<ymonth>
+		<month>Январь</month>
+		<month>Февраль</month>
+		<month>Март</month>
+		<month>Апрель</month>
+		<month>Май</month>
+		<month>Июнь</month>
+		<month>Июль</month>
+		<month>Август</month>
+		<month>Сентябрь</month>
+		<month>Октябрь</month>
+		<month>Ноябрь</month>
+		<month>Декабрь</month>
+	</ymonth>
+</start>

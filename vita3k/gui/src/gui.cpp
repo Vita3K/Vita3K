@@ -436,6 +436,7 @@ void init(GuiState &gui, HostState &host) {
 
     init_style();
     init_font(gui, host);
+    init_lang(gui, host);
     init_users(gui, host);
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());

@@ -31,6 +31,171 @@
 
 namespace gui {
 
+static std::string start, resume;
+
+void init_lang(GuiState &gui, HostState &host) {
+    start.clear(), resume.clear();
+    gui.lang = {};
+    auto &user_lang = gui.lang.user_lang;
+    const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
+    switch (sys_lang) {
+    case SCE_SYSTEM_PARAM_LANG_JAPANESE: user_lang = "ja"; break;
+    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US: user_lang = "en"; break;
+    case SCE_SYSTEM_PARAM_LANG_FRENCH: user_lang = "fr"; break;
+    case SCE_SYSTEM_PARAM_LANG_SPANISH: user_lang = "es"; break;
+    case SCE_SYSTEM_PARAM_LANG_GERMAN: user_lang = "de", start = u8"Starten", resume = u8"Fortfahren"; break;
+    case SCE_SYSTEM_PARAM_LANG_ITALIAN: user_lang = "it"; break;
+    case SCE_SYSTEM_PARAM_LANG_DUTCH: user_lang = "nl"; break;
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: user_lang = "pt", start = u8"Iniciar", resume = u8"Continuar"; break;
+    case SCE_SYSTEM_PARAM_LANG_RUSSIAN: user_lang = "ru"; break;
+    case SCE_SYSTEM_PARAM_LANG_KOREAN: user_lang = "ko"; break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_T: user_lang = "zh-t"; break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_S: user_lang = "zh-s"; break;
+    case SCE_SYSTEM_PARAM_LANG_FINNISH: user_lang = "fi", start = u8"Rozpocznij", resume = u8"Jatka"; break;
+    case SCE_SYSTEM_PARAM_LANG_SWEDISH: user_lang = "sv", start = u8"Starta", resume = u8"Fortsätt"; break;
+    case SCE_SYSTEM_PARAM_LANG_DANISH: user_lang = "da", start = u8"Start", resume = u8"Fortsæt"; break;
+    case SCE_SYSTEM_PARAM_LANG_NORWEGIAN: user_lang = "no", start = u8"Start", resume = u8"Fortsett"; break;
+    case SCE_SYSTEM_PARAM_LANG_POLISH: user_lang = "pl", start = u8"Rozpocznij", resume = u8"Kontynuuj"; break;
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR: user_lang = "pt-br", start = u8"Iniciar", resume = u8"Continuar"; break;
+    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB: user_lang = "en-gb", start = u8"Start", resume = u8"Continue"; break;
+    case SCE_SYSTEM_PARAM_LANG_TURKISH: user_lang = "tr", start = u8"Başlat", resume = u8"Devam"; break;
+    default: break;
+    }
+
+    pugi::xml_document lang_xml;
+    const auto lang_path{ fs::path(host.base_path) / "lang" };
+    const auto lang_xml_path = (lang_path / (user_lang + ".xml")).string();
+    if (fs::exists(lang_xml_path) && lang_xml.load_file(lang_xml_path.c_str())) {
+        // Main Menu Bar
+        const auto main_menubar = lang_xml.child("main_menubar");
+        if (!main_menubar.empty()) {
+            // File Menu
+            const auto file = main_menubar.child("file");
+            auto &lang_main_menubar = gui.lang.main_menubar;
+            if (!file.empty()) {
+                lang_main_menubar["file"] = file.attribute("name").as_string();
+                lang_main_menubar["open_pref_path"] = file.child("open_pref_path").text().as_string();
+                lang_main_menubar["install_firmware"] = file.child("install_firmware").text().as_string();
+                lang_main_menubar["install_pkg"] = file.child("install_pkg").text().as_string();
+                lang_main_menubar["install_zip"] = file.child("install_zip").text().as_string();
+            }
+
+            // Emulation Menu
+            if (!main_menubar.child("emulation").empty()) {
+                lang_main_menubar["emulation"] = main_menubar.child("emulation").attribute("name").as_string();
+                lang_main_menubar["load_last_app"] = main_menubar.child("emulation").child("load_last_app").text().as_string();
+            }
+
+            // Configuration Menu
+            const auto configuration = main_menubar.child("configuration");
+            if (!configuration.empty()) {
+                lang_main_menubar["configuration"] = configuration.attribute("name").as_string();
+                lang_main_menubar["settings"] = configuration.child("settings").text().as_string();
+                lang_main_menubar["user_management"] = configuration.child("user_management").text().as_string();
+            }
+
+            // Controls Menu
+            if (!main_menubar.child("controls").empty()) {
+                lang_main_menubar["controls"] = main_menubar.child("controls").attribute("name").as_string();
+                gui.lang.main_menubar["keyboard_controls"] = main_menubar.child("controls").child("keyboard_controls").text().as_string();
+            }
+
+            // Help Menu
+            if (!main_menubar.child("help").empty()) {
+                lang_main_menubar["help"] = main_menubar.child("help").attribute("name").as_string();
+                lang_main_menubar["about"] = main_menubar.child("help").child("about").text().as_string();
+                lang_main_menubar["welcome"] = main_menubar.child("help").child("welcome").text().as_string();
+            }
+        }
+
+        // App Context
+        const auto app_context = lang_xml.child("app_context");
+        if (!app_context.empty()) {
+            auto &lang_app_context = gui.lang.app_context;
+            lang_app_context["update_history"] = app_context.child("update_history").text().as_string();
+            lang_app_context["information"] = app_context.child("information").text().as_string();
+            lang_app_context["app_delete"] = app_context.child("app_delete").text().as_string();
+            lang_app_context["save_delete"] = app_context.child("save_delete").text().as_string();
+            lang_app_context["name"] = app_context.child("name").text().as_string();
+            lang_app_context["trophy_earning"] = app_context.child("trophy_earning").text().as_string();
+            lang_app_context["eligible"] = app_context.child("trophy_earning").attribute("eligible").as_string();
+            lang_app_context["ineligible"] = app_context.child("trophy_earning").attribute("ineligible").as_string();
+            lang_app_context["parental_Controls"] = app_context.child("parental_Controls").text().as_string();
+            lang_app_context["level"] = app_context.child("parental_Controls").attribute("level").as_string();
+            lang_app_context["updated"] = app_context.child("updated").text().as_string();
+            lang_app_context["size"] = app_context.child("size").text().as_string();
+            lang_app_context["version"] = app_context.child("version").text().as_string();
+        }
+
+        // Live Area
+        if (!lang_xml.child("live_area").empty()) {
+            start = lang_xml.child("live_area").child("start").text().as_string();
+            resume = lang_xml.child("live_area").child("continue").text().as_string();
+        }
+
+        // Settings
+        const auto settings = lang_xml.child("settings");
+        if (!settings.empty()) {
+            auto &lang_settings = gui.lang.settings;
+            lang_settings["settings"] = settings.attribute("name").as_string();
+            const auto theme_background = settings.child("theme_background");
+            if (!theme_background.empty()) {
+                lang_settings["theme_background"] = theme_background.attribute("name").as_string();
+                lang_settings["default"] = theme_background.attribute("default").as_string();
+                const auto theme = theme_background.child("theme");
+                // Theme
+                if (!theme.empty()) {
+                    lang_settings["theme"] = theme.attribute("name").as_string();
+                    const auto information = theme.child("information");
+                    if (!information.empty()) {
+                        lang_settings["information"] = information.attribute("name").as_string();
+                        lang_settings["name"] = information.child("name").text().as_string();
+                        lang_settings["provider"] = information.child("provider").text().as_string();
+                        lang_settings["updated"] = information.child("updated").text().as_string();
+                        lang_settings["size"] = information.child("size").text().as_string();
+                        lang_settings["version"] = information.child("version").text().as_string();
+                    }
+                    lang_settings["delete"] = theme.child("delete").text().as_string();
+                }
+                lang_settings["start_screen"] = theme_background.child("start_screen").attribute("name").as_string();
+                lang_settings["image"] = theme_background.child("start_screen").child("image").text().as_string();
+                lang_settings["home_screen_backgrounds"] = theme_background.child("home_screen_backgrounds").text().as_string();
+            }
+            // Languague
+            lang_settings["language"] = settings.child("language").attribute("name").as_string();
+            lang_settings["system_language"] = settings.child("language").child("system_language").text().as_string();
+        }
+
+        // User Management
+        const auto user_management = lang_xml.child("user_management");
+        if (!user_management.empty()) {
+            auto &lang_user_management = gui.lang.user_management;
+            lang_user_management["create_user"] = user_management.child("create_user").text().as_string();
+            lang_user_management["edit_user"] = user_management.child("edit_user").text().as_string();
+            lang_user_management["delete_user"] = user_management.child("delete_user").text().as_string();
+            lang_user_management["change_avatar"] = user_management.child("change_avatar").text().as_string();
+            lang_user_management["name"] = user_management.child("name").text().as_string();
+            lang_user_management["user"] = user_management.child("user").text().as_string();
+            lang_user_management["confirm"] = user_management.child("confirm").text().as_string();
+        }
+
+        // Start Screen
+        const auto start = lang_xml.child("start");
+        if (!start.empty()) {
+            for (const auto &day : start.child("wday"))
+                gui.lang.wday.push_back(day.text().as_string());
+            for (const auto &month : start.child("ymonth"))
+                gui.lang.ymonth.push_back(month.text().as_string());
+        }
+    } else
+        LOG_DEBUG("Error open xml: {}", lang_xml_path);
+
+    if (start.empty()) {
+        start = "Start";
+        resume = "Continue";
+    }
+}
+
 bool get_live_area_sys_app_state(GuiState &gui) {
     return !gui.live_area.content_manager && !gui.live_area.settings && !gui.live_area.trophy_collection && !gui.live_area.manual;
 }
@@ -272,35 +437,8 @@ static std::map<std::string, std::map<std::string, std::map<std::string, ImVec2>
 static std::map<std::string, std::map<std::string, std::string>> target;
 static std::map<std::string, std::map<std::string, uint64_t>> current_item, last_time;
 static std::map<std::string, std::string> type;
-static std::string start, resume;
 
 void init_live_area(GuiState &gui, HostState &host) {
-    std::string user_lang;
-    const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
-    switch (sys_lang) {
-    case SCE_SYSTEM_PARAM_LANG_JAPANESE: user_lang = "ja", start = u8"はじめる", resume = u8"つづける"; break;
-    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US: user_lang = "en", start = u8"Start", resume = u8"Continue"; break;
-    case SCE_SYSTEM_PARAM_LANG_FRENCH: user_lang = "fr", start = u8"Démarrer", resume = u8"Continuer"; break;
-    case SCE_SYSTEM_PARAM_LANG_SPANISH: user_lang = "es", start = u8"Iniciar", resume = u8"Continuar"; break;
-    case SCE_SYSTEM_PARAM_LANG_GERMAN: user_lang = "de", start = u8"Starten", resume = u8"Fortfahren"; break;
-    case SCE_SYSTEM_PARAM_LANG_ITALIAN: user_lang = "it", start = u8"Avvia", resume = u8"Continua"; break;
-    case SCE_SYSTEM_PARAM_LANG_DUTCH: user_lang = "nl", start = u8"Starten", resume = u8"Doorgaan"; break;
-    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: user_lang = "pt", start = u8"Iniciar", resume = u8"Continuar"; break;
-    case SCE_SYSTEM_PARAM_LANG_RUSSIAN: user_lang = "ru", start = u8"Запуск", resume = u8"Продолжить"; break;
-    case SCE_SYSTEM_PARAM_LANG_KOREAN: user_lang = "ko", start = u8"시작", resume = u8"계속"; break;
-    case SCE_SYSTEM_PARAM_LANG_CHINESE_T: user_lang = "ch", start = u8"啟動", resume = u8"繼續"; break;
-    case SCE_SYSTEM_PARAM_LANG_CHINESE_S: user_lang = "zh", start = u8"开始", resume = u8"继续"; break;
-    case SCE_SYSTEM_PARAM_LANG_FINNISH: user_lang = "fi", start = u8"Rozpocznij", resume = u8"Jatka"; break;
-    case SCE_SYSTEM_PARAM_LANG_SWEDISH: user_lang = "sv", start = u8"Starta", resume = u8"Fortsätt"; break;
-    case SCE_SYSTEM_PARAM_LANG_DANISH: user_lang = "da", start = u8"Start", resume = u8"Fortsæt"; break;
-    case SCE_SYSTEM_PARAM_LANG_NORWEGIAN: user_lang = "no", start = u8"Start", resume = u8"Fortsett"; break;
-    case SCE_SYSTEM_PARAM_LANG_POLISH: user_lang = "pl", start = u8"Rozpocznij", resume = u8"Kontynuuj"; break;
-    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR: user_lang = "pt-br", start = u8"Iniciar", resume = u8"Continuar"; break;
-    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB: user_lang = "en-gb", start = u8"Start", resume = u8"Continue"; break;
-    case SCE_SYSTEM_PARAM_LANG_TURKISH: user_lang = "tr", start = u8"Başlat", resume = u8"Devam"; break;
-    default: break;
-    }
-
     // Init type
     if (items_pos.empty()) {
         // Content manager
@@ -373,6 +511,7 @@ void init_live_area(GuiState &gui, HostState &host) {
         items_pos["psmobile"]["frame4"]["size"] = ImVec2(440.f, 34.f);
     }
 
+    const auto user_lang = gui.lang.user_lang;
     const auto title_id = gui.apps_list_opened[gui.current_app_selected];
     const VitaIoDevice app_device = title_id.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
 

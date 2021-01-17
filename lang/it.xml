@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<live_area>
+	<start>Avvia</start>
+	<continue>Continua</continue>
+</live_area>
+
+<main_menubar>
+	<file name="File">
+		<open_pref_path>Apri la Cartella Pref</open_pref_path>
+		<install_firmware>Installa il Firmware</install_firmware>
+		<install_pkg>Installa un .pkg</install_pkg>
+		<install_zip>Installa un .zip, .vpk</install_zip>
+	</file>
+	<emulation name="Emulazione">
+		<load_last_app>Carica l'Ultima App</load_last_app>
+	</emulation>
+	<configuration name="Configurazione">
+		<settings>Impostazioni</settings>
+		<user_management>Gestione utenti</user_management>
+	</configuration>
+	<controls name="Controlli">
+		<keyboard_controls>Controlli della Tastiera</keyboard_controls>
+	</controls>
+	<help name="Aiuto">
+		<about>A Proposito</about>
+		<welcome>Benvevuto</welcome>
+	</help>
+</main_menubar>
+
+<app_context>
+	<update_history>Cronologia degli aggiornamenti</update_history>
+	<information>Informazioni</information>
+	<app_delete>Questa applicazione e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</app_delete>
+	<save_delete>Vuoi eliminare questi dati salvati?</save_delete>
+	<name>Nome</name>
+	<trophy_earning eligible="Idoneo" ineligible="Non idoneo">Guadagno di trofei</trophy_earning>
+	<parental_Controls level="Livello">Filtro contenuti</parental_Controls>
+	<updated>Aggiornato</updated>
+	<size>Dimensione</size>
+	<version>Versione</version>
+</app_context>
+
+<user_management>
+	<create_user>Crea utente</create_user>
+	<edit_user>Modifica utente</edit_user>
+	<delete_user>Elimina utente</delete_user>
+	<change_avatar>Cambia avatar</change_avatar>
+	<name>Nome</name>
+	<user>Utente</user>
+	<confirm>Conferma</confirm>
+</user_management>
+
+<start>
+	<wday>
+		<day>Domenica</day>
+		<day>Lunedi</day>
+		<day>Martedi</day>
+		<day>Mercoledi</day>
+		<day>Giovedi</day>
+		<day>Venerdi</day>
+		<day>Sabato</day>
+	</wday>
+
+	<ymonth>
+		<month>Gennaio</month>
+		<month>Febbraio</month>
+		<month>Marzo</month>
+		<month>Aprile</month>
+		<month>Maggio</month>
+		<month>Giugno</month>
+		<month>Luglio</month>
+		<month>Agosto</month>
+		<month>Settembre</month>
+		<month>Ottobre</month>
+		<month>Novembre</month>
+		<month>Dicembre</month>
+	</ymonth>
+</start>

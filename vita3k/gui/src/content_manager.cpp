@@ -33,7 +33,10 @@ void get_app_info(GuiState &gui, HostState &host, const std::string &title_id) {
     gui.app_selector.app_info = {};
 
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
-        gui.app_selector.app_info.trophy = fs::exists(APP_PATH / "sce_sys/trophy") ? "Eligible" : "Ineligible";
+        const auto is_lang = !gui.lang.app_context.empty();
+        const auto eligible = is_lang ? gui.lang.app_context["eligible"] : "Eligible";
+        const auto ineligible = is_lang ? gui.lang.app_context["ineligible"] : "Ineligible";
+        gui.app_selector.app_info.trophy = fs::exists(APP_PATH / "sce_sys/trophy") ? eligible : ineligible;
 
         const auto last_writed = fs::last_write_time(APP_PATH);
         const auto updated = std::localtime(&last_writed);
@@ -488,7 +491,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "Parental Controls");
             ImGui::SameLine(280.f * SCAL.x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Level %d", *reinterpret_cast<const uint16_t *>(app_index->parental_level.c_str()));
+            ImGui::TextColored(GUI_COLOR_TEXT, "Level %d", *reinterpret_cast<const uint16_t *>(get_app_index(gui, app_selected)->parental_level.c_str()));
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
             ImGui::SameLine(280.f * SCAL.x);
@@ -500,7 +503,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "Version");
             ImGui::SameLine(280.f * SCAL.x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", app_index->app_ver.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, app_selected)->app_ver.c_str());
             for (const auto &dlc : dlc_info) {
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (40.f * SCAL.y));
                 ImGui::Separator();
