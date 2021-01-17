@@ -108,10 +108,9 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &title_id) {
         if (title_id == "NPXS10008") {
             init_trophy_collection(gui, host);
             gui.live_area.trophy_collection = true;
-        } else if (title_id == "NPXS10015") {
-            init_themes(gui, host);
-            gui.live_area.theme_background = true;
-        } else {
+        } else if (title_id == "NPXS10015")
+            gui.live_area.settings = true;
+        else {
             init_content_manager(gui, host);
             gui.live_area.content_manager = true;
         }
@@ -200,7 +199,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     case SELECT_APP:
         ImGui::SetWindowFontScale(1.1f);
         std::string title_id_label = "Title ID";
-        float title_id_size = (ImGui::CalcTextSize(title_id_label.c_str()).x + 50.f) * scal.x;
+        float title_id_size = (ImGui::CalcTextSize(title_id_label.c_str()).x + 60.f) * scal.x;
         std::string app_ver_label = "Version";
         float app_ver_size = (ImGui::CalcTextSize(app_ver_label.c_str()).x + 30.f) * scal.x;
         std::string cateogry_label = "Category";
@@ -351,7 +350,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         }
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
-        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Refresh").x + ImGui::GetStyle().DisplayWindowPadding.x + (270 * scal.x)));
+        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Refresh").x + ImGui::GetStyle().DisplayWindowPadding.x + (260 * scal.x)));
         if (ImGui::Button("Refresh"))
             refresh_app_list(gui, host);
         ImGui::PopStyleColor(3);
@@ -423,7 +422,6 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 if (host.app_title_id == app.title_id)
                     draw_app_context_menu(gui, host);
                 ImGui::PopID();
-                ImGui::PushFont(get_font_format(gui, app.title_id));
                 if (!host.cfg.apps_list_grid) {
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
@@ -434,18 +432,21 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::NextColumn();
                     ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::NextColumn();
+                    ImGui::PushFont(get_font_format(gui, app.title_id));
                     ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                    ImGui::PopFont();
                     ImGui::PopStyleColor();
                     ImGui::PopStyleVar();
                     ImGui::NextColumn();
                 } else {
                     ImGui::SetCursorPosX(GRID_INIT_POS - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x + (32.f * scal.x)).x / 2.f));
+                    ImGui::PushFont(get_font_format(gui, app.title_id));
                     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE - (48.f * scal.x)));
                     ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && gui.users[host.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
                     ImGui::PopTextWrapPos();
+                    ImGui::PopFont();
                     ImGui::NextColumn();
                 }
-                ImGui::PopFont();
                 if (selected)
                     pre_load_app(gui, host, host.cfg.show_live_area_screen);
             }

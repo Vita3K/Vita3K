@@ -112,16 +112,16 @@ static void init_font(GuiState &gui, HostState &host) {
     const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
     switch (sys_lang) {
     case SCE_SYSTEM_PARAM_LANG_JAPANESE: user_font = io.Fonts->GetGlyphRangesJapanese(); break;
-    case SCE_SYSTEM_PARAM_LANG_RUSSIAN: user_font = io.Fonts->GetGlyphRangesCyrillic(); break;
     case SCE_SYSTEM_PARAM_LANG_KOREAN: user_font = io.Fonts->GetGlyphRangesKorean(); break;
     case SCE_SYSTEM_PARAM_LANG_CHINESE_T: user_font = io.Fonts->GetGlyphRangesChineseFull(); break;
     case SCE_SYSTEM_PARAM_LANG_CHINESE_S: user_font = io.Fonts->GetGlyphRangesChineseSimplifiedCommon(); break;
-    default: user_font = io.Fonts->GetGlyphRangesDefault(); break;
+    default: user_font = io.Fonts->GetGlyphRangesCyrillic(); break;
     }
 
     // set up font paths
     const auto default_font_path{ fs::path(host.base_path) / "data/fonts/mplus-1mn-bold.ttf" };
-    const auto fw_font_path{ fs::path(host.pref_path) / "sa0/data/font/pvf/jpn0.pvf" };
+    const auto fw_latin_font_path{ fs::path(host.pref_path) / "sa0/data/font/pvf/ltn0.pvf" };
+    const auto fw_jap_path{ fs::path(host.pref_path) / "sa0/data/font/pvf/jpn0.pvf" };
 
     // Set Large Font
     ImFontConfig font_config{};
@@ -141,19 +141,19 @@ static void init_font(GuiState &gui, HostState &host) {
         LOG_WARN("Could not find default font file at \"{}\", falling back to default imgui font.", default_font_path.string());
 
     // check existence of fw font file
-    if (fs::exists(fw_font_path)) {
+    if (fs::exists(fw_latin_font_path)) {
         // read fw font
-        const auto font_file_size = fs::file_size(fw_font_path);
+        const auto font_file_size = fs::file_size(fw_latin_font_path);
         gui.live_area_font_data.resize(font_file_size);
-        std::ifstream font_stream(fw_font_path.string().c_str(), std::ios::in | std::ios::binary);
+        std::ifstream font_stream(fw_latin_font_path.string().c_str(), std::ios::in | std::ios::binary);
         font_stream.read(gui.live_area_font_data.data(), font_file_size);
 
         // add fw font to imgui
         gui.live_area_font = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 19.2f, &font_config, user_font);
-        gui.live_area_asia_font = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 19.2f, &font_config, io.Fonts->GetGlyphRangesChineseFull());
+        gui.live_area_asia_font = io.Fonts->AddFontFromFileTTF(fw_jap_path.string().c_str(), 19.2f, &font_config, io.Fonts->GetGlyphRangesChineseFull());
         gui.live_area_font_large = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 124.f, &font_config, large_font_chars);
     } else {
-        LOG_WARN("Could not find firmware font file at \"{}\", install firmware fonts package for fix this.", fw_font_path.string());
+        LOG_WARN("Could not find firmware font file at \"{}\", install firmware fonts package for fix this.", fw_latin_font_path.string());
         if (!gui.font_data.empty()) {
             gui.live_area_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(gui.font_data.size()), 19.2f, &font_config, user_font);
             gui.live_area_asia_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(gui.font_data.size()), 19.2f, &font_config, io.Fonts->GetGlyphRangesChineseFull());
@@ -165,7 +165,7 @@ static void init_font(GuiState &gui, HostState &host) {
 }
 
 ImFont *get_font_format(GuiState &gui, const std::string &title_id) {
-    const auto is_asia = (title_id.find("PCSC") != std::string::npos) || (title_id.find("PCSG") != std::string::npos) || (title_id.find("PCSH") != std::string::npos);
+    const auto is_asia = (title_id.find("PCSC") != std::string::npos) || (title_id.find("PCSD") != std::string::npos) || (title_id.find("PCSG") != std::string::npos) || (title_id.find("PCSH") != std::string::npos);
     const auto font_format = is_asia ? gui.live_area_asia_font : gui.live_area_font;
 
     return font_format;
@@ -266,21 +266,18 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
             if (host.app_version[0] == '0')
                 host.app_version.erase(host.app_version.begin());
             sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
-            if (app != "NPXS10015") {
-                if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
-                    sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
-                if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
-                    sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
-                std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
-            } else
-                host.app_short_title = host.app_title = "Theme & Background";
+            if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
+                sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
+            if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+                sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
+            std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
             boost::trim(host.app_title);
         } else {
             host.app_version = host.app_category = "N/A";
             if (app == "NPXS10008")
                 host.app_short_title = host.app_title = "Trophy Collection";
             else if (app == "NPXS10015")
-                host.app_short_title = host.app_title = "Theme & Background";
+                host.app_short_title = host.app_title = "Settings";
             else
                 host.app_short_title = host.app_title = "Content Manager";
         }
@@ -484,8 +481,6 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (gui.live_area.manual)
         draw_manual(gui, host);
 
-    if (gui.live_area.theme_background)
-        draw_themes_selection(gui, host);
     if (gui.live_area.start_screen)
         draw_start_screen(gui, host);
 
@@ -494,6 +489,9 @@ void draw_live_area(GuiState &gui, HostState &host) {
 
     if (gui.live_area.content_manager)
         draw_content_manager(gui, host);
+
+    if (gui.live_area.settings)
+        draw_settings(gui, host);
 
     if (gui.live_area.user_management)
         draw_user_management(gui, host);

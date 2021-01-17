@@ -413,7 +413,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(is_background ? 0.f : 0.999f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    ImGui::Begin("##trophy_collection", &gui.live_area.theme_background, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##trophy_collection", &gui.live_area.trophy_collection, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
         ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10008"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
     if (group_id_selected.empty()) {

@@ -63,8 +63,8 @@ void draw_content_manager(GuiState &gui, HostState &host);
 void draw_information_bar(GuiState &gui, HostState &host);
 void draw_live_area_screen(GuiState &gui, HostState &host);
 void draw_manual(GuiState &gui, HostState &host);
+void draw_settings(GuiState &gui, HostState &host);
 void draw_start_screen(GuiState &gui, HostState &host);
-void draw_themes_selection(GuiState &gui, HostState &host);
 void draw_trophy_collection(GuiState &gui, HostState &host);
 void draw_user_management(GuiState &gui, HostState &host);
 

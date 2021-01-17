@@ -32,7 +32,7 @@
 namespace gui {
 
 bool get_live_area_sys_app_state(GuiState &gui) {
-    return !gui.live_area.content_manager && !gui.live_area.theme_background && !gui.live_area.trophy_collection && !gui.live_area.manual;
+    return !gui.live_area.content_manager && !gui.live_area.settings && !gui.live_area.trophy_collection && !gui.live_area.manual;
 }
 
 static bool notice_info;

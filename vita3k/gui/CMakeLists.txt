@@ -37,9 +37,9 @@ add_library(
 	src/private.h
 	src/reinstall.cpp
 	src/semaphores_dialog.cpp
+	src/settings.cpp
 	src/settings_dialog.cpp
 	src/threads_dialog.cpp
-	src/themes.cpp
 	src/trophy_collection.cpp
 	src/user_management.cpp
 	src/controls_dialog.cpp
