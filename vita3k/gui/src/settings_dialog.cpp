@@ -49,14 +49,6 @@ static const char OS_PREFIX[] = "open ";
 static const char OS_PREFIX[] = "xdg-open ";
 #endif
 
-static const char *LIST_SYS_LANG[] = {
-    "Japanese", "American English", "French", "Spanish", "German", "Italian", "Dutch", "Portugal Portuguese",
-    "Russian", "Korean", "Traditional Chinese", "Simplified Chinese", "Finnish", "Swedish",
-    "Danish", "Norwegian", "Polish", "Brazil Portuguese", "British English", "Turkish"
-};
-
-constexpr int SYS_LANG_COUNT = IM_ARRAYSIZE(LIST_SYS_LANG);
-
 static bool change_pref_location(const std::string &input_path, const std::string &current_path) {
     if (fs::path(input_path).has_extension())
         return false;
@@ -208,13 +200,6 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("System")) {
         ImGui::PopStyleColor();
-        if (ImGui::Combo("Console Language", &host.cfg.sys_lang, LIST_SYS_LANG, SYS_LANG_COUNT, 6)) {
-            get_sys_apps_title(gui, host);
-            get_user_apps_title(gui, host);
-        }
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select your language. \nNote that some applications might not have your language.\nReboot emu request for change font.");
-        ImGui::Spacing();
         ImGui::TextColored(GUI_COLOR_TEXT, "Enter Button Assignment \nSelect your 'Enter' Button.");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and get default confirmation button.");

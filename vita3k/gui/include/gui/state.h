@@ -77,9 +77,9 @@ struct LiveAreaState {
     bool information_bar = false;
     bool live_area_screen = false;
     bool manual = false;
-    bool theme_background = false;
-    bool trophy_collection = false;
+    bool settings = false;
     bool start_screen = false;
+    bool trophy_collection = false;
     bool user_management = false;
 };
 
