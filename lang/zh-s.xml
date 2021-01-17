@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<main_menubar>
+	<file name="文件">
+		<open_pref_path>打开存放路径</open_pref_path>
+		<install_firmware>安装系统固件</install_firmware>
+		<install_pkg>安装 .pkg</install_pkg>
+		<install_zip>安装 .zip 或者 .vpk</install_zip>
+	</file>
+	<emulation name="仿真拟">
+		<load_last_app>打开最后运行的APP</load_last_app>
+	</emulation>
+	<configuration name="配置">
+		<settings>设置</settings>
+		<user_management>用户管理</user_management>
+	</configuration>
+	<controls name="控制">
+		<keyboard_controls>按键映射</keyboard_controls>
+	</controls>
+	<help name="帮助">
+		<about>关于</about>
+		<welcome>欢迎界面</welcome>
+	</help>
+</main_menubar>
+
+<app_context>
+	<update_history>更新历史记录</update_history>
+	<information>信息</information>
+	<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
+	<save_delete>要删除此保存数据吗？</save_delete>
+	<name>名称</name>
+	<trophy_earning eligible="有权" ineligible="无权">获得奖杯</trophy_earning>
+	<parental_Controls level="级别">视听者限制</parental_Controls>
+	<updated>升级日期</updated>
+	<size>大小</size>
+	<version>版本</version>
+</app_context>
+
+<live_area>
+	<start>开始</start>
+	<continue>继续</continue>
+</live_area>
+
+<settings name="设定">
+	<theme_background name="主题&背景" default="原始">
+		<theme name="主题">
+			<information name="信息">
+				<name>名称</name>
+				<provider>提供者</provider>
+				<updated>升级日期</updated>
+				<size>大小</size>
+				<version>版本</version>
+			</information>
+			<delete>删除此主题。</delete>
+		</theme>
+		<start_screen name="开始画面">
+			<image>图像</image>
+		</start_screen>
+		<home_screen_backgrounds>主画面的背景</home_screen_backgrounds>
+	</theme_background>
+	<language name="语言">
+		<system_language>系统语言</system_language>
+	</language>
+</settings>
+
+<user_management>
+	<create_user>新建用户</create_user>
+	<edit_user>编辑用户</edit_user>
+	<delete_user>删除用户</delete_user>
+	<change_avatar>更换头像</change_avatar>
+	<name>用户名</name>
+	<user>用户</user>
+	<confirm>更改</confirm>
+</user_management>
+
+<start>
+	<wday>
+		<day>星期日</day>
+		<day>星期一</day>
+		<day>星期二</day>
+		<day>星期三</day>
+		<day>星期四</day>
+		<day>星期五</day>
+		<day>星期六</day>
+	</wday>
+
+	<ymonth>
+		<month>1月</month>
+		<month>2月</month>
+		<month>3月</month>
+		<month>4月</month>
+		<month>5月</month>
+		<month>6月</month>
+		<month>7月</month>
+		<month>8月</month>
+		<month>9月</month>
+		<month>10月</month>
+		<month>11月</month>
+		<month>12月</month>
+	</ymonth>
+</start>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<main_menubar>
+	<file name="File">
+		<open_pref_path>Open Pref Path</open_pref_path>
+		<install_firmware>Install Firmware</install_firmware>
+		<install_pkg>Install .pkg</install_pkg>
+		<install_zip>Install .zip, .vpk</install_zip>
+	</file>
+	<emulation name="Emulation">
+		<load_last_app>Load last App</load_last_app>
+	</emulation>
+	<configuration name="Configuration">
+		<settings>Settings</settings>
+		<user_management>User Management</user_management>
+	</configuration>
+	<controls name="Controls">
+		<keyboard_controls>Keyboard Controls</keyboard_controls>
+	</controls>
+	<help name="Help">
+		<about>About</about>
+		<welcome>Welcome</welcome>
+	</help>
+</main_menubar>	
+
+<app_context>
+	<update_history>Update History</update_history>
+	<information>Information</information>
+	<app_delete>This application and all related data, including saved data, will be deleted.</app_delete>
+	<save_delete>Do you want to delete this saved data?</save_delete>
+	<name>Name</name>
+	<trophy_earning eligible="Eligible" ineligible="Ineligible">Trophy Earning</trophy_earning>
+	<parental_Controls level="Level">Parental Controls</parental_Controls>
+	<updated>Updated</updated>
+	<size>Size</size>
+	<version>Version</version>
+</app_context>
+
+<live_area>
+	<start>Start</start>
+	<continue>Continue</continue>
+</live_area>
+
+<settings name="Settings">
+	<theme_background name="Theme & Background" default="Default">
+		<theme name="Theme">
+			<information name="Information">
+				<name>Name</name>
+				<provider>Provider</provider>
+				<updated>Updated</updated>
+				<size>Size</size>
+				<version>Version</version>
+			</information>
+			<delete>This theme will be deleted.</delete>
+		</theme>
+		<start_screen name="Start Screen">
+			<image>Image</image>
+		</start_screen>
+		<home_screen_backgrounds>Home Screen Backgrounds</home_screen_backgrounds>
+	</theme_background>
+	<language name="Language">
+		<system_language>System Language</system_language>
+	</language>
+</settings>
+
+<user_management>
+	<create_user>Create User</create_user>
+	<edit_user>Edit User</edit_user>
+	<delete_user>Delete User</delete_user>
+	<change_avatar>Change Avatar</change_avatar>
+	<name>Name</name>
+	<user>User</user>
+	<confirm>Confirm</confirm>
+</user_management>
+
+<start>
+	<wday>
+		<day>Sunday</day>
+		<day>Monday</day>
+		<day>Tuesday</day>
+		<day>Wednesday</day>
+		<day>Thursday</day>
+		<day>Friday</day>
+		<day>Saturday</day>
+	</wday>
+
+	<ymonth>
+		<month>January</month>
+		<month>February</month>
+		<month>March</month>
+		<month>April</month>
+		<month>May</month>
+		<month>June</month>
+		<month>July</month>
+		<month>August</month>
+		<month>September</month>
+		<month>October</month>
+		<month>November</month>
+		<month>December</month>
+	</ymonth>
+</start>

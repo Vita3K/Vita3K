@@ -101,6 +101,8 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
     const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / title_id };
     const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / title_id };
     const auto SHADER_LOG_PATH{ fs::path(host.base_path) / "shaderlog" / title_id };
+    auto lang = gui.lang.app_context;
+    const auto is_lang = !lang.empty();
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
@@ -109,7 +111,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
             pre_load_app(gui, host, false);
         if (title_id.find("NPXS") == std::string::npos) {
             if (ImGui::MenuItem("Check App Compatibility")) {
-                const std::string compat_url = title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + host.app_title;
+                const std::string compat_url = title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + host.app_title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + host.app_title;
                 system((OS_PREFIX + compat_url).c_str());
             }
             if (ImGui::BeginMenu("Copy App Info")) {
@@ -153,14 +155,14 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
                 }
                 ImGui::EndMenu();
             }
-            if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem("Update History")) {
+            if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(is_lang ? lang["update_history"].c_str() : "Update History")) {
                 if (get_update_history(gui, host, title_id))
                     context_dialog = "history";
                 else
-                    LOG_WARN("Patch note Error for title: {}", title_id);
+                    LOG_WARN("Patch note Error for title id: {}", title_id);
             }
         }
-        if (ImGui::MenuItem("Information", nullptr, &information)) {
+        if (ImGui::MenuItem(is_lang ? lang["information"].c_str() : "Information", nullptr, &information)) {
             if (title_id.find("NPXS") == std::string::npos) {
                 get_app_info(gui, host, title_id);
                 const auto app_size = get_app_size(host, title_id);
@@ -217,7 +219,9 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(app_index->stitle.c_str()).x / 2.f));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_short_title.c_str());
             ImGui::SetWindowFontScale(1.4f * scal.x);
-            std::string ask_delete = context_dialog == "save" ? "Do you want to delete this saved data?" : "This application and all related data, including saved data, will be deleted.";
+            const auto app_delete = is_lang ? lang["app_delete"] : "This application and all related data, including saved data, will be deleted.";
+            const auto save_delete = is_lang ? lang["save_delete"] : "Do you want to delete this saved data?";
+            const auto ask_delete = context_dialog == "save" ? save_delete : app_delete;
             ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(ask_delete.c_str(), 0, false, WINDOW_SIZE.x - (108.f * scal.x)).x / 2, (WINDOW_SIZE.y / 2) + 10));
             ImGui::PushTextWrapPos(WINDOW_SIZE.x - (54.f * scal.x));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", ask_delete.c_str());
@@ -263,28 +267,37 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
             ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * scal.y));
             ImGui::Image(get_app_icon(gui, title_id)->second, INFO_ICON_SIZE);
         }
-        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize("Name  ").x, INFO_ICON_SIZE.y + (50.f * scal.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, "Name ");
+        const auto name = is_lang ? lang["name"] : "Name";
+        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize((name + "  ").c_str()).x, INFO_ICON_SIZE.y + (50.f * scal.y)));
+        ImGui::TextColored(GUI_COLOR_TEXT, (name + " ").c_str());
         ImGui::SameLine();
         ImGui::PushTextWrapPos(display_size.x - (85.f * scal.x));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", app_index->title.c_str());
         ImGui::PopTextWrapPos();
         if (title_id.find("NPXS") == std::string::npos) {
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Trophy Earning  ").x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Trophy Earning  %s", gui.app_selector.app_info.trophy.c_str());
+            const auto trophy_earning = is_lang ? lang["trophy_earning"] : "Trophy Earning";
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((trophy_earning + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, (trophy_earning + "  %s").c_str(), gui.app_selector.app_info.trophy.c_str());
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Parental Controls  ").x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Parental Controls  Level %d", *reinterpret_cast<const uint16_t *>(app_index->parental_level.c_str()));
+            const auto parental_Controls = is_lang ? lang["parental_Controls"] : "Parental Controls";
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((parental_Controls + "  ").c_str()).x);
+            const auto level = is_lang ? lang["level"] : "Level";
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (parental_Controls + "  " + level).c_str());
+            ImGui::SameLine();
+            ImGui::TextColored(GUI_COLOR_TEXT, "%d", *reinterpret_cast<const uint16_t *>(app_index->parental_level.c_str()));
             ImGui::Spacing();
-            ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize("Updated  ").x));
-            ImGui::TextColored(GUI_COLOR_TEXT, "Updated  %s", gui.app_selector.app_info.updated.c_str());
+            const auto updated = is_lang ? lang["updated"] : "Updated";
+            ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize((updated + "  ").c_str()).x));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (updated + "  " + gui.app_selector.app_info.updated).c_str());
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Size  ").x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Size  %s", get_unit_size(gui.app_selector.app_info.size).c_str());
+            const auto size = is_lang ? lang["size"] : "Size";
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((size + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (size + "  " + get_unit_size(gui.app_selector.app_info.size)).c_str());
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Version  ").x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "Version  %s", app_index->app_ver.c_str());
+            const auto version = is_lang ? lang["version"] : "Version";
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((version + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (version + "  " + app_index->app_ver).c_str());
         }
         ImGui::End();
     }

@@ -1,0 +1,101 @@
+	<?xml version="1.0" encoding="utf-8"?>
+
+<main_menubar>
+	<file name="Archivo">
+		<open_pref_path>Abrir la Carpeta Pref</open_pref_path>
+		<install_firmware>Instalar Firmware</install_firmware>
+		<install_pkg>Instalar un .pkg</install_pkg>
+		<install_zip>Instalar un .zip, .vpk</install_zip>
+	</file>
+	<emulation name="Emulación">
+		<load_last_app>Cargar ultima aplicación</load_last_app>
+	</emulation>
+	<configuration name="Configuración">
+		<settings>Ajustes</settings>
+		<user_management>Gestión de usuarios</user_management>
+	</configuration>
+	<controls name="Controles">
+		<keyboard_controls>Controles del teclado</keyboard_controls>
+	</controls>
+	<help name="Ayuda">
+		<about>Acerca de</about>
+		<welcome>Bienvenido</welcome>
+	</help>
+</main_menubar>	
+
+<app_context>
+	<update_history>Historial de actualizaciones</update_history>
+	<information>Información</information>
+	<app_delete>Se eliminarán la aplicación y todos los datos relacionados, incluidos los datos guardados.</app_delete>
+	<save_delete>¿Quieres eliminar estos datos guardados?</save_delete>
+	<name>Nombre</name>
+	<trophy_earning eligible="Elegible" ineligible="No elegible">Ganar trofeos</trophy_earning>
+	<parental_Controls level="Nivel">Control paterno</parental_Controls>
+	<updated>Actualizado</updated>
+	<size>Tamaño</size>
+	<version>Versión</version>
+</app_context>
+
+<live_area>
+	<start>Iniciar</start>
+	<continue>Continuar</continue>
+</live_area>
+
+<settings name="Ajustes">
+	<theme_background name="Tema y Fondo" default="Predeterminado">
+		<theme name="Tema">
+			<information name="Información">
+				<name>Nombre</name>
+				<provider>Proveedor</provider>
+				<updated>Actualizado</updated>
+				<size>Tamaño</size>
+				<version>Versión</version>
+			</information>
+			<delete>Este tema se eliminará.</delete>
+		</theme>
+		<start_screen name="Pantalla inicial">
+			<image>Imagen</image>
+		</start_screen>
+		<home_screen_backgrounds>Fondos de la pantalla de inicio</home_screen_backgrounds>
+	</theme_background>
+	<language name="Idioma">
+		<system_language>Idioma del sistema</system_language>
+	</language>
+</settings>
+
+<user_management>
+	<create_user>Crear usuario</create_user>
+	<edit_user>Modificar usuario</edit_user>
+	<delete_user>Eliminar usuario</delete_user>
+	<change_avatar>Cambiar avatar</change_avatar>
+	<name>Nombre</name>
+	<user>Usuario</user>
+	<confirm>Confirmar</confirm>
+</user_management>
+
+<start>
+	<wday>
+		<day>Domingo</day>
+		<day>Lunes</day>
+		<day>Martes</day>
+		<day>Miercoles</day>
+		<day>Jueves</day>
+		<day>Viernes</day>
+		<day>Sabado</day>
+	</wday>
+
+	<ymonth>
+		<month>Enero</month>
+		<month>Febrero</month>
+		<month>Marzo</month>
+		<month>Abril</month>
+		<month>Mayo</month>
+		<month>Junio</month>
+		<month>Julio</month>
+		<month>Agosto</month>
+		<month>Septiembre</month>
+		<month>Octubre</month>
+		<month>Noviembre</month>
+		<month>Diciembre</month>
+	</ymonth>
+</start>

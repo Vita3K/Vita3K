@@ -456,7 +456,7 @@ void init_themes(GuiState &gui, HostState &host) {
         theme_preview_name["default"]["home"] = "data/internal/theme/defaultTheme_homeScreen.png";
         theme_preview_name["default"]["start"] = "data/internal/theme/defaultTheme_startScreen.png";
 
-        themes_info["default"].title = "Default";
+        themes_info["default"].title = !gui.lang.settings.empty() ? gui.lang.settings["default"] : "Default";
         themes_list.push_back({ "default", {} });
     } else
         LOG_WARN("Default theme not found, install firmware fix this!");
@@ -530,7 +530,9 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto scal_clock_font_size = 124.f * scal_default_font;
     const auto scal_clock_font = scal_clock_font_size / ImGui::GetFontSize();
 
-    const auto DATE_STR = fmt::format("{} {} ({})", local.tm_mday, ymonth[local.tm_mon], wday[local.tm_wday]);
+    const auto is_lang = !gui.lang.ymonth.empty();
+
+    const auto DATE_STR = fmt::format("{} {} ({})", local.tm_mday, is_lang ? gui.lang.ymonth[local.tm_mon] : ymonth[local.tm_mon], !gui.lang.wday.empty() ? gui.lang.wday[local.tm_wday] : wday[local.tm_wday]);
     const auto CLOCK_STR = fmt::format("{:0>2d}:{:0>2d}", local.tm_hour, local.tm_min);
 
     if (start_param["dateLayout"] == "2") {
@@ -560,7 +562,7 @@ static float scroll_pos;
 static bool set_scroll_pos;
 
 static const std::vector<std::string> LIST_SYS_LANG = {
-    "Japanese", "English (United States)", u8"Français", u8"Español", "Deutsch", "Italiano", "Nederlands", u8"Português (Portugal)",
+    u8"日本語", "English (United States)", u8"Français", u8"Español", "Deutsch", "Italiano", "Nederlands", u8"Português (Portugal)",
     u8"Русский", "Korean", "Chinese - Traditional", "Chinese - Simplified", "Suomi", "Svenska",
     "Dansk", "Norsk", "Polskis", u8"Português (Brasil)", "English (United Kingdom)", u8"Türkçe"
 };
@@ -581,6 +583,8 @@ void draw_settings(GuiState &gui, HostState &host) {
     const auto POPUP_SIZE = ImVec2(756.0f * SCAL.x, 436.0f * SCAL.y);
 
     const auto is_background = gui.apps_background.find("NPXS10015") != gui.apps_background.end();
+    auto lang = gui.lang.settings;
+    const auto is_lang = !lang.empty();
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -618,28 +622,28 @@ void draw_settings(GuiState &gui, HostState &host) {
 
     // Settings
     if (settings_menu.empty()) {
-        title = "Settings";
+        title = is_lang ? lang["settings"] : "Settings";
         ImGui::SetWindowFontScale(1.2f);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
         const auto SIZE_SELECT = 80.f * SCAL.y;
-        if (ImGui::Selectable("Theme & Background", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y))) {
+        if (ImGui::Selectable(is_lang ? lang["theme_background"].c_str() : "Theme & Background", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y))) {
             init_themes(gui, host);
             settings_menu = "theme_background";
         }
         ImGui::Separator();
-        if (ImGui::Selectable("Language", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y)))
+        if (ImGui::Selectable(is_lang ? lang["language"].c_str() : "Language", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y)))
             settings_menu = "language";
         ImGui::PopStyleVar();
         ImGui::Separator();
     } else if (settings_menu == "theme_background") {
         // Themes & Backgrounds
         if (menu.empty()) {
-            title = "Theme & Background";
+            title = is_lang ? lang["theme_background"] : "Theme & Background";
             ImGui::SetWindowFontScale(1.2f);
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
             const auto SIZE_SELECT = 80.f * SCAL.y;
             if (!themes_info.empty()) {
-                if (ImGui::Selectable("Theme", false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
+                if (ImGui::Selectable(is_lang ? lang["theme"].c_str() : "Theme", false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
                     menu = "theme";
                 ImGui::SetWindowFontScale(0.74f);
                 const auto CALC_TITLE = ImGui::CalcTextSize(themes_info[gui.users[host.io.user_id].theme_id].title.c_str(), 0, false, 260.f * SCAL.x).y / 2.f;
@@ -653,10 +657,10 @@ void draw_settings(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (CALC_POS_TITLE > 0 ? CALC_POS_TITLE : -CALC_POS_TITLE));
                 ImGui::Separator();
             }
-            if (ImGui::Selectable("Start Screen", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y)))
+            if (ImGui::Selectable(is_lang ? lang["start_screen"].c_str() : "Start Screen", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y)))
                 menu = "start";
             ImGui::Separator();
-            if (ImGui::Selectable("Home Screen Backgrounds", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y)))
+            if (ImGui::Selectable(is_lang ? lang["home_screen_backgrounds"].c_str() : "Home Screen Backgrounds", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y)))
                 menu = "background";
             ImGui::PopStyleVar();
             ImGui::Separator();
@@ -664,7 +668,7 @@ void draw_settings(GuiState &gui, HostState &host) {
             if (menu == "theme") {
                 // Theme List
                 if (theme_selected.empty()) {
-                    title = "Theme";
+                    title = is_lang ? lang["theme"].c_str() : "Theme";
 
                     // Delete Theme
                     if (!delete_theme.empty()) {
@@ -755,9 +759,10 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + POPUP_SIZE.x - SIZE_MINI_PACKAGE.x - 48.f);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme_selected].title.c_str());
                         ImGui::PopTextWrapPos();
-                        const auto CALC_TEXT = ImGui::CalcTextSize("This theme will be deleted.");
+                        const auto delete_str = is_lang ? lang["delete"] : "This theme will be deleted.";
+                        const auto CALC_TEXT = ImGui::CalcTextSize(delete_str.c_str());
                         ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - (CALC_TEXT.x / 2.f), POPUP_SIZE.y / 2.f - (CALC_TEXT.y / 2.f)));
-                        ImGui::TextColored(GUI_COLOR_TEXT, "This theme will be deleted.");
+                        ImGui::TextColored(GUI_COLOR_TEXT, delete_str.c_str());
                         ImGui::SetCursorPos(ImVec2(50.f, POPUP_SIZE.y - (22.f + BUTTON_SIZE.y)));
                         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
                         if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
@@ -798,29 +803,29 @@ void draw_settings(GuiState &gui, HostState &host) {
                         const auto INFO_POS = ImVec2(280.f * SCAL.x, 30.f * SCAL.y);
                         ImGui::SetWindowFontScale(0.94f);
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
-                        ImGui::TextColored(GUI_COLOR_TEXT, "Name");
+                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["name"].c_str() : "Name");
                         ImGui::SameLine();
                         ImGui::PushTextWrapPos(SIZE_LIST.x - (30.f * SCAL.x));
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme_selected].title.c_str());
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
-                        ImGui::TextColored(GUI_COLOR_TEXT, "Provider");
+                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["provider"].c_str() : "Provider");
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme_selected].provided.c_str());
                         ImGui::PopTextWrapPos();
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
-                        ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
+                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["updated"].c_str() : "Updated");
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme_selected].updated.c_str());
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
-                        ImGui::TextColored(GUI_COLOR_TEXT, "Size");
+                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["size"].c_str() : "Size");
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%zu KB", themes_info[theme_selected].size);
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
-                        ImGui::TextColored(GUI_COLOR_TEXT, "Version");
+                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["version"].c_str() : "Version");
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme_selected].version.c_str());
@@ -828,7 +833,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                 }
             } else if (menu == "start") {
                 if (start.empty()) {
-                    title = "Start Screen";
+                    title = is_lang ? lang["start_screen"].c_str() : "Start Screen";
                     ImGui::SetWindowFontScale(0.72f);
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
                     const auto PACKAGE_POS_Y = (SIZE_LIST.y / 2.f) - (SIZE_PACKAGE.y / 2.f) - (72.f * SCAL.y);
@@ -865,7 +870,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                     ImGui::PopStyleColor();
                     ImGui::SetWindowFontScale(0.72f);
                     ImGui::SetCursorPosX(IMAGE_POS.x);
-                    ImGui::TextColored(GUI_COLOR_TEXT, "Image");
+                    ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["image"].c_str() : "Image");
                     const auto DEFAULT_POS = ImVec2(is_not_default ? (SIZE_LIST.x / 2.f) + (SIZE_PACKAGE.x / 2.f) + (30.f * SCAL.y) : (SIZE_LIST.x / 2.f) - (SIZE_PACKAGE.x / 2.f), PACKAGE_POS_Y);
                     if (gui.themes_preview["default"].find("package") != gui.themes_preview["default"].end()) {
                         ImGui::SetCursorPos(DEFAULT_POS);
@@ -878,7 +883,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::PopStyleColor();
                         ImGui::SetWindowFontScale(0.72f);
                         ImGui::SetCursorPosX(DEFAULT_POS.x);
-                        ImGui::TextColored(GUI_COLOR_TEXT, "Default");
+                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["default"].c_str() : "Default");
                     }
                     ImGui::PopStyleVar();
                     ImGui::SetWindowFontScale(0.90f);
@@ -910,7 +915,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         }
                         start.clear();
                     } else if (start == "default") {
-                        title = "Default";
+                        title = is_lang ? lang["default"].c_str() : "Default";
                         if (gui.themes_preview["default"].find("start") != gui.themes_preview["default"].end()) {
                             ImGui::SetCursorPos(START_PREVIEW_POS);
                             ImGui::Image(gui.themes_preview["default"]["start"], SIZE_PREVIEW);
@@ -926,7 +931,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                     }
                 }
             } else if (menu == "background") {
-                title = "Home Screen Backgrounds";
+                title = is_lang ? lang["home_screen_backgrounds"] : "Home Screen Backgrounds";
 
                 // Delete user background
                 if (!delete_user_background.empty()) {
@@ -974,11 +979,11 @@ void draw_settings(GuiState &gui, HostState &host) {
         }
     } else if (settings_menu == "language") {
         // Language
-        title = "Language";
+        title = is_lang ? lang["language"] : "Language";
         ImGui::SetWindowFontScale(1.2f);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
         const auto SIZE_SELECT = 80.f * SCAL.y;
-        if (ImGui::Selectable("System Language", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y)))
+        if (ImGui::Selectable(is_lang ? lang["system_language"].c_str() : "System Language", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y)))
             menu = "select_language";
         ImGui::Separator();
         ImGui::PopStyleVar();
@@ -1005,6 +1010,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                     if (lang_id != host.cfg.sys_lang) {
                         host.cfg.sys_lang = lang_id;
                         config::serialize_config(host.cfg, host.base_path);
+                        init_lang(gui, host);
                         get_sys_apps_title(gui, host);
                         std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {
                             return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
@@ -1075,7 +1081,7 @@ void draw_settings(GuiState &gui, HostState &host) {
         if ((popup != "information") && ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...")) {
-            if (ImGui::MenuItem("Information"))
+            if (ImGui::MenuItem(is_lang ? lang["information"].c_str() : "Information"))
                 popup = "information";
             if (ImGui::MenuItem("Delete"))
                 popup = "delete";

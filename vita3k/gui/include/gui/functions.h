@@ -51,6 +51,7 @@ void init(GuiState &gui, HostState &host);
 void init_app_background(GuiState &gui, HostState &host, const std::string &title_id);
 void init_apps_icon(GuiState &gui, HostState &host, const std::vector<gui::App> &apps_list);
 void init_content_manager(GuiState &gui, HostState &host);
+void init_lang(GuiState &gui, HostState &host);
 void init_live_area(GuiState &gui, HostState &host);
 bool init_manual(GuiState &gui, HostState &host);
 bool init_theme(GuiState &gui, HostState &host, const std::string &content_id);

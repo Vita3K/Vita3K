@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<main_menubar>
+	<file name="Bestand">
+		<open_pref_path>Open Opslag Pad</open_pref_path>
+		<install_firmware>Installeer Firmware</install_firmware>
+		<install_pkg>Installeer .pkg</install_pkg>
+		<install_zip>Installeer .zip, .vpk</install_zip>
+	</file>
+	<emulation name="Emuleren">
+		<load_last_app>Laad Laatste App</load_last_app>
+	</emulation>
+	<configuration name="Configuratie">
+		<settings>Instellingen</settings>
+		<user_management>Gebruiker Beheer</user_management>
+	</configuration>
+	<controls name="Besturing">
+		<keyboard_controls>Toetsenbord Besturing</keyboard_controls>
+	</controls>
+	<help name="Help">
+		<about>Over</about>
+		<welcome>Welkom</welcome>
+	</help>
+</main_menubar>	
+
+<app_context>
+	<update_history>Updategeschiedenis</update_history>
+	<information>Informatie</information>
+	<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
+	<save_delete>Wil je deze opgeslagen data verwijderen?</save_delete> 
+	<name>Naam</name>
+	<trophy_earning eligible="Geschikt" ineligible="Niet geschikt">Trofeeën verdienen</trophy_earning> 
+	<parental_Controls level="Niveau">Ouderlijk toezicht</parental_Controls>
+	<updated>Geüpdatet</updated>
+	<size>Grootte</size>
+	<version>Versie</version>
+</app_context>
+
+<live_area>
+	<start>Starten</start>
+	<continue>Doorgaan</continue>
+</live_area>
+
+<settings name="Instellingen">
+	<theme_background name="Thema en achtergrond" default="Standaard ">
+		<theme name="Thema">
+			<information name="Informatie">
+				<name>Naam</name>
+				<provider>Provider</provider>
+				<updated>Geüpdatet</updated>
+				<size>Grootte</size>
+				<version>Versie</version>
+			</information>
+			<delete>Dit thema wordt verwijderd.</delete>
+		</theme>
+		<start_screen name="Startscherm">
+			<image>Afbeelding</image>
+		</start_screen>
+		<home_screen_backgrounds>Achtergronden voor beginscherm</home_screen_backgrounds> 
+	</theme_background>
+	<language name="Taal">
+		<system_language>Systeemtaal</system_language>
+	</language>
+</settings>
+
+<user_management>
+	<create_user>Maak Gebruiker</create_user>
+	<edit_user>Bewerk Gebruiker</edit_user>
+	<delete_user>Verwijder Gebruiker</delete_user>
+	<change_avatar>Verander Avatar</change_avatar>
+	<name>Naam</name>
+	<user>Gebruiker</user>
+	<confirm>Bevestigen</confirm>
+</user_management>
+
+<start>
+	<wday>
+		<day>Zondag</day>
+		<day>Maandag</day>
+		<day>Dinsdag</day>
+		<day>Woensdag</day>
+		<day>Donderdag</day>
+		<day>Vrijdag</day>
+		<day>Zaterdag</day>
+	</wday>
+
+	<ymonth>
+		<month>Januari</month>
+		<month>Februari</month>
+		<month>Maart</month>
+		<month>April</month>
+		<month>Mei</month>
+		<month>Juni</month>
+		<month>Juli</month>
+		<month>Augustus</month>
+		<month>September</month>
+		<month>Oktober</month>
+		<month>November</month>
+		<month>December</month>
+	</ymonth>
+</start>
