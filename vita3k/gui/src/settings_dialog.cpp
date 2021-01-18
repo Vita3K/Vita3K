@@ -92,7 +92,9 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
         // TODO: Move app old to new path
         get_modules_list(gui, host);
         refresh_app_list(gui, host);
+        get_sys_apps_title(gui, host);
         init_users(gui, host);
+        gui.configuration_menu.settings_dialog = false;
         gui.live_area.app_selector = false;
         gui.live_area.user_management = true;
         LOG_INFO("Successfully moved Vita3K path to: {}", string_utils::wide_to_utf(host.pref_path));
@@ -206,9 +208,12 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("System")) {
         ImGui::PopStyleColor();
-        ImGui::Combo("Console Language", &host.cfg.sys_lang, LIST_SYS_LANG, SYS_LANG_COUNT, 6);
+        if (ImGui::Combo("Console Language", &host.cfg.sys_lang, LIST_SYS_LANG, SYS_LANG_COUNT, 6)) {
+            get_sys_apps_title(gui, host);
+            get_user_apps_title(gui, host);
+        }
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select your language. \nNote that some applications might not have your language.");
+            ImGui::SetTooltip("Select your language. \nNote that some applications might not have your language.\nReboot emu request for change font.");
         ImGui::Spacing();
         ImGui::TextColored(GUI_COLOR_TEXT, "Enter Button Assignment \nSelect your 'Enter' Button.");
         if (ImGui::IsItemHovered())
@@ -228,11 +233,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Combo("Log Level", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0");
+        if (ImGui::Combo("Log Level", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0"))
+            logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg.log_level));
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred log level.");
-        if (ImGui::Button("Apply Log Level"))
-            logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg.log_level));
         ImGui::Spacing();
         ImGui::Checkbox("Archive Log", &host.cfg.archive_log);
         if (ImGui::IsItemHovered())

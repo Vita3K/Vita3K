@@ -579,10 +579,12 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
     if (is_background)
         ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
     ImGui::SetWindowFontScale(1.6f * SCAL.x);
+    ImGui::PushFont(get_font_format(gui, selected));
     const auto theme_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
     ImGui::PushTextWrapPos(((display_size.x - SIZE_LIST.x) / 2.f) + SIZE_LIST.x);
     ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (theme_str.x / 2.f), (35.f * SCAL.y) - (theme_str.y / 2.f)));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
+    ImGui::PopFont();
     ImGui::PopTextWrapPos();
 
     // Search Bar
@@ -676,7 +678,9 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                     ImGui::PopID();
                     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + SIZE_PACKAGE.x);
                     ImGui::SetCursorPosY(POS_TITLE);
+                    ImGui::PushFont(get_font_format(gui, theme.first));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme.first].title.c_str());
+                    ImGui::PopFont();
                     ImGui::PopTextWrapPos();
                     ImGui::NextColumn();
                 }
@@ -723,7 +727,9 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                     const auto CALC_TITLE = ImGui::CalcTextSize(themes_info[selected].title.c_str(), nullptr, false, POPUP_SIZE.x - SIZE_MINI_PACKAGE.x - 48.f).y / 2.f;
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (SIZE_MINI_PACKAGE.y / 2.f) - CALC_TITLE);
                     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + POPUP_SIZE.x - SIZE_MINI_PACKAGE.x - 48.f);
+                    ImGui::PushFont(get_font_format(gui, selected));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[selected].title.c_str());
+                    ImGui::PopFont();
                     ImGui::PopTextWrapPos();
                     const auto CALC_TEXT = ImGui::CalcTextSize("This theme will be deleted.");
                     ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - (CALC_TEXT.x / 2.f), POPUP_SIZE.y / 2.f - (CALC_TEXT.y / 2.f)));
@@ -770,15 +776,17 @@ void draw_themes_selection(GuiState &gui, HostState &host) {
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
                     ImGui::TextColored(GUI_COLOR_TEXT, "Name");
                     ImGui::SameLine();
+                    ImGui::PushFont(get_font_format(gui, selected));
                     ImGui::PushTextWrapPos(SIZE_LIST.x - (30.f * SCAL.x));
                     ImGui::SetCursorPosX(INFO_POS.x);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[selected].title.c_str());
-                    ImGui::PopTextWrapPos();
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
                     ImGui::TextColored(GUI_COLOR_TEXT, "Provider");
                     ImGui::SameLine();
                     ImGui::SetCursorPosX(INFO_POS.x);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[selected].provided.c_str());
+                    ImGui::PopTextWrapPos();
+                    ImGui::PopFont();
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
                     ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
                     ImGui::SameLine();

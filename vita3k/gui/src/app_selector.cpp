@@ -35,7 +35,6 @@ bool refresh_app_list(GuiState &gui, HostState &host) {
 
     gui.apps_background.clear();
     gui.apps_list_opened.clear();
-    gui.app_selector.user_apps.clear();
     gui.app_selector.user_apps_icon.clear();
     gui.current_app_selected = -1;
     gui.live_area_contents.clear();
@@ -424,6 +423,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 if (host.app_title_id == app.title_id)
                     draw_app_context_menu(gui, host);
                 ImGui::PopID();
+                ImGui::PushFont(get_font_format(gui, app.title_id));
                 if (!host.cfg.apps_list_grid) {
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
@@ -445,6 +445,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::PopTextWrapPos();
                     ImGui::NextColumn();
                 }
+                ImGui::PopFont();
                 if (selected)
                     pre_load_app(gui, host, host.cfg.show_live_area_screen);
             }

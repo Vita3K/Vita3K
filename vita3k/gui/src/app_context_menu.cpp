@@ -212,8 +212,10 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
                 ImGui::Image(gui.app_selector.user_apps_icon[host.app_title_id], PUPOP_ICON_SIZE);
             }
             ImGui::SetWindowFontScale(1.6f * scal.x);
+            ImGui::PushFont(get_font_format(gui, host.app_title_id));
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(host.app_short_title.c_str()).x / 2.f));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_short_title.c_str());
+            ImGui::PopFont();
             ImGui::SetWindowFontScale(1.4f * scal.x);
             std::string ask_delete = context_dialog == "save" ? "Do you want to delete this saved data?" : "This application and all related data, including saved data, will be deleted.";
             ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(ask_delete.c_str(), 0, false, WINDOW_SIZE.x - (108.f * scal.x)).x / 2, (WINDOW_SIZE.y / 2) + 10));
@@ -264,9 +266,11 @@ void draw_app_context_menu(GuiState &gui, HostState &host) {
         ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize("Name  ").x, INFO_ICON_SIZE.y + (50.f * scal.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "Name ");
         ImGui::SameLine();
+        ImGui::PushFont(get_font_format(gui, host.app_title_id));
         ImGui::PushTextWrapPos(display_size.x - (85.f * scal.x));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, host.app_title_id)->title.c_str());
         ImGui::PopTextWrapPos();
+        ImGui::PopFont();
         if (host.app_title_id.find("NPXS") == std::string::npos) {
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize("Trophy Earning  ").x);
