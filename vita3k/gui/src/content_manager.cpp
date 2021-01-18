@@ -261,7 +261,9 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         const auto CALC_NAME = ImGui::CalcTextSize(get_app_index(gui, app_selected)->title.c_str(), nullptr, false, SIZE_INFO.x - SIZE_ICON_DETAIL.x).y / 2.f;
         ImGui::SetCursorPos(ImVec2((110.f * SCAL.x) + SIZE_ICON_DETAIL.x, (SIZE_ICON_DETAIL.y / 2.f) - CALC_NAME + (10.f * SCAL.y)));
         ImGui::PushTextWrapPos(SIZE_INFO.x);
+        ImGui::PushFont(get_font_format(gui, app_selected));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, app_selected)->title.c_str());
+        ImGui::PopFont();
         ImGui::PopTextWrapPos();
     } else {
         const auto content_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
@@ -419,7 +421,9 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     const auto Title_POS = ImGui::GetCursorPosY();
                     ImGui::SetWindowFontScale(1.1f);
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (4.f * SCAL.y));
+                    ImGui::PushFont(get_font_format(gui, app.title_id));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", app.title.c_str());
+                    ImGui::PopFont();
                     ImGui::SetCursorPosY(Title_POS + (46.f * SCAL.y));
                     ImGui::SetWindowFontScale(0.8f);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_unit_size(apps_size[app.title_id]).c_str());
@@ -467,7 +471,9 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     const auto Title_POS = ImGui::GetCursorPosY();
                     ImGui::SetWindowFontScale(1.1f);
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (4.f * SCAL.y));
+                    ImGui::PushFont(get_font_format(gui, save.title_id));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", save.title.c_str());
+                    ImGui::PopFont();
                     ImGui::SetWindowFontScale(0.8f);
                     ImGui::SetCursorPosY(Title_POS + (46.f * SCAL.y));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", save.date.c_str(), get_unit_size(save.size).c_str());
@@ -507,7 +513,9 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 ImGui::SetWindowFontScale(1.2f);
                 ImGui::TextColored(GUI_COLOR_TEXT, "+");
                 ImGui::SameLine(0, 30.f * SCAL.x);
+                ImGui::PushFont(get_font_format(gui, app_selected));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", dlc.second.name.c_str());
+                ImGui::PopFont();
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::TextColored(GUI_COLOR_TEXT, "Updated");

@@ -104,60 +104,71 @@ static void init_style() {
 }
 
 static void init_font(GuiState &gui, HostState &host) {
-    const auto DATA_DIRNAME = "data";
-    const auto FONT_DIRNAME = "fonts";
-    const auto FONT_FILENAME = "mplus-1mn-bold.ttf";
+    ImGuiIO &io = ImGui::GetIO();
+    gui.monospaced_font = io.Fonts->AddFontDefault();
 
-    // set up font paths
-    fs::path font_dir = fs::path(host.base_path) /= fs::path(DATA_DIRNAME) /= FONT_DIRNAME;
-    fs::path font_path(fs::absolute(font_dir /= FONT_FILENAME));
-
-    // check existence of font file
-    if (!fs::exists(font_path)) {
-        LOG_WARN("Could not find font file at \"{}\", falling back to default imgui font.", font_path.string());
-        return;
+    // Set user font
+    const ImWchar *user_font;
+    const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
+    switch (sys_lang) {
+    case SCE_SYSTEM_PARAM_LANG_JAPANESE: user_font = io.Fonts->GetGlyphRangesJapanese(); break;
+    case SCE_SYSTEM_PARAM_LANG_RUSSIAN: user_font = io.Fonts->GetGlyphRangesCyrillic(); break;
+    case SCE_SYSTEM_PARAM_LANG_KOREAN: user_font = io.Fonts->GetGlyphRangesKorean(); break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_T: user_font = io.Fonts->GetGlyphRangesChineseFull(); break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_S: user_font = io.Fonts->GetGlyphRangesChineseSimplifiedCommon(); break;
+    default: user_font = io.Fonts->GetGlyphRangesDefault(); break;
     }
 
-    // read font
-    const auto font_file_size = fs::file_size(font_path);
-    gui.font_data.resize(font_file_size);
-    std::ifstream font_stream(font_path.string().c_str(), std::ios::in | std::ios::binary);
-    font_stream.read(gui.font_data.data(), font_file_size);
+    // set up font paths
+    const auto default_font_path{ fs::path(host.base_path) / "data/fonts/mplus-1mn-bold.ttf" };
+    const auto fw_font_path{ fs::path(host.pref_path) / "sa0/data/font/pvf/jpn0.pvf" };
 
-    // add it to imgui
-    ImGuiIO &io = ImGui::GetIO();
-    ImFontConfig font_config{};
-    gui.monospaced_font = io.Fonts->AddFontDefault();
-    gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(font_file_size), 16.f, &font_config, io.Fonts->GetGlyphRangesJapanese());
-}
-
-static void init_live_area_font(GuiState &gui, HostState &host) {
-    const auto font_path{ fs::path(host.pref_path) / "sa0/data/font/pvf/jpn0.pvf" };
-
-    ImGuiIO &io = ImGui::GetIO();
+    // Set Large Font
     ImFontConfig font_config{};
     static const ImWchar large_font_chars[] = { L'0', L'1', L'2', L'3', L'4', L'5', L'6', L'7', L'8', L'9', L':', L';', L'<', L'=', L'>' };
 
-    // check existence of font file
-    if (!fs::exists(font_path)) {
+    // check existence of default font file
+    if (fs::exists(default_font_path)) {
+        // read default font
+        const auto font_file_size = fs::file_size(default_font_path);
+        gui.font_data.resize(font_file_size);
+        std::ifstream font_stream(default_font_path.string().c_str(), std::ios::in | std::ios::binary);
+        font_stream.read(gui.font_data.data(), font_file_size);
+
+        // add default font to imgui
+        gui.normal_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(font_file_size), 16.f, &font_config, user_font);
+    } else
+        LOG_WARN("Could not find default font file at \"{}\", falling back to default imgui font.", default_font_path.string());
+
+    // check existence of fw font file
+    if (fs::exists(fw_font_path)) {
+        // read fw font
+        const auto font_file_size = fs::file_size(fw_font_path);
+        gui.live_area_font_data.resize(font_file_size);
+        std::ifstream font_stream(fw_font_path.string().c_str(), std::ios::in | std::ios::binary);
+        font_stream.read(gui.live_area_font_data.data(), font_file_size);
+
+        // add fw font to imgui
+        gui.live_area_font = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 19.2f, &font_config, user_font);
+        gui.live_area_asia_font = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 19.2f, &font_config, io.Fonts->GetGlyphRangesChineseFull());
+        gui.live_area_font_large = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 124.f, &font_config, large_font_chars);
+    } else {
+        LOG_WARN("Could not find firmware font file at \"{}\", install firmware fonts package for fix this.", fw_font_path.string());
         if (!gui.font_data.empty()) {
-            LOG_WARN("Could not find firmware font file at \"{}\", using defaut vita3k font, install firmware fonts package for fix this.", font_path.string());
-            gui.live_area_font = gui.normal_font;
+            gui.live_area_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(gui.font_data.size()), 19.2f, &font_config, user_font);
+            gui.live_area_asia_font = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(gui.font_data.size()), 19.2f, &font_config, io.Fonts->GetGlyphRangesChineseFull());
             gui.live_area_font_large = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(gui.font_data.size()), 124.f, &font_config, large_font_chars);
+            LOG_WARN("Using default Vita3K font.");
         } else
-            LOG_WARN("Could not find firmware font file at \"{}\", using defaut imgui font.", font_path.string());
-        return;
+            LOG_WARN("Not find default Vita3K, using defaut imgui font.", default_font_path.string());
     }
+}
 
-    // read font
-    const auto font_file_size = fs::file_size(font_path);
-    gui.live_area_font_data.resize(font_file_size);
-    std::ifstream font_stream(font_path.string().c_str(), std::ios::in | std::ios::binary);
-    font_stream.read(gui.live_area_font_data.data(), font_file_size);
+ImFont *get_font_format(GuiState &gui, const std::string &title_id) {
+    const auto is_asia = (title_id.find("PCSC") != std::string::npos) || (title_id.find("PCSG") != std::string::npos) || (title_id.find("PCSH") != std::string::npos);
+    const auto font_format = is_asia ? gui.live_area_asia_font : gui.live_area_font;
 
-    // add it to imgui
-    gui.live_area_font = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 19.2f, &font_config, io.Fonts->GetGlyphRangesJapanese());
-    gui.live_area_font_large = io.Fonts->AddFontFromMemoryTTF(gui.live_area_font_data.data(), static_cast<int>(font_file_size), 124.f, &font_config, large_font_chars);
+    return font_format;
 }
 
 void init_apps_icon(GuiState &gui, HostState &host, const std::vector<App> &apps_list) {
@@ -244,6 +255,7 @@ std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string 
 }
 
 void get_sys_apps_title(GuiState &gui, HostState &host) {
+    gui.app_selector.sys_apps.clear();
     const std::vector<std::string> sys_apps_list = { "NPXS10008", "NPXS10015", "NPXS10026" };
     for (const auto &app : sys_apps_list) {
         vfs::FileBuffer params;
@@ -281,6 +293,7 @@ void get_user_apps_title(GuiState &gui, HostState &host) {
     if (!fs::exists(app_path))
         return;
 
+    gui.app_selector.user_apps.clear();
     for (const auto &app : fs::directory_iterator(app_path)) {
         if (!app.path().empty() && fs::is_directory(app.path())
             && !app.path().filename_is_dot() && !app.path().filename_is_dot_dot()) {
@@ -410,7 +423,6 @@ void init(GuiState &gui, HostState &host) {
 
     init_style();
     init_font(gui, host);
-    init_live_area_font(gui, host);
     init_users(gui, host);
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());

@@ -232,6 +232,7 @@ struct GuiState {
     ImFont *normal_font{};
     ImFont *monospaced_font{};
     ImFont *live_area_font{};
+    ImFont *live_area_asia_font{};
     ImFont *live_area_font_large{};
     std::vector<char> font_data;
     std::vector<char> live_area_font_data;
