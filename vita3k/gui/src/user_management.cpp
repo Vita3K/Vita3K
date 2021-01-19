@@ -318,6 +318,8 @@ void draw_user_management(GuiState &gui, HostState &host) {
             const auto calc_del_text = (AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize("Delete User").x / 2.f);
             ImGui::SetCursorPos(ImVec2(DELETE_USER_POS + calc_del_text, AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCAL.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "Delete User");
+        } else {
+            ImGui::PopStyleVar();
         }
     } else if ((menu == "create") || (menu == "edit")) {
         title = menu == "create" ? "Create User" : "Edit User";
