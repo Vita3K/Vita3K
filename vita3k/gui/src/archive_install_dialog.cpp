@@ -38,6 +38,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
     static bool draw_file_dialog = true;
     static bool content_install_confirm = false;
     static bool finished_installing = false;
+    static bool failed_installation = false;
     static std::atomic<float> progress(0);
     static bool reinstalling = false;
     static const auto progress_callback = [&](float updated_progress) {
@@ -56,7 +57,8 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
                     std::lock_guard<std::mutex> lock(install_mutex);
                     content_install_confirm = true;
                 } else if (!gui.content_reinstall_confirm) {
-                    ImGui::OpenPopup("Content installation failed");
+                    std::lock_guard<std::mutex> lock(install_mutex);
+                    failed_installation = true;
                 }
                 {
                     std::lock_guard<std::mutex> lock(install_mutex);
@@ -69,6 +71,8 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
             draw_file_dialog = true;
         }
     }
+    if (failed_installation)
+        ImGui::OpenPopup("Content installation failed");
 
     if (reinstalling) {
         finished_installing = false;
@@ -166,7 +170,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        ImGui::Checkbox("Delete the archive for the content that failed to install?", &delete_archive_file);
+        ImGui::Checkbox("Delete vpk/zip file of the content that failed to install?", &delete_archive_file);
         ImGui::Spacing();
         ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
         if (ImGui::Button("Ok", BUTTON_SIZE)) {
