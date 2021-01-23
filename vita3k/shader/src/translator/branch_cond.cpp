@@ -175,7 +175,8 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
     }
     case Opcode::IADD8:
     case Opcode::ISUB8:
-    case Opcode::IMUL8: {
+    case Opcode::IMUL8:
+    case Opcode::FPSUB8: {
         filled_dt = DataType::INT8;
         break;
     }
@@ -185,6 +186,10 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
         filled_dt = DataType::UINT8;
         break;
     }
+    }
+
+    if (alu_sel == 2) {
+        filled_dt = DataType::INT8;
     }
 
     if (alu_sel == 3) {

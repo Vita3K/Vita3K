@@ -546,7 +546,35 @@ public:
 
     bool sop3();
 
-    bool i8mad();
+    bool i8mad(
+        Imm2 pred,
+        Imm1 cmod1,
+        Imm1 skipinv,
+        Imm1 nosched,
+        Imm2 csel0,
+        Imm1 dest_bank_ext,
+        Imm1 end,
+        Imm1 src1_bank_ext,
+        Imm1 src2_bank_ext,
+        Imm1 cmod2,
+        Imm3 repeat_count,
+        Imm1 saturated,
+        Imm1 cmod0,
+        Imm1 asel0,
+        Imm1 amod2,
+        Imm1 amod1,
+        Imm1 amod0,
+        Imm1 csel1,
+        Imm1 csel2,
+        Imm1 src0_neg,
+        Imm1 src0_bank,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_num,
+        Imm7 src0_num,
+        Imm7 src1_num,
+        Imm7 src2_num);
 
     bool i16mad();
 

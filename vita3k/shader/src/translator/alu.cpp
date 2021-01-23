@@ -472,6 +472,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
         break;
     }
 
+    case Opcode::FPSUB8:
     case Opcode::ISUBU16:
     case Opcode::ISUB16:
     case Opcode::ISUBU32:

@@ -443,12 +443,39 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
                                         ----------------------------------------------------------- = don't care
         */
         INST(&V::sop3, "SOP3 ()", "10010-----------------------------------------------------------"),
-        // 8-bit Integer multiply-add
+        // 8-bit integer Multiply and Add
         /*
-                                     10011 = opcode1
-                                          ----------------------------------------------------------- = don't care
+                                    10011 = opcode1
+                                          pp = pred (2 bits)
+                                            c = cmod1 (1 bit)
+                                            s = skipinv (1 bit)
+                                              n = nosched (1 bit)
+                                              ee = csel0 (2 bits)
+                                                d = dest_bank_ext (1 bit)
+                                                  a = end (1 bit)
+                                                  r = src1_bank_ext (1 bit)
+                                                    b = src2_bank_ext (1 bit)
+                                                    m = cmod2 (1 bit)
+                                                      ttt = repeat_count (3 bits)
+                                                        u = saturated (1 bit)
+                                                          o = cmod0 (1 bit)
+                                                          l = asel0 (1 bit)
+                                                            f = amod2 (1 bit)
+                                                            g = amod1 (1 bit)
+                                                              h = amod0 (1 bit)
+                                                              i = csel1 (1 bit)
+                                                                j = csel2 (1 bit)
+                                                                k = src0_neg (1 bit)
+                                                                  q = src0_bank (1 bit)
+                                                                  vv = dest_bank (2 bits)
+                                                                    ww = src1_bank (2 bits)
+                                                                      xx = src2_bank (2 bits)
+                                                                        yyyyyyy = dest_num (7 bits)
+                                                                                zzzzzzz = src0_num (7 bits)
+                                                                                      AAAAAAA = src1_num (7 bits)
+                                                                                              BBBBBBB = src2_num (7 bits)
         */
-        INST(&V::i8mad, "I8MAD ()", "10011-----------------------------------------------------------"),
+        INST(&V::i8mad, "I8MAD ()", "10011ppcsneedarbmtttuolfghijkqvvwwxxyyyyyyyzzzzzzzAAAAAAABBBBBBB"),
         // 16-bit Integer multiply-add
         /*
                                        10100 = opcode1
