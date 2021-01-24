@@ -27,6 +27,7 @@
 #include <kernel/functions.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
+#include <util/arm.h>
 #include <util/find.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
@@ -114,40 +115,6 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
     if (nid_blacklist.find(nid) == nid_blacklist.end()) {
         const char *const name = import_name(nid);
         LOG_TRACE("[{}LE] TID: {:<3} FUNC: {} {} at {}", emulation_level, thread_id, log_hex(nid), name, log_hex(lr));
-    }
-}
-
-// Encode code taken from https://github.com/yifanlu/UVLoader/blob/master/resolve.c
-
-#define INSTRUCTION_UNKNOWN 0 ///< Unknown/unsupported instruction
-#define INSTRUCTION_MOVW 1 ///< MOVW Rd, \#imm instruction
-#define INSTRUCTION_MOVT 2 ///< MOVT Rd, \#imm instruction
-#define INSTRUCTION_SYSCALL 3 ///< SVC \#imm instruction
-#define INSTRUCTION_BRANCH 4 ///< BX Rn instruction
-
-static uint32_t encode_arm_inst(uint8_t type, uint16_t immed, uint16_t reg) {
-    switch (type) {
-    case INSTRUCTION_MOVW:
-        // 1110 0011 0000 XXXX YYYY XXXXXXXXXXXX
-        // where X is the immediate and Y is the register
-        // Upper bits == 0xE30
-        return ((uint32_t)0xE30 << 20) | ((uint32_t)(immed & 0xF000) << 4) | (immed & 0xFFF) | (reg << 12);
-    case INSTRUCTION_MOVT:
-        // 1110 0011 0100 XXXX YYYY XXXXXXXXXXXX
-        // where X is the immediate and Y is the register
-        // Upper bits == 0xE34
-        return ((uint32_t)0xE34 << 20) | ((uint32_t)(immed & 0xF000) << 4) | (immed & 0xFFF) | (reg << 12);
-    case INSTRUCTION_SYSCALL:
-        // Syscall does not have any immediate value, the number should
-        // already be in R12
-        return (uint32_t)0xEF000000;
-    case INSTRUCTION_BRANCH:
-        // 1110 0001 0010 111111111111 0001 YYYY
-        // BX Rn has 0xE12FFF1 as top bytes
-        return ((uint32_t)0xE12FFF1 << 4) | reg;
-    case INSTRUCTION_UNKNOWN:
-    default:
-        return 0;
     }
 }
 
