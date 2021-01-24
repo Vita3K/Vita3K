@@ -16,7 +16,7 @@ constexpr uint64_t next_image_timeout = 200000000;
 const std::array<float, 4> clear_color = { 0.0f, 0.0f, 0.0f, 1.0f };
 const vk::ClearValue clear_value((vk::ClearColorValue(clear_color)));
 
-// This is seperated because I use similar objects a lot and it is getting irritating to type.
+// This is separated because I use similar objects a lot and it is getting irritating to type.
 const vk::ImageSubresourceRange base_subresource_range = vk::ImageSubresourceRange(
     vk::ImageAspectFlagBits::eColor, // Aspect
     0, 1, // Level Range

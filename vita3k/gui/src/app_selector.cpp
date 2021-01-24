@@ -203,8 +203,8 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         float title_id_size = (ImGui::CalcTextSize(title_id_label.c_str()).x + 50.f) * scal.x;
         std::string app_ver_label = "Version";
         float app_ver_size = (ImGui::CalcTextSize(app_ver_label.c_str()).x + 30.f) * scal.x;
-        std::string cateogry_label = "Category";
-        float cateogry_size = (ImGui::CalcTextSize(cateogry_label.c_str()).x + 30.f) * scal.x;
+        std::string category_label = "Category";
+        float category_size = (ImGui::CalcTextSize(category_label.c_str()).x + 30.f) * scal.x;
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
         if (!host.cfg.apps_list_grid) {
             ImGui::Columns(5);
@@ -280,16 +280,16 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             ImGui::NextColumn();
             switch (gui.app_selector.category_sort_state) {
             case ASCENDANT:
-                cateogry_label += " >";
-                cateogry_size += ImGui::CalcTextSize(" >").x;
+                category_label += " >";
+                category_size += ImGui::CalcTextSize(" >").x;
                 break;
             case DESCENDANT:
-                cateogry_label += " <";
-                cateogry_size += ImGui::CalcTextSize(" <").x;
+                category_label += " <";
+                category_size += ImGui::CalcTextSize(" <").x;
                 break;
             }
-            ImGui::SetColumnWidth(3, cateogry_size);
-            if (ImGui::Button(cateogry_label.c_str())) {
+            ImGui::SetColumnWidth(3, category_size);
+            if (ImGui::Button(category_label.c_str())) {
                 gui.app_selector.title_id_sort_state = NOT_SORTED;
                 gui.app_selector.app_ver_sort_state = NOT_SORTED;
                 gui.app_selector.category_sort_state = static_cast<gui::SortState>(std::max<int>(1, (gui.app_selector.category_sort_state + 1) % 3));
@@ -385,7 +385,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             ImGui::SetColumnWidth(0, icon_size + /* padding */ 20.f);
             ImGui::SetColumnWidth(1, title_id_size);
             ImGui::SetColumnWidth(2, app_ver_size);
-            ImGui::SetColumnWidth(3, cateogry_size);
+            ImGui::SetColumnWidth(3, category_size);
         } else {
             ImGui::Columns(4, nullptr, false);
             ImGui::SetColumnWidth(0, GRID_COLUMN_SIZE);

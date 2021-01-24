@@ -45,7 +45,7 @@ void get_buffer_parameter(const std::uint32_t start_sample, const std::uint32_t 
 }
 
 void Module::process(const MemState &mem, Voice *voice) {
-    // Lock voice to avoid resource modificiation from other thread
+    // Lock voice to avoid resource modification from other thread
     const std::lock_guard<std::mutex> guard(*voice->voice_lock);
 
     Parameters *params = voice->get_parameters<Parameters>(mem);

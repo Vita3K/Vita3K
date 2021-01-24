@@ -265,7 +265,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::Button("Change Emulator Path"))
             change_emulator_path(gui, host);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Change Vita3K emulator path like wanted.\nNeed move folder old to new manualy.");
+            ImGui::SetTooltip("Change Vita3K emulator path like wanted.\nNeed move folder old to new manually.");
         if (host.cfg.pref_path != host.default_path) {
             ImGui::SameLine();
             if (ImGui::Button("Reset Path Emulator")) {
@@ -282,7 +282,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                 }
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Reset Vita3K emulator path to default.\nNeed move folder old to default manualy.");
+                ImGui::SetTooltip("Reset Vita3K emulator path to default.\nNeed move folder old to default manually.");
         }
         ImGui::EndTabItem();
     } else

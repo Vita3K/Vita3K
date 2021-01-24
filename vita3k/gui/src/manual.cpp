@@ -78,7 +78,7 @@ bool init_manual(GuiState &gui, HostState &host) {
     return gui.manuals.find(title_id) != gui.manuals.end();
 }
 
-static auto hiden_button = false;
+static auto hidden_button = false;
 
 void draw_manual(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
@@ -100,12 +100,12 @@ void draw_manual(GuiState &gui, HostState &host) {
         ImGui::Image(gui.manuals[title_id][current_page], ImVec2(size_page[title_id]["current"].x * scal.x, size_page[title_id]["current"].y * scal.y));
 
     if (ImGui::IsMouseClicked(1))
-        hiden_button = !hiden_button;
+        hidden_button = !hidden_button;
 
     const auto BUTTON_SIZE = ImVec2(65.f * scal.x, 30.f * scal.y);
 
     ImGui::SetCursorPos(ImVec2(size_child.x - ((!zoom[title_id].second ? 70.0f : 85.f) * scal.x), 10.0f * scal.y));
-    if (!hiden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_psbutton)) {
+    if (!hidden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_psbutton)) {
         gui.live_area.manual = false;
         gui.live_area.information_bar = true;
         gui.live_area.live_area_screen = true;
@@ -114,10 +114,10 @@ void draw_manual(GuiState &gui, HostState &host) {
     const auto wheel_counter = ImGui::GetIO().MouseWheel;
     if (current_page > 0) {
         ImGui::SetCursorPos(ImVec2(5.0f * scal.x, size_child.y - (40.0f * scal.y)));
-        if ((!hiden_button && !zoom[title_id].second && ImGui::Button("<", BUTTON_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_left) || ImGui::IsKeyPressed(host.cfg.keyboard_button_left) || (!zoom[title_id].second && wheel_counter == 1))
+        if ((!hidden_button && !zoom[title_id].second && ImGui::Button("<", BUTTON_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_left) || ImGui::IsKeyPressed(host.cfg.keyboard_button_left) || (!zoom[title_id].second && wheel_counter == 1))
             --current_page;
     }
-    if (!hiden_button && !zoom[title_id].second) {
+    if (!hidden_button && !zoom[title_id].second) {
         ImGui::SetCursorPos(ImVec2(size_child.x / 2.f - ((BUTTON_SIZE.x / 2.f) * scal.x), display_size.y - (40.f * scal.y)));
         const std::string slider = fmt::format("{:0>2d}/{:0>2d}", current_page + 1, (int32_t)gui.manuals[title_id].size());
         if (ImGui::Button(slider.c_str(), BUTTON_SIZE))
@@ -135,7 +135,7 @@ void draw_manual(GuiState &gui, HostState &host) {
     }
     if (current_page < (int)gui.manuals[title_id].size() - 1) {
         ImGui::SetCursorPos(ImVec2(size_child.x - (70.f * scal.x), display_size.y - (40.0f * scal.y)));
-        if ((!hiden_button && !zoom[title_id].second && ImGui::Button(">", BUTTON_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right) || ImGui::IsKeyPressed(host.cfg.keyboard_button_right) || (!zoom[title_id].second && (wheel_counter == -1)))
+        if ((!hidden_button && !zoom[title_id].second && ImGui::Button(">", BUTTON_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right) || ImGui::IsKeyPressed(host.cfg.keyboard_button_right) || (!zoom[title_id].second && (wheel_counter == -1)))
             ++current_page;
     }
     ImGui::EndChild();

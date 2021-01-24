@@ -179,8 +179,8 @@ bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderSt
         return false;
     }
 
-    // This was added for compability with hand-written shaders. GXP shaders don't use matrix, but rather flatten them as array.
-    // Hand-written shaders usually convet them to matrix if possible. Until we get rid of hand-written shaders, this will stay here.
+    // This was added for compatibility with hand-written shaders. GXP shaders don't use matrix, but rather flatten them as array.
+    // Hand-written shaders usually convert them to matrix if possible. Until we get rid of hand-written shaders, this will stay here.
     bool is_matrix = false;
     GLenum utype{};
 

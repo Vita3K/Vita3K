@@ -769,7 +769,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                     np_com_id_sort = "progress";
                 }
             } else {
-                if (ImGui::MenuItem("Orignal", nullptr, trophy_sort == "original")) {
+                if (ImGui::MenuItem("Original", nullptr, trophy_sort == "original")) {
                     std::sort(trophy_list.begin(), trophy_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.id < tb.id;
                     });
