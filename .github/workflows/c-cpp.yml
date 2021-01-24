@@ -18,10 +18,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Move ci tag
-        uses: weareyipyip/walking-tag-action@v2
+        uses: s3krit/walking-tag-action@master
         with:
-          tag-name: continous
-          tag-message: Last commit build by the CI
+          TAG_NAME: continous
+          TAG_MESSAGE: Last commit build by the CI
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         if: github.ref == 'refs/heads/master'
