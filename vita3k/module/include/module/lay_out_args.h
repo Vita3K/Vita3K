@@ -89,7 +89,7 @@ constexpr std::enable_if_t<sizeof...(Args) == 0> add_args_to_layout(ArgLayout &h
 // One or more arguments to add.
 template <typename Head, typename... Tail>
 constexpr void add_args_to_layout(ArgLayout &head, LayoutArgsState &state) {
-    // Returns immidiately if the Head is an varargs
+    // Returns immediately if the Head is an varargs
     if constexpr (std::is_same_v<Head, module::vargs>) {
         return;
     } else {

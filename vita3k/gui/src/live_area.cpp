@@ -195,8 +195,8 @@ void draw_information_bar(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
     const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
-    ImU32 DEFAUL_BAR_COLOR = 4278190080; // Black
-    ImU32 DEFAUL_INDICATOR_COLOR = 4294967295; // White
+    ImU32 DEFAULT_BAR_COLOR = 4278190080; // Black
+    ImU32 DEFAULT_INDICATOR_COLOR = 4294967295; // White
     const auto is_notif_pos = !gui.live_area.start_screen && (gui.live_area.live_area_screen || gui.live_area.app_selector) ? 78.f * SCAL.x : 0.f;
 
     const auto is_theme_color = gui.live_area.app_selector || gui.live_area.live_area_screen || gui.live_area.start_screen;
@@ -211,7 +211,7 @@ void draw_information_bar(GuiState &gui, HostState &host) {
 
     const std::string clock_str = fmt::format("{:0>2d}:{:0>2d}", local.tm_hour, local.tm_min);
 
-    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, MENUBAR_HEIGHT), is_theme_color ? gui.information_bar_color["bar"] : DEFAUL_BAR_COLOR, 0.f, ImDrawCornerFlags_All);
+    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, MENUBAR_HEIGHT), is_theme_color ? gui.information_bar_color["bar"] : DEFAULT_BAR_COLOR, 0.f, ImDrawCornerFlags_All);
 
     if (gui.live_area.app_selector || gui.live_area.live_area_screen) {
         const float decal_icon_pos = 38.f * ((float(gui.apps_list_opened.size()) - 1.f) / 2.f);
@@ -231,7 +231,7 @@ void draw_information_bar(GuiState &gui, HostState &host) {
     const auto scal_font_size = scal_default_font / ImGui::GetFontSize();
     const auto clock_size = ImGui::CalcTextSize(clock_str.c_str());
 
-    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, scal_default_font * SCAL.x, ImVec2(display_size.x - (62.f * SCAL.x) - ((clock_size.x * scal_font_size) * SCAL.x) - is_notif_pos, (MENUBAR_HEIGHT / 2.f) - (((clock_size.y * scal_font_size) * SCAL.y) / 2.f)), is_theme_color ? gui.information_bar_color["indicator"] : DEFAUL_INDICATOR_COLOR, clock_str.c_str());
+    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, scal_default_font * SCAL.x, ImVec2(display_size.x - (62.f * SCAL.x) - ((clock_size.x * scal_font_size) * SCAL.x) - is_notif_pos, (MENUBAR_HEIGHT / 2.f) - (((clock_size.y * scal_font_size) * SCAL.y) / 2.f)), is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, clock_str.c_str());
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (54.f * SCAL.x) - is_notif_pos, 12.f * SCAL.y), ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 20 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 0.f, ImDrawCornerFlags_All);
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 5.f * SCAL.y), ImVec2(display_size.x - (12.f * SCAL.x) - is_notif_pos, 27 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f, ImDrawCornerFlags_All);
 
@@ -1191,15 +1191,15 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         }
 
         if (fs::exists(manual_path) && !fs::is_empty(manual_path)) {
-            const auto manaul_pos = ImVec2(463.0f * scal.x, 505.0f * scal.y);
-            const auto pos_scal_manual = ImVec2(display_size.x - manaul_pos.x, display_size.y - manaul_pos.y);
+            const auto manual_pos = ImVec2(463.0f * scal.x, 505.0f * scal.y);
+            const auto pos_scal_manual = ImVec2(display_size.x - manual_pos.x, display_size.y - manual_pos.y);
 
             const std::string MANUAL_STR = "Manual";
             const auto MANUAL_STR_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(MANUAL_STR.c_str()).x * scal_widget_font_size) * scal.x, (ImGui::CalcTextSize(MANUAL_STR.c_str()).y * scal_widget_font_size) * scal.y);
-            const auto MANUAl_STR_POS = ImVec2(pos_scal_manual.x + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.x / 2.f)),
+            const auto MANUAL_STR_POS = ImVec2(pos_scal_manual.x + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.x / 2.f)),
                 pos_scal_manual.y + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.y / 2.f)));
             ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_manual, ImVec2(pos_scal_manual.x + widget_scal_size.x, pos_scal_manual.y + widget_scal_size.y), IM_COL32(202, 0, 106, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
-            ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 23.0f * scal.x, MANUAl_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
+            ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 23.0f * scal.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
             ImGui::SetCursorPos(pos_scal_manual);
             if (ImGui::Selectable("##manual", ImGuiSelectableFlags_None, false, widget_scal_size)) {
                 if (init_manual(gui, host)) {
@@ -1237,8 +1237,8 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Using configuration set for keyboard in control setting");
             if (gui.modules.empty()) {
                 ImGui::Spacing();
-                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize("Firmware not detected, Install it is recomanded for font text in Livea Area").x / 2.f));
-                ImGui::TextColored(GUI_COLOR_TEXT, "Firmware not detected, Install it is recomanded for font text in Livea Area");
+                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize("Firmware not detected, Install it is recommended for font text in Livea Area").x / 2.f));
+                ImGui::TextColored(GUI_COLOR_TEXT, "Firmware not detected, Install it is recommended for font text in Livea Area");
             }
             ImGui::Spacing();
             ImGui::Separator();
@@ -1247,7 +1247,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Browse in app list", "D-pad, Left Stick, Wheel in Up/Down or using Slider");
             ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Start App", "Click on Start or Press on Cross");
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Show/Hide Live Area durring app run", "Press on PS");
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Show/Hide Live Area during app run", "Press on PS");
             ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Exit Live Area", "Click on Esc or Press on Circle");
             ImGui::Spacing();
             ImGui::Separator();

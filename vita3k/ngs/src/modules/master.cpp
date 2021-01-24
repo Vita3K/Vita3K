@@ -18,7 +18,7 @@ void Module::get_expectation(AudioDataType *expect_audio_type, std::int16_t *exp
 }
 
 void Module::process(const MemState &mem, Voice *voice) {
-    // Lock voice to avoid resource modificiation from other thread
+    // Lock voice to avoid resource modification from other thread
     const std::lock_guard<std::mutex> guard(*voice->voice_lock);
 
     // Merge all voices. This buss manually outputs 2 channels

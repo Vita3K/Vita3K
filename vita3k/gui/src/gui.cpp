@@ -160,7 +160,7 @@ static void init_font(GuiState &gui, HostState &host) {
             gui.live_area_font_large = io.Fonts->AddFontFromMemoryTTF(gui.font_data.data(), static_cast<int>(gui.font_data.size()), 124.f, &font_config, large_font_chars);
             LOG_WARN("Using default Vita3K font.");
         } else
-            LOG_WARN("Not find default Vita3K, using defaut imgui font.", default_font_path.string());
+            LOG_WARN("Not find default Vita3K, using default imgui font.", default_font_path.string());
     }
 }
 
