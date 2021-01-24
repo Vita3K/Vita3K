@@ -19,6 +19,8 @@
 
 #include <modules/module_parent.h>
 
+#include "../xxHash/xxh3.h"
+
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <immintrin.h>
@@ -42,6 +44,15 @@ struct SceGxmRenderTarget {
     std::uint16_t height;
 };
 
+typedef std::uint32_t VertexCacheHash;
+
+struct VertexProgramCacheKey {
+    SceGxmRegisteredProgram vertex_program;
+    VertexCacheHash hash;
+};
+
+typedef std::map<VertexProgramCacheKey, Ptr<SceGxmVertexProgram>> VertexProgramCache;
+
 struct FragmentProgramCacheKey {
     SceGxmRegisteredProgram fragment_program;
     SceGxmBlendInfo blend_info;
@@ -50,6 +61,7 @@ struct FragmentProgramCacheKey {
 typedef std::map<FragmentProgramCacheKey, Ptr<SceGxmFragmentProgram>> FragmentProgramCache;
 
 struct SceGxmShaderPatcher {
+    VertexProgramCache vertex_program_cache;
     FragmentProgramCache fragment_program_cache;
 };
 
@@ -74,8 +86,23 @@ static const uint8_t mask_gxp[] = {
 };
 // clang-format on
 
+static VertexCacheHash hash_data(const void *data, size_t size) {
+    auto hash = XXH_INLINE_XXH3_64bits(data, size);
+    return VertexCacheHash(hash);
+}
+
 static bool operator<(const SceGxmRegisteredProgram &a, const SceGxmRegisteredProgram &b) {
     return a.program < b.program;
+}
+
+static bool operator<(const VertexProgramCacheKey &a, const VertexProgramCacheKey &b) {
+    if (a.vertex_program < b.vertex_program) {
+        return true;
+    }
+    if (b.vertex_program < a.vertex_program) {
+        return false;
+    }
+    return b.hash < a.hash;
 }
 
 static bool operator<(const SceGxmBlendInfo &a, const SceGxmBlendInfo &b) {
@@ -2127,6 +2154,26 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     if (!shaderPatcher || !programId || !vertexProgram)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
+    VertexProgramCacheKey key = {
+        *programId,
+        0
+    };
+
+    if (attributes) {
+        key.hash = hash_data(attributes, sizeof(SceGxmVertexAttribute) * attributeCount);
+    }
+
+    if (streams) {
+        key.hash ^= hash_data(streams, sizeof(SceGxmVertexStream) * streamCount);
+    }
+
+    VertexProgramCache::const_iterator cached = shaderPatcher->vertex_program_cache.find(key);
+    if (cached != shaderPatcher->vertex_program_cache.end()) {
+        ++cached->second.get(mem)->reference_count;
+        *vertexProgram = cached->second;
+        return 0;
+    }
+
     *vertexProgram = alloc<SceGxmVertexProgram>(mem, __FUNCTION__);
     assert(*vertexProgram);
     if (!*vertexProgram) {
@@ -2147,6 +2194,8 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
     if (!renderer::create(vp->renderer_data, *host.renderer, *programId->program.get(mem), host.renderer->gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
+
+    shaderPatcher->vertex_program_cache.emplace(key, *vertexProgram);
 
     return 0;
 }
@@ -2255,6 +2304,12 @@ EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shader
     SceGxmVertexProgram *const vp = vertexProgram.get(host.mem);
     --vp->reference_count;
     if (vp->reference_count == 0) {
+        for (VertexProgramCache::const_iterator it = shaderPatcher->vertex_program_cache.begin(); it != shaderPatcher->vertex_program_cache.end(); ++it) {
+            if (it->second == vertexProgram) {
+                shaderPatcher->vertex_program_cache.erase(it);
+                break;
+            }
+        }
         free(host.mem, vertexProgram);
     }
 
