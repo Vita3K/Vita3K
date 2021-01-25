@@ -42,7 +42,6 @@ size_t get_app_size(HostState &host, const std::string &title_id);
 std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string &title_id);
 std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &title_id);
 std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &title_id);
-ImFont *get_font_format(GuiState &gui, const std::string &title_id);
 bool get_live_area_sys_app_state(GuiState &gui);
 void get_modules_list(GuiState &gui, HostState &host);
 std::string get_unit_size(const size_t &size);
@@ -76,7 +75,7 @@ void draw_end(GuiState &host, SDL_Window *window);
 void draw_live_area(GuiState &gui, HostState &host);
 void draw_ui(GuiState &gui, HostState &host);
 
-void draw_app_context_menu(GuiState &gui, HostState &host);
+void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &title_id);
 void draw_common_dialog(GuiState &gui, HostState &host);
 void draw_reinstall_dialog(GenericDialogState *status);
 void draw_trophies_unlocked(GuiState &gui, HostState &host);

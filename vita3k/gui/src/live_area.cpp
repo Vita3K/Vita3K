@@ -55,7 +55,7 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
             ImGui::GetForegroundDrawList()->AddImage(gui.theme_information_bar_notice["new"], NOTICE_POS, ImVec2(NOTICE_POS.x + NOTICE_SIZE.x, NOTICE_SIZE.y));
         else
             ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (84.f * SCAL.x), (-40.f * SCAL.y)), ImVec2(display_size.x + (32.f * SCAL.y), 76.f * SCAL.y), IM_COL32(11.f, 90.f, 252.f, 255.f), 75.f * SCAL.x, ImDrawCornerFlags_All);
-        ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, 40.f * SCAL.x, ImVec2(display_size.x - (NOTICE_SIZE.x / 2.f) + (10.f * SCAL.x), (10.f * SCAL.y)), NOTICE_COLOR, std::to_string(gui.notice_info_count_new).c_str());
+        ImGui::GetForegroundDrawList()->AddText(gui.vita_font, 40.f * SCAL.x, ImVec2(display_size.x - (NOTICE_SIZE.x / 2.f) + (10.f * SCAL.x), (10.f * SCAL.y)), NOTICE_COLOR, std::to_string(gui.notice_info_count_new).c_str());
     } else {
         if (gui.theme_information_bar_notice.find("no") != gui.theme_information_bar_notice.end())
             ImGui::GetForegroundDrawList()->AddImage(gui.theme_information_bar_notice["no"], NOTICE_POS, ImVec2(NOTICE_POS.x + NOTICE_SIZE.x, NOTICE_SIZE.y));
@@ -231,7 +231,7 @@ void draw_information_bar(GuiState &gui, HostState &host) {
     const auto scal_font_size = scal_default_font / ImGui::GetFontSize();
     const auto clock_size = ImGui::CalcTextSize(clock_str.c_str());
 
-    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, scal_default_font * SCAL.x, ImVec2(display_size.x - (62.f * SCAL.x) - ((clock_size.x * scal_font_size) * SCAL.x) - is_notif_pos, (MENUBAR_HEIGHT / 2.f) - (((clock_size.y * scal_font_size) * SCAL.y) / 2.f)), is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, clock_str.c_str());
+    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_default_font * SCAL.x, ImVec2(display_size.x - (62.f * SCAL.x) - ((clock_size.x * scal_font_size) * SCAL.x) - is_notif_pos, (MENUBAR_HEIGHT / 2.f) - (((clock_size.y * scal_font_size) * SCAL.y) / 2.f)), is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, clock_str.c_str());
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (54.f * SCAL.x) - is_notif_pos, 12.f * SCAL.y), ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 20 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 0.f, ImDrawCornerFlags_All);
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 5.f * SCAL.y), ImVec2(display_size.x - (12.f * SCAL.x) - is_notif_pos, 27 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f, ImDrawCornerFlags_All);
 
@@ -288,8 +288,8 @@ void init_live_area(GuiState &gui, HostState &host) {
     case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: user_lang = "pt", start = u8"Iniciar", resume = u8"Continuar"; break;
     case SCE_SYSTEM_PARAM_LANG_RUSSIAN: user_lang = "ru", start = u8"Запуск", resume = u8"Продолжить"; break;
     case SCE_SYSTEM_PARAM_LANG_KOREAN: user_lang = "ko", start = u8"시작", resume = u8"계속"; break;
-    case SCE_SYSTEM_PARAM_LANG_CHINESE_T: user_lang = "ch", start = u8"开始", resume = u8"繼續"; break;
-    case SCE_SYSTEM_PARAM_LANG_CHINESE_S: user_lang = "zh", start = u8"啟動", resume = u8"继续"; break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_T: user_lang = "ch", start = u8"啟動", resume = u8"繼續"; break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_S: user_lang = "zh", start = u8"开始", resume = u8"继续"; break;
     case SCE_SYSTEM_PARAM_LANG_FINNISH: user_lang = "fi", start = u8"Rozpocznij", resume = u8"Jatka"; break;
     case SCE_SYSTEM_PARAM_LANG_SWEDISH: user_lang = "sv", start = u8"Starta", resume = u8"Fortsätt"; break;
     case SCE_SYSTEM_PARAM_LANG_DANISH: user_lang = "da", start = u8"Start", resume = u8"Fortsæt"; break;
@@ -1159,7 +1159,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     }
     ImGui::PushID(title_id.c_str());
     ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * scal.x, ImDrawCornerFlags_All);
-    ImGui::GetWindowDrawList()->AddText(gui.live_area_font, scal_default_font * scal.x, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
+    ImGui::GetWindowDrawList()->AddText(gui.vita_font, scal_default_font * scal.x, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
     ImGui::SetCursorPos(SELECT_POS);
     if (ImGui::Selectable("##gate", false, ImGuiSelectableFlags_None, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))
         pre_run_app(gui, host, title_id);
@@ -1182,7 +1182,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         const auto POS_STR_SEARCH = ImVec2(pos_scal_search.x + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.x / 2.f)),
             pos_scal_search.y + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.y / 2.f)));
         ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_search, ImVec2(pos_scal_search.x + widget_scal_size.x, pos_scal_search.y + widget_scal_size.y), IM_COL32(20, 168, 222, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
-        ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 23.0f * scal.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH.c_str());
+        ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * scal.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH.c_str());
         ImGui::SetCursorPos(pos_scal_search);
         if (ImGui::Selectable("##Search", ImGuiSelectableFlags_None, false, widget_scal_size)) {
             auto search_url = "http://www.google.com/search?q=" + host.app_title;
@@ -1199,7 +1199,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             const auto MANUAL_STR_POS = ImVec2(pos_scal_manual.x + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.x / 2.f)),
                 pos_scal_manual.y + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.y / 2.f)));
             ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_manual, ImVec2(pos_scal_manual.x + widget_scal_size.x, pos_scal_manual.y + widget_scal_size.y), IM_COL32(202, 0, 106, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
-            ImGui::GetWindowDrawList()->AddText(gui.live_area_font, 23.0f * scal.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
+            ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * scal.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
             ImGui::SetCursorPos(pos_scal_manual);
             if (ImGui::Selectable("##manual", ImGuiSelectableFlags_None, false, widget_scal_size)) {
                 if (init_manual(gui, host)) {

@@ -392,7 +392,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             ImGui::SetColumnWidth(2, GRID_COLUMN_SIZE);
             ImGui::SetColumnWidth(3, GRID_COLUMN_SIZE);
         }
-        ImGui::SetWindowFontScale(!gui.live_area_font_data.empty() ? 0.82f * scal.x : 1.f);
+        ImGui::SetWindowFontScale(gui.fw_font ? 0.9f * scal.x : 1.f);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
             for (const auto &app : apps_list) {
@@ -420,7 +420,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     host.app_title_id = app.title_id;
                 }
                 if (host.app_title_id == app.title_id)
-                    draw_app_context_menu(gui, host);
+                    draw_app_context_menu(gui, host, app.title_id);
                 ImGui::PopID();
                 if (!host.cfg.apps_list_grid) {
                     ImGui::NextColumn();
@@ -432,19 +432,15 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::NextColumn();
                     ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::NextColumn();
-                    ImGui::PushFont(get_font_format(gui, app.title_id));
                     ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
-                    ImGui::PopFont();
                     ImGui::PopStyleColor();
                     ImGui::PopStyleVar();
                     ImGui::NextColumn();
                 } else {
                     ImGui::SetCursorPosX(GRID_INIT_POS - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x + (32.f * scal.x)).x / 2.f));
-                    ImGui::PushFont(get_font_format(gui, app.title_id));
                     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE - (48.f * scal.x)));
                     ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && gui.users[host.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
                     ImGui::PopTextWrapPos();
-                    ImGui::PopFont();
                     ImGui::NextColumn();
                 }
                 if (selected)
