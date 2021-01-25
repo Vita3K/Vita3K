@@ -413,19 +413,24 @@ void init_themes(GuiState &gui, HostState &host) {
                 theme_preview_name[content_id]["home"] = infomation.child("m_homePreviewFilePath").text().as_string();
                 theme_preview_name[content_id]["start"] = infomation.child("m_startPreviewFilePath").text().as_string();
 
-                for (const auto &param : infomation.child("m_title").child("m_param"))
-                    if ((strncmp(param.name(), user_lang.c_str(), user_lang.size()) == 0))
-                        themes_info[content_id].title = param.text().as_string();
+                // Title
+                const auto title = infomation.child("m_title");
+                if (!title.child("m_param").child(user_lang.c_str()).text().empty())
+                    themes_info[content_id].title = title.child("m_param").child(user_lang.c_str()).text().as_string();
+                else
+                    themes_info[content_id].title = title.child("m_default").text().as_string();
 
-                if (themes_info[content_id].title.empty())
-                    themes_info[content_id].title = infomation.child("m_title").child("m_default").text().as_string();
+                // Provider
+                const auto provider = infomation.child("m_provider");
+                if (!provider.child("m_param").child(user_lang.c_str()).text().empty())
+                    themes_info[content_id].provided = provider.child("m_param").child(user_lang.c_str()).text().as_string();
+                else
+                    themes_info[content_id].provided = provider.child("m_default").text().as_string();
 
                 size_t theme_size = 0;
                 for (const auto &theme : fs::recursive_directory_iterator(theme_path / content_id))
                     if (fs::is_regular_file(theme.path()))
                         theme_size += fs::file_size(theme.path());
-
-                themes_info[content_id].provided = infomation.child("m_provider").child("m_default").text().as_string();
 
                 const auto updated = fs::last_write_time(theme_path / content_id);
                 const auto updated_date = std::localtime(&updated);
@@ -535,9 +540,9 @@ void draw_start_screen(GuiState &gui, HostState &host) {
         CLOCK_POS.x -= CLOCK_SIZE * SCAL.x;
     }
 
-    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font, scal_date_font_size * SCAL.x, DATE_POS, date_color, DATE_STR.c_str());
-    ImGui::PushFont(gui.live_area_font_large);
-    ImGui::GetForegroundDrawList()->AddText(gui.live_area_font_large, scal_clock_font_size * SCAL.x, CLOCK_POS, date_color, CLOCK_STR.c_str());
+    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_date_font_size * SCAL.x, DATE_POS, date_color, DATE_STR.c_str());
+    ImGui::PushFont(gui.large_font);
+    ImGui::GetForegroundDrawList()->AddText(gui.large_font, scal_clock_font_size * SCAL.x, CLOCK_POS, date_color, CLOCK_STR.c_str());
     ImGui::PopFont();
 
     if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
@@ -585,12 +590,10 @@ void draw_settings(GuiState &gui, HostState &host) {
     if (is_background)
         ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
     ImGui::SetWindowFontScale(1.6f * SCAL.x);
-    ImGui::PushFont(get_font_format(gui, theme_selected));
     const auto title_size_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
     ImGui::PushTextWrapPos(((display_size.x - SIZE_LIST.x) / 2.f) + SIZE_LIST.x);
     ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (title_size_str.x / 2.f), (35.f * SCAL.y) - (title_size_str.y / 2.f)));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
-    ImGui::PopFont();
     ImGui::PopTextWrapPos();
 
     if (settings_menu == "theme_background") {
@@ -639,7 +642,6 @@ void draw_settings(GuiState &gui, HostState &host) {
                 if (ImGui::Selectable("Theme", false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
                     menu = "theme";
                 ImGui::SetWindowFontScale(0.74f);
-                ImGui::PushFont(get_font_format(gui, gui.users[host.io.user_id].theme_id));
                 const auto CALC_TITLE = ImGui::CalcTextSize(themes_info[gui.users[host.io.user_id].theme_id].title.c_str(), 0, false, 260.f * SCAL.x).y / 2.f;
                 ImGui::SameLine(0, 420.f * SCAL.x);
                 const auto CALC_POS_TITLE = (SIZE_SELECT / 2.f) - CALC_TITLE;
@@ -649,7 +651,6 @@ void draw_settings(GuiState &gui, HostState &host) {
                 ImGui::PopTextWrapPos();
                 ImGui::SetWindowFontScale(1.2f);
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (CALC_POS_TITLE > 0 ? CALC_POS_TITLE : -CALC_POS_TITLE));
-                ImGui::PopFont();
                 ImGui::Separator();
             }
             if (ImGui::Selectable("Start Screen", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y)))
@@ -705,9 +706,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::PopID();
                         ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + SIZE_PACKAGE.x);
                         ImGui::SetCursorPosY(POS_TITLE);
-                        ImGui::PushFont(get_font_format(gui, theme.first));
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme.first].title.c_str());
-                        ImGui::PopFont();
                         ImGui::PopTextWrapPos();
                         ImGui::NextColumn();
                     }
@@ -754,9 +753,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         const auto CALC_TITLE = ImGui::CalcTextSize(themes_info[theme_selected].title.c_str(), nullptr, false, POPUP_SIZE.x - SIZE_MINI_PACKAGE.x - 48.f).y / 2.f;
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (SIZE_MINI_PACKAGE.y / 2.f) - CALC_TITLE);
                         ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + POPUP_SIZE.x - SIZE_MINI_PACKAGE.x - 48.f);
-                        ImGui::PushFont(get_font_format(gui, theme_selected));
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme_selected].title.c_str());
-                        ImGui::PopFont();
                         ImGui::PopTextWrapPos();
                         const auto CALC_TEXT = ImGui::CalcTextSize("This theme will be deleted.");
                         ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - (CALC_TEXT.x / 2.f), POPUP_SIZE.y / 2.f - (CALC_TEXT.y / 2.f)));
@@ -803,7 +800,6 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
                         ImGui::TextColored(GUI_COLOR_TEXT, "Name");
                         ImGui::SameLine();
-                        ImGui::PushFont(get_font_format(gui, theme_selected));
                         ImGui::PushTextWrapPos(SIZE_LIST.x - (30.f * SCAL.x));
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme_selected].title.c_str());
@@ -813,7 +809,6 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme_selected].provided.c_str());
                         ImGui::PopTextWrapPos();
-                        ImGui::PopFont();
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
                         ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
                         ImGui::SameLine();
@@ -1011,7 +1006,13 @@ void draw_settings(GuiState &gui, HostState &host) {
                         host.cfg.sys_lang = lang_id;
                         config::serialize_config(host.cfg, host.base_path);
                         get_sys_apps_title(gui, host);
+                        std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {
+                            return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
+                        });
                         get_user_apps_title(gui, host);
+                        std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
+                            return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
+                        });
                         gui.apps_list_opened.clear();
                         gui.live_area_contents.clear();
                         gui.live_items.clear();

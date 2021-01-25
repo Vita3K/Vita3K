@@ -289,9 +289,13 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to open Live Area by default when clicking on a application.\nIf disabled, use the right click on application to open it.");
         ImGui::Spacing();
-        ImGui::Checkbox("Grid mode", &host.cfg.apps_list_grid);
+        ImGui::Checkbox("Grid Mode", &host.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable app list in grid mode.");
+        ImGui::SameLine();
+        ImGui::Checkbox("Asia Region Font Support", &host.cfg.asia_font_support);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Check this box to enable font support for Korean and Traditional Chinese.\nYou will need a Firmware Fonts Package installed for Asia region font support.\Enabling this will use more memory and will require you to restart the emulator.");
         if (!host.cfg.apps_list_grid) {
             ImGui::Spacing();
             ImGui::SliderInt("App Icon Size", &host.cfg.icon_size, 32, 128);

@@ -229,11 +229,8 @@ struct GuiState {
     ImVec2 trophy_window_pos;
 
     // imgui
-    ImFont *normal_font{};
     ImFont *monospaced_font{};
-    ImFont *live_area_font{};
-    ImFont *live_area_asia_font{};
-    ImFont *live_area_font_large{};
-    std::vector<char> font_data;
-    std::vector<char> live_area_font_data;
+    ImFont *vita_font{};
+    ImFont *large_font{};
+    bool fw_font = false;
 };

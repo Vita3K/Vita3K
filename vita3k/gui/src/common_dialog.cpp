@@ -381,7 +381,7 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
 }
 
 void draw_common_dialog(GuiState &gui, HostState &host) {
-    ImGui::PushFont(gui.live_area_font);
+    ImGui::PushFont(gui.vita_font);
     if (host.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         switch (host.common_dialog.type) {
         case IME_DIALOG:

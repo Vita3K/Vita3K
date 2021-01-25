@@ -84,8 +84,8 @@
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
     code(bool, "dump-textures", false, dump_textures)                                                   \
-    code(bool, "show-welcome", true, show_welcome)
-
+    code(bool, "show-welcome", true, show_welcome)                                                      \
+    code(bool, "asia-font-support", false, asia_font_support)
 
 // Vector members produced in the config file
 // Order is code(option_type, option_name, default_value)
