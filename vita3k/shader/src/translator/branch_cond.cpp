@@ -175,13 +175,13 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
     }
     case Opcode::IADD8:
     case Opcode::ISUB8:
-    case Opcode::IMUL8:
-    case Opcode::FPSUB8: {
+    case Opcode::IMUL8: {
         filled_dt = DataType::INT8;
         break;
     }
     case Opcode::IADDU8:
     case Opcode::ISUBU8:
+    case Opcode::FPSUB8:
     case Opcode::IMULU8: {
         filled_dt = DataType::UINT8;
         break;
@@ -189,7 +189,7 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
     }
 
     if (alu_sel == 2) {
-        filled_dt = DataType::INT8;
+        filled_dt = DataType::UINT8;
     }
 
     if (alu_sel == 3) {
@@ -197,6 +197,10 @@ static Opcode decode_test_inst(const Imm2 alu_sel, const Imm4 alu_op, const Imm1
     }
 
     return test_op;
+}
+
+inline bool is_sub_opcode(Opcode test_op) {
+    return (test_op == Opcode::VSUB) || (test_op == Opcode::VF16SUB) || (test_op == Opcode::ISUB8) || (test_op == Opcode::ISUB16) || (test_op == Opcode::ISUB32) || (test_op == Opcode::ISUBU8) || (test_op == Opcode::ISUBU16) || (test_op == Opcode::ISUBU32) || (test_op == Opcode::FPSUB8);
 }
 
 bool USSETranslatorVisitor::vtst(
@@ -285,18 +289,41 @@ bool USSETranslatorVisitor::vtst(
     const bool compare_include_equal = (zero_test == 1);
 
     // Sign test number
-    const spv::Op tb_comp_ops[2][4] = {
-        { spv::OpFOrdNotEqual,
-            spv::OpFOrdLessThan,
-            spv::OpFOrdGreaterThan,
-            spv::OpAll },
-        { spv::OpFOrdEqual,
-            spv::OpFOrdLessThanEqual,
-            spv::OpFOrdGreaterThanEqual,
-            spv::OpAll }
+    const spv::Op tb_comp_ops[3][2][4] = {
+        { { spv::OpFOrdNotEqual,
+              spv::OpFOrdLessThan,
+              spv::OpFOrdGreaterThan,
+              spv::OpAll },
+            { spv::OpFOrdEqual,
+                spv::OpFOrdLessThanEqual,
+                spv::OpFOrdGreaterThanEqual,
+                spv::OpAll } },
+        { { spv::OpIEqual,
+              spv::OpSLessThan,
+              spv::OpSGreaterThan,
+              spv::OpAll },
+            { spv::OpIEqual,
+                spv::OpSLessThanEqual,
+                spv::OpSGreaterThanEqual,
+                spv::OpAll } },
+        { { spv::OpIEqual,
+              spv::OpULessThan,
+              spv::OpUGreaterThan,
+              spv::OpAll },
+            { spv::OpIEqual,
+                spv::OpULessThanEqual,
+                spv::OpUGreaterThanEqual,
+                spv::OpAll } },
     };
 
-    const spv::Op used_comp_op = tb_comp_ops[compare_include_equal][sign_test];
+    int index_tb_comp = 0;
+    if (is_signed_integer_data_type(load_data_type)) {
+        index_tb_comp = 1;
+    } else if (is_unsigned_integer_data_type(load_data_type)) {
+        index_tb_comp = 2;
+    }
+
+    const spv::Op used_comp_op = tb_comp_ops[index_tb_comp][compare_include_equal][sign_test];
 
     // Optimize this case. Alternative name is CMP.
     const char *tb_comp_str[2][4] = {
@@ -314,7 +341,7 @@ bool USSETranslatorVisitor::vtst(
 
     m_b.setLine(m_recompiler.cur_pc);
 
-    if (test_op == Opcode::VSUB || test_op == Opcode::VF16SUB) {
+    if (is_sub_opcode(test_op)) {
         LOG_DISASM("{:016x}: {}{}.{}.{} p{} {} {}", m_instr, disasm::e_predicate_str(pred), "CMP", used_comp_str, disasm::data_type_str(load_data_type),
             pdst_n, disasm::operand_to_str(inst.opr.src1, load_mask), disasm::operand_to_str(inst.opr.src2, load_mask));
 
