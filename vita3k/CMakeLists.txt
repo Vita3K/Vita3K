@@ -93,7 +93,10 @@ endif()
 
 add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
 
-target_link_libraries(vita3k PRIVATE app discord-rpc gui modules)
+target_link_libraries(vita3k PRIVATE app gui modules)
+if(USE_DISCORD_RICH_PRESENCE)
+	target_link_libraries(vita3k PRIVATE discord-rpc)
+endif()
 if(LINUX)
 	target_link_libraries(vita3k PRIVATE stdc++fs)
 endif()
@@ -127,8 +130,13 @@ if(APPLE)
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/../Resources/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:vita3k>/../Resources/shaders-builtin"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/external/sdl/macos/SDL2.framework" "$<TARGET_FILE_DIR:vita3k>/../Frameworks/SDL2.framework"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dylib" "$<TARGET_FILE_DIR:vita3k>/../Resources")
+		COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/external/sdl/macos/SDL2.framework" "$<TARGET_FILE_DIR:vita3k>/../Frameworks/SDL2.framework")
+  if(USE_DISCORD_RICH_PRESENCE)
+    add_custom_command(
+      TARGET vita3k
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dylib" "$<TARGET_FILE_DIR:vita3k>/../Resources")
+  endif()
 	set_target_properties(vita3k PROPERTIES LINK_FLAGS "-rpath @loader_path/../Frameworks/ -rpath @loader_path/../Resources/")
 	target_sources(vita3k PRIVATE Vita3K.icns)
 	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
@@ -140,8 +148,13 @@ elseif(LINUX)
 		TARGET vita3k
 		POST_BUILD
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
-		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so" "$<TARGET_FILE_DIR:vita3k>")
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin")
+  if(USE_DISCORD_RICH_PRESENCE)
+    add_custom_command(
+      TARGET vita3k
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so" "$<TARGET_FILE_DIR:vita3k>")
+  endif()
 elseif(WIN32)
 	target_sources(vita3k PRIVATE resource.h Vita3K.ico Vita3K.rc)
 	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT vita3k)
@@ -152,8 +165,13 @@ elseif(WIN32)
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../data" "$<TARGET_FILE_DIR:vita3k>/data"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/external/sdl/windows/lib/x64/SDL2.dll" "$<TARGET_FILE_DIR:vita3k>"
-		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dll" "$<TARGET_FILE_DIR:vita3k>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${UNICORN_DLL_DIR}/unicorn.dll" "$<TARGET_FILE_DIR:vita3k>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${UNICORN_DLL_DIR}/libgcc_s_seh-1.dll" "$<TARGET_FILE_DIR:vita3k>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${UNICORN_DLL_DIR}/libwinpthread-1.dll" "$<TARGET_FILE_DIR:vita3k>")
+  if(USE_DISCORD_RICH_PRESENCE)
+    add_custom_command(
+      TARGET vita3k
+      POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dll" "$<TARGET_FILE_DIR:vita3k>")
+  endif()
 endif()
