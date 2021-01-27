@@ -53,7 +53,7 @@ struct App {
 
 struct AppInfo {
     std::string trophy;
-    std::string updated;
+    tm updated;
     size_t size;
 };
 
@@ -135,9 +135,17 @@ struct NoticeInfo {
     std::string msg;
 };
 
+enum DateFormat {
+    YYYY_MM_DD,
+    DD_MM_YYYY,
+    MM_DD_YYYY
+};
+
 struct User {
     std::string id;
     std::string name;
+    DateFormat date_format;
+    bool clock_12_hour;
     std::string avatar;
     std::string theme_id;
     bool use_theme_bg;

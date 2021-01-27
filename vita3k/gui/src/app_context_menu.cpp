@@ -111,7 +111,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
             pre_load_app(gui, host, false);
         if (title_id.find("NPXS") == std::string::npos) {
             if (ImGui::MenuItem("Check App Compatibility")) {
-                const std::string compat_url = title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + host.app_title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + host.app_title;
+                const std::string compat_url = title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + host.app_title;
                 system((OS_PREFIX + compat_url).c_str());
             }
             if (ImGui::BeginMenu("Copy App Info")) {
@@ -289,7 +289,12 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
             ImGui::Spacing();
             const auto updated = is_lang ? lang["updated"] : "Updated";
             ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize((updated + "  ").c_str()).x));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (updated + "  " + gui.app_selector.app_info.updated).c_str());
+            auto DATE_TIME = get_date_time(gui, host, gui.app_selector.app_info.updated);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s %s", updated.c_str(), DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+            if (gui.users[host.io.user_id].clock_12_hour) {
+                ImGui::SameLine();
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+            }
             ImGui::Spacing();
             const auto size = is_lang ? lang["size"] : "Size";
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((size + "  ").c_str()).x);

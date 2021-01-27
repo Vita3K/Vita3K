@@ -91,8 +91,8 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
         }
     }
 
-    date["date"] = ImVec2(900.f, 192.f);
-    date["clock"] = ImVec2(900.f, 160.f);
+    date["date"] = ImVec2(900.f, 186.f);
+    date["clock"] = ImVec2(900.f, 146.f);
     if (!start_param["dateLayout"].empty()) {
         switch (std::stoi(start_param["dateLayout"])) {
         case 0:
@@ -490,22 +490,11 @@ void init_themes(GuiState &gui, HostState &host) {
     }
 }
 
-static const char *const ymonth[] = {
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-};
-
-static const char *const wday[] = {
-    "Sunday", "Monday", "Tuesday", "Wednesday",
-    "Thursday", "Friday", "Saturday"
-};
-
 void draw_start_screen(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
     const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
     auto DATE_POS = ImVec2(display_size.x - (date["date"].x * SCAL.x), display_size.y - (date["date"].y * SCAL.y));
-    auto CLOCK_POS = ImVec2(display_size.x - (date["clock"].x * SCAL.x), display_size.y - (date["clock"].y * SCAL.y));
 
     ImGui::SetNextWindowPos(ImVec2(0.f, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
@@ -523,28 +512,42 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto tt = std::chrono::system_clock::to_time_t(now);
     const auto local = *localtime(&tt);
 
-    const auto scal_default_font = 19.2f / ImGui::GetFontSize();
-    const auto scal_date_font_size = 34.f * scal_default_font;
-    const auto scal_data_font = scal_date_font_size / ImGui::GetFontSize();
+    ImGui::PushFont(gui.vita_font);
+    const auto SCAL_PIX_DATE_FONT = 38.f / 30.f;
+    const auto DATE_FONT_SIZE = 38.f;
+    const auto SCAL_DATE_FONT_SIZE = DATE_FONT_SIZE / ImGui::GetFontSize();
 
-    const auto scal_clock_font_size = 124.f * scal_default_font;
-    const auto scal_clock_font = scal_clock_font_size / ImGui::GetFontSize();
+    auto DATE_TIME = get_date_time(gui, host, local);
+    const auto DATE_STR = DATE_TIME["detail-date"];
+    const auto CALC_DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str());
+    const auto DATE_SIZE = ImVec2(CALC_DATE_SIZE.x * SCAL_DATE_FONT_SIZE, CALC_DATE_SIZE.y * SCAL_DATE_FONT_SIZE * SCAL_PIX_DATE_FONT);
+    if (start_param["dateLayout"] == "2")
+        DATE_POS.x -= DATE_SIZE.x * SCAL.x;
+    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, DATE_FONT_SIZE * SCAL.x, DATE_POS, date_color, DATE_STR.c_str());
+    ImGui::PopFont();
 
-    const auto is_lang = !gui.lang.ymonth.empty();
-
-    const auto DATE_STR = fmt::format("{} {} ({})", local.tm_mday, is_lang ? gui.lang.ymonth[local.tm_mon] : ymonth[local.tm_mon], !gui.lang.wday.empty() ? gui.lang.wday[local.tm_wday] : wday[local.tm_wday]);
-    const auto CLOCK_STR = fmt::format("{:0>2d}:{:0>2d}", local.tm_hour, local.tm_min);
-
-    if (start_param["dateLayout"] == "2") {
-        const auto DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str()).x * scal_data_font;
-        const auto CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str()).x * scal_clock_font;
-        DATE_POS.x -= DATE_SIZE * SCAL.x;
-        CLOCK_POS.x -= CLOCK_SIZE * SCAL.x;
-    }
-
-    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_date_font_size * SCAL.x, DATE_POS, date_color, DATE_STR.c_str());
     ImGui::PushFont(gui.large_font);
-    ImGui::GetForegroundDrawList()->AddText(gui.large_font, scal_clock_font_size * SCAL.x, CLOCK_POS, date_color, CLOCK_STR.c_str());
+    const auto SCAL_PIX_LARGE_FONT = 96.f / ImGui::GetFontSize();
+
+    auto CLOCK_POS = ImVec2(display_size.x - (date["clock"].x * SCAL.x), display_size.y - (date["clock"].y * SCAL.y));
+    if (std::stoi(DATE_TIME["hour"]) < 10)
+        CLOCK_POS.x += ImGui::CalcTextSize("0").x;
+    const auto CLOCK_STR = DATE_TIME["clock"];
+    const auto CALC_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str());
+    const auto CLOCK_SIZE = ImVec2(CALC_CLOCK_SIZE.x, CALC_CLOCK_SIZE.y * SCAL_PIX_LARGE_FONT);
+    const auto DAY_MOMENT_STR = DATE_TIME["day-moment"];
+    const auto CALC_DAY_MOMENT_SIZE = ImGui::CalcTextSize(DAY_MOMENT_STR.c_str());
+    const auto DAY_MOMENT_FONT_SIZE = ImGui::GetFontSize() / 2.f;
+    const auto SCAL_FONT_DAY_MOMENT = DAY_MOMENT_FONT_SIZE / ImGui::GetFontSize();
+    const auto DAY_MOMENT_SIZE = gui.users[host.io.user_id].clock_12_hour ? ImVec2(CALC_DAY_MOMENT_SIZE.x * SCAL_FONT_DAY_MOMENT, CALC_DAY_MOMENT_SIZE.y * SCAL_FONT_DAY_MOMENT * SCAL_PIX_LARGE_FONT) : ImVec2(0.f, 0.f);
+
+    if (start_param["dateLayout"] == "2")
+        CLOCK_POS.x -= (CLOCK_SIZE.x * SCAL.x) + (DAY_MOMENT_SIZE.x * SCAL.x);
+    ImGui::GetForegroundDrawList()->AddText(gui.large_font, ImGui::GetFontSize() * SCAL.x, CLOCK_POS, date_color, CLOCK_STR.c_str());
+    if (gui.users[host.io.user_id].clock_12_hour) {
+        const auto DAY_MOMENT_POS = ImVec2(CLOCK_POS.x + ((CLOCK_SIZE.x + 6.f) * SCAL.x), CLOCK_POS.y + ((CLOCK_SIZE.y - DAY_MOMENT_SIZE.y) * SCAL.y));
+        ImGui::GetForegroundDrawList()->AddText(gui.large_font, DAY_MOMENT_FONT_SIZE * SCAL.x, DAY_MOMENT_POS, date_color, DAY_MOMENT_STR.c_str());
+    }
     ImGui::PopFont();
 
     if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
@@ -560,6 +563,20 @@ static std::string popup, settings_menu, menu, theme_selected, title, start, del
 static ImGuiTextFilter search_bar;
 static float scroll_pos;
 static bool set_scroll_pos;
+
+static std::string get_date_format_sting(GuiState &gui, DateFormat &date_format) {
+    std::string date_format_str;
+    const auto is_lang = !gui.lang.settings.empty();
+    auto settings = gui.lang.settings;
+    switch (date_format) {
+    case YYYY_MM_DD: date_format_str = is_lang ? settings["yyyy_mm_dd"] : "YYYY/MM/DD"; break;
+    case DD_MM_YYYY: date_format_str = is_lang ? settings["dd_mm_yyyy"] : "DD/MM/YYYY"; break;
+    case MM_DD_YYYY: date_format_str = is_lang ? settings["mm_dd_yyyy"] : "MM/DD/YYYY"; break;
+    default: break;
+    }
+
+    return date_format_str;
+}
 
 static const std::vector<std::string> LIST_SYS_LANG = {
     u8"日本語", "English (United States)", u8"Français", u8"Español", "Deutsch", "Italiano", "Nederlands", u8"Português (Portugal)",
@@ -620,18 +637,23 @@ void draw_settings(GuiState &gui, HostState &host) {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
     ImGui::BeginChild("##settings_child", SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
+    const auto SIZE_SELECT = 80.f * SCAL.y;
+    const auto SIZE_PUPUP_SELECT = 70.f * SCAL.y;
+
     // Settings
     if (settings_menu.empty()) {
         title = is_lang ? lang["settings"] : "Settings";
         ImGui::SetWindowFontScale(1.2f);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-        const auto SIZE_SELECT = 80.f * SCAL.y;
-        if (ImGui::Selectable(is_lang ? lang["theme_background"].c_str() : "Theme & Background", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y))) {
+        if (ImGui::Selectable(is_lang ? lang["theme_background"].c_str() : "Theme & Background", false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT))) {
             init_themes(gui, host);
             settings_menu = "theme_background";
         }
         ImGui::Separator();
-        if (ImGui::Selectable(is_lang ? lang["language"].c_str() : "Language", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y)))
+        if (ImGui::Selectable(is_lang ? lang["date_time"].c_str() : "Date & Time", false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
+            settings_menu = "date&time";
+        ImGui::Separator();
+        if (ImGui::Selectable(is_lang ? lang["language"].c_str() : "Language", false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
             settings_menu = "language";
         ImGui::PopStyleVar();
         ImGui::Separator();
@@ -641,7 +663,6 @@ void draw_settings(GuiState &gui, HostState &host) {
             title = is_lang ? lang["theme_background"] : "Theme & Background";
             ImGui::SetWindowFontScale(1.2f);
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-            const auto SIZE_SELECT = 80.f * SCAL.y;
             if (!themes_info.empty()) {
                 if (ImGui::Selectable(is_lang ? lang["theme"].c_str() : "Theme", false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
                     menu = "theme";
@@ -738,7 +759,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                                 gui.users[host.io.user_id].use_theme_bg = false;
                             init_theme_start_background(gui, host, theme_selected);
                             gui.users[host.io.user_id].start_type = (theme_selected == "default") ? "default" : "theme";
-                            update_user(gui, host, host.io.user_id);
+                            save_user(gui, host, host.io.user_id);
                             set_scroll_pos = true;
                             theme_selected.clear();
                         }
@@ -772,7 +793,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                             if (theme_selected == gui.users[host.io.user_id].theme_id) {
                                 gui.users[host.io.user_id].theme_id = "default";
                                 gui.users[host.io.user_id].start_path.clear();
-                                update_user(gui, host, host.io.user_id);
+                                save_user(gui, host, host.io.user_id);
                                 init_apps_icon(gui, host, gui.app_selector.sys_apps);
                                 if (init_theme(gui, host, "default"))
                                     gui.users[host.io.user_id].use_theme_bg = true;
@@ -901,7 +922,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                             gui.users[host.io.user_id].start_path.clear();
                             gui.users[host.io.user_id].start_type = "theme";
                             init_theme_start_background(gui, host, gui.users[host.io.user_id].theme_id);
-                            update_user(gui, host, host.io.user_id);
+                            save_user(gui, host, host.io.user_id);
                             start.clear();
                         }
                     } else if (start == "image") {
@@ -911,7 +932,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         if ((result == NFD_OKAY) && init_user_start_background(gui, image_path)) {
                             gui.users[host.io.user_id].start_path = image_path;
                             gui.users[host.io.user_id].start_type = "image";
-                            update_user(gui, host, host.io.user_id);
+                            save_user(gui, host, host.io.user_id);
                         }
                         start.clear();
                     } else if (start == "default") {
@@ -925,7 +946,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                             gui.users[host.io.user_id].start_path.clear();
                             init_theme_start_background(gui, host, "default");
                             gui.users[host.io.user_id].start_type = "default";
-                            update_user(gui, host, host.io.user_id);
+                            save_user(gui, host, host.io.user_id);
                             start.clear();
                         }
                     }
@@ -942,7 +963,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         gui.current_user_bg = 0;
                     else if (!gui.theme_backgrounds.empty())
                         gui.users[host.io.user_id].use_theme_bg = true;
-                    update_user(gui, host, host.io.user_id);
+                    save_user(gui, host, host.io.user_id);
                     delete_user_background.clear();
                 }
 
@@ -969,7 +990,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         if (init_user_background(gui, host, host.io.user_id, background_path)) {
                             gui.users[host.io.user_id].backgrounds.push_back(background_path);
                             gui.users[host.io.user_id].use_theme_bg = false;
-                            update_user(gui, host, host.io.user_id);
+                            save_user(gui, host, host.io.user_id);
                         }
                     }
                 }
@@ -977,13 +998,92 @@ void draw_settings(GuiState &gui, HostState &host) {
                 ImGui::Columns(1);
             }
         }
+    } else if (settings_menu == "date&time") {
+        // Language
+        title = is_lang ? lang["date_time"] : "Date & Time";
+        ImGui::SetWindowFontScale(1.2f);
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
+        if (ImGui::Selectable(is_lang ? lang["date_format"].c_str() : "Date Format", menu == "date_format", ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
+            menu = "date_format";
+        ImGui::Separator();
+        if (ImGui::Selectable(is_lang ? lang["time_format"].c_str() : "Time Format", menu == "time_format", ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
+            menu = "time_format";
+        ImGui::Separator();
+        ImGui::PopStyleVar();
+        if (!menu.empty()) {
+            const auto WINDOW_TIME_SIZE = ImVec2(WINDOW_SIZE.x - 70.f, WINDOW_SIZE.y);
+            ImGui::SetNextWindowPos(ImVec2(70.f * SCAL.x, MENUBAR_HEIGHT), ImGuiCond_Always);
+            ImGui::SetNextWindowSize(WINDOW_TIME_SIZE, ImGuiCond_Always);
+            ImGui::SetNextWindowBgAlpha(0.f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+            ImGui::Begin("##time", &gui.live_area.settings, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+            const auto TIME_SELECT_SIZE = 336.f * SCAL.x;
+            ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
+            ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x - TIME_SELECT_SIZE, MENUBAR_HEIGHT), ImGuiCond_Always, ImVec2(0.f, 0.f));
+            ImGui::BeginChild("##time_select", ImVec2(TIME_SELECT_SIZE, WINDOW_SIZE.y), false, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
+            ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
+            ImGui::Columns(2, nullptr, false);
+            ImGui::SetColumnWidth(0, 30.f);
+            ImGui::SetWindowFontScale(1.6f);
+            if (menu == "date_format") {
+                for (auto f = 0; f < 3; f++) {
+                    auto date_format_value = DateFormat(f);
+                    const auto date_format_str = get_date_format_sting(gui, date_format_value);
+                    ImGui::PushID(date_format_str.c_str());
+                    ImGui::SetCursorPosY((display_size.y / 2.f) - MENUBAR_HEIGHT - (SIZE_PUPUP_SELECT * 1.5f) + (SIZE_PUPUP_SELECT * f));
+                    if (ImGui::Selectable(gui.users[host.io.user_id].date_format == date_format_value ? "V" : "##date_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
+                        if (gui.users[host.io.user_id].date_format != date_format_value) {
+                            gui.users[host.io.user_id].date_format = date_format_value;
+                            save_user(gui, host, host.io.user_id);
+                        }
+                        menu.clear();
+                    }
+                    ImGui::NextColumn();
+                    ImGui::SetCursorPosY((display_size.y / 2.f) - MENUBAR_HEIGHT - (SIZE_PUPUP_SELECT * 1.5f) + (SIZE_PUPUP_SELECT * f));
+                    ImGui::Selectable(date_format_str.c_str(), false, ImGuiSelectableFlags_None, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT));
+                    ImGui::PopID();
+                    ImGui::NextColumn();
+                }
+            } else if (menu == "time_format") {
+                ImGui::SetCursorPosY((display_size.y / 2.f) - SIZE_PUPUP_SELECT - MENUBAR_HEIGHT);
+                if (ImGui::Selectable(gui.users[host.io.user_id].clock_12_hour ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
+                    if (!gui.users[host.io.user_id].clock_12_hour) {
+                        gui.users[host.io.user_id].clock_12_hour = true;
+                        save_user(gui, host, host.io.user_id);
+                    }
+                    menu.clear();
+                }
+                ImGui::NextColumn();
+                ImGui::SetCursorPosY((display_size.y / 2.f) - SIZE_PUPUP_SELECT - MENUBAR_HEIGHT);
+                ImGui::Selectable(is_lang ? lang["12_hour_clock"].c_str() : "12-Hour Clock", false, ImGuiSelectableFlags_None, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT));
+                ImGui::NextColumn();
+                if (ImGui::Selectable(!gui.users[host.io.user_id].clock_12_hour ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
+                    if (gui.users[host.io.user_id].clock_12_hour) {
+                        gui.users[host.io.user_id].clock_12_hour = false;
+                        save_user(gui, host, host.io.user_id);
+                    }
+                    menu.clear();
+                }
+                ImGui::NextColumn();
+                ImGui::Selectable(is_lang ? lang["24_hour_clock"].c_str() : "24-Hour Clock", false, ImGuiSelectableFlags_None, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT));
+                ImGui::NextColumn();
+            }
+            ImGui::Columns(1);
+            ImGui::PopStyleVar();
+            ImGui::EndChild();
+            ImGui::PopStyleVar();
+            if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootWindow) && !ImGui::IsAnyItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                menu.clear();
+            ImGui::End();
+            ImGui::PopStyleVar();
+        }
     } else if (settings_menu == "language") {
         // Language
         title = is_lang ? lang["language"] : "Language";
         ImGui::SetWindowFontScale(1.2f);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-        const auto SIZE_SELECT = 80.f * SCAL.y;
-        if (ImGui::Selectable(is_lang ? lang["system_language"].c_str() : "System Language", false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCAL.y)))
+
+        if (ImGui::Selectable(is_lang ? lang["system_language"].c_str() : "System Language", false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
             menu = "select_language";
         ImGui::Separator();
         ImGui::PopStyleVar();
@@ -1001,12 +1101,12 @@ void draw_settings(GuiState &gui, HostState &host) {
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
             ImGui::Columns(2, nullptr, false);
             ImGui::SetColumnWidth(0, 30.f);
-            const auto SIZE_LANG_SELECT = 70.f * SCAL.y;
-            const auto current_lang = LIST_SYS_LANG[host.cfg.sys_lang];
+
+            const auto current_sys_lang = LIST_SYS_LANG[host.cfg.sys_lang];
             for (const auto &sys_lang : LIST_SYS_LANG) {
                 ImGui::PushID(sys_lang.c_str());
-                const auto lang_id = uint32_t(std::distance(LIST_SYS_LANG.begin(), std::find(LIST_SYS_LANG.begin(), LIST_SYS_LANG.end(), sys_lang)));
-                if (ImGui::Selectable(current_lang == sys_lang ? "V" : "##lang", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(SYS_LANG_SIZE, SIZE_LANG_SELECT))) {
+                if (ImGui::Selectable(current_sys_lang == sys_lang ? "V" : "##lang", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(SYS_LANG_SIZE, SIZE_PUPUP_SELECT))) {
+                    const auto lang_id = uint32_t(std::distance(LIST_SYS_LANG.begin(), std::find(LIST_SYS_LANG.begin(), LIST_SYS_LANG.end(), sys_lang)));
                     if (lang_id != host.cfg.sys_lang) {
                         host.cfg.sys_lang = lang_id;
                         config::serialize_config(host.cfg, host.base_path);
@@ -1028,7 +1128,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                     menu.clear();
                 }
                 ImGui::NextColumn();
-                ImGui::Selectable(sys_lang.c_str(), false, ImGuiSelectableFlags_None, ImVec2(SYS_LANG_SIZE, SIZE_LANG_SELECT));
+                ImGui::Selectable(sys_lang.c_str(), false, ImGuiSelectableFlags_None, ImVec2(SYS_LANG_SIZE, SIZE_PUPUP_SELECT));
                 ImGui::PopID();
                 ImGui::NextColumn();
             }

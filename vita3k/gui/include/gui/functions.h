@@ -42,6 +42,7 @@ size_t get_app_size(HostState &host, const std::string &title_id);
 std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string &title_id);
 std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &title_id);
 std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &title_id);
+std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host, const tm &date_time);
 bool get_live_area_sys_app_state(GuiState &gui);
 void get_modules_list(GuiState &gui, HostState &host);
 std::string get_unit_size(const size_t &size);
@@ -67,9 +68,9 @@ void open_user(GuiState &gui, HostState &host);
 void pre_load_app(GuiState &gui, HostState &host, bool live_area);
 void pre_run_app(GuiState &gui, HostState &host, const std::string &title_id);
 bool refresh_app_list(GuiState &gui, HostState &host);
+void save_user(GuiState &gui, HostState &host, const std::string &user_id);
 void update_apps_list_opened(GuiState &gui, const std::string &title_id);
 void update_notice_info(GuiState &gui, HostState &host, const std::string &type);
-void update_user(GuiState &gui, HostState &host, const std::string &user_id);
 
 void draw_begin(GuiState &gui, HostState &host);
 void draw_end(GuiState &host, SDL_Window *window);

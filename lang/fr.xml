@@ -58,6 +58,17 @@
 		</start_screen>
 		<home_screen_backgrounds>Arrière-plans d'écran d'accueil</home_screen_backgrounds>
 	</theme_background>
+	<date_time name="Date et heure">
+		<date_format name ="Affichage de la date">
+			<yyyy_mm_dd>AAAA/MM/JJ</yyyy_mm_dd>
+			<dd_mm_yyyy>JJ/MM/AAAA</dd_mm_yyyy>
+			<mm_dd_yyyy>MM/JJ/AAAA</mm_dd_yyyy>
+		</date_format>
+		<time_format name="Affichage de l'heure">
+			<clock_12_hour>Affichage 12h</clock_12_hour>
+			<clock_24_hour>Affichage 24h</clock_24_hour>
+		</time_format>
+	</date_time>
 	<language name="Langue">
 		<system_language>Langue système</system_language>
 	</language>

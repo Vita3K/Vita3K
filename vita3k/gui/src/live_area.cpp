@@ -161,6 +161,26 @@ void init_lang(GuiState &gui, HostState &host) {
                 lang_settings["image"] = theme_background.child("start_screen").child("image").text().as_string();
                 lang_settings["home_screen_backgrounds"] = theme_background.child("home_screen_backgrounds").text().as_string();
             }
+
+            // Date & Time
+            if (!settings.child("date_time").empty()) {
+                const auto date_time = settings.child("date_time");
+                lang_settings["date_time"] = date_time.attribute("name").as_string();
+                if (!date_time.child("date_format").empty()) {
+                    const auto date_format = date_time.child("date_format");
+                    lang_settings["date_format"] = date_format.attribute("name").as_string();
+                    lang_settings["yyyy_mm_dd"] = date_format.child("yyyy_mm_dd").text().as_string();
+                    lang_settings["dd_mm_yyyy"] = date_format.child("dd_mm_yyyy").text().as_string();
+                    lang_settings["mm_dd_yyyy"] = date_format.child("mm_dd_yyyy").text().as_string();
+                }
+                if (!date_time.child("time_format").empty()) {
+                    const auto time_format = date_time.child("time_format");
+                    lang_settings["time_format"] = time_format.attribute("name").as_string();
+                    lang_settings["12_hour_clock"] = time_format.child("clock_12_hour").text().as_string();
+                    lang_settings["24_hour_clock"] = time_format.child("clock_24_hour").text().as_string();
+                }
+            }
+
             // Languague
             lang_settings["language"] = settings.child("language").attribute("name").as_string();
             lang_settings["system_language"] = settings.child("language").child("system_language").text().as_string();
@@ -370,12 +390,6 @@ void draw_information_bar(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowSize(ImVec2(display_size.x, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::Begin("##information_bar", &gui.live_area.information_bar, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
-    const auto now = std::chrono::system_clock::now();
-    const auto tt = std::chrono::system_clock::to_time_t(now);
-    const auto local = *localtime(&tt);
-
-    const std::string clock_str = fmt::format("{:0>2d}:{:0>2d}", local.tm_hour, local.tm_min);
-
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, MENUBAR_HEIGHT), is_theme_color ? gui.information_bar_color["bar"] : DEFAULT_BAR_COLOR, 0.f, ImDrawCornerFlags_All);
 
     if (gui.live_area.app_selector || gui.live_area.live_area_screen) {
@@ -384,19 +398,39 @@ void draw_information_bar(GuiState &gui, HostState &host) {
             const auto icon_scal_pos = ImVec2((display_size.x / 2.f) - (16.f * SCAL.x) - (decal_icon_pos * SCAL.x) + (a * (38.f * SCAL.x)), display_size.y - (544.f * SCAL.y));
             const auto icon_scal_size = ImVec2(icon_scal_pos.x + (32.0f * SCAL.x), icon_scal_pos.y + (32.f * SCAL.y));
             if (get_app_icon(gui, gui.apps_list_opened[a])->first == gui.apps_list_opened[a])
-                ImGui::GetForegroundDrawList()->AddImage(get_app_icon(gui, gui.apps_list_opened[a])->second, icon_scal_pos, icon_scal_size);
+                ImGui::GetForegroundDrawList()->AddImageRounded(get_app_icon(gui, gui.apps_list_opened[a])->second, icon_scal_pos, icon_scal_size, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 15.f, ImDrawCornerFlags_All);
             else
                 ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32_WHITE, 0.f, ImDrawCornerFlags_All);
             if (gui.apps_list_opened[a] != gui.apps_list_opened[gui.current_app_selected])
-                ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32(0.f, 0.f, 0.f, 140.f), 0.f, ImDrawCornerFlags_All);
+                ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32(0.f, 0.f, 0.f, 140.f), 15.f, ImDrawCornerFlags_All);
         }
     }
 
-    const auto scal_default_font = 19.2f * (19.2f / ImGui::GetFontSize());
-    const auto scal_font_size = scal_default_font / ImGui::GetFontSize();
-    const auto clock_size = ImGui::CalcTextSize(clock_str.c_str());
+    const auto SCAL_PIX_FONT = 19.2f / 24.f;
+    const auto scal_default_font = ImGui::GetFontSize() / 19.2f;
+    const auto scal_clock_default_font = 24.f * scal_default_font;
+    const auto scal_format_default_font = 18.f * scal_default_font;
+    const auto scal_clock_font_size = scal_clock_default_font / ImGui::GetFontSize();
+    const auto scal_format_font_size = scal_format_default_font / ImGui::GetFontSize();
 
-    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_default_font * SCAL.x, ImVec2(display_size.x - (62.f * SCAL.x) - ((clock_size.x * scal_font_size) * SCAL.x) - is_notif_pos, (MENUBAR_HEIGHT / 2.f) - (((clock_size.y * scal_font_size) * SCAL.y) / 2.f)), is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, clock_str.c_str());
+    const auto now = std::chrono::system_clock::now();
+    const auto tt = std::chrono::system_clock::to_time_t(now);
+    const auto local = *localtime(&tt);
+
+    auto DATE_TIME = get_date_time(gui, host, local);
+    const auto CLOCK_STR = DATE_TIME["clock"];
+    const auto FORMAT_STR = DATE_TIME["day-moment"];
+    const auto CALC_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str());
+    const auto SCAL_CLOCK_SIZE = ImVec2(CALC_CLOCK_SIZE.x * scal_clock_font_size, CALC_CLOCK_SIZE.y * scal_clock_font_size * SCAL_PIX_FONT);
+    const auto CALC_FORMAT_SIZE = ImGui::CalcTextSize(FORMAT_STR.c_str());
+    const auto SCAL_FORMAT_SIZE = host.io.user_id.empty() || gui.users[host.io.user_id].clock_12_hour ? ImVec2((CALC_FORMAT_SIZE.x * scal_format_font_size), CALC_FORMAT_SIZE.y * scal_format_font_size * SCAL_PIX_FONT) : ImVec2(0.f, 0.f);
+
+    const auto CLOCK_POS = ImVec2(display_size.x - (62.f * SCAL.x) - (SCAL_CLOCK_SIZE.x * SCAL.x) - (SCAL_FORMAT_SIZE.x * SCAL.x) - is_notif_pos, (MENUBAR_HEIGHT / 2.f) - ((SCAL_CLOCK_SIZE.y * SCAL.y) / 2.f));
+    const auto FORMAT_POS = ImVec2(CLOCK_POS.x + (SCAL_CLOCK_SIZE.x * SCAL.x) + (4.f * SCAL.x), CLOCK_POS.y + (SCAL_CLOCK_SIZE.y - SCAL_FORMAT_SIZE.y));
+
+    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_clock_default_font * SCAL.x, CLOCK_POS, is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, CLOCK_STR.c_str());
+    if (host.io.user_id.empty() || gui.users[host.io.user_id].clock_12_hour)
+        ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_format_default_font * SCAL.x, FORMAT_POS, is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, FORMAT_STR.c_str());
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (54.f * SCAL.x) - is_notif_pos, 12.f * SCAL.y), ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 20 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 0.f, ImDrawCornerFlags_All);
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 5.f * SCAL.y), ImVec2(display_size.x - (12.f * SCAL.x) - is_notif_pos, 27 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f, ImDrawCornerFlags_All);
 
@@ -1275,7 +1309,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         }
     }
 
-    const auto scal_default_font = 25.f * (19.2f / ImGui::GetFontSize());
+    const auto scal_default_font = 25.f * (ImGui::GetFontSize() / 19.2f);
     const auto scal_font_size = scal_default_font / ImGui::GetFontSize();
 
     const std::string BUTTON_STR = title_id == host.io.title_id ? resume : start;

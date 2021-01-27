@@ -63,6 +63,17 @@
 		</start_screen>
 		<home_screen_backgrounds>Фон начального экрана</home_screen_backgrounds>
 	</theme_background>
+	<date_time name="Дата и время">
+		<date_format name ="Формат даты">
+			<yyyy_mm_dd>ГГГГ/ММ/ДД</yyyy_mm_dd>
+			<dd_mm_yyyy>ДД/ММ/ГГГГ</dd_mm_yyyy>
+			<mm_dd_yyyy>ММ/ДД/ГГГГ</mm_dd_yyyy>
+		</date_format>
+		<time_format name="Формат времени">
+			<clock_12_hour>12-часовой формат</clock_12_hour>
+			<clock_24_hour>24-часовой формат</clock_24_hour>
+		</time_format>
+	</date_time>
 	<language name="Язык">
 		<system_language>Язык системы</system_language>
 	</language>

@@ -72,27 +72,54 @@ void init_users(GuiState &gui, HostState &host) {
                 const auto user_child = user_xml.child("user");
 
                 // Load user settings
-                const auto user_id = user_child.attribute("id").as_string();
+                std::string user_id;
+                if (!user_child.attribute("id").empty())
+                    user_id = user_child.attribute("id").as_string();
+                else
+                    user_id = path.path().stem().string();
+
                 auto &user = gui.users[user_id];
                 user.id = user_id;
                 if (!user_child.attribute("name").empty())
                     user.name = user_child.attribute("name").as_string();
-                if (!user_child.child("avatar").text().empty()) {
+                else
+                    user.name = "vita3K";
+
+                if (!user_child.attribute("date-format").empty())
+                    user.date_format = DateFormat(user_child.attribute("date-format").as_int());
+                else
+                    user.date_format = DateFormat::MM_DD_YYYY;
+
+                if (!user_child.attribute("clock-12-hour").empty())
+                    user.clock_12_hour = user_child.attribute("clock-12-hour").as_bool();
+                else
+                    user.clock_12_hour = true;
+
+                if (!user_child.child("avatar").text().empty())
                     user.avatar = user_child.child("avatar").text().as_string();
-                    init_avatar(gui, host, user.id, user.avatar);
-                }
+                else
+                    user.avatar = "default";
+                init_avatar(gui, host, user.id, user.avatar);
 
                 // Load theme settings
                 auto theme = user_child.child("theme");
                 if (!theme.attribute("use-background").empty())
                     user.use_theme_bg = theme.attribute("use-background").as_bool();
+                else
+                    user.use_theme_bg = true;
+
                 if (!theme.child("content-id").text().empty())
                     user.theme_id = theme.child("content-id").text().as_string();
+                else
+                    user.theme_id = "default";
 
                 // Load start screen settings
                 auto start = user_child.child("start-screen");
                 if (!start.attribute("type").empty())
                     user.start_type = start.attribute("type").as_string();
+                else
+                    user.start_type = "default";
+
                 if (!start.child("path").text().empty())
                     user.start_path = start.child("path").text().as_string();
 
@@ -104,7 +131,7 @@ void init_users(GuiState &gui, HostState &host) {
     }
 }
 
-void update_user(GuiState &gui, HostState &host, const std::string &user_id) {
+void save_user(GuiState &gui, HostState &host, const std::string &user_id) {
     const auto user_path{ fs::path(host.pref_path) / "ux0/user" / user_id };
     if (!fs::exists(user_path))
         fs::create_directory(user_path);
@@ -120,6 +147,8 @@ void update_user(GuiState &gui, HostState &host, const std::string &user_id) {
     auto user_child = user_xml.append_child("user");
     user_child.append_attribute("id") = user.id.c_str();
     user_child.append_attribute("name") = user.name.c_str();
+    user_child.append_attribute("date-format") = user.date_format;
+    user_child.append_attribute("clock-12-hour") = user.clock_12_hour;
     user_child.append_child("avatar").append_child(pugi::node_pcdata).set_value(user.avatar.c_str());
 
     // Save theme settings
@@ -263,6 +292,8 @@ void draw_user_management(GuiState &gui, HostState &host) {
             }
             temp.id = user_id;
             temp.name = user + std::to_string(i);
+            temp.date_format = DateFormat::MM_DD_YYYY;
+            temp.clock_12_hour = true;
             temp.avatar = "default";
             temp.theme_id = "default";
             temp.use_theme_bg = true;
@@ -366,7 +397,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
         if (!temp.name.empty() && check_free_name ? ImGui::Button(confirm.c_str(), BUTTON_SIZE) : ImGui::Selectable(confirm.c_str(), false, ImGuiSelectableFlags_Disabled, BUTTON_SIZE)) {
             gui.users_avatar[user_id] = gui.users_avatar["temp"];
             gui.users[user_id] = temp;
-            update_user(gui, host, user_id);
+            save_user(gui, host, user_id);
             if (menu == "create")
                 menu = "confirm";
             else {

@@ -35,6 +35,17 @@
 		</start_screen>
 		<home_screen_backgrounds>ホーム画面の背景</home_screen_backgrounds>
 	</theme_background>
+	<date_time name="日付&時刻">
+		<date_format name ="日付表示">
+			<yyyy_mm_dd>年/月/日</yyyy_mm_dd>
+			<dd_mm_yyyy>日/月/年</dd_mm_yyyy>
+			<mm_dd_yyyy>月/日/年</mm_dd_yyyy>
+		</date_format>
+		<time_format name="時間表示">
+			<clock_12_hour>12時間</clock_12_hour>
+			<clock_24_hour>24時間</clock_24_hour>
+		</time_format>
+	</date_time>
 	<language name="言語">
 		<system_language>システム言語</system_language>
 	</language>
