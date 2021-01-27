@@ -39,8 +39,7 @@ void get_app_info(GuiState &gui, HostState &host, const std::string &title_id) {
         gui.app_selector.app_info.trophy = fs::exists(APP_PATH / "sce_sys/trophy") ? eligible : ineligible;
 
         const auto last_writed = fs::last_write_time(APP_PATH);
-        const auto updated = std::localtime(&last_writed);
-        gui.app_selector.app_info.updated = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}", updated->tm_mday, updated->tm_mon + 1, updated->tm_year + 1900, updated->tm_hour, updated->tm_min);
+        gui.app_selector.app_info.updated = *std::localtime(&last_writed);
     }
 }
 
@@ -495,7 +494,12 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
             ImGui::SameLine(280.f * SCAL.x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.app_selector.app_info.updated.c_str());
+            auto DATE_TIME = get_date_time(gui, host, gui.app_selector.app_info.updated);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+            if (gui.users[host.io.user_id].clock_12_hour) {
+                ImGui::SameLine();
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+            }
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "Size");
             ImGui::SameLine(280.f * SCAL.x);

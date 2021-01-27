@@ -319,7 +319,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                     gui.users[host.io.user_id].use_theme_bg = true;
                 gui.users[host.io.user_id].start_path.clear();
                 gui.users[host.io.user_id].start_type = "default";
-                update_user(gui, host, host.io.user_id);
+                save_user(gui, host, host.io.user_id);
                 init_theme_start_background(gui, host, "default");
                 init_apps_icon(gui, host, gui.app_selector.sys_apps);
             }
@@ -327,7 +327,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         }
         if (!gui.theme_backgrounds.empty())
             if (ImGui::Checkbox("Using theme background", &gui.users[host.io.user_id].use_theme_bg))
-                update_user(gui, host, host.io.user_id);
+                save_user(gui, host, host.io.user_id);
 
         if (!gui.user_backgrounds.empty()) {
             ImGui::Spacing();
@@ -337,7 +337,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                 if (!gui.theme_backgrounds.empty())
                     gui.users[host.io.user_id].use_theme_bg = true;
                 gui.users[host.io.user_id].backgrounds.clear();
-                update_user(gui, host, host.io.user_id);
+                save_user(gui, host, host.io.user_id);
             }
         }
         ImGui::Spacing();
@@ -348,7 +348,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                 gui.users[host.io.user_id].start_path.clear();
                 init_theme_start_background(gui, host, gui.users[host.io.user_id].theme_id);
                 gui.users[host.io.user_id].start_type = (gui.users[host.io.user_id].theme_id == "default") ? "default" : "theme";
-                update_user(gui, host, host.io.user_id);
+                save_user(gui, host, host.io.user_id);
             }
         }
         if (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty()) {

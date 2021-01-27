@@ -108,7 +108,7 @@ static void init_font(GuiState &gui, HostState &host) {
     gui.monospaced_font = io.Fonts->AddFontDefault();
 
     // Set Large Font
-    static const ImWchar large_font_chars[] = { L'0', L'1', L'2', L'3', L'4', L'5', L'6', L'7', L'8', L'9', L':', L';', L'<', L'=', L'>' };
+    static const ImWchar large_font_chars[] = { L'0', L'1', L'2', L'3', L'4', L'5', L'6', L'7', L'8', L'9', L':', L'A', L'M', L'P' };
 
     // Set Fw font paths
     const auto fw_font_path{ fs::path(host.pref_path) / "sa0/data/font/pvf" };
@@ -120,7 +120,7 @@ static void init_font(GuiState &gui, HostState &host) {
         0x2DE0, 0x2DFF, // Cyrillic Extended-A
         0xA640, 0xA69F, // Cyrillic Extended-B
         0x2000, 0x206F, // General Punctuation
-        0x2100, 0x214F, // Letter type symbols 
+        0x2100, 0x214F, // Letter type symbols
         0,
     };
 
@@ -128,7 +128,7 @@ static void init_font(GuiState &gui, HostState &host) {
         0x2200, 0x22FF, // Math operators 
         0x2150, 0x218F, // Numeral forms
         0x2600, 0x26FF, // Miscellaneous symbols
-        0x4E00, 0x9FFF, // Unified ideograms CJC 
+        0x4E00, 0x9FFF, // Unified ideograms CJC
         0,
     };
 
@@ -166,20 +166,20 @@ static void init_font(GuiState &gui, HostState &host) {
 
         io.Fonts->Build();
         font_config.MergeMode = false;
-        gui.large_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), 124.f, &font_config, large_font_chars);
+        gui.large_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), 116.f, &font_config, large_font_chars);
     } else {
         LOG_WARN("Could not find firmware font file at \"{}\", install firmware fonts package to fix this.", latin_fw_font_path.string());
         // Set up default font path
         const auto default_font_path{ fs::path(host.base_path) / "data/fonts/mplus-1mn-bold.ttf" };
         // Check existence of default font file
         if (fs::exists(default_font_path)) {
-            gui.vita_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 16.f, &font_config, latin_range);
+            gui.vita_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 22.f, &font_config, latin_range);
             font_config.MergeMode = true;
-            io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 16.f, &font_config, io.Fonts->GetGlyphRangesJapanese());
+            io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 22.f, &font_config, io.Fonts->GetGlyphRangesJapanese());
 
             io.Fonts->Build();
             font_config.MergeMode = false;
-            gui.large_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 124.f, &font_config, large_font_chars);
+            gui.large_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 134.f, &font_config, large_font_chars);
 
             LOG_INFO("Using default Vita3K font.");
         } else
@@ -299,6 +299,48 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
         }
         gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, {}, host.app_short_title, host.app_title, app });
     }
+}
+
+static const char *const ymonth[] = {
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+};
+
+static const char *const wday[] = {
+    "Sunday", "Monday", "Tuesday", "Wednesday",
+    "Thursday", "Friday", "Saturday"
+};
+
+std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host, const tm &date_time) {
+    std::map<std::string, std::string> date_time_str;
+    if (!host.io.user_id.empty()) {
+        const auto day_str = !gui.lang.wday.empty() ? gui.lang.wday[date_time.tm_wday] : wday[date_time.tm_wday];
+        const auto month_str = !gui.lang.ymonth.empty() ? gui.lang.ymonth[date_time.tm_mon] : ymonth[date_time.tm_mon];
+        const auto year = date_time.tm_year + 1900;
+        const auto month = date_time.tm_mon + 1;
+        switch (gui.users[host.io.user_id].date_format) {
+        case DateFormat::YYYY_MM_DD:
+            date_time_str["detail-date"] = fmt::format("{} {} ({})", month_str, date_time.tm_mday, day_str);
+            date_time_str["date"] = fmt::format("{}/{}/{}", year, month, date_time.tm_mday);
+            break;
+        case DateFormat::DD_MM_YYYY:
+            date_time_str["detail-date"] = fmt::format("{} {} ({})", date_time.tm_mday, month_str, day_str);
+            date_time_str["date"] = fmt::format("{}/{}/{}", date_time.tm_mday, month, year);
+            break;
+        case DateFormat::MM_DD_YYYY:
+            date_time_str["detail-date"] = fmt::format("{} {} ({})", month_str, date_time.tm_mday, day_str);
+            date_time_str["date"] = fmt::format("{}/{}/{}", month, date_time.tm_mday, year);
+            break;
+        default: break;
+        }
+    }
+    const auto is_afternoon = date_time.tm_hour > 12;
+    const auto clock_12h = is_afternoon && (host.io.user_id.empty() || gui.users[host.io.user_id].clock_12_hour);
+    date_time_str["hour"] = std::to_string(clock_12h ? (date_time.tm_hour - 12) : date_time.tm_hour);
+    date_time_str["clock"] = fmt::format("{}:{:0>2d}", date_time_str["hour"], date_time.tm_min);
+    date_time_str["day-moment"] = is_afternoon ? "PM" : "AM";
+
+    return date_time_str;
 }
 
 void get_user_apps_title(GuiState &gui, HostState &host) {
@@ -494,9 +536,6 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (gui.live_area.manual)
         draw_manual(gui, host);
 
-    if (gui.live_area.start_screen)
-        draw_start_screen(gui, host);
-
     if (gui.live_area.user_management)
         draw_user_management(gui, host);
 
@@ -511,6 +550,9 @@ void draw_live_area(GuiState &gui, HostState &host) {
         draw_trophy_collection(gui, host);
 
     ImGui::PopFont();
+
+    if (gui.live_area.start_screen)
+        draw_start_screen(gui, host);
 }
 
 void draw_ui(GuiState &gui, HostState &host) {

@@ -35,6 +35,17 @@
 		</start_screen>
 		<home_screen_backgrounds>홈 화면의 배경</home_screen_backgrounds>
 	</theme_background>
+	<date_time name="날짜 & 시각">
+		<date_format name ="날짜 표시 형식">
+			<yyyy_mm_dd>년/월/일</yyyy_mm_dd>
+			<dd_mm_yyyy>일/월/년</dd_mm_yyyy>
+			<mm_dd_yyyy>월/일/년</mm_dd_yyyy>
+		</date_format>
+		<time_format name="시간 표시 형식">
+			<clock_12_hour>12 시간</clock_12_hour>
+			<clock_24_hour>24 시간</clock_24_hour>
+		</time_format>
+	</date_time>
 	<language name="언어">
 		<system_language>시스템 언어</system_language>
 	</language>

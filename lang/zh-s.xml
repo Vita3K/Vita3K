@@ -58,6 +58,17 @@
 		</start_screen>
 		<home_screen_backgrounds>主画面的背景</home_screen_backgrounds>
 	</theme_background>
+	<date_time name="日期&时间">
+		<date_format name ="日期格式">
+			<yyyy_mm_dd>年/月/日</yyyy_mm_dd>
+			<dd_mm_yyyy>日/月/年</dd_mm_yyyy>
+			<mm_dd_yyyy>月/日/年</mm_dd_yyyy>
+		</date_format>
+		<time_format name="时间格式">
+			<clock_12_hour>12小时制</clock_12_hour>
+			<clock_24_hour>24小时制</clock_24_hour>
+		</time_format>
+	</date_time>
 	<language name="语言">
 		<system_language>系统语言</system_language>
 	</language>
