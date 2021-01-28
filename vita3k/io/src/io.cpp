@@ -377,6 +377,10 @@ SceOff tell_file(IOState &io, const SceUID fd, const char *export_name) {
 
     const auto std_file = io.std_files.find(fd);
 
+    if (std_file == io.std_files.end()) {
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
+    }
+
     return std_file->second.tell();
 }
 
