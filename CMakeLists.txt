@@ -40,8 +40,13 @@ if(NOT CI)
 endif()
 
 if(WIN32)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 	add_definitions (/D "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" /D "_CRT_SECURE_NO_WARNINGS")
+endif()
+
+# Allow per-translation-unit parallel builds when using MSVC
+if(CMAKE_GENERATOR MATCHES "Visual Studio" AND (CMAKE_C_COMPILER_ID MATCHES "MSVC|Intel" OR CMAKE_CXX_COMPILER_ID MATCHES "MSVC|Intel"))
+	string(APPEND CMAKE_C_FLAGS " /MP")
+	string(APPEND CMAKE_CXX_FLAGS " /MP")
 endif()
 
 if ((CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
