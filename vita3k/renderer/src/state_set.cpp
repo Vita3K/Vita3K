@@ -21,8 +21,8 @@ COMMAND_SET_STATE(region_clip) {
     const std::uint32_t yMin = helper.pop<std::uint32_t>();
     const std::uint32_t yMax = helper.pop<std::uint32_t>();
 
-    state->region_clip_min.x = static_cast<SceInt>(align(xMin, SCE_GXM_TILE_SIZEX));
-    state->region_clip_min.y = static_cast<SceInt>(align(yMin, SCE_GXM_TILE_SIZEY));
+    state->region_clip_min.x = static_cast<SceInt>(align(xMin, SCE_GXM_TILE_SIZEX) - SCE_GXM_TILE_SIZEX);
+    state->region_clip_min.y = static_cast<SceInt>(align(yMin, SCE_GXM_TILE_SIZEY) - SCE_GXM_TILE_SIZEY);
     state->region_clip_max.x = static_cast<SceInt>(align(xMax, SCE_GXM_TILE_SIZEX));
     state->region_clip_max.y = static_cast<SceInt>(align(yMax, SCE_GXM_TILE_SIZEY));
 
