@@ -50,13 +50,13 @@ static bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelM
         }
 
         std::vector<char> data(static_cast<int>(size) + 1); // null-terminated char array
-        if (read_file(&data, host.io, file, SceSize(size), export_name) < 0) {
+        if (read_file(data.data(), host.io, file, SceSize(size), export_name) < 0) {
             data.clear();
             error_val = RET_ERROR(static_cast<int>(size));
             return false;
         }
 
-        mod_id = load_self(entry_point, host.kernel, host.mem, &data, path, host.cfg);
+        mod_id = load_self(entry_point, host.kernel, host.mem, data.data(), path, host.cfg);
 
         close_file(host.io, file, export_name);
         data.clear();
