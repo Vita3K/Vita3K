@@ -1053,52 +1053,57 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
 
     std::vector<spv::Id> ops;
 
-    // Store with traditional toture method
+    // The provided source are stored in continous order, however the dest mask may not be the same
+    const int total_elem_to_copy_first_vec = std::min<int>(4 - (insert_offset % 4), total_comp_source);
+    std::uint32_t dest_comp_stored_so_far = 0;
+
+    elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset) >> 2) });
+
+    ops.push_back(b.createLoad(elem));
+    ops.push_back(source);
+
+    for (auto i = 0; i < insert_offset % 4; i++) {
+        ops.push_back(i);
+    }
+
+    for (auto i = insert_offset % 4; i < 4; i++) {
+        if ((dest_comp_stored_so_far < total_comp_source) && (dest_mask & (1 << (i - (insert_offset % 4))))) {
+            ops.push_back(4 + (dest_comp_stored_so_far++));
+        } else {
+            ops.push_back(i);
+        }
+    }
+
+    spv::Id shuffled = b.createOp(spv::OpVectorShuffle, b.makeVectorType(type_f32, 4), ops);
+    b.createStore(shuffled, elem);
+
+    // Check if there's leftover to be stored to next vec4 element.
     if ((insert_offset % 4) + total_comp_source > 4) {
+        ops.clear();
+        const int total_elem_left = ((insert_offset % 4) + total_comp_source) - 4;
+
         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset + 3) >> 2) });
-        const auto total_comp_left_to_copy = total_comp_source - (4 - (insert_offset % 4));
-        const auto copied = 4 - insert_offset % 4;
 
         // Do an access chain
         ops.push_back(b.createLoad(elem));
         ops.push_back(source);
 
-        for (auto i = 0; i < total_comp_left_to_copy; i++) {
-            ops.push_back(4 + copied + i);
+        // Start taking value that specified in the mask
+        for (auto i = 0; i < total_elem_left; i++) {
+            if ((dest_comp_stored_so_far < total_comp_source) && (dest_mask & (1 << (total_elem_to_copy_first_vec + i)))) {
+                ops.push_back(4 + (dest_comp_stored_so_far++));
+            } else {
+                ops.push_back(i);
+            }
         }
 
-        for (auto i = total_comp_left_to_copy; i < 4; i++) {
+        for (auto i = total_elem_left; i < 4; i++) {
             ops.push_back(i);
         }
 
         spv::Id shuffled = b.createOp(spv::OpVectorShuffle, bank_base_elem_type, ops);
         b.createStore(shuffled, elem);
     }
-
-    // Store the rest
-    ops.clear();
-    elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset) >> 2) });
-
-    ops.push_back(b.createLoad(elem));
-    ops.push_back(source);
-
-    const auto start_offset_from_vec4 = insert_offset % 4;
-
-    for (auto i = 0; i < start_offset_from_vec4; i++) {
-        ops.push_back(i);
-    }
-
-    for (auto i = 0; i < std::min((int)(4 - start_offset_from_vec4), (int)total_comp_source); i++) {
-        ops.push_back(4 + i);
-    }
-
-    for (auto i = std::min(start_offset_from_vec4 + total_comp_source, 4); i < 4; i++) {
-        ops.push_back(i);
-    }
-
-    spv::Id shuffled = b.createOp(spv::OpVectorShuffle, b.makeVectorType(type_f32, 4), ops);
-
-    b.createStore(shuffled, elem);
 }
 
 spv::Id shader::usse::utils::make_uniform_vector_from_type(spv::Builder &b, spv::Id type, int val) {
