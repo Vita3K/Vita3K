@@ -241,7 +241,7 @@ public:
         Imm6 src1_n,
         Imm6 src2_n);
 
-    bool v32nmad(ExtPredicate pred,
+    bool v32nmad(ExtVecPredicate pred,
         bool skipinv,
         Imm2 src1_swiz_10_11,
         bool syncstart,
@@ -264,7 +264,7 @@ public:
         Imm6 src1_n,
         Imm6 src2_n);
 
-    bool v16nmad(ExtPredicate pred,
+    bool v16nmad(ExtVecPredicate pred,
         bool skipinv,
         Imm2 src1_swiz_10_11,
         bool syncstart,

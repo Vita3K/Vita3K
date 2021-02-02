@@ -490,7 +490,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
 }
 
 bool USSETranslatorVisitor::v32nmad(
-    ExtPredicate pred,
+    ExtVecPredicate pred,
     bool skipinv,
     Imm2 src1_swiz_10_11,
     bool syncstart,
@@ -573,7 +573,9 @@ bool USSETranslatorVisitor::v32nmad(
         source_mask = 0b1111;
     }
 
-    LOG_DISASM("{:016x}: {}{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(opcode), disasm::operand_to_str(inst.opr.dest, dest_mask),
+    ExtPredicate pred_translated = ext_vec_predicate_to_ext(pred);
+
+    LOG_DISASM("{:016x}: {}{} {} {} {}", m_instr, disasm::e_predicate_str(pred_translated), disasm::opcode_str(opcode), disasm::operand_to_str(inst.opr.dest, dest_mask),
         disasm::operand_to_str(inst.opr.src1, source_mask), disasm::operand_to_str(inst.opr.src2, source_mask));
 
     // Recompile
@@ -588,7 +590,7 @@ bool USSETranslatorVisitor::v32nmad(
 }
 
 bool USSETranslatorVisitor::v16nmad(
-    ExtPredicate pred,
+    ExtVecPredicate pred,
     bool skipinv,
     Imm2 src1_swiz_10_11,
     bool syncstart,

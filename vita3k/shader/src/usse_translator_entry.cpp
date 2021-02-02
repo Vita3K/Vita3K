@@ -73,7 +73,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
         // Vector operations except for MAD (F32)
         /*
                                          00001 = opcode1
-                                              ppp = pred (3 bits, ExtPredicate)
+                                              ppp = pred (3 bits, ExtVecPredicate)
                                                  s = skipinv (1 bit, bool)
                                                   rr = src1_swiz_10_11 (2 bits)
                                                     y = syncstart (1 bit, bool)
@@ -100,7 +100,7 @@ boost::optional<const USSEMatcher<V> &> DecodeUSSE(uint64_t instruction) {
         // Vector operations except for MAD (F16)
         /*
                                          00010 = opcode1
-                                              ppp = pred (3 bits, ExtPredicate)
+                                              ppp = pred (3 bits, ExtVecPredicate)
                                                  s = skipinv (1 bit, bool)
                                                   rr = src1_swiz_10_11 (2 bits)
                                                     y = syncstart (1 bit, bool)
