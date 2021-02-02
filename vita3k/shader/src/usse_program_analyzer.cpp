@@ -103,6 +103,12 @@ std::uint8_t get_predicate(const std::uint64_t inst) {
         uint8_t predicate = ((inst >> 32) & ~0xF9FFFFFF) >> 25;
         return static_cast<uint8_t>(short_predicate_to_ext(static_cast<ShortPredicate>(predicate)));
     }
+    // V16NMAD, V32NMAD
+    case 0b00010:
+    case 0b00001: {
+        uint8_t predicate = ((inst >> 32) & ~0xF8FFFFFFU) >> 24;
+        return static_cast<uint8_t>(ext_vec_predicate_to_ext(static_cast<ExtVecPredicate>(predicate)));
+    }
     case 0b00000:
         return ((inst >> 32) & ~0xFCFFFFFF) >> 24;
 
