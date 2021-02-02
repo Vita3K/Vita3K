@@ -19,6 +19,34 @@
 
 #include <module/module.h>
 
+enum SceAudiodecCodec : uint32_t {
+    SCE_AUDIODEC_TYPE_AT9 = 0x1003,
+    SCE_AUDIODEC_TYPE_MP3 = 0x1004,
+    SCE_AUDIODEC_TYPE_AAC = 0x1005,
+    SCE_AUDIODEC_TYPE_CELP = 0x1006,
+};
+
+struct SceAudiodecInitStreamParam {
+    SceUInt32 size;
+    SceUInt32 totalStreams;
+};
+
+struct SceAudiodecInitChParam {
+    SceUInt32 size;
+    SceUInt32 totalCh;
+};
+
+union SceAudiodecInitParam {
+    SceUInt32 size;
+    SceAudiodecInitChParam at9;
+    SceAudiodecInitStreamParam mp3;
+    SceAudiodecInitStreamParam aac;
+    SceAudiodecInitStreamParam celp;
+};
+
+EXPORT(SceInt32, sceAudiodecInitLibrary, SceUInt32 codecType, SceAudiodecInitParam *pInitParam);
+EXPORT(SceInt32, sceAudiodecTermLibrary, SceUInt32 codecType);
+
 BRIDGE_DECL(sceAudiodecClearContext)
 BRIDGE_DECL(sceAudiodecCreateDecoder)
 BRIDGE_DECL(sceAudiodecCreateDecoderExternal)
