@@ -23,13 +23,6 @@ enum {
     SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION = 0x807F2801
 };
 
-enum SceAudiodecCodec : uint32_t {
-    SCE_AUDIODEC_TYPE_AT9 = 0x1003,
-    SCE_AUDIODEC_TYPE_MP3 = 0x1004,
-    SCE_AUDIODEC_TYPE_AAC = 0x1005,
-    SCE_AUDIODEC_TYPE_CELP = 0x1006,
-};
-
 enum {
     SCE_AUDIODEC_MP3_MPEG_VERSION_2_5,
     SCE_AUDIODEC_MP3_MPEG_VERSION_RESERVED,
@@ -198,7 +191,7 @@ EXPORT(int, sceAudiodecGetInternalError) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAudiodecInitLibrary) {
+EXPORT(SceInt32, sceAudiodecInitLibrary, SceUInt32 codecType, SceAudiodecInitParam *pInitParam) {
     return STUBBED("EMPTY");
 }
 
@@ -206,7 +199,7 @@ EXPORT(int, sceAudiodecPartlyDecode) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAudiodecTermLibrary) {
+EXPORT(SceInt32, sceAudiodecTermLibrary, SceUInt32 codecType) {
     return STUBBED("EMPTY");
 }
 
