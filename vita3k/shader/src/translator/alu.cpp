@@ -29,35 +29,35 @@ using namespace shader;
 using namespace usse;
 
 bool USSETranslatorVisitor::vmad(
-    ExtPredicate pred,
+    ExtVecPredicate pred,
     Imm1 skipinv,
     Imm1 gpi1_swiz_ext,
     Imm1 opcode2,
     Imm1 dest_use_bank_ext,
     Imm1 end,
-    Imm1 src0_bank_ext,
+    Imm1 src1_bank_ext,
     RepeatMode repeat_mode,
     Imm1 gpi0_abs,
     RepeatCount repeat_count,
     bool nosched,
     Imm4 write_mask,
-    Imm1 src0_neg,
-    Imm1 src0_abs,
+    Imm1 src1_neg,
+    Imm1 src1_abs,
     Imm1 gpi1_neg,
     Imm1 gpi1_abs,
     Imm1 gpi0_swiz_ext,
     Imm2 dest_bank,
-    Imm2 src0_bank,
+    Imm2 src1_bank,
     Imm2 gpi0_n,
     Imm6 dest_n,
     Imm4 gpi0_swiz,
     Imm4 gpi1_swiz,
     Imm2 gpi1_n,
     Imm1 gpi0_neg,
-    Imm1 src0_swiz_ext,
-    Imm4 src0_swiz,
-    Imm6 src0_n) {
-    std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), "VMAD");
+    Imm1 src1_swiz_ext,
+    Imm4 src1_swiz,
+    Imm6 src1_n) {
+    std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(ext_vec_predicate_to_ext(pred)), "VMAD");
 
     Instruction inst;
 
@@ -68,13 +68,13 @@ bool USSETranslatorVisitor::vmad(
         type = 1;
     }
 
-    inst.opr.src0 = decode_src12(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, true, 7, m_second_program);
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
 
     // GPI0 and GPI1, setup!
-    inst.opr.src1.bank = usse::RegisterBank::FPINTERNAL;
-    inst.opr.src1.flags = RegisterFlags::GPI;
-    inst.opr.src1.num = gpi0_n;
+    inst.opr.src0.bank = usse::RegisterBank::FPINTERNAL;
+    inst.opr.src0.flags = RegisterFlags::GPI;
+    inst.opr.src0.num = gpi0_n;
 
     inst.opr.src2.bank = usse::RegisterBank::FPINTERNAL;
     inst.opr.src2.flags = RegisterFlags::GPI;
@@ -85,24 +85,24 @@ bool USSETranslatorVisitor::vmad(
         inst.opr.dest.swizzle[3] = usse::SwizzleChannel::_X;
     }
 
-    inst.opr.src0.swizzle = decode_vec34_swizzle(src0_swiz, src0_swiz_ext, type);
-    inst.opr.src1.swizzle = decode_vec34_swizzle(gpi0_swiz, gpi0_swiz_ext, type);
+    inst.opr.src1.swizzle = decode_vec34_swizzle(src1_swiz, src1_swiz_ext, type);
+    inst.opr.src0.swizzle = decode_vec34_swizzle(gpi0_swiz, gpi0_swiz_ext, type);
     inst.opr.src2.swizzle = decode_vec34_swizzle(gpi1_swiz, gpi1_swiz_ext, type);
 
-    if (src0_abs) {
-        inst.opr.src0.flags |= RegisterFlags::Absolute;
-    }
-
-    if (src0_neg) {
-        inst.opr.src0.flags |= RegisterFlags::Negative;
-    }
-
-    if (gpi0_abs) {
+    if (src1_abs) {
         inst.opr.src1.flags |= RegisterFlags::Absolute;
     }
 
-    if (gpi0_neg) {
+    if (src1_neg) {
         inst.opr.src1.flags |= RegisterFlags::Negative;
+    }
+
+    if (gpi0_abs) {
+        inst.opr.src0.flags |= RegisterFlags::Absolute;
+    }
+
+    if (gpi0_neg) {
+        inst.opr.src0.flags |= RegisterFlags::Negative;
     }
 
     if (gpi1_abs) {
@@ -267,31 +267,31 @@ bool USSETranslatorVisitor::vmad2(
 }
 
 bool USSETranslatorVisitor::vdp(
-    ExtPredicate pred,
+    ExtVecPredicate pred,
     Imm1 skipinv,
     bool clip_plane_enable,
     Imm1 opcode2,
     Imm1 dest_use_bank_ext,
     Imm1 end,
-    Imm1 src0_bank_ext,
+    Imm1 src1_bank_ext,
     RepeatMode repeat_mode,
     Imm1 gpi0_abs,
     RepeatCount repeat_count,
     bool nosched,
     Imm4 write_mask,
-    Imm1 src0_neg,
-    Imm1 src0_abs,
+    Imm1 src1_neg,
+    Imm1 src1_abs,
     Imm3 clip_plane_n,
     Imm2 dest_bank,
-    Imm2 src0_bank,
+    Imm2 src1_bank,
     Imm2 gpi0_n,
     Imm6 dest_n,
     Imm4 gpi0_swiz,
-    Imm3 src0_swiz_w,
-    Imm3 src0_swiz_z,
-    Imm3 src0_swiz_y,
-    Imm3 src0_swiz_x,
-    Imm6 src0_n) {
+    Imm3 src1_swiz_w,
+    Imm3 src1_swiz_z,
+    Imm3 src1_swiz_y,
+    Imm3 src1_swiz_x,
+    Imm6 src1_n) {
     Instruction inst;
 
     // Is this VDP3 or VDP4, op2 = 0 => vec3
@@ -303,14 +303,14 @@ bool USSETranslatorVisitor::vdp(
         src_mask = 0b0111;
     }
 
-    // Double regs always true for src0, dest
-    inst.opr.src0 = decode_src12(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
+    // Double regs always true for src1, dest
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, true, 7, m_second_program);
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_use_bank_ext, true, 7, m_second_program);
 
-    inst.opr.src1.bank = usse::RegisterBank::FPINTERNAL;
-    inst.opr.src1.flags = RegisterFlags::GPI;
-    inst.opr.src1.num = gpi0_n;
-    inst.opr.src1.swizzle = decode_vec34_swizzle(gpi0_swiz, false, type);
+    inst.opr.src2.bank = usse::RegisterBank::FPINTERNAL;
+    inst.opr.src2.flags = RegisterFlags::GPI;
+    inst.opr.src2.num = gpi0_n;
+    inst.opr.src2.swizzle = decode_vec34_swizzle(gpi0_swiz, false, type);
 
     // Decode first source swizzle
     const SwizzleChannel tb_swizz_dec[] = {
@@ -325,22 +325,22 @@ bool USSETranslatorVisitor::vdp(
         SwizzleChannel::_UNDEFINED
     };
 
-    inst.opr.src0.swizzle[0] = tb_swizz_dec[src0_swiz_x];
-    inst.opr.src0.swizzle[1] = tb_swizz_dec[src0_swiz_y];
-    inst.opr.src0.swizzle[2] = tb_swizz_dec[src0_swiz_z];
-    inst.opr.src0.swizzle[3] = tb_swizz_dec[src0_swiz_w];
+    inst.opr.src1.swizzle[0] = tb_swizz_dec[src1_swiz_x];
+    inst.opr.src1.swizzle[1] = tb_swizz_dec[src1_swiz_y];
+    inst.opr.src1.swizzle[2] = tb_swizz_dec[src1_swiz_z];
+    inst.opr.src1.swizzle[3] = tb_swizz_dec[src1_swiz_w];
 
     // Set modifiers
-    if (src0_neg) {
-        inst.opr.src0.flags |= RegisterFlags::Negative;
+    if (src1_neg) {
+        inst.opr.src1.flags |= RegisterFlags::Negative;
     }
 
-    if (src0_abs) {
-        inst.opr.src0.flags |= RegisterFlags::Absolute;
+    if (src1_abs) {
+        inst.opr.src1.flags |= RegisterFlags::Absolute;
     }
 
     if (gpi0_abs) {
-        inst.opr.src1.flags |= RegisterFlags::Absolute;
+        inst.opr.src2.flags |= RegisterFlags::Absolute;
     }
 
     m_b.setLine(m_recompiler.cur_pc);
@@ -349,11 +349,11 @@ bool USSETranslatorVisitor::vdp(
     BEGIN_REPEAT(repeat_count)
     GET_REPEAT(inst, repeat_mode)
 
-    LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::operand_to_str(inst.opr.dest, write_mask, 0),
-        disasm::operand_to_str(inst.opr.src0, src_mask, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset));
+    LOG_DISASM("{:016x}: {}VDP {} {} {}", m_instr, disasm::e_predicate_str(ext_vec_predicate_to_ext(pred)), disasm::operand_to_str(inst.opr.dest, write_mask, 0),
+        disasm::operand_to_str(inst.opr.src1, src_mask, src1_repeat_offset), disasm::operand_to_str(inst.opr.src2, src_mask, src2_repeat_offset));
 
-    spv::Id lhs = load(inst.opr.src0, type == 1 ? 0b0111 : 0b1111, src0_repeat_offset);
-    spv::Id rhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
+    spv::Id lhs = load(inst.opr.src1, type == 1 ? 0b0111 : 0b1111, src1_repeat_offset);
+    spv::Id rhs = load(inst.opr.src2, type == 1 ? 0b0111 : 0b1111, src2_repeat_offset);
 
     if (lhs == spv::NoResult || rhs == spv::NoResult) {
         LOG_ERROR("Source not loaded (lhs: {}, rhs: {})", lhs, rhs);
