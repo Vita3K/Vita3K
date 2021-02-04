@@ -142,7 +142,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         gui.live_area.information_bar = true;
 
     if (!gui.file_menu.pkg_install_dialog) {
-        if (ImGui::IsAnyWindowHovered() || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
+        if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
             last_time["start"] = 0;
         else {
             if (last_time["start"] == 0)
