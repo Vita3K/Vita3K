@@ -160,9 +160,9 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
     const sce_module_imports_raw *const imports_end = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_end);
 
     for (const sce_module_imports_raw *imports = imports_begin; imports < imports_end; imports = reinterpret_cast<const sce_module_imports_raw *>(reinterpret_cast<const uint8_t *>(imports) + imports->size)) {
-        assert(imports->num_syms_unk == 0);
+        assert(imports->num_syms_tls_vars == 0);
 
-        Address module_name{};
+        Address library_name{};
         Address func_nid_table{};
         Address func_entry_table{};
         Address var_nid_table{};
@@ -170,14 +170,14 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
 
         if (imports->size == 0x24) {
             auto short_imports = reinterpret_cast<const sce_module_imports_short_raw *>(imports);
-            module_name = short_imports->module_name;
+            library_name = short_imports->library_name;
             func_nid_table = short_imports->func_nid_table;
             func_entry_table = short_imports->func_entry_table;
             var_nid_table = short_imports->var_nid_table;
             var_entry_table = short_imports->var_entry_table;
         } else if (imports->size == 0x34) {
             auto long_imports = imports;
-            module_name = long_imports->module_name;
+            library_name = long_imports->library_name;
             func_nid_table = long_imports->func_nid_table;
             func_entry_table = long_imports->func_entry_table;
             var_nid_table = long_imports->var_nid_table;
@@ -186,7 +186,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
 
         std::string lib_name;
         if (cfg.log_imports) {
-            lib_name = Ptr<const char>(module_name).get(mem);
+            lib_name = Ptr<const char>(library_name).get(mem);
             LOG_INFO("Loading func imports from {}", lib_name);
         }
 
@@ -281,7 +281,7 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
     const sce_module_exports_raw *const exports_end = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_end);
 
     for (const sce_module_exports_raw *exports = exports_begin; exports < exports_end; exports = reinterpret_cast<const sce_module_exports_raw *>(reinterpret_cast<const uint8_t *>(exports) + exports->size)) {
-        const char *const lib_name = Ptr<const char>(exports->module_name).get(mem);
+        const char *const lib_name = Ptr<const char>(exports->library_name).get(mem);
 
         if (cfg.log_exports) {
             LOG_INFO("Loading func exports from {}", lib_name ? lib_name : "unknown");
@@ -429,7 +429,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     for (const auto [seg, infos] : segment_reloc_info) {
         LOG_INFO("Loaded module segment {} @ [0x{:08X} - 0x{:08X} / 0x{:08X}] (size: 0x{:08X}) of module {}", seg, infos.addr, infos.addr + infos.size, infos.p_vaddr, infos.size, self_path);
-        kernel.module_regions.push_back({ module_info->library_nid,
+        kernel.module_regions.push_back({ module_info->module_nid,
             module_info->name,
             infos.addr,
             static_cast<uint32_t>(infos.size),
@@ -455,9 +455,9 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     //unk40
     //unk44
-    sceKernelModuleInfo->tlsInit = Ptr<const void>((!module_info->field_38 ? 0 : (module_info_segment_address.address() + module_info->field_38)));
-    sceKernelModuleInfo->tlsInitSize = module_info->field_3C;
-    sceKernelModuleInfo->tlsAreaSize = module_info->field_40;
+    sceKernelModuleInfo->tlsInit = Ptr<const void>((!module_info->tls_start ? 0 : (module_info_segment_address.address() + module_info->tls_start)));
+    sceKernelModuleInfo->tlsInitSize = module_info->tls_filesz;
+    sceKernelModuleInfo->tlsAreaSize = module_info->tls_memsz;
 
     if (sceKernelModuleInfo->tlsInit) {
         kernel.tls_address = sceKernelModuleInfo->tlsInit;
