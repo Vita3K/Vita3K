@@ -247,3 +247,7 @@ endif()
 
 add_subdirectory(ffmpeg)
 add_subdirectory(psvpfstools)
+
+option(BUILD_SHARED_LIBS "Build shared library" OFF)
+option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
+add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)
