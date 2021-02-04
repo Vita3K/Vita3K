@@ -186,8 +186,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
 
     for (size_t i = 0; i < program.uniform_buffer_count; ++i) {
         const SceGxmUniformBufferInfo *buffer_info = &buffer_infoes[i];
-
-        const uint32_t offset = base_offset + buffer_info->base_offset;
+        const uint32_t offset = base_offset + buffer_info->ldst_base_offset;
 
         const auto buffer = uniform_buffers.find(buffer_info->reside_buffer);
         // buffer = null seems to happen when there's a leftover uniform buffer (uniform buffer that's not used in shader code)
@@ -198,8 +197,9 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             item.offset = offset;
             item.component_count = 1;
             item.array_size = 1;
+
             UniformBufferInputSource source;
-            source.base = buffer->second.reg_block_size;
+            source.base = buffer_info->ldst_base_value + 4;
             source.index = buffer->second.index;
             item.source = source;
 

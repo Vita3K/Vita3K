@@ -60,9 +60,9 @@ static void fixup_reg_special(Operand &inout_reg) {
 /**
  * \brief Doubles 'reg' register if necessary
  */
-static void double_reg(Imm6 &reg, RegisterBank reg_bank) {
+static void double_reg(usse::OperandNum &reg, RegisterBank reg_bank) {
     if (reg_bank != RegisterBank::SPECIAL && reg_bank != RegisterBank::IMMEDIATE)
-        reg <<= 1;
+        reg = (reg << 1) & 0xFF;
 }
 
 // Operand bank decoding

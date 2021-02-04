@@ -1373,9 +1373,9 @@ enum SceGxmFragmentProgramInputs : int {
 };
 
 struct SceGxmUniformBufferInfo {
-    std::uint16_t reside_buffer; // If reside buffer = 0, this is a in memory buffer. Likely SSBO
-    std::uint16_t base_offset;
-    std::uint32_t unk0;
+    std::uint16_t reside_buffer; ///< If reside buffer = 0, this is a in memory buffer. Likely SSBO
+    std::uint16_t ldst_base_offset; ///< Point to the register number starting from container's base SA offset, storing base value.
+    std::int32_t ldst_base_value; ///< Value representing the starting offset in bytes to load/store buffer data.
 };
 
 struct SceGxmProgram {

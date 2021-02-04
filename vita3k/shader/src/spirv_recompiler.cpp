@@ -840,7 +840,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            reg.bank = RegisterBank::SECATTR;
                            reg.num = input.offset;
                            reg.type = DataType::INT32;
-                           const auto base = buffer_bases.at(s.index) + 4 * s.base;
+                           const auto base = buffer_bases.at(s.index) + s.base;
                            utils::store(b, spv_params, utils, features, reg, b.makeIntConstant(base), 0b1, 0);
                        },
                        [&](const DependentSamplerInputSource &s) {
