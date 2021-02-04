@@ -19,4 +19,5 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(scePafGetCurrentClockLocalTime)
 BRIDGE_DECL(sce_paf_misc_does_file_exist)

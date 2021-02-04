@@ -29,6 +29,10 @@ EXPORT(int, sceShellUtilRegisterEventHandler) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceShellUtilRequestLaunchApp) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceShellUtilUnlock) {
     return UNIMPLEMENTED();
 }
@@ -36,4 +40,5 @@ EXPORT(int, sceShellUtilUnlock) {
 BRIDGE_IMPL(sceShellUtilInitEvents)
 BRIDGE_IMPL(sceShellUtilLock)
 BRIDGE_IMPL(sceShellUtilRegisterEventHandler)
+BRIDGE_IMPL(sceShellUtilRequestLaunchApp)
 BRIDGE_IMPL(sceShellUtilUnlock)

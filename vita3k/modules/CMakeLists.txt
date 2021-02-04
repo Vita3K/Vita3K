@@ -6,6 +6,8 @@ add_library(modules STATIC
 	SceAppMgr/SceAppMgrUser.cpp SceAppMgr/SceAppMgrUser.h
 	SceAppMgr/SceSharedFb.cpp SceAppMgr/SceSharedFb.h
 	SceAppUtil/SceAppUtil.cpp SceAppUtil/SceAppUtil.h
+	SceAppUtil/SceAppUtilAddcontForce.cpp SceAppUtil/SceAppUtilAddcontForce.h
+	SceAppUtil/SceAppUtilBook.cpp SceAppUtil/SceAppUtilBook.h
 	SceAppUtil/SceAppUtilCache.cpp SceAppUtil/SceAppUtilCache.h
 	SceAppUtil/SceAppUtilExt.cpp SceAppUtil/SceAppUtilExt.h
 	SceAtrac/SceAtrac.cpp SceAtrac/SceAtrac.h
@@ -153,6 +155,7 @@ add_library(modules STATIC
 	SceScreenShot/SceScreenShot.cpp SceScreenShot/SceScreenShot.h
 	SceShaccCg/SceShaccCg.cpp SceShaccCg/SceShaccCg.h
 	SceShellSvc/SceShellUtil.cpp SceShellSvc/SceShellUtil.h
+	SceShellSvc/SceShellUtilLaunchApp.cpp SceShellSvc/SceShellUtilLaunchApp.h
 	SceShutterSound/SceShutterSound.cpp SceShutterSound/SceShutterSound.h
 	SceSmart/SceSmart.cpp SceSmart/SceSmart.h
 	SceSqlite/SceSqlite.cpp SceSqlite/SceSqlite.h
