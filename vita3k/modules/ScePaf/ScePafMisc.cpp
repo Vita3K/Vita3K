@@ -17,8 +17,13 @@
 
 #include "ScePafMisc.h"
 
+EXPORT(int, scePafGetCurrentClockLocalTime) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sce_paf_misc_does_file_exist) {
     return UNIMPLEMENTED();
 }
 
+BRIDGE_IMPL(scePafGetCurrentClockLocalTime)
 BRIDGE_IMPL(sce_paf_misc_does_file_exist)

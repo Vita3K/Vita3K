@@ -434,6 +434,11 @@ NID(sceAppUtilShutdown, 0xB220B00B)
 NID(sceAppUtilStoreBrowse, 0x85FA94EE)
 NID(sceAppUtilSystemParamGetInt, 0x5DFB9CA0)
 NID(sceAppUtilSystemParamGetString, 0x6E6AA267)
+// Library "SceAppUtilAddcontForce"
+NID(sceAppUtilAddcontForceAddcontMount, 0x6087E5F7)
+// Library "SceAppUtilBook"
+NID(sceAppUtilBookMount, 0xFDAAF091)
+NID(sceAppUtilBookUmount, 0x9C1794C2)
 // Library "SceAppUtilCache"
 NID(sceAppUtilCacheGetDevInfo, 0x1171B736)
 NID(sceAppUtilCacheMount, 0x0AA56143)
@@ -5299,6 +5304,7 @@ NID(sceNpWebApiUnregisterServicePushEventCallback, 0x06D28ADA)
 NID(sceNpWebApiUtilityParseNpId, 0x98CBE11F)
 // Module "ScePaf"
 // Library "ScePafMisc"
+NID(scePafGetCurrentClockLocalTime, 0x96345146)
 NID(sce_paf_misc_does_file_exist, 0x95F14046)
 // Library "ScePafResource"
 NID(scePafResourceGetAttribute, 0xAD8678FB)
@@ -6032,7 +6038,10 @@ NID(sceShaccCgSetDefaultAllocator, 0x6F01D573)
 NID(sceShellUtilInitEvents, 0xE8AD11EC)
 NID(sceShellUtilLock, 0xA9537233)
 NID(sceShellUtilRegisterEventHandler, 0x7B5EDFE7)
+NID(sceShellUtilRequestLaunchApp, 0xFD521712)
 NID(sceShellUtilUnlock, 0x21A6CF54)
+// Library "SceShellUtilLaunchApp"
+NID(sceShellUtilLaunchAppRequestLaunchApp, 0x5372EEDB)
 // Module "SceShutterSound"
 // Library "SceShutterSound"
 NID(sceShutterSoundPlay, 0x7FFB6D79)

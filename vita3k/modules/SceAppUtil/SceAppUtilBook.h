@@ -19,8 +19,5 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(sceShellUtilInitEvents)
-BRIDGE_DECL(sceShellUtilLock)
-BRIDGE_DECL(sceShellUtilRegisterEventHandler)
-BRIDGE_DECL(sceShellUtilRequestLaunchApp)
-BRIDGE_DECL(sceShellUtilUnlock)
+BRIDGE_DECL(sceAppUtilBookMount)
+BRIDGE_DECL(sceAppUtilBookUmount)

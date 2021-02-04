@@ -15,12 +15,10 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include "SceAppUtilAddcontForce.h"
 
-#include <module/module.h>
+EXPORT(int, sceAppUtilAddcontForceAddcontMount) {
+    return UNIMPLEMENTED();
+}
 
-BRIDGE_DECL(sceShellUtilInitEvents)
-BRIDGE_DECL(sceShellUtilLock)
-BRIDGE_DECL(sceShellUtilRegisterEventHandler)
-BRIDGE_DECL(sceShellUtilRequestLaunchApp)
-BRIDGE_DECL(sceShellUtilUnlock)
+BRIDGE_IMPL(sceAppUtilAddcontForceAddcontMount)
