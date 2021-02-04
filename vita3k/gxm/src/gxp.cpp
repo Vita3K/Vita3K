@@ -345,11 +345,11 @@ int get_uniform_buffer_base(const SceGxmProgram &program, const SceGxmProgramPar
         reinterpret_cast<const std::uint8_t *>(&program.uniform_buffer_offset) + program.uniform_buffer_offset);
 
     if (program.uniform_buffer_count == 1) {
-        base += info->base_offset;
+        base += info->ldst_base_offset;
     } else {
         for (std::uint32_t i = 0; i < program.uniform_buffer_count; i++) {
             if (info[i].reside_buffer == parameter.resource_index) {
-                base += info[i].base_offset;
+                base += info[i].ldst_base_offset;
             }
         }
     }

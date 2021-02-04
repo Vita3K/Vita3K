@@ -285,8 +285,10 @@ inline bool is_float_data_type(const DataType dtype) {
 enum InstructionFlags {
 };
 
+using OperandNum = std::uint16_t;
+
 struct Operand {
-    Imm6 num = 0b111111;
+    OperandNum num = 0xFFFF;
     RegisterBank bank = RegisterBank::INVALID;
     RegisterFlags flags{};
     Swizzle4 swizzle = SWIZZLE_CHANNEL_4_UNDEFINED;
