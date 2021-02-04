@@ -231,9 +231,11 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable Archiving Log.");
         ImGui::SameLine();
+#ifdef USE_DISCORD
         ImGui::Checkbox("Discord Rich Presence", &host.cfg.discord_rich_presence);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Enables Discord Rich Presence to show what application you're running on discord");
+#endif
         ImGui::Checkbox("Performance overlay", &host.cfg.performance_overlay);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Display performance information on the screen as an overlay.");
