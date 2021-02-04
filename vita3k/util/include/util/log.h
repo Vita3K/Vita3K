@@ -17,6 +17,8 @@
 
 #pragma once
 
+#define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+
 #include <spdlog/spdlog.h>
 #include <util/exit_code.h>
 #include <util/fs.h>
@@ -69,5 +71,3 @@ std::string log_hex(T val) {
     using unsigned_type = typename std::make_unsigned<T>::type;
     return fmt::format("0x{:0X}", static_cast<unsigned_type>(val));
 }
-
-void dump_hex(const std::vector<uint8_t> &bytes, std::ostream &stream);
