@@ -500,6 +500,15 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     case SCE_GXM_COLOR_FORMAT_U8_R:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RED, GL_UNSIGNED_BYTE, pixels);
         break;
+    case SCE_GXM_COLOR_FORMAT_F16_R:
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RED, GL_HALF_FLOAT, pixels);
+        break;
+    case SCE_GXM_COLOR_FORMAT_F16F16_GR:
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RG, GL_HALF_FLOAT, pixels);
+        break;
+    case SCE_GXM_COLOR_FORMAT_F16F16F16F16_ABGR:
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_HALF_FLOAT, pixels);
+        break;
     default:
         LOG_ERROR("Color format not implemented: {}, report this to developer", format);
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
