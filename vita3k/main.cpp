@@ -39,7 +39,9 @@
 #endif
 
 #include <SDL.h>
+#include <chrono>
 #include <cstdlib>
+#include <thread>
 
 int main(int argc, char *argv[]) {
     Root root_paths;
