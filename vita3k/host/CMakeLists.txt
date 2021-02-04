@@ -23,4 +23,4 @@ target_link_libraries(host PUBLIC psvpfsparser app audio config ctrl dialog io k
 if(USE_GDBSTUB)
 	target_link_libraries(host PUBLIC gdbstub)
 endif()
-target_link_libraries(host PRIVATE elfio FAT16 vita-toolchain)
+target_link_libraries(host PRIVATE elfio::elfio FAT16 vita-toolchain)
