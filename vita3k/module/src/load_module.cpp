@@ -31,11 +31,11 @@ bool is_lle_module(SceSysmoduleModuleId module_id, HostState &host) {
         SCE_SYSMODULE_HTTP,
         SCE_SYSMODULE_SSL,
         SCE_SYSMODULE_HTTPS,
-        //SCE_SYSMODULE_SAS, // Have regressed, Disable for now
+        SCE_SYSMODULE_SAS,
         SCE_SYSMODULE_PGF,
         SCE_SYSMODULE_SYSTEM_GESTURE,
         SCE_SYSMODULE_XML,
-        SCE_SYSMODULE_MP4,
+        //SCE_SYSMODULE_MP4, // Is not ready for now
         SCE_SYSMODULE_ATRAC,
         SCE_SYSMODULE_JSON,
     };
