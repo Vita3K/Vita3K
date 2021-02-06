@@ -246,6 +246,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Disable experimental ngs support", &host.cfg.disable_ngs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Disable experimental support for advanced audio library ngs");
+        ImGui::Checkbox("Enable video playing support", &host.cfg.video_playing);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Uncheck the box to disable video player.\nOn some game, disable it is required for more progress.");
         ImGui::Separator();
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Emulated System Storage Folder");
         ImGui::Spacing();
@@ -416,10 +419,20 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     } else
         ImGui::PopStyleColor();
 
-    if (host.cfg.overwrite_config)
-        config::serialize_config(host.cfg, host.cfg.config_path);
-
     ImGui::EndTabBar();
+
+    if (host.cfg.overwrite_config) {
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        static const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+        if (ImGui::Button("Save", BUTTON_SIZE))
+            config::serialize_config(host.cfg, host.cfg.config_path);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Click on Save is required to keep changes after reboot.");
+    }
+
     ImGui::End();
 }
 

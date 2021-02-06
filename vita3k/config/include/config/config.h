@@ -85,7 +85,8 @@
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
     code(bool, "dump-textures", false, dump_textures)                                                   \
     code(bool, "show-welcome", true, show_welcome)                                                      \
-    code(bool, "asia-font-support", false, asia_font_support)
+    code(bool, "asia-font-support", false, asia_font_support)                                           \
+    code(bool, "video-playing", true, video_playing)
 
 // Vector members produced in the config file
 // Order is code(option_type, option_name, default_value)

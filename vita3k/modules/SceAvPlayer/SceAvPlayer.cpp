@@ -275,23 +275,28 @@ EXPORT(int, sceAvPlayerGetVideoDataEx) {
 }
 
 EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
-    SceUID player_handle = host.kernel.get_next_uid();
-    PlayerPtr player = std::make_shared<PlayerInfoState>();
-    host.kernel.players[player_handle] = player;
+    if (host.cfg.video_playing) {
+        SceUID player_handle = host.kernel.get_next_uid();
+        PlayerPtr player = std::make_shared<PlayerInfoState>();
+        host.kernel.players[player_handle] = player;
 
-    if (info->memory_allocator.general_allocator)
-        LOG_WARN("General Allocator will not be used.");
-    if (info->memory_allocator.general_deallocator)
-        LOG_WARN("General Deallocator will not be used.");
-    if (info->memory_allocator.texture_allocator)
-        LOG_WARN("Texture Allocator will not be used.");
-    if (info->memory_allocator.texture_deallocator)
-        LOG_WARN("Texture Deallocator will not be used.");
+        if (info->memory_allocator.general_allocator)
+            LOG_WARN("General Allocator will not be used.");
+        if (info->memory_allocator.general_deallocator)
+            LOG_WARN("General Deallocator will not be used.");
+        if (info->memory_allocator.texture_allocator)
+            LOG_WARN("Texture Allocator will not be used.");
+        if (info->memory_allocator.texture_deallocator)
+            LOG_WARN("Texture Deallocator will not be used.");
 
-    player->last_frame_time = current_time();
+        player->last_frame_time = current_time();
 
-    // Result is defined as a void *, but I just call it SceUID because it is easier to deal with. Same size.
-    return player_handle;
+        // Result is defined as a void *, but I just call it SceUID because it is easier to deal with. Same size.
+        return player_handle;
+    } else {
+        LOG_WARN("Video is skipped");
+        return 0;
+    }
 }
 
 EXPORT(bool, sceAvPlayerIsActive, SceUID player_handle) {
