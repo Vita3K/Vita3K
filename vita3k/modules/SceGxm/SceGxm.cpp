@@ -1803,11 +1803,13 @@ EXPORT(int, sceGxmSetDeferredContextVertexBuffer, SceGxmContext *deferredContext
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetFragmentDefaultUniformBuffer, SceGxmContext *context, const void *bufferData) {
+EXPORT(int, sceGxmSetFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<const void> bufferData) {
     if (!context || !bufferData) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    context->state.fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = bufferData;
+    return 0;
 }
 
 EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmFragmentProgram> fragmentProgram) {
@@ -2063,11 +2065,13 @@ EXPORT(int, sceGxmSetValidationEnable) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmSetVertexDefaultUniformBuffer, SceGxmContext *context, const void *bufferData) {
+EXPORT(int, sceGxmSetVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<const void> bufferData) {
     if (!context || !bufferData) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    context->state.vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = bufferData;
+    return 0;
 }
 
 EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVertexProgram> vertexProgram) {
