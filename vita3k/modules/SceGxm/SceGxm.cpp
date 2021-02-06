@@ -811,6 +811,10 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
+    if (!draw) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
     SceGxmPrecomputedVertexState *vertex_state = context->state.precomputed_vertex_state.cast<SceGxmPrecomputedVertexState>().get(host.mem);
     SceGxmPrecomputedFragmentState *fragment_state = context->state.precomputed_fragment_state.cast<SceGxmPrecomputedFragmentState>().get(host.mem);
 
@@ -1667,6 +1671,14 @@ EXPORT(int, sceGxmProgramParameterGetType, const SceGxmProgramParameter *paramet
 }
 
 EXPORT(bool, sceGxmProgramParameterIsRegFormat, const SceGxmProgram *program, const SceGxmProgramParameter *parameter) {
+    if (program->is_fragment()) {
+        return false;
+    }
+
+    if (parameter->category != SceGxmParameterCategory::SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+        return false;
+    }
+
     return UNIMPLEMENTED();
 }
 
@@ -1937,6 +1949,9 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
 
     if (!uniformBuffer || !parameter || !sourceData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    if (parameter->category != SceGxmParameterCategory::SCE_GXM_PARAMETER_CATEGORY_UNIFORM)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
     size_t size = 0;
     size_t offset = 0;
