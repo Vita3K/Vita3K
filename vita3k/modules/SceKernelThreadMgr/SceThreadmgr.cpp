@@ -267,7 +267,7 @@ EXPORT(int, _sceKernelGetThreadInfo, SceUID thid, SceKernelThreadInfo *info) {
     const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
 
     strncpy(info->name, thread->name.c_str(), 0x1f);
-    info->stack = Ptr<void>(thread->stack->get());
+    info->stack = Ptr<void>(thread->stack.get(), host.mem);
     info->stackSize = thread->stack_size;
     info->initPriority = thread->priority;
     info->currentPriority = thread->priority;
