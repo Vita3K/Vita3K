@@ -352,11 +352,11 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     };
 
     // Both vertex output and this struct should stay in a larger varying struct
-    auto vertex_outputs_ptr = reinterpret_cast<const SceGxmProgramVertexOutput *>(
+    auto vertex_varyings_ptr = reinterpret_cast<const SceGxmProgramVertexVaryings *>(
         reinterpret_cast<const std::uint8_t *>(&program.varyings_offset) + program.varyings_offset);
 
     const SceGxmProgramAttributeDescriptor *descriptor = reinterpret_cast<const SceGxmProgramAttributeDescriptor *>(
-        reinterpret_cast<const std::uint8_t *>(&vertex_outputs_ptr->vertex_outputs1) + vertex_outputs_ptr->vertex_outputs1);
+        reinterpret_cast<const std::uint8_t *>(&vertex_varyings_ptr->vertex_outputs1) + vertex_varyings_ptr->vertex_outputs1);
 
     std::uint32_t pa_offset = 0;
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
@@ -365,7 +365,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     std::array<shader::usse::Coord, 10> coords;
 
     // It may actually be total fragments input
-    for (size_t i = 0; i < vertex_outputs_ptr->varyings_count; i++, descriptor++) {
+    for (size_t i = 0; i < vertex_varyings_ptr->varyings_count; i++, descriptor++) {
         // 4 bit flag indicates a PA!
         if ((descriptor->attribute_info & 0x4000F000) != 0xF000) {
             const uint32_t input_id = (descriptor->attribute_info & 0x4000F000);
@@ -771,10 +771,24 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         last_base += size * 4;
     }
 
-    const auto add_var_to_reg = [&](const Input &input, const std::string &name, bool pa) {
+    const auto add_var_to_reg = [&](const Input &input, const std::string &name, std::uint16_t semantic, bool pa) {
         const spv::Id param_type = get_param_type(b, input);
         int type_size = get_data_type_size(input.type);
         spv::Id var = b.createVariable(spv::StorageClassInput, param_type, name.c_str());
+
+        switch (semantic) {
+        case SCE_GXM_PARAMETER_SEMANTIC_INDEX:
+            b.addDecoration(var, spv::DecorationBuiltIn, spv::BuiltInVertexId);
+            break;
+
+        case SCE_GXM_PARAMETER_SEMANTIC_INSTANCE:
+            b.addDecoration(var, spv::DecorationBuiltIn, spv::BuiltInInstanceId);
+            break;
+
+        default:
+            break;
+        }
+
         translation_state.interfaces.push_back(var);
         VarToReg var_to_reg;
         var_to_reg.var = var;
@@ -832,7 +846,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                        [&](const UniformInputSource &s) {
                            // In ubo mode we copy using default uniform buffer
                            if (!features.use_ubo) {
-                               add_var_to_reg(input, s.name, false);
+                               add_var_to_reg(input, s.name, 0, false);
                            }
                        },
                        [&](const UniformBufferInputSource &s) {
@@ -847,8 +861,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            const auto spv_sampler = samplers.at(s.index);
                            spv_params.samplers.emplace(input.offset, spv_sampler);
                        },
-                       [&](const AttributeInputSoucre &s) {
-                           add_var_to_reg(input, s.name, true);
+                       [&](const AttributeInputSource &s) {
+                           add_var_to_reg(input, s.name, s.semantic, true);
                        } },
             input.source);
     }
@@ -948,12 +962,12 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     color_val_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     color_val_operand.type = std::get<0>(shader::get_parameter_type_store_and_name(param_type));
 
-    auto vertex_outputs_ptr = reinterpret_cast<const SceGxmProgramVertexOutput *>(
+    auto vertex_varyings_ptr = reinterpret_cast<const SceGxmProgramVertexVaryings *>(
         reinterpret_cast<const std::uint8_t *>(&program.varyings_offset) + program.varyings_offset);
 
     int reg_off = 0;
-    if (!program.is_native_color() && vertex_outputs_ptr->output_param_type == 1) {
-        reg_off = vertex_outputs_ptr->fragment_output_start;
+    if (!program.is_native_color() && vertex_varyings_ptr->output_param_type == 1) {
+        reg_off = vertex_varyings_ptr->fragment_output_start;
         if (reg_off != 0) {
             LOG_INFO("Non zero pa offset: {} at {}", reg_off, translate_state.hash.c_str());
         }
