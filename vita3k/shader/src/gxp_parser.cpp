@@ -99,9 +99,11 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             item.generic_type = translate_generic_type(param_type);
             item.bank = is_uniform ? RegisterBank::SECATTR : RegisterBank::PRIMATTR;
             if (!is_uniform) {
-                AttributeInputSoucre source;
+                AttributeInputSource source;
                 source.name = var_name;
                 source.index = parameter.resource_index;
+                source.semantic = parameter.semantic;
+
                 item.source = source;
             } else {
                 UniformInputSource source;
@@ -259,6 +261,41 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             item.offset = literal_offset;
             item.array_size = 1;
             item.generic_type = GenericType::SCALER;
+            item.source = source;
+
+            program_input.inputs.push_back(item);
+        }
+    }
+
+    // Parse special semantics
+    if (program.is_vertex()) {
+        auto vertex_varyings_ptr = reinterpret_cast<const SceGxmProgramVertexVaryings *>(
+            reinterpret_cast<const std::uint8_t *>(&program.varyings_offset) + program.varyings_offset);
+
+        Input item;
+        item.component_count = 1;
+        item.array_size = 1;
+        item.bank = RegisterBank::PRIMATTR;
+        item.generic_type = GenericType::SCALER;
+        item.type = DataType::UINT32;
+
+        if (program.special_flags & SCE_GXM_SPECIAL_HAS_INDEX_SEMANTIC) {
+            AttributeInputSource source;
+            source.semantic = SCE_GXM_PARAMETER_SEMANTIC_INDEX;
+            source.name = "gl_VertexID";
+
+            item.offset = vertex_varyings_ptr->semantic_index_offset;
+            item.source = source;
+
+            program_input.inputs.push_back(item);
+        }
+
+        if (program.special_flags & SCE_GXM_SPECIAL_HAS_INSTANCE_SEMANTIC) {
+            AttributeInputSource source;
+            source.semantic = SCE_GXM_PARAMETER_SEMANTIC_INSTANCE;
+            source.name = "gl_InstanceID";
+
+            item.offset = vertex_varyings_ptr->semantic_instance_offset;
             item.source = source;
 
             program_input.inputs.push_back(item);

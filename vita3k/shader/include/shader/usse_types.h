@@ -365,10 +365,12 @@ struct UniformInputSource {
     bool in_mem;
 };
 
-struct AttributeInputSoucre {
+struct AttributeInputSource {
     std::string name;
+
     // resource index
-    uint32_t index;
+    std::uint32_t index;
+    std::uint16_t semantic;
 };
 
 struct LiteralInputSource {
@@ -388,7 +390,7 @@ struct DependentSamplerInputSource {
 };
 
 // Read source field in Input struct
-using InputSource = std::variant<UniformInputSource, UniformBufferInputSource, LiteralInputSource, AttributeInputSoucre, DependentSamplerInputSource>;
+using InputSource = std::variant<UniformInputSource, UniformBufferInputSource, LiteralInputSource, AttributeInputSource, DependentSamplerInputSource>;
 
 /**
  * Input parameters that are usually copied into PA or SA

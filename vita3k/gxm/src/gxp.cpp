@@ -163,11 +163,11 @@ SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, SceG
     if (!program.is_vertex())
         return _SCE_GXM_VERTEX_PROGRAM_OUTPUT_INVALID;
 
-    auto vertex_outputs_ptr = reinterpret_cast<const SceGxmProgramVertexOutput *>(
+    auto vertex_varyings_ptr = reinterpret_cast<const SceGxmProgramVertexVaryings *>(
         reinterpret_cast<const std::uint8_t *>(&program.varyings_offset) + program.varyings_offset);
 
-    const std::uint32_t vo1 = vertex_outputs_ptr->vertex_outputs1;
-    const std::uint32_t vo2 = vertex_outputs_ptr->vertex_outputs2;
+    const std::uint32_t vo1 = vertex_varyings_ptr->vertex_outputs1;
+    const std::uint32_t vo2 = vertex_varyings_ptr->vertex_outputs2;
 
     const bool has_fog = vo1 & 0x200;
     const bool has_color = vo1 & 0x800;
@@ -230,9 +230,9 @@ SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program) {
     const auto vo_offset = program.varyings_offset;
     const auto vo_offset_addr = (const std::uint8_t *)&program.varyings_offset;
 
-    const SceGxmProgramVertexOutput *vo_ptr = nullptr;
+    const SceGxmProgramVertexVaryings *vo_ptr = nullptr;
     if (vo_offset)
-        vo_ptr = (const SceGxmProgramVertexOutput *)(vo_offset_addr + vo_offset);
+        vo_ptr = (const SceGxmProgramVertexVaryings *)(vo_offset_addr + vo_offset);
 
     // following code is adapted from decompilation
     const uint8_t *vo_start = nullptr;

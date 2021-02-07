@@ -218,7 +218,9 @@ enum SceGxmParameterSemantic {
     SCE_GXM_PARAMETER_SEMANTIC_POSITION,
     SCE_GXM_PARAMETER_SEMANTIC_SPECULAR,
     SCE_GXM_PARAMETER_SEMANTIC_TANGENT,
-    SCE_GXM_PARAMETER_SEMANTIC_TEXCOORD
+    SCE_GXM_PARAMETER_SEMANTIC_TEXCOORD,
+    SCE_GXM_PARAMETER_SEMANTIC_INDEX,
+    SCE_GXM_PARAMETER_SEMANTIC_INSTANCE
 };
 
 enum SceGxmTextureType {
@@ -1322,7 +1324,7 @@ enum SceGxmVertexProgramOutputs : int {
 using SceGxmVertexOutputTexCoordInfos = std::array<uint8_t, 10>;
 
 #pragma pack(push, 1)
-struct SceGxmProgramVertexOutput {
+struct SceGxmProgramVertexVaryings {
     std::uint8_t unk0[8];
     std::uint8_t fragment_output_start; // this might be wrong
     std::uint8_t unk1;
@@ -1333,10 +1335,13 @@ struct SceGxmProgramVertexOutput {
     std::uint16_t pad0; // padding maybe
     std::uint32_t vertex_outputs1; // includes everything except texcoord outputs
     std::uint32_t vertex_outputs2; // includes texcoord outputs
+    std::uint32_t unk18;
+    std::uint16_t semantic_index_offset;
+    std::uint16_t semantic_instance_offset;
 };
 #pragma pack(pop)
 
-static_assert(sizeof(SceGxmProgramVertexOutput) == 24);
+static_assert(sizeof(SceGxmProgramVertexVaryings) == 32);
 
 struct SceGxmProgramAttributeDescriptor {
     std::uint32_t attribute_info;
@@ -1372,6 +1377,11 @@ enum SceGxmFragmentProgramInputs : int {
     _SCE_GXM_FRAGMENT_PROGRAM_INPUT_LAST = 1 << 15
 };
 
+enum SceGxmSpecialFlag {
+    SCE_GXM_SPECIAL_HAS_INDEX_SEMANTIC = 1 << 1,
+    SCE_GXM_SPECIAL_HAS_INSTANCE_SEMANTIC = 1 << 2
+};
+
 struct SceGxmUniformBufferInfo {
     std::uint16_t reside_buffer; ///< If reside buffer = 0, this is a in memory buffer. Likely SSBO
     std::uint16_t ldst_base_offset; ///< Point to the register number starting from container's base SA offset, storing base value.
@@ -1394,7 +1404,7 @@ struct SceGxmProgram {
 
     std::uint8_t type{ 0 }; // shader profile, seems to contain more info in bits after the first(bitfield?)
     std::uint8_t unk15;
-    std::uint8_t unk16;
+    std::uint8_t special_flags;
     std::uint8_t unk17;
 
     std::uint32_t unk18;
@@ -1476,12 +1486,12 @@ struct SceGxmProgram {
         return ((type >> 7) & 1);
     }
     SceGxmParameterType get_fragment_output_type() const {
-        return static_cast<const SceGxmParameterType>(reinterpret_cast<const SceGxmProgramVertexOutput *>(
+        return static_cast<const SceGxmParameterType>(reinterpret_cast<const SceGxmProgramVertexVaryings *>(
             reinterpret_cast<const std::uint8_t *>(&varyings_offset) + varyings_offset)
                                                           ->output_param_type);
     }
     std::uint8_t get_fragment_output_component_count() const {
-        return reinterpret_cast<const SceGxmProgramVertexOutput *>(reinterpret_cast<const std::uint8_t *>(&varyings_offset) + varyings_offset)->output_comp_count;
+        return reinterpret_cast<const SceGxmProgramVertexVaryings *>(reinterpret_cast<const std::uint8_t *>(&varyings_offset) + varyings_offset)->output_comp_count;
     }
     bool is_secondary_program_available() const {
         return secondary_program_offset < secondary_program_offset_end + 4;
