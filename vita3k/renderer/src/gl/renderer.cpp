@@ -480,8 +480,10 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     // TODO Need more check into this
     switch (format) {
     case SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR:
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
+        break;
     case SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
         break;
     case SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
@@ -499,6 +501,9 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
         break;
     case SCE_GXM_COLOR_FORMAT_U8_R:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RED, GL_UNSIGNED_BYTE, pixels);
+        break;
+    case SCE_GXM_COLOR_FORMAT_U2F10F10F10_ABGR:
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, pixels);
         break;
     case SCE_GXM_COLOR_FORMAT_F16_R:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RED, GL_HALF_FLOAT, pixels);
