@@ -39,12 +39,12 @@ enum SceDisplayErrorCode {
 };
 
 struct SceDisplayFrameBuf {
-    uint32_t size = 0;
+    SceUInt32 size = 0;
     Ptr<const void> base;
-    uint32_t pitch = 0;
-    uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
-    uint32_t width = 0;
-    uint32_t height = 0;
+    SceUInt32 pitch = 0;
+    SceUInt32 pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
+    SceUInt32 width = 0;
+    SceUInt32 height = 0;
 };
 
 EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync);

@@ -46,7 +46,7 @@ EXPORT(int, _sceDisplayGetResolutionInfoInternal) {
 }
 
 EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
-    if (pFrameBuf == nullptr)
+    if (!pFrameBuf)
         return SCE_DISPLAY_ERROR_OK;
     if (pFrameBuf->size != sizeof(SceDisplayFrameBuf)) {
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
@@ -63,6 +63,8 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
     if (sync != SCE_DISPLAY_SETBUF_NEXTFRAME && sync != SCE_DISPLAY_SETBUF_IMMEDIATE) {
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
     }
+    if ((pFrameBuf->width < 480) || (pFrameBuf->height < 272) || (pFrameBuf->pitch < 480))
+        return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_RESOLUTION);
 
     host.display.base = pFrameBuf->base;
     host.display.pitch = pFrameBuf->pitch;
