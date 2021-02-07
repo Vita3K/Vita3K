@@ -1350,8 +1350,18 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetAllTextures, SceGxmPrecomputedFragm
     return 0;
 }
 
-EXPORT(int, sceGxmPrecomputedFragmentStateSetAllUniformBuffers) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmPrecomputedFragmentStateSetAllUniformBuffers, SceGxmPrecomputedFragmentState *precomputedState, Ptr<const void> const *bufferDataArray) {
+    if (!precomputedState || !precomputedState->uniform_buffers || !bufferDataArray)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    UniformBuffers *uniform_buffers = precomputedState->uniform_buffers.get(host.mem);
+    if (!uniform_buffers)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    for (auto b = 0; bufferDataArray[b]; b++)
+        (*uniform_buffers)[b] = bufferDataArray[b];
+
+    return 0;
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetDefaultUniformBuffer, SceGxmPrecomputedFragmentState *state, Ptr<const void> buffer) {
@@ -1426,8 +1436,18 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetAllTextures, SceGxmPrecomputedVertexS
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmPrecomputedVertexStateSetAllUniformBuffers) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmPrecomputedVertexStateSetAllUniformBuffers, SceGxmPrecomputedVertexState *precomputedState, Ptr<const void> const *bufferDataArray) {
+    if (!precomputedState || !precomputedState->uniform_buffers || !bufferDataArray)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    UniformBuffers *uniform_buffers = precomputedState->uniform_buffers.get(host.mem);
+    if (!uniform_buffers)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    for (auto b = 0; bufferDataArray[b]; b++)
+        (*uniform_buffers)[b] = bufferDataArray[b];
+
+    return 0;
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetDefaultUniformBuffer, SceGxmPrecomputedVertexState *state, Ptr<const void> buffer) {
