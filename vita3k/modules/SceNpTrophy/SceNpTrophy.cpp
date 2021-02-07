@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -124,6 +124,13 @@ EXPORT(int, sceNpTrophyGetGameInfo, np::trophy::ContextHandle context_handle, Sc
         details->numGroups = context->group_count;
         details->numTrophies = context->trophy_count;
 
+        std::string name, detail;
+        if (!context->get_trophy_set(name, detail))
+            return RET_ERROR(SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF);
+
+        memcpy((char *)details->title, name.c_str(), name.size() + 1);
+        memcpy((char *)details->description, detail.c_str(), detail.size() + 1);
+
         for (std::uint32_t i = 0; i < context->trophy_count; i++) {
             switch (context->trophy_kinds[i]) {
             case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
@@ -142,8 +149,6 @@ EXPORT(int, sceNpTrophyGetGameInfo, np::trophy::ContextHandle context_handle, Sc
                 break;
             }
         }
-
-        // TODO: set title and description
     }
 
     if (data) {
@@ -221,7 +226,22 @@ EXPORT(int, sceNpTrophyGetTrophyInfo, np::trophy::ContextHandle context_handle, 
         details->trophyId = trophy_id;
         details->trophyGrade = context->trophy_kinds[trophy_id];
         details->hidden = context->is_trophy_hidden(trophy_id);
-        // TODO: set groupId, name and description
+        int32_t id = 0;
+        for (uint32_t gid = 0; gid < context->group_count + 1; gid++) {
+            for (auto count = 0; count < context->trophy_count_by_group[gid]; count++, id++) {
+                if (trophy_id == id) {
+                    details->groupId = gid;
+                    break;
+                }
+            }
+        }
+
+        std::string name, detail;
+        if (!context->get_trophy_details(trophy_id, name, detail))
+            return RET_ERROR(SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF);
+
+        memcpy((char *)details->name, name.c_str(), name.size() + 1);
+        memcpy((char *)details->description, detail.c_str(), detail.size() + 1);
     }
 
     if (data) {
@@ -279,10 +299,6 @@ EXPORT(int, sceNpTrophyTerm) {
     return 0;
 }
 
-static void trophy_unlocked(const NpTrophyUnlockCallbackData &callback_data, const SceNpTrophyID trophy_id) {
-    LOG_TRACE("Trophy unlocked: {}, id = {}", callback_data.trophy_name, trophy_id);
-}
-
 static int do_trophy_callback(HostState &host, np::trophy::Context *context, SceNpTrophyID trophy_id) {
     NpTrophyUnlockCallbackData callback_data;
 
@@ -294,11 +310,11 @@ static int do_trophy_callback(HostState &host, np::trophy::Context *context, Sce
     callback_data.np_com_id = fmt::format("{}_{:0>2d}", context->comm_id.data, context->comm_id.num);
     callback_data.trophy_id = fmt::format("{:0>3d}", trophy_id);
     callback_data.trophy_kind = context->trophy_kinds[trophy_id];
-    if (!context->get_trophy_name(trophy_id, callback_data.trophy_name)) {
+    if (!context->get_trophy_details(trophy_id, callback_data.trophy_name, callback_data.trophy_detail)) {
         return SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF;
     }
 
-    trophy_unlocked(callback_data, trophy_id);
+    LOG_INFO("Trophy unlocked, name: {}, detail: {}, id = {}", callback_data.trophy_name, callback_data.trophy_detail, trophy_id);
 
     // Call this async.
     if (host.np.trophy_state.trophy_unlock_callback) {

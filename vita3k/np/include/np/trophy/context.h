@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2019 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -85,7 +85,8 @@ struct Context {
     const bool is_trophy_hidden(const uint32_t &trophy_index);
     const bool is_trophy_unlocked(const uint32_t &trophy_index);
     const int total_trophy_unlocked();
-    bool get_trophy_name(const std::int32_t id, std::string &name);
+    bool get_trophy_details(const int32_t id, std::string &name, std::string &detail);
+    bool get_trophy_set(std::string &name, std::string &detail);
 
     explicit Context(const CommunicationID &comm_id, IOState *io, const SceUID trophy_stream,
         const std::string &output_progress_path);

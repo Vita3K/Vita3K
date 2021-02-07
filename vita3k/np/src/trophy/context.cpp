@@ -277,7 +277,7 @@ const int Context::total_trophy_unlocked() {
     return total;
 }
 
-bool Context::get_trophy_name(const std::int32_t id, std::string &name) {
+bool Context::get_trophy_details(const int32_t id, std::string &name, std::string &detail) {
     if (id < 0 || id >= MAX_TROPHIES) {
         return false;
     }
@@ -304,12 +304,39 @@ bool Context::get_trophy_name(const std::int32_t id, std::string &name) {
     for (const auto &trop : doc.child("trophyconf")) {
         if ((trop.name() == std::string("trophy")) && (trop.attribute("id").as_uint() == id)) {
             name = trop.child("name").text().as_string();
+            detail = trop.child("detail").text().as_string();
 
             break;
         }
     }
 
-    return !name.empty();
+    return !name.empty() && !detail.empty();
+}
+
+bool Context::get_trophy_set(std::string &name, std::string &detail) {
+    if (trophy_detail_xml.empty()) {
+        const std::string fname = fmt::format("TROP_{:0>2d}.SFM", lang);
+
+        if (!read_trophy_entry_to_buffer(trophy_file, fname.c_str(), trophy_detail_xml)) {
+            if (!read_trophy_entry_to_buffer(trophy_file, "TROP.SFM", trophy_detail_xml)) {
+                return false;
+            }
+        }
+    }
+
+    // Parse it
+    pugi::xml_document doc;
+    const auto result = doc.load_string(trophy_detail_xml.c_str());
+
+    if (!result) {
+        return false;
+    }
+
+    const auto trophy_conf = doc.child("trophyconf");
+    name = trophy_conf.child("title-name").text().as_string();
+    detail = trophy_conf.child("title-detail").text().as_string();
+
+    return !name.empty() && !detail.empty();
 }
 
 int Context::install_trophy_conf(IOState *io, const std::wstring &pref_path, const std::string np_com_id) {
