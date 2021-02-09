@@ -26,8 +26,9 @@
 #include <io/VitaIoDevice.h>
 #include <io/functions.h>
 
-namespace gui {
+#include <util/safe_time.h>
 
+namespace gui {
 void get_app_info(GuiState &gui, HostState &host, const std::string &title_id) {
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / title_id };
     gui.app_selector.app_info = {};
@@ -38,8 +39,8 @@ void get_app_info(GuiState &gui, HostState &host, const std::string &title_id) {
         const auto ineligible = is_lang ? gui.lang.app_context["ineligible"] : "Ineligible";
         gui.app_selector.app_info.trophy = fs::exists(APP_PATH / "sce_sys/trophy") ? eligible : ineligible;
 
-        const auto last_writed = fs::last_write_time(APP_PATH);
-        gui.app_selector.app_info.updated = *std::localtime(&last_writed);
+        const auto last_writen = fs::last_write_time(APP_PATH);
+        SAFE_LOCALTIME(&last_writen, &gui.app_selector.app_info.updated);
     }
 }
 
@@ -96,9 +97,12 @@ static void get_save_data_list(GuiState &gui, HostState &host) {
     for (const auto &save : fs::directory_iterator(SAVE_PATH)) {
         const auto title_id = save.path().stem().generic_string();
         if (fs::is_directory(save.path()) && !fs::is_empty(save.path()) && get_app_index(gui, title_id) != gui.app_selector.user_apps.end()) {
-            const auto last_writed = fs::last_write_time(save);
-            const auto updated = std::localtime(&last_writed);
-            const auto date = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}", updated->tm_mday, updated->tm_mon + 1, updated->tm_year + 1900, updated->tm_hour, updated->tm_min);
+            tm updated_tm = {};
+
+            const auto last_writen = fs::last_write_time(save);
+            SAFE_LOCALTIME(&last_writen, &updated_tm);
+            const auto date = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}",
+                updated_tm.tm_mday, updated_tm.tm_mon + 1, updated_tm.tm_year + 1900, updated_tm.tm_hour, updated_tm.tm_min);
 
             size_t size = 0;
             for (const auto &save_path : fs::recursive_directory_iterator(save)) {
@@ -199,10 +203,13 @@ static void get_content_info(GuiState &gui, HostState &host) {
         for (const auto &dlc : fs::directory_iterator(DLC_PATH)) {
             const auto content_id = dlc.path().stem().string();
 
-            const auto last_writed = fs::last_write_time(dlc);
-            const auto updated = std::localtime(&last_writed);
+            tm updated_tm = {};
 
-            dlc_info[content_id].date = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}", updated->tm_mday, updated->tm_mon + 1, updated->tm_year + 1900, updated->tm_hour, updated->tm_min);
+            const auto last_writen = fs::last_write_time(dlc);
+            const auto updated = SAFE_LOCALTIME(&last_writen, &updated_tm);
+
+            dlc_info[content_id].date = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}",
+                updated_tm.tm_mday, updated_tm.tm_mon + 1, updated_tm.tm_year + 1900, updated_tm.tm_hour, updated_tm.tm_min);
 
             size_t dlc_size = 0;
             for (const auto &content : fs::recursive_directory_iterator(dlc)) {

@@ -17,6 +17,14 @@
 
 #include "SceRtcUser.h"
 
+#include <rtc/rtc.h>
+
+#include <util/safe_time.h>
+
+#include <chrono>
+
+#define VITA_CLOCKS_PER_SEC 1000000
+
 EXPORT(int, sceRtcCheckValid, const SceDateTime *pTime) {
     if (pTime == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
@@ -90,10 +98,15 @@ EXPORT(int, sceRtcFormatRFC2822LocalTime, char *pszDateTime, const SceRtcTick *u
 
     // Get timezone difference
     std::time_t epoch_plus_11h = 60 * 60 * 11;
-    auto local_tz_hour = std::localtime(&epoch_plus_11h)->tm_hour;
-    const auto local_tz_minute = std::localtime(&epoch_plus_11h)->tm_min;
-    const auto gmt_tz_hour = std::gmtime(&epoch_plus_11h)->tm_hour;
-    const auto gmt_tz_minute = std::gmtime(&epoch_plus_11h)->tm_min;
+    tm epoch_localtime = {};
+    tm epoch_gmtime = {};
+    SAFE_LOCALTIME(&epoch_plus_11h, &epoch_localtime);
+    SAFE_GMTIME(&epoch_plus_11h, &epoch_gmtime);
+
+    auto local_tz_hour = epoch_localtime.tm_hour;
+    const auto local_tz_minute = epoch_localtime.tm_min;
+    const auto gmt_tz_hour = epoch_gmtime.tm_hour;
+    const auto gmt_tz_minute = epoch_gmtime.tm_min;
     const auto tz_minute_diff = local_tz_minute - gmt_tz_minute;
     if (tz_minute_diff != 0 && gmt_tz_hour > local_tz_hour)
         local_tz_hour++;
@@ -102,7 +115,7 @@ EXPORT(int, sceRtcFormatRFC2822LocalTime, char *pszDateTime, const SceRtcTick *u
     if (utc) { // format utc in localtime
         SceDateTime date;
         memset(&date, 0, sizeof(date));
-        tm gmt;
+        tm gmt = {};
         __RtcTicksToPspTime(&date, utc->tick);
         __RtcPspTimeToTm(&gmt, &date);
         while (gmt.tm_year < 70)
@@ -111,23 +124,26 @@ EXPORT(int, sceRtcFormatRFC2822LocalTime, char *pszDateTime, const SceRtcTick *u
             gmt.tm_year -= 400;
 
         time_t time = rtc_timegm(&gmt);
-        auto local_time = std::localtime(&time);
+        tm current_localtime = {};
+        SAFE_LOCALTIME(&time, &current_localtime);
 
         char *end = pszDateTime + 32;
-        pszDateTime += strftime(pszDateTime, end - pszDateTime, "%a, %d %b ", local_time);
+        pszDateTime += strftime(pszDateTime, end - pszDateTime, "%a, %d %b ", &current_localtime);
         pszDateTime += snprintf(pszDateTime, end - pszDateTime, "%04d", date.year);
-        pszDateTime += strftime(pszDateTime, end - pszDateTime, " %H:%M:%S ", local_time);
+        pszDateTime += strftime(pszDateTime, end - pszDateTime, " %H:%M:%S ", &current_localtime);
 
-        if (local_tz_hour < gmt_tz_hour || local_time->tm_mday < gmt.tm_mday) {
+        if (local_tz_hour < gmt_tz_hour || current_localtime.tm_mday < gmt.tm_mday) {
             pszDateTime += snprintf(pszDateTime, end - pszDateTime, "-%02d%02d", abs(tz_hour_diff), abs(tz_minute_diff));
         } else {
             pszDateTime += snprintf(pszDateTime, end - pszDateTime, "+%02d%02d", abs(tz_hour_diff), abs(tz_minute_diff));
         }
     } else { // format current time
         time_t time = std::time(nullptr);
-        auto local_time = *std::localtime(&time);
-        time_t gmtime = std::time(nullptr);
-        auto gmt = *std::gmtime(&gmtime);
+        tm local_time = {};
+        tm gmt = {};
+
+        SAFE_LOCALTIME(&time, &local_time);
+        SAFE_GMTIME(&time, &gmt);
 
         char *end = pszDateTime + 32;
         pszDateTime += strftime(pszDateTime, end - pszDateTime, "%a, %d %b ", &local_time);

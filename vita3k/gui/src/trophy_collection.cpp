@@ -20,6 +20,7 @@
 #include <gui/functions.h>
 
 #include <util/log.h>
+#include <util/safe_time.h>
 
 #include <io/device.h>
 #include <io/functions.h>
@@ -29,7 +30,6 @@
 #include <stb_image.h>
 
 namespace gui {
-
 using namespace np::trophy;
 
 struct NPComId {
@@ -145,9 +145,12 @@ void init_trophy_collection(GuiState &gui, HostState &host) {
                 }
 
                 // Read Updated time
+                tm updated_date_tm = {};
+
                 const auto updated = fs::last_write_time(trophy_data_np_com_id_path / "TROPUSR.DAT");
-                const auto updated_date = std::localtime(&updated);
-                np_com_id_info[np_com_id].updated = fmt::format("{}/{}/{}  {}:{:0>2d}", updated_date->tm_mday, updated_date->tm_mon + 1, updated_date->tm_year + 1900, updated_date->tm_hour, updated_date->tm_min);
+                SAFE_LOCALTIME(&updated, &updated_date_tm);
+                np_com_id_info[np_com_id].updated = fmt::format("{}/{}/{}  {}:{:0>2d}",
+                    updated_date_tm.tm_mday, updated_date_tm.tm_mon + 1, updated_date_tm.tm_year + 1900, updated_date_tm.tm_hour, updated_date_tm.tm_min);
 
                 // Open trophy progress file
                 const auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + host.io.user_id + "/trophy/data/" + np_com_id + "/TROPUSR.DAT");
@@ -356,8 +359,11 @@ static void get_trophy_list(GuiState &gui, HostState &host, const std::string &n
         // Check earned trophy and set time
         if (np_com_id_info[np_com_id].context.is_trophy_unlocked(std::stoi(trophy.first))) {
             trophy_info[trophy_id].earned = true;
-            const auto unlocked_date = std::localtime(&unlocked);
-            trophy_info[trophy_id].unlocked_time = fmt::format("{}/{}/{}  {}:{:0>2d}", unlocked_date->tm_mday, unlocked_date->tm_mon + 1, unlocked_date->tm_year + 1900, unlocked_date->tm_hour, unlocked_date->tm_min);
+            tm unlocked_date_tm = {};
+
+            SAFE_LOCALTIME(&unlocked, &unlocked_date_tm);
+            trophy_info[trophy_id].unlocked_time = fmt::format("{}/{}/{}  {}:{:0>2d}",
+                unlocked_date_tm.tm_mday, unlocked_date_tm.tm_mon + 1, unlocked_date_tm.tm_year + 1900, unlocked_date_tm.tm_hour, unlocked_date_tm.tm_min);
         }
 
         const auto grade = uint32_t(np_com_id_info[np_com_id].context.trophy_kinds[std::stoi(trophy.first)]);

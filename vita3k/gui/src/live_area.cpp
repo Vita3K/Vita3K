@@ -19,6 +19,8 @@
 
 #include <gui/functions.h>
 
+#include <util/safe_time.h>
+
 #include <io/VitaIoDevice.h>
 #include <io/vfs.h>
 #include <util/log.h>
@@ -30,7 +32,6 @@
 #include <stb_image.h>
 
 namespace gui {
-
 static std::string start, resume;
 
 void init_lang(GuiState &gui, HostState &host) {
@@ -280,8 +281,11 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
             const auto SELECT_SIZE = ImVec2(POPUP_SIZE.x, 80.f * SCAL.y);
 
             for (const auto &notice : gui.notice_info) {
-                const auto updated = std::localtime(&notice.date);
-                const auto date = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}", updated->tm_mday, updated->tm_mon + 1, updated->tm_year + 1900, updated->tm_hour, updated->tm_min);
+                tm updated_tm = {};
+
+                SAFE_LOCALTIME(&notice.date, &updated_tm);
+                const auto date = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}",
+                    updated_tm.tm_mday, updated_tm.tm_mon + 1, updated_tm.tm_year + 1900, updated_tm.tm_hour, updated_tm.tm_min);
                 if (notice.pos < (gui.notice_info.size() - 1))
                     ImGui::Separator();
                 const auto ICON_POS = ImGui::GetCursorPos();
@@ -415,7 +419,9 @@ void draw_information_bar(GuiState &gui, HostState &host) {
 
     const auto now = std::chrono::system_clock::now();
     const auto tt = std::chrono::system_clock::to_time_t(now);
-    const auto local = *localtime(&tt);
+
+    tm local = {};
+    SAFE_LOCALTIME(&tt, &local);
 
     auto DATE_TIME = get_date_time(gui, host, local);
     const auto CLOCK_STR = DATE_TIME["clock"];

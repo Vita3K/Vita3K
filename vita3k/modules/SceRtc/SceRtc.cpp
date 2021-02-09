@@ -19,6 +19,8 @@
 
 #include <rtc/rtc.h>
 
+#include <util/safe_time.h>
+
 #include <chrono>
 #include <ctime>
 
@@ -29,8 +31,15 @@ EXPORT(int, _sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTi
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
     std::time_t t = std::time(nullptr);
-    std::time_t local = std::mktime(std::localtime(&t));
-    std::time_t gmt = std::mktime(std::gmtime(&t));
+
+    tm local_tm = {};
+    tm gmt_tm = {};
+
+    SAFE_LOCALTIME(&t, &local_tm);
+    SAFE_GMTIME(&t, &gmt_tm);
+
+    std::time_t local = std::mktime(&local_tm);
+    std::time_t gmt = std::mktime(&gmt_tm);
     pUtc->tick = pLocalTime->tick - (local - gmt) * VITA_CLOCKS_PER_SEC;
 
     return 0;
@@ -42,8 +51,15 @@ EXPORT(int, _sceRtcConvertUtcToLocalTime, const SceRtcTick *pUtc, SceRtcTick *pL
     }
 
     std::time_t t = std::time(nullptr);
-    std::time_t local = std::mktime(std::localtime(&t));
-    std::time_t gmt = std::mktime(std::gmtime(&t));
+
+    tm local_tm = {};
+    tm gmt_tm = {};
+
+    SAFE_LOCALTIME(&t, &local_tm);
+    SAFE_GMTIME(&t, &gmt_tm);
+
+    std::time_t local = std::mktime(&local_tm);
+    std::time_t gmt = std::mktime(&gmt_tm);
     pLocalTime->tick = pUtc->tick + (local - gmt) * VITA_CLOCKS_PER_SEC;
     return 0;
 }
@@ -85,8 +101,15 @@ EXPORT(int, _sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
     }
 
     std::time_t t = std::time(nullptr);
-    std::time_t local = std::mktime(std::localtime(&t));
-    std::time_t gmt = std::mktime(std::gmtime(&t));
+
+    tm local_tm = {};
+    tm gmt_tm = {};
+
+    SAFE_LOCALTIME(&t, &local_tm);
+    SAFE_GMTIME(&t, &gmt_tm);
+
+    std::time_t local = std::mktime(&local_tm);
+    std::time_t gmt = std::mktime(&gmt_tm);
     uint64_t tick = rtc_get_ticks(host.kernel.base_tick.tick) + (local - gmt) * VITA_CLOCKS_PER_SEC;
     __RtcTicksToPspTime(datePtr, tick);
     return 0;
