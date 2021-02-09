@@ -23,8 +23,6 @@
 #include <cstdint>
 #include <string>
 
-struct _FILETIME;
-
 // This is the # of microseconds between January 1, 0001 and January 1, 1970.
 // Grabbed from JPSCP
 static constexpr auto RTC_OFFSET = 62135596800000000ULL;
@@ -85,11 +83,6 @@ inline time_t rtc_timegm(struct tm *tm) {
 
 std::uint64_t rtc_base_ticks();
 std::uint64_t rtc_get_ticks(uint64_t base_tick);
-#ifdef WIN32
-std::uint64_t convert_filetime(const _FILETIME &filetime);
-#else
-std::uint64_t convert_timespec(const timespec &timespec);
-#endif
 void __RtcPspTimeToTm(tm *val, const SceDateTime *pt);
 void __RtcTicksToPspTime(SceDateTime *t, std::uint64_t ticks);
 std::uint64_t __RtcPspTimeToTicks(const SceDateTime *pt);

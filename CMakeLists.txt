@@ -40,7 +40,7 @@ if(NOT CI)
 endif()
 
 if(WIN32)
-	add_definitions (/D "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" /D "_CRT_SECURE_NO_WARNINGS")
+	add_definitions (/D "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" /D "_CRT_SECURE_NO_WARNINGS" /D "NOMINMAX")
 endif()
 
 # Allow per-translation-unit parallel builds when using MSVC

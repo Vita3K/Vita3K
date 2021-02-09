@@ -19,7 +19,7 @@
 
 #include <modules/module_parent.h>
 
-#include "../xxHash/xxh3.h"
+#include <xxh3.h>
 
 #include <gxm/functions.h>
 #include <gxm/types.h>

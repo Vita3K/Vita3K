@@ -6,10 +6,10 @@
 #include <mem/ptr.h>
 #include <util/log.h>
 
-#include "../xxHash/xxh3.h"
 #include <algorithm> // find
 #include <cstring> // memcmp
 #include <numeric> // accumulate, reduce
+#include <xxh3.h>
 #ifdef WIN32
 #include <execution>
 #endif

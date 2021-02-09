@@ -71,7 +71,7 @@
 	url = https://github.com/Vita3K/unicorn.git
 [submodule "external/vita-toolchain"]
 	path = external/vita-toolchain
-	url = https://github.com/Vita3K/vita-toolchain
+	url = https://github.com/vitasdk/vita-toolchain.git
 [submodule "external/VulkanMemoryAllocator"]
 	path = external/VulkanMemoryAllocator
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git

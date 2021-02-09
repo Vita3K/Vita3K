@@ -23,6 +23,9 @@
 #include <net/types.h>
 #include <util/lock_and_find.h>
 
+#include <chrono>
+#include <thread>
+
 EXPORT(int, sceNetAccept, int sid, SceNetSockaddr *addr, unsigned int *addrlen) {
     auto sock = lock_and_find(sid, host.net.socks, host.kernel.mutex);
     if (!sock) {

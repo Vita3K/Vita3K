@@ -17,9 +17,8 @@
 
 #pragma once
 
+#include <util/log.h>
 #include <util/system.h>
-
-#include <spdlog/spdlog.h>
 
 // clang-format off
 // Singular options produced in config file

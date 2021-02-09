@@ -17,6 +17,8 @@
 #include <features/state.h>
 #include <gxm/functions.h>
 
+#include <spdlog/fmt/bin_to_hex.h>
+
 namespace renderer::gl {
 static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     R_PROFILE(__func__);
@@ -72,14 +74,8 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         const std::string hash_text_v = hex_string(state.vertex_program.get(mem)->renderer_data->hash);
 
         LOG_DEBUG("\nVertex  : {}\nFragment: {}", hash_text_v, hash_text_f);
-
-        std::stringstream vert_ub;
-        dump_hex(context.ubo_data[0], vert_ub);
-        LOG_DEBUG("Vertex default uniform buffer: \n{}", vert_ub.str());
-
-        std::stringstream frag_ub;
-        dump_hex(context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER], frag_ub);
-        LOG_DEBUG("Fragment default uniform buffer: \n{}", frag_ub.str());
+        LOG_DEBUG("Vertex default uniform buffer: {:a}\n", spdlog::to_hex(context.ubo_data[0].begin(), context.ubo_data[0].end(), 16));
+        LOG_DEBUG("Fragment default uniform buffer: {:a}\n", spdlog::to_hex(context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER].begin(), context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER].end(), 16));
     }
 
     if (!program_id) {

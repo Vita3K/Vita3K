@@ -42,11 +42,11 @@ endif()
 add_library(printf INTERFACE)
 target_include_directories(printf INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/printf")
 
-add_library(elfio INTERFACE)
-target_include_directories(elfio INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/elfio")
+add_subdirectory(elfio)
 
+option(SPDLOG_WCHAR_FILENAMES "Support wchar filenames" ON)
+option(SPDLOG_NO_THREAD_ID "prevent spdlog from querying the thread id on each log call if thread id is not needed" ON)
 add_subdirectory(spdlog EXCLUDE_FROM_ALL)
-target_compile_definitions(spdlog INTERFACE SPDLOG_WCHAR_FILENAMES=1 SPDLOG_NO_THREAD_ID=1 SPDLOG_ACTIVE_LEVEL=SPDLOG_LEVEL_TRACE)
 
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
@@ -92,7 +92,7 @@ endif()
 add_subdirectory(libfat16)
 
 # The imgui target is including both imgui and imgui_club.
-add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_widgets.cpp imgui/misc/cpp/imgui_stdlib.cpp)
+add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/misc/cpp/imgui_stdlib.cpp)
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
 		"${CMAKE_CURRENT_SOURCE_DIR}/imgui_club/imgui_memory_editor/")
 
@@ -247,3 +247,7 @@ endif()
 
 add_subdirectory(ffmpeg)
 add_subdirectory(psvpfstools)
+
+option(BUILD_SHARED_LIBS "Build shared library" OFF)
+option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
+add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)

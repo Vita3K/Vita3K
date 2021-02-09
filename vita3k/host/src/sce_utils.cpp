@@ -913,7 +913,7 @@ void make_fself(const std::string &input_file, const std::string &output_file) {
     control_6.common.type = 6;
     control_6.common.size = sizeof(control_6);
     control_6.common.unk = 1;
-    control_6.unk1 = 1;
+    control_6.is_used = 1;
     SCE_controlinfo_7 control_7 = { 0 };
     control_7.common.type = 7;
     control_7.common.size = sizeof(control_7);
