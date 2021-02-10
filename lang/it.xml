@@ -41,6 +41,17 @@
 	<version>Versione</version>
 </app_context>
 
+<indicator>
+	<app_added_home>L'applicazione è stata aggiunta alla schermata principale.</app_added_home>
+	<delete_all>Elimina tutto</delete_all>
+	<notif_deleted>Le notifiche saranno eliminate.</notif_deleted>
+	<install_failed>Impossibile installare.</install_failed>
+	<install_complete>Installazione completata.</install_complete>
+	<installing>Installazione in corso...</installing>
+	<no_notif>Non ci sono notifiche.</no_notif>
+	<trophy_earned>Hai guadagnato un trofeo!</trophy_earned>
+</indicator>
+
 <user_management>
 	<create_user>Crea utente</create_user>
 	<edit_user>Modifica utente</edit_user>

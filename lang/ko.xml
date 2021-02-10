@@ -13,6 +13,17 @@
 	<version>버전</version>
 </app_context>
 
+<indicator>
+	<app_added_home>홈 화면에 애플리케이션이 추가되었습니다.</app_added_home>
+	<delete_all>모두 삭제</delete_all>
+	<notif_deleted>알림을 삭제합니다.</notif_deleted>
+	<install_failed>설치하지 못했습니다.</install_failed>
+	<install_complete>설치했습니다.</install_complete>
+	<installing>설치중입니다...</installing>
+	<no_notif>알림이 없습니다.</no_notif>
+	<trophy_earned>홈 화면에 애플리케이션이 추가되었습니다.</trophy_earned>
+</indicator>
+
 <live_area>
 	<start>시작</start>
 	<continue>계속</continue>

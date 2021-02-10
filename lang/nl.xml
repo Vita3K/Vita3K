@@ -36,6 +36,17 @@
 	<version>Versie</version>
 </app_context>
 
+<indicator>
+	<app_added_home>De applicatie is toegevoegd aan het beginscherm.</app_added_home>
+	<delete_all>Alles verwijderen</delete_all>
+	<notif_deleted>De meldingen worden verwijderd.</notif_deleted>
+	<install_failed>Kan niet installeren.</install_failed>
+	<install_complete>De installatie is voltooid.</install_complete>
+	<installing>Bezig met installeren...</installing>
+	<no_notif>Er zijn geen meldingen.</no_notif>
+	<trophy_earned>Je hebt een trofee gewonnen!</trophy_earned>
+</indicator>
+
 <live_area>
 	<start>Starten</start>
 	<continue>Doorgaan</continue>

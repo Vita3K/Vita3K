@@ -424,9 +424,10 @@ void update_notice_info(GuiState &gui, HostState &host, const std::string &type)
     const auto pos = gui.notice_info.size();
 
     std::string msg;
+    auto indicator = gui.lang.indicator;
     if (type == "content") {
         if (host.app_category == "gd") {
-            msg = "The application has been added to the home screen.";
+            msg = !indicator["app_added_home"].empty() ? indicator["app_added_home"] : "The application has been added to the home screen.";
 
             int32_t width = 0;
             int32_t height = 0;
@@ -447,9 +448,9 @@ void update_notice_info(GuiState &gui, HostState &host, const std::string &type)
             gui.notice_info_icon[pos].init(gui.imgui_state.get(), data, width, height);
             stbi_image_free(data);
         } else
-            msg = "Installation complete.";
+            msg = !indicator["install_complete"].empty() ? indicator["install_complete"] : "Installation complete.";
 
-        gui.notice_info.push_back({ host.app_title_id, host.app_category, type, pos, std::time(0), host.app_title, msg });
+        gui.notice_info.push_back({ host.app_title_id, host.app_category, type, pos, std::time(nullptr), host.app_title, msg });
     } else {
         const auto trophy_data = gui.trophy_unlock_display_requests.back();
         int32_t width = 0;
@@ -485,8 +486,8 @@ void update_notice_info(GuiState &gui, HostState &host, const std::string &type)
             break;
         }
         const auto name = trophy_kind_s + " " + trophy_data.trophy_name;
-        msg = "You have earned a trophy!";
-        gui.notice_info.push_back({ trophy_data.np_com_id, trophy_data.trophy_id, type, pos, std::time(0), name, msg });
+        msg = !indicator["trophy_earned"].empty() ? indicator["trophy_earned"] : "You have earned a trophy!";
+        gui.notice_info.push_back({ trophy_data.np_com_id, trophy_data.trophy_id, type, pos, std::time(nullptr), name, msg });
     }
 
     ++gui.notice_info_count_new;
