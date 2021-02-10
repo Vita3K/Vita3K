@@ -36,6 +36,17 @@
 	<version>Version</version>
 </app_context>
 
+<indicator>
+	<app_added_home>The application has been added to the home screen.</app_added_home>
+	<delete_all>Delete All</delete_all>
+	<notif_deleted>The notifications will be deleted.</notif_deleted>
+	<install_failed>Could not install.</install_failed>
+	<install_complete>Installation complete.</install_complete>
+	<installing>Installing...</installing>
+	<no_notif>There are no notifications.</no_notif>
+	<trophy_earned>You have earned a trophy!</trophy_earned>
+</indicator>
+
 <live_area>
 	<start>Start</start>
 	<continue>Continue</continue>

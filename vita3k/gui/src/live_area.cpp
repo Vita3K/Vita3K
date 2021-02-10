@@ -129,6 +129,20 @@ void init_lang(GuiState &gui, HostState &host) {
                 lang_app_context["version"] = app_context.child("version").text().as_string();
             }
 
+            // Indicator
+            if (!lang_xml.child("indicator").empty()) {
+                auto &lang_indicator = gui.lang.indicator;
+                const auto indicator = lang_xml.child("indicator");
+                lang_indicator["app_added_home"] = indicator.child("app_added_home").text().as_string();
+                lang_indicator["delete_all"] = indicator.child("delete_all").text().as_string();
+                lang_indicator["notif_deleted"] = indicator.child("notif_deleted").text().as_string();
+                lang_indicator["install_failed"] = indicator.child("install_failed").text().as_string();
+                lang_indicator["install_complete"] = indicator.child("install_complete").text().as_string();
+                lang_indicator["installing"] = indicator.child("installing").text().as_string();
+                lang_indicator["no_notif"] = indicator.child("no_notif").text().as_string();
+                lang_indicator["trophy_earned"] = indicator.child("trophy_earned").text().as_string();
+            }
+
             // Live Area
             if (!lang_xml.child("live_area").empty()) {
                 start = lang_xml.child("live_area").child("start").text().as_string();
@@ -270,11 +284,13 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, gui.notice_info.empty() ? 0.f : 8.0f);
         ImGui::SetNextWindowPos(POPUP_POS, ImGuiCond_Always);
         ImGui::BeginChild("##notice_info_child", POPUP_SIZE, true, ImGuiWindowFlags_NoSavedSettings);
+        auto indicator = gui.lang.indicator;
         if (gui.notice_info.empty()) {
             ImGui::SetWindowFontScale(1.2f * SCAL.x);
-            const auto calc_text = ImGui::CalcTextSize("There are no notifications.");
+            const auto no_notif = !indicator["no_notif"].empty() ? indicator["no_notif"].c_str() : "There are no notifications";
+            const auto calc_text = ImGui::CalcTextSize(no_notif);
             ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (calc_text.x / 2.f), (POPUP_SIZE.y / 2.f) - (calc_text.y / 2.f)));
-            ImGui::TextColored(ImVec4(0.f, 0.f, 0.f, 1.f), "There are no notifications.");
+            ImGui::TextColored(ImVec4(0.f, 0.f, 0.f, 1.f), "%s", no_notif);
         } else {
             ImGui::Columns(3, nullptr, false);
             ImGui::SetColumnWidth(0, 85.f * SCAL.x);
@@ -346,15 +362,16 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
             if (ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
                 ImGui::OpenPopup("...");
             if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
-                if (ImGui::Button("Delete All"))
+                if (ImGui::Button(!indicator["delete_all"].empty() ? indicator["delete_all"].c_str() : "Delete All"))
                     ImGui::OpenPopup("Delete All");
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
                 ImGui::SetNextWindowSize(DELETE_POPUP_SIZE, ImGuiCond_Always);
                 ImGui::SetNextWindowPos(ImVec2((display_size.x / 2.f) - (DELETE_POPUP_SIZE.x / 2.f), (display_size.y / 2.f) - (DELETE_POPUP_SIZE.y / 2.f)));
                 if (ImGui::BeginPopupModal("Delete All", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
                     ImGui::SetWindowFontScale(1.4f * SCAL.x);
-                    ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize("The notifications will be deleted.").x / 2.f), (DELETE_POPUP_SIZE.y / 2.f) - (46.f * SCAL.y)));
-                    ImGui::TextColored(GUI_COLOR_TEXT, "The notifications will be deleted.");
+                    const auto notif_deleted = !indicator["notif_deleted"].empty() ? indicator["notif_deleted"].c_str() : "The notifications will be deleted.";
+                    ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize(notif_deleted).x / 2.f), (DELETE_POPUP_SIZE.y / 2.f) - (46.f * SCAL.y)));
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", notif_deleted);
                     ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCAL.x)), DELETE_POPUP_SIZE.y - BUTTON_SIZE.y - (24.0f * SCAL.y)));
                     if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
                         ImGui::CloseCurrentPopup();

@@ -13,6 +13,17 @@
 	<version>バージョン</version>
 </app_context>
 
+<indicator>
+	<app_added_home>ホーム画面にアプリケーションが追加されました。</app_added_home>
+	<delete_all>すべて削除</delete_all>
+	<notif_deleted>お知らせを削除します。</notif_deleted>
+	<install_failed>インストールできませんでした。</install_failed>
+	<install_complete>インストールしました。</install_complete>
+	<installing>インストール中です...</installing>
+	<no_notif>お知らせはありません。</no_notif>
+	<trophy_earned>トロフィーを獲得しました！</trophy_earned>
+</indicator>
+
 <live_area>
 	<start>はじめる</start>
 	<continue>つづける</continue>

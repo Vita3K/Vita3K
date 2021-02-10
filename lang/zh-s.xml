@@ -36,6 +36,17 @@
 	<version>版本</version>
 </app_context>
 
+<indicator>
+	<app_added_home>已将应用程序添加至主画面。</app_added_home>
+	<delete_all>全部删除</delete_all>
+	<notif_deleted>最新资讯将被删除。</notif_deleted>
+	<install_failed>无法安装。</install_failed>
+	<install_complete>安装完毕。</install_complete>
+	<installing>正在安装…</installing>
+	<no_notif>没有最新资讯。</no_notif>
+	<trophy_earned>已获得奖杯！</trophy_earned>
+</indicator>
+
 <live_area>
 	<start>开始</start>
 	<continue>继续</continue>

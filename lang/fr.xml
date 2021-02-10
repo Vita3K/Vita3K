@@ -36,6 +36,17 @@
 	<version>Version</version>
 </app_context>
 
+<indicator>
+	<app_added_home>L'application a été ajoutée à l'écran d'accueil.</app_added_home>
+	<delete_all>Supprimer tout</delete_all>
+	<notif_deleted>Les notifications vont être supprimées.</notif_deleted>
+	<install_failed>L'installation a échoué.</install_failed>
+	<install_complete>Installation terminée.</install_complete>
+	<installing>Installation en cours...</installing>
+	<no_notif>Aucune notification.</no_notif>
+	<trophy_earned>Vous avez obtenu un trophée !</trophy_earned>
+</indicator>
+
 <live_area>
 	<start>Démarrer</start>
 	<continue>Continuer</continue>

@@ -90,7 +90,8 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
     ImGui::SetCursorPosY(TROPHY_WINDOW_MARGIN_PADDING);
     ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "(%s) %s", trophy_kind_s.c_str(), callback_data.trophy_name.c_str());
     ImGui::SetWindowFontScale(0.8f);
-    ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "You have earned a trophy!");
+    const auto trophy_earned = !gui.lang.indicator["trophy_earned"].empty() ? gui.lang.indicator["trophy_earned"].c_str() : "You have earned a trophy!";
+    ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), trophy_earned);
     ImGui::End();
     ImGui::PopStyleColor();
     ImGui::PopStyleVar(2);
