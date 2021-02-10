@@ -280,7 +280,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                 source_size = compressed_size;
                 glCompressedTexSubImage2D(GL_TEXTURE_2D, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), pixels);
             } else {
-                source_size = (width * height * (bpp + 7)) >> 3;
+                source_size = (width * height * ((bpp + 7) >> 3));
                 glTexSubImage2D(GL_TEXTURE_2D, mip_index, 0, 0, width, height, format, type, pixels);
             }
         }
