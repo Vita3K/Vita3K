@@ -18,7 +18,8 @@ endif()
 enable_testing()
 
 macro(pre_configure_boost)
-	find_package(Boost COMPONENTS filesystem system QUIET)
+	set (Boost_USE_STATIC_LIBS ON)
+	find_package(Boost COMPONENTS filesystem system program_options QUIET)
 
 	if (Boost_FOUND)
 		set(BOOST_INCLUDEDIR ${Boost_INCLUDE_DIRS})
