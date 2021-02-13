@@ -43,9 +43,7 @@ Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID th
 
     const Ptr<Ptr<void>> address(tls);
 
-    if (!kernel.tls_address) {
-        return address;
-    } else {
+    if (kernel.tls_address) {
         auto alloc_name = fmt::format("TLS for thread #{} {}", thread_id, key);
         // TODO Use a finer-grained allocator.
         // TODO This is a memory leak.
@@ -55,8 +53,9 @@ Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID th
 
         *address.get(mem) = new_tls;
         slot_to_address.insert(SlotToAddress::value_type(key, address));
-        return address;
     }
+    *(address.get(mem)) = 0;
+    return address;
 }
 
 void stop_all_threads(KernelState &kernel) {
