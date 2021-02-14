@@ -10,8 +10,9 @@ namespace gui {
 
 static constexpr float TROPHY_MOVE_DELTA = 12.0f;
 static constexpr float TROPHY_WINDOW_ICON_SIZE = 48.0f;
-static constexpr float TROPHY_WINDOW_MARGIN_PADDING = 6.0f;
-static const ImVec2 TROPHY_WINDOW_SIZE = ImVec2(400.f, TROPHY_WINDOW_ICON_SIZE + TROPHY_WINDOW_MARGIN_PADDING * 2);
+static constexpr float TROPHY_ICON_MARGIN_PADDING = 6.f;
+static constexpr float TROPHY_WINDOW_MARGIN_PADDING = 12.f;
+static const ImVec2 TROPHY_WINDOW_SIZE = ImVec2(400.f, TROPHY_WINDOW_ICON_SIZE + TROPHY_WINDOW_MARGIN_PADDING);
 static constexpr int TROPHY_WINDOW_STATIC_FRAME_COUNT = 250;
 static constexpr float TROPHY_WINDOW_Y_POS = 20.0f;
 
@@ -52,9 +53,9 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
     ImGui::SetNextWindowSize(TROPHY_WINDOW_SIZE);
     ImGui::Begin("##NoName", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
-    ImGui::SetCursorPos(ImVec2(TROPHY_WINDOW_MARGIN_PADDING, TROPHY_WINDOW_MARGIN_PADDING));
     ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, TROPHY_WINDOW_ICON_SIZE + TROPHY_WINDOW_MARGIN_PADDING * 2);
+    ImGui::SetCursorPos(ImVec2(TROPHY_WINDOW_MARGIN_PADDING, TROPHY_ICON_MARGIN_PADDING));
     ImGui::Image((ImTextureID)gui.trophy_window_icon, ImVec2(TROPHY_WINDOW_ICON_SIZE, TROPHY_WINDOW_ICON_SIZE));
     ImGui::NextColumn();
 
@@ -85,11 +86,10 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
         break;
     }
 
-    ImGui::SetWindowFontScale(1.4f);
+    ImGui::SetWindowFontScale(1.f);
     ImGui::SetCursorPosY(TROPHY_WINDOW_MARGIN_PADDING);
     ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "(%s) %s", trophy_kind_s.c_str(), callback_data.trophy_name.c_str());
-
-    ImGui::SetWindowFontScale(1.2f);
+    ImGui::SetWindowFontScale(0.8f);
     ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "You have earned a trophy!");
     ImGui::End();
     ImGui::PopStyleColor();

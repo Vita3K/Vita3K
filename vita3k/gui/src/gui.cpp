@@ -488,11 +488,14 @@ void init(GuiState &gui, HostState &host) {
         gui.help_menu.welcome_dialog = true;
 
     get_modules_list(gui, host);
-    get_user_apps_title(gui, host);
     get_sys_apps_title(gui, host);
-    init_apps_icon(gui, host, gui.app_selector.user_apps);
 
     const auto cmd = host.cfg.run_title_id || host.cfg.vpk_path;
+    if (!cmd) {
+        get_user_apps_title(gui, host);
+        init_apps_icon(gui, host, gui.app_selector.user_apps);
+    }
+
     if (!gui.users.empty() && (gui.users.find(host.cfg.user_id) != gui.users.end()) && (cmd || host.cfg.auto_user_login)) {
         init_user(gui, host, host.cfg.user_id);
         if (!cmd && host.cfg.auto_user_login) {
@@ -538,6 +541,9 @@ void draw_live_area(GuiState &gui, HostState &host) {
 
     if (gui.live_area.user_management)
         draw_user_management(gui, host);
+
+    if (!gui.trophy_unlock_display_requests.empty())
+        gui::draw_trophies_unlocked(gui, host);
 
     // System App
     if (gui.live_area.content_manager)

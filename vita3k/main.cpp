@@ -259,7 +259,6 @@ int main(int argc, char *argv[]) {
         if (host.cfg.performance_overlay && !gui.live_area.app_selector && !gui.live_area.live_area_screen && gui::get_live_area_sys_app_state(gui))
             gui::draw_perf_overlay(gui, host);
 
-        gui::draw_trophies_unlocked(gui, host);
         if (host.display.imgui_render) {
             gui::draw_ui(gui, host);
         }
