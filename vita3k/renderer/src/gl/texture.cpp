@@ -46,6 +46,8 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, translate_wrap_mode(uaddr));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, translate_wrap_mode(vaddr));
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, (gxm_texture.lod_bias - 31) / 8.f);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, translate_minmag_filter((SceGxmTextureFilter)gxm_texture.min_filter));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, translate_minmag_filter((SceGxmTextureFilter)gxm_texture.mag_filter));
     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
@@ -276,7 +278,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
             glTexSubImage2D(GL_TEXTURE_2D, mip_index, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         else {
             size_t compressed_size = 0;
-            if (renderer::texture::is_compressed_format(gxm::get_base_format(fmt), width, height, compressed_size)) {
+            if (renderer::texture::is_compressed_format(base_format, width, height, compressed_size)) {
                 source_size = compressed_size;
                 glCompressedTexSubImage2D(GL_TEXTURE_2D, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), pixels);
             } else {
