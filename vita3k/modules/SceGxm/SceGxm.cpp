@@ -1030,7 +1030,7 @@ EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params
     if (!params) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    *hostMemSize = MB(2);
+    *hostMemSize = uint32_t(MB(2));
     return STUBBED("2MB host mem");
 }
 
@@ -2542,19 +2542,25 @@ EXPORT(uint32_t, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
 }
 
 EXPORT(uint32_t, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
-    assert(texture);
+    if (!texture)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
     }
+
     return texture->lod_bias;
 }
 
 EXPORT(uint32_t, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
-    assert(texture);
+    if (!texture)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
     }
-    return (texture->lod_min0 << 2) | texture->lod_min1;
+
+    return texture->lod_min0 | (texture->lod_min1 << 2);
 }
 
 EXPORT(int, sceGxmTextureGetMagFilter, const SceGxmTexture *texture) {
@@ -2802,7 +2808,9 @@ EXPORT(int, sceGxmTextureSetLodBias, SceGxmTexture *texture, uint32_t bias) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    return UNIMPLEMENTED();
+    texture->lod_bias = bias;
+
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetLodMin, SceGxmTexture *texture, uint32_t lodMin) {
@@ -2814,7 +2822,10 @@ EXPORT(int, sceGxmTextureSetLodMin, SceGxmTexture *texture, uint32_t lodMin) {
         return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
     }
 
-    return UNIMPLEMENTED();
+    texture->lod_min0 = lodMin & 3;
+    texture->lod_min1 = lodMin >> 2;
+
+    return 0;
 }
 
 EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
