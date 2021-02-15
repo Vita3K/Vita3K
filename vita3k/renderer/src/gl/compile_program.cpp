@@ -49,14 +49,6 @@ static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
     return shader;
 }
 
-static void bind_attribute_locations(GLuint gl_program, const GLVertexProgram &program) {
-    R_PROFILE(__func__);
-
-    for (const AttributeLocations::value_type &binding : program.attribute_locations) {
-        glBindAttribLocation(gl_program, binding.first / sizeof(uint32_t), binding.second.c_str());
-    }
-}
-
 static void bind_uniform_block_locations(GLuint gl_program, const SceGxmProgram &program) {
     std::string name_type = (program.is_vertex() ? "vert" : "frag");
 
@@ -153,9 +145,6 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
 
     glAttachShader(program->get(), fragment_shader->get());
     glAttachShader(program->get(), vertex_shader->get());
-
-    bind_attribute_locations(program->get(), vertex_program);
-
     glLinkProgram(program->get());
 
     if (!features.use_shader_binding) {

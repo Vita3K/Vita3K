@@ -23,6 +23,7 @@
 #include <renderer/types.h>
 
 #include <renderer/texture_cache_state.h>
+#include <shader/usse_program_analyzer.h>
 
 #include <map>
 #include <memory>
@@ -46,7 +47,6 @@ inline bool operator==(const ExcludedUniform &lhs, const ExcludedUniform &rhs) {
     return (lhs.name == rhs.name) && (lhs.program == rhs.program);
 }
 
-typedef std::map<GLuint, std::string> AttributeLocations;
 typedef std::map<std::string, SharedGLObject> ShaderCache;
 typedef std::tuple<std::string, std::string> ProgramHashes;
 typedef std::map<ProgramHashes, SharedGLObject> ProgramCache;
@@ -106,7 +106,7 @@ struct GLFragmentProgram : public renderer::FragmentProgram {
 
 struct GLVertexProgram : public renderer::VertexProgram {
     GLShaderStatics statics;
-    AttributeLocations attribute_locations;
+    shader::usse::AttributeInformationMap attribute_infos;
 };
 
 struct GLRenderTarget : public renderer::RenderTarget {

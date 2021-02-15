@@ -11,6 +11,7 @@ GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
     case SCE_GXM_ATTRIBUTE_FORMAT_U8:
     case SCE_GXM_ATTRIBUTE_FORMAT_U8N:
         return GL_UNSIGNED_BYTE;
+
     case SCE_GXM_ATTRIBUTE_FORMAT_S8:
     case SCE_GXM_ATTRIBUTE_FORMAT_S8N:
         return GL_BYTE;
