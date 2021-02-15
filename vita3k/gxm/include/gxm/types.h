@@ -1165,7 +1165,7 @@ typedef std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS> TextureDatas;
 typedef std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> StreamDatas;
 
 struct GxmViewport {
-    SceGxmViewportMode enable = SCE_GXM_VIEWPORT_DISABLED;
+    SceGxmViewportMode enable = SCE_GXM_VIEWPORT_ENABLED;
     SceFVector3 offset;
     SceFVector3 scale;
 };
