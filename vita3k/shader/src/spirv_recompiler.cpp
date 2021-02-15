@@ -1107,10 +1107,6 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
             if (vo == SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION) {
                 b.addDecoration(out_var, spv::DecorationBuiltIn, spv::BuiltInPosition);
 
-                if (translation_state.flip_vec_id != spv::NoResult) {
-                    o_val = b.createBinOp(spv::OpFMul, out_type, o_val, translation_state.flip_vec_id);
-                }
-
                 // Transform screen space coordinate to ndc when viewport is disabled.
                 spv::Id f32 = b.makeFloatType(32);
                 spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
@@ -1130,10 +1126,20 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                 spv::Id constant = b.createCompositeConstruct(v4, { neg_one, one, zero, zero });
                 spv::Id o_val2 = b.createBinOp(spv::OpFMul, v4, o_val, scale);
                 o_val2 = b.createBinOp(spv::OpFAdd, v4, o_val2, constant);
+
+                if (translation_state.flip_vec_id != spv::NoResult) {
+                    o_val2 = b.createBinOp(spv::OpFMul, v4, o_val2, translation_state.flip_vec_id);
+                }
+
                 // o_val2 = (x,y) * (2/width, -2/height) + (-1,1)
                 b.createStore(o_val2, out_var);
 
                 cond_builder.makeBeginElse();
+
+                if (translation_state.flip_vec_id != spv::NoResult) {
+                    o_val = b.createBinOp(spv::OpFMul, out_type, o_val, translation_state.flip_vec_id);
+                }
+
                 b.createStore(o_val, out_var);
                 cond_builder.makeEndIf();
             } else {
