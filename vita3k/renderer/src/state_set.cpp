@@ -127,7 +127,7 @@ COMMAND_SET_STATE(viewport) {
         state->viewport.scale.x = helper.pop<float>();
         state->viewport.scale.y = helper.pop<float>();
         state->viewport.scale.z = helper.pop<float>();
-    } else {    
+    } else {
         state->viewport.enable = helper.pop<SceGxmViewportMode>();
     }
 

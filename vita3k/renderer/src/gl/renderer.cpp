@@ -93,22 +93,6 @@ static GLenum translate_blend_factor(SceGxmBlendFactor src) {
     }
 }
 
-static AttributeLocations attribute_locations(const SceGxmProgram &vertex_program) {
-    R_PROFILE(__func__);
-    AttributeLocations locations;
-
-    const SceGxmProgramParameter *const parameters = gxp::program_parameters(vertex_program);
-    for (uint32_t i = 0; i < vertex_program.parameter_count; ++i) {
-        const SceGxmProgramParameter &parameter = parameters[i];
-        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
-            std::string name = gxp::parameter_name(parameter);
-            locations.emplace(parameter.resource_index, name);
-        }
-    }
-
-    return locations;
-}
-
 void bind_fundamental(GLContext &context) {
     // Bind the vertex array and element buffer.
     glBindVertexArray(context.vertex_array[0]);
@@ -408,8 +392,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
     gxp_ptr_map.emplace(hash_bytes_v, &program);
 
     shader::usse::get_uniform_buffer_sizes(program, vp->uniform_buffer_sizes);
-
-    vert_program_gl->attribute_locations = attribute_locations(program);
+    shader::usse::get_attribute_informations(program, vert_program_gl->attribute_infos);
 
     return true;
 }

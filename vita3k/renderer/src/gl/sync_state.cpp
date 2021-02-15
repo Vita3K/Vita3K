@@ -334,15 +334,44 @@ void sync_vertex_attributes(GLContext &context, const GxmContextState &state, co
     // Vertex attributes.
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
+        const GLVertexProgram *glvert = reinterpret_cast<GLVertexProgram *>(vertex_program.renderer_data.get());
         const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
+
         const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
         const GLenum type = attribute_format_to_gl_type(attribute_format);
         const GLboolean normalised = attribute_format_normalised(attribute_format);
-        const int attrib_location = attribute.regIndex / sizeof(uint32_t);
 
-        glBindBuffer(GL_ARRAY_BUFFER, context.stream_vertex_buffers[attribute.streamIndex]);
-        glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
-        glEnableVertexAttribArray(attrib_location);
+        int attrib_location = 0;
+        bool upload_integral = false;
+
+        if (glvert->attribute_infos.find(attribute.regIndex) != glvert->attribute_infos.end()) {
+            shader::usse::AttributeInformation info = glvert->attribute_infos.at(attribute.regIndex);
+            attrib_location = info.location();
+
+            switch (info.gxm_type()) {
+            case SCE_GXM_PARAMETER_TYPE_U8:
+            case SCE_GXM_PARAMETER_TYPE_S8:
+            case SCE_GXM_PARAMETER_TYPE_U16:
+            case SCE_GXM_PARAMETER_TYPE_S16:
+            case SCE_GXM_PARAMETER_TYPE_U32:
+            case SCE_GXM_PARAMETER_TYPE_S32:
+                upload_integral = true;
+                break;
+
+            default:
+                break;
+            }
+
+            glBindBuffer(GL_ARRAY_BUFFER, context.stream_vertex_buffers[attribute.streamIndex]);
+
+            if (upload_integral) {
+                glVertexAttribIPointer(attrib_location, attribute.componentCount, type, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
+            } else {
+                glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
+            }
+
+            glEnableVertexAttribArray(attrib_location);
+        }
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
