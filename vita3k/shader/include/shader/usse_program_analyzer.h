@@ -68,10 +68,32 @@ struct USSEBlock {
     }
 };
 
+struct AttributeInformation {
+    std::uint32_t info;
+
+    explicit AttributeInformation()
+        : info(0) {
+    }
+
+    explicit AttributeInformation(const std::uint16_t loc, const std::uint16_t gxm_type)
+        : info(loc | (static_cast<std::uint32_t>(gxm_type) << 16)) {
+    }
+
+    std::uint16_t location() const {
+        return static_cast<std::uint16_t>(info);
+    }
+
+    std::uint16_t gxm_type() const {
+        return static_cast<std::uint16_t>(info >> 16);
+    }
+};
+
 using UniformBufferMap = std::map<int, UniformBuffer>;
+using AttributeInformationMap = std::map<int, AttributeInformation>;
 
 using USSEOffset = std::uint32_t;
 
+void get_attribute_informations(const SceGxmProgram &program, AttributeInformationMap &locmap);
 void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &sizes);
 int match_uniform_buffer_with_buffer_size(const SceGxmProgram &program, const SceGxmProgramParameter &parameter, const shader::usse::UniformBufferMap &buffers);
 

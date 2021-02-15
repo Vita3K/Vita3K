@@ -771,7 +771,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         last_base += size * 4;
     }
 
-    const auto add_var_to_reg = [&](const Input &input, const std::string &name, std::uint16_t semantic, bool pa) {
+    const auto add_var_to_reg = [&](const Input &input, const std::string &name, std::uint16_t semantic, bool pa, std::int32_t location) {
         const spv::Id param_type = get_param_type(b, input);
         int type_size = get_data_type_size(input.type);
         spv::Id var = b.createVariable(spv::StorageClassInput, param_type, name.c_str());
@@ -787,6 +787,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         default:
             break;
+        }
+
+        if (location != -1) {
+            b.addDecoration(var, spv::DecorationLocation, location);
         }
 
         translation_state.interfaces.push_back(var);
@@ -836,6 +840,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
+    std::int32_t in_fcount_allocated = 0;
+
     for (const auto &input : program_input.inputs) {
         std::visit(overloaded{
                        [&](const LiteralInputSource &s) {
@@ -846,7 +852,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                        [&](const UniformInputSource &s) {
                            // In ubo mode we copy using default uniform buffer
                            if (!features.use_ubo) {
-                               add_var_to_reg(input, s.name, 0, false);
+                               add_var_to_reg(input, s.name, 0, false, -1);
                            }
                        },
                        [&](const UniformBufferInputSource &s) {
@@ -862,7 +868,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            spv_params.samplers.emplace(input.offset, spv_sampler);
                        },
                        [&](const AttributeInputSource &s) {
-                           add_var_to_reg(input, s.name, s.semantic, true);
+                           add_var_to_reg(input, s.name, s.semantic, true, in_fcount_allocated / 4);
+                           in_fcount_allocated += ((input.array_size * input.component_count + 3) / 4 * 4);
                        } },
             input.source);
     }

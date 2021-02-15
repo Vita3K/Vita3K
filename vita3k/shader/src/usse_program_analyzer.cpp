@@ -166,4 +166,17 @@ void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &
         sizes[index] = buffer.size;
     }
 }
+
+void get_attribute_informations(const SceGxmProgram &program, AttributeInformationMap &locmap) {
+    const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
+    std::uint32_t fcount_allocated = 0;
+
+    for (size_t i = 0; i < program.parameter_count; ++i) {
+        const SceGxmProgramParameter &parameter = gxp_parameters[i];
+        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+            locmap.emplace(parameter.resource_index, AttributeInformation(fcount_allocated / 4, parameter.type));
+            fcount_allocated += ((parameter.array_size * parameter.component_count + 3) / 4) * 4;
+        }
+    }
+}
 } // namespace shader::usse
