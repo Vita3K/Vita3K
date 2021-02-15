@@ -96,7 +96,7 @@ void set_fragment_texture(State &state, Context *ctx, GxmContextState *gxm_conte
 void set_viewport(State &state, Context *ctx, GxmContextState *gxm_context, float xOffset, float yOffset, float zOffset, float xScale, float yScale, float zScale) {
     switch (state.current_backend) {
     default:
-        renderer::add_state_set_command(ctx, renderer::GXMState::Viewport, SCE_GXM_VIEWPORT_ENABLED, true, xOffset, yOffset,
+        renderer::add_state_set_command(ctx, renderer::GXMState::Viewport, true, xOffset, yOffset,
             zOffset, xScale, yScale, zScale);
 
         break;
@@ -106,7 +106,7 @@ void set_viewport(State &state, Context *ctx, GxmContextState *gxm_context, floa
 void set_viewport_enable(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmViewportMode enable) {
     switch (state.current_backend) {
     default:
-        renderer::add_state_set_command(ctx, renderer::GXMState::Viewport, enable, false);
+        renderer::add_state_set_command(ctx, renderer::GXMState::Viewport, false, enable);
         break;
     }
 }
