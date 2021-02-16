@@ -1597,9 +1597,12 @@ EXPORT(bool, sceGxmProgramIsDiscardUsed, const SceGxmProgram *program) {
 }
 
 EXPORT(bool, sceGxmProgramIsEquivalent, const SceGxmProgram *programA, const SceGxmProgram *programB) {
-    assert(programA);
-    assert(programB);
-    return UNIMPLEMENTED();
+    if (!programA || !programB) {
+        LOG_ERROR("SCE_GXM_ERROR_INVALID_POINTER");
+        return false;
+    }
+
+    return (programA->size == programB->size) && (memcmp(programA, programB, programA->size) == 0);
 }
 
 EXPORT(bool, sceGxmProgramIsFragColorUsed, const SceGxmProgram *program) {
