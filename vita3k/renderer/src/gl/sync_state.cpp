@@ -194,11 +194,11 @@ void sync_cull(GLContext &context, const GxmContextState &state) {
     switch (state.cull_mode) {
     case SCE_GXM_CULL_CCW:
         glEnable(GL_CULL_FACE);
-        glCullFace(context.viewport_flip[1] == 1.0f ? GL_FRONT : GL_BACK);
+        glCullFace(GL_BACK);
         break;
     case SCE_GXM_CULL_CW:
         glEnable(GL_CULL_FACE);
-        glCullFace(context.viewport_flip[1] == 1.0f ? GL_BACK : GL_FRONT);
+        glCullFace(GL_FRONT);
         break;
     case SCE_GXM_CULL_NONE:
         glDisable(GL_CULL_FACE);
