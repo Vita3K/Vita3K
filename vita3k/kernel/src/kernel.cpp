@@ -36,25 +36,11 @@ Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID th
     if (existing != slot_to_address.end()) {
         return existing->second;
     }
-
+    assert(key <= 0x800 / 4);
     const ThreadStatePtr thread = util::find(thread_id, kernel.threads);
-
     Address tls = read_tpidruro(*thread->cpu) - 0x800 + key * 4;
-
     const Ptr<Ptr<void>> address(tls);
-
-    if (kernel.tls_address) {
-        auto alloc_name = fmt::format("TLS for thread #{} {}", thread_id, key);
-        // TODO Use a finer-grained allocator.
-        // TODO This is a memory leak.
-        Ptr<void> new_tls(alloc(mem, 4 * kernel.tls_msize, alloc_name.c_str()));
-        memset(new_tls.get(mem), 0, 4 * kernel.tls_psize);
-        memcpy(new_tls.get(mem), kernel.tls_address.get(mem), 4 * kernel.tls_psize);
-
-        *address.get(mem) = new_tls;
-        slot_to_address.insert(SlotToAddress::value_type(key, address));
-    }
-    *(address.get(mem)) = 0;
+    slot_to_address.insert(SlotToAddress::value_type(key, address));
     return address;
 }
 
