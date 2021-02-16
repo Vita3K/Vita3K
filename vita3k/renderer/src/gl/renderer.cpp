@@ -270,8 +270,6 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state) {
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
-    gl_state.features.use_ubo = true;
-
     return true;
 }
 
@@ -438,20 +436,7 @@ void set_context(GLContext &context, GxmContextState &state, const MemState &mem
     }
 }
 
-static void flip_vertically(uint32_t *pixels, size_t width, size_t height, size_t stride_in_pixels) {
-    R_PROFILE(__func__);
-
-    uint32_t *row1 = &pixels[0];
-    uint32_t *row2 = &pixels[(height - 1) * stride_in_pixels];
-
-    while (row1 < row2) {
-        std::swap_ranges(&row1[0], &row1[width], &row2[0]);
-        row1 += stride_in_pixels;
-        row2 -= stride_in_pixels;
-    }
-}
-
-void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format, const bool do_flip) {
+void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format) {
     R_PROFILE(__func__);
 
     if (pixels == nullptr) {
@@ -504,11 +489,6 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     }
 
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-
-    if (do_flip) {
-        flip_vertically(pixels, width, height, stride_in_pixels);
-    }
-
     ++context.texture_cache.timestamp;
 }
 

@@ -743,16 +743,8 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
     const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(host.mem);
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(host.mem);
 
-    if (host.renderer->features.use_ubo) {
-        renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), vertex_program_gxp, context->state.vertex_uniform_buffers, gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
-        renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), fragment_program_gxp, context->state.fragment_uniform_buffers, gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
-    } else {
-        // Update uniforms from this side. We should pass the pointer to parameter struct, since from there it can
-        // find the name and other things based on the pointer in memory. The pointer should be persists until
-        // the fragment is done, so we are guranteed to be safe.
-        renderer::set_uniforms(*host.renderer, context->renderer.get(), vertex_program_gxp, context->state.vertex_uniform_buffers, host.mem);
-        renderer::set_uniforms(*host.renderer, context->renderer.get(), fragment_program_gxp, context->state.fragment_uniform_buffers, host.mem);
-    }
+    renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), vertex_program_gxp, context->state.vertex_uniform_buffers, gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
+    renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), fragment_program_gxp, context->state.fragment_uniform_buffers, gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
     // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).
@@ -837,13 +829,8 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     const SceGxmProgram &vertex_program_gxp = *vertex_program->program.get(host.mem);
     const SceGxmProgram &fragment_program_gxp = *fragment_program->program.get(host.mem);
 
-    if (host.renderer->features.use_ubo) {
-        renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
-        renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
-    } else {
-        renderer::set_uniforms(*host.renderer, context->renderer.get(), vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), host.mem);
-        renderer::set_uniforms(*host.renderer, context->renderer.get(), fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), host.mem);
-    }
+    renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
+    renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
     // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).

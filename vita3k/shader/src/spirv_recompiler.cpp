@@ -741,13 +741,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         uniform_buffers.emplace(buffer.index, block);
     }
 
-    if (features.use_ubo) {
-        for (const auto buffer : program_input.uniform_buffers) {
-            if (buffer.reg_block_size > 0) {
-                const uint32_t reg_block_size_in_f32v = (buffer.reg_block_size + 3) / 4;
-                const auto spv_buffer = uniform_buffers.at(buffer.index);
-                copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset / 4, reg_block_size_in_f32v);
-            }
+    for (const auto buffer : program_input.uniform_buffers) {
+        if (buffer.reg_block_size > 0) {
+            const uint32_t reg_block_size_in_f32v = (buffer.reg_block_size + 3) / 4;
+            const auto spv_buffer = uniform_buffers.at(buffer.index);
+            copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset / 4, reg_block_size_in_f32v);
         }
     }
 
@@ -849,12 +847,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            // Pair sort automatically sort offset for us
                            std::sort(literal_pairs.begin(), literal_pairs.end());
                        },
-                       [&](const UniformInputSource &s) {
-                           // In ubo mode we copy using default uniform buffer
-                           if (!features.use_ubo) {
-                               add_var_to_reg(input, s.name, 0, false, -1);
-                           }
-                       },
                        [&](const UniformBufferInputSource &s) {
                            Operand reg;
                            reg.bank = RegisterBank::SECATTR;
@@ -928,7 +920,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         translation_state.screen_height_id = height_id;
     }
 
-    if (program_type == SceGxmProgramType::Vertex && features.hardware_flip) {
+    if (program_type == SceGxmProgramType::Vertex) {
         // Create variable that helps us do flipping
         // TODO: Not emit this on Vulkan or DirectX
         spv::Id f32 = b.makeFloatType(32);
@@ -1486,7 +1478,6 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
     features.direct_fragcolor = false;
     features.support_shader_interlock = true;
     features.pack_unpack_half_through_ext = false;
-    features.use_ubo = true;
 
     convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), features, false, true);
 
