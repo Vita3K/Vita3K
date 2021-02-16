@@ -738,7 +738,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 set_scroll_pos = true;
             }
         } else {
-            if (!gui.apps_list_opened.empty() && gui.apps_list_opened[gui.current_app_selected] == "NPXS10008")
+            if (!gui.apps_list_opened.empty() && (gui.current_app_selected >= 0))
                 gui.live_area.live_area_screen = true;
             else
                 gui.live_area.app_selector = true;

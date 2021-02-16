@@ -78,16 +78,16 @@ void update_apps_list_opened(GuiState &gui, const std::string &title_id) {
 
 static std::map<std::string, uint64_t> last_time;
 
-void pre_load_app(GuiState &gui, HostState &host, bool live_area) {
+void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::string &title_id) {
     gui.live_area.app_selector = false;
     if (live_area) {
-        update_apps_list_opened(gui, host.app_title_id);
+        update_apps_list_opened(gui, title_id);
         last_time["home"] = 0;
         init_live_area(gui, host);
         gui.live_area.information_bar = true;
         gui.live_area.live_area_screen = true;
     } else
-        pre_run_app(gui, host, host.app_title_id);
+        pre_run_app(gui, host, title_id);
 }
 
 void pre_run_app(GuiState &gui, HostState &host, const std::string &title_id) {
@@ -444,7 +444,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::NextColumn();
                 }
                 if (selected)
-                    pre_load_app(gui, host, host.cfg.show_live_area_screen);
+                    pre_load_app(gui, host, host.cfg.show_live_area_screen, app.title_id);
             }
         };
         // System Applications

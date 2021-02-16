@@ -92,14 +92,14 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
     }
 
     date["date"] = ImVec2(900.f, 186.f);
-    date["clock"] = ImVec2(900.f, 146.f);
+    date["clock"] = ImVec2(880.f, 146.f);
     if (!start_param["dateLayout"].empty()) {
         switch (std::stoi(start_param["dateLayout"])) {
         case 0:
             break;
         case 1:
             date["date"].y = 468.f;
-            date["clock"].y = 436.f;
+            date["clock"].y = 426.f;
             break;
         case 2:
             date["date"].x = 50.f;
@@ -176,8 +176,8 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
     stbi_image_free(data);
     fclose(f);
 
-    date["date"] = ImVec2(898, 186.f);
-    date["clock"] = ImVec2(898.f, 146.f);
+    date["date"] = ImVec2(900.f, 186.f);
+    date["clock"] = ImVec2(880.f, 146.f);
 
     date_color = 4294967295; // White
 
@@ -494,7 +494,6 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
     const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
-    auto DATE_POS = ImVec2(display_size.x - (date["date"].x * SCAL.x), display_size.y - (date["date"].y * SCAL.y));
 
     ImGui::SetNextWindowPos(ImVec2(0.f, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
@@ -513,40 +512,44 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto local = *localtime(&tt);
 
     ImGui::PushFont(gui.vita_font);
-    const auto SCAL_PIX_DATE_FONT = 38.f / 30.f;
-    const auto DATE_FONT_SIZE = 38.f;
+    const auto SCAL_DEFAULT_FONT = ImGui::GetFontSize() / 19.2f;
+    const auto SCAL_PIX_DATE_FONT = 34.f / 28.f;
+    const auto DATE_FONT_SIZE = 34.f * SCAL_DEFAULT_FONT;
     const auto SCAL_DATE_FONT_SIZE = DATE_FONT_SIZE / ImGui::GetFontSize();
 
     auto DATE_TIME = get_date_time(gui, host, local);
     const auto DATE_STR = DATE_TIME["detail-date"];
     const auto CALC_DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str());
     const auto DATE_SIZE = ImVec2(CALC_DATE_SIZE.x * SCAL_DATE_FONT_SIZE, CALC_DATE_SIZE.y * SCAL_DATE_FONT_SIZE * SCAL_PIX_DATE_FONT);
-    if (start_param["dateLayout"] == "2")
-        DATE_POS.x -= DATE_SIZE.x * SCAL.x;
+    const auto DATE_POS = ImVec2(display_size.x - (start_param["dateLayout"] == "2" ? date["date"].x + DATE_SIZE.x : date["date"].x) * SCAL.x, display_size.y - (date["date"].y * SCAL.y));
     ImGui::GetForegroundDrawList()->AddText(gui.vita_font, DATE_FONT_SIZE * SCAL.x, DATE_POS, date_color, DATE_STR.c_str());
     ImGui::PopFont();
 
     ImGui::PushFont(gui.large_font);
+    const auto SCAL_DEFAULT_LARGE_FONT = ImGui::GetFontSize() / 116.f;
+    const auto LARGE_FONT_SIZE = 116.f * SCAL_DEFAULT_FONT;
     const auto SCAL_PIX_LARGE_FONT = 96.f / ImGui::GetFontSize();
 
-    auto CLOCK_POS = ImVec2(display_size.x - (date["clock"].x * SCAL.x), display_size.y - (date["clock"].y * SCAL.y));
-    if (std::stoi(DATE_TIME["hour"]) < 10)
-        CLOCK_POS.x += ImGui::CalcTextSize("0").x;
     const auto CLOCK_STR = DATE_TIME["clock"];
     const auto CALC_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str());
     const auto CLOCK_SIZE = ImVec2(CALC_CLOCK_SIZE.x, CALC_CLOCK_SIZE.y * SCAL_PIX_LARGE_FONT);
+
     const auto DAY_MOMENT_STR = DATE_TIME["day-moment"];
     const auto CALC_DAY_MOMENT_SIZE = ImGui::CalcTextSize(DAY_MOMENT_STR.c_str());
-    const auto DAY_MOMENT_FONT_SIZE = ImGui::GetFontSize() / 2.f;
-    const auto SCAL_FONT_DAY_MOMENT = DAY_MOMENT_FONT_SIZE / ImGui::GetFontSize();
-    const auto DAY_MOMENT_SIZE = gui.users[host.io.user_id].clock_12_hour ? ImVec2(CALC_DAY_MOMENT_SIZE.x * SCAL_FONT_DAY_MOMENT, CALC_DAY_MOMENT_SIZE.y * SCAL_FONT_DAY_MOMENT * SCAL_PIX_LARGE_FONT) : ImVec2(0.f, 0.f);
+    const auto DAY_MOMENT_LARGE_FONT_SIZE = 56 * SCAL_DEFAULT_LARGE_FONT;
+    const auto SCAL_LARGE_FONT_DAY_MOMENT = DAY_MOMENT_LARGE_FONT_SIZE / ImGui::GetFontSize();
+    const auto DAY_MOMENT_SIZE = gui.users[host.io.user_id].clock_12_hour ? ImVec2(CALC_DAY_MOMENT_SIZE.x * SCAL_LARGE_FONT_DAY_MOMENT, CALC_DAY_MOMENT_SIZE.y * SCAL_LARGE_FONT_DAY_MOMENT * SCAL_PIX_LARGE_FONT) : ImVec2(0.f, 0.f);
 
+    auto CLOCK_POS = ImVec2(display_size.x - (date["clock"].x * SCAL.x), display_size.y - (date["clock"].y * SCAL.y));
     if (start_param["dateLayout"] == "2")
         CLOCK_POS.x -= (CLOCK_SIZE.x * SCAL.x) + (DAY_MOMENT_SIZE.x * SCAL.x);
-    ImGui::GetForegroundDrawList()->AddText(gui.large_font, ImGui::GetFontSize() * SCAL.x, CLOCK_POS, date_color, CLOCK_STR.c_str());
+    else if (std::stoi(DATE_TIME["hour"]) < 10)
+        CLOCK_POS.x += ImGui::CalcTextSize("0").x;
+
+    ImGui::GetForegroundDrawList()->AddText(gui.large_font, LARGE_FONT_SIZE * SCAL.x, CLOCK_POS, date_color, CLOCK_STR.c_str());
     if (gui.users[host.io.user_id].clock_12_hour) {
         const auto DAY_MOMENT_POS = ImVec2(CLOCK_POS.x + ((CLOCK_SIZE.x + 6.f) * SCAL.x), CLOCK_POS.y + ((CLOCK_SIZE.y - DAY_MOMENT_SIZE.y) * SCAL.y));
-        ImGui::GetForegroundDrawList()->AddText(gui.large_font, DAY_MOMENT_FONT_SIZE * SCAL.x, DAY_MOMENT_POS, date_color, DAY_MOMENT_STR.c_str());
+        ImGui::GetForegroundDrawList()->AddText(gui.large_font, DAY_MOMENT_LARGE_FONT_SIZE * SCAL.x, DAY_MOMENT_POS, date_color, DAY_MOMENT_STR.c_str());
     }
     ImGui::PopFont();
 
