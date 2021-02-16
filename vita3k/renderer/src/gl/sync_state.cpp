@@ -122,6 +122,8 @@ void sync_viewport(GLContext &context, const GxmContextState &state) {
     const GLsizei display_w = state.color_surface.width;
     const GLsizei display_h = state.color_surface.height;
     const GxmViewport &viewport = state.viewport;
+    const float previous_flip_y = context.viewport_flip[1];
+
     if (viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
         const GLfloat ymin = viewport.offset.y + viewport.scale.y;
         const GLfloat ymax = viewport.offset.y - viewport.scale.y - 1;
@@ -146,6 +148,12 @@ void sync_viewport(GLContext &context, const GxmContextState &state) {
 
         glViewport(0, 0, display_w, display_h);
         glDepthRange(0, 1);
+    }
+
+    if (previous_flip_y != context.viewport_flip[1]) {
+        // We need to sync again state that uses the flip
+        sync_cull(context, state);
+        sync_clipping(context, state);
     }
 }
 
@@ -370,61 +378,5 @@ void sync_vertex_attributes(GLContext &context, const GxmContextState &state, co
         }
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-}
-
-bool sync_state(GLContext &context, const GxmContextState &state, const MemState &mem, const Config &config, const std::string &base_path, const std::string &title_id) {
-    R_PROFILE(__func__);
-
-    const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
-    const SceGxmProgram &fragment_gxp = *gxm_fragment_program.program.get(mem);
-    const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_gxp);
-    const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
-        gxm_fragment_program.renderer_data.get());
-
-    sync_viewport(context, state);
-    sync_clipping(context, state);
-    sync_cull(context, state);
-
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    glClearDepth(state.depth_stencil_surface.backgroundDepth);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
-
-    sync_mask(context, state, mem);
-
-    if (sync_depth_data(state)) {
-        sync_front_depth_func(state);
-        sync_front_depth_write_enable(state);
-    }
-
-    if (sync_stencil_data(state, mem)) {
-        set_stencil_state(GL_BACK, state.back_stencil);
-        set_stencil_state(GL_FRONT, state.front_stencil);
-    }
-
-    sync_front_polygon_mode(state);
-    sync_front_depth_bias(state);
-    sync_blending(state, mem);
-
-    // Textures.
-    for (size_t i = 0; i < fragment_gxp.parameter_count; ++i) {
-        const SceGxmProgramParameter &param = fragment_params[i];
-        if (param.category != SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-            continue;
-        }
-        const size_t texture_unit = param.resource_index;
-        if (texture_unit >= SCE_GXM_MAX_TEXTURE_UNITS) {
-            LOG_WARN("Texture unit index ({}) out of range. SCE_GXM_MAX_TEXTURE_UNITS is {}.", texture_unit, SCE_GXM_MAX_TEXTURE_UNITS);
-            continue;
-        }
-        sync_texture(context, state, mem, texture_unit, config, base_path, title_id);
-    }
-    glActiveTexture(GL_TEXTURE0);
-
-    // Uniforms.
-    sync_vertex_attributes(context, state, mem);
-
-    return true;
 }
 } // namespace renderer::gl
