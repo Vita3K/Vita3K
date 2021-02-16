@@ -132,8 +132,6 @@ int send_single_command(State &state, Context *ctx, GxmContextState *gxm_state, 
     return wait_for_status(state, &status);
 }
 
-bool sync_state(State &state, Context &context, const MemState &mem);
-
 struct TextureCacheState;
 
 namespace texture {
