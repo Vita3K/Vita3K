@@ -90,28 +90,25 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             const auto [store_type, param_type_name] = shader::get_parameter_type_store_and_name(parameter_type);
 
             // Make the type
-            Input item;
-            item.type = store_type;
-            item.offset = offset;
-            item.component_count = parameter.component_count;
-            item.array_size = parameter.array_size;
             gxp::GenericParameterType param_type = gxp::parameter_generic_type(parameter);
-            item.generic_type = translate_generic_type(param_type);
-            item.bank = is_uniform ? RegisterBank::SECATTR : RegisterBank::PRIMATTR;
             if (!is_uniform) {
+                Input item;
+                item.type = store_type;
+                item.offset = offset;
+                item.component_count = parameter.component_count;
+                item.array_size = parameter.array_size;
+
+                item.generic_type = translate_generic_type(param_type);
+                item.bank = RegisterBank::PRIMATTR;
+
                 AttributeInputSource source;
                 source.name = var_name;
                 source.index = parameter.resource_index;
                 source.semantic = parameter.semantic;
 
                 item.source = source;
+                program_input.inputs.push_back(item);
             } else {
-                UniformInputSource source;
-                source.name = var_name;
-                source.index = parameter.resource_index;
-                const uint32_t reg_block_size = container ? container->size_in_f32 : 0;
-                source.in_mem = parameter.resource_index > reg_block_size;
-                item.source = source;
                 uint32_t vector_size = parameter.component_count * get_data_type_size(store_type);
                 if (parameter.array_size != 1) {
                     if (is_float_data_type(store_type) && parameter.component_count != 1) {
@@ -123,6 +120,8 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
                 const uint32_t parameter_size = parameter.array_size * vector_size;
                 const uint32_t parameter_size_in_f32 = (parameter_size + 3) / 4;
                 if (uniform_buffers.find(parameter.container_index) == uniform_buffers.end()) {
+                    const std::uint32_t reg_block_size = container ? container->size_in_f32 : 0;
+
                     UniformBuffer buffer;
                     buffer.index = (parameter.container_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER;
                     buffer.reg_block_size = reg_block_size;
@@ -136,8 +135,6 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
                     buffer.reg_start_offset = std::min(buffer.reg_start_offset, static_cast<uint32_t>(offset));
                 }
             }
-
-            program_input.inputs.push_back(item);
             break;
         }
 

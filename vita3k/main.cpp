@@ -206,7 +206,6 @@ int main(int argc, char *argv[]) {
     }
 
     gui::init_app_background(gui, host, host.io.title_id);
-    host.renderer->features.hardware_flip = host.cfg.hardware_flip;
 
     app::gl_screen_renderer gl_renderer;
 

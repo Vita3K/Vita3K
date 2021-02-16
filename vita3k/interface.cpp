@@ -310,7 +310,6 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
             return InitConfigFailed;
     }
 
-    LOG_INFO_IF(host.cfg.hardware_flip, "{}: enabled", host.cfg[e_hardware_flip]);
     LOG_INFO("ngs experimental state: {}", !host.cfg.disable_ngs);
     LOG_INFO("video player state: {}", host.cfg.video_playing);
     if (host.cfg.auto_lle)

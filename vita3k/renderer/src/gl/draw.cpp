@@ -125,39 +125,12 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     }
     bind_host_texture("f_mask", shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0]);
 
-    if (!features.use_ubo) {
-        const SceGxmVertexProgram &gxm_vertex_program = *state.vertex_program.get(mem);
-        const FragmentProgram &fragment_program = *gxm_fragment_program.renderer_data.get();
+    // Try to configure the vertex shader, to output coordinates suited for GXM viewport
+    GLuint flip_vec_loc = glGetUniformLocation(program_id, "flip_vec");
 
-        // Set uniforms
-        const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(mem);
-
-        gl::GLShaderStatics &vertex_gl_statics = reinterpret_cast<gl::GLVertexProgram *>(gxm_vertex_program.renderer_data.get())->statics;
-        gl::GLShaderStatics &fragment_gl_statics = reinterpret_cast<gl::GLFragmentProgram *>(gxm_fragment_program.renderer_data.get())->statics;
-
-        for (auto &vertex_uniform : context.vertex_set_requests) {
-            gl::set_uniform(program_id, vertex_program_gxp, vertex_gl_statics, mem, vertex_uniform.parameter, vertex_uniform.data,
-                config.log_uniforms);
-
-            delete vertex_uniform.data;
-        }
-
-        for (auto &fragment_uniform : context.fragment_set_requests) {
-            gl::set_uniform(program_id, fragment_program_gxp, fragment_gl_statics, mem, fragment_uniform.parameter,
-                fragment_uniform.data, config.log_uniforms);
-
-            delete fragment_uniform.data;
-        }
-    }
-
-    if (config.hardware_flip) {
-        // Try to configure the vertex shader, to output coordinates suited for GXM viewport
-        GLuint flip_vec_loc = glGetUniformLocation(program_id, "flip_vec");
-
-        if (flip_vec_loc != -1) {
-            // Let's do flipping
-            glUniform4fv(flip_vec_loc, 1, context.viewport_flip);
-        }
+    if (flip_vec_loc != -1) {
+        // Let's do flipping
+        glUniform4fv(flip_vec_loc, 1, context.viewport_flip);
     }
 
     const auto set_uniform_if_exists = [&](const std::string &name, float val) {

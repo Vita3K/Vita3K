@@ -65,7 +65,7 @@ COMMAND(handle_sync_surface_data) {
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::get_surface_data(*reinterpret_cast<gl::GLContext *>(render_context), width, height,
-            stride_in_pixels, pixels, state->color_surface.colorFormat, !config.hardware_flip);
+            stride_in_pixels, pixels, state->color_surface.colorFormat);
 
         break;
     }

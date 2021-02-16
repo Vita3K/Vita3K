@@ -117,7 +117,7 @@ void sync_mask(GLContext &context, const GxmContextState &state, const MemState 
     glBindTexture(GL_TEXTURE_2D, texId);
 }
 
-void sync_viewport(GLContext &context, const GxmContextState &state, const bool hardware_flip) {
+void sync_viewport(GLContext &context, const GxmContextState &state) {
     // Viewport.
     const GLsizei display_w = state.color_surface.width;
     const GLsizei display_h = state.color_surface.height;
@@ -131,34 +131,30 @@ void sync_viewport(GLContext &context, const GxmContextState &state, const bool 
         const GLfloat x = viewport.offset.x - std::abs(viewport.scale.x);
         const GLfloat y = std::min<GLfloat>(ymin, ymax);
 
-        if (hardware_flip) {
-            context.viewport_flip[0] = 1.0f;
-            context.viewport_flip[1] = (ymin < ymax) ? -1.0f : 1.0f;
-            context.viewport_flip[2] = 1.0f;
-            context.viewport_flip[3] = 1.0f;
-        }
+        context.viewport_flip[0] = 1.0f;
+        context.viewport_flip[1] = (ymin < ymax) ? -1.0f : 1.0f;
+        context.viewport_flip[2] = 1.0f;
+        context.viewport_flip[3] = 1.0f;
 
-        glViewportIndexedf(0, x, hardware_flip ? y : display_h - h - y, w, h);
+        glViewportIndexedf(0, x, y, w, h);
         glDepthRange(viewport.offset.z - viewport.scale.z, viewport.offset.z + viewport.scale.z);
     } else {
-        if (hardware_flip) {
-            context.viewport_flip[0] = 1.0f;
-            context.viewport_flip[1] = -1.0f;
-            context.viewport_flip[2] = 1.0f;
-            context.viewport_flip[3] = 1.0f;
-        }
+        context.viewport_flip[0] = 1.0f;
+        context.viewport_flip[1] = -1.0f;
+        context.viewport_flip[2] = 1.0f;
+        context.viewport_flip[3] = 1.0f;
 
         glViewport(0, 0, display_w, display_h);
         glDepthRange(0, 1);
     }
 }
 
-void sync_clipping(GLContext &context, const GxmContextState &state, const bool hardware_flip) {
+void sync_clipping(GLContext &context, const GxmContextState &state) {
     const GLsizei display_h = state.color_surface.height;
     const GLsizei scissor_x = state.region_clip_min.x;
     GLsizei scissor_y = 0;
 
-    if (hardware_flip && context.viewport_flip[1] == -1.0f)
+    if (context.viewport_flip[1] == -1.0f)
         scissor_y = state.region_clip_min.y;
     else
         scissor_y = display_h - state.region_clip_max.y - 1;
@@ -385,8 +381,8 @@ bool sync_state(GLContext &context, const GxmContextState &state, const MemState
     const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
         gxm_fragment_program.renderer_data.get());
 
-    sync_viewport(context, state, config.hardware_flip);
-    sync_clipping(context, state, config.hardware_flip);
+    sync_viewport(context, state);
+    sync_clipping(context, state);
     sync_cull(context, state);
 
     glEnable(GL_DEPTH_TEST);

@@ -193,9 +193,6 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("GPU")) {
         ImGui::PopStyleColor();
-        ImGui::Checkbox("Hardware Flip", &host.cfg.hardware_flip);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable texture flipping from GPU side.\nIt is recommended to disable this option for homebrew.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();

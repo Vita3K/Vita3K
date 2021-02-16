@@ -28,7 +28,7 @@ COMMAND_SET_STATE(region_clip) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::sync_clipping(*reinterpret_cast<gl::GLContext *>(render_context), *state, config.hardware_flip);
+        gl::sync_clipping(*reinterpret_cast<gl::GLContext *>(render_context), *state);
         break;
     }
 
@@ -134,7 +134,7 @@ COMMAND_SET_STATE(viewport) {
     // Sync
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::sync_viewport(*reinterpret_cast<gl::GLContext *>(render_context), *state, config.hardware_flip);
+        gl::sync_viewport(*reinterpret_cast<gl::GLContext *>(render_context), *state);
         break;
     }
 
