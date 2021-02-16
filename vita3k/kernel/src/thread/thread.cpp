@@ -131,6 +131,12 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
 
     write_tpidruro(*thread->cpu, tls_address);
 
+    Ptr<void> tls_address_ptr(tls_address);
+    memset(tls_address_ptr.get(mem), 0, 0x800);
+    if (kernel.tls_address) {
+        assert(kernel.tls_psize <= 0x800 / 4);
+        memcpy(tls_address_ptr.get(mem), kernel.tls_address.get(mem), 4 * kernel.tls_psize);
+    }
     WaitingThreadState waiting{ name };
 
     const std::unique_lock<std::mutex> lock(kernel.mutex);
