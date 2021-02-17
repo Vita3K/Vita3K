@@ -58,7 +58,7 @@ void sync_rendertarget(const GLRenderTarget &rt);
 void set_context(GLContext &ctx, GxmContextState &state, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features);
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format);
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
-    const void *indices, size_t count, const MemState &mem, const char *base_path, const char *title_id, const Config &config);
+    const void *indices, size_t count, uint32_t instance_count, const MemState &mem, const char *base_path, const char *title_id, const Config &config);
 
 void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data);
 

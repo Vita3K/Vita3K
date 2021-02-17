@@ -695,7 +695,7 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
     return 0;
 }
 
-EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount) {
+static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount, uint32_t instanceCount) {
     if (!context || !indexData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -763,7 +763,9 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
         const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
         const size_t attribute_size = gxm::attribute_format_size(attribute_format) * attribute.componentCount;
         const SceGxmVertexStream &stream = gxm_vertex_program.streams[attribute.streamIndex];
-        const size_t data_length = attribute.offset + (max_index * stream.stride) + attribute_size;
+        const SceGxmIndexSource index_source = static_cast<SceGxmIndexSource>(stream.indexSource);
+        const size_t data_passed_length = gxm::is_stream_instancing(index_source) ? ((instanceCount - 1) * stream.stride) : (max_index * stream.stride);
+        const size_t data_length = attribute.offset + data_passed_length + attribute_size;
         max_data_length[attribute.streamIndex] = std::max<size_t>(max_data_length[attribute.streamIndex], data_length);
         stream_used |= (1 << attribute.streamIndex);
     }
@@ -782,16 +784,21 @@ EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, Sc
 
     // Fragment texture is copied so no need to set it here.
     // Add draw command
-    renderer::draw(*host.renderer, context->renderer.get(), &context->state, primType, indexType, indexData, indexCount);
+    renderer::draw(*host.renderer, context->renderer.get(), &context->state, primType, indexType, indexData, indexCount, instanceCount);
 
     return 0;
 }
 
+EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount) {
+    return gxmDrawElementGeneral(host, export_name, context, primType, indexType, indexData, indexCount, 1);
+}
+
 EXPORT(int, sceGxmDrawInstanced, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount, uint32_t indexWrap) {
-    if (!context || !indexData) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    if (indexCount % indexWrap != 0) {
+        LOG_WARN("Extra vertexes are requested to be drawn (ignored)");
     }
-    return UNIMPLEMENTED();
+
+    return gxmDrawElementGeneral(host, export_name, context, primType, indexType, indexData, indexWrap, indexCount / indexWrap);
 }
 
 EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw *draw) {
@@ -870,7 +877,6 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         // Upload it
         if (stream_used & (1 << static_cast<std::uint16_t>(stream_index))) {
             const size_t data_length = max_data_length[stream_index];
-
             const std::uint8_t *const data = stream_data[stream_index].cast<const std::uint8_t>().get(host.mem);
 
             renderer::set_vertex_stream(*host.renderer, context->renderer.get(), &context->state, stream_index,
@@ -880,7 +886,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
 
     // Fragment texture is copied so no need to set it here.
     // Add draw command
-    renderer::draw(*host.renderer, context->renderer.get(), &context->state, draw->type, draw->index_format, draw->index_data.get(host.mem), draw->vertex_count);
+    renderer::draw(*host.renderer, context->renderer.get(), &context->state, draw->type, draw->index_format, draw->index_data.get(host.mem), draw->vertex_count, 1);
 
     return 0;
 }

@@ -6,6 +6,7 @@ add_library(
 	include/gxm/types.h
 	src/attributes.cpp
 	src/gxp.cpp
+	src/stream.cpp
 	src/textures.cpp
 )
 

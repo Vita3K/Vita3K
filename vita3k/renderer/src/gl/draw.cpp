@@ -41,8 +41,8 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     return GL_TRIANGLES;
 }
 
-void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, const MemState &mem,
-    const char *base_path, const char *title_id, const Config &config) {
+void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, uint32_t instance_count,
+    const MemState &mem, const char *base_path, const char *title_id, const Config &config) {
     R_PROFILE(__func__);
 
     GLuint program_id = context.last_draw_program;
@@ -169,7 +169,12 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     // Draw.
     const GLenum mode = translate_primitive(type);
     const GLenum gl_type = format == SCE_GXM_INDEX_FORMAT_U16 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
-    glDrawElements(mode, static_cast<GLsizei>(count), gl_type, nullptr);
+
+    if (instance_count == 1) {
+        glDrawElements(mode, static_cast<GLsizei>(count), gl_type, nullptr);
+    } else {
+        glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, nullptr, instance_count);
+    }
 
     state.last_draw_vertex_program_hash = state.vertex_program.get(mem)->renderer_data->hash;
     state.last_draw_fragment_program_hash = state.fragment_program.get(mem)->renderer_data->hash;

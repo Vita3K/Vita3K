@@ -375,6 +375,12 @@ void sync_vertex_attributes(GLContext &context, const GxmContextState &state, co
             }
 
             glEnableVertexAttribArray(attrib_location);
+
+            if (gxm::is_stream_instancing(static_cast<SceGxmIndexSource>(stream.indexSource))) {
+                glVertexAttribDivisor(attrib_location, 1);
+            } else {
+                glVertexAttribDivisor(attrib_location, 0);
+            }
         }
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
