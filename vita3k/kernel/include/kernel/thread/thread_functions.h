@@ -23,6 +23,7 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 struct CPUState;
 struct ThreadState;
@@ -36,6 +37,6 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
 int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp);
 Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, KernelState &kernel, MemState &mem);
 bool run_thread(ThreadState &thread, bool callback);
-bool run_callback(ThreadState &thread, Address &pc, Address &data);
+int run_callback(KernelState &kernel, ThreadState &thread, const SceUID &thid, Address callback_address, const std::vector<uint32_t> &args);
 uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, const Ptr<void> &argp, bool callback = false);
 void raise_waiting_threads(ThreadState *thread);
