@@ -663,3 +663,11 @@ void load_context(CPUState &state, CPUContext &ctx) {
     write_lr(state, ctx.lr);
     write_sp(state, ctx.sp);
 }
+
+void set_thread_id(CPUState &state, SceUID thread_id) {
+    state.thread_id = thread_id;
+}
+
+SceUID get_thread_id(CPUState &state) {
+    return state.thread_id;
+}

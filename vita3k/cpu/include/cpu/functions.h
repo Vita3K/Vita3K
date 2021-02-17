@@ -111,6 +111,8 @@ std::stack<StackFrame> get_stack_frames(CPUState &state);
 void push_stack_frame(CPUState &state, StackFrame sf);
 void log_stack_frames(CPUState &cpu);
 bool is_returning(CPUState &cpu);
+void set_thread_id(CPUState &state, SceUID thread_id);
+SceUID get_thread_id(CPUState &state);
 
 void push_lr(CPUState &cpu, Address lr);
 Address pop_lr(CPUState &cpu);
