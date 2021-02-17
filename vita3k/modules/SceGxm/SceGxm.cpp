@@ -1064,7 +1064,7 @@ static int SDLCALL thread_function(void *data) {
                 break;
         }
         const ThreadStatePtr display_thread = util::find(params.thid, params.kernel->threads);
-        run_callback(*display_thread, display_callback->pc, display_callback->data);
+        run_callback(*params.kernel, *display_thread, params.thid, display_callback->pc, { display_callback->data });
 
         free(*params.mem, display_callback->data);
 
