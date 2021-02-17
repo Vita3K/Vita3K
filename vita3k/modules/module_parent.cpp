@@ -239,5 +239,15 @@ CPUDepInject create_cpu_dep_inject(HostState &host) {
     inject.trace_stack = host.cfg.stack_traceback;
     inject.get_watch_memory_addr = get_watch_memory_addr;
     inject.module_regions = host.kernel.module_regions;
+    const CallSVC call_svc = [inject, &host](CPUState &cpu, uint32_t imm, Address pc) {
+        uint32_t nid;
+        if (is_returning(cpu)) {
+            nid = *Ptr<uint32_t>(pc).get(host.mem);
+        } else {
+            nid = *Ptr<uint32_t>(pc + 4).get(host.mem);
+        }
+        inject.call_import(cpu, nid, get_thread_id(cpu));
+    };
+    inject.call_svc = call_svc;
     return inject;
 }
