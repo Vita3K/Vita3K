@@ -305,9 +305,10 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     if (host.cfg.archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
         fs::create_directory(log_directory);
-        const auto log_name{ log_directory / (string_utils::remove_special_chars(host.current_app_title) + " - [" + host.io.title_id + "].log") };
-        if (logging::add_sink(log_name) != Success)
+        const auto log_path{ log_directory / string_utils::utf_to_wide(host.io.title_id + " - [" + string_utils::remove_special_chars(host.current_app_title) + "].log") };
+        if (logging::add_sink(log_path) != Success)
             return InitConfigFailed;
+        logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg.log_level));
     }
 
     LOG_INFO("ngs experimental state: {}", !host.cfg.disable_ngs);
