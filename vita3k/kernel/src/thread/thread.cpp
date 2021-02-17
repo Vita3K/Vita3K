@@ -255,12 +255,34 @@ bool run_thread(ThreadState &thread, bool callback) {
     }
 }
 
-bool run_callback(ThreadState &thread, Address &pc, Address &data) {
-    std::unique_lock<std::mutex> lock(thread.mutex);
-    write_reg(*thread.cpu, 0, data);
-    write_pc(*thread.cpu, pc);
-    lock.unlock();
-    return run_thread(thread, true);
+int run_callback(KernelState &kernel, ThreadState &thread, const SceUID &thid, Address callback_address, const std::vector<uint32_t> &args) {
+    bool should_wait = false;
+    if (kernel.cpu_pool.available() == 0) {
+        LOG_TRACE("CPU pool for callbacks is empty. Waiting.");
+        should_wait = true;
+    }
+    auto cpu_item = kernel.cpu_pool.borrow();
+    if (should_wait)
+        LOG_TRACE("Got a cpu from CPU pool after a wait");
+    auto cpu = cpu_item.get();
+
+    CPUContext ctx;
+    save_context(*thread.cpu, ctx);
+    load_context(*cpu, ctx);
+
+    assert(args.size() <= 4);
+    for (int i = 0; i < args.size(); i++) {
+        write_reg(*cpu, i, args[i]);
+    }
+    // TODO: remaining arguments should be pushed into stack
+    set_thread_id(*cpu, thid);
+    write_pc(*cpu, callback_address);
+    bool res = run(*cpu, true, callback_address);
+    if (res < 0) {
+        LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
+        return -1;
+    }
+    return read_reg(*cpu, 0);
 }
 
 uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, const Ptr<void> &argp, bool callback) {
