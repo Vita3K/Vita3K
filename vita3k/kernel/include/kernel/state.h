@@ -17,13 +17,13 @@
 
 #pragma once
 
+#include <codec/state.h>
 #include <cpu/functions.h>
 #include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 #include <mem/ptr.h>
-
-#include <codec/state.h>
 #include <rtc/rtc.h>
+#include <util/pool.h>
 
 #include <atomic>
 #include <map>
@@ -60,6 +60,7 @@ typedef std::map<Address, uint32_t> NidFromExport;
 typedef std::map<Address, uint32_t> NotFoundVars;
 typedef std::map<Address, WatchMemory> WatchMemoryAddrs;
 typedef std::vector<ModuleRegion> ModuleRegions;
+typedef Pool<CPUState> CPUPool;
 
 struct WaitingThreadData {
     ThreadStatePtr thread;
@@ -322,6 +323,7 @@ struct KernelState {
     NotFoundVars not_found_vars;
     WatchMemoryAddrs watch_memory_addrs;
     ModuleRegions module_regions;
+    CPUPool cpu_pool;
 
     InitialFibers initial_fibers;
     SceRtcTick start_tick;

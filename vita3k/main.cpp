@@ -25,6 +25,7 @@
 #include <gui/state.h>
 #include <host/pkg.h>
 #include <host/state.h>
+#include <modules/module_parent.h>
 #include <renderer/functions.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
@@ -127,7 +128,8 @@ int main(int argc, char *argv[]) {
         vpk_path_wide = string_utils::utf_to_wide(*cfg.run_title_id);
     }
 
-    if (!app::init(host, cfg, root_paths)) {
+    auto inject = create_cpu_dep_inject(host);
+    if (!app::init(host, cfg, root_paths, inject)) {
         app::error_dialog("Host initialization failed.", host.window.get());
         return HostInitFailed;
     }
