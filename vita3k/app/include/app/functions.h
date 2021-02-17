@@ -23,6 +23,7 @@ struct Config;
 struct HostState;
 struct SDL_Window;
 struct ImGui_State;
+struct CPUDepInject;
 template <class T>
 class Ptr;
 class Root;
@@ -39,7 +40,7 @@ enum class AppRunType {
     Vpk,
 };
 
-bool init(HostState &state, Config &cfg, const Root &root_paths);
+bool init(HostState &state, Config &cfg, const Root &root_paths, CPUDepInject inject);
 void destroy(HostState &host, ImGui_State *imgui);
 void update_viewport(HostState &state);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);

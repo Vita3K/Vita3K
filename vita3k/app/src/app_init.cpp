@@ -94,7 +94,7 @@ void update_viewport(HostState &state) {
     }
 }
 
-bool init(HostState &state, Config &cfg, const Root &root_paths) {
+bool init(HostState &state, Config &cfg, const Root &root_paths, CPUDepInject inject) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
@@ -176,6 +176,11 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         discordrpc::update_presence();
     }
 #endif
+
+    for (int i = 0; i < cfg.cpu_pool_size; ++i) {
+        auto item = init_cpu(0, 0, 0, state.mem, inject);
+        state.kernel.cpu_pool.add(std::move(item));
+    }
 
     state.kernel.start_tick = { rtc_base_ticks() };
     state.kernel.base_tick = { rtc_base_ticks() };
