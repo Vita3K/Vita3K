@@ -15,6 +15,7 @@ add_library(
     include/util/lock_and_find.h
     include/util/log.h
     include/util/preprocessor.h
+    include/util/pool.h
     include/util/resource.h
     include/util/string_utils.h
     include/util/system.h
