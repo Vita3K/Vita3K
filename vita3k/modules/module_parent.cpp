@@ -161,9 +161,7 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
 
         const std::unordered_set<uint32_t> lle_nid_blacklist = {};
         log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
-        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        const std::lock_guard<std::mutex> lock(thread->mutex);
-        write_pc(*thread->cpu, export_pc);
+        write_pc(cpu, export_pc);
     }
 }
 

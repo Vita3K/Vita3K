@@ -159,77 +159,11 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
     return buffer;
 }
 
-#include <modules/module_parent.h>
-SceUID create_callback_thread(HostState &host, SceUID base_thread_id, char *thread_name) {
-    const char *export_name = "CreateCallbackThread";
-    const ThreadStatePtr main_thread = util::find(base_thread_id, host.kernel.threads);
-
-    auto inject = create_cpu_dep_inject(host);
-    auto new_thread_id = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, thread_name,
-        SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, inject, nullptr);
-
-    if (new_thread_id > 0x80000000) {
-        LOG_ERROR("Callback thread creation error: {}", new_thread_id);
-        return SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
-    }
-
-    const ThreadStatePtr callback_thread = util::find(new_thread_id, host.kernel.threads);
-
-    const std::function<void(SDL_Thread *)> delete_thread = [callback_thread](SDL_Thread *running_thread) {
-        {
-            const std::lock_guard<std::mutex> lock(callback_thread->mutex);
-            callback_thread->to_do = ThreadToDo::exit;
-        }
-    };
-    return new_thread_id;
-}
-
-void destroy_callback_thread(HostState &host, SceUID callback_thread_id) {
-    if (callback_thread_id != SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID) {
-        host.kernel.threads.erase(callback_thread_id);
-    }
-}
-
-SceUID create_avplayer_callback_thread(HostState &host, SceUID base_thread_id) {
-    return create_callback_thread(host, base_thread_id, "AvPlayerCallbackThread");
-}
-
-int run_callback(HostState &host, SceUID callback_thread_id, Address callback_address, uint arglen, uint32_t args[]) {
-    if (callback_thread_id == SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID) {
-        LOG_ERROR("Callback thread error");
-        return 0;
-    }
-    const ThreadStatePtr thread = util::find(callback_thread_id, host.kernel.threads);
-    std::unique_lock<std::mutex> lock(thread->mutex);
-    stop(*thread->cpu);
-    assert(arglen <= 4);
-    for (int i = 0; i < arglen; i++) {
-        write_reg(*thread->cpu, i, args[i]);
-    }
-    // TODO: remaining arguments should be pushed into stack
-    write_pc(*thread->cpu, callback_address);
-    lock.unlock();
-    run_thread(*thread, true);
-    return read_reg(*thread->cpu, 0);
-}
-
 uint run_event_callback(HostState &host, SceUID thread_id, const PlayerPtr player_info, uint32_t event_id, uint32_t source_id, Ptr<void> event_data) {
     constexpr char *export_name = "SceAvPlayerEventCallback";
     if (player_info->event_manager.event_callback) {
-        SceUID temp_callback_thread;
-        if (player_info->callback_depth_counter > 0) {
-            temp_callback_thread = create_callback_thread(host, thread_id, "AvPlayerCallbackThread_2");
-        } else {
-            temp_callback_thread = player_info->player_callback_thread_id;
-        }
-        uint32_t argp_arr[4] = { player_info->event_manager.user_data, event_id, source_id, event_data.address() };
-        player_info->callback_depth_counter++;
-        auto result = run_callback(host, temp_callback_thread, player_info->event_manager.event_callback.address(), 4, argp_arr);
-        player_info->callback_depth_counter--;
-        if (player_info->callback_depth_counter > 0) {
-            destroy_callback_thread(host, temp_callback_thread);
-        }
-        return result;
+        auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+        return run_callback(host.kernel, *thread, thread_id, player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
     } else {
         if (event_id == SCE_AVPLAYER_STATE_READY) {
             return UNIMPLEMENTED();
@@ -253,7 +187,6 @@ EXPORT(int, sceAvPlayerClose, SceUID player_handle) {
     const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
     run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_STOP, 0, Ptr<void>(0));
     assert(player_info->callback_depth_counter == 0);
-    destroy_callback_thread(host, player_info->player_callback_thread_id);
     host.kernel.players.erase(player_handle);
     return 0;
 }
@@ -415,10 +348,6 @@ EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
         player->memory_allocator = info->memory_allocator;
         player->file_manager = info->file_manager;
         player->event_manager = info->event_manager;
-
-        if (info->event_manager.event_callback) {
-            player->player_callback_thread_id = create_avplayer_callback_thread(host, thread_id);
-        }
         // Result is defined as a void *, but I just call it SceUID because it is easier to deal with. Same size.
         return player_handle;
     } else {
