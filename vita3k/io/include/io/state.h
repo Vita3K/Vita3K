@@ -117,4 +117,5 @@ struct IOState {
     DirEntries dir_entries;
 
     std::unordered_map<std::string, std::string> cachemap;
+    bool case_isens_find_enabled = false;
 };
