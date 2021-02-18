@@ -15,5 +15,6 @@ std::string remove_special_chars(std::string str);
 void replace(std::string &str, const std::string &in, const std::string &out);
 std::basic_string<uint8_t> string_to_byte_array(std::string string);
 std::string toupper(const std::string &s);
+std::string tolower(const std::string &s);
 
 } // namespace string_utils

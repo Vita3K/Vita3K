@@ -37,6 +37,9 @@ void init_device_paths(IOState &io);
 bool init_savedata_app_path(IOState &io, const fs::path &pref_path);
 bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path, bool redirect_stdout);
 
+bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &translated_path, const fs::path &system_path);
+fs::path find_in_cache(IOState &io, const std::string &system_path);
+
 std::string expand_path(IOState &io, const char *path, const std::wstring &pref_path);
 std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths);
 
