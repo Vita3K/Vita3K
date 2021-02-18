@@ -246,6 +246,11 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Enable video playing support", &host.cfg.video_playing);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable video player.\nOn some game, disable it is required for more progress.");
+#ifndef WIN32
+        ImGui::Checkbox("Check to enable case-insensitive path finding on case sensitive filesystems. \nRESETS ON RESTART", &host.io.case_isens_find_enabled);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Allows emulator to attempt searching for files regardless of case on non-windows platforms");
+#endif
         ImGui::Separator();
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Emulated System Storage Folder");
         ImGui::Spacing();
