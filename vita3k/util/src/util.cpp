@@ -214,6 +214,13 @@ std::string toupper(const std::string &s) {
     return r;
 }
 
+std::string tolower(const std::string &s) {
+    std::string r = s;
+    std::transform(r.begin(), r.end(), r.begin(),
+        [](unsigned char c) { return std::tolower(c); });
+    return r;
+}
+
 } // namespace string_utils
 
 template <>

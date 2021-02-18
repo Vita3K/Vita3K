@@ -150,6 +150,42 @@ bool init_savedata_app_path(IOState &io, const fs::path &pref_path) {
     return true;
 }
 
+bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &translated_path, const fs::path &system_path) {
+    std::string final_path{};
+
+    switch (device) {
+    case +VitaIoDevice::app0: {
+        std::string app_id = translated_path.string().substr(0, 14);
+        final_path = system_path.string().substr(0, system_path.string().find(app_id)) + app_id;
+        break;
+    }
+    case +VitaIoDevice::addcont0: {
+        std::string addcont_id = translated_path.string().substr(0, 18);
+        final_path = system_path.string().substr(0, system_path.string().find(addcont_id)) + addcont_id;
+        break;
+    }
+    default: {
+        return false;
+    }
+    }
+
+    for (const auto &file : fs::recursive_directory_iterator(final_path)) {
+        io.cachemap.insert(std::make_pair(string_utils::tolower(file.path().string()), file.path().string()));
+    }
+
+    return true;
+}
+
+fs::path find_in_cache(IOState &io, const std::string &system_path) {
+    const auto find_path = io.cachemap.find(system_path);
+
+    if (find_path != io.cachemap.end()) {
+        return fs::path{ find_path->second.c_str() };
+    } else {
+        return fs::path{};
+    }
+}
+
 std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths) {
     auto relative_path = device::remove_duplicate_device(path, device);
 
@@ -218,6 +254,7 @@ std::string expand_path(IOState &io, const char *path, const std::wstring &pref_
 
 SceUID open_file(IOState &io, const char *path, const int flags, const std::wstring &pref_path, const char *export_name) {
     auto device = device::get_device(path);
+    auto device_for_icase = device;
     if (device == VitaIoDevice::_INVALID) {
         LOG_ERROR("Cannot find device for path: {}", path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -245,12 +282,25 @@ SceUID open_file(IOState &io, const char *path, const int flags, const std::wstr
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 
-    const auto system_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio);
-
+    auto system_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio);
+    const auto original_system_path = system_path;
     // Do not allow any new files if they do not have a write flag.
+    // Attempt a case-insensitive file search.
     if (!fs::exists(system_path) && !can_write(flags)) {
-        LOG_ERROR("Missing file at {} (target path: {})", system_path.string(), path);
-        return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+        const auto cached_path = find_in_cache(io, string_utils::tolower(system_path.string()));
+        if (!cached_path.empty()) {
+            system_path = cached_path;
+            LOG_TRACE("Found cached filepath at {}", system_path.string());
+        } else {
+            const bool path_found = find_case_isens_path(io, device_for_icase, translated_path, system_path);
+            system_path = find_in_cache(io, string_utils::tolower(system_path.string()));
+            if (!system_path.empty() && path_found) {
+                LOG_TRACE("Found file on case-sensitive filesystem at {}", system_path.string());
+            } else {
+                LOG_ERROR("Missing file at {} (target path: {})", original_system_path.string(), path);
+                return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+            }
+        }
     } else if (!fs::exists(system_path) && (flags & SCE_O_CREAT)) {
         if (!fs::exists(system_path.parent_path())) {
             fs::create_directories(system_path.parent_path());
@@ -392,6 +442,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::wstrin
     fs::path file_path = "";
     if (fd == invalid_fd) {
         auto device = device::get_device(file);
+        auto device_for_icase = device;
         if (device == VitaIoDevice::_INVALID) {
             LOG_ERROR("Cannot find device for path: {}", file);
             return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
@@ -399,11 +450,24 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::wstrin
 
         const auto translated_path = translate_path(file, device, io.device_paths);
         file_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio);
+        const auto original_file_path = file_path;
+        // Attempt a case-insensitive file search.
         if (!fs::exists(file_path)) {
-            LOG_ERROR("Missing file at {} (target path: {})", file_path.string(), file);
-            return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+            const auto cached_path = find_in_cache(io, string_utils::tolower(file_path.string()));
+            if (!cached_path.empty()) {
+                file_path = cached_path;
+                LOG_TRACE("Found cached filepath at {}", file_path.string());
+            } else {
+                const bool path_found = find_case_isens_path(io, device_for_icase, translated_path, file_path);
+                file_path = find_in_cache(io, file_path.string());
+                if (!file_path.empty() && path_found) {
+                    LOG_TRACE("Found file on case-sensitive filesystem at {}", file_path.string());
+                } else {
+                    LOG_ERROR("Missing file at {} (target path: {})", original_file_path.string(), file);
+                    return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+                }
+            }
         }
-
         LOG_TRACE_IF(log_file_op, "{}: Statting file: {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
     } else { // We have previously opened and defined the location
         const auto fd_file = io.std_files.find(fd);
@@ -520,7 +584,7 @@ SceUID open_dir(IOState &io, const char *path, const std::wstring &pref_path, co
 
     const auto dir_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio) / "/";
     if (!fs::exists(dir_path)) {
-        LOG_ERROR("File does not exist at: {} (target path: {})", dir_path.string(), path);
+        LOG_ERROR("Directory does not exist at: {} (target path: {})", dir_path.string(), path);
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 

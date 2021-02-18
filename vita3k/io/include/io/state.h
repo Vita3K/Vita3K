@@ -21,6 +21,7 @@
 #include <io/util.h>
 
 #include <map>
+#include <unordered_map>
 
 // Class for all needed information to access files on Vita3K.
 class FileStats : public VitaStats {
@@ -114,4 +115,6 @@ struct IOState {
     TtyFiles tty_files;
     StdFiles std_files;
     DirEntries dir_entries;
+
+    std::unordered_map<std::string, std::string> cachemap;
 };
