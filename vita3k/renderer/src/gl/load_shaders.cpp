@@ -12,8 +12,8 @@
 #include <utility>
 
 namespace renderer::gl {
-static std::string load_shader(const char *hash, const char *extension, const char *base_path) {
-    const auto shader_path = fs_utils::construct_file_name(base_path, "shaders", hash, extension);
+static std::string load_shader(const char *hash, const char *extension, const char *base_path, const char *title_id) {
+    const auto shader_path = fs_utils::construct_file_name(base_path, (fs::path("shaders") / title_id).c_str(), hash, extension);
     fs::ifstream is(shader_path, fs::ifstream::binary);
     if (!is) {
         return std::string();
@@ -40,7 +40,7 @@ std::string load_shader(const SceGxmProgram &program, const FeatureState &featur
 
     const Sha256HashText hash_text = hex(hash_bytes);
 
-    std::string source = load_shader(hash_text.data(), shader_type_str, base_path);
+    std::string source = load_shader(hash_text.data(), shader_type_str, base_path, title_id);
     if (source.empty()) {
         LOG_INFO("Generating {} shader {}", shader_type_str, hash_text.data());
 
