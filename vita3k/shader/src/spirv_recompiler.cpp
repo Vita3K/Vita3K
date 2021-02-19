@@ -359,6 +359,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         reinterpret_cast<const std::uint8_t *>(&vertex_varyings_ptr->vertex_outputs1) + vertex_varyings_ptr->vertex_outputs1);
 
     std::uint32_t pa_offset = 0;
+    std::uint32_t anon_tex_count = 0;
+
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
     // Store the coords
@@ -438,6 +440,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             std::string sampling_type = "2D";
             uint32_t sampler_resource_index = 0;
 
+            bool anonymous = false;
+
             for (std::uint32_t p = 0; p < program.parameter_count; p++) {
                 const SceGxmProgramParameter &parameter = gxp_parameters[p];
 
@@ -452,6 +456,13 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
                     break;
                 }
+            }
+
+            if (tex_name.empty()) {
+                LOG_INFO("Sample symbol stripped, using anonymous name");
+
+                anonymous = true;
+                tex_name = fmt::format("anonymousTexture{}", anon_tex_count++);
             }
 
             const auto component_type = (descriptor->component_info >> 4) & 3;
@@ -532,7 +543,13 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             tex_query_info.dest_offset = pa_offset;
 
             tex_query_info.coord_index = tex_coord_index;
-            tex_query_info.sampler = samplers[sampler_resource_index];
+
+            if (anonymous) {
+                // Probably not gonna be used in future, just for non-dependent queries
+                tex_query_info.sampler = create_param_sampler(b, tex_name);
+            } else {
+                tex_query_info.sampler = samplers[sampler_resource_index];
+            }
 
             tex_query_infos.push_back(tex_query_info);
 
@@ -691,7 +708,8 @@ static spv::Id create_uniform_block(spv::Builder &b, const FeatureState &feature
 }
 
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
-    const FeatureState &features, TranslationState &translation_state, SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
+    const FeatureState &features, TranslationState &translation_state, SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries,
+    const std::vector<SceGxmVertexAttribute> *hint_attributes) {
     SpirvShaderParameters spv_params = {};
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
@@ -864,6 +882,26 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            in_fcount_allocated += ((input.array_size * input.component_count + 3) / 4 * 4);
                        } },
             input.source);
+    }
+
+    if ((in_fcount_allocated == 0) && (program.primary_reg_count != 0)) {
+        // Using hint to create attribute. Looks like attribute with F32 types are stripped, otherwise
+        // whole shader symbols are kept...
+        if (hint_attributes) {
+            LOG_INFO("Shader stripped all symbols, trying to use hint attributes");
+
+            for (std::size_t i = 0; i < hint_attributes->size(); i++) {
+                Input inp;
+                inp.offset = hint_attributes->at(i).regIndex;
+                inp.bank = RegisterBank::PRIMATTR;
+                inp.generic_type = GenericType::VECTOR;
+                inp.type = DataType::F32;
+                inp.component_count = 4;
+                inp.array_size = (hint_attributes->at(i).componentCount + 3) >> 2;
+
+                add_var_to_reg(inp, fmt::format("attribute{}", i), 0, true, static_cast<std::int32_t>(i));
+            }
+        }
     }
 
     // We should avoid ugly and long GLSL code generated. Also, inefficient SPIR-V code.
@@ -1148,7 +1186,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     return vert_fin_func;
 }
 
-static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
+static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     SpirvCode spirv;
 
     SceGxmProgramType program_type = program.get_type();
@@ -1212,7 +1250,7 @@ static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::s
     }
 
     // Generate parameters
-    SpirvShaderParameters parameters = create_parameters(b, program, utils, features, translation_state, program_type, texture_queries);
+    SpirvShaderParameters parameters = create_parameters(b, program, utils, features, translation_state, program_type, texture_queries, hint_attributes);
 
     if (program.is_fragment()) {
         end_hook_func = make_frag_finalize_function(b, parameters, program, utils, features, translation_state);
@@ -1439,11 +1477,11 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 // * Functions (exposed API) *
 // ***************************
 
-std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
+std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
     translation_state.is_maskupdate = maskupdate;
-    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, features, translation_state, force_shader_debug, dumper);
+    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
 
     const auto source = convert_spirv_to_glsl(shader_name, spirv_binary, features, translation_state);
 
@@ -1479,7 +1517,7 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
     features.support_shader_interlock = true;
     features.pack_unpack_half_through_ext = false;
 
-    convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), features, false, true);
+    convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), features, nullptr, false, true);
 
     free(gxp_program);
 }

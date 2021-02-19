@@ -29,7 +29,7 @@ static std::string load_shader(const char *hash, const char *extension, const ch
     return source;
 }
 
-std::string load_shader(const SceGxmProgram &program, const FeatureState &features, bool maskupdate, const char *base_path, const char *title_id) {
+std::string load_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id) {
     const Sha256Hash hash_bytes = sha256(&program, program.size);
     auto shader_type_to_str = [](SceGxmProgramType type) {
         return type == SceGxmProgramType::Vertex ? "vert" : type == SceGxmProgramType::Fragment ? "frag" : "unknown";
@@ -71,7 +71,7 @@ std::string load_shader(const SceGxmProgram &program, const FeatureState &featur
             return true;
         };
 
-        source = shader::convert_gxp_to_glsl(program, hash_text.data(), features, maskupdate, false, write_data_with_ext);
+        source = shader::convert_gxp_to_glsl(program, hash_text.data(), features, hint_attributes, maskupdate, false, write_data_with_ext);
     }
 
     return source;

@@ -107,6 +107,8 @@ struct GLFragmentProgram : public renderer::FragmentProgram {
 struct GLVertexProgram : public renderer::VertexProgram {
     GLShaderStatics statics;
     shader::usse::AttributeInformationMap attribute_infos;
+
+    bool stripped_symbols_checked;
 };
 
 struct GLRenderTarget : public renderer::RenderTarget {

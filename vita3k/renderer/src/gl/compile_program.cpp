@@ -83,11 +83,11 @@ static void bind_uniform_block_locations(GLuint gl_program, const SceGxmProgram 
 }
 
 static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const FeatureState &features, const std::string &hash,
-    ShaderCache &cache, const GLenum type, bool maskupdate, const char *base_path, const char *title_id) {
+    ShaderCache &cache, const GLenum type, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id) {
     const auto cached = cache.find(hash);
     if (cached == cache.end()) {
         // Need to compile new one and add it to cache
-        auto obj = compile_glsl(type, load_shader(*program, features, maskupdate, base_path, title_id));
+        auto obj = compile_glsl(type, load_shader(*program, features, hint_attributes, maskupdate, base_path, title_id));
         cache.emplace(hash, obj);
 
         return obj;
@@ -123,7 +123,7 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
     // No... It doesn't exist. Now we try to find each object. If it doesn't exist then we can kind
     // of compile it again.
     const SharedGLObject fragment_shader = get_or_compile_shader(fragment_program_gxm.program.get(mem),
-        features, fragment_program.hash, fragment_cache, GL_FRAGMENT_SHADER, maskupdate, base_path, title_id);
+        features, fragment_program.hash, fragment_cache, GL_FRAGMENT_SHADER, nullptr, maskupdate, base_path, title_id);
 
     if (!fragment_shader) {
         LOG_CRITICAL("Error in get/compile fragment vertex shader:\n{}", vertex_program.hash);
@@ -131,7 +131,7 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
     }
 
     const SharedGLObject vertex_shader = get_or_compile_shader(vertex_program_gxm.program.get(mem),
-        features, vertex_program.hash, vertex_cache, GL_VERTEX_SHADER, maskupdate, base_path, title_id);
+        features, vertex_program.hash, vertex_cache, GL_VERTEX_SHADER, &vertex_program_gxm.attributes, maskupdate, base_path, title_id);
 
     if (!vertex_shader) {
         LOG_CRITICAL("Error in get/compiled vertex shader:\n{}", vertex_program.hash);
