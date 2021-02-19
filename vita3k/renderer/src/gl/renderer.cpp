@@ -354,9 +354,11 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
     GLFragmentProgram *frag_program_gl = reinterpret_cast<GLFragmentProgram *>(fp.get());
 
     // Try to hash this shader
-    const Sha256Hash hash_bytes_f = sha256(&program, program.size);
-    fp->hash.assign(hash_bytes_f.begin(), hash_bytes_f.end());
-
+    Sha256Hash hash_bytes_f = sha256(&program, program.size);
+    if (fp != nullptr || fp.get() != NULL) {
+        fp->hash.assign(hash_bytes_f.begin(), hash_bytes_f.end());
+        shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);
+    }
     gxp_ptr_map.emplace(hash_bytes_f, &program);
 
     // Translate blending.
@@ -373,7 +375,6 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
         frag_program_gl->alpha_src = translate_blend_factor(blend->alphaSrc);
         frag_program_gl->alpha_dst = translate_blend_factor(blend->alphaDst);
     }
-    shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);
 
     return true;
 }
@@ -386,8 +387,12 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
 
     // Try to hash this shader
     const Sha256Hash hash_bytes_v = sha256(&program, program.size);
+    if (vp == nullptr || vp.get() == NULL) {
+        gxp_ptr_map.emplace(hash_bytes_v, &program);
+        return true; //Skip shader stuff
+    }
+
     vp->hash.assign(hash_bytes_v.begin(), hash_bytes_v.end());
-    gxp_ptr_map.emplace(hash_bytes_v, &program);
 
     shader::usse::get_uniform_buffer_sizes(program, vp->uniform_buffer_sizes);
     shader::usse::get_attribute_informations(program, vert_program_gl->attribute_infos);

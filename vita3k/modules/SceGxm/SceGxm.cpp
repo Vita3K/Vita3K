@@ -1836,9 +1836,8 @@ EXPORT(int, sceGxmSetFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<c
 
 EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmFragmentProgram> fragmentProgram) {
     assert(context);
-    assert(fragmentProgram);
 
-    if (!context || !fragmentProgram)
+    if (!context)
         return;
 
     context->record.fragment_program = fragmentProgram;
@@ -2101,9 +2100,8 @@ EXPORT(int, sceGxmSetVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<con
 
 EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVertexProgram> vertexProgram) {
     assert(context);
-    assert(vertexProgram);
 
-    if (!context || !vertexProgram)
+    if (!context)
         return;
 
     context->record.vertex_program = vertexProgram;

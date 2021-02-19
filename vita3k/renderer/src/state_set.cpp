@@ -42,6 +42,8 @@ COMMAND_SET_STATE(program) {
     const Ptr<const void> program = helper.pop<Ptr<const void>>();
     const bool is_fragment = helper.pop<bool>();
 
+    if (!program || !(program.get(mem)))
+        return;
     if (is_fragment) {
         state->fragment_program = program.cast<const SceGxmFragmentProgram>();
 
