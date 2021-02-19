@@ -21,6 +21,7 @@
 #include <gui/functions.h>
 #include <io/device.h>
 #include <util/log.h>
+#include <util/safe_time.h>
 #include <util/string_utils.h>
 
 #include <nfd.h>
@@ -433,9 +434,10 @@ void init_themes(GuiState &gui, HostState &host) {
                         theme_size += fs::file_size(theme.path());
 
                 const auto updated = fs::last_write_time(theme_path / content_id);
-                const auto updated_date = std::localtime(&updated);
+                tm updated_date = {};
 
-                themes_info[content_id].updated = fmt::format("{}/{}/{}  {:0>2d}:{:0>2d}", updated_date->tm_mday, updated_date->tm_mon + 1, updated_date->tm_year + 1900, updated_date->tm_hour, updated_date->tm_min);
+                SAFE_LOCALTIME(&updated, &updated_date);
+                themes_info[content_id].updated = fmt::format("{}/{}/{}  {:0>2d}:{:0>2d}", updated_date.tm_mday, updated_date.tm_mon + 1, updated_date.tm_year + 1900, updated_date.tm_hour, updated_date.tm_min);
 
                 themes_info[content_id].size = theme_size / KB(1);
                 themes_info[content_id].version = infomation.child("m_contentVer").text().as_string();
@@ -509,7 +511,9 @@ void draw_start_screen(GuiState &gui, HostState &host) {
 
     const auto now = std::chrono::system_clock::now();
     const auto tt = std::chrono::system_clock::to_time_t(now);
-    const auto local = *localtime(&tt);
+    tm local = {};
+
+    SAFE_LOCALTIME(&tt, &local);
 
     ImGui::PushFont(gui.vita_font);
     const auto SCAL_DEFAULT_FONT = ImGui::GetFontSize() / 19.2f;
@@ -517,7 +521,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto DATE_FONT_SIZE = 34.f * SCAL_DEFAULT_FONT;
     const auto SCAL_DATE_FONT_SIZE = DATE_FONT_SIZE / ImGui::GetFontSize();
 
-    auto DATE_TIME = get_date_time(gui, host, local);
+    auto DATE_TIME = get_date_time(gui, host, const_cast<tm &>(local));
     const auto DATE_STR = DATE_TIME["detail-date"];
     const auto CALC_DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str());
     const auto DATE_SIZE = ImVec2(CALC_DATE_SIZE.x * SCAL_DATE_FONT_SIZE, CALC_DATE_SIZE.y * SCAL_DATE_FONT_SIZE * SCAL_PIX_DATE_FONT);
