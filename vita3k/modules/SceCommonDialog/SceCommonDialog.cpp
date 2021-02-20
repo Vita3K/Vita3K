@@ -533,8 +533,8 @@ EXPORT(int, sceNpTrophySetupDialogAbort) {
     return 0;
 }
 
-EXPORT(int, sceNpTrophySetupDialogGetResult, SceNpTrophySetupDialogResult *result) {
-    result->result = host.common_dialog.result;
+EXPORT(int, sceNpTrophySetupDialogGetResult, Ptr<SceNpTrophySetupDialogResult> result) {
+    result.get(host.mem)->result = host.common_dialog.result;
     return 0;
 }
 
@@ -549,7 +549,7 @@ EXPORT(int, sceNpTrophySetupDialogInit, const Ptr<SceNpTrophySetupDialogParam> p
 
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
     host.common_dialog.type = TROPHY_SETUP_DIALOG;
-    host.common_dialog.trophy.tick = SDL_GetTicks() + (param.get(host.mem)->options & 0x01) ? 3000 : 0;
+    host.common_dialog.trophy.tick = SDL_GetTicks() + ((param.get(host.mem)->options & 0x01) ? 3000 : 0);
     return 0;
 }
 
