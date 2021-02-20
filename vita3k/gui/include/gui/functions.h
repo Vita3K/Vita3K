@@ -46,12 +46,14 @@ std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host,
 bool get_live_area_sys_app_state(GuiState &gui);
 void get_modules_list(GuiState &gui, HostState &host);
 std::string get_unit_size(const size_t &size);
+void get_user_app_params(GuiState &gui, HostState &host, const std::string &title_id);
 void get_user_apps_title(GuiState &gui, HostState &host);
 void get_sys_apps_title(GuiState &gui, HostState &host);
 void init(GuiState &gui, HostState &host);
 void init_app_background(GuiState &gui, HostState &host, const std::string &title_id);
 void init_apps_icon(GuiState &gui, HostState &host, const std::vector<gui::App> &apps_list);
 void init_content_manager(GuiState &gui, HostState &host);
+void init_home(GuiState &gui, HostState &host);
 void init_lang(GuiState &gui, HostState &host);
 void init_live_area(GuiState &gui, HostState &host);
 bool init_manual(GuiState &gui, HostState &host);
@@ -79,7 +81,7 @@ void draw_ui(GuiState &gui, HostState &host);
 
 void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &title_id);
 void draw_common_dialog(GuiState &gui, HostState &host);
-void draw_reinstall_dialog(GenericDialogState *status);
+void draw_reinstall_dialog(GenericDialogState *status, HostState &host);
 void draw_trophies_unlocked(GuiState &gui, HostState &host);
 void draw_perf_overlay(GuiState &gui, HostState &host);
 

@@ -93,13 +93,11 @@ void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::str
 void pre_run_app(GuiState &gui, HostState &host, const std::string &title_id) {
     gui.live_area.live_area_screen = false;
     if (title_id.find("NPXS") == std::string::npos) {
-        if (host.io.title_id != title_id) {
-            host.io.title_id = title_id;
-
-            if (host.cfg.overwrite_config) {
-                host.cfg.last_app = title_id;
-                config::serialize_config(host.cfg, host.cfg.config_path);
-            }
+        get_user_app_params(gui, host, title_id);
+        host.io.title_id = host.app_title_id;
+        if (host.cfg.overwrite_config && (host.cfg.last_app != host.io.title_id)) {
+            host.cfg.last_app = title_id;
+            config::serialize_config(host.cfg, host.cfg.config_path);
         }
         gui.live_area.information_bar = false;
     } else {
