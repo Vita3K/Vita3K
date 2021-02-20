@@ -186,7 +186,6 @@ EXPORT(int, sceAvPlayerAddSource, SceUID player_handle, const char *path) {
 EXPORT(int, sceAvPlayerClose, SceUID player_handle) {
     const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
     run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_STOP, 0, Ptr<void>(0));
-    assert(player_info->callback_depth_counter == 0);
     host.kernel.players.erase(player_handle);
     return 0;
 }

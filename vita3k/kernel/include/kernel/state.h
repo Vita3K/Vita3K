@@ -234,8 +234,6 @@ struct PlayerInfoState {
     SceAvPlayerMemoryAllocator memory_allocator;
     SceAvPlayerFileManager file_manager;
     SceAvPlayerEventManager event_manager;
-    SceUID player_callback_thread_id = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
-    uint32_t callback_depth_counter = 0;
 };
 
 typedef std::shared_ptr<PlayerInfoState> PlayerPtr;
