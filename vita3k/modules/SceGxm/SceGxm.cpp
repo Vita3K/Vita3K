@@ -2663,11 +2663,14 @@ EXPORT(uint32_t, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
     return static_cast<uint32_t>(gxm::get_width(texture));
 }
 
-EXPORT(int, sceGxmTextureInitCube, SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
+EXPORT(int, sceGxmTextureInitCube, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+    STUBBED("Stub InitCube");
+    const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_CUBE);
+
+    return result;
 }
 
 EXPORT(int, sceGxmTextureInitCubeArbitrary, SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
