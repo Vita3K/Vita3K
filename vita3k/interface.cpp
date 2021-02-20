@@ -454,6 +454,7 @@ bool handle_events(HostState &host, GuiState &gui) {
 
                 SDL_SetWindowFullscreen(host.window.get(), host.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
             }
+            break;
 
         case SDL_WINDOWEVENT:
             handle_window_event(host, event.window);

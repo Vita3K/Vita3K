@@ -776,7 +776,7 @@ EXPORT(int, sceKernelGetThreadmgrUIDClass) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetTimerBaseWide, SceUID timer_handle) {
+EXPORT(uint64_t, sceKernelGetTimerBaseWide, SceUID timer_handle) {
     const TimerPtr timer_info = lock_and_find(timer_handle, host.kernel.timers, host.kernel.mutex);
 
     if (!timer_info)
