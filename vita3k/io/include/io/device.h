@@ -38,7 +38,8 @@ inline VitaIoDevice get_device(const std::string &path) {
     if (colon == std::string::npos)
         return VitaIoDevice::_INVALID;
 
-    const auto p = path.substr(0, colon);
+    auto p = path.substr(0, colon);
+    std::transform(p.begin(), p.end(), p.begin(), tolower);
     if (VitaIoDevice::_is_valid_nocase(p.c_str()))
         return VitaIoDevice::_from_string(p.c_str());
 
@@ -105,6 +106,8 @@ inline std::string remove_duplicate_device(const std::string &path, VitaIoDevice
     auto cur_path = remove_device_from_path(path, device);
     if (get_device(cur_path) != VitaIoDevice::_INVALID) {
         device = get_device(cur_path);
+        if (cur_path.find_first_of(':') != std::string::npos)
+            cur_path = remove_duplicate_device(cur_path, device);
         return cur_path;
     }
 
