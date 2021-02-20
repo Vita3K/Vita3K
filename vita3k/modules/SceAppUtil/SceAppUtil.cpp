@@ -22,6 +22,7 @@
 #include <io/functions.h>
 #include <io/io.h>
 #include <io/vfs.h>
+#include <util/safe_time.h>
 
 #include <cstring>
 
@@ -209,13 +210,15 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
     if (slot && slot->slotParam) {
         SceDateTime modified_time;
         std::time_t time = std::time(0);
-        tm *local = localtime(&time);
-        modified_time.year = local->tm_year + 1900;
-        modified_time.month = local->tm_mon + 1;
-        modified_time.day = local->tm_mday;
-        modified_time.hour = local->tm_hour;
-        modified_time.minute = local->tm_min;
-        modified_time.second = local->tm_sec;
+        tm local = {};
+
+        SAFE_LOCALTIME(&time, &local);
+        modified_time.year = local.tm_year + 1900;
+        modified_time.month = local.tm_mon + 1;
+        modified_time.day = local.tm_mday;
+        modified_time.hour = local.tm_hour;
+        modified_time.minute = local.tm_min;
+        modified_time.second = local.tm_sec;
         slot->slotParam.get(host.mem)->modifiedTime = modified_time;
         fd = open_file(host.io, construct_slotparam_path(slot->id).c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
         write_file(fd, slot->slotParam.get(host.mem), sizeof(SceAppUtilSaveDataSlotParam), host.io, export_name);
