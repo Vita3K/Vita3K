@@ -74,11 +74,13 @@ EXPORT(int, __stack_chk_guard) {
 }
 
 EXPORT(int, _sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const char *name, unsigned int attr, int init_count, Ptr<SceKernelLwMutexOptParam> opt_param) {
-    Ptr<SceKernelCreateLwMutex_opt> options = Ptr<SceKernelCreateLwMutex_opt>(alloc(host.mem, sizeof(SceKernelCreateLwMutex_opt), name));
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    Ptr<SceKernelCreateLwMutex_opt> options = Ptr<SceKernelCreateLwMutex_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateLwMutex_opt)));
     options.get(host.mem)->init_count = init_count;
     options.get(host.mem)->opt_param = opt_param;
     int res = CALL_EXPORT(__sceKernelCreateLwMutex, workarea, name, attr, options);
-    free(host.mem, options);
+    stack_free(*thread->cpu, sizeof(SceKernelCreateLwMutex_opt));
     return res;
 }
 
@@ -408,11 +410,13 @@ EXPORT(int, sceIoIoctlAsync) {
 }
 
 EXPORT(SceOff, sceIoLseek, const SceUID fd, const SceOff offset, const SceIoSeekMode whence) {
-    Ptr<_sceIoLseekOpt> options = alloc<_sceIoLseekOpt>(host.mem, "");
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    Ptr<_sceIoLseekOpt> options = Ptr<_sceIoLseekOpt>(stack_alloc(*thread->cpu, sizeof(_sceIoLseekOpt)));
     options.get(host.mem)->offset = offset;
     options.get(host.mem)->whence = whence;
     int res = CALL_EXPORT(_sceIoLseek, fd, options);
-    free(host.mem, options);
+    stack_free(*thread->cpu, sizeof(_sceIoLseekOpt));
     return res;
 }
 
@@ -878,11 +882,13 @@ EXPORT(int, sceKernelCreateEventFlag, const char *name, unsigned int attr, unsig
 }
 
 EXPORT(int, sceKernelCreateLwCond, Ptr<SceKernelLwCondWork> workarea, const char *name, SceUInt attr, Ptr<SceKernelLwMutexWork> workarea_mutex, Ptr<SceKernelLwCondOptParam> opt_param) {
-    Ptr<SceKernelCreateLwCond_opt> options = Ptr<SceKernelCreateLwCond_opt>(alloc(host.mem, sizeof(SceKernelCreateLwCond_opt), name));
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    Ptr<SceKernelCreateLwCond_opt> options = Ptr<SceKernelCreateLwCond_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateLwCond_opt)));
     options.get(host.mem)->workarea_mutex = workarea_mutex;
     options.get(host.mem)->opt_param = opt_param;
     int res = CALL_EXPORT(_sceKernelCreateLwCond, workarea, name, attr, options);
-    free(host.mem, options);
+    stack_free(*thread->cpu, sizeof(SceKernelCreateLwCond_opt));
     return res;
 }
 
@@ -912,20 +918,24 @@ EXPORT(int, sceKernelCreateRWLock) {
 }
 
 EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal, int maxVal, Ptr<SceKernelSemaOptParam> option) {
-    Ptr<SceKernelCreateSema_opt> options = alloc<SceKernelCreateSema_opt>(host.mem, name);
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    Ptr<SceKernelCreateSema_opt> options = Ptr<SceKernelCreateSema_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateSema_opt)));
     options.get(host.mem)->maxVal = maxVal;
     options.get(host.mem)->option = option;
     int res = CALL_EXPORT(_sceKernelCreateSema, name, attr, initVal, options);
-    free(host.mem, options);
+    stack_free(*thread->cpu, sizeof(SceKernelCreateSema_opt));
     return res;
 }
 
 EXPORT(int, sceKernelCreateSema_16XX, const char *name, SceUInt attr, int initVal, int maxVal, Ptr<SceKernelSemaOptParam> option) {
-    Ptr<SceKernelCreateSema_opt> options = alloc<SceKernelCreateSema_opt>(host.mem, name);
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    Ptr<SceKernelCreateSema_opt> options = Ptr<SceKernelCreateSema_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateSema_opt)));
     options.get(host.mem)->maxVal = maxVal;
     options.get(host.mem)->option = option;
     int res = CALL_EXPORT(_sceKernelCreateSema, name, attr, initVal, options);
-    free(host.mem, options);
+    stack_free(*thread->cpu, sizeof(SceKernelCreateSema_opt));
     return res;
 }
 
@@ -934,13 +944,15 @@ EXPORT(int, sceKernelCreateSimpleEvent) {
 }
 
 EXPORT(SceUID, sceKernelCreateThread, const char *name, SceKernelThreadEntry entry, int init_priority, int stack_size, SceUInt attr, int cpu_affinity_mask, Ptr<SceKernelThreadOptParam> option) {
-    Ptr<SceKernelCreateThread_opt> options = alloc<SceKernelCreateThread_opt>(host.mem, name);
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+
+    Ptr<SceKernelCreateThread_opt> options = Ptr<SceKernelCreateThread_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateThread_opt)));
     options.get(host.mem)->stack_size = stack_size;
     options.get(host.mem)->attr = attr;
     options.get(host.mem)->cpu_affinity_mask = cpu_affinity_mask;
     options.get(host.mem)->option = option;
     SceUID res = CALL_EXPORT(sceKernelCreateThreadForUser, name, entry, init_priority, options.get(host.mem));
-    free(host.mem, options);
+    stack_free(*thread->cpu, sizeof(SceKernelCreateThread_opt));
     return res;
 }
 

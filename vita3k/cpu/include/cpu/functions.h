@@ -93,6 +93,8 @@ void write_lr(CPUState &state, uint32_t value);
 void write_fpscr(CPUState &state, uint32_t value);
 void write_cpsr(CPUState &state, uint32_t value);
 void write_tpidruro(CPUState &state, uint32_t value);
+uint32_t stack_alloc(CPUState &state, size_t size);
+uint32_t stack_free(CPUState &state, size_t size);
 
 // Debugging helpers
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size = nullptr);
