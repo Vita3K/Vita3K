@@ -576,6 +576,18 @@ void write_tpidruro(CPUState &state, uint32_t value) {
     assert(err == UC_ERR_OK);
 }
 
+uint32_t stack_alloc(CPUState &state, size_t size) {
+    const uint32_t new_sp = read_sp(state) - size;
+    write_sp(state, new_sp);
+    return new_sp;
+}
+
+uint32_t stack_free(CPUState &state, size_t size) {
+    const uint32_t new_sp = read_sp(state) + size;
+    write_sp(state, new_sp);
+    return new_sp;
+}
+
 bool hit_breakpoint(CPUState &state) {
     return state.did_break;
 }
