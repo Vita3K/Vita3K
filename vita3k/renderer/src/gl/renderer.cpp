@@ -392,6 +392,12 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
     shader::usse::get_uniform_buffer_sizes(program, vp->uniform_buffer_sizes);
     shader::usse::get_attribute_informations(program, vert_program_gl->attribute_infos);
 
+    if (vert_program_gl->attribute_infos.empty()) {
+        vert_program_gl->stripped_symbols_checked = false;
+    } else {
+        vert_program_gl->stripped_symbols_checked = true;
+    }
+
     return true;
 }
 

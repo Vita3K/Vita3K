@@ -16,6 +16,7 @@ bool is_paletted_format(SceGxmTextureFormat src);
 bool is_yuv_format(SceGxmTextureFormat src);
 size_t attribute_format_size(SceGxmAttributeFormat format);
 size_t index_element_size(SceGxmIndexFormat format);
+bool is_stream_instancing(SceGxmIndexSource source);
 } // namespace gxm
 
 namespace gxp {

@@ -177,6 +177,22 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
         program_input.uniform_buffers.push_back(buffer);
     }
 
+    auto default_ub_ite = std::find_if(program_input.uniform_buffers.begin(), program_input.uniform_buffers.end(), [](const shader::usse::UniformBuffer &buffer) {
+        return buffer.index == 0;
+    });
+
+    if ((default_ub_ite == program_input.uniform_buffers.end()) && (program.default_uniform_buffer_count != 0)) {
+        // Must there be a one if possible
+        UniformBuffer buffer;
+        buffer.index = 0;
+        buffer.reg_block_size = program.default_uniform_buffer_count;
+        buffer.reg_start_offset = 0;
+        buffer.rw = false;
+        buffer.size = program.default_uniform_buffer_count;
+
+        program_input.uniform_buffers.push_back(buffer);
+    }
+
     const auto buffer_infoes = reinterpret_cast<const SceGxmUniformBufferInfo *>(
         reinterpret_cast<const std::uint8_t *>(&program.uniform_buffer_offset) + program.uniform_buffer_offset);
 

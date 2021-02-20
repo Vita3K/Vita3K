@@ -147,7 +147,7 @@ void set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context,
     }
 }
 
-void draw(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count) {
+void draw(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count, const std::uint32_t instance_count) {
     switch (state.current_backend) {
     default: {
         const std::size_t copy_size = gxm::index_element_size(index_type) * index_count;
@@ -155,7 +155,7 @@ void draw(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmPrimit
 
         std::memcpy(a_copy, index_data, copy_size);
 
-        renderer::add_command(ctx, renderer::CommandOpcode::Draw, nullptr, prim_type, index_type, a_copy, index_count);
+        renderer::add_command(ctx, renderer::CommandOpcode::Draw, nullptr, prim_type, index_type, a_copy, index_count, instance_count);
         break;
     }
     }

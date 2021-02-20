@@ -94,11 +94,12 @@ COMMAND(handle_draw) {
     SceGxmIndexFormat format = helper.pop<SceGxmIndexFormat>();
     const void *indicies = helper.pop<const void *>();
     const std::uint32_t count = helper.pop<const std::uint32_t>();
+    const std::uint32_t instance_count = helper.pop<const std::uint32_t>();
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::draw(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context),
-            *state, features, type, format, indicies, count, mem, base_path, title_id, config);
+            *state, features, type, format, indicies, count, instance_count, mem, base_path, title_id, config);
 
         break;
     }

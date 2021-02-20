@@ -1037,6 +1037,13 @@ enum SceGxmErrorCode {
     SCE_GXM_ERROR_DRIVER = 0x805B0017
 };
 
+enum SceGxmIndexSource {
+    SCE_GXM_INDEX_SOURCE_EACH_VERTEX_16BIT = 0,
+    SCE_GXM_INDEX_SOURCE_EACH_VERTEX_32BIT = 1,
+    SCE_GXM_INDEX_SOURCE_EACH_INSTANCE_16BIT = 2,
+    SCE_GXM_INDEX_SOURCE_EACH_INSTANCE_32BIT = 3
+};
+
 struct SceGxmVertexStream {
     uint16_t stride;
     uint16_t indexSource;

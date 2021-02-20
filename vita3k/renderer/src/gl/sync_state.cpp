@@ -337,8 +337,21 @@ void sync_blending(const GxmContextState &state, const MemState &mem) {
 void sync_vertex_attributes(GLContext &context, const GxmContextState &state, const MemState &mem) {
     // Vertex attributes.
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
+    GLVertexProgram *glvert = reinterpret_cast<GLVertexProgram *>(vertex_program.renderer_data.get());
+
+    if (!glvert->stripped_symbols_checked) {
+        // Insert some symbols here
+        const SceGxmProgram *vertex_program_body = vertex_program.program.get(mem);
+        if (vertex_program_body && (vertex_program_body->primary_reg_count != 0)) {
+            for (std::size_t i = 0; i < vertex_program.attributes.size(); i++) {
+                glvert->attribute_infos.emplace(vertex_program.attributes[i].regIndex, shader::usse::AttributeInformation(static_cast<std::uint16_t>(i), SCE_GXM_PARAMETER_TYPE_F32));
+            }
+        }
+
+        glvert->stripped_symbols_checked = true;
+    }
+
     for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
-        const GLVertexProgram *glvert = reinterpret_cast<GLVertexProgram *>(vertex_program.renderer_data.get());
         const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
 
         const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
@@ -375,6 +388,12 @@ void sync_vertex_attributes(GLContext &context, const GxmContextState &state, co
             }
 
             glEnableVertexAttribArray(attrib_location);
+
+            if (gxm::is_stream_instancing(static_cast<SceGxmIndexSource>(stream.indexSource))) {
+                glVertexAttribDivisor(attrib_location, 1);
+            } else {
+                glVertexAttribDivisor(attrib_location, 0);
+            }
         }
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
