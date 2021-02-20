@@ -173,14 +173,16 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
                 ImGui_ImplSdl_NewFrame(gui->imgui_state.get());
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 gui::draw_ui(*gui, host);
-                gui::draw_reinstall_dialog(&status);
+                ImGui::PushFont(gui->vita_font);
+                gui::draw_reinstall_dialog(&status, host);
+                ImGui::PopFont();
                 glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
                 ImGui::Render();
                 ImGui_ImplSdl_RenderDrawData(gui->imgui_state.get());
                 SDL_GL_SwapWindow(host.window.get());
             }
             if (status == gui::CANCEL_STATE) {
-                LOG_INFO("{} already installed, launching application...", host.app_title_id);
+                LOG_INFO("{} already installed, {}", host.app_title_id, host.app_category == "gd" ? "launching application..." : "open home");
                 fclose(vpk_fp);
                 return true;
             } else if (status == gui::UNK_STATE) {
@@ -282,25 +284,9 @@ static auto pre_load_module(HostState &host, const std::vector<std::string> &lib
     return Success;
 }
 
-static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, const app::AppRunType run_type) {
+static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, const std::wstring &path) {
     if (path.empty())
         return InvalidApplicationPath;
-
-    vfs::FileBuffer params;
-    bool params_found = vfs::read_app_file(params, host.pref_path, host.io.title_id, "sce_sys/param.sfo");
-
-    if (params_found) {
-        sfo::load(host.sfo_handle, params);
-
-        sfo::get_data_by_key(host.current_app_title, host.sfo_handle, "TITLE");
-        std::replace(host.current_app_title.begin(), host.current_app_title.end(), '\n', ' '); // Restrict title to one line
-        sfo::get_data_by_key(host.io.title_id, host.sfo_handle, "TITLE_ID");
-        sfo::get_data_by_key(host.app_version, host.sfo_handle, "APP_VER");
-        sfo::get_data_by_key(host.app_category, host.sfo_handle, "CATEGORY");
-    } else {
-        host.current_app_title = host.io.title_id; // Use TitleID as Title
-        host.app_version = host.app_category = "N/A";
-    }
 
     if (host.cfg.archive_log) {
         const fs::path log_directory{ host.base_path + "/logs" };
@@ -471,14 +457,23 @@ bool handle_events(HostState &host, GuiState &gui) {
         case SDL_FINGERUP:
             handle_touch_event(event.tfinger);
             break;
+        case SDL_DROPFILE: {
+            const auto drop_file = fs::path(string_utils::utf_to_wide(event.drop.file));
+            if ((drop_file.extension() == ".vpk") || (drop_file.extension() == ".zip"))
+                install_archive(host, &gui, drop_file);
+            else
+                LOG_ERROR("File droped: [{}] is not supported for install .zip/.vpk", drop_file.filename().string());
+            SDL_free(event.drop.file);
+            break;
+        }
         }
     }
 
     return true;
 }
 
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path, const app::AppRunType run_type) {
-    if (load_app_impl(entry_point, host, path, run_type) != Success) {
+ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path) {
+    if (load_app_impl(entry_point, host, path) != Success) {
         std::string message = "Failed to load \"";
         message += string_utils::wide_to_utf(path);
         message += "\"";

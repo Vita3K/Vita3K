@@ -110,23 +110,13 @@ int main(int argc, char *argv[]) {
     else
         run_type = app::AppRunType::Unknown;
 
-    std::wstring vpk_path_wide;
-    if (run_type == app::AppRunType::Vpk) {
-        vpk_path_wide = string_utils::utf_to_wide(*cfg.vpk_path);
-    } else {
-        SDL_Event ev;
-        while (SDL_PollEvent(&ev)) {
-            if (ev.type == SDL_DROPFILE) {
-                vpk_path_wide = string_utils::utf_to_wide(ev.drop.file);
-                SDL_free(ev.drop.file);
-                break;
-            }
+    SDL_Event ev;
+    while (SDL_PollEvent(&ev)) {
+        if (ev.type == SDL_DROPFILE) {
+            *cfg.vpk_path = ev.drop.file;
+            SDL_free(ev.drop.file);
+            break;
         }
-    }
-
-    // TODO: Clean this, ie. make load_app overloads called depending on run type
-    if (run_type == app::AppRunType::Extracted) {
-        vpk_path_wide = string_utils::utf_to_wide(*cfg.run_title_id);
     }
 
     auto inject = create_cpu_dep_inject(host);
@@ -136,8 +126,30 @@ int main(int argc, char *argv[]) {
     }
 
     GuiState gui;
-    if (!cfg.console) {
+    if (!cfg.console)
         gui::init(gui, host);
+
+    if (run_type == app::AppRunType::Vpk) {
+        auto gui_ptr = cfg.console ? nullptr : &gui;
+        if (install_archive(host, gui_ptr, string_utils::utf_to_wide(*cfg.vpk_path)) && (host.app_category == "gd"))
+            run_type = app::AppRunType::Extracted;
+        else {
+            run_type = app::AppRunType::Unknown;
+            host.cfg.vpk_path.reset();
+            if (!cfg.console)
+                gui::init_home(gui, host);
+        }
+    }
+
+    if (run_type == app::AppRunType::Extracted) {
+        host.io.title_id = cfg.run_title_id ? *cfg.run_title_id : host.app_title_id;
+        gui::get_user_app_params(gui, host, host.io.title_id);
+        gui::init_apps_icon(gui, host, gui.app_selector.user_apps);
+        if (host.cfg.run_title_id)
+            host.cfg.run_title_id.reset();
+    }
+
+    if (!cfg.console) {
 #if USE_DISCORD
         auto discord_rich_presence_old = host.cfg.discord_rich_presence;
 #endif
@@ -145,7 +157,7 @@ int main(int argc, char *argv[]) {
         std::chrono::system_clock::time_point present = std::chrono::system_clock::now();
         std::chrono::system_clock::time_point later = std::chrono::system_clock::now();
         const double frame_time = 1000.0 / 60.0;
-        // Application not provided via argument, show game selector
+        // Application not provided via argument, show app selector
         while (run_type == app::AppRunType::Unknown) {
             // get the current time & get the time we worked for
             present = std::chrono::system_clock::now();
@@ -174,25 +186,20 @@ int main(int argc, char *argv[]) {
                 return QuitRequested;
             }
 
-            // TODO: Clean this, ie. make load_app overloads called depending on run type
-            if (!host.io.title_id.empty()) {
-                vpk_path_wide = string_utils::utf_to_wide(host.io.title_id);
+            if (!host.io.title_id.empty())
                 run_type = app::AppRunType::Extracted;
-            }
         }
     }
 
-    if (run_type == app::AppRunType::Vpk) {
-        auto gui_ptr = cfg.console ? nullptr : &gui;
-        if (!install_archive(host, gui_ptr, vpk_path_wide)) {
-            return FileNotFound;
-        }
-    } else if (run_type == app::AppRunType::Extracted) {
-        host.io.title_id = string_utils::wide_to_utf(vpk_path_wide);
-    }
+    const auto APP_INDEX = gui::get_app_index(gui, host.io.title_id);
+    host.app_version = APP_INDEX->app_ver;
+    host.app_category = APP_INDEX->category;
+    host.current_app_title = APP_INDEX->title;
+    host.app_short_title = APP_INDEX->stitle;
+    host.io.title_id = APP_INDEX->title_id;
 
     Ptr<const void> entry_point;
-    if (const auto err = load_app(entry_point, host, vpk_path_wide, run_type) != Success)
+    if (const auto err = load_app(entry_point, host, string_utils::utf_to_wide(host.io.title_id)) != Success)
         return err;
     if (const auto err = run_app(host, entry_point) != Success)
         return err;

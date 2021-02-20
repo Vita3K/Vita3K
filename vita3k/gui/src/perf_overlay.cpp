@@ -23,7 +23,6 @@
 
 namespace gui {
 static const ImVec2 PERF_OVERLAY_POS = ImVec2(10.0f, 10.0f);
-static const ImVec2 PERF_OVERLAY_WINDOW_SIZE = ImVec2(40.0f, 15.0f);
 static const ImVec4 PERF_OVERLAY_BG_COLOR = ImVec4(0.282f, 0.239f, 0.545f, 1.0f);
 
 void draw_perf_overlay(GuiState &gui, HostState &host) {
@@ -31,7 +30,7 @@ void draw_perf_overlay(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowBgAlpha(0.8f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, PERF_OVERLAY_BG_COLOR);
 
-    ImGui::Begin("##performance", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
+    ImGui::Begin("##performance", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::Text("FPS: %d", host.fps);
     ImGui::End();
 

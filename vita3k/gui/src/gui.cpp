@@ -252,6 +252,25 @@ void init_app_background(GuiState &gui, HostState &host, const std::string &titl
     stbi_image_free(data);
 }
 
+void init_home(GuiState &gui, HostState &host) {
+    const auto is_cmd = host.cfg.run_title_id || host.cfg.vpk_path;
+    if (!is_cmd) {
+        get_user_apps_title(gui, host);
+        init_apps_icon(gui, host, gui.app_selector.user_apps);
+    }
+
+    if (!gui.users.empty() && (gui.users.find(host.cfg.user_id) != gui.users.end()) && (is_cmd || host.cfg.auto_user_login)) {
+        init_user(gui, host, host.cfg.user_id);
+        if (!is_cmd && host.cfg.auto_user_login) {
+            gui.live_area.information_bar = true;
+            open_user(gui, host);
+        }
+    } else {
+        gui.live_area.information_bar = true;
+        gui.live_area.user_management = true;
+    }
+}
+
 std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &title_id) {
     const auto &app_type = title_id.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
     const auto app_icon = std::find_if(app_type.begin(), app_type.end(), [&](const auto &i) {
@@ -268,6 +287,30 @@ std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string 
     });
 
     return app_index;
+}
+
+void get_user_app_params(GuiState &gui, HostState &host, const std::string &title_id) {
+    vfs::FileBuffer params;
+    if (vfs::read_app_file(params, host.pref_path, title_id, "sce_sys/param.sfo")) {
+        SfoFile sfo_handle;
+        sfo::load(sfo_handle, params);
+        sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
+        if (host.app_version[0] == '0')
+            host.app_version.erase(host.app_version.begin());
+        sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
+        sfo::get_data_by_key(host.app_parental_level, sfo_handle, "PARENTAL_LEVEL");
+        if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
+            sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
+        if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+            sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
+        std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
+        boost::trim(host.app_title);
+        sfo::get_data_by_key(host.app_title_id, sfo_handle, "TITLE_ID");
+    } else {
+        host.app_short_title = host.app_title = host.app_title_id = title_id; // Use TitleID as Short title and Title
+        host.app_version = host.app_category = host.app_parental_level = "N/A";
+    }
+    gui.app_selector.user_apps.push_back({ host.app_version, host.app_category, host.app_parental_level, host.app_short_title, host.app_title, host.app_title_id });
 }
 
 void get_sys_apps_title(GuiState &gui, HostState &host) {
@@ -490,22 +533,7 @@ void init(GuiState &gui, HostState &host) {
     get_modules_list(gui, host);
     get_sys_apps_title(gui, host);
 
-    const auto cmd = host.cfg.run_title_id || host.cfg.vpk_path;
-    if (!cmd) {
-        get_user_apps_title(gui, host);
-        init_apps_icon(gui, host, gui.app_selector.user_apps);
-    }
-
-    if (!gui.users.empty() && (gui.users.find(host.cfg.user_id) != gui.users.end()) && (cmd || host.cfg.auto_user_login)) {
-        init_user(gui, host, host.cfg.user_id);
-        if (!cmd && host.cfg.auto_user_login) {
-            gui.live_area.information_bar = true;
-            open_user(gui, host);
-        }
-    } else {
-        gui.live_area.information_bar = true;
-        gui.live_area.user_management = true;
-    }
+    init_home(gui, host);
 
     // Initialize trophy callback
     host.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {
