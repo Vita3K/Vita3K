@@ -817,8 +817,10 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     SceGxmPrecomputedVertexState *vertex_state = context->state.precomputed_vertex_state.cast<SceGxmPrecomputedVertexState>().get(host.mem);
     SceGxmPrecomputedFragmentState *fragment_state = context->state.precomputed_fragment_state.cast<SceGxmPrecomputedFragmentState>().get(host.mem);
 
-    assert(vertex_state);
-    assert(fragment_state);
+    if (!vertex_state)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_PRECOMPUTED_VERTEX_STATE);
+    if (!fragment_state)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_PRECOMPUTED_FRAGMENT_STATE);
 
     // not sure if precomputed uses current program... maybe it does?
     // anyway states have to be made on a program to program basis so this should be safe
