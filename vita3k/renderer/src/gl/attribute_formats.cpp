@@ -26,8 +26,7 @@ GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format) {
     case SCE_GXM_ATTRIBUTE_FORMAT_F32:
         return GL_FLOAT;
     case SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED:
-        LOG_WARN("Unsupported attribute format SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED");
-        return GL_UNSIGNED_BYTE;
+        return GL_INT;
     }
 
     LOG_ERROR("Unsupported attribute format {}", log_hex(format));
