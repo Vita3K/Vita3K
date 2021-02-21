@@ -319,7 +319,7 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
                 ImGui::PushStyleColor(ImGuiCol_Header, SELECT_COLOR);
                 ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECT_COLOR_HOVERED);
                 ImGui::PushStyleColor(ImGuiCol_HeaderActive, SELECT_COLOR_ACTIVE);
-                if (ImGui::Selectable("##icon", gui.notice_info_new[notice.pos], host.io.title_id.empty() || ((notice.type == "content") && (notice.group == "theme")) || (notice.type == "trophy") ? ImGuiSelectableFlags_SpanAllColumns : ImGuiSelectableFlags_Disabled, SELECT_SIZE)) {
+                if (ImGui::Selectable("##icon", gui.notice_info_new[notice.pos], host.io.app_path.empty() || ((notice.type == "content") && (notice.group == "theme")) || (notice.type == "trophy") ? ImGuiSelectableFlags_SpanAllColumns : ImGuiSelectableFlags_Disabled, SELECT_SIZE)) {
                     gui.notice_info_count_new = 0;
                     gui.notice_info_new.clear();
                     if (notice.type == "content") {
@@ -565,26 +565,26 @@ void init_live_area(GuiState &gui, HostState &host) {
     }
 
     const auto user_lang = gui.lang.user_lang;
-    const auto title_id = gui.apps_list_opened[gui.current_app_selected];
-    const VitaIoDevice app_device = title_id.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
+    const auto app_path = gui.apps_list_opened[gui.current_app_selected];
+    const VitaIoDevice app_device = app_path.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
 
-    if (gui.live_area_contents.find(title_id) == gui.live_area_contents.end()) {
+    if (gui.live_area_contents.find(app_path) == gui.live_area_contents.end()) {
         auto default_contents = false;
         const auto fw_path{ fs::path(host.pref_path) / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
-        auto template_xml{ fs::path(host.pref_path) / app_device._to_string() / "app" / title_id / "sce_sys/livearea/contents/template.xml" };
+        auto template_xml{ fs::path(host.pref_path) / app_device._to_string() / "app" / app_path / "sce_sys/livearea/contents/template.xml" };
 
         pugi::xml_document doc;
 
         if (!doc.load_file(template_xml.c_str())) {
-            if ((title_id.find("PCS") != std::string::npos) || (title_id.find("NPXS") != std::string::npos))
-                LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}'.", title_id, host.app_title);
+            if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
+                LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}'.", app_path, host.app_title);
             if (doc.load_file(default_fw_contents.c_str())) {
                 template_xml = default_fw_contents;
                 default_contents = true;
                 LOG_INFO("Using default firmware contents.");
             } else {
-                type[title_id] = "a1";
+                type[app_path] = "a1";
                 LOG_WARN("Default firmware contents is corrupted or missing, install firmware for fix it.");
                 return;
             }
@@ -593,8 +593,8 @@ void init_live_area(GuiState &gui, HostState &host) {
         if (doc.load_file(template_xml.c_str())) {
             std::map<std::string, std::string> name;
 
-            type[title_id].clear();
-            type[title_id] = doc.child("livearea").attribute("style").as_string();
+            type[app_path].clear();
+            type[app_path] = doc.child("livearea").attribute("style").as_string();
 
             if (!doc.child("livearea").child("livearea-background").child("image").child("lang").text().empty()) {
                 for (const auto &livearea_background : doc.child("livearea").child("livearea-background")) {
@@ -652,102 +652,102 @@ void init_live_area(GuiState &gui, HostState &host) {
                 if (default_contents)
                     vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "data/internal/livearea/default/sce_sys/livearea/contents/" + contents.second);
                 else if (app_device == VitaIoDevice::vs0)
-                    vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + title_id + "/sce_sys/livearea/contents/" + contents.second);
+                    vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + contents.second);
                 else
-                    vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/" + contents.second);
+                    vfs::read_app_file(buffer, host.pref_path, app_path, "sce_sys/livearea/contents/" + contents.second);
 
                 if (buffer.empty()) {
-                    if ((title_id.find("PCS") != std::string::npos) || (title_id.find("NPXS") != std::string::npos))
-                        LOG_WARN("Contents {} '{}' Not found for title {} [{}].", contents.first, contents.second, title_id, host.app_title);
+                    if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
+                        LOG_WARN("Contents {} '{}' Not found for title {} [{}].", contents.first, contents.second, app_path, host.app_title);
                     continue;
                 }
                 stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                 if (!data) {
-                    LOG_ERROR("Invalid Live Area Contents for title {}.", title_id);
+                    LOG_ERROR("Invalid Live Area Contents for title {}.", app_path);
                     continue;
                 }
 
-                gui.live_area_contents[title_id][contents.first].init(gui.imgui_state.get(), data, width, height);
+                gui.live_area_contents[app_path][contents.first].init(gui.imgui_state.get(), data, width, height);
                 stbi_image_free(data);
             }
 
             std::map<std::string, std::map<std::string, std::vector<std::string>>> items_name;
 
-            frames[title_id].clear();
-            liveitem[title_id].clear();
-            str[title_id].clear();
-            target[title_id].clear();
+            frames[app_path].clear();
+            liveitem[app_path].clear();
+            str[app_path].clear();
+            target[app_path].clear();
 
             for (const auto &livearea : doc.child("livearea")) {
                 if (!livearea.attribute("id").empty()) {
-                    frames[title_id].push_back({ livearea.attribute("id").as_string(), livearea.attribute("multi").as_string(), livearea.attribute("autoflip").as_uint() });
+                    frames[app_path].push_back({ livearea.attribute("id").as_string(), livearea.attribute("multi").as_string(), livearea.attribute("autoflip").as_uint() });
 
-                    std::string frame = frames[title_id].back().id;
+                    std::string frame = frames[app_path].back().id;
 
                     // Position background
                     if (!livearea.child("liveitem").child("background").empty()) {
                         if (!livearea.child("liveitem").child("background").attribute("x").empty())
-                            liveitem[title_id][frame]["background"]["x"].first = livearea.child("liveitem").child("background").attribute("x").as_int();
+                            liveitem[app_path][frame]["background"]["x"].first = livearea.child("liveitem").child("background").attribute("x").as_int();
                         if (!livearea.child("liveitem").child("background").attribute("y").empty())
-                            liveitem[title_id][frame]["background"]["y"].first = livearea.child("liveitem").child("background").attribute("y").as_int();
+                            liveitem[app_path][frame]["background"]["y"].first = livearea.child("liveitem").child("background").attribute("y").as_int();
                         if (!livearea.child("liveitem").child("background").attribute("align").empty())
-                            liveitem[title_id][frame]["background"]["align"].second = livearea.child("liveitem").child("background").attribute("align").as_string();
+                            liveitem[app_path][frame]["background"]["align"].second = livearea.child("liveitem").child("background").attribute("align").as_string();
                         if (!livearea.child("liveitem").child("background").attribute("valign").empty())
-                            liveitem[title_id][frame]["background"]["valign"].second = livearea.child("liveitem").child("background").attribute("valign").as_string();
+                            liveitem[app_path][frame]["background"]["valign"].second = livearea.child("liveitem").child("background").attribute("valign").as_string();
                     }
 
                     // Position image
                     if (!livearea.child("liveitem").child("image").empty()) {
                         if (!livearea.child("liveitem").child("image").attribute("x").empty())
-                            liveitem[title_id][frame]["image"]["x"].first = livearea.child("liveitem").child("image").attribute("x").as_int();
+                            liveitem[app_path][frame]["image"]["x"].first = livearea.child("liveitem").child("image").attribute("x").as_int();
                         if (!livearea.child("liveitem").child("image").attribute("y").empty())
-                            liveitem[title_id][frame]["image"]["y"].first = livearea.child("liveitem").child("image").attribute("y").as_int();
+                            liveitem[app_path][frame]["image"]["y"].first = livearea.child("liveitem").child("image").attribute("y").as_int();
                         if (!livearea.child("liveitem").child("image").attribute("align").empty())
-                            liveitem[title_id][frame]["image"]["align"].second = livearea.child("liveitem").child("image").attribute("align").as_string();
+                            liveitem[app_path][frame]["image"]["align"].second = livearea.child("liveitem").child("image").attribute("align").as_string();
                         if (!livearea.child("liveitem").child("image").attribute("valign").empty())
-                            liveitem[title_id][frame]["image"]["valign"].second = livearea.child("liveitem").child("image").attribute("valign").as_string();
+                            liveitem[app_path][frame]["image"]["valign"].second = livearea.child("liveitem").child("image").attribute("valign").as_string();
                         if (!livearea.child("liveitem").child("image").attribute("origin").empty())
-                            liveitem[title_id][frame]["image"]["origin"].second = livearea.child("liveitem").child("image").attribute("origin").as_string();
+                            liveitem[app_path][frame]["image"]["origin"].second = livearea.child("liveitem").child("image").attribute("origin").as_string();
                     }
 
                     if (!livearea.child("liveitem").child("text").empty()) {
                         // SceInt32
                         if (!livearea.child("liveitem").child("text").attribute("width").empty())
-                            liveitem[title_id][frame]["text"]["width"].first = livearea.child("liveitem").child("text").attribute("width").as_int();
+                            liveitem[app_path][frame]["text"]["width"].first = livearea.child("liveitem").child("text").attribute("width").as_int();
                         if (!livearea.child("liveitem").child("text").attribute("height").empty())
-                            liveitem[title_id][frame]["text"]["height"].first = livearea.child("liveitem").child("text").attribute("height").as_int();
+                            liveitem[app_path][frame]["text"]["height"].first = livearea.child("liveitem").child("text").attribute("height").as_int();
                         if (!livearea.child("liveitem").child("text").attribute("x").empty())
-                            liveitem[title_id][frame]["text"]["x"].first = livearea.child("liveitem").child("text").attribute("x").as_int();
+                            liveitem[app_path][frame]["text"]["x"].first = livearea.child("liveitem").child("text").attribute("x").as_int();
                         if (!livearea.child("liveitem").child("text").attribute("y").empty())
-                            liveitem[title_id][frame]["text"]["y"].first = livearea.child("liveitem").child("text").attribute("y").as_int();
+                            liveitem[app_path][frame]["text"]["y"].first = livearea.child("liveitem").child("text").attribute("y").as_int();
                         if (!livearea.child("liveitem").child("text").attribute("margin-top").empty())
-                            liveitem[title_id][frame]["text"]["margin-top"].first = livearea.child("liveitem").child("text").attribute("margin-top").as_int();
+                            liveitem[app_path][frame]["text"]["margin-top"].first = livearea.child("liveitem").child("text").attribute("margin-top").as_int();
                         if (!livearea.child("liveitem").child("text").attribute("margin-buttom").empty())
-                            liveitem[title_id][frame]["text"]["margin-buttom"].first = livearea.child("liveitem").child("text").attribute("margin-buttom").as_int();
+                            liveitem[app_path][frame]["text"]["margin-buttom"].first = livearea.child("liveitem").child("text").attribute("margin-buttom").as_int();
                         if (!livearea.child("liveitem").child("text").attribute("margin-left").empty())
-                            liveitem[title_id][frame]["text"]["margin-left"].first = livearea.child("liveitem").child("text").attribute("margin-left").as_int();
+                            liveitem[app_path][frame]["text"]["margin-left"].first = livearea.child("liveitem").child("text").attribute("margin-left").as_int();
                         if (!livearea.child("liveitem").child("text").attribute("margin-right").empty())
-                            liveitem[title_id][frame]["text"]["margin-right"].first = livearea.child("liveitem").child("text").attribute("margin-right").as_int();
+                            liveitem[app_path][frame]["text"]["margin-right"].first = livearea.child("liveitem").child("text").attribute("margin-right").as_int();
 
                         // String
                         if (!livearea.child("liveitem").child("text").attribute("align").empty())
-                            liveitem[title_id][frame]["text"]["align"].second = livearea.child("liveitem").child("text").attribute("align").as_string();
+                            liveitem[app_path][frame]["text"]["align"].second = livearea.child("liveitem").child("text").attribute("align").as_string();
                         if (!livearea.child("liveitem").child("text").attribute("valign").empty())
-                            liveitem[title_id][frame]["text"]["valign"].second = livearea.child("liveitem").child("text").attribute("valign").as_string();
+                            liveitem[app_path][frame]["text"]["valign"].second = livearea.child("liveitem").child("text").attribute("valign").as_string();
                         if (!livearea.child("liveitem").child("text").attribute("origin").empty())
-                            liveitem[title_id][frame]["text"]["origin"].second = livearea.child("liveitem").child("text").attribute("origin").as_string();
+                            liveitem[app_path][frame]["text"]["origin"].second = livearea.child("liveitem").child("text").attribute("origin").as_string();
                         if (!livearea.child("liveitem").child("text").attribute("line-align").empty())
-                            liveitem[title_id][frame]["text"]["line-align"].second = livearea.child("liveitem").child("text").attribute("line-align").as_string();
+                            liveitem[app_path][frame]["text"]["line-align"].second = livearea.child("liveitem").child("text").attribute("line-align").as_string();
                         if (!livearea.child("liveitem").child("text").attribute("text-align").empty())
-                            liveitem[title_id][frame]["text"]["text-align"].second = livearea.child("liveitem").child("text").attribute("text-align").as_string();
+                            liveitem[app_path][frame]["text"]["text-align"].second = livearea.child("liveitem").child("text").attribute("text-align").as_string();
                         if (!livearea.child("liveitem").child("text").attribute("text-valign").empty())
-                            liveitem[title_id][frame]["text"]["text-valign"].second = livearea.child("liveitem").child("text").attribute("text-valign").as_string();
+                            liveitem[app_path][frame]["text"]["text-valign"].second = livearea.child("liveitem").child("text").attribute("text-valign").as_string();
                         if (!livearea.child("liveitem").child("text").attribute("word-wrap").empty())
-                            liveitem[title_id][frame]["text"]["word-wrap"].second = livearea.child("liveitem").child("text").attribute("word-wrap").as_string();
+                            liveitem[app_path][frame]["text"]["word-wrap"].second = livearea.child("liveitem").child("text").attribute("word-wrap").as_string();
                         if (!livearea.child("liveitem").child("text").attribute("word-scroll").empty())
-                            liveitem[title_id][frame]["text"]["word-scroll"].second = livearea.child("liveitem").child("text").attribute("word-scroll").as_string();
+                            liveitem[app_path][frame]["text"]["word-scroll"].second = livearea.child("liveitem").child("text").attribute("word-scroll").as_string();
                         if (!livearea.child("liveitem").child("text").attribute("ellipsis").empty())
-                            liveitem[title_id][frame]["text"]["ellipsis"].second = livearea.child("liveitem").child("text").attribute("ellipsis").as_string();
+                            liveitem[app_path][frame]["text"]["ellipsis"].second = livearea.child("liveitem").child("text").attribute("ellipsis").as_string();
                     }
 
                     for (const auto &frame_id : livearea) {
@@ -760,10 +760,10 @@ void init_live_area(GuiState &gui, HostState &host) {
                                         if (!frame_id.child("image").text().empty())
                                             items_name[frame]["image"].push_back({ frame_id.child("image").text().as_string() });
                                         if (!frame_id.child("target").text().empty())
-                                            target[title_id][frame] = frame_id.child("target").text().as_string();
+                                            target[app_path][frame] = frame_id.child("target").text().as_string();
                                         if (!frame_id.child("text").child("str").text().empty()) {
                                             for (const auto &str_child : frame_id.child("text"))
-                                                str[title_id][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
+                                                str[app_path][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
                                         }
                                         break;
                                     }
@@ -781,10 +781,10 @@ void init_live_area(GuiState &gui, HostState &host) {
                                     if (!frame_id.child("image").text().empty())
                                         items_name[frame]["image"].push_back({ frame_id.child("image").text().as_string() });
                                     if (!frame_id.child("target").text().empty())
-                                        target[title_id][frame] = frame_id.child("target").text().as_string();
+                                        target[app_path][frame] = frame_id.child("target").text().as_string();
                                     if (!frame_id.child("text").child("str").text().empty()) {
                                         for (const auto &str_child : frame_id.child("text"))
-                                            str[title_id][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
+                                            str[app_path][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
                                     }
                                     break;
                                 }
@@ -794,10 +794,10 @@ void init_live_area(GuiState &gui, HostState &host) {
                                 if (!frame_id.child("image").text().empty())
                                     items_name[frame]["image"].push_back({ frame_id.child("image").text().as_string() });
                                 if (!frame_id.child("target").text().empty())
-                                    target[title_id][frame] = frame_id.child("target").text().as_string();
+                                    target[app_path][frame] = frame_id.child("target").text().as_string();
                                 if (!frame_id.child("text").child("str").text().empty()) {
                                     for (const auto &str_child : frame_id.child("text"))
-                                        str[title_id][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
+                                        str[app_path][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
                                 }
                                 break;
                             }
@@ -810,31 +810,31 @@ void init_live_area(GuiState &gui, HostState &host) {
                         items_name[frame]["background"].push_back({ liveitem.child("background").text().as_string() });
                     if (items_name[frame]["image"].empty() && !liveitem.child("image").text().empty())
                         items_name[frame]["image"].push_back({ liveitem.child("image").text().as_string() });
-                    if (target[title_id][frame].empty() && !liveitem.child("target").text().empty())
-                        target[title_id][frame] = liveitem.child("target").text().as_string();
-                    if (str[title_id][frame].empty() && !liveitem.child("text").child("str").text().empty()) {
+                    if (target[app_path][frame].empty() && !liveitem.child("target").text().empty())
+                        target[app_path][frame] = liveitem.child("target").text().as_string();
+                    if (str[app_path][frame].empty() && !liveitem.child("text").child("str").text().empty()) {
                         for (const auto &str_child : liveitem.child("text"))
-                            str[title_id][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
+                            str[app_path][frame].push_back({ str_child.attribute("color").as_string(), str_child.attribute("size").as_float(), str_child.text().as_string() });
                     }
 
                     // Remove space or return line if exist on target
-                    if (!target[title_id][frame].empty()) {
-                        if (target[title_id][frame].find('\n') != std::string::npos)
-                            target[title_id][frame].erase(remove(target[title_id][frame].begin(), target[title_id][frame].end(), '\n'), target[title_id][frame].end());
-                        target[title_id][frame].erase(remove_if(target[title_id][frame].begin(), target[title_id][frame].end(), isspace), target[title_id][frame].end());
+                    if (!target[app_path][frame].empty()) {
+                        if (target[app_path][frame].find('\n') != std::string::npos)
+                            target[app_path][frame].erase(remove(target[app_path][frame].begin(), target[app_path][frame].end(), '\n'), target[app_path][frame].end());
+                        target[app_path][frame].erase(remove_if(target[app_path][frame].begin(), target[app_path][frame].end(), isspace), target[app_path][frame].end());
                     }
                 }
             }
 
             for (auto &item : items_name) {
-                current_item[title_id][item.first] = 0;
+                current_item[app_path][item.first] = 0;
                 if (!item.second["background"].empty()) {
                     for (auto &bg_name : item.second["background"])
-                        gui.live_items[title_id][item.first]["background"].push_back({});
+                        gui.live_items[app_path][item.first]["background"].push_back({});
                 }
                 if (!item.second["image"].empty()) {
                     for (auto &img_name : item.second["image"])
-                        gui.live_items[title_id][item.first]["image"].push_back({});
+                        gui.live_items[app_path][item.first]["image"].push_back({});
                 }
             }
 
@@ -859,23 +859,23 @@ void init_live_area(GuiState &gui, HostState &host) {
                             vfs::FileBuffer buffer;
 
                             if (app_device == VitaIoDevice::vs0)
-                                vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + title_id + "/sce_sys/livearea/contents/" + bg_name);
+                                vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + bg_name);
                             else
-                                vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/" + bg_name);
+                                vfs::read_app_file(buffer, host.pref_path, app_path, "sce_sys/livearea/contents/" + bg_name);
 
                             if (buffer.empty()) {
-                                if ((title_id.find("PCS") != std::string::npos) || (title_id.find("NPXS") != std::string::npos))
-                                    LOG_WARN("background, Id: {}, Name: '{}', Not found for title: {} [{}].", item.first, bg_name, title_id, host.app_title);
+                                if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
+                                    LOG_WARN("background, Id: {}, Name: '{}', Not found for title: {} [{}].", item.first, bg_name, app_path, host.app_title);
                                 continue;
                             }
                             stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                             if (!data) {
-                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, title_id, host.app_title);
+                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, app_path, host.app_title);
                                 continue;
                             }
 
-                            items[title_id][item.first]["background"]["size"] = ImVec2(float(width), float(height));
-                            gui.live_items[title_id][item.first]["background"][pos].init(gui.imgui_state.get(), data, width, height);
+                            items[app_path][item.first]["background"]["size"] = ImVec2(float(width), float(height));
+                            gui.live_items[app_path][item.first]["background"][pos].init(gui.imgui_state.get(), data, width, height);
                             stbi_image_free(data);
                         }
                     }
@@ -897,23 +897,23 @@ void init_live_area(GuiState &gui, HostState &host) {
                             vfs::FileBuffer buffer;
 
                             if (app_device == VitaIoDevice::vs0)
-                                vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + title_id + "/sce_sys/livearea/contents/" + img_name);
+                                vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + img_name);
                             else
-                                vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/livearea/contents/" + img_name);
+                                vfs::read_app_file(buffer, host.pref_path, app_path, "sce_sys/livearea/contents/" + img_name);
 
                             if (buffer.empty()) {
-                                if ((title_id.find("PCS") != std::string::npos) || (title_id.find("NPXS") != std::string::npos))
-                                    LOG_WARN("Image, Id: {} Name: '{}', Not found for title {} [{}].", item.first, img_name, title_id, host.app_title);
+                                if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
+                                    LOG_WARN("Image, Id: {} Name: '{}', Not found for title {} [{}].", item.first, img_name, app_path, host.app_title);
                                 continue;
                             }
                             stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                             if (!data) {
-                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, title_id, host.app_title);
+                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, app_path, host.app_title);
                                 continue;
                             }
 
-                            items[title_id][item.first]["image"]["size"] = ImVec2(float(width), float(height));
-                            gui.live_items[title_id][item.first]["image"][pos].init(gui.imgui_state.get(), data, width, height);
+                            items[app_path][item.first]["image"]["size"] = ImVec2(float(width), float(height));
+                            gui.live_items[app_path][item.first]["image"][pos].init(gui.imgui_state.get(), data, width, height);
                             stbi_image_free(data);
                         }
                     }
@@ -921,8 +921,8 @@ void init_live_area(GuiState &gui, HostState &host) {
             }
         }
     }
-    if (type[title_id].empty())
-        type[title_id] = "a1";
+    if (type[app_path].empty())
+        type[app_path] = "a1";
 }
 
 inline uint64_t current_time() {
@@ -936,8 +936,8 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
     const auto MENUBAR_HEIGHT = 32.f * scal.y;
 
-    const auto title_id = gui.apps_list_opened[gui.current_app_selected];
-    const VitaIoDevice app_device = title_id.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
+    const auto app_path = gui.apps_list_opened[gui.current_app_selected];
+    const VitaIoDevice app_device = app_path.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
     const auto is_background = (gui.users[host.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
@@ -956,44 +956,44 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     const auto pos_bg = ImVec2(display_size.x - background_pos.x, display_size.y - background_pos.y);
     const auto background_size = ImVec2(840.0f * scal.x, 500.0f * scal.y);
 
-    if (gui.live_area_contents[title_id].find("livearea-background") != gui.live_area_contents[title_id].end())
-        ImGui::GetWindowDrawList()->AddImage(gui.live_area_contents[title_id]["livearea-background"], pos_bg, ImVec2(pos_bg.x + background_size.x, pos_bg.y + background_size.y));
+    if (gui.live_area_contents[app_path].find("livearea-background") != gui.live_area_contents[app_path].end())
+        ImGui::GetWindowDrawList()->AddImage(gui.live_area_contents[app_path]["livearea-background"], pos_bg, ImVec2(pos_bg.x + background_size.x, pos_bg.y + background_size.y));
     else
         ImGui::GetWindowDrawList()->AddRectFilled(pos_bg, ImVec2(pos_bg.x + background_size.x, pos_bg.y + background_size.y), IM_COL32(148.f, 164.f, 173.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
-    for (const auto &frame : frames[title_id]) {
+    for (const auto &frame : frames[app_path]) {
         if (frame.autoflip != 0) {
-            if (last_time[title_id][frame.id] == 0)
-                last_time[title_id][frame.id] = current_time();
+            if (last_time[app_path][frame.id] == 0)
+                last_time[app_path][frame.id] = current_time();
 
-            while (last_time[title_id][frame.id] + frame.autoflip < current_time()) {
-                last_time[title_id][frame.id] += frame.autoflip;
+            while (last_time[app_path][frame.id] + frame.autoflip < current_time()) {
+                last_time[app_path][frame.id] += frame.autoflip;
 
-                if (gui.live_items[title_id][frame.id].find("background") != gui.live_items[title_id][frame.id].end()) {
-                    if (current_item[title_id][frame.id] != int(gui.live_items[title_id][frame.id]["background"].size()) - 1)
-                        ++current_item[title_id][frame.id];
+                if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end()) {
+                    if (current_item[app_path][frame.id] != int(gui.live_items[app_path][frame.id]["background"].size()) - 1)
+                        ++current_item[app_path][frame.id];
                     else
-                        current_item[title_id][frame.id] = 0;
-                } else if (gui.live_items[title_id][frame.id].find("image") != gui.live_items[title_id][frame.id].end()) {
-                    if (current_item[title_id][frame.id] != int(gui.live_items[title_id][frame.id]["image"].size()) - 1)
-                        ++current_item[title_id][frame.id];
+                        current_item[app_path][frame.id] = 0;
+                } else if (gui.live_items[app_path][frame.id].find("image") != gui.live_items[app_path][frame.id].end()) {
+                    if (current_item[app_path][frame.id] != int(gui.live_items[app_path][frame.id]["image"].size()) - 1)
+                        ++current_item[app_path][frame.id];
                     else
-                        current_item[title_id][frame.id] = 0;
+                        current_item[app_path][frame.id] = 0;
                 }
             }
         }
 
-        if (type[title_id] == "psmobile") {
-            LOG_WARN_IF(items_pos[type[title_id]][frame.id].empty(), "Info not found for {}, with {}, on title: {}",
-                type[title_id], frame.id, title_id);
+        if (type[app_path] == "psmobile") {
+            LOG_WARN_IF(items_pos[type[app_path]][frame.id].empty(), "Info not found for {}, with {}, on title: {}",
+                type[app_path], frame.id, app_path);
         }
 
-        const auto FRAME_SIZE = items_pos[type[title_id]][frame.id]["size"];
+        const auto FRAME_SIZE = items_pos[type[app_path]][frame.id]["size"];
 
-        auto FRAME_POS = ImVec2(items_pos[type[title_id]][frame.id]["pos"].x * scal.x,
-            items_pos[type[title_id]][frame.id]["pos"].y * scal.y);
+        auto FRAME_POS = ImVec2(items_pos[type[app_path]][frame.id]["pos"].x * scal.x,
+            items_pos[type[app_path]][frame.id]["pos"].y * scal.y);
 
-        auto bg_size = items[title_id][frame.id]["background"]["size"];
+        auto bg_size = items[app_path][frame.id]["background"]["size"];
 
         // Resize items
         const auto bg_resize = ImVec2(bg_size.x / FRAME_SIZE.x, bg_size.y / FRAME_SIZE.y);
@@ -1002,7 +1002,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         if (bg_size.y > FRAME_SIZE.y)
             bg_size.y /= bg_resize.y;
 
-        auto img_size = items[title_id][frame.id]["image"]["size"];
+        auto img_size = items[app_path][frame.id]["image"]["size"];
         const auto img_resize = ImVec2(img_size.x / FRAME_SIZE.x, img_size.y / FRAME_SIZE.y);
         if (img_size.x > FRAME_SIZE.x)
             img_size.x /= img_resize.x;
@@ -1014,34 +1014,34 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         auto img_pos_init = ImVec2((FRAME_SIZE.x - img_size.x) / 2.f, (FRAME_SIZE.y - img_size.y) / 2.f);
 
         // Allign items
-        if ((liveitem[title_id][frame.id]["background"]["align"].second == "left") && (liveitem[title_id][frame.id]["background"]["x"].first >= 0))
+        if ((liveitem[app_path][frame.id]["background"]["align"].second == "left") && (liveitem[app_path][frame.id]["background"]["x"].first >= 0))
             bg_pos_init.x = 0.0f;
-        else if ((liveitem[title_id][frame.id]["background"]["align"].second == "right") && (liveitem[title_id][frame.id]["background"]["x"].first <= 0))
+        else if ((liveitem[app_path][frame.id]["background"]["align"].second == "right") && (liveitem[app_path][frame.id]["background"]["x"].first <= 0))
             bg_pos_init.x = FRAME_SIZE.x - bg_size.x;
         else
-            bg_pos_init.x += liveitem[title_id][frame.id]["background"]["x"].first;
+            bg_pos_init.x += liveitem[app_path][frame.id]["background"]["x"].first;
 
-        if ((liveitem[title_id][frame.id]["image"]["align"].second == "left") && (liveitem[title_id][frame.id]["image"]["x"].first >= 0))
+        if ((liveitem[app_path][frame.id]["image"]["align"].second == "left") && (liveitem[app_path][frame.id]["image"]["x"].first >= 0))
             img_pos_init.x = 0.0f;
-        else if ((liveitem[title_id][frame.id]["image"]["align"].second == "right") && (liveitem[title_id][frame.id]["image"]["x"].first <= 0))
+        else if ((liveitem[app_path][frame.id]["image"]["align"].second == "right") && (liveitem[app_path][frame.id]["image"]["x"].first <= 0))
             img_pos_init.x = FRAME_SIZE.x - img_size.x;
         else
-            img_pos_init.x += liveitem[title_id][frame.id]["image"]["x"].first;
+            img_pos_init.x += liveitem[app_path][frame.id]["image"]["x"].first;
 
         // Valign items
-        if ((liveitem[title_id][frame.id]["background"]["valign"].second == "top") && (liveitem[title_id][frame.id]["background"]["y"].first <= 0))
+        if ((liveitem[app_path][frame.id]["background"]["valign"].second == "top") && (liveitem[app_path][frame.id]["background"]["y"].first <= 0))
             bg_pos_init.y = 0.0f;
-        else if ((liveitem[title_id][frame.id]["background"]["valign"].second == "bottom") && (liveitem[title_id][frame.id]["background"]["y"].first >= 0))
+        else if ((liveitem[app_path][frame.id]["background"]["valign"].second == "bottom") && (liveitem[app_path][frame.id]["background"]["y"].first >= 0))
             bg_pos_init.y = FRAME_SIZE.y - bg_size.y;
         else
-            bg_pos_init.y -= liveitem[title_id][frame.id]["background"]["y"].first;
+            bg_pos_init.y -= liveitem[app_path][frame.id]["background"]["y"].first;
 
-        if ((liveitem[title_id][frame.id]["image"]["valign"].second == "top") && (liveitem[title_id][frame.id]["image"]["y"].first <= 0))
+        if ((liveitem[app_path][frame.id]["image"]["valign"].second == "top") && (liveitem[app_path][frame.id]["image"]["y"].first <= 0))
             img_pos_init.y = 0.0f;
-        else if ((liveitem[title_id][frame.id]["image"]["valign"].second == "bottom") && (liveitem[title_id][frame.id]["image"]["y"].first >= 0))
+        else if ((liveitem[app_path][frame.id]["image"]["valign"].second == "bottom") && (liveitem[app_path][frame.id]["image"]["y"].first >= 0))
             img_pos_init.y = FRAME_SIZE.y - img_size.y;
         else
-            img_pos_init.y -= liveitem[title_id][frame.id]["image"]["y"].first;
+            img_pos_init.y -= liveitem[app_path][frame.id]["image"]["y"].first;
 
         // Set items pos
         auto bg_pos = ImVec2((display_size.x - FRAME_POS.x) + (bg_pos_init.x * scal.x), (display_size.y - FRAME_POS.y) + (bg_pos_init.y * scal.y));
@@ -1089,26 +1089,26 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             img_pos.y += pos_frame.y - img_pos.y;
 
         // Display items
-        if (gui.live_items[title_id][frame.id].find("background") != gui.live_items[title_id][frame.id].end()) {
+        if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end()) {
             ImGui::SetCursorPos(bg_pos);
-            ImGui::Image(gui.live_items[title_id][frame.id]["background"][current_item[title_id][frame.id]], bg_scal_size);
+            ImGui::Image(gui.live_items[app_path][frame.id]["background"][current_item[app_path][frame.id]], bg_scal_size);
         }
-        if (gui.live_items[title_id][frame.id].find("image") != gui.live_items[title_id][frame.id].end()) {
+        if (gui.live_items[app_path][frame.id].find("image") != gui.live_items[app_path][frame.id].end()) {
             ImGui::SetCursorPos(img_pos);
-            ImGui::Image(gui.live_items[title_id][frame.id]["image"][current_item[title_id][frame.id]], img_scal_size);
+            ImGui::Image(gui.live_items[app_path][frame.id]["image"][current_item[app_path][frame.id]], img_scal_size);
         }
 
         // Target link
-        if (!target[title_id][frame.id].empty() && (target[title_id][frame.id].find("psts:") == std::string::npos)) {
+        if (!target[app_path][frame.id].empty() && (target[app_path][frame.id].find("psts:") == std::string::npos)) {
             ImGui::SetCursorPos(pos_frame);
             ImGui::PushID(frame.id.c_str());
             if (ImGui::Selectable("##target_link", false, ImGuiSelectableFlags_None, scal_size_frame))
-                system((OS_PREFIX + target[title_id][frame.id]).c_str());
+                system((OS_PREFIX + target[app_path][frame.id]).c_str());
             ImGui::PopID();
         }
 
         // Text
-        for (const auto &str_tag : str[title_id][frame.id]) {
+        for (const auto &str_tag : str[app_path][frame.id]) {
             if (!str_tag.text.empty()) {
                 std::vector<ImVec4> str_color;
 
@@ -1116,7 +1116,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                     int color;
 
                     if (frame.autoflip != 0)
-                        sscanf(str[title_id][frame.id][current_item[title_id][frame.id]].color.c_str(), "#%x", &color);
+                        sscanf(str[app_path][frame.id][current_item[app_path][frame.id]].color.c_str(), "#%x", &color);
                     else
                         sscanf(str_tag.color.c_str(), "#%x", &color);
 
@@ -1127,15 +1127,15 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                 auto str_size = scal_size_frame, text_pos = pos_frame;
 
                 // Origin
-                if (liveitem[title_id][frame.id]["text"]["origin"].second.empty() || (liveitem[title_id][frame.id]["text"]["origin"].second == "background")) {
-                    if (gui.live_items[title_id][frame.id].find("background") != gui.live_items[title_id][frame.id].end())
+                if (liveitem[app_path][frame.id]["text"]["origin"].second.empty() || (liveitem[app_path][frame.id]["text"]["origin"].second == "background")) {
+                    if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end())
                         str_size = bg_scal_size, text_pos = bg_pos;
-                    else if (!liveitem[title_id][frame.id]["text"]["origin"].second.empty() && (gui.live_items[title_id][frame.id].find("image") != gui.live_items[title_id][frame.id].end()))
+                    else if (!liveitem[app_path][frame.id]["text"]["origin"].second.empty() && (gui.live_items[app_path][frame.id].find("image") != gui.live_items[app_path][frame.id].end()))
                         str_size = img_scal_size, text_pos = img_pos;
-                } else if (liveitem[title_id][frame.id]["text"]["origin"].second == "image") {
-                    if (gui.live_items[title_id][frame.id].find("image") != gui.live_items[title_id][frame.id].end())
+                } else if (liveitem[app_path][frame.id]["text"]["origin"].second == "image") {
+                    if (gui.live_items[app_path][frame.id].find("image") != gui.live_items[app_path][frame.id].end())
                         str_size = img_scal_size, text_pos = img_pos;
-                    else if (gui.live_items[title_id][frame.id].find("background") != gui.live_items[title_id][frame.id].end())
+                    else if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end())
                         str_size = bg_scal_size, text_pos = bg_pos;
                 }
 
@@ -1144,20 +1144,20 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                     size_text = str_tag.size; // TODO multiple size on same frame
 
                 auto str_wrap = scal_size_frame.x;
-                if (liveitem[title_id][frame.id]["text"]["allign"].second == "outside-right")
+                if (liveitem[app_path][frame.id]["text"]["allign"].second == "outside-right")
                     str_wrap = str_size.x;
 
-                if (liveitem[title_id][frame.id]["text"]["width"].first > 0) {
-                    if (liveitem[title_id][frame.id]["text"]["word-wrap"].second != "off")
-                        str_wrap = float(liveitem[title_id][frame.id]["text"]["width"].first) * scal.x;
-                    text_pos.x += (str_size.x - (float(liveitem[title_id][frame.id]["text"]["width"].first) * scal.x)) / 2.f;
-                    str_size.x = float(liveitem[title_id][frame.id]["text"]["width"].first) * scal.x;
+                if (liveitem[app_path][frame.id]["text"]["width"].first > 0) {
+                    if (liveitem[app_path][frame.id]["text"]["word-wrap"].second != "off")
+                        str_wrap = float(liveitem[app_path][frame.id]["text"]["width"].first) * scal.x;
+                    text_pos.x += (str_size.x - (float(liveitem[app_path][frame.id]["text"]["width"].first) * scal.x)) / 2.f;
+                    str_size.x = float(liveitem[app_path][frame.id]["text"]["width"].first) * scal.x;
                 }
 
-                if ((liveitem[title_id][frame.id]["text"]["height"].first > 0)
-                    && ((liveitem[title_id][frame.id]["text"]["word-scroll"].second == "on" || liveitem[title_id][frame.id]["text"]["height"].first <= FRAME_SIZE.y))) {
-                    text_pos.y += (str_size.y - (float(liveitem[title_id][frame.id]["text"]["height"].first) * scal.y)) / 2.f;
-                    str_size.y = float(liveitem[title_id][frame.id]["text"]["height"].first) * scal.y;
+                if ((liveitem[app_path][frame.id]["text"]["height"].first > 0)
+                    && ((liveitem[app_path][frame.id]["text"]["word-scroll"].second == "on" || liveitem[app_path][frame.id]["text"]["height"].first <= FRAME_SIZE.y))) {
+                    text_pos.y += (str_size.y - (float(liveitem[app_path][frame.id]["text"]["height"].first) * scal.y)) / 2.f;
+                    str_size.y = float(liveitem[app_path][frame.id]["text"]["height"].first) * scal.y;
                 }
 
                 const auto scal_font_size = size_text / ImGui::GetFontSize();
@@ -1166,34 +1166,34 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                 // Calcule text pixel size
                 ImVec2 calc_text_size;
                 if (frame.autoflip > 0) {
-                    if (liveitem[title_id][frame.id]["text"]["word-wrap"].second != "off")
-                        calc_text_size = ImGui::CalcTextSize(str[title_id][frame.id][current_item[title_id][frame.id]].text.c_str(), 0, false, str_wrap);
+                    if (liveitem[app_path][frame.id]["text"]["word-wrap"].second != "off")
+                        calc_text_size = ImGui::CalcTextSize(str[app_path][frame.id][current_item[app_path][frame.id]].text.c_str(), 0, false, str_wrap);
                     else
-                        calc_text_size = ImGui::CalcTextSize(str[title_id][frame.id][current_item[title_id][frame.id]].text.c_str());
+                        calc_text_size = ImGui::CalcTextSize(str[app_path][frame.id][current_item[app_path][frame.id]].text.c_str());
                 } else {
-                    if (liveitem[title_id][frame.id]["text"]["word-wrap"].second != "off")
+                    if (liveitem[app_path][frame.id]["text"]["word-wrap"].second != "off")
                         calc_text_size = ImGui::CalcTextSize(str_tag.text.c_str(), 0, false, str_wrap);
                     else
                         calc_text_size = ImGui::CalcTextSize(str_tag.text.c_str());
                 }
 
-                /*if (liveitem[title_id][frame.id]["text"]["ellipsis"].second == "on") {
+                /*if (liveitem[app_path][frame.id]["text"]["ellipsis"].second == "on") {
                     // TODO ellipsis
                 }*/
 
                 ImVec2 str_pos_init;
 
                 // Allign
-                if (liveitem[title_id][frame.id]["text"]["align"].second.empty()) {
-                    if (liveitem[title_id][frame.id]["text"]["text-align"].second.empty()) {
-                        if (liveitem[title_id][frame.id]["text"]["line-align"].second == "left")
+                if (liveitem[app_path][frame.id]["text"]["align"].second.empty()) {
+                    if (liveitem[app_path][frame.id]["text"]["text-align"].second.empty()) {
+                        if (liveitem[app_path][frame.id]["text"]["line-align"].second == "left")
                             str_pos_init.x = 0.f;
-                        else if (liveitem[title_id][frame.id]["text"]["line-align"].second == "right")
+                        else if (liveitem[app_path][frame.id]["text"]["line-align"].second == "right")
                             str_pos_init.x = str_size.x - calc_text_size.x;
-                        else if (liveitem[title_id][frame.id]["text"]["line-align"].second == "outside-right") {
+                        else if (liveitem[app_path][frame.id]["text"]["line-align"].second == "outside-right") {
                             text_pos.x += str_size.x;
-                            if (liveitem[title_id][frame.id]["text"]["origin"].second == "image") {
-                                if (gui.live_items[title_id][frame.id].find("background") != gui.live_items[title_id][frame.id].end())
+                            if (liveitem[app_path][frame.id]["text"]["origin"].second == "image") {
+                                if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end())
                                     str_size.x = bg_scal_size.x - img_scal_size.x - (img_pos.x - bg_pos.x);
                                 else
                                     str_size = scal_size_frame, text_pos = pos_frame;
@@ -1201,17 +1201,17 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                         } else
                             str_pos_init.x = (str_size.x - calc_text_size.x) / 2.0f;
                     } else {
-                        if ((liveitem[title_id][frame.id]["text"]["text-align"].second == "center")
-                            || ((liveitem[title_id][frame.id]["text"]["text-align"].second == "left") && (liveitem[title_id][frame.id]["text"]["x"].first < 0)))
+                        if ((liveitem[app_path][frame.id]["text"]["text-align"].second == "center")
+                            || ((liveitem[app_path][frame.id]["text"]["text-align"].second == "left") && (liveitem[app_path][frame.id]["text"]["x"].first < 0)))
                             str_pos_init.x = (str_size.x - calc_text_size.x) / 2.0f;
-                        else if (liveitem[title_id][frame.id]["text"]["text-align"].second == "left")
+                        else if (liveitem[app_path][frame.id]["text"]["text-align"].second == "left")
                             str_pos_init.x = 0.f;
-                        else if (liveitem[title_id][frame.id]["text"]["text-align"].second == "right")
+                        else if (liveitem[app_path][frame.id]["text"]["text-align"].second == "right")
                             str_pos_init.x = str_size.x - calc_text_size.x;
-                        else if (liveitem[title_id][frame.id]["text"]["text-align"].second == "outside-right") {
+                        else if (liveitem[app_path][frame.id]["text"]["text-align"].second == "outside-right") {
                             text_pos.x += str_size.x;
-                            if (liveitem[title_id][frame.id]["text"]["origin"].second == "image") {
-                                if (gui.live_items[title_id][frame.id].find("background") != gui.live_items[title_id][frame.id].end())
+                            if (liveitem[app_path][frame.id]["text"]["origin"].second == "image") {
+                                if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end())
                                     str_size.x = bg_scal_size.x - img_scal_size.x - (img_pos.x - bg_pos.x);
                                 else
                                     str_size = scal_size_frame, text_pos = pos_frame;
@@ -1219,16 +1219,16 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                         }
                     }
                 } else {
-                    if (liveitem[title_id][frame.id]["text"]["align"].second == "center")
+                    if (liveitem[app_path][frame.id]["text"]["align"].second == "center")
                         str_pos_init.x = (str_size.x - calc_text_size.x) / 2.0f;
-                    else if (liveitem[title_id][frame.id]["text"]["align"].second == "left")
+                    else if (liveitem[app_path][frame.id]["text"]["align"].second == "left")
                         str_pos_init.x = 0.f;
-                    else if (liveitem[title_id][frame.id]["text"]["align"].second == "right")
+                    else if (liveitem[app_path][frame.id]["text"]["align"].second == "right")
                         str_pos_init.x = str_size.x - calc_text_size.x;
-                    else if (liveitem[title_id][frame.id]["text"]["align"].second == "outside-right") {
+                    else if (liveitem[app_path][frame.id]["text"]["align"].second == "outside-right") {
                         text_pos.x += str_size.x;
-                        if (liveitem[title_id][frame.id]["text"]["origin"].second == "image") {
-                            if (gui.live_items[title_id][frame.id].find("background") != gui.live_items[title_id][frame.id].end())
+                        if (liveitem[app_path][frame.id]["text"]["origin"].second == "image") {
+                            if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end())
                                 str_size.x = bg_scal_size.x - img_scal_size.x - (img_pos.x - bg_pos.x);
                             else
                                 str_size = scal_size_frame, text_pos = pos_frame;
@@ -1237,45 +1237,45 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                 }
 
                 // Valign
-                if (liveitem[title_id][frame.id]["text"]["valign"].second.empty()) {
-                    if (liveitem[title_id][frame.id]["text"]["text-valign"].second.empty() || (liveitem[title_id][frame.id]["text"]["text-valign"].second == "center"))
+                if (liveitem[app_path][frame.id]["text"]["valign"].second.empty()) {
+                    if (liveitem[app_path][frame.id]["text"]["text-valign"].second.empty() || (liveitem[app_path][frame.id]["text"]["text-valign"].second == "center"))
                         str_pos_init.y = (str_size.y - calc_text_size.y) / 2.f;
-                    else if (liveitem[title_id][frame.id]["text"]["text-valign"].second == "bottom")
+                    else if (liveitem[app_path][frame.id]["text"]["text-valign"].second == "bottom")
                         str_pos_init.y = str_size.y - calc_text_size.y;
-                    else if (liveitem[title_id][frame.id]["text"]["text-valign"].second == "top")
+                    else if (liveitem[app_path][frame.id]["text"]["text-valign"].second == "top")
                         str_pos_init.y = 0.f;
                 } else {
-                    if ((liveitem[title_id][frame.id]["text"]["valign"].second == "center")
-                        || ((liveitem[title_id][frame.id]["text"]["valign"].second == "bottom") && (liveitem[title_id][frame.id]["text"]["y"].first != 0))
-                        || ((liveitem[title_id][frame.id]["text"]["valign"].second == "top") && (liveitem[title_id][frame.id]["text"]["y"].first != 0)))
+                    if ((liveitem[app_path][frame.id]["text"]["valign"].second == "center")
+                        || ((liveitem[app_path][frame.id]["text"]["valign"].second == "bottom") && (liveitem[app_path][frame.id]["text"]["y"].first != 0))
+                        || ((liveitem[app_path][frame.id]["text"]["valign"].second == "top") && (liveitem[app_path][frame.id]["text"]["y"].first != 0)))
                         str_pos_init.y = (str_size.y - calc_text_size.y) / 2.f;
-                    else if (liveitem[title_id][frame.id]["text"]["valign"].second == "bottom")
+                    else if (liveitem[app_path][frame.id]["text"]["valign"].second == "bottom")
                         str_pos_init.y = str_size.y - calc_text_size.y;
-                    else if (liveitem[title_id][frame.id]["text"]["valign"].second == "top") {
+                    else if (liveitem[app_path][frame.id]["text"]["valign"].second == "top") {
                         str_pos_init.y = 0.f;
-                    } else if (liveitem[title_id][frame.id]["text"]["valign"].second == "outside-top") {
+                    } else if (liveitem[app_path][frame.id]["text"]["valign"].second == "outside-top") {
                         str_pos_init.y = 0.f;
                     }
                 }
 
-                auto pos_str = ImVec2(str_pos_init.x, str_pos_init.y - (liveitem[title_id][frame.id]["text"]["y"].first * scal.y));
+                auto pos_str = ImVec2(str_pos_init.x, str_pos_init.y - (liveitem[app_path][frame.id]["text"]["y"].first * scal.y));
 
-                if (liveitem[title_id][frame.id]["text"]["x"].first > 0) {
-                    text_pos.x += liveitem[title_id][frame.id]["text"]["x"].first * scal.x;
-                    str_size.x -= liveitem[title_id][frame.id]["text"]["x"].first * scal.x;
+                if (liveitem[app_path][frame.id]["text"]["x"].first > 0) {
+                    text_pos.x += liveitem[app_path][frame.id]["text"]["x"].first * scal.x;
+                    str_size.x -= liveitem[app_path][frame.id]["text"]["x"].first * scal.x;
                 }
 
-                if ((liveitem[title_id][frame.id]["text"]["margin-left"].first > 0) && !liveitem[title_id][frame.id]["text"]["width"].first) {
-                    text_pos.x += liveitem[title_id][frame.id]["text"]["margin-left"].first * scal.x;
-                    str_size.x -= liveitem[title_id][frame.id]["text"]["margin-left"].first * scal.x;
+                if ((liveitem[app_path][frame.id]["text"]["margin-left"].first > 0) && !liveitem[app_path][frame.id]["text"]["width"].first) {
+                    text_pos.x += liveitem[app_path][frame.id]["text"]["margin-left"].first * scal.x;
+                    str_size.x -= liveitem[app_path][frame.id]["text"]["margin-left"].first * scal.x;
                 }
 
-                if (liveitem[title_id][frame.id]["text"]["margin-right"].first > 0)
-                    str_size.x -= liveitem[title_id][frame.id]["text"]["margin-right"].first * scal.x;
+                if (liveitem[app_path][frame.id]["text"]["margin-right"].first > 0)
+                    str_size.x -= liveitem[app_path][frame.id]["text"]["margin-right"].first * scal.x;
 
-                if (liveitem[title_id][frame.id]["text"]["margin-top"].first > 0) {
-                    text_pos.y += liveitem[title_id][frame.id]["text"]["margin-top"].first * scal.y;
-                    str_size.y -= liveitem[title_id][frame.id]["text"]["margin-top"].first * scal.y;
+                if (liveitem[app_path][frame.id]["text"]["margin-top"].first > 0) {
+                    text_pos.y += liveitem[app_path][frame.id]["text"]["margin-top"].first * scal.y;
+                    str_size.y -= liveitem[app_path][frame.id]["text"]["margin-top"].first * scal.y;
                 }
 
                 // Text Display
@@ -1283,44 +1283,44 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                 // TODO Correct display few line on same frame, used by eg: Asphalt: Injection
                 ImGui::SetNextWindowPos(text_pos);
                 ImGui::BeginChild(frame.id.c_str(), str_size, false, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings);
-                if (liveitem[title_id][frame.id]["text"]["word-wrap"].second != "off")
+                if (liveitem[app_path][frame.id]["text"]["word-wrap"].second != "off")
                     ImGui::PushTextWrapPos(str_wrap);
-                if (liveitem[title_id][frame.id]["text"]["word-scroll"].second == "on") {
+                if (liveitem[app_path][frame.id]["text"]["word-scroll"].second == "on") {
                     static std::map<std::string, std::map<std::string, std::pair<bool, float>>> scroll;
-                    if (liveitem[title_id][frame.id]["text"]["word-wrap"].second == "off") {
-                        if (scroll[title_id][frame.id].first) {
-                            if (scroll[title_id][frame.id].second >= 0.f)
-                                scroll[title_id][frame.id].second -= 0.5f;
+                    if (liveitem[app_path][frame.id]["text"]["word-wrap"].second == "off") {
+                        if (scroll[app_path][frame.id].first) {
+                            if (scroll[app_path][frame.id].second >= 0.f)
+                                scroll[app_path][frame.id].second -= 0.5f;
                             else
-                                scroll[title_id][frame.id].first = false;
+                                scroll[app_path][frame.id].first = false;
                         } else {
-                            if (scroll[title_id][frame.id].second <= ImGui::GetScrollMaxX())
-                                scroll[title_id][frame.id].second += 0.5f;
+                            if (scroll[app_path][frame.id].second <= ImGui::GetScrollMaxX())
+                                scroll[app_path][frame.id].second += 0.5f;
                             else
-                                scroll[title_id][frame.id].first = true;
+                                scroll[app_path][frame.id].first = true;
                         }
-                        ImGui::SetScrollX(scroll[title_id][frame.id].second);
+                        ImGui::SetScrollX(scroll[app_path][frame.id].second);
                     } else {
-                        if (scroll[title_id][frame.id].first) {
-                            if (scroll[title_id][frame.id].second >= 0.f)
-                                scroll[title_id][frame.id].second -= 0.5f;
+                        if (scroll[app_path][frame.id].first) {
+                            if (scroll[app_path][frame.id].second >= 0.f)
+                                scroll[app_path][frame.id].second -= 0.5f;
                             else
-                                scroll[title_id][frame.id].first = false;
+                                scroll[app_path][frame.id].first = false;
                         } else {
-                            if (scroll[title_id][frame.id].second <= ImGui::GetScrollMaxY())
-                                scroll[title_id][frame.id].second += 0.5f;
+                            if (scroll[app_path][frame.id].second <= ImGui::GetScrollMaxY())
+                                scroll[app_path][frame.id].second += 0.5f;
                             else
-                                scroll[title_id][frame.id].first = true;
+                                scroll[app_path][frame.id].first = true;
                         }
-                        ImGui::SetScrollY(scroll[title_id][frame.id].second);
+                        ImGui::SetScrollY(scroll[app_path][frame.id].second);
                     }
                 }
                 ImGui::SetCursorPos(pos_str);
                 if (frame.autoflip > 0)
-                    ImGui::TextColored(str_color[0], "%s", str[title_id][frame.id][current_item[title_id][frame.id]].text.c_str());
+                    ImGui::TextColored(str_color[0], "%s", str[app_path][frame.id][current_item[app_path][frame.id]].text.c_str());
                 else
                     ImGui::TextColored(str_color[0], "%s", str_tag.text.c_str());
-                if (liveitem[title_id][frame.id]["text"]["word-wrap"].second != "off")
+                if (liveitem[app_path][frame.id]["text"]["word-wrap"].second != "off")
                     ImGui::PopTextWrapPos();
                 ImGui::EndChild();
                 ImGui::SetWindowFontScale(1.f);
@@ -1331,9 +1331,9 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     const auto scal_default_font = 25.f * (ImGui::GetFontSize() / 19.2f);
     const auto scal_font_size = scal_default_font / ImGui::GetFontSize();
 
-    const std::string BUTTON_STR = title_id == host.io.title_id ? resume : start;
+    const std::string BUTTON_STR = app_path == host.io.app_path ? resume : start;
     const auto GATE_SIZE = ImVec2(280.0f * scal.x, 158.0f * scal.y);
-    const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[title_id]]["gate"]["pos"].x * scal.x), display_size.y - (items_pos[type[title_id]]["gate"]["pos"].y * scal.y));
+    const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[app_path]]["gate"]["pos"].x * scal.x), display_size.y - (items_pos[type[app_path]]["gate"]["pos"].y * scal.y));
     const auto START_SIZE = ImVec2((ImGui::CalcTextSize(BUTTON_STR.c_str()).x * scal_font_size), (ImGui::CalcTextSize(BUTTON_STR.c_str()).y * scal_font_size));
     const auto START_BUTTON_SIZE = ImVec2((START_SIZE.x + 26.0f) * scal.x, (START_SIZE.y + 5.0f) * scal.y);
     const auto POS_BUTTON = ImVec2((GATE_POS.x + (GATE_SIZE.x - START_BUTTON_SIZE.x) / 2.0f), (GATE_POS.y + (GATE_SIZE.y - START_BUTTON_SIZE.y) / 1.08f));
@@ -1345,22 +1345,26 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
     const auto BUTTON_SIZE = ImVec2(72.f * scal.x, 30.f * scal.y);
 
-    if (gui.live_area_contents[title_id].find("gate") != gui.live_area_contents[title_id].end()) {
+    if (gui.live_area_contents[app_path].find("gate") != gui.live_area_contents[app_path].end()) {
         ImGui::SetCursorPos(GATE_POS);
-        ImGui::Image(gui.live_area_contents[title_id]["gate"], GATE_SIZE);
+        ImGui::Image(gui.live_area_contents[app_path]["gate"], GATE_SIZE);
     }
-    ImGui::PushID(title_id.c_str());
+    ImGui::PushID(app_path.c_str());
     ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * scal.x, ImDrawCornerFlags_All);
     ImGui::GetWindowDrawList()->AddText(gui.vita_font, scal_default_font * scal.x, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
     ImGui::SetCursorPos(SELECT_POS);
-    if (ImGui::Selectable("##gate", false, ImGuiSelectableFlags_None, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))
-        pre_run_app(gui, host, title_id);
+    const auto is_enable = host.io.title_id.empty()
+        || (gui.apps_list_opened[gui.current_app_selected].find("NPXS") != std::string::npos)
+        || (gui.apps_list_opened[gui.current_app_selected] == host.io.title_id);
+    ImGui::SetCursorPos(SELECT_POS);
+    if (ImGui::Selectable("##gate", false, is_enable ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_Disabled, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))
+        pre_run_app(gui, host, app_path);
     ImGui::PopID();
     ImGui::GetWindowDrawList()->AddRect(GATE_POS, SIZE_GATE, IM_COL32(192, 192, 192, 255), 15.f, ImDrawCornerFlags_All, 12.f);
 
     if (app_device == VitaIoDevice::ux0) {
         const auto widget_scal_size = ImVec2(80.0f * scal.x, 80.f * scal.y);
-        const auto manual_path{ fs::path(host.pref_path) / "ux0/app" / title_id / "sce_sys/manual/" };
+        const auto manual_path{ fs::path(host.pref_path) / "ux0/app" / app_path / "sce_sys/manual/" };
         const auto scal_widget_font_size = 23.0f / ImGui::GetFontSize();
 
         auto search_pos = ImVec2(578.0f * scal.x, 505.0f * scal.y);
@@ -1394,7 +1398,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * scal.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
             ImGui::SetCursorPos(pos_scal_manual);
             if (ImGui::Selectable("##manual", ImGuiSelectableFlags_None, false, widget_scal_size)) {
-                if (init_manual(gui, host)) {
+                if (init_manual(gui, host, app_path)) {
                     gui.live_area.information_bar = false;
                     gui.live_area.live_area_screen = false;
                     gui.live_area.manual = true;
@@ -1406,10 +1410,10 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
     if (!gui.live_area.content_manager && !gui.live_area.manual) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f);
-        if (host.io.title_id != title_id) {
+        if (host.io.app_path != app_path) {
             ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * scal.x) - BUTTON_SIZE.x, 44.0f * scal.y));
             if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
-                gui.apps_list_opened.erase(get_app_open_list_index(gui, title_id));
+                gui.apps_list_opened.erase(get_app_open_list_index(gui, app_path));
                 if (gui.current_app_selected == 0) {
                     gui.live_area.live_area_screen = false;
                     gui.live_area.app_selector = true;

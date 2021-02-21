@@ -26,16 +26,17 @@
 
 namespace gui {
 
-void delete_app(GuiState &gui, HostState &host) {
-    const fs::path app_path{ fs::path(host.pref_path) / "ux0/app" / host.app_title_id };
+void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
+    const fs::path APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
+    const auto APP_INDEX = get_app_index(gui, app_path);
 
-    LOG_INFO_IF(fs::remove_all(app_path), "Application successfully deleted '{} [{}]'.", host.app_title_id, host.app_title);
+    LOG_INFO_IF(fs::remove_all(APP_PATH), "Application successfully deleted '{} [{}]'.", APP_INDEX->title_id, APP_INDEX->title);
 
     if (!fs::exists(app_path)) {
         gui.delete_app_icon = true;
-        gui.app_selector.user_apps.erase(get_app_index(gui, host.app_title_id));
+        gui.app_selector.user_apps.erase(APP_INDEX);
     } else
-        LOG_ERROR("Failed to delete '{} [{}]'.", host.app_title_id, host.app_title);
+        LOG_ERROR("Failed to delete '{} [{}]'.", APP_INDEX->title_id, APP_INDEX->title);
 }
 
 static std::map<double, std::string> update_history_infos;
@@ -96,11 +97,15 @@ static const char OS_PREFIX[] = "xdg-open ";
 static std::string context_dialog;
 static auto information = false;
 
-void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &title_id) {
-    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / title_id };
+void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &app_path) {
+    const auto APP_INDEX = get_app_index(gui, app_path);
+    const auto title_id = APP_INDEX->title_id;
+
+    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
     const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / title_id };
     const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / title_id };
     const auto SHADER_LOG_PATH{ fs::path(host.base_path) / "shaderlog" / title_id };
+
     auto lang = gui.lang.app_context;
     const auto is_lang = !lang.empty();
 
@@ -108,16 +113,16 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
         ImGui::SetWindowFontScale(1.3f);
         if (ImGui::MenuItem("Boot"))
-            pre_load_app(gui, host, false, title_id);
+            pre_load_app(gui, host, false, app_path);
         if (title_id.find("NPXS") == std::string::npos) {
             if (ImGui::MenuItem("Check App Compatibility")) {
-                const std::string compat_url = title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + host.app_title;
+                const std::string compat_url = title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + APP_INDEX->title;
                 system((OS_PREFIX + compat_url).c_str());
             }
             if (ImGui::BeginMenu("Copy App Info")) {
                 if (ImGui::MenuItem("ID and Name")) {
                     ImGui::LogToClipboard();
-                    ImGui::LogText("%s [%s]", title_id.c_str(), host.app_title.c_str());
+                    ImGui::LogText("%s [%s]", title_id.c_str(), APP_INDEX->title.c_str());
                     ImGui::LogFinish();
                 }
                 if (ImGui::MenuItem("ID")) {
@@ -127,7 +132,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
                 }
                 if (ImGui::MenuItem("Name")) {
                     ImGui::LogToClipboard();
-                    ImGui::LogText("%s", host.app_title.c_str());
+                    ImGui::LogText("%s", APP_INDEX->title.c_str());
                     ImGui::LogFinish();
                 }
                 ImGui::EndMenu();
@@ -164,8 +169,8 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
         }
         if (ImGui::MenuItem(is_lang ? lang["information"].c_str() : "Information", nullptr, &information)) {
             if (title_id.find("NPXS") == std::string::npos) {
-                get_app_info(gui, host, title_id);
-                const auto app_size = get_app_size(host, title_id);
+                get_app_info(gui, host, app_path);
+                const auto app_size = get_app_size(gui, host, app_path);
                 gui.app_selector.app_info.size = app_size;
             }
             gui.live_area.information_bar = false;
@@ -180,8 +185,6 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
     const auto BUTTON_SIZE = ImVec2(320.f * scal.x, 46.f * scal.y);
     const auto PUPOP_ICON_SIZE = ImVec2(96.f * scal.x, 96.f * scal.y);
     const auto INFO_ICON_SIZE = ImVec2(128.f * scal.x, 128.f * scal.y);
-
-    const auto app_index = get_app_index(gui, title_id);
 
     // Context Dialog
     if (!context_dialog.empty()) {
@@ -216,8 +219,8 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
                 ImGui::Image(gui.app_selector.user_apps_icon[title_id], PUPOP_ICON_SIZE);
             }
             ImGui::SetWindowFontScale(1.6f * scal.x);
-            ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(app_index->stitle.c_str()).x / 2.f));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_short_title.c_str());
+            ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(APP_INDEX->stitle.c_str()).x / 2.f));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->stitle.c_str());
             ImGui::SetWindowFontScale(1.4f * scal.x);
             const auto app_delete = is_lang ? lang["app_delete"] : "This application and all related data, including saved data, will be deleted.";
             const auto save_delete = is_lang ? lang["save_delete"] : "Do you want to delete this saved data?";
@@ -241,7 +244,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
                 fs::remove_all(DLC_PATH);
                 fs::remove_all(SAVE_DATA_PATH);
                 fs::remove_all(SHADER_LOG_PATH);
-                delete_app(gui, host);
+                delete_app(gui, host, app_path);
             } else if (context_dialog == "save")
                 fs::remove_all(SAVE_DATA_PATH);
             context_dialog.clear();
@@ -272,7 +275,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
         ImGui::TextColored(GUI_COLOR_TEXT, (name + " ").c_str());
         ImGui::SameLine();
         ImGui::PushTextWrapPos(display_size.x - (85.f * scal.x));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", app_index->title.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->title.c_str());
         ImGui::PopTextWrapPos();
         if (title_id.find("NPXS") == std::string::npos) {
             ImGui::Spacing();
@@ -285,7 +288,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
             const auto level = is_lang ? lang["level"] : "Level";
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", (parental_Controls + "  " + level).c_str());
             ImGui::SameLine();
-            ImGui::TextColored(GUI_COLOR_TEXT, "%d", *reinterpret_cast<const uint16_t *>(app_index->parental_level.c_str()));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%d", *reinterpret_cast<const uint16_t *>(APP_INDEX->parental_level.c_str()));
             ImGui::Spacing();
             const auto updated = is_lang ? lang["updated"] : "Updated";
             ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize((updated + "  ").c_str()).x));
@@ -302,7 +305,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ti
             ImGui::Spacing();
             const auto version = is_lang ? lang["version"] : "Version";
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((version + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (version + "  " + app_index->app_ver).c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (version + "  " + APP_INDEX->app_ver).c_str());
         }
         ImGui::End();
     }

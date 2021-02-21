@@ -29,8 +29,8 @@
 #include <util/safe_time.h>
 
 namespace gui {
-void get_app_info(GuiState &gui, HostState &host, const std::string &title_id) {
-    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / title_id };
+void get_app_info(GuiState &gui, HostState &host, const std::string &app_path) {
+    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
     gui.app_selector.app_info = {};
 
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
@@ -44,8 +44,8 @@ void get_app_info(GuiState &gui, HostState &host, const std::string &title_id) {
     }
 }
 
-size_t get_app_size(HostState &host, const std::string &title_id) {
-    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / title_id };
+size_t get_app_size(GuiState &gui, HostState &host, const std::string &app_path) {
+    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
     size_t app_size = 0;
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
         for (const auto &app : fs::recursive_directory_iterator(APP_PATH)) {
@@ -53,7 +53,7 @@ size_t get_app_size(HostState &host, const std::string &title_id) {
                 app_size += fs::file_size(app.path());
         }
     }
-    const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / title_id };
+    const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / get_app_index(gui, app_path)->title_id };
     if (fs::exists(DLC_PATH) && !fs::is_empty(DLC_PATH)) {
         for (const auto &dlc : fs::recursive_directory_iterator(DLC_PATH)) {
             if (fs::is_regular_file(dlc.path()))
@@ -130,8 +130,8 @@ void init_content_manager(GuiState &gui, HostState &host) {
 
     size_t apps_list_size = 0;
     for (const auto &app : gui.app_selector.user_apps) {
-        apps_size[app.title_id] = get_app_size(host, app.title_id);
-        apps_list_size += apps_size[app.title_id];
+        apps_size[app.path] = get_app_size(gui, host, app.path);
+        apps_list_size += apps_size[app.path];
     }
     space["app"] = apps_list_size ? get_unit_size(apps_list_size) : "-";
 
@@ -325,7 +325,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
         if (ImGui::Selectable("Themes", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT))) {
-            host.app_title_id = "NPXS10026";
+            host.app_path = "NPXS10026";
             gui.live_area.content_manager = false;
             pre_run_app(gui, host, "NPXS10015");
         }
@@ -417,13 +417,13 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 for (const auto &app : gui.app_selector.user_apps) {
                     if (!search_bar.PassFilter(app.title.c_str()) && !search_bar.PassFilter(app.stitle.c_str()) && !search_bar.PassFilter(app.title_id.c_str()))
                         continue;
-                    ImGui::PushID(app.title_id.c_str());
+                    ImGui::PushID(app.path.c_str());
                     ImGui::SetWindowFontScale(1.32f);
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (15.f * SCAL.y));
-                    ImGui::Checkbox("##selected", &contents_selected[app.title_id]);
+                    ImGui::Checkbox("##selected", &contents_selected[app.path]);
                     ImGui::NextColumn();
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (8.f * SCAL.y));
-                    ImGui::Image(gui.app_selector.user_apps_icon[app.title_id], SIZE_ICON_LIST);
+                    ImGui::Image(gui.app_selector.user_apps_icon[app.path], SIZE_ICON_LIST);
                     ImGui::NextColumn();
                     const auto Title_POS = ImGui::GetCursorPosY();
                     ImGui::SetWindowFontScale(1.1f);
@@ -431,14 +431,14 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", app.title.c_str());
                     ImGui::SetCursorPosY(Title_POS + (46.f * SCAL.y));
                     ImGui::SetWindowFontScale(0.8f);
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_unit_size(apps_size[app.title_id]).c_str());
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_unit_size(apps_size[app.path]).c_str());
                     ImGui::NextColumn();
                     ImGui::SetWindowFontScale(1.2f);
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (15.f * SCAL.y));
                     if (ImGui::Button("i", ImVec2(45.f * SCAL.x, 45.f * SCAL.y))) {
                         scroll_pos = ImGui::GetScrollY();
                         ImGui::SetScrollY(0.f);
-                        app_selected = app.title_id;
+                        app_selected = app.path;
                         get_app_info(gui, host, app_selected);
                         get_content_info(gui, host);
                         menu = "info";

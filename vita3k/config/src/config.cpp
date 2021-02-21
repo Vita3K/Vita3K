@@ -146,7 +146,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->default_str("")->group("Input");
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
-    input->add_option("--installed-id,-r", command_line.run_title_id, "Title ID of installed app to run")
+    input->add_option("--installed-path,-r", command_line.run_app_path, "Path of installed app to run")
         ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
@@ -233,7 +233,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         }
     }
 
-    if (cfg.console && (cfg.run_title_id || !cfg.vpk_path)) {
+    if (cfg.console && (cfg.run_app_path || !cfg.vpk_path)) {
         LOG_ERROR("Console mode only supports vpk for now");
         return InitConfigFailed;
     }
@@ -259,7 +259,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
 
         LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
-        LOG_INFO_IF(cfg.run_title_id, "input-installed-id: {}", *cfg.run_title_id);
+        LOG_INFO_IF(cfg.run_app_path, "input-installed-path: {}", *cfg.run_app_path);
         LOG_INFO("{}: {}", cfg[e_backend_renderer], cfg.backend_renderer);
         LOG_INFO("{}: {}", cfg[e_log_level], cfg.log_level);
         LOG_INFO_IF(cfg.log_imports, "{}: enabled", cfg[e_log_imports]);

@@ -61,8 +61,8 @@ private:
     void check_members(const Config &rhs) {
         if (rhs.vpk_path.is_initialized())
             vpk_path = rhs.vpk_path;
-        if (rhs.run_title_id.is_initialized())
-            run_title_id = rhs.run_title_id;
+        if (rhs.run_app_path.is_initialized())
+            run_app_path = rhs.run_app_path;
         if (rhs.recompile_shader_path.is_initialized())
             recompile_shader_path = rhs.recompile_shader_path;
         if (rhs.delete_title_id.is_initialized())
@@ -86,7 +86,7 @@ private:
 public:
     // Optional config settings
     optional<std::string> vpk_path;
-    optional<std::string> run_title_id;
+    optional<std::string> run_app_path;
     optional<std::string> recompile_shader_path;
     optional<std::string> delete_title_id;
     optional<std::string> pkg_path;

@@ -60,6 +60,7 @@ struct HostState {
     std::string app_short_title;
     std::string app_title;
     std::string app_title_id;
+    std::string app_path;
     std::string current_app_title;
     std::string base_path;
     std::string default_path;

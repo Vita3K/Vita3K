@@ -263,7 +263,7 @@ static auto pre_load_module(HostState &host, const std::vector<std::string> &lib
         const auto MODULE_PATH_ABS = fmt::format("{}:{}", device._to_string(), module_path);
 
         if (device == VitaIoDevice::app0)
-            res = vfs::read_app_file(module_buffer, host.pref_path, host.io.title_id, module_path);
+            res = vfs::read_app_file(module_buffer, host.pref_path, host.io.app_path, module_path);
         else
             res = vfs::read_file(device, module_buffer, host.pref_path, module_path);
 
@@ -334,7 +334,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     }
 
     // Load pre-loaded libraries
-    const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.title_id / "sce_module" };
+    const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.app_path / "sce_module" };
     const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);
     if (is_app) {
         // Load application module
@@ -369,7 +369,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     // Load main executable
     host.load_self_path = !host.cfg.self_path.empty() ? host.cfg.self_path : EBOOT_PATH;
     vfs::FileBuffer eboot_buffer;
-    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.title_id, host.load_self_path)) {
+    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.app_path, host.load_self_path)) {
         SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), "app0:" + host.load_self_path, host.cfg);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];
