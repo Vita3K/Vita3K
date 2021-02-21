@@ -70,8 +70,8 @@ bool read_file(const VitaIoDevice device, FileBuffer &buf, const std::wstring &p
     return true;
 }
 
-bool read_app_file(FileBuffer &buf, const std::wstring &pref_path, const std::string &title_id, const fs::path &vfs_file_path) {
-    return read_file(VitaIoDevice::ux0, buf, pref_path, fs::path("app") / title_id / vfs_file_path);
+bool read_app_file(FileBuffer &buf, const std::wstring &pref_path, const std::string &app_path, const fs::path &vfs_file_path) {
+    return read_file(VitaIoDevice::ux0, buf, pref_path, fs::path("app") / app_path / vfs_file_path);
 }
 
 SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path, const std::wstring &pref_path) {
@@ -135,7 +135,7 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path, boo
 
 void init_device_paths(IOState &io) {
     io.device_paths.savedata0 = "user/" + io.user_id + "/savedata/" + io.title_id;
-    io.device_paths.app0 = "app/" + io.title_id;
+    io.device_paths.app0 = "app/" + io.app_path;
     io.device_paths.addcont0 = "addcont/" + io.title_id;
 }
 

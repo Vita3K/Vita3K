@@ -66,47 +66,46 @@ bool refresh_app_list(GuiState &gui, HostState &host) {
     return true;
 }
 
-std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &title_id) {
-    return std::find(gui.apps_list_opened.begin(), gui.apps_list_opened.end(), title_id);
+std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &app_path) {
+    return std::find(gui.apps_list_opened.begin(), gui.apps_list_opened.end(), app_path);
 }
 
-void update_apps_list_opened(GuiState &gui, const std::string &title_id) {
-    if (get_app_open_list_index(gui, title_id) == gui.apps_list_opened.end())
-        gui.apps_list_opened.push_back(title_id);
-    gui.current_app_selected = int32_t(std::distance(gui.apps_list_opened.begin(), get_app_open_list_index(gui, title_id)));
+void update_apps_list_opened(GuiState &gui, const std::string &app_path) {
+    if (get_app_open_list_index(gui, app_path) == gui.apps_list_opened.end())
+        gui.apps_list_opened.push_back(app_path);
+    gui.current_app_selected = int32_t(std::distance(gui.apps_list_opened.begin(), get_app_open_list_index(gui, app_path)));
 }
 
 static std::map<std::string, uint64_t> last_time;
 
-void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::string &title_id) {
+void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::string &app_path) {
     gui.live_area.app_selector = false;
     if (live_area) {
-        update_apps_list_opened(gui, title_id);
+        update_apps_list_opened(gui, app_path);
         last_time["home"] = 0;
         init_live_area(gui, host);
         gui.live_area.information_bar = true;
         gui.live_area.live_area_screen = true;
     } else
-        pre_run_app(gui, host, title_id);
+        pre_run_app(gui, host, app_path);
 }
 
-void pre_run_app(GuiState &gui, HostState &host, const std::string &title_id) {
+void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
     gui.live_area.live_area_screen = false;
-    if (title_id.find("NPXS") == std::string::npos) {
-        get_user_app_params(gui, host, title_id);
-        host.io.title_id = host.app_title_id;
-        if (host.cfg.overwrite_config && (host.cfg.last_app != host.io.title_id)) {
-            host.cfg.last_app = title_id;
+    if (app_path.find("NPXS") == std::string::npos) {
+        host.io.app_path = app_path;
+        if (host.cfg.overwrite_config && (host.cfg.last_app != app_path)) {
+            host.cfg.last_app = app_path;
             config::serialize_config(host.cfg, host.cfg.config_path);
         }
         gui.live_area.information_bar = false;
     } else {
-        init_app_background(gui, host, title_id);
+        init_app_background(gui, host, app_path);
 
-        if (title_id == "NPXS10008") {
+        if (app_path == "NPXS10008") {
             init_trophy_collection(gui, host);
             gui.live_area.trophy_collection = true;
-        } else if (title_id == "NPXS10015")
+        } else if (app_path == "NPXS10015")
             gui.live_area.settings = true;
         else {
             init_content_manager(gui, host);
@@ -399,26 +398,22 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     continue;
                 const auto POS_ICON = ImGui::GetCursorPosY();
                 const auto GRID_INIT_POS = ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE / 2.f) - 10.f;
-                if (apps_icon.find(app.title_id) != apps_icon.end()) {
+                if (apps_icon.find(app.path) != apps_icon.end()) {
                     if (host.cfg.apps_list_grid)
                         ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
-                    ImGui::Image(apps_icon[app.title_id], host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size));
+                    ImGui::Image(apps_icon[app.path], host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size));
                 }
                 ImGui::SetCursorPosY(POS_ICON);
                 if (host.cfg.apps_list_grid)
                     ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
                 else
                     ImGui::SetCursorPosY(POS_ICON);
-                ImGui::PushID(app.title_id.c_str());
+                ImGui::PushID(app.path.c_str());
                 ImGui::Selectable("##icon", &selected, host.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
-                if (ImGui::IsItemHovered()) {
-                    host.app_version = app.app_ver;
-                    host.app_short_title = app.stitle;
-                    host.app_title = app.title;
-                    host.app_title_id = app.title_id;
-                }
-                if (host.app_title_id == app.title_id)
-                    draw_app_context_menu(gui, host, app.title_id);
+                if (ImGui::IsItemHovered())
+                    host.app_path = app.path;
+                if (host.app_path == app.path)
+                    draw_app_context_menu(gui, host, app.path);
                 ImGui::PopID();
                 if (!host.cfg.apps_list_grid) {
                     ImGui::NextColumn();
@@ -442,14 +437,13 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::NextColumn();
                 }
                 if (selected)
-                    pre_load_app(gui, host, host.cfg.show_live_area_screen, app.title_id);
+                    pre_load_app(gui, host, host.cfg.show_live_area_screen, app.path);
             }
         };
         // System Applications
         display_app(gui.app_selector.sys_apps, gui.app_selector.sys_apps_icon);
         // User Applications
-        if (host.io.title_id.empty())
-            display_app(gui.app_selector.user_apps, gui.app_selector.user_apps_icon);
+        display_app(gui.app_selector.user_apps, gui.app_selector.user_apps_icon);
         ImGui::PopStyleColor();
         ImGui::Columns(1);
         ImGui::EndChild();

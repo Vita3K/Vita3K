@@ -33,6 +33,6 @@ struct SpaceInfo {
 using FileBuffer = std::vector<SceUInt8>;
 
 bool read_file(VitaIoDevice device, FileBuffer &buf, const std::wstring &pref_path, const fs::path &vfs_file_path);
-bool read_app_file(FileBuffer &buf, const std::wstring &pref_path, const std::string &title_id, const fs::path &vfs_file_path);
+bool read_app_file(FileBuffer &buf, const std::wstring &pref_path, const std::string &app_path, const fs::path &vfs_file_path);
 SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path, const std::wstring &pref_path);
 } // namespace vfs

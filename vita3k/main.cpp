@@ -104,7 +104,7 @@ int main(int argc, char *argv[]) {
     LOG_INFO("{}", window_title);
 
     app::AppRunType run_type;
-    if (cfg.run_title_id)
+    if (cfg.run_app_path)
         run_type = app::AppRunType::Extracted;
     else if (cfg.vpk_path)
         run_type = app::AppRunType::Vpk;
@@ -143,11 +143,11 @@ int main(int argc, char *argv[]) {
     }
 
     if (run_type == app::AppRunType::Extracted) {
-        host.io.title_id = cfg.run_title_id ? *cfg.run_title_id : host.app_title_id;
-        gui::get_user_app_params(gui, host, host.io.title_id);
+        host.io.app_path = cfg.run_app_path ? *cfg.run_app_path : host.app_title_id;
+        gui::get_user_app_params(gui, host, host.io.app_path);
         gui::init_apps_icon(gui, host, gui.app_selector.user_apps);
-        if (host.cfg.run_title_id)
-            host.cfg.run_title_id.reset();
+        if (host.cfg.run_app_path)
+            host.cfg.run_app_path.reset();
     }
 
     if (!cfg.console) {
@@ -187,12 +187,12 @@ int main(int argc, char *argv[]) {
                 return QuitRequested;
             }
 
-            if (!host.io.title_id.empty())
+            if (!host.io.app_path.empty())
                 run_type = app::AppRunType::Extracted;
         }
     }
 
-    const auto APP_INDEX = gui::get_app_index(gui, host.io.title_id);
+    const auto APP_INDEX = gui::get_app_index(gui, host.io.app_path);
     host.app_version = APP_INDEX->app_ver;
     host.app_category = APP_INDEX->category;
     host.current_app_title = APP_INDEX->title;
@@ -200,7 +200,7 @@ int main(int argc, char *argv[]) {
     host.io.title_id = APP_INDEX->title_id;
 
     Ptr<const void> entry_point;
-    if (const auto err = load_app(entry_point, host, string_utils::utf_to_wide(host.io.title_id)) != Success)
+    if (const auto err = load_app(entry_point, host, string_utils::utf_to_wide(host.io.app_path)) != Success)
         return err;
     if (const auto err = run_app(host, entry_point) != Success)
         return err;
@@ -216,7 +216,7 @@ int main(int argc, char *argv[]) {
         gui.imgui_state->do_clear_screen = false;
     }
 
-    gui::init_app_background(gui, host, host.io.title_id);
+    gui::init_app_background(gui, host, host.io.app_path);
 
     app::gl_screen_renderer gl_renderer;
 
@@ -233,9 +233,9 @@ int main(int argc, char *argv[]) {
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
 
-        if (gui.apps_background.find(host.io.title_id) != gui.apps_background.end())
+        if (gui.apps_background.find(host.io.app_path) != gui.apps_background.end())
             // Display application background
-            ImGui::GetForegroundDrawList()->AddImage(gui.apps_background[host.io.title_id],
+            ImGui::GetForegroundDrawList()->AddImage(gui.apps_background[host.io.app_path],
                 ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
         // Application background not found
         else if (!gui.theme_backgrounds.empty())
@@ -288,7 +288,7 @@ int main(int argc, char *argv[]) {
         char *args[8];
         args[0] = argv[0];
         args[1] = (char *)"-r";
-        args[2] = host.app_title_id.data();
+        args[2] = host.io.app_path.data();
         args[3] = (char *)"--self";
         args[4] = host.load_self_path.data();
         if (!host.load_exec_argv.empty()) {

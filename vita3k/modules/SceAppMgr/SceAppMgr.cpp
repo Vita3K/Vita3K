@@ -327,7 +327,7 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
 
     // Load exec executable
     vfs::FileBuffer exec_buffer;
-    if (vfs::read_app_file(exec_buffer, host.pref_path, host.io.title_id, exec_path)) {
+    if (vfs::read_app_file(exec_buffer, host.pref_path, host.io.app_path, exec_path)) {
         if (argv && argv->get(host.mem)) {
             size_t args = 0;
             host.load_exec_argv = "\"";

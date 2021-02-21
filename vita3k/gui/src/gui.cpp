@@ -196,64 +196,65 @@ void init_apps_icon(GuiState &gui, HostState &host, const std::vector<App> &apps
         if (app.title_id.find("NPXS") != std::string::npos)
             vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app.title_id + "/sce_sys/icon0.png");
         else
-            vfs::read_app_file(buffer, host.pref_path, app.title_id, "sce_sys/icon0.png");
+            vfs::read_app_file(buffer, host.pref_path, app.path, "sce_sys/icon0.png");
 
         const auto default_fw_icon{ fs::path(host.pref_path) / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
         const auto default_icon{ fs::path(host.base_path) / "data/image/icon.png" };
 
         if (buffer.empty()) {
             if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
-                LOG_INFO("Default icon found for title {}, [{}].", app.title_id, app.title);
+                LOG_INFO("Default icon found for title {}, [{}] in path {}.", app.title_id, app.title, app.path);
                 std::ifstream image_stream(fs::exists(default_fw_icon) ? default_fw_icon.string() : default_icon.string(), std::ios::binary | std::ios::ate);
                 const std::size_t fsize = image_stream.tellg();
                 buffer.resize(fsize);
                 image_stream.seekg(0, std::ios::beg);
                 image_stream.read(reinterpret_cast<char *>(&buffer[0]), fsize);
             } else {
-                LOG_WARN("Default icon not found for title {}, [{}].", app.title_id, app.title);
+                LOG_WARN("Default icon not found for title {}, [{}] in path {}.", app.title_id, app.title, app.path);
                 continue;
             }
         }
         stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
         if (!data || width != 128 || height != 128) {
-            LOG_ERROR("Invalid icon for title {}, [{}].", app.title_id, app.title);
+            LOG_ERROR("Invalid icon for title {}, [{}] in path {}.", app.title_id, app.title, app.path);
             continue;
         }
-        auto &app_icon = app.title_id.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
-        app_icon[app.title_id].init(gui.imgui_state.get(), data, width, height);
+        auto &app_icon = app.path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+        app_icon[app.path].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 }
 
-void init_app_background(GuiState &gui, HostState &host, const std::string &title_id) {
-    if (gui.apps_background.find(title_id) != gui.apps_background.end())
+void init_app_background(GuiState &gui, HostState &host, const std::string &app_path) {
+    if (gui.apps_background.find(app_path) != gui.apps_background.end())
         return;
 
+    const auto APP_INDEX = get_app_index(gui, app_path);
     int32_t width = 0;
     int32_t height = 0;
     vfs::FileBuffer buffer;
 
-    if (title_id.find("NPXS") != std::string::npos)
-        vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + title_id + "/sce_sys/pic0.png");
+    if (app_path.find("NPXS") != std::string::npos)
+        vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/pic0.png");
     else
-        vfs::read_app_file(buffer, host.pref_path, title_id, "sce_sys/pic0.png");
+        vfs::read_app_file(buffer, host.pref_path, app_path, "sce_sys/pic0.png");
 
     if (buffer.empty()) {
-        LOG_WARN("Background not found for application {} [{}].", get_app_index(gui, title_id)->title, title_id);
+        LOG_WARN("Background not found for application {} [{}].", APP_INDEX->title, app_path);
         return;
     }
 
     stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
     if (!data) {
-        LOG_ERROR("Invalid background for application {} [{}].", get_app_index(gui, title_id)->title, title_id);
+        LOG_ERROR("Invalid background for application {} [{}].", APP_INDEX->title, app_path);
         return;
     }
-    gui.apps_background[title_id].init(gui.imgui_state.get(), data, width, height);
+    gui.apps_background[app_path].init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
 }
 
 void init_home(GuiState &gui, HostState &host) {
-    const auto is_cmd = host.cfg.run_title_id || host.cfg.vpk_path;
+    const auto is_cmd = host.cfg.run_app_path || host.cfg.vpk_path;
     if (!is_cmd) {
         get_user_apps_title(gui, host);
         init_apps_icon(gui, host, gui.app_selector.user_apps);
@@ -271,27 +272,28 @@ void init_home(GuiState &gui, HostState &host) {
     }
 }
 
-std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &title_id) {
-    const auto &app_type = title_id.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &app_path) {
+    const auto &app_type = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
     const auto app_icon = std::find_if(app_type.begin(), app_type.end(), [&](const auto &i) {
-        return i.first == title_id;
+        return i.first == app_path;
     });
 
     return app_icon;
 }
 
-std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string &title_id) {
-    const auto &app_type = title_id.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
+std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string &app_path) {
+    const auto &app_type = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
     const auto app_index = std::find_if(app_type.begin(), app_type.end(), [&](const App &a) {
-        return a.title_id == title_id;
+        return a.path == app_path;
     });
 
     return app_index;
 }
 
-void get_user_app_params(GuiState &gui, HostState &host, const std::string &title_id) {
+void get_user_app_params(GuiState &gui, HostState &host, const std::string &app_path) {
+    host.app_path = app_path;
     vfs::FileBuffer params;
-    if (vfs::read_app_file(params, host.pref_path, title_id, "sce_sys/param.sfo")) {
+    if (vfs::read_app_file(params, host.pref_path, app_path, "sce_sys/param.sfo")) {
         SfoFile sfo_handle;
         sfo::load(sfo_handle, params);
         sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
@@ -307,10 +309,25 @@ void get_user_app_params(GuiState &gui, HostState &host, const std::string &titl
         boost::trim(host.app_title);
         sfo::get_data_by_key(host.app_title_id, sfo_handle, "TITLE_ID");
     } else {
-        host.app_short_title = host.app_title = host.app_title_id = title_id; // Use TitleID as Short title and Title
+        host.app_short_title = host.app_title = host.app_title_id = host.app_path; // Use app path as TitleID, Short title and Title
         host.app_version = host.app_category = host.app_parental_level = "N/A";
     }
-    gui.app_selector.user_apps.push_back({ host.app_version, host.app_category, host.app_parental_level, host.app_short_title, host.app_title, host.app_title_id });
+    gui.app_selector.user_apps.push_back({ host.app_version, host.app_category, host.app_parental_level, host.app_short_title, host.app_title, host.app_title_id, host.app_path });
+}
+
+void get_user_apps_title(GuiState &gui, HostState &host) {
+    fs::path app_path{ fs::path{ host.pref_path } / "ux0/app" };
+    if (!fs::exists(app_path))
+        return;
+
+    gui.app_selector.user_apps.clear();
+    for (const auto &app : fs::directory_iterator(app_path)) {
+        if (!app.path().empty() && fs::is_directory(app.path())
+            && !app.path().filename_is_dot() && !app.path().filename_is_dot_dot()) {
+            const auto app_path = app.path().stem().generic_string();
+            get_user_app_params(gui, host, app_path);
+        }
+    }
 }
 
 void get_sys_apps_title(GuiState &gui, HostState &host) {
@@ -340,7 +357,7 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
             else
                 host.app_short_title = host.app_title = "Content Manager";
         }
-        gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, {}, host.app_short_title, host.app_title, app });
+        gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, {}, host.app_short_title, host.app_title, app, app });
     }
 }
 
@@ -386,40 +403,6 @@ std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host,
     return date_time_str;
 }
 
-void get_user_apps_title(GuiState &gui, HostState &host) {
-    fs::path app_path{ fs::path{ host.pref_path } / "ux0/app" };
-    if (!fs::exists(app_path))
-        return;
-
-    gui.app_selector.user_apps.clear();
-    for (const auto &app : fs::directory_iterator(app_path)) {
-        if (!app.path().empty() && fs::is_directory(app.path())
-            && !app.path().filename_is_dot() && !app.path().filename_is_dot_dot()) {
-            vfs::FileBuffer params;
-            host.app_title_id = app.path().stem().generic_string();
-            if (vfs::read_app_file(params, host.pref_path, host.app_title_id, "sce_sys/param.sfo")) {
-                SfoFile sfo_handle;
-                sfo::load(sfo_handle, params);
-                sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
-                if (host.app_version[0] == '0')
-                    host.app_version.erase(host.app_version.begin());
-                sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
-                sfo::get_data_by_key(host.app_parental_level, sfo_handle, "PARENTAL_LEVEL");
-                if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
-                    sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
-                if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
-                    sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
-                std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
-                boost::trim(host.app_title);
-            } else {
-                host.app_short_title = host.app_title = host.app_title_id; // Use TitleID as Short title and Title
-                host.app_version = host.app_category = host.app_parental_level = "N/A";
-            }
-            gui.app_selector.user_apps.push_back({ host.app_version, host.app_category, host.app_parental_level, host.app_short_title, host.app_title, host.app_title_id });
-        }
-    }
-}
-
 void update_notice_info(GuiState &gui, HostState &host, const std::string &type) {
     const auto pos = gui.notice_info.size();
 
@@ -433,7 +416,7 @@ void update_notice_info(GuiState &gui, HostState &host, const std::string &type)
             int32_t height = 0;
             vfs::FileBuffer buffer;
 
-            vfs::read_app_file(buffer, host.pref_path, host.app_title_id, "sce_sys/pic0.png");
+            vfs::read_app_file(buffer, host.pref_path, host.app_path, "sce_sys/pic0.png");
 
             if (buffer.empty()) {
                 LOG_WARN("Notice icon not found for content {} [{}].", host.app_title_id, host.app_title);

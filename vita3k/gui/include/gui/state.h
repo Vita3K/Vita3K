@@ -49,6 +49,7 @@ struct App {
     std::string stitle;
     std::string title;
     std::string title_id;
+    std::string path;
 };
 
 struct AppInfo {
@@ -236,7 +237,7 @@ struct GuiState {
     std::map<std::string, std::map<std::string, ImGui_Texture>> live_area_contents;
     std::map<std::string, std::map<std::string, std::map<std::string, std::vector<ImGui_Texture>>>> live_items;
 
-    std::map<std::string, std::vector<ImGui_Texture>> manuals;
+    std::vector<ImGui_Texture> manuals;
 
     SceUID thread_watch_index = -1;
 

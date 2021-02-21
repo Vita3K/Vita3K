@@ -217,6 +217,8 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
     sfo::get_data_by_key(host.app_title_id, sfo_file, "TITLE_ID");
     sfo::get_data_by_key(host.app_category, sfo_file, "CATEGORY");
     sfo::get_data_by_key(content_id, sfo_file, "CONTENT_ID");
+    host.app_path = host.app_title_id;
+
     if (type == PkgType::PKG_TYPE_VITA_DLC)
         content_id = content_id.substr(20);
 
