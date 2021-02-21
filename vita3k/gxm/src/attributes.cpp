@@ -17,6 +17,8 @@ size_t attribute_format_size(SceGxmAttributeFormat format) {
         return 2;
     case SCE_GXM_ATTRIBUTE_FORMAT_F32:
         return 4;
+    case SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED:
+        return 4;
     default:
         LOG_ERROR("Unsupported attribute format {}", log_hex(format));
         return 4;

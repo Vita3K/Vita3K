@@ -374,14 +374,13 @@ void sync_vertex_attributes(GLContext &context, const GxmContextState &state, co
             case SCE_GXM_PARAMETER_TYPE_S32:
                 upload_integral = true;
                 break;
-
             default:
                 break;
             }
 
             glBindBuffer(GL_ARRAY_BUFFER, context.stream_vertex_buffers[attribute.streamIndex]);
 
-            if (upload_integral) {
+            if (upload_integral || type == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED) {
                 glVertexAttribIPointer(attrib_location, attribute.componentCount, type, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
             } else {
                 glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
