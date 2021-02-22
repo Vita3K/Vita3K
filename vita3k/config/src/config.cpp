@@ -142,8 +142,10 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     auto input = app.add_option_group("Input", "Special options for Vita3K");
     input->add_option("--console,-z", command_line.console, "Starts the emulator in fullscreen mode.")
        ->default_val(false)->group("Input");
-    input->add_option("--console-arguments,-Z", command_line.console_arguments, "Starts the emulator in fullscreen mode.")
+    input->add_option("--console-arguments,-Z", command_line.console_arguments, "Argument for app, if your argument have space using [space].")
         ->default_str("")->group("Input");
+    input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
+        ->default_str("eboot.bin")->group("Input");
     input->add_option("--installed-id,-r", command_line.run_title_id, "Title ID of installed app to run")
         ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")

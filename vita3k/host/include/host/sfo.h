@@ -23,7 +23,6 @@
 #include <vector>
 
 static const char *EBOOT_PATH = "eboot.bin";
-static const char *EBOOT_PATH_ABS = "app0:eboot.bin";
 
 struct SfoHeader {
     uint32_t magic;
