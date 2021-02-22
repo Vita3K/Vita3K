@@ -651,6 +651,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         case DataType::UINT16:
         case DataType::UINT8: {
             op.type = DataType::UINT32;
+            break;
         }
 
         default:

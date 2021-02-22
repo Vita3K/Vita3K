@@ -759,7 +759,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         uniform_buffers.emplace(buffer.index, block);
     }
 
-    for (const auto buffer : program_input.uniform_buffers) {
+    for (const auto &buffer : program_input.uniform_buffers) {
         if (buffer.reg_block_size > 0) {
             const uint32_t reg_block_size_in_f32v = (buffer.reg_block_size + 3) / 4;
             const auto spv_buffer = uniform_buffers.at(buffer.index);

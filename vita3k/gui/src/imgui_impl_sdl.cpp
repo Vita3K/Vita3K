@@ -176,6 +176,7 @@ IMGUI_API ImTextureID ImGui_ImplSdl_CreateTexture(ImGui_State *state, void *data
 #endif
     default:
         LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
+        return (void *)0;
     }
 }
 
@@ -215,6 +216,7 @@ IMGUI_API bool ImGui_ImplSdl_CreateDeviceObjects(ImGui_State *state) {
 #endif
     default:
         LOG_ERROR("Missing ImGui init for backend {}.", static_cast<int>(state->renderer->current_backend));
+        return false;
     }
 }
 

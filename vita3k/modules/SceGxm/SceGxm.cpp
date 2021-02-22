@@ -189,7 +189,7 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     if (texture_type == SCE_GXM_TEXTURE_SWIZZLED) {
         // Find highest set bit of width and height. It's also the 2^? for width and height
         static auto highest_set_bit = [](const int num) -> std::uint32_t {
-            for (std::uint32_t i = 12; i >= 0; i--) {
+            for (std::uint32_t i = 12; i != 0; i--) {
                 if (num & (1 << i)) {
                     return i;
                 }

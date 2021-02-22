@@ -83,7 +83,8 @@ int main(int argc, char *argv[]) {
     }
 
 #ifdef WIN32
-    CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    auto res = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+    LOG_ERROR_IF(res == S_FALSE, "Failed to initialize COM Library");
 #endif
 
     if (cfg.console) {
