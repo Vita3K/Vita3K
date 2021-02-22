@@ -129,7 +129,7 @@ bool USSETranslatorVisitor::vmad(
     spv::Id vsrc2 = load(inst.opr.src2, write_mask, src2_repeat_offset);
 
     if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
-        LOG_ERROR("Source not loaded (vsrc0: {}, vsr1: {}, vsrc2: {})", vsrc0, vsrc1, vsrc2);
+        LOG_ERROR("Source not loaded (vsrc0: {}, vsrc1: {}, vsrc2: {})", vsrc0, vsrc1, vsrc2);
         return false;
     }
 
@@ -254,7 +254,7 @@ bool USSETranslatorVisitor::vmad2(
     spv::Id vsrc2 = load(inst.opr.src2, dest_mask, 0);
 
     if (vsrc0 == spv::NoResult || vsrc1 == spv::NoResult || vsrc2 == spv::NoResult) {
-        LOG_ERROR("Source not loaded (vsrc0: {}, vsr1: {}, vsrc2: {})", vsrc0, vsrc1, vsrc2);
+        LOG_ERROR("Source not loaded (vsrc0: {}, vsrc1: {}, vsrc2: {})", vsrc0, vsrc1, vsrc2);
         return false;
     }
 
@@ -1343,7 +1343,7 @@ bool USSETranslatorVisitor::vdual(
 
     auto do_dual_op = [&](Opcode code, std::vector<Operand> &ops, Operand &dest,
                           Imm4 write_mask_dest, const DualOpInfo &code_info) {
-        uint32_t write_mask_source = code_info.vector_load ? (0b1111u >> !comp_count_type) : 0b0001;
+        uint32_t write_mask_source = code_info.vector_load ? (0b1111u >> (uint32_t)!comp_count_type) : 0b0001;
 
         spv::Id result;
 
