@@ -322,63 +322,36 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
         exec_path.erase(0, 6);
     else
         exec_path.erase(0, 5);
-    LOG_DEBUG("appPath: {}, exec path: {}", appPath, exec_path);
+
+    LOG_INFO("sceAppMgrLoadExec run self: {}", appPath);
+
     // Load exec executable
     vfs::FileBuffer exec_buffer;
     if (vfs::read_app_file(exec_buffer, host.pref_path, host.io.title_id, exec_path)) {
-        Ptr<const void> exec_entry_point;
-        const auto exec_id = load_self(exec_entry_point, host.kernel, host.mem, exec_buffer.data(), appPath, host.cfg);
-        if (exec_id >= 0) {
-            const auto exec_load = host.kernel.loaded_modules[exec_id];
-
-            LOG_INFO("Exec executable {} ({}) loaded", exec_load->module_name, exec_path);
-
-            auto inject = create_cpu_dep_inject(host);
-            // Init exec thread
-            const auto exec_thread_id = create_thread(exec_entry_point, host.kernel, host.mem, exec_load->module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN),
-                inject, nullptr);
-
-            if (exec_thread_id < 0) {
-                LOG_ERROR("Failed to init exec thread.");
-                return RET_ERROR(exec_thread_id);
+        if (argv && argv->get(host.mem)) {
+            size_t args = 0;
+            host.load_exec_argv = "\"";
+            for (auto i = 0; argv[i]; i++) {
+                LOG_INFO("sceAppMgrLoadExec run with argument at {}: {}", i, argv[i].get(host.mem));
+                if (i)
+                    host.load_exec_argv += " ";
+                std::string c_argv = argv[i].get(host.mem);
+                args += c_argv.size();
+                replace_space(c_argv, " ");
+                host.load_exec_argv += c_argv;
             }
+            host.load_exec_argv += "\"";
 
-            // Init size of argv
-            SceSize size_argv = 0;
-            if (argv && argv->get(host.mem)) {
-                while (argv->get(host.mem)[size_argv])
-                    ++size_argv;
-
-                if (size_argv > 1024)
-                    return RET_ERROR(SCE_APPMGR_ERROR_TOO_LONG_ARGV);
-            }
-
-            // Start exec thread
-            const auto new_argv = copy_stack(thread_id, exec_thread_id, argv ? Ptr<void>(*argv) : Ptr<void>(), host.kernel, host.mem);
-            const auto exec = start_thread(host.kernel, exec_thread_id, size_argv, new_argv);
-            if (exec < 0) {
-                LOG_ERROR("Failed to run exec thread.");
-                return RET_ERROR(exec);
-            }
-
-            LOG_INFO("Exec {} (at \"{}\") start_exec returned {}", exec_load->module_name, exec_load->path, log_hex(exec));
-
-            // Erase current module/thread
-            // TODO Unload and Erase it inside memory
-            auto run_exec_thread = util::find(exec_thread_id, host.kernel.running_threads);
-            host.kernel.running_threads[thread_id].swap(run_exec_thread);
-            host.kernel.running_threads.erase(thread_id);
-
-            auto exec_thread = util::find(exec_thread_id, host.kernel.threads);
-            host.kernel.threads[thread_id].swap(exec_thread);
-            host.kernel.threads.erase(thread_id);
-
-            host.kernel.loaded_modules.erase(thread_id - 1);
-
-            return 0;
+            if (args > 1024)
+                return RET_ERROR(SCE_APPMGR_ERROR_TOO_LONG_ARGV);
         }
 
-        return RET_ERROR(SCE_APPMGR_ERROR_STATE);
+        stop_all_threads(host.kernel);
+
+        host.load_self_path = exec_path;
+        host.load_exec = true;
+
+        return SCE_KERNEL_OK;
     }
 
     return RET_ERROR(SCE_APPMGR_ERROR_INVALID_SELF_PATH);
