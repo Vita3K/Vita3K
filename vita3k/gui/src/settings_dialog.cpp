@@ -121,6 +121,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Settings", &gui.configuration_menu.settings_dialog, settings_flags);
     const ImGuiTabBarFlags settings_tab_flags = ImGuiTabBarFlags_None;
     ImGui::BeginTabBar("SettingsTabBar", settings_tab_flags);
+    std::ostringstream link;
 
     // Core
     if (ImGui::BeginTabItem("Core")) {
@@ -176,7 +177,6 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::SameLine();
         } else {
             ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the last firmware.");
-            std::ostringstream link;
             if (ImGui::Button("Download Firmware")) {
                 std::string firmware_url = "https://www.playstation.com/en-us/support/hardware/psvita/system-software/";
                 link << OS_PREFIX << firmware_url;
@@ -299,10 +299,26 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Grid Mode", &host.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable app list in grid mode.");
-        ImGui::SameLine();
-        ImGui::Checkbox("Asia Region Font Support", &host.cfg.asia_font_support);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check this box to enable font support for Korean and Traditional Chinese.\nYou will need a Firmware Fonts Package installed for Asia region font support.\Enabling this will use more memory and will require you to restart the emulator.");
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        const auto font_size = ImGui::CalcTextSize("Font Support").x;
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (font_size / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Font Support");
+        ImGui::Spacing();
+        if (gui.fw_font) {
+            ImGui::Checkbox("Asia Region", &host.cfg.asia_font_support);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Check this box to enable font support for Korean and Traditional Chinese.\nEnabling this will use more memory and will require you to restart the emulator.");
+        } else {
+            ImGui::TextColored(GUI_COLOR_TEXT, "No firmware font package present.\nPlease download and install it.");
+            if (ImGui::Button("Download firmware font package")) {
+                link << OS_PREFIX << "https://bit.ly/2P2rb0r";
+                system(link.str().c_str());
+            }
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for asian region font support in gui.\nIt is also generally recommended for gui");
+        }
         if (!host.cfg.apps_list_grid) {
             ImGui::Spacing();
             ImGui::SliderInt("App Icon Size", &host.cfg.icon_size, 32, 128);
