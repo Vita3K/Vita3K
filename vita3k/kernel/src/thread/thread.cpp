@@ -116,14 +116,15 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
 
     alloc_name = fmt::format("TLS for thread {} (#{})", name, thid);
 
-    auto tls_address = alloc(mem, 0x800, alloc_name.c_str()) + 0x800;
+    constexpr auto tls_size = 0x800;
+    auto tls_address_ptr = Ptr<void>(alloc(mem, tls_size, alloc_name.c_str()));
+    auto tls_address = tls_address_ptr.address() + tls_size;
 
     write_tpidruro(*thread->cpu, tls_address);
 
-    Ptr<void> tls_address_ptr(tls_address);
-    memset(tls_address_ptr.get(mem), 0, 0x800);
+    memset(tls_address_ptr.get(mem), 0, tls_size);
     if (kernel.tls_address) {
-        assert(kernel.tls_psize <= 0x800 / 4);
+        assert(kernel.tls_psize <= tls_size / 4);
         memcpy(tls_address_ptr.get(mem), kernel.tls_address.get(mem), 4 * kernel.tls_psize);
     }
     WaitingThreadState waiting{ name };
