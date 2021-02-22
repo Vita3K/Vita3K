@@ -37,6 +37,7 @@
 
 #ifdef WIN32
 #include <combaseapi.h>
+#include <process.h>
 #endif
 
 #include <SDL.h>
@@ -222,7 +223,7 @@ int main(int argc, char *argv[]) {
     if (!gl_renderer.init(host.base_path))
         return RendererInitFailed;
 
-    while (host.frame_count == 0) {
+    while (host.frame_count == 0 && !host.load_exec) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
@@ -251,7 +252,7 @@ int main(int argc, char *argv[]) {
         SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.current_app_title, host.io.title_id).c_str());
     }
 
-    while (handle_events(host, gui)) {
+    while (handle_events(host, gui) && !host.load_exec) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
@@ -282,6 +283,25 @@ int main(int argc, char *argv[]) {
 #endif
 
     app::destroy(host, gui.imgui_state.get());
+
+#ifdef WIN32
+    if (host.load_exec) {
+        char *args[8];
+        args[0] = argv[0];
+        args[1] = "-r";
+        args[2] = host.app_title_id.data();
+        args[3] = "--self";
+        args[4] = host.load_self_path.data();
+        if (!host.load_self_argv.empty()) {
+            args[5] = "--console-arguments";
+            args[6] = host.load_self_argv.data();
+            args[7] = NULL;
+        } else
+            args[5] = NULL;
+
+        _execv(argv[0], args);
+    }
+#endif
 
     return Success;
 }

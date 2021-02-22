@@ -366,14 +366,15 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
 
     pre_load_module(host, lib_load_list, VitaIoDevice::vs0);
 
-    // Load main executable (eboot.bin)
+    // Load main executable
+    host.load_self_path = !host.cfg.self_path.empty() ? host.cfg.self_path : EBOOT_PATH;
     vfs::FileBuffer eboot_buffer;
-    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.title_id, EBOOT_PATH)) {
-        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), EBOOT_PATH_ABS, host.cfg);
+    if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.title_id, host.load_self_path)) {
+        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), "app0:" + host.load_self_path, host.cfg);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];
 
-            LOG_INFO("Main executable {} ({}) loaded", module->module_name, EBOOT_PATH);
+            LOG_INFO("Main executable {} ({}) loaded", module->module_name, host.load_self_path);
         } else
             return FileNotFound;
     } else
@@ -531,7 +532,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         const auto module_start = module->module_start;
         const auto module_name = module->module_name;
 
-        if (!module_start || (std::string(module->path) == EBOOT_PATH_ABS))
+        if (!module_start || (std::string(module->path) == "app0:" + host.load_self_path))
             continue;
 
         LOG_DEBUG("Running module_start of library: {} at address {}", module_name, log_hex(module_start.address()));
@@ -553,12 +554,14 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     host.main_thread_id = main_thread_id;
 
     SceKernelThreadOptParam param{ 0, 0 };
-    if (host.cfg.console && host.cfg.console_arguments != "") {
+
+    if (!host.cfg.console_arguments.empty()) {
         auto args = split(host.cfg.console_arguments, "\\s+");
         // why is this flipped
         std::vector<uint8_t> buf;
-        for (int i = 0; i < args.size(); ++i) {
-            buf.insert(buf.end(), args[i].c_str(), args[i].c_str() + args[i].size() + 1);
+        for (auto &arg : args) {
+            std::replace(arg.begin(), arg.end(), '?', ' ');
+            buf.insert(buf.end(), arg.c_str(), arg.c_str() + args.size() + 1);
         }
         auto arr = Ptr<uint8_t>(alloc(host.mem, buf.size(), "arg"));
         memcpy(arr.get(host.mem), buf.data(), buf.size());
