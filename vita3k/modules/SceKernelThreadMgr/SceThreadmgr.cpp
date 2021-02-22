@@ -297,6 +297,9 @@ EXPORT(int, _sceKernelGetTimerTime) {
 }
 
 EXPORT(int, _sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
+    if (!workarea)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
     const auto lwmutexid = workarea.get(host.mem)->uid;
     return mutex_lock(host.kernel, host.mem, export_name, thread_id, lwmutexid, lock_count, ptimeout, SyncWeight::Light);
 }
