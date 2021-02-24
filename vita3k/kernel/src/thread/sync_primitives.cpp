@@ -663,22 +663,39 @@ int condvar_delete(KernelState &kernel, const char *export_name, SceUID thread_i
 // * Event Flag *
 // **************
 
-SceUID eventflag_create(KernelState &kernel, const char *export_name, const char *event_name, SceUID thread_id, SceUInt attr, unsigned int flags) {
-    if ((strlen(event_name) > 31) && ((attr & 0x80) == 0x80)) {
+SceUID eventflag_clear(KernelState &kernel, const char *export_name, SceUID evfId, SceUInt32 bitPattern) {
+    const EventFlagPtr event = lock_and_find(evfId, kernel.eventflags, kernel.mutex);
+    if (!event) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} bitPattern: {:#b}",
+            export_name, evfId, bitPattern);
+    }
+
+    const std::lock_guard<std::mutex> event_lock(event->mutex);
+    event->flags &= bitPattern;
+
+    return SCE_KERNEL_OK;
+}
+
+SceUID eventflag_create(KernelState &kernel, const char *export_name, SceUID thread_id, const char *pName, SceUInt32 attr, SceUInt32 initPattern) {
+    if ((strlen(pName) > 31) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
 
     const SceUID uid = kernel.get_next_uid();
 
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} flags: {:#b}",
-            export_name, uid, thread_id, event_name, attr, flags);
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} bitPattern: {:#b}",
+            export_name, uid, thread_id, pName, attr, initPattern);
     }
 
     const EventFlagPtr event = std::make_shared<EventFlag>();
     event->uid = uid;
-    event->flags = flags;
-    std::copy(event_name, event_name + KERNELOBJECT_MAX_NAME_LENGTH, event->name);
+    event->flags = initPattern;
+    std::copy(pName, pName + KERNELOBJECT_MAX_NAME_LENGTH, event->name);
     event->attr = attr;
 
     const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
@@ -748,19 +765,19 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
     return SCE_KERNEL_OK;
 }
 
-int eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout) {
-    return eventflag_waitorpoll(kernel, export_name, thread_id, event_id, flags, wait, outBits, timeout, true);
+SceInt32 eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
+    return eventflag_waitorpoll(kernel, export_name, thread_id, evfId, bitPattern, waitMode, pResultPat, pTimeout, true);
 }
 
 int eventflag_poll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits) {
     return eventflag_waitorpoll(kernel, export_name, thread_id, event_id, flags, wait, outBits, 0, false);
 }
 
-int eventflag_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags) {
-    assert(event_id >= 0);
+SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID evfId, SceUInt32 bitPattern) {
+    assert(evfId >= 0);
 
     // TODO Don't lock twice.
-    const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
+    const EventFlagPtr event = lock_and_find(evfId, kernel.eventflags, kernel.mutex);
     if (!event) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
     }
@@ -768,12 +785,12 @@ int eventflag_set(KernelState &kernel, const char *export_name, SceUID thread_id
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_flags: {:#b} set_flags: {:#b}"
                   " waiting_threads: {}",
-            export_name, event->uid, thread_id, event->name, event->attr, event->flags, flags,
+            export_name, event->uid, thread_id, event->name, event->attr, event->flags, bitPattern,
             event->waiting_threads.size());
     }
 
     const std::lock_guard<std::mutex> event_lock(event->mutex);
-    event->flags |= flags;
+    event->flags |= bitPattern;
 
     while (!event->waiting_threads.empty()) {
         const auto waiting_thread_data = event->waiting_threads.top();

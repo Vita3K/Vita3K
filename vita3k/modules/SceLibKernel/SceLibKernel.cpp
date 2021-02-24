@@ -939,8 +939,8 @@ EXPORT(int, sceKernelCreateSema_16XX, const char *name, SceUInt attr, int initVa
     return res;
 }
 
-EXPORT(int, sceKernelCreateSimpleEvent) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceKernelCreateSimpleEvent, const char *pName, SceUInt32 attr, SceUInt32 initPattern, const SceKernelSimpleEventOptParam *pOptParam) {
+    return eventflag_create(host.kernel, export_name, thread_id, pName, attr, initPattern);
 }
 
 EXPORT(SceUID, sceKernelCreateThread, const char *name, SceKernelThreadEntry entry, int init_priority, int stack_size, SceUInt attr, int cpu_affinity_mask, Ptr<SceKernelThreadOptParam> option) {
@@ -1491,13 +1491,13 @@ EXPORT(int, sceKernelWaitEventCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelWaitEventFlag, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout) {
-    return eventflag_wait(host.kernel, export_name, thread_id, event_id, flags, wait, outBits, timeout);
+EXPORT(SceInt32, sceKernelWaitEventFlag, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
+    return eventflag_wait(host.kernel, export_name, thread_id, evfId, bitPattern, waitMode, pResultPat, pTimeout);
 }
 
-EXPORT(int, sceKernelWaitEventFlagCB, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout) {
+EXPORT(SceInt32, sceKernelWaitEventFlagCB, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
     STUBBED("no CB");
-    return eventflag_wait(host.kernel, export_name, thread_id, event_id, flags, wait, outBits, timeout);
+    return eventflag_wait(host.kernel, export_name, thread_id, evfId, bitPattern, waitMode, pResultPat, pTimeout);
 }
 
 EXPORT(int, sceKernelWaitException) {
