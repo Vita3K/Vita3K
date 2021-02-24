@@ -503,6 +503,10 @@ struct SceKernelMemBlockInfo {
     SceKernelMemBlockType type;
 };
 
+struct SceKernelSimpleEventOptParam {
+    SceSize size;
+};
+
 struct SceKernelEventFlagOptParam {
     SceSize size;
 };
