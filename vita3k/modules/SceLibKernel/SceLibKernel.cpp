@@ -1483,11 +1483,14 @@ EXPORT(int, sceKernelWaitCondCB, SceUID cond_id, SceUInt32 *timeout) {
     return condvar_wait(host.kernel, host.mem, export_name, thread_id, cond_id, timeout, SyncWeight::Heavy);
 }
 
-EXPORT(int, sceKernelWaitEvent) {
+EXPORT(SceInt32, sceKernelWaitEvent, SceUID eventId, SceUInt32 waitPattern, SceUInt32 *pResultPattern, SceUInt64 *pUserData, SceUInt32 *pTimeout) {
+    //return eventflag_wait(host.kernel, export_name, thread_id, eventId, waitPattern, pResultPattern, pUserData, pTimeout);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelWaitEventCB) {
+EXPORT(SceInt32, sceKernelWaitEventCB, SceUID eventId, SceUInt32 waitPattern, SceUInt32 *pResultPattern, SceUInt64 *pUserData, SceUInt32 *pTimeout) {
+    //STUBBED("no CB");
+    //return eventflag_wait(host.kernel, export_name, thread_id, eventId, waitPattern, pResultPattern, pUserData, pTimeout);
     return UNIMPLEMENTED();
 }
 

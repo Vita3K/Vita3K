@@ -425,11 +425,16 @@ EXPORT(int, _sceKernelWaitCondCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelWaitEvent) {
+EXPORT(SceInt32, _sceKernelWaitEvent, SceUID eventId, SceUInt32 waitPattern, SceUInt32 *pResultPattern, SceUInt64 *pUserData, SceUInt32 *pTimeout) {
+    // Need create event_wait function for pUserData and pResultPattern
+    //return eventflag_wait(host.kernel, export_name, thread_id, eventId, waitPattern, pResultPattern, pTimeout);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelWaitEventCB) {
+EXPORT(SceInt32, _sceKernelWaitEventCB, SceUID eventId, SceUInt32 waitPattern, SceUInt32 *pResultPattern, SceUInt64 *pUserData, SceUInt32 *pTimeout) {
+    //STUBBED("no CB");
+    // Need create event_wait function for pUserData and pResultPattern
+    //return eventflag_wait(host.kernel, export_name, thread_id, eventId, waitPattern, pResultPattern, pResultPattern, pTimeout);
     return UNIMPLEMENTED();
 }
 
@@ -877,8 +882,10 @@ EXPORT(int, sceKernelSendSignal, SceUID target_thread_id) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelSetEvent) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelSetEvent, SceUID eventId, SceUInt32 setPattern, SceUInt64 userData) {
+    // TODO create event_set function for userData
+    STUBBED("No UserData");
+    return eventflag_set(host.kernel, export_name, thread_id, eventId, setPattern);
 }
 
 EXPORT(SceInt32, sceKernelSetEventFlag, SceUID evfId, SceUInt32 bitPattern) {
