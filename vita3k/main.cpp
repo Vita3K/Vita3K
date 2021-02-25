@@ -284,24 +284,26 @@ int main(int argc, char *argv[]) {
 
     app::destroy(host, gui.imgui_state.get());
 
-#ifdef WIN32
     if (host.load_exec) {
         char *args[8];
         args[0] = argv[0];
-        args[1] = "-r";
+        args[1] = (char *)"-r";
         args[2] = host.app_title_id.data();
-        args[3] = "--self";
+        args[3] = (char *)"--self";
         args[4] = host.load_self_path.data();
         if (!host.load_exec_argv.empty()) {
-            args[5] = "--console-arguments";
+            args[5] = (char *)"--console-arguments";
             args[6] = host.load_exec_argv.data();
             args[7] = NULL;
         } else
             args[5] = NULL;
 
+#ifdef WIN32
         _execv(argv[0], args);
-    }
+#elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
+        execv(argv[0], args);
 #endif
+    }
 
     return Success;
 }
