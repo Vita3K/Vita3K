@@ -334,11 +334,9 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
             for (auto i = 0; argv[i]; i++) {
                 LOG_INFO("sceAppMgrLoadExec run with argument at {}: {}", i, argv[i].get(host.mem));
                 if (i)
-                    host.load_exec_argv += " ";
-                std::string c_argv = argv[i].get(host.mem);
-                args += c_argv.size();
-                replace_space(c_argv, " ");
-                host.load_exec_argv += c_argv;
+                    host.load_exec_argv += ", ";
+                args += strlen(argv[i].get(host.mem));
+                host.load_exec_argv += argv[i].get(host.mem);
             }
             host.load_exec_argv += "\"";
 

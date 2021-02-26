@@ -24,7 +24,6 @@
 struct SfoFile;
 
 void install_pup(const std::wstring &pref_path, const std::string &pup_path, const std::function<void(uint32_t)> &progress_callback = nullptr);
-std::string replace_space(std::string &input, const std::string arg);
 
 namespace sfo {
 bool get_data_by_id(std::string &out_data, SfoFile &file, int id);
