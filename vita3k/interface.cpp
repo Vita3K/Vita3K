@@ -498,15 +498,6 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
     return Success;
 }
 
-std::string replace_space(std::string &input, const std::string arg) {
-    if (input.find(arg) != std::string::npos) {
-        while (input.find(arg) != std::string::npos)
-            input.replace(input.find(arg), arg.size(), arg == "[space]" ? " " : "[space]");
-    }
-
-    return input;
-}
-
 static std::vector<std::string> split(const std::string &input, const std::string &regex) {
     std::regex re(regex);
     std::sregex_token_iterator
@@ -564,13 +555,11 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
     SceKernelThreadOptParam param{ 0, 0 };
     if (!host.cfg.console_arguments.empty()) {
-        auto args = split(host.cfg.console_arguments, "\\s+");
+        auto args = split(host.cfg.console_arguments, ",\\s+");
         // why is this flipped
         std::vector<uint8_t> buf;
-        for (auto &arg : args) {
-            replace_space(arg, "[space]");
+        for (auto &arg : args)
             buf.insert(buf.end(), arg.c_str(), arg.c_str() + arg.size() + 1);
-        }
         auto arr = Ptr<uint8_t>(alloc(host.mem, buf.size(), "arg"));
         memcpy(arr.get(host.mem), buf.data(), buf.size());
         auto abc = arr.get(host.mem);

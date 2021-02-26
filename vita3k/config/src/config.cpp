@@ -142,7 +142,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     auto input = app.add_option_group("Input", "Special options for Vita3K");
     input->add_option("--console,-z", command_line.console, "Starts the emulator in fullscreen mode.")
        ->default_val(false)->group("Input");
-    input->add_option("--console-arguments,-Z", command_line.console_arguments, "Argument for app, if your argument have space using [space].")
+    input->add_option("--console-arguments,-Z", command_line.console_arguments, "Argument for app, using ", " for separate argument.")
         ->default_str("")->group("Input");
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
