@@ -299,6 +299,12 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Grid Mode", &host.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable app list in grid mode.");
+        if (!host.cfg.apps_list_grid) {
+            ImGui::Spacing();
+            ImGui::SliderInt("App Icon Size", &host.cfg.icon_size, 32, 128);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Select your preferred icon size.");
+        }
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -318,12 +324,6 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             }
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for asian region font support in gui.\nIt is also generally recommended for gui");
-        }
-        if (!host.cfg.apps_list_grid) {
-            ImGui::Spacing();
-            ImGui::SliderInt("App Icon Size", &host.cfg.icon_size, 32, 128);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred icon size.");
         }
         ImGui::Spacing();
         ImGui::Separator();
