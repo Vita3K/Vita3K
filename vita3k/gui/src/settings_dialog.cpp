@@ -200,6 +200,14 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred backend renderer.");
 #endif
+        if (host.renderer->features.spirv_shader) {
+            ImGui::Checkbox("Use Spir-V shader", &host.cfg.spirv_shader);
+
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, "
+                                  "and not all GPU are compatible with this.");
+            }
+        }
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();

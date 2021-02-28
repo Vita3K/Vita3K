@@ -68,7 +68,7 @@ struct GLContext : public renderer::Context {
     GLTextureCacheState texture_cache;
     GLObjectArray<1> vertex_array;
     GLObjectArray<1> element_buffer;
-    GLObjectArray<30> uniform_buffer;
+    GLObjectArray<31> uniform_buffer;
     const GLRenderTarget *render_target;
 
     std::map<int, std::vector<uint8_t>> ubo_data;
@@ -77,8 +77,6 @@ struct GLContext : public renderer::Context {
     GLuint last_draw_program{ 0 };
 
     float viewport_flip[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
-
-    std::set<GLuint> need_resync_texture_slots;
 
     std::vector<UniformSetRequest> vertex_set_requests;
     std::vector<UniformSetRequest> fragment_set_requests;
