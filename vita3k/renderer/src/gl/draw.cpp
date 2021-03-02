@@ -41,6 +41,13 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     return GL_TRIANGLES;
 }
 
+struct GXMRenderUniformBlock {
+    float viewport_flip[4];
+    float viewport_flag;
+    float screen_width;
+    float screen_height;
+};
+
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, uint32_t instance_count,
     const MemState &mem, const char *base_path, const char *title_id, const Config &config) {
     R_PROFILE(__func__);
@@ -56,7 +63,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     if (state.vertex_program.get(mem)->renderer_data->hash != state.last_draw_vertex_program_hash || state.fragment_program.get(mem)->renderer_data->hash != state.last_draw_fragment_program_hash) {
         // Need to recompile!
         SharedGLObject program = gl::compile_program(renderer.program_cache, renderer.vertex_shader_cache,
-            renderer.fragment_shader_cache, state, features, mem, gxm_fragment_program.is_maskupdate, base_path, title_id);
+            renderer.fragment_shader_cache, state, features, mem, config.spirv_shader, gxm_fragment_program.is_maskupdate, base_path, title_id);
 
         if (!program) {
             LOG_ERROR("Fail to get program!");
@@ -83,66 +90,22 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         glGetIntegerv(GL_CURRENT_PROGRAM, reinterpret_cast<GLint *>(&program_id));
     }
 
-    const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_program_gxp);
-    std::array<bool, SCE_GXM_MAX_TEXTURE_UNITS> sampler_slot_used = { false };
-    for (std::uint32_t i = 0; i < fragment_program_gxp.parameter_count; ++i) {
-        const SceGxmProgramParameter &param = fragment_params[i];
-        if (param.category != SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-            continue;
-        }
-        if (context.need_resync_texture_slots.find(param.resource_index) != context.need_resync_texture_slots.end()) {
-            sync_texture(context, state, mem, param.resource_index, config, base_path, title_id);
-            context.need_resync_texture_slots.erase(param.resource_index);
-        }
-        sampler_slot_used[param.resource_index] = true;
-    }
-
     glUseProgram(program_id);
 
-    const auto bind_host_texture = [&](std::string uniform_name, int image_index, GLint texture) {
-        GLint loc = glGetUniformLocation(program_id, uniform_name.c_str());
-        // It maybe a hand-written shader. So colorAttachment didn't exist
-        if (loc != -1) {
-            if (features.should_use_shader_interlock()) {
-                glBindImageTexture(image_index, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
-            } else {
-                // Tries to find unused texture slot
-                auto it = std::find(sampler_slot_used.begin(), sampler_slot_used.end(), false);
-                if (it == sampler_slot_used.end())
-                    assert(false); // hahahahahahahahahahaha
-                auto index = it - sampler_slot_used.begin();
-                sampler_slot_used[index] = true;
-                context.need_resync_texture_slots.insert(index);
-                glUniform1i(loc, index);
-                glActiveTexture(GL_TEXTURE0 + index);
-                glBindTexture(GL_TEXTURE_2D, texture);
-            }
-        }
-    };
-
     if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
-        bind_host_texture("f_colorAttachment", shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.render_target->color_attachment[0]);
-    }
-    bind_host_texture("f_mask", shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0]);
-
-    // Try to configure the vertex shader, to output coordinates suited for GXM viewport
-    GLuint flip_vec_loc = glGetUniformLocation(program_id, "flip_vec");
-
-    if (flip_vec_loc != -1) {
-        // Let's do flipping
-        glUniform4fv(flip_vec_loc, 1, context.viewport_flip);
+        glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.render_target->color_attachment[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
     }
 
-    const auto set_uniform_if_exists = [&](const std::string &name, float val) {
-        GLuint loc = glGetUniformLocation(program_id, name.c_str());
-        if (loc != -1) {
-            glUniform1f(loc, val);
-        }
-    };
+    glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
 
-    set_uniform_if_exists("viewport_flag", state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED ? 1.0f : 0.0f);
-    set_uniform_if_exists("screen_width", state.color_surface.width);
-    set_uniform_if_exists("screen_height", state.color_surface.height);
+    GXMRenderUniformBlock uniform_block;
+
+    std::memcpy(uniform_block.viewport_flip, context.viewport_flip, sizeof(context.viewport_flip));
+    uniform_block.viewport_flag = (state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) ? 1.0f : 0.0f;
+    uniform_block.screen_width = state.color_surface.width;
+    uniform_block.screen_height = state.color_surface.height;
+
+    set_uniform_buffer(context, true, SCE_GXM_REAL_MAX_UNIFORM_BUFFER, sizeof(GXMRenderUniformBlock), &uniform_block, false);
 
     context.vertex_set_requests.clear();
     context.fragment_set_requests.clear();

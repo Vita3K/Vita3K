@@ -12,35 +12,48 @@
 #include <utility>
 
 namespace renderer::gl {
-static std::string load_shader(const char *hash, const char *extension, const char *base_path, const char *title_id) {
-    const auto shader_path = fs_utils::construct_file_name(base_path, (fs::path("shaders") / title_id).c_str(), hash, extension);
+static bool load_shader(const char *hash, const char *extension, const char *base_path, char **destination, std::size_t &size_read) {
+    const auto shader_path = fs_utils::construct_file_name(base_path, "shaders", hash, extension);
     fs::ifstream is(shader_path, fs::ifstream::binary);
     if (!is) {
-        return std::string();
+        return false;
     }
 
     is.seekg(0, fs::ifstream::end);
-    const size_t size = is.tellg();
+    size_read = is.tellg();
     is.seekg(0);
 
-    std::string source(size, ' ');
-    is.read(&source.front(), size);
+    if (size_read == 0) {
+        return false;
+    }
 
-    return source;
+    if (destination == nullptr) {
+        return true;
+    }
+
+    is.read(*destination, size_read);
+    return true;
 }
 
-std::string load_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id) {
+static const Sha256HashText get_shader_hash(const SceGxmProgram &program) {
     const Sha256Hash hash_bytes = sha256(&program, program.size);
-    auto shader_type_to_str = [](SceGxmProgramType type) {
-        return type == SceGxmProgramType::Vertex ? "vert" : type == SceGxmProgramType::Fragment ? "frag" : "unknown";
-    };
+    return hex(hash_bytes);
+}
 
-    SceGxmProgramType program_type = program.get_type();
-    const char *shader_type_str = shader_type_to_str(program_type);
+template <typename R, typename F>
+R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const char *shader_type_str) {
+    const Sha256HashText hash_text = get_shader_hash(program);
 
-    const Sha256HashText hash_text = hex(hash_bytes);
+    std::size_t read_size = 0;
+    R source;
 
-    std::string source = load_shader(hash_text.data(), shader_type_str, base_path, title_id);
+    if (load_shader(hash_text.data(), shader_type_str, base_path, nullptr, read_size)) {
+        source.resize((read_size + sizeof(typename R::value_type) - 1) / sizeof(typename R::value_type));
+
+        char *dest_pointer = reinterpret_cast<char *>(source.data());
+        load_shader(hash_text.data(), shader_type_str, base_path, &dest_pointer, read_size);
+    }
+
     if (source.empty()) {
         LOG_INFO("Generating {} shader {}", shader_type_str, hash_text.data());
 
@@ -71,10 +84,25 @@ std::string load_shader(const SceGxmProgram &program, const FeatureState &featur
             return true;
         };
 
-        source = shader::convert_gxp_to_glsl(program, hash_text.data(), features, hint_attributes, maskupdate, false, write_data_with_ext);
+        source = genfunc(program, hash_text.data(), features, hint_attributes, maskupdate, false, write_data_with_ext);
     }
 
     return source;
+}
+
+std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id) {
+    SceGxmProgramType program_type = program.get_type();
+
+    auto shader_type_to_str = [](SceGxmProgramType type) {
+        return (type == SceGxmProgramType::Vertex) ? "vert" : ((type == SceGxmProgramType::Fragment) ? "frag" : "unknown");
+    };
+
+    const char *shader_type_str = shader_type_to_str(program_type);
+    return load_shader_generic<std::string>(shader::convert_gxp_to_glsl, program, features, hint_attributes, maskupdate, base_path, title_id, shader_type_str);
+}
+
+std::vector<std::uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id) {
+    return load_shader_generic<std::vector<std::uint32_t>>(shader::convert_gxp_to_spirv, program, features, hint_attributes, maskupdate, base_path, title_id, "spv");
 }
 
 } // namespace renderer::gl

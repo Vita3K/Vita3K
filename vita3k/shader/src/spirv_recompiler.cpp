@@ -107,11 +107,8 @@ struct TranslationState {
     spv::Id last_frag_data_id = spv::NoResult;
     spv::Id color_attachment_id = spv::NoResult;
     spv::Id mask_id = spv::NoResult;
-    spv::Id viewport_flag_id = spv::NoResult;
-    spv::Id screen_width_id = spv::NoResult;
-    spv::Id screen_height_id = spv::NoResult;
     spv::Id frag_coord_id = spv::NoResult; ///< gl_FragCoord, not built-in in SPIR-V.
-    spv::Id flip_vec_id = spv::NoResult;
+    spv::Id render_info_id = spv::NoResult;
     std::vector<VarToReg> var_to_regs;
     std::vector<spv::Id> interfaces;
     bool is_maskupdate;
@@ -121,14 +118,17 @@ struct TranslationState {
 struct VertexProgramOutputProperties {
     std::string name;
     std::uint32_t component_count;
+    std::uint32_t location;
 
     VertexProgramOutputProperties()
         : name(nullptr)
-        , component_count(0) {}
+        , component_count(0)
+        , location(0) {}
 
-    VertexProgramOutputProperties(const char *name, std::uint32_t component_count)
+    VertexProgramOutputProperties(const char *name, std::uint32_t component_count, std::uint32_t location)
         : name(name)
-        , component_count(component_count) {}
+        , component_count(component_count)
+        , location(location) {}
 };
 using VertexProgramOutputPropertiesMap = std::map<SceGxmVertexProgramOutputs, VertexProgramOutputProperties>;
 
@@ -313,42 +313,37 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 }
 
 static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &features, TranslationState &translation_state, const std::string &name) {
-    int sampled = 1;
-    spv::ImageFormat img_format = spv::ImageFormatUnknown;
     spv::Id f32 = b.makeFloatType(32);
     spv::Id v4 = b.makeVectorType(f32, 4);
     spv::Id sampled_type = b.makeFloatType(32);
-    if (features.should_use_shader_interlock()) {
-        sampled = 2;
-        img_format = spv::ImageFormatRgba8;
-    }
-    spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
-    if (!features.should_use_shader_interlock()) {
-        image_type = b.makeSampledImageType(image_type);
-    }
 
+    int sampled = 2;
+    spv::ImageFormat img_format = spv::ImageFormatRgba8;
+
+    spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
     spv::Id sampler = b.createVariable(spv::StorageClassUniformConstant, image_type, name.c_str());
     translation_state.interfaces.push_back(sampler);
+
     return sampler;
 }
 
 static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translation_state, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
     const SceGxmProgram &program) {
-    static const std::unordered_map<std::uint32_t, std::string> name_map = {
-        { 0xD000, "v_Position" },
-        { 0xC000, "v_Fog" },
-        { 0xA000, "v_Color0" },
-        { 0xB000, "v_Color1" },
-        { 0x0, "v_TexCoord0" },
-        { 0x1000, "v_TexCoord1" },
-        { 0x2000, "v_TexCoord2" },
-        { 0x3000, "v_TexCoord3" },
-        { 0x4000, "v_TexCoord4" },
-        { 0x5000, "v_TexCoord5" },
-        { 0x6000, "v_TexCoord6" },
-        { 0x7000, "v_TexCoord7" },
-        { 0x8000, "v_TexCoord8" },
-        { 0x9000, "v_TexCoord9" },
+    static const std::unordered_map<std::uint32_t, std::pair<std::string, std::uint32_t>> name_map = {
+        { 0xD000, { "v_Position", 0 } },
+        { 0xC000, { "v_Fog", 3 } },
+        { 0xA000, { "v_Color0", 1 } },
+        { 0xB000, { "v_Color1", 2 } },
+        { 0x0, { "v_TexCoord0", 4 } },
+        { 0x1000, { "v_TexCoord1", 5 } },
+        { 0x2000, { "v_TexCoord2", 6 } },
+        { 0x3000, { "v_TexCoord3", 7 } },
+        { 0x4000, { "v_TexCoord4", 8 } },
+        { 0x5000, { "v_TexCoord5", 9 } },
+        { 0x6000, { "v_TexCoord6", 10 } },
+        { 0x7000, { "v_TexCoord7", 11 } },
+        { 0x8000, { "v_TexCoord8", 12 } },
+        { 0x9000, { "v_TexCoord9", 13 } },
     };
 
     // Both vertex output and this struct should stay in a larger varying struct
@@ -371,12 +366,15 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         // 4 bit flag indicates a PA!
         if ((descriptor->attribute_info & 0x4000F000) != 0xF000) {
             const uint32_t input_id = (descriptor->attribute_info & 0x4000F000);
+
             std::string pa_name;
+            std::uint32_t pa_loc = 0;
 
             if (input_id & 0x40000000) {
                 pa_name = "v_SpriteCoord";
             } else {
-                pa_name = name_map.at(input_id);
+                pa_name = name_map.at(input_id).first;
+                pa_loc = name_map.at(input_id).second;
             }
 
             std::string pa_type = "uchar";
@@ -408,11 +406,14 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Fragment will only copy what it needed.
             const auto pa_iter_type = b.makeVectorType(b.makeFloatType(32), 4);
             const auto pa_iter_size = num_comp * 4;
-            const auto pa_iter_var = b.createVariable(spv::StorageClassInput, pa_iter_type, pa_name.c_str());
+            spv::Id pa_iter_var = spv::NoResult;
 
             // TODO how about centroid?
             if (input_id == 0xD000) {
-                b.addDecoration(pa_iter_var, spv::DecorationBuiltIn, spv::BuiltInFragCoord);
+                pa_iter_var = translation_state.frag_coord_id;
+            } else {
+                pa_iter_var = b.createVariable(spv::StorageClassInput, pa_iter_type, pa_name.c_str());
+                b.addDecoration(pa_iter_var, spv::DecorationLocation, pa_loc);
             }
 
             translation_state.var_to_regs.push_back(
@@ -557,6 +558,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         }
     }
 
+    static constexpr std::uint32_t TEXCOORD_BASE_LOCATION = 4;
+
     for (auto &query_info : tex_query_infos) {
         if (coords[query_info.coord_index].first == spv::NoResult) {
             // Create an 'in' variable
@@ -566,6 +569,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             coords[query_info.coord_index].first = b.createVariable(spv::StorageClassInput,
                 b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ 4), coord_name.c_str());
+
+            b.addDecoration(coords[query_info.coord_index].first, spv::DecorationLocation, TEXCOORD_BASE_LOCATION + query_info.coord_index);
             translation_state.interfaces.push_back(coords[query_info.coord_index].first);
 
             coords[query_info.coord_index].second = static_cast<int>(DataType::F32);
@@ -580,10 +585,11 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     auto mask = create_builtin_sampler(b, features, translation_state, "f_mask");
     translation_state.mask_id = mask;
 
-    if (features.should_use_shader_interlock())
-        b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
+    b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
 
     spv::Id current_coord = b.createVariable(spv::StorageClassInput, v4, "gl_FragCoord");
+    b.addDecoration(current_coord, spv::DecorationBuiltIn, spv::BuiltInFragCoord);
+
     translation_state.interfaces.push_back(current_coord);
     translation_state.frag_coord_id = current_coord;
 
@@ -605,22 +611,15 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         } else if (features.support_shader_interlock || features.support_texture_barrier) {
             // Create a global sampler, which is our color attachment
             auto color_attachment = create_builtin_sampler(b, features, translation_state, "f_colorAttachment");
-            if (features.should_use_shader_interlock())
-                b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
+
+            b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
             translation_state.color_attachment_id = color_attachment;
 
             spv::Id i32 = b.makeIntegerType(32, true);
             current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord));
             current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
 
-            spv::Id texel = spv::NoResult;
-
-            if (features.should_use_shader_interlock())
-                texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment), current_coord });
-            else
-                texel = b.createOp(spv::OpImageFetch, v4, { b.createLoad(color_attachment), current_coord });
-
-            source = texel;
+            source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment), current_coord });
         } else {
             // Try to initialize outs[0] to some nice value. In case the GPU has garbage data for our shader
             spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
@@ -698,7 +697,7 @@ static spv::Id create_uniform_block(spv::Builder &b, const FeatureState &feature
     const std::string buffer_var_name = fmt::format("buffer{}", base_binding);
     spv::Id default_buffer = b.createVariable(spv::StorageClassUniform, default_buffer_type, buffer_var_name.c_str());
     if (features.use_shader_binding)
-        b.addDecoration(default_buffer, spv::DecorationBinding, ((!is_vert) ? 15 : 0) + base_binding);
+        b.addDecoration(default_buffer, spv::DecorationBinding, ((!is_vert) ? 16 : 0) + base_binding);
 
     b.addMemberDecoration(default_buffer_type, 0, spv::DecorationOffset, 0);
     b.addDecoration(vec4_arr_type, spv::DecorationArrayStride, 16);
@@ -948,24 +947,27 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     if (program_type == SceGxmProgramType::Vertex) {
         spv::Id f32 = b.makeFloatType(32);
-        spv::Id flag_id = b.createVariable(spv::StorageClassUniformConstant, f32, "viewport_flag");
-        translation_state.viewport_flag_id = flag_id;
-
-        spv::Id width_id = b.createVariable(spv::StorageClassUniformConstant, f32, "screen_width");
-        translation_state.screen_width_id = width_id;
-
-        spv::Id height_id = b.createVariable(spv::StorageClassUniformConstant, f32, "screen_height");
-        translation_state.screen_height_id = height_id;
-    }
-
-    if (program_type == SceGxmProgramType::Vertex) {
-        // Create variable that helps us do flipping
-        // TODO: Not emit this on Vulkan or DirectX
-        spv::Id f32 = b.makeFloatType(32);
         spv::Id v4 = b.makeVectorType(f32, 4);
 
-        spv::Id flip_vec = b.createVariable(spv::StorageClassUniformConstant, v4, "flip_vec");
-        translation_state.flip_vec_id = flip_vec;
+        // Create the default reg uniform buffer
+        spv::Id render_buf_type = b.makeStructType({ v4, f32, f32, f32 }, "GxmRenderBufferBlock");
+        b.addDecoration(render_buf_type, spv::DecorationBlock);
+        b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
+
+        b.addMemberDecoration(render_buf_type, 0, spv::DecorationOffset, 0);
+        b.addMemberDecoration(render_buf_type, 1, spv::DecorationOffset, 16);
+        b.addMemberDecoration(render_buf_type, 2, spv::DecorationOffset, 20);
+        b.addMemberDecoration(render_buf_type, 3, spv::DecorationOffset, 24);
+
+        b.addMemberName(render_buf_type, 0, "viewport_flip");
+        b.addMemberName(render_buf_type, 1, "viewport_flag");
+        b.addMemberName(render_buf_type, 2, "screen_width");
+        b.addMemberName(render_buf_type, 3, "screen_height");
+
+        translation_state.render_info_id = b.createVariable(spv::StorageClassUniform, render_buf_type, "renderInfo");
+
+        if (features.use_shader_binding)
+            b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, 15);
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
@@ -1037,12 +1039,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
         spv::Id sampled_type = b.makeFloatType(32);
         spv::Id v4 = b.makeVectorType(sampled_type, 4);
-        spv::Id texel = spv::NoResult;
-
-        if (features.should_use_shader_interlock())
-            texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id), current_coord });
-        else
-            texel = b.createOp(spv::OpImageFetch, v4, { b.createLoad(translate_state.mask_id), current_coord });
+        spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id), current_coord });
         spv::Id rezero = b.makeFloatConstant(0.5f);
         spv::Id zero = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
         spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeBoolType(), { texel, zero });
@@ -1086,24 +1083,24 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     VertexProgramOutputPropertiesMap vertex_properties_map;
     // list is used here to gurantee the vertex outputs are written in right order
     std::list<SceGxmVertexProgramOutputs> vertex_outputs_list;
-    const auto add_vertex_output_info = [&](SceGxmVertexProgramOutputs vo, const char *name, std::uint32_t component_count) {
-        vertex_properties_map.emplace(vo, VertexProgramOutputProperties(name, component_count));
+    const auto add_vertex_output_info = [&](SceGxmVertexProgramOutputs vo, const char *name, std::uint32_t component_count, std::uint32_t location) {
+        vertex_properties_map.emplace(vo, VertexProgramOutputProperties(name, component_count, location));
         vertex_outputs_list.push_back(vo);
     };
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION, "v_Position", 4);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0, "v_Color0", 4);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1, "v_Color1", 4);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG, "v_Fog", 2);
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0, "v_TexCoord0", calculate_copy_comp_count(coord_infos[0]));
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1, "v_TexCoord1", calculate_copy_comp_count(coord_infos[1]));
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2, "v_TexCoord2", calculate_copy_comp_count(coord_infos[2]));
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3, "v_TexCoord3", calculate_copy_comp_count(coord_infos[3]));
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4, "v_TexCoord4", calculate_copy_comp_count(coord_infos[4]));
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5, "v_TexCoord5", calculate_copy_comp_count(coord_infos[5]));
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6, "v_TexCoord6", calculate_copy_comp_count(coord_infos[6]));
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7, "v_TexCoord7", calculate_copy_comp_count(coord_infos[7]));
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8, "v_TexCoord8", calculate_copy_comp_count(coord_infos[8]));
-    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9, "v_TexCoord9", calculate_copy_comp_count(coord_infos[9]));
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION, "v_Position", 4, 0);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0, "v_Color0", 4, 1);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1, "v_Color1", 4, 2);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG, "v_Fog", 2, 3);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0, "v_TexCoord0", calculate_copy_comp_count(coord_infos[0]), 4);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1, "v_TexCoord1", calculate_copy_comp_count(coord_infos[1]), 5);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2, "v_TexCoord2", calculate_copy_comp_count(coord_infos[2]), 6);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3, "v_TexCoord3", calculate_copy_comp_count(coord_infos[3]), 7);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4, "v_TexCoord4", calculate_copy_comp_count(coord_infos[4]), 8);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5, "v_TexCoord5", calculate_copy_comp_count(coord_infos[5]), 9);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6, "v_TexCoord6", calculate_copy_comp_count(coord_infos[6]), 10);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7, "v_TexCoord7", calculate_copy_comp_count(coord_infos[7]), 11);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8, "v_TexCoord8", calculate_copy_comp_count(coord_infos[8]), 12);
+    add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9, "v_TexCoord9", calculate_copy_comp_count(coord_infos[9]), 13);
     // TODO: this should be translated to gl_PointSize
     //add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE, "v_Psize", 1);
     // TODO: these should be translated to gl_ClipDistance
@@ -1129,6 +1126,8 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
             // TODO: use the actual size of variable
             const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), 4);
             const spv::Id out_var = b.createVariable(spv::StorageClassOutput, out_type, properties.name.c_str());
+
+            b.addDecoration(out_var, spv::DecorationLocation, properties.location);
             translation_state.interfaces.push_back(out_var);
 
             // Do store
@@ -1147,18 +1146,23 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                 spv::Id neg_two = b.makeFloatConstant(-2.0f);
                 spv::Id zero = b.makeFloatConstant(0.0f);
 
-                spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeBoolType(), { b.createLoad(translation_state.viewport_flag_id), half });
+                spv::Id viewport_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(1) });
+                spv::Id screen_width_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(2) });
+                spv::Id screen_height_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(3) });
+
+                spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeBoolType(), { b.createLoad(viewport_id), half });
                 spv::Builder::If cond_builder(pred, spv::SelectionControlMaskNone, b);
 
-                spv::Id width_recp = b.createBinOp(spv::OpFDiv, f32, two, b.createLoad(translation_state.screen_width_id));
-                spv::Id height_recp = b.createBinOp(spv::OpFDiv, f32, neg_two, b.createLoad(translation_state.screen_height_id));
+                spv::Id width_recp = b.createBinOp(spv::OpFDiv, f32, two, b.createLoad(screen_width_id));
+                spv::Id height_recp = b.createBinOp(spv::OpFDiv, f32, neg_two, b.createLoad(screen_height_id));
                 spv::Id scale = b.createCompositeConstruct(v4, { width_recp, height_recp, one, one });
                 spv::Id constant = b.createCompositeConstruct(v4, { neg_one, one, zero, zero });
                 spv::Id o_val2 = b.createBinOp(spv::OpFMul, v4, o_val, scale);
                 o_val2 = b.createBinOp(spv::OpFAdd, v4, o_val2, constant);
 
-                if (translation_state.flip_vec_id != spv::NoResult) {
-                    o_val2 = b.createBinOp(spv::OpFMul, v4, o_val2, translation_state.flip_vec_id);
+                if (translation_state.render_info_id != spv::NoResult) {
+                    spv::Id flip_vec_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(0) });
+                    o_val2 = b.createBinOp(spv::OpFMul, v4, o_val2, flip_vec_id);
                 }
 
                 // o_val2 = (x,y) * (2/width, -2/height) + (-1,1)
@@ -1166,8 +1170,9 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
                 cond_builder.makeBeginElse();
 
-                if (translation_state.flip_vec_id != spv::NoResult) {
-                    o_val = b.createBinOp(spv::OpFMul, out_type, o_val, translation_state.flip_vec_id);
+                if (translation_state.render_info_id != spv::NoResult) {
+                    spv::Id flip_vec_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(0) });
+                    o_val = b.createBinOp(spv::OpFMul, out_type, o_val, flip_vec_id);
                 }
 
                 b.createStore(o_val, out_var);
@@ -1186,7 +1191,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     return vert_fin_func;
 }
 
-static SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
+static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     SpirvCode spirv;
 
     SceGxmProgramType program_type = program.get_type();
@@ -1476,12 +1481,19 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 // ***************************
 // * Functions (exposed API) *
 // ***************************
+usse::SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
+    TranslationState translation_state;
+    translation_state.is_fragment = program.is_fragment();
+    translation_state.is_maskupdate = maskupdate;
+
+    return convert_gxp_to_spirv_impl(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
+}
 
 std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
     translation_state.is_maskupdate = maskupdate;
-    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
+    std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv_impl(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
 
     const auto source = convert_spirv_to_glsl(shader_name, spirv_binary, features, translation_state);
 
@@ -1516,6 +1528,7 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
     features.direct_fragcolor = false;
     features.support_shader_interlock = true;
     features.pack_unpack_half_through_ext = false;
+    features.use_shader_binding = true;
 
     convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), features, nullptr, false, true);
 

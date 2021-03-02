@@ -84,7 +84,8 @@
     code(bool, "dump-textures", false, dump_textures)                                                   \
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
-    code(bool, "video-playing", true, video_playing)
+    code(bool, "video-playing", true, video_playing)                                                    \
+    code(bool, "spirv-shader", false, spirv_shader)
 
 // Vector members produced in the config file
 // Order is code(option_type, option_name, default_value)
