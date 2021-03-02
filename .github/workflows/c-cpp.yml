@@ -40,8 +40,10 @@ jobs:
             cache_path: ~/Library/Caches/ccache
           - os: ubuntu-latest
             cache_path: ~/.ccache
+            extra_cmake_args: -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUSE_DISCORD_RICH_PRESENCE=OFF
           - os: windows-latest
             cache_path: ~\AppData\Local\Mozilla\sccache
+            extra_cmake_args: -DBOOST_ROOT=C:\hostedtoolcache\windows\Boost\1.72.0\x86_64 -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
     steps:
       - name: Set up build environment (macos-latest)
@@ -79,7 +81,7 @@ jobs:
 
       - name: CMake
         run: |
-          cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} -G Ninja
+          cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} ${{ matrix.extra_cmake_args }} -G Ninja
           cmake --build build --config ${{ matrix.config }}
         if: matrix.os != 'windows-latest'
 
@@ -87,7 +89,7 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
-          cmake -B build -DBOOST_ROOT=C:\hostedtoolcache\windows\Boost\1.72.0\x86_64 -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache -G Ninja
+          cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} ${{ matrix.extra_cmake_args }} -G Ninja
           cmake --build build --config ${{ matrix.config }}
         if: matrix.os == 'windows-latest'
 
