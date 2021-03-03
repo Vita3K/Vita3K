@@ -414,16 +414,22 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
     if (!params || !context)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    *context = alloc<SceGxmContext>(host.mem, __FUNCTION__);
-    if (!*context) {
-        return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
+    if (params->hostMemSize < sizeof(SceGxmContext)) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
+    *context = params->hostMem.cast<SceGxmContext>();
+
     SceGxmContext *const ctx = context->get(host.mem);
-    ctx->state.params = *params;
+
+    ctx->state.fragment_ring_buffer = params->fragmentRingBufferMem;
+    ctx->state.vertex_ring_buffer = params->vertexRingBufferMem;
+    ctx->state.fragment_ring_buffer_size = params->fragmentRingBufferMemSize;
+    ctx->state.vertex_ring_buffer_size = params->vertexRingBufferMemSize;
+
+    ctx->state.type = SCE_GXM_CONTEXT_TYPE_IMMEDIATE;
 
     if (!renderer::create_context(*host.renderer, ctx->renderer)) {
-        free(host.mem, *context);
         context->reset();
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
@@ -432,10 +438,22 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
 }
 
 EXPORT(int, sceGxmCreateDeferredContext, SceGxmDeferredContextParams *params, Ptr<SceGxmContext> *deferredContext) {
-    if (!params) {
+    if (!params || !deferredContext)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    if (params->hostMemSize < sizeof(SceGxmContext)) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
-    return UNIMPLEMENTED();
+
+    *deferredContext = params->hostMem.cast<SceGxmContext>();
+    SceGxmContext *const ctx = deferredContext->get(host.mem);
+
+    ctx->state.vertex_memory_callback = params->vertexCallback;
+    ctx->state.fragment_memory_callback = params->fragmentCallback;
+
+    ctx->state.type = SCE_GXM_CONTEXT_TYPE_DEFERRED;
+
+    return 0;
 }
 
 EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Ptr<SceGxmRenderTarget> *renderTarget) {
@@ -657,8 +675,8 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
 
         const size_t size = (size_t)program->default_uniform_buffer_count * 4;
         const size_t next_used = context->state.vertex_ring_buffer_used + size;
-        assert(next_used <= context->state.params.vertexRingBufferMemSize);
-        if (next_used > context->state.params.vertexRingBufferMemSize) {
+        assert(next_used <= context->state.vertex_ring_buffer_size);
+        if (next_used > context->state.vertex_ring_buffer_size) {
             return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED); // TODO: Does not actually return this on immediate context
         }
 
@@ -671,8 +689,8 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
 
         const size_t size = (size_t)program->default_uniform_buffer_count * 4;
         const size_t next_used = context->state.fragment_ring_buffer_used + size;
-        assert(next_used <= context->state.params.fragmentRingBufferMemSize);
-        if (next_used > context->state.params.fragmentRingBufferMemSize) {
+        assert(next_used <= context->state.fragment_ring_buffer_size);
+        if (next_used > context->state.fragment_ring_buffer_size) {
             return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED); // TODO: Does not actually return this on immediate context
         }
 
@@ -926,8 +944,8 @@ EXPORT(int, sceGxmGetContextType, const SceGxmContext *context, SceGxmContextTyp
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    STUBBED("SCE_GXM_CONTEXT_TYPE_IMMEDIATE");
-    *type = SCE_GXM_CONTEXT_TYPE_IMMEDIATE;
+    *type = context->state.type;
+
     return 0;
 }
 
@@ -1659,7 +1677,7 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     if (!context || !uniformBuffer)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    *uniformBuffer = context->state.params.fragmentRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
+    *uniformBuffer = context->state.fragment_ring_buffer.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
     context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Reserved;
     context->state.fragment_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
 
@@ -1674,7 +1692,7 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     if (!context || !uniformBuffer)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    *uniformBuffer = context->state.params.vertexRingBufferMem.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
+    *uniformBuffer = context->state.vertex_ring_buffer.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
 
     context->state.vertex_last_reserve_status = SceGxmLastReserveStatus::Reserved;
     context->state.vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
@@ -1748,25 +1766,51 @@ EXPORT(void, sceGxmSetDefaultRegionClipAndViewport, SceGxmContext *context, uint
         0.5f, 0.5f * static_cast<float>(1 + xMax - xMin), -0.5f * static_cast<float>(1 + yMax - yMin), 0.5f);
 }
 
-EXPORT(int, sceGxmSetDeferredContextFragmentBuffer, SceGxmContext *deferredContext, void *mem, uint32_t size) {
+static const int STUB_RING_BUFFER_SIZE = 4096;
+
+EXPORT(int, sceGxmSetDeferredContextFragmentBuffer, SceGxmContext *deferredContext, Ptr<void> mem, uint32_t size) {
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    if (!mem || (size == 0)) {
+        // TODO: Call the callback. This is so sad
+        deferredContext->state.fragment_ring_buffer = alloc(host.mem, STUB_RING_BUFFER_SIZE, "RingBuffer");
+        deferredContext->state.fragment_ring_buffer_size = STUB_RING_BUFFER_SIZE;
+    } else {
+        // Use the one specified
+        deferredContext->state.fragment_ring_buffer = mem;
+        deferredContext->state.fragment_ring_buffer_size = size;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceGxmSetDeferredContextVdmBuffer, SceGxmContext *deferredContext, void *mem, uint32_t size) {
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    // Ignored, no business with us
+    return 0;
 }
 
-EXPORT(int, sceGxmSetDeferredContextVertexBuffer, SceGxmContext *deferredContext, void *mem, uint32_t size) {
+EXPORT(int, sceGxmSetDeferredContextVertexBuffer, SceGxmContext *deferredContext, Ptr<void> mem, uint32_t size) {
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    if (!mem || (size == 0)) {
+        // TODO: Call the callback. This is so sad
+        deferredContext->state.vertex_ring_buffer = alloc(host.mem, STUB_RING_BUFFER_SIZE, "RingBuffer");
+        deferredContext->state.vertex_ring_buffer_size = STUB_RING_BUFFER_SIZE;
+    } else {
+        // Use the one specified
+        deferredContext->state.vertex_ring_buffer = mem;
+        deferredContext->state.vertex_ring_buffer_size = size;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceGxmSetFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<const void> bufferData) {
