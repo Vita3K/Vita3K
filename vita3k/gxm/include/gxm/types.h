@@ -1155,9 +1155,9 @@ typedef void *(*SceGxmDeferredContextCallback)(void *userData, uint32_t minSize,
 struct SceGxmDeferredContextParams {
     Ptr<void> hostMem;
     uint32_t hostMemSize;
-    SceGxmDeferredContextCallback vdmCallback;
-    SceGxmDeferredContextCallback vertexCallback;
-    SceGxmDeferredContextCallback fragmentCallback;
+    Ptr<SceGxmDeferredContextCallback> vdmCallback;
+    Ptr<SceGxmDeferredContextCallback> vertexCallback;
+    Ptr<SceGxmDeferredContextCallback> fragmentCallback;
     Ptr<void> userData;
     Ptr<void> vdmBufferMem;
     uint32_t vdmBufferMemSize;
@@ -1208,7 +1208,7 @@ struct GXMRecordState {
 
 struct GxmContextState {
     // Constant after initialisation.
-    SceGxmContextParams params;
+    SceGxmContextType type;
 
     // Surfaces.
     SceGxmColorSurface color_surface;
@@ -1238,6 +1238,11 @@ struct GxmContextState {
     size_t vertex_ring_buffer_used = 0;
     SceGxmLastReserveStatus fragment_last_reserve_status = SceGxmLastReserveStatus::Available;
     SceGxmLastReserveStatus vertex_last_reserve_status = SceGxmLastReserveStatus::Available;
+
+    Ptr<void> vertex_ring_buffer;
+    uint32_t vertex_ring_buffer_size;
+    Ptr<void> fragment_ring_buffer;
+    uint32_t fragment_ring_buffer_size;
 
     // Vertex streams.
     StreamDatas stream_data;
@@ -1278,6 +1283,10 @@ struct GxmContextState {
     // Precomputed
     Ptr<SceGxmPrecomputedVertexState> precomputed_vertex_state;
     Ptr<SceGxmPrecomputedFragmentState> precomputed_fragment_state;
+
+    // Deferred
+    Ptr<SceGxmDeferredContextCallback> vertex_memory_callback;
+    Ptr<SceGxmDeferredContextCallback> fragment_memory_callback;
 };
 
 struct SceGxmFragmentProgram {
