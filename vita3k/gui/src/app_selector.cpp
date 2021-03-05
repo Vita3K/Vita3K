@@ -185,8 +185,8 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawCornerFlags_All);
 
     if (gui.delete_app_icon) {
-        if (gui.app_selector.user_apps_icon.find(host.app_title_id) != gui.app_selector.user_apps_icon.end())
-            gui.app_selector.user_apps_icon.erase(host.app_title_id);
+        if (gui.app_selector.user_apps_icon.find(host.app_path) != gui.app_selector.user_apps_icon.end())
+            gui.app_selector.user_apps_icon.erase(host.app_path);
         gui.delete_app_icon = false;
     }
 

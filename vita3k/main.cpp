@@ -144,8 +144,7 @@ int main(int argc, char *argv[]) {
 
     if (run_type == app::AppRunType::Extracted) {
         host.io.app_path = cfg.run_app_path ? *cfg.run_app_path : host.app_title_id;
-        gui::get_user_app_params(gui, host, host.io.app_path);
-        gui::init_apps_icon(gui, host, gui.app_selector.user_apps);
+        gui::init_user_app(gui, host, host.io.app_path);
         if (host.cfg.run_app_path)
             host.cfg.run_app_path.reset();
     }

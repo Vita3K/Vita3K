@@ -187,42 +187,47 @@ static void init_font(GuiState &gui, HostState &host) {
     }
 }
 
-void init_apps_icon(GuiState &gui, HostState &host, const std::vector<App> &apps_list) {
-    for (const App &app : apps_list) {
-        int32_t width = 0;
-        int32_t height = 0;
-        vfs::FileBuffer buffer;
+void init_app_icon(GuiState &gui, HostState &host, const std::string &app_path) {
+    int32_t width = 0;
+    int32_t height = 0;
+    vfs::FileBuffer buffer;
 
-        if (app.title_id.find("NPXS") != std::string::npos)
-            vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app.title_id + "/sce_sys/icon0.png");
-        else
-            vfs::read_app_file(buffer, host.pref_path, app.path, "sce_sys/icon0.png");
+    if (app_path.find("NPXS") != std::string::npos)
+        vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/icon0.png");
+    else
+        vfs::read_app_file(buffer, host.pref_path, app_path, "sce_sys/icon0.png");
 
-        const auto default_fw_icon{ fs::path(host.pref_path) / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
-        const auto default_icon{ fs::path(host.base_path) / "data/image/icon.png" };
+    const auto default_fw_icon{ fs::path(host.pref_path) / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
+    const auto default_icon{ fs::path(host.base_path) / "data/image/icon.png" };
 
-        if (buffer.empty()) {
-            if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
-                LOG_INFO("Default icon found for title {}, [{}] in path {}.", app.title_id, app.title, app.path);
-                std::ifstream image_stream(fs::exists(default_fw_icon) ? default_fw_icon.string() : default_icon.string(), std::ios::binary | std::ios::ate);
-                const std::size_t fsize = image_stream.tellg();
-                buffer.resize(fsize);
-                image_stream.seekg(0, std::ios::beg);
-                image_stream.read(reinterpret_cast<char *>(&buffer[0]), fsize);
-            } else {
-                LOG_WARN("Default icon not found for title {}, [{}] in path {}.", app.title_id, app.title, app.path);
-                continue;
-            }
+    const auto APP_INDEX = get_app_index(gui, app_path);
+
+    if (buffer.empty()) {
+        if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
+            LOG_INFO("Default icon found for title {}, [{}] in path {}.", APP_INDEX->title_id, APP_INDEX->title, app_path);
+            std::ifstream image_stream(fs::exists(default_fw_icon) ? default_fw_icon.string() : default_icon.string(), std::ios::binary | std::ios::ate);
+            const std::size_t fsize = image_stream.tellg();
+            buffer.resize(fsize);
+            image_stream.seekg(0, std::ios::beg);
+            image_stream.read(reinterpret_cast<char *>(&buffer[0]), fsize);
+        } else {
+            LOG_WARN("Default icon not found for title {}, [{}] in path {}.", APP_INDEX->title_id, APP_INDEX->title, app_path);
+            return;
         }
-        stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-        if (!data || width != 128 || height != 128) {
-            LOG_ERROR("Invalid icon for title {}, [{}] in path {}.", app.title_id, app.title, app.path);
-            continue;
-        }
-        auto &app_icon = app.path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
-        app_icon[app.path].init(gui.imgui_state.get(), data, width, height);
-        stbi_image_free(data);
     }
+    stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+    if (!data || width != 128 || height != 128) {
+        LOG_ERROR("Invalid icon for title {}, [{}] in path {}.", APP_INDEX->title_id, APP_INDEX->title, app_path);
+        return;
+    }
+    auto &app_icon = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+    app_icon[app_path].init(gui.imgui_state.get(), data, width, height);
+    stbi_image_free(data);
+}
+
+void init_apps_icon(GuiState &gui, HostState &host, const std::vector<gui::App> &app_list) {
+    for (const auto &app : app_list)
+        init_app_icon(gui, host, app.path);
 }
 
 void init_app_background(GuiState &gui, HostState &host, const std::string &app_path) {
@@ -272,6 +277,22 @@ void init_home(GuiState &gui, HostState &host) {
     }
 }
 
+void init_user_app(GuiState &gui, HostState &host, const std::string &app_path) {
+    const auto APP_INDEX = get_app_index(gui, app_path);
+    if (APP_INDEX != gui.app_selector.user_apps.end()) {
+        gui.app_selector.user_apps.erase(APP_INDEX);
+        if (gui.app_selector.user_apps_icon.find(app_path) != gui.app_selector.user_apps_icon.end())
+            gui.app_selector.user_apps_icon.erase(app_path);
+    }
+
+    get_app_param(gui, host, app_path);
+    init_app_icon(gui, host, app_path);
+
+    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
+        return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
+    });
+}
+
 std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &app_path) {
     const auto &app_type = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
     const auto app_icon = std::find_if(app_type.begin(), app_type.end(), [&](const auto &i) {
@@ -290,12 +311,12 @@ std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string 
     return app_index;
 }
 
-void get_user_app_params(GuiState &gui, HostState &host, const std::string &app_path) {
+void get_app_param(GuiState &gui, HostState &host, const std::string &app_path) {
     host.app_path = app_path;
-    vfs::FileBuffer params;
-    if (vfs::read_app_file(params, host.pref_path, app_path, "sce_sys/param.sfo")) {
+    vfs::FileBuffer param;
+    if (vfs::read_app_file(param, host.pref_path, app_path, "sce_sys/param.sfo")) {
         SfoFile sfo_handle;
-        sfo::load(sfo_handle, params);
+        sfo::load(sfo_handle, param);
         sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
         if (host.app_version[0] == '0')
             host.app_version.erase(host.app_version.begin());
@@ -325,7 +346,7 @@ void get_user_apps_title(GuiState &gui, HostState &host) {
         if (!app.path().empty() && fs::is_directory(app.path())
             && !app.path().filename_is_dot() && !app.path().filename_is_dot_dot()) {
             const auto app_path = app.path().stem().generic_string();
-            get_user_app_params(gui, host, app_path);
+            get_app_param(gui, host, app_path);
         }
     }
 }
@@ -411,25 +432,8 @@ void update_notice_info(GuiState &gui, HostState &host, const std::string &type)
     if (type == "content") {
         if (host.app_category == "gd") {
             msg = !indicator["app_added_home"].empty() ? indicator["app_added_home"] : "The application has been added to the home screen.";
-
-            int32_t width = 0;
-            int32_t height = 0;
-            vfs::FileBuffer buffer;
-
-            vfs::read_app_file(buffer, host.pref_path, host.app_path, "sce_sys/pic0.png");
-
-            if (buffer.empty()) {
-                LOG_WARN("Notice icon not found for content {} [{}].", host.app_title_id, host.app_title);
-                return;
-            }
-            stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-            if (!data) {
-                LOG_ERROR("Invalid background for application {} [{}].", host.app_title_id, host.app_title);
-                return;
-            }
-
-            gui.notice_info_icon[pos].init(gui.imgui_state.get(), data, width, height);
-            stbi_image_free(data);
+            if (gui.app_selector.user_apps_icon.find(host.app_path) != gui.app_selector.user_apps_icon.end())
+                gui.notice_info_icon[pos] = gui.app_selector.user_apps_icon[host.app_path];
         } else
             msg = !indicator["install_complete"].empty() ? indicator["install_complete"] : "Installation complete.";
 
@@ -449,24 +453,19 @@ void update_notice_info(GuiState &gui, HostState &host, const std::string &type)
             trophy_kind_s = "(Platinum)";
             break;
         }
-
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD: {
             trophy_kind_s = ("Gold");
             break;
         }
-
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER: {
             trophy_kind_s = "(Silver)";
             break;
         }
-
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE: {
             trophy_kind_s = "(Bronze)";
             break;
         }
-
-        default:
-            break;
+        default: break;
         }
         const auto name = trophy_kind_s + " " + trophy_data.trophy_name;
         msg = !indicator["trophy_earned"].empty() ? indicator["trophy_earned"] : "You have earned a trophy!";
@@ -506,7 +505,7 @@ void init(GuiState &gui, HostState &host) {
     init_style();
     init_font(gui, host);
     init_lang(gui, host);
-    init_users(gui, host);
+    get_users_list(gui, host);
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);

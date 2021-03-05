@@ -156,7 +156,8 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
             draw_file_dialog = true;
             archive_path = nullptr;
             if (host.app_category == "gd")
-                refresh_app_list(gui, host);
+                init_user_app(gui, host, host.app_title_id);
+            update_notice_info(gui, host, "content");
             gui.file_menu.archive_install_dialog = false;
         }
         ImGui::EndPopup();

@@ -106,13 +106,12 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::SetCursorPosX(POS_BUTTON);
+            ImGui::SetCursorPos(ImVec2(POS_BUTTON - (BUTTON_SIZE.x / 2) - 10.f, ImGui::GetWindowSize().y / 2));
             if (ImGui::Button("Cancel", BUTTON_SIZE)) {
                 state.clear();
                 zRIF.clear();
             }
-            ImGui::SameLine();
-            ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) + 10.f);
+            ImGui::SameLine(0, 20.f);
             if (ImGui::Button("Ok", BUTTON_SIZE) && !zRIF.empty())
                 state = "install";
         } else if (state == "install") {
@@ -149,9 +148,9 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                     fs::remove(fs::path(string_utils::utf_to_wide(std::string(work_path))));
                     delete_work_file = false;
                 }
-                update_notice_info(gui, host, "content");
                 if (host.app_category == "gd")
-                    refresh_app_list(gui, host);
+                    init_user_app(gui, host, host.app_title_id);
+                update_notice_info(gui, host, "content");
                 pkg_path = nullptr;
                 work_path = nullptr;
                 gui.file_menu.pkg_install_dialog = false;

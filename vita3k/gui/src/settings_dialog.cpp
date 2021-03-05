@@ -85,7 +85,7 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
         get_modules_list(gui, host);
         refresh_app_list(gui, host);
         get_sys_apps_title(gui, host);
-        init_users(gui, host);
+        get_users_list(gui, host);
         gui.configuration_menu.settings_dialog = false;
         gui.live_area.app_selector = false;
         gui.live_area.user_management = true;

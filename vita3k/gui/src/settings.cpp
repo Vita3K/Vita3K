@@ -800,12 +800,11 @@ void draw_settings(GuiState &gui, HostState &host) {
                             if (theme_selected == gui.users[host.io.user_id].theme_id) {
                                 gui.users[host.io.user_id].theme_id = "default";
                                 gui.users[host.io.user_id].start_path.clear();
-                                save_user(gui, host, host.io.user_id);
-                                init_apps_icon(gui, host, gui.app_selector.sys_apps);
                                 if (init_theme(gui, host, "default"))
                                     gui.users[host.io.user_id].use_theme_bg = true;
                                 else
                                     gui.users[host.io.user_id].use_theme_bg = false;
+                                save_user(gui, host, host.io.user_id);
                                 init_theme_start_background(gui, host, "default");
                             }
                             fs::remove_all(fs::path{ host.pref_path } / "ux0/theme" / theme_selected);
