@@ -601,6 +601,9 @@ void init_live_area(GuiState &gui, HostState &host) {
                     if (livearea_background.child("lang").text().as_string() == user_lang) {
                         name["livearea-background"] = livearea_background.text().as_string();
                         break;
+                    } else if (!livearea_background.child("exclude-lang").empty() && livearea_background.child("exclude-lang").text().as_string() != user_lang) {
+                        name["livearea-background"] = livearea_background.text().as_string();
+                        break;
                     } else if (livearea_background.attribute("default").as_string() == std::string("on")) {
                         name["livearea-background"] = livearea_background.text().as_string();
                         break;

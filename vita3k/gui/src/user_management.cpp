@@ -62,7 +62,7 @@ static bool init_avatar(GuiState &gui, HostState &host, const std::string &user_
     return gui.users_avatar.find(user_id) != gui.users_avatar.end();
 }
 
-void init_users(GuiState &gui, HostState &host) {
+void get_users_list(GuiState &gui, HostState &host) {
     gui.users.clear();
     const auto user_path{ fs::path(host.pref_path) / "ux0/user" };
     if (fs::exists(user_path) && !fs::is_empty(user_path)) {
