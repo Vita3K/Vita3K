@@ -54,7 +54,11 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
         Command *last_cmd = cmd;
         cmd = cmd->next;
 
-        delete last_cmd;
+        if (command_list.context) {
+            mspace_free(command_list.context->alloc_space, last_cmd);
+        } else {
+            delete last_cmd;
+        }
     } while (true);
 }
 

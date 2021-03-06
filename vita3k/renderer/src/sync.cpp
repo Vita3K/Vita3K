@@ -72,6 +72,7 @@ void submit_command_list(State &state, renderer::Context *context, GxmContextSta
     CommandList &command_list) {
     command_list.context = context;
     command_list.gxm_context = context_state;
+
     state.command_buffer_queue.push(std::move(command_list));
 }
 } // namespace renderer

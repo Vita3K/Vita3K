@@ -92,7 +92,7 @@ COMMAND(handle_sync_surface_data) {
 COMMAND(handle_draw) {
     SceGxmPrimitiveType type = helper.pop<SceGxmPrimitiveType>();
     SceGxmIndexFormat format = helper.pop<SceGxmIndexFormat>();
-    const void *indicies = helper.pop<const void *>();
+    void *indicies = helper.pop<void *>();
     const std::uint32_t count = helper.pop<const std::uint32_t>();
     const std::uint32_t instance_count = helper.pop<const std::uint32_t>();
 

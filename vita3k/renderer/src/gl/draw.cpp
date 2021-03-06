@@ -48,7 +48,7 @@ struct GXMRenderUniformBlock {
     float screen_height;
 };
 
-void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, uint32_t instance_count,
+void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
     const MemState &mem, const char *base_path, const char *title_id, const Config &config) {
     R_PROFILE(__func__);
 
@@ -117,8 +117,8 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, nullptr, GL_DYNAMIC_DRAW);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, index_size * count, indices, GL_DYNAMIC_DRAW);
 
-    const std::uint8_t *indicies_u8 = reinterpret_cast<const std::uint8_t *>(indices);
-    delete indicies_u8;
+    std::uint8_t *indices_u8 = reinterpret_cast<std::uint8_t *>(indices);
+    delete[] indices_u8;
 
     if (fragment_program_gxp.is_native_color()) {
         if (features.should_use_texture_barrier()) {

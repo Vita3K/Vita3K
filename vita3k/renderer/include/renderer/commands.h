@@ -22,6 +22,7 @@
 #include <vector>
 
 #include <boost/optional.hpp>
+#include <dlmalloc.h>
 
 struct GxmContextState;
 
@@ -91,13 +92,13 @@ struct Command {
 
 using CommandPool = std::vector<Command>;
 
-// This somehow looks like vulkan
 // It's to split a command list easier when ExecuteCommandList is used.
 struct CommandList {
     Command *first{ nullptr };
     Command *last{ nullptr };
+
     Context *context; ///< The HLE context that try to execute this buffer.
-    GxmContextState *gxm_context; ///< The GXM context associated.
+    GxmContextState *gxm_context;
 };
 
 struct CommandHelper {
@@ -153,8 +154,8 @@ bool do_command_push_data(CommandHelper &helper, Head arg1, Args... args2) {
 }
 
 template <typename... Args>
-Command *make_command(const CommandOpcode opcode, int *status, Args... arguments) {
-    Command *new_command = new Command;
+Command *make_command(mspace m, const CommandOpcode opcode, int *status, Args... arguments) {
+    Command *new_command = m ? reinterpret_cast<Command *>(mspace_calloc(m, 1, sizeof(Command))) : new Command;
     new_command->opcode = opcode;
     new_command->status = status;
     new_command->next = nullptr;
@@ -163,7 +164,12 @@ Command *make_command(const CommandOpcode opcode, int *status, Args... arguments
 
     if constexpr (sizeof...(arguments) > 0) {
         if (!do_command_push_data(helper, arguments...)) {
-            delete new_command;
+            if (m) {
+                mspace_free(m, new_command);
+            } else {
+                delete new_command;
+            }
+
             return nullptr;
         }
     }

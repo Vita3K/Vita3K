@@ -45,23 +45,6 @@ void process_batch(State &state, MemState &mem, Config &config, CommandList &com
 void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path, const char *title_id);
 bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend);
 
-/**
- * \brief Copy uniform data and queue it to available command list.
- * 
- * Later when the uniform commands are processed, resources will be automatically freed.
- * 
- * For backend that support command list/buffer, this will be queued directly to API's command list/buffer.
- * 
- * \param state   The renderer state.
- * \param ctx     The context to queue uniform command in.
- * \param program Target program to get uniforms from.
- * \param buffers Set of all uniform buffers.
- * 
- */
-void set_uniforms(State &state, Context *ctx, const SceGxmProgram &program, const UniformBuffers &buffers, const MemState &mem);
-void set_uniform_buffers(State &state, Context *ctx, const SceGxmProgram &program, const UniformBuffers &buffers, const UniformBufferSizes &sizes, const MemState &mem);
-void set_vertex_data(State &state, Context *ctx, const StreamDatas &datas);
-
 void set_depth_bias(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, int factor, int units);
 void set_depth_func(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, SceGxmDepthFunc depth_func);
 void set_depth_write_enable_mode(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, SceGxmDepthWriteMode enable);
@@ -76,11 +59,10 @@ void set_viewport(State &state, Context *ctx, GxmContextState *gxm_context, floa
 void set_viewport_enable(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmViewportMode enable);
 void set_region_clip(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax);
 void set_two_sided_enable(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmTwoSidedMode mode);
-void set_uniform(State &state, Context *ctx, const bool is_vertex_uniform, const SceGxmProgramParameter *parameter, const void *data);
-void set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform, const int block_num, const std::uint16_t buffer_size, const void *data);
+std::uint8_t **set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform, const int block_num, const std::uint16_t buffer_size);
 
 void set_context(State &state, Context *ctx, GxmContextState *gxm_context, RenderTarget *target, SceGxmColorSurface *color_surface, SceGxmDepthStencilSurface *depth_stencil_surface);
-void set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context, const std::size_t index, const std::size_t data_len, const std::uint8_t *data);
+std::uint8_t **set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context, const std::size_t index, const std::size_t data_len);
 void draw(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count, const std::uint32_t instance_count);
 void sync_surface_data(State &state, Context *ctx, GxmContextState *gxm_context);
 
@@ -90,7 +72,7 @@ void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt);
 
 template <typename... Args>
 bool add_command(Context *ctx, const CommandOpcode opcode, int *status, Args... arguments) {
-    auto cmd_maked = make_command(opcode, status, arguments...);
+    auto cmd_maked = make_command(ctx ? ctx->alloc_space : 0, opcode, status, arguments...);
 
     if (!cmd_maked) {
         return false;
@@ -117,7 +99,7 @@ int send_single_command(State &state, Context *ctx, GxmContextState *gxm_state, 
     Args... arguments) {
     // Make a temporary command list
     int status = CommandErrorCodePending; // Pending.
-    auto cmd = make_command(opcode, &status, arguments...);
+    auto cmd = make_command(ctx ? ctx->alloc_space : 0, opcode, &status, arguments...);
 
     if (!cmd) {
         return CommandErrorArgumentsTooLarge;

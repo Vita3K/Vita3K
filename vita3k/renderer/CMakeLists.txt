@@ -52,9 +52,8 @@ add_library(
 	src/texture_format.cpp
 	src/texture_palette.cpp
 	src/texture_yuv.cpp
-	src/uniforms.cpp
 )
 
 target_include_directories(renderer PUBLIC include)
-target_link_libraries(renderer PUBLIC crypto stb shader glutil threads config util ${RENDERER_VULKAN_LIBRARIES})
+target_link_libraries(renderer PUBLIC crypto dlmalloc stb shader glutil threads config util ${RENDERER_VULKAN_LIBRARIES})
 target_link_libraries(renderer PRIVATE sdl2 stb ffmpeg xxHash::xxhash)
