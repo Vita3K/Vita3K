@@ -3,6 +3,8 @@
 #include <mem/ptr.h>
 #include <util/align.h>
 
+#include <mutex>
+
 struct MemspaceBlockAllocator {
     struct Block {
         std::uint32_t size;
@@ -11,6 +13,7 @@ struct MemspaceBlockAllocator {
     };
 
     std::vector<Block> blocks; /// All block sorted by size
+    std::mutex lock;
 
     explicit MemspaceBlockAllocator() = default;
     explicit MemspaceBlockAllocator(const std::uint32_t memspace_size) {
@@ -28,6 +31,8 @@ struct MemspaceBlockAllocator {
 
     std::uint32_t alloc(const std::uint32_t size) {
         std::uint32_t aligned_size = static_cast<std::uint32_t>(align(size, 4));
+        const std::lock_guard<std::mutex> guard(lock);
+
         for (std::size_t i = 0; i < blocks.size(); i++) {
             if (blocks[i].free && blocks[i].size >= aligned_size) {
                 // Case 1: Equals. Assign it and returns
@@ -61,6 +66,8 @@ struct MemspaceBlockAllocator {
     }
 
     bool free(const std::uint32_t offset) {
+        const std::lock_guard<std::mutex> guard(lock);
+
         auto ite = std::lower_bound(blocks.begin(), blocks.end(), offset, [](const Block &lhs, const std::uint32_t rhs) {
             return lhs.offset < rhs;
         });
