@@ -434,6 +434,10 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
+    // Set VDM buffer space
+    ctx->renderer->alloc_space = create_mspace_with_base(params->vdmRingBufferMem.get(host.mem),
+        params->vdmRingBufferMemSize, true);
+
     return 0;
 }
 
@@ -657,6 +661,27 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
     return 0;
 }
 
+static void gxmSetUniformBuffers(renderer::State &state, SceGxmContext *context, const SceGxmProgram &program, const UniformBuffers &buffers, const UniformBufferSizes &sizes, const MemState &mem) {
+    for (std::size_t i = 0; i < buffers.size(); i++) {
+        if (!buffers[i] || sizes.at(i) == 0) {
+            continue;
+        }
+
+        // Shift all buffer by 1.
+        // The ideal is: default uniform buffer block has the binding of 14. Not really ideal, so i move it to 0, and buffer 0 to 1, etc..
+        std::uint32_t bytes_to_copy = sizes.at(i) * 16;
+        std::uint8_t **dest = renderer::set_uniform_buffer(state, context->renderer.get(), !program.is_fragment(), static_cast<int>((i + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER), bytes_to_copy);
+
+        if (dest) {
+            // Calculate the number of bytes
+            std::uint8_t *a_copy = new std::uint8_t[bytes_to_copy];
+            std::memcpy(a_copy, buffers[i].get(mem), bytes_to_copy);
+
+            *dest = a_copy;
+        }
+    }
+}
+
 static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount, uint32_t instanceCount) {
     if (!context || !indexData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
@@ -705,8 +730,8 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
     const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(host.mem);
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(host.mem);
 
-    renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), vertex_program_gxp, context->state.vertex_uniform_buffers, gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
-    renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), fragment_program_gxp, context->state.fragment_uniform_buffers, gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
+    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, context->state.vertex_uniform_buffers, gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
+    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, context->state.fragment_uniform_buffers, gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
     // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).
@@ -739,8 +764,15 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
             const size_t data_length = max_data_length[stream_index];
             const std::uint8_t *const data = context->state.stream_data[stream_index].cast<const std::uint8_t>().get(host.mem);
 
-            renderer::set_vertex_stream(*host.renderer, context->renderer.get(), &context->state, stream_index,
-                data_length, data);
+            std::uint8_t **dat_copy_to = renderer::set_vertex_stream(*host.renderer, context->renderer.get(), &context->state, stream_index,
+                data_length);
+
+            if (dat_copy_to) {
+                std::uint8_t *a_copy = new std::uint8_t[data_length];
+                std::memcpy(a_copy, data, data_length);
+
+                *dat_copy_to = a_copy;
+            }
         }
     }
 
@@ -800,8 +832,8 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     const SceGxmProgram &vertex_program_gxp = *vertex_program->program.get(host.mem);
     const SceGxmProgram &fragment_program_gxp = *fragment_program->program.get(host.mem);
 
-    renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
-    renderer::set_uniform_buffers(*host.renderer, context->renderer.get(), fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
+    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
+    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
     // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).
@@ -843,8 +875,15 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
             const size_t data_length = max_data_length[stream_index];
             const std::uint8_t *const data = stream_data[stream_index].cast<const std::uint8_t>().get(host.mem);
 
-            renderer::set_vertex_stream(*host.renderer, context->renderer.get(), &context->state, stream_index,
-                data_length, data);
+            std::uint8_t **dest_copy = renderer::set_vertex_stream(*host.renderer, context->renderer.get(), &context->state, stream_index,
+                data_length);
+
+            if (dest_copy) {
+                std::uint8_t *a_copy = new std::uint8_t[data_length];
+                std::memcpy(a_copy, data, data_length);
+
+                *dest_copy = a_copy;
+            }
         }
     }
 
