@@ -1,6 +1,7 @@
 #pragma once
 
 #include <crypto/hash.h>
+#include <dlmalloc.h>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
 #include <gxm/types.h>
@@ -22,6 +23,9 @@ struct SDL_Window;
 using UniformBufferSizes = std::array<std::uint32_t, 15>;
 
 namespace renderer {
+
+using ContextAllocFunc = std::function<void *(std::size_t)>;
+using ContextFreeFunc = std::function<void(void *)>;
 
 typedef std::map<GLuint, std::string> AttributeLocations;
 typedef std::map<std::string, SharedGLObject> ShaderCache;
@@ -75,6 +79,8 @@ struct Context {
     const RenderTarget *current_render_target{};
     CommandList command_list;
     int render_finish_status = 0;
+
+    mspace alloc_space = nullptr;
 };
 
 struct ShaderProgram {
