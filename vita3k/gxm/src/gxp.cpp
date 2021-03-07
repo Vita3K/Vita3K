@@ -69,8 +69,9 @@ void log_parameter(const SceGxmProgramParameter &parameter) {
         category = "Unknown type";
         break;
     }
-    LOG_DEBUG("{}: name:{:s} semantic:{} type:{:d} component_count:{} container_index:{}",
-        category, parameter_name_raw(parameter), log_parameter_semantic(parameter), parameter.type, uint8_t(parameter.component_count), log_hex(uint8_t(parameter.container_index)));
+    LOG_DEBUG("{}: name:{:s} semantic:{} type:{:d} component_count:{} container_index:{} semantic_index:{} array_size:{} resource_index:{}",
+        category, parameter_name_raw(parameter), log_parameter_semantic(parameter), parameter.type, uint8_t(parameter.component_count), log_hex(uint8_t(parameter.container_index)),
+        parameter.semantic_index, parameter.array_size, parameter.resource_index);
 }
 
 const int get_parameter_type_size(const SceGxmParameterType type) {
@@ -163,8 +164,7 @@ SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, SceG
     if (!program.is_vertex())
         return _SCE_GXM_VERTEX_PROGRAM_OUTPUT_INVALID;
 
-    auto vertex_varyings_ptr = reinterpret_cast<const SceGxmProgramVertexVaryings *>(
-        reinterpret_cast<const std::uint8_t *>(&program.varyings_offset) + program.varyings_offset);
+    auto vertex_varyings_ptr = program.vertex_varyings();
 
     const std::uint32_t vo1 = vertex_varyings_ptr->vertex_outputs1;
     const std::uint32_t vo2 = vertex_varyings_ptr->vertex_outputs2;
@@ -227,12 +227,7 @@ SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program) {
     if (!program.is_fragment())
         return _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE;
 
-    const auto vo_offset = program.varyings_offset;
-    const auto vo_offset_addr = (const std::uint8_t *)&program.varyings_offset;
-
-    const SceGxmProgramVertexVaryings *vo_ptr = nullptr;
-    if (vo_offset)
-        vo_ptr = (const SceGxmProgramVertexVaryings *)(vo_offset_addr + vo_offset);
+    const SceGxmProgramVertexVaryings *vo_ptr = program.vertex_varyings();
 
     // following code is adapted from decompilation
     const uint8_t *vo_start = nullptr;

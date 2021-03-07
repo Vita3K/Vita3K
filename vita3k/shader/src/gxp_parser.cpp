@@ -282,8 +282,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
 
     // Parse special semantics
     if (program.is_vertex()) {
-        auto vertex_varyings_ptr = reinterpret_cast<const SceGxmProgramVertexVaryings *>(
-            reinterpret_cast<const std::uint8_t *>(&program.varyings_offset) + program.varyings_offset);
+        auto vertex_varyings_ptr = program.vertex_varyings();
 
         Input item;
         item.component_count = 1;

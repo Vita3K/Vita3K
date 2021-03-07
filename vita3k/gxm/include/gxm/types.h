@@ -1498,13 +1498,14 @@ struct SceGxmProgram {
     bool is_frag_color_used() const {
         return ((type >> 7) & 1);
     }
+    const SceGxmProgramVertexVaryings *vertex_varyings() const {
+        return reinterpret_cast<const SceGxmProgramVertexVaryings *>(varyings_offset ? reinterpret_cast<const std::uint8_t *>(&varyings_offset) + varyings_offset : nullptr);
+    }
     SceGxmParameterType get_fragment_output_type() const {
-        return static_cast<const SceGxmParameterType>(reinterpret_cast<const SceGxmProgramVertexVaryings *>(
-            reinterpret_cast<const std::uint8_t *>(&varyings_offset) + varyings_offset)
-                                                          ->output_param_type);
+        return static_cast<const SceGxmParameterType>(vertex_varyings()->output_param_type);
     }
     std::uint8_t get_fragment_output_component_count() const {
-        return reinterpret_cast<const SceGxmProgramVertexVaryings *>(reinterpret_cast<const std::uint8_t *>(&varyings_offset) + varyings_offset)->output_comp_count;
+        return vertex_varyings()->output_comp_count;
     }
     bool is_secondary_program_available() const {
         return secondary_program_offset < secondary_program_offset_end + 4;
