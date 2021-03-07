@@ -1200,12 +1200,6 @@ struct SceGxmSyncObject {
     std::condition_variable cond;
 };
 
-struct GXMRecordState {
-    // Programs.
-    Ptr<const SceGxmFragmentProgram> fragment_program;
-    Ptr<const SceGxmVertexProgram> vertex_program;
-};
-
 struct GxmContextState {
     // Constant after initialisation.
     SceGxmContextType type;
@@ -1227,9 +1221,6 @@ struct GxmContextState {
     // Programs.
     Ptr<const SceGxmFragmentProgram> fragment_program;
     Ptr<const SceGxmVertexProgram> vertex_program;
-
-    std::string last_draw_fragment_program_hash;
-    std::string last_draw_vertex_program_hash;
 
     // Uniforms.
     UniformBuffers fragment_uniform_buffers;

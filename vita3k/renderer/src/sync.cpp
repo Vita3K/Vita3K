@@ -68,11 +68,8 @@ void subject_in_progress(SceGxmSyncObject *sync_object, const SyncObjectSubject 
     sync_object->done &= ~subjects;
 }
 
-void submit_command_list(State &state, renderer::Context *context, GxmContextState *context_state,
-    CommandList &command_list) {
+void submit_command_list(State &state, renderer::Context *context, CommandList &command_list) {
     command_list.context = context;
-    command_list.gxm_context = context_state;
-
     state.command_buffer_queue.push(std::move(command_list));
 }
 } // namespace renderer

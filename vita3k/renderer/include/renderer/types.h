@@ -75,12 +75,48 @@ enum SyncObjectSubject : std::uint32_t {
 
 struct RenderTarget;
 
+struct GxmRecordState {
+    // Programs.
+    Ptr<const SceGxmFragmentProgram> fragment_program;
+    Ptr<const SceGxmVertexProgram> vertex_program;
+
+    SceGxmColorSurface color_surface;
+    SceGxmDepthStencilSurface depth_stencil_surface;
+
+    SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
+    SceGxmTwoSidedMode two_sided = SCE_GXM_TWO_SIDED_DISABLED;
+    SceGxmRegionClipMode region_clip_mode = SCE_GXM_REGION_CLIP_OUTSIDE;
+
+    SceIVector2 region_clip_min;
+    SceIVector2 region_clip_max;
+
+    GxmStencilState front_stencil_state;
+    GxmStencilState back_stencil_state;
+
+    SceGxmDepthFunc front_depth_func = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
+    SceGxmDepthFunc back_depth_func = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
+
+    SceGxmDepthWriteMode front_depth_write_mode = SCE_GXM_DEPTH_WRITE_ENABLED;
+    SceGxmDepthWriteMode back_depth_write_mode = SCE_GXM_DEPTH_WRITE_ENABLED;
+
+    SceGxmFragmentProgramMode front_side_fragment_program_mode = SCE_GXM_FRAGMENT_PROGRAM_ENABLED;
+    SceGxmFragmentProgramMode back_side_fragment_program_mode = SCE_GXM_FRAGMENT_PROGRAM_ENABLED;
+
+    bool writing_mask = false;
+    bool viewport_flat = false;
+};
+
 struct Context {
     const RenderTarget *current_render_target{};
+    GxmRecordState record;
+
     CommandList command_list;
     int render_finish_status = 0;
 
     mspace alloc_space = nullptr;
+
+    std::string last_draw_fragment_program_hash;
+    std::string last_draw_vertex_program_hash;
 };
 
 struct ShaderProgram {

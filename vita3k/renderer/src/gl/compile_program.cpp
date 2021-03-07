@@ -150,7 +150,7 @@ static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const 
 }
 
 SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_cache, ShaderCache &fragment_cache,
-    const GxmContextState &state, const FeatureState &features, const MemState &mem, bool spirv, bool maskupdate, const char *base_path, const char *title_id) {
+    const GxmRecordState &state, const FeatureState &features, const MemState &mem, bool spirv, bool maskupdate, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 
     assert(state.fragment_program);
