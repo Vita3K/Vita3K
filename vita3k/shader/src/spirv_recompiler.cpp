@@ -344,8 +344,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     };
 
     // Both vertex output and this struct should stay in a larger varying struct
-    auto vertex_varyings_ptr = reinterpret_cast<const SceGxmProgramVertexVaryings *>(
-        reinterpret_cast<const std::uint8_t *>(&program.varyings_offset) + program.varyings_offset);
+    auto vertex_varyings_ptr = program.vertex_varyings();
 
     const SceGxmProgramAttributeDescriptor *descriptor = reinterpret_cast<const SceGxmProgramAttributeDescriptor *>(
         reinterpret_cast<const std::uint8_t *>(&vertex_varyings_ptr->vertex_outputs1) + vertex_varyings_ptr->vertex_outputs1);
@@ -1039,8 +1038,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     color_val_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     color_val_operand.type = std::get<0>(shader::get_parameter_type_store_and_name(param_type));
 
-    auto vertex_varyings_ptr = reinterpret_cast<const SceGxmProgramVertexVaryings *>(
-        reinterpret_cast<const std::uint8_t *>(&program.varyings_offset) + program.varyings_offset);
+    auto vertex_varyings_ptr = program.vertex_varyings();
 
     int reg_off = 0;
     if (!program.is_native_color() && vertex_varyings_ptr->output_param_type == 1) {
