@@ -30,7 +30,6 @@
 #include <string>
 #include <tuple>
 
-struct GxmContextState;
 struct MemState;
 struct FeatureState;
 
@@ -38,7 +37,7 @@ namespace renderer::gl {
 
 // Compile program.
 SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_cache, ShaderCache &fragment_cache,
-    const GxmContextState &state, const FeatureState &features, const MemState &mem, bool spirv, bool maskupdate, const char *base_path, const char *title_id);
+    const GxmRecordState &state, const FeatureState &features, const MemState &mem, bool spirv, bool maskupdate, const char *base_path, const char *title_id);
 
 // Shaders.
 std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id);
@@ -56,30 +55,33 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 void sync_rendertarget(const GLRenderTarget &rt);
-void set_context(GLContext &ctx, GxmContextState &state, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features);
+void set_context(GLContext &ctx, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features);
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format);
-void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
+void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     void *indices, size_t count, uint32_t instance_count, const MemState &mem, const char *base_path, const char *title_id, const Config &config);
 
 void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data);
 
 // State
-void sync_viewport(GLContext &context, const GxmContextState &state);
-void sync_clipping(GLContext &context, const GxmContextState &state);
-void sync_cull(GLContext &context, const GxmContextState &state);
-void sync_front_depth_func(const GxmContextState &state);
-void sync_front_depth_write_enable(const GxmContextState &state);
-bool sync_depth_data(const GxmContextState &state);
-bool sync_stencil_data(const GxmContextState &state, const MemState &mem);
-void sync_stencil_func(const GxmContextState &state, const MemState &mem, bool is_back_stencil);
-void sync_mask(GLContext &context, const GxmContextState &state, const MemState &mem);
-void sync_front_polygon_mode(const GxmContextState &state);
-void sync_front_point_line_width(const GxmContextState &state);
-void sync_front_depth_bias(const GxmContextState &state);
-void sync_blending(const GxmContextState &state, const MemState &mem);
-void sync_texture(GLContext &context, const GxmContextState &state, const MemState &mem, std::size_t index,
-    const Config &config, const std::string &base_path, const std::string &title_id);
-void sync_vertex_attributes(GLContext &context, const GxmContextState &state, const MemState &mem);
+void sync_viewport_flat(GLContext &context);
+void sync_viewport_real(GLContext &context, const float xOffset, const float yOffset, const float zOffset,
+    const float xScale, const float yScale, const float zScale);
+
+void sync_clipping(GLContext &context);
+void sync_cull(const GxmRecordState &state);
+void sync_depth_func(const SceGxmDepthFunc func, const bool is_front);
+void sync_depth_write_enable(const SceGxmDepthWriteMode mode, const bool is_front);
+bool sync_depth_data(const renderer::GxmRecordState &state);
+bool sync_stencil_data(const renderer::GxmRecordState &state, const MemState &mem);
+void sync_stencil_func(const GxmStencilState &state, const MemState &mem, bool is_back_stencil);
+void sync_mask(GLContext &context, const MemState &mem);
+void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front);
+void sync_point_line_width(const std::uint32_t size, const bool front);
+void sync_depth_bias(const int factor, const int unit, const bool front);
+void sync_blending(const GxmRecordState &state, const MemState &mem);
+void sync_texture(GLContext &context, const MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config,
+    const std::string &base_path, const std::string &title_id);
+void sync_vertex_attributes(GLContext &context, const GxmRecordState &state, const MemState &mem);
 void bind_fundamental(GLContext &context);
 
 struct GLTextureCacheState;
