@@ -3,7 +3,6 @@
 #include <renderer/commands.h>
 #include <renderer/types.h>
 
-struct GxmContextState;
 struct MemState;
 struct FeatureState;
 struct Config;
@@ -40,31 +39,31 @@ void subject_in_progress(SceGxmSyncObject *sync_object, const SyncObjectSubject 
 
 int wait_for_status(State &state, int *result_code);
 void reset_command_list(CommandList &command_list);
-void submit_command_list(State &state, renderer::Context *context, GxmContextState *gxm_context_state, CommandList &command_list);
+void submit_command_list(State &state, renderer::Context *context, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list, const char *base_path, const char *title_id);
 void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path, const char *title_id);
 bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend);
 
-void set_depth_bias(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, int factor, int units);
-void set_depth_func(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, SceGxmDepthFunc depth_func);
-void set_depth_write_enable_mode(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, SceGxmDepthWriteMode enable);
-void set_point_line_width(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, unsigned int width);
-void set_polygon_mode(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, SceGxmPolygonMode mode);
-void set_stencil_func(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask);
-void set_stencil_ref(State &state, Context *ctx, GxmContextState *gxm_context, bool is_front, unsigned char sref);
-void set_program(State &state, Context *ctx, GxmContextState *gxm_context, Ptr<const void> program, const bool is_fragment);
-void set_cull_mode(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmCullMode cull);
-void set_fragment_texture(State &state, Context *ctx, GxmContextState *gxm_context, const std::uint32_t tex_index, const SceGxmTexture tex);
-void set_viewport(State &state, Context *ctx, GxmContextState *gxm_context, float xOffset, float yOffset, float zOffset, float xScale, float yScale, float zScale);
-void set_viewport_enable(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmViewportMode enable);
-void set_region_clip(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax);
-void set_two_sided_enable(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmTwoSidedMode mode);
+void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units);
+void set_depth_func(State &state, Context *ctx, bool is_front, SceGxmDepthFunc depth_func);
+void set_depth_write_enable_mode(State &state, Context *ctx, bool is_front, SceGxmDepthWriteMode enable);
+void set_point_line_width(State &state, Context *ctx, bool is_front, unsigned int width);
+void set_polygon_mode(State &state, Context *ctx, bool is_front, SceGxmPolygonMode mode);
+void set_stencil_func(State &state, Context *ctx, bool is_front, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, unsigned char compareMask, unsigned char writeMask);
+void set_stencil_ref(State &state, Context *ctx, bool is_front, unsigned char sref);
+void set_program(State &state, Context *ctx, Ptr<const void> program, const bool is_fragment);
+void set_cull_mode(State &state, Context *ctx, SceGxmCullMode cull);
+void set_fragment_texture(State &state, Context *ctx, const std::uint32_t tex_index, const SceGxmTexture tex);
+void set_viewport_real(State &state, Context *ctx, float xOffset, float yOffset, float zOffset, float xScale, float yScale, float zScale);
+void set_viewport_flat(State &state, Context *ctx);
+void set_region_clip(State &state, Context *ctx, SceGxmRegionClipMode mode, unsigned int xMin, unsigned int xMax, unsigned int yMin, unsigned int yMax);
+void set_two_sided_enable(State &state, Context *ctx, SceGxmTwoSidedMode mode);
 std::uint8_t **set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform, const int block_num, const std::uint16_t buffer_size);
 
-void set_context(State &state, Context *ctx, GxmContextState *gxm_context, RenderTarget *target, SceGxmColorSurface *color_surface, SceGxmDepthStencilSurface *depth_stencil_surface);
-std::uint8_t **set_vertex_stream(State &state, Context *ctx, GxmContextState *gxm_context, const std::size_t index, const std::size_t data_len);
-void draw(State &state, Context *ctx, GxmContextState *gxm_context, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count, const std::uint32_t instance_count);
-void sync_surface_data(State &state, Context *ctx, GxmContextState *gxm_context);
+void set_context(State &state, Context *ctx, RenderTarget *target, SceGxmColorSurface *color_surface, SceGxmDepthStencilSurface *depth_stencil_surface);
+std::uint8_t **set_vertex_stream(State &state, Context *ctx, const std::size_t index, const std::size_t data_len);
+void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count, const std::uint32_t instance_count);
+void sync_surface_data(State &state, Context *ctx);
 
 bool create_context(State &state, std::unique_ptr<Context> &context);
 bool create_render_target(State &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams *params);
@@ -95,8 +94,7 @@ bool add_state_set_command(Context *ctx, const GXMState state, Args... arguments
 }
 
 template <typename... Args>
-int send_single_command(State &state, Context *ctx, GxmContextState *gxm_state, const CommandOpcode opcode,
-    Args... arguments) {
+int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, Args... arguments) {
     // Make a temporary command list
     int status = CommandErrorCodePending; // Pending.
     auto cmd = make_command(ctx ? ctx->alloc_space : 0, opcode, &status, arguments...);
@@ -110,7 +108,7 @@ int send_single_command(State &state, Context *ctx, GxmContextState *gxm_state, 
     list.last = cmd;
 
     // Submit it
-    submit_command_list(state, ctx, gxm_state, list);
+    submit_command_list(state, ctx, list);
     return wait_for_status(state, &status);
 }
 

@@ -34,7 +34,6 @@
 
 struct SceGxmContext {
     GxmContextState state;
-    GXMRecordState record;
     std::unique_ptr<renderer::Context> renderer;
 };
 
@@ -242,6 +241,34 @@ EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(void, sceGxmSetDefaultRegionClipAndViewport, SceGxmContext *context, uint32_t xMax, uint32_t yMax) {
+    const std::uint32_t xMin = 0;
+    const std::uint32_t yMin = 0;
+
+    context->state.viewport.offset.x = 0.5f * static_cast<float>(1.0f + xMin + xMax);
+    context->state.viewport.offset.y = 0.5f * (static_cast<float>(1.0 + yMin + yMax));
+    context->state.viewport.offset.z = 0.5f;
+    context->state.viewport.scale.x = 0.5f * static_cast<float>(1.0f + xMax - xMin);
+    context->state.viewport.scale.y = -0.5f * static_cast<float>(1.0f + yMax - yMin);
+    context->state.viewport.scale.z = 0.5f;
+
+    context->state.region_clip_min.x = xMin;
+    context->state.region_clip_max.x = xMax;
+    context->state.region_clip_min.y = yMin;
+    context->state.region_clip_max.y = yMax;
+    context->state.region_clip_mode = SCE_GXM_REGION_CLIP_OUTSIDE;
+
+    // Set default region clip and viewport
+    renderer::set_region_clip(*host.renderer, context->renderer.get(), SCE_GXM_REGION_CLIP_OUTSIDE,
+        xMin, xMax, yMin, yMax);
+
+    if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
+        renderer::set_viewport_real(*host.renderer, context->renderer.get(), context->state.viewport.offset.x,
+            context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x,
+            context->state.viewport.scale.y, context->state.viewport.scale.z);
+    }
+}
+
 EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
@@ -294,22 +321,13 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
         *depth_stencil_surface_copy = *depthStencil;
     }
 
-    const std::uint32_t xmin = 0;
-    const std::uint32_t ymin = 0;
+    renderer::set_context(*host.renderer, context->renderer.get(), renderTarget->renderer.get(), color_surface_copy,
+        depth_stencil_surface_copy);
+
     const std::uint32_t xmax = (validRegion ? validRegion->xMax : renderTarget->width - 1);
     const std::uint32_t ymax = (validRegion ? validRegion->yMax : renderTarget->height - 1);
 
-    renderer::set_context(*host.renderer, context->renderer.get(), &context->state, renderTarget->renderer.get(),
-        color_surface_copy, depth_stencil_surface_copy);
-
-    // Set default region clip and viewport
-    renderer::set_region_clip(*host.renderer, context->renderer.get(), &context->state, SCE_GXM_REGION_CLIP_OUTSIDE,
-        xmin, xmax, ymin, ymax);
-
-    renderer::set_viewport(*host.renderer, context->renderer.get(), &context->state,
-        0.5f * static_cast<float>(1.0f + xmin + xmax), 0.5f * (static_cast<float>(1.0 + ymin + ymax)),
-        0.5f, 0.5f * static_cast<float>(1.0f + xmax - xmin), -0.5f * static_cast<float>(1.0f + ymax - ymin), 0.5f);
-
+    CALL_EXPORT(sceGxmSetDefaultRegionClipAndViewport, context, xmax, ymax);
     return 0;
 }
 
@@ -477,6 +495,7 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
     *context = params->hostMem.cast<SceGxmContext>();
 
     SceGxmContext *const ctx = context->get(host.mem);
+    new (ctx) SceGxmContext;
 
     ctx->state.fragment_ring_buffer = params->fragmentRingBufferMem;
     ctx->state.vertex_ring_buffer = params->vertexRingBufferMem;
@@ -506,7 +525,9 @@ EXPORT(int, sceGxmCreateDeferredContext, SceGxmDeferredContextParams *params, Pt
     }
 
     *deferredContext = params->hostMem.cast<SceGxmContext>();
+
     SceGxmContext *const ctx = deferredContext->get(host.mem);
+    new (ctx) SceGxmContext;
 
     ctx->state.vertex_memory_callback = params->vertexCallback;
     ctx->state.fragment_memory_callback = params->fragmentCallback;
@@ -746,12 +767,12 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
-    if (!context->record.fragment_program || !context->record.vertex_program) {
+    if (!context->state.fragment_program || !context->state.vertex_program) {
         return RET_ERROR(SCE_GXM_ERROR_NULL_PROGRAM);
     }
 
     if (context->state.vertex_last_reserve_status == SceGxmLastReserveStatus::Reserved) {
-        const auto vertex_program = context->record.vertex_program.get(host.mem);
+        const auto vertex_program = context->state.vertex_program.get(host.mem);
         const auto program = vertex_program->program.get(host.mem);
 
         const size_t size = program->default_uniform_buffer_count * 4;
@@ -765,7 +786,7 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
         context->state.vertex_last_reserve_status = SceGxmLastReserveStatus::Available;
     }
     if (context->state.fragment_last_reserve_status == SceGxmLastReserveStatus::Reserved) {
-        const auto fragment_program = context->record.fragment_program.get(host.mem);
+        const auto fragment_program = context->state.fragment_program.get(host.mem);
         const auto program = fragment_program->program.get(host.mem);
 
         const size_t size = program->default_uniform_buffer_count * 4;
@@ -779,8 +800,8 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
         context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Available;
     }
 
-    const SceGxmFragmentProgram &gxm_fragment_program = *context->record.fragment_program.get(host.mem);
-    const SceGxmVertexProgram &gxm_vertex_program = *context->record.vertex_program.get(host.mem);
+    const SceGxmFragmentProgram &gxm_fragment_program = *context->state.fragment_program.get(host.mem);
+    const SceGxmVertexProgram &gxm_vertex_program = *context->state.vertex_program.get(host.mem);
 
     // Set uniforms
     const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(host.mem);
@@ -820,7 +841,7 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
             const size_t data_length = max_data_length[stream_index];
             const std::uint8_t *const data = context->state.stream_data[stream_index].cast<const std::uint8_t>().get(host.mem);
 
-            std::uint8_t **dat_copy_to = renderer::set_vertex_stream(*host.renderer, context->renderer.get(), &context->state, stream_index,
+            std::uint8_t **dat_copy_to = renderer::set_vertex_stream(*host.renderer, context->renderer.get(), stream_index,
                 data_length);
 
             if (dat_copy_to) {
@@ -834,7 +855,7 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
 
     // Fragment texture is copied so no need to set it here.
     // Add draw command
-    renderer::draw(*host.renderer, context->renderer.get(), &context->state, primType, indexType, indexData, indexCount, instanceCount);
+    renderer::draw(*host.renderer, context->renderer.get(), primType, indexType, indexData, indexCount, instanceCount);
 
     return 0;
 }
@@ -881,8 +902,8 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         return RET_ERROR(SCE_GXM_ERROR_NULL_PROGRAM);
     }
 
-    const SceGxmFragmentProgram &gxm_fragment_program = *context->record.fragment_program.get(host.mem);
-    const SceGxmVertexProgram &gxm_vertex_program = *context->record.vertex_program.get(host.mem);
+    const SceGxmFragmentProgram &gxm_fragment_program = *context->state.fragment_program.get(host.mem);
+    const SceGxmVertexProgram &gxm_vertex_program = *context->state.vertex_program.get(host.mem);
 
     // Set uniforms
     const SceGxmProgram &vertex_program_gxp = *vertex_program->program.get(host.mem);
@@ -908,7 +929,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         const auto parameter = frag_paramters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
             const auto index = parameter.resource_index;
-            renderer::set_fragment_texture(*host.renderer, context->renderer.get(), &context->state, index, textures[index]);
+            renderer::set_fragment_texture(*host.renderer, context->renderer.get(), index, textures[index]);
         }
     }
 
@@ -931,7 +952,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
             const size_t data_length = max_data_length[stream_index];
             const std::uint8_t *const data = stream_data[stream_index].cast<const std::uint8_t>().get(host.mem);
 
-            std::uint8_t **dest_copy = renderer::set_vertex_stream(*host.renderer, context->renderer.get(), &context->state, stream_index,
+            std::uint8_t **dest_copy = renderer::set_vertex_stream(*host.renderer, context->renderer.get(), stream_index,
                 data_length);
 
             if (dest_copy) {
@@ -945,7 +966,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
 
     // Fragment texture is copied so no need to set it here.
     // Add draw command
-    renderer::draw(*host.renderer, context->renderer.get(), &context->state, draw->type, draw->index_format, draw->index_data.get(host.mem), draw->vertex_count, 1);
+    renderer::draw(*host.renderer, context->renderer.get(), draw->type, draw->index_format, draw->index_data.get(host.mem), draw->vertex_count, 1);
 
     return 0;
 }
@@ -966,7 +987,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const SceGxmNotification *ve
     }
 
     // Add command to end the scene
-    renderer::sync_surface_data(*host.renderer, context->renderer.get(), &context->state);
+    renderer::sync_surface_data(*host.renderer, context->renderer.get());
 
     // Add NOP for SceGxmFinish
     context->renderer->render_finish_status = renderer::CommandErrorCodePending;
@@ -993,9 +1014,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const SceGxmNotification *ve
     }
 
     // Submit our command list
-    renderer::submit_command_list(*host.renderer, context->renderer.get(), &context->state,
-        context->renderer->command_list);
-
+    renderer::submit_command_list(*host.renderer, context->renderer.get(), context->renderer->command_list);
     renderer::reset_command_list(context->renderer->command_list);
 
     host.gxm.is_in_scene = false;
@@ -1807,39 +1826,33 @@ EXPORT(int, sceGxmSetAuxiliarySurface) {
 }
 
 EXPORT(void, sceGxmSetBackDepthBias, SceGxmContext *context, int32_t factor, int32_t units) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if ((context->state.back_depth_bias_factor != factor) || (context->state.back_depth_bias_units != units)) {
         context->state.back_depth_bias_factor = factor;
         context->state.back_depth_bias_units = units;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_depth_bias(*host.renderer, context->renderer.get(), &context->state, false, factor, units);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            renderer::set_depth_bias(*host.renderer, context->renderer.get(), false, factor, units);
+        }
     }
 }
 
 EXPORT(void, sceGxmSetBackDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.back_depth_func != depthFunc) {
         context->state.back_depth_func = depthFunc;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_depth_func(*host.renderer, context->renderer.get(), &context->state, false, depthFunc);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            renderer::set_depth_func(*host.renderer, context->renderer.get(), false, depthFunc);
+        }
     }
 }
 
 EXPORT(void, sceGxmSetBackDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.back_depth_write_enable) {
         context->state.back_depth_write_enable = enable;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_depth_write_enable_mode(*host.renderer, context->renderer.get(), &context->state, false, enable);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            renderer::set_depth_write_enable_mode(*host.renderer, context->renderer.get(), false, enable);
+        }
     }
 }
 
@@ -1852,55 +1865,46 @@ EXPORT(void, sceGxmSetBackLineFillLastPixelEnable, SceGxmContext *context, SceGx
 }
 
 EXPORT(void, sceGxmSetBackPointLineWidth, SceGxmContext *context, uint32_t width) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.back_point_line_width != width) {
         context->state.back_point_line_width = width;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_point_line_width(*host.renderer, context->renderer.get(), &context->state, false, width);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            renderer::set_point_line_width(*host.renderer, context->renderer.get(), false, width);
+        }
     }
 }
 
 EXPORT(void, sceGxmSetBackPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.back_polygon_mode != mode) {
         context->state.back_polygon_mode = mode;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_polygon_mode(*host.renderer, context->renderer.get(), &context->state, false, mode);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            renderer::set_polygon_mode(*host.renderer, context->renderer.get(), false, mode);
+        }
     }
 }
 
 EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, uint8_t compareMask, uint8_t writeMask) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if ((context->state.back_stencil.func != func) || (context->state.back_stencil.stencil_fail != stencilFail) || (context->state.back_stencil.depth_fail != depthFail) || (context->state.back_stencil.depth_pass != depthPass) || (context->state.back_stencil.compare_mask != compareMask) || (context->state.back_stencil.write_mask != writeMask)) {
         context->state.back_stencil.func = func;
         context->state.back_stencil.stencil_fail = stencilFail;
         context->state.back_stencil.depth_fail = depthFail;
         context->state.back_stencil.depth_pass = depthPass;
         context->state.back_stencil.compare_mask = compareMask;
         context->state.back_stencil.write_mask = writeMask;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_stencil_func(*host.renderer, context->renderer.get(), &context->state, false, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            renderer::set_stencil_func(*host.renderer, context->renderer.get(), false, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
+        }
     }
 }
 
 EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, uint8_t sref) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.back_stencil.ref != sref) {
         context->state.back_stencil.ref = sref;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_stencil_ref(*host.renderer, context->renderer.get(), &context->state, false, sref);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space)
+            renderer::set_stencil_ref(*host.renderer, context->renderer.get(), false, sref);
     }
 }
 
@@ -1917,25 +1921,12 @@ EXPORT(void, sceGxmSetBackVisibilityTestOp, SceGxmContext *context, SceGxmVisibi
 }
 
 EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.cull_mode != mode) {
         context->state.cull_mode = mode;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_cull_mode(*host.renderer, context->renderer.get(), &context->state, mode);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space)
+            renderer::set_cull_mode(*host.renderer, context->renderer.get(), mode);
     }
-}
-
-EXPORT(void, sceGxmSetDefaultRegionClipAndViewport, SceGxmContext *context, uint32_t xMax, uint32_t yMax) {
-    uint32_t xMin = 0, yMin = 0;
-
-    renderer::set_region_clip(*host.renderer, context->renderer.get(), &context->state, SCE_GXM_REGION_CLIP_OUTSIDE, xMin, xMax, yMin, yMax);
-
-    renderer::set_viewport(*host.renderer, context->renderer.get(), &context->state,
-        0.5f * static_cast<float>(1 + xMax + xMin), 0.5f * static_cast<float>(1 + yMax + yMin),
-        0.5f, 0.5f * static_cast<float>(1 + xMax - xMin), -0.5f * static_cast<float>(1 + yMax - yMin), 0.5f);
 }
 
 static const int STUB_RING_BUFFER_SIZE = 4096;
@@ -2001,8 +1992,8 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
     if (!context || !fragmentProgram)
         return;
 
-    context->record.fragment_program = fragmentProgram;
-    renderer::set_program(*host.renderer, context->renderer.get(), &context->state, fragmentProgram, true);
+    context->state.fragment_program = fragmentProgram;
+    renderer::set_program(*host.renderer, context->renderer.get(), fragmentProgram, true);
 }
 
 EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, uint32_t textureIndex, const SceGxmTexture *texture) {
@@ -2013,7 +2004,8 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, uint32_t textureIn
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    renderer::set_fragment_texture(*host.renderer, context->renderer.get(), &context->state, textureIndex, *texture);
+    context->state.fragment_textures[textureIndex] = *texture;
+    renderer::set_fragment_texture(*host.renderer, context->renderer.get(), textureIndex, *texture);
 
     return 0;
 }
@@ -2032,39 +2024,32 @@ EXPORT(int, sceGxmSetFragmentUniformBuffer, SceGxmContext *context, uint32_t buf
 }
 
 EXPORT(void, sceGxmSetFrontDepthBias, SceGxmContext *context, int32_t factor, int32_t units) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if ((context->state.front_depth_bias_factor != factor) || (context->state.front_depth_bias_units != units)) {
         context->state.front_depth_bias_factor = factor;
         context->state.front_depth_bias_units = units;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_depth_bias(*host.renderer, context->renderer.get(), &context->state, true, factor, units);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space)
+            renderer::set_depth_bias(*host.renderer, context->renderer.get(), true, factor, units);
     }
 }
 
 EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.front_depth_func != depthFunc) {
         context->state.front_depth_func = depthFunc;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_depth_func(*host.renderer, context->renderer.get(), &context->state, true, depthFunc);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            renderer::set_depth_func(*host.renderer, context->renderer.get(), true, depthFunc);
+        }
     }
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.front_depth_write_enable != enable) {
         context->state.front_depth_write_enable = enable;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_depth_write_enable_mode(*host.renderer, context->renderer.get(), &context->state, true, enable);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            renderer::set_depth_write_enable_mode(*host.renderer, context->renderer.get(), true, enable);
+        }
     }
 }
 
@@ -2077,55 +2062,45 @@ EXPORT(void, sceGxmSetFrontLineFillLastPixelEnable, SceGxmContext *context, SceG
 }
 
 EXPORT(void, sceGxmSetFrontPointLineWidth, SceGxmContext *context, uint32_t width) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.front_point_line_width != width) {
         context->state.front_point_line_width = width;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_point_line_width(*host.renderer, context->renderer.get(), &context->state, true, width);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            renderer::set_point_line_width(*host.renderer, context->renderer.get(), true, width);
+        }
     }
 }
 
 EXPORT(void, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.front_polygon_mode != mode) {
         context->state.front_polygon_mode = mode;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_polygon_mode(*host.renderer, context->renderer.get(), &context->state, true, mode);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            renderer::set_polygon_mode(*host.renderer, context->renderer.get(), true, mode);
+        }
     }
 }
 
 EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, uint8_t compareMask, uint8_t writeMask) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if ((context->state.front_stencil.func != func) || (context->state.front_stencil.stencil_fail != stencilFail) || (context->state.front_stencil.depth_fail != depthFail) || (context->state.front_stencil.depth_pass != depthPass) || (context->state.front_stencil.compare_mask != compareMask) || (context->state.front_stencil.write_mask != writeMask)) {
         context->state.front_stencil.func = func;
         context->state.front_stencil.depth_fail = depthFail;
         context->state.front_stencil.depth_pass = depthPass;
         context->state.front_stencil.stencil_fail = stencilFail;
         context->state.front_stencil.compare_mask = compareMask;
         context->state.front_stencil.write_mask = writeMask;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_stencil_func(*host.renderer, context->renderer.get(), &context->state, true, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space)
+            renderer::set_stencil_func(*host.renderer, context->renderer.get(), true, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
     }
 }
 
 EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, uint8_t sref) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.front_stencil.ref != sref) {
         context->state.front_stencil.ref = sref;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_stencil_ref(*host.renderer, context->renderer.get(), &context->state, true, sref);
-        break;
-    default: break;
+        if (context->renderer->alloc_space) {
+            renderer::set_stencil_ref(*host.renderer, context->renderer.get(), true, sref);
+        }
     }
 }
 
@@ -2160,30 +2135,34 @@ EXPORT(void, sceGxmSetPrecomputedVertexState, SceGxmContext *context, Ptr<SceGxm
 }
 
 EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode mode, uint32_t xMin, uint32_t yMin, uint32_t xMax, uint32_t yMax) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
-        // Set it right here now
+    bool change_detected = false;
+
+    if (context->state.region_clip_mode != mode) {
+        context->state.region_clip_mode = mode;
+        change_detected = true;
+    }
+    // Set it right here now
+    if ((context->state.region_clip_min.x != xMin) || (context->state.region_clip_min.y != yMin) || (context->state.region_clip_max.x != xMax)
+        || (context->state.region_clip_max.y != yMax)) {
         context->state.region_clip_min.x = xMin;
         context->state.region_clip_min.y = yMin;
         context->state.region_clip_max.x = xMax;
         context->state.region_clip_max.y = yMax;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_region_clip(*host.renderer, context->renderer.get(), &context->state, mode, xMin, xMax, yMin, yMax);
-        break;
-    default: break;
+
+        change_detected = true;
     }
+
+    if (change_detected && context->renderer->alloc_space)
+        renderer::set_region_clip(*host.renderer, context->renderer.get(), mode, xMin, xMax, yMin, yMax);
 }
 
 EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.two_sided != mode) {
         context->state.two_sided = mode;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_two_sided_enable(*host.renderer, context->renderer.get(), &context->state, mode);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            renderer::set_two_sided_enable(*host.renderer, context->renderer.get(), mode);
+        }
     }
 }
 
@@ -2348,8 +2327,8 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVer
     if (!context || !vertexProgram)
         return;
 
-    context->record.vertex_program = vertexProgram;
-    renderer::set_program(*host.renderer, context->renderer.get(), &context->state, vertexProgram, false);
+    context->state.vertex_program = vertexProgram;
+    renderer::set_program(*host.renderer, context->renderer.get(), vertexProgram, false);
 }
 
 EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, uint32_t streamIndex, Ptr<const void> streamData) {
@@ -2388,19 +2367,39 @@ EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, uint32_t buffe
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
     // Set viewport to enable, enable more offset and scale to set
-    renderer::set_viewport(*host.renderer, context->renderer.get(), &context->state, xOffset, yOffset, zOffset, xScale, yScale, zScale);
+    if (context->state.viewport.offset.x != xOffset || (context->state.viewport.offset.y != yOffset) || (context->state.viewport.offset.z != zOffset)
+        || (context->state.viewport.scale.x != xScale) || (context->state.viewport.scale.y != yScale) || (context->state.viewport.scale.z != zScale)) {
+        context->state.viewport.offset.x = xOffset;
+        context->state.viewport.offset.y = yOffset;
+        context->state.viewport.offset.z = zOffset;
+        context->state.viewport.scale.x = xScale;
+        context->state.viewport.scale.y = yScale;
+        context->state.viewport.scale.z = zScale;
+
+        if (context->renderer->alloc_space) {
+            if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
+                renderer::set_viewport_real(*host.renderer, context->renderer.get(), context->state.viewport.offset.x,
+                    context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x, context->state.viewport.scale.y,
+                    context->state.viewport.scale.z);
+            }
+        }
+    }
 }
 
 EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
     // Set viewport to enable/disable, no additional offset and scale to set.
-    switch (context->state.type) {
-    case SCE_GXM_CONTEXT_TYPE_DEFERRED:
+    if (context->state.viewport.enable != enable) {
         context->state.viewport.enable = enable;
-        break;
-    case SCE_GXM_CONTEXT_TYPE_IMMEDIATE:
-        renderer::set_viewport_enable(*host.renderer, context->renderer.get(), &context->state, enable);
-        break;
-    default: break;
+
+        if (context->renderer->alloc_space) {
+            if (context->state.viewport.enable == SCE_GXM_VIEWPORT_DISABLED) {
+                renderer::set_viewport_flat(*host.renderer, context->renderer.get());
+            } else {
+                renderer::set_viewport_real(*host.renderer, context->renderer.get(), context->state.viewport.offset.x,
+                    context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x, context->state.viewport.scale.y,
+                    context->state.viewport.scale.z);
+            }
+        }
     }
 }
 

@@ -24,8 +24,6 @@
 #include <boost/optional.hpp>
 #include <dlmalloc.h>
 
-struct GxmContextState;
-
 namespace renderer {
 #define REPORT_MISSING(backend) //LOG_ERROR("Unimplemented graphics API handler with backend {}", (int)backend)
 #define REPORT_STUBBED() //LOG_INFO("Stubbed")
@@ -80,7 +78,7 @@ enum CommandErrorCode {
     CommandErrorArgumentsTooLarge = -2
 };
 
-constexpr std::size_t MAX_COMMAND_DATA_SIZE = 0x40;
+constexpr std::size_t MAX_COMMAND_DATA_SIZE = 0x20;
 
 struct Command {
     CommandOpcode opcode;
@@ -88,6 +86,7 @@ struct Command {
     int *status;
 
     Command *next;
+    bool from_host = false;
 };
 
 using CommandPool = std::vector<Command>;
@@ -98,7 +97,6 @@ struct CommandList {
     Command *last{ nullptr };
 
     Context *context; ///< The HLE context that try to execute this buffer.
-    GxmContextState *gxm_context;
 };
 
 struct CommandHelper {
@@ -156,6 +154,14 @@ bool do_command_push_data(CommandHelper &helper, Head arg1, Args... args2) {
 template <typename... Args>
 Command *make_command(mspace m, const CommandOpcode opcode, int *status, Args... arguments) {
     Command *new_command = m ? reinterpret_cast<Command *>(mspace_calloc(m, 1, sizeof(Command))) : new Command;
+
+    if (!new_command && m) {
+        new_command = new Command;
+        new_command->from_host = true;
+    } else {
+        new_command->from_host = false;
+    }
+
     new_command->opcode = opcode;
     new_command->status = status;
     new_command->next = nullptr;
@@ -164,7 +170,7 @@ Command *make_command(mspace m, const CommandOpcode opcode, int *status, Args...
 
     if constexpr (sizeof...(arguments) > 0) {
         if (!do_command_push_data(helper, arguments...)) {
-            if (m) {
+            if (!new_command->from_host) {
                 mspace_free(m, new_command);
             } else {
                 delete new_command;

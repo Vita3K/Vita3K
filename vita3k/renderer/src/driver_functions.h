@@ -2,7 +2,6 @@
 
 struct MemState;
 struct Context;
-struct GxmContextState;
 struct Config;
 struct FeatureState;
 
@@ -14,11 +13,11 @@ struct CommandHelper;
 
 #define COMMAND(name)                                                                                \
     void cmd_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper, \
-        const FeatureState &features, Context *render_context, GxmContextState *state, const char *base_path, const char *title_id)
+        const FeatureState &features, Context *render_context, const char *base_path, const char *title_id)
 
 #define COMMAND_SET_STATE(name)                                                                                \
     void cmd_set_state_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper, \
-        Context *render_context, GxmContextState *state, const char *base_path, const char *title_id)
+        Context *render_context, const char *base_path, const char *title_id)
 
 COMMAND_SET_STATE(region_clip);
 COMMAND_SET_STATE(program);

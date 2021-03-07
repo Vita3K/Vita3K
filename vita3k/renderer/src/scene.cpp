@@ -29,23 +29,23 @@ COMMAND(handle_set_context) {
     }
 
     if (color_surface && !color_surface->disabled) {
-        state->color_surface = *color_surface;
+        render_context->record.color_surface = *color_surface;
         delete color_surface;
     } else {
         // Disable writing to this surface.
         // Data is still in render target though.
-        state->color_surface.data = 0;
+        render_context->record.color_surface.data = 0;
     }
 
     // Maybe we should disable writing to depth stencil too if it's null
     if (depth_stencil_surface) {
-        state->depth_stencil_surface = *depth_stencil_surface;
+        render_context->record.depth_stencil_surface = *depth_stencil_surface;
         delete depth_stencil_surface;
     }
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::set_context(*reinterpret_cast<gl::GLContext *>(render_context), *state, mem, reinterpret_cast<const gl::GLRenderTarget *>(rt), features);
+        gl::set_context(*reinterpret_cast<gl::GLContext *>(render_context), mem, reinterpret_cast<const gl::GLRenderTarget *>(rt), features);
         break;
     }
 
@@ -56,16 +56,16 @@ COMMAND(handle_set_context) {
 }
 
 COMMAND(handle_sync_surface_data) {
-    const size_t width = state->color_surface.width;
-    const size_t height = state->color_surface.height;
-    const size_t stride_in_pixels = state->color_surface.strideInPixels;
-    const Address data = state->color_surface.data.address();
+    const size_t width = render_context->record.color_surface.width;
+    const size_t height = render_context->record.color_surface.height;
+    const size_t stride_in_pixels = render_context->record.color_surface.strideInPixels;
+    const Address data = render_context->record.color_surface.data.address();
     uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::get_surface_data(*reinterpret_cast<gl::GLContext *>(render_context), width, height,
-            stride_in_pixels, pixels, state->color_surface.colorFormat);
+            stride_in_pixels, pixels, render_context->record.color_surface.colorFormat);
 
         break;
     }
@@ -99,7 +99,7 @@ COMMAND(handle_draw) {
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::draw(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context),
-            *state, features, type, format, indicies, count, instance_count, mem, base_path, title_id, config);
+            features, type, format, indicies, count, instance_count, mem, base_path, title_id, config);
 
         break;
     }

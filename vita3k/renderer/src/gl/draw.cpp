@@ -48,22 +48,22 @@ struct GXMRenderUniformBlock {
     float screen_height;
 };
 
-void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
+void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
     const MemState &mem, const char *base_path, const char *title_id, const Config &config) {
     R_PROFILE(__func__);
 
     GLuint program_id = context.last_draw_program;
 
-    const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
+    const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
     const auto &gl_frag_program = reinterpret_cast<gl::GLFragmentProgram *>(gxm_fragment_program.renderer_data.get());
 
     // Trying to cache: the last time vs this time shader pair. Does it different somehow?
     // If it's different, we need to switch. Else just stick to it.
-    if (state.vertex_program.get(mem)->renderer_data->hash != state.last_draw_vertex_program_hash || state.fragment_program.get(mem)->renderer_data->hash != state.last_draw_fragment_program_hash) {
+    if (context.record.vertex_program.get(mem)->renderer_data->hash != context.last_draw_vertex_program_hash || context.record.fragment_program.get(mem)->renderer_data->hash != context.last_draw_fragment_program_hash) {
         // Need to recompile!
         SharedGLObject program = gl::compile_program(renderer.program_cache, renderer.vertex_shader_cache,
-            renderer.fragment_shader_cache, state, features, mem, config.spirv_shader, gxm_fragment_program.is_maskupdate, base_path, title_id);
+            renderer.fragment_shader_cache, context.record, features, mem, config.spirv_shader, gxm_fragment_program.is_maskupdate, base_path, title_id);
 
         if (!program) {
             LOG_ERROR("Fail to get program!");
@@ -77,8 +77,8 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     }
 
     if (config.log_active_shaders) {
-        const std::string hash_text_f = hex_string(state.fragment_program.get(mem)->renderer_data->hash);
-        const std::string hash_text_v = hex_string(state.vertex_program.get(mem)->renderer_data->hash);
+        const std::string hash_text_f = hex_string(context.record.fragment_program.get(mem)->renderer_data->hash);
+        const std::string hash_text_v = hex_string(context.record.vertex_program.get(mem)->renderer_data->hash);
 
         LOG_DEBUG("\nVertex  : {}\nFragment: {}", hash_text_v, hash_text_f);
         LOG_DEBUG("Vertex default uniform buffer: {:a}\n", spdlog::to_hex(context.ubo_data[0].begin(), context.ubo_data[0].end(), 16));
@@ -101,9 +101,9 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
     GXMRenderUniformBlock uniform_block;
 
     std::memcpy(uniform_block.viewport_flip, context.viewport_flip, sizeof(context.viewport_flip));
-    uniform_block.viewport_flag = (state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) ? 1.0f : 0.0f;
-    uniform_block.screen_width = state.color_surface.width;
-    uniform_block.screen_height = state.color_surface.height;
+    uniform_block.viewport_flag = (context.record.viewport_flat) ? 0.0f : 1.0f;
+    uniform_block.screen_width = static_cast<float>(context.record.color_surface.width);
+    uniform_block.screen_height = static_cast<float>(context.record.color_surface.height);
 
     set_uniform_buffer(context, true, SCE_GXM_REAL_MAX_UNIFORM_BUFFER, sizeof(GXMRenderUniformBlock), &uniform_block, false);
 
@@ -139,7 +139,7 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
         glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, nullptr, instance_count);
     }
 
-    state.last_draw_vertex_program_hash = state.vertex_program.get(mem)->renderer_data->hash;
-    state.last_draw_fragment_program_hash = state.fragment_program.get(mem)->renderer_data->hash;
+    context.last_draw_vertex_program_hash = context.record.vertex_program.get(mem)->renderer_data->hash;
+    context.last_draw_fragment_program_hash = context.record.fragment_program.get(mem)->renderer_data->hash;
 }
 } // namespace renderer::gl

@@ -20,7 +20,7 @@ void complete_command(State &state, CommandHelper &helper, const int code) {
 void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list, const char *base_path,
     const char *title_id) {
     using CommandHandlerFunc = std::function<void(renderer::State &, MemState &, Config &,
-        CommandHelper &, const FeatureState &, Context *, GxmContextState *, const char *, const char *)>;
+        CommandHelper &, const FeatureState &, Context *, const char *, const char *)>;
 
     static std::map<CommandOpcode, CommandHandlerFunc> handlers = {
         { CommandOpcode::SetContext, cmd_handle_set_context },
@@ -47,14 +47,13 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
             LOG_ERROR("Unimplemented command opcode {}", static_cast<int>(cmd->opcode));
         } else {
             CommandHelper helper(cmd);
-            handler->second(state, mem, config, helper, features, command_list.context,
-                command_list.gxm_context, base_path, title_id);
+            handler->second(state, mem, config, helper, features, command_list.context, base_path, title_id);
         }
 
         Command *last_cmd = cmd;
         cmd = cmd->next;
 
-        if (command_list.context) {
+        if (command_list.context && !last_cmd->from_host) {
             mspace_free(command_list.context->alloc_space, last_cmd);
         } else {
             delete last_cmd;

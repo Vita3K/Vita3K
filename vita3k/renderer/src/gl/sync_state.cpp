@@ -89,17 +89,8 @@ static GLenum translate_stencil_func(SceGxmStencilFunc stencil_func) {
     return GL_ALWAYS;
 }
 
-static void set_stencil_state(GLenum face, const GxmStencilState &state) {
-    glStencilOpSeparate(face,
-        translate_stencil_op(state.stencil_fail),
-        translate_stencil_op(state.depth_fail),
-        translate_stencil_op(state.depth_pass));
-    glStencilFuncSeparate(face, translate_stencil_func(state.func), state.ref, state.compare_mask);
-    glStencilMaskSeparate(face, state.write_mask);
-}
-
-void sync_mask(GLContext &context, const GxmContextState &state, const MemState &mem) {
-    auto control = state.depth_stencil_surface.control.get(mem);
+void sync_mask(GLContext &context, const MemState &mem) {
+    auto control = context.record.depth_stencil_surface.control.get(mem);
     auto width = context.render_target->width;
     auto height = context.render_target->height;
     GLubyte initial_byte;
@@ -117,59 +108,71 @@ void sync_mask(GLContext &context, const GxmContextState &state, const MemState 
     glBindTexture(GL_TEXTURE_2D, texId);
 }
 
-void sync_viewport(GLContext &context, const GxmContextState &state) {
-    // Viewport.
-    const GLsizei display_w = state.color_surface.width;
-    const GLsizei display_h = state.color_surface.height;
-    const GxmViewport &viewport = state.viewport;
+void sync_viewport_flat(GLContext &context) {
+    const GLsizei display_w = context.record.color_surface.width;
+    const GLsizei display_h = context.record.color_surface.height;
     const float previous_flip_y = context.viewport_flip[1];
 
-    if (viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
-        const GLfloat ymin = viewport.offset.y + viewport.scale.y;
-        const GLfloat ymax = viewport.offset.y - viewport.scale.y - 1;
+    context.viewport_flip[0] = 1.0f;
+    context.viewport_flip[1] = -1.0f;
+    context.viewport_flip[2] = 1.0f;
+    context.viewport_flip[3] = 1.0f;
 
-        const GLfloat w = std::abs(2 * viewport.scale.x);
-        const GLfloat h = std::abs(2 * viewport.scale.y);
-        const GLfloat x = viewport.offset.x - std::abs(viewport.scale.x);
-        const GLfloat y = std::min<GLfloat>(ymin, ymax);
+    context.record.viewport_flat = true;
 
-        context.viewport_flip[0] = 1.0f;
-        context.viewport_flip[1] = (ymin < ymax) ? -1.0f : 1.0f;
-        context.viewport_flip[2] = 1.0f;
-        context.viewport_flip[3] = 1.0f;
-
-        glViewportIndexedf(0, x, y, w, h);
-        glDepthRange(viewport.offset.z - viewport.scale.z, viewport.offset.z + viewport.scale.z);
-    } else {
-        context.viewport_flip[0] = 1.0f;
-        context.viewport_flip[1] = -1.0f;
-        context.viewport_flip[2] = 1.0f;
-        context.viewport_flip[3] = 1.0f;
-
-        glViewport(0, 0, display_w, display_h);
-        glDepthRange(0, 1);
-    }
+    glViewport(0, 0, display_w, display_h);
+    glDepthRange(0, 1);
 
     if (previous_flip_y != context.viewport_flip[1]) {
         // We need to sync again state that uses the flip
-        sync_cull(context, state);
-        sync_clipping(context, state);
+        sync_cull(context.record);
+        sync_clipping(context);
     }
 }
 
-void sync_clipping(GLContext &context, const GxmContextState &state) {
-    const GLsizei display_h = state.color_surface.height;
-    const GLsizei scissor_x = state.region_clip_min.x;
+void sync_viewport_real(GLContext &context, const float xOffset, const float yOffset, const float zOffset,
+    const float xScale, const float yScale, const float zScale) {
+    const GLfloat ymin = yOffset + yScale;
+    const GLfloat ymax = yOffset - yScale - 1;
+
+    const GLfloat w = std::abs(2 * xScale);
+    const GLfloat h = std::abs(2 * yScale);
+    const GLfloat x = xOffset - std::abs(xScale);
+    const GLfloat y = std::min<GLfloat>(ymin, ymax);
+
+    const float previous_flip_y = context.viewport_flip[1];
+
+    context.viewport_flip[0] = 1.0f;
+    context.viewport_flip[1] = (ymin < ymax) ? -1.0f : 1.0f;
+    context.viewport_flip[2] = 1.0f;
+    context.viewport_flip[3] = 1.0f;
+
+    context.record.viewport_flat = false;
+
+    glViewportIndexedf(0, x, y, w, h);
+    glDepthRange(zOffset - zScale, zOffset + zScale);
+
+    if (previous_flip_y != context.viewport_flip[1]) {
+        // We need to sync again state that uses the flip
+        sync_cull(context.record);
+        sync_clipping(context);
+    }
+}
+
+void sync_clipping(GLContext &context) {
+    const GLsizei display_h = context.record.color_surface.height;
+    const GLsizei scissor_x = context.record.region_clip_min.x;
     GLsizei scissor_y = 0;
 
     if (context.viewport_flip[1] == -1.0f)
-        scissor_y = state.region_clip_min.y;
+        scissor_y = context.record.region_clip_min.y;
     else
-        scissor_y = display_h - state.region_clip_max.y - 1;
+        scissor_y = display_h - context.record.region_clip_max.y - 1;
 
-    const GLsizei scissor_w = state.region_clip_max.x - state.region_clip_min.x + 1;
-    const GLsizei scissor_h = state.region_clip_max.y - state.region_clip_min.y + 1;
-    switch (state.region_clip_mode) {
+    const GLsizei scissor_w = context.record.region_clip_max.x - context.record.region_clip_min.x + 1;
+    const GLsizei scissor_h = context.record.region_clip_max.y - context.record.region_clip_min.y + 1;
+
+    switch (context.record.region_clip_mode) {
     case SCE_GXM_REGION_CLIP_NONE:
         glDisable(GL_SCISSOR_TEST);
         break;
@@ -189,7 +192,7 @@ void sync_clipping(GLContext &context, const GxmContextState &state) {
     }
 }
 
-void sync_cull(GLContext &context, const GxmContextState &state) {
+void sync_cull(const GxmRecordState &state) {
     // Culling.
     switch (state.cull_mode) {
     case SCE_GXM_CULL_CCW:
@@ -206,15 +209,17 @@ void sync_cull(GLContext &context, const GxmContextState &state) {
     }
 }
 
-void sync_front_depth_func(const GxmContextState &state) {
-    glDepthFunc(translate_depth_func(state.front_depth_func));
+void sync_depth_func(const SceGxmDepthFunc func, const bool is_front) {
+    if (is_front)
+        glDepthFunc(translate_depth_func(func));
 }
 
-void sync_front_depth_write_enable(const GxmContextState &state) {
-    glDepthMask(state.front_depth_write_enable == SCE_GXM_DEPTH_WRITE_ENABLED ? GL_TRUE : GL_FALSE);
+void sync_depth_write_enable(const SceGxmDepthWriteMode mode, const bool is_front) {
+    if (is_front)
+        glDepthMask(mode == SCE_GXM_DEPTH_WRITE_ENABLED ? GL_TRUE : GL_FALSE);
 }
 
-bool sync_depth_data(const GxmContextState &state) {
+bool sync_depth_data(const renderer::GxmRecordState &state) {
     // Depth test.
     if (state.depth_stencil_surface.depthData) {
         glEnable(GL_DEPTH_TEST);
@@ -225,11 +230,18 @@ bool sync_depth_data(const GxmContextState &state) {
     return false;
 }
 
-void sync_stencil_func(const GxmContextState &state, const MemState &mem, const bool is_back_stencil) {
-    set_stencil_state(is_back_stencil ? GL_BACK : GL_FRONT, is_back_stencil ? state.back_stencil : state.front_stencil);
+void sync_stencil_func(const GxmStencilState &state, const MemState &mem, const bool is_back_stencil) {
+    const GLenum face = is_back_stencil ? GL_BACK : GL_FRONT;
+
+    glStencilOpSeparate(face,
+        translate_stencil_op(state.stencil_fail),
+        translate_stencil_op(state.depth_fail),
+        translate_stencil_op(state.depth_pass));
+    glStencilFuncSeparate(face, translate_stencil_func(state.func), state.ref, state.compare_mask);
+    glStencilMaskSeparate(face, state.write_mask);
 }
 
-bool sync_stencil_data(const GxmContextState &state, const MemState &mem) {
+bool sync_stencil_data(const GxmRecordState &state, const MemState &mem) {
     // Stencil.
     if (state.depth_stencil_surface.stencilData) {
         glEnable(GL_STENCIL_TEST);
@@ -243,40 +255,45 @@ bool sync_stencil_data(const GxmContextState &state, const MemState &mem) {
     return false;
 }
 
-void sync_front_polygon_mode(const GxmContextState &state) {
+void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front) {
+    // TODO: Why decap this?
+    const GLint face = GL_FRONT_AND_BACK;
+
     // Polygon Mode.
-    switch (state.front_polygon_mode) {
+    switch (mode) {
     case SCE_GXM_POLYGON_MODE_POINT_10UV:
     case SCE_GXM_POLYGON_MODE_POINT:
     case SCE_GXM_POLYGON_MODE_POINT_01UV:
     case SCE_GXM_POLYGON_MODE_TRIANGLE_POINT:
-        glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
+        glPolygonMode(face, GL_POINT);
         break;
     case SCE_GXM_POLYGON_MODE_LINE:
     case SCE_GXM_POLYGON_MODE_TRIANGLE_LINE:
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        glPolygonMode(face, GL_LINE);
         break;
     case SCE_GXM_POLYGON_MODE_TRIANGLE_FILL:
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glPolygonMode(face, GL_FILL);
         break;
     }
 }
 
-void sync_front_point_line_width(const GxmContextState &state) {
+void sync_point_line_width(const std::uint32_t width, const bool is_front) {
     // Point Line Width
-    glLineWidth(static_cast<GLfloat>(state.front_point_line_width));
-    glPointSize(static_cast<GLfloat>(state.front_point_line_width));
+    if (is_front) {
+        glLineWidth(static_cast<GLfloat>(width));
+        glPointSize(static_cast<GLfloat>(width));
+    }
 }
 
-void sync_front_depth_bias(const GxmContextState &state) {
+void sync_depth_bias(const int factor, const int unit, const bool is_front) {
     // Depth Bias
-    glPolygonOffset(static_cast<GLfloat>(state.front_depth_bias_factor), static_cast<GLfloat>(state.front_depth_bias_units));
+    if (is_front) {
+        glPolygonOffset(static_cast<GLfloat>(factor), static_cast<GLfloat>(unit));
+    }
 }
 
-void sync_texture(GLContext &context, const GxmContextState &state, const MemState &mem, std::size_t index,
+void sync_texture(GLContext &context, const MemState &mem, std::size_t index, SceGxmTexture texture,
     const Config &config, const std::string &base_path, const std::string &title_id) {
-    const SceGxmTexture &texture = state.fragment_textures[index];
-
     if (texture.data_addr == 0) {
         LOG_WARN("Texture has null data.");
         return;
@@ -297,15 +314,13 @@ void sync_texture(GLContext &context, const GxmContextState &state, const MemSta
     }
 
     if (config.dump_textures) {
-        auto frag_program = state.fragment_program.get(mem);
+        auto frag_program = context.record.fragment_program.get(mem);
         auto program = frag_program->program.get(mem);
         const auto program_hash = sha256(program, program->size);
 
         std::string parameter_name;
-        const auto fragment_program = state.fragment_program.get(mem);
-        const auto fragment_program_gxp = fragment_program->program.get(mem);
-        const auto parameters = gxp::program_parameters(*fragment_program_gxp);
-        for (uint32_t i = 0; i < fragment_program_gxp->parameter_count; ++i) {
+        const auto parameters = gxp::program_parameters(*program);
+        for (uint32_t i = 0; i < program->parameter_count; ++i) {
             const auto parameter = &parameters[i];
             if (parameter->resource_index == index) {
                 parameter_name = gxp::parameter_name_raw(*parameter);
@@ -318,7 +333,7 @@ void sync_texture(GLContext &context, const GxmContextState &state, const MemSta
     glActiveTexture(GL_TEXTURE0);
 }
 
-void sync_blending(const GxmContextState &state, const MemState &mem) {
+void sync_blending(const GxmRecordState &state, const MemState &mem) {
     // Blending.
     const SceGxmFragmentProgram &gxm_fragment_program = *state.fragment_program.get(mem);
     const GLFragmentProgram &fragment_program = *reinterpret_cast<GLFragmentProgram *>(
@@ -334,7 +349,7 @@ void sync_blending(const GxmContextState &state, const MemState &mem) {
     }
 }
 
-void sync_vertex_attributes(GLContext &context, const GxmContextState &state, const MemState &mem) {
+void sync_vertex_attributes(GLContext &context, const GxmRecordState &state, const MemState &mem) {
     // Vertex attributes.
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     GLVertexProgram *glvert = reinterpret_cast<GLVertexProgram *>(vertex_program.renderer_data.get());
