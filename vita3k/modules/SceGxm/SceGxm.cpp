@@ -379,6 +379,8 @@ EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
 
     deferredContext->state.fragment_ring_buffer_used = 0;
     deferredContext->state.vertex_ring_buffer_used = 0;
+    deferredContext->infos = nullptr;
+    deferredContext->last_info = nullptr;
 
     // Begin the command list by white washing previous command list, and restoring deferred state
     renderer::reset_command_list(deferredContext->renderer->command_list);
