@@ -12,6 +12,14 @@
 struct FeatureState;
 
 namespace renderer {
+Command *generic_command_allocate() {
+    return new Command;
+}
+
+void generic_command_free(Command *cmd) {
+    delete cmd;
+}
+
 void complete_command(State &state, CommandHelper &helper, const int code) {
     helper.complete(code);
     state.command_finish_one.notify_all();
@@ -54,12 +62,10 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
         Command *last_cmd = cmd;
         cmd = cmd->next;
 
-        if (!(last_cmd->flags & Command::FLAG_NO_FREE)) {
-            if (command_list.context && !(last_cmd->flags & Command::FLAG_FROM_HOST)) {
-                mspace_free(command_list.context->alloc_space, last_cmd);
-            } else {
-                delete last_cmd;
-            }
+        if (command_list.context) {
+            command_list.context->free_func(last_cmd);
+        } else {
+            generic_command_free(last_cmd);
         }
     } while (true);
 }

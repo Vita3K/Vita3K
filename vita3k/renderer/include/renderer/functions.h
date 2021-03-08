@@ -70,9 +70,13 @@ bool create_context(State &state, std::unique_ptr<Context> &context);
 bool create_render_target(State &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams *params);
 void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt);
 
+Command *generic_command_allocate();
+void generic_command_free(Command *cmd);
+
 template <typename... Args>
 bool add_command(Context *ctx, const CommandOpcode opcode, int *status, Args... arguments) {
-    auto cmd_maked = make_command(ctx ? ctx->alloc_space : 0, ctx ? ctx->recycle_commands : false, opcode, status, arguments...);
+    auto cmd_maked = make_command(ctx ? ctx->alloc_func : generic_command_allocate, ctx ? ctx->free_func : generic_command_free,
+        opcode, status, arguments...);
 
     if (!cmd_maked) {
         return false;
@@ -98,7 +102,8 @@ template <typename... Args>
 int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, Args... arguments) {
     // Make a temporary command list
     int status = CommandErrorCodePending; // Pending.
-    auto cmd = make_command(ctx ? ctx->alloc_space : 0, ctx ? ctx->recycle_commands : false, opcode, &status, arguments...);
+    auto cmd = make_command(ctx ? ctx->alloc_func : generic_command_allocate, ctx ? ctx->free_func : generic_command_free,
+        opcode, &status, arguments...);
 
     if (!cmd) {
         return CommandErrorArgumentsTooLarge;
