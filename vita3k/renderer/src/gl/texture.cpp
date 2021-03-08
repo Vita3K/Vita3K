@@ -178,11 +178,16 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !can_texture_be_unswizzled_without_decode(base_format);
 
     uint32_t mip_index = 0;
+    uint32_t total_mip = gxm_texture.mip_count;
     size_t source_size = 0;
     std::uint32_t org_width = width;
     std::uint32_t org_height = height;
 
-    while (mip_index < gxm_texture.mip_count + 1 && width && height) {
+    if (texture_type == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        total_mip = 0;
+    }
+
+    while (mip_index < total_mip + 1 && width && height) {
         pixels = texture_data;
 
         if (gxm::is_paletted_format(fmt)) {
