@@ -19,6 +19,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <functional>
 #include <vector>
 
 #include <boost/optional.hpp>
@@ -27,6 +28,11 @@
 namespace renderer {
 #define REPORT_MISSING(backend) //LOG_ERROR("Unimplemented graphics API handler with backend {}", (int)backend)
 #define REPORT_STUBBED() //LOG_INFO("Stubbed")
+
+struct Command;
+
+using CommandAllocFunc = std::function<Command *()>;
+using CommandFreeFunc = std::function<void(Command *)>;
 
 struct Context;
 struct State;
@@ -150,19 +156,8 @@ bool do_command_push_data(CommandHelper &helper, Head arg1, Args... args2) {
 }
 
 template <typename... Args>
-Command *make_command(mspace m, const bool recyclable, const CommandOpcode opcode, int *status, Args... arguments) {
-    Command *new_command = m ? reinterpret_cast<Command *>(mspace_calloc(m, 1, sizeof(Command))) : new Command;
-
-    if (!new_command && m) {
-        new_command = new Command;
-        new_command->flags |= Command::FLAG_FROM_HOST;
-    } else {
-        new_command->flags &= ~Command::FLAG_FROM_HOST;
-    }
-
-    if (recyclable) {
-        new_command->flags |= Command::FLAG_NO_FREE;
-    }
+Command *make_command(CommandAllocFunc alloc_func, CommandFreeFunc free_func, const CommandOpcode opcode, int *status, Args... arguments) {
+    Command *new_command = alloc_func();
 
     new_command->opcode = opcode;
     new_command->status = status;
@@ -172,12 +167,7 @@ Command *make_command(mspace m, const bool recyclable, const CommandOpcode opcod
 
     if constexpr (sizeof...(arguments) > 0) {
         if (!do_command_push_data(helper, arguments...)) {
-            if (new_command->flags & Command::FLAG_FROM_HOST) {
-                delete new_command;
-            } else {
-                mspace_free(m, new_command);
-            }
-
+            free_func(new_command);
             return nullptr;
         }
     }

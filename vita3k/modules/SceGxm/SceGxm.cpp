@@ -32,6 +32,20 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
+static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemState &mem, std::uint32_t &return_size, Ptr<SceGxmDeferredContextCallback> callback, Ptr<void> userdata,
+    const std::uint32_t size, const SceUID thread_id) {
+    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const Address final_size_addr = stack_alloc(*thread->cpu, 4);
+
+    Ptr<void> result(static_cast<Address>(run_callback(kernel, *thread, thread_id, callback.address(),
+        { userdata.address(), size, final_size_addr })));
+
+    return_size = *Ptr<std::uint32_t>(final_size_addr).get(mem);
+    stack_free(*thread->cpu, 4);
+
+    return result;
+}
+
 struct SceGxmCommandDataCopyInfo {
     std::uint8_t **dest_pointer;
     const std::uint8_t *source_data;
@@ -45,10 +59,71 @@ struct SceGxmContext {
     std::unique_ptr<renderer::Context> renderer;
 
     // NOTE(pent0): This is more sided to render backend, so I don't want to put in context state
-    SceGxmCommandDataCopyInfo *infos;
-    SceGxmCommandDataCopyInfo *last_info;
+    SceGxmCommandDataCopyInfo *infos = nullptr;
+    SceGxmCommandDataCopyInfo *last_info = nullptr;
 
-    void AddInfo(SceGxmCommandDataCopyInfo *new_info) {
+    mspace alloc_space = nullptr;
+
+    bool make_new_alloc_space(KernelState &kern, const MemState &mem, const SceUID thread_id) {
+        if (alloc_space && ((state.vdm_buffer_size != 0) || (state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE))) {
+            return false;
+        }
+
+        if (state.vdm_buffer) {
+            alloc_space = create_mspace_with_base(state.vdm_buffer.get(mem), state.vdm_buffer_size, true);
+        } else {
+            static constexpr std::uint32_t DEFAULT_SIZE = sizeof(renderer::Command) * 4096;
+            std::uint32_t actual_size = 0;
+
+            Ptr<void> space = gxmRunDeferredMemoryCallback(kern, mem, actual_size, state.vdm_memory_callback,
+                state.memory_callback_userdata, DEFAULT_SIZE, thread_id);
+
+            if (!space) {
+                LOG_ERROR("VDM callback runs out of memory!");
+                return false;
+            }
+
+            alloc_space = create_mspace_with_base(space.get(mem), actual_size, true);
+        }
+
+        return true;
+    }
+
+    renderer::Command *allocate_new_command(KernelState &kern, const MemState &mem, SceUID current_thread_id) {
+        renderer::Command *new_command = reinterpret_cast<renderer::Command *>(mspace_calloc(alloc_space, 1,
+            sizeof(renderer::Command)));
+
+        if (!new_command) {
+            if (!make_new_alloc_space(kern, mem, current_thread_id)) {
+                if (state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
+                    new_command = new renderer::Command;
+                    new_command->flags |= renderer::Command::FLAG_FROM_HOST;
+                } else {
+                    return nullptr;
+                }
+            } else {
+                new_command = reinterpret_cast<renderer::Command *>(mspace_calloc(alloc_space, 1,
+                    sizeof(renderer::Command)));
+            }
+        }
+
+        if (state.type == SCE_GXM_CONTEXT_TYPE_DEFERRED)
+            new_command->flags |= renderer::Command::FLAG_NO_FREE;
+
+        return new_command;
+    }
+
+    void free_new_command(renderer::Command *cmd) {
+        if (!(cmd->flags & renderer::Command::FLAG_NO_FREE)) {
+            if (cmd->flags & renderer::Command::FLAG_FROM_HOST) {
+                delete cmd;
+            } else {
+                mspace_free(alloc_space, cmd);
+            }
+        }
+    }
+
+    void add_info(SceGxmCommandDataCopyInfo *new_info) {
         if (!infos) {
             infos = new_info;
             last_info = new_info;
@@ -58,8 +133,20 @@ struct SceGxmContext {
         }
     }
 
-    SceGxmCommandDataCopyInfo *SupplyNewInfo() {
-        return reinterpret_cast<SceGxmCommandDataCopyInfo *>(mspace_calloc(renderer->alloc_space, 1, sizeof(SceGxmCommandDataCopyInfo)));
+    SceGxmCommandDataCopyInfo *supply_new_info(KernelState &kern, const MemState &mem, const SceUID thread_id) {
+        SceGxmCommandDataCopyInfo *info = reinterpret_cast<SceGxmCommandDataCopyInfo *>(mspace_calloc(alloc_space, 1,
+            sizeof(SceGxmCommandDataCopyInfo)));
+
+        if (!info) {
+            if (!make_new_alloc_space(kern, mem, thread_id)) {
+                return nullptr;
+            }
+        } else {
+            return info;
+        }
+
+        // Try to allocate again
+        return reinterpret_cast<SceGxmCommandDataCopyInfo *>(mspace_calloc(alloc_space, 1, sizeof(SceGxmCommandDataCopyInfo)));
     }
 };
 
@@ -118,6 +205,8 @@ static const uint8_t mask_gxp[] = {
 	0x00, 0x00, 0x00, 0x00, 
 };
 // clang-format on
+
+static constexpr std::uint32_t DEFAULT_RING_SIZE = 4096;
 
 static VertexCacheHash hash_data(const void *data, size_t size) {
     auto hash = XXH_INLINE_XXH3_64bits(data, size);
@@ -292,14 +381,16 @@ EXPORT(void, sceGxmSetDefaultRegionClipAndViewport, SceGxmContext *context, uint
     context->state.region_clip_max.y = yMax;
     context->state.region_clip_mode = SCE_GXM_REGION_CLIP_OUTSIDE;
 
-    // Set default region clip and viewport
-    renderer::set_region_clip(*host.renderer, context->renderer.get(), SCE_GXM_REGION_CLIP_OUTSIDE,
-        xMin, xMax, yMin, yMax);
+    if (context->alloc_space) {
+        // Set default region clip and viewport
+        renderer::set_region_clip(*host.renderer, context->renderer.get(), SCE_GXM_REGION_CLIP_OUTSIDE,
+            xMin, xMax, yMin, yMax);
 
-    if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
-        renderer::set_viewport_real(*host.renderer, context->renderer.get(), context->state.viewport.offset.x,
-            context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x,
-            context->state.viewport.scale.y, context->state.viewport.scale.z);
+        if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
+            renderer::set_viewport_real(*host.renderer, context->renderer.get(), context->state.viewport.offset.x,
+                context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x,
+                context->state.viewport.scale.y, context->state.viewport.scale.z);
+        }
     }
 }
 
@@ -381,6 +472,43 @@ EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
     deferredContext->state.vertex_ring_buffer_used = 0;
     deferredContext->infos = nullptr;
     deferredContext->last_info = nullptr;
+
+    if (!deferredContext->make_new_alloc_space(host.kernel, host.mem, thread_id)) {
+        return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED);
+    }
+
+    if (!deferredContext->state.vertex_ring_buffer) {
+        deferredContext->state.vertex_ring_buffer = gxmRunDeferredMemoryCallback(host.kernel, host.mem, deferredContext->state.vertex_ring_buffer_size,
+            deferredContext->state.vertex_memory_callback, deferredContext->state.memory_callback_userdata, DEFAULT_RING_SIZE, thread_id);
+
+        if (!deferredContext->state.vertex_ring_buffer) {
+            return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED);
+        }
+    }
+
+    if (!deferredContext->state.fragment_ring_buffer) {
+        deferredContext->state.fragment_ring_buffer = gxmRunDeferredMemoryCallback(host.kernel, host.mem, deferredContext->state.fragment_ring_buffer_size,
+            deferredContext->state.fragment_memory_callback, deferredContext->state.memory_callback_userdata, DEFAULT_RING_SIZE, thread_id);
+
+        if (!deferredContext->state.fragment_ring_buffer) {
+            return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED);
+        }
+    }
+
+    // Set command allocate functions
+    // These commands are never gonna be freed from the server side, so this should be fine to set each begin
+    // command list. Why did I make it set each begin command list, at least this is a prevention of thread die
+    // - no callback gonna run...
+    KernelState *kernel = &host.kernel;
+    MemState *mem = &host.mem;
+
+    deferredContext->renderer->alloc_func = [deferredContext, kernel, mem, thread_id]() {
+        return deferredContext->allocate_new_command(*kernel, *mem, thread_id);
+    };
+
+    deferredContext->renderer->free_func = [deferredContext](renderer::Command *cmd) {
+        return deferredContext->free_new_command(cmd);
+    };
 
     // Begin the command list by white washing previous command list, and restoring deferred state
     renderer::reset_command_list(deferredContext->renderer->command_list);
@@ -633,12 +761,23 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
     }
 
     // Set VDM buffer space
-    ctx->renderer->alloc_space = create_mspace_with_base(params->vdmRingBufferMem.get(host.mem),
-        params->vdmRingBufferMemSize, true);
-    ctx->renderer->recycle_commands = false;
-
     ctx->state.vdm_buffer = params->vdmRingBufferMem;
     ctx->state.vdm_buffer_size = params->vdmRingBufferMemSize;
+
+    ctx->make_new_alloc_space(host.kernel, host.mem, thread_id);
+
+    // Set command allocate functions
+    // The command buffer will not be reallocated, so this is fine to use this thread ID
+    KernelState *kernel = &host.kernel;
+    MemState *mem = &host.mem;
+
+    ctx->renderer->alloc_func = [ctx, kernel, mem, thread_id]() {
+        return ctx->allocate_new_command(*kernel, *mem, thread_id);
+    };
+
+    ctx->renderer->free_func = [ctx](renderer::Command *cmd) {
+        return ctx->free_new_command(cmd);
+    };
 
     return 0;
 }
@@ -665,8 +804,6 @@ EXPORT(int, sceGxmCreateDeferredContext, SceGxmDeferredContextParams *params, Pt
 
     // Create a generic context. This is only used for storing command list
     ctx->renderer = std::make_unique<renderer::Context>();
-    ctx->renderer->recycle_commands = true;
-
     return 0;
 }
 
@@ -871,7 +1008,7 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
     return 0;
 }
 
-static void gxmSetUniformBuffers(renderer::State &state, SceGxmContext *context, const SceGxmProgram &program, const UniformBuffers &buffers, const UniformBufferSizes &sizes, const MemState &mem) {
+static void gxmSetUniformBuffers(renderer::State &state, SceGxmContext *context, const SceGxmProgram &program, const UniformBuffers &buffers, const UniformBufferSizes &sizes, KernelState &kern, const MemState &mem, const SceUID current_thread) {
     for (std::size_t i = 0; i < buffers.size(); i++) {
         if (!buffers[i] || sizes.at(i) == 0) {
             continue;
@@ -885,13 +1022,13 @@ static void gxmSetUniformBuffers(renderer::State &state, SceGxmContext *context,
         if (dest) {
             // Calculate the number of bytes
             if (context->state.type == SCE_GXM_CONTEXT_TYPE_DEFERRED) {
-                SceGxmCommandDataCopyInfo *new_info = context->SupplyNewInfo();
+                SceGxmCommandDataCopyInfo *new_info = context->supply_new_info(kern, mem, current_thread);
 
                 new_info->dest_pointer = dest;
                 new_info->source_data = buffers[i].cast<std::uint8_t>().get(mem);
                 new_info->source_data_size = bytes_to_copy;
 
-                context->AddInfo(new_info);
+                context->add_info(new_info);
             } else {
                 std::uint8_t *a_copy = new std::uint8_t[bytes_to_copy];
                 std::memcpy(a_copy, buffers[i].get(mem), bytes_to_copy);
@@ -902,7 +1039,7 @@ static void gxmSetUniformBuffers(renderer::State &state, SceGxmContext *context,
     }
 }
 
-static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount, uint32_t instanceCount) {
+static int gxmDrawElementGeneral(HostState &host, const char *export_name, const SceUID thread_id, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount, uint32_t instanceCount) {
     if (!context || !indexData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -924,12 +1061,24 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
 
         const size_t size = program->default_uniform_buffer_count * 4;
         const size_t next_used = context->state.vertex_ring_buffer_used + size;
-        assert(next_used <= context->state.vertex_ring_buffer_size);
+        //assert(next_used <= context->state.vertex_ring_buffer_size);
         if (next_used > context->state.vertex_ring_buffer_size) {
-            return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED); // TODO: Does not actually return this on immediate context
+            if (context->state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
+                return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED); // TODO: Does not actually return this on immediate context
+            } else {
+                context->state.vertex_ring_buffer = gxmRunDeferredMemoryCallback(host.kernel, host.mem, context->state.vertex_ring_buffer_size,
+                    context->state.vertex_memory_callback, context->state.memory_callback_userdata, DEFAULT_RING_SIZE, thread_id);
+
+                if (!context->state.vertex_ring_buffer) {
+                    return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED);
+                }
+
+                context->state.vertex_ring_buffer_used = 0;
+            }
+        } else {
+            context->state.vertex_ring_buffer_used = next_used;
         }
 
-        context->state.vertex_ring_buffer_used = next_used;
         context->state.vertex_last_reserve_status = SceGxmLastReserveStatus::Available;
     }
     if (context->state.fragment_last_reserve_status == SceGxmLastReserveStatus::Reserved) {
@@ -938,12 +1087,24 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
 
         const size_t size = program->default_uniform_buffer_count * 4;
         const size_t next_used = context->state.fragment_ring_buffer_used + size;
-        assert(next_used <= context->state.fragment_ring_buffer_size);
+        //assert(next_used <= context->state.fragment_ring_buffer_size);
         if (next_used > context->state.fragment_ring_buffer_size) {
-            return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED); // TODO: Does not actually return this on immediate context
+            if (context->state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
+                return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED); // TODO: Does not actually return this on immediate context
+            } else {
+                context->state.fragment_ring_buffer = gxmRunDeferredMemoryCallback(host.kernel, host.mem, context->state.fragment_ring_buffer_size,
+                    context->state.fragment_memory_callback, context->state.memory_callback_userdata, DEFAULT_RING_SIZE, thread_id);
+
+                if (!context->state.fragment_ring_buffer) {
+                    return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED);
+                }
+
+                context->state.fragment_ring_buffer_used = 0;
+            }
+        } else {
+            context->state.fragment_ring_buffer_used = next_used;
         }
 
-        context->state.fragment_ring_buffer_used = next_used;
         context->state.fragment_last_reserve_status = SceGxmLastReserveStatus::Available;
     }
 
@@ -954,8 +1115,10 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
     const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(host.mem);
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(host.mem);
 
-    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, context->state.vertex_uniform_buffers, gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
-    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, context->state.fragment_uniform_buffers, gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
+    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, context->state.vertex_uniform_buffers, gxm_vertex_program.renderer_data->uniform_buffer_sizes,
+        host.kernel, host.mem, thread_id);
+    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, context->state.fragment_uniform_buffers, gxm_fragment_program.renderer_data->uniform_buffer_sizes,
+        host.kernel, host.mem, thread_id);
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
     // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).
@@ -993,13 +1156,13 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
 
             if (dat_copy_to) {
                 if (context->state.type == SCE_GXM_CONTEXT_TYPE_DEFERRED) {
-                    SceGxmCommandDataCopyInfo *new_info = context->SupplyNewInfo();
+                    SceGxmCommandDataCopyInfo *new_info = context->supply_new_info(host.kernel, host.mem, thread_id);
 
                     new_info->dest_pointer = dat_copy_to;
                     new_info->source_data = data;
                     new_info->source_data_size = data_length;
 
-                    context->AddInfo(new_info);
+                    context->add_info(new_info);
                 } else {
                     std::uint8_t *a_copy = new std::uint8_t[data_length];
                     std::memcpy(a_copy, data, data_length);
@@ -1018,7 +1181,7 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
 }
 
 EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount) {
-    return gxmDrawElementGeneral(host, export_name, context, primType, indexType, indexData, indexCount, 1);
+    return gxmDrawElementGeneral(host, export_name, thread_id, context, primType, indexType, indexData, indexCount, 1);
 }
 
 EXPORT(int, sceGxmDrawInstanced, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount, uint32_t indexWrap) {
@@ -1026,7 +1189,7 @@ EXPORT(int, sceGxmDrawInstanced, SceGxmContext *context, SceGxmPrimitiveType pri
         LOG_WARN("Extra vertexes are requested to be drawn (ignored)");
     }
 
-    return gxmDrawElementGeneral(host, export_name, context, primType, indexType, indexData, indexWrap, indexCount / indexWrap);
+    return gxmDrawElementGeneral(host, export_name, thread_id, context, primType, indexType, indexData, indexWrap, indexCount / indexWrap);
 }
 
 EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw *draw) {
@@ -1070,8 +1233,11 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     const SceGxmProgram &vertex_program_gxp = *vertex_program->program.get(host.mem);
     const SceGxmProgram &fragment_program_gxp = *fragment_program->program.get(host.mem);
 
-    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), gxm_vertex_program.renderer_data->uniform_buffer_sizes, host.mem);
-    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), gxm_fragment_program.renderer_data->uniform_buffer_sizes, host.mem);
+    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), gxm_vertex_program.renderer_data->uniform_buffer_sizes,
+        host.kernel, host.mem, thread_id);
+
+    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), gxm_fragment_program.renderer_data->uniform_buffer_sizes,
+        host.kernel, host.mem, thread_id);
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
     // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).
@@ -1118,13 +1284,13 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
 
             if (dest_copy) {
                 if (context->state.type == SCE_GXM_CONTEXT_TYPE_DEFERRED) {
-                    SceGxmCommandDataCopyInfo *new_info = context->SupplyNewInfo();
+                    SceGxmCommandDataCopyInfo *new_info = context->supply_new_info(host.kernel, host.mem, thread_id);
 
                     new_info->dest_pointer = dest_copy;
                     new_info->source_data = data;
                     new_info->source_data_size = data_length;
 
-                    context->AddInfo(new_info);
+                    context->add_info(new_info);
                 } else {
                     std::uint8_t *a_copy = new std::uint8_t[data_length];
                     std::memcpy(a_copy, data, data_length);
@@ -1153,7 +1319,7 @@ EXPORT(int, sceGxmEndCommandList, SceGxmContext *deferredContext, SceGxmCommandL
 
     // Try to allocate memory for storing command list from renderer
     commandList->copy_info = deferredContext->infos;
-    commandList->list = reinterpret_cast<renderer::CommandList *>(mspace_calloc(deferredContext->renderer->alloc_space,
+    commandList->list = reinterpret_cast<renderer::CommandList *>(mspace_calloc(deferredContext->alloc_space,
         1, sizeof(renderer::CommandList)));
 
     *commandList->list = deferredContext->renderer->command_list;
@@ -2093,7 +2259,7 @@ EXPORT(void, sceGxmSetBackDepthBias, SceGxmContext *context, int32_t factor, int
         context->state.back_depth_bias_factor = factor;
         context->state.back_depth_bias_units = units;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_depth_bias(*host.renderer, context->renderer.get(), false, factor, units);
         }
     }
@@ -2103,7 +2269,7 @@ EXPORT(void, sceGxmSetBackDepthFunc, SceGxmContext *context, SceGxmDepthFunc dep
     if (context->state.back_depth_func != depthFunc) {
         context->state.back_depth_func = depthFunc;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_depth_func(*host.renderer, context->renderer.get(), false, depthFunc);
         }
     }
@@ -2113,7 +2279,7 @@ EXPORT(void, sceGxmSetBackDepthWriteEnable, SceGxmContext *context, SceGxmDepthW
     if (context->state.back_depth_write_enable) {
         context->state.back_depth_write_enable = enable;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_depth_write_enable_mode(*host.renderer, context->renderer.get(), false, enable);
         }
     }
@@ -2131,7 +2297,7 @@ EXPORT(void, sceGxmSetBackPointLineWidth, SceGxmContext *context, uint32_t width
     if (context->state.back_point_line_width != width) {
         context->state.back_point_line_width = width;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_point_line_width(*host.renderer, context->renderer.get(), false, width);
         }
     }
@@ -2141,7 +2307,7 @@ EXPORT(void, sceGxmSetBackPolygonMode, SceGxmContext *context, SceGxmPolygonMode
     if (context->state.back_polygon_mode != mode) {
         context->state.back_polygon_mode = mode;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_polygon_mode(*host.renderer, context->renderer.get(), false, mode);
         }
     }
@@ -2156,7 +2322,7 @@ EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc
         context->state.back_stencil.compare_mask = compareMask;
         context->state.back_stencil.write_mask = writeMask;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_stencil_func(*host.renderer, context->renderer.get(), false, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
         }
     }
@@ -2166,7 +2332,7 @@ EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, uint8_t sref) {
     if (context->state.back_stencil.ref != sref) {
         context->state.back_stencil.ref = sref;
 
-        if (context->renderer->alloc_space)
+        if (context->alloc_space)
             renderer::set_stencil_ref(*host.renderer, context->renderer.get(), false, sref);
     }
 }
@@ -2187,7 +2353,7 @@ EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
     if (context->state.cull_mode != mode) {
         context->state.cull_mode = mode;
 
-        if (context->renderer->alloc_space)
+        if (context->alloc_space)
             renderer::set_cull_mode(*host.renderer, context->renderer.get(), mode);
     }
 }
@@ -2207,8 +2373,6 @@ EXPORT(int, sceGxmSetDeferredContextFragmentBuffer, SceGxmContext *deferredConte
         return RET_ERROR(SCE_GXM_ERROR_WITHIN_COMMAND_LIST);
     }
 
-    constexpr const std::size_t DEFAULT_RING_BUFFER_SIZE = 4096;
-
     if ((size != 0) && (size < SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE)) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
@@ -2217,24 +2381,9 @@ EXPORT(int, sceGxmSetDeferredContextFragmentBuffer, SceGxmContext *deferredConte
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    if (size == 0) {
-        size = DEFAULT_RING_BUFFER_SIZE;
-    }
-
-    if (!mem) {
-        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        const Address final_size_addr = stack_alloc(*thread->cpu, 4);
-
-        deferredContext->state.fragment_ring_buffer = run_callback(host.kernel, *thread, thread_id, deferredContext->state.fragment_memory_callback.address(),
-            { deferredContext->state.memory_callback_userdata.address(), size, final_size_addr });
-        deferredContext->state.fragment_ring_buffer_size = *Ptr<std::uint32_t>(final_size_addr).get(host.mem);
-
-        stack_free(*thread->cpu, 4);
-    } else {
-        // Use the one specified
-        deferredContext->state.fragment_ring_buffer = mem;
-        deferredContext->state.fragment_ring_buffer_size = size;
-    }
+    // Use the one specified
+    deferredContext->state.fragment_ring_buffer = mem;
+    deferredContext->state.fragment_ring_buffer_size = size;
 
     return 0;
 }
@@ -2252,38 +2401,9 @@ EXPORT(int, sceGxmSetDeferredContextVdmBuffer, SceGxmContext *deferredContext, P
         return RET_ERROR(SCE_GXM_ERROR_WITHIN_COMMAND_LIST);
     }
 
-    constexpr const std::size_t DEFAULT_RING_BUFFER_SIZE = 4096 * sizeof(renderer::Command);
-
-    if ((size != 0) && (size < SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE)) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    }
-
-    if (mem && !size) {
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    }
-
-    if (size == 0) {
-        size = DEFAULT_RING_BUFFER_SIZE;
-    }
-
-    if (!mem) {
-        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        const Address final_size_addr = stack_alloc(*thread->cpu, 4);
-
-        deferredContext->state.vdm_buffer = run_callback(host.kernel, *thread, thread_id, deferredContext->state.vdm_memory_callback.address(),
-            { deferredContext->state.memory_callback_userdata.address(), size, final_size_addr });
-        deferredContext->state.vdm_buffer_size = *Ptr<std::uint32_t>(final_size_addr).get(host.mem);
-
-        stack_free(*thread->cpu, 4);
-    } else {
-        // Use the one specified
-        deferredContext->state.vdm_buffer = mem;
-        deferredContext->state.vdm_buffer_size = size;
-    }
-
-    // Make the alloc space for command
-    deferredContext->renderer->alloc_space = create_mspace_with_base(deferredContext->state.vdm_buffer.get(host.mem),
-        deferredContext->state.vdm_buffer_size, true);
+    // Use the one specified
+    deferredContext->state.vdm_buffer = mem;
+    deferredContext->state.vdm_buffer_size = size;
 
     return 0;
 }
@@ -2301,8 +2421,6 @@ EXPORT(int, sceGxmSetDeferredContextVertexBuffer, SceGxmContext *deferredContext
         return RET_ERROR(SCE_GXM_ERROR_WITHIN_COMMAND_LIST);
     }
 
-    constexpr const std::size_t DEFAULT_RING_BUFFER_SIZE = 4096;
-
     if ((size != 0) && (size < SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE)) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
@@ -2311,24 +2429,9 @@ EXPORT(int, sceGxmSetDeferredContextVertexBuffer, SceGxmContext *deferredContext
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    if (size == 0) {
-        size = DEFAULT_RING_BUFFER_SIZE;
-    }
-
-    if (!mem) {
-        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        const Address final_size_addr = stack_alloc(*thread->cpu, 4);
-
-        deferredContext->state.vertex_ring_buffer = run_callback(host.kernel, *thread, thread_id, deferredContext->state.vertex_memory_callback.address(),
-            { deferredContext->state.memory_callback_userdata.address(), size, final_size_addr });
-        deferredContext->state.vertex_ring_buffer_size = *Ptr<std::uint32_t>(final_size_addr).get(host.mem);
-
-        stack_free(*thread->cpu, 4);
-    } else {
-        // Use the one specified
-        deferredContext->state.vertex_ring_buffer = mem;
-        deferredContext->state.vertex_ring_buffer_size = size;
-    }
+    // Use the one specified
+    deferredContext->state.vertex_ring_buffer = mem;
+    deferredContext->state.vertex_ring_buffer_size = size;
 
     return 0;
 }
@@ -2343,9 +2446,6 @@ EXPORT(int, sceGxmSetFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<c
 }
 
 EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmFragmentProgram> fragmentProgram) {
-    assert(context);
-    assert(fragmentProgram);
-
     if (!context || !fragmentProgram)
         return;
 
@@ -2362,7 +2462,9 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, uint32_t textureIn
     }
 
     context->state.fragment_textures[textureIndex] = *texture;
-    renderer::set_fragment_texture(*host.renderer, context->renderer.get(), textureIndex, *texture);
+
+    if (context->alloc_space)
+        renderer::set_fragment_texture(*host.renderer, context->renderer.get(), textureIndex, *texture);
 
     return 0;
 }
@@ -2385,7 +2487,7 @@ EXPORT(void, sceGxmSetFrontDepthBias, SceGxmContext *context, int32_t factor, in
         context->state.front_depth_bias_factor = factor;
         context->state.front_depth_bias_units = units;
 
-        if (context->renderer->alloc_space)
+        if (context->alloc_space)
             renderer::set_depth_bias(*host.renderer, context->renderer.get(), true, factor, units);
     }
 }
@@ -2394,7 +2496,7 @@ EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc de
     if (context->state.front_depth_func != depthFunc) {
         context->state.front_depth_func = depthFunc;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_depth_func(*host.renderer, context->renderer.get(), true, depthFunc);
         }
     }
@@ -2404,7 +2506,7 @@ EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepth
     if (context->state.front_depth_write_enable != enable) {
         context->state.front_depth_write_enable = enable;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_depth_write_enable_mode(*host.renderer, context->renderer.get(), true, enable);
         }
     }
@@ -2422,7 +2524,7 @@ EXPORT(void, sceGxmSetFrontPointLineWidth, SceGxmContext *context, uint32_t widt
     if (context->state.front_point_line_width != width) {
         context->state.front_point_line_width = width;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_point_line_width(*host.renderer, context->renderer.get(), true, width);
         }
     }
@@ -2432,7 +2534,7 @@ EXPORT(void, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMod
     if (context->state.front_polygon_mode != mode) {
         context->state.front_polygon_mode = mode;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_polygon_mode(*host.renderer, context->renderer.get(), true, mode);
         }
     }
@@ -2447,7 +2549,7 @@ EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFun
         context->state.front_stencil.compare_mask = compareMask;
         context->state.front_stencil.write_mask = writeMask;
 
-        if (context->renderer->alloc_space)
+        if (context->alloc_space)
             renderer::set_stencil_func(*host.renderer, context->renderer.get(), true, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
     }
 }
@@ -2455,7 +2557,7 @@ EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFun
 EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, uint8_t sref) {
     if (context->state.front_stencil.ref != sref) {
         context->state.front_stencil.ref = sref;
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_stencil_ref(*host.renderer, context->renderer.get(), true, sref);
         }
     }
@@ -2509,7 +2611,7 @@ EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode m
         change_detected = true;
     }
 
-    if (change_detected && context->renderer->alloc_space)
+    if (change_detected && context->alloc_space)
         renderer::set_region_clip(*host.renderer, context->renderer.get(), mode, xMin, xMax, yMin, yMax);
 }
 
@@ -2517,7 +2619,7 @@ EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode
     if (context->state.two_sided != mode) {
         context->state.two_sided = mode;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             renderer::set_two_sided_enable(*host.renderer, context->renderer.get(), mode);
         }
     }
@@ -2678,9 +2780,6 @@ EXPORT(int, sceGxmSetVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<con
 }
 
 EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVertexProgram> vertexProgram) {
-    assert(context);
-    assert(vertexProgram);
-
     if (!context || !vertexProgram)
         return;
 
@@ -2733,7 +2832,7 @@ EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xSc
         context->state.viewport.scale.y = yScale;
         context->state.viewport.scale.z = zScale;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
                 renderer::set_viewport_real(*host.renderer, context->renderer.get(), context->state.viewport.offset.x,
                     context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x, context->state.viewport.scale.y,
@@ -2748,7 +2847,7 @@ EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode
     if (context->state.viewport.enable != enable) {
         context->state.viewport.enable = enable;
 
-        if (context->renderer->alloc_space) {
+        if (context->alloc_space) {
             if (context->state.viewport.enable == SCE_GXM_VIEWPORT_DISABLED) {
                 renderer::set_viewport_flat(*host.renderer, context->renderer.get());
             } else {

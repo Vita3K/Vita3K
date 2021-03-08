@@ -1,7 +1,6 @@
 #pragma once
 
 #include <crypto/hash.h>
-#include <dlmalloc.h>
 #include <glutil/object.h>
 #include <glutil/object_array.h>
 #include <gxm/types.h>
@@ -17,15 +16,11 @@ static constexpr auto DEFAULT_RES_WIDTH = 960;
 static constexpr auto DEFAULT_RES_HEIGHT = 544;
 
 struct SceGxmProgram;
-
 struct SDL_Window;
 
 using UniformBufferSizes = std::array<std::uint32_t, 15>;
 
 namespace renderer {
-
-using ContextAllocFunc = std::function<void *(std::size_t)>;
-using ContextFreeFunc = std::function<void(void *)>;
 
 typedef std::map<GLuint, std::string> AttributeLocations;
 typedef std::map<std::string, SharedGLObject> ShaderCache;
@@ -105,12 +100,11 @@ struct Context {
     GxmRecordState record;
 
     CommandList command_list;
+    CommandAllocFunc alloc_func;
+    CommandFreeFunc free_func;
 
     int render_finish_status = 0;
     int notification_finish_status = 0;
-
-    bool recycle_commands = false;
-    mspace alloc_space = nullptr;
 
     std::string last_draw_fragment_program_hash;
     std::string last_draw_vertex_program_hash;
