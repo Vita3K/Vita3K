@@ -461,6 +461,9 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
     ctx->renderer->alloc_space = create_mspace_with_base(params->vdmRingBufferMem.get(host.mem),
         params->vdmRingBufferMemSize, true);
 
+    ctx->state.vdm_buffer = params->vdmRingBufferMem;
+    ctx->state.vdm_buffer_size = params->vdmRingBufferMemSize;
+
     return 0;
 }
 
@@ -478,8 +481,13 @@ EXPORT(int, sceGxmCreateDeferredContext, SceGxmDeferredContextParams *params, Pt
 
     ctx->state.vertex_memory_callback = params->vertexCallback;
     ctx->state.fragment_memory_callback = params->fragmentCallback;
+    ctx->state.vdm_memory_callback = params->vdmCallback;
+    ctx->state.memory_callback_userdata = params->userData;
 
     ctx->state.type = SCE_GXM_CONTEXT_TYPE_DEFERRED;
+
+    // Create a generic context. This is only used for storing command list
+    ctx->renderer = std::make_unique<renderer::Context>();
 
     return 0;
 }
@@ -1014,21 +1022,39 @@ EXPORT(int, sceGxmGetDeferredContextFragmentBuffer, const SceGxmContext *deferre
     if (!deferredContext || !mem) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    *mem = deferredContext->state.fragment_ring_buffer;
+    return 0;
 }
 
 EXPORT(int, sceGxmGetDeferredContextVdmBuffer, const SceGxmContext *deferredContext, Ptr<void> *mem) {
     if (!deferredContext || !mem) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    *mem = deferredContext->state.vdm_buffer;
+    return 0;
 }
 
 EXPORT(int, sceGxmGetDeferredContextVertexBuffer, const SceGxmContext *deferredContext, Ptr<void> *mem) {
     if (!deferredContext || !mem) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    *mem = deferredContext->state.vertex_ring_buffer;
+    return 0;
 }
 
 EXPORT(Ptr<uint32_t>, sceGxmGetNotificationRegion) {
@@ -1869,17 +1895,40 @@ EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
     }
 }
 
-static const int STUB_RING_BUFFER_SIZE = 4096;
+static constexpr const std::uint32_t SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE = 1024;
 
 EXPORT(int, sceGxmSetDeferredContextFragmentBuffer, SceGxmContext *deferredContext, Ptr<void> mem, uint32_t size) {
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (!mem || (size == 0)) {
-        // TODO: Call the callback. This is so sad
-        deferredContext->state.fragment_ring_buffer = alloc(host.mem, STUB_RING_BUFFER_SIZE, "RingBuffer");
-        deferredContext->state.fragment_ring_buffer_size = STUB_RING_BUFFER_SIZE;
+    if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    constexpr const std::size_t DEFAULT_RING_BUFFER_SIZE = 4096;
+
+    if ((size != 0) && (size < SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE)) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (mem && !size) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (size == 0) {
+        size = DEFAULT_RING_BUFFER_SIZE;
+    }
+
+    if (!mem) {
+        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+        const Address final_size_addr = stack_alloc(*thread->cpu, 4);
+
+        deferredContext->state.fragment_ring_buffer = run_callback(host.kernel, *thread, thread_id, deferredContext->state.fragment_memory_callback.address(),
+            { deferredContext->state.memory_callback_userdata.address(), size, final_size_addr });
+        deferredContext->state.fragment_ring_buffer_size = *Ptr<std::uint32_t>(final_size_addr).get(host.mem);
+
+        stack_free(*thread->cpu, 4);
     } else {
         // Use the one specified
         deferredContext->state.fragment_ring_buffer = mem;
@@ -1889,12 +1938,48 @@ EXPORT(int, sceGxmSetDeferredContextFragmentBuffer, SceGxmContext *deferredConte
     return 0;
 }
 
-EXPORT(int, sceGxmSetDeferredContextVdmBuffer, SceGxmContext *deferredContext, void *mem, uint32_t size) {
+EXPORT(int, sceGxmSetDeferredContextVdmBuffer, SceGxmContext *deferredContext, Ptr<void> mem, uint32_t size) {
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    // Ignored, no business with us
+    if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    constexpr const std::size_t DEFAULT_RING_BUFFER_SIZE = 4096 * sizeof(renderer::Command);
+
+    if ((size != 0) && (size < SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE)) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (mem && !size) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (size == 0) {
+        size = DEFAULT_RING_BUFFER_SIZE;
+    }
+
+    if (!mem) {
+        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+        const Address final_size_addr = stack_alloc(*thread->cpu, 4);
+
+        deferredContext->state.vdm_buffer = run_callback(host.kernel, *thread, thread_id, deferredContext->state.vdm_memory_callback.address(),
+            { deferredContext->state.memory_callback_userdata.address(), size, final_size_addr });
+        deferredContext->state.vdm_buffer_size = *Ptr<std::uint32_t>(final_size_addr).get(host.mem);
+
+        stack_free(*thread->cpu, 4);
+    } else {
+        // Use the one specified
+        deferredContext->state.vdm_buffer = mem;
+        deferredContext->state.vdm_buffer_size = size;
+    }
+
+    // Make the alloc space for command
+    deferredContext->renderer->alloc_space = create_mspace_with_base(deferredContext->state.vdm_buffer.get(host.mem),
+        deferredContext->state.vdm_buffer_size, true);
+
     return 0;
 }
 
@@ -1903,10 +1988,33 @@ EXPORT(int, sceGxmSetDeferredContextVertexBuffer, SceGxmContext *deferredContext
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (!mem || (size == 0)) {
-        // TODO: Call the callback. This is so sad
-        deferredContext->state.vertex_ring_buffer = alloc(host.mem, STUB_RING_BUFFER_SIZE, "RingBuffer");
-        deferredContext->state.vertex_ring_buffer_size = STUB_RING_BUFFER_SIZE;
+    if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    constexpr const std::size_t DEFAULT_RING_BUFFER_SIZE = 4096;
+
+    if ((size != 0) && (size < SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE)) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (mem && !size) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (size == 0) {
+        size = DEFAULT_RING_BUFFER_SIZE;
+    }
+
+    if (!mem) {
+        const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+        const Address final_size_addr = stack_alloc(*thread->cpu, 4);
+
+        deferredContext->state.vertex_ring_buffer = run_callback(host.kernel, *thread, thread_id, deferredContext->state.vertex_memory_callback.address(),
+            { deferredContext->state.memory_callback_userdata.address(), size, final_size_addr });
+        deferredContext->state.vertex_ring_buffer_size = *Ptr<std::uint32_t>(final_size_addr).get(host.mem);
+
+        stack_free(*thread->cpu, 4);
     } else {
         // Use the one specified
         deferredContext->state.vertex_ring_buffer = mem;

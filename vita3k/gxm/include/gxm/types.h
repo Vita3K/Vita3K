@@ -1234,6 +1234,8 @@ struct GxmContextState {
     uint32_t vertex_ring_buffer_size;
     Ptr<void> fragment_ring_buffer;
     uint32_t fragment_ring_buffer_size;
+    Ptr<void> vdm_buffer;
+    uint32_t vdm_buffer_size;
 
     // Vertex streams.
     StreamDatas stream_data;
@@ -1282,6 +1284,8 @@ struct GxmContextState {
     // Deferred
     Ptr<SceGxmDeferredContextCallback> vertex_memory_callback;
     Ptr<SceGxmDeferredContextCallback> fragment_memory_callback;
+    Ptr<SceGxmDeferredContextCallback> vdm_memory_callback;
+    Ptr<void> memory_callback_userdata;
 };
 
 struct SceGxmFragmentProgram {
