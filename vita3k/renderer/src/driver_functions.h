@@ -47,5 +47,6 @@ COMMAND(handle_draw);
 // Sync
 COMMAND(handle_nop);
 COMMAND(handle_signal_sync_object);
+COMMAND(handle_notification);
 
 } // namespace renderer
