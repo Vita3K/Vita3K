@@ -54,21 +54,13 @@ enum class CommandOpcode : std::uint16_t {
     SyncSurfaceData = 6,
 
     /**
-         * Jump to another command pointer, save current command pointer on a stack
-         */
-    JumpWithLink = 7,
-
-    /**
-         * Pop the stack, and jump the command popped
-         */
-    JumpBack = 8,
-
-    /**
          * Signal sync object that fragment has been done.
          */
     SignalSyncObject = 9,
 
-    DestroyRenderTarget = 10
+    SignalNotification = 10,
+
+    DestroyRenderTarget = 11
 };
 
 enum CommandErrorCode {
@@ -80,12 +72,18 @@ enum CommandErrorCode {
 constexpr std::size_t MAX_COMMAND_DATA_SIZE = 0x20;
 
 struct Command {
+    enum {
+        FLAG_FROM_HOST = 1 << 0,
+        FLAG_NO_FREE = 1 << 1
+    };
+
     CommandOpcode opcode;
+    std::uint16_t flags = 0;
+
     std::uint8_t data[MAX_COMMAND_DATA_SIZE];
     int *status;
 
     Command *next;
-    bool from_host = false;
 };
 
 using CommandPool = std::vector<Command>;
@@ -151,14 +149,18 @@ bool do_command_push_data(CommandHelper &helper, Head arg1, Args... args2) {
 }
 
 template <typename... Args>
-Command *make_command(mspace m, const CommandOpcode opcode, int *status, Args... arguments) {
+Command *make_command(mspace m, const bool recyclable, const CommandOpcode opcode, int *status, Args... arguments) {
     Command *new_command = m ? reinterpret_cast<Command *>(mspace_calloc(m, 1, sizeof(Command))) : new Command;
 
     if (!new_command && m) {
         new_command = new Command;
-        new_command->from_host = true;
+        new_command->flags |= Command::FLAG_FROM_HOST;
     } else {
-        new_command->from_host = false;
+        new_command->flags &= ~Command::FLAG_FROM_HOST;
+    }
+
+    if (recyclable) {
+        new_command->flags |= Command::FLAG_NO_FREE;
     }
 
     new_command->opcode = opcode;
@@ -169,10 +171,10 @@ Command *make_command(mspace m, const CommandOpcode opcode, int *status, Args...
 
     if constexpr (sizeof...(arguments) > 0) {
         if (!do_command_push_data(helper, arguments...)) {
-            if (!new_command->from_host) {
-                mspace_free(m, new_command);
-            } else {
+            if (new_command->flags & Command::FLAG_FROM_HOST) {
                 delete new_command;
+            } else {
+                mspace_free(m, new_command);
             }
 
             return nullptr;

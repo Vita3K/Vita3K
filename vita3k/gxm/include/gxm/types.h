@@ -1034,7 +1034,9 @@ enum SceGxmErrorCode {
     SCE_GXM_ERROR_INVALID_PRECOMPUTED_DRAW = 0x805B0014,
     SCE_GXM_ERROR_INVALID_PRECOMPUTED_VERTEX_STATE = 0x805B0015,
     SCE_GXM_ERROR_INVALID_PRECOMPUTED_FRAGMENT_STATE = 0x805B0016,
-    SCE_GXM_ERROR_DRIVER = 0x805B0017
+    SCE_GXM_ERROR_DRIVER = 0x805B0017,
+    SCE_GXM_ERROR_WITHIN_COMMAND_LIST = 0x805B002C,
+    SCE_GXM_ERROR_NOT_WITHIN_COMMAND_LIST = 0x805B002D
 };
 
 enum SceGxmIndexSource {
@@ -1286,6 +1288,8 @@ struct GxmContextState {
     Ptr<SceGxmDeferredContextCallback> fragment_memory_callback;
     Ptr<SceGxmDeferredContextCallback> vdm_memory_callback;
     Ptr<void> memory_callback_userdata;
+
+    bool active = false;
 };
 
 struct SceGxmFragmentProgram {

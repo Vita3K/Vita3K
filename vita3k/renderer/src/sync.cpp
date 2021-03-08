@@ -22,6 +22,14 @@ COMMAND(handle_signal_sync_object) {
     renderer::subject_done(sync, renderer::SyncObjectSubject::Fragment);
 }
 
+COMMAND(handle_notification) {
+    SceGxmNotification *nof = helper.pop<Ptr<SceGxmNotification>>().get(mem);
+    [[maybe_unused]] const bool is_vertex = helper.pop<bool>();
+
+    volatile std::uint32_t *val = nof->address.get(mem);
+    *val = nof->value;
+}
+
 // Client side function
 void finish(State &state, Context &context) {
     // Wait for the code
