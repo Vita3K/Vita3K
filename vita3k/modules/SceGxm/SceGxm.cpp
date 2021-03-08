@@ -32,9 +32,35 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
+struct SceGxmCommandDataCopyInfo {
+    std::uint8_t **dest_pointer;
+    const std::uint8_t *source_data;
+    std::uint32_t source_data_size;
+
+    SceGxmCommandDataCopyInfo *next;
+};
+
 struct SceGxmContext {
     GxmContextState state;
     std::unique_ptr<renderer::Context> renderer;
+
+    // NOTE(pent0): This is more sided to render backend, so I don't want to put in context state
+    SceGxmCommandDataCopyInfo *infos;
+    SceGxmCommandDataCopyInfo *last_info;
+
+    void AddInfo(SceGxmCommandDataCopyInfo *new_info) {
+        if (!infos) {
+            infos = new_info;
+            last_info = new_info;
+        } else {
+            last_info->next = new_info;
+            last_info = new_info;
+        }
+    }
+
+    SceGxmCommandDataCopyInfo *SupplyNewInfo() {
+        return reinterpret_cast<SceGxmCommandDataCopyInfo *>(mspace_calloc(renderer->alloc_space, 1, sizeof(SceGxmCommandDataCopyInfo)));
+    }
 };
 
 struct SceGxmRenderTarget {
@@ -42,6 +68,14 @@ struct SceGxmRenderTarget {
     std::uint16_t width;
     std::uint16_t height;
 };
+
+struct SceGxmCommandList {
+    renderer::CommandList *list;
+    SceGxmCommandDataCopyInfo *copy_info;
+};
+
+// Seems on real vita, this is the maximum size, I got stack corrupt if try to write more
+static_assert(sizeof(SceGxmCommandList) <= 32);
 
 typedef std::uint32_t VertexCacheHash;
 
@@ -269,11 +303,90 @@ EXPORT(void, sceGxmSetDefaultRegionClipAndViewport, SceGxmContext *context, uint
     }
 }
 
+static void gxmContextStateRestore(renderer::State &state, MemState &mem, SceGxmContext *context, const bool sync_viewport_and_clip) {
+    if (sync_viewport_and_clip) {
+        renderer::set_region_clip(state, context->renderer.get(), SCE_GXM_REGION_CLIP_OUTSIDE,
+            context->state.region_clip_min.x, context->state.region_clip_max.x, context->state.region_clip_min.y,
+            context->state.region_clip_max.y);
+
+        if (context->state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) {
+            renderer::set_viewport_real(state, context->renderer.get(), context->state.viewport.offset.x,
+                context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x,
+                context->state.viewport.scale.y, context->state.viewport.scale.z);
+        } else {
+            renderer::set_viewport_flat(state, context->renderer.get());
+        }
+    }
+
+    renderer::set_cull_mode(state, context->renderer.get(), context->state.cull_mode);
+    renderer::set_depth_bias(state, context->renderer.get(), true, context->state.front_depth_bias_factor, context->state.front_depth_bias_units);
+    renderer::set_depth_bias(state, context->renderer.get(), false, context->state.back_depth_bias_factor, context->state.back_depth_bias_units);
+    renderer::set_depth_func(state, context->renderer.get(), true, context->state.front_depth_func);
+    renderer::set_depth_func(state, context->renderer.get(), false, context->state.back_depth_func);
+    renderer::set_depth_write_enable_mode(state, context->renderer.get(), true, context->state.front_depth_write_enable);
+    renderer::set_depth_write_enable_mode(state, context->renderer.get(), false, context->state.back_depth_write_enable);
+    renderer::set_point_line_width(state, context->renderer.get(), true, context->state.front_point_line_width);
+    renderer::set_point_line_width(state, context->renderer.get(), false, context->state.back_point_line_width);
+    renderer::set_polygon_mode(state, context->renderer.get(), true, context->state.front_polygon_mode);
+    renderer::set_polygon_mode(state, context->renderer.get(), false, context->state.back_polygon_mode);
+    renderer::set_two_sided_enable(state, context->renderer.get(), context->state.two_sided);
+    renderer::set_stencil_func(state, context->renderer.get(), true, context->state.front_stencil.func, context->state.front_stencil.stencil_fail,
+        context->state.front_stencil.depth_fail, context->state.front_stencil.depth_pass, context->state.front_stencil.compare_mask,
+        context->state.front_stencil.write_mask);
+    renderer::set_stencil_func(state, context->renderer.get(), false, context->state.back_stencil.func, context->state.back_stencil.stencil_fail,
+        context->state.back_stencil.depth_fail, context->state.back_stencil.depth_pass, context->state.back_stencil.compare_mask,
+        context->state.back_stencil.write_mask);
+    renderer::set_stencil_ref(state, context->renderer.get(), true, context->state.front_stencil.ref);
+    renderer::set_stencil_ref(state, context->renderer.get(), false, context->state.back_stencil.ref);
+
+    if (context->state.vertex_program)
+        renderer::set_program(state, context->renderer.get(), context->state.vertex_program, false);
+
+    // The uniform buffer, vertex stream will be uploaded later, for now only need to resync de textures
+    if (context->state.fragment_program) {
+        renderer::set_program(state, context->renderer.get(), context->state.fragment_program, true);
+
+        const SceGxmFragmentProgram &gxm_fragment_program = *context->state.fragment_program.get(mem);
+        const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
+
+        const auto frag_paramters = gxp::program_parameters(fragment_program_gxp);
+
+        for (uint32_t i = 0; i < fragment_program_gxp.parameter_count; ++i) {
+            const auto parameter = frag_paramters[i];
+            if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+                const auto index = parameter.resource_index;
+
+                if (context->state.fragment_textures[index].data_addr != 0) {
+                    renderer::set_fragment_texture(state, context->renderer.get(), index, context->state.fragment_textures[index]);
+                }
+            }
+        }
+    }
+}
+
 EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (deferredContext->state.active) {
+        return RET_ERROR(SCE_GXM_ERROR_WITHIN_COMMAND_LIST);
+    }
+
+    deferredContext->state.fragment_ring_buffer_used = 0;
+    deferredContext->state.vertex_ring_buffer_used = 0;
+
+    // Begin the command list by white washing previous command list, and restoring deferred state
+    renderer::reset_command_list(deferredContext->renderer->command_list);
+    gxmContextStateRestore(*host.renderer, host.mem, deferredContext, true);
+
+    deferredContext->state.active = true;
+
+    return 0;
 }
 
 EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceGxmRenderTarget *renderTarget, const SceGxmValidRegion *validRegion, SceGxmSyncObject *vertexSyncObject, Ptr<SceGxmSyncObject> fragmentSyncObject, const SceGxmColorSurface *colorSurface, const SceGxmDepthStencilSurface *depthStencil) {
@@ -289,7 +402,11 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (host.gxm.is_in_scene) {
+    if (context->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (context->state.active) {
         return RET_ERROR(SCE_GXM_ERROR_WITHIN_SCENE);
     }
 
@@ -306,7 +423,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
     context->state.vertex_ring_buffer_used = 0;
 
     // It's legal to set at client.
-    host.gxm.is_in_scene = true;
+    context->state.active = true;
 
     SceGxmColorSurface *color_surface_copy = nullptr;
     SceGxmDepthStencilSurface *depth_stencil_surface_copy = nullptr;
@@ -344,7 +461,11 @@ EXPORT(int, sceGxmBeginSceneEx, SceGxmContext *immediateContext, uint32_t flags,
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (host.gxm.is_in_scene) {
+    if (immediateContext->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (immediateContext->state.active) {
         return RET_ERROR(SCE_GXM_ERROR_WITHIN_SCENE);
     }
 
@@ -512,6 +633,7 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
     // Set VDM buffer space
     ctx->renderer->alloc_space = create_mspace_with_base(params->vdmRingBufferMem.get(host.mem),
         params->vdmRingBufferMemSize, true);
+    ctx->renderer->recycle_commands = false;
 
     ctx->state.vdm_buffer = params->vdmRingBufferMem;
     ctx->state.vdm_buffer_size = params->vdmRingBufferMemSize;
@@ -541,6 +663,7 @@ EXPORT(int, sceGxmCreateDeferredContext, SceGxmDeferredContextParams *params, Pt
 
     // Create a generic context. This is only used for storing command list
     ctx->renderer = std::make_unique<renderer::Context>();
+    ctx->renderer->recycle_commands = true;
 
     return 0;
 }
@@ -759,10 +882,20 @@ static void gxmSetUniformBuffers(renderer::State &state, SceGxmContext *context,
 
         if (dest) {
             // Calculate the number of bytes
-            std::uint8_t *a_copy = new std::uint8_t[bytes_to_copy];
-            std::memcpy(a_copy, buffers[i].get(mem), bytes_to_copy);
+            if (context->state.type == SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+                SceGxmCommandDataCopyInfo *new_info = context->SupplyNewInfo();
 
-            *dest = a_copy;
+                new_info->dest_pointer = dest;
+                new_info->source_data = buffers[i].cast<std::uint8_t>().get(mem);
+                new_info->source_data_size = bytes_to_copy;
+
+                context->AddInfo(new_info);
+            } else {
+                std::uint8_t *a_copy = new std::uint8_t[bytes_to_copy];
+                std::memcpy(a_copy, buffers[i].get(mem), bytes_to_copy);
+
+                *dest = a_copy;
+            }
         }
     }
 }
@@ -771,8 +904,12 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
     if (!context || !indexData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    if (!host.gxm.is_in_scene) {
-        return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
+    if (!context->state.active) {
+        if (context->state.type == SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+            return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_COMMAND_LIST);
+        } else {
+            return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
+        }
     }
 
     if (!context->state.fragment_program || !context->state.vertex_program) {
@@ -853,10 +990,20 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, SceGx
                 data_length);
 
             if (dat_copy_to) {
-                std::uint8_t *a_copy = new std::uint8_t[data_length];
-                std::memcpy(a_copy, data, data_length);
+                if (context->state.type == SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+                    SceGxmCommandDataCopyInfo *new_info = context->SupplyNewInfo();
 
-                *dat_copy_to = a_copy;
+                    new_info->dest_pointer = dat_copy_to;
+                    new_info->source_data = data;
+                    new_info->source_data_size = data_length;
+
+                    context->AddInfo(new_info);
+                } else {
+                    std::uint8_t *a_copy = new std::uint8_t[data_length];
+                    std::memcpy(a_copy, data, data_length);
+
+                    *dat_copy_to = a_copy;
+                }
             }
         }
     }
@@ -885,8 +1032,12 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (!host.gxm.is_in_scene) {
-        return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
+    if (!context->state.active) {
+        if (context->state.type == SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+            return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_COMMAND_LIST);
+        } else {
+            return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
+        }
     }
 
     if (!draw) {
@@ -964,10 +1115,20 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
                 data_length);
 
             if (dest_copy) {
-                std::uint8_t *a_copy = new std::uint8_t[data_length];
-                std::memcpy(a_copy, data, data_length);
+                if (context->state.type == SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+                    SceGxmCommandDataCopyInfo *new_info = context->SupplyNewInfo();
 
-                *dest_copy = a_copy;
+                    new_info->dest_pointer = dest_copy;
+                    new_info->source_data = data;
+                    new_info->source_data_size = data_length;
+
+                    context->AddInfo(new_info);
+                } else {
+                    std::uint8_t *a_copy = new std::uint8_t[data_length];
+                    std::memcpy(a_copy, data, data_length);
+
+                    *dest_copy = a_copy;
+                }
             }
         }
     }
@@ -979,19 +1140,42 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     return 0;
 }
 
-EXPORT(int, sceGxmEndCommandList) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmEndCommandList, SceGxmContext *deferredContext, SceGxmCommandList *commandList) {
+    if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (!deferredContext->state.active) {
+        return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_COMMAND_LIST);
+    }
+
+    // Try to allocate memory for storing command list from renderer
+    commandList->copy_info = deferredContext->infos;
+    commandList->list = reinterpret_cast<renderer::CommandList *>(mspace_calloc(deferredContext->renderer->alloc_space,
+        1, sizeof(renderer::CommandList)));
+
+    *commandList->list = deferredContext->renderer->command_list;
+
+    // Reset active state
+    deferredContext->state.active = false;
+    renderer::reset_command_list(deferredContext->renderer->command_list);
+
+    return 0;
 }
 
-EXPORT(int, sceGxmEndScene, SceGxmContext *context, const SceGxmNotification *vertexNotification, const SceGxmNotification *fragmentNotification) {
+EXPORT(int, sceGxmEndScene, SceGxmContext *context, Ptr<SceGxmNotification> vertexNotification, Ptr<SceGxmNotification> fragmentNotification) {
     const MemState &mem = host.mem;
 
     if (!context) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (!host.gxm.is_in_scene) {
-        return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
+    if (context->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (!context->state.active) {
+        return RET_ERROR(SCE_GXM_ERROR_WITHIN_SCENE);
     }
 
     // Add command to end the scene
@@ -1002,6 +1186,16 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const SceGxmNotification *ve
     renderer::add_command(context->renderer.get(), renderer::CommandOpcode::Nop, &context->renderer->render_finish_status,
         (int)0);
 
+    if (vertexNotification) {
+        renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
+            nullptr, vertexNotification, true);
+    }
+
+    if (fragmentNotification) {
+        renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
+            nullptr, fragmentNotification, false);
+    }
+
     if (context->state.fragment_sync_object) {
         // Add NOP for our sync object
         SceGxmSyncObject *sync = context->state.fragment_sync_object.get(mem);
@@ -1011,28 +1205,50 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const SceGxmNotification *ve
         renderer::subject_in_progress(sync, renderer::SyncObjectSubject::Fragment);
     }
 
-    if (vertexNotification) {
-        volatile uint32_t *vertex_address = vertexNotification->address.get(host.mem);
-        *vertex_address = vertexNotification->value;
-    }
-
-    if (fragmentNotification) {
-        volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
-        *fragment_address = fragmentNotification->value;
-    }
-
     // Submit our command list
     renderer::submit_command_list(*host.renderer, context->renderer.get(), context->renderer->command_list);
     renderer::reset_command_list(context->renderer->command_list);
 
-    host.gxm.is_in_scene = false;
+    context->state.active = false;
     host.renderer->scene_processed_since_last_frame++;
 
     return 0;
 }
 
-EXPORT(int, sceGxmExecuteCommandList) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmExecuteCommandList, SceGxmContext *context, SceGxmCommandList *commandList) {
+    if (!context) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    if (context->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (!context->state.active) {
+        return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
+    }
+
+    // Finalise by copy values
+    SceGxmCommandDataCopyInfo *copy_info = commandList->copy_info;
+    while (copy_info) {
+        std::uint8_t *data_allocated = new std::uint8_t[copy_info->source_data_size];
+        std::memcpy(data_allocated, copy_info->source_data, copy_info->source_data_size);
+
+        *copy_info->dest_pointer = data_allocated;
+        copy_info = copy_info->next;
+    }
+
+    // Emit a jump to the first command of given command list
+    // Since only one immediate context exists per process, direct linking like this should be fine! (I hope)
+    renderer::CommandList &imm_cmds = context->renderer->command_list;
+
+    imm_cmds.last->next = commandList->list->first;
+    imm_cmds.last = commandList->list->last;
+
+    // Restore back our GXM state
+    gxmContextStateRestore(*host.renderer, host.mem, context, true);
+
+    return 0;
 }
 
 EXPORT(void, sceGxmFinish, SceGxmContext *context) {
@@ -1040,6 +1256,7 @@ EXPORT(void, sceGxmFinish, SceGxmContext *context) {
 
     if (!context)
         return;
+
     // Wait on this context's rendering finish code. There is one for sync object and one specifically
     // for SceGxmFinish.
     renderer::finish(*host.renderer, *context->renderer);
@@ -1079,6 +1296,10 @@ EXPORT(int, sceGxmGetDeferredContextFragmentBuffer, const SceGxmContext *deferre
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
+    if (deferredContext->state.active) {
+        return RET_ERROR(SCE_GXM_ERROR_WITHIN_COMMAND_LIST);
+    }
+
     *mem = deferredContext->state.fragment_ring_buffer;
     return 0;
 }
@@ -1092,6 +1313,10 @@ EXPORT(int, sceGxmGetDeferredContextVdmBuffer, const SceGxmContext *deferredCont
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
+    if (deferredContext->state.active) {
+        return RET_ERROR(SCE_GXM_ERROR_WITHIN_COMMAND_LIST);
+    }
+
     *mem = deferredContext->state.vdm_buffer;
     return 0;
 }
@@ -1103,6 +1328,10 @@ EXPORT(int, sceGxmGetDeferredContextVertexBuffer, const SceGxmContext *deferredC
 
     if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (deferredContext->state.active) {
+        return RET_ERROR(SCE_GXM_ERROR_WITHIN_COMMAND_LIST);
     }
 
     *mem = deferredContext->state.vertex_ring_buffer;
@@ -1297,7 +1526,13 @@ EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
     if (!notification) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    // TODO: This is so horrible
+    volatile std::uint32_t *value = notification->address.get(host.mem);
+    while (*value != notification->value) {
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceGxmPadHeartbeat, const SceGxmColorSurface *displaySurface, SceGxmSyncObject *displaySyncObject) {
@@ -1966,6 +2201,10 @@ EXPORT(int, sceGxmSetDeferredContextFragmentBuffer, SceGxmContext *deferredConte
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
+    if (deferredContext->state.active) {
+        return RET_ERROR(SCE_GXM_ERROR_WITHIN_COMMAND_LIST);
+    }
+
     constexpr const std::size_t DEFAULT_RING_BUFFER_SIZE = 4096;
 
     if ((size != 0) && (size < SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE)) {
@@ -2005,6 +2244,10 @@ EXPORT(int, sceGxmSetDeferredContextVdmBuffer, SceGxmContext *deferredContext, P
 
     if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (deferredContext->state.active) {
+        return RET_ERROR(SCE_GXM_ERROR_WITHIN_COMMAND_LIST);
     }
 
     constexpr const std::size_t DEFAULT_RING_BUFFER_SIZE = 4096 * sizeof(renderer::Command);
@@ -2050,6 +2293,10 @@ EXPORT(int, sceGxmSetDeferredContextVertexBuffer, SceGxmContext *deferredContext
 
     if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+    }
+
+    if (deferredContext->state.active) {
+        return RET_ERROR(SCE_GXM_ERROR_WITHIN_COMMAND_LIST);
     }
 
     constexpr const std::size_t DEFAULT_RING_BUFFER_SIZE = 4096;

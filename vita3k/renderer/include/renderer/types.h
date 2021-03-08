@@ -105,8 +105,11 @@ struct Context {
     GxmRecordState record;
 
     CommandList command_list;
-    int render_finish_status = 0;
 
+    int render_finish_status = 0;
+    int notification_finish_status = 0;
+
+    bool recycle_commands = false;
     mspace alloc_space = nullptr;
 
     std::string last_draw_fragment_program_hash;
