@@ -390,6 +390,8 @@ EXPORT(void, sceGxmSetDefaultRegionClipAndViewport, SceGxmContext *context, uint
             renderer::set_viewport_real(*host.renderer, context->renderer.get(), context->state.viewport.offset.x,
                 context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x,
                 context->state.viewport.scale.y, context->state.viewport.scale.z);
+        } else {
+            renderer::set_viewport_flat(*host.renderer, context->renderer.get());
         }
     }
 }
@@ -2837,6 +2839,8 @@ EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xSc
                 renderer::set_viewport_real(*host.renderer, context->renderer.get(), context->state.viewport.offset.x,
                     context->state.viewport.offset.y, context->state.viewport.offset.z, context->state.viewport.scale.x, context->state.viewport.scale.y,
                     context->state.viewport.scale.z);
+            } else {
+                renderer::set_viewport_flat(*host.renderer, context->renderer.get());
             }
         }
     }
