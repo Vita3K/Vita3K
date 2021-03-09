@@ -5,6 +5,13 @@
 #include <codec/state.h>
 
 namespace ngs::atrac9 {
+enum {
+    SCE_NGS_AT9_CALLBACK_REASON_DONE_ALL = 0,
+    SCE_NGS_AT9_CALLBACK_REASON_DONE_ONE_BUFFER = 1,
+    SCE_NGS_AT9_CALLBACK_REASON_START_LOOP = 2,
+    SCE_NGS_AT9_CALLBACK_REASON_DECODE_ERROR = 3
+};
+
 struct BufferParameter {
     Ptr<void> buffer;
     std::int32_t bytes_count;
@@ -56,13 +63,16 @@ private:
 
 public:
     explicit Module();
-    void process(const MemState &mem, Voice *voice) override;
+
+    void process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) override;
     void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) override {}
+    std::uint32_t module_id() const override { return 0x5CAA; }
+    std::size_t get_buffer_parameter_size() const override;
 };
 
 struct VoiceDefinition : public ngs::VoiceDefinition {
-    std::unique_ptr<ngs::Module> new_module() override;
-    std::size_t get_buffer_parameter_size() const override;
+    void new_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) override;
+    std::size_t get_total_buffer_parameter_size() const override;
 };
 
 void get_buffer_parameter(std::uint32_t start_sample, std::uint32_t num_samples, std::uint32_t info, SkipBufferInfo &parameter);

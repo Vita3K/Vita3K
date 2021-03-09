@@ -84,7 +84,7 @@ bool VoiceScheduler::stop(Voice *voice) {
     return true;
 }
 
-void VoiceScheduler::update(const MemState &mem) {
+void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID thread_id) {
     const std::lock_guard<std::mutex> guard(lock);
 
     // Do a first routine to clear inputs from previous update session
@@ -93,8 +93,17 @@ void VoiceScheduler::update(const MemState &mem) {
     }
 
     for (ngs::Voice *voice : queue) {
+        // Modify the state, in peace....
+        const std::lock_guard<std::mutex> guard(*voice->voice_lock);
         voice->state = ngs::VOICE_STATE_ACTIVE;
-        voice->rack->module->process(mem, voice);
+
+        for (std::size_t i = 0; i < voice->rack->modules.size(); i++) {
+            if (voice->rack->modules[i]) {
+                voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i]);
+            }
+        }
+
+        voice->frame_count++;
     }
 }
 
