@@ -6,15 +6,33 @@
 #include <vector>
 
 #include <mem/ptr.h>
+#include <util/types.h>
 
 #include <mem/mempool.h>
 #include <ngs/common.h>
 #include <ngs/scheduler.h>
 
 struct MemState;
+struct KernelState;
 
 namespace ngs {
+// random number of bytes to make sure nothing bad happens
+constexpr size_t default_parameter_size = 128;
+
 struct State;
+struct Voice;
+
+struct CallbackInfo {
+    Ptr<void> voice_handle;
+    Ptr<void> rack_handle;
+    std::uint32_t module_id;
+    std::uint32_t callback_reason;
+    std::uint32_t callback_reason_2;
+    Ptr<void> callback_ptr;
+    Ptr<void> userdata;
+};
+
+typedef void (*ModuleCallback)(CallbackInfo *info);
 
 struct ModuleParameterHeader {
     std::int32_t module_id;
@@ -26,6 +44,58 @@ enum AudioDataType {
     F32 = 1
 };
 
+struct BufferParamsInfo {
+    Ptr<void> data;
+    std::uint32_t size;
+};
+
+struct ModuleData {
+    Voice *parent;
+    std::uint32_t index;
+
+    Ptr<ModuleCallback> callback;
+    Ptr<void> user_data;
+
+    std::vector<std::uint8_t> voice_state_data; ///< Voice state.
+    std::vector<std::uint8_t> extra_voice_data; ///< Local data storage for module.
+
+    BufferParamsInfo info;
+    std::vector<std::uint8_t> last_info;
+
+    enum Flags {
+        PARAMS_LOCK = 1 << 0,
+    };
+
+    std::uint8_t flags;
+
+    explicit ModuleData();
+
+    template <typename T>
+    T *get_state() {
+        if (voice_state_data.size() == 0) {
+            voice_state_data.resize(sizeof(T));
+        }
+
+        return reinterpret_cast<T *>(&voice_state_data[0]);
+    }
+
+    template <typename T>
+    T *get_parameters(const MemState &mem) {
+        if (flags & PARAMS_LOCK) {
+            // Use our previous set of data
+            return reinterpret_cast<T *>(&last_info[0]);
+        }
+
+        return info.data.cast<T>().get(mem);
+    }
+
+    void invoke_callback(KernelState &kern, const MemState &mem, const SceUID thread_id, const std::uint32_t reason1,
+        const std::uint32_t reason2, Address reason_ptr);
+
+    BufferParamsInfo *lock_params(const MemState &mem);
+    bool unlock_params();
+};
+
 struct Module {
     BussType buss_type;
 
@@ -33,13 +103,18 @@ struct Module {
         : buss_type(buss_type) {}
     virtual ~Module() = default;
 
-    virtual void process(const MemState &mem, Voice *voice) = 0;
+    virtual void process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) = 0;
     virtual void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) = 0;
+    virtual std::uint32_t module_id() const { return 0; }
+    virtual std::size_t get_buffer_parameter_size() const = 0;
 };
 
+static constexpr std::uint32_t MAX_VOICE_OUTPUT = 8;
+
 struct VoiceDefinition {
-    virtual std::unique_ptr<Module> new_module() = 0;
-    virtual std::size_t get_buffer_parameter_size() const = 0;
+    virtual void new_modules(std::vector<std::unique_ptr<Module>> &mods) = 0;
+    virtual std::size_t get_total_buffer_parameter_size() const = 0;
+    virtual std::uint32_t output_count() const = 0;
 };
 
 struct SystemInitParameters {
@@ -82,11 +157,6 @@ struct RackDescription {
     Ptr<void> unk14;
 };
 
-struct BufferParamsInfo {
-    Ptr<void> data;
-    std::uint32_t size;
-};
-
 struct Rack;
 
 enum VoiceState {
@@ -115,67 +185,39 @@ struct VoiceInputManager {
 struct Voice {
     Rack *rack;
 
-    Ptr<void> callback;
-    Ptr<void> user_data;
-
-    BufferParamsInfo info;
-    std::vector<std::uint8_t> last_info;
+    std::vector<ModuleData> datas;
     VoiceState state;
-
-    enum Flags {
-        PARAMS_LOCK = 1 << 0,
-    };
-
-    std::uint8_t flags;
     std::uint32_t frame_count;
 
     using Patches = std::vector<Ptr<Patch>>;
 
     std::array<Patches, MAX_OUTPUT_PORT> patches;
-    std::vector<std::uint8_t> voice_state_data; ///< Voice state.
-    std::vector<std::uint8_t> extra_voice_data; ///< Local data storage for module.
 
     VoiceInputManager inputs;
+
     std::unique_ptr<std::mutex> voice_lock;
+    std::uint8_t *products[MAX_VOICE_OUTPUT];
 
     void init(Rack *mama);
 
-    BufferParamsInfo *lock_params(const MemState &mem);
-    bool unlock_params();
+    ModuleData *module_storage(const std::uint32_t index);
 
     bool remove_patch(const MemState &mem, const Ptr<Patch> patch);
     Ptr<Patch> patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, std::int32_t dest_index, Voice *dest);
-
-    template <typename T>
-    T *get_state() {
-        if (voice_state_data.size() == 0) {
-            voice_state_data.resize(sizeof(T));
-        }
-
-        return reinterpret_cast<T *>(&voice_state_data[0]);
-    }
-
-    template <typename T>
-    T *get_parameters(const MemState &mem) {
-        if (flags & PARAMS_LOCK) {
-            // Use our previous set of data
-            return reinterpret_cast<T *>(&last_info[0]);
-        }
-
-        return info.data.cast<T>().get(mem);
-    }
 };
 
 struct System;
 
 struct Rack : public MempoolObject {
     System *system;
-    std::unique_ptr<Module> module;
+    VoiceDefinition *vdef;
+
     std::int32_t channels_per_voice;
     std::int32_t max_patches_per_input;
     std::int32_t patches_per_output;
 
     std::vector<Ptr<Voice>> voices;
+    std::vector<std::unique_ptr<Module>> modules;
 
     explicit Rack(System *mama, const Ptr<void> memspace, const std::uint32_t memspace_size);
 

@@ -1,9 +1,12 @@
 #pragma once
 
+#include <util/types.h>
+
 #include <mem/ptr.h>
 #include <vector>
 
 struct MemState;
+struct KernelState;
 
 namespace ngs {
 struct PatchSetupInfo;
@@ -29,7 +32,7 @@ public:
     bool pause(Voice *voice);
     bool stop(Voice *voice);
 
-    void update(const MemState &mem);
+    void update(KernelState &kern, const MemState &mem, const SceUID thread_id);
 
     Ptr<Patch> patch(const MemState &mem, PatchSetupInfo *info);
 };

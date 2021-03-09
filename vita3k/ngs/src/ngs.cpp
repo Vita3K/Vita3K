@@ -1,10 +1,18 @@
+#include <kernel/state.h>
+#include <kernel/thread/thread_functions.h>
 #include <mem/mem.h>
+#include <ngs/definitions/atrac9.h>
+#include <ngs/definitions/master.h>
+#include <ngs/definitions/passthrough.h>
+#include <ngs/definitions/player.h>
+#include <ngs/definitions/simple.h>
 #include <ngs/modules/atrac9.h>
 #include <ngs/modules/master.h>
 #include <ngs/modules/passthrough.h>
 #include <ngs/modules/player.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
+#include <util/lock_and_find.h>
 
 #include <util/log.h>
 
@@ -85,21 +93,14 @@ std::int32_t VoiceInputManager::receive(ngs::Patch *patch, const std::uint8_t **
     return 0;
 }
 
-void Voice::init(Rack *mama) {
-    rack = mama;
-    state = VoiceState::VOICE_STATE_AVAILABLE;
-    flags = 0;
-    frame_count = 0;
-
-    for (std::uint32_t i = 0; i < MAX_OUTPUT_PORT; i++)
-        patches[i].resize(mama->patches_per_output);
-
-    inputs.init(rack->system->granularity, 1);
-    voice_lock = std::make_unique<std::mutex>();
+ModuleData::ModuleData()
+    : callback(0)
+    , user_data(0)
+    , flags(0) {
 }
 
-BufferParamsInfo *Voice::lock_params(const MemState &mem) {
-    const std::lock_guard<std::mutex> guard(*voice_lock);
+BufferParamsInfo *ModuleData::lock_params(const MemState &mem) {
+    const std::lock_guard<std::mutex> guard(*parent->voice_lock);
 
     // Save a copy of previous set of data
     if (flags & PARAMS_LOCK) {
@@ -117,18 +118,50 @@ BufferParamsInfo *Voice::lock_params(const MemState &mem) {
     return &info;
 }
 
-bool Voice::unlock_params() {
-    const std::lock_guard<std::mutex> guard(*voice_lock);
+bool ModuleData::unlock_params() {
+    const std::lock_guard<std::mutex> guard(*parent->voice_lock);
 
     if (flags & PARAMS_LOCK) {
         flags &= ~PARAMS_LOCK;
-
-        // Reset the state, empty them out
-        voice_state_data.clear();
         return true;
     }
 
     return false;
+}
+
+void ModuleData::invoke_callback(KernelState &kernel, const MemState &mem, const SceUID thread_id, const std::uint32_t reason1,
+    const std::uint32_t reason2, Address reason_ptr) {
+    if (!callback) {
+        return;
+    }
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const Address callback_info_addr = stack_alloc(*thread->cpu, sizeof(CallbackInfo));
+
+    CallbackInfo *info = Ptr<CallbackInfo>(callback_info_addr).get(mem);
+    info->rack_handle = Ptr<void>(parent->rack, mem);
+    info->voice_handle = Ptr<void>(parent, mem);
+    info->module_id = parent->rack->modules[index]->module_id();
+    info->callback_reason = reason1;
+    info->callback_reason_2 = reason2;
+    info->callback_ptr = Ptr<void>(reason_ptr);
+    info->userdata = user_data;
+
+    run_callback(kernel, *thread, thread_id, callback.address(), { callback_info_addr });
+    stack_free(*thread->cpu, sizeof(CallbackInfo));
+}
+
+void Voice::init(Rack *mama) {
+    rack = mama;
+    state = VoiceState::VOICE_STATE_AVAILABLE;
+
+    datas.resize(mama->modules.size());
+
+    for (std::uint32_t i = 0; i < MAX_OUTPUT_PORT; i++)
+        patches[i].resize(mama->patches_per_output);
+
+    inputs.init(rack->system->granularity, 1);
+    voice_lock = std::make_unique<std::mutex>();
 }
 
 Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, std::int32_t dest_index, Voice *dest) {
@@ -175,13 +208,25 @@ Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int3
     patch->output_channels = 2;
 
     AudioDataType source_data_type;
-    rack->module->get_expectation(&source_data_type, &patch->output_channels);
+    for (auto &module : rack->modules) {
+        if (module) {
+            // Get the first module that accept inputs
+            module->get_expectation(&source_data_type, &patch->output_channels);
+            break;
+        }
+    }
 
     // Set default value
     patch->dest_data_type = AudioDataType::S16;
     patch->dest_channels = 2;
 
-    dest->rack->module->get_expectation(&patch->dest_data_type, &patch->dest_channels);
+    // Find the last module that is available from dest voice, to get expectation...
+    for (std::size_t i = dest->rack->modules.size(); i >= 1; i--) {
+        if (dest->rack->modules[i - 1]) {
+            dest->rack->modules[i - 1]->get_expectation(&patch->dest_data_type, &patch->dest_channels);
+            break;
+        }
+    }
 
     // Initialize the matrix
     patch->volume_matrix[0][1] = 1.0f;
@@ -214,6 +259,14 @@ bool Voice::remove_patch(const MemState &mem, const Ptr<Patch> patch) {
     return true;
 }
 
+ModuleData *Voice::module_storage(const std::uint32_t index) {
+    if (index >= datas.size()) {
+        return nullptr;
+    }
+
+    return &datas[index];
+}
+
 std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameters) {
     return sizeof(System);
 }
@@ -221,7 +274,7 @@ std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameter
 std::uint32_t Rack::get_required_memspace_size(MemState &mem, RackDescription *description) {
     uint32_t buffer_size = 0;
     if (description->definition)
-        buffer_size = static_cast<std::uint32_t>(description->definition.get(mem)->get_buffer_parameter_size() * description->voice_count);
+        buffer_size = static_cast<std::uint32_t>(description->definition.get(mem)->get_total_buffer_parameter_size() * description->voice_count);
 
     return sizeof(ngs::Rack) + description->voice_count * sizeof(ngs::Voice) + buffer_size + description->patches_per_output * MAX_OUTPUT_PORT * description->voice_count * sizeof(ngs::Patch);
 }
@@ -273,9 +326,9 @@ bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo
     }
 
     if (description->definition)
-        rack->module = description->definition.get(mem)->new_module();
+        description->definition.get(mem)->new_modules(rack->modules);
     else
-        rack->module = nullptr;
+        rack->modules.clear();
 
     // Initialize voice definition
     rack->channels_per_voice = description->channels_per_voice;
@@ -284,6 +337,7 @@ bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo
 
     // Alloc spaces for voice
     rack->voices.resize(description->voice_count);
+    rack->vdef = description->definition.get(mem);
 
     for (auto &voice : rack->voices) {
         voice = rack->alloc<Voice>();
@@ -296,15 +350,17 @@ bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo
         v->init(rack);
 
         // Allocate parameter buffer info for each voice
-        if (description->definition)
-            v->info.size = static_cast<std::uint32_t>(description->definition.get(mem)->get_buffer_parameter_size());
-        else
-            v->info.size = 0;
+        for (std::size_t i = 0; i < rack->modules.size(); i++) {
+            if (rack->modules[i]) {
+                v->datas[i].info.size = static_cast<std::uint32_t>(rack->modules[i]->get_buffer_parameter_size());
+            } else {
+                v->datas[i].info.size = default_parameter_size;
+            }
 
-        if (v->info.size != 0) {
-            v->info.data = rack->alloc_raw(v->info.size);
-        } else {
-            v->info.data = 0;
+            v->datas[i].info.data = rack->alloc_raw(v->datas[i].info.size);
+
+            v->datas[i].parent = v;
+            v->datas[i].index = static_cast<std::uint32_t>(i);
         }
     }
 
@@ -321,6 +377,10 @@ Ptr<VoiceDefinition> create_voice_definition(State &ngs, MemState &mem, ngs::Bus
         return ngs.alloc_and_init<ngs::player::VoiceDefinition>(mem);
     case ngs::BussType::BUSS_MASTER:
         return ngs.alloc_and_init<ngs::master::VoiceDefinition>(mem);
+    case ngs::BussType::BUSS_SIMPLE_ATRAC9:
+        return ngs.alloc_and_init<ngs::simple::Atrac9VoiceDefinition>(mem);
+    case ngs::BussType::BUSS_SIMPLE:
+        return ngs.alloc_and_init<ngs::simple::PlayerVoiceDefinition>(mem);
 
     default:
         LOG_WARN("Missing voice definition for Buss Type {}, using passthrough.", static_cast<uint32_t>(type));
