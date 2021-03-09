@@ -306,7 +306,7 @@ EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, SceAvPlayerFrameInfo
             std::memcpy(buffer.get(host.mem), data.data(), data.size());
         }
     } else {
-        buffer = get_buffer(player_info, MediaType::VIDEO, host.mem, H264DecoderState::buffer_size(size), true);
+        buffer = get_buffer(player_info, MediaType::VIDEO, host.mem, H264DecoderState::buffer_size(size), false);
     }
     //TODO: catch eof error and call
     //uint32_t buf = SCE_AVPLAYER_ERROR_MAYBE_EOF;
