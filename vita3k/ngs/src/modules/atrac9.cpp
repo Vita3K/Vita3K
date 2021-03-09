@@ -3,19 +3,16 @@
 #include <util/log.h>
 
 namespace ngs::atrac9 {
-void VoiceDefinition::new_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) {
-    mods.push_back(std::make_unique<Module>());
-}
-
-std::size_t VoiceDefinition::get_total_buffer_parameter_size() const {
-    return sizeof(Parameters);
-}
-
 Module::Module()
     : ngs::Module(ngs::BussType::BUSS_ATRAC9)
     , last_config(0)
     , decoded_samples_pending(0)
     , decoded_passed(0) {}
+
+void Module::get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) {
+    *expect_audio_type = AudioDataType::S16;
+    *expect_channel_count = 2;
+}
 
 void get_buffer_parameter(const std::uint32_t start_sample, const std::uint32_t num_samples, const std::uint32_t info, SkipBufferInfo &parameter) {
     const std::uint8_t sample_rate_index = ((info & (0b1111 << 12)) >> 12);
@@ -119,10 +116,10 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         }
     }
 
-    const std::uint8_t *data_ptr = decoded_pending.data() + params->channels * sizeof(std::int16_t) * decoded_passed;
-    const std::uint32_t samples_to_be_passed = data.parent->rack->system->granularity;
+    std::uint8_t *data_ptr = decoded_pending.data() + params->channels * sizeof(std::int16_t) * decoded_passed;
+    std::uint32_t samples_to_be_passed = data.parent->rack->system->granularity;
 
-    deliver_data(mem, data.parent, 0, data_ptr);
+    data.parent->products[0] = data_ptr;
 
     decoded_samples_pending = (decoded_samples_pending < samples_to_be_passed) ? 0 : (decoded_samples_pending - samples_to_be_passed);
     decoded_passed += samples_to_be_passed;

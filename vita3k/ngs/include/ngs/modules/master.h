@@ -19,9 +19,4 @@ public:
         return 0;
     }
 };
-
-struct VoiceDefinition : public ngs::VoiceDefinition {
-    void new_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) override;
-    std::size_t get_total_buffer_parameter_size() const override;
-};
 }; // namespace ngs::master

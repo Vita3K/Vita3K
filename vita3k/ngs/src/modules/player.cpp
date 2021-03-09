@@ -3,14 +3,6 @@
 #include <cassert>
 
 namespace ngs::player {
-void VoiceDefinition::new_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) {
-    mods.push_back(std::make_unique<Module>());
-}
-
-std::size_t VoiceDefinition::get_total_buffer_parameter_size() const {
-    return sizeof(Parameters);
-}
-
 Module::Module()
     : ngs::Module(ngs::BussType::BUSS_NORMAL_PLAYER) {}
 
@@ -28,8 +20,6 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     }
 
     assert(data.parent->inputs.inputs.size() == 1);
-    uint8_t *output_data = data.parent->inputs.inputs[0].data();
-
-    deliver_data(mem, data.parent, 0, output_data);
+    data.parent->products[0] = data.parent->inputs.inputs[0].data();
 }
 } // namespace ngs::player

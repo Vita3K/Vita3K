@@ -66,14 +66,9 @@ public:
     explicit Module();
 
     void process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) override;
-    void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) override {}
+    void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) override;
     std::uint32_t module_id() const override { return 0x5CAA; }
     std::size_t get_buffer_parameter_size() const override;
-};
-
-struct VoiceDefinition : public ngs::VoiceDefinition {
-    void new_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) override;
-    std::size_t get_total_buffer_parameter_size() const override;
 };
 
 void get_buffer_parameter(std::uint32_t start_sample, std::uint32_t num_samples, std::uint32_t info, SkipBufferInfo &parameter);

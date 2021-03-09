@@ -95,6 +95,9 @@ EXPORT(int, sceNgsPatchCreateRouting, ngs::PatchSetupInfo *patch_info, SceNgsPat
         return RET_ERROR(SCE_NGS_ERROR);
     }
 
+    LOG_TRACE("Patching 0x{:X}:{}:{} to 0x{:X}:{}", patch_info->source.address(), patch_info->source_output_index,
+        patch_info->source_output_index, patch_info->dest.address(), patch_info->dest_input_index);
+
     *handle = source->rack->system->voice_scheduler.patch(host.mem, patch_info);
 
     if (!*handle) {
@@ -430,11 +433,9 @@ EXPORT(int, sceNgsVoiceGetInfo, SceNgsVoiceHandle handle, SceNgsVoiceInfo *info)
     info->voice_state = ngsVoiceStateFromHLEState(voice->state);
     info->num_modules = static_cast<SceUInt32>(voice->datas.size());
     info->num_inputs = static_cast<SceUInt32>(voice->inputs.inputs.size());
+    info->num_outputs = voice->rack->vdef->output_count();
     info->num_patches_per_output = static_cast<SceUInt32>(voice->rack->patches_per_output);
     info->update_passed = voice->frame_count;
-
-    // TODO: This is stubbed
-    info->num_outputs = 1;
 
     return 0;
 }
@@ -490,10 +491,7 @@ EXPORT(int, sceNgsVoiceKill, SceNgsVoiceHandle voice_handle) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    if (!voice->rack->system->voice_scheduler.stop(voice)) {
-        return RET_ERROR(SCE_NGS_ERROR);
-    }
-
+    voice->rack->system->voice_scheduler.stop(voice);
     return 0;
 }
 
@@ -507,6 +505,10 @@ EXPORT(SceUInt32, sceNgsVoiceLockParams, SceNgsVoiceHandle voice_handle, std::ui
     }
 
     ngs::Voice *voice = voice_handle.get(host.mem);
+    if (!voice) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
     ngs::ModuleData *data = voice->module_storage(module_index);
 
     if (!data) {
@@ -565,7 +567,7 @@ EXPORT(int, sceNgsVoiceSetFinishedCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoiceSetModuleCallback, SceNgsVoiceHandle voice_handle, const SceUInt32 module, Ptr<ngs::ModuleCallback> callback, Ptr<void> user_data) {
+EXPORT(int, sceNgsVoiceSetModuleCallback, SceNgsVoiceHandle voice_handle, uint32_t module, Ptr<ngs::ModuleCallback> callback, Ptr<void> user_data) {
     if (host.cfg.disable_ngs) {
         return 0;
     }
@@ -590,7 +592,7 @@ EXPORT(int, sceNgsVoiceSetPreset) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceUInt32, sceNgsVoiceUnlockParams, SceNgsVoiceHandle handle, const SceUInt32 module_index) {
+EXPORT(SceUInt32, sceNgsVoiceUnlockParams, SceNgsVoiceHandle handle, const std::uint32_t module_index) {
     if (host.cfg.disable_ngs) {
         return 0;
     }

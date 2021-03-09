@@ -16,6 +16,9 @@ struct MemState;
 struct KernelState;
 
 namespace ngs {
+// random number of bytes to make sure nothing bad happens
+constexpr size_t default_parameter_size = 128;
+
 struct State;
 struct Voice;
 
@@ -106,9 +109,12 @@ struct Module {
     virtual std::size_t get_buffer_parameter_size() const = 0;
 };
 
+static constexpr std::uint32_t MAX_VOICE_OUTPUT = 8;
+
 struct VoiceDefinition {
     virtual void new_modules(std::vector<std::unique_ptr<Module>> &mods) = 0;
     virtual std::size_t get_total_buffer_parameter_size() const = 0;
+    virtual std::uint32_t output_count() const = 0;
 };
 
 struct SystemInitParameters {
@@ -188,7 +194,9 @@ struct Voice {
     std::array<Patches, MAX_OUTPUT_PORT> patches;
 
     VoiceInputManager inputs;
+
     std::unique_ptr<std::mutex> voice_lock;
+    std::uint8_t *products[MAX_VOICE_OUTPUT];
 
     void init(Rack *mama);
 
@@ -202,6 +210,8 @@ struct System;
 
 struct Rack : public MempoolObject {
     System *system;
+    VoiceDefinition *vdef;
+
     std::int32_t channels_per_voice;
     std::int32_t max_patches_per_input;
     std::int32_t patches_per_output;

@@ -95,12 +95,19 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
     for (ngs::Voice *voice : queue) {
         // Modify the state, in peace....
         const std::lock_guard<std::mutex> guard(*voice->voice_lock);
+        std::fill(voice->products, voice->products + sizeof(voice->products) / sizeof(std::uint8_t *), nullptr);
+
         voice->state = ngs::VOICE_STATE_ACTIVE;
 
         for (std::size_t i = 0; i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {
                 voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i]);
             }
+        }
+
+        for (std::size_t i = 0; i < voice->rack->vdef->output_count(); i++) {
+            if (voice->products[i])
+                deliver_data(mem, voice, static_cast<std::uint8_t>(i), voice->products[i]);
         }
 
         voice->frame_count++;

@@ -1,11 +1,15 @@
 #include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <mem/mem.h>
+#include <ngs/definitions/atrac9.h>
+#include <ngs/definitions/master.h>
+#include <ngs/definitions/passthrough.h>
+#include <ngs/definitions/player.h>
+#include <ngs/definitions/simple.h>
 #include <ngs/modules/atrac9.h>
 #include <ngs/modules/master.h>
 #include <ngs/modules/passthrough.h>
 #include <ngs/modules/player.h>
-#include <ngs/modules/simple.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/lock_and_find.h>
@@ -208,6 +212,7 @@ Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int3
         if (module) {
             // Get the first module that accept inputs
             module->get_expectation(&source_data_type, &patch->output_channels);
+            break;
         }
     }
 
@@ -215,8 +220,13 @@ Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int3
     patch->dest_data_type = AudioDataType::S16;
     patch->dest_channels = 2;
 
-    std::unique_ptr<ngs::Module> &dest_mod = dest->rack->modules.back();
-    dest_mod->get_expectation(&patch->dest_data_type, &patch->dest_channels);
+    // Find the last module that is available from dest voice, to get expectation...
+    for (std::size_t i = dest->rack->modules.size(); i >= 1; i--) {
+        if (dest->rack->modules[i - 1]) {
+            dest->rack->modules[i - 1]->get_expectation(&patch->dest_data_type, &patch->dest_channels);
+            break;
+        }
+    }
 
     // Initialize the matrix
     patch->volume_matrix[0][1] = 1.0f;
@@ -327,6 +337,7 @@ bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo
 
     // Alloc spaces for voice
     rack->voices.resize(description->voice_count);
+    rack->vdef = description->definition.get(mem);
 
     for (auto &voice : rack->voices) {
         voice = rack->alloc<Voice>();
@@ -342,8 +353,11 @@ bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo
         for (std::size_t i = 0; i < rack->modules.size(); i++) {
             if (rack->modules[i]) {
                 v->datas[i].info.size = static_cast<std::uint32_t>(rack->modules[i]->get_buffer_parameter_size());
-                v->datas[i].info.data = rack->alloc_raw(v->datas[i].info.size);
+            } else {
+                v->datas[i].info.size = default_parameter_size;
             }
+
+            v->datas[i].info.data = rack->alloc_raw(v->datas[i].info.size);
 
             v->datas[i].parent = v;
             v->datas[i].index = static_cast<std::uint32_t>(i);
