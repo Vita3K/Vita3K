@@ -116,6 +116,28 @@ struct Mp3DecoderState : public DecoderState {
     explicit Mp3DecoderState(uint32_t channels);
 };
 
+struct PCMDecoderState : public DecoderState {
+private:
+    std::vector<std::uint8_t> result;
+    float dest_frequency;
+
+    std::int32_t adpcm_history1;
+    std::int32_t adpcm_history2;
+    std::int32_t adpcm_history3;
+    std::int32_t adpcm_history4;
+
+public:
+    std::uint32_t source_channels;
+    float source_frequency;
+
+    bool he_adpcm;
+
+    bool send(const uint8_t *data, uint32_t size) override;
+    bool receive(uint8_t *data, DecoderSize *size) override;
+
+    explicit PCMDecoderState(const float dest_frequency);
+};
+
 struct PlayerState {
     std::string video_playing;
     std::queue<std::string> videos_queue;
