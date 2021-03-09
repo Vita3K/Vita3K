@@ -5,6 +5,7 @@ add_library(
 	include/ngs/modules/master.h
 	include/ngs/modules/player.h
     include/ngs/modules/passthrough.h
+	include/ngs/modules/simple.h
 	include/ngs/common.h
 	include/ngs/scheduler.h
 	include/ngs/state.h
@@ -14,6 +15,7 @@ add_library(
 	src/modules/master.cpp
 	src/modules/player.cpp
     src/modules/passthrough.cpp
+	src/modules/simple.cpp
 	src/ngs.cpp
 	src/route.cpp
 	src/scheduler.cpp)

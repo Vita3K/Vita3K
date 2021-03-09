@@ -5,6 +5,7 @@
 #include <ngs/modules/master.h>
 #include <ngs/modules/passthrough.h>
 #include <ngs/modules/player.h>
+#include <ngs/modules/simple.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/lock_and_find.h>
@@ -362,6 +363,10 @@ Ptr<VoiceDefinition> create_voice_definition(State &ngs, MemState &mem, ngs::Bus
         return ngs.alloc_and_init<ngs::player::VoiceDefinition>(mem);
     case ngs::BussType::BUSS_MASTER:
         return ngs.alloc_and_init<ngs::master::VoiceDefinition>(mem);
+    case ngs::BussType::BUSS_SIMPLE_ATRAC9:
+        return ngs.alloc_and_init<ngs::simple::Atrac9VoiceDefinition>(mem);
+    case ngs::BussType::BUSS_SIMPLE:
+        return ngs.alloc_and_init<ngs::simple::PlayerVoiceDefinition>(mem);
 
     default:
         LOG_WARN("Missing voice definition for Buss Type {}, using passthrough.", static_cast<uint32_t>(type));
