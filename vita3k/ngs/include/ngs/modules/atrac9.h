@@ -56,6 +56,7 @@ struct State {
 struct Module : public ngs::Module {
 private:
     std::unique_ptr<Atrac9DecoderState> decoder;
+    std::uint32_t last_config;
 
     PCMChannelBuf decoded_pending;
     std::uint32_t decoded_samples_pending;

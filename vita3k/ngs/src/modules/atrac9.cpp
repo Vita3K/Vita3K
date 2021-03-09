@@ -13,6 +13,7 @@ std::size_t VoiceDefinition::get_total_buffer_parameter_size() const {
 
 Module::Module()
     : ngs::Module(ngs::BussType::BUSS_ATRAC9)
+    , last_config(0)
     , decoded_samples_pending(0)
     , decoded_passed(0) {}
 
@@ -59,8 +60,10 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     assert(state);
 
     // making this maybe to early...
-    if (!decoder)
+    if (!decoder || (params->config_data != last_config)) {
         decoder = std::make_unique<Atrac9DecoderState>(params->config_data);
+        last_config = params->config_data;
+    }
 
     if (static_cast<std::int32_t>(decoded_samples_pending) < data.parent->rack->system->granularity) {
         // Ran out of data, supply new
