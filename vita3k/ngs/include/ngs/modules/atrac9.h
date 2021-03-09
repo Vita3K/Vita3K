@@ -5,6 +5,13 @@
 #include <codec/state.h>
 
 namespace ngs::atrac9 {
+enum {
+    SCE_NGS_AT9_CALLBACK_REASON_DONE_ALL = 0,
+    SCE_NGS_AT9_CALLBACK_REASON_DONE_ONE_BUFFER = 1,
+    SCE_NGS_AT9_CALLBACK_REASON_START_LOOP = 2,
+    SCE_NGS_AT9_CALLBACK_REASON_DECODE_ERROR = 3
+};
+
 struct BufferParameter {
     Ptr<void> buffer;
     std::int32_t bytes_count;
@@ -49,6 +56,7 @@ struct State {
 struct Module : public ngs::Module {
 private:
     std::unique_ptr<Atrac9DecoderState> decoder;
+    std::uint32_t last_config;
 
     PCMChannelBuf decoded_pending;
     std::uint32_t decoded_samples_pending;
@@ -56,12 +64,10 @@ private:
 
 public:
     explicit Module();
-    void process(const MemState &mem, Voice *voice) override;
-    void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) override {}
-};
 
-struct VoiceDefinition : public ngs::VoiceDefinition {
-    std::unique_ptr<ngs::Module> new_module() override;
+    void process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) override;
+    void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) override;
+    std::uint32_t module_id() const override { return 0x5CAA; }
     std::size_t get_buffer_parameter_size() const override;
 };
 

@@ -4,10 +4,6 @@
 #include <fstream>
 
 namespace ngs::master {
-std::unique_ptr<ngs::Module> VoiceDefinition::new_module() {
-    return std::make_unique<Module>();
-}
-
 Module::Module()
     : ngs::Module(ngs::BussType::BUSS_MASTER) {
 }
@@ -17,21 +13,18 @@ void Module::get_expectation(AudioDataType *expect_audio_type, std::int16_t *exp
     *expect_channel_count = 2;
 }
 
-void Module::process(const MemState &mem, Voice *voice) {
-    // Lock voice to avoid resource modification from other thread
-    const std::lock_guard<std::mutex> guard(*voice->voice_lock);
-
+void Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
     // Merge all voices. This buss manually outputs 2 channels
-    if (voice->voice_state_data.empty()) {
-        voice->voice_state_data.resize(voice->rack->system->granularity * sizeof(std::uint16_t) * 2);
+    if (data.voice_state_data.empty()) {
+        data.voice_state_data.resize(data.parent->rack->system->granularity * sizeof(std::uint16_t) * 2);
     }
 
-    std::fill(voice->voice_state_data.begin(), voice->voice_state_data.end(), 0);
+    std::fill(data.voice_state_data.begin(), data.voice_state_data.end(), 0);
 
-    if (voice->inputs.inputs.empty()) {
+    if (data.parent->inputs.inputs.empty()) {
         return;
     }
 
-    std::copy(voice->inputs.inputs[0].data(), voice->inputs.inputs[0].data() + voice->voice_state_data.size(), voice->voice_state_data.data());
+    std::copy(data.parent->inputs.inputs[0].data(), data.parent->inputs.inputs[0].data() + data.voice_state_data.size(), data.voice_state_data.data());
 }
 }; // namespace ngs::master
