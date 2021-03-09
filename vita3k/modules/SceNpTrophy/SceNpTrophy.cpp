@@ -175,7 +175,8 @@ EXPORT(int, sceNpTrophyGetGameInfo, np::trophy::ContextHandle context_handle, Sc
             }
         }
 
-        data->progressPercentage = data->unlockedTrophies * 100 / context->trophy_count;
+        if (context->trophy_count > 0)
+            data->progressPercentage = data->unlockedTrophies * 100 / context->trophy_count;
     }
 
     return 0;
