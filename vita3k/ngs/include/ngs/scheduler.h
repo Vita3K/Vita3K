@@ -6,6 +6,7 @@
 
 #include <thread>
 
+#include <optional>
 #include <vector>
 
 struct MemState;
@@ -21,7 +22,7 @@ struct VoiceScheduler {
     std::vector<Voice *> pending_deque;
 
     std::mutex lock;
-    std::thread::id updater;
+    std::optional<std::thread::id> updater;
 
 protected:
     bool deque_voice(Voice *voice);
@@ -34,6 +35,7 @@ protected:
 public:
     bool play(const MemState &mem, Voice *voice);
     bool pause(Voice *voice);
+    bool resume(const MemState &mem, Voice *voice);
     bool stop(Voice *voice);
 
     void update(KernelState &kern, const MemState &mem, const SceUID thread_id);
