@@ -6,71 +6,76 @@
 namespace ngs::player {
 Module::Module()
     : ngs::Module(ngs::BussType::BUSS_NORMAL_PLAYER)
-    , decoded_samples_pending(0)
-    , decoded_passed(0) {}
+    , decoded_gran_pending(0)
+    , decoded_gran_passed(0) {}
 
 std::size_t Module::get_buffer_parameter_size() const {
     return sizeof(Parameters);
+}
+
+void Module::on_state_change(ModuleData &data, const VoiceState previous) {
+    State *state = data.get_state<State>();
+    if (data.parent->state == VOICE_STATE_AVAILABLE) {
+        state->current_byte_position_in_buffer = 0;
+        state->current_loop_count = 0;
+        state->current_buffer = 0;
+    }
 }
 
 void Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
     Parameters *params = data.get_parameters<Parameters>(mem);
     State *state = data.get_state<State>();
 
-    if (data.parent->inputs.inputs.empty()) {
-        return;
+    std::uint8_t *data_ptr = decoded_pending.data();
+
+    if (!decoder || (decoder->he_adpcm != static_cast<bool>(params->type))) {
+        decoder = std::make_unique<PCMDecoderState>(data.parent->rack->system->sample_rate);
+        decoder->he_adpcm = static_cast<bool>(params->type);
     }
 
-    if (state->current_buffer == -1) {
-        return;
-    }
+    if (static_cast<std::int32_t>(decoded_gran_pending) < data.parent->rack->system->granularity) {
+        if (!decoded_pending.empty()) {
+            decoded_pending.erase(decoded_pending.begin(), decoded_pending.begin() + decoded_gran_passed * 4);
+        } else {
+            if (state->current_buffer == -1) {
+                return;
+            }
+        }
 
-    std::uint8_t *data_ptr = nullptr;
+        decoded_gran_passed = 0;
 
-    if (static_cast<std::int32_t>(decoded_samples_pending) < data.parent->rack->system->granularity) {
-        if (!decoded_pending.empty())
-            decoded_pending.erase(decoded_pending.begin(), decoded_pending.begin() + decoded_passed * 4);
-
-        decoded_passed = 0;
-        while (static_cast<std::int32_t>(decoded_samples_pending) < data.parent->rack->system->granularity) {
+        while ((static_cast<std::int32_t>(decoded_gran_pending) < data.parent->rack->system->granularity)
+            && (state->current_buffer != -1)) {
             // Ran out of data, supply new
             // Decode new data and deliver them
             // Let's open our context
-            auto *input = params->buffer_params[state->current_buffer].buffer.cast<uint8_t>().get(mem)
-                + state->current_byte_position_in_buffer;
+            if ((decoded_pending.size() < data.parent->rack->system->granularity * 2 * sizeof(std::uint16_t)) && (state->current_buffer != -1)) {
+                decoder->source_channels = params->channels;
+                decoder->source_frequency = params->playback_frequency;
 
-            if (params->type == ParameterAudioTypeADPCM) {
-                LOG_ERROR("ADPCM audio, not supported yet!!");
-                return;
-            } else {
-                // TODO: Accelerate
-                std::size_t current_pos = decoded_pending.size();
+                auto *input = params->buffer_params[state->current_buffer].buffer.cast<uint8_t>().get(mem);
 
-                std::uint32_t bytes_left_in_buffer = params->buffer_params[state->current_buffer].bytes_count - state->current_byte_position_in_buffer;
-                std::uint32_t samples_to_take = bytes_left_in_buffer / sizeof(std::uint16_t) / params->channels;
-                samples_to_take = std::min<std::uint32_t>(samples_to_take, data.parent->rack->system->granularity);
+                DecoderSize samples_count;
 
-                bytes_left_in_buffer = samples_to_take * params->channels * sizeof(std::uint16_t);
-                decoded_pending.resize(current_pos + bytes_left_in_buffer);
+                decoder->send(input, params->buffer_params[state->current_buffer].bytes_count);
+                decoder->receive(nullptr, &samples_count);
 
-                if (params->channels == 2) {
-                    std::memcpy(&decoded_pending[current_pos], input, bytes_left_in_buffer);
-                } else {
-                    for (std::size_t i = 0; i < bytes_left_in_buffer; i++) {
-                        decoded_pending[current_pos + 2 * i] = input[i];
-                        decoded_pending[current_pos + 2 * i + 1] = input[i + 1];
-                    }
-                }
+                const std::size_t current_count = decoded_pending.size();
 
-                data_ptr = decoded_pending.data();
-
-                state->samples_generated_since_key_on += samples_to_take;
-                state->bytes_consumed_since_key_on += params->channels * samples_to_take * sizeof(std::uint16_t);
-                state->current_byte_position_in_buffer += params->channels * samples_to_take * sizeof(std::uint16_t);
-                state->total_bytes_consumed += params->channels * samples_to_take * sizeof(std::uint16_t);
-
-                decoded_samples_pending += samples_to_take;
+                decoded_pending.resize(current_count + samples_count.samples * sizeof(std::uint16_t));
+                decoder->receive(current_count + decoded_pending.data(), nullptr);
             }
+
+            data_ptr = decoded_pending.data();
+
+            std::uint32_t bytes_left_in_buffer = decoded_pending.size();
+            std::uint32_t samples_to_take_per_channel = bytes_left_in_buffer / sizeof(std::uint16_t) / 2;
+
+            state->bytes_consumed_since_key_on += params->buffer_params[state->current_buffer].bytes_count;
+            state->current_byte_position_in_buffer += params->buffer_params[state->current_buffer].bytes_count;
+            state->total_bytes_consumed += params->buffer_params[state->current_buffer].bytes_count;
+
+            decoded_gran_pending = samples_to_take_per_channel;
 
             if (state->current_byte_position_in_buffer >= params->buffer_params[state->current_buffer].bytes_count) {
                 const std::int32_t prev_index = state->current_buffer;
@@ -108,12 +113,14 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         }
     }
 
-    std::uint32_t samples_to_be_passed = std::min<std::uint32_t>(decoded_samples_pending, data.parent->rack->system->granularity);
-    data_ptr += 2 * sizeof(std::int16_t) * decoded_passed;
+    std::uint32_t gran_to_be_passed = std::min<std::uint32_t>(decoded_gran_pending, data.parent->rack->system->granularity);
+    data_ptr += 2 * sizeof(std::int16_t) * decoded_gran_passed;
 
     data.parent->products[0] = data_ptr;
 
-    decoded_samples_pending = (decoded_samples_pending < samples_to_be_passed) ? 0 : (decoded_samples_pending - samples_to_be_passed);
-    decoded_passed += samples_to_be_passed;
+    decoded_gran_pending = (decoded_gran_pending < decoded_gran_passed) ? 0 : (decoded_gran_pending - gran_to_be_passed);
+    decoded_gran_passed += gran_to_be_passed;
+
+    state->samples_generated_since_key_on += gran_to_be_passed * 2;
 }
 } // namespace ngs::player
