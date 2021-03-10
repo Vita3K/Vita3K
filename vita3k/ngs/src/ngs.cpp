@@ -267,6 +267,16 @@ ModuleData *Voice::module_storage(const std::uint32_t index) {
     return &datas[index];
 }
 
+void Voice::transition(const VoiceState new_state) {
+    const VoiceState old = state;
+    state = new_state;
+
+    for (std::size_t i = 0; i < datas.size(); i++) {
+        if (rack->modules[i])
+            rack->modules[i]->on_state_change(datas[i], old);
+    }
+}
+
 std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameters) {
     return sizeof(System);
 }

@@ -21,9 +21,9 @@ bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
 
     // Transition
     if (voice->state == ngs::VOICE_STATE_ACTIVE || voice->state == ngs::VOICE_STATE_PAUSED) {
-        voice->state = ngs::VOICE_STATE_ACTIVE;
+        voice->transition(ngs::VOICE_STATE_ACTIVE);
     } else if (voice->state == ngs::VOICE_STATE_AVAILABLE) {
-        voice->state = ngs::VOICE_STATE_PENDING;
+        voice->transition(ngs::VOICE_STATE_PENDING);
     } else {
         return false;
     }
@@ -62,7 +62,7 @@ bool VoiceScheduler::pause(Voice *voice) {
     }
 
     if (voice->state == ngs::VOICE_STATE_ACTIVE || voice->state == ngs::VOICE_STATE_PENDING) {
-        voice->state = ngs::VOICE_STATE_PAUSED;
+        voice->transition(ngs::VOICE_STATE_PAUSED);
 
         // Remove from the list
         deque_voice(voice);
@@ -78,7 +78,7 @@ bool VoiceScheduler::stop(Voice *voice) {
         return false;
     }
 
-    voice->state = ngs::VOICE_STATE_AVAILABLE;
+    voice->transition(ngs::VOICE_STATE_AVAILABLE);
     deque_voice(voice);
 
     return true;
@@ -97,7 +97,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         const std::lock_guard<std::mutex> guard(*voice->voice_lock);
         std::fill(voice->products, voice->products + sizeof(voice->products) / sizeof(std::uint8_t *), nullptr);
 
-        voice->state = ngs::VOICE_STATE_ACTIVE;
+        voice->transition(ngs::VOICE_STATE_ACTIVE);
 
         for (std::size_t i = 0; i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {

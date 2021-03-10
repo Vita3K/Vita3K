@@ -46,15 +46,24 @@ std::size_t Module::get_buffer_parameter_size() const {
     return sizeof(Parameters);
 }
 
+void Module::on_state_change(ModuleData &data, const VoiceState previous) {
+    State *state = data.get_state<State>();
+    if (data.parent->state == VOICE_STATE_AVAILABLE) {
+        state->current_byte_position_in_buffer = 0;
+        state->current_loop_count = 0;
+        state->current_buffer = 0;
+    }
+}
+
 void Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
     Parameters *params = data.get_parameters<Parameters>(mem);
     State *state = data.get_state<State>();
 
+    assert(state);
+
     if (state->current_buffer == -1) {
         return;
     }
-
-    assert(state);
 
     // making this maybe to early...
     if (!decoder || (params->config_data != last_config)) {

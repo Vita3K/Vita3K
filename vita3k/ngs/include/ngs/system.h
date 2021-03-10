@@ -19,6 +19,16 @@ namespace ngs {
 // random number of bytes to make sure nothing bad happens
 constexpr size_t default_parameter_size = 128;
 
+enum VoiceState {
+    VOICE_STATE_AVAILABLE = 1 << 0,
+    VOICE_STATE_ACTIVE = 1 << 1,
+    VOICE_STATE_FINALIZING = 1 << 2,
+    VOICE_STATE_UNLOADING = 1 << 3,
+    VOICE_STATE_PENDING = 1 << 4,
+    VOICE_STATE_PAUSED = 1 << 5,
+    VOICE_STATE_KEY_OFF = 1 << 6
+};
+
 struct State;
 struct Voice;
 
@@ -107,6 +117,7 @@ struct Module {
     virtual void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) = 0;
     virtual std::uint32_t module_id() const { return 0; }
     virtual std::size_t get_buffer_parameter_size() const = 0;
+    virtual void on_state_change(ModuleData &v, const VoiceState previous) {}
 };
 
 static constexpr std::uint32_t MAX_VOICE_OUTPUT = 8;
@@ -159,16 +170,6 @@ struct RackDescription {
 
 struct Rack;
 
-enum VoiceState {
-    VOICE_STATE_AVAILABLE = 1 << 0,
-    VOICE_STATE_ACTIVE = 1 << 1,
-    VOICE_STATE_FINALIZING = 1 << 2,
-    VOICE_STATE_UNLOADING = 1 << 3,
-    VOICE_STATE_PENDING = 1 << 4,
-    VOICE_STATE_PAUSED = 1 << 5,
-    VOICE_STATE_KEY_OFF = 1 << 6
-};
-
 struct VoiceInputManager {
     using PCMInput = std::vector<std::uint8_t>;
     using PCMInputs = std::vector<PCMInput>;
@@ -204,6 +205,8 @@ struct Voice {
 
     bool remove_patch(const MemState &mem, const Ptr<Patch> patch);
     Ptr<Patch> patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, std::int32_t dest_index, Voice *dest);
+
+    void transition(const VoiceState new_state);
 };
 
 struct System;
