@@ -1,5 +1,6 @@
 #pragma once
 
+#include <codec/state.h>
 #include <ngs/system.h>
 
 namespace ngs::player {
@@ -52,9 +53,11 @@ struct Parameters {
 
 struct Module : public ngs::Module {
 private:
+    std::unique_ptr<PCMDecoderState> decoder;
+
     PCMChannelBuf decoded_pending;
-    std::uint32_t decoded_samples_pending;
-    std::uint32_t decoded_passed;
+    std::uint32_t decoded_gran_pending;
+    std::uint32_t decoded_gran_passed;
 
 public:
     explicit Module();
@@ -62,5 +65,6 @@ public:
     void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) override {}
     std::uint32_t module_id() const { return 0x5CE6; }
     std::size_t get_buffer_parameter_size() const override;
+    void on_state_change(ModuleData &v, const VoiceState previous) override;
 };
 }; // namespace ngs::player
