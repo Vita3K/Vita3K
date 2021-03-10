@@ -3,6 +3,9 @@
 #include <util/types.h>
 
 #include <mem/ptr.h>
+
+#include <thread>
+
 #include <vector>
 
 struct MemState;
@@ -15,14 +18,15 @@ struct Patch;
 
 struct VoiceScheduler {
     std::vector<Voice *> queue;
+    std::vector<Voice *> pending_deque;
+
     std::mutex lock;
+    std::thread::id updater;
 
 protected:
     bool deque_voice(Voice *voice);
+    bool deque_voice_impl(Voice *voice);
 
-    /**
-         * \brief Sort the voice queue so that dependencies between them are respected.
-         */
     bool resort_to_respect_dependencies(const MemState &mem, Voice *source);
 
     std::int32_t get_position(Voice *v);
