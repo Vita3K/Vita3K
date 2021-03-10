@@ -66,7 +66,7 @@ struct AudioCallbackState {
 
 struct SharedAudioState {
     std::mutex mutex;
-    int next_port_id = 0;
+    int next_port_id = 1;
     AudioOutPortPtrs out_ports;
     AudioInPort in_port;
 };
