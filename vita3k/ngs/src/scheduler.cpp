@@ -16,7 +16,7 @@ bool VoiceScheduler::deque_voice_impl(Voice *voice) {
 }
 
 bool VoiceScheduler::deque_voice(Voice *voice) {
-    if (updater == std::this_thread::get_id()) {
+    if (updater.has_value() && (updater.value() == std::this_thread::get_id())) {
         pending_deque.push_back(voice);
         return true;
     }
@@ -85,6 +85,14 @@ bool VoiceScheduler::pause(Voice *voice) {
     return false;
 }
 
+bool VoiceScheduler::resume(const MemState &mem, Voice *voice) {
+    if (voice->state != ngs::VOICE_STATE_PAUSED) {
+        return false;
+    }
+
+    return play(mem, voice);
+}
+
 bool VoiceScheduler::stop(Voice *voice) {
     if (voice->state == ngs::VOICE_STATE_AVAILABLE || voice->state == ngs::VOICE_STATE_FINALIZING) {
         return false;
@@ -131,6 +139,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
     }
 
     pending_deque.clear();
+    updater.reset();
 }
 
 std::int32_t VoiceScheduler::get_position(Voice *v) {
