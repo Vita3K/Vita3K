@@ -5,9 +5,7 @@
 namespace ngs::atrac9 {
 Module::Module()
     : ngs::Module(ngs::BussType::BUSS_ATRAC9)
-    , last_config(0)
-    , decoded_samples_pending(0)
-    , decoded_passed(0) {}
+    , last_config(0) {}
 
 void Module::get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) {
     *expect_audio_type = AudioDataType::S16;
@@ -71,24 +69,24 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         last_config = params->config_data;
     }
 
-    if (static_cast<std::int32_t>(decoded_samples_pending) < data.parent->rack->system->granularity) {
+    if (static_cast<std::int32_t>(state->decoded_samples_pending) < data.parent->rack->system->granularity) {
         // Ran out of data, supply new
         // Decode new data and deliver them
         // Let's open our context
         auto *input = params->buffer_params[state->current_buffer].buffer.cast<uint8_t>().get(mem)
             + state->current_byte_position_in_buffer;
 
-        decoded_pending.resize(decoder->get_samples_per_superframe() * sizeof(int16_t) * 2);
+        data.extra_storage.resize(decoder->get_samples_per_superframe() * sizeof(int16_t) * 2);
         decoder->send(input, decoder->get_superframe_size());
-        decoder->receive(decoded_pending.data(), nullptr);
+        decoder->receive(data.extra_storage.data(), nullptr);
 
         state->samples_generated_since_key_on += decoder->get_samples_per_superframe();
         state->bytes_consumed_since_key_on += decoder->get_superframe_size();
         state->current_byte_position_in_buffer += decoder->get_superframe_size();
         state->total_bytes_consumed += decoder->get_superframe_size();
 
-        decoded_samples_pending += decoder->get_samples_per_superframe();
-        decoded_passed = 0;
+        state->decoded_samples_pending += decoder->get_samples_per_superframe();
+        state->decoded_passed = 0;
 
         if (state->current_byte_position_in_buffer >= params->buffer_params[state->current_buffer].bytes_count) {
             const std::int32_t prev_index = state->current_buffer;
@@ -125,12 +123,12 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         }
     }
 
-    std::uint8_t *data_ptr = decoded_pending.data() + params->channels * sizeof(std::int16_t) * decoded_passed;
+    std::uint8_t *data_ptr = data.extra_storage.data() + params->channels * sizeof(std::int16_t) * state->decoded_passed;
     std::uint32_t samples_to_be_passed = data.parent->rack->system->granularity;
 
     data.parent->products[0] = data_ptr;
 
-    decoded_samples_pending = (decoded_samples_pending < samples_to_be_passed) ? 0 : (decoded_samples_pending - samples_to_be_passed);
-    decoded_passed += samples_to_be_passed;
+    state->decoded_samples_pending = (state->decoded_samples_pending < samples_to_be_passed) ? 0 : (state->decoded_samples_pending - samples_to_be_passed);
+    state->decoded_passed += samples_to_be_passed;
 }
 }; // namespace ngs::atrac9

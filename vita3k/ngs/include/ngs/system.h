@@ -67,7 +67,7 @@ struct ModuleData {
     Ptr<void> user_data;
 
     std::vector<std::uint8_t> voice_state_data; ///< Voice state.
-    std::vector<std::uint8_t> extra_voice_data; ///< Local data storage for module.
+    std::vector<std::uint8_t> extra_storage; ///< Local data storage for module.
 
     BufferParamsInfo info;
     std::vector<std::uint8_t> last_info;
@@ -84,6 +84,7 @@ struct ModuleData {
     T *get_state() {
         if (voice_state_data.size() == 0) {
             voice_state_data.resize(sizeof(T));
+            new (&voice_state_data[0]) T();
         }
 
         return reinterpret_cast<T *>(&voice_state_data[0]);

@@ -45,22 +45,22 @@ struct Parameters {
 };
 
 struct State {
-    std::int32_t current_byte_position_in_buffer;
-    std::int32_t current_buffer;
-    std::int32_t samples_generated_since_key_on;
-    std::int32_t bytes_consumed_since_key_on;
-    std::int32_t total_bytes_consumed;
-    std::int8_t current_loop_count;
+    std::int32_t current_byte_position_in_buffer = 0;
+    std::int32_t current_buffer = 0;
+    std::int32_t samples_generated_since_key_on = 0;
+    std::int32_t bytes_consumed_since_key_on = 0;
+    std::int32_t total_bytes_consumed = 0;
+
+    // INTERNAL
+    std::int8_t current_loop_count = 0;
+    std::uint32_t decoded_samples_pending = 0;
+    std::uint32_t decoded_passed = 0;
 };
 
 struct Module : public ngs::Module {
 private:
     std::unique_ptr<Atrac9DecoderState> decoder;
     std::uint32_t last_config;
-
-    PCMChannelBuf decoded_pending;
-    std::uint32_t decoded_samples_pending;
-    std::uint32_t decoded_passed;
 
 public:
     explicit Module();
