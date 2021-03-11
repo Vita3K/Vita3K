@@ -89,7 +89,13 @@ struct SavedataState {
     bool draw_info_window = false;
 };
 
+struct DialogLang {
+    std::map<std::string, std::string> trophy;
+    std::map<std::string, std::string> save_data;
+};
+
 struct DialogState {
+    DialogLang lang;
     DialogType type = NO_DIALOG;
     SceCommonDialogStatus status = SCE_COMMON_DIALOG_STATUS_NONE;
     SceCommonDialogStatus substatus = SCE_COMMON_DIALOG_STATUS_NONE;

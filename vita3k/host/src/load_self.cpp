@@ -350,7 +350,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         const uint8_t *const seg_bytes = self_bytes + self_header.header_len + seg_header.p_offset;
 
         auto get_seg_header_string = [&seg_header]() {
-            return seg_header.p_type == PT_LOAD ? "LOAD" : seg_header.p_type == PT_LOOS ? "LOOS" : "UNKNOWN";
+            return seg_header.p_type == PT_LOAD ? "LOAD" : (seg_header.p_type == PT_LOOS ? "LOOS" : "UNKNOWN");
         };
 
         auto dump_segment = [&](const uint8_t *const seg_data) {

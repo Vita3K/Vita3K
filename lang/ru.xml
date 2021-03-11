@@ -7,25 +7,20 @@
 		<install_pkg>Установить файл .pkg</install_pkg>
 		<install_zip>Установить файл .zip или .vpk</install_zip>
 	</file>
-
 	<emulation name="Эмуляция">
 		<load_last_app>Загрузить последнее приложение</load_last_app>
 	</emulation>
-
 	<configuration name="Конфигурация">
 		<settings>Настройки</settings>
 		<user_management>Управление пользователями</user_management>
 	</configuration>
-
 	<controls name="Управление">
 		<keyboard_controls>Элементы управления клавиатурой</keyboard_controls>
 	</controls>
-
 	<help name="Справка">
 		<about>О программе</about>
 		<welcome>Добро пожаловать</welcome>
 	</help>
-
 </main_menubar>
 
 <app_context>
@@ -40,6 +35,43 @@
 	<size>Размер</size>
 	<version>Версия</version>
 </app_context>
+
+<dialog>
+	<trophy>
+		<preparing_start_app>Подготовка к запуску приложения...</preparing_start_app>
+	</trophy>
+	<save_data>
+		<delete>
+			<cancel_deleting>Отменить удаление?</cancel_deleting> 
+			<deletion_complete>Удаление завершено.</deletion_complete> 
+			<delete_saved_data>Удалить эти сохраненные данные?</delete_saved_data> 
+		</delete>
+		<info>
+			<details>Подробности</details>
+			<updated>Обновлен</updated>
+		</info>
+		<load name="Загрузить">
+			<cancel_loading>Отменить загрузку?</cancel_loading>
+			<no_saved_data>Отсутствуют сохраненные данные.</no_saved_data>
+			<load_complete>Загрузка завершена.</load_complete>
+			<loading>Идет загрузка...</loading>
+			<load_saved_data>Загрузить эти сохраненные данные?</load_saved_data>
+		</load>
+		<save name="Сохранить">
+			<cancel_saving>Отменить сохранение?</cancel_saving>
+			<could_not_save>Не удалось сохранить файл.
+На карте памяти недостаточно свободного места.</could_not_save>
+			<not_free_space>На карте памяти недостаточно свободного места.</not_free_space>
+			<new_saved_data>Новые сохраненные данные</new_saved_data>
+			<saving_complete>Сохранение завершено.</saving_complete>
+			<save_the_data>Сохранить данные?</save_the_data>
+			<saving>Идет сохранение...</saving>
+			<warning_saving>Идет сохранение...
+Не выключайте систему и не закрывайте приложение.</warning_saving>
+			<overwrite_saved_data>Перезаписать сохраненные данные?</overwrite_saved_data>
+		</save>
+	</save_data>
+</dialog>
 
 <indicator>
 	<app_added_home>Приложение добавлено на начальный экран.</app_added_home>

@@ -36,6 +36,43 @@
 	<version>Versie</version>
 </app_context>
 
+<dialog>
+	<trophy>
+		<preparing_start_app>Bezig met het voorbereiden voor het starten van de applicatie...</preparing_start_app>
+	</trophy>
+	<save_data>
+		<delete>
+			<cancel_deleting>Wil je het verwijderen annuleren?</cancel_deleting> 
+			<deletion_complete>Het verwijderen is voltooid.</deletion_complete> 
+			<delete_saved_data>Wil je deze opgeslagen data verwijderen?</delete_saved_data> 
+		</delete>
+		<info>
+			<details>Details</details>
+			<updated>Geüpdatet</updated>
+		</info>
+		<load name="Laden">
+			<cancel_loading>Wil je het laden annuleren?</cancel_loading>
+			<no_saved_data>Er zijn geen opgeslagen data.</no_saved_data>
+			<load_complete>Het laden is voltooid.</load_complete>
+			<loading>Bezig met laden...</loading>
+			<load_saved_data>Wil je deze opgeslagen data laden?</load_saved_data>
+		</load>
+		<save name="Opslaan">
+			<cancel_saving>Wil je het opslaan annuleren?</cancel_saving>
+			<could_not_save>Kan het bestand niet opslaan.
+Er is onvoldoende vrije ruimte op de geheugenkaart.</could_not_save>
+			<not_free_space>Er is onvoldoende vrije ruimte op de geheugenkaart.</not_free_space>
+			<new_saved_data>Nieuwe opgeslagen data</new_saved_data>
+			<saving_complete>Opslaan voltooid.</saving_complete>
+			<save_the_data>Wil je de data opslaan?</save_the_data>
+			<saving>Bezig met opslaan...</saving>
+			<warning_saving>Bezig met opslaan...
+Schakel het systeem niet uit en sluit de applicatie niet.</warning_saving>
+			<overwrite_saved_data>Wil je deze opgeslagen data overschrijven?</overwrite_saved_data>
+		</save>
+	</save_data>
+</dialog>
+
 <indicator>
 	<app_added_home>De applicatie is toegevoegd aan het beginscherm.</app_added_home>
 	<delete_all>Alles verwijderen</delete_all>

@@ -36,6 +36,43 @@
 	<version>版本</version>
 </app_context>
 
+<dialog>
+	<trophy>
+		<preparing_start_app>正在準備啟動應用程式……</preparing_start_app>
+	</trophy>
+	<save_data>
+		<delete>
+			<cancel_deleting>確定要取消刪除嗎？</cancel_deleting> 
+			<deletion_complete>已刪除。</deletion_complete> 
+			<delete_saved_data>確定要刪除此保存資料嗎?</delete_saved_data> 
+		</delete>
+		<info>
+			<details>詳細內容</details>
+			<updated>更新日</updated>
+		</info>
+		<load name="載入">
+			<cancel_loading>確定要取消載入嗎？</cancel_loading>
+			<no_saved_data>找不到保存資料。</no_saved_data>
+			<load_complete>已載入。</load_complete>
+			<loading>載入中……</loading>
+			<load_saved_data>確定要載入此保存資料嗎？</load_saved_data>
+		</load>
+		<save name="保存">
+			<cancel_saving>確定要取消保存嗎？</cancel_saving>
+			<could_not_save>無法保存。
+記憶卡的可用容量不足。</could_not_save>
+			<not_free_space>記憶卡的可用容量不足。</not_free_space>
+			<new_saved_data>新的保存資料</new_saved_data>
+			<saving_complete>已保存。</saving_complete>
+			<save_the_data>確定要保存資料嗎？</save_the_data>
+			<saving>保存中……</saving>
+			<warning_saving>保存中……
+請勿關閉電源或結束應用程式。</warning_saving>
+			<overwrite_saved_data>確定要覆寫此保存資料嗎？</overwrite_saved_data>
+		</save>
+	</save_data>
+</dialog>
+
 <indicator>
 	<app_added_home>已追加應用程式至主頁畫面。</app_added_home>
 	<delete_all>全部刪除</delete_all>

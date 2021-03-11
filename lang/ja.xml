@@ -13,6 +13,43 @@
 	<version>バージョン</version>
 </app_context>
 
+<dialog>
+	<trophy>
+		<preparing_start_app>アプリケーションを始める準備中です...</preparing_start_app>
+	</trophy>
+	<save_data>
+		<delete>
+			<cancel_deleting>削除をキャンセルしますか？</cancel_deleting> 
+			<deletion_complete>削除しました。</deletion_complete> 
+			<delete_saved_data>このセーブデータを削除しますか？</delete_saved_data> 
+		</delete>
+		<info>
+			<details>詳細</details>
+			<updated>更新日</updated>
+		</info>
+		<load name="ロード">
+			<cancel_loading>ロードをキャンセルしますか？</cancel_loading>
+			<no_saved_data>セーブデータがありません。</no_saved_data>
+			<load_complete>ロードしました。</load_complete>
+			<loading>ロード中です...</loading>
+			<load_saved_data>このセーブデータをロードしますか？</load_saved_data>
+		</load>
+		<save name="セーブ">
+			<cancel_saving>セーブをキャンセルしますか？</cancel_saving>
+			<could_not_save>セーブできませんでした。
+メモリーカードの空き容量が不足しています。</could_not_save>
+			<not_free_space>メモリーカードの空き容量が不足しています。</not_free_space>
+			<new_saved_data>新しいセーブデータ</new_saved_data>
+			<saving_complete>セーブしました。</saving_complete>
+			<save_the_data>データをセーブしますか？</save_the_data>
+			<saving>セーブ中です...</saving>
+			<warning_saving>セーブ中です...
+電源を切ったり、アプリケーションを終了したりしないでください。</warning_saving>
+			<overwrite_saved_data>このセーブデータを上書きしますか？</overwrite_saved_data>
+		</save>
+	</save_data>
+</dialog>
+
 <indicator>
 	<app_added_home>ホーム画面にアプリケーションが追加されました。</app_added_home>
 	<delete_all>すべて削除</delete_all>
