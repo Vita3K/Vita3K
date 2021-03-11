@@ -36,6 +36,43 @@
 	<version>版本</version>
 </app_context>
 
+<dialog>
+	<trophy>
+		<preparing_start_app>正在准备启动应用程序…</preparing_start_app>
+	</trophy>
+	<save_data>
+		<delete>
+			<cancel_deleting>要取消删除吗？</cancel_deleting> 
+			<deletion_complete>删除完毕。</deletion_complete> 
+			<delete_saved_data>要删除此保存数据吗？</delete_saved_data> 
+		</delete>
+		<info>
+			<details>详细信息</details>
+			<updated>升级日期</updated>
+		</info>
+		<load name="读取">
+			<cancel_loading>要取消读取吗？</cancel_loading>
+			<no_saved_data>保存数据不存在。</no_saved_data>
+			<load_complete>读取完毕。</load_complete>
+			<loading>正在读取…</loading>
+			<load_saved_data>要读取此保存数据吗？</load_saved_data>
+		</load>
+		<save name="保存">
+			<cancel_saving>要取消保存吗？</cancel_saving>
+			<could_not_save>无法保存文件。
+存储卡没有足够的空余容量。</could_not_save>
+			<not_free_space>存储卡没有足够的空余容量。</not_free_space>
+			<new_saved_data>新建保存数据</new_saved_data>
+			<saving_complete>保存完毕。</saving_complete>
+			<save_the_data>要保存数据吗？</save_the_data>
+			<saving>正在保存…</saving>
+			<warning_saving>正在保存…
+请勿关闭电源或关闭应用程序。</warning_saving>
+			<overwrite_saved_data>要覆盖此保存数据吗？</overwrite_saved_data>
+		</save>
+	</save_data>
+</dialog>
+
 <indicator>
 	<app_added_home>已将应用程序添加至主画面。</app_added_home>
 	<delete_all>全部删除</delete_all>

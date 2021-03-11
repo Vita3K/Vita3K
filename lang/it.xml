@@ -41,6 +41,43 @@
 	<version>Versione</version>
 </app_context>
 
+<dialog>
+	<trophy>
+		<preparing_start_app>Preparazione per l'avvio dell'applicazione...</preparing_start_app>
+	</trophy>
+	<save_data>
+		<delete>
+			<cancel_deleting>Vuoi annullare l'eliminazione?</cancel_deleting> 
+			<deletion_complete>Eliminazione completata.</deletion_complete> 
+			<delete_saved_data>Vuoi eliminare questi dati salvati?</delete_saved_data> 
+		</delete>
+		<info>
+			<details>Dettagli</details>
+			<updated>Aggiornato</updated>
+		</info>
+		<load name="Carica">
+			<cancel_loading>Vuoi annullare il caricamento?</cancel_loading>
+			<no_saved_data>Non ci sono dati salvati.</no_saved_data>
+			<load_complete>Caricamento completato.</load_complete>
+			<loading>Caricamento in corso...</loading>
+			<load_saved_data>Vuoi caricare questi dati salvati?</load_saved_data>
+		</load>
+		<save name="Salva">
+			<cancel_saving>Vuoi annullare il salvataggio?</cancel_saving>
+			<could_not_save>Impossibile salvare il file.
+Spazio libero insufficiente sulla scheda di memoria.</could_not_save>
+			<not_free_space>Spazio libero insufficiente sulla scheda di memoria.</not_free_space>
+			<new_saved_data>Nuovi dati salvati</new_saved_data>
+			<saving_complete>Salvataggio completato.</saving_complete>
+			<save_the_data>Vuoi salvare i dati?</save_the_data>
+			<saving>Salvataggio in corso...</saving>
+			<warning_saving>Salvataggio in corso...
+Non spegnere il sistema né chiudere l'applicazione.</warning_saving>
+			<overwrite_saved_data>Vuoi sovrascrivere questi dati salvati?</overwrite_saved_data>
+		</save>
+	</save_data>
+</dialog>
+
 <indicator>
 	<app_added_home>L'applicazione è stata aggiunta alla schermata principale.</app_added_home>
 	<delete_all>Elimina tutto</delete_all>

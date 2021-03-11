@@ -36,6 +36,43 @@
 	<version>Version</version>
 </app_context>
 
+<dialog>
+	<trophy>
+		<preparing_start_app>Preparing to start the application...</preparing_start_app>
+	</trophy>
+	<save_data>
+		<delete>
+			<cancel_deleting>Do you want to cancel deleting?</cancel_deleting> 
+			<deletion_complete>Deletion complete.</deletion_complete> 
+			<delete_saved_data>Do you want to delete this saved data?</delete_saved_data> 
+		</delete>
+		<info>
+			<details>Details</details>
+			<updated>Updated</updated>
+		</info>
+		<load name="Load">
+			<cancel_loading>Do you want to cancel loading?</cancel_loading>
+			<no_saved_data>There is no saved data.</no_saved_data>
+			<load_complete>Loading complete.</load_complete>
+			<loading>Loading...</loading>
+			<load_saved_data>Do you want to load this saved data?</load_saved_data>
+		</load>
+		<save name="Save">
+			<cancel_saving>Do you want to cancel saving?</cancel_saving>
+			<could_not_save>Could not save the file.
+There is not enough free space on the memory card.</could_not_save>
+			<not_free_space>There is not enough free space on the memory card.</not_free_space>
+			<new_saved_data>New Saved Data</new_saved_data>
+			<saving_complete>Saving complete.</saving_complete>
+			<save_the_data>Do you want to save the data?</save_the_data>
+			<saving>Saving...</saving>
+			<warning_saving>Saving...
+Do not power off the system or close the application.</warning_saving>
+			<overwrite_saved_data>Do you want to overwrite this saved data?</overwrite_saved_data>
+		</save>
+	</save_data>
+</dialog>
+
 <indicator>
 	<app_added_home>The application has been added to the home screen.</app_added_home>
 	<delete_all>Delete All</delete_all>

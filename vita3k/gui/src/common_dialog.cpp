@@ -110,14 +110,24 @@ static void draw_message_dialog(DialogState &common_dialog) {
 static void draw_trophy_setup_dialog(DialogState &common_dialog) {
     int timer = (static_cast<int64_t>(common_dialog.trophy.tick) - static_cast<int64_t>(SDL_GetTicks())) / 1000;
     if (timer > 0) {
-        ImGui::SetNextWindowPos(ImVec2(30, 30));
-        ImGui::SetNextWindowSize(ImVec2(0, 0));
-        ImGui::Begin("Trophy system ready");
-        ImGui::Text("Trophy dialog setup correctly");
-        std::string closeup_text = "This dialog will close automatically in ";
-        closeup_text += std::to_string(timer);
-        closeup_text += " seconds.";
-        ImGui::Text("%s", closeup_text.c_str());
+        const auto display_size = ImGui::GetIO().DisplaySize;
+        const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
+        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
+        ImGui::Begin("##preparing_app", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        const auto WINDOW_SIZE = ImVec2(764.f * SCAL.x, 440.f * SCAL.y);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
+        ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::BeginChild("##preparing_app_child", WINDOW_SIZE, false, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        const auto str = !common_dialog.lang.trophy["preparing_start_app"].empty() ? common_dialog.lang.trophy["preparing_start_app"].c_str() : "Preparing to start the application...";
+        ImGui::SetWindowFontScale(1.2f);
+        const auto str_size = ImGui::CalcTextSize(str);
+        const auto STR_POS = ImVec2((WINDOW_SIZE.x / 2.f) - (str_size.x / 2.f), (WINDOW_SIZE.y / 2.f) - (str_size.y / 2.f));
+        ImGui::SetCursorPos(STR_POS);
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", str);
+        ImGui::EndChild();
+        ImGui::PopStyleVar(2);
         ImGui::End();
     } else {
         common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
@@ -125,11 +135,28 @@ static void draw_trophy_setup_dialog(DialogState &common_dialog) {
     }
 }
 
-static void draw_save_info(DialogState &common_dialog, GuiState &gui, int loop_index, const ImTextureID &texture) {
+static std::string get_save_date_time(GuiState &gui, HostState &host, const SceDateTime &date_time) {
+    std::string date_str;
+    switch (gui.users[host.io.user_id].date_format) {
+    case DateFormat::YYYY_MM_DD:
+        date_str = fmt::format("{}/{}/{}", date_time.year, date_time.month, date_time.day);
+        break;
+    case DateFormat::DD_MM_YYYY:
+        date_str = fmt::format("{}/{}/{}", date_time.day, date_time.month, date_time.year);
+        break;
+    case DateFormat::MM_DD_YYYY:
+        date_str = fmt::format("{}/{}/{}", date_time.month, date_time.day, date_time.year);
+        break;
+    default: break;
+    }
+
+    return date_str + fmt::format(" {}:{:0>2d}", date_time.hour, date_time.minute);
+}
+
+static void draw_save_info(GuiState &gui, HostState &host, int loop_index, const ImTextureID &texture) {
     const ImVec2 THUMBNAIL_SIZE = ImVec2(160.f, 90.f);
     const ImVec2 WINDOW_SIZE = ImVec2(ImGui::GetIO().DisplaySize.x / 1.7f, ImGui::GetIO().DisplaySize.y / 1.5f);
-    const auto date = common_dialog.savedata.date[common_dialog.savedata.selected_save];
-
+    auto lang = host.common_dialog.lang.save_data;
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(WINDOW_SIZE);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, GUI_COMMON_DIALOG_BG);
@@ -137,120 +164,118 @@ static void draw_save_info(DialogState &common_dialog, GuiState &gui, int loop_i
     ImGui::SetNextWindowBgAlpha(0.f);
     ImGui::SetWindowFontScale(1.2f);
     if (ImGui::Button("X", ImVec2(40, 30))) {
-        common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
-        common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
-        common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
-        common_dialog.savedata.draw_info_window = false;
+        host.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+        host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+        host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        host.common_dialog.savedata.draw_info_window = false;
     }
     ImGui::SameLine();
-    ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(common_dialog.savedata.list_title.c_str()).x / 2);
-    ImGui::Text("%s", common_dialog.savedata.list_title.c_str());
+    ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(host.common_dialog.savedata.list_title.c_str()).x / 2);
+    ImGui::Text("%s", host.common_dialog.savedata.list_title.c_str());
 
-    if (!common_dialog.savedata.icon_buffer[loop_index].empty()) {
+    if (!host.common_dialog.savedata.icon_buffer[loop_index].empty()) {
         ImGui::SetCursorPos(ImVec2(50, THUMBNAIL_SIZE.y / 2 + 20));
         ImGui::Image(texture, THUMBNAIL_SIZE);
     }
     ImGui::SameLine();
-    ImGui::Text("%s", common_dialog.savedata.title[common_dialog.savedata.selected_save].c_str());
+    ImGui::Text("%s", host.common_dialog.savedata.title[host.common_dialog.savedata.selected_save].c_str());
     ImGui::SetCursorPosY(WINDOW_SIZE.y / 2);
     ImGui::BeginGroup();
     ImGui::PushTextWrapPos(WINDOW_SIZE.x - 75);
     ImGui::SetCursorPosX(50);
-    ImGui::Text("Updated");
+    ImGui::Text("%s", !lang["updated"].empty() ? lang["updated"].c_str() : "Updated");
     ImGui::SameLine();
     ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - 85);
-    ImGui::Text("%d/%02d/%02d   %02d:%02d", date.year, date.month, date.day, date.hour, date.minute);
+    ImGui::Text("%s", get_save_date_time(gui, host, host.common_dialog.savedata.date[host.common_dialog.savedata.selected_save]).c_str());
+    ImGui::Spacing();
     ImGui::Spacing();
     ImGui::Spacing();
     ImGui::SetCursorPosX(50);
-    ImGui::Text("Details");
+    ImGui::Text("%s", !lang["details"].empty() ? lang["details"].c_str() : "Details");
     ImGui::SameLine();
     ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - 85);
-    ImGui::Text("%s", common_dialog.savedata.details[common_dialog.savedata.selected_save].c_str());
+    ImGui::Text("%s", host.common_dialog.savedata.details[host.common_dialog.savedata.selected_save].c_str());
     ImGui::PopTextWrapPos();
     ImGui::EndGroup();
     ImGui::SetCursorPosY(WINDOW_SIZE.y - 41);
     if (ImGui::Button("Back", ImVec2(62, 30))) {
-        common_dialog.savedata.draw_info_window = false;
+        host.common_dialog.savedata.draw_info_window = false;
     }
     ImGui::End();
 }
 
-static void draw_savedata_dialog_list(DialogState &common_dialog, GuiState &gui, ImVec2 WINDOW_SIZE, ImVec2 THUMBNAIL_SIZE, int loop_index, int save_index, std::vector<ImTextureID> &thumbnails_textures) {
+static void draw_savedata_dialog_list(GuiState &gui, HostState &host, ImVec2 WINDOW_SIZE, ImVec2 THUMBNAIL_SIZE, int loop_index, int save_index, std::vector<ImTextureID> &thumbnails_textures) {
     char selectable_buffer[32];
     char info_button_buffer[32];
     sprintf(selectable_buffer, "###New Saved Data %d", loop_index);
 
     ImGui::SetCursorPos(ImVec2(15, (save_index * THUMBNAIL_SIZE.y) + 2));
     if (ImGui::Selectable(selectable_buffer, false, ImGuiSelectableFlags_None, ImVec2(WINDOW_SIZE.x - 120, THUMBNAIL_SIZE.y - 5))) {
-        common_dialog.savedata.selected_save = loop_index;
-        common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-        common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
-        common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
+        host.common_dialog.savedata.selected_save = loop_index;
+        host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+        host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        host.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
     }
     ImGui::SameLine();
     ImGui::SetWindowFontScale(1.2f);
-    if (!common_dialog.savedata.title[loop_index].empty()) {
+    if (!host.common_dialog.savedata.title[loop_index].empty()) {
         ImGui::SetCursorPosX(THUMBNAIL_SIZE.x + 10 + 5);
-        ImGui::Text("%s", common_dialog.savedata.title[loop_index].c_str());
+        ImGui::Text("%s", host.common_dialog.savedata.title[loop_index].c_str());
     }
     ImGui::SetWindowFontScale(1.f);
-    switch (common_dialog.savedata.list_style) {
+    switch (host.common_dialog.savedata.list_style) {
     case SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_DATE_SUBTITLE:
-        if (common_dialog.savedata.has_date[loop_index]) {
+        if (host.common_dialog.savedata.has_date[loop_index]) {
             ImGui::SetCursorPos(ImVec2(THUMBNAIL_SIZE.x + 10 + 5, (save_index * THUMBNAIL_SIZE.y) + 28));
-            ImGui::Text("%d/%02d/%02d  %02d:%02d", common_dialog.savedata.date[loop_index].year, common_dialog.savedata.date[loop_index].month,
-                common_dialog.savedata.date[loop_index].day, common_dialog.savedata.date[loop_index].hour, common_dialog.savedata.date[loop_index].minute);
+            ImGui::Text("%s", get_save_date_time(gui, host, host.common_dialog.savedata.date[loop_index]).c_str());
         }
-        if (!common_dialog.savedata.subtitle[loop_index].empty()) {
+        if (!host.common_dialog.savedata.subtitle[loop_index].empty()) {
             ImGui::SetCursorPos(ImVec2(THUMBNAIL_SIZE.x + 10 + 5, (save_index * THUMBNAIL_SIZE.y) + 50));
-            ImGui::Text("%s", common_dialog.savedata.subtitle[loop_index].c_str());
+            ImGui::Text("%s", host.common_dialog.savedata.subtitle[loop_index].c_str());
         }
         break;
     case SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_SUBTITLE_DATE:
-        if (!common_dialog.savedata.subtitle[loop_index].empty()) {
+        if (!host.common_dialog.savedata.subtitle[loop_index].empty()) {
             ImGui::SetCursorPos(ImVec2(THUMBNAIL_SIZE.x + 10 + 5, (save_index * THUMBNAIL_SIZE.y) + 28));
-            ImGui::Text("%s", common_dialog.savedata.subtitle[loop_index].c_str());
+            ImGui::Text("%s", host.common_dialog.savedata.subtitle[loop_index].c_str());
         }
-        if (common_dialog.savedata.has_date[loop_index]) {
+        if (host.common_dialog.savedata.has_date[loop_index]) {
             ImGui::SetCursorPos(ImVec2(THUMBNAIL_SIZE.x + 10 + 5, (save_index * THUMBNAIL_SIZE.y) + 50));
-            ImGui::Text("%d/%02d/%02d  %02d:%02d", common_dialog.savedata.date[loop_index].year, common_dialog.savedata.date[loop_index].month,
-                common_dialog.savedata.date[loop_index].day, common_dialog.savedata.date[loop_index].hour, common_dialog.savedata.date[loop_index].minute);
+            ImGui::Text("%s", get_save_date_time(gui, host, host.common_dialog.savedata.date[loop_index]).c_str());
         }
         break;
     case SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_DATE:
-        if (common_dialog.savedata.has_date[loop_index]) {
+        if (host.common_dialog.savedata.has_date[loop_index]) {
             ImGui::SetCursorPos(ImVec2(THUMBNAIL_SIZE.x + 10 + 5, (save_index * THUMBNAIL_SIZE.y) + 28));
-            ImGui::Text("%d/%02d/%02d  %02d:%02d", common_dialog.savedata.date[loop_index].year, common_dialog.savedata.date[loop_index].month,
-                common_dialog.savedata.date[loop_index].day, common_dialog.savedata.date[loop_index].hour, common_dialog.savedata.date[loop_index].minute);
+            ImGui::Text("%s", get_save_date_time(gui, host, host.common_dialog.savedata.date[loop_index]).c_str());
         }
         break;
     }
     ImGui::SetWindowFontScale(1.2f);
     ImGui::SameLine();
-    if (common_dialog.savedata.icon_loaded[loop_index]) {
-        thumbnails_textures[loop_index] = load_image(gui, (const char *)common_dialog.savedata.icon_buffer[loop_index].data(),
-            static_cast<int>(common_dialog.savedata.icon_buffer[loop_index].size()));
-        common_dialog.savedata.icon_loaded[loop_index] = false;
+    if (host.common_dialog.savedata.icon_loaded[loop_index]) {
+        thumbnails_textures[loop_index] = load_image(gui, (const char *)host.common_dialog.savedata.icon_buffer[loop_index].data(),
+            static_cast<int>(host.common_dialog.savedata.icon_buffer[loop_index].size()));
+        host.common_dialog.savedata.icon_loaded[loop_index] = false;
     }
-    if (!common_dialog.savedata.icon_buffer[loop_index].empty()) {
+    if (!host.common_dialog.savedata.icon_buffer[loop_index].empty()) {
         ImGui::SetCursorPos(ImVec2(10, save_index * THUMBNAIL_SIZE.y));
         ImGui::Image(thumbnails_textures[loop_index], THUMBNAIL_SIZE);
     }
     ImGui::SameLine();
-    if (common_dialog.savedata.slot_info[loop_index].isExist == 1) {
+    if (host.common_dialog.savedata.slot_info[loop_index].isExist == 1) {
         sprintf(info_button_buffer, "##info %d", loop_index);
         ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - 74, (save_index * THUMBNAIL_SIZE.y) + 25));
         if (ImGui::Button(info_button_buffer, ImVec2(20, 25))) {
-            common_dialog.savedata.draw_info_window = true;
-            common_dialog.savedata.selected_save = loop_index;
+            host.common_dialog.savedata.draw_info_window = true;
+            host.common_dialog.savedata.selected_save = loop_index;
         }
         ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - 66, (save_index * THUMBNAIL_SIZE.y) + 26));
         ImGui::Text("i");
     }
 }
 
-static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
+static void draw_savedata_dialog(GuiState &gui, HostState &host) {
     const ImVec2 BUTTON_SIZE = ImVec2(200.f, 35.f);
     const ImVec2 THUMBNAIL_SIZE = ImVec2(160.f, 90.f);
     const ImVec2 PROGRESS_BAR_SIZE = ImVec2(300.f, 7.f);
@@ -259,7 +284,7 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
     int existing_saves_count = 0;
     static std::vector<ImTextureID> thumbnails_textures{ nullptr };
 
-    switch (common_dialog.savedata.mode_to_display) {
+    switch (host.common_dialog.savedata.mode_to_display) {
     case SCE_SAVEDATA_DIALOG_MODE_LIST:
         ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::SetNextWindowSize(WINDOW_SIZE);
@@ -267,40 +292,41 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
         ImGui::Begin("##Savedata Dialog", nullptr, ImGuiWindowFlags_NoDecoration);
         ImGui::SetWindowFontScale(1.2f);
         if (ImGui::Button("X", ImVec2(40, 30))) {
-            common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
-            common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
-            common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+            host.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+            host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+            host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
         }
         ImGui::SameLine();
-        ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(common_dialog.savedata.list_title.c_str()).x / 2);
-        ImGui::Text("%s", common_dialog.savedata.list_title.c_str());
+        ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(host.common_dialog.savedata.list_title.c_str()).x / 2);
+        ImGui::Text("%s", host.common_dialog.savedata.list_title.c_str());
         ImGui::SetWindowFontScale(0.9f);
         ImGui::SetNextWindowBgAlpha(0.f);
         ImGui::BeginChild("##Selectables", ImVec2(0, 0), false, ImGuiWindowFlags_NoDecoration);
-        thumbnails_textures.resize(common_dialog.savedata.slot_list_size);
-        for (std::uint32_t i = 0; i < common_dialog.savedata.slot_list_size; i++) {
-            switch (common_dialog.savedata.display_type) {
+        thumbnails_textures.resize(host.common_dialog.savedata.slot_list_size);
+        for (std::uint32_t i = 0; i < host.common_dialog.savedata.slot_list_size; i++) {
+            switch (host.common_dialog.savedata.display_type) {
             case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-                draw_savedata_dialog_list(common_dialog, gui, WINDOW_SIZE, THUMBNAIL_SIZE, i, i, thumbnails_textures);
+                draw_savedata_dialog_list(gui, host, WINDOW_SIZE, THUMBNAIL_SIZE, i, i, thumbnails_textures);
                 break;
             case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
             case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-                if (common_dialog.savedata.slot_info[i].isExist == 1) {
-                    draw_savedata_dialog_list(common_dialog, gui, WINDOW_SIZE, THUMBNAIL_SIZE, i, existing_saves_count, thumbnails_textures);
+                if (host.common_dialog.savedata.slot_info[i].isExist == 1) {
+                    draw_savedata_dialog_list(gui, host, WINDOW_SIZE, THUMBNAIL_SIZE, i, existing_saves_count, thumbnails_textures);
                     existing_saves_count++;
                 }
                 break;
             }
         }
-        if (common_dialog.savedata.draw_info_window) {
-            draw_save_info(common_dialog, gui, common_dialog.savedata.selected_save, thumbnails_textures[common_dialog.savedata.selected_save]);
+        if (host.common_dialog.savedata.draw_info_window) {
+            draw_save_info(gui, host, host.common_dialog.savedata.selected_save, thumbnails_textures[host.common_dialog.savedata.selected_save]);
             return;
         }
-        if (common_dialog.savedata.display_type != SCE_SAVEDATA_DIALOG_TYPE_SAVE) {
+        if (host.common_dialog.savedata.display_type != SCE_SAVEDATA_DIALOG_TYPE_SAVE) {
             if (existing_saves_count == 0) {
                 ImGui::SetWindowFontScale(1.2f);
-                ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize("There is no saved data.").x / 2 - 10, WINDOW_SIZE.y / 2 - ImGui::CalcTextSize("There is no saved data.").y / 2 - 25));
-                ImGui::Text("There is no saved data.");
+                const auto no_save_data = !host.common_dialog.lang.save_data["no_saved_data"].empty() ? host.common_dialog.lang.save_data["no_saved_data"].c_str() : "There is no saved data.";
+                ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(no_save_data).x / 2 - 10, WINDOW_SIZE.y / 2 - ImGui::CalcTextSize(no_save_data).y / 2 - 25));
+                ImGui::Text(no_save_data);
             }
         }
         ImGui::EndChild();
@@ -316,58 +342,57 @@ static void draw_savedata_dialog(DialogState &common_dialog, GuiState &gui) {
         ImGui::SetWindowFontScale(1.2f);
 
         static ImTextureID THUMBNAIL_TEXTURE = nullptr;
-        if (common_dialog.savedata.icon_loaded[0]) {
-            THUMBNAIL_TEXTURE = load_image(gui, (const char *)common_dialog.savedata.icon_buffer[common_dialog.savedata.selected_save].data(),
-                static_cast<int>(common_dialog.savedata.icon_buffer[common_dialog.savedata.selected_save].size()));
-            common_dialog.savedata.icon_loaded[0] = false;
+        if (host.common_dialog.savedata.icon_loaded[0]) {
+            THUMBNAIL_TEXTURE = load_image(gui, (const char *)host.common_dialog.savedata.icon_buffer[host.common_dialog.savedata.selected_save].data(),
+                static_cast<int>(host.common_dialog.savedata.icon_buffer[host.common_dialog.savedata.selected_save].size()));
+            host.common_dialog.savedata.icon_loaded[0] = false;
         }
 
-        if (!common_dialog.savedata.icon_buffer[common_dialog.savedata.selected_save].empty()) {
+        if (!host.common_dialog.savedata.icon_buffer[host.common_dialog.savedata.selected_save].empty()) {
             ImGui::SetCursorPos(ImVec2(36, 25));
             ImGui::Image(THUMBNAIL_TEXTURE, THUMBNAIL_SIZE);
         }
         ImGui::SameLine();
         ImGui::BeginGroup();
-        if (!common_dialog.savedata.title[common_dialog.savedata.selected_save].empty()) {
-            ImGui::Text("%s", common_dialog.savedata.title[common_dialog.savedata.selected_save].c_str());
+        if (!host.common_dialog.savedata.title[host.common_dialog.savedata.selected_save].empty()) {
+            ImGui::Text("%s", host.common_dialog.savedata.title[host.common_dialog.savedata.selected_save].c_str());
         }
         ImGui::SetWindowFontScale(1.f);
-        if (common_dialog.savedata.has_date[common_dialog.savedata.selected_save]) {
-            ImGui::Text("%d/%02d/%02d  %02d:%02d", common_dialog.savedata.date[common_dialog.savedata.selected_save].year, common_dialog.savedata.date[common_dialog.savedata.selected_save].month,
-                common_dialog.savedata.date[common_dialog.savedata.selected_save].day, common_dialog.savedata.date[common_dialog.savedata.selected_save].hour, common_dialog.savedata.date[common_dialog.savedata.selected_save].minute);
+        if (host.common_dialog.savedata.has_date[host.common_dialog.savedata.selected_save]) {
+            ImGui::Text("%s", get_save_date_time(gui, host, host.common_dialog.savedata.date[host.common_dialog.savedata.selected_save]).c_str());
         }
-        if (!common_dialog.savedata.subtitle.empty()) {
-            ImGui::Text("%s", common_dialog.savedata.subtitle[common_dialog.savedata.selected_save].c_str());
+        if (!host.common_dialog.savedata.subtitle.empty()) {
+            ImGui::Text("%s", host.common_dialog.savedata.subtitle[host.common_dialog.savedata.selected_save].c_str());
         }
         ImGui::EndGroup();
         ImGui::SetWindowFontScale(1.2f);
         ImGui::PushTextWrapPos(WINDOW_SIZE.x - 50.f);
-        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(common_dialog.savedata.msg.c_str(), 0, false, WINDOW_SIZE.x - 100.f).x / 2, WINDOW_SIZE.y / 2 + 10));
-        ImGui::Text("%s", common_dialog.savedata.msg.c_str());
+        ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(host.common_dialog.savedata.msg.c_str(), 0, false, WINDOW_SIZE.x - 100.f).x / 2, WINDOW_SIZE.y / 2 + 10));
+        ImGui::Text("%s", host.common_dialog.savedata.msg.c_str());
         ImGui::PopTextWrapPos();
-        if (common_dialog.savedata.has_progress_bar) {
+        if (host.common_dialog.savedata.has_progress_bar) {
             ImGui::Spacing();
             const char dummy_buf[32] = "";
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
             ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_PROGRESS_BAR_BG);
             ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - PROGRESS_BAR_SIZE.x / 2);
-            ImGui::ProgressBar(common_dialog.savedata.bar_percent / 100.f, PROGRESS_BAR_SIZE, dummy_buf);
+            ImGui::ProgressBar(host.common_dialog.savedata.bar_percent / 100.f, PROGRESS_BAR_SIZE, dummy_buf);
             ImGui::PopStyleColor(2);
-            std::string progress = std::to_string(static_cast<int>(common_dialog.savedata.bar_percent)).append("%");
+            std::string progress = std::to_string(static_cast<int>(host.common_dialog.savedata.bar_percent)).append("%");
             ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(progress.c_str()).x / 2);
             ImGui::Text("%s", progress.c_str());
         }
 
-        if (common_dialog.savedata.btn_num != 0) {
+        if (host.common_dialog.savedata.btn_num != 0) {
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
-            const auto buttons_width = common_dialog.savedata.btn_num == 2 ? BUTTON_SIZE.x : BUTTON_SIZE.x / 2;
+            const auto buttons_width = host.common_dialog.savedata.btn_num == 2 ? BUTTON_SIZE.x : BUTTON_SIZE.x / 2;
             ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - buttons_width, WINDOW_SIZE.y - 50));
             ImGui::BeginGroup();
-            for (int i = 0; i < common_dialog.savedata.btn_num; i++) {
-                if (ImGui::Button(common_dialog.savedata.btn[i].c_str(), BUTTON_SIZE)) {
-                    common_dialog.savedata.button_id = common_dialog.savedata.btn_val[i];
-                    common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-                    common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+            for (int i = 0; i < host.common_dialog.savedata.btn_num; i++) {
+                if (ImGui::Button(host.common_dialog.savedata.btn[i].c_str(), BUTTON_SIZE)) {
+                    host.common_dialog.savedata.button_id = host.common_dialog.savedata.btn_val[i];
+                    host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+                    host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
                 }
                 ImGui::SameLine();
             }
@@ -394,7 +419,7 @@ void draw_common_dialog(GuiState &gui, HostState &host) {
             draw_trophy_setup_dialog(host.common_dialog);
             break;
         case SAVEDATA_DIALOG:
-            draw_savedata_dialog(host.common_dialog, gui);
+            draw_savedata_dialog(gui, host);
             break;
         default:
             break;

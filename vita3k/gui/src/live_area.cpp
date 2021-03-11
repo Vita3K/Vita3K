@@ -129,6 +129,52 @@ void init_lang(GuiState &gui, HostState &host) {
                 lang_app_context["version"] = app_context.child("version").text().as_string();
             }
 
+            // Dialog
+            if (!lang_xml.child("dialog").empty()) {
+                const auto dialog = lang_xml.child("dialog");
+                // Trophy
+                if (!dialog.child("trophy").empty())
+                    host.common_dialog.lang.trophy["preparing_start_app"] = dialog.child("trophy").child("preparing_start_app").text().as_string();
+                // Save Data
+                if (!dialog.child("save_data").empty()) {
+                    auto &lang_save_data = host.common_dialog.lang.save_data;
+                    const auto save_data = dialog.child("save_data");
+                    if (!save_data.child("delete").empty()) {
+                        const auto delete_child = save_data.child("delete");
+                        //lang_save_data["delete"] = delete_child.attribute("name").as_string();
+                        lang_save_data["cancel_deleting"] = delete_child.child("cancel_deleting").text().as_string();
+                        lang_save_data["deletion_complete"] = delete_child.child("deletion_complete").text().as_string();
+                        lang_save_data["delete_saved_data"] = delete_child.child("delete_saved_data").text().as_string();
+                    }
+                    if (!save_data.child("info").empty()) {
+                        lang_save_data["details"] = save_data.child("info").child("details").text().as_string();
+                        lang_save_data["updated"] = save_data.child("info").child("updated").text().as_string();
+                    }
+                    if (!save_data.child("load").empty()) {
+                        const auto load = save_data.child("load");
+                        lang_save_data["load"] = load.attribute("name").as_string();
+                        lang_save_data["cancel_loading"] = load.child("cancel_loading").text().as_string();
+                        lang_save_data["no_saved_data"] = load.child("no_saved_data").text().as_string();
+                        lang_save_data["load_complete"] = load.child("load_complete").text().as_string();
+                        lang_save_data["loading"] = load.child("loading").text().as_string();
+                        lang_save_data["load_saved_data"] = load.child("load_saved_data").text().as_string();
+                    }
+                    if (!save_data.child("save").empty()) {
+                        const auto save = save_data.child("save");
+                        lang_save_data["save"] = save.attribute("name").as_string();
+                        lang_save_data["cancel_saving"] = save.child("cancel_saving").text().as_string();
+                        lang_save_data["could_not_save"] = save.child("could_not_save").text().as_string();
+                        lang_save_data["not_free_space"] = save.child("not_free_space").text().as_string();
+                        lang_save_data["new_saved_data"] = save.child("new_saved_data").text().as_string();
+                        lang_save_data["saving_complete"] = save.child("saving_complete").text().as_string();
+                        lang_save_data["save_the_data"] = save.child("save_the_data").text().as_string();
+                        lang_save_data["saving"] = save.child("saving").text().as_string();
+                        lang_save_data["warning_saving"] = save.child("warning_saving").text().as_string();
+                        lang_save_data["overwrite_saved_data"] = save.child("overwrite_saved_data").text().as_string();
+                    }
+                }
+            }
+
             // Indicator
             if (!lang_xml.child("indicator").empty()) {
                 auto &lang_indicator = gui.lang.indicator;
@@ -244,7 +290,7 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
     const auto NOTICE_SIZE = gui.notice_info_count_new ? ImVec2(104.0f * SCAL.x, 95.0f * SCAL.y) : ImVec2(90.0f * SCAL.x, 82.0f * SCAL.y);
     const auto NOTICE_POS = ImVec2(display_size.x - NOTICE_SIZE.x, 0.f);
     const ImU32 NOTICE_COLOR = 4294967295; // White
-    const auto WINDOW_SIZE = notice_info ? display_size : gui.notice_info_count_new ? ImVec2(84.f * SCAL.x, 76.f * SCAL.y) : ImVec2(72.f * SCAL.x, 62.f * SCAL.y);
+    const auto WINDOW_SIZE = notice_info ? display_size : (gui.notice_info_count_new ? ImVec2(84.f * SCAL.x, 76.f * SCAL.y) : ImVec2(72.f * SCAL.x, 62.f * SCAL.y));
     const auto WINDOW_POS = ImVec2(notice_info ? 0.f : display_size.x - WINDOW_SIZE.x, 0.f);
 
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
@@ -1338,10 +1384,9 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     const auto GATE_SIZE = ImVec2(280.0f * scal.x, 158.0f * scal.y);
     const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[app_path]]["gate"]["pos"].x * scal.x), display_size.y - (items_pos[type[app_path]]["gate"]["pos"].y * scal.y));
     const auto START_SIZE = ImVec2((ImGui::CalcTextSize(BUTTON_STR.c_str()).x * scal_font_size), (ImGui::CalcTextSize(BUTTON_STR.c_str()).y * scal_font_size));
-    const auto START_BUTTON_SIZE = ImVec2((START_SIZE.x + 26.0f) * scal.x, (START_SIZE.y + 5.0f) * scal.y);
+    const auto START_BUTTON_SIZE = ImVec2(START_SIZE.x + 26.0f, START_SIZE.y + 5.0f);
     const auto POS_BUTTON = ImVec2((GATE_POS.x + (GATE_SIZE.x - START_BUTTON_SIZE.x) / 2.0f), (GATE_POS.y + (GATE_SIZE.y - START_BUTTON_SIZE.y) / 1.08f));
-    const auto POS_START = ImVec2(POS_BUTTON.x + (START_BUTTON_SIZE.x - (START_SIZE.x * scal.x)) / 2,
-        POS_BUTTON.y + (START_BUTTON_SIZE.y - (START_SIZE.y * scal.y)) / 2);
+    const auto POS_START = ImVec2(POS_BUTTON.x + (START_BUTTON_SIZE.x - START_SIZE.x) / 2.f, POS_BUTTON.y + (START_BUTTON_SIZE.y - START_SIZE.y) / 2.f);
     const auto SELECT_SIZE = ImVec2(GATE_SIZE.x - (10.f * scal.x), GATE_SIZE.y - (5.f * scal.y));
     const auto SELECT_POS = ImVec2(GATE_POS.x + (5.f * scal.y), GATE_POS.y + (2.f * scal.y));
     const auto SIZE_GATE = ImVec2(GATE_POS.x + GATE_SIZE.x, GATE_POS.y + GATE_SIZE.y);
@@ -1354,7 +1399,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     }
     ImGui::PushID(app_path.c_str());
     ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * scal.x, ImDrawCornerFlags_All);
-    ImGui::GetWindowDrawList()->AddText(gui.vita_font, scal_default_font * scal.x, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
+    ImGui::GetWindowDrawList()->AddText(gui.vita_font, scal_default_font, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
     ImGui::SetCursorPos(SELECT_POS);
     const auto is_enable = host.io.title_id.empty()
         || (gui.apps_list_opened[gui.current_app_selected].find("NPXS") != std::string::npos)

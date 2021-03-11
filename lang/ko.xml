@@ -13,6 +13,43 @@
 	<version>버전</version>
 </app_context>
 
+<dialog>
+	<trophy>
+		<preparing_start_app>애플리케이션을 시작하기 위한 준비중입니다...</preparing_start_app>
+	</trophy>
+	<save_data>
+		<delete>
+			<cancel_deleting>삭제를 취소하시겠습니까?</cancel_deleting> 
+			<deletion_complete>삭제했습니다.</deletion_complete> 
+			<delete_saved_data>이 저장 데이터를 삭제하시겠습니까?</delete_saved_data> 
+		</delete>
+		<info>
+			<details>상세</details>
+			<updated>갱신일</updated>
+		</info>
+		<load name="불러오기">
+			<cancel_loading>불러오기를 취소하시겠습니까?</cancel_loading>
+			<no_saved_data>저장 데이터가 없습니다.</no_saved_data>
+			<load_complete>불러오기를 완료했습니다.</load_complete>
+			<loading>불러오기 중입니다...</loading>
+			<load_saved_data>이 저장 데이터를 불러오시겠습니까?</load_saved_data>
+		</load>
+		<save name="저장">
+			<cancel_saving>저장을 취소하시겠습니까?</cancel_saving>
+			<could_not_save>저장하지 못했습니다.
+메모리 카드의 빈 용량이 부족합니다.</could_not_save>
+			<not_free_space>메모리 카드의 빈 용량이 부족합니다.</not_free_space>
+			<new_saved_data>새 저장 데이터</new_saved_data>
+			<saving_complete>저장했습니다.</saving_complete>
+			<save_the_data>데이터를 저장하시겠습니까?</save_the_data>
+			<saving>저장중입니다...</saving>
+			<warning_saving>저장중입니다…
+전원을 끄거나 애플리케이션을 종료하지 마십시오.</warning_saving>
+			<overwrite_saved_data>이 저장 데이터를 덮어쓰시겠습니까?</overwrite_saved_data>
+		</save>
+	</save_data>
+</dialog>
+
 <indicator>
 	<app_added_home>홈 화면에 애플리케이션이 추가되었습니다.</app_added_home>
 	<delete_all>모두 삭제</delete_all>
