@@ -130,6 +130,16 @@ void ModuleData::invoke_callback(KernelState &kernel, const MemState &mem, const
     stack_free(*thread->cpu, sizeof(CallbackInfo));
 }
 
+void ModuleData::fill_to_fit_granularity() {
+    const std::size_t start_fill = extra_storage.size();
+    const std::size_t to_fill = parent->rack->system->granularity * 2 * sizeof(float) - start_fill;
+
+    if (to_fill > 0) {
+        extra_storage.resize(start_fill + to_fill);
+        std::fill(extra_storage.begin() + start_fill, extra_storage.end(), 0);
+    }
+}
+
 void Voice::init(Rack *mama) {
     rack = mama;
     state = VoiceState::VOICE_STATE_AVAILABLE;
