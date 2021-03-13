@@ -54,7 +54,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
     assert(state);
 
-    if (state->current_buffer == -1) {
+    if ((state->current_buffer == -1) || (params->buffer_params[state->current_buffer].buffer.address() == 0)) {
         return;
     }
 
@@ -64,25 +64,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         last_config = params->config_data;
     }
 
-    if (static_cast<std::int32_t>(state->decoded_samples_pending) < data.parent->rack->system->granularity) {
-        // Ran out of data, supply new
-        // Decode new data and deliver them
-        // Let's open our context
-        auto *input = params->buffer_params[state->current_buffer].buffer.cast<uint8_t>().get(mem)
-            + state->current_byte_position_in_buffer;
-
-        data.extra_storage.resize(decoder->get_samples_per_superframe() * sizeof(float) * 2);
-        decoder->send(input, decoder->get_superframe_size());
-        decoder->receive(data.extra_storage.data(), nullptr);
-
-        state->samples_generated_since_key_on += decoder->get_samples_per_superframe();
-        state->bytes_consumed_since_key_on += decoder->get_superframe_size();
-        state->current_byte_position_in_buffer += decoder->get_superframe_size();
-        state->total_bytes_consumed += decoder->get_superframe_size();
-
-        state->decoded_samples_pending += decoder->get_samples_per_superframe();
-        state->decoded_passed = 0;
-
+    auto try_cycle_to_next_buffer = [&]() {
         if (state->current_byte_position_in_buffer >= params->buffer_params[state->current_buffer].bytes_count) {
             const std::int32_t prev_index = state->current_buffer;
 
@@ -115,6 +97,88 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
             }
 
             state->current_byte_position_in_buffer = 0;
+        }
+    };
+
+    if (static_cast<std::uint32_t>(state->decoded_samples_pending) < data.parent->rack->system->granularity) {
+        if (!data.extra_storage.empty()) {
+            data.extra_storage.erase(data.extra_storage.begin(), data.extra_storage.begin() + state->decoded_passed * 8);
+        }
+
+        state->decoded_passed = 0;
+
+        while (static_cast<std::int32_t>(state->decoded_samples_pending) < data.parent->rack->system->granularity) {
+            ngs::atrac9::BufferParameter &bufparam = params->buffer_params[state->current_buffer];
+
+            if ((state->current_buffer == -1) || (bufparam.bytes_count == 0)) {
+                // Fill it then break
+                data.fill_to_fit_granularity();
+                break;
+            }
+
+            std::uint32_t superframe_size = decoder->get_superframe_size();
+
+            // Ran out of data, supply new
+            // Decode new data and deliver them
+            // Let's open our context
+            if (bufparam.bytes_count > 0) {
+                auto *input = bufparam.buffer.cast<uint8_t>().get(mem) + state->current_byte_position_in_buffer;
+
+                std::uint32_t frame_bytes_gotten = bufparam.bytes_count - state->current_byte_position_in_buffer;
+                state->current_byte_position_in_buffer += superframe_size;
+
+                std::vector<std::uint8_t> temporary_bytes;
+
+                if (frame_bytes_gotten < superframe_size) {
+                    while (frame_bytes_gotten < superframe_size) {
+                        if (temporary_bytes.size() == 0) {
+                            temporary_bytes.resize(frame_bytes_gotten);
+                            std::memcpy(temporary_bytes.data(), input, frame_bytes_gotten);
+                        }
+
+                        try_cycle_to_next_buffer();
+
+                        bufparam = params->buffer_params[state->current_buffer];
+
+                        if ((state->current_buffer == -1) || (bufparam.bytes_count == 0)) {
+                            break;
+                        }
+
+                        std::uint32_t bytes_to_get_next = std::min<std::uint32_t>(superframe_size - frame_bytes_gotten, bufparam.bytes_count);
+                        std::uint8_t *ptr_append = reinterpret_cast<std::uint8_t *>(bufparam.buffer.get(mem));
+
+                        temporary_bytes.insert(temporary_bytes.end(), ptr_append, ptr_append + bytes_to_get_next);
+                        frame_bytes_gotten += bytes_to_get_next;
+
+                        state->current_byte_position_in_buffer += bytes_to_get_next;
+                    }
+                }
+
+                if (temporary_bytes.size() != 0) {
+                    input = temporary_bytes.data();
+                }
+
+                const std::size_t curr_pos = state->decoded_samples_pending * sizeof(float) * 2;
+
+                data.extra_storage.resize(curr_pos + decoder->get_samples_per_superframe() * sizeof(float) * 2);
+
+                if (decoder->send(input, decoder->get_superframe_size())) {
+                    decoder->receive(data.extra_storage.data() + curr_pos, nullptr);
+                } else {
+                    data.parent->voice_lock->unlock();
+                    data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_CALLBACK_REASON_DECODE_ERROR, state->current_byte_position_in_buffer,
+                        params->buffer_params[state->current_buffer].buffer.address());
+                    data.parent->voice_lock->lock();
+                }
+
+                state->samples_generated_since_key_on += decoder->get_samples_per_superframe();
+                state->bytes_consumed_since_key_on += decoder->get_superframe_size();
+                state->total_bytes_consumed += decoder->get_superframe_size();
+
+                state->decoded_samples_pending += decoder->get_samples_per_superframe();
+            }
+
+            try_cycle_to_next_buffer();
         }
     }
 

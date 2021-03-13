@@ -95,6 +95,8 @@ struct ModuleData {
         return info.data.cast<T>().get(mem);
     }
 
+    void fill_to_fit_granularity();
+
     void invoke_callback(KernelState &kern, const MemState &mem, const SceUID thread_id, const std::uint32_t reason1,
         const std::uint32_t reason2, Address reason_ptr);
 
