@@ -7,11 +7,6 @@ Module::Module()
     : ngs::Module(ngs::BussType::BUSS_ATRAC9)
     , last_config(0) {}
 
-void Module::get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) {
-    *expect_audio_type = AudioDataType::S16;
-    *expect_channel_count = 2;
-}
-
 void get_buffer_parameter(const std::uint32_t start_sample, const std::uint32_t num_samples, const std::uint32_t info, SkipBufferInfo &parameter) {
     const std::uint8_t sample_rate_index = ((info & (0b1111 << 12)) >> 12);
     const std::uint8_t block_rate_index = ((info & (0b111 << 9)) >> 9);
@@ -76,7 +71,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         auto *input = params->buffer_params[state->current_buffer].buffer.cast<uint8_t>().get(mem)
             + state->current_byte_position_in_buffer;
 
-        data.extra_storage.resize(decoder->get_samples_per_superframe() * sizeof(int16_t) * 2);
+        data.extra_storage.resize(decoder->get_samples_per_superframe() * sizeof(float) * 2);
         decoder->send(input, decoder->get_superframe_size());
         decoder->receive(data.extra_storage.data(), nullptr);
 
@@ -123,7 +118,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         }
     }
 
-    std::uint8_t *data_ptr = data.extra_storage.data() + params->channels * sizeof(std::int16_t) * state->decoded_passed;
+    std::uint8_t *data_ptr = data.extra_storage.data() + params->channels * sizeof(float) * state->decoded_passed;
     std::uint32_t samples_to_be_passed = data.parent->rack->system->granularity;
 
     data.parent->products[0] = data_ptr;

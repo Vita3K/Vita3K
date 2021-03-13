@@ -9,17 +9,15 @@ std::size_t Module::get_buffer_parameter_size() const {
     return default_parameter_size;
 }
 
-void Module::get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) {
-    *expect_audio_type = AudioDataType::S16;
-    *expect_channel_count = 2;
-}
-
 void Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
-    if (data.parent->inputs.inputs.size() < 1) {
-        return;
-    }
+    // TODO: Proper implement it, for now just lower volume lol
+    float *product_before = reinterpret_cast<float *>(data.parent->products[0]);
 
-    assert(data.parent->inputs.inputs.size() == 1);
+    if (product_before) {
+        for (std::int32_t i = 0; i < data.parent->rack->system->granularity * 2; i++) {
+            product_before[i] *= 0.5f;
+        }
+    }
 
     // It should do some modifications to create 4 outputs, but I'm not sure what yet kkk
     data.parent->products[1] = data.parent->products[0];

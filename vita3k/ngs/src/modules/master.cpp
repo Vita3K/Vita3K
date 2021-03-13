@@ -8,11 +8,6 @@ Module::Module()
     : ngs::Module(ngs::BussType::BUSS_MASTER) {
 }
 
-void Module::get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) {
-    *expect_audio_type = AudioDataType::S16;
-    *expect_channel_count = 2;
-}
-
 void Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
     // Merge all voices. This buss manually outputs 2 channels
     if (data.voice_state_data.empty()) {
@@ -25,6 +20,12 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         return;
     }
 
-    std::copy(data.parent->inputs.inputs[0].data(), data.parent->inputs.inputs[0].data() + data.voice_state_data.size(), data.voice_state_data.data());
+    std::int16_t *dest_data = reinterpret_cast<std::int16_t *>(data.voice_state_data.data());
+    float *source_data = reinterpret_cast<float *>(data.parent->inputs.inputs[0].data());
+
+    // Convert FLTP to S16
+    for (std::uint32_t i = 0; i < data.parent->rack->system->granularity * 2; i++) {
+        dest_data[i] = static_cast<std::int16_t>(std::clamp(source_data[i] * 32768.0f, -32768.0f, 32767.0f));
+    }
 }
 }; // namespace ngs::master
