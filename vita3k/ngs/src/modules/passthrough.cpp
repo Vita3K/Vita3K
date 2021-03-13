@@ -17,6 +17,4 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     assert(data.parent->inputs.inputs.size() == 1);
     data.parent->products[0] = data.parent->inputs.inputs[0].data();
 }
-
-void Module::get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) {}
 } // namespace ngs::passthrough
