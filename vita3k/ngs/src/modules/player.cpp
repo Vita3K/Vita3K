@@ -33,7 +33,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
     if (static_cast<std::int32_t>(state->decoded_gran_pending) < data.parent->rack->system->granularity) {
         if (!data.extra_storage.empty()) {
-            data.extra_storage.erase(data.extra_storage.begin(), data.extra_storage.begin() + state->decoded_gran_passed * 4);
+            data.extra_storage.erase(data.extra_storage.begin(), data.extra_storage.begin() + state->decoded_gran_passed * 8);
         } else {
             if (state->current_buffer == -1) {
                 return;
@@ -46,7 +46,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
             // Ran out of data, supply new
             // Decode new data and deliver them
             // Let's open our context
-            if ((data.extra_storage.size() < data.parent->rack->system->granularity * 2 * sizeof(std::uint16_t)) && (state->current_buffer != -1)) {
+            if ((data.extra_storage.size() < data.parent->rack->system->granularity * 2 * sizeof(float)) && (state->current_buffer != -1)) {
                 decoder->source_channels = params->channels;
                 decoder->source_frequency = params->playback_frequency;
 
@@ -59,14 +59,14 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
                 const std::size_t current_count = data.extra_storage.size();
 
-                data.extra_storage.resize(current_count + samples_count.samples * sizeof(std::uint16_t));
+                data.extra_storage.resize(current_count + samples_count.samples * sizeof(float));
                 decoder->receive(current_count + data.extra_storage.data(), nullptr);
             }
 
             data_ptr = data.extra_storage.data();
 
             std::uint32_t bytes_left_in_buffer = data.extra_storage.size();
-            std::uint32_t samples_to_take_per_channel = bytes_left_in_buffer / sizeof(std::uint16_t) / 2;
+            std::uint32_t samples_to_take_per_channel = bytes_left_in_buffer / sizeof(float) / 2;
 
             state->bytes_consumed_since_key_on += params->buffer_params[state->current_buffer].bytes_count;
             state->current_byte_position_in_buffer += params->buffer_params[state->current_buffer].bytes_count;
@@ -115,7 +115,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     }
 
     std::uint32_t gran_to_be_passed = std::min<std::uint32_t>(state->decoded_gran_pending, data.parent->rack->system->granularity);
-    data_ptr += 2 * sizeof(std::int16_t) * state->decoded_gran_passed;
+    data_ptr += 2 * sizeof(float) * state->decoded_gran_passed;
 
     data.parent->products[0] = data_ptr;
 

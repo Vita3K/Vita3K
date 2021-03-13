@@ -4,21 +4,6 @@
 #include <util/log.h>
 
 namespace ngs {
-static int audio_data_type_to_byte_count(AudioDataType data_type) {
-    switch (data_type) {
-    case AudioDataType::F32:
-        return 4;
-
-    case AudioDataType::S16:
-        return 2;
-
-    default:
-        break;
-    }
-
-    return 2;
-}
-
 bool deliver_data(const MemState &mem, Voice *source, const std::uint8_t output_port,
     const std::uint8_t *output_data) {
     if (!output_data) {

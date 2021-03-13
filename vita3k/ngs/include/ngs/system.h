@@ -49,11 +49,6 @@ struct ModuleParameterHeader {
     std::int32_t channel;
 };
 
-enum AudioDataType {
-    S16 = 0,
-    F32 = 1
-};
-
 struct BufferParamsInfo {
     Ptr<void> data;
     std::uint32_t size;
@@ -115,7 +110,6 @@ struct Module {
     virtual ~Module() = default;
 
     virtual void process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) = 0;
-    virtual void get_expectation(AudioDataType *expect_audio_type, std::int16_t *expect_channel_count) = 0;
     virtual std::uint32_t module_id() const { return 0; }
     virtual std::size_t get_buffer_parameter_size() const = 0;
     virtual void on_state_change(ModuleData &v, const VoiceState previous) {}
@@ -151,9 +145,6 @@ struct Patch {
     std::int32_t output_index;
     std::int32_t output_sub_index;
     std::int32_t dest_index;
-    std::int16_t output_channels;
-    std::int16_t dest_channels;
-    AudioDataType dest_data_type;
     Voice *dest;
     Voice *source;
 

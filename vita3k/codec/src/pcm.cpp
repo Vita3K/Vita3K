@@ -220,44 +220,43 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
 
         source_transformed = reinterpret_cast<std::uint8_t *>(transformed.data());
     } else {
-        produced_samples = size / sizeof(std::uint16_t);
+        produced_samples = size / sizeof(std::int16_t) / source_channels;
     }
 
     // Try to resample if neccessary
-    if ((dest_frequency != source_frequency) || (source_channels != 2)) {
-        const int source_channel_type = (source_channels == 2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
-        const int dest_channel_type = AV_CH_LAYOUT_STEREO;
+    const int source_channel_type = (source_channels == 2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+    const int dest_channel_type = AV_CH_LAYOUT_STEREO;
 
-        SwrContext *swr = swr_alloc_set_opts(nullptr,
-            dest_channel_type, AV_SAMPLE_FMT_S16, static_cast<int>(dest_frequency),
-            source_channel_type, AV_SAMPLE_FMT_S16, static_cast<int>(source_frequency),
-            0, nullptr);
+    SwrContext *swr = swr_alloc_set_opts(nullptr,
+        dest_channel_type, AV_SAMPLE_FMT_FLT, static_cast<int>(dest_frequency),
+        source_channel_type, AV_SAMPLE_FMT_S16, static_cast<int>(source_frequency),
+        0, nullptr);
 
-        swr_init(swr);
-        const int dest_count = swr_get_out_samples(swr, produced_samples);
+    swr_init(swr);
+    const int dest_count = swr_get_out_samples(swr, produced_samples);
 
-        result.resize(dest_count * 2 * sizeof(std::uint16_t));
-        std::uint8_t *dest_data = &result[0];
-
-        const int result = swr_convert(swr, &dest_data, dest_count, (const uint8_t **)(&source_transformed), produced_samples);
-        swr_free(&swr);
-
-        assert(result > 0);
-    } else {
-        result.resize(produced_samples * sizeof(std::uint16_t));
-        std::memcpy(result.data(), source_transformed, result.size());
+    final_result.resize(dest_count * 2 * sizeof(float));
+    if (dest_count == 0) {
+        return true;
     }
+
+    std::uint8_t *dest_data = &final_result[0];
+
+    const int result = swr_convert(swr, &dest_data, dest_count, (const uint8_t **)(&source_transformed), produced_samples);
+    swr_free(&swr);
+
+    assert(result > 0);
 
     return true;
 }
 
 bool PCMDecoderState::receive(uint8_t *data, DecoderSize *size) {
     if (data) {
-        std::memcpy(data, result.data(), result.size());
+        std::memcpy(data, final_result.data(), final_result.size());
     }
 
     if (size) {
-        size->samples = result.size() / sizeof(std::uint16_t);
+        size->samples = static_cast<std::uint32_t>(final_result.size() / sizeof(float));
     }
 
     return true;

@@ -31,8 +31,8 @@ void VoiceInputManager::init(const std::uint32_t granularity, const std::uint16_
     inputs.resize(total_input);
 
     for (auto &input : inputs) {
-        // PCM16 and maximum channel count
-        input.resize(granularity * 4);
+        // FLTP and maximum channel count
+        input.resize(granularity * 8);
     }
 
     reset_inputs();
@@ -59,35 +59,14 @@ std::int32_t VoiceInputManager::receive(ngs::Patch *patch, const std::uint8_t **
         return -1;
     }
 
-    std::int16_t *dest_buffer = reinterpret_cast<std::int16_t *>(input->data());
-    const std::int16_t *data_to_mix_in = reinterpret_cast<const std::int16_t *>(*data);
+    float *dest_buffer = reinterpret_cast<float *>(input->data());
+    const float *data_to_mix_in = reinterpret_cast<const float *>(*data);
 
     // Try mixing, also with the use of this volume matrix
     // Dest is our voice to receive this data.
     for (std::int32_t k = 0; k < patch->dest->rack->system->granularity; k++) {
-        // General mixing case, pretty straight foward
-        for (std::uint8_t i = 0; i < patch->dest_channels; i++) {
-            std::int32_t sample_to_be_mixed = static_cast<std::int32_t>(data_to_mix_in[k * patch->output_channels + i]
-                * patch->volume_matrix[i][i]);
-
-            if (patch->output_channels != patch->dest_channels) {
-                if ((patch->output_channels == 2) && (patch->dest_channels == 1)) {
-                    sample_to_be_mixed = static_cast<std::int32_t>((sample_to_be_mixed + data_to_mix_in[k * 2 + 1] * patch->volume_matrix[1][0]) / 2);
-                } else {
-                    sample_to_be_mixed = static_cast<std::int32_t>(data_to_mix_in[k] * patch->volume_matrix[0][i]);
-                }
-            }
-
-            std::int32_t mixed_sample = dest_buffer[k * patch->dest_channels + i] + sample_to_be_mixed;
-
-            if (mixed_sample > 32767)
-                mixed_sample = 32767;
-
-            if (mixed_sample < -32768)
-                mixed_sample = -32768;
-
-            dest_buffer[k * patch->dest_channels + i] = mixed_sample;
-        }
+        dest_buffer[k * 2] = std::clamp(dest_buffer[k * 2] + data_to_mix_in[k * 2] * patch->volume_matrix[0][0], -1.0f, 1.0f);
+        dest_buffer[k * 2 + 1] = std::clamp(dest_buffer[k * 2 + 1] + data_to_mix_in[k * 2 + 1] * patch->volume_matrix[1][1], -1.0f, 1.0f);
     }
 
     return 0;
@@ -203,30 +182,6 @@ Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int3
     patch->dest_index = dest_index;
     patch->dest = dest;
     patch->source = this;
-
-    // Default output channel count
-    patch->output_channels = 2;
-
-    AudioDataType source_data_type;
-    for (auto &module : rack->modules) {
-        if (module) {
-            // Get the first module that accept inputs
-            module->get_expectation(&source_data_type, &patch->output_channels);
-            break;
-        }
-    }
-
-    // Set default value
-    patch->dest_data_type = AudioDataType::S16;
-    patch->dest_channels = 2;
-
-    // Find the last module that is available from dest voice, to get expectation...
-    for (std::size_t i = dest->rack->modules.size(); i >= 1; i--) {
-        if (dest->rack->modules[i - 1]) {
-            dest->rack->modules[i - 1]->get_expectation(&patch->dest_data_type, &patch->dest_channels);
-            break;
-        }
-    }
 
     // Initialize the matrix
     patch->volume_matrix[0][1] = 1.0f;

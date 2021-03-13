@@ -118,7 +118,7 @@ struct Mp3DecoderState : public DecoderState {
 
 struct PCMDecoderState : public DecoderState {
 private:
-    std::vector<std::uint8_t> result;
+    std::vector<std::uint8_t> final_result;
     float dest_frequency;
 
     std::int32_t adpcm_history1;
