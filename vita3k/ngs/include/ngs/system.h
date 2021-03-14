@@ -17,7 +17,8 @@ struct KernelState;
 
 namespace ngs {
 // random number of bytes to make sure nothing bad happens
-constexpr size_t default_parameter_size = 128;
+constexpr size_t default_passthrough_parameter_size = 140;
+constexpr size_t default_normal_parameter_size = 100;
 
 enum VoiceState {
     VOICE_STATE_AVAILABLE = 1 << 0,
