@@ -11,7 +11,7 @@ std::size_t Module::get_buffer_parameter_size() const {
 
 void Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
     // TODO: Proper implement it, for now just lower volume lol
-    float *product_before = reinterpret_cast<float *>(data.parent->products[0]);
+    float *product_before = reinterpret_cast<float *>(data.parent->products[0].data);
 
     if (product_before) {
         for (std::int32_t i = 0; i < data.parent->rack->system->granularity * 2; i++) {

@@ -52,7 +52,7 @@ VoiceInputManager::PCMInput *VoiceInputManager::get_input_buffer_queue(const std
     return &inputs[index];
 }
 
-std::int32_t VoiceInputManager::receive(ngs::Patch *patch, const std::uint8_t **data) {
+std::int32_t VoiceInputManager::receive(ngs::Patch *patch, const VoiceProduct &product) {
     PCMInput *input = get_input_buffer_queue(patch->dest_index);
 
     if (!input) {
@@ -60,13 +60,15 @@ std::int32_t VoiceInputManager::receive(ngs::Patch *patch, const std::uint8_t **
     }
 
     float *dest_buffer = reinterpret_cast<float *>(input->data());
-    const float *data_to_mix_in = reinterpret_cast<const float *>(*data);
+    const float *data_to_mix_in = reinterpret_cast<const float *>(product.data);
 
     // Try mixing, also with the use of this volume matrix
     // Dest is our voice to receive this data.
     for (std::int32_t k = 0; k < patch->dest->rack->system->granularity; k++) {
-        dest_buffer[k * 2] = std::clamp(dest_buffer[k * 2] + data_to_mix_in[k * 2] * patch->volume_matrix[0][0], -1.0f, 1.0f);
-        dest_buffer[k * 2 + 1] = std::clamp(dest_buffer[k * 2 + 1] + data_to_mix_in[k * 2 + 1] * patch->volume_matrix[1][1], -1.0f, 1.0f);
+        dest_buffer[k * 2] = std::clamp(dest_buffer[k * 2] + data_to_mix_in[k * 2] * patch->volume_matrix[0][0]
+                + data_to_mix_in[k * 2 + 1] * patch->volume_matrix[1][0],
+            -1.0f, 1.0f);
+        dest_buffer[k * 2 + 1] = std::clamp(dest_buffer[k * 2 + 1] + data_to_mix_in[k * 2] * patch->volume_matrix[0][1] + data_to_mix_in[k * 2 + 1] * patch->volume_matrix[1][1], -1.0f, 1.0f);
     }
 
     return 0;
@@ -194,9 +196,9 @@ Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int3
     patch->source = this;
 
     // Initialize the matrix
-    patch->volume_matrix[0][1] = 1.0f;
+    patch->volume_matrix[0][1] = 0.0f;
     patch->volume_matrix[0][0] = 1.0f;
-    patch->volume_matrix[1][0] = 1.0f;
+    patch->volume_matrix[1][0] = 0.0f;
     patch->volume_matrix[1][1] = 1.0f;
 
     return patches[index][subindex];

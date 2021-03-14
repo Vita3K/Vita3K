@@ -15,6 +15,6 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     }
 
     assert(data.parent->inputs.inputs.size() == 1);
-    data.parent->products[0] = data.parent->inputs.inputs[0].data();
+    data.parent->products[0].data = data.parent->inputs.inputs[0].data();
 }
 } // namespace ngs::passthrough
