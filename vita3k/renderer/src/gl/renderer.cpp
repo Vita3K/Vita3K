@@ -492,6 +492,9 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     case SCE_GXM_COLOR_FORMAT_F16F16F16F16_ABGR:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_HALF_FLOAT, pixels);
         break;
+    case SCE_GXM_COLOR_FORMAT_F16F16F16F16_ARGB:
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_BGRA, GL_HALF_FLOAT, pixels);
+        break;
     case SCE_GXM_COLOR_FORMAT_F32F32_GR:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RG, GL_FLOAT, pixels);
         break;
