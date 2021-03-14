@@ -5,8 +5,8 @@
 
 namespace ngs {
 bool deliver_data(const MemState &mem, Voice *source, const std::uint8_t output_port,
-    const std::uint8_t *output_data) {
-    if (!output_data) {
+    const VoiceProduct &data_to_deliver) {
+    if (!data_to_deliver.data) {
         return false;
     }
 
@@ -17,9 +17,9 @@ bool deliver_data(const MemState &mem, Voice *source, const std::uint8_t output_
             continue;
         }
 
-        if (output_data != nullptr) {
+        if (data_to_deliver.data != nullptr) {
             const std::lock_guard<std::mutex> guard(*patch->dest->voice_lock);
-            patch->dest->inputs.receive(patch, &output_data);
+            patch->dest->inputs.receive(patch, data_to_deliver);
         }
     }
 
