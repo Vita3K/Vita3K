@@ -23,14 +23,19 @@
 
 #define SCE_NGS_MAX_SYSTEM_CHANNELS 2
 
+using SceNgsSynthSystemHandle = Ptr<ngs::System>;
+using SceNgsRackHandle = Ptr<ngs::Rack>;
+using SceNgsVoiceHandle = Ptr<ngs::Voice>;
+using SceNgsPatchHandle = Ptr<ngs::Patch>;
+
 struct SceNgsVolumeMatrix {
     SceFloat32 matrix[SCE_NGS_MAX_SYSTEM_CHANNELS][SCE_NGS_MAX_SYSTEM_CHANNELS];
 };
 
-struct SceNgsPatchInfo1 {
-    std::int32_t out_channels;
-    std::int32_t in_channels;
-    float unk[3];
+struct SceNgsPatchAudioPropInfo {
+    SceInt32 out_channels;
+    SceInt32 in_channels;
+    SceNgsVolumeMatrix volume_matrix;
 };
 
 struct SceNgsVoiceInfo {
@@ -42,17 +47,17 @@ struct SceNgsVoiceInfo {
     SceUInt32 update_passed;
 };
 
-static_assert(sizeof(SceNgsPatchInfo1) == 20);
+static_assert(sizeof(SceNgsPatchAudioPropInfo) == 24);
 
-struct SceNgsPatchInfo2 {
-    std::int32_t unk[5];
+struct SceNgsPatchDeliveryInfo {
+    SceNgsVoiceHandle source_voice_handle;
+    SceInt32 output_index;
+    SceInt32 output_subindex;
+    SceNgsVoiceHandle dest_voice_handle;
+    SceInt32 input_index;
 };
-static_assert(sizeof(SceNgsPatchInfo2) == 20);
 
-using SceNgsSynthSystemHandle = Ptr<ngs::System>;
-using SceNgsRackHandle = Ptr<ngs::Rack>;
-using SceNgsVoiceHandle = Ptr<ngs::Voice>;
-using SceNgsPatchHandle = Ptr<ngs::Patch>;
+static_assert(sizeof(SceNgsPatchDeliveryInfo) == 20);
 
 static constexpr SceUInt32 SCE_NGS_OK = 0;
 static constexpr SceUInt32 SCE_NGS_ERROR = 0x804A0001;
@@ -113,13 +118,32 @@ EXPORT(int, sceNgsPatchCreateRouting, ngs::PatchSetupInfo *patch_info, SceNgsPat
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsPatchGetInfo, std::uint32_t patch, Ptr<SceNgsPatchInfo1> patch_info1_, Ptr<SceNgsPatchInfo2> patch_info2_) {
-    auto *patch_info1 = patch_info1_.get(host.mem);
+EXPORT(int, sceNgsPatchGetInfo, SceNgsPatchHandle patch_handle, SceNgsPatchAudioPropInfo *prop_info, SceNgsPatchDeliveryInfo *deli_info) {
+    ngs::Patch *patch = patch_handle.get(host.mem);
+    if (!patch) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
 
-    patch_info1->in_channels = 2;
-    patch_info1->out_channels = 2;
+    // Always stereo
+    if (prop_info) {
+        prop_info->in_channels = 2;
+        prop_info->out_channels = 2;
 
-    return STUBBED("2 in/out channels");
+        prop_info->volume_matrix.matrix[0][0] = patch->volume_matrix[0][0];
+        prop_info->volume_matrix.matrix[0][1] = patch->volume_matrix[0][1];
+        prop_info->volume_matrix.matrix[1][0] = patch->volume_matrix[1][0];
+        prop_info->volume_matrix.matrix[1][1] = patch->volume_matrix[1][1];
+    }
+
+    if (deli_info) {
+        deli_info->input_index = patch->dest_index;
+        deli_info->output_index = patch->output_index;
+        deli_info->output_subindex = patch->output_sub_index;
+        deli_info->source_voice_handle = Ptr<ngs::Voice>(patch->source, host.mem);
+        deli_info->dest_voice_handle = Ptr<ngs::Voice>(patch->dest, host.mem);
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceNgsPatchRemoveRouting, SceNgsPatchHandle patch_handle) {
