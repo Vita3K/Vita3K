@@ -21,6 +21,12 @@
 
 #include "SceNgs.h"
 
+#define SCE_NGS_MAX_SYSTEM_CHANNELS 2
+
+struct SceNgsVolumeMatrix {
+    SceFloat32 matrix[SCE_NGS_MAX_SYSTEM_CHANNELS][SCE_NGS_MAX_SYSTEM_CHANNELS];
+};
+
 struct SceNgsPatchInfo1 {
     std::int32_t out_channels;
     std::int32_t in_channels;
@@ -533,8 +539,20 @@ EXPORT(int, sceNgsVoicePatchSetVolumes) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoicePatchSetVolumesMatrix) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceNgsVoicePatchSetVolumesMatrix, SceNgsPatchHandle patch_handle, const SceNgsVolumeMatrix *matrix) {
+    if (host.cfg.disable_ngs)
+        return 0;
+
+    ngs::Patch *patch = patch_handle.get(host.mem);
+    if (!patch || patch->output_sub_index == -1)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    patch->volume_matrix[0][0] = matrix->matrix[0][0];
+    patch->volume_matrix[0][1] = matrix->matrix[0][1];
+    patch->volume_matrix[1][0] = matrix->matrix[1][0];
+    patch->volume_matrix[1][1] = matrix->matrix[1][1];
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsVoicePause, SceNgsVoiceHandle handle) {
