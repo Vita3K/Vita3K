@@ -117,7 +117,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     std::uint32_t gran_to_be_passed = std::min<std::uint32_t>(state->decoded_gran_pending, data.parent->rack->system->granularity);
     data_ptr += 2 * sizeof(float) * state->decoded_gran_passed;
 
-    data.parent->products[0] = data_ptr;
+    data.parent->products[0].data = data_ptr;
 
     state->decoded_gran_pending = (state->decoded_gran_pending < state->decoded_gran_passed) ? 0 : (state->decoded_gran_pending - gran_to_be_passed);
     state->decoded_gran_passed += gran_to_be_passed;

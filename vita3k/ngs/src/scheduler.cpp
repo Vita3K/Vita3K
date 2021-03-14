@@ -2,6 +2,7 @@
 #include <ngs/system.h>
 
 #include <algorithm>
+#include <cstring>
 
 namespace ngs {
 bool VoiceScheduler::deque_voice_impl(Voice *voice) {
@@ -116,7 +117,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
     for (ngs::Voice *voice : queue) {
         // Modify the state, in peace....
         const std::lock_guard<std::mutex> guard(*voice->voice_lock);
-        std::fill(voice->products, voice->products + sizeof(voice->products) / sizeof(std::uint8_t *), nullptr);
+        std::memset(voice->products, 0, sizeof(voice->products));
 
         voice->transition(ngs::VOICE_STATE_ACTIVE);
 
@@ -127,7 +128,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         }
 
         for (std::size_t i = 0; i < voice->rack->vdef->output_count(); i++) {
-            if (voice->products[i])
+            if (voice->products[i].data)
                 deliver_data(mem, voice, static_cast<std::uint8_t>(i), voice->products[i]);
         }
 

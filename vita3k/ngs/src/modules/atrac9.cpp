@@ -185,7 +185,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     std::uint8_t *data_ptr = data.extra_storage.data() + params->channels * sizeof(float) * state->decoded_passed;
     std::uint32_t samples_to_be_passed = data.parent->rack->system->granularity;
 
-    data.parent->products[0] = data_ptr;
+    data.parent->products[0].data = data_ptr;
 
     state->decoded_samples_pending = (state->decoded_samples_pending < samples_to_be_passed) ? 0 : (state->decoded_samples_pending - samples_to_be_passed);
     state->decoded_passed += samples_to_be_passed;

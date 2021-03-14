@@ -164,6 +164,11 @@ struct RackDescription {
 
 struct Rack;
 
+struct VoiceProduct {
+    std::uint8_t reserved[2];
+    std::uint8_t *data;
+};
+
 struct VoiceInputManager {
     using PCMInput = std::vector<std::uint8_t>;
     using PCMInputs = std::vector<PCMInput>;
@@ -174,7 +179,7 @@ struct VoiceInputManager {
     void reset_inputs();
 
     PCMInput *get_input_buffer_queue(const std::int32_t index);
-    std::int32_t receive(Patch *patch, const std::uint8_t **data);
+    std::int32_t receive(Patch *patch, const VoiceProduct &data);
 };
 
 struct Voice {
@@ -191,7 +196,7 @@ struct Voice {
     VoiceInputManager inputs;
 
     std::unique_ptr<std::mutex> voice_lock;
-    std::uint8_t *products[MAX_VOICE_OUTPUT];
+    VoiceProduct products[MAX_VOICE_OUTPUT];
 
     void init(Rack *mama);
 
@@ -234,7 +239,7 @@ struct System : public MempoolObject {
 };
 
 bool deliver_data(const MemState &mem, Voice *source, const std::uint8_t output_port,
-    const std::uint8_t *data_to_deliver);
+    const VoiceProduct &data_to_deliver);
 
 bool init_system(State &ngs, const MemState &mem, SystemInitParameters *parameters, Ptr<void> memspace, const std::uint32_t memspace_size);
 bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo *init_info, const RackDescription *description);
