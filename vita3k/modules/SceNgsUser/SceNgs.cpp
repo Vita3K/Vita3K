@@ -454,8 +454,32 @@ EXPORT(int, sceNgsVoiceGetModuleType) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoiceGetOutputPatch) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceNgsVoiceGetOutputPatch, SceNgsVoiceHandle voice_handle, const SceInt32 output_index, const SceInt32 output_subindex, SceNgsPatchHandle *handle) {
+    if (host.cfg.disable_ngs) {
+        return 0;
+    }
+
+    ngs::Voice *voice = voice_handle.get(host.mem);
+
+    if (!voice || !handle) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    if ((output_subindex < 0) || (output_index < 0)) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    if ((output_index >= static_cast<SceInt32>(voice->rack->vdef->output_count())) || (output_subindex >= voice->rack->patches_per_output)) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    *handle = voice->patches[output_index][output_subindex];
+    if (!(*handle) || (handle->get(host.mem))->output_sub_index == -1) {
+        LOG_WARN("Getting non-existen output patch port {}:{}", output_index, output_subindex);
+        *handle = 0;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceNgsVoiceGetParamsOutOfRange) {
