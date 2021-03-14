@@ -204,13 +204,19 @@ Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int3
 
 bool Voice::remove_patch(const MemState &mem, const Ptr<Patch> patch) {
     const std::lock_guard<std::mutex> guard(*voice_lock);
+    bool found = false;
+
     for (std::uint8_t i = 0; i < patches.size(); i++) {
         auto iterator = std::find(patches[i].begin(), patches[i].end(), patch);
 
-        if (iterator == patches[i].end()) {
-            return false;
+        if (iterator != patches[i].end()) {
+            found = true;
+            break;
         }
     }
+
+    if (!found)
+        return false;
 
     // Try to unroute. Free the destination index
     Patch *patch_info = patch.get(mem);
