@@ -337,7 +337,7 @@ bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo
             if (rack->modules[i]) {
                 v->datas[i].info.size = static_cast<std::uint32_t>(rack->modules[i]->get_buffer_parameter_size());
             } else {
-                v->datas[i].info.size = default_parameter_size;
+                v->datas[i].info.size = default_normal_parameter_size;
             }
 
             v->datas[i].info.data = rack->alloc_raw(v->datas[i].info.size);

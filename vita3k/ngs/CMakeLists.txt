@@ -9,6 +9,7 @@ add_library(
 	include/ngs/modules/atrac9.h
 	include/ngs/modules/equalizer.h
 	include/ngs/modules/master.h
+	include/ngs/modules/null.h
 	include/ngs/modules/player.h
 	include/ngs/modules/passthrough.h
 	include/ngs/common.h
@@ -24,6 +25,7 @@ add_library(
 	src/modules/atrac9.cpp
 	src/modules/equalizer.cpp
 	src/modules/master.cpp
+	src/modules/null.cpp
 	src/modules/player.cpp
 	src/modules/passthrough.cpp
 	src/ngs.cpp
