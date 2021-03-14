@@ -4,14 +4,12 @@
 namespace ngs::passthrough {
 void VoiceDefinition::new_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) {
     mods.push_back(std::make_unique<Module>());
-
-    // Reserve some spaces
-    for (int i = 0; i < 9; i++) {
-        mods.push_back(nullptr);
-    }
+    mods.push_back(std::make_unique<Module>());
+    mods.push_back(std::make_unique<Module>());
+    mods.push_back(std::make_unique<Module>());
 }
 
 std::size_t VoiceDefinition::get_total_buffer_parameter_size() const {
-    return default_parameter_size * 10;
+    return default_passthrough_parameter_size * 4;
 }
 } // namespace ngs::passthrough

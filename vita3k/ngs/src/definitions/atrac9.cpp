@@ -14,6 +14,6 @@ void VoiceDefinition::new_modules(std::vector<std::unique_ptr<ngs::Module>> &mod
 }
 
 std::size_t VoiceDefinition::get_total_buffer_parameter_size() const {
-    return sizeof(Parameters) + default_parameter_size * 9;
+    return sizeof(Parameters) + default_normal_parameter_size * 9;
 }
 }; // namespace ngs::atrac9

@@ -17,7 +17,7 @@ void PlayerVoiceDefinition::new_modules(std::vector<std::unique_ptr<ngs::Module>
 }
 
 std::size_t PlayerVoiceDefinition::get_total_buffer_parameter_size() const {
-    return sizeof(ngs::player::Parameters) + default_parameter_size * 5;
+    return sizeof(ngs::player::Parameters) + default_normal_parameter_size * 5;
 }
 
 void Atrac9VoiceDefinition::new_modules(std::vector<std::unique_ptr<ngs::Module>> &mods) {
@@ -32,7 +32,7 @@ void Atrac9VoiceDefinition::new_modules(std::vector<std::unique_ptr<ngs::Module>
 }
 
 std::size_t Atrac9VoiceDefinition::get_total_buffer_parameter_size() const {
-    return sizeof(ngs::atrac9::Parameters) + default_parameter_size * 5;
+    return sizeof(ngs::atrac9::Parameters) + default_normal_parameter_size * 5;
 }
 
 } // namespace ngs::simple
