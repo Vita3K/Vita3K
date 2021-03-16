@@ -368,13 +368,13 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     translation_state.frag_coord_id = current_coord;
 
     // Store the coords
-    std::array<shader::usse::Coord, 10> coords;
+    std::array<shader::usse::Coord, 11> coords;
 
     // It may actually be total fragments input
     for (size_t i = 0; i < vertex_varyings_ptr->varyings_count; i++, descriptor++) {
         // 4 bit flag indicates a PA!
         if ((descriptor->attribute_info & 0x4000F000) != 0xF000) {
-            const uint32_t input_id = (descriptor->attribute_info & 0x4000F000);
+            std::uint32_t input_id = (descriptor->attribute_info & 0x4000F000);
 
             std::string pa_name;
             std::uint32_t pa_loc = 0;
@@ -434,9 +434,20 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             translation_state.interfaces.push_back(pa_iter_var);
             LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
 
+            bool do_coord = false;
+
             if (input_id >= 0 && input_id <= 0x9000) {
-                coords[input_id / 0x1000].first = pa_iter_var;
-                coords[input_id / 0x1000].second = static_cast<int>(pa_dtype);
+                input_id /= 0x1000;
+                do_coord = true;
+            } else if (input_id == 0xD000) {
+                // Not sure, comment out for now
+                //input_id = 10;
+                //do_coord = true;
+            }
+
+            if (do_coord) {
+                coords[input_id].first = pa_iter_var;
+                coords[input_id].second = static_cast<int>(pa_dtype);
             }
 
             pa_offset += ((descriptor->size >> 4) & 3) + 1;
@@ -446,6 +457,11 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
         // Process texture query variable (iterator), stored on a PA (primary attribute) register
         if (tex_coord_index != 0xF) {
+            if (tex_coord_index == 0x400) {
+                // Texcoord variable
+                tex_coord_index = 10;
+            }
+
             std::string tex_name = "";
             std::string sampling_type = "2D";
             uint32_t sampler_resource_index = 0;
@@ -537,7 +553,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 num_component = 4;
             }
 
-            std::string texcoord_name = "TEXCOORD" + std::to_string(tex_coord_index);
+            std::string texcoord_name = (tex_coord_index == 10) ? "POINTCOORD" : ("TEXCOORD" + std::to_string(tex_coord_index));
             LOG_TRACE("pa{} = tex{}{}<{}{}>({}, {}{}{})", pa_offset, sampling_type, projecting,
                 component_type_str, num_component, tex_name, texcoord_name, centroid_str, swizzle_str);
 
@@ -574,10 +590,19 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             // Create an 'in' variable
             // TODO: this really right?
             std::string coord_name = "v_TexCoord";
-            coord_name += std::to_string(query_info.coord_index);
+
+            if (query_info.coord_index == 10) {
+                coord_name = "gl_PointCoord";
+            } else {
+                coord_name += std::to_string(query_info.coord_index);
+            }
 
             coords[query_info.coord_index].first = b.createVariable(spv::StorageClassInput,
                 b.makeVectorType(b.makeFloatType(32), /*tex_coord_comp_count*/ 4), coord_name.c_str());
+
+            if (query_info.coord_index == 10) {
+                b.addDecoration(coords[query_info.coord_index].first, spv::DecorationBuiltIn, spv::BuiltInPointCoord);
+            }
 
             b.addDecoration(coords[query_info.coord_index].first, spv::DecorationLocation, TEXCOORD_BASE_LOCATION + query_info.coord_index);
             translation_state.interfaces.push_back(coords[query_info.coord_index].first);
@@ -1497,8 +1522,9 @@ std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string 
 
     const auto source = convert_spirv_to_glsl(shader_name, spirv_binary, features, translation_state);
 
-    if (LOG_SHADER_CODE || force_shader_debug)
+    if (LOG_SHADER_CODE || force_shader_debug) {
         LOG_DEBUG("Generated GLSL:\n{}", source);
+    }
 
     if (dumper) {
         if (program.is_fragment()) {
