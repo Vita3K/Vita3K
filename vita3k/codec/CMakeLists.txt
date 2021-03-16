@@ -3,6 +3,7 @@ add_library(codec STATIC
 
     src/atrac9.cpp
     src/decoder.cpp
+    src/aac.cpp
     src/h264.cpp
     src/mjpeg.cpp
     src/mp3.cpp

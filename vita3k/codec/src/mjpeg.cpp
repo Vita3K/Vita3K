@@ -50,7 +50,7 @@ bool MjpegDecoderState::send(const uint8_t *data, uint32_t size) {
     av_packet_free(&packet);
 
     if (error < 0) {
-        LOG_WARN("Error sending Mjpeg packet: {}.", log_hex(static_cast<uint32_t>(error)));
+        LOG_WARN("Error sending Mjpeg packet: {}.", codec_error_name(error));
         return false;
     }
     return true;
@@ -60,7 +60,7 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
     AVFrame *frame = av_frame_alloc();
     int error = avcodec_receive_frame(context, frame);
     if (error < 0) {
-        LOG_WARN("Error receiving Mjpeg frame: {}.", log_hex(static_cast<uint32_t>(error)));
+        LOG_WARN("Error receiving Mjpeg frame: {}.", codec_error_name(error));
         av_frame_free(&frame);
         return false;
     }

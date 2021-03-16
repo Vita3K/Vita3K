@@ -2,11 +2,13 @@
 
 #include <array>
 #include <cstdint>
+#include <memory>
 #include <queue>
 #include <string>
 
 struct AVFrame;
 struct AVPacket;
+struct AVIOContext;
 struct AVCodecContext;
 struct AVFormatContext;
 struct AVCodecParserContext;
@@ -86,8 +88,6 @@ struct MjpegDecoderState : public DecoderState {
 };
 
 struct Atrac9DecoderState : public DecoderState {
-    AVCodecContext *context{};
-
     uint32_t config_data;
 
     uint32_t get_channel_count();
@@ -114,6 +114,29 @@ struct Mp3DecoderState : public DecoderState {
     bool receive(uint8_t *data, DecoderSize *size) override;
 
     explicit Mp3DecoderState(uint32_t channels);
+};
+
+struct AacDecoderState : public DecoderState {
+    std::shared_ptr<uint8_t> io_buffer;
+    std::shared_ptr<AVIOContext> io_context;
+
+    int stream_id = -1;
+    std::shared_ptr<AVFormatContext> format_context;
+
+    // Stores previous packet data that has not been used yet by the format context.
+    // Temporary workaround for the Codec API.
+    uint32_t packet_coarse_index = 0;
+    uint32_t packet_fine_index = 0;
+    std::vector<std::vector<uint8_t>> packet_cache;
+
+    size_t read_packet_cache(uint8_t *data, size_t size);
+
+    uint32_t get(DecoderQuery query) override;
+
+    bool send(const uint8_t *data, uint32_t size) override;
+    bool receive(uint8_t *data, DecoderSize *size) override;
+
+    explicit AacDecoderState(uint32_t sample_rate, uint32_t channels);
 };
 
 struct PlayerState {
@@ -155,5 +178,6 @@ struct PlayerState {
 };
 
 void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height);
-void convert_f32_to_s16(const float *f32, int16_t *s16, uint32_t channels, uint32_t samples, uint32_t freq);
+void convert_f32_to_s16(const float *f32, int16_t *s16, uint32_t dest_channels, uint32_t source_channels, uint32_t samples, uint32_t freq);
 void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest);
+std::string codec_error_name(int error);

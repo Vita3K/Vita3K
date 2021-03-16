@@ -126,7 +126,7 @@ bool Atrac9DecoderState::send(const uint8_t *data, uint32_t size) {
     int err = avcodec_send_packet(context, packet);
     av_packet_free(&packet);
     if (err < 0) {
-        LOG_WARN("Error sending Atrac9 packet: {}.", log_hex(static_cast<uint32_t>(err)));
+        LOG_WARN("Error sending Atrac9 packet: {}.", codec_error_name(err));
         return false;
     }
 
@@ -138,7 +138,7 @@ bool Atrac9DecoderState::receive(uint8_t *data, DecoderSize *size) {
 
     int err = avcodec_receive_frame(context, frame);
     if (err < 0) {
-        LOG_WARN("Error receiving Atrac9 frame: {}.", log_hex(static_cast<uint32_t>(err)));
+        LOG_WARN("Error receiving Atrac9 frame: {}.", codec_error_name(err));
         av_frame_free(&frame);
         return false;
     }
@@ -149,8 +149,9 @@ bool Atrac9DecoderState::receive(uint8_t *data, DecoderSize *size) {
     if (data) {
         convert_f32_to_s16(
             reinterpret_cast<float *>(frame->extended_data),
-            reinterpret_cast<int16_t *>(data), 2,
-            frame->channels, frame->nb_samples, frame->sample_rate);
+            reinterpret_cast<int16_t *>(data),
+            2, frame->channels,
+            frame->nb_samples, frame->sample_rate);
     }
 
     if (size) {

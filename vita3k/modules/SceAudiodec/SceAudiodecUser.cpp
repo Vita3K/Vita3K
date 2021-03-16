@@ -47,7 +47,7 @@ struct SceAudiodecInfoMp3 {
 struct SceAudiodecInfoAac {
     uint32_t is_adts;
     uint32_t channels;
-    uint32_t sample_ate;
+    uint32_t sample_rate;
     uint32_t is_sbr;
 };
 
@@ -81,11 +81,10 @@ struct SceAudiodecCtrl {
     Ptr<SceAudiodecInfo> info;
 };
 
-EXPORT(int, sceAudiodecClearContext) {
-    return UNIMPLEMENTED();
-}
+constexpr size_t NORMAL_ES_BUFFER_SIZE = KB(8);
+constexpr size_t NORMAL_PCM_BUFFER_SIZE = KB(4);
 
-EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec) {
+static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec) {
     std::lock_guard<std::mutex> lock(host.kernel.mutex);
 
     SceUID handle = host.kernel.get_next_uid();
@@ -107,6 +106,17 @@ EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec co
         info.frames_in_super_frame = decoder->get(DecoderQuery::AT9_FRAMES_IN_SUPERFRAME);
         return 0;
     }
+    case SCE_AUDIODEC_TYPE_AAC: {
+        SceAudiodecInfoAac &info = ctrl->info.get(host.mem)->aac;
+        DecoderPtr decoder = std::make_shared<AacDecoderState>(info.sample_rate, info.channels);
+        host.kernel.decoders[handle] = decoder;
+
+        ctrl->es_size_max = NORMAL_ES_BUFFER_SIZE;
+        ctrl->pcm_size_max = NORMAL_PCM_BUFFER_SIZE;
+        // no outs :O
+
+        return 0;
+    }
     case SCE_AUDIODEC_TYPE_MP3: {
         SceAudiodecInfoMp3 &info = ctrl->info.get(host.mem)->mp3;
         DecoderPtr decoder = std::make_shared<Mp3DecoderState>(info.channels);
@@ -123,7 +133,8 @@ EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec co
             ctrl->pcm_size_max = 576 * info.channels * sizeof(int16_t);
             return 0;
         default:
-            return RET_ERROR(SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION);
+            LOG_ERROR("Invalid MPEG version {}.", log_hex(info.version));
+            return SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION;
         }
     }
     default: {
@@ -133,8 +144,19 @@ EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec co
     }
 }
 
-EXPORT(int, sceAudiodecCreateDecoderExternal) {
+EXPORT(int, sceAudiodecClearContext) {
     return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec) {
+    return create_decoder(host, ctrl, codec);
+}
+
+EXPORT(int, sceAudiodecCreateDecoderExternal, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec, void *context, uint32_t size) {
+    // I think context is supposed to be just extra memory where I can allocate my context.
+    // I'm just going to allocate like regular sceAudiodecCreateDecoder and see how it goes.
+    // Almost sure zang has already tried this so :/ - desgroup
+    return create_decoder(host, ctrl, codec);
 }
 
 EXPORT(int, sceAudiodecCreateDecoderResident) {
@@ -174,8 +196,11 @@ EXPORT(int, sceAudiodecDeleteDecoder, SceAudiodecCtrl *ctrl) {
     return 0;
 }
 
-EXPORT(int, sceAudiodecDeleteDecoderExternal) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAudiodecDeleteDecoderExternal, SceAudiodecCtrl *ctrl, void *context) {
+    std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    host.kernel.decoders.erase(ctrl->handle);
+
+    return 0;
 }
 
 EXPORT(int, sceAudiodecDeleteDecoderResident) {

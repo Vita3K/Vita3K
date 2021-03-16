@@ -54,7 +54,7 @@ bool H264DecoderState::send(const uint8_t *data, uint32_t size) {
         0 // int64_t pos
     );
     if (error < 0) {
-        LOG_WARN("Error parsing H264 packet: {}.", log_hex(static_cast<uint32_t>(error)));
+        LOG_WARN("Error parsing H264 packet: {}.", codec_error_name(error));
         av_packet_free(&packet);
         return false;
     }
@@ -62,7 +62,7 @@ bool H264DecoderState::send(const uint8_t *data, uint32_t size) {
     error = avcodec_send_packet(context, packet);
     av_packet_free(&packet);
     if (error < 0) {
-        LOG_WARN("Error sending H264 packet: {}.", log_hex(static_cast<uint32_t>(error)));
+        LOG_WARN("Error sending H264 packet: {}.", codec_error_name(error));
         return false;
     }
 
@@ -74,7 +74,7 @@ bool H264DecoderState::receive(uint8_t *data, DecoderSize *size) {
 
     int error = avcodec_receive_frame(context, frame);
     if (error < 0) {
-        LOG_WARN("Error receiving H264 frame: {}.", log_hex(static_cast<uint32_t>(error)));
+        LOG_WARN("Error receiving H264 frame: {}.", codec_error_name(error));
         av_frame_free(&frame);
         return false;
     }
