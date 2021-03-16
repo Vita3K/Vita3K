@@ -126,62 +126,6 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     }
     // data can be empty to be filled out later.
 
-    // Add supported formats here
-
-    switch (tex_format) {
-    case SCE_GXM_TEXTURE_FORMAT_X8U8U8U8_1BGR:
-    case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ARGB:
-    case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB:
-    case SCE_GXM_TEXTURE_FORMAT_U4U4U4U4_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_U1U5U5U5_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_U5U6U5_BGR:
-    case SCE_GXM_TEXTURE_FORMAT_U5U6U5_RGB:
-    case SCE_GXM_TEXTURE_FORMAT_U8U8U8_BGR:
-    case SCE_GXM_TEXTURE_FORMAT_U8_R111:
-    case SCE_GXM_TEXTURE_FORMAT_U8_111R:
-    case SCE_GXM_TEXTURE_FORMAT_U8_1RRR:
-    case SCE_GXM_TEXTURE_FORMAT_UBC1_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_UBC2_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_UBC3_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_PVRT2BPP_1BGR:
-    case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_PVRT4BPP_1BGR:
-    case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_PVRTII2BPP_1BGR:
-    case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR:
-    case SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_1BGR:
-        break;
-
-    default:
-        if (gxm::is_paletted_format(tex_format)) {
-            switch (tex_format) {
-            case SCE_GXM_TEXTURE_FORMAT_P8_ABGR:
-            case SCE_GXM_TEXTURE_FORMAT_P8_1BGR:
-            case SCE_GXM_TEXTURE_FORMAT_P4_ABGR:
-                break;
-            default:
-                LOG_WARN("Initialized texture with untested paletted texture format: {}", log_hex(tex_format));
-            }
-        } else if (gxm::is_yuv_format(tex_format)) {
-            switch (tex_format) {
-            case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC1:
-            case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC1:
-            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC0:
-            case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1:
-            case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1:
-                break;
-            default:
-                LOG_WARN("Initialized texture with untested YUV texture format: {}", log_hex(tex_format));
-            }
-        } else
-            LOG_ERROR("Initialized texture with unsupported texture format: {}", log_hex(tex_format));
-    }
-
     texture->mip_count = std::min<std::uint32_t>(0, mipCount - 1);
     texture->format0 = (tex_format & 0x80000000) >> 31;
     texture->lod_bias = 31;
