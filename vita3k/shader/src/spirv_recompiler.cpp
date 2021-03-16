@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2021 Vita3K team
 // Copyright (c) 2002-2011 The ANGLE Project Authors.
 //
 // This program is free software; you can redistribute it and/or modify
@@ -65,7 +65,7 @@ static constexpr int REG_I_COUNT = 3 * 4;
 static constexpr int REG_TEMP_COUNT = 20 * 4;
 static constexpr int REG_INDEX_COUNT = 2 * 4;
 static constexpr int REG_PRED_COUNT = 4 * 4;
-static constexpr int REG_O_COUNT = 12 * 4;
+static constexpr int REG_O_COUNT = 20 * 4;
 
 // **************
 // * Prototypes *
