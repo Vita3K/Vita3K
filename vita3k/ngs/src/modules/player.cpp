@@ -35,7 +35,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         if (!data.extra_storage.empty()) {
             data.extra_storage.erase(data.extra_storage.begin(), data.extra_storage.begin() + state->decoded_gran_passed * 8);
         } else {
-            if (state->current_buffer == -1) {
+            if ((state->current_buffer == -1) || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
                 return;
             }
         }
@@ -74,7 +74,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
             state->decoded_gran_pending = samples_to_take_per_channel;
 
-            if (state->current_buffer == -1) {
+            if ((state->current_buffer == -1) || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
                 break;
             } else {
                 if (state->current_byte_position_in_buffer >= params->buffer_params[state->current_buffer].bytes_count) {
