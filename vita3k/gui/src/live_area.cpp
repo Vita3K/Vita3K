@@ -129,6 +129,24 @@ void init_lang(GuiState &gui, HostState &host) {
                 lang_app_context["version"] = app_context.child("version").text().as_string();
             }
 
+            // Common
+            if (!lang_xml.child("common").empty()) {
+                const auto common = lang_xml.child("common");
+                auto &lang_common = gui.lang.common;
+                if (!common.child("wday").empty()) {
+                    for (const auto &day : common.child("wday"))
+                        lang_common.wday.push_back(day.text().as_string());
+                }
+                if (!common.child("ymonth").empty()) {
+                    for (const auto &month : common.child("ymonth"))
+                        lang_common.ymonth.push_back(month.text().as_string());
+                }
+                lang_common.common["one_hour_ago"] = common.child("one_hour_ago").text().as_string();
+                lang_common.common["one_minute_ago"] = common.child("one_minute_ago").text().as_string();
+                lang_common.common["hours_ago"] = common.child("hours_ago").text().as_string();
+                lang_common.common["minutes_ago"] = common.child("minutes_ago").text().as_string();
+            }
+
             // Dialog
             if (!lang_xml.child("dialog").empty()) {
                 const auto dialog = lang_xml.child("dialog");
@@ -260,15 +278,6 @@ void init_lang(GuiState &gui, HostState &host) {
                 lang_user_management["user"] = user_management.child("user").text().as_string();
                 lang_user_management["confirm"] = user_management.child("confirm").text().as_string();
             }
-
-            // Start Screen
-            const auto start = lang_xml.child("start");
-            if (!start.empty()) {
-                for (const auto &day : start.child("wday"))
-                    gui.lang.wday.push_back(day.text().as_string());
-                for (const auto &month : start.child("ymonth"))
-                    gui.lang.ymonth.push_back(month.text().as_string());
-            }
         } else
             LOG_ERROR("Error open lang file xml: {}", lang_xml_path);
     }
@@ -281,234 +290,6 @@ void init_lang(GuiState &gui, HostState &host) {
 
 bool get_live_area_sys_app_state(GuiState &gui) {
     return !gui.live_area.content_manager && !gui.live_area.settings && !gui.live_area.trophy_collection && !gui.live_area.manual && !gui.live_area.user_management;
-}
-
-static bool notice_info;
-static void draw_notice_info(GuiState &gui, HostState &host) {
-    const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto NOTICE_SIZE = gui.notice_info_count_new ? ImVec2(104.0f * SCAL.x, 95.0f * SCAL.y) : ImVec2(90.0f * SCAL.x, 82.0f * SCAL.y);
-    const auto NOTICE_POS = ImVec2(display_size.x - NOTICE_SIZE.x, 0.f);
-    const ImU32 NOTICE_COLOR = 4294967295; // White
-    const auto WINDOW_SIZE = notice_info ? display_size : (gui.notice_info_count_new ? ImVec2(84.f * SCAL.x, 76.f * SCAL.y) : ImVec2(72.f * SCAL.x, 62.f * SCAL.y));
-    const auto WINDOW_POS = ImVec2(notice_info ? 0.f : display_size.x - WINDOW_SIZE.x, 0.f);
-
-    ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
-    ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 50.f * SCAL.x);
-    ImGui::Begin("##notice_info", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::PopStyleVar();
-    if (gui.notice_info_count_new) {
-        if (gui.theme_information_bar_notice.find("new") != gui.theme_information_bar_notice.end())
-            ImGui::GetForegroundDrawList()->AddImage(gui.theme_information_bar_notice["new"], NOTICE_POS, ImVec2(NOTICE_POS.x + NOTICE_SIZE.x, NOTICE_SIZE.y));
-        else
-            ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (84.f * SCAL.x), (-40.f * SCAL.y)), ImVec2(display_size.x + (32.f * SCAL.y), 76.f * SCAL.y), IM_COL32(11.f, 90.f, 252.f, 255.f), 75.f * SCAL.x, ImDrawCornerFlags_All);
-        ImGui::GetForegroundDrawList()->AddText(gui.vita_font, 40.f * SCAL.x, ImVec2(display_size.x - (NOTICE_SIZE.x / 2.f) + (10.f * SCAL.x), (10.f * SCAL.y)), NOTICE_COLOR, std::to_string(gui.notice_info_count_new).c_str());
-    } else {
-        if (gui.theme_information_bar_notice.find("no") != gui.theme_information_bar_notice.end())
-            ImGui::GetForegroundDrawList()->AddImage(gui.theme_information_bar_notice["no"], NOTICE_POS, ImVec2(NOTICE_POS.x + NOTICE_SIZE.x, NOTICE_SIZE.y));
-        else
-            ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (70.f * SCAL.x), (-24.f * SCAL.y)), ImVec2(display_size.x + (14.f * SCAL.y), 60.f * SCAL.y), IM_COL32(62.f, 98.f, 160.f, 255.f), 75.f * SCAL.x, ImDrawCornerFlags_All);
-    }
-
-    if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootWindow) && !ImGui::IsAnyItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-        if (notice_info) {
-            gui.notice_info_count_new = 0;
-            gui.notice_info_new.clear();
-        }
-        notice_info = !notice_info;
-    }
-
-    if (notice_info) {
-        const auto POPUP_SIZE = gui.notice_info.empty() ? ImVec2(412.f * SCAL.x, 86.f * SCAL.y) : ImVec2(782.f * SCAL.x, gui.notice_info.size() < 5 ? 22.f + ((80.f * SCAL.y) * gui.notice_info.size() + (10.f * (gui.notice_info.size() - 1))) : 464.f * SCAL.y);
-        const auto POPUP_POS = ImVec2(gui.notice_info.empty() ? display_size.x - (502.f * SCAL.y) : (display_size.x / 2.f) - (POPUP_SIZE.x / 2.f), 56.f * SCAL.y);
-        const auto POPUP_BG_COLOR = gui.notice_info.empty() ? GUI_COLOR_TEXT : GUI_SMOOTH_GRAY;
-
-        ImGui::PushStyleColor(ImGuiCol_ChildBg, POPUP_BG_COLOR);
-        ImGui::PushStyleColor(ImGuiCol_Border, GUI_COLOR_TEXT);
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, gui.notice_info.empty() ? 0.f : 8.0f);
-        ImGui::SetNextWindowPos(POPUP_POS, ImGuiCond_Always);
-        ImGui::BeginChild("##notice_info_child", POPUP_SIZE, true, ImGuiWindowFlags_NoSavedSettings);
-        auto indicator = gui.lang.indicator;
-        if (gui.notice_info.empty()) {
-            ImGui::SetWindowFontScale(1.2f * SCAL.x);
-            const auto no_notif = !indicator["no_notif"].empty() ? indicator["no_notif"].c_str() : "There are no notifications";
-            const auto calc_text = ImGui::CalcTextSize(no_notif);
-            ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (calc_text.x / 2.f), (POPUP_SIZE.y / 2.f) - (calc_text.y / 2.f)));
-            ImGui::TextColored(ImVec4(0.f, 0.f, 0.f, 1.f), "%s", no_notif);
-        } else {
-            ImGui::Columns(3, nullptr, false);
-            ImGui::SetColumnWidth(0, 85.f * SCAL.x);
-            ImGui::SetColumnWidth(1, 500.f * SCAL.x);
-            const auto ICON_SIZE = ImVec2(64.f * SCAL.x, 64.f * SCAL.y);
-            const auto SELECT_SIZE = ImVec2(POPUP_SIZE.x, 80.f * SCAL.y);
-
-            for (const auto &notice : gui.notice_info) {
-                tm updated_tm = {};
-
-                SAFE_LOCALTIME(&notice.date, &updated_tm);
-                if (notice.pos < (gui.notice_info.size() - 1))
-                    ImGui::Separator();
-                const auto ICON_POS = ImGui::GetCursorPos();
-                if (gui.notice_info_icon.find(notice.pos) != gui.notice_info_icon.end()) {
-                    ImGui::SetCursorPos(ImVec2(ICON_POS.x + (ImGui::GetColumnWidth() / 2.f) - (ICON_SIZE.x / 2.f), ICON_POS.y + (SELECT_SIZE.y / 2.f) - (ICON_SIZE.y / 2.f)));
-                    ImGui::Image(gui.notice_info_icon[notice.pos], ICON_SIZE);
-                }
-                ImGui::SetCursorPosY(ICON_POS.y);
-                ImGui::PushID(std::to_string(notice.pos).c_str());
-                const auto SELECT_COLOR = ImVec4(0.23f, 0.68f, 0.95f, 0.60f);
-                const auto SELECT_COLOR_HOVERED = ImVec4(0.23f, 0.68f, 0.99f, 0.80f);
-                const auto SELECT_COLOR_ACTIVE = ImVec4(0.23f, 0.68f, 1.f, 1.f);
-                ImGui::PushStyleColor(ImGuiCol_Header, SELECT_COLOR);
-                ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECT_COLOR_HOVERED);
-                ImGui::PushStyleColor(ImGuiCol_HeaderActive, SELECT_COLOR_ACTIVE);
-                if (ImGui::Selectable("##icon", gui.notice_info_new[notice.pos], host.io.app_path.empty() || ((notice.type == "content") && (notice.group == "theme")) || (notice.type == "trophy") ? ImGuiSelectableFlags_SpanAllColumns : ImGuiSelectableFlags_Disabled, SELECT_SIZE)) {
-                    gui.notice_info_count_new = 0;
-                    gui.notice_info_new.clear();
-                    if (notice.type == "content") {
-                        if (notice.group == "theme")
-                            pre_load_app(gui, host, false, "NPXS10015");
-                        else
-                            pre_load_app(gui, host, host.cfg.show_live_area_screen, notice.id);
-                    } else {
-                        pre_load_app(gui, host, false, "NPXS10008");
-                        open_trophy_unlocked(gui, host, notice.id, notice.group);
-                    }
-                    notice_info = false;
-                }
-                ImGui::PopStyleColor(3);
-                ImGui::PopID();
-                ImGui::NextColumn();
-                ImGui::SetWindowFontScale(1.3f * SCAL.x);
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (14.f * SCAL.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", notice.name.c_str());
-                ImGui::Spacing();
-                ImGui::SetWindowFontScale(0.9f * SCAL.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", notice.msg.c_str());
-                ImGui::NextColumn();
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (60.f * SCAL.y));
-                auto DATE_TIME = get_date_time(gui, host, updated_tm);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
-                if (gui.users[host.io.user_id].clock_12_hour) {
-                    ImGui::SameLine();
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
-                }
-                ImGui::NextColumn();
-            }
-            ImGui::Columns(1);
-        }
-        ImGui::EndChild();
-        ImGui::PopStyleColor(2);
-        ImGui::PopStyleVar(2);
-
-        if (!gui.notice_info.empty()) {
-            const auto DELETE_POPUP_SIZE = ImVec2(756.0f * SCAL.x, 436.0f * SCAL.y);
-            const auto BUTTON_SIZE = ImVec2(320.f * SCAL.x, 46.f * SCAL.y);
-
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
-            ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCAL.x), display_size.y - (52.f * SCAL.y)));
-            if (ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
-                ImGui::OpenPopup("...");
-            if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
-                if (ImGui::Button(!indicator["delete_all"].empty() ? indicator["delete_all"].c_str() : "Delete All"))
-                    ImGui::OpenPopup("Delete All");
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
-                ImGui::SetNextWindowSize(DELETE_POPUP_SIZE, ImGuiCond_Always);
-                ImGui::SetNextWindowPos(ImVec2((display_size.x / 2.f) - (DELETE_POPUP_SIZE.x / 2.f), (display_size.y / 2.f) - (DELETE_POPUP_SIZE.y / 2.f)));
-                if (ImGui::BeginPopupModal("Delete All", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
-                    ImGui::SetWindowFontScale(1.4f * SCAL.x);
-                    const auto notif_deleted = !indicator["notif_deleted"].empty() ? indicator["notif_deleted"].c_str() : "The notifications will be deleted.";
-                    ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize(notif_deleted).x / 2.f), (DELETE_POPUP_SIZE.y / 2.f) - (46.f * SCAL.y)));
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", notif_deleted);
-                    ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCAL.x)), DELETE_POPUP_SIZE.y - BUTTON_SIZE.y - (24.0f * SCAL.y)));
-                    if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
-                        ImGui::CloseCurrentPopup();
-                    }
-                    ImGui::SameLine(0.f, 20.f);
-                    if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
-                        gui.notice_info.clear();
-                        gui.notice_info_icon.clear();
-                        gui.notice_info_count_new = 0;
-                        notice_info = false;
-                        ImGui::CloseCurrentPopup();
-                    }
-                    ImGui::EndPopup();
-                }
-                ImGui::PopStyleVar();
-                ImGui::EndPopup();
-            }
-            ImGui::PopStyleVar();
-        }
-    }
-    ImGui::End();
-}
-
-void draw_information_bar(GuiState &gui, HostState &host) {
-    const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
-    ImU32 DEFAULT_BAR_COLOR = 4278190080; // Black
-    ImU32 DEFAULT_INDICATOR_COLOR = 4294967295; // White
-    const auto is_notif_pos = !gui.live_area.start_screen && (gui.live_area.live_area_screen || gui.live_area.app_selector) ? 78.f * SCAL.x : 0.f;
-
-    const auto is_theme_color = gui.live_area.app_selector || gui.live_area.live_area_screen || gui.live_area.start_screen;
-
-    ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(display_size.x, MENUBAR_HEIGHT), ImGuiCond_Always);
-    ImGui::Begin("##information_bar", &gui.live_area.information_bar, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-
-    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, MENUBAR_HEIGHT), is_theme_color ? gui.information_bar_color["bar"] : DEFAULT_BAR_COLOR, 0.f, ImDrawCornerFlags_All);
-
-    if (gui.live_area.app_selector || gui.live_area.live_area_screen) {
-        const float decal_icon_pos = 38.f * ((float(gui.apps_list_opened.size()) - 1.f) / 2.f);
-        for (auto a = 0; a < gui.apps_list_opened.size(); a++) {
-            const auto icon_scal_pos = ImVec2((display_size.x / 2.f) - (16.f * SCAL.x) - (decal_icon_pos * SCAL.x) + (a * (38.f * SCAL.x)), display_size.y - (544.f * SCAL.y));
-            const auto icon_scal_size = ImVec2(icon_scal_pos.x + (32.0f * SCAL.x), icon_scal_pos.y + (32.f * SCAL.y));
-            if (get_app_icon(gui, gui.apps_list_opened[a])->first == gui.apps_list_opened[a])
-                ImGui::GetForegroundDrawList()->AddImageRounded(get_app_icon(gui, gui.apps_list_opened[a])->second, icon_scal_pos, icon_scal_size, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 15.f, ImDrawCornerFlags_All);
-            else
-                ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32_WHITE, 0.f, ImDrawCornerFlags_All);
-            if ((gui.current_app_selected < 0) || (gui.apps_list_opened[gui.current_app_selected] != gui.apps_list_opened[a]))
-                ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32(0.f, 0.f, 0.f, 140.f), 15.f, ImDrawCornerFlags_All);
-        }
-    }
-
-    const auto SCAL_PIX_FONT = 19.2f / 24.f;
-    const auto scal_default_font = ImGui::GetFontSize() / 19.2f;
-    const auto scal_clock_default_font = 24.f * scal_default_font;
-    const auto scal_format_default_font = 18.f * scal_default_font;
-    const auto scal_clock_font_size = scal_clock_default_font / ImGui::GetFontSize();
-    const auto scal_format_font_size = scal_format_default_font / ImGui::GetFontSize();
-
-    const auto now = std::chrono::system_clock::now();
-    const auto tt = std::chrono::system_clock::to_time_t(now);
-
-    tm local = {};
-    SAFE_LOCALTIME(&tt, &local);
-
-    auto DATE_TIME = get_date_time(gui, host, local);
-    const auto CALC_CLOCK_SIZE = ImGui::CalcTextSize(DATE_TIME["clock"].c_str());
-    const auto SCAL_CLOCK_SIZE = ImVec2(CALC_CLOCK_SIZE.x * scal_clock_font_size, CALC_CLOCK_SIZE.y * scal_clock_font_size * SCAL_PIX_FONT);
-    const auto CALC_FORMAT_SIZE = ImGui::CalcTextSize(DATE_TIME["day-moment"].c_str());
-    const auto SCAL_FORMAT_SIZE = host.io.user_id.empty() || gui.users[host.io.user_id].clock_12_hour ? ImVec2((CALC_FORMAT_SIZE.x * scal_format_font_size), CALC_FORMAT_SIZE.y * scal_format_font_size * SCAL_PIX_FONT) : ImVec2(0.f, 0.f);
-
-    const auto CLOCK_POS = ImVec2(display_size.x - (62.f * SCAL.x) - (SCAL_CLOCK_SIZE.x * SCAL.x) - (SCAL_FORMAT_SIZE.x * SCAL.x) - is_notif_pos, (MENUBAR_HEIGHT / 2.f) - ((SCAL_CLOCK_SIZE.y * SCAL.y) / 2.f));
-    const auto FORMAT_POS = ImVec2(CLOCK_POS.x + (SCAL_CLOCK_SIZE.x * SCAL.x) + (4.f * SCAL.x), CLOCK_POS.y + (SCAL_CLOCK_SIZE.y - SCAL_FORMAT_SIZE.y));
-
-    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_clock_default_font * SCAL.x, CLOCK_POS, is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, DATE_TIME["clock"].c_str());
-    if (host.io.user_id.empty() || gui.users[host.io.user_id].clock_12_hour)
-        ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_format_default_font * SCAL.x, FORMAT_POS, is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, DATE_TIME["day-moment"].c_str());
-    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (54.f * SCAL.x) - is_notif_pos, 12.f * SCAL.y), ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 20 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 0.f, ImDrawCornerFlags_All);
-    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 5.f * SCAL.y), ImVec2(display_size.x - (12.f * SCAL.x) - is_notif_pos, 27 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f, ImDrawCornerFlags_All);
-
-    if (host.display.imgui_render && !gui.live_area.start_screen && !gui.live_area.live_area_screen && get_live_area_sys_app_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
-        gui.live_area.information_bar = false;
-
-    if (is_notif_pos)
-        draw_notice_info(gui, host);
-
-    ImGui::End();
 }
 
 #ifdef _WIN32

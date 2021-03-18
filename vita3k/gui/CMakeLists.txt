@@ -28,6 +28,7 @@ add_library(
 	src/imgui_impl_sdl_gl3.cpp
 	${IMGUI_IMPL_VULKAN_SOURCES}
 	src/imgui_impl_sdl.cpp
+	src/information_bar.cpp
 	src/live_area.cpp
 	src/main_menubar.cpp
 	src/manual.cpp

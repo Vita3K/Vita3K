@@ -13,6 +13,36 @@
 	<version>バージョン</version>
 </app_context>
 
+<common>
+	<wday>
+		<day>日曜日</day>
+		<day>月曜日</day>
+		<day>火曜日</day>
+		<day>水曜日</day>
+		<day>木曜日</day>
+		<day>金曜日</day>
+		<day>土曜日</day>
+	</wday>
+		<ymonth>
+		<month>1月</month>
+		<month>2月</month>
+		<month>3月</month>
+		<month>4月</month>
+		<month>5月</month>
+		<month>6月</month>
+		<month>7月</month>
+		<month>8月</month>
+		<month>9月</month>
+		<month>10月</month>
+		<month>11月</month>
+		<month>12月</month>
+	</ymonth>
+	<one_hour_ago>1時間前</one_hour_ago>
+	<one_minute_ago>1分前</one_minute_ago>
+	<hours_ago>{}時間前</hours_ago>
+	<minutes_ago>{}分前</minutes_ago>
+</common>
+
 <dialog>
 	<trophy>
 		<preparing_start_app>アプリケーションを始める準備中です...</preparing_start_app>
