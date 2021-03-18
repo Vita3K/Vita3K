@@ -82,7 +82,7 @@ struct SaveData {
     std::string title;
     std::string title_id;
     size_t size;
-    std::string date;
+    tm date;
 };
 
 static std::vector<SaveData> save_data_list;
@@ -101,8 +101,6 @@ static void get_save_data_list(GuiState &gui, HostState &host) {
 
             const auto last_writen = fs::last_write_time(save);
             SAFE_LOCALTIME(&last_writen, &updated_tm);
-            const auto date = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}",
-                updated_tm.tm_mday, updated_tm.tm_mon + 1, updated_tm.tm_year + 1900, updated_tm.tm_hour, updated_tm.tm_min);
 
             size_t size = 0;
             for (const auto &save_path : fs::recursive_directory_iterator(save)) {
@@ -110,7 +108,7 @@ static void get_save_data_list(GuiState &gui, HostState &host) {
                     size += fs::file_size(save_path.path());
             }
 
-            save_data_list.push_back({ get_app_index(gui, title_id)->title, title_id, size, date });
+            save_data_list.push_back({ get_app_index(gui, title_id)->title, title_id, size, updated_tm });
         }
     }
     std::sort(save_data_list.begin(), save_data_list.end(), [](const SaveData &sa, const SaveData &sb) {
@@ -181,7 +179,7 @@ static bool get_size_selected_contents(GuiState &gui, HostState &host) {
 struct Dlc {
     std::string name;
     std::string size;
-    std::string date;
+    tm date;
 };
 
 static std::map<std::string, Dlc> dlc_info;
@@ -206,10 +204,7 @@ static void get_content_info(GuiState &gui, HostState &host) {
             tm updated_tm = {};
 
             const auto last_writen = fs::last_write_time(dlc);
-            const auto updated = SAFE_LOCALTIME(&last_writen, &updated_tm);
-
-            dlc_info[content_id].date = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}",
-                updated_tm.tm_mday, updated_tm.tm_mon + 1, updated_tm.tm_year + 1900, updated_tm.tm_hour, updated_tm.tm_min);
+            SAFE_LOCALTIME(&last_writen, &dlc_info[content_id].date);
 
             size_t dlc_size = 0;
             for (const auto &content : fs::recursive_directory_iterator(dlc)) {
@@ -479,7 +474,12 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", save.title.c_str());
                     ImGui::SetWindowFontScale(0.8f);
                     ImGui::SetCursorPosY(Title_POS + (46.f * SCAL.y));
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", save.date.c_str(), get_unit_size(save.size).c_str());
+                    auto DATE_TIME = get_date_time(gui, host, save.date);
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+                    if (gui.users[host.io.user_id].clock_12_hour) {
+                        ImGui::SameLine();
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                    }
                     ImGui::PopID();
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * SCAL.y));
                     ImGui::Separator();
@@ -527,7 +527,12 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
                 ImGui::SameLine(280.f * SCAL.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", dlc.second.date.c_str());
+                auto DATE_TIME = get_date_time(gui, host, dlc.second.date);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+                if (gui.users[host.io.user_id].clock_12_hour) {
+                    ImGui::SameLine();
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                }
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "Size");
                 ImGui::SameLine(280.f * SCAL.x);

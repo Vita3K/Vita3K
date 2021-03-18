@@ -351,7 +351,7 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
 struct Theme {
     std::string title;
     std::string provided;
-    std::string updated;
+    tm updated;
     size_t size;
     std::string version;
 };
@@ -434,10 +434,7 @@ void init_themes(GuiState &gui, HostState &host) {
                         theme_size += fs::file_size(theme.path());
 
                 const auto updated = fs::last_write_time(theme_path / content_id);
-                tm updated_date = {};
-
-                SAFE_LOCALTIME(&updated, &updated_date);
-                themes_info[content_id].updated = fmt::format("{}/{}/{}  {:0>2d}:{:0>2d}", updated_date.tm_mday, updated_date.tm_mon + 1, updated_date.tm_year + 1900, updated_date.tm_hour, updated_date.tm_min);
+                SAFE_LOCALTIME(&updated, &themes_info[content_id].updated);
 
                 themes_info[content_id].size = theme_size / KB(1);
                 themes_info[content_id].version = infomation.child("m_contentVer").text().as_string();
@@ -845,7 +842,12 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["updated"].c_str() : "Updated");
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
-                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme_selected].updated.c_str());
+                        auto DATE_TIME = get_date_time(gui, host, themes_info[theme_selected].updated);
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+                        if (gui.users[host.io.user_id].clock_12_hour) {
+                            ImGui::SameLine();
+                            ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                        }
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
                         ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["size"].c_str() : "Size");
                         ImGui::SameLine();

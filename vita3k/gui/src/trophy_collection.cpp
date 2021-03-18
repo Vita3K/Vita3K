@@ -38,7 +38,7 @@ struct NPComId {
     std::vector<std::string> group_id;
     std::map<std::string, uint32_t> trophy_count_by_group;
     std::map<std::string, std::vector<std::string>> trophy_id_by_group;
-    std::string updated;
+    tm updated;
     std::map<std::string, uint32_t> unlocked_count;
     std::map<std::string, uint32_t> progress;
     std::map<std::string, std::map<std::string, std::string>> unlocked_type_count;
@@ -145,12 +145,8 @@ void init_trophy_collection(GuiState &gui, HostState &host) {
                 }
 
                 // Read Updated time
-                tm updated_date_tm = {};
-
                 const auto updated = fs::last_write_time(trophy_data_np_com_id_path / "TROPUSR.DAT");
-                SAFE_LOCALTIME(&updated, &updated_date_tm);
-                np_com_id_info[np_com_id].updated = fmt::format("{}/{}/{}  {}:{:0>2d}",
-                    updated_date_tm.tm_mday, updated_date_tm.tm_mon + 1, updated_date_tm.tm_year + 1900, updated_date_tm.tm_hour, updated_date_tm.tm_min);
+                SAFE_LOCALTIME(&updated, &np_com_id_info[np_com_id].updated);
 
                 // Open trophy progress file
                 const auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + host.io.user_id + "/trophy/data/" + np_com_id + "/TROPUSR.DAT");
@@ -270,7 +266,7 @@ struct Trophy {
     std::string detail;
     std::map<std::string, std::string> type;
     std::string hidden;
-    std::string unlocked_time;
+    tm unlocked_time;
     bool earned;
 
     Context context;
@@ -322,7 +318,7 @@ static void get_trophy_list(GuiState &gui, HostState &host, const std::string &n
         const std::string trophy_id = trophy.first;
         const std::string icon_name = fmt::format("TROP{}.PNG", trophy_id);
 
-        vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "user/00/trophy/conf/" + np_com_id + "/" + icon_name);
+        vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "user/" + host.io.user_id + "/trophy/conf/" + np_com_id + "/" + icon_name);
         if (buffer.empty()) {
             LOG_WARN("Trophy icon, Name: '{}', Not found for trophy id: {}.", icon_name, trophy.first);
             continue;
@@ -359,11 +355,7 @@ static void get_trophy_list(GuiState &gui, HostState &host, const std::string &n
         // Check earned trophy and set time
         if (np_com_id_info[np_com_id].context.is_trophy_unlocked(std::stoi(trophy.first))) {
             trophy_info[trophy_id].earned = true;
-            tm unlocked_date_tm = {};
-
-            SAFE_LOCALTIME(&unlocked, &unlocked_date_tm);
-            trophy_info[trophy_id].unlocked_time = fmt::format("{}/{}/{}  {}:{:0>2d}",
-                unlocked_date_tm.tm_mday, unlocked_date_tm.tm_mon + 1, unlocked_date_tm.tm_year + 1900, unlocked_date_tm.tm_hour, unlocked_date_tm.tm_min);
+            SAFE_LOCALTIME(&unlocked, &trophy_info[trophy_id].unlocked_time);
         }
 
         const auto grade = uint32_t(np_com_id_info[np_com_id].context.trophy_kinds[std::stoi(trophy.first)]);
@@ -624,7 +616,12 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (45.f * SCAL.y));
                 ImGui::Text("Updated");
                 ImGui::SameLine(260.f * SCAL.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", np_com_id_info[np_com_id_selected].updated.c_str());
+                auto DATE_TIME = get_date_time(gui, host, np_com_id_info[np_com_id_selected].updated);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+                if (gui.users[host.io.user_id].clock_12_hour) {
+                    ImGui::SameLine();
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                }
                 ImGui::PushTextWrapPos(SIZE_INFO.x - 40.f);
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
                 ImGui::Text("Details");
@@ -700,7 +697,15 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCAL.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "Earned");
                 ImGui::SameLine(250.f * SCAL.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", trophy_info[trophy_id_selected].earned ? trophy_info[trophy_id_selected].unlocked_time.c_str() : "Not Earned");
+                if (trophy_info[trophy_id_selected].earned) {
+                    auto DATE_TIME = get_date_time(gui, host, trophy_info[trophy_id_selected].unlocked_time);
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+                    if (gui.users[host.io.user_id].clock_12_hour) {
+                        ImGui::SameLine();
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                    }
+                } else
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", "Not Earned");
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCAL.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "Details");
                 ImGui::SameLine(250.f * SCAL.x);
