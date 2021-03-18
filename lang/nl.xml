@@ -36,6 +36,36 @@
 	<version>Versie</version>
 </app_context>
 
+<common>
+	<wday>
+		<day>zondag</day>
+		<day>maandag</day>
+		<day>dinsdag</day>
+		<day>woensdag</day>
+		<day>donderdag</day>
+		<day>vrijdag</day>
+		<day>zaterdag</day>
+	</wday>
+	<ymonth>
+		<month>Januari</month>
+		<month>Februari</month>
+		<month>Maart</month>
+		<month>April</month>
+		<month>Mei</month>
+		<month>Juni</month>
+		<month>Juli</month>
+		<month>Augustus</month>
+		<month>September</month>
+		<month>Oktober</month>
+		<month>November</month>
+		<month>December</month>
+	</ymonth>
+	<one_hour_ago>1 uur geleden</one_hour_ago>
+	<one_minute_ago>1 minuut geleden</one_minute_ago>
+	<hours_ago>{} uur geleden</hours_ago>
+	<minutes_ago>{} minuten geleden</minutes_ago>
+</common>
+
 <dialog>
 	<trophy>
 		<preparing_start_app>Bezig met het voorbereiden voor het starten van de applicatie...</preparing_start_app>
@@ -131,30 +161,3 @@ Schakel het systeem niet uit en sluit de applicatie niet.</warning_saving>
 	<user>Gebruiker</user>
 	<confirm>Bevestigen</confirm>
 </user_management>
-
-<start>
-	<wday>
-		<day>Zondag</day>
-		<day>Maandag</day>
-		<day>Dinsdag</day>
-		<day>Woensdag</day>
-		<day>Donderdag</day>
-		<day>Vrijdag</day>
-		<day>Zaterdag</day>
-	</wday>
-
-	<ymonth>
-		<month>Januari</month>
-		<month>Februari</month>
-		<month>Maart</month>
-		<month>April</month>
-		<month>Mei</month>
-		<month>Juni</month>
-		<month>Juli</month>
-		<month>Augustus</month>
-		<month>September</month>
-		<month>Oktober</month>
-		<month>November</month>
-		<month>December</month>
-	</ymonth>
-</start>

@@ -36,6 +36,36 @@
 	<version>Versión</version>
 </app_context>
 
+<common>
+	<wday>
+		<day>domingo</day>
+		<day>lunes</day>
+		<day>martes</day>
+		<day>miércoles</day>
+		<day>jueves</day>
+		<day>viernes</day>
+		<day>sábado</day>
+	</wday>
+	<ymonth>
+		<month>Enero</month>
+		<month>Febrero</month>
+		<month>Marzo</month>
+		<month>Abril</month>
+		<month>Mayo</month>
+		<month>Junio</month>
+		<month>Julio</month>
+		<month>Agosto</month>
+		<month>Septiembre</month>
+		<month>Octubre</month>
+		<month>Noviembre</month>
+		<month>Diciembre</month>
+	</ymonth>
+	<one_hour_ago>Hace 1 hora</one_hour_ago>
+	<one_minute_ago>Hace 1 minuto</one_minute_ago>
+	<hours_ago>Hace {} horas</hours_ago>
+	<minutes_ago>Hace {} minutos</minutes_ago>
+</common>
+
 <dialog>
 	<trophy>
 		<preparing_start_app>Preparándose para iniciar la aplicación...</preparing_start_app>
@@ -131,30 +161,3 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 	<user>Usuario</user>
 	<confirm>Confirmar</confirm>
 </user_management>
-
-<start>
-	<wday>
-		<day>Domingo</day>
-		<day>Lunes</day>
-		<day>Martes</day>
-		<day>Miercoles</day>
-		<day>Jueves</day>
-		<day>Viernes</day>
-		<day>Sabado</day>
-	</wday>
-
-	<ymonth>
-		<month>Enero</month>
-		<month>Febrero</month>
-		<month>Marzo</month>
-		<month>Abril</month>
-		<month>Mayo</month>
-		<month>Junio</month>
-		<month>Julio</month>
-		<month>Agosto</month>
-		<month>Septiembre</month>
-		<month>Octubre</month>
-		<month>Noviembre</month>
-		<month>Diciembre</month>
-	</ymonth>
-</start>

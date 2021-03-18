@@ -179,6 +179,7 @@ void init_user(GuiState &gui, HostState &host, const std::string &user_id) {
             init_user_background(gui, host, user_id, bg);
     }
     init_theme(gui, host, gui.users[user_id].theme_id);
+    init_notice_info(gui, host);
 }
 
 void open_user(GuiState &gui, HostState &host) {
@@ -322,8 +323,10 @@ void draw_user_management(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(USER_POS);
             ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
             if (ImGui::Selectable("##avatar", false, ImGuiSelectableFlags_None, AVATAR_SIZE)) {
-                if (host.io.user_id != user.first)
+                if (host.io.user_id != user.first) {
                     init_user(gui, host, user.first);
+                    init_notice_info(gui, host);
+                }
                 if (host.cfg.user_id != user.first) {
                     host.cfg.user_id = user.first;
                     config::serialize_config(host.cfg, host.cfg.config_path);

@@ -389,15 +389,15 @@ static const char *const ymonth[] = {
 };
 
 static const char *const wday[] = {
-    "Sunday", "Monday", "Tuesday", "Wednesday",
-    "Thursday", "Friday", "Saturday"
+    "sunday", "monday", "tuesday", "wednesday",
+    "thursday", "friday", "saturday"
 };
 
 std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host, const tm &date_time) {
     std::map<std::string, std::string> date_time_str;
     if (!host.io.user_id.empty()) {
-        const auto day_str = !gui.lang.wday.empty() ? gui.lang.wday[date_time.tm_wday] : wday[date_time.tm_wday];
-        const auto month_str = !gui.lang.ymonth.empty() ? gui.lang.ymonth[date_time.tm_mon] : ymonth[date_time.tm_mon];
+        const auto day_str = !gui.lang.common.wday.empty() ? gui.lang.common.wday[date_time.tm_wday] : wday[date_time.tm_wday];
+        const auto month_str = !gui.lang.common.ymonth.empty() ? gui.lang.common.ymonth[date_time.tm_mon] : ymonth[date_time.tm_mon];
         const auto year = date_time.tm_year + 1900;
         const auto month = date_time.tm_mon + 1;
         switch (gui.users[host.io.user_id].date_format) {
@@ -425,62 +425,6 @@ std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host,
     return date_time_str;
 }
 
-void update_notice_info(GuiState &gui, HostState &host, const std::string &type) {
-    const auto pos = gui.notice_info.size();
-
-    std::string msg;
-    auto indicator = gui.lang.indicator;
-    if (type == "content") {
-        if (host.app_category == "gd") {
-            msg = !indicator["app_added_home"].empty() ? indicator["app_added_home"] : "The application has been added to the home screen.";
-            if (gui.app_selector.user_apps_icon.find(host.app_path) != gui.app_selector.user_apps_icon.end())
-                gui.notice_info_icon[pos] = gui.app_selector.user_apps_icon[host.app_path];
-        } else
-            msg = !indicator["install_complete"].empty() ? indicator["install_complete"] : "Installation complete.";
-
-        gui.notice_info.push_back({ host.app_title_id, host.app_category, type, pos, std::time(nullptr), host.app_title, msg });
-    } else {
-        const auto trophy_data = gui.trophy_unlock_display_requests.back();
-        int32_t width = 0;
-        int32_t height = 0;
-        stbi_uc *data = stbi_load_from_memory(&trophy_data.icon_buf[0], static_cast<int>(trophy_data.icon_buf.size()), &width, &height, nullptr, STBI_rgb_alpha);
-
-        gui.notice_info_icon[pos].init(gui.imgui_state.get(), data, width, height);
-
-        std::string trophy_kind_s = "?";
-
-        switch (trophy_data.trophy_kind) {
-        case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM: {
-            trophy_kind_s = "(Platinum)";
-            break;
-        }
-        case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD: {
-            trophy_kind_s = ("Gold");
-            break;
-        }
-        case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER: {
-            trophy_kind_s = "(Silver)";
-            break;
-        }
-        case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE: {
-            trophy_kind_s = "(Bronze)";
-            break;
-        }
-        default: break;
-        }
-        const auto name = trophy_kind_s + " " + trophy_data.trophy_name;
-        msg = !indicator["trophy_earned"].empty() ? indicator["trophy_earned"] : "You have earned a trophy!";
-        gui.notice_info.push_back({ trophy_data.np_com_id, trophy_data.trophy_id, type, pos, std::time(nullptr), name, msg });
-    }
-
-    ++gui.notice_info_count_new;
-    gui.notice_info_new[pos] = true;
-
-    std::sort(gui.notice_info.begin(), gui.notice_info.end(), [&](const NoticeInfo &na, const NoticeInfo &nb) {
-        return na.date > nb.date;
-    });
-}
-
 ImTextureID load_image(GuiState &gui, const char *data, const std::uint32_t size) {
     int width;
     int height;
@@ -506,6 +450,7 @@ void init(GuiState &gui, HostState &host) {
     init_style();
     init_font(gui, host);
     init_lang(gui, host);
+    get_notice_list(host);
     get_users_list(gui, host);
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());

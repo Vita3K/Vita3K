@@ -36,6 +36,36 @@
 	<version>Версия</version>
 </app_context>
 
+<common>
+	<wday>
+		<day>воскресенье</day>
+		<day>понедельник</day>
+		<day>вторник</day>
+		<day>среда</day>
+		<day>четверг</day>
+		<day>пятница</day>
+		<day>суббота</day>
+	</wday>
+	<ymonth>
+		<month>Январь</month>
+		<month>Февраль</month>
+		<month>Март</month>
+		<month>Апрель</month>
+		<month>Май</month>
+		<month>Июнь</month>
+		<month>Июль</month>
+		<month>Август</month>
+		<month>Сентябрь</month>
+		<month>Октябрь</month>
+		<month>Ноябрь</month>
+		<month>Декабрь</month>
+	</ymonth>
+	<one_hour_ago>1 час назад</one_hour_ago>
+	<one_minute_ago>1 мин. назад</one_minute_ago>
+	<hours_ago>{} час. назад</hours_ago>
+	<minutes_ago>{} мин. назад</minutes_ago>
+</common>
+
 <dialog>
 	<trophy>
 		<preparing_start_app>Подготовка к запуску приложения...</preparing_start_app>
@@ -121,30 +151,3 @@
 		<system_language>Язык системы</system_language>
 	</language>
 </settings>
-
-<start>
-	<wday>
-		<day>Воскресенье</day>
-		<day>Понедельник</day>
-		<day>Вторник</day>
-		<day>Среда</day>
-		<day>Четверг</day>
-		<day>Пятница</day>
-		<day>Суббота</day>
-	</wday>
-
-	<ymonth>
-		<month>Январь</month>
-		<month>Февраль</month>
-		<month>Март</month>
-		<month>Апрель</month>
-		<month>Май</month>
-		<month>Июнь</month>
-		<month>Июль</month>
-		<month>Август</month>
-		<month>Сентябрь</month>
-		<month>Октябрь</month>
-		<month>Ноябрь</month>
-		<month>Декабрь</month>
-	</ymonth>
-</start>

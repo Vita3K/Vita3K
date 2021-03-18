@@ -36,6 +36,36 @@
 	<version>版本</version>
 </app_context>
 
+<common>
+	<wday>
+		<day>星期日</day>
+		<day>星期一</day>
+		<day>星期二</day>
+		<day>星期三</day>
+		<day>星期四</day>
+		<day>星期五</day>
+		<day>星期六</day>
+	</wday>
+	<ymonth>
+		<month>1月</month>
+		<month>2月</month>
+		<month>3月</month>
+		<month>4月</month>
+		<month>5月</month>
+		<month>6月</month>
+		<month>7月</month>
+		<month>8月</month>
+		<month>9月</month>
+		<month>10月</month>
+		<month>11月</month>
+		<month>12月</month>
+	</ymonth>
+	<one_hour_ago>1小時前</one_hour_ago>
+	<one_minute_ago>1分鐘前</one_minute_ago>
+	<hours_ago>{}小時前</hours_ago>
+	<minutes_ago>{}分鐘前</minutes_ago>
+</common>
+
 <dialog>
 	<trophy>
 		<preparing_start_app>正在準備啟動應用程式……</preparing_start_app>
@@ -131,30 +161,3 @@
 	<user>用戶</user>
 	<confirm>更改</confirm>
 </user_management>
-
-<start>
-	<wday>
-		<day>星期日</day>
-		<day>星期一</day>
-		<day>星期二</day>
-		<day>星期三</day>
-		<day>星期四</day>
-		<day>星期五</day>
-		<day>星期六</day>
-	</wday>
-
-	<ymonth>
-		<month>1月</month>
-		<month>2月</month>
-		<month>3月</month>
-		<month>4月</month>
-		<month>5月</month>
-		<month>6月</month>
-		<month>7月</month>
-		<month>8月</month>
-		<month>9月</month>
-		<month>10月</month>
-		<month>11月</month>
-		<month>12月</month>
-	</ymonth>
-</start>

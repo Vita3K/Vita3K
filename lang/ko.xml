@@ -13,6 +13,36 @@
 	<version>버전</version>
 </app_context>
 
+<common>
+	<wday>
+		<day>일요일</day>
+		<day>월요일</day>
+		<day>화요일</day>
+		<day>수요일</day>
+		<day>목요일</day>
+		<day>금요일</day>
+		<day>토요일</day>
+	</wday>
+	<ymonth>
+		<month>1월</month>
+		<month>2월</month>
+		<month>3월</month>
+		<month>4월</month>
+		<month>5월</month>
+		<month>6월</month>
+		<month>7월</month>
+		<month>8월</month>
+		<month>9월</month>
+		<month>10월</month>
+		<month>11월</month>
+		<month>12월</month>
+	</ymonth>
+	<one_hour_ago>1 시간 전</one_hour_ago>
+	<one_minute_ago>1 분 전</one_minute_ago>
+	<hours_ago>{} 시간 전</hours_ago>
+	<minutes_ago>{} 분 전</minutes_ago>
+</common>
+
 <dialog>
 	<trophy>
 		<preparing_start_app>애플리케이션을 시작하기 위한 준비중입니다...</preparing_start_app>
