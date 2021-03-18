@@ -348,8 +348,6 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
                 tm updated_tm = {};
 
                 SAFE_LOCALTIME(&notice.date, &updated_tm);
-                const auto date = fmt::format("{}/{}/{} {:0>2d}:{:0>2d}",
-                    updated_tm.tm_mday, updated_tm.tm_mon + 1, updated_tm.tm_year + 1900, updated_tm.tm_hour, updated_tm.tm_min);
                 if (notice.pos < (gui.notice_info.size() - 1))
                     ImGui::Separator();
                 const auto ICON_POS = ImGui::GetCursorPos();
@@ -390,7 +388,12 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", notice.msg.c_str());
                 ImGui::NextColumn();
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (60.f * SCAL.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", date.c_str());
+                auto DATE_TIME = get_date_time(gui, host, updated_tm);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+                if (gui.users[host.io.user_id].clock_12_hour) {
+                    ImGui::SameLine();
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                }
                 ImGui::NextColumn();
             }
             ImGui::Columns(1);
