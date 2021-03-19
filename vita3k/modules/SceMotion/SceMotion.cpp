@@ -21,8 +21,16 @@ EXPORT(int, sceMotionGetAngleThreshold) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionGetBasicOrientation) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceMotionGetBasicOrientation, SceFVector3 *basicOrientation) {
+    if (!basicOrientation)
+        return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
+
+    STUBBED("set default value");
+    basicOrientation->x = 0;
+    basicOrientation->y = 0;
+    basicOrientation->z = 1;
+
+    return 0;
 }
 
 EXPORT(int, sceMotionGetDeadband) {
