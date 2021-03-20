@@ -134,7 +134,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
                 if (frame_bytes_gotten < superframe_size) {
                     while (frame_bytes_gotten < superframe_size) {
-                        if (temporary_bytes.size() == 0) {
+                        if (temporary_bytes.empty()) {
                             temporary_bytes.resize(frame_bytes_gotten);
                             std::memcpy(temporary_bytes.data(), input, frame_bytes_gotten);
                         }
@@ -157,7 +157,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                     }
                 }
 
-                if (temporary_bytes.size() != 0) {
+                if (!temporary_bytes.empty()) {
                     input = temporary_bytes.data();
                 }
 
@@ -195,4 +195,4 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
     return finished;
 }
-}; // namespace ngs::atrac9
+} // namespace ngs::atrac9
