@@ -120,6 +120,54 @@ inline uint64_t current_time() {
         .count();
 }
 
+enum AppRegion {
+    ALL,
+    USA,
+    EURO,
+    JAP,
+    ASIA,
+    COMMERCIAL,
+    HOMEBREW,
+};
+
+static AppRegion app_region = ALL;
+static bool app_filter(const std::string &app) {
+    const auto filter_app_region = [&](const std::vector<std::string> &app_region) {
+        const auto app_region_index = std::find_if(app_region.begin(), app_region.end(), [&](const std::string &a) {
+            return app.find(a) != std::string::npos;
+        });
+        return app_region_index == app_region.end();
+    };
+
+    switch (app_region) {
+    case USA:
+        if (filter_app_region({ "PCSA", "PCSE" }))
+            return true;
+        break;
+    case EURO:
+        if (filter_app_region({ "PCSF", "PCSB" }))
+            return true;
+        break;
+    case JAP:
+        if (filter_app_region({ "PCSC", "PCSG" }))
+            return true;
+        break;
+    case ASIA:
+        if (filter_app_region({ "PCSD", "PCSH" }))
+            return true;
+        break;
+    case COMMERCIAL:
+        if (filter_app_region({ "PCS" }))
+            return true;
+        break;
+    case HOMEBREW:
+        if (!filter_app_region({ "PCS" }))
+            return true;
+        break;
+    }
+    return false;
+}
+
 static float scroll_type, current_scroll_pos, max_scroll_pos;
 void draw_app_selector(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
@@ -205,6 +253,8 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         if (!host.cfg.apps_list_grid) {
             ImGui::Columns(5);
             ImGui::SetColumnWidth(0, icon_size + /* padding */ 20.f);
+            if (ImGui::Button("App Filter"))
+                ImGui::OpenPopup("app_filter");
             ImGui::NextColumn();
             switch (gui.app_selector.title_id_sort_state) {
             case ASCENDANT:
@@ -306,6 +356,35 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 }
             }
             ImGui::NextColumn();
+        } else {
+            if (ImGui::Button("App Filter"))
+                ImGui::OpenPopup("app_filter");
+            ImGui::SameLine(0, 20.f);
+        }
+        if (ImGui::BeginPopup("app_filter")) {
+            ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
+            if (ImGui::MenuItem("All", nullptr, app_region == ALL))
+                app_region = ALL;
+            if (ImGui::BeginMenu("By Region")) {
+                if (ImGui::MenuItem("Usa", nullptr, app_region == USA))
+                    app_region = USA;
+                if (ImGui::MenuItem("Euro", nullptr, app_region == EURO))
+                    app_region = EURO;
+                if (ImGui::MenuItem("Jap", nullptr, app_region == JAP))
+                    app_region = JAP;
+                if (ImGui::MenuItem("Asia", nullptr, app_region == ASIA))
+                    app_region = ASIA;
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("By Type")) {
+                if (ImGui::MenuItem("Commercial", nullptr, app_region == COMMERCIAL))
+                    app_region = COMMERCIAL;
+                if (ImGui::MenuItem("Hombrew", nullptr, app_region == HOMEBREW))
+                    app_region = HOMEBREW;
+                ImGui::EndMenu();
+            }
+            ImGui::PopStyleColor();
+            ImGui::EndPopup();
         }
         std::string title_label = "Title";
         switch (gui.app_selector.title_sort_state) {
@@ -394,6 +473,10 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
             for (const auto &app : apps_list) {
                 bool selected = false;
+                if (app_region != ALL) {
+                    if ((app.title_id.find("NPXS") == std::string::npos) && app_filter(app.title_id))
+                        continue;
+                }
                 if (!gui.app_search_bar.PassFilter(app.title.c_str()) && !gui.app_search_bar.PassFilter(app.title_id.c_str()))
                     continue;
                 const auto POS_ICON = ImGui::GetCursorPosY();
