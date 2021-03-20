@@ -128,10 +128,10 @@ inline bool is_default(Swizzle4 sw, Imm4 sw_len = 4) {
 
     // clang-format off
     switch (sw_len) {
-    case 4: if (sw[3] != SwizzleChannel::_W) res = false; // fallthrough
-    case 3: if (sw[2] != SwizzleChannel::_Z) res = false; // fallthrough
-    case 2: if (sw[1] != SwizzleChannel::_Y) res = false; // fallthrough
-    case 1: if (sw[0] != SwizzleChannel::_X) res = false; // fallthrough
+    case 4: if (sw[3] != SwizzleChannel::_W) res = false; [[fallthrough]];
+    case 3: if (sw[2] != SwizzleChannel::_Z) res = false; [[fallthrough]];
+    case 2: if (sw[1] != SwizzleChannel::_Y) res = false; [[fallthrough]];
+    case 1: if (sw[0] != SwizzleChannel::_X) res = false;
     }
     // clang-format on
 
@@ -391,18 +391,18 @@ using InputSource = std::variant<UniformBufferInputSource, LiteralInputSource, A
  */
 struct Input {
     // Destination reigster bank
-    RegisterBank bank;
+    RegisterBank bank{};
     // The type of parameter
-    DataType type;
+    DataType type{};
     // The container type of parameter
-    GenericType generic_type;
+    GenericType generic_type{};
     // Offset of destination register
-    uint32_t offset;
-    uint32_t component_count;
-    uint32_t array_size;
+    uint32_t offset{};
+    uint32_t component_count{};
+    uint32_t array_size{};
     // The source where shader fetches the data
     // e.g. vertex attributes
-    InputSource source;
+    InputSource source{};
 };
 
 /**

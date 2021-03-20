@@ -108,8 +108,8 @@ struct TranslationState {
     spv::Id render_info_id = spv::NoResult;
     std::vector<VarToReg> var_to_regs;
     std::vector<spv::Id> interfaces;
-    bool is_maskupdate;
-    bool is_fragment;
+    bool is_maskupdate{};
+    bool is_fragment{};
 };
 
 struct VertexProgramOutputProperties {
@@ -1292,6 +1292,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     switch (program_type) {
     default:
         LOG_ERROR("Unknown GXM program type");
+        [[fallthrough]];
     // fallthrough
     case Vertex:
         entry_point_name = "main_vs";
