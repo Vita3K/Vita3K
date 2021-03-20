@@ -71,4 +71,4 @@ public:
 };
 
 void get_buffer_parameter(std::uint32_t start_sample, std::uint32_t num_samples, std::uint32_t info, SkipBufferInfo &parameter);
-}; // namespace ngs::atrac9
+} // namespace ngs::atrac9

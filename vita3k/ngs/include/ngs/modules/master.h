@@ -11,4 +11,4 @@ public:
         return 0;
     }
 };
-}; // namespace ngs::master
+} // namespace ngs::master

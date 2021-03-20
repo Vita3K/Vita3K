@@ -30,4 +30,4 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
     return false;
 }
-}; // namespace ngs::master
+} // namespace ngs::master

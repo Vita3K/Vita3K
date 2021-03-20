@@ -11,4 +11,4 @@ void VoiceDefinition::new_modules(std::vector<std::unique_ptr<ngs::Module>> &mod
 std::size_t VoiceDefinition::get_total_buffer_parameter_size() const {
     return 0;
 }
-}; // namespace ngs::master
+} // namespace ngs::master

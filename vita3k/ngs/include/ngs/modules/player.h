@@ -62,8 +62,8 @@ private:
 public:
     explicit Module();
     bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) override;
-    std::uint32_t module_id() const { return 0x5CE6; }
+    std::uint32_t module_id() const override { return 0x5CE6; }
     std::size_t get_buffer_parameter_size() const override;
     void on_state_change(ModuleData &v, const VoiceState previous) override;
 };
-}; // namespace ngs::player
+} // namespace ngs::player

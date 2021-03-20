@@ -10,7 +10,7 @@ std::size_t Module::get_buffer_parameter_size() const {
 }
 
 bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
-    if (data.parent->inputs.inputs.size() < 1) {
+    if (data.parent->inputs.inputs.empty()) {
         return false;
     }
 
