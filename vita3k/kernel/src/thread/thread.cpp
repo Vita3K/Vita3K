@@ -269,6 +269,7 @@ int run_callback(KernelState &kernel, ThreadState &thread, const SceUID &thid, A
     CPUContext ctx;
     save_context(*thread.cpu, ctx);
     load_context(*cpu, ctx);
+    write_tpidruro(*cpu, read_tpidruro(*thread.cpu)); //TLS
 
     assert(args.size() <= 4);
     for (int i = 0; i < args.size(); i++) {
@@ -277,7 +278,10 @@ int run_callback(KernelState &kernel, ThreadState &thread, const SceUID &thid, A
     // TODO: remaining arguments should be pushed into stack
     set_thread_id(*cpu, thid);
     write_pc(*cpu, callback_address);
-    bool res = run(*cpu, true, callback_address);
+    CPUStatePtr old_thread_cpu = CPUStatePtr(cpu, [](CPUState *state) -> void {});
+    old_thread_cpu.swap(thread.cpu);
+    auto res = run(*cpu, true, callback_address);
+    thread.cpu.swap(old_thread_cpu);
     if (res < 0) {
         LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
         return -1;
