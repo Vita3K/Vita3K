@@ -321,8 +321,9 @@ EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, SceAvPlayerFrameInfo
     return true;
 }
 
-EXPORT(int, sceAvPlayerGetVideoDataEx) {
-    return UNIMPLEMENTED();
+EXPORT(bool, sceAvPlayerGetVideoDataEx, SceUID player_handle, SceAvPlayerFrameInfo *frame_info) {
+    STUBBED("Use GetVideoData");
+    return CALL_EXPORT(sceAvPlayerGetVideoData, player_handle, frame_info);
 }
 
 EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
