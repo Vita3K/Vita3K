@@ -579,12 +579,31 @@ EXPORT(SceUInt32, sceNgsVoiceLockParams, SceNgsVoiceHandle voice_handle, SceUInt
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsVoicePatchSetVolume) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceNgsVoicePatchSetVolume, SceNgsPatchHandle patch_handle, const SceInt32 output_channel, const SceInt32 input_channel, const SceFloat32 vol) {
+    if (host.cfg.disable_ngs)
+        return SCE_NGS_OK;
+
+    ngs::Patch *patch = patch_handle.get(host.mem);
+    if (!patch || patch->output_sub_index == -1)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    patch->volume_matrix[output_channel][input_channel] = vol;
+
+    return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsVoicePatchSetVolumes) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceNgsVoicePatchSetVolumes, SceNgsPatchHandle patch_handle, const SceInt32 output_channel, const SceFloat32 *volumes, const SceInt32 vols) {
+    if (host.cfg.disable_ngs)
+        return SCE_NGS_OK;
+
+    ngs::Patch *patch = patch_handle.get(host.mem);
+    if (!patch || patch->output_sub_index == -1)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    for (int i = 0; i < std::min(vols, 2); i++)
+        patch->volume_matrix[output_channel][i] = volumes[i];
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(SceInt32, sceNgsVoicePatchSetVolumesMatrix, SceNgsPatchHandle patch_handle, const SceNgsVolumeMatrix *matrix) {
