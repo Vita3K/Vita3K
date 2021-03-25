@@ -58,7 +58,7 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     const GLenum format = translate_format(fmt);
     const GLenum type = translate_type(fmt);
     const auto texture_type = gxm_texture.texture_type();
-    const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY);
+    const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
     const auto base_fmt = gxm::get_base_format(fmt);
 
     size_t compressed_size = 0;
@@ -174,7 +174,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     size_t bytes_per_pixel = (bpp + 7) >> 3;
 
     const auto texture_type = gxm_texture.texture_type();
-    const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY);
+    const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
     const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !can_texture_be_unswizzled_without_decode(base_format);
 
     uint32_t mip_index = 0;
@@ -206,9 +206,11 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 
         switch (texture_type) {
         case SCE_GXM_TEXTURE_SWIZZLED:
+        case SCE_GXM_TEXTURE_CUBE:
         case SCE_GXM_TEXTURE_TILED:
-        case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY: {
-            if (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) {
+        case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
+        case SCE_GXM_TEXTURE_CUBE_ARBITRARY: {
+            if ((texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) {
                 width = nearest_power_of_two(width);
                 height = nearest_power_of_two(height);
             }
@@ -253,7 +255,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 
             pixels_per_stride = width;
 
-            if (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) {
+            if ((texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) {
                 width = org_width;
                 height = org_height;
             }
@@ -365,7 +367,7 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
     const SceGxmTextureFormat format = gxm::get_format(&gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
 
-    const bool is_swizzled = (gxm_texture.texture_type() == SCE_GXM_TEXTURE_SWIZZLED) || (gxm_texture.texture_type() == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY);
+    const bool is_swizzled = (gxm_texture.texture_type() == SCE_GXM_TEXTURE_SWIZZLED) || (gxm_texture.texture_type() == SCE_GXM_TEXTURE_CUBE) || (gxm_texture.texture_type() == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (gxm_texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
     const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !can_texture_be_unswizzled_without_decode(base_format);
 
     size_t bpp = renderer::texture::bits_per_pixel(base_format);
