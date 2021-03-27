@@ -70,6 +70,15 @@ static bool change_pref_location(const std::string &input_path, const std::strin
     return true;
 }
 
+static void reset_emulator(GuiState &gui, HostState &host) {
+    get_modules_list(gui, host);
+    refresh_app_list(gui, host);
+    get_sys_apps_title(gui, host);
+    get_users_list(gui, host);
+    init_home(gui, host);
+    gui.configuration_menu.settings_dialog = false;
+}
+
 static void change_emulator_path(GuiState &gui, HostState &host) {
     nfdchar_t *emulator_path = nullptr;
     nfdresult_t result = NFD_PickFolder(nullptr, &emulator_path);
@@ -82,13 +91,7 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
         config::serialize_config(host.cfg, host.cfg.config_path);
 
         // TODO: Move app old to new path
-        get_modules_list(gui, host);
-        refresh_app_list(gui, host);
-        get_sys_apps_title(gui, host);
-        get_users_list(gui, host);
-        gui.configuration_menu.settings_dialog = false;
-        gui.live_area.app_selector = false;
-        gui.live_area.user_management = true;
+        reset_emulator(gui, host);
         LOG_INFO("Successfully moved Vita3K path to: {}", string_utils::wide_to_utf(host.pref_path));
     }
 }
@@ -287,8 +290,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                     config::serialize_config(host.cfg, host.cfg.config_path);
 
                     // Refresh the working paths
-                    get_modules_list(gui, host);
-                    refresh_app_list(gui, host);
+                    reset_emulator(gui, host);
                     LOG_INFO("Successfully restore default path for Vita3K files to: {}", string_utils::wide_to_utf(host.pref_path));
                 }
             }

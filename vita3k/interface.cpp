@@ -139,22 +139,22 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
     }
 
     SfoFile sfo_handle;
-    std::string content_id, dlc_foldername;
     sfo::load(sfo_handle, params);
     sfo::get_data_by_key(host.app_title_id, sfo_handle, "TITLE_ID");
     sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
     sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
     sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
-    sfo::get_data_by_key(content_id, sfo_handle, "CONTENT_ID");
+    sfo::get_data_by_key(host.app_content_id, sfo_handle, "CONTENT_ID");
     fs::path output_path;
 
     if (host.app_category == "ac") {
         if (theme) {
-            output_path = { fs::path(host.pref_path) / "ux0/theme" / content_id };
+            output_path = { fs::path(host.pref_path) / "ux0/theme" / host.app_content_id };
             host.app_title += " (Theme)";
+            host.app_category = "theme";
         } else {
-            dlc_foldername = content_id.substr(20);
-            output_path = { fs::path(host.pref_path) / "ux0/addcont" / host.app_title_id / dlc_foldername };
+            host.app_content_id = host.app_content_id.substr(20);
+            output_path = { fs::path(host.pref_path) / "ux0/addcont" / host.app_title_id / host.app_content_id };
             host.app_title = host.app_title + " (DLC)";
         }
     } else if (host.app_category == "gp")

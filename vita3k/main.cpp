@@ -274,7 +274,6 @@ int main(int argc, char *argv[]) {
 
         host.display.condvar.notify_all();
         gui::draw_end(gui, host.window.get());
-        app::set_window_title(host);
     }
 
 #ifdef WIN32

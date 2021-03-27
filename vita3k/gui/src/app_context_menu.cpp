@@ -33,7 +33,10 @@ void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
     LOG_INFO_IF(fs::remove_all(APP_PATH), "Application successfully deleted '{} [{}]'.", APP_INDEX->title_id, APP_INDEX->title);
 
     if (!fs::exists(app_path)) {
-        gui.delete_app_icon = true;
+        if (gui.app_selector.user_apps_icon.find(host.app_path) != gui.app_selector.user_apps_icon.end()) {
+            gui.app_selector.user_apps_icon[host.app_path] = {};
+            gui.app_selector.user_apps_icon.erase(host.app_path);
+        }
         gui.app_selector.user_apps.erase(APP_INDEX);
     } else
         LOG_ERROR("Failed to delete '{} [{}]'.", APP_INDEX->title_id, APP_INDEX->title);
@@ -41,9 +44,9 @@ void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
 
 static std::map<double, std::string> update_history_infos;
 
-static bool get_update_history(GuiState &gui, HostState &host, const std::string &title_id) {
+static bool get_update_history(GuiState &gui, HostState &host, const std::string &app_path) {
     update_history_infos.clear();
-    const auto change_info_path{ fs::path(host.pref_path) / "ux0/app" / title_id / "sce_sys/changeinfo/" };
+    const auto change_info_path{ fs::path(host.pref_path) / "ux0/app" / app_path / "sce_sys/changeinfo/" };
 
     std::string fname = fs::exists(change_info_path / fmt::format("changeinfo_{:0>2d}.xml", host.cfg.sys_lang)) ? fmt::format("changeinfo_{:0>2d}.xml", host.cfg.sys_lang) : "changeinfo.xml";
 
@@ -161,10 +164,10 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                 ImGui::EndMenu();
             }
             if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(is_lang ? lang["update_history"].c_str() : "Update History")) {
-                if (get_update_history(gui, host, title_id))
+                if (get_update_history(gui, host, app_path))
                     context_dialog = "history";
                 else
-                    LOG_WARN("Patch note Error for title id: {}", title_id);
+                    LOG_WARN("Patch note Error for title id: {} in path: {}", title_id, app_path);
             }
         }
         if (ImGui::MenuItem(is_lang ? lang["information"].c_str() : "Information", nullptr, &information)) {
