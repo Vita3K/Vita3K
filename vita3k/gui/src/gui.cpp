@@ -260,7 +260,7 @@ void init_app_background(GuiState &gui, HostState &host, const std::string &app_
 
 void init_home(GuiState &gui, HostState &host) {
     const auto is_cmd = host.cfg.run_app_path || host.cfg.vpk_path;
-    if (!is_cmd) {
+    if (!is_cmd && !gui.configuration_menu.settings_dialog) {
         get_user_apps_title(gui, host);
         init_apps_icon(gui, host, gui.app_selector.user_apps);
     }
@@ -321,6 +321,7 @@ void get_app_param(GuiState &gui, HostState &host, const std::string &app_path) 
         if (host.app_version[0] == '0')
             host.app_version.erase(host.app_version.begin());
         sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
+        sfo::get_data_by_key(host.app_content_id, sfo_handle, "CONTENT_ID");
         sfo::get_data_by_key(host.app_parental_level, sfo_handle, "PARENTAL_LEVEL");
         if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
             sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
@@ -333,7 +334,7 @@ void get_app_param(GuiState &gui, HostState &host, const std::string &app_path) 
         host.app_short_title = host.app_title = host.app_title_id = host.app_path; // Use app path as TitleID, Short title and Title
         host.app_version = host.app_category = host.app_parental_level = "N/A";
     }
-    gui.app_selector.user_apps.push_back({ host.app_version, host.app_category, host.app_parental_level, host.app_short_title, host.app_title, host.app_title_id, host.app_path });
+    gui.app_selector.user_apps.push_back({ host.app_version, host.app_category, host.app_content_id, host.app_parental_level, host.app_short_title, host.app_title, host.app_title_id, host.app_path });
 }
 
 void get_user_apps_title(GuiState &gui, HostState &host) {
@@ -363,22 +364,22 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
             if (host.app_version[0] == '0')
                 host.app_version.erase(host.app_version.begin());
             sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
-            if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
-                sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
-            if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
-                sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
-            std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
+            sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang));
+            sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang));
             boost::trim(host.app_title);
+            sfo::get_data_by_key(host.app_title_id, sfo_handle, "TITLE_ID");
         } else {
-            host.app_version = host.app_category = "N/A";
-            if (app == "NPXS10008")
-                host.app_short_title = host.app_title = "Trophy Collection";
-            else if (app == "NPXS10015")
+            host.app_version = "1.00";
+            host.app_category = "gda";
+            if (app == "NPXS10008") {
+                host.app_short_title = "Trophies";
+                host.app_title = "Trophy Collection";
+            } else if (app == "NPXS10015")
                 host.app_short_title = host.app_title = "Settings";
             else
                 host.app_short_title = host.app_title = "Content Manager";
         }
-        gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, {}, host.app_short_title, host.app_title, app, app });
+        gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, {}, {}, host.app_short_title, host.app_title, host.app_title_id, app });
     }
 }
 

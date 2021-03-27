@@ -805,7 +805,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                                 init_theme_start_background(gui, host, "default");
                             }
                             fs::remove_all(fs::path{ host.pref_path } / "ux0/theme" / theme_selected);
-                            if (host.app_title_id == "NPXS10026")
+                            if (host.app_path == "NPXS10026")
                                 init_content_manager(gui, host);
                             delete_theme = theme_selected;
                             popup.clear();
@@ -1172,7 +1172,7 @@ void draw_settings(GuiState &gui, HostState &host) {
             } else
                 settings_menu.clear();
         } else {
-            if (host.app_title_id == "NPXS10026") {
+            if (host.app_path == "NPXS10026") {
                 gui.live_area.content_manager = true;
             } else {
                 if (!gui.apps_list_opened.empty() && gui.apps_list_opened[gui.current_app_selected] == "NPXS10015")

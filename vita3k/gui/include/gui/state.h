@@ -45,6 +45,7 @@ enum SortState {
 struct App {
     std::string app_ver;
     std::string category;
+    std::string content_id;
     std::string parental_level;
     std::string stitle;
     std::string title;
@@ -203,7 +204,6 @@ struct GuiState {
     std::vector<std::pair<std::string, bool>> modules;
     ImGuiTextFilter module_search_bar;
 
-    bool delete_app_icon = false;
     GLuint display = 0;
 
     ImGuiTextFilter app_search_bar;

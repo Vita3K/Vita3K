@@ -40,18 +40,15 @@ void calculate_fps(HostState &host) {
         host.ms_per_frame = ms / static_cast<std::uint32_t>(host.frame_count);
         host.sdl_ticks = sdl_ticks_now;
         host.frame_count = 0;
-        host.should_update_window_title = true;
+        set_window_title(host);
     }
 }
 
 void set_window_title(HostState &host) {
-    if (host.should_update_window_title) {
-        const std::string title_to_set = fmt::format("{} | {} ({}) | {} ms/frame ({} frames/sec)", window_title,
-            host.current_app_title, host.io.title_id, host.ms_per_frame, host.fps);
+    const std::string title_to_set = fmt::format("{} | {} ({}) | {} ms/frame ({} frames/sec)", window_title,
+        host.current_app_title, host.io.title_id, host.ms_per_frame, host.fps);
 
-        SDL_SetWindowTitle(host.window.get(), title_to_set.c_str());
-        host.should_update_window_title = false;
-    }
+    SDL_SetWindowTitle(host.window.get(), title_to_set.c_str());
 }
 
 } // namespace app

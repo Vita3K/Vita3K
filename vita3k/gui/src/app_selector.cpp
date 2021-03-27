@@ -35,6 +35,8 @@ bool refresh_app_list(GuiState &gui, HostState &host) {
 
     gui.apps_background.clear();
     gui.apps_list_opened.clear();
+    for (auto &app : gui.app_selector.user_apps_icon)
+        app.second = {};
     gui.app_selector.user_apps_icon.clear();
     gui.current_app_selected = -1;
     gui.live_area_contents.clear();
@@ -124,7 +126,7 @@ enum AppRegion {
     ALL,
     USA,
     EURO,
-    JAP,
+    JAPAN,
     ASIA,
     COMMERCIAL,
     HOMEBREW,
@@ -148,7 +150,7 @@ static bool app_filter(const std::string &app) {
         if (filter_app_region({ "PCSF", "PCSB" }))
             return true;
         break;
-    case JAP:
+    case JAPAN:
         if (filter_app_region({ "PCSC", "PCSG" }))
             return true;
         break;
@@ -231,12 +233,6 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size);
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawCornerFlags_All);
-
-    if (gui.delete_app_icon) {
-        if (gui.app_selector.user_apps_icon.find(host.app_path) != gui.app_selector.user_apps_icon.end())
-            gui.app_selector.user_apps_icon.erase(host.app_path);
-        gui.delete_app_icon = false;
-    }
 
     const float icon_size = static_cast<float>(host.cfg.icon_size);
 
@@ -370,8 +366,8 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     app_region = USA;
                 if (ImGui::MenuItem("Euro", nullptr, app_region == EURO))
                     app_region = EURO;
-                if (ImGui::MenuItem("Jap", nullptr, app_region == JAP))
-                    app_region = JAP;
+                if (ImGui::MenuItem("Japan", nullptr, app_region == JAPAN))
+                    app_region = JAPAN;
                 if (ImGui::MenuItem("Asia", nullptr, app_region == ASIA))
                     app_region = ASIA;
                 ImGui::EndMenu();

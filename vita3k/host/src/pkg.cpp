@@ -205,7 +205,6 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
 
     std::vector<uint8_t> sfo_buffer(sfo_size);
     SfoFile sfo_file;
-    std::string content_id;
     infile.seekg(sfo_offset);
     infile.read((char *)&sfo_buffer[0], sfo_size);
     sfo::load(sfo_file, sfo_buffer);
@@ -216,34 +215,36 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
     boost::trim(host.app_title);
     sfo::get_data_by_key(host.app_title_id, sfo_file, "TITLE_ID");
     sfo::get_data_by_key(host.app_category, sfo_file, "CATEGORY");
-    sfo::get_data_by_key(content_id, sfo_file, "CONTENT_ID");
+    sfo::get_data_by_key(host.app_content_id, sfo_file, "CONTENT_ID");
     host.app_path = host.app_title_id;
 
     if (type == PkgType::PKG_TYPE_VITA_DLC)
-        content_id = content_id.substr(20);
+        host.app_content_id = host.app_content_id.substr(20);
 
     if (type == PkgType::PKG_TYPE_VITA_APP && strcmp(host.app_category.c_str(), "gp") == 0) {
         type = PkgType::PKG_TYPE_VITA_PATCH;
     }
 
-    fs::path root_path;
+    fs::path path;
 
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
-        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "app/" + host.app_title_id, host.pref_path);
+        path = { fs::path("app") / host.app_title_id };
         break;
     case PkgType::PKG_TYPE_VITA_DLC:
-        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "addcont/" + host.app_title_id + "/" + content_id, host.pref_path);
+        path = { fs::path("addcont") / host.app_title_id / host.app_content_id };
         break;
     case PkgType::PKG_TYPE_VITA_PATCH:
         app::error_dialog("Sorry, but game updates/patches are not supported at this time.", nullptr);
         return false;
-        //root_path = device::construct_emulated_path(VitaIoDevice::ux0, "patch/" + host.app_title_id, pref_path);
+        //path = { fs::path("patch") / host.app_title_id };
     case PkgType::PKG_TYPE_VITA_THEME:
-        root_path = device::construct_emulated_path(VitaIoDevice::ux0, "theme/" + content_id, host.pref_path);
+        path = { fs::path("theme") / host.app_content_id };
         host.app_category = "theme";
         break;
     }
+
+    const auto root_path = device::construct_emulated_path(VitaIoDevice::ux0, path.string(), host.pref_path);
 
     for (uint32_t i = 0; i < byte_swap(pkg_header.file_count); i++) {
         PkgEntry entry;
