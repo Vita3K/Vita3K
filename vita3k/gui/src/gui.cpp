@@ -388,6 +388,11 @@ static const char *const ymonth[] = {
     "July", "August", "September", "October", "November", "December"
 };
 
+static const char *const small_ymonth[] = {
+    "january", "february", "march", "april", "may", "june",
+    "july", "august", "september", "october", "november", "december"
+};
+
 static const char *const wday[] = {
     "sunday", "monday", "tuesday", "wednesday",
     "thursday", "friday", "saturday"
@@ -402,15 +407,17 @@ std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host,
         const auto month = date_time.tm_mon + 1;
         switch (gui.users[host.io.user_id].date_format) {
         case DateFormat::YYYY_MM_DD:
-            date_time_str["detail-date"] = fmt::format("{} {} ({})", month_str, date_time.tm_mday, day_str);
+            date_time_str["date-start"] = fmt::format("{} {} ({})", month_str, date_time.tm_mday, day_str);
             date_time_str["date"] = fmt::format("{}/{}/{}", year, month, date_time.tm_mday);
             break;
-        case DateFormat::DD_MM_YYYY:
-            date_time_str["detail-date"] = fmt::format("{} {} ({})", date_time.tm_mday, month_str, day_str);
+        case DateFormat::DD_MM_YYYY: {
+            const auto small_month_str = !gui.lang.common.small_ymonth.empty() ? gui.lang.common.small_ymonth[date_time.tm_mon] : small_ymonth[date_time.tm_mon];
+            date_time_str["date-start"] = fmt::format("{} {} ({})", date_time.tm_mday, small_month_str, day_str);
             date_time_str["date"] = fmt::format("{}/{}/{}", date_time.tm_mday, month, year);
             break;
+        }
         case DateFormat::MM_DD_YYYY:
-            date_time_str["detail-date"] = fmt::format("{} {} ({})", month_str, date_time.tm_mday, day_str);
+            date_time_str["date-start"] = fmt::format("{} {} ({})", month_str, date_time.tm_mday, day_str);
             date_time_str["date"] = fmt::format("{}/{}/{}", month, date_time.tm_mday, year);
             break;
         default: break;

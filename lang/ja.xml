@@ -14,6 +14,14 @@
 </app_context>
 
 <common>
+	<cancel>キャンセル</cancel>
+	<delete>削除</delete>
+	<file_corrupted>ファイルが壊れています。</file_corrupted>
+	<no>いいえ</no>
+	<select_all>すべて選択</select_all>
+	<select>選択</select>
+	<please_wait>しばらくお待ちください...</please_wait>
+	<yes>はい</yes>
 	<wday>
 		<day>日曜日</day>
 		<day>月曜日</day>
@@ -23,7 +31,7 @@
 		<day>金曜日</day>
 		<day>土曜日</day>
 	</wday>
-		<ymonth>
+	<ymonth>
 		<month>1月</month>
 		<month>2月</month>
 		<month>3月</month>
@@ -37,8 +45,27 @@
 		<month>11月</month>
 		<month>12月</month>
 	</ymonth>
+	<small_ymonth>
+		<month>1月</month>
+		<month>2月</month>
+		<month>3月</month>
+		<month>4月</month>
+		<month>5月</month>
+		<month>6月</month>
+		<month>7月</month>
+		<month>8月</month>
+		<month>9月</month>
+		<month>10月</month>
+		<month>11月</month>
+		<month>12月</month>
+	</small_ymonth>
+	<hidden_trophy>隠しトロフィー</hidden_trophy>
 	<one_hour_ago>1時間前</one_hour_ago>
 	<one_minute_ago>1分前</one_minute_ago>
+	<bronze>ブロンズ</bronze>
+	<gold>ゴールド</gold>
+	<platinum>プラチナ</platinum>
+	<silver>シルバー</silver>
 	<hours_ago>{}時間前</hours_ago>
 	<minutes_ago>{}分前</minutes_ago>
 </common>

@@ -71,6 +71,7 @@ static bool change_pref_location(const std::string &input_path, const std::strin
 }
 
 static void reset_emulator(GuiState &gui, HostState &host) {
+    gui.live_area.app_selector = false;
     get_modules_list(gui, host);
     refresh_app_list(gui, host);
     get_sys_apps_title(gui, host);
@@ -319,7 +320,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::SetTooltip("Check the box to enable app list in grid mode.");
         if (!host.cfg.apps_list_grid) {
             ImGui::Spacing();
-            ImGui::SliderInt("App Icon Size", &host.cfg.icon_size, 32, 128);
+            ImGui::SliderInt("App Icon Size", &host.cfg.icon_size, 64, 128);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred icon size.");
         }

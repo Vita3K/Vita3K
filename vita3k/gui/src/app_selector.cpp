@@ -249,7 +249,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         if (!host.cfg.apps_list_grid) {
             ImGui::Columns(5);
             ImGui::SetColumnWidth(0, icon_size + /* padding */ 20.f);
-            if (ImGui::Button("App Filter"))
+            if (ImGui::Button("Filter"))
                 ImGui::OpenPopup("app_filter");
             ImGui::NextColumn();
             switch (gui.app_selector.title_id_sort_state) {
@@ -353,7 +353,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             }
             ImGui::NextColumn();
         } else {
-            if (ImGui::Button("App Filter"))
+            if (ImGui::Button("Filter"))
                 ImGui::OpenPopup("app_filter");
             ImGui::SameLine(0, 20.f);
         }

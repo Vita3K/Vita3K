@@ -519,7 +519,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto SCAL_DATE_FONT_SIZE = DATE_FONT_SIZE / ImGui::GetFontSize();
 
     auto DATE_TIME = get_date_time(gui, host, const_cast<tm &>(local));
-    const auto DATE_STR = DATE_TIME["detail-date"];
+    const auto DATE_STR = DATE_TIME["date-start"];
     const auto CALC_DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str());
     const auto DATE_SIZE = ImVec2(CALC_DATE_SIZE.x * SCAL_DATE_FONT_SIZE, CALC_DATE_SIZE.y * SCAL_DATE_FONT_SIZE * SCAL_PIX_DATE_FONT);
     const auto DATE_POS = ImVec2(display_size.x - (start_param["dateLayout"] == "2" ? date["date"].x + DATE_SIZE.x : date["date"].x) * SCAL.x, display_size.y - (date["date"].y * SCAL.y));
@@ -606,6 +606,7 @@ void draw_settings(GuiState &gui, HostState &host) {
     const auto is_background = gui.apps_background.find("NPXS10015") != gui.apps_background.end();
     auto lang = gui.lang.settings;
     const auto is_lang = !lang.empty();
+    auto common = host.common_dialog.lang.common;
 
     ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -663,6 +664,7 @@ void draw_settings(GuiState &gui, HostState &host) {
         ImGui::Separator();
     } else if (settings_menu == "theme_background") {
         // Themes & Backgrounds
+        const auto select = !common["select"].empty() ? common["select"].c_str() : "Select";
         if (menu.empty()) {
             title = is_lang ? lang["theme_background"] : "Theme & Background";
             ImGui::SetWindowFontScale(1.2f);
@@ -754,7 +756,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         }
                         ImGui::SetWindowFontScale(1.2f);
                         ImGui::SetCursorPos(ImVec2((SIZE_LIST.x / 2.f) - (BUTTON_SIZE.x / 2.f), (SIZE_LIST.y - 82.f) - BUTTON_SIZE.y));
-                        if ((theme_selected != gui.users[host.io.user_id].theme_id) && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
+                        if ((theme_selected != gui.users[host.io.user_id].theme_id) && (ImGui::Button(select, BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
                             gui.users[host.io.user_id].start_path.clear();
                             if (init_theme(gui, host, theme_selected)) {
                                 gui.users[host.io.user_id].theme_id = theme_selected;
@@ -790,10 +792,10 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::TextColored(GUI_COLOR_TEXT, delete_str.c_str());
                         ImGui::SetCursorPos(ImVec2(50.f, POPUP_SIZE.y - (22.f + BUTTON_SIZE.y)));
                         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
-                        if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
+                        if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
                             popup.clear();
                         ImGui::SetCursorPos(ImVec2(ImGui::GetWindowSize().x - 50.f - BUTTON_SIZE.x, POPUP_SIZE.y - (22.f + BUTTON_SIZE.y)));
-                        if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+                        if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
                             if (theme_selected == gui.users[host.io.user_id].theme_id) {
                                 gui.users[host.io.user_id].theme_id = "default";
                                 gui.users[host.io.user_id].start_path.clear();
@@ -926,7 +928,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                             ImGui::Image(gui.themes_preview[gui.users[host.io.user_id].theme_id]["start"], SIZE_PREVIEW);
                         }
                         ImGui::SetCursorPos(SELECT_BUTTON_POS);
-                        if ((gui.users[host.io.user_id].start_type != "theme") && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
+                        if ((gui.users[host.io.user_id].start_type != "theme") && (ImGui::Button(select, BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
                             gui.users[host.io.user_id].start_path.clear();
                             gui.users[host.io.user_id].start_type = "theme";
                             init_theme_start_background(gui, host, gui.users[host.io.user_id].theme_id);
@@ -950,7 +952,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                             ImGui::Image(gui.themes_preview["default"]["start"], SIZE_PREVIEW);
                         }
                         ImGui::SetCursorPos(SELECT_BUTTON_POS);
-                        if ((gui.users[host.io.user_id].start_type != "default") && (ImGui::Button("Select", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
+                        if ((gui.users[host.io.user_id].start_type != "default") && (ImGui::Button(select, BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
                             gui.users[host.io.user_id].start_path.clear();
                             init_theme_start_background(gui, host, "default");
                             gui.users[host.io.user_id].start_type = "default";
@@ -1090,7 +1092,6 @@ void draw_settings(GuiState &gui, HostState &host) {
         title = is_lang ? lang["language"] : "Language";
         ImGui::SetWindowFontScale(1.2f);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-
         if (ImGui::Selectable(is_lang ? lang["system_language"].c_str() : "System Language", false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
             menu = "select_language";
         ImGui::Separator();
@@ -1109,7 +1110,6 @@ void draw_settings(GuiState &gui, HostState &host) {
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
             ImGui::Columns(2, nullptr, false);
             ImGui::SetColumnWidth(0, 30.f);
-
             const auto current_sys_lang = LIST_SYS_LANG[host.cfg.sys_lang];
             for (const auto &sys_lang : LIST_SYS_LANG) {
                 ImGui::PushID(sys_lang.c_str());
@@ -1154,6 +1154,7 @@ void draw_settings(GuiState &gui, HostState &host) {
     ImGui::EndChild();
     ImGui::PopStyleVar();
 
+    // Back
     ImGui::SetWindowFontScale(1.00f);
     ImGui::SetCursorPos(ImVec2(6.f, display_size.y - (84.f * SCAL.y)));
     if (ImGui::Button("Back", ImVec2(64.f * SCAL.x, 40.f * SCAL.y))) {
@@ -1192,7 +1193,7 @@ void draw_settings(GuiState &gui, HostState &host) {
         if (ImGui::BeginPopup("...")) {
             if (ImGui::MenuItem(is_lang ? lang["information"].c_str() : "Information"))
                 popup = "information";
-            if (ImGui::MenuItem("Delete"))
+            if (ImGui::MenuItem(!common["delete"].empty() ? common["delete"].c_str() : "Delete"))
                 popup = "delete";
             ImGui::EndPopup();
         }

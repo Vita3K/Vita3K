@@ -37,6 +37,14 @@
 </app_context>
 
 <common>
+	<cancel>Отмена</cancel>
+	<delete>Удалить</delete>
+	<file_corrupted>Файл поврежден.</file_corrupted>
+	<no>Нет</no>
+	<select_all>Выбрать все</select_all>
+	<select>Выбрать</select>
+	<please_wait>Подождите...</please_wait>
+	<yes>Да</yes>
 	<wday>
 		<day>воскресенье</day>
 		<day>понедельник</day>
@@ -60,8 +68,27 @@
 		<month>Ноябрь</month>
 		<month>Декабрь</month>
 	</ymonth>
+	<small_ymonth>
+		<month>января</month>
+		<month>февраля</month>
+		<month>марта</month>
+		<month>апреля</month>
+		<month>мая</month>
+		<month>июня</month>
+		<month>июля</month>
+		<month>августа</month>
+		<month>сентября</month>
+		<month>октября</month>
+		<month>ноября</month>
+		<month>декабря</month>
+	</small_ymonth>
+	<hidden_trophy>Скрытый приз</hidden_trophy>
 	<one_hour_ago>1 час назад</one_hour_ago>
 	<one_minute_ago>1 мин. назад</one_minute_ago>
+	<bronze>Бронзаs</bronze>
+	<gold>Золото</gold>
+	<platinum>Платина</platinum>
+	<silver>Серебро</silver>
 	<hours_ago>{} час. назад</hours_ago>
 	<minutes_ago>{} мин. назад</minutes_ago>
 </common>

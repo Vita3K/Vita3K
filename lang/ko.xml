@@ -14,6 +14,14 @@
 </app_context>
 
 <common>
+	<cancel>취소</cancel>
+	<delete>삭제</delete>
+	<file_corrupted>파일이 손상되어 있습니다.</file_corrupted>
+	<no>아니요</no>
+	<select_all>모두 선택</select_all>
+	<select>선택</select>
+	<please_wait>잠시 기다려 주십시오...</please_wait>
+	<yes>예</yes>
 	<wday>
 		<day>일요일</day>
 		<day>월요일</day>
@@ -37,8 +45,27 @@
 		<month>11월</month>
 		<month>12월</month>
 	</ymonth>
+	<small_ymonth>
+		<month>1월</month>
+		<month>2월</month>
+		<month>3월</month>
+		<month>4월</month>
+		<month>5월</month>
+		<month>6월</month>
+		<month>7월</month>
+		<month>8월</month>
+		<month>9월</month>
+		<month>10월</month>
+		<month>11월</month>
+		<month>12월</month>
+	</small_ymonth>
+	<hidden_trophy>숨겨진 트로피</hidden_trophy>
 	<one_hour_ago>1 시간 전</one_hour_ago>
 	<one_minute_ago>1 분 전</one_minute_ago>
+	<bronze>브론즈</bronze>
+	<gold>골드</gold>
+	<platinum>플래티넘</platinum>
+	<silver>실버</silver>
 	<hours_ago>{} 시간 전</hours_ago>
 	<minutes_ago>{} 분 전</minutes_ago>
 </common>

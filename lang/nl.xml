@@ -37,6 +37,14 @@
 </app_context>
 
 <common>
+	<cancel>Annuleren</cancel>
+	<delete>Verwijderen</delete>
+	<file_corrupted>Het bestand is beschadigd.</file_corrupted>
+	<no>Nee</no>
+	<select_all>Alles selecteren</select_all>
+	<select>Selecteren</select>
+	<please_wait>Een ogenblik geduld...</please_wait>
+	<yes>Ja</yes>
 	<wday>
 		<day>zondag</day>
 		<day>maandag</day>
@@ -60,8 +68,27 @@
 		<month>November</month>
 		<month>December</month>
 	</ymonth>
+	<small_ymonth>
+		<month>januari</month>
+		<month>februari</month>
+		<month>maart</month>
+		<month>april</month>
+		<month>mei</month>
+		<month>juni</month>
+		<month>juli</month>
+		<month>augustus</month>
+		<month>september</month>
+		<month>oktober</month>
+		<month>november</month>
+		<month>december</month>
+	</small_ymonth>
+	<hidden_trophy>Verborgen trofee</hidden_trophy>
 	<one_hour_ago>1 uur geleden</one_hour_ago>
 	<one_minute_ago>1 minuut geleden</one_minute_ago>
+	<bronze>Brons</bronze>
+	<gold>Goud</gold>
+	<platinum>Platina</platinum>
+	<silver>Zilver</silver>
 	<hours_ago>{} uur geleden</hours_ago>
 	<minutes_ago>{} minuten geleden</minutes_ago>
 </common>

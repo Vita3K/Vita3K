@@ -132,6 +132,15 @@ void init_lang(GuiState &gui, HostState &host) {
             // Common
             if (!lang_xml.child("common").empty()) {
                 const auto common = lang_xml.child("common");
+                auto &common_dialog = host.common_dialog.lang.common;
+                common_dialog["cancel"] = common.child("cancel").text().as_string();
+                common_dialog["delete"] = common.child("delete").text().as_string();
+                common_dialog["file_corrupted"] = common.child("file_corrupted").text().as_string();
+                common_dialog["no"] = common.child("no").text().as_string();
+                common_dialog["select_all"] = common.child("select_all").text().as_string();
+                common_dialog["select"] = common.child("select").text().as_string();
+                common_dialog["please_wait"] = common.child("please_wait").text().as_string();
+                common_dialog["yes"] = common.child("yes").text().as_string();
                 auto &lang_common = gui.lang.common;
                 if (!common.child("wday").empty()) {
                     for (const auto &day : common.child("wday"))
@@ -141,8 +150,17 @@ void init_lang(GuiState &gui, HostState &host) {
                     for (const auto &month : common.child("ymonth"))
                         lang_common.ymonth.push_back(month.text().as_string());
                 }
+                if (!common.child("small_ymonth").empty()) {
+                    for (const auto &month : common.child("small_ymonth"))
+                        lang_common.small_ymonth.push_back(month.text().as_string());
+                }
+                lang_common.common["hidden_trophy"] = common.child("hidden_trophy").text().as_string();
                 lang_common.common["one_hour_ago"] = common.child("one_hour_ago").text().as_string();
                 lang_common.common["one_minute_ago"] = common.child("one_minute_ago").text().as_string();
+                lang_common.common["bronze"] = common.child("bronze").text().as_string();
+                lang_common.common["gold"] = common.child("gold").text().as_string();
+                lang_common.common["platinum"] = common.child("platinum").text().as_string();
+                lang_common.common["silver"] = common.child("silver").text().as_string();
                 lang_common.common["hours_ago"] = common.child("hours_ago").text().as_string();
                 lang_common.common["minutes_ago"] = common.child("minutes_ago").text().as_string();
             }
@@ -159,7 +177,6 @@ void init_lang(GuiState &gui, HostState &host) {
                     const auto save_data = dialog.child("save_data");
                     if (!save_data.child("delete").empty()) {
                         const auto delete_child = save_data.child("delete");
-                        //lang_save_data["delete"] = delete_child.attribute("name").as_string();
                         lang_save_data["cancel_deleting"] = delete_child.child("cancel_deleting").text().as_string();
                         lang_save_data["deletion_complete"] = delete_child.child("deletion_complete").text().as_string();
                         lang_save_data["delete_saved_data"] = delete_child.child("delete_saved_data").text().as_string();

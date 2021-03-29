@@ -296,6 +296,8 @@ void draw_content_manager(GuiState &gui, HostState &host) {
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
     ImGui::BeginChild("##content_manager_child", menu == "info" ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
+    auto common = host.common_dialog.lang.common;
+
     if (menu.empty()) {
         title = "Content Manager";
         ImGui::SetWindowFontScale(1.2f);
@@ -377,7 +379,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(ImVec2(106.f * SCAL.x, ImGui::GetCursorPosY() + (76.f * SCAL.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "Data to be Deleted: %s", size_selected_contents.c_str());
             ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (10.f * SCAL.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCAL.y)));
-            if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+            if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
                 popup = false;
             }
             ImGui::SameLine(0, 20.f * SCAL.x);
@@ -565,7 +567,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
     } else {
         ImGui::SetWindowFontScale(1.5f * SCAL.x);
         ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(0.f, 482.f * SCAL.y), display_size, IM_COL32(39.f, 42.f, 49.f, 255.f), 0.f, ImDrawCornerFlags_All);
-        if (ImGui::Button("Cancel", ImVec2(202.f * SCAL.x, 44.f * SCAL.y))) {
+        if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", ImVec2(202.f * SCAL.x, 44.f * SCAL.y))) {
             if (!menu.empty()) {
                 menu.clear();
                 contents_selected.clear();
@@ -574,8 +576,10 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         const auto state = std::find_if(contents_selected.begin(), contents_selected.end(), [&](const auto &c) {
             return !c.second;
         }) != contents_selected.end();
+        ImGui::SetWindowFontScale(1.2f * SCAL.x);
         ImGui::SetCursorPos(ImVec2(display_size.x - (450.f * SCAL.x), display_size.y - (88.f * SCAL.y)));
-        if (ImGui::Button(state ? "Select All" : "Clear All", ImVec2(224.f * SCAL.x, 44.f * SCAL.y))) {
+        const auto select_all = !common["select_all"].empty() ? common["select_all"].c_str() : "Select All";
+        if (ImGui::Button(state ? select_all : "Clear All", ImVec2(224.f * SCAL.x, 44.f * SCAL.y))) {
             for (auto &content : contents_selected) {
                 if (state)
                     content.second = true;
@@ -587,8 +591,10 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             return cs.second;
         }) != contents_selected.end();
         ImGui::SameLine();
+        ImGui::SetWindowFontScale(1.5f * SCAL.x);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
-        if (is_enable ? ImGui::Button("Delete", ImVec2(202.f * SCAL.x, 44.f * SCAL.y)) && get_size_selected_contents(gui, host) : ImGui::Selectable("Delete", false, ImGuiSelectableFlags_Disabled, ImVec2(194.f * SCAL.x, 36.f * SCAL.y)))
+        const auto delete_str = !common["delete"].empty() ? common["delete"].c_str() : "Delete";
+        if (is_enable ? ImGui::Button(delete_str, ImVec2(202.f * SCAL.x, 44.f * SCAL.y)) && get_size_selected_contents(gui, host) : ImGui::Selectable(delete_str, false, ImGuiSelectableFlags_Disabled, ImVec2(194.f * SCAL.x, 36.f * SCAL.y)))
             popup = true;
         ImGui::PopStyleVar();
     }

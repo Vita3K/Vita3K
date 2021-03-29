@@ -42,6 +42,14 @@
 </app_context>
 
 <common>
+	<cancel>Annulla</cancel>
+	<delete>Elimina</delete>
+	<file_corrupted>Il file è danneggiato.</file_corrupted>
+	<no>No</no>
+	<select_all>Seleziona tutto</select_all>
+	<select>Seleziona</select>
+	<please_wait>Attendi...</please_wait>
+	<yes>Sì</yes>
 	<wday>
 		<day>domenica</day>
 		<day>lunedi</day>
@@ -65,8 +73,27 @@
 		<month>Novembre</month>
 		<month>Dicembre</month>
 	</ymonth>
+	<small_ymonth>
+		<month>gennaio</month>
+		<month>febbraio</month>
+		<month>marzo</month>
+		<month>aprile</month>
+		<month>maggio</month>
+		<month>giugno</month>
+		<month>luglio</month>
+		<month>agosto</month>
+		<month>settembre</month>
+		<month>ottobre</month>
+		<month>novembre</month>
+		<month>dicembre</month>
+	</small_ymonth>
+	<hidden_trophy>Trofeo nascosto</hidden_trophy>
 	<one_hour_ago>1 ora fa</one_hour_ago>
 	<one_minute_ago>1 minuto fa</one_minute_ago>
+	<bronze>Bronzo</bronze>
+	<gold>Oro</gold>
+	<platinum>Platino</platinum>
+	<silver>Argento</silver>
 	<hours_ago>{} ore fa</hours_ago>
 	<minutes_ago>{} minuti fa</minutes_ago>
 </common>
