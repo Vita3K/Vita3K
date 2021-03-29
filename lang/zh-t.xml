@@ -37,6 +37,14 @@
 </app_context>
 
 <common>
+	<cancel>取消</cancel>
+	<delete>刪除</delete>
+	<file_corrupted>檔案已毀損。</file_corrupted>
+	<no>否</no>
+	<select_all>全選</select_all>
+	<select>選擇</select>
+	<please_wait>請稍候……</please_wait>
+	<yes>是</yes>
 	<wday>
 		<day>星期日</day>
 		<day>星期一</day>
@@ -60,8 +68,27 @@
 		<month>11月</month>
 		<month>12月</month>
 	</ymonth>
+	<small_ymonth>
+		<month>1月</month>
+		<month>2月</month>
+		<month>3月</month>
+		<month>4月</month>
+		<month>5月</month>
+		<month>6月</month>
+		<month>7月</month>
+		<month>8月</month>
+		<month>9月</month>
+		<month>10月</month>
+		<month>11月</month>
+		<month>12月</month>
+	</small_ymonth>
+	<hidden_trophy>隱藏獎盃</hidden_trophy>
 	<one_hour_ago>1小時前</one_hour_ago>
 	<one_minute_ago>1分鐘前</one_minute_ago>
+	<bronze>Bronze（銅）</bronze>
+	<gold>Gold（金）</gold>
+	<platinum>Platinum（白金）</platinum>
+	<silver>Silver（銀）</silver>
 	<hours_ago>{}小時前</hours_ago>
 	<minutes_ago>{}分鐘前</minutes_ago>
 </common>

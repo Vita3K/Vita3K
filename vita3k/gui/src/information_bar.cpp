@@ -122,18 +122,19 @@ static bool set_notice_info(GuiState &gui, HostState &host, const NoticeList &in
         }
         init_notice_icon(gui, host, content_path / "sce_sys/icon0.png", info);
     } else {
+        auto common = gui.lang.common.common;
         switch (static_cast<np::trophy::SceNpTrophyGrade>(std::stoi(info.group))) {
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
-            name = "(Platinum) ";
+            name = fmt::format("({}) ", !common["platinium"].empty() ? common["platinium"] : "Platinum");
             break;
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD:
-            name = ("Gold");
+            name = fmt::format("({}) ", !common["gold"].empty() ? common["gold"] : "Gold");
             break;
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER:
-            name = "(Silver) ";
+            name = fmt::format("({}) ", !common["silver"].empty() ? common["silver"] : "Silver");
             break;
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE:
-            name = "(Bronze) ";
+            name = fmt::format("({}) ", !common["bronze"].empty() ? common["bronze"] : "Bronze");
             break;
         default: break;
         }
@@ -458,14 +459,15 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
                 if (ImGui::BeginPopupModal("Delete All", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
                     ImGui::SetWindowFontScale(1.4f * SCAL.x);
                     const auto notif_deleted = !indicator["notif_deleted"].empty() ? indicator["notif_deleted"].c_str() : "The notifications will be deleted.";
+                    auto common = host.common_dialog.lang.common;
                     ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize(notif_deleted).x / 2.f), (DELETE_POPUP_SIZE.y / 2.f) - (46.f * SCAL.y)));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", notif_deleted);
                     ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCAL.x)), DELETE_POPUP_SIZE.y - BUTTON_SIZE.y - (24.0f * SCAL.y)));
-                    if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+                    if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
                         ImGui::CloseCurrentPopup();
                     }
                     ImGui::SameLine(0.f, 20.f);
-                    if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+                    if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
                         notice_info.clear();
                         for (auto &notice : gui.notice_info_icon)
                             notice.second = {};
@@ -510,11 +512,11 @@ void draw_information_bar(GuiState &gui, HostState &host) {
             const auto icon_scal_pos = ImVec2((display_size.x / 2.f) - (16.f * SCAL.x) - (decal_icon_pos * SCAL.x) + (a * (38.f * SCAL.x)), display_size.y - (544.f * SCAL.y));
             const auto icon_scal_size = ImVec2(icon_scal_pos.x + (32.0f * SCAL.x), icon_scal_pos.y + (32.f * SCAL.y));
             if (get_app_icon(gui, gui.apps_list_opened[a])->first == gui.apps_list_opened[a])
-                ImGui::GetForegroundDrawList()->AddImageRounded(get_app_icon(gui, gui.apps_list_opened[a])->second, icon_scal_pos, icon_scal_size, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 15.f, ImDrawCornerFlags_All);
+                ImGui::GetForegroundDrawList()->AddImageRounded(get_app_icon(gui, gui.apps_list_opened[a])->second, icon_scal_pos, icon_scal_size, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 15.f * SCAL.x, ImDrawCornerFlags_All);
             else
                 ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32_WHITE, 0.f, ImDrawCornerFlags_All);
             if ((gui.current_app_selected < 0) || (gui.apps_list_opened[gui.current_app_selected] != gui.apps_list_opened[a]))
-                ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32(0.f, 0.f, 0.f, 140.f), 15.f, ImDrawCornerFlags_All);
+                ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32(0.f, 0.f, 0.f, 140.f), 15.f * SCAL.x, ImDrawCornerFlags_All);
         }
     }
 

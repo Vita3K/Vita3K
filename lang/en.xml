@@ -37,6 +37,14 @@
 </app_context>
 
 <common>
+	<cancel>Cancel</cancel>
+	<delete>Delete</delete>
+	<file_corrupted>The file is corrupt.</file_corrupted>
+	<no>No</no>
+	<select_all>Select All</select_all>
+	<select>Select</select>
+	<please_wait>Please wait...</please_wait>
+	<yes>Yes</yes>
 	<wday>
 		<day>sunday</day>
 		<day>monday</day>
@@ -60,8 +68,27 @@
 		<month>November</month>
 		<month>December</month>
 	</ymonth>
+	<small_ymonth>
+		<month>january</month>
+		<month>february</month>
+		<month>march</month>
+		<month>april</month>
+		<month>may</month>
+		<month>june</month>
+		<month>july</month>
+		<month>august</month>
+		<month>september</month>
+		<month>october</month>
+		<month>november</month>
+		<month>december</month>
+	</small_ymonthnth>
+	<hidden_trophy>Hidden Trophy</hidden_trophy>
 	<one_hour_ago>1 Hour Ago</one_hour_ago>
 	<one_minute_ago>1 Minute Ago</one_minute_ago>
+	<bronze>Bronze</bronze>
+	<gold>Gold</gold>
+	<platinum>Platinum</platinum>
+	<silver>Silver</silver>
 	<hours_ago>{} Hours Ago</hours_ago>
 	<minutes_ago>{} Minutes Ago</minutes_ago>
 </common>

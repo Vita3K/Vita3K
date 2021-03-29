@@ -59,26 +59,27 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
     ImGui::Image((ImTextureID)gui.trophy_window_icon, ImVec2(TROPHY_WINDOW_ICON_SIZE, TROPHY_WINDOW_ICON_SIZE));
     ImGui::NextColumn();
 
+    auto common = gui.lang.common.common;
     std::string trophy_kind_s = "?";
 
     switch (callback_data.trophy_kind) {
     case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM: {
-        trophy_kind_s = "Platinum";
+        trophy_kind_s = !common["platinium"].empty() ? common["platinum"] : "Platinum";
         break;
     }
 
     case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD: {
-        trophy_kind_s = "Gold";
+        trophy_kind_s = !common["gold"].empty() ? common["gold"] : "Gold";
         break;
     }
 
     case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER: {
-        trophy_kind_s = "Silver";
+        trophy_kind_s = !common["silver"].empty() ? common["silver"] : "Silver";
         break;
     }
 
     case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE: {
-        trophy_kind_s = "Bronze";
+        trophy_kind_s = !common["bronze"].empty() ? common["bronze"] : "Bronze";
         break;
     }
 

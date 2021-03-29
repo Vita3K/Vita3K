@@ -90,6 +90,7 @@ struct SavedataState {
 };
 
 struct DialogLang {
+    std::map<std::string, std::string> common;
     std::map<std::string, std::string> trophy;
     std::map<std::string, std::string> save_data;
 };

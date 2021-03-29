@@ -332,19 +332,20 @@ static void get_trophy_list(GuiState &gui, HostState &host, const std::string &n
         gui.trophy_list[trophy_id].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
 
+        auto common = gui.lang.common.common;
         const auto trophy_type = np_com_id_info[np_com_id].context.trophy_kinds[std::stoi(trophy_id)];
         switch (trophy_type) {
         case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
-            trophy_info[trophy_id].type["detail"] = "Platinum";
+            trophy_info[trophy_id].type["detail"] = !common["platinum"].empty() ? common["platinum"] : "Platinum";
             break;
         case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD:
-            trophy_info[trophy_id].type["detail"] = "Gold";
+            trophy_info[trophy_id].type["detail"] = !common["gold"].empty() ? common["gold"] : "Gold";
             break;
         case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER:
-            trophy_info[trophy_id].type["detail"] = "Silver";
+            trophy_info[trophy_id].type["detail"] = !common["silver"].empty() ? common["silver"] : "Silver";
             break;
         case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE:
-            trophy_info[trophy_id].type["detail"] = "Bronze";
+            trophy_info[trophy_id].type["detail"] = !common["bronze"].empty() ? common["bronze"] : "Bronze";
             break;
         default:
             LOG_ERROR("Trophy id {} unknown type: {}", trophy_id, (SceInt32)trophy_type);
@@ -449,6 +450,9 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
             ImGui::SetScrollY(scroll_pos[scroll_type]);
             set_scroll_pos = false;
         }
+
+        auto common = gui.lang.common.common;
+        const auto hidden_trophy_str = !common["hidden_trophy"].empty() ? common["hidden_trophy"].c_str() : "Hidden Trophy";
 
         if (np_com_id_selected.empty()) {
             // Ask Delete Trophy Popup
@@ -670,7 +674,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.2f));
                     const auto name_pos = ImGui::GetCursorPosY();
-                    if (ImGui::Selectable(hidden_trophy ? "Hidden Trophy" : trophy.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_TROPHY_LIST.y)))
+                    if (ImGui::Selectable(hidden_trophy ? hidden_trophy_str : trophy.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_TROPHY_LIST.y)))
                         trophy_id_selected = trophy.id;
                     ImGui::PopStyleVar();
                     if (!hidden_trophy) {
@@ -691,10 +695,10 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                     ImGui::TextColored(GUI_COLOR_TEXT, "Lock");
                 }
                 const auto hidden_trophy = (!trophy_info[trophy_id_selected].earned && (trophy_info[trophy_id_selected].hidden == "yes"));
-                const auto CALC_NAME = ImGui::CalcTextSize(hidden_trophy ? "Hidden Trophy" : trophy_info[trophy_id_selected].name.c_str(), nullptr, false, SIZE_INFO.x - SIZE_TROPHY_LIST.x - 48.f).y / 2.f;
+                const auto CALC_NAME = ImGui::CalcTextSize(hidden_trophy ? hidden_trophy_str : trophy_info[trophy_id_selected].name.c_str(), nullptr, false, SIZE_INFO.x - SIZE_TROPHY_LIST.x - 48.f).y / 2.f;
                 ImGui::SetCursorPos(ImVec2(SIZE_TROPHY_LIST.x + 20.f, (SIZE_TROPHY_LIST.y / 2.f) - CALC_NAME));
                 ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + SIZE_INFO.x - SIZE_TROPHY_LIST.x - (48.f * SCAL.x));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", hidden_trophy ? "Hidden Trophy" : trophy_info[trophy_id_selected].name.c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", hidden_trophy ? hidden_trophy_str : trophy_info[trophy_id_selected].name.c_str());
                 ImGui::PopTextWrapPos();
                 ImGui::SetCursorPosY(SIZE_TROPHY_LIST.y + (25.f * SCAL.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", GRADE);
