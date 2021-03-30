@@ -266,6 +266,23 @@ void init_lang(GuiState &gui, HostState &host) {
                 lang_settings["system_language"] = settings.child("language").child("system_language").text().as_string();
             }
 
+            // Trophy Collection
+            if (!lang_xml.child("trophy_collection").empty()) {
+                const auto trophy_collection = lang_xml.child("trophy_collection");
+                auto &lang_trophy_collection = gui.lang.trophy_collection;
+                lang_trophy_collection["details"] = trophy_collection.child("details").text().as_string();
+                lang_trophy_collection["earned"] = trophy_collection.child("earned").text().as_string();
+                lang_trophy_collection["name"] = trophy_collection.child("name").text().as_string();
+                lang_trophy_collection["no_trophies"] = trophy_collection.child("no_trophies").text().as_string();
+                lang_trophy_collection["not_earned"] = trophy_collection.child("not_earned").text().as_string();
+                lang_trophy_collection["original"] = trophy_collection.child("original").text().as_string();
+                lang_trophy_collection["sort"] = trophy_collection.child("sort").text().as_string();
+                lang_trophy_collection["trophies"] = trophy_collection.child("trophies").text().as_string();
+                lang_trophy_collection["grade"] = trophy_collection.child("grade").text().as_string();
+                lang_trophy_collection["progress"] = trophy_collection.child("progress").text().as_string();
+                lang_trophy_collection["updated"] = trophy_collection.child("updated").text().as_string();
+            }
+
             // User Management
             const auto user_management = lang_xml.child("user_management");
             if (!user_management.empty()) {

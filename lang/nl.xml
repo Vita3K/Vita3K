@@ -152,6 +152,21 @@ Schakel het systeem niet uit en sluit de applicatie niet.</warning_saving>
 	</language>
 </settings>
 
+<trophy_collection>
+	<details>Details</details>
+	<earned>Gewonnen</earned>
+	<name>Naam</name>
+	<no_trophies>Er zijn geen trofeeën.
+Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefunctie ondersteunt.</no_trophies>
+	<not_earned>Niet verdiend</not_earned>
+	<original>Origineel</original>
+	<sort>Sorteren</sort>
+	<trophies>Trofeeën</trophies>
+	<grade>Rang</grade>
+	<progress>Voortgang</progress>
+	<updated>Geüpdatet</updated>
+</trophy_collection>
+
 <user_management>
 	<create_user>Maak Gebruiker</create_user>
 	<edit_user>Bewerk Gebruiker</edit_user>

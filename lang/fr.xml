@@ -152,6 +152,21 @@ Ne pas éteindre le système, ni fermer l'application.</warning_saving>
 	</language>
 </settings>
 
+<trophy_collection>
+	<details>Détails</details>
+	<earned>Obtenu</earned>
+	<name>Nom</name>
+	<no_trophies>Aucun trophée.
+Pour obtenir des trophées, utilisez une application compatible avec cette fonctionnalité.</no_trophies>
+	<not_earned>Pas obtenu</not_earned>
+	<original>Original</original>
+	<sort>Trier</sort>
+	<trophies>Trophées</trophies>
+	<grade>Rang</grade>
+	<progress>Progression</progress>
+	<updated>Mis à jour</updated>
+</trophy_collection>
+
 <user_management>
 	<create_user>Créer un utilisateur</create_user>
 	<edit_user>Modifier un utilisateur</edit_user>
