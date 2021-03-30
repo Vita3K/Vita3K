@@ -152,6 +152,21 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 	</language>
 </settings>
 
+<trophy_collection>
+	<details>Detalles</details>
+	<earned>Ganado</earned>
+	<name>Nombre</name>
+	<no_trophies>No hay trofeos.
+Podrás conseguir trofeos si usas una aplicación compatible con la función de trofeos.</no_trophies>
+	<not_earned>No ganado</not_earned>
+	<original>Original</original>
+	<sort>Ordenar</sort>
+	<trophies>Trofeos</trophies>
+	<grade>Grado</grade>
+	<progress>Progreso</progress>
+	<updated>Actualizado</updated>
+</trophy_collection>
+
 <user_management>
 	<create_user>Crear usuario</create_user>
 	<edit_user>Modificar usuario</edit_user>

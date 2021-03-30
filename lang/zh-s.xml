@@ -152,6 +152,21 @@
 	</language>
 </settings>
 
+<trophy_collection>
+	<details>详细信息</details>
+	<earned>获得日期</earned>
+	<name>名称</name>
+	<no_trophies>找不到奖杯。
+您可通过游玩支持奖杯功能的应用程序获得奖杯。</no_trophies>
+	<not_earned>未获得</not_earned>
+	<original>原始</original>
+	<sort>排列</sort>
+	<trophies>奖杯数</trophies>
+	<grade>Grade（等级）</grade>
+	<progress>达成率</progress>
+	<updated>升级日期</updated>
+</trophy_collection>
+
 <user_management>
 	<create_user>新建用户</create_user>
 	<edit_user>编辑用户</edit_user>

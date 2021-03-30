@@ -152,6 +152,21 @@ Do not power off the system or close the application.</warning_saving>
 	</language>
 </settings>
 
+<trophy_collection>
+	<details>Details</details>
+	<earned>Earned</earned>
+	<name>Name</name>
+	<no_trophies>There are no trophies.
+You can earn trophies by using an application that supports the trophy feature.</no_trophies>
+	<not_earned>Not Earned</not_earned>
+	<original>Original</original>
+	<sort>Sort</sort>
+	<trophies>Trophies</trophies>
+	<grade>Grade</grade>
+	<progress>Progress</progress>
+	<updated>Updated</updated>
+</trophy_collection>
+
 <user_management>
 	<create_user>Create User</create_user>
 	<edit_user>Edit User</edit_user>

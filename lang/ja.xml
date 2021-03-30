@@ -128,3 +128,18 @@
 		<system_language>システム言語</system_language>
 	</language>
 </settings>
+
+<trophy_collection>
+	<details>詳細</details>
+	<earned>獲得日</earned>
+	<name>名前</name>
+	<no_trophies>トロフィーがありません。
+トロフィー対応のアプリケーションで遊ぶとトロフィーを獲得できます。</no_trophies>
+	<not_earned>未獲得</not_earned>
+	<original>オリジナル</original>
+	<sort>並べ替え</sort>
+	<trophies>トロフィー数</trophies>
+	<grade>グレード</grade>
+	<progress>達成率</progress>
+	<updated>更新日</updated>
+</trophy_collection>

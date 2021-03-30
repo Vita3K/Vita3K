@@ -152,6 +152,7 @@ struct Lang {
     std::map<std::string, std::string> app_context;
     std::map<std::string, std::string> indicator;
     std::map<std::string, std::string> settings;
+    std::map<std::string, std::string> trophy_collection;
     std::map<std::string, std::string> user_management;
     struct Common {
         std::vector<std::string> wday;

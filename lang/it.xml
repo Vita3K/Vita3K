@@ -119,6 +119,21 @@ Non spegnere il sistema né chiudere l'applicazione.</warning_saving>
 	<trophy_earned>Hai guadagnato un trofeo!</trophy_earned>
 </indicator>
 
+<trophy_collection>
+	<details>Dettagli</details>
+	<earned>Guadagnato</earned>
+	<name>Nome</name>
+	<no_trophies>Non ci sono trofei.
+Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.</no_trophies>
+	<not_earned>Non guadagnato</not_earned>
+	<original>Originale</original>
+	<sort>Ordina</sort>
+	<trophies>Trofei</trophies>
+	<grade>Grado</grade>
+	<progress>Avanzamento</progress>
+	<updated>Aggiornato</updated>
+</trophy_collection>
+
 <user_management>
 	<create_user>Crea utente</create_user>
 	<edit_user>Modifica utente</edit_user>
