@@ -19,6 +19,8 @@
 
 #include <gui/functions.h>
 
+#include <kernel/functions.h>
+
 #include <util/safe_time.h>
 
 #include <io/VitaIoDevice.h>
@@ -1219,11 +1221,8 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * scal.x, ImDrawCornerFlags_All);
     ImGui::GetWindowDrawList()->AddText(gui.vita_font, scal_default_font, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
     ImGui::SetCursorPos(SELECT_POS);
-    const auto is_enable = host.io.title_id.empty()
-        || (gui.apps_list_opened[gui.current_app_selected].find("NPXS") != std::string::npos)
-        || (gui.apps_list_opened[gui.current_app_selected] == host.io.title_id);
     ImGui::SetCursorPos(SELECT_POS);
-    if (ImGui::Selectable("##gate", false, is_enable ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_Disabled, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))
+    if (ImGui::Selectable("##gate", false, ImGuiSelectableFlags_None, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))
         pre_run_app(gui, host, app_path);
     ImGui::PopID();
     ImGui::GetWindowDrawList()->AddRect(GATE_POS, SIZE_GATE, IM_COL32(192, 192, 192, 255), 15.f, ImDrawCornerFlags_All, 12.f);
@@ -1276,9 +1275,12 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
     if (!gui.live_area.content_manager && !gui.live_area.manual) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f);
-        if (host.io.app_path != app_path) {
-            ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * scal.x) - BUTTON_SIZE.x, 44.0f * scal.y));
-            if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+        ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * scal.x) - BUTTON_SIZE.x, 44.0f * scal.y));
+        if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+            if (app_path == host.io.app_path) {
+                stop_all_threads(host.kernel);
+                host.load_exec = true;
+            } else {
                 gui.apps_list_opened.erase(get_app_open_list_index(gui, app_path));
                 if (gui.current_app_selected == 0) {
                     gui.live_area.live_area_screen = false;

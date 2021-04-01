@@ -346,7 +346,8 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
 
         stop_all_threads(host.kernel);
 
-        host.load_self_path = exec_path;
+        host.load_app_path = host.io.app_path;
+        host.load_exec_path = exec_path;
         host.load_exec = true;
 
         return SCE_KERNEL_OK;
