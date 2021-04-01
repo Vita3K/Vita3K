@@ -105,6 +105,16 @@ bool VoiceScheduler::stop(Voice *voice) {
     return true;
 }
 
+bool VoiceScheduler::off(Voice *voice) {
+    if (voice->state == ngs::VOICE_STATE_KEY_OFF || voice->state == ngs::VOICE_STATE_FINALIZING) {
+        return false;
+    }
+
+    voice->transition(ngs::VOICE_STATE_KEY_OFF);
+
+    return true;
+}
+
 void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID thread_id) {
     const std::lock_guard<std::mutex> guard(lock);
     updater = std::this_thread::get_id();
@@ -118,14 +128,19 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         // Modify the state, in peace....
         const std::lock_guard<std::mutex> guard(*voice->voice_lock);
         std::memset(voice->products, 0, sizeof(voice->products));
+        const auto is_key_off = voice->state == ngs::VOICE_STATE_KEY_OFF;
 
-        voice->transition(ngs::VOICE_STATE_ACTIVE);
+        if (!is_key_off)
+            voice->transition(ngs::VOICE_STATE_ACTIVE);
 
         for (std::size_t i = 0; i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {
                 voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i]);
             }
         }
+
+        if (is_key_off)
+            stop(voice);
 
         for (std::size_t i = 0; i < voice->rack->vdef->output_count(); i++) {
             if (voice->products[i].data)

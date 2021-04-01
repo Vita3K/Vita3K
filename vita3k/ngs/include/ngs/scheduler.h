@@ -37,6 +37,7 @@ public:
     bool pause(Voice *voice);
     bool resume(const MemState &mem, Voice *voice);
     bool stop(Voice *voice);
+    bool off(Voice *voice);
 
     void update(KernelState &kern, const MemState &mem, const SceUID thread_id);
 
