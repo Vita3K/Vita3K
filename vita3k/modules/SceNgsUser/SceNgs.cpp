@@ -530,8 +530,19 @@ EXPORT(int, sceNgsVoiceInit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsVoiceKeyOff) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceNgsVoiceKeyOff, SceNgsVoiceHandle voice_handle) {
+    if (host.cfg.disable_ngs) {
+        return SCE_NGS_OK;
+    }
+
+    ngs::Voice *voice = voice_handle.get(host.mem);
+
+    if (!voice) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
+
+    voice->rack->system->voice_scheduler.off(voice);
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsVoiceKill, SceNgsVoiceHandle voice_handle) {
