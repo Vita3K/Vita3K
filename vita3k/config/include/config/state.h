@@ -79,7 +79,8 @@ private:
         load_config = rhs.load_config;
         fullscreen = rhs.fullscreen;
         console = rhs.console;
-        console_arguments = rhs.console_arguments;
+        app_args = rhs.app_args;
+        load_app_list = rhs.load_app_list;
         self_path = rhs.self_path;
     }
 
@@ -94,12 +95,13 @@ public:
 
     // Setting not present in the YAML file
     fs::path config_path = {};
-    std::string console_arguments;
+    std::string app_args;
     std::string self_path;
     bool overwrite_config = true;
     bool load_config = false;
     bool fullscreen = false;
     bool console = false;
+    bool load_app_list = false;
 
     Config() {
         update_yaml();

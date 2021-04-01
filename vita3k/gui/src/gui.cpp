@@ -260,7 +260,7 @@ void init_app_background(GuiState &gui, HostState &host, const std::string &app_
 
 void init_home(GuiState &gui, HostState &host) {
     const auto is_cmd = host.cfg.run_app_path || host.cfg.vpk_path;
-    if (!is_cmd && !gui.configuration_menu.settings_dialog) {
+    if (!gui.configuration_menu.settings_dialog && (host.cfg.load_app_list || !is_cmd)) {
         get_user_apps_title(gui, host);
         init_apps_icon(gui, host, gui.app_selector.user_apps);
     }

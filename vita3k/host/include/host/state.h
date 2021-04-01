@@ -67,8 +67,10 @@ struct HostState {
     std::string default_path;
     std::wstring pref_path;
     bool load_exec = false;
+    std::string load_app_path;
     std::string load_exec_argv;
-    std::string load_self_path;
+    std::string load_exec_path;
+    std::string self_path;
     Config cfg;
     SceUID main_thread_id;
     size_t frame_count = 0;

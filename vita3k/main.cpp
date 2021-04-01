@@ -283,18 +283,26 @@ int main(int argc, char *argv[]) {
     app::destroy(host, gui.imgui_state.get());
 
     if (host.load_exec) {
-        char *args[8];
+        char *args[10];
         args[0] = argv[0];
-        args[1] = (char *)"-r";
-        args[2] = host.io.app_path.data();
-        args[3] = (char *)"--self";
-        args[4] = host.load_self_path.data();
-        if (!host.load_exec_argv.empty()) {
-            args[5] = (char *)"--console-arguments";
-            args[6] = host.load_exec_argv.data();
-            args[7] = NULL;
+        args[1] = (char *)"-a";
+        args[2] = (char *)"true";
+        if (!host.load_app_path.empty()) {
+            args[3] = (char *)"-r";
+            args[4] = host.load_app_path.data();
+            if (!host.load_exec_path.empty()) {
+                args[5] = (char *)"--self";
+                args[6] = host.load_exec_path.data();
+                if (!host.load_exec_argv.empty()) {
+                    args[7] = (char *)"--app-args";
+                    args[8] = host.load_exec_argv.data();
+                    args[9] = NULL;
+                } else
+                    args[7] = NULL;
+            } else
+                args[5] = NULL;
         } else
-            args[5] = NULL;
+            args[3] = NULL;
 
 #ifdef WIN32
         _execv(argv[0], args);

@@ -23,6 +23,8 @@
 
 #include <io/VitaIoDevice.h>
 
+#include <kernel/functions.h>
+
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -95,12 +97,20 @@ void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::str
 void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
     gui.live_area.live_area_screen = false;
     if (app_path.find("NPXS") == std::string::npos) {
-        host.io.app_path = app_path;
-        if (host.cfg.overwrite_config && (host.cfg.last_app != app_path)) {
-            host.cfg.last_app = app_path;
-            config::serialize_config(host.cfg, host.cfg.config_path);
-        }
         gui.live_area.information_bar = false;
+        if (host.io.app_path != app_path) {
+            if (host.cfg.overwrite_config && (host.cfg.last_app != app_path)) {
+                host.cfg.last_app = app_path;
+                config::serialize_config(host.cfg, host.cfg.config_path);
+            }
+            if (!host.io.app_path.empty()) {
+                stop_all_threads(host.kernel);
+                host.load_app_path = app_path;
+                host.load_exec = true;
+            } else
+                host.io.app_path = app_path;
+        } else
+            gui.live_area.live_area_screen = false;
     } else {
         init_app_background(gui, host, app_path);
 
