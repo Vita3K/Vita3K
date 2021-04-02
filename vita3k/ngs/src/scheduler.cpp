@@ -30,18 +30,11 @@ bool VoiceScheduler::deque_voice(Voice *voice) {
 }
 
 bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
-    bool should_enqueue = (voice->state == ngs::VOICE_STATE_PAUSED || voice->state == ngs::VOICE_STATE_AVAILABLE);
-
-    // Transition
-    if (voice->state == ngs::VOICE_STATE_ACTIVE || voice->state == ngs::VOICE_STATE_PAUSED) {
+    // Should Enqueue
+    if ((voice->state == ngs::VOICE_STATE_AVAILABLE) || (voice->state == ngs::VOICE_STATE_PAUSED)) {
+        // Transition
         voice->transition(ngs::VOICE_STATE_ACTIVE);
-    } else if (voice->state == ngs::VOICE_STATE_AVAILABLE) {
-        voice->transition(ngs::VOICE_STATE_PENDING);
-    } else {
-        return false;
-    }
 
-    if (should_enqueue) {
         std::int32_t lowest_dest_pos = static_cast<std::int32_t>(queue.size());
 
         // Check its dependencies position
@@ -64,9 +57,12 @@ bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
 
         const std::lock_guard<std::mutex> guard(lock);
         queue.insert(queue.begin() + lowest_dest_pos, voice);
-    }
 
-    return true;
+        return true;
+    } else if (voice->state == ngs::VOICE_STATE_ACTIVE)
+        return true;
+
+    return false;
 }
 
 bool VoiceScheduler::pause(Voice *voice) {
@@ -129,9 +125,6 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         const std::lock_guard<std::mutex> guard(*voice->voice_lock);
         std::memset(voice->products, 0, sizeof(voice->products));
         const auto is_key_off = voice->state == ngs::VOICE_STATE_KEY_OFF;
-
-        if (!is_key_off)
-            voice->transition(ngs::VOICE_STATE_ACTIVE);
 
         for (std::size_t i = 0; i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {

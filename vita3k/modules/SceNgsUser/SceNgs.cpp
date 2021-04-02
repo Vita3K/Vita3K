@@ -62,6 +62,7 @@ static_assert(sizeof(SceNgsPatchDeliveryInfo) == 20);
 static constexpr SceUInt32 SCE_NGS_OK = 0;
 static constexpr SceUInt32 SCE_NGS_ERROR = 0x804A0001;
 static constexpr SceUInt32 SCE_NGS_ERROR_INVALID_ARG = 0x804A0002;
+static constexpr SceUInt32 SCE_NGS_ERROR_INVALID_STATE = 0x804A0010;
 static constexpr SceUInt32 SCE_NGS_SIZE_MISMATCH = 0x804A000D;
 
 static constexpr SceUInt32 SCE_NGS_VOICE_STATE_AVAILABLE = 0;
@@ -679,6 +680,9 @@ EXPORT(int, sceNgsVoiceResume, SceNgsVoiceHandle handle) {
     if (!voice) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
+
+    if (voice->state != ngs::VOICE_STATE_PAUSED)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_STATE);
 
     if (!voice->rack->system->voice_scheduler.resume(host.mem, voice)) {
         return RET_ERROR(SCE_NGS_ERROR);
