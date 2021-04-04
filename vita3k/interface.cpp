@@ -529,7 +529,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     // Run `module_start` export (entry point) of loaded libraries
     for (auto &mod : host.kernel.loaded_modules) {
         const auto module = mod.second;
-        const auto module_start = module->module_start;
+        const auto module_start = module->start_entry;
         const auto module_name = module->module_name;
 
         if (!module_start || (std::string(module->path) == "app0:" + host.self_path))

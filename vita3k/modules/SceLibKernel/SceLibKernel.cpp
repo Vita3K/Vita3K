@@ -1267,7 +1267,7 @@ bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleIn
         module = module_iter->second;
 
         mod_id = module_iter->first;
-        entry_point = module->module_start;
+        entry_point = module->start_entry;
     }
     return true;
 }
