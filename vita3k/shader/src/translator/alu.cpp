@@ -1223,23 +1223,24 @@ bool USSETranslatorVisitor::vdual(
         uint8_t src_count;
         bool vector_load;
         bool vector_store;
+        bool result_is_vector;
     };
 
     const std::map<Opcode, DualOpInfo> op_info = {
-        { Opcode::VMAD, { 3, true, true } },
-        { Opcode::VDP, { 2, true, false } },
-        { Opcode::VSSQ, { 1, true, false } },
-        { Opcode::VMUL, { 2, true, true } },
-        { Opcode::VADD, { 2, true, true } },
-        { Opcode::VMOV, { 1, true, true } },
-        { Opcode::FRSQ, { 1, false, false } },
-        { Opcode::FRCP, { 1, false, false } },
-        { Opcode::FMAD, { 3, false, false } },
-        { Opcode::FADD, { 2, false, false } },
-        { Opcode::FMUL, { 2, false, false } },
-        { Opcode::FSUBFLR, { 2, false, false } },
-        { Opcode::FEXP, { 1, false, false } },
-        { Opcode::FLOG, { 1, false, false } },
+        { Opcode::VMAD, { 3, true, true, true } },
+        { Opcode::VDP, { 2, true, false, false } },
+        { Opcode::VSSQ, { 1, true, false, false } },
+        { Opcode::VMUL, { 2, true, true, true } },
+        { Opcode::VADD, { 2, true, true, true } },
+        { Opcode::VMOV, { 1, true, true, true } },
+        { Opcode::FRSQ, { 1, false, false, false } },
+        { Opcode::FRCP, { 1, false, false, false } },
+        { Opcode::FMAD, { 3, false, false, false } },
+        { Opcode::FADD, { 2, false, false, false } },
+        { Opcode::FMUL, { 2, false, false, false } },
+        { Opcode::FSUBFLR, { 2, false, false, false } },
+        { Opcode::FEXP, { 1, false, false, false } },
+        { Opcode::FLOG, { 1, false, false, false } },
     };
 
     auto get_dual_op_write_mask = [&](const DualOpInfo &op, bool dest_internal) {
@@ -1255,10 +1256,19 @@ bool USSETranslatorVisitor::vdual(
     op1.opcode = op1_codes[(!comp_count_type && dual_op1_ext_vec3_or_has_w_vec4) << 3u | dual_op1];
     op2.opcode = op2_codes[dual_op2_ext << 3u | dual_op2];
 
+    const auto op1_info = op_info.at(op1.opcode);
+    const auto op2_info = op_info.at(op2.opcode);
+
     // Unified is only part of instruction that can reference any bank. Others are internal.
     Operand unified_dest;
     Operand internal_dest;
-    unified_dest = decode_dest(unified_dest, prim_dest_num, prim_dest_bank, false, true, 8, m_second_program);
+
+    bool should_unified_double = false;
+    if ((prim_ustore && op1_info.result_is_vector) || (!prim_ustore && op2_info.result_is_vector)) {
+        should_unified_double = true;
+    }
+
+    unified_dest = decode_dest(unified_dest, prim_dest_num, prim_dest_bank, false, should_unified_double, 8, m_second_program);
     internal_dest.bank = RegisterBank::FPINTERNAL;
     internal_dest.num = prim_dest_num_gpi_case;
     internal_dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
@@ -1267,8 +1277,6 @@ bool USSETranslatorVisitor::vdual(
     op1.opr.dest = prim_ustore ? unified_dest : internal_dest;
     op2.opr.dest = prim_ustore ? internal_dest : unified_dest;
 
-    const auto op1_info = op_info.at(op1.opcode);
-    const auto op2_info = op_info.at(op2.opcode);
     const optional<DualSrcLayout> op1_layout = get_dual_op1_src_layout(op1_info.src_count, src_config);
     const optional<DualSrcLayout> op2_layout = get_dual_op2_src_layout(op1_info.src_count, op2_info.src_count, src_config);
 
