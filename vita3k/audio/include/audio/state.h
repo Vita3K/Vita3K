@@ -27,6 +27,9 @@
 #include <mutex>
 #include <vector>
 
+#define SCE_AUDIO_OUT_MAX_VOL 32768 //!< Maximum output port volume
+#define SCE_AUDIO_VOLUME_0DB SCE_AUDIO_OUT_MAX_VOL //!< Maximum output port volume
+
 typedef std::shared_ptr<SDL_AudioStream> AudioStreamPtr;
 typedef std::function<void(SceUID)> ResumeAudioThread;
 
@@ -43,6 +46,11 @@ struct SharedAudioOutPortState {
 struct AudioOutPort {
     ReadOnlyAudioOutPortState ro;
     SharedAudioOutPortState shared;
+    // Channel range from 0 - 32768
+    int left_channel_volume = SCE_AUDIO_VOLUME_0DB;
+    int right_channel_volume = SCE_AUDIO_VOLUME_0DB;
+    // Volume range from 1 - 128
+    float volume = SDL_MIX_MAXVOLUME;
 };
 
 struct AudioInPort {
