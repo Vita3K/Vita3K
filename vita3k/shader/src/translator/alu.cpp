@@ -1223,24 +1223,23 @@ bool USSETranslatorVisitor::vdual(
         uint8_t src_count;
         bool vector_load;
         bool vector_store;
-        bool result_is_vector;
     };
 
     const std::map<Opcode, DualOpInfo> op_info = {
-        { Opcode::VMAD, { 3, true, true, true } },
-        { Opcode::VDP, { 2, true, false, false } },
-        { Opcode::VSSQ, { 1, true, false, false } },
-        { Opcode::VMUL, { 2, true, true, true } },
-        { Opcode::VADD, { 2, true, true, true } },
-        { Opcode::VMOV, { 1, true, true, true } },
-        { Opcode::FRSQ, { 1, false, false, false } },
-        { Opcode::FRCP, { 1, false, false, false } },
-        { Opcode::FMAD, { 3, false, false, false } },
-        { Opcode::FADD, { 2, false, false, false } },
-        { Opcode::FMUL, { 2, false, false, false } },
-        { Opcode::FSUBFLR, { 2, false, false, false } },
-        { Opcode::FEXP, { 1, false, false, false } },
-        { Opcode::FLOG, { 1, false, false, false } },
+        { Opcode::VMAD, { 3, true, true } },
+        { Opcode::VDP, { 2, true, false } },
+        { Opcode::VSSQ, { 1, true, false } },
+        { Opcode::VMUL, { 2, true, true } },
+        { Opcode::VADD, { 2, true, true } },
+        { Opcode::VMOV, { 1, true, true } },
+        { Opcode::FRSQ, { 1, false, false } },
+        { Opcode::FRCP, { 1, false, false } },
+        { Opcode::FMAD, { 3, false, false } },
+        { Opcode::FADD, { 2, false, false } },
+        { Opcode::FMUL, { 2, false, false } },
+        { Opcode::FSUBFLR, { 2, false, false } },
+        { Opcode::FEXP, { 1, false, false } },
+        { Opcode::FLOG, { 1, false, false } },
     };
 
     auto get_dual_op_write_mask = [&](const DualOpInfo &op, bool dest_internal) {
@@ -1263,12 +1262,12 @@ bool USSETranslatorVisitor::vdual(
     Operand unified_dest;
     Operand internal_dest;
 
-    bool should_unified_double = false;
-    if ((prim_ustore && op1_info.result_is_vector) || (!prim_ustore && op2_info.result_is_vector)) {
-        should_unified_double = true;
+    bool unified_is_vector = false;
+    if ((prim_ustore && op1_info.vector_store) || (!prim_ustore && op2_info.vector_store)) {
+        unified_is_vector = true;
     }
 
-    unified_dest = decode_dest(unified_dest, prim_dest_num, prim_dest_bank, false, should_unified_double, 8, m_second_program);
+    unified_dest = decode_dest(unified_dest, prim_dest_num, prim_dest_bank, false, unified_is_vector, unified_is_vector ? 8 : 7, m_second_program);
     internal_dest.bank = RegisterBank::FPINTERNAL;
     internal_dest.num = prim_dest_num_gpi_case;
     internal_dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
