@@ -49,6 +49,11 @@ enum SceAudioOutErrorCode {
     SCE_AUDIO_OUT_ERROR_OUT_OF_MEMORY = 0x8026000D
 };
 
+enum SceAudioOutChannelFlag {
+    SCE_AUDIO_VOLUME_FLAG_L_CH = 1, //!< Left Channel
+    SCE_AUDIO_VOLUME_FLAG_R_CH = 2 //!< Right Channel
+};
+
 EXPORT(int, sceAudioOutGetAdopt) {
     return UNIMPLEMENTED();
 }
@@ -164,8 +169,24 @@ EXPORT(int, sceAudioOutSetPortVolume_forUser) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAudioOutSetVolume) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAudioOutSetVolume, int port, SceAudioOutChannelFlag ch, int *vol) {
+    if (!ch) //no channel selected, no changes
+        return 0;
+
+    const AudioOutPortPtr prt = lock_and_find(port, host.audio.shared.out_ports, host.audio.shared.mutex);
+
+    // Unsure of what happens if only one channel is selected, this will break if program passes a size 1 int array
+    const int left = (ch & SCE_AUDIO_VOLUME_FLAG_L_CH) ? vol[0] : prt->left_channel_volume;
+    const int right = (ch & SCE_AUDIO_VOLUME_FLAG_R_CH) ? vol[1] : prt->right_channel_volume;
+    const float volume_level = (static_cast<float>(left + right) / static_cast<float>(SCE_AUDIO_VOLUME_0DB * 2));
+    const int volume = static_cast<int>(SDL_MIX_MAXVOLUME * volume_level);
+
+    prt->volume = volume;
+    //then update channel volumes in case there was a change
+    prt->left_channel_volume = left;
+    prt->right_channel_volume = right;
+
+    return 0;
 }
 
 BRIDGE_IMPL(sceAudioOutGetAdopt)

@@ -52,7 +52,7 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
     const int bytes_got = SDL_AudioStreamGet(port.shared.stream.get(), temp_buffer, bytes_to_get);
     lock.unlock();
     if (bytes_got > 0) {
-        SDL_MixAudio(stream, temp_buffer, bytes_got, SDL_MIX_MAXVOLUME);
+        SDL_MixAudio(stream, temp_buffer, bytes_got, port.volume);
     }
 }
 
