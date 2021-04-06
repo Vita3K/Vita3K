@@ -45,6 +45,10 @@
 #include <util/string_utils.h>
 #endif
 
+#ifdef WIN32
+#include <ShellScalingAPI.h>
+#endif
+
 #include <SDL_video.h>
 #include <SDL_vulkan.h>
 
@@ -145,7 +149,12 @@ bool init(HostState &state, Config &cfg, const Root &root_paths, CPUDepInject in
         state.display.fullscreen = true;
         window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
+#ifdef WIN32
+    SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE);
+    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, window_type | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
+#else
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH, DEFAULT_RES_HEIGHT, window_type | SDL_WINDOW_RESIZABLE), SDL_DestroyWindow);
+#endif
 
     if (!state.window) {
         LOG_ERROR("SDL failed to create window!");
