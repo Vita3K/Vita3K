@@ -327,7 +327,7 @@ EXPORT(bool, sceAvPlayerGetVideoDataEx, SceUID player_handle, SceAvPlayerFrameIn
 }
 
 EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
-    if (host.cfg.video_playing) {
+    if (host.cfg.current_config.video_playing) {
         SceUID player_handle = host.kernel.get_next_uid();
         PlayerPtr player = std::make_shared<PlayerInfoState>();
         host.kernel.players[player_handle] = player;

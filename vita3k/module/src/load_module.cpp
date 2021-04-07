@@ -44,12 +44,12 @@ bool is_lle_module(SceSysmoduleModuleId module_id, HostState &host) {
         return false;
 
     if (have_paths) {
-        if (host.cfg.auto_lle) {
+        if (host.cfg.current_config.auto_lle) {
             if (std::find(auto_lle_modules.begin(), auto_lle_modules.end(), module_id) != auto_lle_modules.end())
                 return true;
         } else {
             for (auto path : paths)
-                if (std::find(host.cfg.lle_modules.begin(), host.cfg.lle_modules.end(), path) != host.cfg.lle_modules.end())
+                if (std::find(host.cfg.current_config.lle_modules.begin(), host.cfg.current_config.lle_modules.end(), path) != host.cfg.current_config.lle_modules.end())
                     return true;
         }
     }

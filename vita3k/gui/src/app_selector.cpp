@@ -499,7 +499,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::SetCursorPosY(POS_ICON);
                 ImGui::PushID(app.path.c_str());
                 ImGui::Selectable("##icon", &selected, host.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
-                if (ImGui::IsItemHovered())
+                if (!gui.configuration_menu.custom_settings_dialog && ImGui::IsItemHovered())
                     host.app_path = app.path;
                 if (host.app_path == app.path)
                     draw_app_context_menu(gui, host, app.path);

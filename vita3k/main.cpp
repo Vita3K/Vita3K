@@ -198,6 +198,8 @@ int main(int argc, char *argv[]) {
     host.app_short_title = APP_INDEX->stitle;
     host.io.title_id = APP_INDEX->title_id;
 
+    gui::set_config(gui, host, host.io.app_path);
+
     Ptr<const void> entry_point;
     if (const auto err = load_app(entry_point, host, string_utils::utf_to_wide(host.io.app_path)) != Success)
         return err;

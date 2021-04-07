@@ -297,13 +297,13 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg.log_level));
     }
 
-    LOG_INFO("ngs experimental state: {}", !host.cfg.disable_ngs);
-    LOG_INFO("video player state: {}", host.cfg.video_playing);
-    if (host.cfg.auto_lle)
+    LOG_INFO("ngs experimental state: {}", !host.cfg.current_config.disable_ngs);
+    LOG_INFO("video player state: {}", host.cfg.current_config.video_playing);
+    if (host.cfg.current_config.auto_lle)
         LOG_INFO("{}: enabled", host.cfg[e_auto_lle]);
-    else if (!host.cfg.lle_modules.empty()) {
+    else if (!host.cfg.current_config.lle_modules.empty()) {
         std::string modules;
-        for (const auto &mod : host.cfg.lle_modules) {
+        for (const auto &mod : host.cfg.current_config.lle_modules) {
             modules += mod + ",";
         }
         modules.pop_back();

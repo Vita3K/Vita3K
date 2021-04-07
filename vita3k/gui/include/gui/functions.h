@@ -47,6 +47,7 @@ bool get_live_area_sys_app_state(GuiState &gui);
 void get_modules_list(GuiState &gui, HostState &host);
 std::string get_unit_size(const size_t &size);
 void get_app_param(GuiState &gui, HostState &host, const std::string &app_path);
+bool get_custom_config(GuiState &gui, HostState &host, const std::string &app_path);
 void get_notice_list(HostState &host);
 void get_user_apps_title(GuiState &gui, HostState &host);
 void get_users_list(GuiState &gui, HostState &host);
@@ -56,6 +57,7 @@ void init_app_background(GuiState &gui, HostState &host, const std::string &app_
 void init_app_icon(GuiState &gui, HostState &host, const std::string &app_path);
 void init_apps_icon(GuiState &gui, HostState &host, const std::vector<gui::App> &app_list);
 void init_content_manager(GuiState &gui, HostState &host);
+void init_custom_config(GuiState &gui, HostState &host, const std::string &app_path);
 void init_home(GuiState &gui, HostState &host);
 void init_lang(GuiState &gui, HostState &host);
 void init_live_area(GuiState &gui, HostState &host);
@@ -75,6 +77,7 @@ void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::str
 void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path);
 bool refresh_app_list(GuiState &gui, HostState &host);
 void save_user(GuiState &gui, HostState &host, const std::string &user_id);
+void set_config(GuiState &gui, HostState &host, const std::string &app_path);
 void update_apps_list_opened(GuiState &gui, const std::string &app_path);
 void update_notice_info(GuiState &gui, HostState &host, const std::string &type);
 void save_notice_list(HostState &host);

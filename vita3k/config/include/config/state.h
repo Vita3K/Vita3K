@@ -103,6 +103,17 @@ public:
     bool console = false;
     bool load_app_list = false;
 
+    // Current config
+    struct CurrentConfig {
+        bool lle_kernel = false;
+        bool auto_lle = false;
+        std::vector<std::string> lle_modules = {};
+        bool disable_ngs = false;
+        bool video_playing = true;
+    };
+
+    CurrentConfig current_config;
+
     Config() {
         update_yaml();
     }
