@@ -75,7 +75,8 @@ static void draw_config_menu(GuiState &gui, HostState &host) {
     auto lang = gui.lang.main_menubar;
     const auto is_lang = !lang.empty();
     if (ImGui::BeginMenu(is_lang ? lang["configuration"].c_str() : "Configuration")) {
-        ImGui::MenuItem(is_lang ? lang["settings"].c_str() : "Settings", nullptr, &gui.configuration_menu.settings_dialog);
+        if (ImGui::MenuItem(is_lang ? lang["settings"].c_str() : "Settings", nullptr, &gui.configuration_menu.settings_dialog))
+            get_modules_list(gui, host);
         if (ImGui::MenuItem(is_lang ? lang["user_management"].c_str() : "User Management", nullptr, &gui.live_area.user_management, (!gui.live_area.user_management && host.io.title_id.empty()))) {
             gui.live_area.app_selector = false;
             gui.live_area.information_bar = true;

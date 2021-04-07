@@ -560,7 +560,7 @@ void draw_ui(GuiState &gui, HostState &host) {
     if (gui.debug_menu.disassembly_dialog)
         draw_disassembly_dialog(gui, host);
 
-    if (gui.configuration_menu.settings_dialog)
+    if (gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog)
         draw_settings_dialog(gui, host);
 
     if (gui.controls_menu.controls_dialog)

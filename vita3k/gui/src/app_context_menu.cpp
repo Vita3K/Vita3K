@@ -105,6 +105,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
     const auto title_id = APP_INDEX->title_id;
 
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
+    const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
     const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / title_id };
     const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / title_id };
     const auto SHADER_LOG_PATH{ fs::path(host.base_path) / "shaderlog" / title_id };
@@ -138,6 +139,18 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     ImGui::LogToClipboard();
                     ImGui::LogText("%s", APP_INDEX->title.c_str());
                     ImGui::LogFinish();
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Custom Config")) {
+                if (!fs::exists(CUSTOM_CONFIG_PATH)) {
+                    if (ImGui::MenuItem("Create", nullptr, &gui.configuration_menu.custom_settings_dialog))
+                        init_custom_config(gui, host, app_path);
+                } else {
+                    if (ImGui::MenuItem("Edit", nullptr, &gui.configuration_menu.custom_settings_dialog))
+                        init_custom_config(gui, host, app_path);
+                    if (ImGui::MenuItem("Remove"))
+                        fs::remove(CUSTOM_CONFIG_PATH);
                 }
                 ImGui::EndMenu();
             }

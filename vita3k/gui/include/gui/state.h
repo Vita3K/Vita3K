@@ -106,6 +106,7 @@ struct DebugMenuState {
 };
 
 struct ConfigurationMenuState {
+    bool custom_settings_dialog = false;
     bool settings_dialog = false;
 };
 
