@@ -527,6 +527,8 @@ GLenum translate_wrap_mode(SceGxmTextureAddrMode src) {
     switch (src) {
     case SCE_GXM_TEXTURE_ADDR_REPEAT:
         return GL_REPEAT;
+    case SCE_GXM_TEXTURE_ADDR_MIRROR:
+        return GL_MIRRORED_REPEAT;
     case SCE_GXM_TEXTURE_ADDR_CLAMP:
         return GL_CLAMP_TO_EDGE;
     case SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP:

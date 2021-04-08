@@ -130,7 +130,7 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     texture->format0 = (tex_format & 0x80000000) >> 31;
     texture->lod_bias = 31;
 
-    if (texture_type == SCE_GXM_TEXTURE_SWIZZLED) {
+    if ((texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE)) {
         // Find highest set bit of width and height. It's also the 2^? for width and height
         static auto highest_set_bit = [](const int num) -> std::uint32_t {
             for (std::uint32_t i = 12; i != 0; i--) {
@@ -2617,11 +2617,14 @@ EXPORT(int, sceGxmTextureInitCube, SceGxmTexture *texture, Ptr<const void> data,
     return result;
 }
 
-EXPORT(int, sceGxmTextureInitCubeArbitrary, SceGxmTexture *texture, const void *data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
+EXPORT(int, sceGxmTextureInitCubeArbitrary, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+    STUBBED("Stub InitCubeArbitrary");
+    const int result = init_texture_base(export_name, texture, data, texFormat, width, height, mipCount, SCE_GXM_TEXTURE_CUBE_ARBITRARY);
+
+    return result;
 }
 
 EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {

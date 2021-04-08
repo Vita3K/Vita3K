@@ -2,14 +2,14 @@
 
 namespace gxm {
 size_t get_width(const SceGxmTexture *texture) {
-    if (texture->type << 29 != SCE_GXM_TEXTURE_SWIZZLED) {
+    if ((texture->type << 29 != SCE_GXM_TEXTURE_SWIZZLED) && (texture->type << 29 != SCE_GXM_TEXTURE_CUBE)) {
         return texture->width + 1;
     }
     return 1ull << (texture->width & 0xF);
 }
 
 size_t get_height(const SceGxmTexture *texture) {
-    if (texture->type << 29 != SCE_GXM_TEXTURE_SWIZZLED) {
+    if ((texture->type << 29 != SCE_GXM_TEXTURE_SWIZZLED) && (texture->type << 29 != SCE_GXM_TEXTURE_CUBE)) {
         return texture->height + 1;
     }
     return 1ull << (texture->height & 0xF);
