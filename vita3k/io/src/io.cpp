@@ -380,6 +380,8 @@ int write_file(SceUID fd, const void *data, const SceSize size, const IOState &i
     }
 
     const auto file = io.std_files.find(fd);
+    if (file == io.std_files.end())
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
     if (!fs::is_directory(file->second.get_system_location().parent_path())) {
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT); // TODO: Is it the right error code?
@@ -399,6 +401,8 @@ int truncate_file(const SceUID fd, unsigned long long length, const IOState &io,
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
     const auto file = io.std_files.find(fd);
+    if (file == io.std_files.end())
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
     auto trunc = file->second.truncate(length);
     LOG_TRACE_IF(log_file_op, "{}: Truncating fd: {}, to size: {}", export_name, log_hex(fd), length);
     return trunc;
@@ -412,6 +416,8 @@ SceOff seek_file(const SceUID fd, const SceOff offset, const SceIoSeekMode whenc
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
     const auto file = io.std_files.find(fd);
+    if (file == io.std_files.end())
+        return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
     if (!file->second.seek(offset, whence))
         return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
