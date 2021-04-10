@@ -27,7 +27,7 @@
 #include <cpu/functions.h>
 #include <kernel/functions.h>
 
-#include <mem/mem.h>
+#include <mem/state.h>
 #include <spdlog/fmt/bundled/printf.h>
 #include <sstream>
 

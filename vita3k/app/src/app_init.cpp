@@ -23,7 +23,6 @@
 #include <gui/imgui_impl_sdl.h>
 #include <host/state.h>
 #include <io/functions.h>
-#include <mem/mem.h>
 #include <nids/functions.h>
 #include <renderer/functions.h>
 #include <rtc/rtc.h>

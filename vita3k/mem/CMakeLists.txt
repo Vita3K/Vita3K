@@ -1,10 +1,12 @@
 add_library(
 	mem
 	STATIC
-	src/mem.cpp
+	include/mem/functions.h
 	include/mem/mempool.h
-	include/mem/mem.h
 	include/mem/ptr.h
+	include/mem/state.h
+	include/mem/util.h
+	src/mem.cpp
 )
 
 target_include_directories(mem PUBLIC include)

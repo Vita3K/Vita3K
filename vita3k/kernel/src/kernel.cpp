@@ -16,18 +16,15 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <kernel/functions.h>
-
 #include <kernel/state.h>
 #include <kernel/thread/thread_state.h>
 
 #include <cpu/functions.h>
-#include <mem/mem.h>
 #include <mem/ptr.h>
-
-#include <spdlog/fmt/fmt.h>
-
 #include <util/find.h>
 #include <util/log.h>
+
+#include <spdlog/fmt/fmt.h>
 
 Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, int key) {
     SlotToAddress &slot_to_address = kernel.tls[thread_id];

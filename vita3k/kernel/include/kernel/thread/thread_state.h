@@ -17,13 +17,12 @@
 
 #pragma once
 
-#include <mem/mem.h> // Address.
 #include <mem/ptr.h>
+#include <util/semaphore.h>
 
 #include <condition_variable>
 #include <mutex>
 #include <string>
-#include <util/semaphore.h>
 
 struct CPUState;
 struct CPUContext;

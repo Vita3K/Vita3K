@@ -20,7 +20,7 @@
 #include <np/common.h>
 #include <np/trophy/context.h>
 
-#include <mem/mem.h> // Address.
+#include <mem/util.h> // Address.
 
 #include <map>
 #include <mutex>

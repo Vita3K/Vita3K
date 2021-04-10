@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <mem/mem.h> // Address.
+#include <mem/util.h> // Address.
 #include <util/types.h>
 
 #include <cstdint>

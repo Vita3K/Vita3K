@@ -1,6 +1,5 @@
 #pragma once
 
-#include <mem/mem.h>
 #include <mem/ptr.h>
 
 enum SceNetProtocol {
