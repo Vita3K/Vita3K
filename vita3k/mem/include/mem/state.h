@@ -17,23 +17,10 @@
 
 #pragma once
 
-#include <functional>
+#include <mem/util.h>
+
 #include <map>
-#include <memory>
 #include <mutex>
-#include <string>
-#include <vector>
-
-typedef uint32_t Address;
-typedef size_t Generation;
-typedef std::unique_ptr<uint8_t[], std::function<void(uint8_t *)>> Memory;
-typedef std::vector<Generation> Allocated;
-typedef std::map<Generation, std::string> GenerationNames;
-
-struct CPUState;
-struct MemState;
-
-typedef void (*BreakpointCallback)(CPUState &, MemState &);
 
 struct Breakpoint {
     bool gdb;
@@ -52,25 +39,3 @@ struct MemState {
     std::map<Address, Address> aligned_addr_to_original;
     std::map<Address, Breakpoint> breakpoints;
 };
-
-constexpr size_t KB(size_t kb) {
-    return kb * 1024;
-}
-
-constexpr size_t MB(size_t mb) {
-    return mb * KB(1024);
-}
-
-constexpr size_t GB(size_t gb) {
-    return gb * MB(1024);
-}
-
-bool init(MemState &state);
-Address alloc(MemState &state, size_t size, const char *name);
-Address alloc(MemState &state, size_t size, const char *name, unsigned int alignment);
-Address alloc_at(MemState &state, Address address, size_t size, const char *name);
-void free(MemState &state, Address address);
-uint32_t mem_available(MemState &state);
-const char *mem_name(Address address, MemState &state);
-void add_breakpoint(MemState &state, bool gdb, bool thumb_mode, uint32_t addr, BreakpointCallback callback);
-void remove_breakpoint(MemState &state, uint32_t addr);

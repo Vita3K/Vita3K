@@ -22,7 +22,6 @@
 #include <kernel/relocation.h>
 #include <kernel/state.h>
 #include <kernel/types.h>
-#include <mem/mem.h>
 
 #include <nids/functions.h>
 #include <util/arm.h>

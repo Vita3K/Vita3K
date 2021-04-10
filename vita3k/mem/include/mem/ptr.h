@@ -17,7 +17,8 @@
 
 #pragma once
 
-#include <mem/mem.h>
+#include <mem/functions.h>
+#include <mem/state.h>
 
 template <class T>
 class Ptr {
