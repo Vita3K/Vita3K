@@ -174,10 +174,46 @@ uint run_event_callback(HostState &host, SceUID thread_id, const PlayerPtr playe
 }
 //end of callback_thread
 
-EXPORT(int, sceAvPlayerAddSource, SceUID player_handle, const char *path) {
+EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path) {
     const PlayerPtr &player_info = lock_and_find(player_handle, host.kernel.players, host.kernel.mutex);
 
-    player_info->player.queue(expand_path(host.io, path, host.pref_path));
+    auto file_path = expand_path(host.io, path.get(host.mem), host.pref_path);
+    if (!fs::exists(file_path) && player_info->file_manager.open_file && player_info->file_manager.close_file && player_info->file_manager.read_file && player_info->file_manager.file_size) {
+        const auto cache_path{ fs::path(host.base_path) / "cache" };
+        if (!fs::exists(cache_path))
+            fs::create_directories(cache_path);
+
+        // Create temp media file
+        const auto temp_file_path = cache_path / "temp_vita_media.mp4";
+        std::ofstream temp_file(temp_file_path.string(), std::ios::out | std::ios::binary);
+
+        const Address buf = alloc(host.mem, KB(512), "AvPlayer buffer");
+        const auto buf_ptr = Ptr<char>(buf).get(host.mem);
+        const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+        run_callback(host.kernel, *thread, thread_id, player_info->file_manager.open_file.address(), { player_info->file_manager.user_data, path.address() });
+        const uint32_t file_size = run_callback(host.kernel, *thread, thread_id, player_info->file_manager.file_size.address(), { player_info->file_manager.user_data });
+        auto remaining = file_size;
+        uint32_t offset = 0;
+        const Ptr<uint32_t> buf_size_ptr(stack_alloc(*thread->cpu, 4));
+        while (remaining) {
+            const auto buf_size = std::min((uint32_t)KB(512), remaining);
+            *buf_size_ptr.get(host.mem) = buf_size;
+            run_callback(host.kernel, *thread, thread_id, player_info->file_manager.read_file.address(), { player_info->file_manager.user_data, buf, offset, 0 });
+            temp_file.write(buf_ptr, buf_size);
+            offset += buf_size;
+            remaining -= buf_size;
+        }
+        stack_free(*thread->cpu, 4);
+        free(host.mem, buf);
+        temp_file.close();
+        if (fs::file_size(temp_file_path) != file_size) {
+            LOG_ERROR("File is corrupted or incomplete: {}", temp_file_path.string());
+            return -1;
+        }
+        run_callback(host.kernel, *thread, thread_id, player_info->file_manager.close_file.address(), { player_info->file_manager.user_data });
+        file_path = temp_file_path.string();
+    }
+    player_info->player.queue(file_path);
     run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_BUFFERING, 0, Ptr<void>(0)); //may be important for sound
     run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_READY, 0, Ptr<void>(0));
     return 0;
@@ -200,16 +236,16 @@ EXPORT(int, sceAvPlayerDisableStream) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAvPlayerStreamCount, SceUID player_handle) {
+EXPORT(int32_t, sceAvPlayerStreamCount, SceUID player_handle) {
     STUBBED("ALWAYS RETURN 2 (VIDEO AND AUDIO)");
     return 2;
 }
 
-EXPORT(int, sceAvPlayerEnableStream, SceUID player_handle, uint32_t stream_no) {
+EXPORT(int32_t, sceAvPlayerEnableStream, SceUID player_handle, uint32_t stream_no) {
     if (player_handle == 0) {
         return SCE_AVPLAYER_ERROR_ILLEGAL_ADDR;
     }
-    if (stream_no > (CALL_EXPORT(sceAvPlayerStreamCount, player_handle))) {
+    if (stream_no > (uint32_t)(CALL_EXPORT(sceAvPlayerStreamCount, player_handle))) {
         return SCE_AVPLAYER_ERROR_INVALID_ARGUMENT;
     }
     return UNIMPLEMENTED();
@@ -234,7 +270,7 @@ EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, SceAvPlayerFrameInfo
         if (data.empty())
             return false;
 
-        buffer = get_buffer(player_info, MediaType::AUDIO, host.mem, data.size() * sizeof(int16_t), false);
+        buffer = get_buffer(player_info, MediaType::AUDIO, host.mem, (uint32_t)data.size() * sizeof(int16_t), false);
         std::memcpy(buffer.get(host.mem), data.data(), data.size() * sizeof(int16_t));
     }
 
