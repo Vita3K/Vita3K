@@ -45,6 +45,7 @@ add_library(modules STATIC
 	SceFios2/SceFios2User.cpp SceFios2/SceFios2User.h
 	SceFios2Kernel/SceFios2Kernel.cpp SceFios2Kernel/SceFios2Kernel.h
 	SceFios2Kernel/SceFios2Kernel02.cpp SceFios2Kernel/SceFios2Kernel02.h
+	SceFios2Kernel/SceFios2KernelForDriver.cpp SceFios2Kernel/SceFios2KernelForDriver.h
 	SceGameUpdate/SceGameUpdate.cpp SceGameUpdate/SceGameUpdate.h
 	SceGps/SceGps.cpp SceGps/SceGps.h
 	SceGpuEs4/SceGpuEs4ForUser.cpp SceGpuEs4/SceGpuEs4ForUser.h
