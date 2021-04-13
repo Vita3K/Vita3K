@@ -20,4 +20,7 @@
 #include <module/module.h>
 
 BRIDGE_DECL(scePafGetCurrentClockLocalTime)
+BRIDGE_DECL(scePafSha1Init)
+BRIDGE_DECL(scePafSha1Result)
+BRIDGE_DECL(scePafSha1Update)
 BRIDGE_DECL(sce_paf_misc_does_file_exist)
