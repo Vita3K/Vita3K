@@ -1415,9 +1415,10 @@ struct SceGxmProgram {
     std::uint8_t unk17;
 
     std::uint32_t unk18;
-    std::uint32_t unk1C;
 
-    std::uint32_t unk20; // bit 6 denotes whether a frag shader writes directly to output (usees __nativecolor modifier) or not
+    std::uint32_t texunit_flags1; // Tex unit flags. 4 bits per tex unit. 0x1 is non dependent read, 0x2 is dependent.
+    std::uint32_t texunit_flags2;
+
     std::uint32_t parameter_count;
     std::uint32_t parameters_offset; // Number of bytes from the start of this field to the first parameter.
     std::uint32_t varyings_offset; // offset to vertex outputs / fragment inputs, relative to this field
@@ -1458,6 +1459,7 @@ struct SceGxmProgram {
     std::uint32_t unk_8C;
     std::uint32_t container_count;
     std::uint32_t container_offset;
+    std::uint32_t sampler_query_info_offset; // Offset to array of uint16_t
 
     SceGxmProgramType get_type() const {
         return static_cast<SceGxmProgramType>(type & 1);
