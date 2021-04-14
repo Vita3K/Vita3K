@@ -497,7 +497,6 @@ void draw_information_bar(GuiState &gui, HostState &host) {
     ImU32 DEFAULT_BAR_COLOR = 4278190080; // Black
     ImU32 DEFAULT_INDICATOR_COLOR = 4294967295; // White
     const auto is_notif_pos = !gui.live_area.start_screen && (gui.live_area.live_area_screen || gui.live_area.app_selector) ? 78.f * SCAL.x : 0.f;
-
     const auto is_theme_color = gui.live_area.app_selector || gui.live_area.live_area_screen || gui.live_area.start_screen;
 
     ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
@@ -507,10 +506,21 @@ void draw_information_bar(GuiState &gui, HostState &host) {
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, MENUBAR_HEIGHT), is_theme_color ? gui.information_bar_color["bar"] : DEFAULT_BAR_COLOR, 0.f, ImDrawCornerFlags_All);
 
     if (gui.live_area.app_selector || gui.live_area.live_area_screen) {
-        const float decal_icon_pos = 38.f * ((float(gui.apps_list_opened.size()) - 1.f) / 2.f);
+        const auto home_icon_center = (display_size.x / 2.f) - (32.f * ((float(gui.apps_list_opened.size())) / 2.f));
+        // Draw Home Icon
+        ImGui::GetForegroundDrawList()->AddTriangleFilled(ImVec2(home_icon_center - (13.f * SCAL.x), 16.f * SCAL.y), ImVec2(home_icon_center, 6.f * SCAL.y), ImVec2(home_icon_center + (13.f * SCAL.x), 16.f * SCAL.y), gui.information_bar_color["indicator"]);
+        ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(home_icon_center - (8.f * SCAL.x), 16.f * SCAL.y), ImVec2(home_icon_center + (8.f * SCAL.x), 26.f * SCAL.y), gui.information_bar_color["indicator"]);
+        if (gui.current_app_selected != -1) {
+            ImGui::GetForegroundDrawList()->AddTriangleFilled(ImVec2(home_icon_center - (13.f * SCAL.x), 16.f * SCAL.y), ImVec2(home_icon_center, 6.f * SCAL.y), ImVec2(home_icon_center + (13.f * SCAL.x), 16.f * SCAL.y), IM_COL32(0.f, 0.f, 0.f, 100.f));
+            ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(home_icon_center - (8.f * SCAL.x), 16.f * SCAL.y), ImVec2(home_icon_center + (8.f * SCAL.x), 26.f * SCAL.y), IM_COL32(0.f, 0.f, 0.f, 100.f));
+        }
+        ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(home_icon_center - (3.f * SCAL.x), 18.5f * SCAL.y), ImVec2(home_icon_center + (3.f * SCAL.x), 26.f * SCAL.y), gui.information_bar_color["bar"]);
+
+        const float decal_app_icon_pos = 34.f * ((float(gui.apps_list_opened.size()) - 2) / 2.f);
+        // Draw App Icon
         for (auto a = 0; a < gui.apps_list_opened.size(); a++) {
-            const auto icon_scal_pos = ImVec2((display_size.x / 2.f) - (16.f * SCAL.x) - (decal_icon_pos * SCAL.x) + (a * (38.f * SCAL.x)), display_size.y - (544.f * SCAL.y));
-            const auto icon_scal_size = ImVec2(icon_scal_pos.x + (32.0f * SCAL.x), icon_scal_pos.y + (32.f * SCAL.y));
+            const auto icon_scal_pos = ImVec2((display_size.x / 2.f) - (14.f * SCAL.x) - (decal_app_icon_pos * SCAL.x) + (a * (34 * SCAL.x)), 2.f * SCAL.y);
+            const auto icon_scal_size = ImVec2(icon_scal_pos.x + (28.0f * SCAL.x), icon_scal_pos.y + (28.f * SCAL.y));
             if (get_app_icon(gui, gui.apps_list_opened[a])->first == gui.apps_list_opened[a])
                 ImGui::GetForegroundDrawList()->AddImageRounded(get_app_icon(gui, gui.apps_list_opened[a])->second, icon_scal_pos, icon_scal_size, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 15.f * SCAL.x, ImDrawCornerFlags_All);
             else
