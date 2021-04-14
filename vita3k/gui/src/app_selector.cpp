@@ -198,7 +198,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     if (!host.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
         gui.live_area.information_bar = true;
 
-    if (!gui.file_menu.pkg_install_dialog) {
+    if (!gui.file_menu.archive_install_dialog && !gui.file_menu.firmware_install_dialog && !gui.file_menu.pkg_install_dialog) {
         if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
             last_time["start"] = 0;
         else {
