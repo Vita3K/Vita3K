@@ -438,13 +438,15 @@ void init_live_area(GuiState &gui, HostState &host) {
         auto default_contents = false;
         const auto fw_path{ fs::path(host.pref_path) / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
-        auto template_xml{ fs::path(host.pref_path) / app_device._to_string() / "app" / app_path / "sce_sys/livearea/contents/template.xml" };
+        const auto APP_PATH{ fs::path(host.pref_path) / app_device._to_string() / "app" / app_path };
+        const auto live_area_path{ fs::path("sce_sys") / (fs::exists(APP_PATH / "sce_sys/retail") ? "retail/livearea" : "livearea") };
+        auto template_xml{ APP_PATH / live_area_path / "contents/template.xml" };
 
         pugi::xml_document doc;
 
         if (!doc.load_file(template_xml.c_str())) {
             if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
-                LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}'.", app_path, host.app_title);
+                LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}' in path: {}.", app_path, host.app_title, template_xml.string());
             if (doc.load_file(default_fw_contents.c_str())) {
                 template_xml = default_fw_contents;
                 default_contents = true;
@@ -523,7 +525,7 @@ void init_live_area(GuiState &gui, HostState &host) {
                 else if (app_device == VitaIoDevice::vs0)
                     vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + contents.second);
                 else
-                    vfs::read_app_file(buffer, host.pref_path, app_path, "sce_sys/livearea/contents/" + contents.second);
+                    vfs::read_app_file(buffer, host.pref_path, app_path, live_area_path.string() + "/contents/" + contents.second);
 
                 if (buffer.empty()) {
                     if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
@@ -730,7 +732,7 @@ void init_live_area(GuiState &gui, HostState &host) {
                             if (app_device == VitaIoDevice::vs0)
                                 vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + bg_name);
                             else
-                                vfs::read_app_file(buffer, host.pref_path, app_path, "sce_sys/livearea/contents/" + bg_name);
+                                vfs::read_app_file(buffer, host.pref_path, app_path, live_area_path.string() + "/contents/" + bg_name);
 
                             if (buffer.empty()) {
                                 if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
@@ -768,7 +770,7 @@ void init_live_area(GuiState &gui, HostState &host) {
                             if (app_device == VitaIoDevice::vs0)
                                 vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + img_name);
                             else
-                                vfs::read_app_file(buffer, host.pref_path, app_path, "sce_sys/livearea/contents/" + img_name);
+                                vfs::read_app_file(buffer, host.pref_path, app_path, live_area_path.string() + "/contents/" + img_name);
 
                             if (buffer.empty()) {
                                 if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
