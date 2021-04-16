@@ -394,8 +394,8 @@ static const char *const small_ymonth[] = {
 };
 
 static const char *const wday[] = {
-    "sunday", "monday", "tuesday", "wednesday",
-    "thursday", "friday", "saturday"
+    "Sunday", "Monday", "Tuesday", "Wednesday",
+    "Thursday", "Friday", "Saturday"
 };
 
 std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host, const tm &date_time) {
