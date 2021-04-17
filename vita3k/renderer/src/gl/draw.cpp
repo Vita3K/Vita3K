@@ -41,11 +41,16 @@ static GLenum translate_primitive(SceGxmPrimitiveType primType) {
     return GL_TRIANGLES;
 }
 
-struct GXMRenderUniformBlock {
+struct GXMRenderVertUniformBlock {
     float viewport_flip[4];
     float viewport_flag;
     float screen_width;
     float screen_height;
+};
+
+struct GXMRenderFragUniformBlock {
+    float back_disabled = 0;
+    float front_disabled = 0;
 };
 
 void draw(GLState &renderer, GLContext &context, GxmContextState &state, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, const void *indices, size_t count, uint32_t instance_count,
@@ -98,14 +103,20 @@ void draw(GLState &renderer, GLContext &context, GxmContextState &state, const F
 
     glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
 
-    GXMRenderUniformBlock uniform_block;
+    GXMRenderVertUniformBlock vert_ublock;
 
-    std::memcpy(uniform_block.viewport_flip, context.viewport_flip, sizeof(context.viewport_flip));
-    uniform_block.viewport_flag = (state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) ? 1.0f : 0.0f;
-    uniform_block.screen_width = state.color_surface.width;
-    uniform_block.screen_height = state.color_surface.height;
+    std::memcpy(vert_ublock.viewport_flip, context.viewport_flip, sizeof(context.viewport_flip));
+    vert_ublock.viewport_flag = (state.viewport.enable == SCE_GXM_VIEWPORT_ENABLED) ? 1.0f : 0.0f;
+    vert_ublock.screen_width = static_cast<float>(state.color_surface.width);
+    vert_ublock.screen_height = static_cast<float>(state.color_surface.height);
 
-    set_uniform_buffer(context, true, SCE_GXM_REAL_MAX_UNIFORM_BUFFER, sizeof(GXMRenderUniformBlock), &uniform_block, false);
+    set_uniform_buffer(context, true, SCE_GXM_REAL_MAX_UNIFORM_BUFFER, sizeof(GXMRenderVertUniformBlock), &vert_ublock, false);
+
+    GXMRenderFragUniformBlock frag_ublock;
+    frag_ublock.back_disabled = (state.back_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) ? 1.0f : 0.0f;
+    frag_ublock.front_disabled = (state.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) ? 1.0f : 0.0f;
+
+    set_uniform_buffer(context, false, SCE_GXM_REAL_MAX_UNIFORM_BUFFER, sizeof(GXMRenderFragUniformBlock), &frag_ublock, false);
 
     context.vertex_set_requests.clear();
     context.fragment_set_requests.clear();

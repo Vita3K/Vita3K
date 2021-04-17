@@ -383,6 +383,16 @@ COMMAND_SET_STATE(vertex_stream) {
     delete[] stream_data;
 }
 
+COMMAND_SET_STATE(fragment_program_enable) {
+    const bool is_front = helper.pop<bool>();
+    const SceGxmFragmentProgramMode mode = helper.pop<SceGxmFragmentProgramMode>();
+
+    if (is_front)
+        state->front_side_fragment_program_mode = mode;
+    else
+        state->back_side_fragment_program_mode = mode;
+}
+
 COMMAND(handle_set_state) {
     renderer::GXMState gxm_state_to_set = helper.pop<renderer::GXMState>();
     using StateChangeHandlerFunc = std::function<void(renderer::State &, MemState &, Config &, CommandHelper &,
@@ -404,7 +414,8 @@ COMMAND(handle_set_state) {
         { renderer::GXMState::CullMode, cmd_set_state_cull_mode },
         { renderer::GXMState::VertexStream, cmd_set_state_vertex_stream },
         { renderer::GXMState::Uniform, cmd_set_state_uniform },
-        { renderer::GXMState::UniformBuffer, cmd_set_state_uniform_buffer }
+        { renderer::GXMState::UniformBuffer, cmd_set_state_uniform_buffer },
+        { renderer::GXMState::FragmentProgramEnable, cmd_set_state_fragment_program_enable }
     };
 
     auto result = handlers.find(gxm_state_to_set);

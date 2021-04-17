@@ -90,15 +90,12 @@ static SharedGLObject compile_spirv(GLenum type, const std::vector<std::uint32_t
 
 static void bind_uniform_block_locations(GLuint gl_program, const SceGxmProgram &program) {
     std::string name_type = (program.is_vertex() ? "vert" : "frag");
+    GLuint render_info_index = glGetUniformBlockIndex(gl_program, program.is_vertex() ? "GxmRenderVertBufferBlock" : "GXMRenderFragBufferBlock");
 
-    if (program.is_vertex()) {
-        GLuint render_info_index = glGetUniformBlockIndex(gl_program, "GxmRenderBufferBlock");
-
-        if (render_info_index == GL_INVALID_INDEX) {
-            LOG_ERROR("Missing render info buffer in vertex shader");
-        } else {
-            glUniformBlockBinding(gl_program, render_info_index, SCE_GXM_REAL_MAX_UNIFORM_BUFFER);
-        }
+    if (render_info_index == GL_INVALID_INDEX) {
+        LOG_ERROR("Missing render info buffer in vertex shader");
+    } else {
+        glUniformBlockBinding(gl_program, render_info_index, SCE_GXM_REAL_MAX_UNIFORM_BUFFER);
     }
 
     for (uint16_t buffer_index = 0; buffer_index < SCE_GXM_REAL_MAX_UNIFORM_BUFFER; buffer_index++) {
