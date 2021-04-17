@@ -23,6 +23,7 @@
 #include <config/version.h>
 #include <gui/functions.h>
 #include <gui/state.h>
+#include <host/functions.h>
 #include <host/pkg.h>
 #include <host/state.h>
 #include <modules/module_parent.h>
@@ -114,7 +115,13 @@ int main(int argc, char *argv[]) {
     SDL_Event ev;
     while (SDL_PollEvent(&ev)) {
         if (ev.type == SDL_DROPFILE) {
-            *cfg.vpk_path = ev.drop.file;
+            const auto drop_file = fs::path(string_utils::utf_to_wide(ev.drop.file));
+            if ((drop_file.extension() == ".vpk") || (drop_file.extension() == ".zip"))
+                *cfg.vpk_path = ev.drop.file;
+            else if ((drop_file.extension() == ".rif") || (drop_file.extension() == ".bin"))
+                copy_license(host, drop_file);
+            else
+                LOG_ERROR("File droped: [{}] is not supported.", drop_file.filename().string());
             SDL_free(ev.drop.file);
             break;
         }
@@ -194,9 +201,11 @@ int main(int argc, char *argv[]) {
     const auto APP_INDEX = gui::get_app_index(gui, host.io.app_path);
     host.app_version = APP_INDEX->app_ver;
     host.app_category = APP_INDEX->category;
+    host.app_content_id = APP_INDEX->content_id;
     host.current_app_title = APP_INDEX->title;
     host.app_short_title = APP_INDEX->stitle;
     host.io.title_id = APP_INDEX->title_id;
+    host.app_sku_flag = get_license_sku_flag(host, host.app_content_id);
 
     gui::set_config(gui, host, host.io.app_path);
 

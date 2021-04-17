@@ -18,6 +18,7 @@
 #include "private.h"
 
 #include <gui/functions.h>
+#include <host/functions.h>
 
 #include <kernel/functions.h>
 
@@ -82,6 +83,7 @@ void init_lang(GuiState &gui, HostState &host) {
                     lang_main_menubar["install_firmware"] = file.child("install_firmware").text().as_string();
                     lang_main_menubar["install_pkg"] = file.child("install_pkg").text().as_string();
                     lang_main_menubar["install_zip"] = file.child("install_zip").text().as_string();
+                    lang_main_menubar["install_license"] = file.child("install_license").text().as_string();
                 }
 
                 // Emulation Menu
@@ -356,6 +358,7 @@ static std::map<std::string, std::map<std::string, std::map<std::string, ImVec2>
 static std::map<std::string, std::map<std::string, std::string>> target;
 static std::map<std::string, std::map<std::string, uint64_t>> current_item, last_time;
 static std::map<std::string, std::string> type;
+static std::map<std::string, int32_t> sku_flag;
 
 void init_live_area(GuiState &gui, HostState &host) {
     // Init type
@@ -433,13 +436,17 @@ void init_live_area(GuiState &gui, HostState &host) {
     const auto user_lang = gui.lang.user_lang;
     const auto app_path = gui.apps_list_opened[gui.current_app_selected];
     const VitaIoDevice app_device = app_path.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
+    const auto APP_INDEX = get_app_index(gui, app_path);
+
+    if (sku_flag.find(app_path) == sku_flag.end())
+        sku_flag[app_path] = get_license_sku_flag(host, APP_INDEX->content_id);
 
     if (gui.live_area_contents.find(app_path) == gui.live_area_contents.end()) {
         auto default_contents = false;
         const auto fw_path{ fs::path(host.pref_path) / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
         const auto APP_PATH{ fs::path(host.pref_path) / app_device._to_string() / "app" / app_path };
-        const auto live_area_path{ fs::path("sce_sys") / (fs::exists(APP_PATH / "sce_sys/retail") ? "retail/livearea" : "livearea") };
+        const auto live_area_path{ fs::path("sce_sys") / (sku_flag[app_path] == 3 ? "retail/livearea" : "livearea") };
         auto template_xml{ APP_PATH / live_area_path / "contents/template.xml" };
 
         pugi::xml_document doc;
@@ -529,12 +536,12 @@ void init_live_area(GuiState &gui, HostState &host) {
 
                 if (buffer.empty()) {
                     if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
-                        LOG_WARN("Contents {} '{}' Not found for title {} [{}].", contents.first, contents.second, app_path, host.app_title);
+                        LOG_WARN("Contents {} '{}' Not found for title {} [{}].", contents.first, contents.second, app_path, APP_INDEX->title);
                     continue;
                 }
                 stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                 if (!data) {
-                    LOG_ERROR("Invalid Live Area Contents for title {}.", app_path);
+                    LOG_ERROR("Invalid Live Area Contents for title {} [{}].", app_path, APP_INDEX->title);
                     continue;
                 }
 
@@ -736,12 +743,12 @@ void init_live_area(GuiState &gui, HostState &host) {
 
                             if (buffer.empty()) {
                                 if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
-                                    LOG_WARN("background, Id: {}, Name: '{}', Not found for title: {} [{}].", item.first, bg_name, app_path, host.app_title);
+                                    LOG_WARN("background, Id: {}, Name: '{}', Not found for title: {} [{}].", item.first, bg_name, app_path, APP_INDEX->title);
                                 continue;
                             }
                             stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                             if (!data) {
-                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, app_path, host.app_title);
+                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, app_path, APP_INDEX->title);
                                 continue;
                             }
 
@@ -774,12 +781,12 @@ void init_live_area(GuiState &gui, HostState &host) {
 
                             if (buffer.empty()) {
                                 if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
-                                    LOG_WARN("Image, Id: {} Name: '{}', Not found for title {} [{}].", item.first, img_name, app_path, host.app_title);
+                                    LOG_WARN("Image, Id: {} Name: '{}', Not found for title {} [{}].", item.first, img_name, app_path, APP_INDEX->title);
                                 continue;
                             }
                             stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                             if (!data) {
-                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, app_path, host.app_title);
+                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, app_path, APP_INDEX->title);
                                 continue;
                             }
 

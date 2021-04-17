@@ -10,6 +10,7 @@ typedef unsigned int SceAppUtilSaveDataSlotStatus;
 typedef unsigned int SceAppUtilAppParamId;
 typedef unsigned int SceAppUtilBgdlStatusType;
 
+#define SCE_APPUTIL_APPPARAM_ID_SKU_FLAG 0
 #define SCE_APPUTIL_NP_DRM_ADDCONT_ID_SIZE 17
 #define SCE_SYSTEM_PARAM_USERNAME_MAXSIZE 17
 

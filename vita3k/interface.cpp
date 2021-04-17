@@ -237,6 +237,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
         if (fs::exists(output_path / "sce_sys/package/work.bin")) {
             std::string licpath = output_path.string() + "/sce_sys/package/work.bin";
             update_progress();
+            copy_license(host, licpath);
             if (!decrypt_install_nonpdrm(licpath, output_path.string())) {
                 LOG_ERROR("NoNpDrm installation failed, deleting data!");
                 fs::remove_all(output_path);
@@ -462,8 +463,10 @@ bool handle_events(HostState &host, GuiState &gui) {
             const auto drop_file = fs::path(string_utils::utf_to_wide(event.drop.file));
             if ((drop_file.extension() == ".vpk") || (drop_file.extension() == ".zip"))
                 install_archive(host, &gui, drop_file);
+            else if ((drop_file.extension() == ".rif") || (drop_file.extension() == ".bin"))
+                copy_license(host, drop_file);
             else
-                LOG_ERROR("File droped: [{}] is not supported for install .zip/.vpk", drop_file.filename().string());
+                LOG_ERROR("File droped: [{}] is not supported.", drop_file.filename().string());
             SDL_free(event.drop.file);
             break;
         }

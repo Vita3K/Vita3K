@@ -43,6 +43,7 @@ void draw_main_menu_bar(GuiState &gui, HostState &host);
 void draw_firmware_install_dialog(GuiState &gui, HostState &host);
 void draw_pkg_install_dialog(GuiState &gui, HostState &host);
 void draw_archive_install_dialog(GuiState &gui, HostState &host);
+void draw_license_install_dialog(GuiState &gui, HostState &host);
 void draw_threads_dialog(GuiState &gui, HostState &host);
 void draw_thread_details_dialog(GuiState &gui, HostState &host);
 void draw_semaphores_dialog(GuiState &gui, HostState &host);
