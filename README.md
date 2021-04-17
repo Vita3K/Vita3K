@@ -19,17 +19,17 @@ The emulator currently runs some homebrew programs. It is also able to load some
 - [Homebrew compatibility database](https://github.com/Vita3K/homebrew-compatibility/issues)
 - [Commercial compatibility database](https://github.com/Vita3K/compatibility/issues)
 
-|               **Persona 4 Golden** by Atlus                |                     **A Rose in the Twilight** by Nippon Ichi Software                      |
-| :--------------------------------------------------------: | :-----------------------------------------------------------------------------------------: |
-| ![Persona 4 Golden screenshot](./docs/screenshots/P4G.png) | ![A Rose in the Twilight screenshot](./docs/screenshots/A%20Rose%20in%20the%20Twilight.png) |
+|               **Persona 4 Golden** by Atlus                   |                     **A Rose in the Twilight** by Nippon Ichi Software                         |
+| :-----------------------------------------------------------: | :--------------------------------------------------------------------------------------------: |
+| ![Persona 4 Golden screenshot](./_readme/screenshots/P4G.png) | ![A Rose in the Twilight screenshot](./_readme/screenshots/A%20Rose%20in%20the%20Twilight.png) |
 
-|                  **Alone with You** by Benjamin Rivers                  |                 **VA-11 HALL-A** by Sukeban Games                 |
-| :---------------------------------------------------------------------: | :---------------------------------------------------------------: |
-| ![Alone with You screenshot](./docs/screenshots/Alone%20With%20You.png) | ![VA-11 HALL-A screenshot](./docs/screenshots/VA-11%20HALL-A.png) |
+|                  **Alone with You** by Benjamin Rivers                     |                 **VA-11 HALL-A** by Sukeban Games                    |
+| :------------------------------------------------------------------------: | :------------------------------------------------------------------: |
+| ![Alone with You screenshot](./_readme/screenshots/Alone%20With%20You.png) | ![VA-11 HALL-A screenshot](./_readme/screenshots/VA-11%20HALL-A.png) |
 
-|              **Fruit Ninja** by Halfbrick Studios               |                **Jetpack Joyride** by Halfbrick Studios                 |
-| :-------------------------------------------------------------: | :---------------------------------------------------------------------: |
-| ![Fruit Ninja Screenshot](./docs/screenshots/Fruit%20Ninja.png) | ![Jetpack Joyride Screenshot](./docs/screenshots/Jetpack%20Joyride.png) |
+|              **Fruit Ninja** by Halfbrick Studios                  |                **Jetpack Joyride** by Halfbrick Studios                    |
+| :----------------------------------------------------------------: | :------------------------------------------------------------------------: |
+| ![Fruit Ninja Screenshot](./_readme/screenshots/Fruit%20Ninja.png) | ![Jetpack Joyride Screenshot](./_readme/screenshots/Jetpack%20Joyride.png) |
 
 ## Licence
 
