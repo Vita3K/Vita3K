@@ -341,6 +341,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
         return true;
         break;
     }
+    create_license(host, zRIF);
     progress_callback(100);
     return true;
 }

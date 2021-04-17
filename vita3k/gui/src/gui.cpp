@@ -539,6 +539,8 @@ void draw_ui(GuiState &gui, HostState &host) {
         draw_firmware_install_dialog(gui, host);
     if (gui.file_menu.archive_install_dialog)
         draw_archive_install_dialog(gui, host);
+    if (gui.file_menu.license_install_dialog)
+        draw_license_install_dialog(gui, host);
     if (gui.debug_menu.threads_dialog)
         draw_threads_dialog(gui, host);
     if (gui.debug_menu.thread_details_dialog)

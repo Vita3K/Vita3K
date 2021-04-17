@@ -11,6 +11,7 @@ add_library(
 	include/host/sfo.h
 	include/host/state.h
 	include/host/window.h
+	src/license.cpp
 	src/load_self.cpp
 	src/pkg.cpp
 	src/pup.cpp

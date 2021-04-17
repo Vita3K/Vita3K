@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -90,8 +90,16 @@ EXPORT(int, sceAppUtilAppEventParseWebBrowser) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilAppParamGetInt) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceAppUtilAppParamGetInt, SceAppUtilAppParamId paramId, SceInt32 *value) {
+    if (paramId != SCE_APPUTIL_APPPARAM_ID_SKU_FLAG)
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
+
+    if (!value)
+        return RET_ERROR(SCE_APPUTIL_ERROR_NOT_INITIALIZED);
+
+    *value = host.app_sku_flag;
+
+    return 0;
 }
 
 EXPORT(int, sceAppUtilBgdlGetStatus) {

@@ -42,6 +42,7 @@ static void draw_file_menu(GuiState &gui, HostState &host) {
         ImGui::MenuItem(is_lang ? lang["install_firmware"].c_str() : "Install Firmware", nullptr, &gui.file_menu.firmware_install_dialog);
         ImGui::MenuItem(is_lang ? lang["install_pkg"].c_str() : "Install .pkg", nullptr, &gui.file_menu.pkg_install_dialog);
         ImGui::MenuItem(is_lang ? lang["install_zip"].c_str() : "Install .zip, .vpk", nullptr, &gui.file_menu.archive_install_dialog);
+        ImGui::MenuItem(!lang["install_license"].empty() ? lang["install_license"].c_str() : "Install License", nullptr, &gui.file_menu.license_install_dialog);
         ImGui::EndMenu();
     }
 }

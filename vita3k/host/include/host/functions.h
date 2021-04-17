@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <host/state.h>
+
 #include <functional>
 #include <string>
 #include <vector>
@@ -24,6 +26,10 @@
 struct SfoFile;
 
 void install_pup(const std::wstring &pref_path, const std::string &pup_path, const std::function<void(uint32_t)> &progress_callback = nullptr);
+
+bool create_license(HostState &host, const std::string &zRIF);
+bool copy_license(HostState &host, const fs::path &license_path);
+int32_t get_license_sku_flag(HostState &host, const std::string &content_id);
 
 namespace sfo {
 bool get_data_by_id(std::string &out_data, SfoFile &file, int id);
