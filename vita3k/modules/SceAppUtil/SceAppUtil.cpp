@@ -98,17 +98,26 @@ EXPORT(int, sceAppUtilBgdlGetStatus) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilDrmClose) {
-    return UNIMPLEMENTED();
+static bool is_addcont_exist(HostState &host, const SceChar8 *path) {
+    const auto drm_content_id_path{ fs::path(host.pref_path) / (+VitaIoDevice::ux0)._to_string() / host.io.device_paths.addcont0 / reinterpret_cast<const char *>(path) };
+    return (fs::exists(drm_content_id_path) && (!fs::is_empty(drm_content_id_path)));
+}
+
+EXPORT(SceInt32, sceAppUtilDrmClose, const SceAppUtilDrmAddcontId *dirName, const SceAppUtilMountPoint *mountPoint) {
+    if (!dirName)
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
+
+    if (!is_addcont_exist(host, dirName->data))
+        return RET_ERROR(SCE_APPUTIL_ERROR_NOT_MOUNTED);
+
+    return 0;
 }
 
 EXPORT(SceInt32, sceAppUtilDrmOpen, const SceAppUtilDrmAddcontId *dirName, const SceAppUtilMountPoint *mountPoint) {
     if (!dirName)
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
 
-    const auto drm_content_id_path{ fs::path(host.pref_path) / (+VitaIoDevice::ux0)._to_string() / host.io.device_paths.addcont0 / reinterpret_cast<const char *>(dirName->data) };
-
-    if (!fs::exists(drm_content_id_path) || (fs::is_empty(drm_content_id_path)))
+    if (!is_addcont_exist(host, dirName->data))
         return SCE_ERROR_ERRNO_ENOENT;
 
     return 0;
