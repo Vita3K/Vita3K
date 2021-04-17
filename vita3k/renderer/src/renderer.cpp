@@ -127,6 +127,14 @@ void set_two_sided_enable(State &state, Context *ctx, GxmContextState *gxm_conte
     }
 }
 
+void set_side_fragment_program_enable(State &state, Context *ctx, const bool is_front, SceGxmFragmentProgramMode mode) {
+    switch (state.current_backend) {
+    default:
+        renderer::add_state_set_command(ctx, renderer::GXMState::FragmentProgramEnable, is_front, mode);
+        break;
+    }
+}
+
 void set_context(State &state, Context *ctx, GxmContextState *gxm_context, RenderTarget *target, SceGxmColorSurface *color_surface, SceGxmDepthStencilSurface *depth_stencil_surface) {
     switch (state.current_backend) {
     default:

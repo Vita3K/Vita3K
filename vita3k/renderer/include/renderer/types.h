@@ -59,6 +59,7 @@ enum class GXMState : std::uint16_t {
     CullMode = 13,
     Uniform = 14,
     UniformBuffer = 15,
+    FragmentProgramEnable = 16,
     TotalState
 };
 

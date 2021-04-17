@@ -1707,7 +1707,7 @@ EXPORT(void, sceGxmSetBackDepthWriteEnable, SceGxmContext *context, SceGxmDepthW
 }
 
 EXPORT(void, sceGxmSetBackFragmentProgramEnable, SceGxmContext *context, SceGxmFragmentProgramMode enable) {
-    UNIMPLEMENTED();
+    renderer::set_side_fragment_program_enable(*host.renderer, context->renderer.get(), false, enable);
 }
 
 EXPORT(void, sceGxmSetBackLineFillLastPixelEnable, SceGxmContext *context, SceGxmLineFillLastPixelMode enable) {
@@ -1836,7 +1836,7 @@ EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepth
 }
 
 EXPORT(void, sceGxmSetFrontFragmentProgramEnable, SceGxmContext *context, SceGxmFragmentProgramMode enable) {
-    UNIMPLEMENTED();
+    renderer::set_side_fragment_program_enable(*host.renderer, context->renderer.get(), true, enable);
 }
 
 EXPORT(void, sceGxmSetFrontLineFillLastPixelEnable, SceGxmContext *context, SceGxmLineFillLastPixelMode enable) {

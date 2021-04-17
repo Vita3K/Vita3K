@@ -967,12 +967,12 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    if (program_type == SceGxmProgramType::Vertex) {
-        spv::Id f32 = b.makeFloatType(32);
-        spv::Id v4 = b.makeVectorType(f32, 4);
+    spv::Id f32 = b.makeFloatType(32);
+    spv::Id v4 = b.makeVectorType(f32, 4);
 
+    if (program_type == SceGxmProgramType::Vertex) {
         // Create the default reg uniform buffer
-        spv::Id render_buf_type = b.makeStructType({ v4, f32, f32, f32 }, "GxmRenderBufferBlock");
+        spv::Id render_buf_type = b.makeStructType({ v4, f32, f32, f32 }, "GxmRenderVertBufferBlock");
         b.addDecoration(render_buf_type, spv::DecorationBlock);
         b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
 
@@ -986,13 +986,29 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         b.addMemberName(render_buf_type, 2, "screen_width");
         b.addMemberName(render_buf_type, 3, "screen_height");
 
-        translation_state.render_info_id = b.createVariable(spv::StorageClassUniform, render_buf_type, "renderInfo");
+        translation_state.render_info_id = b.createVariable(spv::StorageClassUniform, render_buf_type, "renderVertInfo");
 
         if (features.use_shader_binding)
             b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, 15);
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
+        spv::Id render_buf_type = b.makeStructType({ f32, f32 }, "GxmRenderFragBufferBlock");
+
+        b.addDecoration(render_buf_type, spv::DecorationBlock);
+        b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
+
+        b.addMemberDecoration(render_buf_type, 0, spv::DecorationOffset, 0);
+        b.addMemberDecoration(render_buf_type, 1, spv::DecorationOffset, 4);
+
+        b.addMemberName(render_buf_type, 0, "back_disabled");
+        b.addMemberName(render_buf_type, 1, "front_disabled");
+
+        translation_state.render_info_id = b.createVariable(spv::StorageClassUniform, render_buf_type, "renderFragInfo");
+
+        if (features.use_shader_binding)
+            b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, 31);
+
         create_fragment_inputs(b, spv_params, utils, features, translation_state, texture_queries, samplers, program);
     }
 
@@ -1000,9 +1016,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 }
 
 static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program,
-    const FeatureState &features, utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &texture_queries) {
+    const FeatureState &features, utils::SpirvUtilFunctions &utils, spv::Function *begin_hook_func, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &texture_queries) {
     // Do texture queries
-    usse::convert_gxp_usse_to_spirv(b, program, features, parameters, utils, end_hook_func, texture_queries);
+    usse::convert_gxp_usse_to_spirv(b, program, features, parameters, utils, begin_hook_func, end_hook_func, texture_queries);
 }
 
 static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters,
@@ -1213,6 +1229,44 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     return vert_fin_func;
 }
 
+static spv::Function *make_frag_initialize_function(spv::Builder &b, TranslationState &translate_state) {
+    std::vector<std::vector<spv::Decoration>> decorations;
+
+    spv::Block *frag_init_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+
+    spv::Function *frag_init_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "frag_init", {},
+        decorations, &frag_init_block);
+
+    // Note! We use CCW as Front face, however we invert the coordinates so the front face is actually CW, identical to GXM (GXM also has front-face as CW)
+    spv::Id booltype = b.makeBoolType();
+    spv::Id zero = b.makeFloatConstant(0.0f);
+
+    spv::Id front_facing = b.createVariable(spv::StorageClassInput, booltype, "gl_FrontFacing");
+    spv::Id front_disabled = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(1) });
+    spv::Id back_disabled = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(0) });
+    b.addDecoration(front_facing, spv::DecorationBuiltIn, spv::BuiltInFrontFacing);
+
+    front_facing = b.createLoad(front_facing);
+
+    spv::Id pred = b.createOp(spv::OpLogicalAnd, booltype, { b.createBinOp(spv::OpFOrdNotEqual, booltype, b.createLoad(front_disabled), zero), front_facing });
+
+    spv::Builder::If front_disabled_cond_builder(pred, spv::SelectionControlMaskNone, b);
+    b.makeDiscard();
+    front_disabled_cond_builder.makeEndIf();
+
+    pred = b.createOp(spv::OpLogicalAnd, booltype, { b.createBinOp(spv::OpFOrdNotEqual, booltype, b.createLoad(back_disabled), zero), b.createUnaryOp(spv::OpLogicalNot, booltype, front_facing) });
+
+    spv::Builder::If back_disabled_cond_builder(pred, spv::SelectionControlMaskNone, b);
+    b.makeDiscard();
+    back_disabled_cond_builder.makeEndIf();
+
+    b.makeReturn(false);
+    b.setBuildPoint(last_build_point);
+
+    return frag_init_func;
+}
+
 static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     SpirvCode spirv;
 
@@ -1259,6 +1313,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     // Entry point
     spv::Function *spv_func_main = b.makeEntryPoint(entry_point_name.c_str());
     spv::Function *end_hook_func = nullptr;
+    spv::Function *begin_hook_func = nullptr;
 
     std::vector<spv::Id> empty_args;
 
@@ -1280,6 +1335,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     SpirvShaderParameters parameters = create_parameters(b, program, utils, features, translation_state, program_type, texture_queries, hint_attributes);
 
     if (program.is_fragment()) {
+        begin_hook_func = make_frag_initialize_function(b, translation_state);
         end_hook_func = make_frag_finalize_function(b, parameters, program, utils, features, translation_state);
     } else {
         end_hook_func = make_vert_finalize_function(b, parameters, program, utils, features, translation_state);
@@ -1304,7 +1360,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         });
     }
 
-    generate_shader_body(b, parameters, program, features, utils, end_hook_func, texture_queries);
+    generate_shader_body(b, parameters, program, features, utils, begin_hook_func, end_hook_func, texture_queries);
 
     // Add entry point to Builder
     auto entrypoint = b.addEntryPoint(execution_model, spv_func_main, entry_point_name.c_str());

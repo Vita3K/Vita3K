@@ -1256,6 +1256,10 @@ struct GxmContextState {
     SceGxmPolygonMode front_polygon_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
     SceGxmPolygonMode back_polygon_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
 
+    // Fragment Program Mode
+    SceGxmFragmentProgramMode front_side_fragment_program_mode = SCE_GXM_FRAGMENT_PROGRAM_ENABLED;
+    SceGxmFragmentProgramMode back_side_fragment_program_mode = SCE_GXM_FRAGMENT_PROGRAM_ENABLED;
+
     // Line Width
     unsigned int front_point_line_width = 1;
     unsigned int back_point_line_width = 1;
