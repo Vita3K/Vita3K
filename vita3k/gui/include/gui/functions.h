@@ -89,6 +89,7 @@ void draw_ui(GuiState &gui, HostState &host);
 
 void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &app_path);
 void draw_common_dialog(GuiState &gui, HostState &host);
+void draw_ime(HostState &host);
 void draw_reinstall_dialog(GenericDialogState *status, HostState &host);
 void draw_trophies_unlocked(GuiState &gui, HostState &host);
 void draw_perf_overlay(GuiState &gui, HostState &host);

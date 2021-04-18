@@ -512,6 +512,9 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (!gui.trophy_unlock_display_requests.empty())
         gui::draw_trophies_unlocked(gui, host);
 
+    if (host.ime.state && (!gui.live_area.app_selector && !gui.live_area.live_area_screen))
+        draw_ime(host);
+
     // System App
     if (gui.live_area.content_manager)
         draw_content_manager(gui, host);

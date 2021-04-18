@@ -24,6 +24,7 @@ add_library(
 	src/content_manager.cpp
 	src/eventflags_dialog.cpp
 	src/firmware_install_dialog.cpp
+	src/ime.cpp
 	src/gui.cpp
 	src/imgui_impl_sdl_gl3.cpp
 	${IMGUI_IMPL_VULKAN_SOURCES}
