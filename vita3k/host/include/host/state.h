@@ -24,6 +24,7 @@
 #include <gxm/state.h>
 #include <host/sfo.h>
 #include <host/window.h>
+#include <ime/state.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <net/state.h>
@@ -96,6 +97,7 @@ struct HostState {
     NpState np;
     DisplayState display;
     DialogState common_dialog;
+    Ime ime;
     SfoFile sfo_handle;
     NIDSet missing_nids;
 #ifdef USE_GDBSTUB

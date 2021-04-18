@@ -18,6 +18,7 @@
 #pragma once
 
 #include <dialog/state.h>
+#include <ime/state.h>
 #include <np/state.h>
 
 #include <imgui.h>
