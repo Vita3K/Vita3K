@@ -61,18 +61,18 @@ int main(int argc, char *argv[]) {
     HostState host;
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
-            if (cfg.recompile_shader_path.is_initialized()) {
+            if (cfg.recompile_shader_path.has_value()) {
                 LOG_INFO("Recompiling {}", *cfg.recompile_shader_path);
                 shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
             }
-            if (cfg.delete_title_id.is_initialized()) {
+            if (cfg.delete_title_id.has_value()) {
                 LOG_INFO("Deleting title id {}", *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/app" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/addcont" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/user/00/savedata" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "shaderlog" / *cfg.delete_title_id);
             }
-            if (cfg.pkg_path.is_initialized() && cfg.pkg_zrif.is_initialized()) {
+            if (cfg.pkg_path.has_value() && cfg.pkg_zrif.has_value()) {
                 LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
                 host.pref_path = string_utils::utf_to_wide(root_paths.get_pref_path_string());
                 install_pkg(*cfg.pkg_path, host, *cfg.pkg_zrif, [](float) {});

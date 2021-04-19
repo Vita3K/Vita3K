@@ -34,7 +34,6 @@
 
 #include <SPIRV/SpvBuilder.h>
 #include <SPIRV/disassemble.h>
-#include <boost/optional.hpp>
 #include <spirv_glsl.hpp>
 
 #include <algorithm>
@@ -45,8 +44,6 @@
 #include <sstream>
 #include <utility>
 #include <vector>
-
-using boost::optional;
 
 static constexpr bool LOG_SHADER_CODE = true;
 static constexpr bool DUMP_SPIRV_BINARIES = false;

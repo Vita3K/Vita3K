@@ -21,12 +21,8 @@
 #include <config/yaml.h>
 
 #include <util/fs.h>
+#include <util/optional.h>
 #include <util/vector_utils.h>
-
-#include <boost/optional.hpp>
-#include <boost/optional/optional_io.hpp>
-
-using boost::optional;
 
 // Enum based on members in Config file
 // Used for easier getting of options and their names for config files
@@ -59,17 +55,17 @@ private:
 
     // Perform comparisons with optional settings
     void check_members(const Config &rhs) {
-        if (rhs.vpk_path.is_initialized())
+        if (rhs.vpk_path.has_value())
             vpk_path = rhs.vpk_path;
-        if (rhs.run_app_path.is_initialized())
+        if (rhs.run_app_path.has_value())
             run_app_path = rhs.run_app_path;
-        if (rhs.recompile_shader_path.is_initialized())
+        if (rhs.recompile_shader_path.has_value())
             recompile_shader_path = rhs.recompile_shader_path;
-        if (rhs.delete_title_id.is_initialized())
+        if (rhs.delete_title_id.has_value())
             delete_title_id = rhs.delete_title_id;
-        if (rhs.pkg_path.is_initialized())
+        if (rhs.pkg_path.has_value())
             pkg_path = rhs.pkg_path;
-        if (rhs.pkg_zrif.is_initialized())
+        if (rhs.pkg_zrif.has_value())
             pkg_zrif = rhs.pkg_zrif;
 
         if (!rhs.config_path.empty())

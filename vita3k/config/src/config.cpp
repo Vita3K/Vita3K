@@ -25,6 +25,10 @@
 
 #include <CLI11.hpp>
 
+#ifndef VITA3K_CPP17
+#include <boost/optional/optional_io.hpp>
+#endif
+
 #include <exception>
 #include <iostream>
 
@@ -213,15 +217,15 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         return QuitRequested;
     }
 
-    if (command_line.recompile_shader_path.is_initialized()) {
+    if (command_line.recompile_shader_path.has_value()) {
         cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
         return QuitRequested;
     }
-    if (command_line.delete_title_id.is_initialized()) {
+    if (command_line.delete_title_id.has_value()) {
         cfg.delete_title_id = std::move(command_line.delete_title_id);
         return QuitRequested;
     }
-    if (command_line.pkg_path.is_initialized() && command_line.pkg_zrif.is_initialized()) {
+    if (command_line.pkg_path.has_value() && command_line.pkg_zrif.has_value()) {
         cfg.pkg_path = std::move(command_line.pkg_path);
         cfg.pkg_zrif = std::move(command_line.pkg_zrif);
         return QuitRequested;
