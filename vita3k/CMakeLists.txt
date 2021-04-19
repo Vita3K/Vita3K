@@ -34,16 +34,15 @@ macro(configure_boost)
 
 	include_directories(${Boost_INCLUDE_DIRS})
 
-	if(Boost_FOUND)
-		message("Using Boost_VERSION: ${Boost_VERSION}")
-		message("Using Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
-		message("Using Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
-	else()
-		message("Boost library is not found")
-	endif()
+	message("Using Boost_VERSION: ${Boost_VERSION}")
+	message("Using Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
+	message("Using Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
 endmacro(configure_boost)
 
 configure_boost()
+if(${STANDARD_NUM} GREATER 14)
+	add_definitions(-DVITA3K_CPP${STANDARD_NUM})
+endif()
 
 if (USE_GDBSTUB)
 	add_definitions(-DUSE_GDBSTUB)
@@ -100,6 +99,9 @@ if(USE_DISCORD_RICH_PRESENCE)
 endif()
 if(LINUX)
 	target_link_libraries(vita3k PRIVATE stdc++fs)
+endif()
+if(${STANDARD_NUM} GREATER 14)
+	target_compile_features(vita3k PUBLIC cxx_std_${STANDARD_NUM})
 endif()
 
 set_target_properties(vita3k PROPERTIES OUTPUT_NAME Vita3K

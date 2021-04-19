@@ -24,6 +24,7 @@
 #include <shader/usse_disasm.h>
 #include <shader/usse_types.h>
 #include <util/log.h>
+#include <util/optional.h>
 
 using namespace shader;
 using namespace usse;
