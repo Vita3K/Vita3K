@@ -237,8 +237,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
         if (fs::exists(output_path / "sce_sys/package/work.bin")) {
             std::string licpath = output_path.string() + "/sce_sys/package/work.bin";
             update_progress();
-            copy_license(host, licpath);
-            if (!decrypt_install_nonpdrm(licpath, output_path.string())) {
+            if (!decrypt_install_nonpdrm(host, licpath, output_path.string())) {
                 LOG_ERROR("NoNpDrm installation failed, deleting data!");
                 fs::remove_all(output_path);
                 return false;

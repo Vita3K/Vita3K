@@ -93,7 +93,7 @@ void draw_license_install_dialog(GuiState &gui, HostState &host) {
     } else if (state == "success") {
         title = !indicator["install_complete"].empty() ? indicator["install_complete"] : "Installation complete.";
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Succes install license.\nCondent ID: %s\nTitle ID: %s", host.app_content_id.c_str(), host.app_title_id.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "Succes install license.\nContent ID: %s\nTitle ID: %s", host.app_content_id.c_str(), host.app_title_id.c_str());
         ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - 20.f));
         if (ImGui::Button("OK", BUTTON_SIZE)) {
             work_path = nullptr;

@@ -205,7 +205,10 @@ int main(int argc, char *argv[]) {
     host.current_app_title = APP_INDEX->title;
     host.app_short_title = APP_INDEX->stitle;
     host.io.title_id = APP_INDEX->title_id;
-    host.app_sku_flag = get_license_sku_flag(host, host.app_content_id);
+
+    // Check license for PS App Only
+    if (host.io.title_id.find("PCS") != std::string::npos)
+        host.app_sku_flag = get_license_sku_flag(host, host.app_content_id);
 
     gui::set_config(gui, host, host.io.app_path);
 

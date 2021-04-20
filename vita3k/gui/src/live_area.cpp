@@ -435,10 +435,12 @@ void init_live_area(GuiState &gui, HostState &host) {
 
     const auto user_lang = gui.lang.user_lang;
     const auto app_path = gui.apps_list_opened[gui.current_app_selected];
-    const VitaIoDevice app_device = app_path.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
+    const auto is_sys_app = app_path.find("NPXS") != std::string::npos;
+    const auto is_ps_app = app_path.find("PCS") != std::string::npos;
+    const VitaIoDevice app_device = is_sys_app ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
     const auto APP_INDEX = get_app_index(gui, app_path);
 
-    if (sku_flag.find(app_path) == sku_flag.end())
+    if (is_ps_app && (sku_flag.find(app_path) == sku_flag.end()))
         sku_flag[app_path] = get_license_sku_flag(host, APP_INDEX->content_id);
 
     if (gui.live_area_contents.find(app_path) == gui.live_area_contents.end()) {
@@ -452,7 +454,7 @@ void init_live_area(GuiState &gui, HostState &host) {
         pugi::xml_document doc;
 
         if (!doc.load_file(template_xml.c_str())) {
-            if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
+            if (is_ps_app || is_sys_app)
                 LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}' in path: {}.", app_path, host.app_title, template_xml.string());
             if (doc.load_file(default_fw_contents.c_str())) {
                 template_xml = default_fw_contents;
@@ -535,7 +537,7 @@ void init_live_area(GuiState &gui, HostState &host) {
                     vfs::read_app_file(buffer, host.pref_path, app_path, live_area_path.string() + "/contents/" + contents.second);
 
                 if (buffer.empty()) {
-                    if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
+                    if (is_ps_app || is_sys_app)
                         LOG_WARN("Contents {} '{}' Not found for title {} [{}].", contents.first, contents.second, app_path, APP_INDEX->title);
                     continue;
                 }
@@ -742,7 +744,7 @@ void init_live_area(GuiState &gui, HostState &host) {
                                 vfs::read_app_file(buffer, host.pref_path, app_path, live_area_path.string() + "/contents/" + bg_name);
 
                             if (buffer.empty()) {
-                                if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
+                                if (is_ps_app || is_sys_app)
                                     LOG_WARN("background, Id: {}, Name: '{}', Not found for title: {} [{}].", item.first, bg_name, app_path, APP_INDEX->title);
                                 continue;
                             }
@@ -780,7 +782,7 @@ void init_live_area(GuiState &gui, HostState &host) {
                                 vfs::read_app_file(buffer, host.pref_path, app_path, live_area_path.string() + "/contents/" + img_name);
 
                             if (buffer.empty()) {
-                                if ((app_path.find("PCS") != std::string::npos) || (app_path.find("NPXS") != std::string::npos))
+                                if (is_ps_app || is_sys_app)
                                     LOG_WARN("Image, Id: {} Name: '{}', Not found for title {} [{}].", item.first, img_name, app_path, APP_INDEX->title);
                                 continue;
                             }

@@ -69,7 +69,7 @@ static void aes128_ctr_xor(aes_context *ctx, const uint8_t *iv, uint64_t block, 
     }
 }
 
-bool decrypt_install_nonpdrm(std::string &drmlicpath, const std::string &title_path) {
+bool decrypt_install_nonpdrm(HostState &host, std::string &drmlicpath, const std::string &title_path) {
     std::string title_id_src = title_path;
     std::string title_id_dst = title_path + "_dec";
     fs::ifstream binfile(string_utils::utf_to_wide(drmlicpath), std::ios::in | std::ios::binary | std::ios::ate);
@@ -79,6 +79,8 @@ bool decrypt_install_nonpdrm(std::string &drmlicpath, const std::string &title_p
 
     if ((execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) && (title_path.find("theme") == std::string::npos))
         return false;
+
+    copy_license(host, drmlicpath);
 
     fs::remove_all(fs::path(title_id_src));
     fs::rename(fs::path(title_id_dst), fs::path(title_id_src));

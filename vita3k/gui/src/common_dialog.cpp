@@ -46,7 +46,7 @@ static void draw_ime_dialog(DialogState &common_dialog) {
         common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
         std::string result = common_dialog.ime.text;
         std::u16string result16 = string_utils::utf8_to_utf16(result);
-        memcpy(common_dialog.ime.result, result16.c_str(), result16.size() * sizeof(uint16_t));
+        memcpy(common_dialog.ime.result, result16.c_str(), result16.size() * sizeof(uint16_t) + 1);
     }
     if (common_dialog.ime.cancelable) {
         ImGui::SameLine();
