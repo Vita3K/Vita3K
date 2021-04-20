@@ -110,9 +110,9 @@ bool create_license(HostState &host, const std::string &zRIF) {
         fs::create_directories(cache_path);
 
     // Create temp license file
-    const auto temp_rif_path = fs::path(host.base_path) / "cache/temp_licence.rif";
-    std::ofstream temp_file(temp_rif_path.string(), std::ios::out | std::ios::binary);
+    const auto temp_license_path = cache_path / "temp_licence.rif";
+    std::ofstream temp_file(temp_license_path.string(), std::ios::out | std::ios::binary);
     zrif2rif(zRIF, temp_file);
 
-    return copy_license(host, temp_rif_path);
+    return copy_license(host, temp_license_path);
 }
