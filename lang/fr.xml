@@ -177,6 +177,28 @@ Ne pas éteindre le système, ni fermer l'application.</warning_saving>
 	</date_time>
 	<language name="Langue">
 		<system_language>Langue système</system_language>
+		<input_language name="Langue de saisie">
+			<keyboards name="Claviers">
+				<ime_langagues>
+					<lang id="1">Danois</lang>
+					<lang id="2">Allemand</lang>
+					<lang id="262144">Anglais (Royaume-Uni)</lang>
+					<lang id="4">Anglais (États-Unis)</lang>
+					<lang id="8">Espagnol</lang>
+					<lang id="16">Français</lang>
+					<lang id="32">Italien</lang>
+					<lang id="64">Néerlandais</lang>
+					<lang id="128">Norvégien</lang>
+					<lang id="256">Polonais</lang>
+					<lang id="131072">Portugais (Brésil)</lang>
+					<lang id="512">Portugais (Portugal)</lang>
+					<lang id="1024">Russe</lang>
+					<lang id="2048">Finnois</lang>
+					<lang id="4096">Suédois</lang>
+					<lang id="524288">Turc</lang>
+				</ime_langagues>
+			</keyboards>
+		</input_language>
 	</language>
 </settings>
 

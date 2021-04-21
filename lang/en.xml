@@ -177,6 +177,28 @@ Do not power off the system or close the application.</warning_saving>
 	</date_time>
 	<language name="Language">
 		<system_language>System Language</system_language>
+		<input_language name="Input Languages">
+			<keyboards name="Keyboards">
+				<ime_langagues>
+					<lang id="1">Danish</lang>
+					<lang id="2">German</lang>
+					<lang id="262144">English (United Kingdom)</lang>
+					<lang id="4">English (United States)</lang>
+					<lang id="8">Spanish</lang>
+					<lang id="16">French</lang>
+					<lang id="32">Italian</lang>
+					<lang id="64">Dutch</lang>
+					<lang id="128">Norwegian</lang>
+					<lang id="256">Polish</lang>
+					<lang id="131072">Portuguese (Brazil)</lang>
+					<lang id="512">Portuguese (Portugal)</lang>
+					<lang id="1024">Russian</lang>
+					<lang id="2048">Finnish</lang>
+					<lang id="4096">Swedish</lang>
+					<lang id="524288">Turkish</lang>
+				</ime_langagues>
+			</keyboards>
+		</input_language>
 	</language>
 </settings>
 

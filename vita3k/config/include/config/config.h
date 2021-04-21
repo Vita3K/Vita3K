@@ -86,14 +86,16 @@
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "video-playing", true, video_playing)                                                    \
-    code(bool, "spirv-shader", false, spirv_shader)
+    code(bool, "spirv-shader", false, spirv_shader)                                                     \
+    code(uint64_t, "current-ime-lang", 4, current_ime_lang)
 
 // Vector members produced in the config file
 // Order is code(option_type, option_name, default_value)
 // If you are going to implement a dynamic list in the YAML, add it here instead
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_VECTOR(code)                                                                             \
-    code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)
+    code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)              \
+    code(std::vector<uint64_t>, "ime-langs", std::vector<uint64_t>{4}, ime_langs)
 
 // Parent macro for easier generation
 #define CONFIG_LIST(code)                                                                               \

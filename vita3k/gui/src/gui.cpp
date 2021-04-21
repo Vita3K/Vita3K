@@ -129,10 +129,12 @@ static void init_font(GuiState &gui, HostState &host) {
 
     // clang-format off
     static const ImWchar latin_range[] = {
+        0x0020, 0x00FF, // Basic Latin + Latin Supplement
         0x0400, 0x052F, // Cyrillic + Cyrillic Supplement
         0x2DE0, 0x2DFF, // Cyrillic Extended-A
         0xA640, 0xA69F, // Cyrillic Extended-B
         0x2000, 0x206F, // General Punctuation
+        0x20A0, 0x20CF, // Currency Symbols
         0x2100, 0x214F, // Letter type symbols
         0,
     };
@@ -528,8 +530,8 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (!gui.trophy_unlock_display_requests.empty())
         gui::draw_trophies_unlocked(gui, host);
 
-    if (host.ime.state && (!gui.live_area.app_selector && !gui.live_area.live_area_screen))
-        draw_ime(host);
+    if (host.ime.state && !gui.live_area.app_selector && !gui.live_area.live_area_screen && get_sys_apps_state(gui))
+        draw_ime(host.ime, host);
 
     // System App
     if (gui.live_area.content_manager)

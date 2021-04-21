@@ -279,7 +279,7 @@ int main(int argc, char *argv[]) {
         gui::draw_common_dialog(gui, host);
         gui::draw_live_area(gui, host);
 
-        if (host.cfg.performance_overlay && !gui.live_area.app_selector && !gui.live_area.live_area_screen && gui::get_live_area_sys_app_state(gui))
+        if (host.cfg.performance_overlay && !gui.live_area.app_selector && !gui.live_area.live_area_screen && gui::get_sys_apps_state(gui))
             gui::draw_perf_overlay(gui, host);
 
         if (host.display.imgui_render) {
