@@ -17,11 +17,11 @@
 
 #include "SceIme.h"
 
+#include <ime/functions.h>
 #include <ime/types.h>
 
 #include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
-#include <util/string_utils.h>
 
 EXPORT(void, SceImeEventHandler, Ptr<void> arg, const SceImeEvent *e) {
     Ptr<SceImeEvent> e1 = Ptr<SceImeEvent>(alloc(host.mem, sizeof(SceImeEvent), "ime2"));
@@ -33,14 +33,19 @@ EXPORT(void, SceImeEventHandler, Ptr<void> arg, const SceImeEvent *e) {
 
 EXPORT(SceInt32, sceImeClose) {
     host.ime.state = false;
-    memset(&host.ime, 0, sizeof(Ime));
 
     return 0;
 }
 
 EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
-    host.ime = {};
+    host.ime.caps_level = 0;
+    host.ime.caretIndex = 0;
+    host.ime.edit_text = {};
+    host.ime.enter_label.clear();
+    host.ime.str.clear();
+    host.ime.param = {};
     host.ime.param = *param;
+
     switch (host.ime.param.enterLabel) {
     case SCE_IME_ENTER_LABEL_DEFAULT:
         host.ime.enter_label = "Enter";
@@ -56,14 +61,17 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
         break;
     default: break;
     }
-    host.ime.edit_text.str = Ptr<SceWChar16>(alloc(host.mem, SCE_IME_MAX_TEXT_LENGTH + host.ime.param.maxTextLength + 1, "ime_str"));
-    const std::u16string initial16 = reinterpret_cast<char16_t *>(host.ime.param.initialText.get(host.mem));
-    if (!initial16.empty()) {
-        host.ime.str = string_utils::utf16_to_utf8(initial16);
-        host.ime.caretIndex = host.ime.edit_text.caretIndex = host.ime.edit_text.preeditIndex = uint32_t(initial16.size());
-    } else
-        host.ime.caps_level = 1;
 
+    gui::init_ime_lang(host.ime, SceImeLanguage(host.cfg.current_ime_lang));
+
+    host.ime.edit_text.str = Ptr<SceWChar16>(alloc(host.mem, SCE_IME_MAX_TEXT_LENGTH + host.ime.param.maxTextLength + 1, "ime_str"));
+    host.ime.str = reinterpret_cast<char16_t *>(host.ime.param.initialText.get(host.mem));
+    if (!host.ime.str.empty())
+        host.ime.caretIndex = host.ime.edit_text.caretIndex = host.ime.edit_text.preeditIndex = SceUInt32(host.ime.str.length());
+    else
+        host.ime.caps_level = 2;
+
+    host.ime.event_id = SCE_IME_EVENT_OPEN;
     host.ime.state = true;
 
     SceImeEvent e{};
@@ -100,8 +108,7 @@ EXPORT(SceInt32, sceImeUpdate) {
     Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(host.mem, sizeof(SceImeEvent), "ime_event"));
     SceImeEvent *e = event.get(host.mem);
     e->id = host.ime.event_id;
-    std::u16string str16 = string_utils::utf8_to_utf16(host.ime.str);
-    memcpy(host.ime.edit_text.str.get(host.mem), str16.c_str(), SCE_IME_MAX_TEXT_LENGTH + host.ime.param.maxTextLength + 1);
+    memcpy(host.ime.edit_text.str.get(host.mem), host.ime.str.c_str(), host.ime.str.length() * sizeof(SceWChar16) + 1);
     e->param.text = host.ime.edit_text;
     e->param.caretIndex = host.ime.caretIndex;
     CALL_EXPORT(SceImeEventHandler, host.ime.param.arg, e);

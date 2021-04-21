@@ -285,6 +285,19 @@ void init_lang(GuiState &gui, HostState &host) {
                 // Languague
                 lang_settings["language"] = settings.child("language").attribute("name").as_string();
                 lang_settings["system_language"] = settings.child("language").child("system_language").text().as_string();
+
+                // Input Languague
+                if (!settings.child("language").child("input_language").empty()) {
+                    const auto input_language = settings.child("language").child("input_language");
+                    lang_settings["input_language"] = input_language.attribute("name").as_string();
+                    if (!input_language.child("keyboards").empty()) {
+                        const auto keyboards = input_language.child("keyboards");
+                        lang_settings["keyboards"] = keyboards.attribute("name").as_string();
+                        auto &lang_ime = host.ime.languages;
+                        for (const auto &lang : keyboards.child("ime_langagues"))
+                            lang_ime.push_back({ SceImeLanguage(lang.attribute("id").as_uint()), lang.text().as_string() });
+                    }
+                }
             }
 
             // Trophy Collection
@@ -326,7 +339,7 @@ void init_lang(GuiState &gui, HostState &host) {
     }
 }
 
-bool get_live_area_sys_app_state(GuiState &gui) {
+bool get_sys_apps_state(GuiState &gui) {
     return !gui.live_area.content_manager && !gui.live_area.settings && !gui.live_area.trophy_collection && !gui.live_area.manual && !gui.live_area.user_management;
 }
 

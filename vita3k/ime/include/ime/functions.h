@@ -17,16 +17,18 @@
 
 #pragma once
 
-#include <ime/types.h>
+#include <ime/state.h>
 
-struct Ime {
-    std::vector<std::pair<SceImeLanguage, std::string>> languages;
-    bool state = false;
-    SceImeEditText edit_text;
-    SceImeParam param;
-    std::string enter_label;
-    std::u16string str;
-    uint32_t caps_level = 0;
-    uint32_t caretIndex = 0;
-    uint32_t event_id = SCE_IME_EVENT_OPEN;
-};
+#include <cstdint>
+#include <string>
+#include <vector>
+
+struct Ime;
+
+namespace gui {
+
+void init_ime_lang(Ime &ime, const SceImeLanguage &lang);
+std::vector<std::pair<SceImeLanguage, std::string>>::const_iterator get_ime_lang_index(Ime &ime, const SceImeLanguage &lang);
+std::vector<std::pair<SceImeLanguage, std::string>> get_list_ime_lang(Ime &ime);
+
+} // namespace gui

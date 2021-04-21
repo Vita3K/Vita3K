@@ -419,7 +419,7 @@ bool handle_events(HostState &host, GuiState &gui) {
                 if (event.key.keysym.sym == SDLK_g)
                     host.display.imgui_render = !host.display.imgui_render;
             }
-            if (!host.io.title_id.empty() && !gui.live_area.app_selector && gui::get_live_area_sys_app_state(gui)) {
+            if (!host.io.title_id.empty() && !gui.live_area.app_selector && gui::get_sys_apps_state(gui)) {
                 // Show/Hide Live Area during app run
                 // TODO pause app running
                 if (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton) {
