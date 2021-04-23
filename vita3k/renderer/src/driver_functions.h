@@ -29,6 +29,7 @@ COMMAND_SET_STATE(polygon_mode);
 COMMAND_SET_STATE(point_line_width);
 COMMAND_SET_STATE(stencil_func);
 COMMAND_SET_STATE(fragment_texture);
+COMMAND_SET_STATE(vertex_texture);
 
 // State set
 COMMAND(handle_set_state);

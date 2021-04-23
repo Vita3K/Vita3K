@@ -2828,7 +2828,12 @@ EXPORT(int, sceGxmSetVertexTexture, SceGxmContext *context, uint32_t textureInde
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    return UNIMPLEMENTED();
+    context->state.vertex_textures[textureIndex] = *texture;
+
+    if (context->alloc_space)
+        renderer::set_vertex_texture(*host.renderer, context->renderer.get(), textureIndex, *texture);
+
+    return 0;
 }
 
 EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, uint32_t bufferIndex, Ptr<const void> bufferData) {

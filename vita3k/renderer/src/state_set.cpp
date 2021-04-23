@@ -307,7 +307,23 @@ COMMAND_SET_STATE(fragment_texture) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
-        gl::sync_texture(*reinterpret_cast<gl::GLContext *>(render_context), mem, texture_index, texture,
+        gl::sync_fragment_texture(*reinterpret_cast<gl::GLContext *>(render_context), mem, texture_index, texture,
+            config, base_path, title_id);
+        break;
+
+    default:
+        REPORT_MISSING(renderer.current_backend);
+        break;
+    }
+}
+
+COMMAND_SET_STATE(vertex_texture) {
+    const std::uint32_t texture_index = helper.pop<std::uint32_t>();
+    SceGxmTexture texture = helper.pop<SceGxmTexture>();
+
+    switch (renderer.current_backend) {
+    case Backend::OpenGL:
+        gl::sync_vertex_texture(*reinterpret_cast<gl::GLContext *>(render_context), mem, texture_index, texture,
             config, base_path, title_id);
         break;
 

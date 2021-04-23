@@ -292,7 +292,7 @@ void sync_depth_bias(const int factor, const int unit, const bool is_front) {
     }
 }
 
-void sync_texture(GLContext &context, const MemState &mem, std::size_t index, SceGxmTexture texture,
+void sync_fragment_texture(GLContext &context, const MemState &mem, std::size_t index, SceGxmTexture texture,
     const Config &config, const std::string &base_path, const std::string &title_id) {
     if (texture.data_addr == 0) {
         LOG_WARN("Texture has null data.");
@@ -327,10 +327,51 @@ void sync_texture(GLContext &context, const MemState &mem, std::size_t index, Sc
                 break;
             }
         }
-        renderer::gl::texture::dump(texture, mem, parameter_name, base_path, title_id, program_hash);
+        renderer::gl::texture::dump(texture, mem, parameter_name, base_path, title_id, "fragment", program_hash);
     }
 
     glActiveTexture(GL_TEXTURE0);
+}
+
+void sync_vertex_texture(GLContext &context, const MemState &mem, std::size_t index, SceGxmTexture texture,
+    const Config &config, const std::string &base_path, const std::string &title_id) {
+    if (texture.data_addr == 0) {
+        LOG_WARN("Texture has null data.");
+        return;
+    }
+
+    const SceGxmTextureFormat format = gxm::get_format(&texture);
+    if (gxm::is_paletted_format(format) && texture.palette_addr == 0) {
+        LOG_WARN("Ignoring null palette texture");
+        return;
+    }
+
+    glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE16) + index));
+
+    if (config.texture_cache) {
+        renderer::texture::cache_and_bind_texture(context.texture_cache, texture, mem);
+    } else {
+        texture::bind_texture(context.texture_cache, texture, mem);
+    }
+
+    if (config.dump_textures) {
+        auto vert_program = context.record.vertex_program.get(mem);
+        auto program = vert_program->program.get(mem);
+        const auto program_hash = sha256(program, program->size);
+
+        std::string parameter_name;
+        const auto parameters = gxp::program_parameters(*program);
+        for (uint32_t i = 0; i < program->parameter_count; ++i) {
+            const auto parameter = &parameters[i];
+            if (parameter->resource_index == index) {
+                parameter_name = gxp::parameter_name_raw(*parameter);
+                break;
+            }
+        }
+        renderer::gl::texture::dump(texture, mem, parameter_name, base_path, title_id, "vertex", program_hash);
+    }
+
+    glActiveTexture(GL_TEXTURE16);
 }
 
 void sync_blending(const GxmRecordState &state, const MemState &mem) {
