@@ -227,16 +227,16 @@ bool run_thread(ThreadState &thread, bool callback) {
                 thread.to_do = ThreadToDo::wait;
             } else
                 res = run(*thread.cpu, callback, thread.entry_point);
-#ifdef USE_GDBSTUB
+
             if (hit_breakpoint(*thread.cpu)) {
                 thread.to_do = ThreadToDo::wait;
-                LOG_INFO("Stopping thread \"{}\" at breakpoint.", thread.name);
+                if (res < 0) {
+                    LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
+                } else {
+                    LOG_INFO("Stopping thread \"{}\" at breakpoint.", thread.name);
+                }
             }
-#endif
-            if (res < 0) {
-                LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
-                return false;
-            }
+
             if (callback) {
                 return true;
             }

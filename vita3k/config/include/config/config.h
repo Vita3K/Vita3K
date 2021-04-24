@@ -27,6 +27,7 @@
 #define CONFIG_INDIVIDUAL(code)                                                                         \
     code(bool, "log-imports", false, log_imports)                                                       \
     code(bool, "stack-traceback", false, stack_traceback)                                               \
+    code(bool, "gdbstub", false, gdbstub)                                                               \
     code(bool, "log-exports", false, log_exports)                                                       \
     code(bool, "log-active-shaders", false, log_active_shaders)                                         \
     code(bool, "log-uniforms", false, log_uniforms)                                                     \

@@ -17,8 +17,6 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#ifdef USE_GDBSTUB
-
 #include <host/state.h>
 #include <util/log.h>
 
@@ -796,5 +794,3 @@ void server_close(HostState &state) {
     if (state.gdb.server_thread && state.gdb.server_thread->get_id() != std::this_thread::get_id())
         state.gdb.server_thread->join();
 }
-
-#endif

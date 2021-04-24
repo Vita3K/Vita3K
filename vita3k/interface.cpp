@@ -39,9 +39,7 @@
 
 #include <SDL.h>
 
-#ifdef USE_GDBSTUB
 #include <gdbstub/functions.h>
-#endif
 
 #if USE_DISCORD
 #include <app/discord.h>
@@ -488,9 +486,8 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
     if (!host.cfg.show_gui)
         host.display.imgui_render = false;
 
-#ifdef USE_GDBSTUB
-    server_open(host);
-#endif
+    if (host.cfg.gdbstub)
+        server_open(host);
 
 #if USE_DISCORD
     if (host.cfg.discord_rich_presence)

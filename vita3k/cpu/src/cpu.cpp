@@ -371,12 +371,8 @@ int _run_after_injected(CPUState &state, uint32_t pc, bool thumb_mode) {
     std::memcpy(&state.mem->memory[pc], original, size);
     if (err != UC_ERR_OK) {
         log_error_details(state, err);
-#ifdef USE_GDBSTUB
         state.did_break = true;
-        return 0;
-#else
         return -1;
-#endif
     }
     return 0;
 }
@@ -408,12 +404,8 @@ int run(CPUState &state, bool callback, Address entry_point) {
     err = uc_emu_start(state.uc.get(), pc, entry_point & 0xfffffffe, 0, 0);
     if (err != UC_ERR_OK) {
         log_error_details(state, err);
-#ifdef USE_GDBSTUB
         state.did_break = true;
-        return 0;
-#else
         return -1;
-#endif
     }
 
     pc = read_pc(state);
