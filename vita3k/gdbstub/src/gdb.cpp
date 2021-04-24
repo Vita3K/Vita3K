@@ -414,6 +414,8 @@ static std::string cmd_detach(HostState &state, PacketCommand &command) { return
 
 static std::string cmd_continue(HostState &state, PacketCommand &command) {
     const std::string content = content_string(command);
+    const auto step_delay = std::chrono::milliseconds(100);
+    const auto watch_delay = std::chrono::milliseconds(100);
 
     uint64_t index = 5;
     uint64_t next = 0;
@@ -430,40 +432,44 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
         case 's':
         case 'S': {
             bool step = cmd == 's' || cmd == 'S';
-            if (colon != std::string::npos) {
-                const int32_t thread_id = parse_hex(text.substr(colon + 1));
 
-                if (state.kernel.threads.find(thread_id) == state.kernel.threads.end())
-                    return "E00";
-
-                ThreadStatePtr thread = state.kernel.threads[thread_id];
-                if (thread) {
-                    thread->to_do = step ? ThreadToDo::step : ThreadToDo::run;
-                    thread->something_to_do.notify_one();
-                }
-            } else {
-                for (const auto &thread : state.kernel.threads) {
-                    if (thread.second) {
-                        thread.second->to_do = step ? ThreadToDo::step : ThreadToDo::run;
-                        thread.second->something_to_do.notify_one();
-                    }
-                    if (state.gdb.server_die)
-                        break;
-                }
+            // inferior_thread is the thread that trigerred breakpoint before
+            // step or run that thread
+            if (state.gdb.inferior_thread != 0) {
+                auto thread = state.kernel.threads[state.gdb.inferior_thread];
+                thread->to_do = step ? ThreadToDo::step : ThreadToDo::run;
+                thread->something_to_do.notify_one();
             }
 
             if (!step) {
-                bool hit_break = false;
-                while (!hit_break) {
-                    for (const auto &thread : state.kernel.threads) {
-                        if (thread.second->to_do == ThreadToDo::wait && hit_breakpoint(*thread.second->cpu)) {
-                            hit_break = true;
-                            break;
-                        }
-                        if (state.gdb.server_die)
-                            break;
+                // resume the worlld
+                for (const auto [id, thread] : state.kernel.threads) {
+                    if (thread->to_do == ThreadToDo::wait && hit_breakpoint(*thread->cpu)) {
+                        thread->to_do = ThreadToDo::run;
+                        thread->something_to_do.notify_one();
                     }
                 }
+
+                // wait until some thread triger breakpoint
+                while (true) {
+                    if (state.gdb.server_die)
+                        return "";
+                    for (const auto [id, thread] : state.kernel.threads) {
+                        if (thread->to_do == ThreadToDo::wait && hit_breakpoint(*thread->cpu)) {
+                            state.gdb.inferior_thread = id;
+                            break;
+                        }
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(watch_delay));
+                }
+
+                // stop the world
+                for (const auto &thread : state.kernel.threads) {
+                    trigger_breakpoint(*thread.second->cpu);
+                }
+            } else {
+                // hack: waits for stepping to finish
+                std::this_thread::sleep_for(std::chrono::milliseconds(step_delay));
             }
 
             return "S05";
@@ -723,8 +729,7 @@ static void server_listen(HostState &state) {
     }
 
     for (const auto &thread : state.kernel.threads) {
-        stop(*thread.second->cpu);
-        thread.second->to_do = ThreadToDo::wait;
+        trigger_breakpoint(*thread.second->cpu);
     }
 
     LOG_INFO("GDB Server Received Connection");

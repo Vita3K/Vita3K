@@ -372,7 +372,7 @@ int _run_after_injected(CPUState &state, uint32_t pc, bool thumb_mode) {
     if (err != UC_ERR_OK) {
         log_error_details(state, err);
 #ifdef USE_GDBSTUB
-        trigger_breakpoint(state);
+        state.did_break = true;
         return 0;
 #else
         return -1;
@@ -409,7 +409,7 @@ int run(CPUState &state, bool callback, Address entry_point) {
     if (err != UC_ERR_OK) {
         log_error_details(state, err);
 #ifdef USE_GDBSTUB
-        trigger_breakpoint(state);
+        state.did_break = true;
         return 0;
 #else
         return -1;
