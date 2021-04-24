@@ -20,8 +20,5 @@ add_library(
 )
 
 target_include_directories(host PUBLIC include ${PSVPFSPARSER_INCLUDE_DIR})
-target_link_libraries(host PUBLIC psvpfsparser app audio config ctrl dialog ime io kernel miniz net ngs nids np renderer sdl2 touch)
-if(USE_GDBSTUB)
-	target_link_libraries(host PUBLIC gdbstub)
-endif()
+target_link_libraries(host PUBLIC psvpfsparser app audio config ctrl dialog ime io kernel miniz net ngs nids np renderer sdl2 touch gdbstub)
 target_link_libraries(host PRIVATE elfio::elfio FAT16 vita-toolchain)

@@ -35,9 +35,7 @@
 #include <app/discord.h>
 #endif
 
-#ifdef USE_GDBSTUB
 #include <gdbstub/functions.h>
-#endif
 
 #ifdef USE_VULKAN
 #include <renderer/vulkan/functions.h>
@@ -232,9 +230,8 @@ void destroy(HostState &host, ImGui_State *imgui) {
     discordrpc::shutdown();
 #endif
 
-#ifdef USE_GDBSTUB
-    server_close(host);
-#endif
+    if (host.cfg.gdbstub)
+        server_close(host);
 
     // There may be changes that made in the GUI, so we should save, again
     if (host.cfg.overwrite_config)

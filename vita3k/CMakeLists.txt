@@ -44,10 +44,6 @@ if(${STANDARD_NUM} GREATER 14)
 	add_definitions(-DVITA3K_CPP${STANDARD_NUM})
 endif()
 
-if (USE_GDBSTUB)
-	add_definitions(-DUSE_GDBSTUB)
-endif()
-
 if (USE_DISCORD_RICH_PRESENCE)
 	add_definitions(-DUSE_DISCORD)
 endif()
@@ -86,10 +82,7 @@ add_subdirectory(shader)
 add_subdirectory(threads)
 add_subdirectory(touch)
 add_subdirectory(util)
-
-if(USE_GDBSTUB)
-	add_subdirectory(gdbstub)
-endif()
+add_subdirectory(gdbstub)
 
 add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
 

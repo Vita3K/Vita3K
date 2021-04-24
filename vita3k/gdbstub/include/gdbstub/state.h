@@ -17,8 +17,6 @@
 
 #pragma once
 
-#ifdef USE_GDBSTUB
-
 #include <functional>
 #include <memory>
 #include <thread>
@@ -51,5 +49,3 @@ struct GDBState {
 
     SceUID current_thread = 0;
 };
-
-#endif
