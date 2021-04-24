@@ -95,6 +95,10 @@ static std::string to_hex(uint32_t value) {
     return fmt::format("{:0>8x}", value);
 }
 
+static std::string to_hex(SceUID value) {
+    return fmt::format("{:0>8x}", value);
+}
+
 static uint32_t parse_hex(const std::string &hex) {
     std::stringstream stream;
     uint32_t value;
@@ -198,7 +202,7 @@ static std::string cmd_set_current_thread(HostState &state, PacketCommand &comma
 }
 
 static std::string cmd_get_current_thread(HostState &state, PacketCommand &command) {
-    return "QC" + to_hex(static_cast<uint32_t>(state.gdb.current_thread));
+    return "QC" + to_hex(state.gdb.current_thread);
 }
 
 static uint32_t fetch_reg(CPUState &state, uint32_t reg) {
@@ -505,21 +509,30 @@ static std::string cmd_thread_status(HostState &state, PacketCommand &command) {
 
 static std::string cmd_reason(HostState &state, PacketCommand &command) { return "S05"; }
 
-// TODO: Implement qsThreadInfo if list becomes too large.
-static std::string cmd_list_threads(HostState &state, PacketCommand &command) {
+static std::string cmd_get_first_thread(HostState &state, PacketCommand &command) {
     std::stringstream stream;
 
     stream << "m";
+    stream << to_hex(state.kernel.threads.begin()->first);
 
-    uint32_t count = 0;
-    for (const auto &thread : state.kernel.threads) {
-        stream << to_hex(static_cast<uint32_t>(thread.first));
-        if (count != state.kernel.threads.size() - 1)
-            stream << ",";
-        count++;
+    state.gdb.thread_info_index = 0;
+
+    return stream.str();
+}
+
+static std::string cmd_get_next_thread(HostState &state, PacketCommand &command) {
+    std::stringstream stream;
+
+    ++state.gdb.thread_info_index;
+    if (state.gdb.thread_info_index == state.kernel.threads.size()) {
+        stream << "l";
+    } else {
+        auto iter = state.kernel.threads.begin();
+        std::advance(iter, state.gdb.thread_info_index);
+
+        stream << "m";
+        stream << to_hex(iter->first);
     }
-
-    stream << "l";
 
     return stream.str();
 }
@@ -592,8 +605,8 @@ const static PacketFunctionBundle functions[] = {
     { "X", cmd_unimplemented }, // change cmd_unimplemented to cmd_write_binary to enable binary downloading
 
     // Query Packets
-    { "qfThreadInfo", cmd_list_threads },
-    { "qsThreadInfo", cmd_unimplemented },
+    { "qfThreadInfo", cmd_get_first_thread },
+    { "qsThreadInfo", cmd_get_next_thread },
     { "qSupported", cmd_supported },
     { "qAttached", cmd_attached },
     { "qTStatus", cmd_thread_status },
