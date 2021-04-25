@@ -486,8 +486,11 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
     if (!host.cfg.show_gui)
         host.display.imgui_render = false;
 
-    if (host.cfg.gdbstub)
+    if (host.cfg.gdbstub) {
+        host.kernel.wait_for_debugger = true;
         server_open(host);
+    }
+        
 
 #if USE_DISCORD
     if (host.cfg.discord_rich_presence)
