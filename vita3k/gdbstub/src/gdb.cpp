@@ -412,7 +412,6 @@ static std::string cmd_detach(HostState &state, PacketCommand &command) { return
 
 static std::string cmd_continue(HostState &state, PacketCommand &command) {
     const std::string content = content_string(command);
-    const auto step_delay = std::chrono::milliseconds(100);
     const auto watch_delay = std::chrono::milliseconds(100);
 
     uint64_t index = 5;
@@ -447,14 +446,15 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                         thread->something_to_do.notify_one();
                     }
                 }
-
                 // wait until some thread triger breakpoint
-                while (true) {
+                bool did_break = false;
+                while (!did_break) {
                     if (state.gdb.server_die)
                         return "";
                     for (const auto [id, thread] : state.kernel.threads) {
                         if (thread->to_do == ThreadToDo::wait && hit_breakpoint(*thread->cpu)) {
                             state.gdb.inferior_thread = id;
+                            did_break = true;
                             break;
                         }
                     }
@@ -463,11 +463,19 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
 
                 // stop the world
                 for (const auto &thread : state.kernel.threads) {
-                    trigger_breakpoint(*thread.second->cpu);
+                    if (thread.second->to_do == ThreadToDo::run) {
+                        trigger_breakpoint(*thread.second->cpu);
+                    }
                 }
             } else {
-                // hack: waits for stepping to finish
-                std::this_thread::sleep_for(std::chrono::milliseconds(step_delay));
+                // wait until stepping finish
+                // TODO use cond_variable 
+                while (true) {
+                    if (state.kernel.threads[state.gdb.inferior_thread]->to_do == ThreadToDo::wait) {
+                        break;
+                    }
+                    std::this_thread::sleep_for(std::chrono::microseconds(100));
+                }
             }
 
             return "S05";
