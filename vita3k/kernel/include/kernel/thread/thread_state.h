@@ -55,6 +55,7 @@ struct ThreadState {
     std::condition_variable something_to_do;
     std::vector<std::shared_ptr<ThreadState>> waiting_threads;
     std::string name;
+    SceUID id;
     Address entry_point;
     int returned_value;
 };
