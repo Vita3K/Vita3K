@@ -501,6 +501,7 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                 }
             }
 
+            state.gdb.current_thread = state.gdb.inferior_thread;
             return "S05";
         }
         default:
