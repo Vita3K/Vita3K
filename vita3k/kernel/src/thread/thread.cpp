@@ -81,6 +81,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     const ThreadStatePtr thread = std::make_shared<ThreadState>();
     thread->name = name;
     thread->entry_point = entry_point.address();
+    thread->id = thid;
     // TODO: needs testing
     if (init_priority & (SCE_KERNEL_DEFAULT_PRIORITY & 0xF0000000)) {
         thread->priority = init_priority - SCE_KERNEL_DEFAULT_PRIORITY + SCE_KERNEL_DEFAULT_PRIORITY_USER_INTERNAL;
@@ -233,7 +234,7 @@ bool run_thread(ThreadState &thread, bool callback) {
                 if (res < 0) {
                     LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
                 } else {
-                    LOG_INFO("Stopping thread \"{}\" at breakpoint.", thread.name);
+                    LOG_INFO("Stopping thread \"{}\" {} at breakpoint.", thread.name, thread.id);
                 }
             }
 
