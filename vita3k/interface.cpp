@@ -490,7 +490,6 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
         host.kernel.wait_for_debugger = true;
         server_open(host);
     }
-        
 
 #if USE_DISCORD
     if (host.cfg.discord_rich_presence)
