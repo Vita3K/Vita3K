@@ -1346,7 +1346,10 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetUniformBuffer, SceGxmPrecomputedFra
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    return UNIMPLEMENTED();
+    auto &state_uniform_buffers = *precomputedState->uniform_buffers.get(host.mem);
+    state_uniform_buffers[bufferIndex] = bufferData;
+
+    return 0;
 }
 
 EXPORT(Ptr<const void>, sceGxmPrecomputedVertexStateGetDefaultUniformBuffer, SceGxmPrecomputedVertexState *state) {
