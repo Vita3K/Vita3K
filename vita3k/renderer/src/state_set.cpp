@@ -341,8 +341,6 @@ COMMAND_SET_STATE(fragment_texture) {
 }
 
 COMMAND_SET_STATE(two_sided) {
-    REPORT_STUBBED();
-
     const SceGxmTwoSidedMode two_sided = helper.pop<SceGxmTwoSidedMode>();
     state->two_sided = two_sided;
 }
