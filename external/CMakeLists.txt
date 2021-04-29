@@ -44,8 +44,13 @@ target_include_directories(printf INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/printf"
 
 add_subdirectory(elfio)
 
-option(SPDLOG_WCHAR_FILENAMES "Support wchar filenames" ON)
-option(SPDLOG_NO_THREAD_ID "prevent spdlog from querying the thread id on each log call if thread id is not needed" ON)
+add_subdirectory(fmt)
+add_library(fmt::fmt ALIAS fmt)
+set (fmt_DIR fmt)
+
+set(SPDLOG_WCHAR_FILENAMES ON CACHE BOOL "")
+set(SPDLOG_NO_THREAD_ID ON CACHE BOOL "")
+set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "")
 add_subdirectory(spdlog EXCLUDE_FROM_ALL)
 
 add_library(stb INTERFACE)
@@ -147,6 +152,11 @@ else()
 	add_subdirectory(unicorn)
 	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/include")
 endif()
+
+set(DYNARMIC_TESTS OFF CACHE BOOL "")
+set(DYNARMIC_NO_BUNDLED_FMT ON CACHE BOOL "")
+set(DYNARMIC_USE_ARMV7 ON CACHE BOOL "")
+add_subdirectory(dynarmic)
 
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")
