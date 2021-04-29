@@ -563,6 +563,33 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         const bool integral = (op.type == DataType::UINT32) || (op.type == DataType::UINT16);
         std::vector<spv::Id> consts;
 
+        auto handle_unexpect_swizzle = [&](const SwizzleChannel ch, const bool integral) {
+#define GEN_CONSTANT(cnst)                                           \
+    if (integral)                                                    \
+        return b.makeUintConstant(static_cast<std::uint32_t>(cnst)); \
+    else                                                             \
+        return b.makeFloatConstant(static_cast<float>(cnst))
+            switch (ch) {
+            case SwizzleChannel::_0:
+                GEN_CONSTANT(0);
+                break;
+            case SwizzleChannel::_1:
+                GEN_CONSTANT(1);
+                break;
+            case SwizzleChannel::_2:
+                GEN_CONSTANT(2);
+                break;
+            case SwizzleChannel::_H:
+                GEN_CONSTANT(0.5f);
+                break;
+            default: break;
+            }
+
+            return spv::NoResult;
+
+#undef GEN_CONSTANT
+        };
+
         // Load constants. Ignore mask
         if ((op.type == DataType::F32) || (op.type == DataType::UINT32)) {
             auto get_f32_from_bank = [&](const int num) -> spv::Id {
@@ -581,7 +608,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
                 }
 
                 default:
-                    return spv::NoResult;
+                    return handle_unexpect_swizzle(op.swizzle[num], integral);
                 }
 
                 if (integral)
@@ -622,7 +649,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
                 }
 
                 default:
-                    return spv::NoResult;
+                    return handle_unexpect_swizzle(op.swizzle[num], integral);
                 }
 
                 if (integral) {
