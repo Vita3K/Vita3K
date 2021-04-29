@@ -182,7 +182,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths, CPUDepInject in
 #endif
 
     for (int i = 0; i < cfg.cpu_pool_size; ++i) {
-        auto item = init_cpu(0, 0, 0, state.mem, inject);
+        auto item = init_cpu(CPUBackend::Unicorn, 0, 0, 0, state.mem, inject);
         state.kernel.cpu_pool.add(std::move(item));
     }
 

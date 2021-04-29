@@ -83,6 +83,14 @@ bool init(MemState &state) {
 
     assert(state.page_size >= 4096); // Limit imposed by Unicorn.
 
+    state.pages_cpu = std::make_unique<std::array<uint8_t *, MB(1)>>();
+
+    (*(state.pages_cpu))[0] = state.memory.get();
+
+    for (std::size_t i = 1; i < state.pages_cpu->size(); i++) {
+        (*(state.pages_cpu))[i] = (*(state.pages_cpu))[i - 1] + state.page_size;
+    }
+
     const size_t length = GB(4);
 #ifdef WIN32
     state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, length, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);

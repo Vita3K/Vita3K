@@ -19,6 +19,7 @@
 
 #include <mem/util.h>
 
+#include <array>
 #include <map>
 #include <mutex>
 
@@ -33,6 +34,8 @@ struct MemState {
     size_t page_size = 0;
     Generation generation = 0;
     Memory memory;
+    std::unique_ptr<std::array<uint8_t *, MB(1)>> pages_cpu;
+
     Allocated allocated_pages;
     std::mutex generation_mutex;
     GenerationNames generation_names;

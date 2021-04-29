@@ -23,6 +23,7 @@
 #include <kernel/functions.h>
 
 #include <cpu/functions.h>
+#include <cpu/state.h>
 #include <util/find.h>
 #include <util/lock_and_find.h>
 
@@ -47,25 +48,18 @@ static int SDLCALL thread_function(void *data) {
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
     SDL_SemPost(params.host_may_destroy_params.get());
     const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
-    write_reg(*thread->cpu, 0, params.arglen);
-    write_reg(*thread->cpu, 1, params.argp.address());
     if (params.kernel->wait_for_debugger) {
         thread->to_do = ThreadToDo::wait;
         // Any following threads opened with thread_function will not wait.
         params.kernel->wait_for_debugger = false;
     }
-    const bool succeeded = run_thread(*thread, false);
+    const bool succeeded = run_on_current(*thread, Ptr<void>(thread->entry_point), params.arglen, params.argp);
     assert(succeeded);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
 
     const std::lock_guard<std::mutex> lock(thread->mutex);
-
-    for (auto &waiting_thread : thread->waiting_threads) {
-        waiting_thread->to_do = ThreadToDo::run;
-        waiting_thread->something_to_do.notify_all();
-    }
-
-    thread->waiting_threads.clear();
+    thread->to_do = ThreadToDo::exit;
+    raise_waiting_threads(thread.get());
 
     return r0;
 }
@@ -89,15 +83,15 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     const Address stack_top = thread->stack.get() + stack_size;
     memset(thread->stack.get_ptr<void>().get(mem), 0xcc, stack_size);
 
-    thread->cpu = init_cpu(thid, entry_point.address(), stack_top, mem, inject);
+    thread->cpu = init_cpu(CPUBackend::Unicorn, thid, entry_point.address(), stack_top, mem, inject);
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
     if (kernel.watch_code) {
-        log_code_add(*thread->cpu);
+        set_log_code(*thread->cpu, true);
     }
     if (kernel.watch_memory) {
-        log_mem_add(*thread->cpu);
+        set_log_mem(*thread->cpu, true);
     }
 
     if (option) {
@@ -105,10 +99,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         write_reg(*thread->cpu, 1, option->size);
     }
 
-    thread->cpu_context = std::make_unique<CPUContext>();
-    if (!thread->cpu_context) {
-        return SCE_KERNEL_ERROR_ERROR;
-    }
+    thread->cpu_context = save_context(*thread->cpu);
 
     alloc_name = fmt::format("TLS for thread {} (#{})", name, thid);
 
@@ -209,7 +200,7 @@ Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, Kerne
     return new_argp;
 }
 
-bool run_thread(ThreadState &thread, bool callback) {
+static bool run_thread(ThreadState &thread) {
     int res = 0;
     std::unique_lock<std::mutex> lock(thread.mutex);
     while (true) {
@@ -220,30 +211,23 @@ bool run_thread(ThreadState &thread, bool callback) {
         case ThreadToDo::step:
             lock.unlock();
             if (thread.to_do == ThreadToDo::step) {
-                res = step(*thread.cpu, callback, thread.entry_point);
+                res = step(*thread.cpu);
                 thread.to_do = ThreadToDo::wait;
+
             } else
-                res = run(*thread.cpu, callback, thread.entry_point);
+                res = run(*thread.cpu);
 
-            if (hit_breakpoint(*thread.cpu)) {
-                thread.to_do = ThreadToDo::wait;
-                if (res < 0) {
-                    LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
-                } else {
-                    LOG_INFO("Stopping thread \"{}\" {} at breakpoint.", thread.name, thread.id);
-                }
-            }
-
-            if (callback) {
+            if (res < 0) {
+                LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
                 return true;
             }
+
             if (res == 1) {
-                const std::unique_lock<std::mutex> lock(thread.mutex);
-                raise_waiting_threads(&thread);
                 thread.to_do = ThreadToDo::exit;
                 return true;
             }
             lock.lock();
+
             break;
         case ThreadToDo::wait:
             thread.something_to_do.wait(lock);
@@ -263,10 +247,9 @@ int run_callback(KernelState &kernel, ThreadState &thread, const SceUID &thid, A
         LOG_TRACE("Got a cpu from CPU pool after a wait");
     auto cpu = cpu_item.get();
 
-    CPUContext ctx;
-    save_context(*thread.cpu, ctx);
+    CPUContext ctx = save_context(*thread.cpu);
     load_context(*cpu, ctx);
-    write_tpidruro(*cpu, read_tpidruro(*thread.cpu)); //TLS
+    write_tpidruro(*cpu, read_tpidruro(*thread.cpu));
 
     assert(args.size() <= 4);
     for (int i = 0; i < args.size(); i++) {
@@ -275,10 +258,9 @@ int run_callback(KernelState &kernel, ThreadState &thread, const SceUID &thid, A
     // TODO: remaining arguments should be pushed into stack
     set_thread_id(*cpu, thid);
     write_pc(*cpu, callback_address);
-    CPUStatePtr old_thread_cpu = CPUStatePtr(cpu, [](CPUState *state) -> void {});
-    old_thread_cpu.swap(thread.cpu);
-    auto res = run(*cpu, true, callback_address);
-    thread.cpu.swap(old_thread_cpu);
+    write_lr(*cpu, cpu->halt_instruction_pc);
+    auto res = run(*cpu);
+
     if (res < 0) {
         LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
         return -1;
@@ -286,13 +268,20 @@ int run_callback(KernelState &kernel, ThreadState &thread, const SceUID &thid, A
     return read_reg(*cpu, 0);
 }
 
-uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, const Ptr<void> &argp, bool callback) {
-    std::unique_lock<std::mutex> lock(thread.mutex);
-    stop(*thread.cpu);
+uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, const Ptr<void> &argp) {
+    CPUContext ctx = save_context(*thread.cpu);
+    auto tpidruro = read_tpidruro(*thread.cpu);
+
     write_reg(*thread.cpu, 0, arglen);
     write_reg(*thread.cpu, 1, argp.address());
     write_pc(*thread.cpu, entry_point.address());
-    lock.unlock();
-    run_thread(thread, callback);
-    return read_reg(*thread.cpu, 0);
+    write_lr(*thread.cpu, thread.cpu->halt_instruction_pc);
+    set_thread_id(*thread.cpu, thread.id);
+
+    run_thread(thread);
+    auto out = read_reg(*thread.cpu, 0);
+
+    load_context(*thread.cpu, ctx);
+    write_tpidruro(*thread.cpu, tpidruro);
+    return out;
 }
