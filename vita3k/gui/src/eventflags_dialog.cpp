@@ -26,6 +26,7 @@ void draw_event_flags_dialog(GuiState &gui, HostState &host) {
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s  %-7s   %-8s   %-16s", "ID", "EventFlag Name", "Flags", "Attributes", "Waiting Threads");
 
     const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+
     for (const auto &event : host.kernel.eventflags) {
         std::shared_ptr<EventFlag> event_state = event.second;
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s  %02d        %01d         %02zu                 ",

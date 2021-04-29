@@ -814,7 +814,7 @@ inline uint64_t current_time() {
 void draw_live_area_screen(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
     const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto MENUBAR_HEIGHT = 32.f * scal.y;
+    const auto INFORMATION_BAR_HEIGHT = 32.f * scal.y;
 
     const auto app_path = gui.apps_list_opened[gui.current_app_selected];
     const VitaIoDevice app_device = app_path.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
@@ -830,7 +830,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         ImGui::GetBackgroundDrawList()->AddImage((gui.users[host.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[gui.current_user_bg]],
             ImVec2(0.f, 32.f), display_size);
     else
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 180.f), 0.f, ImDrawCornerFlags_All);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 180.f), 0.f, ImDrawCornerFlags_All);
 
     const auto background_pos = ImVec2(900.0f * scal.x, 500.0f * scal.y);
     const auto pos_bg = ImVec2(display_size.x - background_pos.x, display_size.y - background_pos.y);
@@ -1208,6 +1208,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         }
     }
 
+    ImGui::SetWindowFontScale(scal.x);
     const auto scal_default_font = 25.f * (ImGui::GetFontSize() / 19.2f);
     const auto scal_font_size = scal_default_font / ImGui::GetFontSize();
 
@@ -1215,7 +1216,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     const auto GATE_SIZE = ImVec2(280.0f * scal.x, 158.0f * scal.y);
     const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[app_path]]["gate"]["pos"].x * scal.x), display_size.y - (items_pos[type[app_path]]["gate"]["pos"].y * scal.y));
     const auto START_SIZE = ImVec2((ImGui::CalcTextSize(BUTTON_STR.c_str()).x * scal_font_size), (ImGui::CalcTextSize(BUTTON_STR.c_str()).y * scal_font_size));
-    const auto START_BUTTON_SIZE = ImVec2(START_SIZE.x + 26.0f, START_SIZE.y + 5.0f);
+    const auto START_BUTTON_SIZE = ImVec2(START_SIZE.x + 26.0f * scal.x, START_SIZE.y + 5.0f * scal.y);
     const auto POS_BUTTON = ImVec2((GATE_POS.x + (GATE_SIZE.x - START_BUTTON_SIZE.x) / 2.0f), (GATE_POS.y + (GATE_SIZE.y - START_BUTTON_SIZE.y) / 1.08f));
     const auto POS_START = ImVec2(POS_BUTTON.x + (START_BUTTON_SIZE.x - START_SIZE.x) / 2.f, POS_BUTTON.y + (START_BUTTON_SIZE.y - START_SIZE.y) / 2.f);
     const auto SELECT_SIZE = ImVec2(GATE_SIZE.x - (10.f * scal.x), GATE_SIZE.y - (5.f * scal.y));
@@ -1236,7 +1237,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     if (ImGui::Selectable("##gate", false, ImGuiSelectableFlags_None, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))
         pre_run_app(gui, host, app_path);
     ImGui::PopID();
-    ImGui::GetWindowDrawList()->AddRect(GATE_POS, SIZE_GATE, IM_COL32(192, 192, 192, 255), 15.f, ImDrawCornerFlags_All, 12.f);
+    ImGui::GetWindowDrawList()->AddRect(GATE_POS, SIZE_GATE, IM_COL32(192, 192, 192, 255), 10.f * scal.x, ImDrawCornerFlags_All, 12.f * scal.x);
 
     if (app_device == VitaIoDevice::ux0) {
         const auto widget_scal_size = ImVec2(80.0f * scal.x, 80.f * scal.y);
@@ -1285,8 +1286,9 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     }
 
     if (!gui.live_area.content_manager && !gui.live_area.manual) {
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * scal.x);
         ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * scal.x) - BUTTON_SIZE.x, 44.0f * scal.y));
+        ImGui::SetWindowFontScale(scal.x);
         if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
             if (app_path == host.io.app_path) {
                 stop_all_threads(host.kernel);
@@ -1336,7 +1338,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Exit Manual", "Click on X or Press on PS");
             ImGui::Spacing();
             ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (BUTTON_SIZE.x / 2.f));
-            if (ImGui::Button("Ok", BUTTON_SIZE))
+            if (ImGui::Button("OK", BUTTON_SIZE))
                 ImGui::CloseCurrentPopup();
 
             ImGui::EndPopup();
@@ -1345,7 +1347,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     }
 
     const auto SELECTABLE_SIZE = ImVec2(50.f * scal.x, 60.f * scal.y);
-    const auto SELECTABLE_POS = ImVec2(5.f * scal.x, (display_size.y / 2.f) - (SELECTABLE_SIZE.y / 2.f) + MENUBAR_HEIGHT);
+    const auto SELECTABLE_POS = ImVec2(5.f * scal.x, (display_size.y / 2.f) - (SELECTABLE_SIZE.y / 2.f) + INFORMATION_BAR_HEIGHT);
     const auto wheel_counter = ImGui::GetIO().MouseWheel;
     ImGui::SetWindowFontScale(2.f * scal.x);
     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));

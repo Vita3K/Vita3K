@@ -233,14 +233,14 @@ static ImGuiTextFilter search_bar;
 void draw_content_manager(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
+    const auto INFORMATION_BAR_HEIGHT = 32.f * SCAL.y;
 
     const auto SIZE_ICON_LIST = ImVec2(60.f * SCAL.x, 60.f * SCAL.y);
     const auto SIZE_ICON_DETAIL = ImVec2(70.f * SCAL.x, 70.f * SCAL.y);
 
     const auto BUTTON_SIZE = ImVec2(310.f * SCAL.x, 46.f * SCAL.y);
 
-    const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT);
+    const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT);
     const auto SIZE_LIST = ImVec2(820 * SCAL.x, 378.f * SCAL.y);
     const auto SIZE_INFO = ImVec2(780 * SCAL.x, 402.f * SCAL.y);
 
@@ -248,14 +248,14 @@ void draw_content_manager(GuiState &gui, HostState &host) {
 
     const auto is_background = gui.apps_background.find("NPXS10026") != gui.apps_background.end();
 
-    ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(is_background ? 0.f : 0.999f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 
     ImGui::Begin("##content_manager", &gui.live_area.content_manager, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10026"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10026"], ImVec2(0.f, 0.f), display_size); // background image is 960x544
 
     ImGui::SetWindowFontScale(1.5f * SCAL.x);
 
@@ -279,7 +279,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(ImVec2(20.f * SCAL.y, (32.f * SCAL.y) - (search_size.y / 2.f)));
             ImGui::TextColored(GUI_COLOR_TEXT, "Search");
             ImGui::SameLine();
-            search_bar.Draw("##search_bar", 200);
+            search_bar.Draw("##search_bar", 200 * SCAL.x);
 
             // Free Space
             const auto scal_font = 19.2f / ImGui::GetFontSize();
@@ -293,7 +293,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
     }
 
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (menu == "info" ? 130.f : 102.0f) * SCAL.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCAL.x);
     ImGui::BeginChild("##content_manager_child", menu == "info" ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     auto common = host.common_dialog.lang.common;
@@ -368,13 +368,13 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::Begin("##app_delete", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
             ImGui::SetNextWindowBgAlpha(0.999f);
             ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
+            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCAL.x);
             ImGui::BeginChild("##app_delete_child", POPUP_SIZE, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCAL.x);
             ImGui::SetWindowFontScale(1.6f * SCAL.x);
             ImGui::SetCursorPos(ImVec2(52.f * SCAL.x, 80.f * SCAL.y));
             ImGui::PushTextWrapPos(POPUP_SIZE.x);
-            ImGui::TextColored(GUI_COLOR_TEXT, menu == "app" ? "The selected applications and all related data, including saved data, will be deleted." : "The selected saved data items wii be deleted");
+            ImGui::TextColored(GUI_COLOR_TEXT, menu == "app" ? "The selected applications and all related data, including saved data, will be deleted." : "The selected saved data items will be deleted");
             ImGui::PopTextWrapPos();
             ImGui::SetCursorPos(ImVec2(106.f * SCAL.x, ImGui::GetCursorPosY() + (76.f * SCAL.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "Data to be Deleted: %s", size_selected_contents.c_str());
@@ -383,7 +383,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 popup = false;
             }
             ImGui::SameLine(0, 20.f * SCAL.x);
-            if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+            if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
                 content_delete = true;
                 popup = false;
             }
@@ -546,7 +546,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
     ImGui::EndChild();
 
     ImGui::SetWindowFontScale(1.2f * SCAL.x);
-    ImGui::SetCursorPos(ImVec2(10.f, display_size.y - (88.f * SCAL.y)));
+    ImGui::SetCursorPos(ImVec2(10.f * SCAL.x, display_size.y - (88.f * SCAL.y)));
     const auto is_empty = ((menu == "app") && gui.app_selector.user_apps.empty()) || ((menu == "save") && save_data_list.empty());
     if (menu.empty() || (menu == "info") || is_empty) {
         if (ImGui::Button("Back", ImVec2(64.f * SCAL.x, 40.f * SCAL.y))) {
@@ -566,7 +566,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         }
     } else {
         ImGui::SetWindowFontScale(1.5f * SCAL.x);
-        ImGui::GetWindowDrawList()->AddRectFilled(ImVec2(0.f, 482.f * SCAL.y), display_size, IM_COL32(39.f, 42.f, 49.f, 255.f), 0.f, ImDrawCornerFlags_All);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 482.f * SCAL.y), display_size, IM_COL32(39.f, 42.f, 49.f, 255.f), 0.f, ImDrawCornerFlags_All);
         if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", ImVec2(202.f * SCAL.x, 44.f * SCAL.y))) {
             if (!menu.empty()) {
                 menu.clear();

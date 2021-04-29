@@ -392,14 +392,14 @@ void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_
 void draw_trophy_collection(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
+    const auto INFORMATION_BAR_HEIGHT = 32.f * SCAL.y;
 
     const auto SIZE_ICON_LIST = ImVec2(160.f * SCAL.x, 88.f * SCAL.y);
     const auto SIZE_TROPHY_LIST = ImVec2(80.f * SCAL.x, 80.f * SCAL.y);
 
     const auto BUTTON_SIZE = ImVec2(310.f * SCAL.x, 46.f * SCAL.y);
 
-    const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT);
+    const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT);
     const auto SIZE_LIST = ImVec2(780 * SCAL.x, 442.f * SCAL.y);
     const auto SIZE_INFO = ImVec2(780 * SCAL.x, 484.f * SCAL.y);
     const auto POPUP_SIZE = ImVec2(756.0f * SCAL.x, 436.0f * SCAL.y);
@@ -408,13 +408,13 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
 
     const auto is_background = gui.apps_background.find("NPXS10008") != gui.apps_background.end();
 
-    ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(is_background ? 0.f : 0.999f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##trophy_collection", &gui.live_area.trophy_collection, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10008"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10008"], ImVec2(0.f, 0.f), display_size); // background image is 960x544
     if (group_id_selected.empty()) {
         ImGui::SetWindowFontScale(1.4f * SCAL.x);
         if (np_com_id_selected.empty()) {
@@ -462,9 +462,9 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::Begin("##trophy_delete", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                 ImGui::SetNextWindowBgAlpha(0.999f);
                 ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-                ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
+                ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCAL.x);
                 ImGui::BeginChild("##trophy_delete_child", POPUP_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
+                ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCAL.x);
                 ImGui::SetCursorPos(ImVec2(48.f * SCAL.x, 28.f * SCAL.y));
                 if (gui.trophy_np_com_id_list_icons[delete_np_com_id].find("000") != gui.trophy_np_com_id_list_icons[delete_np_com_id].end())
                     ImGui::Image(gui.trophy_np_com_id_list_icons[delete_np_com_id]["000"], SIZE_ICON_LIST);
@@ -481,7 +481,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
                     delete_np_com_id.clear();
                 ImGui::SameLine(0, 20.f * SCAL.x);
-                if (ImGui::Button("Ok", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+                if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
                     fs::remove_all(TROPHY_PATH / "conf" / delete_np_com_id);
                     fs::remove_all(TROPHY_PATH / "data" / delete_np_com_id);
                     const auto np_com_id_index = std::find_if(np_com_id_list.begin(), np_com_id_list.end(), [&](const NPComIdSort &np_com) {
@@ -526,7 +526,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
 
                 // Trophy Context Menu
                 if (ImGui::BeginPopupContextItem("##trophy_context_menu")) {
-                    if (ImGui::MenuItem("Detete Trophy"))
+                    if (ImGui::MenuItem("Delete Trophy"))
                         delete_np_com_id = np_com.id;
                     ImGui::EndPopup();
                 }
@@ -727,8 +727,9 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     }
     ImGui::EndChild();
 
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
-    ImGui::SetCursorPos(ImVec2(8.f, display_size.y - (84.f * SCAL.y)));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCAL.x);
+    ImGui::SetWindowFontScale(1.2f * SCAL.x);
+    ImGui::SetCursorPos(ImVec2(8.f * SCAL.x, display_size.y - (84.f * SCAL.y)));
     if (ImGui::Button("Back", ImVec2(64.f * SCAL.x, 40.f * SCAL.y))) {
         if (!np_com_id_selected.empty()) {
             if (detail_np_com_id) {
@@ -760,7 +761,6 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
             gui.live_area.trophy_collection = false;
         }
     }
-
     if (trophy_id_selected.empty() && !detail_np_com_id && (np_com_id_selected.empty() || !group_id_selected.empty())) {
         ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCAL.x), display_size.y - (84.f * SCAL.y)));
         if (ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
@@ -819,6 +819,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
             ImGui::EndPopup();
         }
     }
+    ImGui::SetWindowFontScale(1.f);
     ImGui::PopStyleVar();
     ImGui::End();
     ImGui::PopStyleVar();

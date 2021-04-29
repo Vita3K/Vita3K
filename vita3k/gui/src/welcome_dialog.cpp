@@ -40,14 +40,14 @@ void draw_welcome_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Welcome to Vita3K", &gui.help_menu.welcome_dialog, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::PopStyleColor();
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "Vita3k PlayStation Vita Emulator");
+    ImGui::TextColored(GUI_COLOR_TEXT, "Vita3K PlayStation Vita Emulator");
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "Vita3k is an open-source PlayStation Vita emulator written in C++ for Windows, Linux and MacOS.");
-    ImGui::TextColored(GUI_COLOR_TEXT, "\nThe emulator is still in it's early stages so any feedback and testing is greatly appreciated.");
+    ImGui::TextColored(GUI_COLOR_TEXT, "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux and MacOS.");
+    ImGui::TextColored(GUI_COLOR_TEXT, "\nThe emulator is still in its early stages so any feedback and testing is greatly appreciated.");
     ImGui::TextColored(GUI_COLOR_TEXT, "\nTo get started, please install the Vita firmware and font packages.");
-    ImGui::TextColored(GUI_COLOR_TEXT, "\nA comprehensive guide on how to set-up Vita3k can be found on the");
+    ImGui::TextColored(GUI_COLOR_TEXT, "\nA comprehensive guide on how to set-up Vita3K can be found on the");
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 9.f);
     if (ImGui::Button("Quickstart")) {
@@ -82,7 +82,7 @@ void draw_welcome_dialog(GuiState &gui, HostState &host) {
         system(link.str().c_str());
     }
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "Vita3k does not condone piracy. You must dump your own games.");
+    ImGui::TextColored(GUI_COLOR_TEXT, "Vita3K does not condone piracy. You must dump your own games.");
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();

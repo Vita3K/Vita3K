@@ -368,14 +368,14 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
     }
 
     if (notice_info_state) {
-        const auto POPUP_SIZE = notice_info.empty() ? ImVec2(412.f * SCAL.x, 86.f * SCAL.y) : ImVec2(782.f * SCAL.x, notice_info.size() < 5 ? 22.f + ((80.f * SCAL.y) * notice_info.size() + (10.f * (notice_info.size() - 1))) : 464.f * SCAL.y);
+        const auto POPUP_SIZE = notice_info.empty() ? ImVec2(412.f * SCAL.x, 86.f * SCAL.y) : ImVec2(782.f * SCAL.x, notice_info.size() < 5 ? 22.f * host.dpi_scale + ((80.f * SCAL.y) * notice_info.size() + (10.f * (notice_info.size() - 1) * host.dpi_scale)) : 464.f * SCAL.y);
         const auto POPUP_POS = ImVec2(notice_info.empty() ? display_size.x - (502.f * SCAL.y) : (display_size.x / 2.f) - (POPUP_SIZE.x / 2.f), 56.f * SCAL.y);
         const auto POPUP_BG_COLOR = notice_info.empty() ? GUI_COLOR_TEXT : GUI_SMOOTH_GRAY;
 
         ImGui::PushStyleColor(ImGuiCol_ChildBg, POPUP_BG_COLOR);
         ImGui::PushStyleColor(ImGuiCol_Border, GUI_COLOR_TEXT);
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, notice_info.empty() ? 0.f : 8.0f);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCAL.x);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, notice_info.empty() ? 0.f : 8.0f * SCAL.x);
         ImGui::SetNextWindowPos(POPUP_POS, ImGuiCond_Always);
         ImGui::BeginChild("##notice_info_child", POPUP_SIZE, true, ImGuiWindowFlags_NoSavedSettings);
         auto indicator = gui.lang.indicator;
@@ -446,7 +446,8 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
             const auto DELETE_POPUP_SIZE = ImVec2(756.0f * SCAL.x, 436.0f * SCAL.y);
             const auto BUTTON_SIZE = ImVec2(320.f * SCAL.x, 46.f * SCAL.y);
 
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
+            ImGui::SetWindowFontScale(1.f * SCAL.x);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCAL.x);
             ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCAL.x), display_size.y - (52.f * SCAL.y)));
             if (ImGui::Button("...", ImVec2(64.f * SCAL.x, 40.f * SCAL.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
                 ImGui::OpenPopup("...");
@@ -485,6 +486,7 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
                 ImGui::EndPopup();
             }
             ImGui::PopStyleVar();
+            ImGui::SetWindowFontScale(1.f);
         }
     }
     ImGui::End();
@@ -493,20 +495,20 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
 void draw_information_bar(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
+    const auto INFORMATION_BAR_HEIGHT = 32.f * SCAL.y;
     ImU32 DEFAULT_BAR_COLOR = 4278190080; // Black
     ImU32 DEFAULT_INDICATOR_COLOR = 4294967295; // White
     const auto is_notif_pos = !gui.live_area.start_screen && (gui.live_area.live_area_screen || gui.live_area.app_selector) ? 78.f * SCAL.x : 0.f;
     const auto is_theme_color = gui.live_area.app_selector || gui.live_area.live_area_screen || gui.live_area.start_screen;
 
     ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(ImVec2(display_size.x, MENUBAR_HEIGHT), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(ImVec2(display_size.x, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::Begin("##information_bar", &gui.live_area.information_bar, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
-    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, MENUBAR_HEIGHT), is_theme_color ? gui.information_bar_color["bar"] : DEFAULT_BAR_COLOR, 0.f, ImDrawCornerFlags_All);
+    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, INFORMATION_BAR_HEIGHT), is_theme_color ? gui.information_bar_color["bar"] : DEFAULT_BAR_COLOR, 0.f, ImDrawCornerFlags_All);
 
     if (gui.live_area.app_selector || gui.live_area.live_area_screen) {
-        const auto home_icon_center = (display_size.x / 2.f) - (32.f * ((float(gui.apps_list_opened.size())) / 2.f));
+        const auto home_icon_center = (display_size.x / 2.f) - (32.f * ((float(gui.apps_list_opened.size())) / 2.f)) * SCAL.x;
         // Draw Home Icon
         ImGui::GetForegroundDrawList()->AddTriangleFilled(ImVec2(home_icon_center - (13.f * SCAL.x), 16.f * SCAL.y), ImVec2(home_icon_center, 6.f * SCAL.y), ImVec2(home_icon_center + (13.f * SCAL.x), 16.f * SCAL.y), gui.information_bar_color["indicator"]);
         ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(home_icon_center - (8.f * SCAL.x), 16.f * SCAL.y), ImVec2(home_icon_center + (8.f * SCAL.x), 26.f * SCAL.y), gui.information_bar_color["indicator"]);
@@ -549,14 +551,14 @@ void draw_information_bar(GuiState &gui, HostState &host) {
     const auto CALC_FORMAT_SIZE = ImGui::CalcTextSize(DATE_TIME["day-moment"].c_str());
     const auto SCAL_FORMAT_SIZE = host.io.user_id.empty() || gui.users[host.io.user_id].clock_12_hour ? ImVec2((CALC_FORMAT_SIZE.x * scal_format_font_size), CALC_FORMAT_SIZE.y * scal_format_font_size * SCAL_PIX_FONT) : ImVec2(0.f, 0.f);
 
-    const auto CLOCK_POS = ImVec2(display_size.x - (62.f * SCAL.x) - (SCAL_CLOCK_SIZE.x * SCAL.x) - (SCAL_FORMAT_SIZE.x * SCAL.x) - is_notif_pos, (MENUBAR_HEIGHT / 2.f) - ((SCAL_CLOCK_SIZE.y * SCAL.y) / 2.f));
+    const auto CLOCK_POS = ImVec2(display_size.x - (62.f * SCAL.x) - (SCAL_CLOCK_SIZE.x * SCAL.x) - (SCAL_FORMAT_SIZE.x * SCAL.x) - is_notif_pos, (INFORMATION_BAR_HEIGHT / 2.f) - ((SCAL_CLOCK_SIZE.y * SCAL.y) / 2.f));
     const auto FORMAT_POS = ImVec2(CLOCK_POS.x + (SCAL_CLOCK_SIZE.x * SCAL.x) + (4.f * SCAL.x), CLOCK_POS.y + (SCAL_CLOCK_SIZE.y - SCAL_FORMAT_SIZE.y));
 
     ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_clock_default_font * SCAL.x, CLOCK_POS, is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, DATE_TIME["clock"].c_str());
     if (host.io.user_id.empty() || gui.users[host.io.user_id].clock_12_hour)
         ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_format_default_font * SCAL.x, FORMAT_POS, is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, DATE_TIME["day-moment"].c_str());
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (54.f * SCAL.x) - is_notif_pos, 12.f * SCAL.y), ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 20 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 0.f, ImDrawCornerFlags_All);
-    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 5.f * SCAL.y), ImVec2(display_size.x - (12.f * SCAL.x) - is_notif_pos, 27 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f, ImDrawCornerFlags_All);
+    ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCAL.x) - is_notif_pos, 5.f * SCAL.y), ImVec2(display_size.x - (12.f * SCAL.x) - is_notif_pos, 27 * SCAL.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f * SCAL.x, ImDrawCornerFlags_All);
 
     if (host.display.imgui_render && !gui.live_area.start_screen && !gui.live_area.live_area_screen && get_live_area_sys_app_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
         gui.live_area.information_bar = false;

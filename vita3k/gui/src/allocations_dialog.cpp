@@ -33,6 +33,7 @@ void draw_allocations_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Memory Allocations", &gui.debug_menu.allocations_dialog);
 
     const std::lock_guard<std::mutex> lock(host.mem.generation_mutex);
+
     for (const auto &pair : host.mem.generation_names) {
         const auto generation_num = pair.first;
         const auto generation_name = pair.second;

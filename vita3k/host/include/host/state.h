@@ -98,5 +98,6 @@ struct HostState {
     Ime ime;
     SfoFile sfo_handle;
     NIDSet missing_nids;
+    float dpi_scale = 1.0f;
     GDBState gdb;
 };
