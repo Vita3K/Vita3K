@@ -248,7 +248,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your desired modules.");
             ImGui::Spacing();
-            ImGui::PushItemWidth(240);
+            ImGui::PushItemWidth(240 * host.dpi_scale);
             if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules.size()), 8)) {
                 for (auto &m : gui.modules) {
                     const auto module = std::find(lle_modules.begin(), lle_modules.end(), m.first);
@@ -267,7 +267,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::PopItemWidth();
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT, "Modules Search");
-            gui.module_search_bar.Draw("##module_search_bar", 200);
+            gui.module_search_bar.Draw("##module_search_bar", 200 * host.dpi_scale);
             ImGui::Spacing();
             if (ImGui::Button("Clear list")) {
                 lle_modules.clear();

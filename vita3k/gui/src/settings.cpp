@@ -492,19 +492,19 @@ void init_themes(GuiState &gui, HostState &host) {
 void draw_start_screen(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
+    const auto INFORMATION_BAR_HEIGHT = 32.f * SCAL.y;
 
-    ImGui::SetNextWindowPos(ImVec2(0.f, MENUBAR_HEIGHT), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(0.f, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##start_screen", &gui.live_area.start_screen, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     if (gui.start_background)
-        ImGui::GetForegroundDrawList()->AddImage(gui.start_background, ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.start_background, ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size);
     else
-        ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_HEIGHT), display_size, IM_COL32(128.f, 128.f, 128.f, 128.f), 0.f, ImDrawCornerFlags_All);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size, IM_COL32(128.f, 128.f, 128.f, 128.f), 0.f, ImDrawCornerFlags_All);
 
-    ImGui::GetForegroundDrawList()->AddRect(ImVec2(32.f * SCAL.x, 64.f * SCAL.y), ImVec2(display_size.x - (32.f * SCAL.x), display_size.y - (32.f * SCAL.y)), IM_COL32(255.f, 255.f, 255.f, 255.f), 20.0f, ImDrawCornerFlags_All);
+    ImGui::GetForegroundDrawList()->AddRect(ImVec2(32.f * SCAL.x, 64.f * SCAL.y), ImVec2(display_size.x - (32.f * SCAL.x), display_size.y - (32.f * SCAL.y)), IM_COL32(255.f, 255.f, 255.f, 255.f), 20.0f * SCAL.x, ImDrawCornerFlags_All);
 
     const auto now = std::chrono::system_clock::now();
     const auto tt = std::chrono::system_clock::to_time_t(now);
@@ -594,8 +594,8 @@ void draw_settings(GuiState &gui, HostState &host) {
 
     const auto BUTTON_SIZE = ImVec2(310.f * SCAL.x, 46.f * SCAL.y);
     const auto ICON_SIZE = ImVec2(100.f * SCAL.x, 100.f * SCAL.y);
-    const auto MENUBAR_HEIGHT = 32.f * SCAL.y;
-    const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - MENUBAR_HEIGHT);
+    const auto INFORMATION_BAR_HEIGHT = 32.f * SCAL.y;
+    const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT);
     const auto SIZE_PREVIEW = ImVec2(360.f * SCAL.x, 204.f * SCAL.y);
     const auto SIZE_MINI_PREVIEW = ImVec2(256.f * SCAL.x, 145.f * SCAL.y);
     const auto SIZE_LIST = ImVec2(780 * SCAL.x, 414.f * SCAL.y);
@@ -608,13 +608,13 @@ void draw_settings(GuiState &gui, HostState &host) {
     const auto is_lang = !lang.empty();
     auto common = host.common_dialog.lang.common;
 
-    ImGui::SetNextWindowPos(ImVec2(0, MENUBAR_HEIGHT), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(is_background ? 0.f : 0.999f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##settings", &gui.live_area.settings, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], ImVec2(0.f, MENUBAR_HEIGHT), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], ImVec2(0.f, 0.f), display_size); // background image is 960x544
     ImGui::SetWindowFontScale(1.6f * SCAL.x);
     const auto title_size_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
     ImGui::PushTextWrapPos(((display_size.x - SIZE_LIST.x) / 2.f) + SIZE_LIST.x);
@@ -627,10 +627,10 @@ void draw_settings(GuiState &gui, HostState &host) {
         if ((menu == "theme") && theme_selected.empty()) {
             ImGui::SetWindowFontScale(1.2f * SCAL.x);
             const auto search_size = ImGui::CalcTextSize("Search");
-            ImGui::SetCursorPos(ImVec2(display_size.x - 220.f - search_size.x, (35.f * SCAL.y) - (search_size.y / 2.f)));
+            ImGui::SetCursorPos(ImVec2(display_size.x - (220.f * SCAL.x) - search_size.x, (35.f * SCAL.y) - (search_size.y / 2.f)));
             ImGui::TextColored(GUI_COLOR_TEXT, "Search");
             ImGui::SameLine();
-            search_bar.Draw("##search_bar", 200);
+            search_bar.Draw("##search_bar", 200 * SCAL.x);
             ImGui::SetWindowFontScale(1.6f * SCAL.x);
         }
     }
@@ -638,7 +638,7 @@ void draw_settings(GuiState &gui, HostState &host) {
     ImGui::SetCursorPosY(64.0f * SCAL.y);
     ImGui::Separator();
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (settings_menu == "theme_background" && !menu.empty() ? 118.f : 96.0f) * SCAL.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCAL.x);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
     ImGui::BeginChild("##settings_child", SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
@@ -775,7 +775,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::Begin("##delete_theme", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
                         ImGui::SetNextWindowBgAlpha(0.999f);
-                        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
+                        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCAL.x);
                         ImGui::BeginChild("##delete_theme_popup", POPUP_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                         ImGui::SetCursorPos(ImVec2(48.f * SCAL.x, 28.f * SCAL.y));
                         ImGui::SetWindowFontScale(1.6f * SCAL.x);
@@ -791,7 +791,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - (CALC_TEXT.x / 2.f), POPUP_SIZE.y / 2.f - (CALC_TEXT.y / 2.f)));
                         ImGui::TextColored(GUI_COLOR_TEXT, delete_str.c_str());
                         ImGui::SetCursorPos(ImVec2(50.f, POPUP_SIZE.y - (22.f + BUTTON_SIZE.y)));
-                        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
+                        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCAL.x);
                         if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
                             popup.clear();
                         ImGui::SetCursorPos(ImVec2(ImGui::GetWindowSize().x - 50.f - BUTTON_SIZE.x, POPUP_SIZE.y - (22.f + BUTTON_SIZE.y)));
@@ -1021,26 +1021,26 @@ void draw_settings(GuiState &gui, HostState &host) {
         ImGui::Separator();
         ImGui::PopStyleVar();
         if (!menu.empty()) {
-            const auto WINDOW_TIME_SIZE = ImVec2(WINDOW_SIZE.x - 70.f, WINDOW_SIZE.y);
-            ImGui::SetNextWindowPos(ImVec2(70.f * SCAL.x, MENUBAR_HEIGHT), ImGuiCond_Always);
+            const auto WINDOW_TIME_SIZE = ImVec2(WINDOW_SIZE.x - 70.f * host.dpi_scale, WINDOW_SIZE.y);
+            ImGui::SetNextWindowPos(ImVec2(70.f * SCAL.x, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
             ImGui::SetNextWindowSize(WINDOW_TIME_SIZE, ImGuiCond_Always);
             ImGui::SetNextWindowBgAlpha(0.f);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
             ImGui::Begin("##time", &gui.live_area.settings, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
             const auto TIME_SELECT_SIZE = 336.f * SCAL.x;
             ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
-            ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x - TIME_SELECT_SIZE, MENUBAR_HEIGHT), ImGuiCond_Always, ImVec2(0.f, 0.f));
+            ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x - TIME_SELECT_SIZE, INFORMATION_BAR_HEIGHT), ImGuiCond_Always, ImVec2(0.f, 0.f));
             ImGui::BeginChild("##time_select", ImVec2(TIME_SELECT_SIZE, WINDOW_SIZE.y), false, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
             ImGui::Columns(2, nullptr, false);
-            ImGui::SetColumnWidth(0, 30.f);
-            ImGui::SetWindowFontScale(1.6f);
+            ImGui::SetColumnWidth(0, 30.f * SCAL.x);
+            ImGui::SetWindowFontScale(1.6f * SCAL.x);
             if (menu == "date_format") {
                 for (auto f = 0; f < 3; f++) {
                     auto date_format_value = DateFormat(f);
                     const auto date_format_str = get_date_format_sting(gui, date_format_value);
                     ImGui::PushID(date_format_str.c_str());
-                    ImGui::SetCursorPosY((display_size.y / 2.f) - MENUBAR_HEIGHT - (SIZE_PUPUP_SELECT * 1.5f) + (SIZE_PUPUP_SELECT * f));
+                    ImGui::SetCursorPosY((display_size.y / 2.f) - INFORMATION_BAR_HEIGHT - (SIZE_PUPUP_SELECT * 1.5f) + (SIZE_PUPUP_SELECT * f));
                     if (ImGui::Selectable(gui.users[host.io.user_id].date_format == date_format_value ? "V" : "##date_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
                         if (gui.users[host.io.user_id].date_format != date_format_value) {
                             gui.users[host.io.user_id].date_format = date_format_value;
@@ -1049,13 +1049,13 @@ void draw_settings(GuiState &gui, HostState &host) {
                         menu.clear();
                     }
                     ImGui::NextColumn();
-                    ImGui::SetCursorPosY((display_size.y / 2.f) - MENUBAR_HEIGHT - (SIZE_PUPUP_SELECT * 1.5f) + (SIZE_PUPUP_SELECT * f));
+                    ImGui::SetCursorPosY((display_size.y / 2.f) - INFORMATION_BAR_HEIGHT - (SIZE_PUPUP_SELECT * 1.5f) + (SIZE_PUPUP_SELECT * f));
                     ImGui::Selectable(date_format_str.c_str(), false, ImGuiSelectableFlags_None, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT));
                     ImGui::PopID();
                     ImGui::NextColumn();
                 }
             } else if (menu == "time_format") {
-                ImGui::SetCursorPosY((display_size.y / 2.f) - SIZE_PUPUP_SELECT - MENUBAR_HEIGHT);
+                ImGui::SetCursorPosY((display_size.y / 2.f) - SIZE_PUPUP_SELECT - INFORMATION_BAR_HEIGHT);
                 if (ImGui::Selectable(gui.users[host.io.user_id].clock_12_hour ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
                     if (!gui.users[host.io.user_id].clock_12_hour) {
                         gui.users[host.io.user_id].clock_12_hour = true;
@@ -1064,7 +1064,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                     menu.clear();
                 }
                 ImGui::NextColumn();
-                ImGui::SetCursorPosY((display_size.y / 2.f) - SIZE_PUPUP_SELECT - MENUBAR_HEIGHT);
+                ImGui::SetCursorPosY((display_size.y / 2.f) - SIZE_PUPUP_SELECT - INFORMATION_BAR_HEIGHT);
                 ImGui::Selectable(is_lang ? lang["12_hour_clock"].c_str() : "12-Hour Clock", false, ImGuiSelectableFlags_None, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT));
                 ImGui::NextColumn();
                 if (ImGui::Selectable(!gui.users[host.io.user_id].clock_12_hour ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
@@ -1098,18 +1098,19 @@ void draw_settings(GuiState &gui, HostState &host) {
         ImGui::PopStyleVar();
         if (!menu.empty()) {
             const auto WINDOW_LANG_LIST_SIZE = ImVec2(WINDOW_SIZE.x - 70.f, WINDOW_SIZE.y);
-            ImGui::SetNextWindowPos(ImVec2(70.f, MENUBAR_HEIGHT), ImGuiCond_Always);
+            ImGui::SetNextWindowPos(ImVec2(70.f, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
             ImGui::SetNextWindowSize(WINDOW_LANG_LIST_SIZE, ImGuiCond_Always);
             ImGui::SetNextWindowBgAlpha(0.f);
             ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
             ImGui::Begin("##system_language", &gui.live_area.settings, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
             const auto SYS_LANG_SIZE = WINDOW_SIZE.x / 2.f;
             ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
-            ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x - SYS_LANG_SIZE, MENUBAR_HEIGHT), ImGuiCond_Always, ImVec2(0.f, 0.f));
+            ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x - SYS_LANG_SIZE, INFORMATION_BAR_HEIGHT), ImGuiCond_Always, ImVec2(0.f, 0.f));
             ImGui::BeginChild("##system_language_select", ImVec2(SYS_LANG_SIZE, WINDOW_SIZE.y), false, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings);
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
             ImGui::Columns(2, nullptr, false);
-            ImGui::SetColumnWidth(0, 30.f);
+            ImGui::SetColumnWidth(0, 30.f * SCAL.x);
+            ImGui::SetWindowFontScale(1.6f * SCAL.x);
             const auto current_sys_lang = LIST_SYS_LANG[host.cfg.sys_lang];
             for (const auto &sys_lang : LIST_SYS_LANG) {
                 ImGui::PushID(sys_lang.c_str());
@@ -1155,8 +1156,8 @@ void draw_settings(GuiState &gui, HostState &host) {
     ImGui::PopStyleVar();
 
     // Back
-    ImGui::SetWindowFontScale(1.00f);
-    ImGui::SetCursorPos(ImVec2(6.f, display_size.y - (84.f * SCAL.y)));
+    ImGui::SetWindowFontScale(1.2f * SCAL.x);
+    ImGui::SetCursorPos(ImVec2(6.f * SCAL.x, display_size.y - (84.f * SCAL.y)));
     if (ImGui::Button("Back", ImVec2(64.f * SCAL.x, 40.f * SCAL.y))) {
         if (!settings_menu.empty()) {
             if (!menu.empty()) {

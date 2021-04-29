@@ -116,7 +116,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
-        ImGui::SetWindowFontScale(1.3f);
+        ImGui::SetWindowFontScale(1.3f * host.dpi_scale);
         if (ImGui::MenuItem("Boot"))
             pre_load_app(gui, host, false, app_path);
         if (title_id.find("NPXS") == std::string::npos) {
@@ -210,9 +210,9 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
         ImGui::Begin("##context_dialog", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetNextWindowBgAlpha(0.999f);
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * scal.x);
         ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * scal.x);
         // Update History
         if (context_dialog == "history") {
             ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + 20.f * scal.x, ImGui::GetWindowPos().y + BUTTON_SIZE.y));
@@ -228,7 +228,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             }
             ImGui::EndChild();
             ImGui::SetWindowFontScale(1.4f * scal.x);
-            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * scal.y)));
+            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * host.dpi_scale)));
         } else {
             // Delete Data
             if (gui.app_selector.user_apps_icon.find(title_id) != gui.app_selector.user_apps_icon.end()) {
@@ -284,7 +284,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             gui.live_area.information_bar = true;
         }
         if (get_app_icon(gui, title_id)->first == title_id) {
-            ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * scal.y));
+            ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * host.dpi_scale));
             ImGui::Image(get_app_icon(gui, title_id)->second, INFO_ICON_SIZE);
         }
         const auto name = is_lang ? lang["name"] : "Name";

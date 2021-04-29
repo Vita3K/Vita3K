@@ -61,8 +61,8 @@ static void remapper_button(GuiState &gui, HostState &host, int *button, const c
 }
 
 void draw_controls_dialog(GuiState &gui, HostState &host) {
-    float width = ImGui::GetWindowWidth() / 1.35f;
-    float height = ImGui::GetWindowHeight() / 1.25f;
+    float width = ImGui::GetWindowWidth() / 1.35f * host.dpi_scale;
+    float height = ImGui::GetWindowHeight() / 1.25f * host.dpi_scale;
     ImGui::SetNextWindowSize(ImVec2(width, height));
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("Controls", &gui.controls_menu.controls_dialog);

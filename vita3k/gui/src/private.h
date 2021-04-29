@@ -58,7 +58,7 @@ void draw_allocations_dialog(GuiState &gui, HostState &host);
 void draw_disassembly_dialog(GuiState &gui, HostState &host);
 void draw_settings_dialog(GuiState &gui, HostState &host);
 void draw_controls_dialog(GuiState &gui, HostState &host);
-void draw_about_dialog(GuiState &gui);
+void draw_about_dialog(GuiState &gui, HostState &host);
 void draw_welcome_dialog(GuiState &gui, HostState &host);
 
 void draw_app_selector(GuiState &gui, HostState &host);

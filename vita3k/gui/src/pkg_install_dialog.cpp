@@ -45,7 +45,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
     };
     std::lock_guard<std::mutex> lock(install_mutex);
 
-    static const auto BUTTON_SIZE = ImVec2(160.f, 45.f);
+    static const auto BUTTON_SIZE = ImVec2(160.f * host.dpi_scale, 45.f * host.dpi_scale);
 
     if (draw_file_dialog) {
         result = NFD_OpenDialog("pkg", nullptr, &pkg_path);
@@ -64,9 +64,9 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
 
     auto indicator = gui.lang.indicator;
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(616.f, 264.f));
+    ImGui::SetNextWindowSize(ImVec2(616.f * host.dpi_scale, 264.f * host.dpi_scale));
     if (ImGui::BeginPopupModal("install", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
-        const auto POS_BUTTON = (ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f) + 10.f;
+        const auto POS_BUTTON = (ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f) + 10.f * host.dpi_scale;
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
         ImGui::Spacing();
@@ -106,13 +106,13 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::SetCursorPos(ImVec2(POS_BUTTON - (BUTTON_SIZE.x / 2) - 10.f, ImGui::GetWindowSize().y / 2));
+            ImGui::SetCursorPos(ImVec2(POS_BUTTON - (BUTTON_SIZE.x / 2) - 10.f * host.dpi_scale, ImGui::GetWindowSize().y / 2));
             if (ImGui::Button("Cancel", BUTTON_SIZE)) {
                 state.clear();
                 zRIF.clear();
             }
             ImGui::SameLine(0, 20.f);
-            if (ImGui::Button("Ok", BUTTON_SIZE) && !zRIF.empty())
+            if (ImGui::Button("OK", BUTTON_SIZE) && !zRIF.empty())
                 state = "install";
         } else if (state == "install") {
             std::thread installation(([&host]() {
@@ -159,9 +159,9 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             }
         } else if (state == "fail") {
             title = !indicator["install_failed"].empty() ? gui.lang.indicator["install_failed"].c_str() : "Could not install.";
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize("Please check log for more details.").x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f));
+            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize("Please check log for more details.").x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f * host.dpi_scale));
             ImGui::TextColored(GUI_COLOR_TEXT, "Please check log for more details.");
-            ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - 20.f));
+            ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - 20.f * host.dpi_scale));
             if (ImGui::Button("OK", BUTTON_SIZE)) {
                 refresh_app_list(gui, host);
                 gui.file_menu.pkg_install_dialog = false;
@@ -172,16 +172,17 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             }
         } else if (state == "installing") {
             title = "Installing";
-            ImGui::SetCursorPos(ImVec2(178.f, ImGui::GetCursorPosY() + 30.f));
+            ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + 30.f * host.dpi_scale));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_title.c_str());
             const auto installing = !indicator["installing"].empty() ? indicator["installing"].c_str() : "Installing...";
-            ImGui::SetCursorPos(ImVec2(178.f, ImGui::GetCursorPosY() + 30.f));
+            ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + 30.f * host.dpi_scale));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", installing);
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (502.f / 2.f), ImGui::GetCursorPosY() + 30.f));
+            const float PROGRESS_BAR_WIDTH = 502.f * host.dpi_scale;
+            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), ImGui::GetCursorPosY() + 30.f * host.dpi_scale));
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
-            ImGui::ProgressBar(progress / 100.f, ImVec2(502.f, 15.f), "");
+            ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * host.dpi_scale), "");
             const auto progress_str = std::to_string(uint32_t(progress)).append("%");
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + 16.f));
+            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + 16.f * host.dpi_scale));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
             ImGui::PopStyleColor();
         }

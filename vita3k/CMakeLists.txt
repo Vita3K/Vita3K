@@ -154,7 +154,7 @@ elseif(LINUX)
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so" "$<TARGET_FILE_DIR:vita3k>")
 	endif()
 elseif(WIN32)
-	target_sources(vita3k PRIVATE resource.h Vita3K.ico Vita3K.rc)
+	target_sources(vita3k PRIVATE resource.h Vita3K.ico Vita3K.rc WindowsDpiAwareness.manifest)
 	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT vita3k)
 	set_target_properties(vita3k PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build-windows/bin")
 	add_custom_command(
