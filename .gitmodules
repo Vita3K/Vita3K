@@ -84,3 +84,9 @@
 [submodule "external/xxHash"]
 	path = external/xxHash
 	url = https://github.com/Cyan4973/xxHash
+[submodule "external/dynarmic"]
+	path = external/dynarmic
+	url=https://github.com/Vita3K/dynarmic.git
+[submodule "external/fmt"]
+	path = external/fmt
+	url = https://github.com/fmtlib/fmt.git

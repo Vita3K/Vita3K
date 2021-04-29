@@ -47,4 +47,4 @@ using ${NAMESPACE}\;
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/include/util/optional.h" ${INCLUDE_COMPLETE})
 
 target_include_directories(util PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/include)
-target_link_libraries(util PUBLIC ${Boost_LIBRARIES} spdlog::spdlog)
+target_link_libraries(util PUBLIC ${Boost_LIBRARIES} fmt spdlog)
