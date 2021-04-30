@@ -78,7 +78,7 @@ inline int find_condvar(CondvarPtr &condvar_out, CondvarPtrs **condvars_out, Ker
 // TODO: Write remaining time to timeout ptr when it's successfully signaled
 
 inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mutex> &thread_lock,
-    std::unique_lock<std::mutex> &primitive_lock, SyncPrimitive &primitive,
+    std::unique_lock<std::mutex> &primitive_lock, WaitingThreadQueue &queue,
     const WaitingThreadData &data, const char *export_name, SceUInt *const timeout) {
     if (timeout && *timeout > 0) {
         auto status = thread->something_to_do.wait_for(thread_lock, std::chrono::microseconds{ *timeout }, [&] { return thread->to_do == ThreadToDo::run; });
@@ -89,7 +89,7 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
             thread->to_do = ThreadToDo::run;
 
             primitive_lock.lock();
-            primitive.waiting_threads.erase(data);
+            queue.erase(data);
 
             return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
         }
@@ -206,7 +206,7 @@ inline int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *expor
         mutex->waiting_threads.emplace(data);
         mutex_lock.unlock();
 
-        int res = handle_timeout(thread, thread_lock, mutex_lock, *mutex, data, export_name, timeout);
+        int res = handle_timeout(thread, thread_lock, mutex_lock, mutex->waiting_threads, data, export_name, timeout);
 
         if (weight == SyncWeight::Light) {
             mutex->workarea.get(mem)->lockCount = mutex->lock_count;
@@ -410,7 +410,7 @@ int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_i
         semaphore->waiting_threads.emplace(data);
         semaphore_lock.unlock();
 
-        return handle_timeout(thread, thread_lock, semaphore_lock, *semaphore, data, export_name, timeout);
+        return handle_timeout(thread, thread_lock, semaphore_lock, semaphore->waiting_threads, data, export_name, timeout);
     } else {
         semaphore->val -= signal;
     }
@@ -554,7 +554,7 @@ int condvar_wait(KernelState &kernel, MemState &mem, const char *export_name, Sc
     condvar->waiting_threads.emplace(data);
     condition_variable_lock.unlock();
 
-    if (auto error = handle_timeout(thread, thread_lock, condition_variable_lock, *condvar, data, export_name, timeout))
+    if (auto error = handle_timeout(thread, thread_lock, condition_variable_lock, condvar->waiting_threads, data, export_name, timeout))
         return error;
 
     thread_lock.unlock();
@@ -738,7 +738,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         event->waiting_threads.emplace(data);
         event_lock.unlock();
 
-        return handle_timeout(thread, thread_lock, event_lock, *event, data, export_name, timeout);
+        return handle_timeout(thread, thread_lock, event_lock, event->waiting_threads, data, export_name, timeout);
     }
 
     return SCE_KERNEL_OK;
