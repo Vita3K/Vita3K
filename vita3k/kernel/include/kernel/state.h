@@ -104,12 +104,12 @@ struct SyncPrimitive {
     uint32_t attr;
 
     std::mutex mutex;
-    WaitingThreadQueue waiting_threads;
 
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
 };
 
 struct Semaphore : SyncPrimitive {
+    WaitingThreadQueue waiting_threads;
     int max;
     int val;
 };
@@ -121,6 +121,7 @@ struct Mutex : SyncPrimitive {
     int init_count;
     int lock_count;
     ThreadStatePtr owner;
+    WaitingThreadQueue waiting_threads;
     Ptr<SceKernelLwMutexWork> workarea;
 };
 
@@ -128,6 +129,7 @@ typedef std::shared_ptr<Mutex> MutexPtr;
 typedef std::map<SceUID, MutexPtr> MutexPtrs;
 
 struct EventFlag : SyncPrimitive {
+    WaitingThreadQueue waiting_threads;
     int flags;
 };
 
@@ -152,6 +154,7 @@ struct Condvar : SyncPrimitive {
             , thread_id(thread_id) {}
     };
 
+    WaitingThreadQueue waiting_threads;
     MutexPtr associated_mutex;
 };
 typedef std::shared_ptr<Condvar> CondvarPtr;
