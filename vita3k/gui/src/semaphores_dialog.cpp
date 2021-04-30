@@ -34,7 +34,7 @@ void draw_semaphores_dialog(GuiState &gui, HostState &host) {
             sema_state->name,
             sema_state->val,
             sema_state->max,
-            sema_state->waiting_threads.size());
+            sema_state->waiting_threads->size());
     }
     ImGui::End();
 }

@@ -201,7 +201,7 @@ EXPORT(int, _sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKe
                 }
             }
         }
-        info_data->numWaitThreads = static_cast<SceUInt32>(mutex->waiting_threads.size());
+        info_data->numWaitThreads = static_cast<SceUInt32>(mutex->waiting_threads->size());
         if (info_size < sizeof(SceKernelLwMutexInfo)) {
             memcpy(info.get(host.mem), &info_data_local, info_size);
         } else {

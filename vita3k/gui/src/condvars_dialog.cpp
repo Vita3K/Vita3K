@@ -33,7 +33,7 @@ void draw_condvars_dialog(GuiState &gui, HostState &host) {
             condvar.first,
             sema_state->name,
             sema_state->attr,
-            sema_state->waiting_threads.size());
+            sema_state->waiting_threads->size());
     }
     ImGui::End();
 }
@@ -50,7 +50,7 @@ void draw_lw_condvars_dialog(GuiState &gui, HostState &host) {
             condvar.first,
             sema_state->name,
             sema_state->attr,
-            sema_state->waiting_threads.size());
+            sema_state->waiting_threads->size());
     }
     ImGui::End();
 }

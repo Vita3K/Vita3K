@@ -20,6 +20,7 @@
 #include <codec/state.h>
 #include <cpu/functions.h>
 #include <kernel/thread/thread_state.h>
+#include <kernel/thread_data_queue.h>
 #include <kernel/types.h>
 #include <mem/ptr.h>
 #include <rtc/rtc.h>
@@ -49,7 +50,6 @@ typedef std::map<SceUID, SceKernelMemBlockInfoPtr> Blocks;
 typedef std::map<SceUID, CodecEngineBlock> CodecEngineBlocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
 typedef std::map<SceUID, SlotToAddress> ThreadToSlotToAddress;
-typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 typedef std::map<SceUID, ThreadStatePtr> ThreadStatePtrs;
 typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
@@ -94,7 +94,7 @@ struct WaitingThreadData {
     }
 };
 
-typedef std::set<WaitingThreadData, std::greater<WaitingThreadData>> WaitingThreadQueue;
+typedef std::unique_ptr<ThreadDataQueue<WaitingThreadData>> WaitingThreadQueuePtr;
 
 // NOTE: uid is copied to sync primitives here for debugging,
 //       not really needed since they are put in std::map's
@@ -109,7 +109,7 @@ struct SyncPrimitive {
 };
 
 struct Semaphore : SyncPrimitive {
-    WaitingThreadQueue waiting_threads;
+    WaitingThreadQueuePtr waiting_threads;
     int max;
     int val;
 };
@@ -121,7 +121,7 @@ struct Mutex : SyncPrimitive {
     int init_count;
     int lock_count;
     ThreadStatePtr owner;
-    WaitingThreadQueue waiting_threads;
+    WaitingThreadQueuePtr waiting_threads;
     Ptr<SceKernelLwMutexWork> workarea;
 };
 
@@ -129,7 +129,7 @@ typedef std::shared_ptr<Mutex> MutexPtr;
 typedef std::map<SceUID, MutexPtr> MutexPtrs;
 
 struct EventFlag : SyncPrimitive {
-    WaitingThreadQueue waiting_threads;
+    WaitingThreadQueuePtr waiting_threads;
     int flags;
 };
 
@@ -154,7 +154,7 @@ struct Condvar : SyncPrimitive {
             , thread_id(thread_id) {}
     };
 
-    WaitingThreadQueue waiting_threads;
+    WaitingThreadQueuePtr waiting_threads;
     MutexPtr associated_mutex;
 };
 typedef std::shared_ptr<Condvar> CondvarPtr;
