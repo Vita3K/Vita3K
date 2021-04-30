@@ -593,7 +593,7 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
     if (target_type == Condvar::SignalTarget::Type::Specific) {
         ThreadStatePtr waiting_thread = lock_and_find(signal_target.thread_id, kernel.threads, kernel.mutex);
         // Search for specified waiting thread
-        auto waiting_thread_iter = std::find(waiting_threads->begin(), waiting_threads->end(), waiting_thread);
+        auto waiting_thread_iter = waiting_threads->find(waiting_thread);
         if (waiting_thread_iter != waiting_threads->end()) {
             const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
 
