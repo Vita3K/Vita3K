@@ -24,8 +24,8 @@ class ThreadDataQueueInteratorBase {
 public:
     virtual ~ThreadDataQueueInteratorBase(){};
     virtual bool operator==(const ThreadDataQueueInteratorBase &rhs) = 0;
-    virtual ThreadDataQueueInteratorBase &operator++() = 0;
-    virtual ThreadDataQueueInteratorBase *clone() const = 0;
+    virtual ThreadDataQueueInteratorBase<T> &operator++() = 0;
+    virtual ThreadDataQueueInteratorBase<T> *clone() const = 0;
     virtual T operator*() = 0;
 };
 
@@ -40,32 +40,33 @@ public:
         delete _base;
     }
 
-    ThreadDataQueueInterator(const ThreadDataQueueInterator &o)
+    ThreadDataQueueInterator(const ThreadDataQueueInterator<T> &o)
         : _base(o._base->clone()) {
     }
 
-    ThreadDataQueueInterator &operator=(const ThreadDataQueueInterator &o) {
+    ThreadDataQueueInterator<T> &operator=(const ThreadDataQueueInterator<T> &o) {
         delete _base;
         _base = o._base->clone();
         return *this;
     }
 
-    bool operator==(const ThreadDataQueueInterator &rhs) const {
+    bool operator==(const ThreadDataQueueInterator<T> &rhs) const {
         return *_base == *rhs._base;
     }
 
-    bool operator!=(const ThreadDataQueueInterator &rhs) const {
+    bool operator!=(const ThreadDataQueueInterator<T> &rhs) const {
         return !(*this == rhs);
     }
 
-    ThreadDataQueueInterator &operator++() {
+    ThreadDataQueueInterator<T> &operator++() {
         ++(*_base);
         return *this;
     }
-    ThreadDataQueueInterator operator++(int) {
+
+    ThreadDataQueueInterator<T> operator++(int) {
         auto last = _base->clone();
         _base->operator++();
-        return ThreadDataQueueInterator(last);
+        return ThreadDataQueueInterator<T>(last);
     }
 
     T operator*() {
@@ -103,20 +104,23 @@ public:
         : it(it) {
     }
 
-    virtual ~FIFOThreadDataQueueInteratorBase() {}
+    ~FIFOThreadDataQueueInteratorBase() override {}
 
     virtual bool operator==(const ThreadDataQueueInteratorBase<T> &rhs) {
-        auto casted = static_cast<const FIFOThreadDataQueueInteratorBase &>(rhs);
+        auto casted = static_cast<const FIFOThreadDataQueueInteratorBase<T> &>(rhs);
         return it == casted.it;
     }
-    virtual ThreadDataQueueInteratorBase &operator++() {
+
+    ThreadDataQueueInteratorBase<T> &operator++() override {
         ++it;
         return *this;
     }
-    virtual ThreadDataQueueInteratorBase *clone() const {
-        return new FIFOThreadDataQueueInteratorBase(it);
+
+    ThreadDataQueueInteratorBase<T> *clone() const override {
+        return new FIFOThreadDataQueueInteratorBase<T>(it);
     }
-    virtual T operator*() {
+
+    T operator*() override {
         return *it;
     }
 
@@ -129,46 +133,47 @@ public:
     FIFOThreadDataQueue() {
     }
 
-    virtual ThreadDataQueueInterator<T> begin() {
+    ThreadDataQueueInterator<T> begin() override {
         return make_iterator(c.begin());
     }
 
-    virtual ThreadDataQueueInterator<T> end() {
+    ThreadDataQueueInterator<T> end() override {
         return make_iterator(c.end());
     }
 
-    virtual void erase(const ThreadDataQueueInterator<T> &it) {
+    void erase(const ThreadDataQueueInterator<T> &it) override {
         auto base = dynamic_cast<const FIFOThreadDataQueueInteratorBase<T> *>(it.base());
         c.erase(base->it);
     }
 
-    virtual void erase(const T &val) {
+    void erase(const T &val) override {
         // TODO better search algo
         auto it = std::find(c.begin(), c.end(), val);
         c.erase(it);
     }
 
-    virtual void push(const T &val) {
+    void push(const T &val) override {
         c.push_back(val);
     }
 
-    virtual void pop() {
+    void pop() override {
         c.erase(c.begin());
     }
 
-    virtual size_t size() {
+    size_t size() override {
         return c.size();
     }
 
-    virtual bool empty() {
+    bool empty() override {
         return c.empty();
     }
 
-    virtual ThreadDataQueueInterator<T> find(const T &val) {
+    ThreadDataQueueInterator<T> find(const T &val) override {
         auto it = std::find(c.begin(), c.end(), val);
         return make_iterator(it);
     }
-    virtual ThreadDataQueueInterator<T> find(const ThreadStatePtr &val) {
+
+    ThreadDataQueueInterator<T> find(const ThreadStatePtr &val) override {
         auto it = std::find(c.begin(), c.end(), val);
         return make_iterator(it);
     }
@@ -189,20 +194,23 @@ public:
         : it(it) {
     }
 
-    virtual ~PriorityThreadDataQueueInteratorBase() {}
+    ~PriorityThreadDataQueueInteratorBase() override {}
 
-    virtual bool operator==(const ThreadDataQueueInteratorBase<T> &rhs) {
-        auto casted = static_cast<const PriorityThreadDataQueueInteratorBase &>(rhs);
+    bool operator==(const ThreadDataQueueInteratorBase<T> &rhs) override {
+        auto casted = static_cast<const PriorityThreadDataQueueInteratorBase<T> &>(rhs);
         return it == casted.it;
     }
-    virtual ThreadDataQueueInteratorBase &operator++() {
+
+    ThreadDataQueueInteratorBase<T> &operator++() override {
         ++it;
         return *this;
     }
-    virtual ThreadDataQueueInteratorBase *clone() const {
-        return new PriorityThreadDataQueueInteratorBase(it);
+
+    ThreadDataQueueInteratorBase<T> *clone() const override {
+        return new PriorityThreadDataQueueInteratorBase<T>(it);
     }
-    virtual T operator*() {
+
+    T operator*() override {
         return *it;
     }
 
@@ -214,44 +222,45 @@ class PriorityThreadDataQueue : public ThreadDataQueue<T> {
 public:
     PriorityThreadDataQueue() {}
 
-    virtual ThreadDataQueueInterator<T> begin() {
+    ThreadDataQueueInterator<T> begin() override {
         return make_iterator(c.begin());
     }
 
-    virtual ThreadDataQueueInterator<T> end() {
+    ThreadDataQueueInterator<T> end() override {
         return make_iterator(c.end());
     }
 
-    virtual void erase(const ThreadDataQueueInterator<T> &it) {
+    void erase(const ThreadDataQueueInterator<T> &it) override {
         auto base = dynamic_cast<const PriorityThreadDataQueueInteratorBase<T> *>(it.base());
         c.erase(base->it);
     }
 
-    virtual void erase(const T &val) {
+    void erase(const T &val) override {
         c.erase(val);
     }
 
-    virtual void push(const T &val) {
+    void push(const T &val) override {
         c.insert(val);
     }
 
-    virtual void pop() {
+    void pop() override {
         c.erase(c.begin());
     }
 
-    virtual size_t size() {
+    size_t size() override {
         return c.size();
     }
 
-    virtual bool empty() {
+    bool empty() override {
         return c.empty();
     }
 
-    virtual ThreadDataQueueInterator<T> find(const T &val) {
+    ThreadDataQueueInterator<T> find(const T &val) override {
         auto it = std::find(c.begin(), c.end(), val);
         return make_iterator(it);
     }
-    virtual ThreadDataQueueInterator<T> find(const ThreadStatePtr &val) {
+
+    ThreadDataQueueInterator<T> find(const ThreadStatePtr &val) override {
         auto it = std::find(c.begin(), c.end(), val);
         return make_iterator(it);
     }
