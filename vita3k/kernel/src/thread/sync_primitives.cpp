@@ -771,12 +771,8 @@ SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thre
     const std::lock_guard<std::mutex> event_lock(event->mutex);
     event->flags |= bitPattern;
 
-    // TODO use iteratable data structure for waiting_threads
-    // std::set should do work
-    std::vector<WaitingThreadData> remain_waiting_threads;
-
-    while (!event->waiting_threads.empty()) {
-        const auto waiting_thread_data = event->waiting_threads.top();
+    for (auto it = event->waiting_threads.begin(); it != event->waiting_threads.end(); ) {
+        const auto waiting_thread_data = *it;
         const auto waiting_thread = waiting_thread_data.thread;
         const auto waiting_flags = waiting_thread_data.flags;
 
@@ -797,22 +793,19 @@ SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thre
             }
 
             const std::unique_lock<std::mutex> waiting_thread_lock(waiting_thread->mutex, std::try_to_lock);
-            if (!waiting_thread_lock)
+            if (!waiting_thread_lock) {
+                ++it;
                 continue;
+            }
 
             assert(waiting_thread->to_do == ThreadToDo::wait);
             waiting_thread->to_do = ThreadToDo::run;
-
             waiting_thread->something_to_do.notify_one();
+
+            event->waiting_threads.erase(it++);
         } else {
-            remain_waiting_threads.push_back(waiting_thread_data);
+            ++it;
         }
-
-        event->waiting_threads.pop();
-    }
-
-    for (auto thread : remain_waiting_threads) {
-        event->waiting_threads.emplace(thread);
     }
 
     return 0;
