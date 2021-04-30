@@ -89,7 +89,7 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
             thread->to_do = ThreadToDo::run;
 
             primitive_lock.lock();
-            primitive.waiting_threads.remove(data);
+            primitive.waiting_threads.erase(data);
 
             return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
         }
@@ -269,7 +269,7 @@ inline int mutex_unlock_impl(KernelState &kernel, const char *export_name, SceUI
             mutex->owner = nullptr;
 
             if (!mutex->waiting_threads.empty()) {
-                const auto waiting_thread_data = mutex->waiting_threads.top();
+                const auto waiting_thread_data = *mutex->waiting_threads.begin();
                 const auto waiting_thread = waiting_thread_data.thread;
                 const auto waiting_lock_count = waiting_thread_data.lock_count;
 
@@ -278,7 +278,7 @@ inline int mutex_unlock_impl(KernelState &kernel, const char *export_name, SceUI
                 assert(waiting_thread->to_do == ThreadToDo::wait);
                 waiting_thread->to_do = ThreadToDo::run;
 
-                mutex->waiting_threads.pop();
+                mutex->waiting_threads.erase(mutex->waiting_threads.begin());
                 mutex->lock_count += waiting_lock_count;
                 mutex->owner = waiting_thread;
 
@@ -441,7 +441,7 @@ int semaphore_signal(KernelState &kernel, const char *export_name, SceUID thread
     semaphore->val += signal;
 
     while (semaphore->val > 0 && !semaphore->waiting_threads.empty()) {
-        const auto waiting_thread_data = semaphore->waiting_threads.top();
+        const auto waiting_thread_data = *semaphore->waiting_threads.begin();
         const auto waiting_thread = waiting_thread_data.thread;
         const auto waiting_signal_count = waiting_thread_data.lock_count;
 
@@ -452,7 +452,7 @@ int semaphore_signal(KernelState &kernel, const char *export_name, SceUID thread
         assert(waiting_thread->to_do == ThreadToDo::wait);
         waiting_thread->to_do = ThreadToDo::run;
 
-        semaphore->waiting_threads.pop();
+        semaphore->waiting_threads.erase(semaphore->waiting_threads.begin());
         semaphore->val -= waiting_signal_count;
 
         waiting_thread->something_to_do.notify_one();

@@ -94,27 +94,7 @@ struct WaitingThreadData {
     }
 };
 
-class WaitingThreadQueue : public std::priority_queue<WaitingThreadData, std::vector<WaitingThreadData>, std::greater<WaitingThreadData>> {
-public:
-    auto begin() const { return this->c.begin(); }
-    auto end() const { return this->c.end(); }
-    bool remove(const WaitingThreadData &value) {
-        auto it = std::find(this->c.begin(), this->c.end(), value);
-        if (it != this->c.end()) {
-            this->c.erase(it);
-            std::make_heap(this->c.begin(), this->c.end(), this->comp);
-            return true;
-        } else {
-            return false;
-        }
-    }
-    auto find(const WaitingThreadData &value) {
-        return std::find(this->c.begin(), this->c.end(), value);
-    }
-    auto find(const ThreadStatePtr &value) {
-        return std::find(this->c.begin(), this->c.end(), value);
-    }
-};
+typedef std::set<WaitingThreadData, std::greater<WaitingThreadData>> WaitingThreadQueue;
 
 // NOTE: uid is copied to sync primitives here for debugging,
 //       not really needed since they are put in std::map's
