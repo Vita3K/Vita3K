@@ -27,17 +27,14 @@
 #include <spdlog/fmt/fmt.h>
 
 Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, int key) {
-    SlotToAddress &slot_to_address = kernel.tls[thread_id];
-
-    const SlotToAddress::const_iterator existing = slot_to_address.find(key);
-    if (existing != slot_to_address.end()) {
-        return existing->second;
+    Ptr<Ptr<void>> address(0);
+    //magic numbers taken from decompiled source. There is 0x400 unused bytes of unknown usage
+    if (key <= 0x100 && key >= 0) {
+        const ThreadStatePtr thread = util::find(thread_id, kernel.threads);
+        address = thread->tls.get_ptr<Ptr<void>>() + key;
+    } else {
+        LOG_ERROR("Wrong tls slot index. TID:{} index:{}", thread_id, key);
     }
-    assert(key <= 0x800 / 4);
-    const ThreadStatePtr thread = util::find(thread_id, kernel.threads);
-    Address tls = read_tpidruro(*thread->cpu) - 0x800 + key * 4;
-    const Ptr<Ptr<void>> address(tls);
-    slot_to_address.insert(SlotToAddress::value_type(key, address));
     return address;
 }
 

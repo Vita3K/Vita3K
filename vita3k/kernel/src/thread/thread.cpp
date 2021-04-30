@@ -102,16 +102,18 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
 
     alloc_name = fmt::format("TLS for thread {} (#{})", name, thid);
 
-    constexpr auto tls_size = 0x800;
-    auto tls_address_ptr = Ptr<void>(alloc(mem, tls_size, alloc_name.c_str()));
-    auto tls_address = tls_address_ptr.address() + tls_size;
+    auto tls_size = kernel_tls_size + (kernel.tls_msize == 0xcccccccc ? 0 : kernel.tls_msize);
+    thread->tls = alloc_block(mem, tls_size, alloc_name.c_str());
+    auto base_tls_address_ptr = thread->tls.get_ptr<uint8_t>();
+    memset(base_tls_address_ptr.get(mem), 0, tls_size);
 
-    write_tpidruro(*thread->cpu, tls_address);
+    auto user_tls_address_ptr = base_tls_address_ptr + kernel_tls_size;
 
-    memset(tls_address_ptr.get(mem), 0, tls_size);
+    write_tpidruro(*thread->cpu, user_tls_address_ptr.address());
+
     if (kernel.tls_address) {
-        assert(kernel.tls_psize <= tls_size / 4);
-        memcpy(tls_address_ptr.get(mem), kernel.tls_address.get(mem), 4 * kernel.tls_psize);
+        assert((kernel.tls_psize == 0xcccccccc ? 0 : kernel.tls_psize) <= (kernel.tls_msize == 0xcccccccc ? 0 : kernel.tls_msize));
+        memcpy(user_tls_address_ptr.get(mem), kernel.tls_address.get(mem), kernel.tls_psize);
     }
     WaitingThreadState waiting{ name };
 

@@ -37,6 +37,8 @@ enum class ThreadToDo {
     wait,
 };
 
+constexpr auto kernel_tls_size = 0x800;
+
 struct ThreadState {
     Block stack;
     int priority;
@@ -53,6 +55,7 @@ struct ThreadState {
     SceUID id;
     Address entry_point;
     int returned_value;
+    Block tls;
 };
 
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;

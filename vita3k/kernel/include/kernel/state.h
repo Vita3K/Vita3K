@@ -49,7 +49,6 @@ typedef std::shared_ptr<SceKernelMemBlockInfo> SceKernelMemBlockInfoPtr;
 typedef std::map<SceUID, SceKernelMemBlockInfoPtr> Blocks;
 typedef std::map<SceUID, CodecEngineBlock> CodecEngineBlocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
-typedef std::map<SceUID, SlotToAddress> ThreadToSlotToAddress;
 typedef std::map<SceUID, ThreadStatePtr> ThreadStatePtrs;
 typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
@@ -308,7 +307,6 @@ struct KernelState {
     Blocks blocks;
     Blocks vm_blocks;
     CodecEngineBlocks codec_blocks;
-    ThreadToSlotToAddress tls;
     Ptr<const void> tls_address;
     unsigned int tls_psize;
     unsigned int tls_msize;
