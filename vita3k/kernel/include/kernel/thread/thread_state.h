@@ -59,3 +59,5 @@ struct ThreadState {
     Address entry_point;
     int returned_value;
 };
+
+typedef std::shared_ptr<ThreadState> ThreadStatePtr;

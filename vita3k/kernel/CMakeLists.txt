@@ -4,6 +4,7 @@ add_library(
 	include/kernel/functions.h
 	include/kernel/state.h
 	include/kernel/types.h
+	include/kernel/thread_data_queue.h
 	include/kernel/thread/thread_functions.h
 	include/kernel/thread/thread_state.h
 	include/kernel/thread/sync_primitives.h
