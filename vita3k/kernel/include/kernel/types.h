@@ -15,6 +15,14 @@
 #define SCE_KERNEL_ATTR_TH_PRIO 0x00002000U
 #define SCE_KERNEL_MUTEX_ATTR_RECURSIVE 0x2U
 
+#define SCE_KERNEL_MSG_PIPE_MODE_ASAP 0x00000000U
+#define SCE_KERNEL_MSG_PIPE_MODE_FULL 0x00000001U
+
+#define SCE_KERNEL_MSG_PIPE_MODE_WAIT 0x00000000U
+#define SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT 0x00000010U
+
+#define SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE 0x00000100U
+
 #define SCE_KERNEL_LW_MUTEX_ATTR_TH_FIFO SCE_KERNEL_ATTR_TH_FIFO
 #define SCE_KERNEL_LW_MUTEX_ATTR_TH_PRIO SCE_KERNEL_ATTR_TH_PRIO
 
@@ -345,7 +353,8 @@ enum SceKernelErrorCode {
     SCE_KERNEL_ERROR_PRELOAD_LIBC_FAILED = 0x8002D0F1,
     SCE_KERNEL_ERROR_PRELOAD_FIOS2_FAILED = 0x8002D0F2,
     SCE_KERNEL_ERROR_AUTHFAIL = 0x8002F000,
-    SCE_KERNEL_ERROR_NO_AUTH = 0x8002F001
+    SCE_KERNEL_ERROR_NO_AUTH = 0x8002F001,
+    SCE_KERNEL_ERROR_MPP_EMPTY = 0x800201b4
 };
 
 enum SceEventFlagWaitTypes {
@@ -585,6 +594,29 @@ struct SceKernelCreateLwCond_opt {
 struct SceKernelCreateSema_opt {
     int maxVal;
     Ptr<SceKernelSemaOptParam> option;
+};
+
+struct SceKernelCreateMsgPipeOpt {
+    /** Size of the structure */
+    SceSize size;
+    /** == 0x00000100U if msgpipe uses openLimit */
+    uint32_t attr;
+    uint32_t reserved[2];
+    uint32_t opneLimit;
+};
+
+struct SceKernelMsgPipeInfo {
+    /** Size of the structure */
+    SceSize size;
+    SceUID id;
+    char name[32];
+    /** == 0x00000100U if msgpipe uses openLimit */
+    uint32_t attr;
+    SceSize bufferSize;
+    SceSize freeSize;
+    /** Number of waiting threads */
+    uint32_t numSenders;
+    uint32_t numReceivers;
 };
 
 struct SceKernelThreadInfo {

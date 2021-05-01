@@ -797,8 +797,8 @@ EXPORT(int, sceKernelOpenEventFlag) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelOpenMsgPipe) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelOpenMsgPipe, const char *name) {
+    return msgpipe_find(host.kernel, export_name, name);
 }
 
 EXPORT(int, sceKernelOpenMutex) {
