@@ -20,7 +20,6 @@
 #include <cpu/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
-#include <util/resource.h>
 
 #include <spdlog/fmt/fmt.h>
 
@@ -81,7 +80,7 @@ void draw_threads_dialog(GuiState &gui, HostState &host) {
             break;
         }
         if (ImGui::Selectable(fmt::format("{:0>8X}         {:<32}   {:<16}   {:0>8X}",
-                thread.first, th_state->name, run_state, th_state->stack.get()->get())
+                thread.first, th_state->name, run_state, th_state->stack.get())
                                   .c_str())) {
             gui.thread_watch_index = thread.first;
             gui.debug_menu.thread_details_dialog = true;

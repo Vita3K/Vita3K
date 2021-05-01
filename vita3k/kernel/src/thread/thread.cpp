@@ -25,7 +25,6 @@
 #include <cpu/functions.h>
 #include <util/find.h>
 #include <util/lock_and_find.h>
-#include <util/resource.h>
 
 #include <SDL_thread.h>
 #include <spdlog/fmt/fmt.h>
@@ -74,10 +73,6 @@ static int SDLCALL thread_function(void *data) {
 SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CPUDepInject &inject, const SceKernelThreadOptParam *option = nullptr) {
     SceUID thid = kernel.get_next_uid();
 
-    const ThreadStack::Deleter stack_deleter = [&mem](Address stack) {
-        free(mem, stack);
-    };
-
     const ThreadStatePtr thread = std::make_shared<ThreadState>();
     thread->name = name;
     thread->entry_point = entry_point.address();
@@ -90,9 +85,9 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     }
     thread->stack_size = stack_size;
     auto alloc_name = fmt::format("Stack for thread {} (#{})", name, thid);
-    thread->stack = std::make_shared<ThreadStack>(alloc(mem, stack_size, alloc_name.c_str()), stack_deleter);
-    const Address stack_top = thread->stack->get() + stack_size;
-    memset(Ptr<void>(thread->stack->get()).get(mem), 0xcc, stack_size);
+    thread->stack = alloc_block(mem, stack_size, alloc_name.c_str());
+    const Address stack_top = thread->stack.get() + stack_size;
+    memset(thread->stack.get_ptr<void>().get(mem), 0xcc, stack_size);
 
     thread->cpu = init_cpu(thid, entry_point.address(), stack_top, mem, inject);
     if (!thread->cpu) {
@@ -196,8 +191,8 @@ Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, Kerne
 
     const std::unique_lock<std::mutex> lock(kernel.mutex);
 
-    const Address old_stack_address = old_thread->stack->get();
-    const Address new_stack_address = new_thread->stack->get();
+    const Address old_stack_address = old_thread->stack.get();
+    const Address new_stack_address = new_thread->stack.get();
 
     const Address old_sp = read_sp(*old_thread->cpu);
     const Address old_stack_size = old_stack_address + old_thread->stack_size - old_sp;
