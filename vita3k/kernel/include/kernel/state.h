@@ -62,6 +62,8 @@ typedef std::map<Address, WatchMemory> WatchMemoryAddrs;
 typedef std::vector<ModuleRegion> ModuleRegions;
 typedef Pool<CPUState> CPUPool;
 
+struct MsgPipeData;
+
 struct WaitingThreadData {
     ThreadStatePtr thread;
     int32_t priority;
@@ -79,6 +81,9 @@ struct WaitingThreadData {
             int32_t flags;
         };
         // struct { }; // condvar
+        struct { //msgpipe
+            MsgPipeData *sending_data;
+        };
     };
 
     bool operator>(const WaitingThreadData &rhs) const {
@@ -159,6 +164,25 @@ struct Condvar : SyncPrimitive {
 };
 typedef std::shared_ptr<Condvar> CondvarPtr;
 typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
+
+struct MsgPipeData {
+    std::vector<char> data;
+    SceUID thread_id;
+    size_t read_size;
+    bool waiting_sender;
+    bool notify_at_empty;
+};
+
+// Unlimited buffer for now
+struct MsgPipe : SyncPrimitive {
+    std::mutex recv_mutex;
+    WaitingThreadQueuePtr sender_threads;
+    WaitingThreadQueuePtr reciever_threads;
+    std::list<MsgPipeData> data_buffer;
+};
+
+typedef std::shared_ptr<MsgPipe> MsgPipePtr;
+typedef std::map<SceUID, MsgPipePtr> MsgPipePtrs;
 
 struct WaitingThreadState {
     std::string name; // for debugging
@@ -294,6 +318,7 @@ struct KernelState {
     MutexPtrs mutexes;
     MutexPtrs lwmutexes; // also Mutexes for now
     EventFlagPtrs eventflags;
+    MsgPipePtrs msgpipes;
     ThreadStatePtrs threads;
     ThreadPtrs running_threads;
     KernelWaitingThreadStates waiting_threads;

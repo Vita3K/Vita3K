@@ -847,3 +847,239 @@ int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread
 
     return SCE_KERNEL_OK;
 }
+
+// *************
+// * Msg Pipe  *
+// *************
+
+SceUID msgpipe_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr) {
+    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+    }
+
+    const SceUID uid = kernel.get_next_uid();
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {}",
+            export_name, uid, thread_id, name, attr);
+    }
+
+    const MsgPipePtr msgpipe = std::make_shared<MsgPipe>();
+
+    msgpipe->attr = attr;
+    msgpipe->uid = uid;
+    std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, msgpipe->name);
+
+    if (msgpipe->attr & SCE_KERNEL_ATTR_TH_FIFO) {
+        msgpipe->reciever_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
+    } else {
+        msgpipe->reciever_threads = std::make_unique<PriorityThreadDataQueue<WaitingThreadData>>();
+    }
+
+    // TODO do senders respect priority?
+    msgpipe->sender_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
+
+    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+    kernel.msgpipes.emplace(uid, msgpipe);
+
+    return uid;
+}
+
+SceUID msgpipe_find(KernelState &kernel, const char *export_name, const char *name) {
+    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+
+    // TODO use another map
+    const auto it = std::find_if(kernel.msgpipes.begin(), kernel.msgpipes.end(), [=](auto it) {
+        return strcmp(it.second->name, name) == 0;
+    });
+
+    if (it != kernel.msgpipes.end()) {
+        return it->first;
+    }
+
+    return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+}
+
+int msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgpipe_id, SceUInt32 wait_mode, char *recv_buf, SceSize msg_size, SceUInt32 *timeout) {
+    assert(msgpipe_id >= 0);
+
+    const MsgPipePtr msgpipe = lock_and_find(msgpipe_id, kernel.msgpipes, kernel.mutex);
+    if (!msgpipe) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} wait_mode: {:#b}"
+                  " waiting_threads: {}",
+            export_name, msgpipe->uid, thread_id, msgpipe->name, msgpipe->attr, wait_mode,
+            msgpipe->reciever_threads->size());
+    }
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+
+    size_t read_size = 0;
+
+    // Tries to consume buffer greedily
+    // After reading the desired numbr of bytes,
+    // it wakes up another waiting receiver.
+
+    bool recv_lock = false;
+    const auto unlock_if_possible = [&] {
+        if (recv_lock)
+            msgpipe->recv_mutex.unlock();
+    };
+    do {
+        // If it couldn't get a lock, it means other receiver is trying to consume buffer
+        if (!recv_lock)
+            recv_lock = msgpipe->recv_mutex.try_lock();
+        std::unique_lock<std::mutex> msgpipe_lock(msgpipe->mutex);
+        if (!msgpipe->data_buffer.empty() && recv_lock) {
+            const auto it = msgpipe->data_buffer.begin();
+            const size_t need_size = msg_size - read_size;
+            const size_t available_size = std::min(it->data.size() - it->read_size, need_size);
+            memcpy(recv_buf + read_size, it->data.data() + it->read_size, available_size);
+            if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL)
+                read_size += available_size;
+            else
+                read_size = msg_size;
+            if (!(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE))
+                it->read_size += available_size;
+
+            if (it->waiting_sender) {
+                if (it->notify_at_empty || (!it->notify_at_empty && it->read_size == it->data.size())) {
+                    it->waiting_sender = false;
+                    const ThreadStatePtr sender_thread = lock_and_find(it->thread_id, kernel.threads, kernel.mutex);
+                    const auto jt = msgpipe->sender_threads->find(sender_thread);
+                    assert(jt != msgpipe->sender_threads->end());
+
+                    msgpipe->sender_threads->erase(jt);
+                    sender_thread->to_do = ThreadToDo::run;
+                    sender_thread->something_to_do.notify_one();
+                }
+            }
+
+            if (it->read_size == it->data.size()) {
+                msgpipe->data_buffer.pop_front();
+            }
+        } else { // There's no data avaialble or other receiver is reading.
+            if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT) {
+                unlock_if_possible();
+                return 0;
+            } else {
+                // Wait
+                std::unique_lock<std::mutex> thread_lock(thread->mutex);
+                assert(thread->to_do == ThreadToDo::run);
+                thread->to_do = ThreadToDo::wait;
+
+                WaitingThreadData data;
+                data.thread = thread;
+
+                msgpipe->reciever_threads->push(data);
+                msgpipe_lock.unlock();
+
+                const auto ret = handle_timeout(thread, thread_lock, msgpipe_lock, msgpipe->reciever_threads, data, export_name, timeout);
+                if (ret) {
+                    unlock_if_possible();
+                    return ret;
+                }
+            }
+        }
+    } while (read_size != msg_size);
+
+    std::unique_lock<std::mutex> msgpipe_lock(msgpipe->mutex);
+    unlock_if_possible();
+    // Notify one waiting receiver
+    if (!msgpipe->reciever_threads->empty()) {
+        auto recv_thread = (*msgpipe->reciever_threads->begin()).thread;
+        msgpipe->reciever_threads->pop();
+        recv_thread->to_do = ThreadToDo::run;
+        recv_thread->something_to_do.notify_one();
+    }
+
+    return read_size;
+}
+
+int msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgpipe_id, SceUInt32 wait_mode, char *send_buf, SceSize msg_size, SceUInt32 *timeout) {
+    assert(msgpipe_id >= 0);
+
+    const MsgPipePtr msgpipe = lock_and_find(msgpipe_id, kernel.msgpipes, kernel.mutex);
+    if (!msgpipe) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} wait_mode: {:#b}"
+                  " waiting_threads: {}",
+            export_name, msgpipe->uid, thread_id, msgpipe->name, msgpipe->attr, wait_mode,
+            msgpipe->reciever_threads->size());
+    }
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+
+    std::unique_lock<std::mutex> msgpipe_lock(msgpipe->mutex);
+
+    MsgPipeData data;
+    data.data = std::vector(send_buf, send_buf + msg_size);
+    data.notify_at_empty = wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL;
+    data.waiting_sender = !(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT);
+    data.thread_id = thread_id;
+    data.read_size = 0;
+    msgpipe->data_buffer.push_back(data);
+
+    // Wake up receiver who might be waiting for data to be available
+    if (!msgpipe->reciever_threads->empty()) {
+        auto recv_thread = (*msgpipe->reciever_threads->begin()).thread;
+        msgpipe->reciever_threads->pop();
+        recv_thread->to_do = ThreadToDo::run;
+        recv_thread->something_to_do.notify_one();
+    }
+
+    // Wait
+    if (data.waiting_sender) {
+        std::unique_lock<std::mutex> thread_lock(thread->mutex);
+        assert(thread->to_do == ThreadToDo::run);
+        thread->to_do = ThreadToDo::wait;
+
+        WaitingThreadData data;
+        data.thread = thread;
+
+        msgpipe->sender_threads->push(data);
+        msgpipe_lock.unlock();
+
+        const auto ret = handle_timeout(thread, thread_lock, msgpipe_lock, msgpipe->reciever_threads, data, export_name, timeout);
+        if (ret) {
+            return ret;
+        }
+    } else {
+        return 0;
+    }
+
+    // TODO this is more than actual size
+    return msg_size;
+}
+
+SceUID msgpipe_delete(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUID msgpipe_id) {
+    assert(msgpipe_id >= 0);
+
+    const MsgPipePtr msgpipe = lock_and_find(msgpipe_id, kernel.msgpipes, kernel.mutex);
+    if (!msgpipe) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {}",
+            export_name, msgpipe->uid, thread_id, msgpipe->name, msgpipe->attr);
+    }
+
+    const std::lock_guard<std::mutex> event_lock(msgpipe->mutex);
+
+    if (msgpipe->reciever_threads->empty() && msgpipe->sender_threads->empty()) {
+        const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+        kernel.msgpipes.erase(msgpipe->uid);
+    } else {
+        // TODO:
+        LOG_WARN("Can't delete sync object, it has waiting threads.");
+    }
+
+    return SCE_KERNEL_OK;
+}
