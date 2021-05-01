@@ -128,7 +128,11 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, MemState &mem, const c
         const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
         mutex->owner = thread;
     }
-    mutex->waiting_threads = std::make_unique<PriorityThreadDataQueue<WaitingThreadData>>();
+    if (mutex->attr & SCE_KERNEL_ATTR_TH_PRIO) {
+        mutex->waiting_threads = std::make_unique<PriorityThreadDataQueue<WaitingThreadData>>();
+    } else {
+        mutex->waiting_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
+    }
 
     if (weight == SyncWeight::Light) {
         SceKernelLwMutexWork *workarea_mem = workarea.get(mem);
@@ -166,7 +170,6 @@ inline int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *expor
     std::unique_lock<std::mutex> mutex_lock(mutex->mutex);
 
     bool is_recursive = (mutex->attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE);
-    bool is_fifo = (mutex->attr & SCE_KERNEL_ATTR_TH_FIFO);
 
     // Already owned
     if (mutex->lock_count > 0) {
@@ -202,7 +205,7 @@ inline int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *expor
         WaitingThreadData data;
         data.thread = thread;
         data.lock_count = lock_count;
-        data.priority = is_fifo ? 0 : thread->priority;
+        data.priority = thread->priority;
 
         mutex->waiting_threads->push(data);
         mutex_lock.unlock();
@@ -365,10 +368,10 @@ SceUID semaphore_create(KernelState &kernel, const char *export_name, const char
     semaphore->attr = attr;
     std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, semaphore->name);
 
-    if (semaphore->attr & SCE_KERNEL_ATTR_TH_FIFO) {
-        semaphore->waiting_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
-    } else {
+    if (semaphore->attr & SCE_KERNEL_ATTR_TH_PRIO) {
         semaphore->waiting_threads = std::make_unique<PriorityThreadDataQueue<WaitingThreadData>>();
+    } else {
+        semaphore->waiting_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
     }
 
     if (LOG_SYNC_PRIMITIVES) {
@@ -516,10 +519,10 @@ SceUID condvar_create(SceUID *uid_out, KernelState &kernel, const char *export_n
     condvar->associated_mutex = std::move(assoc_mutex);
     std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, condvar->name);
 
-    if (condvar->attr & SCE_KERNEL_ATTR_TH_FIFO) {
-        condvar->waiting_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
-    } else {
+    if (condvar->attr & SCE_KERNEL_ATTR_TH_PRIO) {
         condvar->waiting_threads = std::make_unique<PriorityThreadDataQueue<WaitingThreadData>>();
+    } else {
+        condvar->waiting_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
     }
 
     const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
@@ -870,10 +873,10 @@ SceUID msgpipe_create(KernelState &kernel, const char *export_name, const char *
     msgpipe->uid = uid;
     std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, msgpipe->name);
 
-    if (msgpipe->attr & SCE_KERNEL_ATTR_TH_FIFO) {
-        msgpipe->reciever_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
-    } else {
+    if (msgpipe->attr & SCE_KERNEL_ATTR_TH_PRIO) {
         msgpipe->reciever_threads = std::make_unique<PriorityThreadDataQueue<WaitingThreadData>>();
+    } else {
+        msgpipe->reciever_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
     }
 
     // TODO do senders respect priority?
