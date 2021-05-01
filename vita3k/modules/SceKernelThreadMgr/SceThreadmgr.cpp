@@ -23,7 +23,6 @@
 #include <kernel/thread/sync_primitives.h>
 #include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
-#include <util/resource.h>
 
 #include <SDL_timer.h>
 
@@ -267,7 +266,7 @@ EXPORT(int, _sceKernelGetThreadInfo, SceUID thid, SceKernelThreadInfo *info) {
     const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
 
     strncpy(info->name, thread->name.c_str(), 0x1f);
-    info->stack = Ptr<void>(thread->stack->get());
+    info->stack = Ptr<void>(thread->stack.get());
     info->stackSize = thread->stack_size;
     info->initPriority = thread->priority;
     info->currentPriority = thread->priority;

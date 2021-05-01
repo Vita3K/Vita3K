@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <mem/block.h>
 #include <mem/util.h>
 
 struct MemState;
@@ -24,6 +25,7 @@ struct MemState;
 bool init(MemState &state);
 Address alloc(MemState &state, size_t size, const char *name);
 Address alloc(MemState &state, size_t size, const char *name, unsigned int alignment);
+Block alloc_block(MemState &mem, size_t size, const char *name);
 Address alloc_at(MemState &state, Address address, size_t size, const char *name);
 void free(MemState &state, Address address);
 uint32_t mem_available(MemState &state);

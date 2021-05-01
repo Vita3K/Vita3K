@@ -3,6 +3,7 @@ add_library(
 	STATIC
 	include/mem/functions.h
 	include/mem/mempool.h
+	include/mem/block.h
 	include/mem/ptr.h
 	include/mem/state.h
 	include/mem/util.h

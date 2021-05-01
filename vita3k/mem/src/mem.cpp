@@ -154,6 +154,13 @@ Address alloc_at(MemState &state, Address address, size_t size, const char *name
     return address;
 }
 
+Block alloc_block(MemState &mem, size_t size, const char *name) {
+    const Address address = alloc(mem, size, name);
+    return Block(address, [&mem](Address stack) {
+        free(mem, stack);
+    });
+}
+
 void free(MemState &state, Address address) {
     auto &addr_map = state.aligned_addr_to_original;
     if (addr_map.find(address) != addr_map.end()) {

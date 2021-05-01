@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <mem/block.h>
 #include <mem/ptr.h>
 #include <util/semaphore.h>
 
@@ -27,11 +28,6 @@
 struct CPUState;
 struct CPUContext;
 
-template <typename T>
-class Resource;
-
-typedef Resource<Address> ThreadStack;
-typedef std::shared_ptr<ThreadStack> ThreadStackPtr;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::unique_ptr<CPUContext, std::function<void(CPUContext *)>> CPUContextPtr;
 
@@ -43,7 +39,7 @@ enum class ThreadToDo {
 };
 
 struct ThreadState {
-    ThreadStackPtr stack;
+    Block stack;
     int priority;
     int stack_size;
     CPUStatePtr cpu;
