@@ -45,7 +45,11 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
     };
     std::lock_guard<std::mutex> lock(install_mutex);
 
-    static const auto BUTTON_SIZE = ImVec2(160.f * host.dpi_scale, 45.f * host.dpi_scale);
+    const auto display_size = ImGui::GetIO().DisplaySize;
+    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+
+    const auto BUTTON_SIZE = ImVec2(160.f * SCALE.x, 45.f * SCALE.y);
 
     if (draw_file_dialog) {
         result = NFD_OpenDialog("pkg", nullptr, &pkg_path);
@@ -63,10 +67,11 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
     }
 
     auto indicator = gui.lang.indicator;
-    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::SetNextWindowSize(ImVec2(616.f * host.dpi_scale, 264.f * host.dpi_scale));
+    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(616.f * SCALE.x, 264.f * SCALE.y));
     if (ImGui::BeginPopupModal("install", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
-        const auto POS_BUTTON = (ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f) + 10.f * host.dpi_scale;
+        ImGui::SetWindowFontScale(RES_SCALE.x);
+        const auto POS_BUTTON = (ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f) + (10.f * SCALE.x);
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
         ImGui::Spacing();
@@ -98,7 +103,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                 state.clear();
         } else if (state == "zrif") {
             title = "Enter zRIF key";
-            ImGui::PushItemWidth(640.f);
+            ImGui::PushItemWidth(640.f * SCALE.x);
             ImGui::InputTextWithHint("##enter_zrif", "Please input your zRIF here", &zRIF);
             ImGui::PopItemWidth();
             if (ImGui::IsItemHovered())
@@ -111,7 +116,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                 state.clear();
                 zRIF.clear();
             }
-            ImGui::SameLine(0, 20.f);
+            ImGui::SameLine(0, 20.f * SCALE.x);
             if (ImGui::Button("OK", BUTTON_SIZE) && !zRIF.empty())
                 state = "install";
         } else if (state == "install") {
@@ -138,7 +143,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             if (work_path)
                 ImGui::Checkbox("Delete the work.bin file?", &delete_work_file);
             ImGui::Spacing();
-            ImGui::SetCursorPosX(POS_BUTTON);
+            ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button("OK", BUTTON_SIZE)) {
                 if (delete_pkg_file) {
                     fs::remove(fs::path(string_utils::utf_to_wide(std::string(pkg_path))));
@@ -161,7 +166,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             title = !indicator["install_failed"].empty() ? gui.lang.indicator["install_failed"].c_str() : "Could not install.";
             ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize("Please check log for more details.").x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f * host.dpi_scale));
             ImGui::TextColored(GUI_COLOR_TEXT, "Please check log for more details.");
-            ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - 20.f * host.dpi_scale));
+            ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button("OK", BUTTON_SIZE)) {
                 refresh_app_list(gui, host);
                 gui.file_menu.pkg_install_dialog = false;

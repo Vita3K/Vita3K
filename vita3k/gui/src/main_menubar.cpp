@@ -107,7 +107,7 @@ static void draw_help_menu(GuiState &gui) {
 
 void draw_main_menu_bar(GuiState &gui, HostState &host) {
     if (ImGui::BeginMainMenuBar()) {
-        ImGui::SetWindowFontScale(host.dpi_scale);
+        ImGui::SetWindowFontScale(ImGui::GetIO().DisplaySize.x / host.res_width_dpi_scale);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 
         draw_file_menu(gui, host);

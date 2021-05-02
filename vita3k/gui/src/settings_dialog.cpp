@@ -217,18 +217,18 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
     ImGui::Begin(is_custom_config ? ("Custom settings for " + host.app_path).c_str() : "Settings", is_custom_config ? &gui.configuration_menu.custom_settings_dialog : &gui.configuration_menu.settings_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
-    const ImGuiTabBarFlags settings_tab_flags = ImGuiTabBarFlags_None;
-    ImGui::BeginTabBar("SettingsTabBar", settings_tab_flags);
+    ImGui::BeginTabBar("SettingsTabBar", ImGuiTabBarFlags_None);
     std::ostringstream link;
 
     // Core
     if (ImGui::BeginTabItem("Core")) {
+        auto &lle_kernel = is_custom_config ? custom_config.lle_kernel : host.cfg.lle_kernel;
         auto &auto_lle = is_custom_config ? custom_config.auto_lle : host.cfg.auto_lle;
         auto &lle_modules = is_custom_config ? custom_config.lle_modules : host.cfg.lle_modules;
         ImGui::PopStyleColor();
         if (!gui.modules.empty()) {
             ImGui::Spacing();
-            ImGui::Checkbox("Experimental: LLE libkernel & driver_us", &host.cfg.lle_kernel);
+            ImGui::Checkbox("Experimental: LLE libkernel & driver_us", &lle_kernel);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Enable this for using libkernel and driver_us module (experimental).");
             ImGui::Spacing();
@@ -564,13 +564,13 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        static const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
-        ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - 10.f);
+        static const auto BUTTON_SIZE = ImVec2(60.f * host.dpi_scale, 0.f);
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * host.dpi_scale));
         if (ImGui::Button("Apply", BUTTON_SIZE))
             set_config(gui, host, host.app_path);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Click on Apply if you want change setting with app current running.");
-        ImGui::SameLine(0, 20.f);
+        ImGui::SameLine(0, 20.f * host.dpi_scale);
         if (ImGui::Button("Save", BUTTON_SIZE)) {
             if (!is_custom_config)
                 config::serialize_config(host.cfg, host.cfg.config_path);

@@ -278,38 +278,38 @@ static std::map<std::string, float> scroll_special;
 
 void draw_ime(Ime &ime, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCAL = ImVec2(display_size.x / (960.f * host.dpi_scale), display_size.y / (544.f * host.dpi_scale));
-    const auto SCAL = ImVec2(RES_SCAL.x * host.dpi_scale, RES_SCAL.y * host.dpi_scale);
-    const auto WINDOW_POS = ImVec2(0.f, display_size.y - (248.f * SCAL.y));
-    const auto BUTTON_HEIGHT_SIZE = 52.f * SCAL.y;
-    const auto PUNCT_BUTTON_SIZE = ImVec2(56.f * SCAL.x, BUTTON_HEIGHT_SIZE);
-    const auto KEY_BUTTON_SIZE = ImVec2(size_key * SCAL.x, BUTTON_HEIGHT_SIZE);
-    const auto ENTER_BUTTON_SIZE = ImVec2(135.f * SCAL.x, BUTTON_HEIGHT_SIZE);
-    const auto BUTTON_SIZE = numeric_pad ? ENTER_BUTTON_SIZE : ImVec2(size_button * SCAL.x, BUTTON_HEIGHT_SIZE);
-    const auto SPACE = 6.f * SCAL.x;
-    const auto MARGE_BORDER = 13.f * SCAL.x;
-    const auto LAST_ROW_KEY_POS = 185.f * SCAL.y;
+    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto WINDOW_POS = ImVec2(0.f, display_size.y - (248.f * SCALE.y));
+    const auto BUTTON_HEIGHT_SIZE = 52.f * SCALE.y;
+    const auto PUNCT_BUTTON_SIZE = ImVec2(56.f * SCALE.x, BUTTON_HEIGHT_SIZE);
+    const auto KEY_BUTTON_SIZE = ImVec2(size_key * SCALE.x, BUTTON_HEIGHT_SIZE);
+    const auto ENTER_BUTTON_SIZE = ImVec2(135.f * SCALE.x, BUTTON_HEIGHT_SIZE);
+    const auto BUTTON_SIZE = numeric_pad ? ENTER_BUTTON_SIZE : ImVec2(size_button * SCALE.x, BUTTON_HEIGHT_SIZE);
+    const auto SPACE = 6.f * SCALE.x;
+    const auto MARGE_BORDER = 13.f * SCALE.x;
+    const auto LAST_ROW_KEY_POS = 185.f * SCALE.y;
     const auto BUTTON_POS_X = display_size.x - MARGE_BORDER - BUTTON_SIZE.x;
     const auto ENTER_BUTTON_POS_X = display_size.x - MARGE_BORDER - ENTER_BUTTON_SIZE.x;
-    const auto NUM_BUTTON_SIZE = ImVec2(74.f * SCAL.x, BUTTON_HEIGHT_SIZE);
+    const auto NUM_BUTTON_SIZE = ImVec2(74.f * SCALE.x, BUTTON_HEIGHT_SIZE);
     const auto NUM_BUTTON_POS_X = BUTTON_POS_X - (3 * NUM_BUTTON_SIZE.x) - (SPACE * 3);
-    const auto SPACE_BUTTON_SIZE = ImVec2(numeric_pad ? 216.f * SCAL.x : 276.f * SCAL.x, KEY_BUTTON_SIZE.y);
+    const auto SPACE_BUTTON_SIZE = ImVec2(numeric_pad ? 216.f * SCALE.x : 276.f * SCALE.x, KEY_BUTTON_SIZE.y);
     const auto SPACE_BUTTON_POS = ImVec2(numeric_pad ? NUM_BUTTON_POS_X - SPACE - SPACE_BUTTON_SIZE.x : ENTER_BUTTON_POS_X - (PUNCT_BUTTON_SIZE.x * 3.f) - SPACE_BUTTON_SIZE.x - (SPACE * 4.f), LAST_ROW_KEY_POS);
     const auto is_shift = ime.caps_level != NO;
 
     ImGui::PushStyleColor(ImGuiCol_WindowBg, numeric_pad ? IME_NUMERIC_BG : GUI_SMOOTH_GRAY);
-    ImGui::SetNextWindowPos(ImVec2(0.f, display_size.y - (248.f * SCAL.y)), ImGuiCond_Always, ImVec2(0.f, 0.f));
-    ImGui::SetNextWindowSize(ImVec2(display_size.x, 248.f * SCAL.y));
+    ImGui::SetNextWindowPos(ImVec2(0.f, display_size.y - (248.f * SCALE.y)), ImGuiCond_Always, ImVec2(0.f, 0.f));
+    ImGui::SetNextWindowSize(ImVec2(display_size.x, 248.f * SCALE.y));
     ImGui::Begin("##ime", &ime.state, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * host.dpi_scale);
     ImGui::PushStyleColor(ImGuiCol_Button, GUI_COLOR_TEXT);
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_BLACK);
-    ImGui::SetWindowFontScale(SCAL.x);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
     if (numeric_pad) {
         ImGui::SetCursorPosX(MARGE_BORDER);
-        ImGui::VSliderFloat("##scroll_special", ImVec2(42.f * SCAL.x, 140.f * SCAL.y), &scroll_special["current"], scroll_special["max"], 0, "");
-        ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (74.f * SCAL.x), WINDOW_POS.y));
-        ImGui::BeginChild("##special_key", ImVec2(488.f * SCAL.x, 178.f * SCAL.y), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse);
+        ImGui::VSliderFloat("##scroll_special", ImVec2(42.f * SCALE.x, 140.f * SCALE.y), &scroll_special["current"], scroll_special["max"], 0, "");
+        ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (74.f * SCALE.x), WINDOW_POS.y));
+        ImGui::BeginChild("##special_key", ImVec2(488.f * SCALE.x, 178.f * SCALE.y), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoScrollWithMouse);
         const auto scroll_value = ImGui::GetIO().MouseWheel * 20.f;
         if (ImGui::GetIO().MouseWheel == 1)
             scroll_special["current"] -= std::min(scroll_value, scroll_special["current"]);
@@ -334,12 +334,12 @@ void draw_ime(Ime &ime, HostState &host) {
         }
         ImGui::PopStyleColor(2);
         ImGui::EndChild();
-        ImGui::SetCursorPos(ImVec2(NUM_BUTTON_POS_X, key_row_pos[1] * SCAL.y));
+        ImGui::SetCursorPos(ImVec2(NUM_BUTTON_POS_X, key_row_pos[1] * SCALE.y));
         for (const auto &numeric : pad_numeric_key) {
             for (uint32_t i = 0; i < numeric.second.size(); i++) {
                 if (!i)
-                    ImGui::SetCursorPos(ImVec2(NUM_BUTTON_POS_X, key_row_pos[numeric.first] * SCAL.y));
-                if (ImGui::Button(string_utils::utf16_to_utf8(numeric.second[i]).c_str(), ImVec2(i < 3 ? NUM_BUTTON_SIZE.x : 65.f * SCAL.x, NUM_BUTTON_SIZE.y)) && (ime.str.length() < ime.param.maxTextLength))
+                    ImGui::SetCursorPos(ImVec2(NUM_BUTTON_POS_X, key_row_pos[numeric.first] * SCALE.y));
+                if (ImGui::Button(string_utils::utf16_to_utf8(numeric.second[i]).c_str(), ImVec2(i < 3 ? NUM_BUTTON_SIZE.x : 65.f * SCALE.x, NUM_BUTTON_SIZE.y)) && (ime.str.length() < ime.param.maxTextLength))
                     update_key(ime, numeric.second[i]);
                 if (i != (numeric.second.size() - 1))
                     ImGui::SameLine(0, SPACE);
@@ -355,14 +355,14 @@ void draw_ime(Ime &ime, HostState &host) {
         for (const auto &keyboard : is_shift ? shift_lang_key : lang_key) {
             for (uint32_t i = 0; i < keyboard.second.size(); i++) {
                 if (!i)
-                    ImGui::SetCursorPos(ImVec2(lang_keyboard_pos[keyboard.first] * SCAL.x, key_row_pos[keyboard.first] * SCAL.y));
+                    ImGui::SetCursorPos(ImVec2(lang_keyboard_pos[keyboard.first] * SCALE.x, key_row_pos[keyboard.first] * SCALE.y));
                 if (ImGui::Button(string_utils::utf16_to_utf8(keyboard.second[i]).c_str(), KEY_BUTTON_SIZE) && (ime.str.length() < ime.param.maxTextLength))
                     update_key(ime, keyboard.second[i]);
                 if (i != (keyboard.second.size() - 1))
                     ImGui::SameLine(0, SPACE);
             }
         }
-        ImGui::SetCursorPos(ImVec2(MARGE_BORDER, key_row_pos[3] * SCAL.y));
+        ImGui::SetCursorPos(ImVec2(MARGE_BORDER, key_row_pos[3] * SCALE.y));
         ImGui::PushStyleColor(ImGuiCol_Button, IME_BUTTON_BG);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         if (ImGui::Button("Shift", BUTTON_SIZE)) {
@@ -433,7 +433,7 @@ void draw_ime(Ime &ime, HostState &host) {
         }
     }
     ImGui::PopStyleColor(2);
-    ImGui::SetCursorPos(ImVec2(BUTTON_POS_X, key_row_pos[3] * SCAL.y));
+    ImGui::SetCursorPos(ImVec2(BUTTON_POS_X, key_row_pos[3] * SCALE.y));
     ImGui::PushStyleColor(ImGuiCol_Button, IME_BUTTON_BG);
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
     if (ImGui::Button("Back", BUTTON_SIZE) && ime.edit_text.caretIndex) {
@@ -453,7 +453,7 @@ void draw_ime(Ime &ime, HostState &host) {
     ImGui::PopStyleColor(2);
     ImGui::PushStyleColor(ImGuiCol_Button, GUI_COLOR_TEXT_BLACK);
     ImGui::SetCursorPos(ImVec2(MARGE_BORDER, LAST_ROW_KEY_POS));
-    if (ImGui::Button("V", ImVec2(44.f * SCAL.x, KEY_BUTTON_SIZE.y)))
+    if (ImGui::Button("V", ImVec2(44.f * SCALE.x, KEY_BUTTON_SIZE.y)))
         ime.event_id = SCE_IME_EVENT_PRESS_CLOSE;
     ImGui::PopStyleColor();
     ImGui::SameLine(0, 18.f);
