@@ -29,16 +29,19 @@ static std::string state, title, zRIF;
 nfdchar_t *work_path;
 
 void draw_license_install_dialog(GuiState &gui, HostState &host) {
-    static const auto BUTTON_SIZE = ImVec2(160.f, 45.f);
-    const auto displaysize = ImGui::GetIO().DisplaySize;
+    const auto display_size = ImGui::GetIO().DisplaySize;
+    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto BUTTON_SIZE = ImVec2(160.f * SCALE.x, 45.f * SCALE.y);
 
     auto indicator = gui.lang.indicator;
     ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(displaysize);
+    ImGui::SetNextWindowSize(display_size);
     ImGui::Begin("License Install", &gui.file_menu.license_install_dialog, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::SetNextWindowPos(ImVec2(displaysize.x / 2.f, displaysize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::BeginChild("License Install", ImVec2(540.f, 220.f), true, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    const auto POS_BUTTON = (ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f) + 10.f;
+    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetWindowFontScale(RES_SCALE.x);
+    ImGui::BeginChild("License Install", ImVec2(540.f * SCALE.x, 220.f * SCALE.y), true, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    const auto POS_BUTTON = (ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f) + (10.f * SCALE.x);
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
     ImGui::Spacing();
@@ -70,7 +73,7 @@ void draw_license_install_dialog(GuiState &gui, HostState &host) {
             state.clear();
     } else if (state == "zrif") {
         title = "Enter zRIF key";
-        ImGui::PushItemWidth(540.f);
+        ImGui::PushItemWidth(540.f * SCALE.x);
         ImGui::InputTextWithHint("##enter_zrif", "Please input your zRIF here", &zRIF);
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
@@ -104,7 +107,7 @@ void draw_license_install_dialog(GuiState &gui, HostState &host) {
         title = !indicator["install_failed"].empty() ? gui.lang.indicator["install_failed"].c_str() : "Could not install.";
         ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize("Please check log for more details.").x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f));
         ImGui::TextColored(GUI_COLOR_TEXT, "Please check log for more details.");
-        ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - 20.f));
+        ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
         if (ImGui::Button("OK", BUTTON_SIZE)) {
             gui.file_menu.license_install_dialog = false;
             work_path = nullptr;

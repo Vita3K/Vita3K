@@ -110,13 +110,16 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
     const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / title_id };
     const auto SHADER_LOG_PATH{ fs::path(host.base_path) / "shaderlog" / title_id };
 
+    const auto display_size = ImGui::GetIO().DisplaySize;
+    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
+
     auto lang = gui.lang.app_context;
     const auto is_lang = !lang.empty();
     auto common = host.common_dialog.lang.common;
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
-        ImGui::SetWindowFontScale(1.3f * host.dpi_scale);
+        ImGui::SetWindowFontScale(1.3f * RES_SCALE.x);
         if (ImGui::MenuItem("Boot"))
             pre_load_app(gui, host, false, app_path);
         if (title_id.find("NPXS") == std::string::npos) {
@@ -195,13 +198,12 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
         ImGui::EndPopup();
     }
 
-    const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto WINDOW_SIZE = ImVec2(756.0f * scal.x, 436.0f * scal.y);
+    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto WINDOW_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
-    const auto BUTTON_SIZE = ImVec2(320.f * scal.x, 46.f * scal.y);
-    const auto PUPOP_ICON_SIZE = ImVec2(96.f * scal.x, 96.f * scal.y);
-    const auto INFO_ICON_SIZE = ImVec2(128.f * scal.x, 128.f * scal.y);
+    const auto BUTTON_SIZE = ImVec2(320.f * SCALE.x, 46.f * SCALE.y);
+    const auto PUPOP_ICON_SIZE = ImVec2(96.f * SCALE.x, 96.f * SCALE.y);
+    const auto INFO_ICON_SIZE = ImVec2(128.f * SCALE.x, 128.f * SCALE.y);
 
     // Context Dialog
     if (!context_dialog.empty()) {
@@ -210,51 +212,51 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
         ImGui::Begin("##context_dialog", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetNextWindowBgAlpha(0.999f);
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * scal.x);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * scal.x);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
         // Update History
         if (context_dialog == "history") {
-            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + 20.f * scal.x, ImGui::GetWindowPos().y + BUTTON_SIZE.y));
-            ImGui::BeginChild("##info_update_list", ImVec2(WINDOW_SIZE.x - (30.f * scal.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * scal.y)), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + 20.f * SCALE.x, ImGui::GetWindowPos().y + BUTTON_SIZE.y));
+            ImGui::BeginChild("##info_update_list", ImVec2(WINDOW_SIZE.x - (30.f * SCALE.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * SCALE.y)), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
             for (const auto &update : update_history_infos) {
                 ImGui::SetWindowFontScale(1.4f);
                 ImGui::TextColored(GUI_COLOR_TEXT, "Version %.2f", update.first);
                 ImGui::SetWindowFontScale(1.f);
-                ImGui::PushTextWrapPos(WINDOW_SIZE.x - (80.f * scal.x));
+                ImGui::PushTextWrapPos(WINDOW_SIZE.x - (80.f * SCALE.x));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s\n", update.second.c_str());
                 ImGui::PopTextWrapPos();
                 ImGui::TextColored(GUI_COLOR_TEXT, "\n");
             }
             ImGui::EndChild();
-            ImGui::SetWindowFontScale(1.4f * scal.x);
-            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * host.dpi_scale)));
+            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (22.f * SCALE.y)));
         } else {
             // Delete Data
             if (gui.app_selector.user_apps_icon.find(title_id) != gui.app_selector.user_apps_icon.end()) {
-                ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PUPOP_ICON_SIZE.x / 2.f), 24.f * scal.y));
+                ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (PUPOP_ICON_SIZE.x / 2.f), 24.f * SCALE.y));
                 ImGui::Image(gui.app_selector.user_apps_icon[title_id], PUPOP_ICON_SIZE);
             }
-            ImGui::SetWindowFontScale(1.6f * scal.x);
+            ImGui::SetWindowFontScale(1.6f);
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(APP_INDEX->stitle.c_str()).x / 2.f));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->stitle.c_str());
-            ImGui::SetWindowFontScale(1.4f * scal.x);
+            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             const auto app_delete = is_lang ? lang["app_delete"] : "This application and all related data, including saved data, will be deleted.";
             const auto save_delete = is_lang ? lang["save_delete"] : "Do you want to delete this saved data?";
             const auto ask_delete = context_dialog == "save" ? save_delete : app_delete;
-            ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(ask_delete.c_str(), 0, false, WINDOW_SIZE.x - (108.f * scal.x)).x / 2, (WINDOW_SIZE.y / 2) + 10));
-            ImGui::PushTextWrapPos(WINDOW_SIZE.x - (54.f * scal.x));
+            ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(ask_delete.c_str(), 0, false, WINDOW_SIZE.x - (108.f * SCALE.x)).x / 2, (WINDOW_SIZE.y / 2) + 10));
+            ImGui::PushTextWrapPos(WINDOW_SIZE.x - (54.f * SCALE.x));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", ask_delete.c_str());
             ImGui::PopTextWrapPos();
             if ((context_dialog == "app") && ImGui::IsItemHovered())
                 ImGui::SetTooltip("Deleting a application may take a while\ndepending on its size and your hardware.");
-            ImGui::SetWindowFontScale(1.4f * scal.x);
-            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * scal.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * scal.y)));
+            ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+            ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
             if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
                 context_dialog.clear();
             }
             ImGui::SameLine();
-            ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * scal.x));
+            ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * SCALE.x));
         }
         if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
             if (context_dialog == "app") {
@@ -277,21 +279,21 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##information", &information, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-        ImGui::SetWindowFontScale(1.5f * scal.x);
-        ImGui::SetCursorPos(ImVec2(10.0f * scal.x, 10.0f * scal.y));
-        if (ImGui::Button("X", ImVec2(40.f * scal.x, 40.f * scal.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+        ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
+        ImGui::SetCursorPos(ImVec2(10.0f * SCALE.x, 10.0f * SCALE.y));
+        if (ImGui::Button("X", ImVec2(40.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
             information = false;
             gui.live_area.information_bar = true;
         }
         if (get_app_icon(gui, title_id)->first == title_id) {
-            ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * host.dpi_scale));
+            ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * SCALE.x));
             ImGui::Image(get_app_icon(gui, title_id)->second, INFO_ICON_SIZE);
         }
         const auto name = is_lang ? lang["name"] : "Name";
-        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize((name + "  ").c_str()).x, INFO_ICON_SIZE.y + (50.f * scal.y)));
+        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize((name + "  ").c_str()).x, INFO_ICON_SIZE.y + (50.f * SCALE.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, (name + " ").c_str());
         ImGui::SameLine();
-        ImGui::PushTextWrapPos(display_size.x - (85.f * scal.x));
+        ImGui::PushTextWrapPos(display_size.x - (85.f * SCALE.x));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->title.c_str());
         ImGui::PopTextWrapPos();
         if (title_id.find("NPXS") == std::string::npos) {

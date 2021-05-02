@@ -232,19 +232,20 @@ static ImGuiTextFilter search_bar;
 
 void draw_content_manager(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto SCAL = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto INFORMATION_BAR_HEIGHT = 32.f * SCAL.y;
+    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
 
-    const auto SIZE_ICON_LIST = ImVec2(60.f * SCAL.x, 60.f * SCAL.y);
-    const auto SIZE_ICON_DETAIL = ImVec2(70.f * SCAL.x, 70.f * SCAL.y);
+    const auto SIZE_ICON_LIST = ImVec2(60.f * SCALE.x, 60.f * SCALE.y);
+    const auto SIZE_ICON_DETAIL = ImVec2(70.f * SCALE.x, 70.f * SCALE.y);
 
-    const auto BUTTON_SIZE = ImVec2(310.f * SCAL.x, 46.f * SCAL.y);
+    const auto BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
 
     const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT);
-    const auto SIZE_LIST = ImVec2(820 * SCAL.x, 378.f * SCAL.y);
-    const auto SIZE_INFO = ImVec2(780 * SCAL.x, 402.f * SCAL.y);
+    const auto SIZE_LIST = ImVec2(820 * SCALE.x, 378.f * SCALE.y);
+    const auto SIZE_INFO = ImVec2(780 * SCALE.x, 402.f * SCALE.y);
 
-    const auto POPUP_SIZE = ImVec2(756.0f * SCAL.x, 436.0f * SCAL.y);
+    const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
     const auto is_background = gui.apps_background.find("NPXS10026") != gui.apps_background.end();
 
@@ -257,43 +258,43 @@ void draw_content_manager(GuiState &gui, HostState &host) {
     if (is_background)
         ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10026"], ImVec2(0.f, 0.f), display_size); // background image is 960x544
 
-    ImGui::SetWindowFontScale(1.5f * SCAL.x);
+    ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
 
     if (menu == "info") {
-        ImGui::SetCursorPos(ImVec2(90.f * SCAL.x, 10.f * SCAL.y));
+        ImGui::SetCursorPos(ImVec2(90.f * SCALE.x, 10.f * SCALE.y));
         ImGui::Image(gui.app_selector.user_apps_icon[app_selected], SIZE_ICON_DETAIL);
         const auto CALC_NAME = ImGui::CalcTextSize(get_app_index(gui, app_selected)->title.c_str(), nullptr, false, SIZE_INFO.x - SIZE_ICON_DETAIL.x).y / 2.f;
-        ImGui::SetCursorPos(ImVec2((110.f * SCAL.x) + SIZE_ICON_DETAIL.x, (SIZE_ICON_DETAIL.y / 2.f) - CALC_NAME + (10.f * SCAL.y)));
+        ImGui::SetCursorPos(ImVec2((110.f * SCALE.x) + SIZE_ICON_DETAIL.x, (SIZE_ICON_DETAIL.y / 2.f) - CALC_NAME + (10.f * SCALE.y)));
         ImGui::PushTextWrapPos(SIZE_INFO.x);
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, app_selected)->title.c_str());
         ImGui::PopTextWrapPos();
     } else {
         const auto content_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
         ImGui::PushTextWrapPos(((display_size.x - SIZE_LIST.x) / 2.f) + SIZE_LIST.x);
-        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (content_str.x / 2.f), (32.f * SCAL.y) - (content_str.y / 2.f)));
+        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (content_str.x / 2.f), (32.f * SCALE.y) - (content_str.y / 2.f)));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
         ImGui::PopTextWrapPos();
         if (!menu.empty()) {
             // Search Bar
             const auto search_size = ImGui::CalcTextSize("Search");
-            ImGui::SetCursorPos(ImVec2(20.f * SCAL.y, (32.f * SCAL.y) - (search_size.y / 2.f)));
+            ImGui::SetCursorPos(ImVec2(20.f * SCALE.y, (32.f * SCALE.y) - (search_size.y / 2.f)));
             ImGui::TextColored(GUI_COLOR_TEXT, "Search");
             ImGui::SameLine();
-            search_bar.Draw("##search_bar", 200 * SCAL.x);
+            search_bar.Draw("##search_bar", 200 * SCALE.x);
 
             // Free Space
             const auto scal_font = 19.2f / ImGui::GetFontSize();
-            ImGui::GetWindowDrawList()->AddText(gui.vita_font, 19.2f * SCAL.x, ImVec2((display_size.x - ((ImGui::CalcTextSize("Free Space").x * scal_font)) * SCAL.x) - (15.f * SCAL.x), 42.f * SCAL.y),
+            ImGui::GetWindowDrawList()->AddText(gui.vita_font, 19.2f * SCALE.x, ImVec2((display_size.x - ((ImGui::CalcTextSize("Free Space").x * scal_font)) * SCALE.x) - (15.f * SCALE.x), 42.f * SCALE.y),
                 4294967295, "Free Space");
-            ImGui::GetWindowDrawList()->AddText(gui.vita_font, 19.2f * SCAL.x, ImVec2((display_size.x - ((ImGui::CalcTextSize(space["free"].c_str()).x * scal_font)) * SCAL.x) - (15.f * SCAL.x), 68.f * SCAL.y),
+            ImGui::GetWindowDrawList()->AddText(gui.vita_font, 19.2f * SCALE.x, ImVec2((display_size.x - ((ImGui::CalcTextSize(space["free"].c_str()).x * scal_font)) * SCALE.x) - (15.f * SCALE.x), 68.f * SCALE.y),
                 4294967295, space["free"].c_str());
         }
-        ImGui::SetCursorPosY(64.0f * SCAL.y);
+        ImGui::SetCursorPosY(64.0f * SCALE.y);
         ImGui::Separator();
     }
 
-    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (menu == "info" ? 130.f : 102.0f) * SCAL.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCAL.x);
+    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (menu == "info" ? 130.f : 102.0f) * SCALE.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
     ImGui::BeginChild("##content_manager_child", menu == "info" ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     auto common = host.common_dialog.lang.common;
@@ -302,9 +303,9 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         title = "Content Manager";
         ImGui::SetWindowFontScale(1.2f);
         ImGui::Columns(2, nullptr, false);
-        ImGui::SetColumnWidth(0, 630.f * SCAL.x);
+        ImGui::SetColumnWidth(0, 630.f * SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-        const auto SIZE_SELECT = 80.f * SCAL.y;
+        const auto SIZE_SELECT = 80.f * SCALE.y;
         if (ImGui::Selectable("Applications", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
             menu = "app";
         ImGui::NextColumn();
@@ -333,13 +334,13 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         ImGui::PopStyleVar();
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCAL.y));
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCALE.y));
         ImGui::TextColored(GUI_COLOR_TEXT, "Free Space");
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCAL.y));
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCALE.y));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", space["free"].c_str());
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCAL.y));
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCALE.y));
         ImGui::SetWindowFontScale(1.2f);
         ImGui::Separator();
         ImGui::NextColumn();
@@ -368,21 +369,21 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::Begin("##app_delete", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
             ImGui::SetNextWindowBgAlpha(0.999f);
             ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCAL.x);
+            ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
             ImGui::BeginChild("##app_delete_child", POPUP_SIZE, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCAL.x);
-            ImGui::SetWindowFontScale(1.6f * SCAL.x);
-            ImGui::SetCursorPos(ImVec2(52.f * SCAL.x, 80.f * SCAL.y));
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
+            ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
+            ImGui::SetCursorPos(ImVec2(52.f * SCALE.x, 80.f * SCALE.y));
             ImGui::PushTextWrapPos(POPUP_SIZE.x);
             ImGui::TextColored(GUI_COLOR_TEXT, menu == "app" ? "The selected applications and all related data, including saved data, will be deleted." : "The selected saved data items will be deleted");
             ImGui::PopTextWrapPos();
-            ImGui::SetCursorPos(ImVec2(106.f * SCAL.x, ImGui::GetCursorPosY() + (76.f * SCAL.y)));
+            ImGui::SetCursorPos(ImVec2(106.f * SCALE.x, ImGui::GetCursorPosY() + (76.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "Data to be Deleted: %s", size_selected_contents.c_str());
-            ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (10.f * SCAL.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCAL.y)));
+            ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (10.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCALE.y)));
             if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
                 popup = false;
             }
-            ImGui::SameLine(0, 20.f * SCAL.x);
+            ImGui::SameLine(0, 20.f * SCALE.x);
             if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
                 content_delete = true;
                 popup = false;
@@ -408,31 +409,31 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 }
 
                 ImGui::Columns(4, nullptr, false);
-                ImGui::SetColumnWidth(0, 60 * SCAL.x);
-                ImGui::SetColumnWidth(1, 75 * SCAL.x);
-                ImGui::SetColumnWidth(2, 580.f * SCAL.x);
+                ImGui::SetColumnWidth(0, 60 * SCALE.x);
+                ImGui::SetColumnWidth(1, 75 * SCALE.x);
+                ImGui::SetColumnWidth(2, 580.f * SCALE.x);
                 for (const auto &app : gui.app_selector.user_apps) {
                     if (!search_bar.PassFilter(app.title.c_str()) && !search_bar.PassFilter(app.stitle.c_str()) && !search_bar.PassFilter(app.title_id.c_str()))
                         continue;
                     ImGui::PushID(app.path.c_str());
                     ImGui::SetWindowFontScale(1.32f);
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (15.f * SCAL.y));
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (15.f * SCALE.y));
                     ImGui::Checkbox("##selected", &contents_selected[app.path]);
                     ImGui::NextColumn();
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (8.f * SCAL.y));
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (8.f * SCALE.y));
                     ImGui::Image(gui.app_selector.user_apps_icon[app.path], SIZE_ICON_LIST);
                     ImGui::NextColumn();
                     const auto Title_POS = ImGui::GetCursorPosY();
                     ImGui::SetWindowFontScale(1.1f);
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (4.f * SCAL.y));
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (4.f * SCALE.y));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", app.title.c_str());
-                    ImGui::SetCursorPosY(Title_POS + (46.f * SCAL.y));
+                    ImGui::SetCursorPosY(Title_POS + (46.f * SCALE.y));
                     ImGui::SetWindowFontScale(0.8f);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_unit_size(apps_size[app.path]).c_str());
                     ImGui::NextColumn();
                     ImGui::SetWindowFontScale(1.2f);
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (15.f * SCAL.y));
-                    if (ImGui::Button("i", ImVec2(45.f * SCAL.x, 45.f * SCAL.y))) {
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (15.f * SCALE.y));
+                    if (ImGui::Button("i", ImVec2(45.f * SCALE.x, 45.f * SCALE.y))) {
                         scroll_pos = ImGui::GetScrollY();
                         ImGui::SetScrollY(0.f);
                         app_selected = app.path;
@@ -441,7 +442,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                         menu = "info";
                     }
                     ImGui::PopID();
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (15.f * SCAL.y));
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (15.f * SCALE.y));
                     ImGui::Separator();
                     ImGui::NextColumn();
                 }
@@ -457,25 +458,25 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "There is no saved data.");
             } else {
                 ImGui::Columns(3, nullptr, false);
-                ImGui::SetColumnWidth(0, 60 * SCAL.x);
-                ImGui::SetColumnWidth(1, 75 * SCAL.x);
+                ImGui::SetColumnWidth(0, 60 * SCALE.x);
+                ImGui::SetColumnWidth(1, 75 * SCALE.x);
                 for (const auto &save : save_data_list) {
                     if (!search_bar.PassFilter(save.title.c_str()) && !search_bar.PassFilter(save.title_id.c_str()))
                         continue;
                     ImGui::PushID(save.title_id.c_str());
                     ImGui::SetWindowFontScale(1.32f);
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (15.f * SCAL.y));
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (15.f * SCALE.y));
                     ImGui::Checkbox("##selected", &contents_selected[save.title_id]);
                     ImGui::NextColumn();
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (8.f * SCAL.y));
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (8.f * SCALE.y));
                     ImGui::Image(gui.app_selector.user_apps_icon[save.title_id], SIZE_ICON_LIST);
                     ImGui::NextColumn();
                     const auto Title_POS = ImGui::GetCursorPosY();
                     ImGui::SetWindowFontScale(1.1f);
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (4.f * SCAL.y));
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (4.f * SCALE.y));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", save.title.c_str());
                     ImGui::SetWindowFontScale(0.8f);
-                    ImGui::SetCursorPosY(Title_POS + (46.f * SCAL.y));
+                    ImGui::SetCursorPosY(Title_POS + (46.f * SCALE.y));
                     auto DATE_TIME = get_date_time(gui, host, save.date);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
                     if (gui.users[host.io.user_id].clock_12_hour) {
@@ -483,7 +484,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
                     }
                     ImGui::PopID();
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * SCAL.y));
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * SCALE.y));
                     ImGui::Separator();
                     ImGui::NextColumn();
                 }
@@ -494,50 +495,50 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             const auto app_index = get_app_index(gui, app_selected);
             ImGui::SetWindowFontScale(1.f);
             ImGui::TextColored(GUI_COLOR_TEXT, "Trophy Earning");
-            ImGui::SameLine(280.f * SCAL.x);
+            ImGui::SameLine(280.f * SCALE.x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.app_selector.app_info.trophy.c_str());
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "Parental Controls");
-            ImGui::SameLine(280.f * SCAL.x);
+            ImGui::SameLine(280.f * SCALE.x);
             ImGui::TextColored(GUI_COLOR_TEXT, "Level %d", *reinterpret_cast<const uint16_t *>(get_app_index(gui, app_selected)->parental_level.c_str()));
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
-            ImGui::SameLine(280.f * SCAL.x);
+            ImGui::SameLine(280.f * SCALE.x);
             auto DATE_TIME = get_date_time(gui, host, gui.app_selector.app_info.updated);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
             if (gui.users[host.io.user_id].clock_12_hour) {
                 ImGui::SameLine();
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
             }
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "Size");
-            ImGui::SameLine(280.f * SCAL.x);
+            ImGui::SameLine(280.f * SCALE.x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_unit_size(gui.app_selector.app_info.size).c_str());
-            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
+            ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "Version");
-            ImGui::SameLine(280.f * SCAL.x);
+            ImGui::SameLine(280.f * SCALE.x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, app_selected)->app_ver.c_str());
             for (const auto &dlc : dlc_info) {
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (40.f * SCAL.y));
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (40.f * SCALE.y));
                 ImGui::Separator();
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (40.f * SCAL.y));
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (40.f * SCALE.y));
                 ImGui::SetWindowFontScale(1.2f);
                 ImGui::TextColored(GUI_COLOR_TEXT, "+");
-                ImGui::SameLine(0, 30.f * SCAL.x);
+                ImGui::SameLine(0, 30.f * SCALE.x);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", dlc.second.name.c_str());
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
-                ImGui::SameLine(280.f * SCAL.x);
+                ImGui::SameLine(280.f * SCALE.x);
                 auto DATE_TIME = get_date_time(gui, host, dlc.second.date);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
                 if (gui.users[host.io.user_id].clock_12_hour) {
                     ImGui::SameLine();
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
                 }
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCAL.y));
+                ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "Size");
-                ImGui::SameLine(280.f * SCAL.x);
+                ImGui::SameLine(280.f * SCALE.x);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", dlc.second.size.c_str());
             }
         }
@@ -545,11 +546,11 @@ void draw_content_manager(GuiState &gui, HostState &host) {
 
     ImGui::EndChild();
 
-    ImGui::SetWindowFontScale(1.2f * SCAL.x);
-    ImGui::SetCursorPos(ImVec2(10.f * SCAL.x, display_size.y - (88.f * SCAL.y)));
+    ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
+    ImGui::SetCursorPos(ImVec2(10.f * SCALE.x, display_size.y - (88.f * SCALE.y)));
     const auto is_empty = ((menu == "app") && gui.app_selector.user_apps.empty()) || ((menu == "save") && save_data_list.empty());
     if (menu.empty() || (menu == "info") || is_empty) {
-        if (ImGui::Button("Back", ImVec2(64.f * SCAL.x, 40.f * SCAL.y))) {
+        if (ImGui::Button("Back", ImVec2(64.f * SCALE.x, 40.f * SCALE.y))) {
             if (!menu.empty()) {
                 if (menu == "info") {
                     menu = "app";
@@ -565,9 +566,9 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             }
         }
     } else {
-        ImGui::SetWindowFontScale(1.5f * SCAL.x);
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 482.f * SCAL.y), display_size, IM_COL32(39.f, 42.f, 49.f, 255.f), 0.f, ImDrawCornerFlags_All);
-        if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", ImVec2(202.f * SCAL.x, 44.f * SCAL.y))) {
+        ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 482.f * SCALE.y), display_size, IM_COL32(39.f, 42.f, 49.f, 255.f), 0.f, ImDrawCornerFlags_All);
+        if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", ImVec2(202.f * SCALE.x, 44.f * SCALE.y))) {
             if (!menu.empty()) {
                 menu.clear();
                 contents_selected.clear();
@@ -576,10 +577,10 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         const auto state = std::find_if(contents_selected.begin(), contents_selected.end(), [&](const auto &c) {
             return !c.second;
         }) != contents_selected.end();
-        ImGui::SetWindowFontScale(1.2f * SCAL.x);
-        ImGui::SetCursorPos(ImVec2(display_size.x - (450.f * SCAL.x), display_size.y - (88.f * SCAL.y)));
+        ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
+        ImGui::SetCursorPos(ImVec2(display_size.x - (450.f * SCALE.x), display_size.y - (88.f * SCALE.y)));
         const auto select_all = !common["select_all"].empty() ? common["select_all"].c_str() : "Select All";
-        if (ImGui::Button(state ? select_all : "Clear All", ImVec2(224.f * SCAL.x, 44.f * SCAL.y))) {
+        if (ImGui::Button(state ? select_all : "Clear All", ImVec2(224.f * SCALE.x, 44.f * SCALE.y))) {
             for (auto &content : contents_selected) {
                 if (state)
                     content.second = true;
@@ -591,10 +592,10 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             return cs.second;
         }) != contents_selected.end();
         ImGui::SameLine();
-        ImGui::SetWindowFontScale(1.5f * SCAL.x);
+        ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
         const auto delete_str = !common["delete"].empty() ? common["delete"].c_str() : "Delete";
-        if (is_enable ? ImGui::Button(delete_str, ImVec2(202.f * SCAL.x, 44.f * SCAL.y)) && get_size_selected_contents(gui, host) : ImGui::Selectable(delete_str, false, ImGuiSelectableFlags_Disabled, ImVec2(194.f * SCAL.x, 36.f * SCAL.y)))
+        if (is_enable ? ImGui::Button(delete_str, ImVec2(202.f * SCALE.x, 44.f * SCALE.y)) && get_size_selected_contents(gui, host) : ImGui::Selectable(delete_str, false, ImGuiSelectableFlags_Disabled, ImVec2(194.f * SCALE.x, 36.f * SCALE.y)))
             popup = true;
         ImGui::PopStyleVar();
     }

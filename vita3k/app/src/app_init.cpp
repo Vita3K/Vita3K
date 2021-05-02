@@ -147,7 +147,9 @@ bool init(HostState &state, Config &cfg, const Root &root_paths, CPUDepInject in
     SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
     state.dpi_scale = ddpi / 96;
 #endif
-    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, DEFAULT_RES_WIDTH * state.dpi_scale, DEFAULT_RES_HEIGHT * state.dpi_scale, window_type | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
+    state.res_width_dpi_scale = DEFAULT_RES_WIDTH * state.dpi_scale;
+    state.res_height_dpi_scale = DEFAULT_RES_HEIGHT * state.dpi_scale;
+    state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
 
     if (!state.window) {
         LOG_ERROR("SDL failed to create window!");

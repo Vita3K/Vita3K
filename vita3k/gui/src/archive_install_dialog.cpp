@@ -32,6 +32,10 @@ static bool delete_archive_file;
 static nfdchar_t *archive_path;
 
 void draw_archive_install_dialog(GuiState &gui, HostState &host) {
+    const auto display_size = ImGui::GetIO().DisplaySize;
+    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.x * host.dpi_scale);
+
     nfdresult_t result = NFD_CANCEL;
 
     static std::mutex install_mutex;
@@ -97,16 +101,16 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         ImGui::OpenPopup("Content Installation");
         if (ImGui::BeginPopupModal("Content Installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Installation in progress, please wait...");
-            const float PROGRESS_BAR_WIDTH = 150.f * host.dpi_scale;
-            ImGui::SetCursorPosX((ImGui::GetWindowContentRegionWidth() / 2) - (PROGRESS_BAR_WIDTH / 2) + 10 * host.dpi_scale);
+            const float PROGRESS_BAR_WIDTH = 150.f * SCALE.x;
+            ImGui::SetCursorPosX((ImGui::GetWindowContentRegionWidth() / 2) - (PROGRESS_BAR_WIDTH / 2) + (10.f * SCALE.x));
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
-            ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 20.f * host.dpi_scale), nullptr);
+            ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 20.f * SCALE.y), nullptr);
             ImGui::PopStyleColor();
         }
         ImGui::EndPopup();
     }
 
-    static const auto BUTTON_SIZE = ImVec2(60.f * host.dpi_scale, 0.f * host.dpi_scale);
+    static const auto BUTTON_SIZE = ImVec2(60.f * SCALE.x, 45.f * SCALE.y);
 
     if (gui.content_reinstall_confirm && finished_installing)
         ImGui::OpenPopup("Content reinstallation");
@@ -147,7 +151,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("Delete the archive for the content installed?", &delete_archive_file);
         ImGui::Spacing();
-        ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30 * host.dpi_scale);
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (30 * SCALE.x));
         if (ImGui::Button("OK", BUTTON_SIZE)) {
             if (delete_archive_file) {
                 fs::remove(fs::path(string_utils::utf_to_wide(archive_path)));
@@ -174,7 +178,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("Delete vpk/zip file of the content that failed to install?", &delete_archive_file);
         ImGui::Spacing();
-        ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30 * host.dpi_scale);
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (30 * SCALE.x));
         if (ImGui::Button("OK", BUTTON_SIZE)) {
             if (delete_archive_file) {
                 fs::remove(fs::path(string_utils::utf_to_wide(archive_path)));

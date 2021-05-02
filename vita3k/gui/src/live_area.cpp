@@ -824,10 +824,13 @@ inline uint64_t current_time() {
         .count();
 }
 
+static const ImU32 ARROW_COLOR = 4294967295; // White
+
 void draw_live_area_screen(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
-    const auto scal = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
-    const auto INFORMATION_BAR_HEIGHT = 32.f * scal.y;
+    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
+    const auto SCALE = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
+    const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
 
     const auto app_path = gui.apps_list_opened[gui.current_app_selected];
     const VitaIoDevice app_device = app_path.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
@@ -845,9 +848,9 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 180.f), 0.f, ImDrawCornerFlags_All);
 
-    const auto background_pos = ImVec2(900.0f * scal.x, 500.0f * scal.y);
+    const auto background_pos = ImVec2(900.0f * SCALE.x, 500.0f * SCALE.y);
     const auto pos_bg = ImVec2(display_size.x - background_pos.x, display_size.y - background_pos.y);
-    const auto background_size = ImVec2(840.0f * scal.x, 500.0f * scal.y);
+    const auto background_size = ImVec2(840.0f * SCALE.x, 500.0f * SCALE.y);
 
     if (gui.live_area_contents[app_path].find("livearea-background") != gui.live_area_contents[app_path].end())
         ImGui::GetWindowDrawList()->AddImage(gui.live_area_contents[app_path]["livearea-background"], pos_bg, ImVec2(pos_bg.x + background_size.x, pos_bg.y + background_size.y));
@@ -883,8 +886,8 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
         const auto FRAME_SIZE = items_pos[type[app_path]][frame.id]["size"];
 
-        auto FRAME_POS = ImVec2(items_pos[type[app_path]][frame.id]["pos"].x * scal.x,
-            items_pos[type[app_path]][frame.id]["pos"].y * scal.y);
+        auto FRAME_POS = ImVec2(items_pos[type[app_path]][frame.id]["pos"].x * SCALE.x,
+            items_pos[type[app_path]][frame.id]["pos"].y * SCALE.y);
 
         auto bg_size = items[app_path][frame.id]["background"]["size"];
 
@@ -937,9 +940,9 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             img_pos_init.y -= liveitem[app_path][frame.id]["image"]["y"].first;
 
         // Set items pos
-        auto bg_pos = ImVec2((display_size.x - FRAME_POS.x) + (bg_pos_init.x * scal.x), (display_size.y - FRAME_POS.y) + (bg_pos_init.y * scal.y));
+        auto bg_pos = ImVec2((display_size.x - FRAME_POS.x) + (bg_pos_init.x * SCALE.x), (display_size.y - FRAME_POS.y) + (bg_pos_init.y * SCALE.y));
 
-        auto img_pos = ImVec2((display_size.x - FRAME_POS.x) + (img_pos_init.x * scal.x), (display_size.y - FRAME_POS.y) + (img_pos_init.y * scal.y));
+        auto img_pos = ImVec2((display_size.x - FRAME_POS.x) + (img_pos_init.x * SCALE.x), (display_size.y - FRAME_POS.y) + (img_pos_init.y * SCALE.y));
 
         if (bg_size.x == FRAME_SIZE.x)
             bg_pos.x = display_size.x - FRAME_POS.x;
@@ -952,13 +955,13 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             img_pos.y = display_size.y - FRAME_POS.y;
 
         // Scal size items
-        const auto bg_scal_size = ImVec2(bg_size.x * scal.x, bg_size.y * scal.y);
-        const auto img_scal_size = ImVec2(img_size.x * scal.x, img_size.y * scal.y);
+        const auto bg_scal_size = ImVec2(bg_size.x * SCALE.x, bg_size.y * SCALE.y);
+        const auto img_scal_size = ImVec2(img_size.x * SCALE.x, img_size.y * SCALE.y);
 
         const auto pos_frame = ImVec2(display_size.x - FRAME_POS.x, display_size.y - FRAME_POS.y);
 
         // Scal size frame
-        const auto scal_size_frame = ImVec2(FRAME_SIZE.x * scal.x, FRAME_SIZE.y * scal.y);
+        const auto scal_size_frame = ImVec2(FRAME_SIZE.x * SCALE.x, FRAME_SIZE.y * SCALE.y);
 
         // Reset position if get outside frame
         if ((bg_pos.x + bg_scal_size.x) > (pos_frame.x + scal_size_frame.x))
@@ -1032,9 +1035,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                         str_size = bg_scal_size, text_pos = bg_pos;
                 }
 
-                auto size_text = ImGui::GetFontSize();
-                if (str_tag.size != 0)
-                    size_text = str_tag.size; // TODO multiple size on same frame
+                const auto size_text = str_tag.size != 0 ? str_tag.size : ImGui::GetFontSize();
 
                 auto str_wrap = scal_size_frame.x;
                 if (liveitem[app_path][frame.id]["text"]["allign"].second == "outside-right")
@@ -1042,19 +1043,19 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
 
                 if (liveitem[app_path][frame.id]["text"]["width"].first > 0) {
                     if (liveitem[app_path][frame.id]["text"]["word-wrap"].second != "off")
-                        str_wrap = float(liveitem[app_path][frame.id]["text"]["width"].first) * scal.x;
-                    text_pos.x += (str_size.x - (float(liveitem[app_path][frame.id]["text"]["width"].first) * scal.x)) / 2.f;
-                    str_size.x = float(liveitem[app_path][frame.id]["text"]["width"].first) * scal.x;
+                        str_wrap = float(liveitem[app_path][frame.id]["text"]["width"].first) * SCALE.x;
+                    text_pos.x += (str_size.x - (float(liveitem[app_path][frame.id]["text"]["width"].first) * SCALE.x)) / 2.f;
+                    str_size.x = float(liveitem[app_path][frame.id]["text"]["width"].first) * SCALE.x;
                 }
 
                 if ((liveitem[app_path][frame.id]["text"]["height"].first > 0)
                     && ((liveitem[app_path][frame.id]["text"]["word-scroll"].second == "on" || liveitem[app_path][frame.id]["text"]["height"].first <= FRAME_SIZE.y))) {
-                    text_pos.y += (str_size.y - (float(liveitem[app_path][frame.id]["text"]["height"].first) * scal.y)) / 2.f;
-                    str_size.y = float(liveitem[app_path][frame.id]["text"]["height"].first) * scal.y;
+                    text_pos.y += (str_size.y - (float(liveitem[app_path][frame.id]["text"]["height"].first) * SCALE.y)) / 2.f;
+                    str_size.y = float(liveitem[app_path][frame.id]["text"]["height"].first) * SCALE.y;
                 }
 
-                const auto scal_font_size = size_text / ImGui::GetFontSize();
-                ImGui::SetWindowFontScale(scal_font_size * scal.x);
+                const auto scal_font_size = size_text / 19.2f;
+                ImGui::SetWindowFontScale(scal_font_size * RES_SCALE.x);
 
                 // Calcule text pixel size
                 ImVec2 calc_text_size;
@@ -1151,24 +1152,24 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                     }
                 }
 
-                auto pos_str = ImVec2(str_pos_init.x, str_pos_init.y - (liveitem[app_path][frame.id]["text"]["y"].first * scal.y));
+                auto pos_str = ImVec2(str_pos_init.x, str_pos_init.y - (liveitem[app_path][frame.id]["text"]["y"].first * SCALE.y));
 
                 if (liveitem[app_path][frame.id]["text"]["x"].first > 0) {
-                    text_pos.x += liveitem[app_path][frame.id]["text"]["x"].first * scal.x;
-                    str_size.x -= liveitem[app_path][frame.id]["text"]["x"].first * scal.x;
+                    text_pos.x += liveitem[app_path][frame.id]["text"]["x"].first * SCALE.x;
+                    str_size.x -= liveitem[app_path][frame.id]["text"]["x"].first * SCALE.x;
                 }
 
                 if ((liveitem[app_path][frame.id]["text"]["margin-left"].first > 0) && !liveitem[app_path][frame.id]["text"]["width"].first) {
-                    text_pos.x += liveitem[app_path][frame.id]["text"]["margin-left"].first * scal.x;
-                    str_size.x -= liveitem[app_path][frame.id]["text"]["margin-left"].first * scal.x;
+                    text_pos.x += liveitem[app_path][frame.id]["text"]["margin-left"].first * SCALE.x;
+                    str_size.x -= liveitem[app_path][frame.id]["text"]["margin-left"].first * SCALE.x;
                 }
 
                 if (liveitem[app_path][frame.id]["text"]["margin-right"].first > 0)
-                    str_size.x -= liveitem[app_path][frame.id]["text"]["margin-right"].first * scal.x;
+                    str_size.x -= liveitem[app_path][frame.id]["text"]["margin-right"].first * SCALE.x;
 
                 if (liveitem[app_path][frame.id]["text"]["margin-top"].first > 0) {
-                    text_pos.y += liveitem[app_path][frame.id]["text"]["margin-top"].first * scal.y;
-                    str_size.y -= liveitem[app_path][frame.id]["text"]["margin-top"].first * scal.y;
+                    text_pos.y += liveitem[app_path][frame.id]["text"]["margin-top"].first * SCALE.y;
+                    str_size.y -= liveitem[app_path][frame.id]["text"]["margin-top"].first * SCALE.y;
                 }
 
                 // Text Display
@@ -1221,54 +1222,54 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         }
     }
 
-    ImGui::SetWindowFontScale(scal.x);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
     const auto scal_default_font = 25.f * (ImGui::GetFontSize() / 19.2f);
     const auto scal_font_size = scal_default_font / ImGui::GetFontSize();
 
     const std::string BUTTON_STR = app_path == host.io.app_path ? resume : start;
-    const auto GATE_SIZE = ImVec2(280.0f * scal.x, 158.0f * scal.y);
-    const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[app_path]]["gate"]["pos"].x * scal.x), display_size.y - (items_pos[type[app_path]]["gate"]["pos"].y * scal.y));
+    const auto GATE_SIZE = ImVec2(280.0f * SCALE.x, 158.0f * SCALE.y);
+    const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[app_path]]["gate"]["pos"].x * SCALE.x), display_size.y - (items_pos[type[app_path]]["gate"]["pos"].y * SCALE.y));
     const auto START_SIZE = ImVec2((ImGui::CalcTextSize(BUTTON_STR.c_str()).x * scal_font_size), (ImGui::CalcTextSize(BUTTON_STR.c_str()).y * scal_font_size));
-    const auto START_BUTTON_SIZE = ImVec2(START_SIZE.x + 26.0f * scal.x, START_SIZE.y + 5.0f * scal.y);
+    const auto START_BUTTON_SIZE = ImVec2(START_SIZE.x + 26.0f * SCALE.x, START_SIZE.y + 5.0f * SCALE.y);
     const auto POS_BUTTON = ImVec2((GATE_POS.x + (GATE_SIZE.x - START_BUTTON_SIZE.x) / 2.0f), (GATE_POS.y + (GATE_SIZE.y - START_BUTTON_SIZE.y) / 1.08f));
     const auto POS_START = ImVec2(POS_BUTTON.x + (START_BUTTON_SIZE.x - START_SIZE.x) / 2.f, POS_BUTTON.y + (START_BUTTON_SIZE.y - START_SIZE.y) / 2.f);
-    const auto SELECT_SIZE = ImVec2(GATE_SIZE.x - (10.f * scal.x), GATE_SIZE.y - (5.f * scal.y));
-    const auto SELECT_POS = ImVec2(GATE_POS.x + (5.f * scal.y), GATE_POS.y + (2.f * scal.y));
+    const auto SELECT_SIZE = ImVec2(GATE_SIZE.x - (10.f * SCALE.x), GATE_SIZE.y - (5.f * SCALE.y));
+    const auto SELECT_POS = ImVec2(GATE_POS.x + (5.f * SCALE.y), GATE_POS.y + (2.f * SCALE.y));
     const auto SIZE_GATE = ImVec2(GATE_POS.x + GATE_SIZE.x, GATE_POS.y + GATE_SIZE.y);
 
-    const auto BUTTON_SIZE = ImVec2(72.f * scal.x, 30.f * scal.y);
+    const auto BUTTON_SIZE = ImVec2(72.f * SCALE.x, 30.f * SCALE.y);
 
     if (gui.live_area_contents[app_path].find("gate") != gui.live_area_contents[app_path].end()) {
         ImGui::SetCursorPos(GATE_POS);
         ImGui::Image(gui.live_area_contents[app_path]["gate"], GATE_SIZE);
     }
     ImGui::PushID(app_path.c_str());
-    ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * scal.x, ImDrawCornerFlags_All);
+    ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * SCALE.x, ImDrawCornerFlags_All);
     ImGui::GetWindowDrawList()->AddText(gui.vita_font, scal_default_font, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
     ImGui::SetCursorPos(SELECT_POS);
     ImGui::SetCursorPos(SELECT_POS);
     if (ImGui::Selectable("##gate", false, ImGuiSelectableFlags_None, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))
         pre_run_app(gui, host, app_path);
     ImGui::PopID();
-    ImGui::GetWindowDrawList()->AddRect(GATE_POS, SIZE_GATE, IM_COL32(192, 192, 192, 255), 10.f * scal.x, ImDrawCornerFlags_All, 12.f * scal.x);
+    ImGui::GetWindowDrawList()->AddRect(GATE_POS, SIZE_GATE, IM_COL32(192, 192, 192, 255), 10.f * SCALE.x, ImDrawCornerFlags_All, 12.f * SCALE.x);
 
     if (app_device == VitaIoDevice::ux0) {
-        const auto widget_scal_size = ImVec2(80.0f * scal.x, 80.f * scal.y);
+        const auto widget_scal_size = ImVec2(80.0f * SCALE.x, 80.f * SCALE.y);
         const auto manual_path{ fs::path(host.pref_path) / "ux0/app" / app_path / "sce_sys/manual/" };
         const auto scal_widget_font_size = 23.0f / ImGui::GetFontSize();
 
-        auto search_pos = ImVec2(578.0f * scal.x, 505.0f * scal.y);
+        auto search_pos = ImVec2(578.0f * SCALE.x, 505.0f * SCALE.y);
         if (!fs::exists(manual_path) || fs::is_empty(manual_path))
-            search_pos = ImVec2(520.0f * scal.x, 505.0f * scal.y);
+            search_pos = ImVec2(520.0f * SCALE.x, 505.0f * SCALE.y);
 
         const auto pos_scal_search = ImVec2(display_size.x - search_pos.x, display_size.y - search_pos.y);
 
         const std::string SEARCH = "Search";
-        const auto SEARCH_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(SEARCH.c_str()).x * scal_widget_font_size) * scal.x, (ImGui::CalcTextSize(SEARCH.c_str()).y * scal_widget_font_size) * scal.y);
+        const auto SEARCH_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(SEARCH.c_str()).x * scal_widget_font_size) * SCALE.x, (ImGui::CalcTextSize(SEARCH.c_str()).y * scal_widget_font_size) * SCALE.y);
         const auto POS_STR_SEARCH = ImVec2(pos_scal_search.x + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.x / 2.f)),
             pos_scal_search.y + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.y / 2.f)));
-        ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_search, ImVec2(pos_scal_search.x + widget_scal_size.x, pos_scal_search.y + widget_scal_size.y), IM_COL32(20, 168, 222, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
-        ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * scal.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH.c_str());
+        ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_search, ImVec2(pos_scal_search.x + widget_scal_size.x, pos_scal_search.y + widget_scal_size.y), IM_COL32(20, 168, 222, 255), 12.0f * SCALE.x, ImDrawCornerFlags_All);
+        ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH.c_str());
         ImGui::SetCursorPos(pos_scal_search);
         if (ImGui::Selectable("##Search", ImGuiSelectableFlags_None, false, widget_scal_size)) {
             auto search_url = "http://www.google.com/search?q=" + host.app_title;
@@ -1277,15 +1278,15 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         }
 
         if (fs::exists(manual_path) && !fs::is_empty(manual_path)) {
-            const auto manual_pos = ImVec2(463.0f * scal.x, 505.0f * scal.y);
+            const auto manual_pos = ImVec2(463.0f * SCALE.x, 505.0f * SCALE.y);
             const auto pos_scal_manual = ImVec2(display_size.x - manual_pos.x, display_size.y - manual_pos.y);
 
             const std::string MANUAL_STR = "Manual";
-            const auto MANUAL_STR_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(MANUAL_STR.c_str()).x * scal_widget_font_size) * scal.x, (ImGui::CalcTextSize(MANUAL_STR.c_str()).y * scal_widget_font_size) * scal.y);
+            const auto MANUAL_STR_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(MANUAL_STR.c_str()).x * scal_widget_font_size) * SCALE.x, (ImGui::CalcTextSize(MANUAL_STR.c_str()).y * scal_widget_font_size) * SCALE.y);
             const auto MANUAL_STR_POS = ImVec2(pos_scal_manual.x + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.x / 2.f)),
                 pos_scal_manual.y + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.y / 2.f)));
-            ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_manual, ImVec2(pos_scal_manual.x + widget_scal_size.x, pos_scal_manual.y + widget_scal_size.y), IM_COL32(202, 0, 106, 255), 12.0f * scal.x, ImDrawCornerFlags_All);
-            ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * scal.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
+            ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_manual, ImVec2(pos_scal_manual.x + widget_scal_size.x, pos_scal_manual.y + widget_scal_size.y), IM_COL32(202, 0, 106, 255), 12.0f * SCALE.x, ImDrawCornerFlags_All);
+            ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
             ImGui::SetCursorPos(pos_scal_manual);
             if (ImGui::Selectable("##manual", ImGuiSelectableFlags_None, false, widget_scal_size)) {
                 if (init_manual(gui, host, app_path)) {
@@ -1299,9 +1300,8 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     }
 
     if (!gui.live_area.content_manager && !gui.live_area.manual) {
-        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * scal.x);
-        ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * scal.x) - BUTTON_SIZE.x, 44.0f * scal.y));
-        ImGui::SetWindowFontScale(scal.x);
+        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * SCALE.x);
+        ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, 44.0f * SCALE.y));
         if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
             if (app_path == host.io.app_path) {
                 stop_all_threads(host.kernel);
@@ -1315,7 +1315,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                 --gui.current_app_selected;
             }
         }
-        ImGui::SetCursorPos(ImVec2(60.f * scal.x, 44.0f * scal.y));
+        ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, 44.0f * SCALE.y));
         if (ImGui::Button("Help", BUTTON_SIZE))
             ImGui::OpenPopup("Live Area Help");
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
@@ -1359,13 +1359,15 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         ImGui::PopStyleVar();
     }
 
-    const auto SELECTABLE_SIZE = ImVec2(50.f * scal.x, 60.f * scal.y);
-    const auto SELECTABLE_POS = ImVec2(5.f * scal.x, (display_size.y / 2.f) - (SELECTABLE_SIZE.y / 2.f) + INFORMATION_BAR_HEIGHT);
+    const auto SELECTABLE_SIZE = ImVec2(50.f * SCALE.x, 60.f * SCALE.y);
     const auto wheel_counter = ImGui::GetIO().MouseWheel;
-    ImGui::SetWindowFontScale(2.f * scal.x);
-    ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
-    ImGui::SetCursorPos(SELECTABLE_POS);
-    if ((ImGui::Selectable("<", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_l1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_left) || (wheel_counter == 1)) {
+    const auto ARROW_LEFT_CENTER = ImVec2(30.f * SCALE.x, display_size.y - (250.f * SCALE.y));
+    ImGui::GetForegroundDrawList()->AddTriangleFilled(
+        ImVec2(ARROW_LEFT_CENTER.x + (16.f * SCALE.x), ARROW_LEFT_CENTER.y - (20.f * SCALE.y)),
+        ImVec2(ARROW_LEFT_CENTER.x - (16.f * SCALE.x), ARROW_LEFT_CENTER.y),
+        ImVec2(ARROW_LEFT_CENTER.x + (16.f * SCALE.x), ARROW_LEFT_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
+    ImGui::SetCursorPos(ImVec2(ARROW_LEFT_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_LEFT_CENTER.y - (SELECTABLE_SIZE.y / 2.f)));
+    if ((ImGui::Selectable("##left", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_l1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_left) || (wheel_counter == 1)) {
         if (gui.current_app_selected == 0) {
             gui.live_area.live_area_screen = false;
             gui.live_area.app_selector = true;
@@ -1373,12 +1375,16 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         --gui.current_app_selected;
     }
     if (gui.current_app_selected < gui.apps_list_opened.size() - 1) {
-        ImGui::SetCursorPos(ImVec2(display_size.x - SELECTABLE_SIZE.x - SELECTABLE_POS.x, SELECTABLE_POS.y));
-        if ((ImGui::Selectable(">", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right) || (wheel_counter == -1))
+        const auto ARROW_RIGHT_CENTER = ImVec2(display_size.x - (30.f * SCALE.x), display_size.y - (250.f * SCALE.y));
+        ImGui::GetForegroundDrawList()->AddTriangleFilled(
+            ImVec2(ARROW_RIGHT_CENTER.x - (16.f * SCALE.x), ARROW_RIGHT_CENTER.y - (20.f * SCALE.y)),
+            ImVec2(ARROW_RIGHT_CENTER.x + (16.f * SCALE.x), ARROW_RIGHT_CENTER.y),
+            ImVec2(ARROW_RIGHT_CENTER.x - (16.f * SCALE.x), ARROW_RIGHT_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
+        ImGui::SetCursorPos(ImVec2(ARROW_RIGHT_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_RIGHT_CENTER.y - (SELECTABLE_SIZE.y / 2.f)));
+        if ((ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right) || (wheel_counter == -1))
             ++gui.current_app_selected;
     }
-    ImGui::SetWindowFontScale(1.0f * scal.x);
-    ImGui::PopStyleVar();
+    ImGui::SetWindowFontScale(1.f);
     ImGui::End();
 }
 

@@ -112,7 +112,7 @@ static void init_font(GuiState &gui, HostState &host) {
     if (host.dpi_scale > 1) {
         // Set monospaced font path -- ImGui's default is a bitmap font that does not scale well, so load Consolas instead
         const auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
-        gui.monospaced_font = io.Fonts->AddFontFromFileTTF(monospaced_font_path, 13.0f * host.dpi_scale * host.dpi_scale, NULL, io.Fonts->GetGlyphRangesJapanese()); // multiply by dpi_scale twice to correctly scale
+        gui.monospaced_font = io.Fonts->AddFontFromFileTTF(monospaced_font_path, 13.f * host.dpi_scale, NULL, io.Fonts->GetGlyphRangesJapanese());
     } else {
         gui.monospaced_font = io.Fonts->AddFontDefault();
     }
@@ -202,7 +202,6 @@ static void init_font(GuiState &gui, HostState &host) {
     }
     // DPI scaling
     io.DisplayFramebufferScale = { host.dpi_scale, host.dpi_scale };
-    io.FontGlobalScale /= host.dpi_scale;
 }
 
 void init_app_icon(GuiState &gui, HostState &host, const std::string &app_path) {
