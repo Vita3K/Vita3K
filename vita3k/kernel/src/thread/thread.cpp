@@ -222,6 +222,10 @@ static bool run_thread(ThreadState &thread) {
                 return true;
             }
 
+            if (hit_breakpoint(*thread.cpu)) {
+                thread.to_do = ThreadToDo::wait;
+            }
+
             if (res == 1) {
                 thread.to_do = ThreadToDo::exit;
                 return true;
