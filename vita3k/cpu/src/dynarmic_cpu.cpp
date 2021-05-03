@@ -160,6 +160,7 @@ public:
 
 std::unique_ptr<Dynarmic::A32::Jit> make_jit(std::unique_ptr<ArmDynarmicCallback> &callback, MemState *mem) {
     Dynarmic::A32::UserConfig config;
+    config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = callback.get();
     config.fastmem_pointer = mem->memory.get();
 

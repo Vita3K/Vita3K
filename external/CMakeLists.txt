@@ -155,7 +155,6 @@ endif()
 
 set(DYNARMIC_TESTS OFF CACHE BOOL "")
 set(DYNARMIC_NO_BUNDLED_FMT ON CACHE BOOL "")
-set(DYNARMIC_USE_ARMV7 ON CACHE BOOL "")
 add_subdirectory(dynarmic)
 
 add_library(vita-toolchain INTERFACE)
