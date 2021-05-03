@@ -263,7 +263,10 @@ int run_callback(KernelState &kernel, ThreadState &thread, const SceUID &thid, A
     set_thread_id(*cpu, thid);
     write_pc(*cpu, callback_address);
     write_lr(*cpu, cpu->halt_instruction_pc);
+    CPUStatePtr cpu_ptr = CPUStatePtr(cpu, [](CPUState *state) -> void {});
+    thread.cpu.swap(cpu_ptr);
     auto res = run(*cpu);
+    thread.cpu.swap(cpu_ptr);
 
     if (res < 0) {
         LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
