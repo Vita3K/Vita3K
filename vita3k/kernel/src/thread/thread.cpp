@@ -54,7 +54,6 @@ static int SDLCALL thread_function(void *data) {
         params.kernel->wait_for_debugger = false;
     }
     const bool succeeded = run_on_current(*thread, Ptr<void>(thread->entry_point), params.arglen, params.argp);
-    assert(succeeded);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
 
     const std::lock_guard<std::mutex> lock(thread->mutex);
