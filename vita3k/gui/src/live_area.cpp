@@ -829,7 +829,7 @@ static const ImU32 ARROW_COLOR = 4294967295; // White
 void draw_live_area_screen(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
     const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(display_size.x / 960.0f, display_size.y / 544.0f);
+    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
 
     const auto app_path = gui.apps_list_opened[gui.current_app_selected];
@@ -1035,8 +1035,6 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                         str_size = bg_scal_size, text_pos = bg_pos;
                 }
 
-                const auto size_text = str_tag.size != 0 ? str_tag.size : ImGui::GetFontSize();
-
                 auto str_wrap = scal_size_frame.x;
                 if (liveitem[app_path][frame.id]["text"]["allign"].second == "outside-right")
                     str_wrap = str_size.x;
@@ -1054,8 +1052,8 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                     str_size.y = float(liveitem[app_path][frame.id]["text"]["height"].first) * SCALE.y;
                 }
 
-                const auto scal_font_size = size_text / 19.2f;
-                ImGui::SetWindowFontScale(scal_font_size * RES_SCALE.x);
+                const auto size_text_scale = str_tag.size != 0 ? str_tag.size / 19.2f : 1.f;
+                ImGui::SetWindowFontScale(size_text_scale * RES_SCALE.x);
 
                 // Calcule text pixel size
                 ImVec2 calc_text_size;
@@ -1217,19 +1215,19 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                 if (liveitem[app_path][frame.id]["text"]["word-wrap"].second != "off")
                     ImGui::PopTextWrapPos();
                 ImGui::EndChild();
-                ImGui::SetWindowFontScale(1.f);
+                ImGui::SetWindowFontScale(RES_SCALE.x);
             }
         }
     }
 
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    const auto scal_default_font = 25.f * (ImGui::GetFontSize() / 19.2f);
-    const auto scal_font_size = scal_default_font / ImGui::GetFontSize();
+    const auto default_font_scale = (25.f * host.dpi_scale) * (ImGui::GetFontSize() / (19.2f * host.dpi_scale));
+    const auto font_size_scale = default_font_scale / ImGui::GetFontSize();
 
     const std::string BUTTON_STR = app_path == host.io.app_path ? resume : start;
     const auto GATE_SIZE = ImVec2(280.0f * SCALE.x, 158.0f * SCALE.y);
     const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[app_path]]["gate"]["pos"].x * SCALE.x), display_size.y - (items_pos[type[app_path]]["gate"]["pos"].y * SCALE.y));
-    const auto START_SIZE = ImVec2((ImGui::CalcTextSize(BUTTON_STR.c_str()).x * scal_font_size), (ImGui::CalcTextSize(BUTTON_STR.c_str()).y * scal_font_size));
+    const auto START_SIZE = ImVec2((ImGui::CalcTextSize(BUTTON_STR.c_str()).x * font_size_scale), (ImGui::CalcTextSize(BUTTON_STR.c_str()).y * font_size_scale));
     const auto START_BUTTON_SIZE = ImVec2(START_SIZE.x + 26.0f * SCALE.x, START_SIZE.y + 5.0f * SCALE.y);
     const auto POS_BUTTON = ImVec2((GATE_POS.x + (GATE_SIZE.x - START_BUTTON_SIZE.x) / 2.0f), (GATE_POS.y + (GATE_SIZE.y - START_BUTTON_SIZE.y) / 1.08f));
     const auto POS_START = ImVec2(POS_BUTTON.x + (START_BUTTON_SIZE.x - START_SIZE.x) / 2.f, POS_BUTTON.y + (START_BUTTON_SIZE.y - START_SIZE.y) / 2.f);
@@ -1245,7 +1243,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     }
     ImGui::PushID(app_path.c_str());
     ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * SCALE.x, ImDrawCornerFlags_All);
-    ImGui::GetWindowDrawList()->AddText(gui.vita_font, scal_default_font, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
+    ImGui::GetWindowDrawList()->AddText(gui.vita_font, default_font_scale, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
     ImGui::SetCursorPos(SELECT_POS);
     ImGui::SetCursorPos(SELECT_POS);
     if (ImGui::Selectable("##gate", false, ImGuiSelectableFlags_None, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))
