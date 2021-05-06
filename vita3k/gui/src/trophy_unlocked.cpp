@@ -8,15 +8,20 @@
 
 namespace gui {
 
-static constexpr float TROPHY_MOVE_DELTA = 12.0f;
-static constexpr float TROPHY_WINDOW_ICON_SIZE = 48.0f;
-static constexpr float TROPHY_ICON_MARGIN_PADDING = 6.f;
-static constexpr float TROPHY_WINDOW_MARGIN_PADDING = 12.f;
-static const ImVec2 TROPHY_WINDOW_SIZE = ImVec2(400.f, TROPHY_WINDOW_ICON_SIZE + TROPHY_WINDOW_MARGIN_PADDING);
 static constexpr int TROPHY_WINDOW_STATIC_FRAME_COUNT = 250;
-static constexpr float TROPHY_WINDOW_Y_POS = 20.0f;
 
 static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockCallbackData &callback_data) {
+    const auto display_size = ImGui::GetIO().DisplaySize;
+    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+
+    const auto TROPHY_WINDOW_MARGIN_PADDING = 12.f * SCALE.x;
+    const auto TROPHY_WINDOW_ICON_SIZE = 48.f * SCALE.x;
+    const auto TROPHY_ICON_MARGIN_PADDING = 6.f * SCALE.y;
+    const auto TROPHY_WINDOW_SIZE = ImVec2(400.f * SCALE.x, TROPHY_WINDOW_ICON_SIZE + TROPHY_WINDOW_MARGIN_PADDING);
+    const auto TROPHY_WINDOW_Y_POS = 20.f * SCALE.y;
+    const auto TROPHY_MOVE_DELTA = 12.f * SCALE.x;
+
     if (gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_IN
         || gui.trophy_window_frame_stage == TrophyAnimationStage::SLIDE_OUT) {
         ImVec2 target_window_pos = ImVec2(0.0f, 0.0f);
@@ -51,7 +56,7 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 15.0f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, GUI_SMOOTH_GRAY);
     ImGui::SetNextWindowSize(TROPHY_WINDOW_SIZE);
-    ImGui::Begin("##NoName", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##trophy", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     ImGui::Columns(2, nullptr, false);
     ImGui::SetColumnWidth(0, TROPHY_WINDOW_ICON_SIZE + TROPHY_WINDOW_MARGIN_PADDING * 2);
@@ -87,10 +92,10 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
         break;
     }
 
-    ImGui::SetWindowFontScale(1.f);
+    ImGui::SetWindowFontScale(1.f * RES_SCALE.x);
     ImGui::SetCursorPosY(TROPHY_WINDOW_MARGIN_PADDING);
     ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "(%s) %s", trophy_kind_s.c_str(), callback_data.trophy_name.c_str());
-    ImGui::SetWindowFontScale(0.8f);
+    ImGui::SetWindowFontScale(0.8f * RES_SCALE.x);
     const auto trophy_earned = !gui.lang.indicator["trophy_earned"].empty() ? gui.lang.indicator["trophy_earned"].c_str() : "You have earned a trophy!";
     ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), trophy_earned);
     ImGui::End();

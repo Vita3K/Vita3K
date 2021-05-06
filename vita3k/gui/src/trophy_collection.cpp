@@ -479,7 +479,8 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize("This trophy information saved on this user will be deleted.").x / 2.f), POPUP_SIZE.y / 2.f));
                 ImGui::TextColored(GUI_COLOR_TEXT, "This trophy information saved on this user will be deleted.");
                 ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCALE.y)));
-                if (ImGui::Button("Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
+                const auto cancel_str = !host.common_dialog.lang.common["cancel"].empty() ? host.common_dialog.lang.common["cancel"].c_str() : "Cancel";
+                if (ImGui::Button(cancel_str, BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
                     delete_np_com_id.clear();
                 ImGui::SameLine(0, 20.f * SCALE.x);
                 if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
