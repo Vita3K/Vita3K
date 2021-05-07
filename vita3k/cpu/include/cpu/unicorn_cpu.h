@@ -37,7 +37,6 @@ class UnicornCPU : public CPUInterface {
 
     void log_error_details(uc_err code);
 
-    static void stack_trace_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data);
     static void intr_hook(uc_engine *uc, uint32_t intno, void *user_data);
     static void code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data);
     static void read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data);
@@ -47,10 +46,7 @@ class UnicornCPU : public CPUInterface {
     void log_stack_frames();
 
 public:
-    UnicornCPU(CPUState *cpu, Address pc, Address sp, bool trace_stack);
-
-    /*! \brief Execute a amount of instructions. */
-    int execute_instructions(int num);
+    UnicornCPU(CPUState *cpu, Address pc, Address sp);
 
     int execute_instructions_no_check(int num);
 

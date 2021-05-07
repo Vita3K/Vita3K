@@ -72,6 +72,7 @@ struct HostState {
     std::string load_exec_path;
     std::string self_path;
     Config cfg;
+    std::unique_ptr<CPUProtocolBase> cpu_protocol;
     SceUID main_thread_id;
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;

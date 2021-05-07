@@ -127,8 +127,9 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    auto inject = create_cpu_dep_inject(host);
-    if (!app::init(host, cfg, root_paths, inject)) {
+    // TODO move this to app_init after module refactoring
+    host.cpu_protocol = std::make_unique<CPUProtocol>(host);
+    if (!app::init(host, cfg, root_paths)) {
         app::error_dialog("Host initialization failed.", host.window.get());
         return HostInitFailed;
     }

@@ -26,6 +26,20 @@
 
 #include <spdlog/fmt/fmt.h>
 
+bool init(KernelState &kernel, MemState &mem, int cpu_pool_size, CPUProtocolBase *cpu_protocol, CPUBackend cpu_backend) {
+    for (int i = 0; i < cpu_pool_size; ++i) {
+        auto item = init_cpu(cpu_backend, 0, 0, 0, mem, cpu_protocol);
+        kernel.cpu_pool.add(std::move(item));
+    }
+
+    kernel.exclusive_monitor = new_exclusive_monitor(100);
+    kernel.start_tick = { rtc_base_ticks() };
+    kernel.base_tick = { rtc_base_ticks() };
+    kernel.cpu_protocol = cpu_protocol;
+    kernel.cpu_backend = cpu_backend;
+    return true;
+}
+
 Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, int key) {
     SlotToAddress &slot_to_address = kernel.tls[thread_id];
 

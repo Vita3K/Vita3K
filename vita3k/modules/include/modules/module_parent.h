@@ -48,4 +48,16 @@ constexpr int var_exports_size =
 
 const std::array<VarExport, var_exports_size> &get_var_exports();
 
-CPUDepInject create_cpu_dep_inject(HostState &host);
+// TODO move to module
+struct CPUProtocol : public CPUProtocolBase {
+    CPUProtocol(HostState &host);
+    ~CPUProtocol();
+    void call_import(CPUState &cpu, uint32_t nid, SceUID thread_id) override;
+    std::string resolve_nid_name(Address nid) override;
+    Address get_watch_memory_addr(Address addr) override;
+    std::vector<ModuleRegion> &get_module_regions() override;
+    ExclusiveMonitorPtr get_exlusive_monitor() override;
+
+private:
+    HostState *host;
+};

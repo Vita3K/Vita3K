@@ -2,6 +2,7 @@
 #include <cpu/interface.h>
 #include <cpu/state.h>
 #include <dynarmic/A32/context.h>
+#include <dynarmic/exclusive_monitor.h>
 #include <set>
 #include <util/log.h>
 
@@ -12,10 +13,6 @@ class ArmDynarmicCallback : public Dynarmic::A32::UserCallbacks {
 
     CPUState *parent;
     DynarmicCPU *cpu;
-    uint64_t interpreted = 0;
-
-    bool log_read = false;
-    bool log_write = false;
 
 public:
     explicit ArmDynarmicCallback(CPUState &parent, DynarmicCPU &cpu)
@@ -25,14 +22,15 @@ public:
     ~ArmDynarmicCallback() {}
 
     uint32_t MemoryReadCode(Dynarmic::A32::VAddr addr) override {
-        //LOG_TRACE("Fetch at addr 0x{:X}, inst 0x{} ({})", addr, log_hex(MemoryRead32(addr)), disassemble(*parent, addr, nullptr));
+        if (cpu->log_read)
+            LOG_TRACE("Fetch at addr 0x{:X}", addr);
         return MemoryRead32(addr);
     }
 
     uint8_t MemoryRead8(Dynarmic::A32::VAddr addr) override {
         uint8_t ret = *Ptr<uint8_t>(addr).get(*parent->mem);
 
-        if (log_read) {
+        if (cpu->log_read) {
             LOG_TRACE("Read uint8_t at address: 0x{:x}, val = 0x{:x}", addr, ret);
         }
 
@@ -42,7 +40,7 @@ public:
     uint16_t MemoryRead16(Dynarmic::A32::VAddr addr) override {
         uint16_t ret = *Ptr<uint16_t>(addr).get(*parent->mem);
 
-        if (log_read) {
+        if (cpu->log_read) {
             LOG_TRACE("Read uint16_t at address: 0x{:x}, val = 0x{:x}", addr, ret);
         }
 
@@ -52,7 +50,7 @@ public:
     uint32_t MemoryRead32(Dynarmic::A32::VAddr addr) override {
         uint32_t ret = *Ptr<uint32_t>(addr).get(*parent->mem);
 
-        if (log_read) {
+        if (cpu->log_read) {
             LOG_TRACE("Read uint32_t at address: 0x{:x}, val = 0x{:x}", addr, ret);
         }
 
@@ -62,7 +60,7 @@ public:
     uint64_t MemoryRead64(Dynarmic::A32::VAddr addr) override {
         uint64_t ret = *Ptr<uint64_t>(addr).get(*parent->mem);
 
-        if (log_read) {
+        if (cpu->log_read) {
             LOG_TRACE("Read uint64_t at address: 0x{:x}, val = 0x{:x}", addr, ret);
         }
 
@@ -72,7 +70,7 @@ public:
     void MemoryWrite8(Dynarmic::A32::VAddr addr, uint8_t value) override {
         *Ptr<uint8_t>(addr).get(*parent->mem) = value;
 
-        if (log_write) {
+        if (cpu->log_write) {
             LOG_TRACE("Write uint8_t at addr: 0x{:x}, val = 0x{:x}", addr, value);
         }
     }
@@ -80,7 +78,7 @@ public:
     void MemoryWrite16(Dynarmic::A32::VAddr addr, uint16_t value) override {
         *Ptr<uint16_t>(addr).get(*parent->mem) = value;
 
-        if (log_write) {
+        if (cpu->log_write) {
             LOG_TRACE("Write uint16_t at addr: 0x{:x}, val = 0x{:x}", addr, value);
         }
     }
@@ -88,7 +86,7 @@ public:
     void MemoryWrite32(Dynarmic::A32::VAddr addr, uint32_t value) override {
         *Ptr<uint32_t>(addr).get(*parent->mem) = value;
 
-        if (log_write) {
+        if (cpu->log_write) {
             LOG_TRACE("Write uint32_t at addr: 0x{:x}, val = 0x{:x}", addr, value);
         }
     }
@@ -96,7 +94,7 @@ public:
     void MemoryWrite64(Dynarmic::A32::VAddr addr, uint64_t value) override {
         *Ptr<uint64_t>(addr).get(*parent->mem) = value;
 
-        if (log_write) {
+        if (cpu->log_write) {
             LOG_TRACE("Write uint64_t at addr: 0x{:x}, val = 0x{:x}", addr, value);
         }
     }
@@ -109,74 +107,79 @@ public:
         } else {
             addr &= 0xFFFFFFFC;
         }
-        static std::set<uint32_t> logged;
-        static std::mutex mu;
-        mu.lock();
-        if (logged.find(addr) == logged.end()) {
-            LOG_TRACE("Fallback at addr 0x{:X}, inst 0x{:X} ({})", addr, MemoryReadCode(addr), disassemble(*parent, addr, nullptr));
-            logged.insert(addr);
-        }
-        mu.unlock();
         CPUContext context = cpu->save_context();
         cpu->fallback.load_context(context);
         std::uint64_t res = static_cast<std::uint64_t>(cpu->fallback.execute_instructions_no_check(static_cast<int>(num_insts)));
         context = cpu->fallback.save_context();
         cpu->load_context(context);
-
-        interpreted += num_insts;
     }
 
     void ExceptionRaised(uint32_t pc, Dynarmic::A32::Exception exception) override {
         switch (exception) {
-        case Dynarmic::A32::Exception::Breakpoint:
-            return;
+        case Dynarmic::A32::Exception::Breakpoint: {
+            cpu->did_break = true;
+            cpu->jit->HaltExecution();
+            cpu->jit->ClearCache();
+            if (cpu->is_thumb_mode())
+                cpu->set_pc(pc | 1);
+            else
+                cpu->set_pc(pc);
+            break;
+        }
+        case Dynarmic::A32::Exception::WaitForInterrupt: {
+            cpu->halted = true;
+            cpu->jit->HaltExecution();
+            break;
+        }
+        case Dynarmic::A32::Exception::PreloadDataWithIntentToWrite:
+        case Dynarmic::A32::Exception::PreloadData:
+        case Dynarmic::A32::Exception::SendEvent:
+        case Dynarmic::A32::Exception::SendEventLocal:
+        case Dynarmic::A32::Exception::WaitForEvent:
+            break;
         case Dynarmic::A32::Exception::UndefinedInstruction: {
+            LOG_WARN("Undefined instruction at pc = 0x{:x}", pc);
+            LOG_TRACE("at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc), disassemble(*parent, pc, nullptr));
             break;
         }
         default:
             LOG_WARN("Exception Raised at pc = 0x{:x}", pc);
             LOG_TRACE("at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc), disassemble(*parent, pc, nullptr));
-
-            break;
         }
     }
 
     void CallSVC(uint32_t svc) override {
-        if (svc == 0x44) {
-            cpu->stop();
-            return;
+        call_svc(*parent, svc, cpu->get_pc());
+        if (cpu->exit_request) {
+            cpu->jit->HaltExecution();
         }
-        parent->call_svc(*parent, svc, cpu->get_pc());
     }
 
-    void AddTicks(uint64_t ticks) override {
-        interpreted = 0;
-    }
+    void AddTicks(uint64_t ticks) override {}
 
     uint64_t GetTicksRemaining() override {
         return 1ull << 63;
     }
 };
 
-std::unique_ptr<Dynarmic::A32::Jit> make_jit(std::unique_ptr<ArmDynarmicCallback> &callback, MemState *mem) {
+std::unique_ptr<Dynarmic::A32::Jit> make_jit(DynarmicCPU &cpu, std::unique_ptr<ArmDynarmicCallback> &callback, MemState *mem, Dynarmic::ExclusiveMonitor *monitor) {
     Dynarmic::A32::UserConfig config;
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = callback.get();
     config.fastmem_pointer = mem->memory.get();
-
-    if (mem) {
-        config.page_table = mem->pages_cpu.get();
-    }
+    config.hook_hint_instructions = true;
+    config.global_monitor = monitor;
+    config.page_table = mem->pages_cpu.get();
 
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
 
-DynarmicCPU::DynarmicCPU(CPUState *state, Address pc, Address sp, bool log_code)
+DynarmicCPU::DynarmicCPU(CPUState *state, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor)
     : parent(state)
-    , fallback(state, pc, sp, log_code)
+    , fallback(state, pc, sp)
     , cb(std::make_unique<ArmDynarmicCallback>(*state, *this))
     , ep(pc) {
-    jit = make_jit(cb, state->mem);
+    jit = make_jit(*this, cb, state->mem, monitor);
 
     set_pc(pc);
     set_lr(pc);
@@ -188,14 +191,17 @@ DynarmicCPU::DynarmicCPU(CPUState *state, Address pc, Address sp, bool log_code)
 DynarmicCPU::~DynarmicCPU() {
 }
 
-/*! Run the CPU */
 int DynarmicCPU::run() {
+    halted = false;
+    did_break = false;
+    exit_request = false;
     jit->Run();
-    return 0;
+    auto pc = get_pc();
+    return halted;
 }
 
 int DynarmicCPU::step() {
-    cb->InterpreterFallback(get_pc(), 1);
+    jit->Step();
     return 0;
 }
 
@@ -204,10 +210,12 @@ bool DynarmicCPU::is_returning() {
 }
 
 bool DynarmicCPU::hit_breakpoint() {
-    return false;
+    return did_break;
 }
 
 void DynarmicCPU::trigger_breakpoint() {
+    did_break = true;
+    stop();
 }
 
 void DynarmicCPU::set_log_code(bool log) {
@@ -224,28 +232,23 @@ bool DynarmicCPU::get_log_mem() {
     return false;
 }
 
-/*! Stop the CPU */
 void DynarmicCPU::stop() {
-    jit->HaltExecution();
+    exit_request = true;
 }
 
-/*! Get a specific ARM Rx register. Range from r0 to r15 */
 uint32_t DynarmicCPU::get_reg(uint8_t idx) {
     return jit->Regs()[idx];
 }
 
-/*! Get the stack pointer */
 uint32_t DynarmicCPU::get_sp() {
     return jit->Regs()[13];
 }
 
-/*! Get the program counter */
 uint32_t DynarmicCPU::get_pc() {
     auto out = jit->Regs()[15];
     return out;
 }
 
-/*! Set a Rx register */
 void DynarmicCPU::set_reg(uint8_t idx, uint32_t val) {
     jit->Regs()[idx] = val;
 }
@@ -263,7 +266,6 @@ void DynarmicCPU::set_tpidruro(uint32_t val) {
     fallback.set_tpidruro(val);
 }
 
-/*! Set program counter */
 void DynarmicCPU::set_pc(uint32_t val) {
     if (val & 1) {
         set_cpsr(get_cpsr() | 0x20);
@@ -275,12 +277,10 @@ void DynarmicCPU::set_pc(uint32_t val) {
     jit->Regs()[15] = val;
 }
 
-/*! Set LR */
 void DynarmicCPU::set_lr(uint32_t val) {
     jit->Regs()[14] = val;
 }
 
-/*! Set stack pointer */
 void DynarmicCPU::set_sp(uint32_t val) {
     jit->Regs()[13] = val;
 }
@@ -343,4 +343,14 @@ void DynarmicCPU::set_float_reg(uint8_t idx, float val) {
 
 bool DynarmicCPU::is_thumb_mode() {
     return jit->Cpsr() & 0x20;
+}
+
+// TODO: proper abstraction
+ExclusiveMonitorPtr new_exclusive_monitor(int max_num_cores) {
+    return new Dynarmic::ExclusiveMonitor(max_num_cores);
+}
+
+void free_exclusive_monitor(ExclusiveMonitorPtr monitor) {
+    Dynarmic::ExclusiveMonitor *monitor_ = reinterpret_cast<Dynarmic::ExclusiveMonitor *>(monitor);
+    delete monitor_;
 }

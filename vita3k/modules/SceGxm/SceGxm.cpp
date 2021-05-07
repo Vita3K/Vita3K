@@ -1048,8 +1048,7 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
 
     const auto stack_size = SCE_KERNEL_STACK_SIZE_USER_DEFAULT; // TODO: Verify this is the correct stack size
 
-    auto inject = create_cpu_dep_inject(host);
-    host.gxm.display_queue_thread = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, inject, nullptr);
+    host.gxm.display_queue_thread = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, nullptr);
 
     if (host.gxm.display_queue_thread < 0) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);

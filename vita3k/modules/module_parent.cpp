@@ -195,9 +195,8 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
                 LOG_DEBUG("Running module_start of module: {}", module_name);
 
                 Ptr<void> argp = Ptr<void>();
-                auto inject = create_cpu_dep_inject(host);
                 const SceUID module_thread_id = create_thread(lib_entry_point, host.kernel, host.mem, module_name, SCE_KERNEL_DEFAULT_PRIORITY_USER,
-                    static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), inject, nullptr);
+                    static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), nullptr);
                 const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
                 const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp);
 
@@ -220,32 +219,29 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
     return true;
 }
 
-CPUDepInject create_cpu_dep_inject(HostState &host) {
-    const CallImport call_import = [&host](CPUState &cpu, uint32_t nid, SceUID main_thread_id) {
-        ::call_import(host, cpu, nid, main_thread_id);
-    };
-    const ResolveNIDName resolve_nid_name = [&host](Address addr) {
-        return ::resolve_nid_name(host.kernel, addr);
-    };
-    auto get_watch_memory_addr = [&host](Address addr) {
-        return ::get_watch_memory_addr(host.kernel, addr);
-    };
+CPUProtocol::CPUProtocol(HostState &host)
+    : host(&host) {
+}
 
-    CPUDepInject inject;
-    inject.call_import = call_import;
-    inject.resolve_nid_name = resolve_nid_name;
-    inject.trace_stack = host.cfg.stack_traceback;
-    inject.get_watch_memory_addr = get_watch_memory_addr;
-    inject.module_regions = host.kernel.module_regions;
-    const CallSVC call_svc = [inject, &host](CPUState &cpu, uint32_t imm, Address pc) {
-        uint32_t nid;
-        if (is_returning(cpu)) {
-            nid = *Ptr<uint32_t>(pc).get(host.mem);
-        } else {
-            nid = *Ptr<uint32_t>(pc + 4).get(host.mem);
-        }
-        inject.call_import(cpu, nid, get_thread_id(cpu));
-    };
-    inject.call_svc = call_svc;
-    return inject;
+CPUProtocol::~CPUProtocol() {
+}
+
+void CPUProtocol::call_import(CPUState &cpu, uint32_t nid, SceUID thread_id) {
+    ::call_import(*host, cpu, nid, thread_id);
+}
+
+std::string CPUProtocol::resolve_nid_name(Address addr) {
+    return ::resolve_nid_name(host->kernel, addr);
+}
+
+Address CPUProtocol::get_watch_memory_addr(Address addr) {
+    return ::get_watch_memory_addr(host->kernel, addr);
+}
+
+std::vector<ModuleRegion> &CPUProtocol::get_module_regions() {
+    return host->kernel.module_regions;
+}
+
+ExclusiveMonitorPtr CPUProtocol::get_exlusive_monitor() {
+    return host->kernel.exclusive_monitor;
 }

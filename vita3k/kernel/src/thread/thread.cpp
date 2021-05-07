@@ -63,7 +63,7 @@ static int SDLCALL thread_function(void *data) {
     return r0;
 }
 
-SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, CPUDepInject &inject, const SceKernelThreadOptParam *option = nullptr) {
+SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState &mem, const char *name, int init_priority, int stack_size, const SceKernelThreadOptParam *option = nullptr) {
     SceUID thid = kernel.get_next_uid();
 
     const ThreadStatePtr thread = std::make_shared<ThreadState>();
@@ -82,7 +82,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     const Address stack_top = thread->stack.get() + stack_size;
     memset(thread->stack.get_ptr<void>().get(mem), 0xcc, stack_size);
 
-    thread->cpu = init_cpu(CPUBackend::Unicorn, thid, entry_point.address(), stack_top, mem, inject);
+    thread->cpu = init_cpu(kernel.cpu_backend, thid, entry_point.address(), stack_top, mem, kernel.cpu_protocol);
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
