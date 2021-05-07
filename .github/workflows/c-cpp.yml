@@ -121,7 +121,7 @@ jobs:
           tag_name: continous
           release_name: "Automatic CI builds"
           body_mrkdwn: |
-            _Corresponding commit: ${{ github.sha }}_
+            _This is the newest build, but Github date can't be updated. Corresponding commit: ${{ github.sha }}_
           assets: ${{ matrix.os }}.zip
           replace_assets: true
           github_token: ${{ secrets.GITHUB_TOKEN }}
