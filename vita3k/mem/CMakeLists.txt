@@ -1,6 +1,7 @@
 add_library(
 	mem
 	STATIC
+	include/mem/atomic.h
 	include/mem/functions.h
 	include/mem/mempool.h
 	include/mem/block.h
