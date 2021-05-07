@@ -99,6 +99,21 @@ public:
         }
     }
 
+    bool MemoryWriteExclusive8(Dynarmic::A32::VAddr addr, uint8_t value, uint8_t expected) override {
+        return Ptr<uint8_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+    }
+
+    bool MemoryWriteExclusive16(Dynarmic::A32::VAddr addr, uint16_t value, uint16_t expected) override {
+        return Ptr<uint16_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+    }
+
+    bool MemoryWriteExclusive32(Dynarmic::A32::VAddr addr, uint32_t value, uint32_t expected) override {
+        return Ptr<uint32_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+    }
+    bool MemoryWriteExclusive64(Dynarmic::A32::VAddr addr, uint64_t value, uint64_t expected) override {
+        return Ptr<uint64_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+    }
+
     void InterpreterFallback(Dynarmic::A32::VAddr addr, size_t num_insts) {
         const bool thumb = cpu->is_thumb_mode();
 
