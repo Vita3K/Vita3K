@@ -107,6 +107,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
     const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
     const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / title_id };
+    const auto LICENSE_PATH{ fs::path(host.pref_path) / "ux0/license" / title_id };
     const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / title_id };
     const auto SHADER_LOG_PATH{ fs::path(host.base_path) / "shaderlog" / title_id };
 
@@ -162,6 +163,8 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     system((OS_PREFIX + APP_PATH.string()).c_str());
                 if (fs::exists(DLC_PATH) && ImGui::MenuItem("Dlc"))
                     system((OS_PREFIX + DLC_PATH.string()).c_str());
+                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem("License"))
+                    system((OS_PREFIX + LICENSE_PATH.string()).c_str());
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
                     system((OS_PREFIX + SAVE_DATA_PATH.string()).c_str());
                 ImGui::EndMenu();
@@ -173,6 +176,8 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     context_dialog = "app";
                 if (fs::exists(DLC_PATH) && ImGui::MenuItem("DLC"))
                     fs::remove_all(DLC_PATH);
+                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem("License"))
+                    fs::remove_all(LICENSE_PATH);
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
                     context_dialog = "save";
                 if (ImGui::MenuItem("Shader Log")) {

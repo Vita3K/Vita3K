@@ -63,7 +63,7 @@ void draw_license_install_dialog(GuiState &gui, HostState &host) {
             gui.file_menu.license_install_dialog = false;
     } else if (state == "work") {
         nfdresult_t result = NFD_CANCEL;
-        result = NFD_OpenDialog("bin,zif", nullptr, &work_path);
+        result = NFD_OpenDialog("bin,rif", nullptr, &work_path);
         if (result == NFD_OKAY) {
             if (copy_license(host, work_path))
                 state = "success";
