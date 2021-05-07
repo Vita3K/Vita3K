@@ -23,6 +23,7 @@
 #include <gui/imgui_impl_sdl.h>
 #include <host/state.h>
 #include <io/functions.h>
+#include <kernel/functions.h>
 #include <nids/functions.h>
 #include <renderer/functions.h>
 #include <rtc/rtc.h>
@@ -91,7 +92,7 @@ void update_viewport(HostState &state) {
     }
 }
 
-bool init(HostState &state, Config &cfg, const Root &root_paths, CPUDepInject inject) {
+bool init(HostState &state, Config &cfg, const Root &root_paths) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
@@ -161,6 +162,11 @@ bool init(HostState &state, Config &cfg, const Root &root_paths, CPUDepInject in
         return false;
     }
 
+    if (!init(state.kernel, state.mem, cfg.cpu_pool_size, state.cpu_protocol.get(), cfg.dynarmic_cpu ? CPUBackend::Dynarmic : CPUBackend::Unicorn)) {
+        LOG_WARN("Failed to init kernel!");
+        return false;
+    }
+
     if (!init(state.audio, resume_thread)) {
         LOG_WARN("Failed to init audio! Audio will not work.");
     }
@@ -180,14 +186,6 @@ bool init(HostState &state, Config &cfg, const Root &root_paths, CPUDepInject in
         discordrpc::update_presence();
     }
 #endif
-
-    for (int i = 0; i < cfg.cpu_pool_size; ++i) {
-        auto item = init_cpu(CPUBackend::Unicorn, 0, 0, 0, state.mem, inject);
-        state.kernel.cpu_pool.add(std::move(item));
-    }
-
-    state.kernel.start_tick = { rtc_base_ticks() };
-    state.kernel.base_tick = { rtc_base_ticks() };
 
     if (!cfg.console) {
         if (renderer::init(state.window.get(), state.renderer, state.backend_renderer)) {

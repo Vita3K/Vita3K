@@ -46,18 +46,17 @@ SceUID get_thread_id(CPUState &state) {
     return state.thread_id;
 }
 
-CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address sp, MemState &mem, CPUDepInject &inject) {
+CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address sp, MemState &mem, CPUProtocolBase *protocol) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
-    state->call_svc = inject.call_svc;
-    state->resolve_nid_name = inject.resolve_nid_name;
-    state->get_watch_memory_addr = inject.get_watch_memory_addr;
+    state->protocol = protocol;
     state->thread_id = thread_id;
-    state->module_regions = inject.module_regions;
-    Ptr<uint16_t> halt_inst = Ptr<uint16_t>(alloc(mem, 4, "halt_instruction"));
-    *halt_inst.get(mem) = 0xBF00; // NOP
-    *(halt_inst.get(mem) + 1) = 0xBF30; // WFI
-    state->halt_instruction_pc = halt_inst.address() | 1;
+
+    state->halt_instruction = alloc_block(mem, 4, "halt_instruction");
+    const auto halt_ptr = state->halt_instruction.get_ptr<uint16_t>();
+    *halt_ptr.get(mem) = 0xBF00; // NOP
+    *(halt_ptr.get(mem) + 1) = 0xBF30; // WFI
+    state->halt_instruction_pc = state->halt_instruction.get() | 1;
 
     if (!init(state->disasm)) {
         return CPUStatePtr();
@@ -65,11 +64,12 @@ CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address s
 
     switch (backend) {
     case CPUBackend::Dynarmic: {
-        state->cpu = std::make_unique<DynarmicCPU>(state.get(), pc, sp, false);
+        Dynarmic::ExclusiveMonitor *monitor = reinterpret_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exlusive_monitor());
+        state->cpu = std::make_unique<DynarmicCPU>(state.get(), pc, sp, monitor);
         break;
     }
     case CPUBackend::Unicorn: {
-        state->cpu = std::make_unique<UnicornCPU>(state.get(), pc, sp, inject.trace_stack);
+        state->cpu = std::make_unique<UnicornCPU>(state.get(), pc, sp);
         break;
     }
     default:
@@ -81,29 +81,6 @@ CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address s
 
 int run(CPUState &state) {
     return state.cpu->run();
-}
-
-CPUContext run_worker(CPUState &state, CPUBackend backend) {
-    CPUInterfacePtr newcpu;
-    switch (backend) {
-    case CPUBackend::Dynarmic: {
-        newcpu = std::make_unique<DynarmicCPU>(&state, read_pc(state), read_sp(state), false);
-        break;
-    }
-    case CPUBackend::Unicorn: {
-        newcpu = std::make_unique<UnicornCPU>(&state, read_pc(state), read_sp(state), false);
-        break;
-    }
-    }
-    auto original_cpu = std::move(state.cpu);
-    CPUContext context = original_cpu->save_context();
-    newcpu->set_tpidruro(original_cpu->get_tpidruro());
-    newcpu->load_context(context);
-    state.cpu = std::move(newcpu);
-    run(state);
-    auto out = save_context(state);
-    state.cpu = std::move(original_cpu);
-    return out;
 }
 
 int step(CPUState &state) {
@@ -211,7 +188,7 @@ bool is_returning(CPUState &state) {
 }
 
 std::unique_ptr<ModuleRegion> get_region(CPUState &state, Address addr) {
-    for (const auto &region : state.module_regions) {
+    for (const auto &region : state.protocol->get_module_regions()) {
         if (region.start <= addr && addr < region.start + region.size) {
             return std::make_unique<ModuleRegion>(region);
         }
@@ -249,4 +226,14 @@ uint32_t stack_free(CPUState &state, size_t size) {
     const uint32_t new_sp = read_sp(state) + size;
     write_sp(state, new_sp);
     return new_sp;
+}
+
+void call_svc(CPUState &state, uint32_t svc, Address pc) {
+    uint32_t nid;
+    if (is_returning(state)) {
+        nid = *Ptr<uint32_t>(pc).get(*state.mem);
+    } else {
+        nid = *Ptr<uint32_t>(pc + 4).get(*state.mem);
+    }
+    state.protocol->call_import(state, nid, get_thread_id(state));
 }

@@ -40,16 +40,12 @@ struct StackFrame {
     std::string name;
 };
 
-CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address sp, MemState &mem, CPUDepInject &inject);
-// run a guest function
-// if this is called inside interrupt handler
-// it will not modify current cpu state
+CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address sp, MemState &mem, CPUProtocolBase *protocol);
 int run(CPUState &state);
-// run a guest function inside another cpu instance
-// this does not modify the current cpu state
-CPUContext run_worker(CPUState &state, CPUBackend backend, Address pc);
 int step(CPUState &state);
 void stop(CPUState &state);
+void set_thread_id(CPUState &state, SceUID thread_id);
+SceUID get_thread_id(CPUState &state);
 uint32_t read_reg(CPUState &state, size_t index);
 float read_float_reg(CPUState &state, size_t index);
 void write_float_reg(CPUState &state, size_t index, float value);
@@ -74,6 +70,9 @@ void write_cpsr(CPUState &state, uint32_t value);
 uint32_t stack_alloc(CPUState &state, size_t size);
 uint32_t stack_free(CPUState &state, size_t size);
 
+ExclusiveMonitorPtr new_exclusive_monitor(int max_num_cores);
+void free_exclusive_monitor(ExclusiveMonitorPtr monitor);
+
 // Debugging helpers
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size = nullptr);
 std::string disassemble(CPUState &state, uint64_t at, uint16_t *insn_size = nullptr);
@@ -84,7 +83,7 @@ void set_log_mem(CPUState &state, bool log);
 bool get_log_code(CPUState &state);
 bool get_log_mem(CPUState &state);
 bool is_returning(CPUState &cpu);
-void set_thread_id(CPUState &state, SceUID thread_id);
-SceUID get_thread_id(CPUState &state);
-
 std::unique_ptr<ModuleRegion> get_region(CPUState &state, Address addr);
+
+// Private functions
+void call_svc(CPUState &state, uint32_t svc, Address pc);

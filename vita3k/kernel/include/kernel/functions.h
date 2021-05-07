@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cpu/common.h>
 #include <kernel/types.h>
 #include <util/types.h>
 
@@ -34,3 +35,5 @@ void remove_watch_memory_addr(KernelState &state, Address addr);
 Address get_watch_memory_addr(KernelState &state, Address addr);
 
 void update_watches(KernelState &state);
+
+bool init(KernelState &state, MemState &mem, int cpu_pool_size, CPUProtocolBase *cpu_protocol, CPUBackend cpu_backend);

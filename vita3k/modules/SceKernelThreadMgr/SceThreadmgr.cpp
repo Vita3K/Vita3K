@@ -621,8 +621,7 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
 
-    auto inject = create_cpu_dep_inject(host);
-    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, options->stack_size, inject, options->option.get(host.mem));
+    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, options->stack_size, options->option.get(host.mem));
     if (thid < 0)
         return RET_ERROR(thid);
     return thid;

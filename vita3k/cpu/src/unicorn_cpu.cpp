@@ -17,32 +17,6 @@ static inline void func_trace(CPUState &state) {
             LOG_TRACE("Returning, r0: {}", log_hex(read_reg(state, 0)));
 }
 
-void UnicornCPU::stack_trace_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
-    UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
-    auto thumb_mode = state.is_thumb_mode();
-    if (thumb_mode) {
-        uint16_t ins = 0;
-        uc_err err = uc_mem_read(uc, address, &ins, sizeof(ins));
-        assert(err == UC_ERR_OK);
-        if ((ins & 0xff00) == 0xB400 || (ins & 0xff00) == 0xB500 || ins == 0xE92D) {
-            state.stack_frames.push({ static_cast<uint32_t>(address), state.get_sp() });
-        }
-        if ((ins & 0xff00) == 0xBC00 || (ins & 0xff00) == 0xBD00 || ins == 0xE8BD) {
-            state.stack_frames.pop();
-        }
-    } else {
-        uint16_t ins = 0;
-        uc_err err = uc_mem_read(uc, address + 2, &ins, sizeof(ins));
-        assert(err == UC_ERR_OK);
-        if (ins == 0xE92D) {
-            state.stack_frames.push({ static_cast<uint32_t>(address), state.get_sp() });
-        }
-        if (ins == 0xE8BD) {
-            state.stack_frames.pop();
-        }
-    }
-}
-
 void UnicornCPU::code_hook(uc_engine *uc, uint64_t address, uint32_t size, void *user_data) {
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
     std::string disassembly = disassemble(*state.parent, address);
@@ -57,7 +31,7 @@ void UnicornCPU::code_hook(uc_engine *uc, uint64_t address, uint32_t size, void 
         string_utils::replace(disassembly, "sp", fmt::format("sp({})", log_hex(state.get_sp())));
     }
 
-    auto name = state.parent->resolve_nid_name(address);
+    auto name = state.parent->protocol->resolve_nid_name(address);
     if (name != "") {
         LOG_TRACE("{} ({}): {} {} entering export function {}", log_hex((uint64_t)uc), state.parent->thread_id, log_hex(address), disassembly, name);
     } else {
@@ -72,7 +46,7 @@ void UnicornCPU::read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, in
 
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
     MemState &mem = *state.parent->mem;
-    auto start = state.parent->get_watch_memory_addr(address);
+    auto start = state.parent->protocol->get_watch_memory_addr(address);
     if (start) {
         memcpy(&value, Ptr<const void>(static_cast<Address>(address)).get(mem), size);
         state.log_memory_access(uc, "Read", start, size, value, mem, *state.parent, address - start);
@@ -82,7 +56,7 @@ void UnicornCPU::read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, in
 void UnicornCPU::write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
     MemState &mem = *state.parent->mem;
-    auto start = state.parent->get_watch_memory_addr(address);
+    auto start = state.parent->protocol->get_watch_memory_addr(address);
     if (start) {
         MemState &mem = *state.parent->mem;
         state.log_memory_access(uc, "Write", start, size, value, mem, *state.parent, address - start);
@@ -117,15 +91,15 @@ void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
         const uint32_t imm = svc_instruction & 0xffffff;
 
         if (IMPORT_CALL_LOG_LEVEL != LogCallAndReturn) {
-            state.parent->call_svc(*state.parent, imm, pc);
+            call_svc(*state.parent, imm, pc);
         } else if (before_inst != 0xef000053) {
             state.returning = false;
             state.lr_stack.push(state.get_lr());
             state.set_lr(pc);
-            state.parent->call_svc(*state.parent, imm, pc);
+            call_svc(*state.parent, imm, pc);
         } else {
             state.returning = true;
-            state.parent->call_svc(*state.parent, 53, pc);
+            call_svc(*state.parent, 53, pc);
             state.set_pc(state.lr_stack.top());
             state.lr_stack.pop();
         }
@@ -232,7 +206,7 @@ int UnicornCPU::run_after_injected(uint32_t pc, bool thumb_mode) {
     return 0;
 }
 
-UnicornCPU::UnicornCPU(CPUState *state, Address pc, Address sp, bool trace_stack)
+UnicornCPU::UnicornCPU(CPUState *state, Address pc, Address sp)
     : parent(state) {
     uc_engine *temp_uc = nullptr;
     uc_err err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &temp_uc);
@@ -261,11 +235,6 @@ UnicornCPU::UnicornCPU(CPUState *state, Address pc, Address sp, bool trace_stack
     assert(err == UC_ERR_OK);
 
     enable_vfp_fpu(uc.get());
-
-    if (trace_stack) {
-        err = uc_hook_add(uc.get(), &hh, UC_HOOK_CODE, reinterpret_cast<void *>(&stack_trace_hook), this, 1, 0);
-        assert(err == UC_ERR_OK);
-    }
 }
 
 int UnicornCPU::execute_instructions_no_check(int num) {

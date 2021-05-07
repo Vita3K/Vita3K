@@ -1,6 +1,7 @@
 #pragma once
 
 #include <dynarmic/A32/a32.h>
+#include <dynarmic/exclusive_monitor.h>
 
 #include <cpu/functions.h>
 #include <cpu/unicorn_cpu.h>
@@ -22,8 +23,16 @@ class DynarmicCPU : public CPUInterface {
     Address ep;
     Address tpidruro;
 
+    bool exit_request = false;
+    bool halted = false;
+
+    bool did_break = false;
+
+    bool log_read = false;
+    bool log_write = false;
+
 public:
-    DynarmicCPU(CPUState *state, Address pc, Address sp, bool log_code);
+    DynarmicCPU(CPUState *state, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor);
     ~DynarmicCPU();
     int run() override;
     void stop() override;

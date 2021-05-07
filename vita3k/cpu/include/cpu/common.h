@@ -16,11 +16,28 @@ struct CPUContext;
 struct CPUInterface;
 
 typedef std::function<void(CPUState &cpu, uint32_t, Address)> CallSVC;
-typedef std::function<void(CPUState &cpu, uint32_t, SceUID)> CallImport;
-typedef std::function<std::string(Address)> ResolveNIDName;
+
 typedef std::function<Address(Address)> GetWatchMemoryAddr;
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::unique_ptr<CPUInterface> CPUInterfacePtr;
+typedef void *ExclusiveMonitorPtr;
+
+struct ModuleRegion {
+    uint32_t nid;
+    std::string name;
+    Address start;
+    uint32_t size;
+    Address vaddr;
+};
+
+struct CPUProtocolBase {
+    virtual void call_import(CPUState &cpu, uint32_t nid, SceUID thread_id) = 0;
+    virtual std::string resolve_nid_name(Address addr) = 0;
+    virtual Address get_watch_memory_addr(Address addr) = 0;
+    virtual std::vector<ModuleRegion> &get_module_regions() = 0;
+    virtual ExclusiveMonitorPtr get_exlusive_monitor() = 0;
+    virtual ~CPUProtocolBase() {}
+};
 
 struct CPUContext {
     std::array<uint32_t, 16> cpu_registers;
@@ -51,23 +68,6 @@ struct CPUContext {
     void set_pc(uint32_t val) {
         cpu_registers[15] = val;
     }
-};
-
-struct ModuleRegion {
-    uint32_t nid;
-    std::string name;
-    Address start;
-    uint32_t size;
-    Address vaddr;
-};
-
-struct CPUDepInject {
-    CallImport call_import;
-    CallSVC call_svc;
-    ResolveNIDName resolve_nid_name;
-    GetWatchMemoryAddr get_watch_memory_addr;
-    std::vector<ModuleRegion> module_regions;
-    bool trace_stack;
 };
 
 enum class CPUBackend {

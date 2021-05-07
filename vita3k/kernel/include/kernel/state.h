@@ -329,7 +329,10 @@ struct KernelState {
     NotFoundVars not_found_vars;
     WatchMemoryAddrs watch_memory_addrs;
     ModuleRegions module_regions;
+    ExclusiveMonitorPtr exclusive_monitor;
     CPUPool cpu_pool;
+    CPUBackend cpu_backend;
+    CPUProtocolBase *cpu_protocol;
 
     InitialFibers initial_fibers;
     SceRtcTick start_tick;
@@ -339,6 +342,7 @@ struct KernelState {
     PlayerStates players;
     TimerStates timers;
     Ptr<uint32_t> process_param;
+
     bool wait_for_debugger = false;
     bool watch_import_calls = false;
     bool watch_code = false;
