@@ -55,10 +55,16 @@ static int SDLCALL thread_function(void *data) {
     }
     const bool succeeded = run_on_current(*thread, Ptr<void>(thread->entry_point), params.arglen, params.argp);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
+    thread->returned_value = r0;
+    if (thread->to_do == ThreadToDo::exit || thread->to_do == ThreadToDo::exit_delete) {
+        raise_waiting_threads(thread.get());
+        params.kernel->waiting_threads.erase(thread->id);
+    }
+    if (thread->to_do == ThreadToDo::exit_delete) {
+        params.kernel->threads.erase(thread->id);
+    }
 
-    const std::lock_guard<std::mutex> lock(thread->mutex);
-    thread->to_do = ThreadToDo::exit;
-    raise_waiting_threads(thread.get());
+    params.kernel->running_threads.erase(thread->id);
 
     return r0;
 }
@@ -152,19 +158,7 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
     params.arglen = arglen;
     params.argp = argp;
 
-    const std::function<void(SDL_Thread *)> delete_thread = [thread](SDL_Thread *running_thread) {
-        {
-            const std::unique_lock<std::mutex> lock(thread->mutex);
-            thread->to_do = ThreadToDo::exit;
-        }
-        thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
-
-        raise_waiting_threads(thread.get());
-
-        SDL_WaitThread(running_thread, &thread->returned_value);
-    };
-
-    const ThreadPtr running_thread(SDL_CreateThread(&thread_function, waiting->second.name.c_str(), &params), delete_thread);
+    const ThreadPtr running_thread(SDL_CreateThread(&thread_function, waiting->second.name.c_str(), &params), [thread](SDL_Thread *running_thread) {});
     if (!running_thread) {
         return SCE_KERNEL_ERROR_THREAD_ERROR;
     }
@@ -204,6 +198,7 @@ static bool run_thread(ThreadState &thread) {
     std::unique_lock<std::mutex> lock(thread.mutex);
     while (true) {
         switch (thread.to_do) {
+        case ThreadToDo::exit_delete:
         case ThreadToDo::exit:
             return true;
         case ThreadToDo::run:
@@ -215,6 +210,9 @@ static bool run_thread(ThreadState &thread) {
 
             } else
                 res = run(*thread.cpu);
+
+            if (thread.to_do == ThreadToDo::exit || thread.to_do == ThreadToDo::exit_delete)
+                return true;
 
             if (res < 0) {
                 LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
@@ -290,4 +288,51 @@ uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, 
     load_context(*thread.cpu, ctx);
     write_tpidruro(*thread.cpu, tpidruro);
     return out;
+}
+
+void exit_thread(ThreadState &thread) {
+    const auto last_to_do = thread.to_do;
+    thread.to_do = ThreadToDo::exit;
+    if (last_to_do == ThreadToDo::wait) {
+        std::lock_guard<std::mutex> lock(thread.mutex);
+        thread.something_to_do.notify_one();
+    } else if (last_to_do == ThreadToDo::run) {
+        stop(*thread.cpu);
+    }
+}
+
+void exit_and_delete_thread(ThreadState &thread) {
+    const auto last_to_do = thread.to_do;
+    thread.to_do = ThreadToDo::exit_delete;
+    if (last_to_do == ThreadToDo::wait) {
+        std::lock_guard<std::mutex> lock(thread.mutex);
+        thread.something_to_do.notify_one();
+    } else if (last_to_do == ThreadToDo::run) {
+        stop(*thread.cpu);
+    }
+}
+
+void delete_thread(KernelState &kernel, ThreadState &thread) {
+    kernel.waiting_threads.erase(thread.id);
+    kernel.threads.erase(thread.id);
+}
+
+int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
+    const std::lock_guard<std::mutex> waiter_lock(waiter->mutex);
+
+    {
+        const std::lock_guard<std::mutex> thread_lock(target->mutex);
+
+        if (target->to_do == ThreadToDo::exit) {
+            if (stat != nullptr) {
+                *stat = target->returned_value;
+            }
+            return SCE_KERNEL_OK;
+        }
+
+        target->waiting_threads.push_back(waiter);
+    }
+    waiter->to_do = ThreadToDo::wait;
+    stop(*waiter->cpu);
+    return SCE_KERNEL_OK;
 }

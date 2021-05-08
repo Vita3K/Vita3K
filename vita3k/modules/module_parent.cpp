@@ -199,13 +199,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
                     static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_DEFAULT), nullptr);
                 const ThreadStatePtr module_thread = util::find(module_thread_id, host.kernel.threads);
                 const auto ret = run_on_current(*module_thread, lib_entry_point, 0, argp);
-
-                module_thread->to_do = ThreadToDo::exit;
-                module_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
-
-                const std::lock_guard<std::mutex> lock(host.kernel.mutex);
-                host.kernel.running_threads.erase(module_thread_id);
-                host.kernel.threads.erase(module_thread_id);
+                delete_thread(host.kernel, *module_thread);
                 LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
             }
 

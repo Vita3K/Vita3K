@@ -492,42 +492,16 @@ EXPORT(int, _sceKernelWaitSignalCB) {
     return UNIMPLEMENTED();
 }
 
-int wait_thread_end(HostState &host, SceUID thread_id, SceUID thid, int *stat) {
-    const ThreadStatePtr current_thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-
-    const std::lock_guard<std::mutex> current_thread_lock(current_thread->mutex);
-
-    {
-        const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
-        if (!thread) {
-            return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
-        }
-
-        const std::lock_guard<std::mutex> thread_lock(thread->mutex);
-
-        if (thread->to_do == ThreadToDo::exit) {
-            if (stat != nullptr) {
-                *stat = thread->returned_value;
-            }
-            return SCE_KERNEL_OK;
-        }
-
-        thread->waiting_threads.push_back(current_thread);
-    }
-
-    assert(current_thread->to_do == ThreadToDo::run);
-    current_thread->to_do = ThreadToDo::wait;
-    stop(*current_thread->cpu);
-
-    return SCE_KERNEL_OK;
-}
-
 EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
-    return wait_thread_end(host, thread_id, thid, stat);
+    auto waiter = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    auto target = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+    return wait_thread_end(waiter, target, stat);
 }
 
 EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout) {
-    return wait_thread_end(host, thread_id, thid, stat);
+    auto waiter = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    auto target = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+    return wait_thread_end(waiter, target, stat);
 }
 
 EXPORT(int, sceKernelCancelCallback) {
@@ -689,12 +663,7 @@ EXPORT(int, sceKernelDeleteSimpleEvent) {
 
 EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
-
-    // TODO: This causes a deadlock
-    //const std::lock_guard<std::mutex> lock2(host.kernel.mutex);
-    host.kernel.running_threads.erase(thid);
-    host.kernel.waiting_threads.erase(thid);
-    host.kernel.threads.erase(thid);
+    delete_thread(host.kernel, *thread);
     return 0;
 }
 
@@ -708,27 +677,7 @@ EXPORT(int, sceKernelExitDeleteThread, int status) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     std::unique_lock<std::mutex> thread_lock(thread->mutex);
 
-    thread->to_do = ThreadToDo::exit;
-    stop(*thread->cpu);
-    thread->something_to_do.notify_all();
-
-    for (auto t : thread->waiting_threads) {
-        const std::lock_guard<std::mutex> lock(t->mutex);
-        assert(t->to_do == ThreadToDo::wait);
-        t->to_do = ThreadToDo::run;
-        t->something_to_do.notify_one();
-    }
-
-    thread->waiting_threads.clear();
-
-    // need to unlock thread->mutex because thread destructor (delete_thread) will get called, and it locks that mutex
-    thread_lock.unlock();
-
-    // TODO: This causes a deadlock
-    //const std::lock_guard<std::mutex> lock2(host.kernel.mutex);
-    host.kernel.running_threads.erase(thread_id);
-    host.kernel.waiting_threads.erase(thread_id);
-    host.kernel.threads.erase(thread_id);
+    exit_and_delete_thread(*thread);
 
     return status;
 }

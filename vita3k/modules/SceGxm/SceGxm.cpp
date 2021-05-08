@@ -1054,16 +1054,6 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
 
-    const ThreadStatePtr display_thread = util::find(host.gxm.display_queue_thread, host.kernel.threads);
-
-    const std::function<void(SDL_Thread *)> delete_thread = [display_thread](SDL_Thread *running_thread) {
-        {
-            const std::lock_guard<std::mutex> lock(display_thread->mutex);
-            display_thread->to_do = ThreadToDo::exit;
-        }
-        display_thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
-    };
-
     GxmThreadParams gxm_params;
     gxm_params.mem = &host.mem;
     gxm_params.kernel = &host.kernel;
@@ -1071,7 +1061,7 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     gxm_params.gxm = &host.gxm;
     gxm_params.renderer = host.renderer.get();
 
-    const ThreadPtr running_thread(SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params), delete_thread);
+    const ThreadPtr running_thread(SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params), [](SDL_Thread *running_thread) {});
     SDL_SemWait(gxm_params.host_may_destroy_params.get());
     host.kernel.running_threads.emplace(host.gxm.display_queue_thread, running_thread);
     host.gxm.notification_region = Ptr<uint32_t>(alloc(host.mem, MB(1), "SceGxmNotificationRegion"));
@@ -2452,29 +2442,7 @@ EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
 
 EXPORT(int, sceGxmTerminate) {
     const ThreadStatePtr thread = lock_and_find(host.gxm.display_queue_thread, host.kernel.threads, host.kernel.mutex);
-    std::unique_lock<std::mutex> thread_lock(thread->mutex);
-
-    thread->to_do = ThreadToDo::exit;
-    stop(*thread->cpu);
-    thread->something_to_do.notify_all();
-
-    for (auto t : thread->waiting_threads) {
-        const std::lock_guard<std::mutex> lock(t->mutex);
-        assert(t->to_do == ThreadToDo::wait);
-        t->to_do = ThreadToDo::run;
-        t->something_to_do.notify_one();
-    }
-
-    thread->waiting_threads.clear();
-
-    // need to unlock thread->mutex because thread destructor (delete_thread) will get called, and it locks that mutex
-    thread_lock.unlock();
-
-    // TODO: This causes a deadlock
-    //const std::lock_guard<std::mutex> lock2(host.kernel.mutex);
-    host.kernel.running_threads.erase(host.gxm.display_queue_thread);
-    host.kernel.waiting_threads.erase(host.gxm.display_queue_thread);
-    host.kernel.threads.erase(host.gxm.display_queue_thread);
+    exit_and_delete_thread(*thread);
     return 0;
 }
 

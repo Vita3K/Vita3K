@@ -17,6 +17,7 @@
 
 #include <kernel/functions.h>
 #include <kernel/state.h>
+#include <kernel/thread/thread_functions.h>
 #include <kernel/thread/thread_state.h>
 
 #include <cpu/functions.h>
@@ -58,12 +59,7 @@ Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID th
 void stop_all_threads(KernelState &kernel) {
     const std::lock_guard<std::mutex> lock(kernel.mutex);
     for (ThreadStatePtrs::iterator thread = kernel.threads.begin(); thread != kernel.threads.end(); ++thread) {
-        {
-            const std::lock_guard<std::mutex> lock2(thread->second->mutex);
-            thread->second->to_do = ThreadToDo::exit;
-        }
-        thread->second->something_to_do.notify_all();
-        stop(*thread->second->cpu);
+        exit_thread(*thread->second);
     }
 }
 
