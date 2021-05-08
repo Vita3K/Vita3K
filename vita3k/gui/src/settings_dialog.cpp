@@ -214,7 +214,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
 
 void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.48f));
     const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
     ImGui::Begin(is_custom_config ? ("Custom settings for " + host.app_path).c_str() : "Settings", is_custom_config ? &gui.configuration_menu.custom_settings_dialog : &gui.configuration_menu.settings_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::BeginTabBar("SettingsTabBar", ImGuiTabBarFlags_None);
@@ -226,21 +226,34 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         auto &auto_lle = is_custom_config ? custom_config.auto_lle : host.cfg.auto_lle;
         auto &lle_modules = is_custom_config ? custom_config.lle_modules : host.cfg.lle_modules;
         ImGui::PopStyleColor();
+        ImGui::Spacing();
+        if (!is_custom_config) {
+            static const char *LIST_CPU_BACKEND[] = { "Unicorn", "Dynarmic" };
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Cpu Backend");
+            if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&host.kernel.cpu_backend), LIST_CPU_BACKEND, IM_ARRAYSIZE(LIST_CPU_BACKEND)))
+                host.cfg.cpu_backend = LIST_CPU_BACKEND[int(host.kernel.cpu_backend)];
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Select your preferred cpu backend. (Save and Reboot to apply)");
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+        }
         if (!gui.modules.empty()) {
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Module Mode");
             ImGui::Spacing();
             ImGui::Checkbox("Experimental: LLE libkernel & driver_us", &lle_kernel);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Enable this for using libkernel and driver_us module (experimental).");
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Module Mode");
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select Automatic or Manual mode for load modules list.");
-            ImGui::Spacing();
             if (ImGui::RadioButton("Automatic", auto_lle))
                 auto_lle = true;
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Select Automatic mode for using modules list pre-set.");
             ImGui::SameLine();
             if (ImGui::RadioButton("Manual", !auto_lle))
                 auto_lle = false;
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Select Manual mode for load custom modules list.");
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -249,7 +262,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                 ImGui::SetTooltip("Select your desired modules.");
             ImGui::Spacing();
             ImGui::PushItemWidth(240 * host.dpi_scale);
-            if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules.size()), 8)) {
+            if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules.size()), 6)) {
                 for (auto &m : gui.modules) {
                     const auto module = std::find(lle_modules.begin(), lle_modules.end(), m.first);
                     const bool module_existed = (module != lle_modules.end());
@@ -565,12 +578,15 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Separator();
         ImGui::Spacing();
         static const auto BUTTON_SIZE = ImVec2(60.f * host.dpi_scale, 0.f);
-        ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * host.dpi_scale));
-        if (ImGui::Button("Apply", BUTTON_SIZE))
-            set_config(gui, host, host.app_path);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Click on Apply if you want change setting with app current running.");
-        ImGui::SameLine(0, 20.f * host.dpi_scale);
+        if (!host.io.title_id.empty()) {
+            ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * host.dpi_scale));
+            if (ImGui::Button("Apply", BUTTON_SIZE))
+                set_config(gui, host, host.app_path);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Click on Apply if you want change setting with app current running.");
+            ImGui::SameLine(0, 20.f * host.dpi_scale);
+        } else
+            ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
         if (ImGui::Button("Save", BUTTON_SIZE)) {
             if (!is_custom_config)
                 config::serialize_config(host.cfg, host.cfg.config_path);
