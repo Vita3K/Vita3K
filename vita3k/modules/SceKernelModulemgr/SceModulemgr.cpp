@@ -114,10 +114,7 @@ EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize ar
     if (pRes)
         *pRes = result;
 
-    thread->to_do = ThreadToDo::exit;
-    thread->something_to_do.notify_all(); // TODO Should this be notify_one()?
-    host.kernel.running_threads.erase(thid);
-    host.kernel.threads.erase(thid);
+    delete_thread(host.kernel, *thread);
 
     return mod_id;
 }
