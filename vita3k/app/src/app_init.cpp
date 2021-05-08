@@ -117,6 +117,8 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         state.pref_path = string_utils::utf_to_wide(state.cfg.pref_path);
     }
 
+    state.kernel.cpu_backend = state.cfg.cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
+
 #ifdef USE_VULKAN
     if (string_utils::toupper(state.cfg.backend_renderer) == "VULKAN")
         state.backend_renderer = renderer::Backend::Vulkan;
@@ -162,7 +164,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         return false;
     }
 
-    if (!init(state.kernel, state.mem, cfg.cpu_pool_size, state.cpu_protocol.get(), cfg.dynarmic_cpu ? CPUBackend::Dynarmic : CPUBackend::Unicorn)) {
+    if (!init(state.kernel, state.mem, cfg.cpu_pool_size, state.cpu_protocol.get(), state.kernel.cpu_backend)) {
         LOG_WARN("Failed to init kernel!");
         return false;
     }

@@ -48,7 +48,7 @@
     code(int, "delay-start", 10, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
     code(int, "log-level", static_cast<int>(spdlog::level::trace), log_level)                           \
-    code(bool, "dynarmic-cpu", false, dynarmic_cpu)                                                     \
+    code(std::string, "cpu-backend", "Unicorn", cpu_backend)                                            \
     code(std::string, "pref-path", std::string{}, pref_path)                                            \
     code(std::string, "last-app", std::string{}, last_app)                                              \
     code(bool, "discord-rich-presence", true, discord_rich_presence)                                    \
