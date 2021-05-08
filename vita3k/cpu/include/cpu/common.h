@@ -31,8 +31,7 @@ struct ModuleRegion {
 };
 
 struct CPUProtocolBase {
-    virtual void call_import(CPUState &cpu, uint32_t nid, SceUID thread_id) = 0;
-    virtual std::string resolve_nid_name(Address addr) = 0;
+    virtual void call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) = 0;
     virtual Address get_watch_memory_addr(Address addr) = 0;
     virtual std::vector<ModuleRegion> &get_module_regions() = 0;
     virtual ExclusiveMonitorPtr get_exlusive_monitor() = 0;

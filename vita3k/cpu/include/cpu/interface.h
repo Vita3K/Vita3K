@@ -40,7 +40,6 @@ struct CPUInterface {
     virtual bool is_thumb_mode() = 0;
     virtual int step() = 0;
 
-    virtual bool is_returning() = 0;
     virtual bool hit_breakpoint() = 0;
     virtual void trigger_breakpoint() = 0;
     virtual void set_log_code(bool log) = 0;

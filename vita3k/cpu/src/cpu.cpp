@@ -183,10 +183,6 @@ bool get_log_mem(CPUState &state) {
     return state.cpu->get_log_mem();
 }
 
-bool is_returning(CPUState &state) {
-    return state.cpu->is_returning();
-}
-
 std::unique_ptr<ModuleRegion> get_region(CPUState &state, Address addr) {
     for (const auto &region : state.protocol->get_module_regions()) {
         if (region.start <= addr && addr < region.start + region.size) {
@@ -226,14 +222,4 @@ uint32_t stack_free(CPUState &state, size_t size) {
     const uint32_t new_sp = read_sp(state) + size;
     write_sp(state, new_sp);
     return new_sp;
-}
-
-void call_svc(CPUState &state, uint32_t svc, Address pc) {
-    uint32_t nid;
-    if (is_returning(state)) {
-        nid = *Ptr<uint32_t>(pc).get(*state.mem);
-    } else {
-        nid = *Ptr<uint32_t>(pc + 4).get(*state.mem);
-    }
-    state.protocol->call_import(state, nid, get_thread_id(state));
 }

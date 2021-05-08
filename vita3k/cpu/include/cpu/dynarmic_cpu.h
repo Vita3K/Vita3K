@@ -67,7 +67,6 @@ public:
     bool is_thumb_mode() override;
     int step() override;
 
-    bool is_returning() override;
     bool hit_breakpoint() override;
     void trigger_breakpoint() override;
     void set_log_code(bool log) override;
