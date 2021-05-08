@@ -76,8 +76,14 @@ std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const 
 
 void update_apps_list_opened(GuiState &gui, const std::string &app_path) {
     if (get_app_open_list_index(gui, app_path) == gui.apps_list_opened.end())
-        gui.apps_list_opened.push_back(app_path);
+        gui.apps_list_opened.insert(gui.apps_list_opened.begin(), app_path);
     gui.current_app_selected = int32_t(std::distance(gui.apps_list_opened.begin(), get_app_open_list_index(gui, app_path)));
+    if (gui.apps_list_opened.size() > 6) {
+        const auto last_app = gui.apps_list_opened.back();
+        gui.live_area_contents.erase(last_app);
+        gui.live_items.erase(last_app);
+        gui.apps_list_opened.erase(get_app_open_list_index(gui, last_app));
+    }
 }
 
 static std::map<std::string, uint64_t> last_time;
