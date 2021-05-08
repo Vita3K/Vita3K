@@ -988,7 +988,9 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
 
     spv::Id type_f32 = b.makeFloatType(32);
 
-    if (dest.type == DataType::UINT32 || dest.type == DataType::INT32) {
+    // FPINTERNAL bank can't pack, always store 32-bit. So bitcast
+    if (((dest.bank == RegisterBank::FPINTERNAL) && is_integer_data_type(dest.type))
+        || ((dest.bank != RegisterBank::FPINTERNAL) && ((dest.type == DataType::UINT32) || (dest.type == DataType::INT32)))) {
         std::vector<spv::Id> ops{ source };
         spv::Id bitcast_type = utils::make_vector_or_scalar_type(b, type_f32, total_comp_source);
 
