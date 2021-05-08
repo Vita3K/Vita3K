@@ -349,11 +349,11 @@ uint32_t DynarmicCPU::get_lr() {
 }
 
 float DynarmicCPU::get_float_reg(uint8_t idx) {
-    return static_cast<float>(jit->ExtRegs()[idx]);
+    return reinterpret_cast<float &>(jit->ExtRegs()[idx]);
 }
 
 void DynarmicCPU::set_float_reg(uint8_t idx, float val) {
-    jit->ExtRegs()[idx] = val;
+    jit->ExtRegs()[idx] = reinterpret_cast<uint32_t &>(val);
 }
 
 bool DynarmicCPU::is_thumb_mode() {
