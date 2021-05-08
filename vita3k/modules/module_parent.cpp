@@ -123,8 +123,6 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
 
     if (!export_pc) {
         // HLE - call our C++ function
-        if (is_returning(cpu))
-            return;
         if (host.kernel.watch_import_calls) {
             const std::unordered_set<uint32_t> hle_nid_blacklist = {
                 0xB295EB61, // sceKernelGetTLSAddr
@@ -154,10 +152,11 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
 
         // LLE - directly run ARM code imported from some loaded module
-        if (is_returning(cpu)) {
+        // TODO: resurrect this
+        /*if (is_returning(cpu)) {
             LOG_TRACE("[LLE] TID: {:<3} FUNC: {} returned {}", thread_id, import_name(nid), log_hex(read_reg(cpu, 0)));
             return;
-        }
+        }*/
 
         const std::unordered_set<uint32_t> lle_nid_blacklist = {};
         log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
@@ -220,12 +219,9 @@ CPUProtocol::CPUProtocol(HostState &host)
 CPUProtocol::~CPUProtocol() {
 }
 
-void CPUProtocol::call_import(CPUState &cpu, uint32_t nid, SceUID thread_id) {
+void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) {
+    uint32_t nid = *Ptr<uint32_t>(pc + 4).get(host->mem);
     ::call_import(*host, cpu, nid, thread_id);
-}
-
-std::string CPUProtocol::resolve_nid_name(Address addr) {
-    return ::resolve_nid_name(host->kernel, addr);
 }
 
 Address CPUProtocol::get_watch_memory_addr(Address addr) {

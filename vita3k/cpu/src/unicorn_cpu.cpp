@@ -31,12 +31,7 @@ void UnicornCPU::code_hook(uc_engine *uc, uint64_t address, uint32_t size, void 
         string_utils::replace(disassembly, "sp", fmt::format("sp({})", log_hex(state.get_sp())));
     }
 
-    auto name = state.parent->protocol->resolve_nid_name(address);
-    if (name != "") {
-        LOG_TRACE("{} ({}): {} {} entering export function {}", log_hex((uint64_t)uc), state.parent->thread_id, log_hex(address), disassembly, name);
-    } else {
-        LOG_TRACE("{} ({}): {} {}", log_hex((uint64_t)uc), state.parent->thread_id, log_hex(address), disassembly);
-    }
+    LOG_TRACE("{} ({}): {} {}", log_hex((uint64_t)uc), state.parent->thread_id, log_hex(address), disassembly);
 
     func_trace(*state.parent);
 }
@@ -79,30 +74,12 @@ void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
     state.is_inside_intr_hook = true;
     if (intno == INT_SVC) {
         assert(!state.is_thumb_mode());
-        uint32_t before_inst = 0;
-        const Address before_addr = pc - 8;
-        uc_err err = uc_mem_read(uc, before_addr, &before_inst, sizeof(before_inst));
-        assert(err == UC_ERR_OK);
-
         const Address svc_address = pc - 4;
         uint32_t svc_instruction = 0;
-        err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
+        const auto err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
         assert(err == UC_ERR_OK);
         const uint32_t imm = svc_instruction & 0xffffff;
-
-        if (IMPORT_CALL_LOG_LEVEL != LogCallAndReturn) {
-            call_svc(*state.parent, imm, pc);
-        } else if (before_inst != 0xef000053) {
-            state.returning = false;
-            state.lr_stack.push(state.get_lr());
-            state.set_lr(pc);
-            call_svc(*state.parent, imm, pc);
-        } else {
-            state.returning = true;
-            call_svc(*state.parent, 53, pc);
-            state.set_pc(state.lr_stack.top());
-            state.lr_stack.pop();
-        }
+        state.parent->protocol->call_svc(*state.parent, imm, pc, get_thread_id(*state.parent));
     } else if (intno == INT_BKPT) {
         auto &bks = state.parent->mem->breakpoints;
         if (bks.find(pc) != bks.end()) {
@@ -137,26 +114,6 @@ static void enable_vfp_fpu(uc_engine *uc) {
     assert(err == UC_ERR_OK);
 }
 
-void UnicornCPU::log_stack_frames() {
-    auto sfs = stack_frames;
-    LOG_INFO("stack information");
-    int i = 0;
-    while (!sfs.empty() && i < 50) {
-        i++;
-        auto sf = sfs.top();
-        sfs.pop();
-
-        auto region = get_region(*this->parent, sf.addr);
-        assert(region);
-        auto vaddr = sf.addr - region->start + region->vaddr;
-        LOG_INFO("---------");
-        LOG_INFO("module: {}", region->name);
-        LOG_INFO("vaddr: {}", log_hex(vaddr));
-        LOG_INFO("addr: {}", log_hex(sf.addr));
-        LOG_INFO("fp: {}", sf.sp);
-    }
-}
-
 void UnicornCPU::log_error_details(uc_err code) {
     // I don't especially want the time logged for every line, but I also want it to print to the log file...
     LOG_ERROR("Unicorn error {}. {}", log_hex(code), uc_strerror(code));
@@ -174,7 +131,6 @@ void UnicornCPU::log_error_details(uc_err code) {
     }
     LOG_ERROR("r12: 0x{:0>8x}", registers[12]);
     LOG_ERROR("Executing: {}", disassemble(*this->parent, pc));
-    log_stack_frames();
 }
 
 int UnicornCPU::run_after_injected(uint32_t pc, bool thumb_mode) {
@@ -471,10 +427,6 @@ void UnicornCPU::load_context(CPUContext ctx) {
     set_sp(ctx.cpu_registers[13]);
     set_lr(ctx.cpu_registers[14]);
     set_pc(ctx.cpu_registers[15]);
-}
-
-bool UnicornCPU::is_returning() {
-    return returning;
 }
 
 bool UnicornCPU::hit_breakpoint() {

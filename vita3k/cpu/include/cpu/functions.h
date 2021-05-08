@@ -26,20 +26,6 @@
 #include <functional>
 #include <stack>
 
-enum ImportCallLogLevel {
-    None,
-    LogCall,
-    LogCallAndReturn
-};
-
-constexpr ImportCallLogLevel IMPORT_CALL_LOG_LEVEL = None;
-
-struct StackFrame {
-    uint32_t addr;
-    uint32_t sp;
-    std::string name;
-};
-
 CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address sp, MemState &mem, CPUProtocolBase *protocol);
 int run(CPUState &state);
 int step(CPUState &state);
@@ -82,8 +68,4 @@ void set_log_code(CPUState &state, bool log);
 void set_log_mem(CPUState &state, bool log);
 bool get_log_code(CPUState &state);
 bool get_log_mem(CPUState &state);
-bool is_returning(CPUState &cpu);
 std::unique_ptr<ModuleRegion> get_region(CPUState &state, Address addr);
-
-// Private functions
-void call_svc(CPUState &state, uint32_t svc, Address pc);

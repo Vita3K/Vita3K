@@ -27,8 +27,6 @@ class UnicornCPU : public CPUInterface {
 
     bool is_inside_intr_hook = false;
 
-    std::stack<StackFrame> stack_frames;
-
     std::stack<Address> lr_stack;
 
     bool returning = false;
@@ -43,7 +41,6 @@ class UnicornCPU : public CPUInterface {
     static void write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data);
     void log_memory_access(uc_engine *uc, const char *type, Address address, int size, int64_t value, MemState &mem, CPUState &cpu, Address offset);
     int run_after_injected(uint32_t pc, bool thumb_mode);
-    void log_stack_frames();
 
 public:
     UnicornCPU(CPUState *cpu, Address pc, Address sp);
@@ -84,7 +81,6 @@ public:
     CPUContext save_context() override;
     void load_context(CPUContext context) override;
 
-    bool is_returning() override;
     bool hit_breakpoint() override;
     void trigger_breakpoint() override;
     void set_log_code(bool log) override;

@@ -164,7 +164,7 @@ public:
     }
 
     void CallSVC(uint32_t svc) override {
-        call_svc(*parent, svc, cpu->get_pc());
+        parent->protocol->call_svc(*parent, svc, cpu->get_pc(), get_thread_id(*parent));
         if (cpu->exit_request) {
             cpu->jit->HaltExecution();
         }
@@ -218,10 +218,6 @@ int DynarmicCPU::run() {
 int DynarmicCPU::step() {
     jit->Step();
     return 0;
-}
-
-bool DynarmicCPU::is_returning() {
-    return false;
 }
 
 bool DynarmicCPU::hit_breakpoint() {
