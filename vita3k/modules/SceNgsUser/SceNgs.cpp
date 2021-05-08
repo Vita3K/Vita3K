@@ -119,17 +119,22 @@ EXPORT(int, sceNgsPatchCreateRouting, ngs::PatchSetupInfo *patch_info, SceNgsPat
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsPatchGetInfo, SceNgsPatchHandle patch_handle, SceNgsPatchAudioPropInfo *prop_info, SceNgsPatchDeliveryInfo *deli_info) {
+EXPORT(SceInt32, sceNgsPatchGetInfo, SceNgsPatchHandle patch_handle, SceNgsPatchAudioPropInfo *prop_info, SceNgsPatchDeliveryInfo *deli_info) {
+    // Always stereo
+    if (prop_info) {
+        prop_info->in_channels = 2;
+        prop_info->out_channels = 2;
+    }
+
+    if (host.cfg.current_config.disable_ngs)
+        return SCE_NGS_OK;
+
     ngs::Patch *patch = patch_handle.get(host.mem);
     if (!patch) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    // Always stereo
     if (prop_info) {
-        prop_info->in_channels = 2;
-        prop_info->out_channels = 2;
-
         prop_info->volume_matrix.matrix[0][0] = patch->volume_matrix[0][0];
         prop_info->volume_matrix.matrix[0][1] = patch->volume_matrix[0][1];
         prop_info->volume_matrix.matrix[1][0] = patch->volume_matrix[1][0];
@@ -144,7 +149,7 @@ EXPORT(int, sceNgsPatchGetInfo, SceNgsPatchHandle patch_handle, SceNgsPatchAudio
         deli_info->dest_voice_handle = Ptr<ngs::Voice>(patch->dest, host.mem);
     }
 
-    return 0;
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsPatchRemoveRouting, SceNgsPatchHandle patch_handle) {
