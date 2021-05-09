@@ -84,7 +84,7 @@ add_subdirectory(touch)
 add_subdirectory(util)
 add_subdirectory(gdbstub)
 
-add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
+add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp cpu_protocol.h cpu_protocol.cpp)
 
 target_link_libraries(vita3k PRIVATE app gui modules)
 if(USE_DISCORD_RICH_PRESENCE)

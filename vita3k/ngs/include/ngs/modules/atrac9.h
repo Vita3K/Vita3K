@@ -1,8 +1,7 @@
 #pragma once
 
-#include <ngs/system.h>
-
 #include <codec/state.h>
+#include <ngs/system.h>
 
 namespace ngs::atrac9 {
 enum {

@@ -19,6 +19,13 @@
 
 #include <codec/state.h>
 
+typedef std::shared_ptr<DecoderState> DecoderPtr;
+
+struct MJpegState {
+    bool initialized = false;
+    DecoderPtr decoder;
+};
+
 struct SceJpegMJpegInitInfo {
     uint32_t size;
     int32_t decoder_count;
@@ -54,13 +61,12 @@ EXPORT(int, sceJpegDecodeMJpeg) {
 
 EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *jpeg_data, uint32_t jpeg_size,
     uint8_t *output, uint32_t output_size, int mode, void *buffer, uint32_t buffer_size) {
-    if (!host.kernel.mjpeg_state)
-        return -1;
+    const auto state = host.kernel.obj_store.get<MJpegState>();
 
     DecoderSize size = {};
 
-    host.kernel.mjpeg_state->send(jpeg_data, jpeg_size);
-    host.kernel.mjpeg_state->receive(output, &size);
+    state->decoder->send(jpeg_data, jpeg_size);
+    state->decoder->receive(output, &size);
 
     // Top 16 bits = width, bottom 16 bits = height.
     return (size.width << 16u) | size.height;
@@ -71,20 +77,19 @@ EXPORT(int, sceJpegDeleteSplitDecoder) {
 }
 
 EXPORT(int, sceJpegFinishMJpeg) {
-    host.kernel.mjpeg_state.reset();
+    host.kernel.obj_store.erase<MJpegState>();
 
     return 0;
 }
 
 EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
     int32_t format, int32_t mode, SceJpegOutputInfo *output) {
-    if (!host.kernel.mjpeg_state)
-        return -1;
+    const auto state = host.kernel.obj_store.get<MJpegState>();
 
     DecoderSize size = {};
 
-    host.kernel.mjpeg_state->send(jpeg_data, jpeg_size);
-    host.kernel.mjpeg_state->receive(nullptr, &size);
+    state->decoder->send(jpeg_data, jpeg_size);
+    state->decoder->receive(nullptr, &size);
 
     output->width = size.width;
     output->height = size.height;
@@ -96,13 +101,17 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
 
 // TODO: Decoder options are ignored for the time being.
 EXPORT(int, sceJpegInitMJpeg, int32_t decoder_count) {
-    host.kernel.mjpeg_state = std::make_shared<MjpegDecoderState>();
+    host.kernel.obj_store.create<MJpegState>();
+    const auto state = host.kernel.obj_store.get<MJpegState>();
+    state->decoder = std::make_shared<MjpegDecoderState>();
 
     return 0;
 }
 
 EXPORT(int, sceJpegInitMJpegWithParam, const SceJpegMJpegInitInfo *info) {
-    host.kernel.mjpeg_state = std::make_shared<MjpegDecoderState>();
+    host.kernel.obj_store.create<MJpegState>();
+    const auto state = host.kernel.obj_store.get<MJpegState>();
+    state->decoder = std::make_shared<MjpegDecoderState>();
 
     return 0;
 }

@@ -33,4 +33,5 @@ add_library(
 	src/scheduler.cpp)
 
 target_include_directories(ngs PUBLIC include)
-target_link_libraries(ngs PRIVATE util mem kernel codec cpu)
+target_link_libraries(ngs PUBLIC codec)
+target_link_libraries(ngs PRIVATE util mem kernel cpu)

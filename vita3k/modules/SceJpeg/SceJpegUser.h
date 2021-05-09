@@ -18,6 +18,7 @@
 #pragma once
 
 #include <module/module.h>
+#include <modules/module_parent.h>
 
 BRIDGE_DECL(sceJpegCreateSplitDecoder)
 BRIDGE_DECL(sceJpegCsc)

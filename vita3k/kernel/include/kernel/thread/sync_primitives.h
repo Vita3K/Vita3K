@@ -17,7 +17,138 @@
 
 #pragma once
 
-#include <kernel/state.h>
+#include <cpu/common.h>
+#include <kernel/thread/thread_data_queue.h>
+#include <kernel/types.h>
+
+struct MsgPipeData;
+struct KernelState;
+
+struct WaitingThreadData {
+    ThreadStatePtr thread;
+    int32_t priority;
+
+    // additional fields for each primitive
+    union {
+        struct { // mutex
+            int32_t lock_count;
+        };
+        struct { // semaphore
+            int32_t signal;
+        };
+        struct { // event flags
+            int32_t wait;
+            int32_t flags;
+        };
+        // struct { }; // condvar
+        struct { //msgpipe
+            MsgPipeData *sending_data;
+        };
+    };
+
+    bool operator>(const WaitingThreadData &rhs) const {
+        return priority > rhs.priority;
+    }
+
+    bool operator==(const WaitingThreadData &rhs) const {
+        return thread == rhs.thread;
+    }
+
+    bool operator==(const ThreadStatePtr &rhs) const {
+        return thread == rhs;
+    }
+};
+
+typedef std::unique_ptr<ThreadDataQueue<WaitingThreadData>> WaitingThreadQueuePtr;
+
+// NOTE: uid is copied to sync primitives here for debugging,
+//       not really needed since they are put in std::map's
+struct SyncPrimitive {
+    SceUID uid;
+
+    uint32_t attr;
+
+    std::mutex mutex;
+
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+};
+
+struct Semaphore : SyncPrimitive {
+    WaitingThreadQueuePtr waiting_threads;
+    int max;
+    int val;
+};
+
+typedef std::shared_ptr<Semaphore> SemaphorePtr;
+typedef std::map<SceUID, SemaphorePtr> SemaphorePtrs;
+
+struct Mutex : SyncPrimitive {
+    int init_count;
+    int lock_count;
+    ThreadStatePtr owner;
+    WaitingThreadQueuePtr waiting_threads;
+    Ptr<SceKernelLwMutexWork> workarea;
+};
+
+typedef std::shared_ptr<Mutex> MutexPtr;
+typedef std::map<SceUID, MutexPtr> MutexPtrs;
+
+struct EventFlag : SyncPrimitive {
+    WaitingThreadQueuePtr waiting_threads;
+    int flags;
+};
+
+typedef std::shared_ptr<EventFlag> EventFlagPtr;
+typedef std::map<SceUID, EventFlagPtr> EventFlagPtrs;
+
+struct Condvar : SyncPrimitive {
+    struct SignalTarget {
+        enum class Type {
+            Any, // signal any one waiting thread
+            Specific, // signal a specific waiting thread (target_thread)
+            All, // signal all waiting threads
+        } type;
+
+        SceUID thread_id; // for Type::One
+
+        explicit SignalTarget(Type type)
+            : type(type)
+            , thread_id(0) {}
+        SignalTarget(Type type, SceUID thread_id)
+            : type(type)
+            , thread_id(thread_id) {}
+    };
+
+    WaitingThreadQueuePtr waiting_threads;
+    MutexPtr associated_mutex;
+};
+typedef std::shared_ptr<Condvar> CondvarPtr;
+typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
+
+struct MsgPipeData {
+    std::vector<char> data;
+    SceUID thread_id;
+    size_t read_size;
+    bool waiting_sender;
+    bool notify_at_empty;
+};
+
+// Unlimited buffer for now
+struct MsgPipe : SyncPrimitive {
+    std::mutex recv_mutex;
+    WaitingThreadQueuePtr sender_threads;
+    WaitingThreadQueuePtr reciever_threads;
+    std::list<MsgPipeData> data_buffer;
+};
+
+typedef std::shared_ptr<MsgPipe> MsgPipePtr;
+typedef std::map<SceUID, MsgPipePtr> MsgPipePtrs;
+
+struct WaitingThreadState {
+    std::string name; // for debugging
+};
+
+typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;
 
 enum class SyncWeight {
     Light, // lightweight
