@@ -22,11 +22,12 @@
 #include "vargs.h"
 #include "write_return_value.h"
 
-#include <host/import_fn.h>
-#include <host/import_var.h>
 #include <host/state.h>
 
 #include <microprofile.h>
+
+using ImportFn = std::function<void(HostState &host, CPUState &cpu, SceUID thread_id)>;
+using ImportVarFactory = std::function<Address(HostState &host)>;
 
 // Function returns a value that is written to CPU registers.
 template <typename Ret, typename... Args, size_t... indices>

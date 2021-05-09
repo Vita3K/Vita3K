@@ -15,13 +15,30 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include "cpu_protocol.h"
+#include <kernel/functions.h>
+#include <modules/module_parent.h>
 
-#include <util/types.h>
+CPUProtocol::CPUProtocol(HostState &host)
+    : host(&host) {
+}
 
-#include <functional>
+CPUProtocol::~CPUProtocol() {
+}
 
-struct CPUState;
-struct HostState;
+void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) {
+    uint32_t nid = *Ptr<uint32_t>(pc + 4).get(host->mem);
+    ::call_import(*host, cpu, nid, thread_id);
+}
 
-using ImportFn = std::function<void(HostState &host, CPUState &cpu, SceUID thread_id)>;
+Address CPUProtocol::get_watch_memory_addr(Address addr) {
+    return ::get_watch_memory_addr(host->kernel, addr);
+}
+
+std::vector<ModuleRegion> &CPUProtocol::get_module_regions() {
+    return host->kernel.module_regions;
+}
+
+ExclusiveMonitorPtr CPUProtocol::get_exlusive_monitor() {
+    return host->kernel.exclusive_monitor;
+}

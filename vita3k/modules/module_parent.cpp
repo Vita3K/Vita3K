@@ -18,8 +18,6 @@
 #include <modules/module_parent.h>
 
 #include <cpu/functions.h>
-#include <host/import_fn.h>
-#include <host/import_var.h>
 #include <host/load_self.h>
 #include <host/state.h>
 #include <io/device.h>
@@ -36,9 +34,13 @@
 
 static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 
+#define LIBRARY(name) extern const LibraryInitFn import_library_init_##name;
+#include <modules/library_init_list.inc>
+#undef LIBRARY
+
 #define VAR_NID(name, nid) extern const ImportVarFactory import_##name;
 #define NID(name, nid) extern const ImportFn import_##name;
-#include <nids/nids.h>
+#include <nids/nids.inc>
 #undef NID
 #undef VAR_NID
 
@@ -50,7 +52,7 @@ static ImportFn resolve_import(uint32_t nid) {
 #define NID(name, nid) \
     case nid:          \
         return import_##name;
-#include <nids/nids.h>
+#include <nids/nids.inc>
 #undef NID
 #undef VAR_NID
     }
@@ -67,7 +69,7 @@ const std::array<VarExport, var_exports_size> &get_var_exports() {
         import_##name,     \
         #name              \
     },
-#include <nids/nids.h>
+#include <nids/nids.inc>
 #undef VAR_NID
 #undef NID
     };
@@ -212,26 +214,8 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
     return true;
 }
 
-CPUProtocol::CPUProtocol(HostState &host)
-    : host(&host) {
-}
-
-CPUProtocol::~CPUProtocol() {
-}
-
-void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) {
-    uint32_t nid = *Ptr<uint32_t>(pc + 4).get(host->mem);
-    ::call_import(*host, cpu, nid, thread_id);
-}
-
-Address CPUProtocol::get_watch_memory_addr(Address addr) {
-    return ::get_watch_memory_addr(host->kernel, addr);
-}
-
-std::vector<ModuleRegion> &CPUProtocol::get_module_regions() {
-    return host->kernel.module_regions;
-}
-
-ExclusiveMonitorPtr CPUProtocol::get_exlusive_monitor() {
-    return host->kernel.exclusive_monitor;
+void init_libraries(HostState &host) {
+#define LIBRARY(name) import_library_init_##name(host);
+#include <modules/library_init_list.inc>
+#undef LIBRARY
 }

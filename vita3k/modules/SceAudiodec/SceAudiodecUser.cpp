@@ -17,6 +17,7 @@
 
 #include "SceAudiodecUser.h"
 
+#include <codec/state.h>
 #include <util/lock_and_find.h>
 
 enum {
@@ -28,6 +29,14 @@ enum {
     SCE_AUDIODEC_MP3_MPEG_VERSION_RESERVED,
     SCE_AUDIODEC_MP3_MPEG_VERSION_2,
     SCE_AUDIODEC_MP3_MPEG_VERSION_1,
+};
+
+typedef std::shared_ptr<DecoderState> DecoderPtr;
+typedef std::map<SceUID, DecoderPtr> DecoderStates;
+
+struct AudiodecState {
+    std::mutex mutex;
+    DecoderStates decoders;
 };
 
 struct SceAudiodecInfoAt9 {
@@ -86,7 +95,8 @@ EXPORT(int, sceAudiodecClearContext) {
 }
 
 EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec) {
-    std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    std::lock_guard<std::mutex> lock(state->mutex);
 
     SceUID handle = host.kernel.get_next_uid();
     ctrl->handle = handle;
@@ -95,7 +105,7 @@ EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec co
     case SCE_AUDIODEC_TYPE_AT9: {
         SceAudiodecInfoAt9 &info = ctrl->info.get(host.mem)->at9;
         DecoderPtr decoder = std::make_shared<Atrac9DecoderState>(info.config_data);
-        host.kernel.decoders[handle] = decoder;
+        state->decoders[handle] = decoder;
 
         ctrl->es_size_max = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
         ctrl->pcm_size_max = decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME)
@@ -110,7 +120,7 @@ EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec co
     case SCE_AUDIODEC_TYPE_MP3: {
         SceAudiodecInfoMp3 &info = ctrl->info.get(host.mem)->mp3;
         DecoderPtr decoder = std::make_shared<Mp3DecoderState>(info.channels);
-        host.kernel.decoders[handle] = decoder;
+        state->decoders[handle] = decoder;
 
         ctrl->es_size_max = 1441;
 
@@ -142,7 +152,8 @@ EXPORT(int, sceAudiodecCreateDecoderResident) {
 }
 
 EXPORT(int, sceAudiodecDecode, SceAudiodecCtrl *ctrl) {
-    const DecoderPtr &decoder = lock_and_find(ctrl->handle, host.kernel.decoders, host.kernel.mutex);
+    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    const DecoderPtr &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
 
     DecoderSize size = {};
 
@@ -168,8 +179,9 @@ EXPORT(int, sceAudiodecDecodeNStreams) {
 }
 
 EXPORT(int, sceAudiodecDeleteDecoder, SceAudiodecCtrl *ctrl) {
-    std::lock_guard<std::mutex> lock(host.kernel.mutex);
-    host.kernel.decoders.erase(ctrl->handle);
+    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    std::lock_guard<std::mutex> lock(state->mutex);
+    state->decoders.erase(ctrl->handle);
 
     return 0;
 }
@@ -192,7 +204,8 @@ EXPORT(int, sceAudiodecGetInternalError) {
 }
 
 EXPORT(SceInt32, sceAudiodecInitLibrary, SceUInt32 codecType, SceAudiodecInitParam *pInitParam) {
-    return STUBBED("EMPTY");
+    host.kernel.obj_store.create<AudiodecState>();
+    return 0;
 }
 
 EXPORT(int, sceAudiodecPartlyDecode) {
@@ -200,7 +213,8 @@ EXPORT(int, sceAudiodecPartlyDecode) {
 }
 
 EXPORT(SceInt32, sceAudiodecTermLibrary, SceUInt32 codecType) {
-    return STUBBED("EMPTY");
+    host.kernel.obj_store.erase<AudiodecState>();
+    return 0;
 }
 
 BRIDGE_IMPL(sceAudiodecClearContext)

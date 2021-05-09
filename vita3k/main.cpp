@@ -17,6 +17,7 @@
 
 #include "interface.h"
 
+#include "cpu_protocol.h"
 #include <app/functions.h>
 #include <app/screen_render.h>
 #include <config/functions.h>
@@ -133,6 +134,8 @@ int main(int argc, char *argv[]) {
         app::error_dialog("Host initialization failed.", host.window.get());
         return HostInitFailed;
     }
+
+    init_libraries(host);
 
     GuiState gui;
     if (!cfg.console)

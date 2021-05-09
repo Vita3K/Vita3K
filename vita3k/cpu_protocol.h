@@ -17,10 +17,18 @@
 
 #pragma once
 
-#include <util/types.h>
-
-#include <functional>
+#include <cpu/common.h>
 
 struct HostState;
 
-using ImportVarFactory = std::function<Address(HostState &host)>;
+struct CPUProtocol : public CPUProtocolBase {
+    CPUProtocol(HostState &host);
+    ~CPUProtocol();
+    void call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) override;
+    Address get_watch_memory_addr(Address addr) override;
+    std::vector<ModuleRegion> &get_module_regions() override;
+    ExclusiveMonitorPtr get_exlusive_monitor() override;
+
+private:
+    HostState *host;
+};

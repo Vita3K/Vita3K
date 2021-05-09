@@ -397,7 +397,7 @@ EXPORT(int, sceIoGetstatAsync) {
 }
 
 EXPORT(int, sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
-    return stat_file_by_fd(host.io, fd, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
+    return stat_file_by_fd(host.io, fd, stat, host.pref_path, export_name);
 }
 
 EXPORT(int, sceIoIoctl) {

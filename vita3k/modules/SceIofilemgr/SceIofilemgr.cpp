@@ -51,11 +51,11 @@ EXPORT(int, _sceIoDread, const SceUID fd, SceIoDirent *dir) {
     if (dir == nullptr) {
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     }
-    return read_dir(host.io, fd, dir, host.pref_path, host.kernel.base_tick.tick, export_name);
+    return read_dir(host.io, fd, dir, host.pref_path, export_name);
 }
 
 EXPORT(int, _sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(host.io, file, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
+    return stat_file(host.io, file, stat, host.pref_path, export_name);
 }
 
 EXPORT(int, _sceIoGetstatAsync) {
@@ -63,7 +63,7 @@ EXPORT(int, _sceIoGetstatAsync) {
 }
 
 EXPORT(int, _sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
-    return stat_file_by_fd(host.io, fd, stat, host.pref_path, host.kernel.base_tick.tick, export_name);
+    return stat_file_by_fd(host.io, fd, stat, host.pref_path, export_name);
 }
 
 EXPORT(int, _sceIoIoctl) {

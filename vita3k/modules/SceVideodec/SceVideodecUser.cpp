@@ -16,8 +16,16 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceVideodecUser.h"
-
+#include <codec/state.h>
 #include <util/lock_and_find.h>
+
+typedef std::shared_ptr<DecoderState> DecoderPtr;
+typedef std::map<SceUID, DecoderPtr> DecoderStates;
+
+struct VideodecState {
+    std::mutex mutex;
+    DecoderStates decoders;
+};
 
 enum SceVideodecType {
     SCE_VIDEODEC_TYPE_HW_AVCDEC = 0x1001
@@ -119,11 +127,11 @@ struct SceAvcdecArrayPicture {
 
 EXPORT(int, sceAvcdecCreateDecoder, uint32_t codec_type, SceAvcdecCtrl *decoder, const SceAvcdecQueryDecoderInfo *query) {
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
-
+    const auto state = host.kernel.obj_store.get<VideodecState>();
     SceUID handle = host.kernel.get_next_uid();
     decoder->handle = handle;
 
-    host.kernel.decoders[handle] = std::make_shared<H264DecoderState>(query->horizontal, query->vertical);
+    state->decoders[handle] = std::make_shared<H264DecoderState>(query->horizontal, query->vertical);
 
     return 0;
 }
@@ -145,7 +153,8 @@ EXPORT(int, sceAvcdecCscInternal) {
 }
 
 EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceAvcdecArrayPicture *picture) {
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
+    const auto state = host.kernel.obj_store.get<VideodecState>();
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
 
     H264DecoderOptions options = {};
     options.pts_upper = au->pts.upper;
@@ -183,14 +192,16 @@ EXPORT(int, sceAvcdecDecodeAuNongameapp) {
 }
 
 EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
+    const auto state = host.kernel.obj_store.get<VideodecState>();
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
 
     return H264DecoderState::buffer_size(
         { decoder_info->get(DecoderQuery::WIDTH), decoder_info->get(DecoderQuery::HEIGHT) });
 }
 
 EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
+    const auto state = host.kernel.obj_store.get<VideodecState>();
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
 
     decoder_info->flush();
 
@@ -226,7 +237,8 @@ EXPORT(int, sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp) {
 }
 
 EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *picture) {
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, host.kernel.decoders, host.kernel.mutex);
+    const auto state = host.kernel.obj_store.get<VideodecState>();
+    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
 
     uint8_t *output = picture->pPicture.get(host.mem)[0].get(host.mem)->frame.pPicture[0].cast<uint8_t>().get(host.mem);
     decoder_info->receive(output);
@@ -243,7 +255,9 @@ EXPORT(int, sceAvcdecDecodeWithWorkPicture) {
 }
 
 EXPORT(int, sceAvcdecDeleteDecoder, SceAvcdecCtrl *decoder) {
-    host.kernel.decoders.erase(decoder->handle);
+    const auto state = host.kernel.obj_store.get<VideodecState>();
+    std::lock_guard<std::mutex> lock(state->mutex);
+    state->decoders.erase(decoder->handle);
 
     return 0;
 }
@@ -366,11 +380,13 @@ EXPORT(int, sceM4vdecQueryDecoderMemSizeInternal) {
 }
 
 EXPORT(int, sceVideodecInitLibrary) {
-    return STUBBED("EMPTY");
+    host.kernel.obj_store.create<VideodecState>();
+    return 0;
 }
 
 EXPORT(int, sceVideodecInitLibraryInternal) {
-    return UNIMPLEMENTED();
+    host.kernel.obj_store.create<VideodecState>();
+    return 0;
 }
 
 EXPORT(int, sceVideodecInitLibraryNongameapp) {
@@ -415,7 +431,8 @@ EXPORT(int, sceVideodecSetConfigInternal) {
 }
 
 EXPORT(int, sceVideodecTermLibrary) {
-    return UNIMPLEMENTED();
+    host.kernel.obj_store.erase<VideodecState>();
+    return 0;
 }
 
 BRIDGE_IMPL(sceAvcdecCreateDecoder)

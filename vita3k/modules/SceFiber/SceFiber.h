@@ -18,6 +18,7 @@
 #pragma once
 
 #include <module/module.h>
+#include <modules/module_parent.h>
 
 #define SCE_FIBER_CONTEXT_MINIMUM_SIZE 512
 
@@ -49,6 +50,7 @@ typedef struct SceFiber {
     CPUContext *cpu;
 } SceFiber;
 
+LIBRARY_INIT_DECL(SceFiber)
 BRIDGE_DECL(_sceFiberAttachContextAndRun)
 BRIDGE_DECL(_sceFiberAttachContextAndSwitch)
 BRIDGE_DECL(_sceFiberInitializeImpl)

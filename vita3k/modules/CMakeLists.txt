@@ -1,5 +1,5 @@
-add_library(modules STATIC
-	module_parent.cpp include/modules/module_parent.h
+set(SOURCE_LIST
+	module_parent.cpp include/modules/module_parent.h include/modules/library_init_list.inc
 
 	SceAVConfig/SceAVConfig.cpp SceAVConfig/SceAVConfig.h
 	SceAppMgr/SceAppMgr.cpp SceAppMgr/SceAppMgr.h
@@ -198,6 +198,11 @@ add_library(modules STATIC
 	SceVshBridge/SceVshBridge.cpp SceVshBridge/SceVshBridge.h
 	SceWlanBt/SceWlan.cpp SceWlanBt/SceWlan.h
 )
+
+add_library(modules STATIC
+	${SOURCE_LIST}	
+)
 target_include_directories(modules PUBLIC include)
 target_link_libraries(modules PRIVATE xxHash::xxhash)
 target_link_libraries(modules PUBLIC module)
+source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})
