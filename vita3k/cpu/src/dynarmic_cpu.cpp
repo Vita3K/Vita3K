@@ -1,5 +1,5 @@
-#include <cpu/dynarmic_cpu.h>
-#include <cpu/interface.h>
+#include <cpu/impl/dynarmic_cpu.h>
+#include <cpu/impl/interface.h>
 #include <cpu/state.h>
 #include <dynarmic/A32/context.h>
 #include <dynarmic/exclusive_monitor.h>

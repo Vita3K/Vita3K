@@ -15,9 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <disasm/functions.h>
+#include <cpu/disasm/functions.h>
 
-#include <disasm/state.h>
+#include <cpu/disasm/state.h>
 
 #include <capstone/capstone.h>
 

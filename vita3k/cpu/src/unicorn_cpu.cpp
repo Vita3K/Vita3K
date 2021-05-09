@@ -1,10 +1,10 @@
 #include <cpu/functions.h>
-#include <cpu/unicorn_cpu.h>
+#include <cpu/impl/unicorn_cpu.h>
 #include <mem/ptr.h>
 #include <util/log.h>
 
 #include <cassert>
-#include <disasm/functions.h>
+#include <cpu/disasm/functions.h>
 
 #include <util/string_utils.h>
 

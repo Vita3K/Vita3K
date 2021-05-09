@@ -1,9 +1,9 @@
 #pragma once
 
-#include <cpu/interface.h>
+#include <cpu/impl/interface.h>
 
+#include <cpu/disasm/state.h>
 #include <cpu/state.h>
-#include <disasm/state.h>
 #include <unicorn/unicorn.h>
 
 #include <array>
