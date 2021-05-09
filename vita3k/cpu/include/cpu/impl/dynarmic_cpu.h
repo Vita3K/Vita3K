@@ -4,7 +4,7 @@
 #include <dynarmic/exclusive_monitor.h>
 
 #include <cpu/functions.h>
-#include <cpu/unicorn_cpu.h>
+#include <cpu/impl/unicorn_cpu.h>
 
 #include <functional>
 #include <memory>

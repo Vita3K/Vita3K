@@ -16,16 +16,16 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <cpu/functions.h>
-#include <cpu/interface.h>
+#include <cpu/impl/interface.h>
 
-#include <disasm/functions.h>
-#include <disasm/state.h>
+#include <cpu/disasm/functions.h>
+#include <cpu/disasm/state.h>
 #include <mem/ptr.h>
 #include <util/log.h>
 #include <util/types.h>
 
-#include <cpu/dynarmic_cpu.h>
-#include <cpu/unicorn_cpu.h>
+#include <cpu/impl/dynarmic_cpu.h>
+#include <cpu/impl/unicorn_cpu.h>
 
 #include <cassert>
 #include <cpu/state.h>

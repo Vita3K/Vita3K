@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cpu/common.h>
+#include <cpu/disasm/state.h>
 #include <cpu/functions.h>
-#include <disasm/state.h>
 
 struct CPUState {
     SceUID thread_id;
