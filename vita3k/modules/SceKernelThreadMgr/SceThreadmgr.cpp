@@ -495,12 +495,18 @@ EXPORT(int, _sceKernelWaitSignalCB) {
 EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     auto waiter = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     auto target = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+    if (!target) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
     return wait_thread_end(waiter, target, stat);
 }
 
 EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout) {
     auto waiter = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     auto target = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+    if (!target) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
     return wait_thread_end(waiter, target, stat);
 }
 
@@ -663,6 +669,9 @@ EXPORT(int, sceKernelDeleteSimpleEvent) {
 
 EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+    if (!thread || thread->to_do != ThreadToDo::exit) {
+        return SCE_KERNEL_ERROR_NOT_DORMANT;
+    }
     delete_thread(host.kernel, *thread);
     return 0;
 }
@@ -675,8 +684,6 @@ EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
 
 EXPORT(int, sceKernelExitDeleteThread, int status) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    std::unique_lock<std::mutex> thread_lock(thread->mutex);
-
     exit_and_delete_thread(*thread);
 
     return status;
