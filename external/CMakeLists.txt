@@ -29,10 +29,12 @@ option(CAPSTONE_BUILD_CSTOOL "Build cstool" OFF)
 option(CAPSTONE_ARCHITECTURE_DEFAULT "Whether architectures are enabled by default" OFF)
 option(CAPSTONE_ARM_SUPPORT "ARM support" ON)
 add_subdirectory(capstone EXCLUDE_FROM_ALL)
+set_property(TARGET capstone-static PROPERTY FOLDER externals)
 set(capstone_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/capstone/include" PARENT_SCOPE)
 
 add_library(crypto-algorithms STATIC crypto-algorithms/sha256.c crypto-algorithms/sha256.h)
 target_include_directories(crypto-algorithms PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/crypto-algorithms")
+set_property(TARGET crypto-algorithms PROPERTY FOLDER externals)
 
 add_library(dirent INTERFACE)
 if(WIN32)
@@ -47,11 +49,13 @@ add_subdirectory(elfio)
 add_subdirectory(fmt)
 add_library(fmt::fmt ALIAS fmt)
 set (fmt_DIR fmt)
+set_property(TARGET fmt PROPERTY FOLDER externals)
 
 set(SPDLOG_WCHAR_FILENAMES ON CACHE BOOL "")
 set(SPDLOG_NO_THREAD_ID ON CACHE BOOL "")
 set(SPDLOG_FMT_EXTERNAL ON CACHE BOOL "")
 add_subdirectory(spdlog EXCLUDE_FROM_ALL)
+set_property(TARGET spdlog PROPERTY FOLDER externals)
 
 add_library(stb INTERFACE)
 target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
@@ -59,6 +63,7 @@ target_include_directories(stb INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/stb")
 add_library(glad STATIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/src/glad.c")
 target_include_directories(glad PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/include")
 target_link_libraries(glad PRIVATE ${CMAKE_DL_LIBS})
+set_property(TARGET glad PROPERTY FOLDER externals)
 
 add_library(better-enums INTERFACE)
 target_include_directories(better-enums INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/better-enums")
@@ -68,11 +73,13 @@ add_library(googletest STATIC googletest/googletest/src/gtest_main.cc googletest
 target_include_directories(googletest PUBLIC googletest/googletest/include)
 target_include_directories(googletest PRIVATE googletest/googletest)
 target_compile_definitions(googletest PUBLIC GTEST_HAS_PTHREAD=0)
+set_property(TARGET googletest PROPERTY FOLDER externals)
 
 add_library(microprofile STATIC microprofile/microprofile.cpp microprofile/microprofile.h)
 target_include_directories(microprofile PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/microprofile")
 set_property(TARGET microprofile PROPERTY CXX_STANDARD 11)
 target_compile_definitions(microprofile PUBLIC MICROPROFILE_ENABLED=0 MICROPROFILE_GPU_TIMERS=0)
+set_property(TARGET microprofile PROPERTY FOLDER externals)
 
 if(WIN32)
 	add_library(nativefiledialog STATIC nativefiledialog-cmake/src/nfd_win.cpp nativefiledialog-cmake/src/nfd_common.c)
@@ -93,16 +100,20 @@ elseif(UNIX)
 	target_include_directories(nativefiledialog PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog-cmake/src/include")
 	target_link_libraries(nativefiledialog ${GTK3_LIBRARIES})
 endif()
+set_property(TARGET nativefiledialog PROPERTY FOLDER externals)
 
 add_subdirectory(libfat16)
+set_property(TARGET FAT16 PROPERTY FOLDER externals)
 
 # The imgui target is including both imgui and imgui_club.
 add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/misc/cpp/imgui_stdlib.cpp)
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
 		"${CMAKE_CURRENT_SOURCE_DIR}/imgui_club/imgui_memory_editor/")
+set_property(TARGET imgui PROPERTY FOLDER externals)
 
 add_library(miniz STATIC miniz/miniz.c miniz/miniz.h)
 target_include_directories(miniz PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniz")
+set_property(TARGET miniz PROPERTY FOLDER externals)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/sdl2-cmake-scripts")
 if(APPLE)
@@ -156,6 +167,7 @@ endif()
 set(DYNARMIC_TESTS OFF CACHE BOOL "")
 set(DYNARMIC_NO_BUNDLED_FMT ON CACHE BOOL "")
 add_subdirectory(dynarmic)
+set_property(TARGET dynarmic PROPERTY FOLDER externals)
 
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")
@@ -168,6 +180,7 @@ add_subdirectory(yaml-cpp EXCLUDE_FROM_ALL)
 add_library(yaml INTERFACE)
 target_include_directories(yaml INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp/include")
 target_link_libraries(yaml INTERFACE yaml-cpp)
+set_property(TARGET yaml-cpp PROPERTY FOLDER externals)
 
 add_library(rpcs3 INTERFACE)
 target_include_directories(rpcs3 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/include")
@@ -210,6 +223,7 @@ if(USE_DISCORD_RICH_PRESENCE)
     target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/libdiscord_game_sdk.so")
   endif()
   target_include_directories(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp")
+  set_property(TARGET discord-rpc PROPERTY FOLDER externals)
 endif()
 
 option(BUILD_EXTERNAL "Build external dependencies in /External" OFF)
@@ -230,12 +244,16 @@ option(SPIRV_CROSS_ENABLE_C_API "Enable C API wrapper support in static library.
 option(SPIRV_CROSS_ENABLE_UTIL "Enable util module support." OFF)
 option(SPIRV_CROSS_SKIP_INSTALL "Skips installation targets." ON)
 add_subdirectory(SPIRV-Cross)
+set_property(TARGET spirv-cross-core PROPERTY FOLDER externals)
+set_property(TARGET spirv-cross-glsl PROPERTY FOLDER externals)
 
 add_library(dlmalloc STATIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc/dlmalloc.cc")
 target_include_directories(dlmalloc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc")
 target_compile_definitions(dlmalloc PUBLIC ONLY_MSPACES=1)
+set_property(TARGET dlmalloc PROPERTY FOLDER externals)
 
 add_subdirectory(pugixml)
+set_property(TARGET pugixml-static PROPERTY FOLDER externals)
 
 add_library(CLI11 INTERFACE)
 # See "Note: Special instructions for GCC 8" on https://github.com/CLIUtils/CLI11
@@ -256,7 +274,11 @@ endif()
 
 add_subdirectory(ffmpeg)
 add_subdirectory(psvpfstools)
+set_property(TARGET psvpfsparser PROPERTY FOLDER externals)
+set_property(TARGET libzRIF PROPERTY FOLDER externals)
+set_property(TARGET libb64 PROPERTY FOLDER externals)
 
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
 add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)
+set_property(TARGET xxhash PROPERTY FOLDER externals)
