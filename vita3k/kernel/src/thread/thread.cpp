@@ -327,12 +327,12 @@ int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
             if (stat != nullptr) {
                 *stat = target->returned_value;
             }
-            return SCE_KERNEL_OK;
+            return 0;
         }
 
         target->waiting_threads.push_back(waiter);
     }
     waiter->to_do = ThreadToDo::wait;
     stop(*waiter->cpu);
-    return SCE_KERNEL_OK;
+    return 0;
 }
