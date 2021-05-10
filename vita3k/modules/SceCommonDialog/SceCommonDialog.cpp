@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -1018,8 +1018,11 @@ EXPORT(int, sceSaveDataDialogFinish, Ptr<const SceSaveDataDialogFinishParam> fin
     return 0;
 }
 
-EXPORT(int, sceSaveDataDialogGetResult, Ptr<SceSaveDataDialogResult> result) {
-    if (result.get(host.mem) == nullptr) {
+EXPORT(SceInt32, sceSaveDataDialogGetResult, Ptr<SceSaveDataDialogResult> result) {
+    if (host.common_dialog.type != SAVEDATA_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
+
+    if (!result.get(host.mem)) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
 
