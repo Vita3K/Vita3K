@@ -27,6 +27,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <vector>
 
 namespace logging {
@@ -70,4 +71,13 @@ template <typename T>
 std::string log_hex(T val) {
     using unsigned_type = typename std::make_unsigned<T>::type;
     return fmt::format("0x{:0X}", static_cast<unsigned_type>(val));
+}
+
+template <typename T>
+std::string log_hex_full(T val) {
+    using unsigned_type = typename std::make_unsigned<T>::type;
+    std::stringstream ss;
+    ss << "0x";
+    ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << val;
+    return ss.str();
 }

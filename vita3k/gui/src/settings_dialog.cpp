@@ -551,6 +551,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::Checkbox("Dump textures", &host.cfg.dump_textures);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Dump textures to files");
+            ImGui::SameLine();
+            ImGui::Checkbox("Dump elfs", &host.cfg.dump_elfs);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Dump loaded code as elfs");
             ImGui::Spacing();
             if (ImGui::Button(host.kernel.watch_code ? "Unwatch code" : "Watch code")) {
                 host.kernel.watch_code = !host.kernel.watch_code;

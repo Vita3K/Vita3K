@@ -26,6 +26,7 @@
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_INDIVIDUAL(code)                                                                         \
     code(bool, "log-imports", false, log_imports)                                                       \
+    code(bool, "dump-elfs", false, dump_elfs)                                                           \
     code(bool, "stack-traceback", false, stack_traceback)                                               \
     code(bool, "gdbstub", false, gdbstub)                                                               \
     code(bool, "log-exports", false, log_exports)                                                       \
