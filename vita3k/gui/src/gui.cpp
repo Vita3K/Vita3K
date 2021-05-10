@@ -509,6 +509,9 @@ void draw_end(GuiState &gui, SDL_Window *window) {
 void draw_live_area(GuiState &gui, HostState &host) {
     ImGui::PushFont(gui.vita_font);
 
+    if (gui.live_area.app_close)
+        draw_app_close(gui, host);
+
     if (gui.live_area.app_selector)
         draw_app_selector(gui, host);
 

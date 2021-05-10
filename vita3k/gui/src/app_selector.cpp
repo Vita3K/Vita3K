@@ -74,12 +74,14 @@ std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const 
     return std::find(gui.apps_list_opened.begin(), gui.apps_list_opened.end(), app_path);
 }
 
-void update_apps_list_opened(GuiState &gui, const std::string &app_path) {
-    if (get_app_open_list_index(gui, app_path) == gui.apps_list_opened.end())
+void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &app_path) {
+    if ((get_app_open_list_index(gui, app_path) != gui.apps_list_opened.end()) && (gui.apps_list_opened.front() != app_path))
+        gui.apps_list_opened.erase(get_app_open_list_index(gui, app_path));
+    if ((get_app_open_list_index(gui, app_path) == gui.apps_list_opened.end()))
         gui.apps_list_opened.insert(gui.apps_list_opened.begin(), app_path);
-    gui.current_app_selected = int32_t(std::distance(gui.apps_list_opened.begin(), get_app_open_list_index(gui, app_path)));
+    gui.current_app_selected = 0;
     if (gui.apps_list_opened.size() > 6) {
-        const auto last_app = gui.apps_list_opened.back();
+        const auto last_app = gui.apps_list_opened.back() == host.io.app_path ? gui.apps_list_opened[gui.apps_list_opened.size() - 2] : gui.apps_list_opened.back();
         gui.live_area_contents.erase(last_app);
         gui.live_items.erase(last_app);
         gui.apps_list_opened.erase(get_app_open_list_index(gui, last_app));
@@ -89,11 +91,11 @@ void update_apps_list_opened(GuiState &gui, const std::string &app_path) {
 static std::map<std::string, uint64_t> last_time;
 
 void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::string &app_path) {
-    gui.live_area.app_selector = false;
     if (live_area) {
-        update_apps_list_opened(gui, app_path);
+        update_apps_list_opened(gui, host, app_path);
         last_time["home"] = 0;
         init_live_area(gui, host);
+        gui.live_area.app_selector = false;
         gui.live_area.information_bar = true;
         gui.live_area.live_area_screen = true;
     } else
@@ -101,23 +103,27 @@ void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::str
 }
 
 void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
-    gui.live_area.live_area_screen = false;
     if (app_path.find("NPXS") == std::string::npos) {
-        gui.live_area.information_bar = false;
         if (host.io.app_path != app_path) {
-            if (host.cfg.overwrite_config && (host.cfg.last_app != app_path)) {
-                host.cfg.last_app = app_path;
-                config::serialize_config(host.cfg, host.cfg.config_path);
-            }
-            if (!host.io.app_path.empty()) {
-                stop_all_threads(host.kernel);
-                host.load_app_path = app_path;
-                host.load_exec = true;
-            } else
+            if (!host.io.app_path.empty())
+                gui.live_area.app_close = true;
+            else {
+                gui.live_area.information_bar = false;
+                gui.live_area.app_selector = false;
+                gui.live_area.live_area_screen = false;
                 host.io.app_path = app_path;
-        } else
+                if (host.cfg.overwrite_config && (host.cfg.last_app != app_path)) {
+                    host.cfg.last_app = app_path;
+                    config::serialize_config(host.cfg, host.cfg.config_path);
+                }
+            }
+        } else {
             gui.live_area.live_area_screen = false;
+            gui.live_area.information_bar = false;
+        }
     } else {
+        gui.live_area.app_selector = false;
+        gui.live_area.live_area_screen = false;
         init_app_background(gui, host, app_path);
 
         if (app_path == "NPXS10008") {
@@ -130,6 +136,57 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
             gui.live_area.content_manager = true;
         }
     }
+}
+
+void draw_app_close(GuiState &gui, HostState &host) {
+    const ImVec2 display_size = ImGui::GetIO().DisplaySize;
+    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+
+    const auto WINDOW_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
+    const auto BUTTON_SIZE = ImVec2(320.f * SCALE.x, 46.f * SCALE.y);
+
+    auto common = host.common_dialog.lang.common;
+
+    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
+    ImGui::Begin("##app_close", &gui.live_area.app_close, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
+    ImGui::BeginChild("##app_close_child", WINDOW_SIZE, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
+
+    const auto ICON_SIZE = ImVec2(64.f * SCALE.x, 64.f * SCALE.y);
+
+    ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
+    ImGui::SetCursorPos(ImVec2(50.f * SCALE.x, 108.f * SCALE.y));
+    const auto warn_app_close = !gui.lang.game_data["app_close"].empty() ? gui.lang.game_data["app_close"].c_str() : "The following application will close.";
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", warn_app_close);
+    if (gui.app_selector.user_apps_icon.find(host.io.app_path) != gui.app_selector.user_apps_icon.end()) {
+        const auto ICON_POS_SCALE = ImVec2(152.f * SCALE.x, (display_size.y / 2.f) - (ICON_SIZE.y / 2.f) - (10.f * SCALE.y));
+        const auto ICON_SIZE_SCALE = ImVec2(ICON_POS_SCALE.x + ICON_SIZE.x, ICON_POS_SCALE.y + ICON_SIZE.y);
+        ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, host.io.app_path)->second, ICON_POS_SCALE, ICON_SIZE_SCALE, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 40.f * SCALE.x, ImDrawCornerFlags_All);
+    }
+    ImGui::SetCursorPos(ImVec2(ICON_SIZE.x + (72.f * SCALE.x), (WINDOW_SIZE.y / 2.f) - ImGui::CalcTextSize(host.current_app_title.c_str()).y + (4.f * SCALE.y)));
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.current_app_title.c_str());
+    ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
+    if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
+        gui.live_area.app_close = false;
+    ImGui::SameLine(0, 20.f * SCALE.x);
+    if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+        const auto app_path = gui.apps_list_opened[gui.current_app_selected];
+        if (host.cfg.overwrite_config && (host.cfg.last_app != app_path)) {
+            host.cfg.last_app = app_path;
+            config::serialize_config(host.cfg, host.cfg.config_path);
+        }
+        stop_all_threads(host.kernel);
+        host.load_app_path = app_path;
+        host.load_exec = true;
+    }
+    ImGui::PopStyleVar();
+    ImGui::EndChild();
+    ImGui::PopStyleVar();
+    ImGui::End();
 }
 
 inline uint64_t current_time() {

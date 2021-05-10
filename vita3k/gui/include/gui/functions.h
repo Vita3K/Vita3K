@@ -78,7 +78,7 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path);
 bool refresh_app_list(GuiState &gui, HostState &host);
 void save_user(GuiState &gui, HostState &host, const std::string &user_id);
 void set_config(GuiState &gui, HostState &host, const std::string &app_path);
-void update_apps_list_opened(GuiState &gui, const std::string &app_path);
+void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &app_path);
 void update_notice_info(GuiState &gui, HostState &host, const std::string &type);
 void save_notice_list(HostState &host);
 

@@ -1158,7 +1158,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                             gui.apps_list_opened.clear();
                             gui.live_area_contents.clear();
                             gui.live_items.clear();
-                            update_apps_list_opened(gui, "NPXS10015");
+                            update_apps_list_opened(gui, host, "NPXS10015");
                             init_notice_info(gui, host);
                             init_live_area(gui, host);
                         }

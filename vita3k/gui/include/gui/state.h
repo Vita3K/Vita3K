@@ -75,6 +75,7 @@ struct AppsSelector {
 };
 
 struct LiveAreaState {
+    bool app_close = false;
     bool app_selector = false;
     bool content_manager = false;
     bool information_bar = false;
@@ -153,6 +154,7 @@ struct Lang {
     std::string user_lang;
     std::map<std::string, std::string> main_menubar;
     std::map<std::string, std::string> app_context;
+    std::map<std::string, std::string> game_data;
     std::map<std::string, std::string> indicator;
     std::map<std::string, std::string> settings;
     std::map<std::string, std::string> trophy_collection;

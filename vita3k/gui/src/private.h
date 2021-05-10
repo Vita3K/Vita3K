@@ -64,6 +64,7 @@ void draw_controls_dialog(GuiState &gui, HostState &host);
 void draw_about_dialog(GuiState &gui, HostState &host);
 void draw_welcome_dialog(GuiState &gui, HostState &host);
 
+void draw_app_close(GuiState &gui, HostState &host);
 void draw_app_selector(GuiState &gui, HostState &host);
 void draw_content_manager(GuiState &gui, HostState &host);
 void draw_information_bar(GuiState &gui, HostState &host);
