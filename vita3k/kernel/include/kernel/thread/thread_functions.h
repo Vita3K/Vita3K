@@ -40,7 +40,7 @@ void exit_thread(ThreadState &thread);
 void exit_and_delete_thread(ThreadState &thread);
 void delete_thread(KernelState &kernel, ThreadState &thread);
 int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat);
-Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, KernelState &kernel, MemState &mem);
+Ptr<void> copy_block_to_stack(ThreadState &thread, MemState &mem, const Ptr<void> &data, const int size);
 int run_callback(KernelState &kernel, ThreadState &thread, const SceUID &thid, Address callback_address, const std::vector<uint32_t> &args);
 uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, const Ptr<void> &argp);
 void raise_waiting_threads(ThreadState *thread);

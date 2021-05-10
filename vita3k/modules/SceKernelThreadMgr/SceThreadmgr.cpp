@@ -396,7 +396,11 @@ EXPORT(int, _sceKernelSignalLwCondTo) {
 }
 
 EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
-    Ptr<void> new_argp = copy_stack(thid, thread_id, argp, host.kernel, host.mem);
+    auto thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
+    Ptr<void> new_argp(0);
+    if (argp && arglen > 0) {
+        new_argp = copy_block_to_stack(*thread, host.mem, argp, arglen);
+    }
     const int res = start_thread(host.kernel, thid, arglen, new_argp);
     if (res < 0) {
         return RET_ERROR(res);
