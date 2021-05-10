@@ -131,6 +131,10 @@ Ne pas éteindre le système, ni fermer l'application.</warning_saving>
 	</save_data>
 </dialog>
 
+<game_data>
+	<app_close>L'application suivante va être fermée.</app_close>
+</game_data>
+
 <indicator>
 	<app_added_home>L'application a été ajoutée à l'écran d'accueil.</app_added_home>
 	<delete_all>Supprimer tout</delete_all>

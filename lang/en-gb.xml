@@ -131,6 +131,10 @@ Do not power off the system or close the application.</warning_saving>
 	</save_data>
 </dialog>
 
+<game_data>
+	<app_close>The following application will close.</app_close>
+</game_data>
+
 <indicator>
 	<app_added_home>The application has been added to the home screen.</app_added_home>
 	<delete_all>Delete All</delete_all>

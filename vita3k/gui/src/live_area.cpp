@@ -214,6 +214,13 @@ void init_lang(GuiState &gui, HostState &host) {
                 }
             }
 
+            // Game Data
+            if (!lang_xml.child("game_data").empty()) {
+                auto &lang_game_data = gui.lang.game_data;
+                const auto game_data = lang_xml.child("game_data");
+                lang_game_data["app_close"] = game_data.child("app_close").text().as_string();
+            }
+
             // Indicator
             if (!lang_xml.child("indicator").empty()) {
                 auto &lang_indicator = gui.lang.indicator;
