@@ -846,6 +846,7 @@ void self2elf(const std::string &infile, const std::string &outfile, KeyStore &S
 
         if (segment_infos[idx].compressed == SecureBool::YES) {
             const std::string decompressed_data = decompress_segments(decrypted_data, segment_infos[idx].size);
+            segment_infos[idx].compressed = SecureBool::NO;
             fileout.write(decompressed_data.c_str(), decompressed_data.length());
             at += decompressed_data.length();
         } else {
