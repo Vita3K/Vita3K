@@ -19,6 +19,7 @@
 
 #include "cpu/functions.h"
 
+#include <sstream>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -40,6 +41,18 @@ LIBRARY_INIT_IMPL(SceFiber) {
     host.kernel.obj_store.create<FiberState>();
 }
 LIBRARY_INIT_REGISTER(SceFiber)
+
+std::string _describeFiber(ThreadStatePtr thread, SceFiber *fiber) {
+    std::stringstream ss;
+    ss << fmt::format("Fiber (name: {})\n", fiber->name);
+    ss << fmt::format("entry: {}\n", log_hex(fiber->cpu->get_pc()), log_hex(fiber->entry.address()));
+    ss << "CPU Context:\n";
+    ss << fiber->cpu->description();
+    ss << "Referenced from " << thread->id << "\n";
+    ss << "CPU Context:\n";
+    ss << thread->cpu_context.description();
+    return ss.str();
+}
 
 InitialFiber *_findIntialFiber(FiberState &state, Address sp) {
     // TODO use interval tree
