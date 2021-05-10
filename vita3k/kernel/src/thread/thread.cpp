@@ -171,28 +171,17 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
     return SCE_KERNEL_OK;
 }
 
-Ptr<void> copy_stack(SceUID thid, SceUID thread_id, const Ptr<void> &argp, KernelState &kernel, MemState &mem) {
-    const ThreadStatePtr new_thread = lock_and_find(thid, kernel.threads, kernel.mutex);
-    const ThreadStatePtr old_thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+Ptr<void> copy_block_to_stack(ThreadState &thread, MemState &mem, const Ptr<void> &data, const int size) {
+    const Address stack_top = thread.stack.get() + thread.stack_size;
+    const Address sp = read_sp(*thread.cpu);
+    assert(sp <= stack_top && sp >= thread.stack.get());
+    assert(sp - thread.stack.get() >= size);
+    const Address data_addr = sp - size;
+    memcpy(Ptr<uint8_t>(data_addr).get(mem), data.get(mem), size);
 
-    const std::unique_lock<std::mutex> lock(kernel.mutex);
+    write_sp(*thread.cpu, data_addr);
 
-    const Address old_stack_address = old_thread->stack.get();
-    const Address new_stack_address = new_thread->stack.get();
-
-    const Address old_sp = read_sp(*old_thread->cpu);
-    const Address old_stack_size = old_stack_address + old_thread->stack_size - old_sp;
-    const Address new_sp = new_stack_address + new_thread->stack_size - old_stack_size;
-
-    memcpy(Ptr<void>(new_sp).get(mem), Ptr<void>(old_sp).get(mem), old_stack_size);
-    write_sp(*new_thread->cpu, new_sp);
-
-    Ptr<void> new_argp = argp;
-    if (old_stack_address < argp.address() && (old_stack_address + old_thread->stack_size > argp.address())) {
-        const Address offset = old_stack_address + old_thread->stack_size - argp.address();
-        new_argp = Ptr<void>(new_stack_address + new_thread->stack_size - offset);
-    }
-    return new_argp;
+    return Ptr<void>(data_addr);
 }
 
 static bool run_thread(ThreadState &thread) {
