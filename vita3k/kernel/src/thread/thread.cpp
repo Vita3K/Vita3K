@@ -140,6 +140,10 @@ void raise_waiting_threads(ThreadState *thread) {
     thread->waiting_threads.clear();
 }
 
+bool is_running(KernelState &kernel, ThreadState &thread) {
+    return kernel.running_threads.find(thread.id) != kernel.running_threads.end();
+}
+
 int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp) {
     const std::unique_lock<std::mutex> lock(kernel.mutex);
 
