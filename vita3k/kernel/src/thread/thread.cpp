@@ -19,6 +19,7 @@
 #include <kernel/thread/thread_state.h>
 
 #include <kernel/state.h>
+#include <util/align.h>
 
 #include <kernel/functions.h>
 
@@ -180,7 +181,8 @@ Ptr<void> copy_block_to_stack(ThreadState &thread, MemState &mem, const Ptr<void
     const Address sp = read_sp(*thread.cpu);
     assert(sp <= stack_top && sp >= thread.stack.get());
     assert(sp - thread.stack.get() >= size);
-    const Address data_addr = sp - size;
+    const int aligned_size = align(size, 8);
+    const Address data_addr = sp - aligned_size;
     memcpy(Ptr<uint8_t>(data_addr).get(mem), data.get(mem), size);
 
     write_sp(*thread.cpu, data_addr);
