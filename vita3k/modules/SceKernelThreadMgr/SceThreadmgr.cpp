@@ -398,6 +398,15 @@ EXPORT(int, _sceKernelSignalLwCondTo) {
 EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {
     auto thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
     Ptr<void> new_argp(0);
+
+    if (!thread) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
+
+    if (is_running(host.kernel, *thread)) {
+        return SCE_KERNEL_ERROR_RUNNING;
+    }
+
     if (argp && arglen > 0) {
         new_argp = copy_block_to_stack(*thread, host.mem, argp, arglen);
     }

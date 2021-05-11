@@ -38,6 +38,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
 int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp);
 void exit_thread(ThreadState &thread);
 void exit_and_delete_thread(ThreadState &thread);
+bool is_running(KernelState &kernel, ThreadState &thread);
 void delete_thread(KernelState &kernel, ThreadState &thread);
 int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat);
 Ptr<void> copy_block_to_stack(ThreadState &thread, MemState &mem, const Ptr<void> &data, const int size);
