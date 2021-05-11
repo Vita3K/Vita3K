@@ -474,6 +474,9 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     case SCE_GXM_COLOR_FORMAT_U5U6U5_RGB:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
         break;
+    case SCE_GXM_COLOR_FORMAT_U8U8_AR:
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RG, GL_UNSIGNED_BYTE, pixels);
+        break;
     case SCE_GXM_COLOR_FORMAT_U8_A:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_ALPHA, GL_UNSIGNED_BYTE, pixels);
         break;
