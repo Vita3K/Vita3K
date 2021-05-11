@@ -86,8 +86,6 @@ struct MjpegDecoderState : public DecoderState {
 };
 
 struct Atrac9DecoderState : public DecoderState {
-    AVCodecContext *context{};
-
     uint32_t config_data;
 
     uint32_t get_channel_count();
@@ -102,11 +100,10 @@ struct Atrac9DecoderState : public DecoderState {
     bool receive(uint8_t *data, DecoderSize *size) override;
 
     explicit Atrac9DecoderState(uint32_t config_data);
+    ~Atrac9DecoderState() override;
 };
 
 struct Mp3DecoderState : public DecoderState {
-    AVCodecContext *context{};
-
     uint32_t get(DecoderQuery query) override;
     uint32_t get_es_size(const uint8_t *data) override;
 
@@ -114,6 +111,7 @@ struct Mp3DecoderState : public DecoderState {
     bool receive(uint8_t *data, DecoderSize *size) override;
 
     explicit Mp3DecoderState(uint32_t channels);
+    ~Mp3DecoderState() override;
 };
 
 struct PCMDecoderState : public DecoderState {
