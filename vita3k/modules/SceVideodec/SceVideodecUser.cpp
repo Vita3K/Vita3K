@@ -394,11 +394,13 @@ EXPORT(int, sceVideodecInitLibraryNongameapp) {
 }
 
 EXPORT(int, sceVideodecInitLibraryWithUnmapMem) {
-    return UNIMPLEMENTED();
+    host.kernel.obj_store.create<VideodecState>();
+    return 0;
 }
 
 EXPORT(int, sceVideodecInitLibraryWithUnmapMemInternal) {
-    return UNIMPLEMENTED();
+    host.kernel.obj_store.create<VideodecState>();
+    return 0;
 }
 
 EXPORT(int, sceVideodecInitLibraryWithUnmapMemNongameapp) {
