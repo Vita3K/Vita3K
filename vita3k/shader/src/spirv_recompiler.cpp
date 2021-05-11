@@ -357,6 +357,15 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
     // Store the coords
     std::array<shader::usse::Coord, 11> coords;
 
+    spv::Id f32 = b.makeFloatType(32);
+    spv::Id v4 = b.makeVectorType(f32, 4);
+
+    spv::Id current_coord = b.createVariable(spv::StorageClassInput, v4, "gl_FragCoord");
+    b.addDecoration(current_coord, spv::DecorationBuiltIn, spv::BuiltInFragCoord);
+
+    translation_state.interfaces.push_back(current_coord);
+    translation_state.frag_coord_id = current_coord;
+
     // It may actually be total fragments input
     for (size_t i = 0; i < vertex_varyings_ptr->varyings_count; i++, descriptor++) {
         // 4 bit flag indicates a PA!
@@ -600,19 +609,10 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         query_info.coord = coords[query_info.coord_index];
     }
 
-    spv::Id f32 = b.makeFloatType(32);
-    spv::Id v4 = b.makeVectorType(f32, 4);
-
     auto mask = create_builtin_sampler(b, features, translation_state, "f_mask");
     translation_state.mask_id = mask;
 
     b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
-
-    spv::Id current_coord = b.createVariable(spv::StorageClassInput, v4, "gl_FragCoord");
-    b.addDecoration(current_coord, spv::DecorationBuiltIn, spv::BuiltInFragCoord);
-
-    translation_state.interfaces.push_back(current_coord);
-    translation_state.frag_coord_id = current_coord;
 
     if (program.is_native_color()) {
         // There might be a chance that this shader also reads from OUTPUT bank. We will load last state frag data
