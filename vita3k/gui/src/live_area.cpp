@@ -1023,9 +1023,9 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                     else
                         sscanf(str_tag.color.c_str(), "#%x", &color);
 
-                    str_color.push_back(ImVec4(float((color >> 16) & 0xFF), float((color >> 8) & 0xFF), float((color >> 0) & 0xFF), 255.f));
+                    str_color.push_back(ImVec4(((color >> 16) & 0xFF) / 255.f, ((color >> 8) & 0xFF) / 255.f, ((color >> 0) & 0xFF) / 255.f, 1.f));
                 } else
-                    str_color.push_back(ImVec4(255.f, 255.f, 255.f, 255.f));
+                    str_color.push_back(ImVec4(1.f, 1.f, 1.f, 1.f));
 
                 auto str_size = scal_size_frame, text_pos = pos_frame;
 
