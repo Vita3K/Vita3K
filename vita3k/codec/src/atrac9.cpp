@@ -182,3 +182,10 @@ Atrac9DecoderState::Atrac9DecoderState(uint32_t config_data)
     int err = avcodec_open2(context, codec, nullptr);
     assert(err == 0);
 }
+
+Atrac9DecoderState::~Atrac9DecoderState() {
+    avcodec_close(context);
+    av_free(context);
+
+    context = nullptr;
+}
