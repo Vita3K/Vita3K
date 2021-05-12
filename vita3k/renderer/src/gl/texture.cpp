@@ -93,7 +93,7 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
  * 
  * \return Size of source taken.
  */
-static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height) {
+static size_t decompress_and_unswizzle_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height) {
     int ubc_type = 0;
 
     switch (fmt) {
@@ -114,14 +114,15 @@ static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, v
     }
 
     if (ubc_type) {
-        renderer::texture::decompress_bc_swizz_image(width, height, reinterpret_cast<const std::uint8_t *>(data),
+        renderer::texture::decompress_bc_image(width, height, reinterpret_cast<const std::uint8_t *>(data),
             reinterpret_cast<std::uint32_t *>(dest), ubc_type);
         return (((width + 3) / 4) * ((height + 3) / 4) * ((ubc_type > 1) ? 16 : 8));
     } else if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) && (fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)) {
         // TODO, is not perfect for PVRT-II.
         pvr::PVRTDecompressPVRTC(data, (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP), width, height,
             (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP), reinterpret_cast<uint8_t *>(dest));
-        // TODO, calcule return is not sur.
+        renderer::texture::swizzled_texture_to_linear_texture(reinterpret_cast<uint8_t *>(dest), reinterpret_cast<uint8_t *>(dest), width, height, 32);
+        // TODO, calcule return is not sure.
         return ((width + 3) / 4) * ((height + 3) / 4);
     }
 
@@ -248,7 +249,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
             if (need_decompress_and_unswizzle_on_cpu) {
                 // Must decompress them
                 texture_data_decompressed.resize(width * height * 4);
-                source_size = decompress_compressed_swizz_texture(base_format, texture_data_decompressed.data(), pixels, width, height);
+                source_size = decompress_and_unswizzle_compressed_texture(base_format, texture_data_decompressed.data(), pixels, width, height);
                 bytes_per_pixel = 4;
                 bpp = 32;
                 pixels = texture_data_decompressed.data();
@@ -281,6 +282,8 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                 pixels = texture_data_decompressed.data();
                 break;
             default:
+                if (need_decompress_and_unswizzle_on_cpu)
+                    break;
                 // Convert data
                 texture_pixels_lineared.resize(width * height * bytes_per_pixel);
 
@@ -292,9 +295,6 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                         static_cast<std::uint8_t>(bpp));
 
                 pixels = texture_pixels_lineared.data();
-
-                if (need_decompress_and_unswizzle_on_cpu)
-                    texture_data_decompressed.clear();
                 break;
             }
 
