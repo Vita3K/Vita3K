@@ -204,6 +204,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     size_t bytes_per_pixel = (bpp + 7) >> 3;
 
     const auto texture_type = gxm_texture.texture_type();
+    const bool is_ubc = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1) || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC2) || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC3);
     const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
     const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !can_texture_be_unswizzled_without_decode(base_format);
 
@@ -243,6 +244,11 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
             if ((texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) {
                 width = nearest_power_of_two(width);
                 height = nearest_power_of_two(height);
+            }
+
+            if (is_ubc) {
+                width = align(width, 4);
+                height = align(height, 4);
             }
 
             if (need_decompress_and_unswizzle_on_cpu) {
@@ -298,7 +304,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                 break;
             }
 
-            if ((texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) {
+            if ((texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY) || is_ubc) {
                 width = org_width;
                 height = org_height;
             }
