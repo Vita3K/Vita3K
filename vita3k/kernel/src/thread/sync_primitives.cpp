@@ -387,7 +387,6 @@ SceUID semaphore_create(KernelState &kernel, const char *export_name, const char
 
 int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, SceInt32 signal, SceUInt *timeout) {
     assert(semaid >= 0);
-    assert(signal == 1);
 
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaid, kernel.semaphores, kernel.mutex);
@@ -405,7 +404,7 @@ int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_i
 
     std::unique_lock<std::mutex> semaphore_lock(semaphore->mutex);
 
-    if (semaphore->val <= 0) {
+    if (semaphore->val < signal) {
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
         assert(thread->to_do == ThreadToDo::run);
         thread->to_do = ThreadToDo::wait;
@@ -448,10 +447,13 @@ int semaphore_signal(KernelState &kernel, const char *export_name, SceUID thread
     }
     semaphore->val += signal;
 
-    while (semaphore->val > 0 && !semaphore->waiting_threads->empty()) {
+    while (!semaphore->waiting_threads->empty()) {
         const auto waiting_thread_data = *semaphore->waiting_threads->begin();
         const auto waiting_thread = waiting_thread_data.thread;
-        const auto waiting_signal_count = waiting_thread_data.lock_count;
+        const auto waiting_signal_count = waiting_thread_data.signal;
+
+        if (semaphore->val < waiting_signal_count)
+            break;
 
         const std::unique_lock<std::mutex> waiting_thread_lock(waiting_thread->mutex, std::try_to_lock);
         if (!waiting_thread_lock)
