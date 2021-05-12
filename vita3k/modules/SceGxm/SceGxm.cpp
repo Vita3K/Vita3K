@@ -64,6 +64,11 @@ struct SceGxmContext {
 
     mspace alloc_space = nullptr;
 
+    bool last_precomputed = false;
+    void reset_recording() {
+        last_precomputed = false;
+    }
+
     bool make_new_alloc_space(KernelState &kern, const MemState &mem, const SceUID thread_id) {
         if (alloc_space && ((state.vdm_buffer_size != 0) || (state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE))) {
             return false;
@@ -500,6 +505,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
 
     // It's legal to set at client.
     context->state.active = true;
+    context->last_precomputed = false;
 
     SceGxmColorSurface *color_surface_copy = nullptr;
     SceGxmDepthStencilSurface *depth_stencil_surface_copy = nullptr;
@@ -1065,6 +1071,24 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, const
     gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, context->state.fragment_uniform_buffers, gxm_fragment_program.renderer_data->uniform_buffer_sizes,
         host.kernel, host.mem, thread_id);
 
+    if (context->last_precomputed) {
+        // Need to re-set the data
+        const auto frag_paramters = gxp::program_parameters(fragment_program_gxp);
+        auto &textures = context->state.fragment_textures;
+        for (uint32_t i = 0; i < fragment_program_gxp.parameter_count; ++i) {
+            const auto parameter = frag_paramters[i];
+            if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+                const auto index = parameter.resource_index;
+                renderer::set_fragment_texture(*host.renderer, context->renderer.get(), index, textures[index]);
+            }
+        }
+
+        renderer::set_program(*host.renderer, context->renderer.get(), context->state.vertex_program, false);
+        renderer::set_program(*host.renderer, context->renderer.get(), context->state.fragment_program, true);
+
+        context->last_precomputed = false;
+    }
+
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
     // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).
     size_t max_index = 0;
@@ -1171,17 +1195,17 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         return RET_ERROR(SCE_GXM_ERROR_NULL_PROGRAM);
     }
 
-    const SceGxmFragmentProgram &gxm_fragment_program = *context->state.fragment_program.get(host.mem);
-    const SceGxmVertexProgram &gxm_vertex_program = *context->state.vertex_program.get(host.mem);
+    renderer::set_program(*host.renderer, context->renderer.get(), fragment_state->program, true);
+    renderer::set_program(*host.renderer, context->renderer.get(), vertex_state->program, false);
 
     // Set uniforms
     const SceGxmProgram &vertex_program_gxp = *vertex_program->program.get(host.mem);
     const SceGxmProgram &fragment_program_gxp = *fragment_program->program.get(host.mem);
 
-    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), gxm_vertex_program.renderer_data->uniform_buffer_sizes,
+    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), vertex_program->renderer_data->uniform_buffer_sizes,
         host.kernel, host.mem, thread_id);
 
-    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), gxm_fragment_program.renderer_data->uniform_buffer_sizes,
+    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), fragment_program->renderer_data->uniform_buffer_sizes,
         host.kernel, host.mem, thread_id);
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
@@ -1249,7 +1273,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     // Fragment texture is copied so no need to set it here.
     // Add draw command
     renderer::draw(*host.renderer, context->renderer.get(), draw->type, draw->index_format, draw->index_data.get(host.mem), draw->vertex_count, 1);
-
+    context->last_precomputed = true;
     return 0;
 }
 
