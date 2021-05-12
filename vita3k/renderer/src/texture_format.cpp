@@ -437,12 +437,20 @@ static void decompress_block_dxt5(std::uint32_t x, std::uint32_t y, std::uint32_
  * \param image            Pointer to the image where the decompressed pixels will be stored.
  * \param bc_type          Block compressed type. BC1 (DXT1), BC2 (DXT2) or BC3 (DXT3).
  */
-void decompress_bc_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type) {
+void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type) {
     std::uint32_t block_count_x = (width + 3) / 4;
     std::uint32_t block_count_y = (height + 3) / 4;
     std::uint32_t block_size = (bc_type > 1) ? 16 : 8;
 
     std::uint32_t temp_block_result[16] = {};
+
+    // This looks like swizzle order but it's not.
+    static const int dxt_order[] = {
+        0, 2, 8, 10,
+        1, 3, 9, 11,
+        4, 6, 12, 14,
+        5, 7, 13, 15
+    };
 
     for (std::uint32_t j = 0; j < block_count_y; j++) {
         for (std::uint32_t i = 0; i < block_count_x; i++) {
@@ -460,15 +468,11 @@ void decompress_bc_image(std::uint32_t width, std::uint32_t height, const std::u
                 break;
             }
 
-            for (int dy = 0; dy < 4; dy++) {
-                for (int dx = 0; dx < 4; dx++) {
-                    const uint32_t y = (j * block_size * 4 + dy);
-                    const uint32_t x = (i * block_size * 4 + dx);
-                    if (x >= width || y >= height)
-                        continue;
-                    image[width * y + x] = temp_block_result[dy * 4 + dx];
-                }
+            for (int b = 0; b < 16; b++) {
+                image[dxt_order[b]] = temp_block_result[b];
             }
+
+            image += 16;
         }
 
         block_storage += block_count_x * block_size;
