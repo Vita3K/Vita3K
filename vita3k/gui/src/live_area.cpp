@@ -468,14 +468,14 @@ void init_live_area(GuiState &gui, HostState &host) {
         const auto fw_path{ fs::path(host.pref_path) / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
         const auto APP_PATH{ fs::path(host.pref_path) / app_device._to_string() / "app" / app_path };
-        const auto live_area_path{ fs::path("sce_sys") / (sku_flag[app_path] == 3 ? "retail/livearea" : "livearea") };
+        const auto live_area_path{ fs::path("sce_sys") / ((sku_flag[app_path] == 3) && fs::exists(APP_PATH / "sce_sys/retail/livearea") ? "retail/livearea" : "livearea") };
         auto template_xml{ APP_PATH / live_area_path / "contents/template.xml" };
 
         pugi::xml_document doc;
 
         if (!doc.load_file(template_xml.c_str())) {
             if (is_ps_app || is_sys_app)
-                LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}' in path: {}.", app_path, host.app_title, template_xml.string());
+                LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}' in path: {}.", APP_INDEX->title_id, APP_INDEX->title, template_xml.string());
             if (doc.load_file(default_fw_contents.c_str())) {
                 template_xml = default_fw_contents;
                 default_contents = true;
@@ -1018,7 +1018,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                 if (!str_tag.color.empty()) {
                     int color;
 
-                    if (frame.autoflip != 0)
+                    if (frame.autoflip)
                         sscanf(str[app_path][frame.id][current_item[app_path][frame.id]].color.c_str(), "#%x", &color);
                     else
                         sscanf(str_tag.color.c_str(), "#%x", &color);
