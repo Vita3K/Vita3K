@@ -774,8 +774,73 @@ SOP3:
     description: Sum of Products 3
     members:
         - opcode1: '10010'
-        - DONTCARE:
-            size: 59
+        - pred:
+            offset: 57
+            size: 2
+        - mod1:
+            offset: 56
+            size: 1
+        - skipinv:
+            offset: 55
+            size: 1
+        - nosched:
+            offset: 54
+            size: 1
+        - cop:
+            offset: 52
+            size: 2
+        - destbext:
+            offset: 51
+            size: 1
+        - end:
+            offset: 50
+            size: 1
+        - src1bext:
+            offset: 49
+            size: 1
+        - src2bext:
+            offset: 48
+            size: 1
+        - mod2:
+            offset: 47
+            size: 1
+        - wrmask:
+            offset: 43
+            size: 4
+        - aop:
+            offset: 41
+            size: 2
+        - sel1:
+            offset: 38
+            size: 3
+        - sel2:
+            offset: 35
+            size: 3
+        - src0bank:
+            offset: 34
+            size: 1
+        - destbank:
+            offset: 32
+            size: 2
+        - src1bank:
+            offset: 30
+            size: 2
+        - src2bank:
+            offset: 28
+            size: 2
+        - destn:
+            offset: 21
+            size: 7
+        - src0n:
+            offset: 14
+            size: 7
+        - src1n:
+            offset: 7
+            size: 7
+        - src2n:
+            offset: 0
+            size: 7
+
 I8MAD:
     description: 8-bit Integer multiply-add
     members:
