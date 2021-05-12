@@ -29,6 +29,15 @@ inline bool atomic_compare_and_swap(volatile uint64_t *pointer, uint64_t value, 
         value, expected);
     return result == expected;
 }
+
+inline uint32_t atomic_load_acquire(volatile uint32_t *pointer) {
+    return *pointer;
+}
+
+inline void atomic_store_release(volatile uint32_t *pointer, uint32_t value) {
+    *pointer = value;
+}
+
 #else
 
 inline bool atomic_compare_and_swap(volatile uint8_t *pointer, uint8_t value, uint8_t expected) {
@@ -45,6 +54,16 @@ inline bool atomic_compare_and_swap(volatile uint32_t *pointer, uint32_t value, 
 
 inline bool atomic_compare_and_swap(volatile uint64_t *pointer, uint64_t value, uint64_t expected) {
     return __sync_bool_compare_and_swap(pointer, expected, value);
+}
+
+inline uint32_t atomic_load_acquire(volatile uint32_t *pointer) {
+    uint32_t value;
+    __atomic_load(pointer, &value, __ATOMIC_ACQUIRE);
+    return value;
+}
+
+inline void atomic_store_release(volatile uint32_t *pointer, uint32_t value) {
+    __atomic_store(pointer, &value, __ATOMIC_RELEASE);
 }
 
 #endif

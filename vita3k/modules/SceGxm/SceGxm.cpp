@@ -870,13 +870,13 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, const SceGxmNotification *ve
     }
 
     if (vertexNotification) {
-        volatile uint32_t *vertex_address = vertexNotification->address.get(host.mem);
-        *vertex_address = vertexNotification->value;
+        renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
+            nullptr, vertexNotification->address, vertexNotification->value, true);
     }
 
     if (fragmentNotification) {
-        volatile uint32_t *fragment_address = fragmentNotification->address.get(host.mem);
-        *fragment_address = fragmentNotification->value;
+        renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
+            nullptr, fragmentNotification->address, fragmentNotification->value, false);
     }
 
     // Submit our command list
@@ -1129,7 +1129,13 @@ EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
     if (!notification) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    volatile uint32_t *ptr = notification->address.get(host.mem);
+
+    // TODO is there better way?
+    while (atomic_load_acquire(ptr) != notification->value) {
+    }
+    return 0;
 }
 
 EXPORT(int, sceGxmPadHeartbeat, const SceGxmColorSurface *displaySurface, SceGxmSyncObject *displaySyncObject) {

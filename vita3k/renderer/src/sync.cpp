@@ -22,6 +22,14 @@ COMMAND(handle_signal_sync_object) {
     renderer::subject_done(sync, renderer::SyncObjectSubject::Fragment);
 }
 
+COMMAND(handle_notification) {
+    volatile uint32_t *ptr = helper.pop<Ptr<volatile uint32_t>>().get(mem);
+    uint32_t value = helper.pop<uint32_t>();
+    [[maybe_unused]] const bool is_vertex = helper.pop<bool>();
+
+    atomic_store_release(ptr, value);
+}
+
 // Client side function
 void finish(State &state, Context &context) {
     // Wait for the code
