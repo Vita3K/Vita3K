@@ -25,7 +25,7 @@ EXPORT(int32_t, sceCodecEngineAllocMemoryFromUnmapMemBlock, SceUID uid, uint32_t
     if (it == host.kernel.codec_blocks.end())
         return SCE_CODECENGINE_ERROR_INVALID_VALUE;
     auto &block = it->second;
-    return 1 + block.vaddr++;
+    return 0xDEADBEAF + block.vaddr++;
 }
 
 EXPORT(int, sceCodecEngineCloseUnmapMemBlock, SceUID uid) {
