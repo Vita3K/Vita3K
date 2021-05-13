@@ -295,6 +295,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg.log_level));
     }
 
+    LOG_INFO("{}: {}", host.cfg[e_cpu_backend], host.cfg.current_config.cpu_backend);
     LOG_INFO("ngs experimental state: {}", !host.cfg.current_config.disable_ngs);
     LOG_INFO("video player state: {}", host.cfg.current_config.video_playing);
     if (host.cfg.current_config.auto_lle)

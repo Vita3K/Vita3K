@@ -110,7 +110,6 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
                 }
                 fw_version.clear();
                 pup_path = nullptr;
-                get_modules_list(gui, host);
                 gui.file_menu.firmware_install_dialog = false;
                 draw_file_dialog = true;
             }

@@ -266,7 +266,6 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
         LOG_INFO_IF(cfg.run_app_path, "input-installed-path: {}", *cfg.run_app_path);
-        LOG_INFO("{}: {}", cfg[e_cpu_backend], cfg.cpu_backend);
         LOG_INFO("{}: {}", cfg[e_backend_renderer], cfg.backend_renderer);
         LOG_INFO("{}: {}", cfg[e_log_level], cfg.log_level);
         LOG_INFO_IF(cfg.log_imports, "{}: enabled", cfg[e_log_imports]);
