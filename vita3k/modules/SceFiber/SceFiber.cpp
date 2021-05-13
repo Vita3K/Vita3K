@@ -25,16 +25,10 @@
 
 const static int DEFAULT_FIBER_STACK_SIZE = 4096;
 
-struct InitialFiber {
-    Address start;
-    Address end;
-    SceFiber *fiber;
-};
-
-typedef std::vector<InitialFiber> InitialFibers;
-
 struct FiberState {
-    InitialFibers initial_fibers;
+    std::mutex mutex;
+    std::map<SceUID, SceFiber *> thread_fibers;
+    std::map<SceUID, CPUContext> thread_contexts;
 };
 
 LIBRARY_INIT_IMPL(SceFiber) {
@@ -42,7 +36,32 @@ LIBRARY_INIT_IMPL(SceFiber) {
 }
 LIBRARY_INIT_REGISTER(SceFiber)
 
-std::string _describeFiber(ThreadStatePtr thread, SceFiber *fiber) {
+constexpr bool LOG_FIBER = false;
+
+void set_thread_fiber(FiberState &state, const SceUID &tid, SceFiber *fiber) {
+    const std::lock_guard<std::mutex> lock(state.mutex);
+    state.thread_fibers[tid] = fiber;
+}
+
+SceFiber *get_thread_fiber(FiberState &state, const SceUID &tid) {
+    const std::lock_guard<std::mutex> lock(state.mutex);
+    if (state.thread_fibers.find(tid) == state.thread_fibers.end()) {
+        return nullptr;
+    }
+    return state.thread_fibers[tid];
+}
+
+void set_thread_context(FiberState &state, const SceUID &tid, const CPUContext &ctx) {
+    const std::lock_guard<std::mutex> lock(state.mutex);
+    state.thread_contexts[tid] = ctx;
+}
+
+CPUContext get_thread_context(FiberState &state, const SceUID &tid) {
+    const std::lock_guard<std::mutex> lock(state.mutex);
+    return state.thread_contexts[tid];
+}
+
+std::string describe_fiber(FiberState &state, ThreadStatePtr thread, SceFiber *fiber) {
     std::stringstream ss;
     ss << fmt::format("Fiber (name: {})\n", fiber->name);
     ss << fmt::format("entry: {}\n", log_hex(fiber->cpu->get_pc()), log_hex(fiber->entry.address()));
@@ -50,113 +69,105 @@ std::string _describeFiber(ThreadStatePtr thread, SceFiber *fiber) {
     ss << fiber->cpu->description();
     ss << "Referenced from " << thread->id << "\n";
     ss << "CPU Context:\n";
-    ss << thread->cpu_context.description();
+    auto ctx = get_thread_context(state, thread->id);
+    ss << ctx.description();
     return ss.str();
 }
 
-InitialFiber *_findIntialFiber(FiberState &state, Address sp) {
-    // TODO use interval tree
-    // TODO destroy initial fibers
-    for (auto &ifiber : state.initial_fibers) {
-        // stack adress is descending
-        if (ifiber.start <= sp && sp <= ifiber.end) {
-            return &ifiber;
-        }
+void log_fiber(FiberState &state, ThreadStatePtr thread, SceFiber *fiber, const std::string &function_name) {
+    std::string log_msg = function_name + "\n";
+    log_msg += describe_fiber(state, thread, fiber);
+    LOG_INFO("{}", log_msg);
+}
+
+void setup_fiber_to_run(HostState &host, const ThreadStatePtr thread, SceFiber *fiber, const uint32_t &argOnRunTo) {
+    assert(fiber->status != FiberStatus::RUN);
+    if (!fiber->addrContext) {
+        fiber->cpu->set_sp(read_sp(*thread->cpu));
+        fiber->status = FiberStatus::INIT;
     }
-    return nullptr;
-}
 
-void _resetFiber(FiberState &state, MemState &mem, SceFiber *fiber) {
-    auto ifiber = _findIntialFiber(state, fiber->cpu->get_sp());
-    assert(ifiber);
-    const auto cpu = fiber->cpu;
-    *fiber = *ifiber->fiber;
-    fiber->cpu = cpu;
-    *fiber->cpu = *ifiber->fiber->cpu;
-    memset(Ptr<void>(ifiber->start).get(mem), 0xCC, ifiber->end - ifiber->start);
-}
-
-int _fiberSwitch(HostState &host, const ThreadStatePtr thread, SceFiber *fiber, CPUContext &backup_cpu_context, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun, bool reset) {
-    const auto state = host.kernel.obj_store.get<FiberState>();
-    backup_cpu_context = save_context(*thread->cpu);
-
-    bool suspended = false;
-    if (fiber->addrContext == 0 && reset) {
-        _resetFiber(*state, host.mem, fiber);
-    } else if (fiber->entry.address() == fiber->cpu->get_pc()) {
+    if (fiber->status == FiberStatus::INIT) {
+        fiber->cpu->cpu_registers[0] = fiber->argOnInitialize;
         fiber->cpu->cpu_registers[1] = argOnRunTo;
+        fiber->cpu->set_pc(fiber->entry.address());
     } else {
-        suspended = true;
-        Address previousArgOnRun = fiber->cpu->cpu_registers[2];
-        if (previousArgOnRun) {
-            *(Ptr<SceUInt32>(previousArgOnRun).get(host.mem)) = argOnRunTo;
+        if (fiber->argOnRun) {
+            *fiber->argOnRun.get(host.mem) = argOnRunTo;
         }
     }
-
-    load_context(*(thread->cpu), *fiber->cpu);
-
-    thread->fiber = Ptr<void>(fiber, host.mem);
-
-    return suspended ? SCE_FIBER_OK : fiber->cpu->cpu_registers[0];
+    fiber->status = FiberStatus::RUN;
 }
 
-void _initializeFiber(HostState &host, const ThreadStatePtr thread, SceFiber *fiber, const char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext, SceFiberOptParam *params) {
+void initialize_fiber(HostState &host, const ThreadStatePtr thread, SceFiber *fiber, const char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext, SceFiberOptParam *params) {
     const auto state = host.kernel.obj_store.get<FiberState>();
     fiber->entry = entry;
     strncpy(fiber->name, name, 32);
     fiber->argOnInitialize = argOnInitialize;
+    fiber->argOnRun = 0;
     fiber->addrContext = addrContext.address();
     fiber->sizeContext = sizeContext;
     fiber->cpu = new CPUContext;
+    fiber->status = FiberStatus::INIT;
     *fiber->cpu = save_context(*thread->cpu);
 
-    fiber->cpu->cpu_registers[0] = argOnInitialize;
-    fiber->cpu->set_pc(fiber->entry.address());
-
-    if (addrContext.address() == 0) {
-        auto ctx_name = new char[32];
-        strncpy(ctx_name, name, 32);
-
-        addrContext = Ptr<void>(alloc(host.mem, DEFAULT_FIBER_STACK_SIZE, ctx_name));
-        sizeContext = DEFAULT_FIBER_STACK_SIZE;
+    if (addrContext.address() && sizeContext != 0) {
+        memset(addrContext.get(host.mem), 0xCC, sizeContext);
+        fiber->cpu->set_sp(addrContext.address() + sizeContext);
     }
-
-    fiber->cpu->set_sp(addrContext.address() + sizeContext);
-    memset(addrContext.get(host.mem), 0xCC, sizeContext);
-
-    SceFiber *fiberCopy = new SceFiber;
-    *fiberCopy = *fiber;
-    fiberCopy->cpu = new CPUContext;
-    *fiberCopy->cpu = *fiber->cpu;
-
-    InitialFiber ifiber;
-    ifiber.start = addrContext.address();
-    ifiber.end = addrContext.address() + sizeContext;
-    ifiber.fiber = fiberCopy;
-    state->initial_fibers.push_back(ifiber);
+    fiber->cpu->set_lr(0xDEADBEAF);
 }
 
 EXPORT(int, _sceFiberAttachContextAndRun, SceFiber *fiber, Address addrContext, SceSize sizeContext, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun) {
     // Maybe Need more check on real hw
     STUBBED("Todo: not sure for now");
+    const auto state = host.kernel.obj_store.get<FiberState>();
     const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    SceFiber *thread_fiber = get_thread_fiber(*state, thread->id);
+    assert(!thread_fiber);
+    if (LOG_FIBER) {
+        log_fiber(*state, thread, fiber, "Attach context and run");
+    }
+
     fiber->addrContext = addrContext;
     fiber->sizeContext = sizeContext;
-    auto res = _fiberSwitch(host, thread, fiber, thread->cpu_context, argOnRunTo, argOnRun, false);
-    write_lr(*(thread->cpu), thread->cpu_context.get_lr());
+    if (!addrContext && sizeContext > 0) {
+        fiber->cpu->set_sp(addrContext + sizeContext);
+    }
 
-    return res;
+    setup_fiber_to_run(host, thread, fiber, argOnRunTo);
+    set_thread_context(*state, thread->id, save_context(*thread->cpu));
+    set_thread_fiber(*state, thread->id, fiber);
+
+    load_context(*thread->cpu, *fiber->cpu);
+    return fiber->cpu->cpu_registers[0];
 }
 
 EXPORT(int, _sceFiberAttachContextAndSwitch, SceFiber *fiber, Address addrContext, SceSize sizeContext, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun) {
     // Maybe Need more check on real hw
     STUBBED("Todo: not sure for now");
+    const auto state = host.kernel.obj_store.get<FiberState>();
     const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    auto old_fiber = thread->fiber.cast<SceFiber>().get(host.mem);
+    SceFiber *thread_fiber = get_thread_fiber(*state, thread->id);
+    if (LOG_FIBER) {
+        log_fiber(*state, thread, fiber, "Attach context and switch");
+    }
+
     fiber->addrContext = addrContext;
     fiber->sizeContext = sizeContext;
+    if (!addrContext && sizeContext > 0) {
+        fiber->cpu->set_sp(addrContext + sizeContext);
+    }
 
-    return _fiberSwitch(host, thread, fiber, *old_fiber->cpu, argOnRunTo, argOnRun, true);
+    *thread_fiber->cpu = save_context(*thread->cpu);
+    setup_fiber_to_run(host, thread, fiber, argOnRunTo);
+    thread_fiber->status = FiberStatus::SUSPEND;
+    thread_fiber->argOnRun = argOnRun;
+    thread_fiber->cpu->cpu_registers[0] = SCE_FIBER_OK;
+    set_thread_fiber(*state, thread->id, fiber);
+    load_context(*thread->cpu, *fiber->cpu);
+
+    return fiber->cpu->cpu_registers[0];
 }
 
 EXPORT(SceInt32, _sceFiberInitializeImpl, SceFiber *fiber, const char *name, Ptr<SceFiberEntry> entry, SceUInt32 argOnInitialize, Ptr<void> addrContext, SceSize sizeContext, SceFiberOptParam *params) {
@@ -177,7 +188,7 @@ EXPORT(SceInt32, _sceFiberInitializeImpl, SceFiber *fiber, const char *name, Ptr
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
 
-    _initializeFiber(host, thread, fiber, name, entry, argOnInitialize, addrContext, sizeContext, params);
+    initialize_fiber(host, thread, fiber, name, entry, argOnInitialize, addrContext, sizeContext, params);
 
     return SCE_FIBER_OK;
 }
@@ -200,7 +211,7 @@ EXPORT(int, _sceFiberInitializeWithInternalOptionImpl, SceFiber *fiber, const ch
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
 
-    _initializeFiber(host, thread, fiber, name, entry, argOnInitialize, addrContext, sizeContext, nullptr);
+    initialize_fiber(host, thread, fiber, name, entry, argOnInitialize, addrContext, sizeContext, nullptr);
 
     return SCE_FIBER_OK;
 }
@@ -211,7 +222,7 @@ EXPORT(SceInt32, sceFiberFinalize, SceFiber *fiber) {
     }
 
     delete fiber->cpu;
-    return STUBBED("TODO CHECKS");
+    return 0;
 }
 
 EXPORT(int, sceFiberGetInfo) {
@@ -219,14 +230,15 @@ EXPORT(int, sceFiberGetInfo) {
 }
 
 EXPORT(SceUInt32, sceFiberGetSelf, Ptr<SceFiber> *fiber) {
+    const auto state = host.kernel.obj_store.get<FiberState>();
     if (!fiber) {
         return RET_ERROR(SCE_FIBER_ERROR_NULL);
     }
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-
-    if (thread->fiber)
-        *fiber = thread->fiber.cast<SceFiber>();
+    SceFiber *thread_fiber = get_thread_fiber(*state, thread->id);
+    if (thread_fiber)
+        *fiber = Ptr<SceFiber>(thread_fiber, host.mem);
     else
         *fiber = Ptr<SceFiber>(0);
 
@@ -249,32 +261,50 @@ EXPORT(int, sceFiberRenameSelf) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, sceFiberReturnToThread, SceUInt32 argOnReturn, Ptr<SceUInt32> argOnRun) {
+EXPORT(SceInt32, sceFiberReturnToThread, uint32_t argOnReturnTo, Ptr<uint32_t> argOnRun) {
     const auto state = host.kernel.obj_store.get<FiberState>();
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    auto fiber = thread->fiber.cast<SceFiber>().get(host.mem);
-    (*thread->fiber.cast<SceFiber>().get(host.mem)->cpu) = save_context(*thread->cpu);
-    load_context(*thread->cpu, thread->cpu_context);
+    SceFiber *fiber = get_thread_fiber(*state, thread->id);
+    CPUContext thread_context = get_thread_context(*state, thread->id);
+    assert(fiber->status == FiberStatus::RUN);
+    if (LOG_FIBER) {
+        log_fiber(*state, thread, fiber, "Return to thread");
+    }
 
-    Address previousArgOnRun = thread->cpu_context.cpu_registers[2];
-    if (fiber->addrContext == 0) {
-        _resetFiber(*state, host.mem, fiber);
-    } else if (previousArgOnRun) {
-        *(Ptr<SceUInt32>(previousArgOnRun).get(host.mem)) = argOnReturn;
+    *fiber->cpu = save_context(*thread->cpu);
+    fiber->cpu->cpu_registers[0] = SCE_FIBER_OK;
+    fiber->status = FiberStatus::SUSPEND;
+    fiber->argOnRun = argOnRun;
+    set_thread_fiber(*state, thread->id, nullptr);
+
+    load_context(*thread->cpu, thread_context);
+    Address argOnReturn = thread_context.cpu_registers[2];
+    if (argOnReturn) {
+        *(Ptr<uint32_t>(argOnReturn).get(host.mem)) = argOnReturnTo;
     }
 
     return SCE_FIBER_OK;
 }
 
-EXPORT(SceUInt32, sceFiberRun, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun) {
+EXPORT(SceUInt32, sceFiberRun, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnReturn) {
+    const auto state = host.kernel.obj_store.get<FiberState>();
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     if (!fiber) {
         return RET_ERROR(SCE_FIBER_ERROR_NULL);
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    auto res = _fiberSwitch(host, thread, fiber, thread->cpu_context, argOnRunTo, argOnRun, false);
-    write_lr(*(thread->cpu), thread->cpu_context.get_lr());
-    return res;
+    SceFiber *thread_fiber = get_thread_fiber(*state, thread->id);
+    assert(!thread_fiber);
+    if (LOG_FIBER) {
+        log_fiber(*state, thread, fiber, "Run");
+    }
+
+    setup_fiber_to_run(host, thread, fiber, argOnRunTo);
+    set_thread_context(*state, thread->id, save_context(*thread->cpu));
+    set_thread_fiber(*state, thread->id, fiber);
+
+    load_context(*thread->cpu, *fiber->cpu);
+    return fiber->cpu->cpu_registers[0];
 }
 
 EXPORT(int, sceFiberStartContextSizeCheck) {
@@ -286,13 +316,27 @@ EXPORT(int, sceFiberStopContextSizeCheck) {
 }
 
 EXPORT(SceUInt32, sceFiberSwitch, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun) {
+    const auto state = host.kernel.obj_store.get<FiberState>();
+    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     if (!fiber) {
         return RET_ERROR(SCE_FIBER_ERROR_NULL);
     }
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    auto old_fiber = thread->fiber.cast<SceFiber>().get(host.mem);
-    return _fiberSwitch(host, thread, fiber, *old_fiber->cpu, argOnRunTo, argOnRun, true);
+    SceFiber *thread_fiber = get_thread_fiber(*state, thread->id);
+    assert(thread_fiber);
+    if (LOG_FIBER) {
+        log_fiber(*state, thread, fiber, "Switch");
+    }
+
+    *thread_fiber->cpu = save_context(*thread->cpu);
+    thread_fiber->status = FiberStatus::SUSPEND;
+    thread_fiber->argOnRun = argOnRun;
+    thread_fiber->cpu->cpu_registers[0] = SCE_FIBER_OK;
+    set_thread_fiber(*state, thread->id, fiber);
+    setup_fiber_to_run(host, thread, fiber, argOnRunTo);
+    load_context(*thread->cpu, *fiber->cpu);
+
+    return fiber->cpu->cpu_registers[0];
 }
 
 BRIDGE_IMPL(_sceFiberAttachContextAndRun)

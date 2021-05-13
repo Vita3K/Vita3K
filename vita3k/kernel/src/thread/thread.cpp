@@ -105,8 +105,6 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
         write_reg(*thread->cpu, 1, option->size);
     }
 
-    thread->cpu_context = save_context(*thread->cpu);
-
     alloc_name = fmt::format("TLS for thread {} (#{})", name, thid);
 
     auto tls_size = kernel_tls_size + (kernel.tls_msize == 0xcccccccc ? 0 : kernel.tls_msize);

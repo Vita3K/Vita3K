@@ -41,14 +41,24 @@ struct SceFiberOptParam {
     char reserved[128];
 };
 
+enum class FiberStatus {
+    INIT,
+    SUSPEND,
+    RUN
+};
+
 typedef struct SceFiber {
     Ptr<SceFiberEntry> entry;
-    SceUInt32 argOnInitialize;
     Address addrContext;
     SceSize sizeContext;
     char name[32];
     CPUContext *cpu;
+    SceUInt32 argOnInitialize;
+    Ptr<uint32_t> argOnRun;
+    FiberStatus status;
 } SceFiber;
+
+static_assert(sizeof(SceFiber) <= 128, "SceFiber sturct size is more than 128");
 
 LIBRARY_INIT_DECL(SceFiber)
 BRIDGE_DECL(_sceFiberAttachContextAndRun)

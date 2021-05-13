@@ -45,8 +45,6 @@ struct ThreadState {
     int priority;
     int stack_size;
     CPUStatePtr cpu;
-    CPUContext cpu_context;
-    Ptr<void> fiber;
     ThreadToDo to_do = ThreadToDo::run;
     std::mutex mutex;
     sync_utils::Semaphore signal;
