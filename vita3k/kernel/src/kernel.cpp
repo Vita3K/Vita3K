@@ -37,7 +37,6 @@ bool init(KernelState &kernel, MemState &mem, int cpu_pool_size, CPUProtocolBase
     kernel.start_tick = { rtc_base_ticks() };
     kernel.base_tick = { rtc_base_ticks() };
     kernel.cpu_protocol = cpu_protocol;
-    kernel.cpu_backend = cpu_backend;
     return true;
 }
 

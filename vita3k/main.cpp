@@ -202,6 +202,8 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    gui::set_config(gui, host, host.io.app_path);
+
     const auto APP_INDEX = gui::get_app_index(gui, host.io.app_path);
     host.app_version = APP_INDEX->app_ver;
     host.app_category = APP_INDEX->category;
@@ -213,8 +215,6 @@ int main(int argc, char *argv[]) {
     // Check license for PS App Only
     if (host.io.title_id.find("PCS") != std::string::npos)
         host.app_sku_flag = get_license_sku_flag(host, host.app_content_id);
-
-    gui::set_config(gui, host, host.io.app_path);
 
     Ptr<const void> entry_point;
     if (const auto err = load_app(entry_point, host, string_utils::utf_to_wide(host.io.app_path)) != Success)
