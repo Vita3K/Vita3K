@@ -149,10 +149,10 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             if (ImGui::BeginMenu("Custom Config")) {
                 if (!fs::exists(CUSTOM_CONFIG_PATH)) {
                     if (ImGui::MenuItem("Create", nullptr, &gui.configuration_menu.custom_settings_dialog))
-                        init_custom_config(gui, host, app_path);
+                        init_config(gui, host, app_path);
                 } else {
                     if (ImGui::MenuItem("Edit", nullptr, &gui.configuration_menu.custom_settings_dialog))
-                        init_custom_config(gui, host, app_path);
+                        init_config(gui, host, app_path);
                     if (ImGui::MenuItem("Remove"))
                         fs::remove(CUSTOM_CONFIG_PATH);
                 }

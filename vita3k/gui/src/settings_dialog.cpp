@@ -71,6 +71,29 @@ static bool change_pref_location(const std::string &input_path, const std::strin
     return true;
 }
 
+static Config::CurrentConfig config;
+
+static void get_modules_list(GuiState &gui, HostState &host) {
+    gui.modules.clear();
+
+    const auto modules_path{ fs::path(host.pref_path) / "vs0/sys/external/" };
+    if (fs::exists(modules_path) && !fs::is_empty(modules_path)) {
+        for (const auto &module : fs::directory_iterator(modules_path)) {
+            if (module.path().extension() == ".suprx")
+                gui.modules.push_back({ module.path().filename().replace_extension().string(), false });
+        }
+
+        for (auto &m : gui.modules)
+            m.second = std::find(config.lle_modules.begin(), config.lle_modules.end(), m.first) != config.lle_modules.end();
+
+        std::sort(gui.modules.begin(), gui.modules.end(), [](const auto &ma, const auto &mb) {
+            if (ma.second == mb.second)
+                return ma.first < mb.first;
+            return ma.second;
+        });
+    }
+}
+
 static void reset_emulator(GuiState &gui, HostState &host) {
     gui.live_area.app_selector = false;
     get_modules_list(gui, host);
@@ -99,49 +122,10 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
     }
 }
 
-Config::CurrentConfig custom_config;
+static CPUBackend config_cpu_backend;
 
-void get_modules_list(GuiState &gui, HostState &host) {
-    gui.modules.clear();
-    auto &lle_modules = gui.configuration_menu.custom_settings_dialog ? custom_config.lle_modules : host.cfg.lle_modules;
-
-    const auto modules_path{ fs::path(host.pref_path) / "vs0/sys/external/" };
-    if (fs::exists(modules_path) && !fs::is_empty(modules_path)) {
-        for (const auto &module : fs::directory_iterator(modules_path)) {
-            if (module.path().extension() == ".suprx")
-                gui.modules.push_back({ module.path().filename().replace_extension().string(), false });
-        }
-
-        for (auto &m : gui.modules)
-            m.second = std::find(lle_modules.begin(), lle_modules.end(), m.first) != lle_modules.end();
-
-        std::sort(gui.modules.begin(), gui.modules.end(), [](const auto &ma, const auto &mb) {
-            if (ma.second == mb.second)
-                return ma.first < mb.first;
-            return ma.second;
-        });
-    }
-}
-
-CPUBackend config_cpu_backend;
-
-void init_custom_config(GuiState &gui, HostState &host, const std::string &app_path) {
-    const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
-    if (is_custom_config && !get_custom_config(gui, host, app_path)) {
-        custom_config.cpu_backend = host.cfg.cpu_backend;
-        custom_config.lle_kernel = host.cfg.lle_kernel;
-        custom_config.auto_lle = host.cfg.auto_lle;
-        custom_config.lle_modules = host.cfg.lle_modules;
-        custom_config.disable_ngs = host.cfg.disable_ngs;
-        custom_config.video_playing = host.cfg.video_playing;
-    }
-    const auto cpu_backend = is_custom_config ? custom_config.cpu_backend : host.cfg.cpu_backend;
-    config_cpu_backend = cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
-    get_modules_list(gui, host);
-}
-
-bool get_custom_config(GuiState &gui, HostState &host, const std::string &app_path) {
-    custom_config = {};
+static bool get_custom_config(GuiState &gui, HostState &host, const std::string &app_path) {
+    config = {};
     const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
 
     if (fs::exists(CUSTOM_CONFIG_PATH)) {
@@ -150,17 +134,17 @@ bool get_custom_config(GuiState &gui, HostState &host, const std::string &app_pa
             // Load Core Config
             if (!custum_config_xml.child("core").empty()) {
                 const auto core_child = custum_config_xml.child("core");
-                custom_config.cpu_backend = core_child.attribute("cpu-backend").as_string();
-                custom_config.lle_kernel = core_child.attribute("lle-kernel").as_bool();
-                custom_config.auto_lle = core_child.attribute("auto-lle").as_bool();
+                config.cpu_backend = core_child.attribute("cpu-backend").as_string();
+                config.lle_kernel = core_child.attribute("lle-kernel").as_bool();
+                config.auto_lle = core_child.attribute("auto-lle").as_bool();
                 for (auto &m : core_child.child("lle-modules"))
-                    custom_config.lle_modules.push_back(m.text().as_string());
+                    config.lle_modules.push_back(m.text().as_string());
             }
             // Load Emulator Config
             if (!custum_config_xml.child("emulator").empty()) {
                 const auto emulator_child = custum_config_xml.child("emulator");
-                custom_config.disable_ngs = emulator_child.attribute("disable-ngs").as_bool();
-                custom_config.video_playing = emulator_child.attribute("video-playing").as_bool();
+                config.disable_ngs = emulator_child.attribute("disable-ngs").as_bool();
+                config.video_playing = emulator_child.attribute("video-playing").as_bool();
             }
 
             return true;
@@ -174,44 +158,67 @@ bool get_custom_config(GuiState &gui, HostState &host, const std::string &app_pa
     return false;
 }
 
-static void save_custom_config(GuiState &gui, HostState &host) {
-    const auto CONFIG_PATH{ fs::path(host.base_path) / "config" };
-    const auto CUSTOM_CONFIG_PATH{ CONFIG_PATH / fmt::format("config_{}.xml", host.app_path) };
-    if (!fs::exists(CONFIG_PATH))
-        fs::create_directory(CONFIG_PATH);
+void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
+    if (!get_custom_config(gui, host, app_path)) {
+        config.cpu_backend = host.cfg.cpu_backend;
+        config.lle_kernel = host.cfg.lle_kernel;
+        config.auto_lle = host.cfg.auto_lle;
+        config.lle_modules = host.cfg.lle_modules;
+        config.disable_ngs = host.cfg.disable_ngs;
+        config.video_playing = host.cfg.video_playing;
+    }
+    config_cpu_backend = config.cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
+    get_modules_list(gui, host);
+}
 
-    pugi::xml_document custum_config_xml;
-    auto declarationUser = custum_config_xml.append_child(pugi::node_declaration);
-    declarationUser.append_attribute("version") = "1.0";
-    declarationUser.append_attribute("encoding") = "utf-8";
+static void save_config(GuiState &gui, HostState &host) {
+    if (gui.configuration_menu.custom_settings_dialog) {
+        const auto CONFIG_PATH{ fs::path(host.base_path) / "config" };
+        const auto CUSTOM_CONFIG_PATH{ CONFIG_PATH / fmt::format("config_{}.xml", host.app_path) };
+        if (!fs::exists(CONFIG_PATH))
+            fs::create_directory(CONFIG_PATH);
 
-    // Core
-    auto core_child = custum_config_xml.append_child("core");
-    core_child.append_attribute("cpu-backend") = custom_config.cpu_backend.c_str();
-    core_child.append_attribute("lle-kernel") = custom_config.lle_kernel;
-    core_child.append_attribute("auto-lle") = custom_config.auto_lle;
-    auto enable_module = core_child.append_child("lle-modules");
-    for (const auto &m : custom_config.lle_modules)
-        enable_module.append_child("module").append_child(pugi::node_pcdata).set_value(m.c_str());
+        pugi::xml_document custum_config_xml;
+        auto declarationUser = custum_config_xml.append_child(pugi::node_declaration);
+        declarationUser.append_attribute("version") = "1.0";
+        declarationUser.append_attribute("encoding") = "utf-8";
 
-    // Emulator
-    auto emulator_child = custum_config_xml.append_child("emulator");
-    emulator_child.append_attribute("disable-ngs") = custom_config.disable_ngs;
-    emulator_child.append_attribute("video-playing") = custom_config.video_playing;
+        // Core
+        auto core_child = custum_config_xml.append_child("core");
+        core_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
+        core_child.append_attribute("lle-kernel") = config.lle_kernel;
+        core_child.append_attribute("auto-lle") = config.auto_lle;
+        auto enable_module = core_child.append_child("lle-modules");
+        for (const auto &m : config.lle_modules)
+            enable_module.append_child("module").append_child(pugi::node_pcdata).set_value(m.c_str());
 
-    const auto save_xml = custum_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
-    if (!save_xml)
-        LOG_ERROR("Fail save custum config xml for app path: {}, in path: {}", host.app_path, CONFIG_PATH.string());
+        // Emulator
+        auto emulator_child = custum_config_xml.append_child("emulator");
+        emulator_child.append_attribute("disable-ngs") = config.disable_ngs;
+        emulator_child.append_attribute("video-playing") = config.video_playing;
+
+        const auto save_xml = custum_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
+        if (!save_xml)
+            LOG_ERROR("Fail save custum config xml for app path: {}, in path: {}", host.app_path, CONFIG_PATH.string());
+    } else {
+        host.cfg.cpu_backend = config.cpu_backend;
+        host.cfg.lle_kernel = config.lle_kernel;
+        host.cfg.auto_lle = config.auto_lle;
+        host.cfg.lle_modules = config.lle_modules;
+        host.cfg.disable_ngs = config.disable_ngs;
+        host.cfg.video_playing = config.video_playing;
+    }
+    config::serialize_config(host.cfg, host.cfg.config_path);
 }
 
 void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
     if (get_custom_config(gui, host, app_path)) {
-        host.cfg.current_config.cpu_backend = custom_config.cpu_backend;
-        host.cfg.current_config.lle_kernel = custom_config.lle_kernel;
-        host.cfg.current_config.auto_lle = custom_config.auto_lle;
-        host.cfg.current_config.lle_modules = custom_config.lle_modules;
-        host.cfg.current_config.disable_ngs = custom_config.disable_ngs;
-        host.cfg.current_config.video_playing = custom_config.video_playing;
+        host.cfg.current_config.cpu_backend = config.cpu_backend;
+        host.cfg.current_config.lle_kernel = config.lle_kernel;
+        host.cfg.current_config.auto_lle = config.auto_lle;
+        host.cfg.current_config.lle_modules = config.lle_modules;
+        host.cfg.current_config.disable_ngs = config.disable_ngs;
+        host.cfg.current_config.video_playing = config.video_playing;
     } else {
         host.cfg.current_config.cpu_backend = host.cfg.cpu_backend;
         host.cfg.current_config.lle_kernel = host.cfg.lle_kernel;
@@ -235,16 +242,12 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
 
     // Core
     if (ImGui::BeginTabItem("Core")) {
-        auto &cpu_backend = is_custom_config ? custom_config.cpu_backend : host.cfg.cpu_backend;
-        auto &lle_kernel = is_custom_config ? custom_config.lle_kernel : host.cfg.lle_kernel;
-        auto &auto_lle = is_custom_config ? custom_config.auto_lle : host.cfg.auto_lle;
-        auto &lle_modules = is_custom_config ? custom_config.lle_modules : host.cfg.lle_modules;
         ImGui::PopStyleColor();
         ImGui::Spacing();
         static const char *LIST_CPU_BACKEND[] = { "Unicorn", "Dynarmic" };
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Cpu Backend");
         if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND, IM_ARRAYSIZE(LIST_CPU_BACKEND)))
-            cpu_backend = LIST_CPU_BACKEND[int(config_cpu_backend)];
+            config.cpu_backend = LIST_CPU_BACKEND[int(config_cpu_backend)];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred cpu backend.");
         ImGui::Spacing();
@@ -253,17 +256,17 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (!gui.modules.empty()) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Module Mode");
             ImGui::Spacing();
-            ImGui::Checkbox("Experimental: LLE libkernel & driver_us", &lle_kernel);
+            ImGui::Checkbox("Experimental: LLE libkernel & driver_us", &config.lle_kernel);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Enable this for using libkernel and driver_us module (experimental).");
             ImGui::Spacing();
-            if (ImGui::RadioButton("Automatic", auto_lle))
-                auto_lle = true;
+            if (ImGui::RadioButton("Automatic", config.auto_lle))
+                config.auto_lle = true;
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select Automatic mode for using modules list pre-set.");
             ImGui::SameLine();
-            if (ImGui::RadioButton("Manual", !auto_lle))
-                auto_lle = false;
+            if (ImGui::RadioButton("Manual", !config.auto_lle))
+                config.auto_lle = false;
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select Manual mode for load custom modules list.");
             ImGui::Spacing();
@@ -276,15 +279,15 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::PushItemWidth(240 * host.dpi_scale);
             if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules.size()), 6)) {
                 for (auto &m : gui.modules) {
-                    const auto module = std::find(lle_modules.begin(), lle_modules.end(), m.first);
-                    const bool module_existed = (module != lle_modules.end());
+                    const auto module = std::find(config.lle_modules.begin(), config.lle_modules.end(), m.first);
+                    const bool module_existed = (module != config.lle_modules.end());
                     if (!gui.module_search_bar.PassFilter(m.first.c_str()))
                         continue;
-                    if (ImGui::Selectable(m.first.c_str(), &m.second, auto_lle ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None)) {
+                    if (ImGui::Selectable(m.first.c_str(), &m.second, config.auto_lle ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None)) {
                         if (module_existed)
-                            lle_modules.erase(module);
+                            config.lle_modules.erase(module);
                         else
-                            lle_modules.push_back(m.first);
+                            config.lle_modules.push_back(m.first);
                     }
                 }
                 ImGui::ListBoxFooter();
@@ -295,7 +298,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             gui.module_search_bar.Draw("##module_search_bar", 200 * host.dpi_scale);
             ImGui::Spacing();
             if (ImGui::Button("Clear list")) {
-                lle_modules.clear();
+                config.lle_modules.clear();
                 for (auto &m : gui.modules)
                     m.second = false;
             }
@@ -359,10 +362,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("Disable experimental ngs support", is_custom_config ? &custom_config.disable_ngs : &host.cfg.disable_ngs);
+        ImGui::Checkbox("Disable experimental ngs support", is_custom_config ? &config.disable_ngs : &host.cfg.disable_ngs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Disable experimental support for advanced audio library ngs");
-        ImGui::Checkbox("Enable video playing support", is_custom_config ? &custom_config.video_playing : &host.cfg.video_playing);
+        ImGui::Checkbox("Enable video playing support", is_custom_config ? &config.video_playing : &host.cfg.video_playing);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable video player.\nOn some game, disable it is required for more progress.");
         ImGui::Spacing();
@@ -597,13 +600,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::SameLine(0, 20.f * host.dpi_scale);
         } else
             ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
-        if (ImGui::Button("Save", BUTTON_SIZE)) {
-            config::serialize_config(host.cfg, host.cfg.config_path);
-            if (is_custom_config)
-                save_custom_config(gui, host);
-        }
-        if (!is_custom_config && ImGui::IsItemHovered())
-            ImGui::SetTooltip("Click on Save is required to keep changes after reboot.");
+        if (ImGui::Button("Save", BUTTON_SIZE))
+            save_config(gui, host);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Click on Save is required to keep changes.");
     }
 
     ImGui::End();

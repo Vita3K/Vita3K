@@ -483,7 +483,6 @@ void init(GuiState &gui, HostState &host) {
     if (host.cfg.show_welcome)
         gui.help_menu.welcome_dialog = true;
 
-    get_modules_list(gui, host);
     get_sys_apps_title(gui, host);
 
     init_home(gui, host);
