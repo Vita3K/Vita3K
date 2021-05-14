@@ -237,7 +237,7 @@ public:
     }
 };
 
-std::unique_ptr<Dynarmic::A32::Jit> make_jit(DynarmicCPU &cpu, ArmDynarmicCallback *callback, std::shared_ptr<ArmDynarmicCP15> cp15, MemState *mem, Dynarmic::ExclusiveMonitor *monitor) {
+std::unique_ptr<Dynarmic::A32::Jit> make_jit(DynarmicCPU &cpu, ArmDynarmicCallback *callback, std::shared_ptr<ArmDynarmicCP15> cp15, MemState *mem, Dynarmic::ExclusiveMonitor *monitor, std::size_t processor_id) {
     Dynarmic::A32::UserConfig config;
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = callback;
@@ -246,17 +246,19 @@ std::unique_ptr<Dynarmic::A32::Jit> make_jit(DynarmicCPU &cpu, ArmDynarmicCallba
     config.global_monitor = monitor;
     config.coprocessors[15] = cp15;
     config.page_table = mem->pages_cpu.get();
+    config.processor_id = processor_id;
 
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
 
-DynarmicCPU::DynarmicCPU(CPUState *state, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor)
+DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor)
     : parent(state)
     , fallback(state, pc, sp)
     , cb(std::make_unique<ArmDynarmicCallback>(*state, *this))
     , cp15(std::make_shared<ArmDynarmicCP15>())
-    , ep(pc) {
-    jit = make_jit(*this, cb.get(), cp15, state->mem, monitor);
+    , ep(pc)
+    , core_id(processor_id) {
+    jit = make_jit(*this, cb.get(), cp15, state->mem, monitor, processor_id);
 
     set_pc(pc);
     set_lr(pc);
@@ -418,6 +420,10 @@ bool DynarmicCPU::is_thumb_mode() {
     return jit->Cpsr() & 0x20;
 }
 
+std::size_t DynarmicCPU::processor_id() const {
+    return core_id;
+}
+
 // TODO: proper abstraction
 ExclusiveMonitorPtr new_exclusive_monitor(int max_num_cores) {
     return new Dynarmic::ExclusiveMonitor(max_num_cores);
@@ -426,4 +432,9 @@ ExclusiveMonitorPtr new_exclusive_monitor(int max_num_cores) {
 void free_exclusive_monitor(ExclusiveMonitorPtr monitor) {
     Dynarmic::ExclusiveMonitor *monitor_ = reinterpret_cast<Dynarmic::ExclusiveMonitor *>(monitor);
     delete monitor_;
+}
+
+void clear_exclusive(ExclusiveMonitorPtr monitor, std::size_t core_num) {
+    Dynarmic::ExclusiveMonitor *monitor_ = reinterpret_cast<Dynarmic::ExclusiveMonitor *>(monitor);
+    monitor_->ClearProcessor(core_num);
 }

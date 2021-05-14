@@ -25,6 +25,8 @@ class DynarmicCPU : public CPUInterface {
     Address ep;
     Address tpidruro;
 
+    std::size_t core_id = 0;
+
     bool exit_request = false;
     bool halted = false;
 
@@ -34,7 +36,7 @@ class DynarmicCPU : public CPUInterface {
     bool log_write = false;
 
 public:
-    DynarmicCPU(CPUState *state, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor);
+    DynarmicCPU(CPUState *state, std::size_t processor_id, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor);
     ~DynarmicCPU();
     int run() override;
     void stop() override;
@@ -75,4 +77,6 @@ public:
     void set_log_mem(bool log) override;
     bool get_log_code() override;
     bool get_log_mem() override;
+
+    std::size_t processor_id() const override;
 };

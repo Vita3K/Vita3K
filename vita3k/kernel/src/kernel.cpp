@@ -27,14 +27,35 @@
 
 #include <spdlog/fmt/fmt.h>
 
+int CorenumAllocator::new_corenum() {
+    const std::lock_guard<std::mutex> guard(lock);
+
+    int size = 1;
+    return alloc.AllocateFrom(0, size);
+}
+
+void CorenumAllocator::free_corenum(const int num) {
+    const std::lock_guard<std::mutex> guard(lock);
+    alloc.Free(num, 1);
+}
+
+void CorenumAllocator::set_max_core_count(const std::size_t max) {
+    const std::lock_guard<std::mutex> guard(lock);
+    alloc.SetMaximum(max);
+}
+
 bool init(KernelState &kernel, MemState &mem, int cpu_pool_size, CPUProtocolBase *cpu_protocol, CPUBackend cpu_backend) {
-    kernel.exclusive_monitor = new_exclusive_monitor(100);
+    static constexpr std::size_t MAX_CORE_COUNT = 150;
+
+    kernel.corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
+
+    kernel.exclusive_monitor = new_exclusive_monitor(MAX_CORE_COUNT);
     kernel.start_tick = { rtc_base_ticks() };
     kernel.base_tick = { rtc_base_ticks() };
     kernel.cpu_protocol = cpu_protocol;
 
     for (int i = 0; i < cpu_pool_size; ++i) {
-        auto item = init_cpu(cpu_backend, 0, 0, 0, mem, cpu_protocol);
+        auto item = init_cpu(cpu_backend, 0, static_cast<std::size_t>(kernel.corenum_allocator.new_corenum()), 0, 0, mem, cpu_protocol);
         kernel.cpu_pool.add(std::move(item));
     }
 
