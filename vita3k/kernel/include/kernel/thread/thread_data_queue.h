@@ -214,7 +214,7 @@ public:
         return *it;
     }
 
-    typename std::multiset<T, std::greater<T>>::iterator it;
+    typename std::multiset<T>::iterator it;
 };
 
 template <typename T>
@@ -271,5 +271,5 @@ private:
         return ThreadDataQueueInterator<T>(base);
     }
 
-    std::multiset<T, std::greater<T>> c;
+    std::multiset<T> c;
 };

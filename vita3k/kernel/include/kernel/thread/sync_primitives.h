@@ -46,6 +46,10 @@ struct WaitingThreadData {
         };
     };
 
+    bool operator<(const WaitingThreadData &rhs) const {
+        return priority < rhs.priority;
+    }
+
     bool operator>(const WaitingThreadData &rhs) const {
         return priority > rhs.priority;
     }
