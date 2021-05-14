@@ -77,9 +77,9 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     thread->name = name;
     thread->entry_point = entry_point.address();
     thread->id = thid;
-    // TODO: needs testing
-    if (init_priority & (SCE_KERNEL_DEFAULT_PRIORITY & 0xF0000000)) {
-        thread->priority = init_priority - SCE_KERNEL_DEFAULT_PRIORITY + SCE_KERNEL_DEFAULT_PRIORITY_USER_INTERNAL;
+    if (init_priority > SCE_KERNEL_LOWEST_PRIORITY_USER) {
+        assert(SCE_KERNEL_HIGHEST_DEFAULT_PRIORITY <= init_priority && init_priority <= SCE_KERNEL_LOWEST_DEFAULT_PRIORITY);
+        thread->priority = init_priority - SCE_KERNEL_DEFAULT_PRIORITY + SCE_KERNEL_GAME_DEFAULT_PRIORITY_ACTUAL;
     } else {
         thread->priority = init_priority;
     }
