@@ -2,11 +2,71 @@
 #include <cpu/impl/interface.h>
 #include <cpu/state.h>
 #include <dynarmic/A32/context.h>
+#include <dynarmic/A32/coprocessor.h>
 #include <dynarmic/exclusive_monitor.h>
 #include <set>
 #include <util/log.h>
 
 #include <mem/ptr.h>
+
+class ArmDynarmicCP15 : public Dynarmic::A32::Coprocessor {
+    uint32_t tpidruro;
+
+public:
+    using CoprocReg = Dynarmic::A32::CoprocReg;
+
+    explicit ArmDynarmicCP15()
+        : tpidruro(0) {
+    }
+
+    ~ArmDynarmicCP15() {}
+
+    std::optional<Callback> CompileInternalOperation(bool two, unsigned opc1, CoprocReg CRd,
+        CoprocReg CRn, CoprocReg CRm,
+        unsigned opc2) override {
+        return std::nullopt;
+    }
+
+    CallbackOrAccessOneWord CompileSendOneWord(bool two, unsigned opc1, CoprocReg CRn,
+        CoprocReg CRm, unsigned opc2) override {
+        return CallbackOrAccessOneWord{};
+    }
+
+    CallbackOrAccessTwoWords CompileSendTwoWords(bool two, unsigned opc, CoprocReg CRm) override {
+        return CallbackOrAccessTwoWords{};
+    }
+
+    CallbackOrAccessOneWord CompileGetOneWord(bool two, unsigned opc1, CoprocReg CRn, CoprocReg CRm,
+        unsigned opc2) override {
+        if (CRn == CoprocReg::C13 && CRm == CoprocReg::C0 && opc1 == 0 && opc2 == 3) {
+            return &tpidruro;
+        }
+
+        return CallbackOrAccessOneWord{};
+    }
+
+    CallbackOrAccessTwoWords CompileGetTwoWords(bool two, unsigned opc, CoprocReg CRm) override {
+        return CallbackOrAccessTwoWords{};
+    }
+
+    std::optional<Callback> CompileLoadWords(bool two, bool long_transfer, CoprocReg CRd,
+        std::optional<std::uint8_t> option) override {
+        return std::nullopt;
+    }
+
+    std::optional<Callback> CompileStoreWords(bool two, bool long_transfer, CoprocReg CRd,
+        std::optional<std::uint8_t> option) override {
+        return std::nullopt;
+    }
+
+    void set_tpidruro(uint32_t tpidruro) {
+        this->tpidruro = tpidruro;
+    }
+
+    uint32_t get_tpidruro() {
+        return tpidruro;
+    }
+};
 
 class ArmDynarmicCallback : public Dynarmic::A32::UserCallbacks {
     friend class DynarmicCPU;
@@ -177,13 +237,14 @@ public:
     }
 };
 
-std::unique_ptr<Dynarmic::A32::Jit> make_jit(DynarmicCPU &cpu, std::unique_ptr<ArmDynarmicCallback> &callback, MemState *mem, Dynarmic::ExclusiveMonitor *monitor) {
+std::unique_ptr<Dynarmic::A32::Jit> make_jit(DynarmicCPU &cpu, ArmDynarmicCallback *callback, std::shared_ptr<ArmDynarmicCP15> cp15, MemState *mem, Dynarmic::ExclusiveMonitor *monitor) {
     Dynarmic::A32::UserConfig config;
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
-    config.callbacks = callback.get();
+    config.callbacks = callback;
     config.fastmem_pointer = mem->memory.get();
     config.hook_hint_instructions = true;
     config.global_monitor = monitor;
+    config.coprocessors[15] = cp15;
     config.page_table = mem->pages_cpu.get();
 
     return std::make_unique<Dynarmic::A32::Jit>(config);
@@ -193,8 +254,9 @@ DynarmicCPU::DynarmicCPU(CPUState *state, Address pc, Address sp, Dynarmic::Excl
     : parent(state)
     , fallback(state, pc, sp)
     , cb(std::make_unique<ArmDynarmicCallback>(*state, *this))
+    , cp15(std::make_shared<ArmDynarmicCP15>())
     , ep(pc) {
-    jit = make_jit(*this, cb, state->mem, monitor);
+    jit = make_jit(*this, cb.get(), cp15, state->mem, monitor);
 
     set_pc(pc);
     set_lr(pc);
@@ -269,11 +331,11 @@ void DynarmicCPU::set_cpsr(uint32_t val) {
 }
 
 uint32_t DynarmicCPU::get_tpidruro() {
-    return tpidruro;
+    return cp15->get_tpidruro();
 }
 
 void DynarmicCPU::set_tpidruro(uint32_t val) {
-    tpidruro = val;
+    cp15->set_tpidruro(val);
     fallback.set_tpidruro(val);
 }
 

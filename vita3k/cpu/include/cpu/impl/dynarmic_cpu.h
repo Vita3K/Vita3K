@@ -10,6 +10,7 @@
 #include <memory>
 
 class ArmDynarmicCallback;
+class ArmDynarmicCP15;
 
 class DynarmicCPU : public CPUInterface {
     friend class ArmDynarmicCallback;
@@ -19,6 +20,7 @@ class DynarmicCPU : public CPUInterface {
 
     std::unique_ptr<Dynarmic::A32::Jit> jit;
     std::unique_ptr<ArmDynarmicCallback> cb;
+    std::shared_ptr<ArmDynarmicCP15> cp15;
 
     Address ep;
     Address tpidruro;
