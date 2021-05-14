@@ -464,6 +464,10 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         kernel.tls_address = sceKernelModuleInfo->tlsInit;
         kernel.tls_psize = sceKernelModuleInfo->tlsInitSize;
         kernel.tls_msize = sceKernelModuleInfo->tlsAreaSize;
+    } else {
+        kernel.tls_address = 0;
+        kernel.tls_psize = 0;
+        kernel.tls_msize = 0;
     }
 
     strncpy(sceKernelModuleInfo->path, self_path.c_str(), 255);
