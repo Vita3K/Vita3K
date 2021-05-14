@@ -12,5 +12,6 @@ enum ExitCode {
     RendererInitFailed,
     ModuleLoadFailed,
     InitThreadFailed,
-    RunThreadFailed
+    RunThreadFailed,
+    KernelInitFailed
 };
