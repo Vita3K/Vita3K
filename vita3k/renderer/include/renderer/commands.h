@@ -36,7 +36,7 @@ using CommandFreeFunc = std::function<void(Command *)>;
 struct Context;
 struct State;
 
-enum class CommandOpcode : std::uint16_t {
+enum class CommandOpcode : std::uint8_t {
     // These two functions are sync, and taking pointer as parameter.
     CreateContext = 0,
     CreateRenderTarget = 1,
@@ -84,12 +84,12 @@ struct Command {
     };
 
     CommandOpcode opcode;
-    std::uint16_t flags = 0;
+    std::uint8_t flags = 0;
 
     std::uint8_t data[MAX_COMMAND_DATA_SIZE];
     int *status;
 
-    Command *next;
+    Command *next = nullptr;
 };
 
 using CommandPool = std::vector<Command>;
