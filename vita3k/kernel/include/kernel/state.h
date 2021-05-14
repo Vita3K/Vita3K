@@ -107,9 +107,9 @@ struct KernelState {
     Blocks blocks;
     Blocks vm_blocks;
     CodecEngineBlocks codec_blocks;
-    Ptr<const void> tls_address;
-    unsigned int tls_psize;
-    unsigned int tls_msize;
+    Ptr<const void> tls_address = Ptr<const void>(0);
+    unsigned int tls_psize = 0;
+    unsigned int tls_msize = 0;
     SemaphorePtrs semaphores;
     CondvarPtrs condvars;
     CondvarPtrs lwcondvars;
