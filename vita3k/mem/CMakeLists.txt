@@ -1,6 +1,7 @@
 add_library(
 	mem
 	STATIC
+	include/mem/allocator.h
 	include/mem/atomic.h
 	include/mem/functions.h
 	include/mem/mempool.h
@@ -8,6 +9,7 @@ add_library(
 	include/mem/ptr.h
 	include/mem/state.h
 	include/mem/util.h
+	src/allocator.cpp
 	src/mem.cpp
 )
 
