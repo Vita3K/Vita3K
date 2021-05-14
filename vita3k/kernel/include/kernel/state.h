@@ -21,6 +21,7 @@
 #include <kernel/thread/sync_primitives.h>
 #include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
+#include <mem/allocator.h>
 #include <mem/ptr.h>
 #include <rtc/rtc.h>
 #include <util/pool.h>
@@ -102,6 +103,16 @@ struct WatchMemory {
     size_t size;
 };
 
+struct CorenumAllocator {
+    BitmapAllocator alloc;
+    std::mutex lock;
+
+    void set_max_core_count(const std::size_t max);
+
+    int new_corenum();
+    void free_corenum(const int num);
+};
+
 struct KernelState {
     std::mutex mutex;
     Blocks blocks;
@@ -138,6 +149,8 @@ struct KernelState {
     SceRtcTick base_tick;
     TimerStates timers;
     Ptr<uint32_t> process_param;
+
+    CorenumAllocator corenum_allocator;
 
     bool wait_for_debugger = false;
     bool watch_import_calls = false;

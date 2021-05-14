@@ -77,6 +77,13 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     thread->name = name;
     thread->entry_point = entry_point.address();
     thread->id = thid;
+
+    thread->core_num = kernel.corenum_allocator.new_corenum();
+    if (thread->core_num < 0) {
+        LOG_ERROR("Out of core number to allocate, use 0");
+        thread->core_num = 0;
+    }
+
     if (init_priority > SCE_KERNEL_LOWEST_PRIORITY_USER) {
         assert(SCE_KERNEL_HIGHEST_DEFAULT_PRIORITY <= init_priority && init_priority <= SCE_KERNEL_LOWEST_DEFAULT_PRIORITY);
         thread->priority = init_priority - SCE_KERNEL_DEFAULT_PRIORITY + SCE_KERNEL_GAME_DEFAULT_PRIORITY_ACTUAL;
@@ -89,7 +96,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     const Address stack_top = thread->stack.get() + stack_size;
     memset(thread->stack.get_ptr<void>().get(mem), 0xcc, stack_size);
 
-    thread->cpu = init_cpu(kernel.cpu_backend, thid, entry_point.address(), stack_top, mem, kernel.cpu_protocol);
+    thread->cpu = init_cpu(kernel.cpu_backend, thid, static_cast<std::size_t>(thread->core_num), entry_point.address(), stack_top, mem, kernel.cpu_protocol);
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
@@ -264,6 +271,7 @@ int run_callback(KernelState &kernel, ThreadState &thread, const SceUID &thid, A
         LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
         return -1;
     }
+
     return read_reg(*cpu, 0);
 }
 
@@ -308,6 +316,8 @@ void exit_and_delete_thread(ThreadState &thread) {
 }
 
 void delete_thread(KernelState &kernel, ThreadState &thread) {
+    kernel.corenum_allocator.free_corenum(thread.core_num);
+
     kernel.waiting_threads.erase(thread.id);
     kernel.threads.erase(thread.id);
 }

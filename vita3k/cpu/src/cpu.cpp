@@ -46,7 +46,7 @@ SceUID get_thread_id(CPUState &state) {
     return state.thread_id;
 }
 
-CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address sp, MemState &mem, CPUProtocolBase *protocol) {
+CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, std::size_t processor_id, Address pc, Address sp, MemState &mem, CPUProtocolBase *protocol) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
     state->protocol = protocol;
@@ -65,7 +65,7 @@ CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address s
     switch (backend) {
     case CPUBackend::Dynarmic: {
         Dynarmic::ExclusiveMonitor *monitor = reinterpret_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exlusive_monitor());
-        state->cpu = std::make_unique<DynarmicCPU>(state.get(), pc, sp, monitor);
+        state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, pc, sp, monitor);
         break;
     }
     case CPUBackend::Unicorn: {
@@ -181,6 +181,10 @@ bool get_log_code(CPUState &state) {
 
 bool get_log_mem(CPUState &state) {
     return state.cpu->get_log_mem();
+}
+
+std::size_t get_processor_id(CPUState &state) {
+    return state.cpu->processor_id();
 }
 
 std::unique_ptr<ModuleRegion> get_region(CPUState &state, Address addr) {
