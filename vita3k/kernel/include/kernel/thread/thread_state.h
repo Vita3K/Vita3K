@@ -44,6 +44,7 @@ struct ThreadState {
     Block stack;
     int priority;
     int stack_size;
+    int core_num;
     CPUStatePtr cpu;
     ThreadToDo to_do = ThreadToDo::run;
     std::mutex mutex;

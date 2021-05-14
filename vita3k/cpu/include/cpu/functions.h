@@ -26,7 +26,7 @@
 #include <functional>
 #include <stack>
 
-CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, Address pc, Address sp, MemState &mem, CPUProtocolBase *protocol);
+CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, std::size_t processor_id, Address pc, Address sp, MemState &mem, CPUProtocolBase *protocol);
 int run(CPUState &state);
 int step(CPUState &state);
 void stop(CPUState &state);
@@ -47,6 +47,7 @@ void write_tpidruro(CPUState &state, uint32_t value);
 bool is_thumb_mode(CPUState &state);
 CPUContext save_context(CPUState &state);
 void load_context(CPUState &state, CPUContext ctx);
+std::size_t get_processor_id(CPUState &state);
 
 uint32_t read_fpscr(CPUState &state);
 void write_fpscr(CPUState &state, uint32_t value);
@@ -58,6 +59,7 @@ uint32_t stack_free(CPUState &state, size_t size);
 
 ExclusiveMonitorPtr new_exclusive_monitor(int max_num_cores);
 void free_exclusive_monitor(ExclusiveMonitorPtr monitor);
+void clear_exclusive(ExclusiveMonitorPtr monitor, std::size_t core_num);
 
 // Debugging helpers
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size = nullptr);
