@@ -29,7 +29,7 @@
 #include <host/load_self.h>
 #include <io/functions.h>
 #include <kernel/functions.h>
-#include <kernel/thread/sync_primitives.h>
+#include <kernel/sync_primitives.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/types.h>
 #include <rtc/rtc.h>
@@ -1556,8 +1556,8 @@ EXPORT(int, sceKernelWaitSemaCB, SceUID semaid, int signal, SceUInt *timeout) {
     return CALL_EXPORT(_sceKernelWaitSema, semaid, signal, timeout);
 }
 
-EXPORT(int, sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout, SceKernelWaitSignalParams *params) {
-    return CALL_EXPORT(_sceKernelWaitSignal, unknown, delay, timeout, params);
+EXPORT(int, sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout) {
+    return CALL_EXPORT(_sceKernelWaitSignal, unknown, delay, timeout);
 }
 
 EXPORT(int, sceKernelWaitSignalCB) {

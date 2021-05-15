@@ -18,7 +18,7 @@
 #pragma once
 
 #include <cpu/functions.h>
-#include <kernel/thread/sync_primitives.h>
+#include <kernel/sync_primitives.h>
 #include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 #include <mem/allocator.h>

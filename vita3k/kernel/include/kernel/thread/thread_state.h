@@ -19,7 +19,6 @@
 
 #include <mem/block.h>
 #include <mem/ptr.h>
-#include <util/semaphore.h>
 
 #include <condition_variable>
 #include <mutex>
@@ -40,6 +39,19 @@ enum class ThreadToDo {
 
 constexpr auto kernel_tls_size = 0x800;
 
+struct ThreadSignal {
+    ThreadSignal() = default;
+    ~ThreadSignal() = default;
+
+    void wait();
+    bool send();
+
+private:
+    std::mutex mutex;
+    std::condition_variable recv_cond;
+    bool signaled = false;
+};
+
 struct ThreadState {
     Block stack;
     int priority;
@@ -48,7 +60,7 @@ struct ThreadState {
     CPUStatePtr cpu;
     ThreadToDo to_do = ThreadToDo::run;
     std::mutex mutex;
-    sync_utils::Semaphore signal;
+    ThreadSignal signal;
     std::condition_variable something_to_do;
     std::vector<std::shared_ptr<ThreadState>> waiting_threads;
     std::string name;

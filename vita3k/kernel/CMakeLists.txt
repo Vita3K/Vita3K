@@ -5,12 +5,12 @@ set(SOURCE_LIST
 	include/kernel/thread/thread_data_queue.h
 	include/kernel/thread/thread_functions.h
 	include/kernel/thread/thread_state.h
-	include/kernel/thread/sync_primitives.h
+	include/kernel/sync_primitives.h
 	include/kernel/relocation.h
 	include/kernel/object_store.h
 	src/kernel.cpp
-	src/thread/thread.cpp
-	src/thread/sync_primitives.cpp
+	src/thread.cpp
+	src/sync_primitives.cpp
 	src/relocation.cpp
 )
 
