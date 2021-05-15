@@ -237,7 +237,7 @@ public:
     void AddTicks(uint64_t ticks) override {}
 
     uint64_t GetTicksRemaining() override {
-        return 1ull << 63;
+        return 1ull << 60;
     }
 };
 
