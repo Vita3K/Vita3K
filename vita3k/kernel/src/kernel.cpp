@@ -82,15 +82,18 @@ void stop_all_threads(KernelState &kernel) {
 }
 
 void add_watch_memory_addr(KernelState &state, Address addr, size_t size) {
+    std::lock_guard<std::mutex> lock(state.mutex);
     state.watch_memory_addrs.emplace(addr, WatchMemory{ addr, size });
 }
 
 void remove_watch_memory_addr(KernelState &state, Address addr) {
+    std::lock_guard<std::mutex> lock(state.mutex);
     state.watch_memory_addrs.erase(addr);
 }
 
 // TODO use boost icl or interval tree instead if this turns out to be a significant bottleneck
 Address get_watch_memory_addr(KernelState &state, Address addr) {
+    std::lock_guard<std::mutex> lock(state.mutex);
     for (const auto &item : state.watch_memory_addrs) {
         if (item.second.start <= addr && addr < item.second.start + item.second.size) {
             return item.second.start;
