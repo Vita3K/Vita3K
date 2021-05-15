@@ -15,10 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <kernel/thread/sync_primitives.h>
-
 #include <cpu/functions.h>
 #include <kernel/state.h>
+#include <kernel/sync_primitives.h>
 #include <kernel/types.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>

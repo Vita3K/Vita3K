@@ -57,6 +57,8 @@ static int SDLCALL thread_function(void *data) {
     const bool succeeded = run_on_current(*thread, Ptr<void>(thread->entry_point), params.arglen, params.argp);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
     thread->returned_value = r0;
+
+    std::lock_guard<std::mutex> lock(params.kernel->mutex);
     if (thread->to_do == ThreadToDo::exit || thread->to_do == ThreadToDo::exit_delete) {
         raise_waiting_threads(thread.get());
         params.kernel->waiting_threads.erase(thread->id);
@@ -319,6 +321,7 @@ void delete_thread(KernelState &kernel, ThreadState &thread) {
     kernel.corenum_allocator.free_corenum(thread.core_num);
 
     kernel.waiting_threads.erase(thread.id);
+    raise_waiting_threads(&thread);
     kernel.threads.erase(thread.id);
 }
 
@@ -340,4 +343,20 @@ int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
     waiter->to_do = ThreadToDo::wait;
     stop(*waiter->cpu);
     return 0;
+}
+
+void ThreadSignal::wait() {
+    std::unique_lock<std::mutex> lock(mutex);
+    recv_cond.wait(lock, [&]() { return signaled; });
+    signaled = false;
+}
+
+bool ThreadSignal::send() {
+    std::unique_lock<std::mutex> lock(mutex);
+    if (signaled) {
+        return false;
+    }
+    signaled = true;
+    recv_cond.notify_one();
+    return true;
 }

@@ -11,7 +11,6 @@ add_library(
 	include/util/fs.h
 	include/util/function_info.h
 	include/util/instrset_detect.h
-	include/util/semaphore.h
 	include/util/lock_and_find.h
 	include/util/log.h
 	include/util/preprocessor.h
