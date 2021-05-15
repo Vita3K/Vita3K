@@ -111,7 +111,7 @@ void initialize_fiber(HostState &host, const ThreadStatePtr thread, SceFiber *fi
     fiber->status = FiberStatus::INIT;
     *fiber->cpu = save_context(*thread->cpu);
 
-    if (addrContext.address() && sizeContext != 0) {
+    if (addrContext && sizeContext > 0) {
         memset(addrContext.get(host.mem), 0xCC, sizeContext);
         fiber->cpu->set_sp(addrContext.address() + sizeContext);
     }
@@ -125,13 +125,14 @@ EXPORT(int, _sceFiberAttachContextAndRun, SceFiber *fiber, Address addrContext, 
     const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     SceFiber *thread_fiber = get_thread_fiber(*state, thread->id);
     assert(!thread_fiber);
+    assert(!fiber->addrContext);
     if (LOG_FIBER) {
         log_fiber(*state, thread, fiber, "Attach context and run");
     }
 
     fiber->addrContext = addrContext;
     fiber->sizeContext = sizeContext;
-    if (!addrContext && sizeContext > 0) {
+    if (addrContext && sizeContext > 0) {
         fiber->cpu->set_sp(addrContext + sizeContext);
     }
 
@@ -153,9 +154,11 @@ EXPORT(int, _sceFiberAttachContextAndSwitch, SceFiber *fiber, Address addrContex
         log_fiber(*state, thread, fiber, "Attach context and switch");
     }
 
+    assert(thread_fiber);
+    assert(!fiber->addrContext);
     fiber->addrContext = addrContext;
     fiber->sizeContext = sizeContext;
-    if (!addrContext && sizeContext > 0) {
+    if (addrContext && sizeContext > 0) {
         fiber->cpu->set_sp(addrContext + sizeContext);
     }
 
