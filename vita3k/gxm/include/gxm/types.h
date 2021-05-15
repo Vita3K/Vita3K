@@ -1272,6 +1272,7 @@ struct GxmContextState {
 
     // Textures.
     TextureDatas fragment_textures;
+    TextureDatas vertex_textures;
 
     // Mask
     bool writing_mask;

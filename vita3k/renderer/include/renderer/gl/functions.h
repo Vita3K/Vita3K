@@ -79,7 +79,9 @@ void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front);
 void sync_point_line_width(const std::uint32_t size, const bool front);
 void sync_depth_bias(const int factor, const int unit, const bool front);
 void sync_blending(const GxmRecordState &state, const MemState &mem);
-void sync_texture(GLContext &context, const MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config,
+void sync_fragment_texture(GLContext &context, const MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config,
+    const std::string &base_path, const std::string &title_id);
+void sync_vertex_texture(GLContext &context, const MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config,
     const std::string &base_path, const std::string &title_id);
 void sync_vertex_attributes(GLContext &context, const GxmRecordState &state, const MemState &mem);
 void bind_fundamental(GLContext &context);
@@ -110,7 +112,7 @@ size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 
 // Texture cache.
 bool init(GLTextureCacheState &cache);
-void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::string &name, const std::string &base_path, const std::string &title_id, Sha256Hash hash);
+void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::string &name, const std::string &base_path, const std::string &title_id, const std::string &type, Sha256Hash hash);
 
 } // namespace texture
 } // namespace renderer::gl
