@@ -208,17 +208,21 @@ public:
         }
         case Dynarmic::A32::Exception::PreloadDataWithIntentToWrite:
         case Dynarmic::A32::Exception::PreloadData:
+        case Dynarmic::A32::Exception::PreloadInstruction:
         case Dynarmic::A32::Exception::SendEvent:
         case Dynarmic::A32::Exception::SendEventLocal:
         case Dynarmic::A32::Exception::WaitForEvent:
             break;
-        case Dynarmic::A32::Exception::UndefinedInstruction: {
-            LOG_WARN("Undefined instruction at pc = 0x{:x}", pc);
-            LOG_TRACE("at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc), disassemble(*parent, pc, nullptr));
+        case Dynarmic::A32::Exception::Yield:
+            break;
+        case Dynarmic::A32::Exception::UndefinedInstruction:
+        case Dynarmic::A32::Exception::UnpredictableInstruction:
+        case Dynarmic::A32::Exception::DecodeError: {
+            LOG_WARN("Undefined/Unpredictable instruction at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc), disassemble(*parent, pc, nullptr));
             break;
         }
         default:
-            LOG_WARN("Exception Raised at pc = 0x{:x}", pc);
+            LOG_WARN("Unknown exception {} Raised at pc = 0x{:x}", static_cast<size_t>(exception), pc);
             LOG_TRACE("at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc), disassemble(*parent, pc, nullptr));
         }
     }
