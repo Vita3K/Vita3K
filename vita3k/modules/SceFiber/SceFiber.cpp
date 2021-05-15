@@ -39,12 +39,10 @@ LIBRARY_INIT_REGISTER(SceFiber)
 constexpr bool LOG_FIBER = false;
 
 void set_thread_fiber(FiberState &state, const SceUID &tid, SceFiber *fiber) {
-    const std::lock_guard<std::mutex> lock(state.mutex);
     state.thread_fibers[tid] = fiber;
 }
 
 SceFiber *get_thread_fiber(FiberState &state, const SceUID &tid) {
-    const std::lock_guard<std::mutex> lock(state.mutex);
     if (state.thread_fibers.find(tid) == state.thread_fibers.end()) {
         return nullptr;
     }
@@ -52,12 +50,10 @@ SceFiber *get_thread_fiber(FiberState &state, const SceUID &tid) {
 }
 
 void set_thread_context(FiberState &state, const SceUID &tid, const CPUContext &ctx) {
-    const std::lock_guard<std::mutex> lock(state.mutex);
     state.thread_contexts[tid] = ctx;
 }
 
 CPUContext get_thread_context(FiberState &state, const SceUID &tid) {
-    const std::lock_guard<std::mutex> lock(state.mutex);
     return state.thread_contexts[tid];
 }
 
@@ -80,10 +76,10 @@ void log_fiber(FiberState &state, ThreadStatePtr thread, SceFiber *fiber, const 
     LOG_INFO("{}", log_msg);
 }
 
-void setup_fiber_to_run(HostState &host, const ThreadStatePtr thread, SceFiber *fiber, const uint32_t &argOnRunTo) {
+void setup_fiber_to_run(HostState &host, const ThreadStatePtr thread, SceFiber *fiber, uint32_t thread_sp, const uint32_t &argOnRunTo) {
     assert(fiber->status != FiberStatus::RUN);
     if (!fiber->addrContext) {
-        fiber->cpu->set_sp(read_sp(*thread->cpu));
+        fiber->cpu->set_sp(thread_sp);
         fiber->status = FiberStatus::INIT;
     }
 
@@ -122,6 +118,7 @@ EXPORT(int, _sceFiberAttachContextAndRun, SceFiber *fiber, Address addrContext, 
     // Maybe Need more check on real hw
     STUBBED("Todo: not sure for now");
     const auto state = host.kernel.obj_store.get<FiberState>();
+    const std::lock_guard<std::mutex> lock(state->mutex);
     const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     SceFiber *thread_fiber = get_thread_fiber(*state, thread->id);
     assert(!thread_fiber);
@@ -136,7 +133,7 @@ EXPORT(int, _sceFiberAttachContextAndRun, SceFiber *fiber, Address addrContext, 
         fiber->cpu->set_sp(addrContext + sizeContext);
     }
 
-    setup_fiber_to_run(host, thread, fiber, argOnRunTo);
+    setup_fiber_to_run(host, thread, fiber, read_sp(*thread->cpu), argOnRunTo);
     set_thread_context(*state, thread->id, save_context(*thread->cpu));
     set_thread_fiber(*state, thread->id, fiber);
 
@@ -148,7 +145,9 @@ EXPORT(int, _sceFiberAttachContextAndSwitch, SceFiber *fiber, Address addrContex
     // Maybe Need more check on real hw
     STUBBED("Todo: not sure for now");
     const auto state = host.kernel.obj_store.get<FiberState>();
+    const std::lock_guard<std::mutex> lock(state->mutex);
     const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    auto ctx = get_thread_context(*state, thread->id);
     SceFiber *thread_fiber = get_thread_fiber(*state, thread->id);
     if (LOG_FIBER) {
         log_fiber(*state, thread, fiber, "Attach context and switch");
@@ -163,7 +162,7 @@ EXPORT(int, _sceFiberAttachContextAndSwitch, SceFiber *fiber, Address addrContex
     }
 
     *thread_fiber->cpu = save_context(*thread->cpu);
-    setup_fiber_to_run(host, thread, fiber, argOnRunTo);
+    setup_fiber_to_run(host, thread, fiber, ctx.get_sp(), argOnRunTo);
     thread_fiber->status = FiberStatus::SUSPEND;
     thread_fiber->argOnRun = argOnRun;
     thread_fiber->cpu->cpu_registers[0] = SCE_FIBER_OK;
@@ -266,6 +265,7 @@ EXPORT(int, sceFiberRenameSelf) {
 
 EXPORT(SceInt32, sceFiberReturnToThread, uint32_t argOnReturnTo, Ptr<uint32_t> argOnRun) {
     const auto state = host.kernel.obj_store.get<FiberState>();
+    const std::lock_guard<std::mutex> lock(state->mutex);
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     SceFiber *fiber = get_thread_fiber(*state, thread->id);
     CPUContext thread_context = get_thread_context(*state, thread->id);
@@ -291,6 +291,7 @@ EXPORT(SceInt32, sceFiberReturnToThread, uint32_t argOnReturnTo, Ptr<uint32_t> a
 
 EXPORT(SceUInt32, sceFiberRun, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnReturn) {
     const auto state = host.kernel.obj_store.get<FiberState>();
+    const std::lock_guard<std::mutex> lock(state->mutex);
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     if (!fiber) {
         return RET_ERROR(SCE_FIBER_ERROR_NULL);
@@ -302,7 +303,7 @@ EXPORT(SceUInt32, sceFiberRun, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<SceUIn
         log_fiber(*state, thread, fiber, "Run");
     }
 
-    setup_fiber_to_run(host, thread, fiber, argOnRunTo);
+    setup_fiber_to_run(host, thread, fiber, read_sp(*thread->cpu), argOnRunTo);
     set_thread_context(*state, thread->id, save_context(*thread->cpu));
     set_thread_fiber(*state, thread->id, fiber);
 
@@ -320,7 +321,9 @@ EXPORT(int, sceFiberStopContextSizeCheck) {
 
 EXPORT(SceUInt32, sceFiberSwitch, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<SceUInt32> argOnRun) {
     const auto state = host.kernel.obj_store.get<FiberState>();
+    const std::lock_guard<std::mutex> lock(state->mutex);
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    auto ctx = get_thread_context(*state, thread->id);
     if (!fiber) {
         return RET_ERROR(SCE_FIBER_ERROR_NULL);
     }
@@ -336,7 +339,7 @@ EXPORT(SceUInt32, sceFiberSwitch, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<Sce
     thread_fiber->argOnRun = argOnRun;
     thread_fiber->cpu->cpu_registers[0] = SCE_FIBER_OK;
     set_thread_fiber(*state, thread->id, fiber);
-    setup_fiber_to_run(host, thread, fiber, argOnRunTo);
+    setup_fiber_to_run(host, thread, fiber, ctx.get_sp(), argOnRunTo);
     load_context(*thread->cpu, *fiber->cpu);
 
     return fiber->cpu->cpu_registers[0];
