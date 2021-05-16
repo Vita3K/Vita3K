@@ -213,7 +213,7 @@ void init_trophy_collection(GuiState &gui, HostState &host) {
                         const auto silver_count = unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER];
                         const auto bronze_count = unlocked_type_count[group_id][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE];
                         np_com_id_info[np_com_id].unlocked_type_count[group_id]["detail"] = fmt::format("P:{}  G:{}  S:{}  B:{}", plat_count, gold_count, silver_count, bronze_count);
-                        np_com_id_info[np_com_id].unlocked_type_count[group_id]["general"] = fmt::format("{}    {}    {}    {}", plat_count, gold_count, silver_count, bronze_count);
+                        np_com_id_info[np_com_id].unlocked_type_count[group_id]["general"] = fmt::format("{}   {}   {}   {}", plat_count, gold_count, silver_count, bronze_count);
                         np_com_id_info[np_com_id].progress[group_id] = (np_com_id_info[np_com_id].unlocked_count[group_id] * 100) / np_com_id_info[np_com_id].trophy_count_by_group[group_id];
                     }
                 }
@@ -223,7 +223,7 @@ void init_trophy_collection(GuiState &gui, HostState &host) {
                 const auto silver_count = unlocked_type_count["global"][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER];
                 const auto bronze_count = unlocked_type_count["global"][SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE];
                 np_com_id_info[np_com_id].unlocked_type_count["global"]["detail"] = fmt::format("P:{}  G:{}  S:{}  B:{}", plat_count, gold_count, silver_count, bronze_count);
-                np_com_id_info[np_com_id].unlocked_type_count["global"]["general"] = fmt::format("{}    {}    {}    {}", plat_count, gold_count, silver_count, bronze_count);
+                np_com_id_info[np_com_id].unlocked_type_count["global"]["general"] = fmt::format("{}   {}   {}   {}", plat_count, gold_count, silver_count, bronze_count);
 
                 const auto progress = np_com_id_info[np_com_id].unlocked_count["global"] * 100 / np_com_id_info[np_com_id].context.trophy_count;
                 np_com_id_info[np_com_id].progress["global"] = progress;
@@ -401,8 +401,8 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     const auto BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
 
     const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT);
-    const auto SIZE_LIST = ImVec2(780 * SCALE.x, 442.f * SCALE.y);
-    const auto SIZE_INFO = ImVec2(780 * SCALE.x, 484.f * SCALE.y);
+    const auto SIZE_LIST = ImVec2((!np_com_id_selected.empty() && group_id_selected.empty() ? 810.f : 790.f) * SCALE.x, 442.f * SCALE.y);
+    const auto SIZE_INFO = ImVec2(820.f * SCALE.x, 484.f * SCALE.y);
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
     const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "trophy" };
@@ -423,13 +423,13 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
             ImGui::SameLine();
             search_bar.Draw("##search_bar", 200 * SCALE.x);
         }
-        ImGui::SetCursorPos(ImVec2(display_size.x - (305.f * SCALE.x), (15.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, "P    G    S    B");
+        ImGui::SetCursorPos(ImVec2(display_size.x - (285.f * SCALE.x), (15.f * SCALE.y)));
+        ImGui::TextColored(GUI_COLOR_TEXT, "P   G   S   B");
         ImGui::SetCursorPosY(54.f * SCALE.y);
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.f);
     }
-    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (!trophy_id_selected.empty() || detail_np_com_id ? 48.0f : 90.f) * SCALE.y), ImGuiCond_Always, ImVec2(0.5f, 0.f));
+    ImGui::SetNextWindowPos(ImVec2(90.f * SCALE.x, (!trophy_id_selected.empty() || detail_np_com_id ? 48.0f : 90.f) * SCALE.y), ImGuiCond_Always, ImVec2(0.f, 0.f));
     ImGui::BeginChild("##trophy_collection_child", !trophy_id_selected.empty() || detail_np_com_id ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
     auto lang = gui.lang.trophy_collection;
@@ -504,7 +504,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
             // Select Np Com ID
             ImGui::Columns(3, nullptr, false);
             ImGui::SetColumnWidth(0, SIZE_ICON_LIST.x + (10.f * SCALE.x));
-            ImGui::SetColumnWidth(1, 385.f * SCALE.x);
+            ImGui::SetColumnWidth(1, 405.f * SCALE.x);
             for (const auto &np_com : np_com_id_list) {
                 ImGui::PushID(np_com.id.c_str());
                 if (!search_bar.PassFilter(np_com.name.c_str()))
@@ -566,7 +566,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::Columns(4, nullptr, false);
                 ImGui::SetColumnWidth(0, 30.f * SCALE.x);
                 ImGui::SetColumnWidth(1, SIZE_ICON_LIST.x + (10.f * SCALE.x));
-                ImGui::SetColumnWidth(2, 355.f * SCALE.x);
+                ImGui::SetColumnWidth(2, 375.f * SCALE.x);
                 for (const auto &group_id : np_com_id_info[np_com_id_selected].group_id) {
                     ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + (10.f * SCALE.x) - (ImGui::CalcTextSize("+").x / 2.f), ImGui::GetCursorPosY() + (SIZE_ICON_LIST.y / 2.f) - (ImGui::CalcTextSize("+").y / 2.f)));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", group_id != "000" ? "+" : "");
@@ -597,7 +597,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
                     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
                     ImGui::Selectable(np_com_id_info[np_com_id_selected].unlocked_type_count[group_id]["general"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
-                    ImGui::SameLine(0.f, 15.f * SCALE.x);
+                    ImGui::SameLine(0.f, 25.f * SCALE.x);
                     ImGui::Selectable(">", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y));
                     ImGui::PopStyleVar();
                     ImGui::NextColumn();

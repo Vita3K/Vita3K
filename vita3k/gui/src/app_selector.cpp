@@ -504,7 +504,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             refresh_app_list(gui, host);
         ImGui::PopStyleColor(3);
         ImGui::SameLine();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Search");
+        ImGui::TextColored(GUI_COLOR_TEXT_BLACK, "Search");
         ImGui::SameLine();
         gui.app_search_bar.Draw("##app_search_bar", (120.f * SCALE.x));
         if (!host.cfg.apps_list_grid) {

@@ -362,10 +362,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("Disable experimental ngs support", is_custom_config ? &config.disable_ngs : &host.cfg.disable_ngs);
+        ImGui::Checkbox("Disable experimental ngs support", &config.disable_ngs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Disable experimental support for advanced audio library ngs");
-        ImGui::Checkbox("Enable video playing support", is_custom_config ? &config.video_playing : &host.cfg.video_playing);
+        ImGui::Checkbox("Enable video playing support", &config.video_playing);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable video player.\nOn some game, disable it is required for more progress.");
         ImGui::Spacing();
