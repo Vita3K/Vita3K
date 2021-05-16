@@ -64,6 +64,7 @@ static int SDLCALL thread_function(void *data) {
         params.kernel->waiting_threads.erase(thread->id);
     }
     if (thread->to_do == ThreadToDo::exit_delete) {
+        params.kernel->corenum_allocator.free_corenum(thread->core_num);
         params.kernel->threads.erase(thread->id);
     }
 
