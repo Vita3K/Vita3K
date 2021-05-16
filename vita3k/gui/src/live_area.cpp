@@ -1277,7 +1277,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH.c_str());
         ImGui::SetCursorPos(pos_scal_search);
         if (ImGui::Selectable("##Search", ImGuiSelectableFlags_None, false, widget_scal_size)) {
-            auto search_url = "http://www.google.com/search?q=" + host.app_title;
+            auto search_url = "http://www.google.com/search?q=" + get_app_index(gui, app_path)->title;
             std::replace(search_url.begin(), search_url.end(), ' ', '+');
             system((OS_PREFIX + search_url).c_str());
         }
