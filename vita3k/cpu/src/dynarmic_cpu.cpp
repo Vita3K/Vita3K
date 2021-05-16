@@ -241,28 +241,29 @@ public:
     }
 };
 
-std::unique_ptr<Dynarmic::A32::Jit> make_jit(DynarmicCPU &cpu, ArmDynarmicCallback *callback, std::shared_ptr<ArmDynarmicCP15> cp15, MemState *mem, Dynarmic::ExclusiveMonitor *monitor, std::size_t processor_id) {
+std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit(Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt) {
     Dynarmic::A32::UserConfig config;
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
-    config.callbacks = callback;
-    config.fastmem_pointer = mem->memory.get();
+    config.callbacks = cb.get();
+    config.fastmem_pointer = (log_read || log_write) ? nullptr : parent->mem->memory.get();
     config.hook_hint_instructions = true;
     config.global_monitor = monitor;
     config.coprocessors[15] = cp15;
-    config.page_table = mem->pages_cpu.get();
-    config.processor_id = processor_id;
+    config.page_table = (log_read || log_write) ? nullptr : parent->mem->pages_cpu.get();
+    config.processor_id = core_id;
+    config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
 
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
 
-DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor)
+DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt)
     : parent(state)
     , fallback(state, pc, sp)
     , cb(std::make_unique<ArmDynarmicCallback>(*state, *this))
     , cp15(std::make_shared<ArmDynarmicCP15>())
     , ep(pc)
     , core_id(processor_id) {
-    jit = make_jit(*this, cb.get(), cp15, state->mem, monitor, processor_id);
+    jit = make_jit(monitor, cpu_opt);
 
     set_pc(pc);
     set_lr(pc);

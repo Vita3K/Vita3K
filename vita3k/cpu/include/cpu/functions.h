@@ -26,7 +26,7 @@
 #include <functional>
 #include <stack>
 
-CPUStatePtr init_cpu(CPUBackend backend, SceUID thread_id, std::size_t processor_id, Address pc, Address sp, MemState &mem, CPUProtocolBase *protocol);
+CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::size_t processor_id, Address pc, Address sp, MemState &mem, CPUProtocolBase *protocol);
 int run(CPUState &state);
 int step(CPUState &state);
 void stop(CPUState &state);

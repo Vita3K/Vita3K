@@ -166,6 +166,7 @@ endif()
 
 set(DYNARMIC_TESTS OFF CACHE BOOL "")
 set(DYNARMIC_NO_BUNDLED_FMT ON CACHE BOOL "")
+set(DYNARMIC_FRONTENDS "A32" CACHE STRING "")
 add_subdirectory(dynarmic)
 set_property(TARGET dynarmic PROPERTY FOLDER externals)
 

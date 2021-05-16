@@ -36,4 +36,4 @@ Address get_watch_memory_addr(KernelState &state, Address addr);
 
 void update_watches(KernelState &state);
 
-bool init(KernelState &state, MemState &mem, int cpu_pool_size, CPUProtocolBase *cpu_protocol, CPUBackend cpu_backend);
+bool init(KernelState &state, MemState &mem, int cpu_pool_size, CPUProtocolBase *cpu_protocol, CPUBackend cpu_backend, bool cpu_opt);

@@ -286,7 +286,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     if (path.empty())
         return InvalidApplicationPath;
 
-    if (!init(host.kernel, host.mem, host.cfg.cpu_pool_size, host.cpu_protocol.get(), host.kernel.cpu_backend)) {
+    if (!init(host.kernel, host.mem, host.cfg.cpu_pool_size, host.cpu_protocol.get(), host.kernel.cpu_backend, host.kernel.cpu_opt)) {
         LOG_WARN("Failed to init kernel!");
         return KernelInitFailed;
     }
