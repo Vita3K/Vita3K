@@ -87,76 +87,65 @@ public:
         return MemoryRead32(addr);
     }
 
-    uint8_t MemoryRead8(Dynarmic::A32::VAddr addr) override {
-        uint8_t ret = *Ptr<uint8_t>(addr).get(*parent->mem);
-
-        if (cpu->log_read) {
-            LOG_TRACE("Read uint8_t at address: 0x{:x}, val = 0x{:x}", addr, ret);
+    template <typename T>
+    T MemoryRead(Dynarmic::A32::VAddr addr) {
+        Ptr<T> ptr{ addr };
+        if (!ptr || !ptr.valid(*parent->mem)) {
+            LOG_WARN("Invalid read of uint{}_t at address: 0x{:x}", sizeof(T) * 8, addr);
+            return 0;
         }
 
+        T ret = *ptr.get(*parent->mem);
+        if (cpu->log_read) {
+            LOG_TRACE("Read uint{}_t at address: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, ret);
+        }
         return ret;
+    }
+
+    uint8_t MemoryRead8(Dynarmic::A32::VAddr addr) override {
+        return MemoryRead<uint8_t>(addr);
     }
 
     uint16_t MemoryRead16(Dynarmic::A32::VAddr addr) override {
-        uint16_t ret = *Ptr<uint16_t>(addr).get(*parent->mem);
-
-        if (cpu->log_read) {
-            LOG_TRACE("Read uint16_t at address: 0x{:x}, val = 0x{:x}", addr, ret);
-        }
-
-        return ret;
+        return MemoryRead<uint16_t>(addr);
     }
 
     uint32_t MemoryRead32(Dynarmic::A32::VAddr addr) override {
-        uint32_t ret = *Ptr<uint32_t>(addr).get(*parent->mem);
-
-        if (cpu->log_read) {
-            LOG_TRACE("Read uint32_t at address: 0x{:x}, val = 0x{:x}", addr, ret);
-        }
-
-        return ret;
+        return MemoryRead<uint32_t>(addr);
     }
 
     uint64_t MemoryRead64(Dynarmic::A32::VAddr addr) override {
-        uint64_t ret = *Ptr<uint64_t>(addr).get(*parent->mem);
+        return MemoryRead<uint64_t>(addr);
+    }
 
-        if (cpu->log_read) {
-            LOG_TRACE("Read uint64_t at address: 0x{:x}, val = 0x{:x}", addr, ret);
+    template <typename T>
+    void MemoryWrite(Dynarmic::A32::VAddr addr, T value) {
+        Ptr<T> ptr{ addr };
+        if (!ptr || !ptr.valid(*parent->mem)) {
+            LOG_TRACE("Invalid write of uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
+            return;
         }
 
-        return ret;
+        *ptr.get(*parent->mem) = value;
+        if (cpu->log_write) {
+            LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
+        }
     }
 
     void MemoryWrite8(Dynarmic::A32::VAddr addr, uint8_t value) override {
-        *Ptr<uint8_t>(addr).get(*parent->mem) = value;
-
-        if (cpu->log_write) {
-            LOG_TRACE("Write uint8_t at addr: 0x{:x}, val = 0x{:x}", addr, value);
-        }
+        MemoryWrite<uint8_t>(addr, value);
     }
 
     void MemoryWrite16(Dynarmic::A32::VAddr addr, uint16_t value) override {
-        *Ptr<uint16_t>(addr).get(*parent->mem) = value;
-
-        if (cpu->log_write) {
-            LOG_TRACE("Write uint16_t at addr: 0x{:x}, val = 0x{:x}", addr, value);
-        }
+        MemoryWrite<uint16_t>(addr, value);
     }
 
     void MemoryWrite32(Dynarmic::A32::VAddr addr, uint32_t value) override {
-        *Ptr<uint32_t>(addr).get(*parent->mem) = value;
-
-        if (cpu->log_write) {
-            LOG_TRACE("Write uint32_t at addr: 0x{:x}, val = 0x{:x}", addr, value);
-        }
+        MemoryWrite<uint32_t>(addr, value);
     }
 
     void MemoryWrite64(Dynarmic::A32::VAddr addr, uint64_t value) override {
-        *Ptr<uint64_t>(addr).get(*parent->mem) = value;
-
-        if (cpu->log_write) {
-            LOG_TRACE("Write uint64_t at addr: 0x{:x}, val = 0x{:x}", addr, value);
-        }
+        MemoryWrite<uint64_t>(addr, value);
     }
 
     bool MemoryWriteExclusive8(Dynarmic::A32::VAddr addr, uint8_t value, uint8_t expected) override {
@@ -170,11 +159,12 @@ public:
     bool MemoryWriteExclusive32(Dynarmic::A32::VAddr addr, uint32_t value, uint32_t expected) override {
         return Ptr<uint32_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
     }
+
     bool MemoryWriteExclusive64(Dynarmic::A32::VAddr addr, uint64_t value, uint64_t expected) override {
         return Ptr<uint64_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
     }
 
-    void InterpreterFallback(Dynarmic::A32::VAddr addr, size_t num_insts) {
+    void InterpreterFallback(Dynarmic::A32::VAddr addr, size_t num_insts) override {
         const bool thumb = cpu->is_thumb_mode();
 
         if (thumb) {
