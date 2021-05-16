@@ -23,6 +23,7 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
+#include <SDL.h>
 #include <algorithm>
 
 // Defines stop/pause behaviour. If true, GetVideo/AudioData will return false when stopped.
@@ -93,6 +94,8 @@ struct PlayerInfoState {
 
     bool do_loop = false;
     bool paused = false;
+    bool auto_start = false;
+    Ptr<const char> default_language;
 
     uint64_t last_frame_time = 0;
     SceAvPlayerMemoryAllocator memory_allocator;
@@ -114,8 +117,9 @@ struct SceAvPlayerInfo {
     DebugLevel debug_level;
     uint32_t base_priority;
     int32_t frame_buffer_count;
-    int32_t auto_start;
-    uint32_t unknown0;
+    bool auto_start;
+    uint8_t reserved[3];
+    Ptr<const char> default_language;
 };
 
 struct SceAvPlayerAudio {
@@ -177,16 +181,20 @@ enum SceAvPlayerErrorCode {
     SCE_AVPLAYER_ERROR_NOT_ENOUGH_MEMORY = 0x806a0003,
     SCE_AVPLAYER_ERROR_INVALID_EVENT = 0x806a0004,
     SCE_AVPLAYER_ERROR_MAYBE_EOF = 0x806a00a1,
+    SCE_AVPLAYER_WAR_FILE_NONINTERLEAVED = 0x806A00A0,
+    SCE_AVPLAYER_WAR_LOOPING_BACK = 0x806A00A1,
+    SCE_AVPLAYER_WAR_JUMP_COMPLETE = 0x806A00A3,
 };
 
-enum SceAvPlayerState {
-    SCE_AVPLAYER_STATE_UNKNOWN = 0,
-    SCE_AVPLAYER_STATE_STOP = 1,
-    SCE_AVPLAYER_STATE_READY = 2,
-    SCE_AVPLAYER_STATE_PLAY = 3,
-    SCE_AVPLAYER_STATE_PAUSE = 4,
-    SCE_AVPLAYER_STATE_BUFFERING = 5,
-    SCE_AVPLAYER_STATE_ERROR = 32
+enum SceAvPlayerEvents {
+    SCE_AVPLAYER_STATE_STOP = 0x01,
+    SCE_AVPLAYER_STATE_READY = 0x02,
+    SCE_AVPLAYER_STATE_PLAY = 0x03,
+    SCE_AVPLAYER_STATE_PAUSE = 0x04,
+    SCE_AVPLAYER_STATE_BUFFERING = 0x05,
+    SCE_AVPLAYER_TIMED_TEXT_DELIVERY = 0x10,
+    SCE_AVPLAYER_WARNING_ID = 0x20,
+    SCE_AVPLAYER_ENCRYPTION = 0x30
 };
 
 static inline uint64_t current_time() {
@@ -219,11 +227,41 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
     return buffer;
 }
 
+struct ThreadParamsEx {
+    KernelState *kernel = nullptr;
+    ThreadState *thread = nullptr;
+    SceUID thid = 0;
+    Address callback_address = 0;
+    uint wait_time = 0;
+    std::vector<uint32_t> args;
+};
+
+static int SDLCALL thread_callback(void *data) {
+    ThreadParamsEx *params = static_cast<ThreadParamsEx *>(data);
+    SDL_Delay(params->wait_time);
+    run_callback(*params->kernel, *params->thread, params->thid, params->callback_address, params->args);
+    delete params;
+    return 0;
+}
+
+int run_callback_threaded(KernelState &kernel, ThreadState &thread, const SceUID &thid, Address callback_address, const std::vector<uint32_t> &args) {
+    ThreadParamsEx *params = new ThreadParamsEx;
+    params->kernel = &kernel;
+    params->thread = &thread;
+    params->thid = thid;
+    params->callback_address = callback_address;
+    params->args = args;
+    params->wait_time = 200;
+    SDL_CreateThread(&thread_callback, "AvPlayer callback thread", params);
+
+    return 0;
+}
+
 uint run_event_callback(HostState &host, SceUID thread_id, const PlayerPtr player_info, uint32_t event_id, uint32_t source_id, Ptr<void> event_data) {
     constexpr char *export_name = "SceAvPlayerEventCallback";
     if (player_info->event_manager.event_callback) {
         auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        return run_callback(host.kernel, *thread, thread_id, player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
+        return run_callback_threaded(host.kernel, *thread, thread_id, player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
     } else {
         if (event_id == SCE_AVPLAYER_STATE_READY) {
             return UNIMPLEMENTED();
@@ -445,14 +483,15 @@ EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
             log_hex(info->file_manager.file_size.address()));
         LOG_TRACE("SceAvPlayerInfo.event_manager: user_data:{}, event_callback:{}",
             log_hex(info->event_manager.user_data), log_hex(info->event_manager.event_callback.address()));
-        LOG_TRACE("SceAvPlayerInfo: debug_level:{}, base_priority:{}, frame_buffer_count:{}, auto_start:{}, unknown0:{}",
-            log_hex(info->debug_level), log_hex(info->base_priority), log_hex(info->frame_buffer_count), log_hex(info->auto_start),
-            log_hex(info->unknown0));
+        LOG_TRACE("SceAvPlayerInfo: debug_level:{}, base_priority:{}, frame_buffer_count:{}, auto_start:{}",
+            log_hex(info->debug_level), log_hex(info->base_priority), log_hex(info->frame_buffer_count), info->auto_start);
 
         player->last_frame_time = current_time();
         player->memory_allocator = info->memory_allocator;
         player->file_manager = info->file_manager;
         player->event_manager = info->event_manager;
+        player->auto_start = info->auto_start;
+        player->default_language = info->default_language;
         // Result is defined as a void *, but I just call it SceUID because it is easier to deal with. Same size.
         return player_handle;
     } else {
@@ -512,7 +551,8 @@ EXPORT(int, sceAvPlayerStart, SceUID player_handle) {
     if (!player_info->player.videos_queue.empty()) {
         player_info->player.pop_video();
     }
-    run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_PLAY, 0, Ptr<void>(0));
+    if (!player_info->auto_start)
+        run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_PLAY, 0, Ptr<void>(0));
     return 0;
 }
 
