@@ -129,27 +129,28 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
     const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
 
     if (fs::exists(CUSTOM_CONFIG_PATH)) {
-        pugi::xml_document custum_config_xml;
-        if (custum_config_xml.load_file(CUSTOM_CONFIG_PATH.c_str())) {
+        pugi::xml_document custom_config_xml;
+        if (custom_config_xml.load_file(CUSTOM_CONFIG_PATH.c_str())) {
             // Load Core Config
-            if (!custum_config_xml.child("core").empty()) {
-                const auto core_child = custum_config_xml.child("core");
+            if (!custom_config_xml.child("core").empty()) {
+                const auto core_child = custom_config_xml.child("core");
                 config.cpu_backend = core_child.attribute("cpu-backend").as_string();
+                config.cpu_opt = core_child.attribute("cpu-opt").as_bool();
                 config.lle_kernel = core_child.attribute("lle-kernel").as_bool();
                 config.auto_lle = core_child.attribute("auto-lle").as_bool();
                 for (auto &m : core_child.child("lle-modules"))
                     config.lle_modules.push_back(m.text().as_string());
             }
             // Load Emulator Config
-            if (!custum_config_xml.child("emulator").empty()) {
-                const auto emulator_child = custum_config_xml.child("emulator");
+            if (!custom_config_xml.child("emulator").empty()) {
+                const auto emulator_child = custom_config_xml.child("emulator");
                 config.disable_ngs = emulator_child.attribute("disable-ngs").as_bool();
                 config.video_playing = emulator_child.attribute("video-playing").as_bool();
             }
 
             return true;
         } else {
-            LOG_ERROR("Custrum config XML found is corrupted on path: {}", CUSTOM_CONFIG_PATH.string());
+            LOG_ERROR("Custom config XML found is corrupted on path: {}", CUSTOM_CONFIG_PATH.string());
             fs::remove(CUSTOM_CONFIG_PATH);
             return false;
         }
@@ -161,6 +162,7 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
 void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
     if (!get_custom_config(gui, host, app_path)) {
         config.cpu_backend = host.cfg.cpu_backend;
+        config.cpu_opt = host.cfg.cpu_opt;
         config.lle_kernel = host.cfg.lle_kernel;
         config.auto_lle = host.cfg.auto_lle;
         config.lle_modules = host.cfg.lle_modules;
@@ -178,14 +180,15 @@ static void save_config(GuiState &gui, HostState &host) {
         if (!fs::exists(CONFIG_PATH))
             fs::create_directory(CONFIG_PATH);
 
-        pugi::xml_document custum_config_xml;
-        auto declarationUser = custum_config_xml.append_child(pugi::node_declaration);
+        pugi::xml_document custom_config_xml;
+        auto declarationUser = custom_config_xml.append_child(pugi::node_declaration);
         declarationUser.append_attribute("version") = "1.0";
         declarationUser.append_attribute("encoding") = "utf-8";
 
         // Core
-        auto core_child = custum_config_xml.append_child("core");
+        auto core_child = custom_config_xml.append_child("core");
         core_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
+        core_child.append_attribute("cpu-opt") = config.cpu_opt;
         core_child.append_attribute("lle-kernel") = config.lle_kernel;
         core_child.append_attribute("auto-lle") = config.auto_lle;
         auto enable_module = core_child.append_child("lle-modules");
@@ -193,15 +196,16 @@ static void save_config(GuiState &gui, HostState &host) {
             enable_module.append_child("module").append_child(pugi::node_pcdata).set_value(m.c_str());
 
         // Emulator
-        auto emulator_child = custum_config_xml.append_child("emulator");
+        auto emulator_child = custom_config_xml.append_child("emulator");
         emulator_child.append_attribute("disable-ngs") = config.disable_ngs;
         emulator_child.append_attribute("video-playing") = config.video_playing;
 
-        const auto save_xml = custum_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
+        const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
         if (!save_xml)
-            LOG_ERROR("Fail save custum config xml for app path: {}, in path: {}", host.app_path, CONFIG_PATH.string());
+            LOG_ERROR("Fail save custom config xml for app path: {}, in path: {}", host.app_path, CONFIG_PATH.string());
     } else {
         host.cfg.cpu_backend = config.cpu_backend;
+        host.cfg.cpu_opt = config.cpu_opt;
         host.cfg.lle_kernel = config.lle_kernel;
         host.cfg.auto_lle = config.auto_lle;
         host.cfg.lle_modules = config.lle_modules;
@@ -214,6 +218,7 @@ static void save_config(GuiState &gui, HostState &host) {
 void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
     if (get_custom_config(gui, host, app_path)) {
         host.cfg.current_config.cpu_backend = config.cpu_backend;
+        host.cfg.current_config.cpu_opt = config.cpu_opt;
         host.cfg.current_config.lle_kernel = config.lle_kernel;
         host.cfg.current_config.auto_lle = config.auto_lle;
         host.cfg.current_config.lle_modules = config.lle_modules;
@@ -221,6 +226,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.video_playing = config.video_playing;
     } else {
         host.cfg.current_config.cpu_backend = host.cfg.cpu_backend;
+        host.cfg.current_config.cpu_opt = host.cfg.cpu_opt;
         host.cfg.current_config.lle_kernel = host.cfg.lle_kernel;
         host.cfg.current_config.auto_lle = host.cfg.auto_lle;
         host.cfg.current_config.lle_modules = host.cfg.lle_modules;
@@ -228,8 +234,10 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.video_playing = host.cfg.video_playing;
     }
     // No change it if app already running
-    if (host.io.title_id.empty())
+    if (host.io.title_id.empty()) {
         host.kernel.cpu_backend = host.cfg.current_config.cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
+        host.kernel.cpu_opt = host.cfg.current_config.cpu_opt;
+    }
 }
 
 void draw_settings_dialog(GuiState &gui, HostState &host) {
@@ -250,6 +258,12 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             config.cpu_backend = LIST_CPU_BACKEND[int(config_cpu_backend)];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred cpu backend.");
+        ImGui::Spacing();
+        if (config_cpu_backend == CPUBackend::Dynarmic) {
+            ImGui::Checkbox("Enable optimizations", &config.cpu_opt);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Enable additional CPU JIT optimizations.");
+        }
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

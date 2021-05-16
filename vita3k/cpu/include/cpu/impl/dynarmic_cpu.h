@@ -35,8 +35,10 @@ class DynarmicCPU : public CPUInterface {
     bool log_read = false;
     bool log_write = false;
 
+    std::unique_ptr<Dynarmic::A32::Jit> make_jit(Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt);
+
 public:
-    DynarmicCPU(CPUState *state, std::size_t processor_id, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor);
+    DynarmicCPU(CPUState *state, std::size_t processor_id, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt);
     ~DynarmicCPU();
     int run() override;
     void stop() override;

@@ -44,7 +44,7 @@ void CorenumAllocator::set_max_core_count(const std::size_t max) {
     alloc.set_maximum(max);
 }
 
-bool init(KernelState &kernel, MemState &mem, int cpu_pool_size, CPUProtocolBase *cpu_protocol, CPUBackend cpu_backend) {
+bool init(KernelState &kernel, MemState &mem, int cpu_pool_size, CPUProtocolBase *cpu_protocol, CPUBackend cpu_backend, bool cpu_opt) {
     static constexpr std::size_t MAX_CORE_COUNT = 150;
 
     kernel.corenum_allocator.set_max_core_count(MAX_CORE_COUNT);
@@ -55,7 +55,7 @@ bool init(KernelState &kernel, MemState &mem, int cpu_pool_size, CPUProtocolBase
     kernel.cpu_protocol = cpu_protocol;
 
     for (int i = 0; i < cpu_pool_size; ++i) {
-        auto item = init_cpu(cpu_backend, 0, static_cast<std::size_t>(kernel.corenum_allocator.new_corenum()), 0, 0, mem, cpu_protocol);
+        auto item = init_cpu(cpu_backend, cpu_opt, 0, static_cast<std::size_t>(kernel.corenum_allocator.new_corenum()), 0, 0, mem, cpu_protocol);
         kernel.cpu_pool.add(std::move(item));
     }
 

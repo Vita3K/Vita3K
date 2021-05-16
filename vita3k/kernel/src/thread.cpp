@@ -98,7 +98,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     const Address stack_top = thread->stack.get() + stack_size;
     memset(thread->stack.get_ptr<void>().get(mem), 0xcc, stack_size);
 
-    thread->cpu = init_cpu(kernel.cpu_backend, thid, static_cast<std::size_t>(thread->core_num), entry_point.address(), stack_top, mem, kernel.cpu_protocol);
+    thread->cpu = init_cpu(kernel.cpu_backend, kernel.cpu_opt, thid, static_cast<std::size_t>(thread->core_num), entry_point.address(), stack_top, mem, kernel.cpu_protocol);
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }

@@ -141,6 +141,7 @@ struct KernelState {
     ExclusiveMonitorPtr exclusive_monitor;
     CPUPool cpu_pool;
     CPUBackend cpu_backend;
+    bool cpu_opt;
     CPUProtocolBase *cpu_protocol;
 
     ObjectStore obj_store;
