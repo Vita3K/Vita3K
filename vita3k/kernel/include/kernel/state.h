@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cpu/functions.h>
+#include <kernel/cpu_protocol.h>
 #include <kernel/sync_primitives.h>
 #include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
@@ -37,8 +38,6 @@
 struct ThreadState;
 
 struct SDL_Thread;
-
-struct CPUProtocol;
 
 struct WatchMemory;
 
@@ -132,8 +131,6 @@ struct KernelState {
     EventFlagPtrs eventflags;
     MsgPipePtrs msgpipes;
     ThreadStatePtrs threads;
-    ThreadPtrs running_threads;
-    KernelWaitingThreadStates waiting_threads;
     SceKernelModuleInfoPtrs loaded_modules;
     LoadedSysmodules loaded_sysmodules;
     ExportNids export_nids;
@@ -142,7 +139,7 @@ struct KernelState {
     WatchMemoryAddrs watch_memory_addrs;
     ModuleRegions module_regions;
 
-    CPUPool cpu_pool;
+    ThreadStatePtr guest_func_runner;
     CPUBackend cpu_backend;
     bool cpu_opt;
     CPUProtocolPtr cpu_protocol;

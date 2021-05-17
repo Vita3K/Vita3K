@@ -21,6 +21,7 @@
 #include <mem/ptr.h>
 
 #include <condition_variable>
+#include <list>
 #include <mutex>
 #include <string>
 
@@ -29,11 +30,24 @@ struct CPUContext;
 
 typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 
+struct ThreadJob {
+    CPUContext ctx;
+    std::function<void(int res)> notify;
+    bool in_progress = false;
+};
+
+typedef std::list<ThreadJob> RunQueue;
+
 enum class ThreadToDo {
-    exit_delete,
     exit,
     run,
     step,
+    wait,
+};
+
+enum class ThreadStatus {
+    run,
+    dormant,
     wait,
 };
 
@@ -58,10 +72,15 @@ struct ThreadState {
     int stack_size;
     int core_num;
     CPUStatePtr cpu;
-    ThreadToDo to_do = ThreadToDo::run;
+    CPUContext init_cpu_ctx;
+    RunQueue run_queue;
+    RunQueue jobs_to_add;
+    ThreadToDo to_do = ThreadToDo::wait;
+    std::condition_variable something_to_do;
     std::mutex mutex;
     ThreadSignal signal;
-    std::condition_variable something_to_do;
+    ThreadStatus status = ThreadStatus::dormant;
+    std::condition_variable status_cond;
     std::vector<std::shared_ptr<ThreadState>> waiting_threads;
     std::string name;
     SceUID id;

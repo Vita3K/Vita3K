@@ -148,12 +148,6 @@ struct MsgPipe : SyncPrimitive {
 typedef std::shared_ptr<MsgPipe> MsgPipePtr;
 typedef std::map<SceUID, MsgPipePtr> MsgPipePtrs;
 
-struct WaitingThreadState {
-    std::string name; // for debugging
-};
-
-typedef std::map<SceUID, WaitingThreadState> KernelWaitingThreadStates;
-
 enum class SyncWeight {
     Light, // lightweight
     Heavy // 'heavy'weight

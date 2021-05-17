@@ -677,7 +677,7 @@ EXPORT(int, sceKernelDeleteSimpleEvent) {
 
 EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     const ThreadStatePtr thread = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
-    if (!thread || thread->to_do != ThreadToDo::exit) {
+    if (!thread || thread->status != ThreadStatus::dormant) {
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     }
     delete_thread(host.kernel, *thread);

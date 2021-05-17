@@ -30,6 +30,7 @@ struct CPUState;
 
 Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID thread_id, int key);
 void stop_all_threads(KernelState &kernel);
+int run_guest_function(KernelState &kernel, Address callback_address, const std::vector<uint32_t> &args);
 
 void add_watch_memory_addr(KernelState &state, Address addr, size_t size);
 void remove_watch_memory_addr(KernelState &state, Address addr);
@@ -37,4 +38,4 @@ Address get_watch_memory_addr(KernelState &state, Address addr);
 
 void update_watches(KernelState &state);
 
-bool init(KernelState &state, MemState &mem, int cpu_pool_size, CPUProtocolBase *cpu_protocol, CPUBackend cpu_backend, bool cpu_opt);
+bool init(KernelState &state, MemState &mem, int cpu_pool_size, CallImportFunc call_import, CPUBackend cpu_backend, bool cpu_opt);

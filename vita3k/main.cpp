@@ -222,8 +222,8 @@ int main(int argc, char *argv[]) {
     if (cfg.console) {
         auto main_thread = host.kernel.threads.at(host.main_thread_id);
         auto lock = std::unique_lock<std::mutex>(main_thread->mutex);
-        main_thread->something_to_do.wait(lock, [&]() {
-            return main_thread->to_do == ThreadToDo::exit;
+        main_thread->status_cond.wait(lock, [&]() {
+            return main_thread->status == ThreadStatus::dormant;
         });
         return Success;
     } else {

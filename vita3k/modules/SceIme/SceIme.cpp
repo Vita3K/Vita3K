@@ -27,8 +27,9 @@ EXPORT(void, SceImeEventHandler, Ptr<void> arg, const SceImeEvent *e) {
     Ptr<SceImeEvent> e1 = Ptr<SceImeEvent>(alloc(host.mem, sizeof(SceImeEvent), "ime2"));
     memcpy(e1.get(host.mem), e, sizeof(SceImeEvent));
     auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    run_callback(host.kernel, *thread, thread_id, host.ime.param.handler.address(), { arg.address(), e1.address() });
-    free(host.mem, e1.address());
+    request_callback(*thread, host.ime.param.handler.address(), { arg.address(), e1.address() }, [&host, e1](int res) {
+        free(host.mem, e1.address());
+    });
 }
 
 EXPORT(SceInt32, sceImeClose) {

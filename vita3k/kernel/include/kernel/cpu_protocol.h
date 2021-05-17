@@ -18,7 +18,8 @@
 #pragma once
 
 #include <cpu/common.h>
-#include <kernel/state.h>
+
+struct KernelState;
 
 typedef std::function<void(CPUState &cpu, uint32_t nid, SceUID thread_id)> CallImportFunc;
 
