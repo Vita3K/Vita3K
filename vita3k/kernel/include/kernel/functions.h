@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cpu/common.h>
+#include <kernel/cpu_protocol.h>
 #include <kernel/types.h>
 #include <util/types.h>
 
