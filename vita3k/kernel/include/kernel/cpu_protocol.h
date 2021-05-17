@@ -18,11 +18,12 @@
 #pragma once
 
 #include <cpu/common.h>
+#include <kernel/state.h>
 
-struct HostState;
+typedef std::function<void(CPUState &cpu, uint32_t nid, SceUID thread_id)> CallImportFunc;
 
 struct CPUProtocol : public CPUProtocolBase {
-    CPUProtocol(HostState &host);
+    CPUProtocol(KernelState &kernel, MemState &mem, const CallImportFunc &func);
     ~CPUProtocol();
     void call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) override;
     Address get_watch_memory_addr(Address addr) override;
@@ -30,5 +31,7 @@ struct CPUProtocol : public CPUProtocolBase {
     ExclusiveMonitorPtr get_exlusive_monitor() override;
 
 private:
-    HostState *host;
+    CallImportFunc call_import;
+    KernelState *kernel;
+    MemState *mem;
 };

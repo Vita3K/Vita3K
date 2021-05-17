@@ -38,6 +38,8 @@ struct ThreadState;
 
 struct SDL_Thread;
 
+struct CPUProtocol;
+
 struct WatchMemory;
 
 struct InitialFiber;
@@ -58,6 +60,7 @@ typedef std::map<Address, uint32_t> NidFromExport;
 typedef std::map<Address, uint32_t> NotFoundVars;
 typedef std::map<Address, WatchMemory> WatchMemoryAddrs;
 typedef std::vector<ModuleRegion> ModuleRegions;
+typedef std::unique_ptr<CPUProtocol> CPUProtocolPtr;
 typedef Pool<CPUState> CPUPool;
 
 struct CodecEngineBlock {
@@ -138,11 +141,12 @@ struct KernelState {
     NotFoundVars not_found_vars;
     WatchMemoryAddrs watch_memory_addrs;
     ModuleRegions module_regions;
-    ExclusiveMonitorPtr exclusive_monitor;
+
     CPUPool cpu_pool;
     CPUBackend cpu_backend;
     bool cpu_opt;
-    CPUProtocolBase *cpu_protocol;
+    CPUProtocolPtr cpu_protocol;
+    ExclusiveMonitorPtr exclusive_monitor;
 
     ObjectStore obj_store;
 

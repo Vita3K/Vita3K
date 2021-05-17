@@ -17,7 +17,6 @@
 
 #include "interface.h"
 
-#include "cpu_protocol.h"
 #include <app/functions.h>
 #include <app/screen_render.h>
 #include <config/functions.h>
@@ -128,8 +127,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // TODO move this to app_init after module refactoring
-    host.cpu_protocol = std::make_unique<CPUProtocol>(host);
     if (!app::init(host, cfg, root_paths)) {
         app::error_dialog("Host initialization failed.", host.window.get());
         return HostInitFailed;
