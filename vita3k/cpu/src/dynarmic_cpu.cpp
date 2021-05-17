@@ -165,17 +165,16 @@ public:
     }
 
     void InterpreterFallback(Dynarmic::A32::VAddr addr, size_t num_insts) override {
-        const bool thumb = cpu->is_thumb_mode();
+        if (cpu->is_thumb_mode())
+            addr |= 1;
 
-        if (thumb) {
-            addr &= 0xFFFFFFFE;
-        } else {
-            addr &= 0xFFFFFFFC;
-        }
         CPUContext context = cpu->save_context();
+        context.set_pc(addr);
         cpu->fallback.load_context(context);
-        std::uint64_t res = static_cast<std::uint64_t>(cpu->fallback.execute_instructions_no_check(static_cast<int>(num_insts)));
+        cpu->fallback.execute_instructions_no_check(static_cast<int>(num_insts));
         context = cpu->fallback.save_context();
+        context.cpsr = cpu->get_cpsr();
+        context.fpscr = cpu->get_fpscr();
         cpu->load_context(context);
     }
 
@@ -209,6 +208,7 @@ public:
         case Dynarmic::A32::Exception::UnpredictableInstruction:
         case Dynarmic::A32::Exception::DecodeError: {
             LOG_WARN("Undefined/Unpredictable instruction at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc), disassemble(*parent, pc, nullptr));
+            InterpreterFallback(pc, 1);
             break;
         }
         default:
