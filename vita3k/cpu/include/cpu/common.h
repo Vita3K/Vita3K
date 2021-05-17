@@ -46,15 +46,15 @@ struct CPUContext {
     std::array<uint32_t, 64> fpu_registers;
     uint32_t fpscr;
 
-    uint32_t get_sp() {
+    uint32_t get_sp() const {
         return cpu_registers[13];
     }
 
-    uint32_t get_lr() {
+    uint32_t get_lr() const {
         return cpu_registers[14];
     }
 
-    uint32_t get_pc() {
+    uint32_t get_pc() const {
         return cpu_registers[15];
     }
 

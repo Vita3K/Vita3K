@@ -396,32 +396,34 @@ bool UnicornCPU::is_thumb_mode() {
 
 CPUContext UnicornCPU::save_context() {
     CPUContext ctx = {};
-    for (auto i = 0; i < 16; i++) {
+    for (size_t i = 0; i < 16; i++) {
         ctx.cpu_registers[i] = get_reg(i);
     }
     ctx.cpu_registers[13] = get_sp();
     ctx.cpu_registers[14] = get_lr();
     ctx.cpu_registers[15] = get_pc();
-    /*
-    for (auto i = 0; i < ctx.fpu_registers.size(); i++) {
+
+    for (size_t i = 0; i < ctx.fpu_registers.size(); i++) {
         ctx.fpu_registers[i] = get_float_reg(i);
     }
 
-    ctx.cpsr = get_cpsr();
-    ctx.fpscr = get_fpscr();*/
+    // Unicorn doesn't like tweaking cpsr
+    // ctx.cpsr = get_cpsr();
+    // ctx.fpscr = get_fpscr();
 
     return ctx;
 }
 
 void UnicornCPU::load_context(CPUContext ctx) {
-    /*for (auto i = 0; i < ctx.fpu_registers.size(); i++) {
+    for (size_t i = 0; i < ctx.fpu_registers.size(); i++) {
         set_float_reg(i, ctx.fpu_registers[i]);
     }
 
-    set_fpscr(ctx.fpscr);
-    set_cpsr(ctx.cpsr);*/
+    // Unicorn doesn't like tweaking cpsr
+    // set_cpsr(ctx.cpsr);
+    // set_fpscr(ctx.fpscr);
 
-    for (auto i = 0; i < 16; i++) {
+    for (size_t i = 0; i < 16; i++) {
         set_reg(i, ctx.cpu_registers[i]);
     }
     set_sp(ctx.cpu_registers[13]);
