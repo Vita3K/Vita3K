@@ -18,6 +18,7 @@
 #include <cpu/functions.h>
 #include <kernel/state.h>
 #include <kernel/sync_primitives.h>
+#include <kernel/thread/thread_functions.h>
 #include <kernel/types.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
@@ -198,8 +199,7 @@ inline int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *expor
 
         // Sleep thread!
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
-        assert(thread->status == ThreadStatus::run);
-        thread->status = ThreadStatus::wait;
+        update_status(*thread, ThreadStatus::wait, ThreadStatus::run);
 
         WaitingThreadData data;
         data.thread = thread;
@@ -277,15 +277,11 @@ inline int mutex_unlock_impl(KernelState &kernel, const char *export_name, SceUI
                 const auto waiting_lock_count = waiting_thread_data.lock_count;
 
                 const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
-
-                assert(waiting_thread->status == ThreadStatus::wait);
-                waiting_thread->status = ThreadStatus::run;
+                update_status(*waiting_thread, ThreadStatus::run, ThreadStatus::wait);
 
                 mutex->waiting_threads->pop();
                 mutex->lock_count += waiting_lock_count;
                 mutex->owner = waiting_thread;
-
-                waiting_thread->status_cond.notify_one();
             }
         }
     }
@@ -405,8 +401,7 @@ int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_i
 
     if (semaphore->val < signal) {
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
-        assert(thread->status == ThreadStatus::run);
-        thread->status = ThreadStatus::wait;
+        update_status(*thread, ThreadStatus::wait, ThreadStatus::run);
 
         WaitingThreadData data;
         data.thread = thread;
@@ -458,13 +453,10 @@ int semaphore_signal(KernelState &kernel, const char *export_name, SceUID thread
         if (!waiting_thread_lock)
             continue;
 
-        assert(waiting_thread->status == ThreadStatus::wait);
-        waiting_thread->status = ThreadStatus::run;
+        update_status(*waiting_thread, ThreadStatus::run, ThreadStatus::wait);
 
         semaphore->waiting_threads->pop();
         semaphore->val -= waiting_signal_count;
-
-        waiting_thread->status_cond.notify_one();
     }
 
     return SCE_KERNEL_OK;
@@ -557,8 +549,7 @@ int condvar_wait(KernelState &kernel, MemState &mem, const char *export_name, Sc
         return error;
 
     std::unique_lock<std::mutex> thread_lock(thread->mutex);
-    assert(thread->status == ThreadStatus::run);
-    thread->status = ThreadStatus::wait;
+    update_status(*thread, ThreadStatus::wait, ThreadStatus::run);
 
     WaitingThreadData data;
     data.thread = thread;
@@ -601,9 +592,7 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
         if (waiting_thread_iter != waiting_threads->end()) {
             const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
 
-            assert(waiting_thread->status == ThreadStatus::wait);
-            waiting_thread->status = ThreadStatus::run;
-            waiting_thread->status_cond.notify_one();
+            update_status(*waiting_thread, ThreadStatus::run, ThreadStatus::wait);
             waiting_threads->erase(waiting_thread_iter);
         } else {
             LOG_ERROR("{}: Target thread {} not found", export_name, waiting_thread->name);
@@ -616,9 +605,7 @@ int condvar_signal(KernelState &kernel, const char *export_name, SceUID thread_i
             if (!waiting_thread_lock)
                 continue;
 
-            assert(waiting_thread->status == ThreadStatus::wait);
-            waiting_thread->status = ThreadStatus::run;
-            waiting_thread->status_cond.notify_one();
+            update_status(*waiting_thread, ThreadStatus::run, ThreadStatus::wait);
             waiting_threads->pop();
         }
     }
@@ -741,8 +728,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         }
     } else if (dowait) {
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
-        assert(thread->status == ThreadStatus::run);
-        thread->status = ThreadStatus::wait;
+        update_status(*thread, ThreadStatus::wait, ThreadStatus::run);
 
         WaitingThreadData data;
         data.thread = thread;
@@ -813,9 +799,7 @@ SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thre
                 continue;
             }
 
-            assert(waiting_thread->status == ThreadStatus::wait);
-            waiting_thread->status = ThreadStatus::run;
-            waiting_thread->status_cond.notify_one();
+            update_status(*waiting_thread, ThreadStatus::run, ThreadStatus::wait);
 
             event->waiting_threads->erase(it++);
         } else {
@@ -957,8 +941,7 @@ int msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id,
                     assert(jt != msgpipe->sender_threads->end());
 
                     msgpipe->sender_threads->erase(jt);
-                    sender_thread->status = ThreadStatus::run;
-                    sender_thread->status_cond.notify_one();
+                    update_status(*sender_thread, ThreadStatus::run);
                 }
             }
 
@@ -972,8 +955,7 @@ int msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id,
             } else {
                 // Wait
                 std::unique_lock<std::mutex> thread_lock(thread->mutex);
-                assert(thread->status == ThreadStatus::run);
-                thread->status = ThreadStatus::wait;
+                update_status(*thread, ThreadStatus::wait, ThreadStatus::run);
 
                 WaitingThreadData data;
                 data.thread = thread;
@@ -1041,8 +1023,7 @@ int msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id,
     // Wait
     if (data.waiting_sender) {
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
-        assert(thread->status == ThreadStatus::run);
-        thread->status = ThreadStatus::wait;
+        update_status(*thread, ThreadStatus::wait, ThreadStatus::run);
 
         WaitingThreadData data;
         data.thread = thread;

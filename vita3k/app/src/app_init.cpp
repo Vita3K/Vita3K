@@ -24,6 +24,7 @@
 #include <host/state.h>
 #include <io/functions.h>
 #include <kernel/functions.h>
+#include <kernel/thread/thread_functions.h>
 #include <nids/functions.h>
 #include <renderer/functions.h>
 #include <rtc/rtc.h>
@@ -97,9 +98,8 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
         if (thread->status == ThreadStatus::wait) {
-            thread->status = ThreadStatus::run;
+            update_status(*thread, ThreadStatus::run);
         }
-        thread->status_cond.notify_all();
     };
 
     state.cfg = std::move(cfg);

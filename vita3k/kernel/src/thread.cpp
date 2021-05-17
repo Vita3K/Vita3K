@@ -144,7 +144,7 @@ void raise_waiting_threads(ThreadState *thread) {
         const std::unique_lock<std::mutex> lock(t->mutex);
         assert(t->status == ThreadStatus::wait);
         t->status = ThreadStatus::run;
-        t->status_cond.notify_one();
+        t->status_cond.notify_all();
     }
     thread->waiting_threads.clear();
 }
@@ -213,10 +213,8 @@ static bool run_thread(ThreadState &thread) {
         case ThreadToDo::step:
             // Pop a job to do
             if (thread.run_queue.empty()) {
-                thread.status = ThreadStatus::dormant;
+                update_status(thread, ThreadStatus::dormant);
                 thread.to_do = ThreadToDo::wait;
-                raise_waiting_threads(&thread);
-                thread.status_cond.notify_one();
                 break;
             }
 
@@ -225,8 +223,7 @@ static bool run_thread(ThreadState &thread) {
                 load_context(*thread.cpu, current_job->ctx);
                 current_job->in_progress = true;
             }
-            thread.status = ThreadStatus::run;
-            thread.status_cond.notify_one();
+            update_status(thread, ThreadStatus::run);
 
             // Run the cpu
             lock.unlock();
@@ -308,6 +305,28 @@ int run_guest_function(KernelState &kernel, ThreadState &thread, Address callbac
     return res;
 }
 
+void update_status(ThreadState &thread, ThreadStatus status, std::optional<ThreadStatus> expected) {
+    if (expected) {
+        assert(expected.value() == thread.status);
+    }
+    thread.status = status;
+    thread.status_cond.notify_all();
+
+    if (status == ThreadStatus::dormant) {
+        raise_waiting_threads(&thread);
+    }
+}
+
+static void clear_run_queue(ThreadState &thread) {
+    if (!thread.run_queue.empty()) {
+        const auto top = thread.run_queue.begin();
+        if (top->notify) {
+            top->notify(read_reg(*thread.cpu, 0));
+        }
+        thread.run_queue.clear();
+    }
+}
+
 void request_callback(ThreadState &thread, Address callback_address, const std::vector<uint32_t> &args, const std::function<void(int res)> notify) {
     std::unique_lock<std::mutex> thread_lock(thread.mutex);
     ThreadJob job;
@@ -328,19 +347,7 @@ void request_callback(ThreadState &thread, Address callback_address, const std::
 
 void exit_thread(ThreadState &thread) {
     std::lock_guard<std::mutex> lock(thread.mutex);
-    const auto last_to_do = thread.to_do;
-    thread.to_do = ThreadToDo::wait;
-    thread.status = ThreadStatus::dormant;
-    thread.status_cond.notify_one();
-    if (!thread.run_queue.empty()) {
-        const auto top = thread.run_queue.begin();
-        if (top->notify) {
-            top->notify(read_reg(*thread.cpu, 0));
-        }
-        thread.run_queue.clear();
-    }
-
-    raise_waiting_threads(&thread);
+    clear_run_queue(thread);
     stop(*thread.cpu);
 }
 
@@ -348,13 +355,7 @@ void exit_and_delete_thread(ThreadState &thread) {
     std::lock_guard<std::mutex> lock(thread.mutex);
     const auto last_to_do = thread.to_do;
     thread.to_do = ThreadToDo::exit;
-    if (!thread.run_queue.empty()) {
-        const auto top = thread.run_queue.begin();
-        if (top->notify) {
-            top->notify(read_reg(*thread.cpu, 0));
-        }
-        thread.run_queue.clear();
-    }
+    clear_run_queue(thread);
     if (last_to_do == ThreadToDo::wait) {
         thread.something_to_do.notify_one();
     } else {
@@ -386,6 +387,11 @@ int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
     waiter->status = ThreadStatus::wait;
     waiter->status_cond.wait(waiter_lock, [&]() { return waiter->status == ThreadStatus::run; });
     return 0;
+}
+
+void wait_thread_status(ThreadState &thread, ThreadStatus status) {
+    std::unique_lock<std::mutex> lock(thread.mutex);
+    thread.status_cond.wait(lock, [&]() { return thread.status == status; });
 }
 
 void ThreadSignal::wait() {
