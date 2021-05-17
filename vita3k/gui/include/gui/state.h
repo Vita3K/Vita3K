@@ -243,7 +243,7 @@ struct GuiState {
     TrophyAnimationStage trophy_window_frame_stage{ TrophyAnimationStage::SLIDE_IN };
     ImTextureID trophy_window_icon{};
 
-    std::queue<NpTrophyUnlockCallbackData> trophy_unlock_display_requests;
+    std::vector<NpTrophyUnlockCallbackData> trophy_unlock_display_requests;
     std::mutex trophy_unlock_display_requests_access_mutex;
 
     ImVec2 trophy_window_pos;
