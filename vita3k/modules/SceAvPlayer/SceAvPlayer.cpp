@@ -313,7 +313,9 @@ EXPORT(int32_t, sceAvPlayerEnableStream, SceUID player_handle, uint32_t stream_n
 EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, SceAvPlayerFrameInfo *frame_info) {
     const auto state = host.kernel.obj_store.get<AvPlayerState>();
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
-
+    if (!player_info) {
+        return SCE_AVPLAYER_ERROR_ILLEGAL_ADDR;
+    }
     Ptr<uint8_t> buffer;
 
     if (player_info->paused) {
