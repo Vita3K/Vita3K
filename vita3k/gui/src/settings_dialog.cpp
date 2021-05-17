@@ -252,23 +252,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Core")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        static const char *LIST_CPU_BACKEND[] = { "Unicorn", "Dynarmic" };
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Cpu Backend");
-        if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND, IM_ARRAYSIZE(LIST_CPU_BACKEND)))
-            config.cpu_backend = LIST_CPU_BACKEND[int(config_cpu_backend)];
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select your preferred cpu backend.");
-        ImGui::Spacing();
-        if (config_cpu_backend == CPUBackend::Dynarmic) {
-            ImGui::Checkbox("Enable optimizations", &config.cpu_opt);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Enable additional CPU JIT optimizations.");
-        }
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
         if (!gui.modules.empty()) {
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Module Mode");
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Modules Mode");
             ImGui::Spacing();
             ImGui::Checkbox("Experimental: LLE libkernel & driver_us", &config.lle_kernel);
             if (ImGui::IsItemHovered())
@@ -291,7 +276,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                 ImGui::SetTooltip("Select your desired modules.");
             ImGui::Spacing();
             ImGui::PushItemWidth(240 * host.dpi_scale);
-            if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules.size()), 6)) {
+            if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules.size()), 8)) {
                 for (auto &m : gui.modules) {
                     const auto module = std::find(config.lle_modules.begin(), config.lle_modules.end(), m.first);
                     const bool module_existed = (module != config.lle_modules.end());
@@ -331,16 +316,39 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     } else
         ImGui::PopStyleColor();
 
+    // CPU
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
+    if (ImGui::BeginTabItem("CPU")) {
+        ImGui::PopStyleColor();
+        ImGui::Spacing();
+        static const char *LIST_CPU_BACKEND[] = { "Unicorn", "Dynarmic" };
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Cpu Backend");
+        if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND, IM_ARRAYSIZE(LIST_CPU_BACKEND)))
+            config.cpu_backend = LIST_CPU_BACKEND[int(config_cpu_backend)];
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select your preferred cpu backend.");
+        if (config_cpu_backend == CPUBackend::Dynarmic) {
+            ImGui::Spacing();
+            ImGui::Checkbox("Enable optimizations", &config.cpu_opt);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Enable additional CPU JIT optimizations.");
+        }
+        ImGui::EndTabItem();
+    } else
+        ImGui::PopStyleColor();
+
     // GPU
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("GPU")) {
         ImGui::PopStyleColor();
+        ImGui::Spacing();
 #ifdef USE_VULKAN
         static const char *LIST_BACKEND_RENDERER[] = { "OpenGL", "Vulkan" };
         if (ImGui::Combo("Backend Renderer (Reboot for apply)", reinterpret_cast<int *>(&host.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
             host.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(host.backend_renderer)];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred backend renderer.");
+        ImGui::Spacing();
 #endif
         if (host.renderer->features.spirv_shader) {
             ImGui::Checkbox("Use Spir-V shader", &host.cfg.spirv_shader);
@@ -358,6 +366,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("System")) {
         ImGui::PopStyleColor();
+        ImGui::Spacing();
         ImGui::TextColored(GUI_COLOR_TEXT, "Enter Button Assignment \nSelect your 'Enter' Button.");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and get default confirmation button.");
@@ -445,6 +454,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("GUI")) {
         ImGui::PopStyleColor();
+        ImGui::Spacing();
         ImGui::Checkbox("GUI Visible", &host.cfg.show_gui);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show GUI after booting a application.");
@@ -551,6 +561,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("Debug")) {
         ImGui::PopStyleColor();
+        ImGui::Spacing();
         ImGui::Checkbox("Log Imports", &host.cfg.log_imports);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
