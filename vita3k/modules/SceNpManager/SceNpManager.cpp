@@ -47,7 +47,7 @@ EXPORT(int, sceNpCheckCallback) {
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     for (auto &callback : host.np.cbs) {
-        run_callback(host.kernel, *thread, thread_id, callback.second.pc, { (uint32_t)host.np.state, callback.second.data });
+        request_callback(*thread, callback.second.pc, { (uint32_t)host.np.state, callback.second.data });
     }
 
     return STUBBED("Stub");

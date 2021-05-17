@@ -19,6 +19,7 @@
 
 #include <codec/state.h>
 #include <io/functions.h>
+#include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
@@ -219,17 +220,11 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
     return buffer;
 }
 
-uint run_event_callback(HostState &host, SceUID thread_id, const PlayerPtr player_info, uint32_t event_id, uint32_t source_id, Ptr<void> event_data) {
+void run_event_callback(HostState &host, SceUID thread_id, const PlayerPtr player_info, uint32_t event_id, uint32_t source_id, Ptr<void> event_data) {
     constexpr char *export_name = "SceAvPlayerEventCallback";
     if (player_info->event_manager.event_callback) {
         auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        return run_callback(host.kernel, *thread, thread_id, player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
-    } else {
-        if (event_id == SCE_AVPLAYER_STATE_READY) {
-            return UNIMPLEMENTED();
-        } else {
-            return 0;
-        }
+        request_callback(*thread, player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
     }
 }
 //end of callback_thread
@@ -251,15 +246,15 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         const Address buf = alloc(host.mem, KB(512), "AvPlayer buffer");
         const auto buf_ptr = Ptr<char>(buf).get(host.mem);
         const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        run_callback(host.kernel, *thread, thread_id, player_info->file_manager.open_file.address(), { player_info->file_manager.user_data, path.address() });
-        const uint32_t file_size = run_callback(host.kernel, *thread, thread_id, player_info->file_manager.file_size.address(), { player_info->file_manager.user_data });
+        run_guest_function(host.kernel, player_info->file_manager.open_file.address(), { player_info->file_manager.user_data, path.address() });
+        const uint32_t file_size = run_guest_function(host.kernel, player_info->file_manager.file_size.address(), { player_info->file_manager.user_data });
         auto remaining = file_size;
         uint32_t offset = 0;
         const Ptr<uint32_t> buf_size_ptr(stack_alloc(*thread->cpu, 4));
         while (remaining) {
             const auto buf_size = std::min((uint32_t)KB(512), remaining);
             *buf_size_ptr.get(host.mem) = buf_size;
-            run_callback(host.kernel, *thread, thread_id, player_info->file_manager.read_file.address(), { player_info->file_manager.user_data, buf, offset, 0 });
+            run_guest_function(host.kernel, player_info->file_manager.read_file.address(), { player_info->file_manager.user_data, buf, offset, 0 });
             temp_file.write(buf_ptr, buf_size);
             offset += buf_size;
             remaining -= buf_size;
@@ -271,7 +266,7 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
             LOG_ERROR("File is corrupted or incomplete: {}", temp_file_path.string());
             return -1;
         }
-        run_callback(host.kernel, *thread, thread_id, player_info->file_manager.close_file.address(), { player_info->file_manager.user_data });
+        run_guest_function(host.kernel, player_info->file_manager.close_file.address(), { player_info->file_manager.user_data });
         file_path = temp_file_path.string();
     }
     player_info->player.queue(file_path);

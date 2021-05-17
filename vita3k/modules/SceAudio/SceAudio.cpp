@@ -120,10 +120,10 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         lock.unlock();
 
         std::unique_lock<std::mutex> mlock(thread->mutex);
-        if (thread->to_do != ThreadToDo::run)
+        if (thread->status != ThreadStatus::run)
             return 0;
-        thread->to_do = ThreadToDo::wait;
-        thread->something_to_do.wait(mlock);
+        thread->status = ThreadStatus::wait;
+        thread->status_cond.wait(mlock, [&]() { return thread->status == ThreadStatus::run; });
     }
 
     return 0;

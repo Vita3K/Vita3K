@@ -24,6 +24,7 @@
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <immintrin.h>
+#include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <mem/allocator.h>
 #include <mem/mempool.h>
@@ -40,7 +41,7 @@ static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemStat
     const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
     const Address final_size_addr = stack_alloc(*thread->cpu, 4);
 
-    Ptr<void> result(static_cast<Address>(run_callback(kernel, *thread, thread_id, callback.address(),
+    Ptr<void> result(static_cast<Address>(run_guest_function(kernel, callback.address(),
         { userdata.address(), size, final_size_addr })));
 
     return_size = *Ptr<std::uint32_t>(final_size_addr).get(mem);
@@ -1593,13 +1594,8 @@ static int SDLCALL thread_function(void *data) {
         renderer::wishlist(newBuffer, renderer::SyncObjectSubject::Fragment);
 
         // Now run callback
-        {
-            const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
-            if ((!thread) || thread->to_do == ThreadToDo::exit)
-                break;
-        }
         const ThreadStatePtr display_thread = util::find(params.thid, params.kernel->threads);
-        run_callback(*params.kernel, *display_thread, params.thid, display_callback->pc, { display_callback->data });
+        run_guest_function(*params.kernel, *display_thread, display_callback->pc, { display_callback->data });
 
         free(*params.mem, display_callback->data);
 
@@ -1644,9 +1640,8 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     gxm_params.gxm = &host.gxm;
     gxm_params.renderer = host.renderer.get();
 
-    const ThreadPtr running_thread(SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params), [](SDL_Thread *running_thread) {});
+    SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params);
     SDL_SemWait(gxm_params.host_may_destroy_params.get());
-    host.kernel.running_threads.emplace(host.gxm.display_queue_thread, running_thread);
     host.gxm.notification_region = Ptr<uint32_t>(alloc(host.mem, MB(1), "SceGxmNotificationRegion"));
     memset(host.gxm.notification_region.get(host.mem), 0, MB(1));
     return 0;

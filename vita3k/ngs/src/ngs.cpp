@@ -1,3 +1,4 @@
+#include <kernel/functions.h>
 #include <kernel/state.h>
 #include <kernel/thread/thread_functions.h>
 #include <ngs/definitions/atrac9.h>
@@ -127,7 +128,7 @@ void ModuleData::invoke_callback(KernelState &kernel, const MemState &mem, const
     info->callback_ptr = Ptr<void>(reason_ptr);
     info->userdata = user_data;
 
-    run_callback(kernel, *thread, thread_id, callback.address(), { callback_info_addr });
+    run_guest_function(kernel, callback.address(), { callback_info_addr });
     stack_free(*thread->cpu, sizeof(CallbackInfo));
 }
 

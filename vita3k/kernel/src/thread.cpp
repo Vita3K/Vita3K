@@ -39,36 +39,24 @@
 struct ThreadParams {
     KernelState *kernel = nullptr;
     SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
-    SceSize arglen = 0;
-    Ptr<void> argp;
     std::shared_ptr<SDL_semaphore> host_may_destroy_params = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(0), SDL_DestroySemaphore);
 };
+
+static bool run_thread(ThreadState &thread);
 
 static int SDLCALL thread_function(void *data) {
     assert(data != nullptr);
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
     SDL_SemPost(params.host_may_destroy_params.get());
     const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
-    if (params.kernel->wait_for_debugger) {
-        thread->to_do = ThreadToDo::wait;
-        // Any following threads opened with thread_function will not wait.
-        params.kernel->wait_for_debugger = false;
-    }
-    const bool succeeded = run_on_current(*thread, Ptr<void>(thread->entry_point), params.arglen, params.argp);
+    run_thread(*thread);
     const uint32_t r0 = read_reg(*thread->cpu, 0);
     thread->returned_value = r0;
 
     std::lock_guard<std::mutex> lock(params.kernel->mutex);
-    if (thread->to_do == ThreadToDo::exit || thread->to_do == ThreadToDo::exit_delete) {
-        raise_waiting_threads(thread.get());
-        params.kernel->waiting_threads.erase(thread->id);
-    }
-    if (thread->to_do == ThreadToDo::exit_delete) {
-        params.kernel->corenum_allocator.free_corenum(thread->core_num);
-        params.kernel->threads.erase(thread->id);
-    }
-
-    params.kernel->running_threads.erase(thread->id);
+    raise_waiting_threads(thread.get());
+    params.kernel->threads.erase(thread->id);
+    params.kernel->corenum_allocator.free_corenum(thread->core_num);
 
     return r0;
 }
@@ -99,7 +87,7 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     const Address stack_top = thread->stack.get() + stack_size;
     memset(thread->stack.get_ptr<void>().get(mem), 0xcc, stack_size);
 
-    thread->cpu = init_cpu(kernel.cpu_backend, kernel.cpu_opt, thid, static_cast<std::size_t>(thread->core_num), entry_point.address(), stack_top, mem, kernel.cpu_protocol);
+    thread->cpu = init_cpu(kernel.cpu_backend, kernel.cpu_opt, thid, static_cast<std::size_t>(thread->core_num), entry_point.address(), stack_top, mem, kernel.cpu_protocol.get());
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
@@ -130,61 +118,76 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     } else {
         write_tpidruro(*thread->cpu, 0);
     }
-    WaitingThreadState waiting{ name };
+
+    thread->init_cpu_ctx = save_context(*thread->cpu);
 
     const std::unique_lock<std::mutex> lock(kernel.mutex);
     kernel.threads.emplace(thid, thread);
-    kernel.waiting_threads.emplace(thid, waiting);
 
+    ThreadParams params;
+    params.kernel = &kernel;
+    params.thid = thid;
+
+    SDL_CreateThread(&thread_function, thread->name.c_str(), &params);
+    SDL_SemWait(params.host_may_destroy_params.get());
     return thid;
+}
+
+ThreadStatePtr create_thread(KernelState &kernel, MemState &mem, const char *name) {
+    constexpr size_t DEFAULT_STACK_SIZE = 0x1000;
+    const SceUID id = create_thread(Ptr<void>(0), kernel, mem, name, SCE_KERNEL_DEFAULT_PRIORITY, DEFAULT_STACK_SIZE, nullptr);
+    return lock_and_find(id, kernel.threads, kernel.mutex);
 }
 
 void raise_waiting_threads(ThreadState *thread) {
     for (auto t : thread->waiting_threads) {
         const std::unique_lock<std::mutex> lock(t->mutex);
-        assert(t->to_do == ThreadToDo::wait);
-        t->to_do = ThreadToDo::run;
-        t->something_to_do.notify_one();
+        assert(t->status == ThreadStatus::wait);
+        t->status = ThreadStatus::run;
+        t->status_cond.notify_one();
     }
     thread->waiting_threads.clear();
 }
 
 bool is_running(KernelState &kernel, ThreadState &thread) {
-    return kernel.running_threads.find(thread.id) != kernel.running_threads.end();
+    return thread.status == ThreadStatus::run;
 }
 
 int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp) {
     const std::unique_lock<std::mutex> lock(kernel.mutex);
 
-    const KernelWaitingThreadStates::const_iterator waiting = kernel.waiting_threads.find(thid);
-    if (waiting == kernel.waiting_threads.end()) {
-        if (kernel.running_threads.find(thid) != kernel.running_threads.end()) {
-            return SCE_KERNEL_ERROR_RUNNING;
-        }
+    const ThreadStatePtr thread = util::find(thid, kernel.threads);
+    if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
+    if (thread->status == ThreadStatus::run)
+        return SCE_KERNEL_ERROR_RUNNING;
+    std::unique_lock<std::mutex> thread_lock(thread->mutex);
 
-    const ThreadStatePtr thread = util::find(thid, kernel.threads);
-    assert(thread);
+    CPUContext ctx = save_context(*thread->cpu);
+    ctx.cpu_registers[0] = arglen;
+    ctx.cpu_registers[1] = argp.address();
+    ctx.set_pc(thread->entry_point);
+    ctx.set_lr(thread->cpu->halt_instruction_pc);
 
-    ThreadParams params;
-    params.kernel = &kernel;
-    params.thid = thid;
-    params.arglen = arglen;
-    params.argp = argp;
+    ThreadJob job;
+    job.ctx = ctx;
 
-    const ThreadPtr running_thread(SDL_CreateThread(&thread_function, waiting->second.name.c_str(), &params), [thread](SDL_Thread *running_thread) {});
-    if (!running_thread) {
-        return SCE_KERNEL_ERROR_THREAD_ERROR;
+    thread->run_queue.push_front(job);
+
+    if (kernel.wait_for_debugger) {
+        thread->to_do = ThreadToDo::wait;
+        kernel.wait_for_debugger = false;
+    } else {
+        thread->to_do = ThreadToDo::run;
     }
+    thread->something_to_do.notify_one();
 
-    kernel.waiting_threads.erase(waiting);
-    kernel.running_threads.emplace(thid, running_thread);
-    SDL_SemWait(params.host_may_destroy_params.get());
     return SCE_KERNEL_OK;
 }
 
 Ptr<void> copy_block_to_stack(ThreadState &thread, MemState &mem, const Ptr<void> &data, const int size) {
+    std::unique_lock<std::mutex> thread_lock(thread.mutex);
     const Address stack_top = thread.stack.get() + thread.stack_size;
     const Address sp = read_sp(*thread.cpu);
     assert(sp <= stack_top && sp >= thread.stack.get());
@@ -200,14 +203,32 @@ Ptr<void> copy_block_to_stack(ThreadState &thread, MemState &mem, const Ptr<void
 
 static bool run_thread(ThreadState &thread) {
     int res = 0;
+    RunQueue::iterator current_job;
     std::unique_lock<std::mutex> lock(thread.mutex);
     while (true) {
         switch (thread.to_do) {
-        case ThreadToDo::exit_delete:
         case ThreadToDo::exit:
             return true;
         case ThreadToDo::run:
         case ThreadToDo::step:
+            // Pop a job to do
+            if (thread.run_queue.empty()) {
+                thread.status = ThreadStatus::dormant;
+                thread.to_do = ThreadToDo::wait;
+                raise_waiting_threads(&thread);
+                thread.status_cond.notify_one();
+                break;
+            }
+
+            current_job = thread.run_queue.begin();
+            if (!current_job->in_progress) {
+                load_context(*thread.cpu, current_job->ctx);
+                current_job->in_progress = true;
+            }
+            thread.status = ThreadStatus::run;
+            thread.status_cond.notify_one();
+
+            // Run the cpu
             lock.unlock();
             if (thread.to_do == ThreadToDo::step) {
                 res = step(*thread.cpu);
@@ -215,13 +236,19 @@ static bool run_thread(ThreadState &thread) {
 
             } else
                 res = run(*thread.cpu);
+            lock.lock();
 
-            if (thread.to_do == ThreadToDo::exit || thread.to_do == ThreadToDo::exit_delete)
+            // Handle errors
+            if (thread.to_do == ThreadToDo::exit)
                 return true;
 
             if (res < 0) {
                 LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
-                return true;
+                if (current_job->notify) {
+                    current_job->notify(0xDEADDEAD);
+                }
+                thread.run_queue.erase(current_job);
+                break;
             }
 
             if (hit_breakpoint(*thread.cpu)) {
@@ -229,11 +256,11 @@ static bool run_thread(ThreadState &thread) {
             }
 
             if (res == 1) {
-                thread.to_do = ThreadToDo::exit;
-                return true;
+                if (current_job->notify) {
+                    current_job->notify(read_reg(*thread.cpu, 0));
+                }
+                thread.run_queue.erase(current_job);
             }
-            lock.lock();
-
             break;
         case ThreadToDo::wait:
             thread.something_to_do.wait(lock);
@@ -242,97 +269,111 @@ static bool run_thread(ThreadState &thread) {
     }
 }
 
-int run_callback(KernelState &kernel, ThreadState &thread, const SceUID &thid, Address callback_address, const std::vector<uint32_t> &args) {
-    bool should_wait = false;
-    if (kernel.cpu_pool.available() == 0) {
-        LOG_TRACE("CPU pool for callbacks is empty. Waiting.");
-        should_wait = true;
-    }
-    auto cpu_item = kernel.cpu_pool.borrow();
-    if (should_wait)
-        LOG_TRACE("Got a cpu from CPU pool after a wait");
-    auto cpu = cpu_item.get();
+int run_guest_function(KernelState &kernel, ThreadState &thread, Address callback_address, const std::vector<uint32_t> &args) {
+    std::unique_lock<std::mutex> thread_lock(thread.mutex);
+    std::mutex mutex;
+    std::condition_variable cond;
+    bool done = false;
+    int res = 0;
 
-    CPUContext ctx = save_context(*thread.cpu);
-    load_context(*cpu, ctx);
-    write_tpidruro(*cpu, read_tpidruro(*thread.cpu));
+    ThreadJob job;
+
+    job.notify = [&](int res2) {
+        std::lock_guard<std::mutex> lock(mutex);
+        done = true;
+        res = res2;
+        cond.notify_one();
+    };
+
+    CPUContext ctx = thread.init_cpu_ctx;
 
     assert(args.size() <= 4);
     for (int i = 0; i < args.size(); i++) {
-        write_reg(*cpu, i, args[i]);
+        ctx.cpu_registers[i] = args[i];
     }
+
+    ctx.set_pc(callback_address);
+    ctx.set_lr(thread.cpu->halt_instruction_pc);
+    job.ctx = ctx;
     // TODO: remaining arguments should be pushed into stack
-    set_thread_id(*cpu, thid);
-    write_pc(*cpu, callback_address);
-    write_lr(*cpu, cpu->halt_instruction_pc);
-    CPUStatePtr cpu_ptr = CPUStatePtr(cpu, [](CPUState *state) -> void {});
-    thread.cpu.swap(cpu_ptr);
-    auto res = run(*cpu);
-    thread.cpu.swap(cpu_ptr);
 
-    if (res < 0) {
-        LOG_ERROR("Thread {} experienced a unicorn error.", thread.name);
-        return -1;
-    }
+    thread.to_do = ThreadToDo::run;
+    thread.run_queue.push_back(job);
+    thread.something_to_do.notify_one();
 
-    return read_reg(*cpu, 0);
+    thread_lock.unlock();
+    std::unique_lock<std::mutex> lock(mutex);
+    cond.wait(lock, [&]() { return done; });
+
+    return res;
 }
 
-uint32_t run_on_current(ThreadState &thread, const Ptr<const void> entry_point, SceSize arglen, const Ptr<void> &argp) {
+void request_callback(ThreadState &thread, Address callback_address, const std::vector<uint32_t> &args, const std::function<void(int res)> notify) {
+    std::unique_lock<std::mutex> thread_lock(thread.mutex);
+    ThreadJob job;
     CPUContext ctx = save_context(*thread.cpu);
-    auto tpidruro = read_tpidruro(*thread.cpu);
+    job.notify = notify;
+    assert(args.size() <= 4);
+    for (int i = 0; i < args.size(); i++) {
+        ctx.cpu_registers[i] = args[i];
+    }
 
-    write_reg(*thread.cpu, 0, arglen);
-    write_reg(*thread.cpu, 1, argp.address());
-    write_pc(*thread.cpu, entry_point.address());
-    write_lr(*thread.cpu, thread.cpu->halt_instruction_pc);
-    set_thread_id(*thread.cpu, thread.id);
+    ctx.set_pc(callback_address);
+    ctx.set_lr(thread.cpu->halt_instruction_pc);
+    job.ctx = ctx;
+    // TODO: remaining arguments should be pushed into stack
 
-    run_thread(thread);
-    auto out = read_reg(*thread.cpu, 0);
-
-    load_context(*thread.cpu, ctx);
-    write_tpidruro(*thread.cpu, tpidruro);
-    return out;
+    thread.jobs_to_add.push_back(job);
 }
 
 void exit_thread(ThreadState &thread) {
+    std::lock_guard<std::mutex> lock(thread.mutex);
     const auto last_to_do = thread.to_do;
-    thread.to_do = ThreadToDo::exit;
-    if (last_to_do == ThreadToDo::wait) {
-        std::lock_guard<std::mutex> lock(thread.mutex);
-        thread.something_to_do.notify_one();
-    } else if (last_to_do == ThreadToDo::run) {
-        stop(*thread.cpu);
+    thread.to_do = ThreadToDo::wait;
+    thread.status = ThreadStatus::dormant;
+    thread.status_cond.notify_one();
+    if (!thread.run_queue.empty()) {
+        const auto top = thread.run_queue.begin();
+        if (top->notify) {
+            top->notify(read_reg(*thread.cpu, 0));
+        }
+        thread.run_queue.clear();
     }
+
+    raise_waiting_threads(&thread);
+    stop(*thread.cpu);
 }
 
 void exit_and_delete_thread(ThreadState &thread) {
+    std::lock_guard<std::mutex> lock(thread.mutex);
     const auto last_to_do = thread.to_do;
-    thread.to_do = ThreadToDo::exit_delete;
+    thread.to_do = ThreadToDo::exit;
+    if (!thread.run_queue.empty()) {
+        const auto top = thread.run_queue.begin();
+        if (top->notify) {
+            top->notify(read_reg(*thread.cpu, 0));
+        }
+        thread.run_queue.clear();
+    }
     if (last_to_do == ThreadToDo::wait) {
-        std::lock_guard<std::mutex> lock(thread.mutex);
         thread.something_to_do.notify_one();
-    } else if (last_to_do == ThreadToDo::run) {
+    } else {
         stop(*thread.cpu);
     }
 }
 
 void delete_thread(KernelState &kernel, ThreadState &thread) {
-    kernel.corenum_allocator.free_corenum(thread.core_num);
-
-    kernel.waiting_threads.erase(thread.id);
-    raise_waiting_threads(&thread);
-    kernel.threads.erase(thread.id);
+    std::lock_guard<std::mutex> lock(thread.mutex);
+    assert(thread.to_do == ThreadToDo::wait);
+    thread.to_do = ThreadToDo::exit;
+    thread.something_to_do.notify_one();
 }
 
 int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
-    const std::lock_guard<std::mutex> waiter_lock(waiter->mutex);
-
+    std::unique_lock<std::mutex> waiter_lock(waiter->mutex);
     {
-        const std::lock_guard<std::mutex> thread_lock(target->mutex);
-
-        if (target->to_do == ThreadToDo::exit) {
+        const std::unique_lock<std::mutex> thread_lock(target->mutex);
+        if (target->status == ThreadStatus::dormant) {
             if (stat != nullptr) {
                 *stat = target->returned_value;
             }
@@ -341,8 +382,9 @@ int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
 
         target->waiting_threads.push_back(waiter);
     }
-    waiter->to_do = ThreadToDo::wait;
-    stop(*waiter->cpu);
+
+    waiter->status = ThreadStatus::wait;
+    waiter->status_cond.wait(waiter_lock, [&]() { return waiter->status == ThreadStatus::run; });
     return 0;
 }
 

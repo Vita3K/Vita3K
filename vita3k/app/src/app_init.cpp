@@ -96,10 +96,10 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
-        if (thread->to_do == ThreadToDo::wait) {
-            thread->to_do = ThreadToDo::run;
+        if (thread->status == ThreadStatus::wait) {
+            thread->status = ThreadStatus::run;
         }
-        thread->something_to_do.notify_all();
+        thread->status_cond.notify_all();
     };
 
     state.cfg = std::move(cfg);

@@ -53,6 +53,8 @@ bool init(KernelState &kernel, MemState &mem, int cpu_pool_size, CallImportFunc 
     kernel.base_tick = { rtc_base_ticks() };
     kernel.cpu_protocol = std::make_unique<CPUProtocol>(kernel, mem, call_import);
 
+    kernel.guest_func_runner = create_thread(kernel, mem, "guest function runner");
+
     return true;
 }
 
@@ -71,8 +73,12 @@ Ptr<Ptr<void>> get_thread_tls_addr(KernelState &kernel, MemState &mem, SceUID th
 void stop_all_threads(KernelState &kernel) {
     const std::lock_guard<std::mutex> lock(kernel.mutex);
     for (ThreadStatePtrs::iterator thread = kernel.threads.begin(); thread != kernel.threads.end(); ++thread) {
-        exit_thread(*thread->second);
+        exit_and_delete_thread(*thread->second);
     }
+}
+
+int run_guest_function(KernelState &kernel, Address callback_address, const std::vector<uint32_t> &args) {
+    return run_guest_function(kernel, *kernel.guest_func_runner, callback_address, args);
 }
 
 void add_watch_memory_addr(KernelState &state, Address addr, size_t size) {
