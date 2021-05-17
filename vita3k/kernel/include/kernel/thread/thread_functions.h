@@ -24,6 +24,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 struct CPUState;
@@ -39,6 +40,8 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
 int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const Ptr<void> &argp);
 Ptr<void> copy_block_to_stack(ThreadState &thread, MemState &mem, const Ptr<void> &data, const int size);
 bool is_running(KernelState &kernel, ThreadState &thread);
+void update_status(ThreadState &thread, ThreadStatus status, std::optional<ThreadStatus> expected = std::nullopt);
+void wait_thread_status(ThreadState &thread, ThreadStatus status);
 void exit_thread(ThreadState &thread);
 void exit_and_delete_thread(ThreadState &thread);
 void delete_thread(KernelState &kernel, ThreadState &thread);
