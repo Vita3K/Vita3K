@@ -545,8 +545,10 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
 
         LOG_DEBUG("Running module_start of library: {} at address {}", module_name, log_hex(module_start.address()));
 
-        auto argp = Ptr<void>();
-        const auto ret = run_guest_function(host.kernel, module_start.address(), { 0, argp.address() });
+        // TODO: why does fios need separate thread its stack freed anyways?
+        const ThreadStatePtr module_thread = create_thread(host.kernel, host.mem, module_name);
+        const auto ret = run_guest_function(host.kernel, *module_thread, module_start.address(), { 0, 0 });
+        delete_thread(host.kernel, *module_thread);
 
         LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
     }
