@@ -357,3 +357,17 @@ uint32_t encode_arm_inst(uint8_t type, uint16_t immed, uint16_t reg) {
         return 0;
     }
 }
+
+uint32_t encode_thumb_inst(uint8_t type, uint16_t immed, uint16_t reg) {
+    switch (type) {
+    case INSTRUCTION_MOVW:
+        return ((uint32_t)0x1E << 27) | ((uint32_t)(immed & 0x1000) << 14) | ((uint32_t)0x24 << 20) | ((immed & 0xf000) << 4) | ((immed & 0x700) << 4) | (reg << 8) | immed & 0xff;
+    case INSTRUCTION_MOVT:
+        return ((uint32_t)0x1E << 27) | ((uint32_t)(immed & 0x1000) << 14) | ((uint32_t)0x2C << 20) | ((immed & 0xf000) << 4) | ((immed & 0x700) << 4) | (reg << 8) | immed & 0xff;
+    case INSTRUCTION_BRANCH:
+        return ((((uint32_t)0x8E << 7) | (reg << 3)) << 16) | 0xBF00;
+    case INSTRUCTION_UNKNOWN:
+    default:
+        return 0;
+    }
+}

@@ -9,8 +9,10 @@ set(SOURCE_LIST
 	include/kernel/sync_primitives.h
 	include/kernel/relocation.h
 	include/kernel/object_store.h
+	include/kernel/debugger.h
 	src/kernel.cpp
 	src/thread.cpp
+	src/debugger.cpp
 	src/cpu_protocol.cpp
 	src/sync_primitives.cpp
 	src/relocation.cpp

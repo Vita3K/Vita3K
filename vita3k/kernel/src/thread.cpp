@@ -91,10 +91,10 @@ SceUID create_thread(Ptr<const void> entry_point, KernelState &kernel, MemState 
     if (!thread->cpu) {
         return SCE_KERNEL_ERROR_ERROR;
     }
-    if (kernel.watch_code) {
+    if (kernel.debugger.watch_code) {
         set_log_code(*thread->cpu, true);
     }
-    if (kernel.watch_memory) {
+    if (kernel.debugger.watch_memory) {
         set_log_mem(*thread->cpu, true);
     }
 
@@ -175,9 +175,9 @@ int start_thread(KernelState &kernel, const SceUID &thid, SceSize arglen, const 
 
     thread->run_queue.push_front(job);
 
-    if (kernel.wait_for_debugger) {
+    if (kernel.debugger.wait_for_debugger) {
         thread->to_do = ThreadToDo::wait;
-        kernel.wait_for_debugger = false;
+        kernel.debugger.wait_for_debugger = false;
     } else {
         thread->to_do = ThreadToDo::run;
     }

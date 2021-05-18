@@ -103,7 +103,6 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
     };
 
     state.cfg = std::move(cfg);
-    state.kernel.wait_for_debugger = state.cfg.wait_for_debugger;
 
     state.base_path = root_paths.get_base_path_string();
     state.default_path = root_paths.get_pref_path_string();

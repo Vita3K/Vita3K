@@ -23,13 +23,6 @@
 #include <map>
 #include <mutex>
 
-struct Breakpoint {
-    bool gdb;
-    bool thumb_mode;
-    unsigned char data[4];
-    BreakpointCallback callback;
-};
-
 struct MemState {
     size_t page_size = 0;
     Generation generation = 0;
@@ -40,5 +33,4 @@ struct MemState {
     std::mutex generation_mutex;
     GenerationNames generation_names;
     std::map<Address, Address> aligned_addr_to_original;
-    std::map<Address, Breakpoint> breakpoints;
 };

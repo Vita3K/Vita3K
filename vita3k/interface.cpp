@@ -498,7 +498,7 @@ ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstr
         host.display.imgui_render = false;
 
     if (host.cfg.gdbstub) {
-        host.kernel.wait_for_debugger = true;
+        host.kernel.debugger.wait_for_debugger = true;
         server_open(host);
     }
 

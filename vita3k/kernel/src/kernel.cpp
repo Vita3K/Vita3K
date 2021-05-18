@@ -22,6 +22,8 @@
 
 #include <cpu/functions.h>
 #include <mem/ptr.h>
+#include <util/align.h>
+#include <util/arm.h>
 #include <util/find.h>
 #include <util/log.h>
 
@@ -52,7 +54,7 @@ bool init(KernelState &kernel, MemState &mem, int cpu_pool_size, CallImportFunc 
     kernel.start_tick = { rtc_base_ticks() };
     kernel.base_tick = { rtc_base_ticks() };
     kernel.cpu_protocol = std::make_unique<CPUProtocol>(kernel, mem, call_import);
-
+    kernel.debugger.init(&kernel);
     kernel.guest_func_runner = create_thread(kernel, mem, "guest function runner");
 
     return true;
@@ -79,43 +81,4 @@ void stop_all_threads(KernelState &kernel) {
 
 int run_guest_function(KernelState &kernel, Address callback_address, const std::vector<uint32_t> &args) {
     return run_guest_function(kernel, *kernel.guest_func_runner, callback_address, args);
-}
-
-void add_watch_memory_addr(KernelState &state, Address addr, size_t size) {
-    std::lock_guard<std::mutex> lock(state.mutex);
-    state.watch_memory_addrs.emplace(addr, WatchMemory{ addr, size });
-}
-
-void remove_watch_memory_addr(KernelState &state, Address addr) {
-    std::lock_guard<std::mutex> lock(state.mutex);
-    state.watch_memory_addrs.erase(addr);
-}
-
-// TODO use boost icl or interval tree instead if this turns out to be a significant bottleneck
-Address get_watch_memory_addr(KernelState &state, Address addr) {
-    std::lock_guard<std::mutex> lock(state.mutex);
-    for (const auto &item : state.watch_memory_addrs) {
-        if (item.second.start <= addr && addr < item.second.start + item.second.size) {
-            return item.second.start;
-        }
-    }
-    return 0;
-}
-
-void update_watches(KernelState &state) {
-    for (const auto &thread : state.threads) {
-        auto &cpu = *thread.second->cpu;
-        if (state.watch_code != get_log_code(cpu)) {
-            if (state.watch_code)
-                set_log_code(cpu, true);
-            else
-                set_log_code(cpu, false);
-        }
-        if (state.watch_memory != get_log_mem(cpu)) {
-            if (state.watch_memory)
-                set_log_mem(cpu, true);
-            else
-                set_log_mem(cpu, false);
-        }
-    }
 }

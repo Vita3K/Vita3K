@@ -125,7 +125,7 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
 
     if (!export_pc) {
         // HLE - call our C++ function
-        if (host.kernel.watch_import_calls) {
+        if (host.kernel.debugger->watch_import_calls) {
             const std::unordered_set<uint32_t> hle_nid_blacklist = {
                 0xB295EB61, // sceKernelGetTLSAddr
                 0x46E7BE7B, // sceKernelLockLwMutex
