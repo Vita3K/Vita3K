@@ -90,7 +90,8 @@
     code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "video-playing", true, video_playing)                                                    \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
-    code(uint64_t, "current-ime-lang", 4, current_ime_lang)
+    code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
+    code(bool, "disable-at9-decoder", false, disable_at9_decoder)
 
 // Vector members produced in the config file
 // Order is code(option_type, option_name, default_value)

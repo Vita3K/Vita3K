@@ -304,6 +304,8 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     }
 
     LOG_INFO("{}: {}", host.cfg[e_cpu_backend], host.cfg.current_config.cpu_backend);
+    LOG_INFO_IF(host.kernel.cpu_backend == CPUBackend::Dynarmic, "CPU Optimisation state: {}", host.cfg.current_config.cpu_opt);
+    LOG_INFO("at9 audio decoder state: {}", !host.cfg.current_config.disable_at9_decoder);
     LOG_INFO("ngs experimental state: {}", !host.cfg.current_config.disable_ngs);
     LOG_INFO("video player state: {}", host.cfg.current_config.video_playing);
     if (host.cfg.current_config.auto_lle)
