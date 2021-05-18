@@ -424,7 +424,7 @@ bool handle_events(HostState &host, GuiState &gui) {
                 }
             }
             // toggle gui state
-            if (!host.io.title_id.empty() && !gui.live_area.user_management && !gui.configuration_menu.settings_dialog && !gui.captured_key) {
+            if (!host.io.title_id.empty() && !gui.live_area.user_management && !gui.configuration_menu.settings_dialog && !gui.is_capturing_keys) {
                 if (event.key.keysym.sym == SDLK_g)
                     host.display.imgui_render = !host.display.imgui_render;
             }
