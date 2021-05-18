@@ -144,6 +144,7 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
             // Load Emulator Config
             if (!custom_config_xml.child("emulator").empty()) {
                 const auto emulator_child = custom_config_xml.child("emulator");
+                config.disable_at9_decoder = emulator_child.attribute("disable-at9-decoder").as_bool();
                 config.disable_ngs = emulator_child.attribute("disable-ngs").as_bool();
                 config.video_playing = emulator_child.attribute("video-playing").as_bool();
             }
@@ -166,6 +167,7 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
         config.lle_kernel = host.cfg.lle_kernel;
         config.auto_lle = host.cfg.auto_lle;
         config.lle_modules = host.cfg.lle_modules;
+        config.disable_at9_decoder = host.cfg.disable_at9_decoder;
         config.disable_ngs = host.cfg.disable_ngs;
         config.video_playing = host.cfg.video_playing;
     }
@@ -197,6 +199,7 @@ static void save_config(GuiState &gui, HostState &host) {
 
         // Emulator
         auto emulator_child = custom_config_xml.append_child("emulator");
+        emulator_child.append_attribute("disable-at9-decoder") = config.disable_at9_decoder;
         emulator_child.append_attribute("disable-ngs") = config.disable_ngs;
         emulator_child.append_attribute("video-playing") = config.video_playing;
 
@@ -209,6 +212,7 @@ static void save_config(GuiState &gui, HostState &host) {
         host.cfg.lle_kernel = config.lle_kernel;
         host.cfg.auto_lle = config.auto_lle;
         host.cfg.lle_modules = config.lle_modules;
+        host.cfg.disable_at9_decoder = config.disable_at9_decoder;
         host.cfg.disable_ngs = config.disable_ngs;
         host.cfg.video_playing = config.video_playing;
     }
@@ -222,6 +226,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.lle_kernel = config.lle_kernel;
         host.cfg.current_config.auto_lle = config.auto_lle;
         host.cfg.current_config.lle_modules = config.lle_modules;
+        host.cfg.current_config.disable_at9_decoder = config.disable_at9_decoder;
         host.cfg.current_config.disable_ngs = config.disable_ngs;
         host.cfg.current_config.video_playing = config.video_playing;
     } else {
@@ -230,6 +235,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.lle_kernel = host.cfg.lle_kernel;
         host.cfg.current_config.auto_lle = host.cfg.auto_lle;
         host.cfg.current_config.lle_modules = host.cfg.lle_modules;
+        host.cfg.current_config.disable_at9_decoder = host.cfg.disable_at9_decoder;
         host.cfg.current_config.disable_ngs = host.cfg.disable_ngs;
         host.cfg.current_config.video_playing = host.cfg.video_playing;
     }
@@ -385,12 +391,17 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
+        ImGui::Checkbox("Disable At9 audio decoder", &config.disable_at9_decoder);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Enable this options that disables AT9 audio decoder.\nIt is required to prevent the crash in certain games such as Gravity (Rush/Daze) for the time being.");
         ImGui::Checkbox("Disable experimental ngs support", &config.disable_ngs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Disable experimental support for advanced audio library ngs");
         ImGui::Checkbox("Enable video playing support", &config.video_playing);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable video player.\nOn some game, disable it is required for more progress.");
+        ImGui::Spacing();
+        ImGui::Separator();
         ImGui::Spacing();
         if (ImGui::Combo("Log Level", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0"))
             logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg.log_level));

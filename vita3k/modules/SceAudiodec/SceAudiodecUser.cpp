@@ -115,7 +115,7 @@ EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec co
         info.sample_rate = decoder->get(DecoderQuery::SAMPLE_RATE);
         info.super_frame_size = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
         info.frames_in_super_frame = decoder->get(DecoderQuery::AT9_FRAMES_IN_SUPERFRAME);
-        return 0;
+        return host.cfg.current_config.disable_at9_decoder ? -1 : 0;
     }
     case SCE_AUDIODEC_TYPE_MP3: {
         SceAudiodecInfoMp3 &info = ctrl->info.get(host.mem)->mp3;
@@ -144,7 +144,8 @@ EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec co
 }
 
 EXPORT(int, sceAudiodecCreateDecoderExternal) {
-    return UNIMPLEMENTED();
+    STUBBED("Hack for LLE MP4"); // Remove this after implement AAC or impelment SceMP4 in HLE
+    return -1;
 }
 
 EXPORT(int, sceAudiodecCreateDecoderResident) {
