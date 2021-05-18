@@ -224,31 +224,3 @@ const char *mem_name(Address address, MemState &state) {
 
     return found->second.c_str();
 }
-
-constexpr unsigned char thumb_breakpoint[2] = { 0x00, 0xBE };
-constexpr unsigned char arm_breakpoint[4] = { 0x70, 0x00, 0x20, 0xE1 };
-
-void add_breakpoint(MemState &mem, bool gdb, bool thumb_mode, uint32_t addr, BreakpointCallback callback) {
-    Breakpoint last = {
-        gdb,
-        thumb_mode,
-        { 0 },
-        callback
-    };
-    if (thumb_mode) {
-        std::memcpy(&last.data, &mem.memory[addr], sizeof(thumb_breakpoint));
-        std::memcpy(&mem.memory[addr], thumb_breakpoint, sizeof(thumb_breakpoint));
-    } else {
-        std::memcpy(&last.data, &mem.memory[addr], sizeof(arm_breakpoint));
-        std::memcpy(&mem.memory[addr], arm_breakpoint, sizeof(arm_breakpoint));
-    }
-    mem.breakpoints[addr] = last;
-}
-
-void remove_breakpoint(MemState &mem, uint32_t addr) {
-    if (mem.breakpoints.find(addr) != mem.breakpoints.end()) {
-        auto last = mem.breakpoints[addr];
-        std::memcpy(&mem.memory[addr], &last.data, last.thumb_mode ? sizeof(thumb_breakpoint) : sizeof(arm_breakpoint));
-        mem.breakpoints.erase(addr);
-    }
-}

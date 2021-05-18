@@ -26,3 +26,5 @@
 #define INSTRUCTION_BRANCH 4 ///< BX Rn instruction
 
 uint32_t encode_arm_inst(uint8_t type, uint16_t immed, uint16_t reg);
+// SVC not implemented for thumb
+uint32_t encode_thumb_inst(uint8_t type, uint16_t immed, uint16_t reg);

@@ -589,7 +589,7 @@ static std::string cmd_add_breakpoint(HostState &state, PacketCommand &command) 
 
     // kind is 2 if it's thumb mode
     // https://sourceware.org/gdb/current/onlinedocs/gdb/ARM-Breakpoint-Kinds.html#ARM-Breakpoint-Kinds
-    add_breakpoint(state.mem, true, kind == 2, address, nullptr);
+    state.kernel.debugger.add_breakpoint(state.mem, kind == 2, address);
 
     return "OK";
 }
@@ -604,7 +604,7 @@ static std::string cmd_remove_breakpoint(HostState &state, PacketCommand &comman
     const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
 
     LOG_GDB("GDB Server Removed Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
-    remove_breakpoint(state.mem, address);
+    state.kernel.debugger.remove_breakpoint(state.mem, address);
 
     return "OK";
 }

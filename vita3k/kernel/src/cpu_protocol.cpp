@@ -30,6 +30,12 @@ CPUProtocol::~CPUProtocol() {
 }
 
 void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) {
+    if (svc == TRAMPOLINE_SVC) {
+        Trampoline *tr = *Ptr<Trampoline *>(pc + 4).get(*mem);
+        tr->callback(*kernel, cpu, *mem, tr->lr);
+        return;
+    }
+
     // TODO: just supply ThreadStatePtr to call_import
     // the only benefit of using thread_id instead--namely less locking--is now gone.
     ThreadStatePtr thread = lock_and_find(thread_id, kernel->threads, kernel->mutex);
@@ -54,7 +60,7 @@ void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID threa
 }
 
 Address CPUProtocol::get_watch_memory_addr(Address addr) {
-    return ::get_watch_memory_addr(*kernel, addr);
+    return kernel->debugger.get_watch_memory_addr(addr);
 }
 
 std::vector<ModuleRegion> &CPUProtocol::get_module_regions() {
