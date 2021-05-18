@@ -2043,16 +2043,12 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, const 
         return Ptr<SceGxmProgramParameter>();
 
     const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
-    uint32_t current_index = 0;
     for (uint32_t i = 0; i < program->parameter_count; ++i) {
         const SceGxmProgramParameter *const parameter = &parameters[i];
         const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
-        if (parameter->semantic == semantic) {
-            if (current_index == index) {
-                const Address parameter_address = static_cast<Address>(parameter_bytes - &mem.memory[0]);
-                return Ptr<SceGxmProgramParameter>(parameter_address);
-            }
-            current_index++;
+        if ((parameter->semantic == semantic) && (parameter->semantic_index == index)) {
+            const Address parameter_address = static_cast<Address>(parameter_bytes - &mem.memory[0]);
+            return Ptr<SceGxmProgramParameter>(parameter_address);
         }
     }
 
