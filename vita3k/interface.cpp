@@ -374,8 +374,12 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
 
     pre_load_module(host, lib_load_list, VitaIoDevice::vs0);
 
+    // if is Mai Dump, using original eboot
+    const std::string eboot_origin = "mai_moe/eboot_origin.bin";
+    const auto is_mai_dump = fs::exists(fs::path(host.pref_path) / "ux0/app" / host.io.app_path / eboot_origin);
+
     // Load main executable
-    host.self_path = !host.cfg.self_path.empty() ? host.cfg.self_path : EBOOT_PATH;
+    host.self_path = !host.cfg.self_path.empty() ? host.cfg.self_path : (is_mai_dump ? eboot_origin : EBOOT_PATH);
     vfs::FileBuffer eboot_buffer;
     if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.app_path, host.self_path)) {
         SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), "app0:" + host.self_path, host.cfg);
