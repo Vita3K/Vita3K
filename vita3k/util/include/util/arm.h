@@ -24,7 +24,8 @@
 #define INSTRUCTION_MOVT 2 ///< MOVT Rd, \#imm instruction
 #define INSTRUCTION_SYSCALL 3 ///< SVC \#imm instruction
 #define INSTRUCTION_BRANCH 4 ///< BX Rn instruction
+#define INSTRUCTION_BLX 5 ///< BLX imm instruction
 
-uint32_t encode_arm_inst(uint8_t type, uint16_t immed, uint16_t reg);
+uint32_t encode_arm_inst(uint8_t type, uint32_t immed, uint16_t reg);
 // SVC not implemented for thumb
-uint32_t encode_thumb_inst(uint8_t type, uint16_t immed, uint16_t reg);
+uint32_t encode_thumb_inst(uint8_t type, uint32_t immed, uint16_t reg);

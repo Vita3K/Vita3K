@@ -183,7 +183,6 @@ public:
         case Dynarmic::A32::Exception::Breakpoint: {
             cpu->did_break = true;
             cpu->jit->HaltExecution();
-            cpu->jit->ClearCache();
             if (cpu->is_thumb_mode())
                 cpu->set_pc(pc | 1);
             else
