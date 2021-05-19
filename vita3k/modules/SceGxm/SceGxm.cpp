@@ -310,10 +310,10 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
 
     if ((texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE)) {
         // Find highest set bit of width and height. It's also the 2^? for width and height
-        static auto highest_set_bit = [](const int num) -> std::uint32_t {
-            for (std::uint32_t i = 12; i != 0; i--) {
+        static auto highest_set_bit = [](const std::uint32_t num) -> std::uint32_t {
+            for (std::int32_t i = 12; i >= 0; i--) {
                 if (num & (1 << i)) {
-                    return i;
+                    return static_cast<std::uint32_t>(i);
                 }
             }
 
@@ -321,8 +321,8 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
         };
 
         texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_MIRROR;
-        texture->height = highest_set_bit(height);
-        texture->width = highest_set_bit(width);
+        texture->height_base2 = highest_set_bit(height);
+        texture->width_base2 = highest_set_bit(width);
     } else {
         texture->uaddr_mode = texture->vaddr_mode = SCE_GXM_TEXTURE_ADDR_CLAMP;
         texture->height = height - 1;
