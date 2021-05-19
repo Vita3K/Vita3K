@@ -30,7 +30,7 @@ CPUProtocol::~CPUProtocol() {
 
 void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) {
     if (svc == TRAMPOLINE_SVC) {
-        Trampoline *tr = *Ptr<Trampoline *>(pc + 4).get(*mem);
+        Trampoline *tr = *Ptr<Trampoline *>(pc).get(*mem);
         tr->callback(*kernel, cpu, *mem, tr->lr);
         return;
     }

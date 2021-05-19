@@ -2,11 +2,12 @@
 #include <kernel/state.h>
 #include <util/align.h>
 #include <util/arm.h>
+#include <util/log.h>
 
 constexpr unsigned char THUMB_BREAKPOINT[2] = { 0x00, 0xBE };
 constexpr unsigned char ARM_BREAKPOINT[4] = { 0x70, 0x00, 0x20, 0xE1 };
 
-bool is_thumb16(uint32_t inst) {
+inline bool is_thumb16(uint32_t inst) {
     return (inst & 0xF8000000) < 0xE8000000;
 }
 
@@ -27,6 +28,7 @@ void Debugger::add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode) {
         std::memcpy(&mem.memory[addr], ARM_BREAKPOINT, sizeof(ARM_BREAKPOINT));
     }
     breakpoints.emplace(addr, last);
+    parent->invalidate_jit_cache(addr, 4);
 }
 
 void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
@@ -34,41 +36,56 @@ void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
         auto last = breakpoints[addr];
         std::memcpy(&mem.memory[addr], &last.data, last.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT));
         breakpoints.erase(addr);
+        parent->invalidate_jit_cache(addr, 4);
     }
 }
 
 void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, TrampolineCallback callback) {
+    const auto encode_thumb_and_swap = [](uint8_t type, uint32_t immed, uint16_t reg) {
+        const uint32_t inst = encode_thumb_inst(type, immed, reg);
+        return (inst << 16) | ((inst >> 16) & 0xFFFF);
+    };
+    const auto encode_inst = thumb_mode ? encode_thumb_and_swap : encode_arm_inst;
+
     std::unique_ptr<Trampoline> tr = std::make_unique<Trampoline>();
     tr->addr = addr;
     tr->thumb_mode = thumb_mode;
     tr->callback = callback;
-    uint32_t *insts = reinterpret_cast<uint32_t *>(&mem.memory[addr]);
-    memcpy(tr->original, insts, 12);
-    tr->trampoline_code = alloc_block(mem, 0x1C, "trampoline");
+    tr->trampoline_code = alloc_block(mem, 0x20, "trampoline");
     tr->lr = tr->addr + 12;
     if (thumb_mode)
         tr->lr |= 1;
-    const Address trampoline_addr = align(tr->trampoline_code.get(), 4);
-    const auto encode_inst = thumb_mode ? encode_thumb_inst : encode_arm_inst;
 
-    const Address imm = thumb_mode ? trampoline_addr | 1 : trampoline_addr;
-    insts[0] = encode_inst(INSTRUCTION_MOVW, (uint16_t)imm, 12);
-    insts[1] = encode_inst(INSTRUCTION_MOVT, (uint16_t)(imm >> 16), 12);
+    const Address trampoline_addr = align(tr->trampoline_code.get(), 4);
+    // Insert trampoline jumper and back up
+    uint32_t *insts = reinterpret_cast<uint32_t *>(&mem.memory[addr]);
+    memcpy(tr->original, insts, 12);
+    const Address destination = thumb_mode ? trampoline_addr | 1 : trampoline_addr;
+
+    insts[0] = encode_inst(INSTRUCTION_MOVW, (uint16_t)destination, 12);
+    insts[1] = encode_inst(INSTRUCTION_MOVT, (uint16_t)(destination >> 16), 12);
     insts[2] = encode_inst(INSTRUCTION_BRANCH, 0, 12);
 
+    // Create trampoline
     uint32_t *trampoline_insts = reinterpret_cast<uint32_t *>(&mem.memory[trampoline_addr]);
     memcpy(trampoline_insts, tr->original, 12);
     trampoline_insts[3] = thumb_mode ? 0xDF53BF00 : 0xEF000053; // SVC 0x53
-    uint64_t *trampoline_ptr = reinterpret_cast<uint64_t *>(&trampoline_insts[4]);
-    *trampoline_ptr = reinterpret_cast<uintptr_t>(tr.get());
+    Trampoline **trampoline_host_ptr = Ptr<Trampoline *>(trampoline_addr + 16).get(mem);
+    *trampoline_host_ptr = tr.get();
+
+    std::lock_guard<std::mutex> lock(mutex);
+    trampolines.emplace(addr, std::move(tr));
+    parent->invalidate_jit_cache(addr, 12);
 }
 
 void Debugger::remove_trampoline(MemState &mem, uint32_t addr) {
-    auto it = trampolines.find(addr);
+    std::lock_guard<std::mutex> lock(mutex);
+    const auto it = trampolines.find(addr);
     if (it != trampolines.end()) {
         uint32_t *insts = reinterpret_cast<uint32_t *>(&mem.memory[addr]);
         memcpy(insts, it->second->original, 12);
-        trampolines.erase(addr);
+        trampolines.erase(it);
+        parent->invalidate_jit_cache(addr, 12);
     }
 }
 
@@ -94,19 +111,5 @@ Address Debugger::get_watch_memory_addr(Address addr) {
 }
 
 void Debugger::update_watches() {
-    for (const auto &thread : parent->threads) {
-        auto &cpu = *thread.second->cpu;
-        if (watch_code != get_log_code(cpu)) {
-            if (watch_code)
-                set_log_code(cpu, true);
-            else
-                set_log_code(cpu, false);
-        }
-        if (watch_memory != get_log_mem(cpu)) {
-            if (watch_memory)
-                set_log_mem(cpu, true);
-            else
-                set_log_mem(cpu, false);
-        }
-    }
+    parent->set_memory_watch(watch_memory);
 }
