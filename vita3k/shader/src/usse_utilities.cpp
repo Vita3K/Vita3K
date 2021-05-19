@@ -1253,20 +1253,17 @@ spv::Id shader::usse::utils::unwrap_type(spv::Builder &b, spv::Id type) {
 }
 
 // will break in 32-bit host
-static std::tuple<float, float> get_int_normalize_constants(DataType type) {
+static float get_int_normalize_constants(DataType type) {
     switch (type) {
     case DataType::UINT8:
-        return std::make_tuple(255.0f, 0.0f);
     case DataType::INT8:
-        return std::make_tuple(255.0f, 128.0f);
+        return 255.0f;
     case DataType::UINT16:
-        return std::make_tuple(65535.0f, 0.0f);
     case DataType::INT16:
-        return std::make_tuple(65535.0f, 32768.0f);
+        return 65535.0f;
     case DataType::UINT32:
-        return std::make_tuple(4294967295.0f, 0.0f);
     case DataType::INT32:
-        return std::make_tuple(4294967295.0f, 2147483648.0f);
+        return 4294967295.0f;
     default:
         assert(false);
     }
@@ -1296,14 +1293,11 @@ spv::Id shader::usse::utils::convert_to_float(spv::Builder &b, spv::Id opr, Data
     }
 
     if (normal) {
-        const auto constants = get_int_normalize_constants(type);
-        const auto normalizer = b.makeFloatConstant(std::get<0>(constants));
-        const auto bias = b.makeFloatConstant(std::get<1>(constants));
+        const auto constant = get_int_normalize_constants(type);
+        const auto normalizer = b.makeFloatConstant(constant);
         const auto normalizer_vec = create_constant_vector_or_scalar(b, normalizer, comp_count);
-        const auto bias_vec = create_constant_vector_or_scalar(b, bias, comp_count);
 
         opr = b.createBinOp(spv::OpFDiv, target_type, opr, normalizer_vec);
-        opr = b.createBinOp(spv::OpFAdd, target_type, opr, bias_vec);
     }
     return opr;
 }
@@ -1319,16 +1313,13 @@ spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataTy
     auto target_type = b.isVector(opr) ? b.makeVectorType(target_comp_type, b.getNumComponents(opr)) : target_comp_type;
 
     if (normal) {
-        const auto constants = get_int_normalize_constants(type);
-        const auto normalizer = b.makeFloatConstant(std::get<0>(constants));
-        const auto bias = b.makeFloatConstant(std::get<1>(constants));
+        const auto constant = get_int_normalize_constants(type);
+        const auto normalizer = b.makeFloatConstant(constant);
         const auto normalizer_vec = create_constant_vector_or_scalar(b, normalizer, comp_count);
-        const auto bias_vec = create_constant_vector_or_scalar(b, bias, comp_count);
         const auto zero_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(0.0), comp_count);
         const auto one_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(1.0), comp_count);
 
         opr = b.createBuiltinCall(opr_type, b.import("GLSL.std.450"), GLSLstd450FClamp, { opr, zero_vec, one_vec });
-        opr = b.createBinOp(spv::OpFSub, opr_type, opr, bias_vec);
         opr = b.createBinOp(spv::OpFMul, opr_type, opr, normalizer_vec);
     }
 
