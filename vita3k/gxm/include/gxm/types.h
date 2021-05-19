@@ -1082,10 +1082,25 @@ struct SceGxmTexture {
     uint32_t unk2 : 2;
     uint32_t format0 : 1;
     // Control Word 1
-    uint32_t height : 12;
-    uint32_t width : 12;
-    uint32_t base_format : 5;
-    uint32_t type : 3;
+    union {
+        struct {
+            uint32_t height : 12;
+            uint32_t width : 12;
+        };
+
+        struct {
+            uint32_t height_base2 : 4;
+            uint32_t unknown1 : 12;
+            uint32_t width_base2 : 4;
+            uint32_t unknown2 : 4;
+        };
+
+        struct {
+            uint32_t whblock : 24;
+            uint32_t base_format : 5;
+            uint32_t type : 3;
+        };
+    };
     // Control Word 2
     uint32_t lod_min0 : 2;
     uint32_t data_addr : 30;
@@ -1099,6 +1114,8 @@ struct SceGxmTexture {
         return type << 29;
     }
 };
+
+static_assert(sizeof(SceGxmTexture) == 16);
 
 struct SceGxmColorSurface {
     // opaque start
