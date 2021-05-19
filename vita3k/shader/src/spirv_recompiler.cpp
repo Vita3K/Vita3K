@@ -1383,7 +1383,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     return spirv;
 }
 
-static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode spirv_binary, const FeatureState &features, TranslationState &translation_state) {
+static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode spirv_binary, const FeatureState &features, TranslationState &translation_state, bool is_native_color) {
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
     spirv_cross::CompilerGLSL::Options options;
@@ -1518,7 +1518,7 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
         glsl.set_name(translation_state.frag_coord_id, "gl_FragCoord");
     }
     if (features.support_shader_interlock) {
-        if (translation_state.is_fragment) {
+        if (translation_state.is_fragment && is_native_color) {
             glsl.add_header_line("layout(early_fragment_tests) in;\n");
         }
         glsl.require_extension("GL_ARB_fragment_shader_interlock");
@@ -1560,7 +1560,7 @@ std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string 
     translation_state.is_maskupdate = maskupdate;
     std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv_impl(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
 
-    const auto source = convert_spirv_to_glsl(shader_name, spirv_binary, features, translation_state);
+    const auto source = convert_spirv_to_glsl(shader_name, spirv_binary, features, translation_state, program.is_native_color());
 
     if (LOG_SHADER_CODE || force_shader_debug) {
         LOG_DEBUG("Generated GLSL:\n{}", source);
