@@ -33,8 +33,6 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <kernel/functions.h>
-
 #include <algorithm>
 #include <nfd.h>
 #include <pugixml.hpp>

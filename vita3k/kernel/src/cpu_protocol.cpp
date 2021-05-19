@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <kernel/cpu_protocol.h>
-#include <kernel/functions.h>
 #include <kernel/state.h>
 #include <util/lock_and_find.h>
 

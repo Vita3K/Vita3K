@@ -19,7 +19,6 @@
 #include <modules/module_parent.h>
 
 #include <host/functions.h>
-#include <kernel/functions.h>
 #include <kernel/sync_primitives.h>
 #include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
@@ -723,7 +722,7 @@ EXPORT(int, sceKernelGetThreadStackFreeSize) {
 }
 
 EXPORT(Ptr<void>, sceKernelGetThreadTLSAddr, SceUID thid, int key) {
-    return get_thread_tls_addr(host.kernel, host.mem, thid, key);
+    return host.kernel.get_thread_tls_addr(host.mem, thid, key);
 }
 
 EXPORT(int, sceKernelGetThreadmgrUIDClass) {

@@ -21,7 +21,6 @@
 #include <host/functions.h>
 #include <host/load_self.h>
 #include <io/functions.h>
-#include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <modules/module_parent.h>
 #include <util/find.h>

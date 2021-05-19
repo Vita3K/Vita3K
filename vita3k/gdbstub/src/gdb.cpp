@@ -23,7 +23,6 @@
 #include <gdbstub/functions.h>
 
 #include <cpu/functions.h>
-#include <kernel/functions.h>
 
 #include <mem/state.h>
 #include <spdlog/fmt/bundled/printf.h>

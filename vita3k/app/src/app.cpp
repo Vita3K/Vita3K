@@ -19,7 +19,6 @@
 
 #include <config/version.h>
 #include <host/state.h>
-#include <kernel/functions.h>
 #include <util/log.h>
 
 #include <SDL.h>

@@ -25,7 +25,6 @@
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
-#include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <modules/module_parent.h>
 #include <touch/touch.h>
@@ -289,7 +288,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     const auto call_import = [&host](CPUState &cpu, uint32_t nid, SceUID thread_id) {
         ::call_import(host, cpu, nid, thread_id);
     };
-    if (!init(host.kernel, host.mem, host.cfg.cpu_pool_size, call_import, host.kernel.cpu_backend, host.kernel.cpu_opt)) {
+    if (!host.kernel.init(host.mem, call_import, host.kernel.cpu_backend, host.kernel.cpu_opt)) {
         LOG_WARN("Failed to init kernel!");
         return KernelInitFailed;
     }
@@ -408,7 +407,7 @@ bool handle_events(HostState &host, GuiState &gui) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
         switch (event.type) {
         case SDL_QUIT:
-            stop_all_threads(host.kernel);
+            host.kernel.stop_all_threads();
             host.gxm.display_queue.abort();
             host.display.abort.exchange(true);
             host.display.condvar.notify_all();

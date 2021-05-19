@@ -19,7 +19,6 @@
 
 #include <host/functions.h>
 #include <host/load_self.h>
-#include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <modules/module_parent.h>
 #include <util/find.h>
@@ -344,7 +343,7 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
                 return RET_ERROR(SCE_APPMGR_ERROR_TOO_LONG_ARGV);
         }
 
-        stop_all_threads(host.kernel);
+        host.kernel.stop_all_threads();
 
         host.load_app_path = host.io.app_path;
         host.load_exec_path = exec_path;

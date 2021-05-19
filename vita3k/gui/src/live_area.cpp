@@ -20,8 +20,6 @@
 #include <gui/functions.h>
 #include <host/functions.h>
 
-#include <kernel/functions.h>
-
 #include <util/safe_time.h>
 
 #include <io/VitaIoDevice.h>
@@ -1309,7 +1307,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, 44.0f * SCALE.y));
         if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
             if (app_path == host.io.app_path) {
-                stop_all_threads(host.kernel);
+                host.kernel.stop_all_threads();
                 host.load_exec = true;
             } else {
                 gui.apps_list_opened.erase(get_app_open_list_index(gui, app_path));

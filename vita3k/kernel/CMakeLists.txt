@@ -1,5 +1,4 @@
 set(SOURCE_LIST
-	include/kernel/functions.h
 	include/kernel/state.h
 	include/kernel/types.h
 	include/kernel/thread/thread_data_queue.h
