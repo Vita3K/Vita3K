@@ -159,6 +159,14 @@ struct KernelState {
         return next_uid++;
     }
 
+    bool init(MemState &mem, CallImportFunc call_import, CPUBackend cpu_backend, bool cpu_opt);
+    void set_memory_watch(bool enabled);
+    void invalidate_jit_cache(Address start, size_t length);
+    ThreadStatePtr get_thread(SceUID thread_id);
+    Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
+    void stop_all_threads();
+    int run_guest_function(Address callback_address, const std::vector<uint32_t> &args);
+
 private:
     std::atomic<SceUID> next_uid{ 0 };
 };

@@ -17,8 +17,6 @@
 
 #include "SceNet.h"
 
-#include <kernel/functions.h>
-
 #include <net/functions.h>
 #include <net/types.h>
 #include <util/lock_and_find.h>

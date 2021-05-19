@@ -23,8 +23,6 @@
 
 #include <io/VitaIoDevice.h>
 
-#include <kernel/functions.h>
-
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -179,7 +177,7 @@ void draw_app_close(GuiState &gui, HostState &host) {
             host.cfg.last_app = app_path;
             config::serialize_config(host.cfg, host.cfg.config_path);
         }
-        stop_all_threads(host.kernel);
+        host.kernel.stop_all_threads();
         host.load_app_path = app_path;
         host.load_exec = true;
     }

@@ -23,7 +23,6 @@
 #include <gui/imgui_impl_sdl.h>
 #include <host/state.h>
 #include <io/functions.h>
-#include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <nids/functions.h>
 #include <renderer/functions.h>

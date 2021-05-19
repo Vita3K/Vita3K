@@ -48,6 +48,7 @@ bool is_thumb_mode(CPUState &state);
 CPUContext save_context(CPUState &state);
 void load_context(CPUState &state, CPUContext ctx);
 std::size_t get_processor_id(CPUState &state);
+void invalidate_jit_cache(CPUState &state, Address start, size_t length);
 
 uint32_t read_fpscr(CPUState &state);
 void write_fpscr(CPUState &state, uint32_t value);

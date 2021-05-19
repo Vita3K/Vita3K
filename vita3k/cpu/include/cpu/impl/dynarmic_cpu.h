@@ -81,4 +81,5 @@ public:
     bool get_log_mem() override;
 
     std::size_t processor_id() const override;
+    void invalidate_jit_cache(Address start, size_t length) override;
 };

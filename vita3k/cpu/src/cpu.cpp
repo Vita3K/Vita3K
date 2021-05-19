@@ -187,6 +187,10 @@ std::size_t get_processor_id(CPUState &state) {
     return state.cpu->processor_id();
 }
 
+void invalidate_jit_cache(CPUState &state, Address start, size_t length) {
+    state.cpu->invalidate_jit_cache(start, length);
+}
+
 std::unique_ptr<ModuleRegion> get_region(CPUState &state, Address addr) {
     for (const auto &region : state.protocol->get_module_regions()) {
         if (region.start <= addr && addr < region.start + region.size) {

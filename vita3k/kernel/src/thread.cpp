@@ -21,8 +21,6 @@
 #include <kernel/state.h>
 #include <util/align.h>
 
-#include <kernel/functions.h>
-
 #include <cpu/functions.h>
 #include <cpu/state.h>
 #include <util/find.h>

@@ -411,6 +411,10 @@ std::size_t DynarmicCPU::processor_id() const {
     return core_id;
 }
 
+void DynarmicCPU::invalidate_jit_cache(Address start, size_t length) {
+    jit->InvalidateCacheRange(start, length);
+}
+
 // TODO: proper abstraction
 ExclusiveMonitorPtr new_exclusive_monitor(int max_num_cores) {
     return new Dynarmic::ExclusiveMonitor(max_num_cores);

@@ -24,7 +24,6 @@
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <immintrin.h>
-#include <kernel/functions.h>
 #include <kernel/thread/thread_functions.h>
 #include <mem/allocator.h>
 #include <mem/mempool.h>
@@ -41,7 +40,7 @@ static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemStat
     const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
     const Address final_size_addr = stack_alloc(*thread->cpu, 4);
 
-    Ptr<void> result(static_cast<Address>(run_guest_function(kernel, callback.address(),
+    Ptr<void> result(static_cast<Address>(kernel.run_guest_function(callback.address(),
         { userdata.address(), size, final_size_addr })));
 
     return_size = *Ptr<std::uint32_t>(final_size_addr).get(mem);

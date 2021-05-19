@@ -28,7 +28,6 @@
 #include <host/functions.h>
 #include <host/load_self.h>
 #include <io/functions.h>
-#include <kernel/functions.h>
 #include <kernel/sync_primitives.h>
 #include <kernel/thread/thread_functions.h>
 #include <kernel/types.h>
@@ -998,7 +997,7 @@ EXPORT(int, sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
 
 EXPORT(int, sceKernelExitProcess, int res) {
     // TODO Handle exit code?
-    stop_all_threads(host.kernel);
+    host.kernel.stop_all_threads();
 
     return SCE_KERNEL_OK;
 }
@@ -1111,7 +1110,7 @@ EXPORT(int, sceKernelGetSystemTime) {
 }
 
 EXPORT(Ptr<Ptr<void>>, sceKernelGetTLSAddr, int key) {
-    return get_thread_tls_addr(host.kernel, host.mem, thread_id, key);
+    return host.kernel.get_thread_tls_addr(host.mem, thread_id, key);
 }
 
 EXPORT(int, sceKernelGetThreadContextForVM) {
