@@ -382,7 +382,7 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &fe
     return f16_pack_func;
 }
 
-static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderParameters &params) {
+static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, const SpirvUniformBufferInfo &info, const int buffer_index) {
     // The address can be unaligned, so we load two words around address / 4 and combine them.
     // | = address
     // s = memory[address/4] (source)
@@ -395,25 +395,41 @@ static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderP
     spv::Id type_i32 = b.makeIntType(32);
     spv::Block *func_block;
     spv::Block *last_build_point = b.getBuildPoint();
-    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", { type_i32 },
+
+    const std::string func_name = fmt::format("fetchMemoryForBuffer{}Base{}", buffer_index, info.base);
+
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { type_i32 },
         {}, &func_block);
 
+    spv::Id sixteen_cst = b.makeIntConstant(16);
+    spv::Id eight_cst = b.makeIntConstant(8);
+    spv::Id four_cst = b.makeIntConstant(4);
+    spv::Id one_cst = b.makeIntConstant(1);
+    spv::Id zero_cst = b.makeIntConstant(0);
+
     spv::Id addr = fetch_func->getParamId(0);
-    spv::Id base_offset = b.createBinOp(spv::OpSDiv, type_i32, addr, b.makeIntConstant(4));
-    spv::Id rem = b.createBinOp(spv::OpSRem, type_i32, addr, b.makeIntConstant(4));
-    spv::Id rem_inv = b.createBinOp(spv::OpISub, type_i32, b.makeIntConstant(4), rem);
+    spv::Id base_vector = b.createBinOp(spv::OpSDiv, type_i32, addr, sixteen_cst);
+    spv::Id base_left = b.createBinOp(spv::OpSRem, type_i32, addr, sixteen_cst);
+    spv::Id base_offset = b.createBinOp(spv::OpSDiv, type_i32, base_left, four_cst);
+    spv::Id rem = b.createBinOp(spv::OpSRem, type_i32, base_left, four_cst);
+    spv::Id rem_inv = b.createBinOp(spv::OpISub, type_i32, four_cst, rem);
 
     // If int was shifted by more than 32 bits in nvidia glsl, the pipeline crashes.
     // rem_inv_overflow is the flag used to make sure >> 32 is not executed.
-    spv::Id rem_inv_overflow = b.createBinOp(spv::OpIEqual, b.makeBoolType(), rem_inv, b.makeIntConstant(4));
-    rem_inv = b.createTriOp(spv::OpSelect, type_i32, rem_inv_overflow, b.makeIntConstant(0), rem_inv);
+    spv::Id rem_inv_overflow = b.createBinOp(spv::OpIEqual, b.makeBoolType(), rem_inv, four_cst);
+    rem_inv = b.createTriOp(spv::OpSelect, type_i32, rem_inv_overflow, zero_cst, rem_inv);
 
-    spv::Id rem_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem, b.makeIntConstant(8));
-    spv::Id rem_inv_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem_inv, b.makeIntConstant(8));
+    spv::Id rem_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem, eight_cst);
+    spv::Id rem_inv_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem_inv, eight_cst);
 
-    spv::Id src = b.createLoad(b.createAccessChain(spv::StorageClassPrivate, params.memory, { base_offset }));
-    spv::Id friend_offset = b.createBinOp(spv::OpIAdd, type_i32, base_offset, b.makeIntConstant(1));
-    spv::Id src_friend = b.createLoad(b.createAccessChain(spv::StorageClassPrivate, params.memory, { friend_offset }));
+    spv::Id src = b.createLoad(b.createAccessChain(spv::StorageClassPrivate, info.var, { zero_cst, base_vector, base_offset }));
+
+    spv::Id friend_offset = b.createBinOp(spv::OpIAdd, type_i32, base_offset, one_cst);
+    spv::Id friend_vector = b.createBinOp(spv::OpIAdd, type_i32, base_vector, b.createBinOp(spv::OpSDiv, type_i32, friend_offset, b.makeIntConstant(4)));
+
+    friend_offset = b.createBinOp(spv::OpSRem, type_i32, friend_offset, four_cst);
+
+    spv::Id src_friend = b.createLoad(b.createAccessChain(spv::StorageClassPrivate, info.var, { zero_cst, friend_vector, friend_offset }));
     spv::Id src_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src);
     spv::Id src_friend_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src_friend);
 
@@ -425,6 +441,55 @@ static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderP
     spv::Id output_casted = b.createUnaryOp(spv::OpBitcast, type_f32, output);
 
     b.makeReturn(false, output_casted);
+    b.setBuildPoint(last_build_point);
+
+    return fetch_func;
+}
+
+static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderParameters &params) {
+    spv::Id type_f32 = b.makeFloatType(32);
+    spv::Id type_ui32 = b.makeUintType(32);
+    spv::Id type_i32 = b.makeIntType(32);
+    spv::Id type_bool = b.makeBoolType();
+
+    spv::Block *func_block;
+    spv::Block *last_build_point = b.getBuildPoint();
+
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", { type_i32 },
+        {}, &func_block);
+    spv::Id addr = fetch_func->getParamId(0);
+
+    std::stack<std::unique_ptr<spv::Builder::If>> fetch_stacks;
+
+    for (auto &[index, buffer_info] : params.buffers) {
+        if (!fetch_stacks.empty()) {
+            fetch_stacks.top()->makeBeginElse();
+        }
+
+        const spv::Id range_begin = b.makeIntConstant(buffer_info.base);
+        const spv::Id range_end = b.makeIntConstant(buffer_info.base + buffer_info.size);
+
+        spv::Id need1 = b.createBinOp(spv::OpSGreaterThanEqual, type_bool, addr, range_begin);
+        spv::Id need2 = b.createBinOp(spv::OpSLessThan, type_bool, addr, range_end);
+
+        spv::Id need_final = b.createBinOp(spv::OpLogicalAnd, type_bool, need1, need2);
+
+        fetch_stacks.push(std::make_unique<spv::Builder::If>(need_final, spv::SelectionControlMaskNone, b));
+
+        spv::Id subtracted_base = b.createBinOp(spv::OpISub, type_i32, addr, range_begin);
+        spv::Function *access_func = make_fetch_memory_func_for_array(b, buffer_info, index);
+
+        b.makeReturn(false, b.createFunctionCall(access_func, { subtracted_base }));
+    }
+
+    while (!fetch_stacks.empty()) {
+        std::unique_ptr<spv::Builder::If> fetch_if = std::move(fetch_stacks.top());
+        fetch_if->makeEndIf();
+
+        fetch_stacks.pop();
+    }
+
+    b.makeReturn(false, b.makeFloatConstant(0.0f));
     b.setBuildPoint(last_build_point);
 
     return fetch_func;

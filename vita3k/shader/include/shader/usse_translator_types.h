@@ -13,7 +13,12 @@ namespace shader::usse {
 
 using SpirvCode = std::vector<uint32_t>;
 using SpirvVarRegBank = spv::Id;
-using SpirvUniformBuffrerBase = std::tuple<uint32_t, spv::Id>;
+
+struct SpirvUniformBufferInfo {
+    std::uint32_t base;
+    std::uint32_t size;
+    spv::Id var;
+};
 
 struct SpirvShaderParameters {
     // Mapped to 'pa' (primary attribute) USSE registers
@@ -46,8 +51,7 @@ struct SpirvShaderParameters {
     // Sampler map. Since all banks are a flat array, sampler must be in an explicit bank.
     std::unordered_map<std::uint32_t, spv::Id> samplers;
 
-    // Memory that has all uniform buffer data
-    spv::Id memory;
+    std::unordered_map<std::uint32_t, SpirvUniformBufferInfo> buffers;
 };
 
 using Coord = std::pair<spv::Id, int>;
