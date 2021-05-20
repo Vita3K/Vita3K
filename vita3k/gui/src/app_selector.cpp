@@ -609,7 +609,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
 
     if (current_scroll_pos > 0) {
         const auto ARROW_UPP_CENTER = ImVec2(display_size.x - (30.f * SCALE.x), 110.f * SCALE.y);
-        ImGui::GetForegroundDrawList()->AddTriangleFilled(
+        ImGui::GetWindowDrawList()->AddTriangleFilled(
             ImVec2(ARROW_UPP_CENTER.x - (20.f * SCALE.x), ARROW_UPP_CENTER.y + (16.f * SCALE.y)),
             ImVec2(ARROW_UPP_CENTER.x, ARROW_UPP_CENTER.y - (16.f * SCALE.y)),
             ImVec2(ARROW_UPP_CENTER.x + (20.f * SCALE.x), ARROW_UPP_CENTER.y + (16.f * SCALE.y)), ARROW_COLOR);
@@ -620,7 +620,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     }
     if (!gui.apps_list_opened.empty()) {
         const auto ARROW_CENTER = ImVec2(display_size.x - (30.f * SCALE.x), display_size.y - (250.f * SCALE.y));
-        ImGui::GetForegroundDrawList()->AddTriangleFilled(
+        ImGui::GetWindowDrawList()->AddTriangleFilled(
             ImVec2(ARROW_CENTER.x - (16.f * SCALE.x), ARROW_CENTER.y - (20.f * SCALE.y)),
             ImVec2(ARROW_CENTER.x + (16.f * SCALE.x), ARROW_CENTER.y),
             ImVec2(ARROW_CENTER.x - (16.f * SCALE.x), ARROW_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);

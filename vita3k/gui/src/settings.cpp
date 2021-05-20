@@ -504,7 +504,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     if (gui.start_background)
         ImGui::GetBackgroundDrawList()->AddImage(gui.start_background, ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size);
     else
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size, IM_COL32(128.f, 128.f, 128.f, 128.f), 0.f, ImDrawCornerFlags_All);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size, IM_COL32(43.f, 44.f, 47.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
     ImGui::GetForegroundDrawList()->AddRect(ImVec2(32.f * SCALE.x, 64.f * SCALE.y), ImVec2(display_size.x - (32.f * SCALE.x), display_size.y - (32.f * SCALE.y)), IM_COL32(255.f, 255.f, 255.f, 255.f), 20.0f * SCALE.x, ImDrawCornerFlags_All);
 
@@ -517,7 +517,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     ImGui::PushFont(gui.vita_font);
     const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * host.dpi_scale);
     const auto SCAL_PIX_DATE_FONT = 34.f / 28.f;
-    const auto DATE_FONT_SIZE = 34.f * DEFAULT_FONT_SCALE;
+    const auto DATE_FONT_SIZE = (34.f * host.dpi_scale) * DEFAULT_FONT_SCALE;
     const auto SCAL_DATE_FONT_SIZE = DATE_FONT_SIZE / ImGui::GetFontSize();
 
     auto DATE_TIME = get_date_time(gui, host, const_cast<tm &>(local));
@@ -525,12 +525,12 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto CALC_DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str());
     const auto DATE_SIZE = ImVec2(CALC_DATE_SIZE.x * SCAL_DATE_FONT_SIZE, CALC_DATE_SIZE.y * SCAL_DATE_FONT_SIZE * SCAL_PIX_DATE_FONT);
     const auto DATE_POS = ImVec2(display_size.x - (start_param["dateLayout"] == "2" ? date["date"].x + DATE_SIZE.x : date["date"].x) * SCALE.x, display_size.y - (date["date"].y * SCALE.y));
-    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, DATE_FONT_SIZE * SCALE.x, DATE_POS, date_color, DATE_STR.c_str());
+    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, DATE_FONT_SIZE * RES_SCALE.x, DATE_POS, date_color, DATE_STR.c_str());
     ImGui::PopFont();
 
     ImGui::PushFont(gui.large_font);
     const auto DEFAULT_LARGE_FONT_SCALE = ImGui::GetFontSize() / (116.f * host.dpi_scale);
-    const auto LARGE_FONT_SIZE = 116.f * DEFAULT_FONT_SCALE;
+    const auto LARGE_FONT_SIZE = (116.f * host.dpi_scale) * DEFAULT_FONT_SCALE;
     const auto PIX_LARGE_FONT_SCALE = (96.f * host.dpi_scale) / ImGui::GetFontSize();
 
     const auto CLOCK_STR = DATE_TIME["clock"];
@@ -539,7 +539,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
 
     const auto DAY_MOMENT_STR = DATE_TIME["day-moment"];
     const auto CALC_DAY_MOMENT_SIZE = ImGui::CalcTextSize(DAY_MOMENT_STR.c_str());
-    const auto DAY_MOMENT_LARGE_FONT_SIZE = 56.f * DEFAULT_LARGE_FONT_SCALE;
+    const auto DAY_MOMENT_LARGE_FONT_SIZE = (56.f * host.dpi_scale) * DEFAULT_LARGE_FONT_SCALE;
     const auto LARGE_FONT_DAY_MOMENT_SCALE = DAY_MOMENT_LARGE_FONT_SIZE / ImGui::GetFontSize();
     const auto DAY_MOMENT_SIZE = gui.users[host.io.user_id].clock_12_hour ? ImVec2(CALC_DAY_MOMENT_SIZE.x * LARGE_FONT_DAY_MOMENT_SCALE, CALC_DAY_MOMENT_SIZE.y * LARGE_FONT_DAY_MOMENT_SCALE * PIX_LARGE_FONT_SCALE) : ImVec2(0.f, 0.f);
 
@@ -547,12 +547,12 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     if (start_param["dateLayout"] == "2")
         CLOCK_POS.x -= (CLOCK_SIZE.x * SCALE.x) + (DAY_MOMENT_SIZE.x * SCALE.x);
     else if (std::stoi(DATE_TIME["hour"]) < 10)
-        CLOCK_POS.x += ImGui::CalcTextSize("0").x;
+        CLOCK_POS.x += ImGui::CalcTextSize("0").x * RES_SCALE.x;
 
-    ImGui::GetForegroundDrawList()->AddText(gui.large_font, LARGE_FONT_SIZE * SCALE.x, CLOCK_POS, date_color, CLOCK_STR.c_str());
+    ImGui::GetForegroundDrawList()->AddText(gui.large_font, LARGE_FONT_SIZE * RES_SCALE.x, CLOCK_POS, date_color, CLOCK_STR.c_str());
     if (gui.users[host.io.user_id].clock_12_hour) {
-        const auto DAY_MOMENT_POS = ImVec2(CLOCK_POS.x + ((CLOCK_SIZE.x + 6.f) * SCALE.x), CLOCK_POS.y + ((CLOCK_SIZE.y - DAY_MOMENT_SIZE.y) * SCALE.y));
-        ImGui::GetForegroundDrawList()->AddText(gui.large_font, DAY_MOMENT_LARGE_FONT_SIZE * SCALE.x, DAY_MOMENT_POS, date_color, DAY_MOMENT_STR.c_str());
+        const auto DAY_MOMENT_POS = ImVec2(CLOCK_POS.x + ((CLOCK_SIZE.x + (6.f * SCALE.x)) * RES_SCALE.x), CLOCK_POS.y + ((CLOCK_SIZE.y - DAY_MOMENT_SIZE.y) * RES_SCALE.y));
+        ImGui::GetForegroundDrawList()->AddText(gui.large_font, DAY_MOMENT_LARGE_FONT_SIZE * RES_SCALE.x, DAY_MOMENT_POS, date_color, DAY_MOMENT_STR.c_str());
     }
     ImGui::PopFont();
 
@@ -613,11 +613,13 @@ void draw_settings(GuiState &gui, HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
-    ImGui::SetNextWindowBgAlpha(is_background ? 0.f : 0.999f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    ImGui::Begin("##settings", &gui.live_area.settings, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##settings", &gui.live_area.settings, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], ImVec2(0.f, 0.f), display_size); // background image is 960x544
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], ImVec2(0.f, 0.f), display_size);
+    else
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), display_size, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawCornerFlags_All);
+
     ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
     const auto title_size_str = ImGui::CalcTextSize(title.c_str(), 0, false, SIZE_LIST.x);
     ImGui::PushTextWrapPos(((display_size.x - SIZE_LIST.x) / 2.f) + SIZE_LIST.x);

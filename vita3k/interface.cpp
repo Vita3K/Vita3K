@@ -428,15 +428,12 @@ bool handle_events(HostState &host, GuiState &gui) {
                     gui.is_capturing_keys = false;
                 }
             }
-            // toggle gui state
-            if (!host.io.title_id.empty() && !gui.live_area.user_management && !gui.configuration_menu.settings_dialog && !gui.is_capturing_keys) {
+            if (!host.io.title_id.empty() && !gui.live_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog) {
+                // toggle gui state
                 if (event.key.keysym.sym == SDLK_g)
                     host.display.imgui_render = !host.display.imgui_render;
-            }
-            if (!host.io.title_id.empty() && !gui.live_area.app_selector && gui::get_sys_apps_state(gui)) {
-                // Show/Hide Live Area during app run
-                // TODO pause app running
-                if (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton) {
+                // Show/Hide Live Area during app run, TODO pause app running
+                else if (gui::get_sys_apps_state(gui) && (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton)) {
                     gui::update_apps_list_opened(gui, host, host.io.app_path);
                     gui::init_live_area(gui, host);
                     gui.live_area.information_bar = !gui.live_area.information_bar;

@@ -499,8 +499,8 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
 
 void draw_information_bar(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.x * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
     ImU32 DEFAULT_BAR_COLOR = 4278190080; // Black
     ImU32 DEFAULT_INDICATOR_COLOR = 4294967295; // White
@@ -538,12 +538,12 @@ void draw_information_bar(GuiState &gui, HostState &host) {
         }
     }
 
-    const auto SCAL_PIX_FONT = 19.2f / 24.f;
-    const auto scal_default_font = ImGui::GetFontSize() / (19.2f * host.dpi_scale);
-    const auto scal_clock_default_font = 24.f * scal_default_font;
-    const auto scal_format_default_font = 18.f * scal_default_font;
-    const auto scal_clock_font_size = scal_clock_default_font / ImGui::GetFontSize();
-    const auto scal_format_font_size = scal_format_default_font / ImGui::GetFontSize();
+    const auto PIX_FONT_SCALE = 19.2f / 24.f;
+    const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * host.dpi_scale);
+    const auto CLOCK_DEFAULT_FONT_SCALE = (24.f * host.dpi_scale) * DEFAULT_FONT_SCALE;
+    const auto DAY_MOMENT_DEFAULT_FONT_SCALE = (18.f * host.dpi_scale) * DEFAULT_FONT_SCALE;
+    const auto CLOCK_FONT_SIZE_SCALE = CLOCK_DEFAULT_FONT_SCALE / ImGui::GetFontSize();
+    const auto DAY_MOMENT_FONT_SIZE_SCALE = DAY_MOMENT_DEFAULT_FONT_SCALE / ImGui::GetFontSize();
 
     const auto now = std::chrono::system_clock::now();
     const auto tt = std::chrono::system_clock::to_time_t(now);
@@ -553,16 +553,16 @@ void draw_information_bar(GuiState &gui, HostState &host) {
 
     auto DATE_TIME = get_date_time(gui, host, local);
     const auto CALC_CLOCK_SIZE = ImGui::CalcTextSize(DATE_TIME["clock"].c_str());
-    const auto SCAL_CLOCK_SIZE = ImVec2(CALC_CLOCK_SIZE.x * scal_clock_font_size, CALC_CLOCK_SIZE.y * scal_clock_font_size * SCAL_PIX_FONT);
-    const auto CALC_FORMAT_SIZE = ImGui::CalcTextSize(DATE_TIME["day-moment"].c_str());
-    const auto SCAL_FORMAT_SIZE = host.io.user_id.empty() || gui.users[host.io.user_id].clock_12_hour ? ImVec2((CALC_FORMAT_SIZE.x * scal_format_font_size), CALC_FORMAT_SIZE.y * scal_format_font_size * SCAL_PIX_FONT) : ImVec2(0.f, 0.f);
+    const auto CLOCK_SIZE_SCALE = ImVec2((CALC_CLOCK_SIZE.x * CLOCK_FONT_SIZE_SCALE) * RES_SCALE.x, (CALC_CLOCK_SIZE.y * CLOCK_FONT_SIZE_SCALE * PIX_FONT_SCALE) * RES_SCALE.y);
+    const auto CALC_DAY_MOMENT_SIZE = ImGui::CalcTextSize(DATE_TIME["day-moment"].c_str());
+    const auto DAY_MOMENT_SIZE_SCALE = host.io.user_id.empty() || gui.users[host.io.user_id].clock_12_hour ? ImVec2((CALC_DAY_MOMENT_SIZE.x * DAY_MOMENT_FONT_SIZE_SCALE) * RES_SCALE.y, (CALC_DAY_MOMENT_SIZE.y * DAY_MOMENT_FONT_SIZE_SCALE * PIX_FONT_SCALE) * RES_SCALE.y) : ImVec2(0.f, 0.f);
 
-    const auto CLOCK_POS = ImVec2(display_size.x - (62.f * SCALE.x) - (SCAL_CLOCK_SIZE.x * SCALE.x) - (SCAL_FORMAT_SIZE.x * SCALE.x) - is_notif_pos, (INFORMATION_BAR_HEIGHT / 2.f) - ((SCAL_CLOCK_SIZE.y * SCALE.y) / 2.f));
-    const auto FORMAT_POS = ImVec2(CLOCK_POS.x + (SCAL_CLOCK_SIZE.x * SCALE.x) + (4.f * SCALE.x), CLOCK_POS.y + (SCAL_CLOCK_SIZE.y - SCAL_FORMAT_SIZE.y));
+    const auto CLOCK_POS = ImVec2(display_size.x - (64.f * SCALE.x) - CLOCK_SIZE_SCALE.x - DAY_MOMENT_SIZE_SCALE.x - is_notif_pos, (INFORMATION_BAR_HEIGHT / 2.f) - (CLOCK_SIZE_SCALE.y / 2.f));
+    const auto DAY_MOMENT_POS = ImVec2(CLOCK_POS.x + CLOCK_SIZE_SCALE.x + (6.f * SCALE.x), CLOCK_POS.y + (CLOCK_SIZE_SCALE.y - DAY_MOMENT_SIZE_SCALE.y));
 
-    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_clock_default_font * SCALE.x, CLOCK_POS, is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, DATE_TIME["clock"].c_str());
+    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, CLOCK_DEFAULT_FONT_SCALE * RES_SCALE.x, CLOCK_POS, is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, DATE_TIME["clock"].c_str());
     if (host.io.user_id.empty() || gui.users[host.io.user_id].clock_12_hour)
-        ImGui::GetForegroundDrawList()->AddText(gui.vita_font, scal_format_default_font * SCALE.x, FORMAT_POS, is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, DATE_TIME["day-moment"].c_str());
+        ImGui::GetForegroundDrawList()->AddText(gui.vita_font, DAY_MOMENT_DEFAULT_FONT_SCALE * RES_SCALE.x, DAY_MOMENT_POS, is_theme_color ? gui.information_bar_color["indicator"] : DEFAULT_INDICATOR_COLOR, DATE_TIME["day-moment"].c_str());
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (54.f * SCALE.x) - is_notif_pos, 12.f * SCALE.y), ImVec2(display_size.x - (50.f * SCALE.x) - is_notif_pos, 20 * SCALE.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 0.f, ImDrawCornerFlags_All);
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCALE.x) - is_notif_pos, 5.f * SCALE.y), ImVec2(display_size.x - (12.f * SCALE.x) - is_notif_pos, 27 * SCALE.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f * SCALE.x, ImDrawCornerFlags_All);
 

@@ -123,12 +123,12 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
 static CPUBackend config_cpu_backend;
 
 static bool get_custom_config(GuiState &gui, HostState &host, const std::string &app_path) {
-    config = {};
     const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
 
     if (fs::exists(CUSTOM_CONFIG_PATH)) {
         pugi::xml_document custom_config_xml;
         if (custom_config_xml.load_file(CUSTOM_CONFIG_PATH.c_str())) {
+            config = {};
             // Load Core Config
             if (!custom_config_xml.child("core").empty()) {
                 const auto core_child = custom_config_xml.child("core");
@@ -248,7 +248,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.48f));
     const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
-    ImGui::Begin(is_custom_config ? ("Custom settings for " + host.app_path).c_str() : "Settings", is_custom_config ? &gui.configuration_menu.custom_settings_dialog : &gui.configuration_menu.settings_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+    auto &settings_dialog = is_custom_config ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
+    ImGui::Begin(is_custom_config ? ("Custom settings for " + host.app_path).c_str() : "Settings", &settings_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::BeginTabBar("SettingsTabBar", ImGuiTabBarFlags_None);
     std::ostringstream link;
 
@@ -620,25 +621,21 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
 
     ImGui::EndTabBar();
 
-    if (host.cfg.overwrite_config) {
-        ImGui::Spacing();
-        ImGui::Separator();
-        ImGui::Spacing();
-        static const auto BUTTON_SIZE = ImVec2(60.f * host.dpi_scale, 0.f);
-        if (!host.io.title_id.empty()) {
-            ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * host.dpi_scale));
-            if (ImGui::Button("Apply", BUTTON_SIZE))
-                set_config(gui, host, host.app_path);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Click on Apply if you want change setting with app current running.");
-            ImGui::SameLine(0, 20.f * host.dpi_scale);
-        } else
-            ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
-        if (ImGui::Button("Save", BUTTON_SIZE))
-            save_config(gui, host);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Click on Save is required to keep changes.");
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    static const auto BUTTON_SIZE = ImVec2(100.f * host.dpi_scale, 0.f);
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * host.dpi_scale));
+    if (ImGui::Button("Close", BUTTON_SIZE))
+        settings_dialog = false;
+    ImGui::SameLine(0, 20.f * host.dpi_scale);
+    if (ImGui::Button(!host.io.title_id.empty() ? "Save & Apply" : "Save", BUTTON_SIZE)) {
+        save_config(gui, host);
+        if (!host.io.title_id.empty())
+            set_config(gui, host, host.app_path);
     }
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Click on Save is required to keep changes.");
 
     ImGui::End();
 }

@@ -411,14 +411,16 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
-    ImGui::SetNextWindowBgAlpha(is_background ? 0.f : 0.999f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    ImGui::Begin("##trophy_collection", &gui.live_area.trophy_collection, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##trophy_collection", &gui.live_area.trophy_collection, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10008"], ImVec2(0.f, 0.f), display_size); // background image is 960x544
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10008"], ImVec2(0.f, 0.f), display_size);
+    else
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), display_size, IM_COL32(31.f, 12.f, 0.f, 255.f), 0.f, ImDrawCornerFlags_All);
+
     if (group_id_selected.empty()) {
         ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-        if (np_com_id_selected.empty()) {
+        if (!np_com_id_list.empty() && np_com_id_selected.empty()) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Search");
             ImGui::SameLine();
             search_bar.Draw("##search_bar", 200 * SCALE.x);

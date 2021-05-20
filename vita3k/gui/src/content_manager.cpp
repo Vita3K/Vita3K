@@ -251,12 +251,13 @@ void draw_content_manager(GuiState &gui, HostState &host) {
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
-    ImGui::SetNextWindowBgAlpha(is_background ? 0.f : 0.999f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 
-    ImGui::Begin("##content_manager", &gui.live_area.content_manager, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##content_manager", &gui.live_area.content_manager, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10026"], ImVec2(0.f, 0.f), display_size); // background image is 960x544
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10026"], ImVec2(0.f, 0.f), display_size);
+    else
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), display_size, IM_COL32(53.f, 54.f, 70.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
     ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
 
@@ -275,13 +276,14 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
         ImGui::PopTextWrapPos();
         if (!menu.empty()) {
-            // Search Bar
-            const auto search_size = ImGui::CalcTextSize("Search");
-            ImGui::SetCursorPos(ImVec2(20.f * SCALE.y, (32.f * SCALE.y) - (search_size.y / 2.f)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "Search");
-            ImGui::SameLine();
-            search_bar.Draw("##search_bar", 200 * SCALE.x);
-
+            if (((menu == "app") && !gui.app_selector.user_apps.empty()) || ((menu == "save") && !save_data_list.empty())) {
+                // Search Bar
+                const auto search_size = ImGui::CalcTextSize("Search");
+                ImGui::SetCursorPos(ImVec2(20.f * SCALE.y, (32.f * SCALE.y) - (search_size.y / 2.f)));
+                ImGui::TextColored(GUI_COLOR_TEXT, "Search");
+                ImGui::SameLine();
+                search_bar.Draw("##search_bar", 200 * SCALE.x);
+            }
             // Free Space
             const auto scal_font = 19.2f / ImGui::GetFontSize();
             ImGui::GetWindowDrawList()->AddText(gui.vita_font, 19.2f * SCALE.x, ImVec2((display_size.x - ((ImGui::CalcTextSize("Free Space").x * scal_font)) * SCALE.x) - (15.f * SCALE.x), 42.f * SCALE.y),
