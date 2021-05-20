@@ -190,10 +190,7 @@ void open_user(GuiState &gui, HostState &host) {
     else
         init_theme_start_background(gui, host, gui.users[host.io.user_id].theme_id);
 
-    if (gui.start_background)
-        gui.live_area.start_screen = true;
-    else
-        gui.live_area.app_selector = true;
+    gui.live_area.start_screen = true;
 }
 
 static auto get_users_index(GuiState &gui, const std::string &user_name) {

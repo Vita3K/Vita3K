@@ -388,6 +388,7 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
         } else {
             host.app_version = "1.00";
             host.app_category = "gda";
+            host.app_title_id = app;
             if (app == "NPXS10008") {
                 host.app_short_title = "Trophies";
                 host.app_title = "Trophy Collection";

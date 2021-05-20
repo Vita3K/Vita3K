@@ -76,9 +76,9 @@ static void draw_config_menu(GuiState &gui, HostState &host) {
     auto lang = gui.lang.main_menubar;
     const auto is_lang = !lang.empty();
     const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", host.io.app_path) };
-    const auto is_custom_config = !host.io.app_path.empty() && fs::exists(CUSTOM_CONFIG_PATH);
+    auto &settings_dialog = !host.io.app_path.empty() && fs::exists(CUSTOM_CONFIG_PATH) ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     if (ImGui::BeginMenu(is_lang ? lang["configuration"].c_str() : "Configuration")) {
-        if (ImGui::MenuItem(is_lang ? lang["settings"].c_str() : "Settings", nullptr, is_custom_config ? &gui.configuration_menu.custom_settings_dialog : &gui.configuration_menu.settings_dialog))
+        if (ImGui::MenuItem(is_lang ? lang["settings"].c_str() : "Settings", nullptr, &settings_dialog))
             init_config(gui, host, host.io.app_path);
         if (ImGui::MenuItem(is_lang ? lang["user_management"].c_str() : "User Management", nullptr, &gui.live_area.user_management, (!gui.live_area.user_management && host.io.title_id.empty()))) {
             gui.live_area.app_selector = false;
