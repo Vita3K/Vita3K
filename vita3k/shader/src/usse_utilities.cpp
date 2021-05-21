@@ -1149,30 +1149,6 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     }
 }
 
-spv::Id shader::usse::utils::make_uniform_vector_from_type(spv::Builder &b, spv::Id type, int val) {
-    const int num_comp = b.getNumTypeComponents(type);
-    spv::Id v_elem_type = (num_comp > 1) ? b.getContainedTypeId(type) : type;
-
-    spv::Id cnst = spv::NoResult;
-
-    if (b.isUintType(v_elem_type)) {
-        cnst = b.makeUintConstant(val);
-    } else if (b.isIntType(v_elem_type)) {
-        cnst = b.makeIntConstant(val);
-    } else {
-        cnst = b.makeFloatConstant(static_cast<float>(val));
-    }
-
-    if (num_comp == 1) {
-        return cnst;
-    }
-
-    std::vector<spv::Id> c_vecs(num_comp, cnst);
-    spv::Id v0 = b.makeCompositeConstant(type, c_vecs);
-
-    return v0;
-}
-
 spv::Id shader::usse::utils::make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size) {
     if (size == 1) {
         return component;
