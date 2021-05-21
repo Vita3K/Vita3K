@@ -53,6 +53,9 @@ const char *data_type_str(DataType p) {
     case DataType::INT8: return "i8";
     case DataType::INT16: return "i16";
     case DataType::INT32: return "i32";
+    case DataType::UINT8: return "u8";
+    case DataType::UINT16: return "u16";
+    case DataType::UINT32: return "u32";
     case DataType::C10: return "c10";
     case DataType::F16: return "f16";
     case DataType::F32: return "f32";
