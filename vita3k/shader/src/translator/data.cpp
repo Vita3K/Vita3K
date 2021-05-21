@@ -425,7 +425,7 @@ bool USSETranslatorVisitor::vpck(
     int offset_start_masking = 0;
 
     // For some occasions the swizzle needs to cycle from the first components to the first bit that was on in the dest mask.
-    bool no_swizzle_cycle_to_mask = (is_float_data_type(inst.opr.src1.type) && is_float_data_type(inst.opr.src2.type))
+    bool no_swizzle_cycle_to_mask = (is_float_data_type(inst.opr.src1.type) && is_float_data_type(inst.opr.dest.type))
         || (scale && ((inst.opr.src1.type == DataType::UINT8) || (inst.opr.dest.type == DataType::UINT8)));
 
     for (int i = 0; i < 4; i++) {
