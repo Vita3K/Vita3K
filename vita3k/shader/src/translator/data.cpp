@@ -73,6 +73,7 @@ bool USSETranslatorVisitor::vmov(
 
     const bool is_double_regs = move_data_type == DataType::C10 || move_data_type == DataType::F16 || move_data_type == DataType::F32;
     const bool is_conditional = (move_type != MoveType::UNCONDITIONAL);
+    const bool is_u8_conditional = inst.opcode == Opcode::VMOVCU8;
 
     // Decode operands
     uint8_t reg_bits = is_double_regs ? 7 : 6;
@@ -87,16 +88,11 @@ bool USSETranslatorVisitor::vmov(
     inst.opr.dest.type = move_data_type;
 
     // TODO: adjust dest mask if needed
-
-    if (inst.opr.dest.bank == RegisterBank::SPECIAL || inst.opr.src0.bank == RegisterBank::SPECIAL || inst.opr.src1.bank == RegisterBank::SPECIAL || inst.opr.src2.bank == RegisterBank::SPECIAL) {
-        LOG_WARN("Special regs unsupported");
-        return false;
-    }
-
     CompareMethod compare_method = CompareMethod::NE_ZERO;
     spv::Op compare_op = spv::OpAny;
 
     if (is_conditional) {
+        inst.opr.src0.type = is_u8_conditional ? DataType::UINT8 : DataType::F32;
         compare_method = static_cast<CompareMethod>((test_bit_2 << 1) | test_bit_1);
         inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank_sel, end_or_src0_bank_ext, is_double_regs, reg_bits, m_second_program);
         inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, is_double_regs, reg_bits, m_second_program);
@@ -107,41 +103,37 @@ bool USSETranslatorVisitor::vmov(
 
         inst.opr.src2.swizzle = inst.opr.src1.swizzle;
 
-        const bool isUInt = is_unsigned_integer_data_type(inst.opr.src0.type);
-        const bool isInt = is_signed_integer_data_type(inst.opr.src1.type);
-
-        if (isUInt || isInt) {
-            switch (compare_method) {
-            case CompareMethod::LT_ZERO:
-                if (isUInt)
-                    compare_op = spv::Op::OpULessThan;
-                else if (isInt)
-                    compare_op = spv::Op::OpSLessThan;
-                else
-                    compare_op = spv::Op::OpFOrdLessThan;
-                break;
-            case CompareMethod::LTE_ZERO:
-                if (isUInt)
-                    compare_op = spv::Op::OpULessThanEqual;
-                else if (isInt)
-                    compare_op = spv::Op::OpSLessThanEqual;
-                else
-                    compare_op = spv::Op::OpFOrdLessThanEqual;
-                break;
-            case CompareMethod::NE_ZERO:
-                if (isInt || isUInt)
-                    compare_op = spv::Op::OpINotEqual;
-                else
-                    compare_op = spv::Op::OpFOrdNotEqual;
-                break;
-            case CompareMethod::EQ_ZERO:
-                if (isInt || isUInt)
-                    compare_op = spv::Op::OpIEqual;
-                else
-                    compare_op = spv::Op::OpFOrdEqual;
-                break;
-            }
+        switch (compare_method) {
+        case CompareMethod::LT_ZERO:
+            if (is_u8_conditional)
+                compare_op = spv::Op::OpULessThan;
+            else
+                compare_op = spv::Op::OpFOrdLessThan;
+            break;
+        case CompareMethod::LTE_ZERO:
+            if (is_u8_conditional)
+                compare_op = spv::Op::OpULessThanEqual;
+            else
+                compare_op = spv::Op::OpFOrdLessThanEqual;
+            break;
+        case CompareMethod::NE_ZERO:
+            if (is_u8_conditional)
+                compare_op = spv::Op::OpINotEqual;
+            else
+                compare_op = spv::Op::OpFOrdNotEqual;
+            break;
+        case CompareMethod::EQ_ZERO:
+            if (is_u8_conditional)
+                compare_op = spv::Op::OpIEqual;
+            else
+                compare_op = spv::Op::OpFOrdEqual;
+            break;
         }
+    }
+
+    if (inst.opr.dest.bank == RegisterBank::SPECIAL || inst.opr.src0.bank == RegisterBank::SPECIAL || inst.opr.src1.bank == RegisterBank::SPECIAL || inst.opr.src2.bank == RegisterBank::SPECIAL) {
+        LOG_WARN("Special regs unsupported");
+        return false;
     }
 
     // Recompile
@@ -197,7 +189,9 @@ bool USSETranslatorVisitor::vmov(
         source_to_compare_with_0 = load(inst.opr.src0, dest_mask, src0_repeat_offset);
         source_2 = load(inst.opr.src2, dest_mask, src2_repeat_offset);
         spv::Id result_type = m_b.getTypeId(source_2);
-        spv::Id v0 = utils::make_uniform_vector_from_type(m_b, result_type, 0);
+        spv::Id v0_comp_type = is_u8_conditional ? m_b.makeUintType(32) : m_b.makeFloatType(32);
+        spv::Id v0_type = utils::make_vector_or_scalar_type(m_b, v0_comp_type, m_b.getNumComponents(source_2));
+        spv::Id v0 = utils::make_uniform_vector_from_type(m_b, v0_type, 0);
 
         bool source_2_first = false;
 

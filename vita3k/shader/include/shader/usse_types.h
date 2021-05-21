@@ -164,8 +164,8 @@ enum class MoveType : uint8_t {
 };
 
 enum class CompareMethod : uint8_t {
-    NE_ZERO = 0b00,
-    EQ_ZERO = 0b01,
+    EQ_ZERO = 0b00,
+    NE_ZERO = 0b01,
     LT_ZERO = 0b10,
     LTE_ZERO = 0b11,
 };
