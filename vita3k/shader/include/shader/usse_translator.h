@@ -437,6 +437,8 @@ public:
         Imm6 src2_n,
         Imm1 comp_sel_0_bit0);
 
+    spv::Id vtst_impl(Instruction inst, ExtPredicate pred, int zero_test, int sign_test, Imm4 load_mask, bool mask);
+
     bool vtst(ExtPredicate pred,
         Imm1 skipinv,
         Imm1 onceonly,
