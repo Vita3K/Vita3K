@@ -1292,6 +1292,7 @@ bool USSETranslatorVisitor::vdual(
 
     Imm4 fixed_write_mask = write_mask_non_gpi | ((comp_count_type && dual_op1_ext_vec3_or_has_w_vec4) << 3u);
 
+    const size_t op1_src_count = op1_info.src_count;
     Imm4 op1_write_mask = prim_ustore ? get_dual_op_write_mask(op1_info, op1.opr.dest.bank == RegisterBank::FPINTERNAL) : fixed_write_mask;
     Imm4 op2_write_mask = prim_ustore ? fixed_write_mask : get_dual_op_write_mask(op2_info, op2.opr.dest.bank == RegisterBank::FPINTERNAL);
 
@@ -1310,7 +1311,7 @@ bool USSETranslatorVisitor::vdual(
                     code_info.vector_load, code_info.vector_load ? 8 : 7, m_second_program);
                 // gpi2_slot_num_bit_1 is also unified source ext
                 op.swizzle = decode_dual_swizzle(unified_store_swizz,
-                    code_info.src_count >= 2 ? false : gpi2_slot_num_bit_1, comp_count_type);
+                    op1_src_count >= 2 ? false : gpi2_slot_num_bit_1, comp_count_type);
                 if (gpi2_slot_num_bit_0_or_unified_store_abs)
                     op.flags |= RegisterFlags::Absolute;
                 if (unified_store_neg)
