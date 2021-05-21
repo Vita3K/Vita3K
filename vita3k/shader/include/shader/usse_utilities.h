@@ -31,14 +31,37 @@ spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState 
 
 spv::Id fetch_memory(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, spv::Id addr);
 
-spv::Id make_uniform_vector_from_type(spv::Builder &b, spv::Id type, int val);
-
 spv::Id make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size);
 
 spv::Id unwrap_type(spv::Builder &b, spv::Id type);
 
 spv::Id convert_to_float(spv::Builder &b, spv::Id opr, DataType type, bool normal);
 spv::Id convert_to_int(spv::Builder &b, spv::Id opr, DataType type, bool normal);
+
+template <typename T>
+spv::Id make_uniform_vector_from_type(spv::Builder &b, spv::Id type, T val) {
+    const int num_comp = b.getNumTypeComponents(type);
+    spv::Id v_elem_type = (num_comp > 1) ? b.getContainedTypeId(type) : type;
+
+    spv::Id cnst = spv::NoResult;
+
+    if (b.isUintType(v_elem_type)) {
+        cnst = b.makeUintConstant(val);
+    } else if (b.isIntType(v_elem_type)) {
+        cnst = b.makeIntConstant(val);
+    } else {
+        cnst = b.makeFloatConstant(val);
+    }
+
+    if (num_comp == 1) {
+        return cnst;
+    }
+
+    std::vector<spv::Id> c_vecs(num_comp, cnst);
+    spv::Id v0 = b.makeCompositeConstant(type, c_vecs);
+
+    return v0;
+}
 
 template <typename F>
 void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite, spv::Id iterator_limit, F body) {
