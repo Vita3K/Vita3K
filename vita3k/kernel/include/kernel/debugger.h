@@ -48,7 +48,7 @@ struct Debugger {
     void remove_watch_memory_addr(KernelState &state, Address addr);
     void add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode);
     void remove_breakpoint(MemState &mem, uint32_t addr);
-    void add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, TrampolineCallback callback);
+    void add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, TrampolineCallback callback, bool hook_before_orig = false);
     void remove_trampoline(MemState &mem, uint32_t addr);
     Address get_watch_memory_addr(Address addr);
     void update_watches();
