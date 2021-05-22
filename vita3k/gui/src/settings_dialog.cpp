@@ -132,13 +132,19 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
             // Load Core Config
             if (!custom_config_xml.child("core").empty()) {
                 const auto core_child = custom_config_xml.child("core");
-                config.cpu_backend = core_child.attribute("cpu-backend").as_string();
-                config.cpu_opt = core_child.attribute("cpu-opt").as_bool();
                 config.lle_kernel = core_child.attribute("lle-kernel").as_bool();
                 config.auto_lle = core_child.attribute("auto-lle").as_bool();
                 for (auto &m : core_child.child("lle-modules"))
                     config.lle_modules.push_back(m.text().as_string());
             }
+
+            // Load CPU Config
+            if (!custom_config_xml.child("cpu").empty()) {
+                const auto cpu_child = custom_config_xml.child("cpu");
+                config.cpu_backend = cpu_child.attribute("cpu-backend").as_string();
+                config.cpu_opt = cpu_child.attribute("cpu-opt").as_bool();
+            }
+
             // Load Emulator Config
             if (!custom_config_xml.child("emulator").empty()) {
                 const auto emulator_child = custom_config_xml.child("emulator");
@@ -171,6 +177,7 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
     }
     config_cpu_backend = config.cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
     get_modules_list(gui, host);
+    host.display.imgui_render = true;
 }
 
 static void save_config(GuiState &gui, HostState &host) {
@@ -187,13 +194,16 @@ static void save_config(GuiState &gui, HostState &host) {
 
         // Core
         auto core_child = custom_config_xml.append_child("core");
-        core_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
-        core_child.append_attribute("cpu-opt") = config.cpu_opt;
         core_child.append_attribute("lle-kernel") = config.lle_kernel;
         core_child.append_attribute("auto-lle") = config.auto_lle;
         auto enable_module = core_child.append_child("lle-modules");
         for (const auto &m : config.lle_modules)
             enable_module.append_child("module").append_child(pugi::node_pcdata).set_value(m.c_str());
+
+        // CPU
+        auto cpu_child = custom_config_xml.append_child("cpu");
+        cpu_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
+        cpu_child.append_attribute("cpu-opt") = config.cpu_opt;
 
         // Emulator
         auto emulator_child = custom_config_xml.append_child("emulator");
