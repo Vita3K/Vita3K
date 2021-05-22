@@ -23,7 +23,7 @@
 #include <gui/imgui_impl_sdl.h>
 #include <host/state.h>
 #include <io/functions.h>
-#include <kernel/thread/thread_functions.h>
+
 #include <nids/functions.h>
 #include <renderer/functions.h>
 #include <rtc/rtc.h>
@@ -97,7 +97,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
         const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
         if (thread->status == ThreadStatus::wait) {
-            update_status(*thread, ThreadStatus::run);
+            thread->update_status(ThreadStatus::run);
         }
     };
 

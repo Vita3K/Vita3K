@@ -17,7 +17,6 @@
 
 #include "SceNetCtl.h"
 
-#include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
 
 #define SCE_NETCTL_INFO_SSID_LEN_MAX 32
@@ -117,7 +116,7 @@ EXPORT(int, sceNetCtlCheckCallback) {
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     for (auto &callback : host.net.cbs) {
-        request_callback(*thread, callback.second.pc, { 1, callback.second.data });
+        thread->request_callback(callback.second.pc, { 1, callback.second.data });
     }
     return STUBBED("Stub");
 }

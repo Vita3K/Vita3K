@@ -17,8 +17,6 @@
 
 #include "private.h"
 
-#include <kernel/thread/thread_functions.h>
-
 namespace gui {
 
 void draw_condvars_dialog(GuiState &gui, HostState &host) {

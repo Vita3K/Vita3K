@@ -16,7 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <host/state.h>
-#include <kernel/thread/thread_functions.h>
 
 #include <vector>
 

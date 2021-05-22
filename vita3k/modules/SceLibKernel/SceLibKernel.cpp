@@ -29,7 +29,7 @@
 #include <host/load_self.h>
 #include <io/functions.h>
 #include <kernel/sync_primitives.h>
-#include <kernel/thread/thread_functions.h>
+
 #include <kernel/types.h>
 #include <rtc/rtc.h>
 #include <util/lock_and_find.h>

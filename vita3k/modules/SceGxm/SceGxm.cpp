@@ -24,7 +24,7 @@
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <immintrin.h>
-#include <kernel/thread/thread_functions.h>
+
 #include <mem/allocator.h>
 #include <mem/mempool.h>
 #include <renderer/functions.h>
@@ -1594,7 +1594,7 @@ static int SDLCALL thread_function(void *data) {
 
         // Now run callback
         const ThreadStatePtr display_thread = util::find(params.thid, params.kernel->threads);
-        run_guest_function(*params.kernel, *display_thread, display_callback->pc, { display_callback->data });
+        display_thread->run_guest_function(display_callback->pc, { display_callback->data });
 
         free(*params.mem, display_callback->data);
 
@@ -1626,7 +1626,7 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
 
     const auto stack_size = SCE_KERNEL_STACK_SIZE_USER_DEFAULT; // TODO: Verify this is the correct stack size
 
-    host.gxm.display_queue_thread = create_thread(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, nullptr);
+    host.gxm.display_queue_thread = ThreadState::create(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, nullptr);
 
     if (host.gxm.display_queue_thread < 0) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
@@ -3216,7 +3216,7 @@ EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
 
 EXPORT(int, sceGxmTerminate) {
     const ThreadStatePtr thread = lock_and_find(host.gxm.display_queue_thread, host.kernel.threads, host.kernel.mutex);
-    exit_and_delete_thread(*thread);
+    thread->exit();
     return 0;
 }
 
