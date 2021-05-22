@@ -20,7 +20,7 @@
 
 #include <host/functions.h>
 #include <kernel/sync_primitives.h>
-#include <kernel/thread/thread_functions.h>
+
 #include <util/lock_and_find.h>
 
 #include <SDL_timer.h>
@@ -402,14 +402,14 @@ EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) 
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    if (is_running(host.kernel, *thread)) {
+    if (thread->status == ThreadStatus::run) {
         return SCE_KERNEL_ERROR_RUNNING;
     }
 
     if (argp && arglen > 0) {
-        new_argp = copy_block_to_stack(*thread, host.mem, argp, arglen);
+        new_argp = thread->copy_block_to_stack(host.mem, argp, arglen);
     }
-    const int res = start_thread(host.kernel, thid, arglen, new_argp);
+    const int res = thread->start(host.kernel, arglen, new_argp);
     if (res < 0) {
         return RET_ERROR(res);
     }
@@ -491,12 +491,33 @@ EXPORT(int, _sceKernelWaitSemaCB, SceUID semaid, int signal, SceUInt *timeout) {
 EXPORT(int, _sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout) {
     STUBBED("sceKernelWaitSignal");
     const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    thread->update_status(ThreadStatus::wait);
     thread->signal.wait();
+    thread->update_status(ThreadStatus::run);
     return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelWaitSignalCB) {
     return UNIMPLEMENTED();
+}
+
+int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
+    std::unique_lock<std::mutex> waiter_lock(waiter->mutex);
+    {
+        const std::unique_lock<std::mutex> thread_lock(target->mutex);
+        if (target->status == ThreadStatus::dormant) {
+            if (stat != nullptr) {
+                *stat = target->returned_value;
+            }
+            return 0;
+        }
+
+        target->waiting_threads.push_back(waiter);
+    }
+
+    waiter->status = ThreadStatus::wait;
+    waiter->status_cond.wait(waiter_lock, [&]() { return waiter->status == ThreadStatus::run; });
+    return 0;
 }
 
 EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
@@ -608,7 +629,7 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
 
-    const SceUID thid = create_thread(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, options->stack_size, options->option.get(host.mem));
+    const SceUID thid = ThreadState::create(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, options->stack_size, options->option.get(host.mem));
     if (thid < 0)
         return RET_ERROR(thid);
     return thid;
@@ -679,7 +700,7 @@ EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     if (!thread || thread->status != ThreadStatus::dormant) {
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     }
-    delete_thread(host.kernel, *thread);
+    thread->exit();
     return 0;
 }
 
@@ -691,7 +712,7 @@ EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
 
 EXPORT(int, sceKernelExitDeleteThread, int status) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    exit_and_delete_thread(*thread);
+    thread->exit();
 
     return status;
 }

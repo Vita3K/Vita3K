@@ -18,7 +18,7 @@
 #include "private.h"
 
 #include <cpu/functions.h>
-#include <kernel/thread/thread_functions.h>
+
 #include <kernel/thread/thread_state.h>
 
 #include <spdlog/fmt/fmt.h>
@@ -65,18 +65,15 @@ void draw_threads_dialog(GuiState &gui, HostState &host) {
     for (const auto &thread : host.kernel.threads) {
         std::shared_ptr<ThreadState> th_state = thread.second;
         std::string run_state;
-        switch (th_state->to_do) {
-        case ThreadToDo::run:
+        switch (th_state->status) {
+        case ThreadStatus::run:
             run_state = "Running";
             break;
-        case ThreadToDo::step:
-            run_state = "Stepping";
-            break;
-        case ThreadToDo::wait:
+        case ThreadStatus::wait:
             run_state = "Waiting";
             break;
-        case ThreadToDo::exit:
-            run_state = "Exiting";
+        case ThreadStatus::dormant:
+            run_state = "Dormant";
             break;
         }
         if (ImGui::Selectable(fmt::format("{:0>8X}         {:<32}   {:<16}   {:0>8X}",

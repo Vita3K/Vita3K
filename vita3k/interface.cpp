@@ -25,7 +25,7 @@
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
-#include <kernel/thread/thread_functions.h>
+
 #include <modules/module_parent.h>
 #include <touch/touch.h>
 #include <util/find.h>
@@ -527,7 +527,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         return ::resolve_nid_name(host.kernel, addr);
     };
 
-    const SceUID main_thread_id = create_thread(entry_point, host.kernel, host.mem, host.io.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN), nullptr);
+    const SceUID main_thread_id = ThreadState::create(entry_point, host.kernel, host.mem, host.io.title_id.c_str(), SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN), nullptr);
 
     if (main_thread_id < 0) {
         app::error_dialog("Failed to init main thread.", host.window.get());
@@ -548,9 +548,9 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         LOG_DEBUG("Running module_start of library: {} at address {}", module_name, log_hex(module_start.address()));
 
         // TODO: why does fios need separate thread its stack freed anyways?
-        const ThreadStatePtr module_thread = create_thread(host.kernel, host.mem, module_name);
-        const auto ret = run_guest_function(host.kernel, *module_thread, module_start.address(), { 0, 0 });
-        delete_thread(host.kernel, *module_thread);
+        const ThreadStatePtr module_thread = host.kernel.create_thread(host.mem, module_name);
+        const auto ret = module_thread->run_guest_function(module_start.address(), { 0, 0 });
+        module_thread->exit();
 
         LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
     }
@@ -570,7 +570,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         param.size = SceSize(buf.size());
         param.attr = arr.address();
     }
-    if (start_thread(host.kernel, main_thread_id, param.size, Ptr<void>(param.attr)) < 0) {
+    if (main_thread->start(host.kernel, param.size, Ptr<void>(param.attr)) < 0) {
         app::error_dialog("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }

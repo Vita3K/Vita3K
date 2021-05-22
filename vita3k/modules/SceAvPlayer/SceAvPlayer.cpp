@@ -19,7 +19,7 @@
 
 #include <codec/state.h>
 #include <io/functions.h>
-#include <kernel/thread/thread_functions.h>
+
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -223,7 +223,7 @@ void run_event_callback(HostState &host, SceUID thread_id, const PlayerPtr playe
     constexpr char *export_name = "SceAvPlayerEventCallback";
     if (player_info->event_manager.event_callback) {
         auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        request_callback(*thread, player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
+        thread->request_callback(player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
     }
 }
 //end of callback_thread

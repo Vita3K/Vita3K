@@ -1,5 +1,5 @@
 #include <kernel/state.h>
-#include <kernel/thread/thread_functions.h>
+
 #include <ngs/definitions/atrac9.h>
 #include <ngs/definitions/master.h>
 #include <ngs/definitions/passthrough.h>

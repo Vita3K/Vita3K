@@ -40,22 +40,7 @@ void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID threa
     ThreadStatePtr thread = lock_and_find(thread_id, kernel->threads, kernel->mutex);
     uint32_t nid = *Ptr<uint32_t>(pc + 4).get(*mem);
     call_import(cpu, nid, thread_id);
-    if (!thread->jobs_to_add.empty()) {
-        const auto current = thread->run_queue.begin();
-        // Add resuming job
-        ThreadJob job;
-        job.ctx = save_context(cpu);
-        job.notify = current->notify;
-        thread->run_queue.erase(current);
-        thread->run_queue.push_front(job);
-
-        // Add requested callback jobs
-        for (auto it = thread->jobs_to_add.rbegin(); it != thread->jobs_to_add.rend(); ++it) {
-            thread->run_queue.push_front(*it);
-        }
-        thread->jobs_to_add.clear();
-        stop(*thread->cpu);
-    }
+    thread->flush_callback_requests();
 }
 
 Address CPUProtocol::get_watch_memory_addr(Address addr) {

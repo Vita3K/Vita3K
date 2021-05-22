@@ -21,7 +21,6 @@
 #include <kernel/cpu_protocol.h>
 #include <kernel/debugger.h>
 #include <kernel/sync_primitives.h>
-#include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 #include <mem/allocator.h>
 #include <mem/ptr.h>
@@ -49,6 +48,9 @@ struct InitialFiber;
 
 struct CodecEngineBlock;
 
+struct ThreadState;
+
+typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 typedef std::shared_ptr<SceKernelMemBlockInfo> SceKernelMemBlockInfoPtr;
 typedef std::map<SceUID, SceKernelMemBlockInfoPtr> Blocks;
 typedef std::map<SceUID, CodecEngineBlock> CodecEngineBlocks;
@@ -165,6 +167,7 @@ struct KernelState {
     ThreadStatePtr get_thread(SceUID thread_id);
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
     void stop_all_threads();
+    ThreadStatePtr create_thread(MemState &mem, const char *name);
     int run_guest_function(Address callback_address, const std::vector<uint32_t> &args);
 
 private:

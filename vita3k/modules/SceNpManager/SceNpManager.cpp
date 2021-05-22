@@ -17,7 +17,6 @@
 
 #include "SceNpManager.h"
 
-#include <kernel/thread/thread_functions.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
@@ -47,7 +46,7 @@ EXPORT(int, sceNpCheckCallback) {
 
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     for (auto &callback : host.np.cbs) {
-        request_callback(*thread, callback.second.pc, { (uint32_t)host.np.state, callback.second.data });
+        thread->request_callback(callback.second.pc, { (uint32_t)host.np.state, callback.second.data });
     }
 
     return STUBBED("Stub");

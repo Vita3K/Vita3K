@@ -16,7 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <kernel/state.h>
-#include <kernel/thread/thread_functions.h>
+
 #include <kernel/thread/thread_state.h>
 
 #include <cpu/functions.h>
@@ -27,6 +27,7 @@
 #include <util/log.h>
 
 #include <spdlog/fmt/fmt.h>
+#include <util/lock_and_find.h>
 
 int CorenumAllocator::new_corenum() {
     const std::lock_guard<std::mutex> guard(lock);
@@ -56,7 +57,7 @@ bool KernelState::init(MemState &mem, CallImportFunc call_import, CPUBackend cpu
     debugger.init(this);
     this->cpu_backend = cpu_backend;
     this->cpu_opt = cpu_opt;
-    guest_func_runner = create_thread(*this, mem, "guest function runner");
+    guest_func_runner = create_thread(mem, "guest function runner");
 
     return true;
 }
@@ -105,10 +106,16 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
 void KernelState::stop_all_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
     for (ThreadStatePtrs::iterator thread = threads.begin(); thread != threads.end(); ++thread) {
-        exit_and_delete_thread(*thread->second);
+        thread->second->exit();
     }
 }
 
+ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name) {
+    constexpr size_t DEFAULT_STACK_SIZE = 0x1000;
+    const SceUID id = ThreadState::create(Ptr<void>(0), *this, mem, name, SCE_KERNEL_DEFAULT_PRIORITY, DEFAULT_STACK_SIZE, nullptr);
+    return lock_and_find(id, threads, mutex);
+}
+
 int KernelState::run_guest_function(Address callback_address, const std::vector<uint32_t> &args) {
-    return ::run_guest_function(*this, *this->guest_func_runner, callback_address, args);
+    return this->guest_func_runner->run_guest_function(callback_address, args);
 }
