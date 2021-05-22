@@ -40,7 +40,7 @@ void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
     }
 }
 
-void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, TrampolineCallback callback) {
+void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, TrampolineCallback callback, bool hook_before_orig) {
     const auto encode_thumb_and_swap = [](uint8_t type, uint32_t immed, uint16_t reg) {
         const uint32_t inst = encode_thumb_inst(type, immed, reg);
         return (inst << 16) | ((inst >> 16) & 0xFFFF);
@@ -51,7 +51,7 @@ void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, Tram
     tr->addr = addr;
     tr->thumb_mode = thumb_mode;
     tr->callback = callback;
-    tr->trampoline_code = alloc_block(mem, 0x20, "trampoline");
+    tr->trampoline_code = alloc_block(mem, 0x60, "trampoline");
     tr->lr = tr->addr + 12;
     if (thumb_mode)
         tr->lr |= 1;
@@ -68,10 +68,23 @@ void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, Tram
 
     // Create trampoline
     uint32_t *trampoline_insts = reinterpret_cast<uint32_t *>(&mem.memory[trampoline_addr]);
-    memcpy(trampoline_insts, tr->original, 12);
-    trampoline_insts[3] = thumb_mode ? 0xDF53BF00 : 0xEF000053; // SVC 0x53
-    Trampoline **trampoline_host_ptr = Ptr<Trampoline *>(trampoline_addr + 16).get(mem);
-    *trampoline_host_ptr = tr.get();
+    if (!hook_before_orig) {
+        memcpy(trampoline_insts, tr->original, 12);
+        trampoline_insts[3] = thumb_mode ? 0xDF53BF00 : 0xEF000053; // SVC 0x53
+        Trampoline **trampoline_host_ptr = Ptr<Trampoline *>(trampoline_addr + 16).get(mem);
+        *trampoline_host_ptr = tr.get();
+    } else {
+        trampoline_insts[0] = thumb_mode ? 0xDF53BF00 : 0xEF000053; // SVC 0x53
+        Trampoline **trampoline_host_ptr = Ptr<Trampoline *>(trampoline_addr + 4).get(mem);
+        *trampoline_host_ptr = tr.get();
+        memcpy(&trampoline_insts[3], tr->original, 12);
+        trampoline_insts[6] = encode_inst(INSTRUCTION_MOVW, (uint16_t)tr->lr, 12);
+        trampoline_insts[7] = encode_inst(INSTRUCTION_MOVT, (uint16_t)(tr->lr >> 16), 12);
+        trampoline_insts[8] = encode_inst(INSTRUCTION_BRANCH, 0, 12);
+        tr->lr = trampoline_addr + 12;
+        if (thumb_mode)
+            tr->lr |= 1;
+    }
 
     std::lock_guard<std::mutex> lock(mutex);
     trampolines.emplace(addr, std::move(tr));
