@@ -262,7 +262,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     if (!host.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
         gui.live_area.information_bar = true;
 
-    if (!gui.file_menu.archive_install_dialog && !gui.file_menu.firmware_install_dialog && !gui.file_menu.pkg_install_dialog) {
+    if (!gui.file_menu.archive_install_dialog && !gui.file_menu.firmware_install_dialog && !gui.file_menu.pkg_install_dialog && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog) {
         if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
             last_time["start"] = 0;
         else {
@@ -560,14 +560,21 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPosY(POS_ICON);
                 if (host.cfg.apps_list_grid)
                     ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
-                else
-                    ImGui::SetCursorPosY(POS_ICON);
                 ImGui::PushID(app.path.c_str());
                 ImGui::Selectable("##icon", &selected, host.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
                 if (!gui.configuration_menu.custom_settings_dialog && ImGui::IsItemHovered())
                     host.app_path = app.path;
                 if (host.app_path == app.path)
                     draw_app_context_menu(gui, host, app.path);
+                const auto IS_CUSTOM_CONFIG = fs::exists(fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app.path));
+                if (IS_CUSTOM_CONFIG) {
+                    if (host.cfg.apps_list_grid)
+                        ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
+                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (ImGui::GetFontSize() + 26.f));
+                    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+                    ImGui::Button("CC", ImVec2(40.f * SCALE.x, 0.f));
+                    ImGui::PopStyleColor();
+                }
                 ImGui::PopID();
                 if (!host.cfg.apps_list_grid) {
                     ImGui::NextColumn();
