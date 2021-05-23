@@ -1,7 +1,9 @@
 #pragma once
 
-#include <dynarmic/A32/a32.h>
-#include <dynarmic/exclusive_monitor.h>
+#include <dynarmic/interface/A32/a32.h>
+#include <dynarmic/interface/A32/context.h>
+#include <dynarmic/interface/A32/coprocessor.h>
+#include <dynarmic/interface/exclusive_monitor.h>
 
 #include <cpu/functions.h>
 #include <cpu/impl/unicorn_cpu.h>
