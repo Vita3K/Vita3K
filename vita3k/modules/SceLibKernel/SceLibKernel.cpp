@@ -1073,17 +1073,18 @@ EXPORT(int, sceKernelGetPMUSERENR) {
 }
 
 EXPORT(int, sceKernelGetProcessTime, SceUInt64 *time) {
-    if (time)
-        *time = rtc_get_ticks(host.kernel.base_tick.tick);
+    if (time) {
+        *time = rtc_get_ticks(host.kernel.base_tick.tick) - host.kernel.start_tick;
+    }
     return 0;
 }
 
 EXPORT(SceUInt32, sceKernelGetProcessTimeLow) {
-    return static_cast<SceUInt32>(rtc_get_ticks(host.kernel.base_tick.tick));
+    return static_cast<SceUInt32>(rtc_get_ticks(host.kernel.base_tick.tick) - host.kernel.start_tick);
 }
 
 EXPORT(SceUInt64, sceKernelGetProcessTimeWide) {
-    return rtc_get_ticks(host.kernel.base_tick.tick);
+    return rtc_get_ticks(host.kernel.base_tick.tick) - host.kernel.start_tick;
 }
 
 EXPORT(int, sceKernelGetRWLockInfo) {
