@@ -763,7 +763,7 @@ bool USSETranslatorVisitor::vcomp(
     return true;
 }
 
-bool USSETranslatorVisitor::sop(
+bool USSETranslatorVisitor::sop2(
     Imm2 pred,
     Imm1 cmod1,
     Imm1 skipinv,
@@ -1024,12 +1024,210 @@ bool USSETranslatorVisitor::sop(
     return true;
 }
 
-bool shader::usse::USSETranslatorVisitor::sop2() {
-    LOG_DISASM("Unimplmenet Opcode: sop2");
+bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
+    Imm1 mod1,
+    Imm1 skipinv,
+    Imm1 nosched,
+    Imm2 cop,
+    Imm1 destbankext,
+    Imm1 end,
+    Imm1 src1bankext,
+    Imm1 src2bankext,
+    Imm1 mod2,
+    Imm4 wmask,
+    Imm2 aop,
+    Imm3 sel1,
+    Imm3 sel2,
+    Imm2 destbank,
+    Imm2 src1bank,
+    Imm2 src2bank,
+    Imm7 destnum,
+    Imm7 src1num,
+    Imm7 src2num) {
+    static auto selector_zero = [](spv::Builder &b, const spv::Id type, const spv::Id src1, const spv::Id src2) {
+        return utils::make_uniform_vector_from_type(b, type, 0);
+    };
+
+    static auto selector_src1_color = [](spv::Builder &b, const spv::Id type, const spv::Id src1, const spv::Id src2) {
+        return src1;
+    };
+
+    static auto selector_src2_color = [](spv::Builder &b, const spv::Id type, const spv::Id src1, const spv::Id src2) {
+        return src2;
+    };
+
+    static auto selector_src1_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src1, const spv::Id src2) {
+        return b.createOp(spv::OpVectorShuffle, type, { src1, src1, 3, 3, 3, 3 });
+    };
+
+    static auto selector_src2_alpha = [](spv::Builder &b, spv::Id type, const spv::Id src1, const spv::Id src2) {
+        return b.createOp(spv::OpVectorShuffle, type, { src2, src2, 3, 3, 3, 3 });
+    };
+
+    // This opcode always operates on C10.
+    static Opcode operations[] = {
+        Opcode::FADD,
+        Opcode::FSUB,
+        Opcode::FMIN,
+        Opcode::FMAX
+    };
+
+    using SelectorFunc = std::function<spv::Id(spv::Builder &, const spv::Id, const spv::Id, const spv::Id)>;
+
+    static SelectorFunc selector[] = {
+        selector_zero,
+        nullptr, // source alpha saturated.
+        selector_src1_color,
+        selector_src1_alpha,
+        nullptr,
+        nullptr,
+        selector_src2_color,
+        selector_src2_alpha
+    };
+
+    Instruction inst;
+    inst.opcode = Opcode::SOP2WM;
+
+    // Never double register num
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1num, src1bank, src1bankext, false, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2num, src2bank, src2bankext, false, 7, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, destnum, destbank, destbankext, false, 7, m_second_program);
+
+    inst.opr.src1.type = DataType::UINT8;
+    inst.opr.src2.type = DataType::UINT8;
+    inst.opr.dest.type = DataType::UINT8;
+
+    if (cop >= sizeof(operations) / sizeof(Opcode)) {
+        LOG_ERROR("Invalid color opcode: {}", (int)cop);
+        return true;
+    }
+
+    if (aop >= sizeof(operations) / sizeof(Opcode)) {
+        LOG_ERROR("Invalid alpha opcode: {}", (int)aop);
+        return true;
+    }
+
+    Opcode color_op = operations[cop];
+    Opcode alpha_op = operations[aop];
+
+    // Lookup color selector
+    SelectorFunc operation_1_lhs_selector_func = selector[sel1];
+    SelectorFunc operation_2_lhs_selector_func = selector[sel2];
+
+    if (!operation_1_lhs_selector_func || !operation_2_lhs_selector_func) {
+        LOG_ERROR("Unimplemented operation selector (sel1: {}, sel2: {}", sel1, sel2);
+        return true;
+    }
+
+    auto apply_opcode = [&](Opcode op, spv::Id type, spv::Id lhs, spv::Id rhs) {
+        switch (op) {
+        case Opcode::FADD: {
+            return m_b.createBinOp(spv::OpFAdd, type, lhs, rhs);
+        }
+
+        case Opcode::FSUB: {
+            return m_b.createBinOp(spv::OpFSub, type, lhs, rhs);
+        }
+
+        case Opcode::FMIN:
+        case Opcode::VMIN: {
+            return m_b.createBuiltinCall(type, std_builtins, GLSLstd450FMin, { lhs, rhs });
+        }
+
+        case Opcode::FMAX:
+        case Opcode::VMAX: {
+            return m_b.createBuiltinCall(type, std_builtins, GLSLstd450FMax, { lhs, rhs });
+        }
+
+        default: {
+            LOG_ERROR("Unsuppported sop opcode: {}", disasm::opcode_str(op));
+            break;
+        }
+        }
+
+        return spv::NoResult;
+    };
+
+    spv::Id uniform_1 = spv::NoResult;
+
+    auto apply_complement_modifiers = [&](spv::Id &target, Imm1 enable, spv::Id type) {
+        if (enable == 1) {
+            if (!uniform_1)
+                uniform_1 = utils::make_uniform_vector_from_type(m_b, type, 1);
+
+            target = m_b.createBinOp(spv::OpFSub, type, uniform_1, target);
+        }
+    };
+
+    spv::Id src1 = load(inst.opr.src1, 0b1111, 0);
+    spv::Id src2 = load(inst.opr.src2, 0b1111, 0);
+
+    src1 = utils::convert_to_float(m_b, src1, DataType::UINT8, true);
+    src2 = utils::convert_to_float(m_b, src2, DataType::UINT8, true);
+
+    spv::Id src_type = m_b.getTypeId(src1);
+
+    // Apply selector
+    spv::Id operation_1 = operation_1_lhs_selector_func(m_b, src_type, src1, src2);
+    spv::Id operation_2 = operation_2_lhs_selector_func(m_b, src_type, src1, src2);
+
+    // Apply modifiers
+    apply_complement_modifiers(operation_1, mod1, src_type);
+    apply_complement_modifiers(operation_2, mod2, src_type);
+
+    // Factor them with source
+    operation_1 = m_b.createBinOp(spv::OpFMul, src_type, operation_1, src1);
+    operation_2 = m_b.createBinOp(spv::OpFMul, src_type, operation_2, src2);
+
+    spv::Id result = apply_opcode(color_op, src_type, operation_1, operation_2);
+    spv::Id alpha_type = m_b.makeFloatType(32);
+
+    // Alpha is at the first bit, so reverse that
+    wmask = ((wmask & 0b1110) >> 1) | ((wmask & 1) << 3);
+
+    if (wmask & 0b1000) {
+        // Alpha is written, so calculate and also store
+        const spv::Id alpha_index = m_b.makeIntConstant(3);
+        spv::Id a1 = m_b.createBinOp(spv::OpVectorExtractDynamic, alpha_type, operation_1, alpha_index);
+        spv::Id a2 = m_b.createBinOp(spv::OpVectorExtractDynamic, alpha_type, operation_2, alpha_index);
+
+        result = m_b.createTriOp(spv::OpVectorInsertDynamic, src_type, result, apply_opcode(alpha_op, alpha_type, a1, a2), alpha_index);
+    }
+
+    result = utils::convert_to_int(m_b, result, DataType::UINT8, true);
+
+    // Final result. Do binary operation and then store
+    store(inst.opr.dest, result, wmask, 0);
+
+    // TODO log correctly
+    LOG_DISASM("{:016x}: {}", m_instr, disasm::opcode_str(color_op));
+    LOG_DISASM("{:016x}: {}", m_instr, disasm::opcode_str(alpha_op));
+
     return true;
 }
 
-bool shader::usse::USSETranslatorVisitor::sop3() {
+bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
+    Imm1 mod1,
+    Imm1 skipinv,
+    Imm1 nosched,
+    Imm2 cop,
+    Imm1 destbext,
+    Imm1 end,
+    Imm1 src1bext,
+    Imm1 src2bext,
+    Imm1 mod2,
+    Imm4 wrmask,
+    Imm2 aop,
+    Imm3 sel1,
+    Imm3 sel2,
+    Imm1 src0bank,
+    Imm2 destbank,
+    Imm2 src1bank,
+    Imm2 src2bank,
+    Imm7 destn,
+    Imm7 src0n,
+    Imm7 src1n,
+    Imm7 src2n) {
     LOG_DISASM("Unimplmenet Opcode: sop3");
     return true;
 }

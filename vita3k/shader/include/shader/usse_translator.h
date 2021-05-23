@@ -514,7 +514,7 @@ public:
         Imm7 src1_n,
         Imm7 src2_n);
 
-    bool sop(Imm2 pred,
+    bool sop2(Imm2 pred,
         Imm1 cmod1,
         Imm1 skipinv,
         Imm1 nosched,
@@ -542,9 +542,49 @@ public:
         Imm7 src1_n,
         Imm7 src2_n);
 
-    bool sop2();
+    bool sop2m(Imm2 pred,
+        Imm1 mod1,
+        Imm1 skipinv,
+        Imm1 nosched,
+        Imm2 cop,
+        Imm1 destbankext,
+        Imm1 end,
+        Imm1 src1bankext,
+        Imm1 src2bankext,
+        Imm1 mod2,
+        Imm4 wmask,
+        Imm2 aop,
+        Imm3 sel1,
+        Imm3 sel2,
+        Imm2 destbank,
+        Imm2 src1bank,
+        Imm2 src2bank,
+        Imm7 destnum,
+        Imm7 src1num,
+        Imm7 src2num);
 
-    bool sop3();
+    bool sop3(Imm2 pred,
+        Imm1 mod1,
+        Imm1 skipinv,
+        Imm1 nosched,
+        Imm2 cop,
+        Imm1 destbext,
+        Imm1 end,
+        Imm1 src1bext,
+        Imm1 src2bext,
+        Imm1 mod2,
+        Imm4 wrmask,
+        Imm2 aop,
+        Imm3 sel1,
+        Imm3 sel2,
+        Imm1 src0bank,
+        Imm2 destbank,
+        Imm2 src1bank,
+        Imm2 src2bank,
+        Imm7 destn,
+        Imm7 src0n,
+        Imm7 src1n,
+        Imm7 src2n);
 
     bool i8mad(
         Imm2 pred,

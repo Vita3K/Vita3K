@@ -398,50 +398,92 @@ static optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
                                                                                           qqqqqqq = src2_n (7 bits)
         */
         INST(&V::vbw, "VBW ()", "01ooopppsnrydecxaaaaittttthhbwkkffggjjjjjjjlllllllmmmmmmmqqqqqqq"),
-        // Sum of Products
+        // Sum of Products with 2 sources
         /*
-                                 10000 = op1
-                                      pp = pred (2 bits)
-                                        c = cmod1 (1 bit)
-                                         s = skipinv (1 bit)
-                                          n = nosched (1 bit)
-                                           aa = asel1 (2 bits)
-                                             d = dest_bank_ext (1 bit)
-                                              e = end (1 bit)
-                                               r = src1_bank_ext (1 bit)
-                                                b = src2_bank_ext (1 bit)
-                                                 m = cmod2 (1 bit)
-                                                  ooo = count (3 bits)
-                                                     f = amod1 (1 bit)
-                                                      ll = asel2 (2 bits)
-                                                        ggg = csel1 (3 bits)
-                                                           hhh = csel2 (3 bits)
-                                                              i = amod2 (1 bit)
-                                                               tt = dest_bank (2 bits)
-                                                                 kk = src1_bank (2 bits)
-                                                                   jj = src2_bank (2 bits)
-                                                                     qqqqqqq = dest_n (7 bits)
-                                                                            u = src1_mod (1 bit)
-                                                                             vv = cop (2 bits)
-                                                                               ww = aop (2 bits)
-                                                                                 x = asrc1_mod (1 bit)
-                                                                                  y = dest_mod (1 bit)
-                                                                                   zzzzzzz = src1_n (7 bits)
-                                                                                          AAAAAAA = src2_n (7 bits)
+                                   10000 = op1
+                                        pp = pred (2 bits)
+                                          c = cmod1 (1 bit)
+                                           s = skipinv (1 bit)
+                                            n = nosched (1 bit)
+                                             aa = asel1 (2 bits)
+                                               d = dest_bank_ext (1 bit)
+                                                e = end (1 bit)
+                                                 r = src1_bank_ext (1 bit)
+                                                  b = src2_bank_ext (1 bit)
+                                                   m = cmod2 (1 bit)
+                                                    ooo = count (3 bits)
+                                                       f = amod1 (1 bit)
+                                                        ll = asel2 (2 bits)
+                                                          ggg = csel1 (3 bits)
+                                                             hhh = csel2 (3 bits)
+                                                                i = amod2 (1 bit)
+                                                                 tt = dest_bank (2 bits)
+                                                                   kk = src1_bank (2 bits)
+                                                                     jj = src2_bank (2 bits)
+                                                                       qqqqqqq = dest_n (7 bits)
+                                                                              u = src1_mod (1 bit)
+                                                                               vv = cop (2 bits)
+                                                                                 ww = aop (2 bits)
+                                                                                   x = asrc1_mod (1 bit)
+                                                                                    y = dest_mod (1 bit)
+                                                                                     zzzzzzz = src1_n (7 bits)
+                                                                                            AAAAAAA = src2_n (7 bits)
         */
-        INST(&V::sop, "SOP ()", "10000ppcsnaaderbmooofllggghhhittkkjjqqqqqqquvvwwxyzzzzzzzAAAAAAA"),
-        // Sum of Products 2
+        INST(&V::sop2, "SOP2 ()", "10000ppcsnaaderbmooofllggghhhittkkjjqqqqqqquvvwwxyzzzzzzzAAAAAAA"),
+        // Sum of Products with 2 sources and a write mask
+        /*
+                                     10010 = opcode1
+                                          pp = pred (2 bits)
+                                            m = mod1 (1 bit)
+                                             s = skipinv (1 bit)
+                                              n = nosched (1 bit)
+                                               cc = cop (2 bits)
+                                                 d = destbankext (1 bit)
+                                                  e = end (1 bit)
+                                                   r = src1bankext (1 bit)
+                                                    b = src2bankext (1 bit)
+                                                     o = mod2 (1 bit)
+                                                      wwww = wmask (4 bits)
+                                                          aa = aop (2 bits)
+                                                            lll = sel1 (3 bits)
+                                                               fff = sel2 (3 bits)
+                                                                  - = don't care
+                                                                   tt = destbank (2 bits)
+                                                                     kk = src1bank (2 bits)
+                                                                       gg = src2bank (2 bits)
+                                                                         uuuuuuu = destnum (7 bits)
+                                                                                ------- = don't care
+                                                                                       hhhhhhh = src1num (7 bits)
+                                                                                              iiiiiii = src2num (7 bits)
+        */
+        INST(&V::sop2m, "SOP2M ()", "10010ppmsnccderbowwwwaalllfff-ttkkgguuuuuuu-------hhhhhhhiiiiiii"),
+        // Sum of Products with 3 sources
         /*
                                    10001 = opcode1
-                                        ----------------------------------------------------------- = don't care
+                                        pp = pred (2 bits)
+                                          m = mod1 (1 bit)
+                                           s = skipinv (1 bit)
+                                            n = nosched (1 bit)
+                                             cc = cop (2 bits)
+                                               d = destbext (1 bit)
+                                                e = end (1 bit)
+                                                 r = src1bext (1 bit)
+                                                  b = src2bext (1 bit)
+                                                   o = mod2 (1 bit)
+                                                    wwww = wrmask (4 bits)
+                                                        aa = aop (2 bits)
+                                                          lll = sel1 (3 bits)
+                                                             fff = sel2 (3 bits)
+                                                                k = src0bank (1 bit)
+                                                                 tt = destbank (2 bits)
+                                                                   gg = src1bank (2 bits)
+                                                                     hh = src2bank (2 bits)
+                                                                       iiiiiii = destn (7 bits)
+                                                                              jjjjjjj = src0n (7 bits)
+                                                                                     qqqqqqq = src1n (7 bits)
+                                                                                            uuuuuuu = src2n (7 bits)
         */
-        INST(&V::sop2, "SOP2 ()", "10001-----------------------------------------------------------"),
-        // Sum of Products 3
-        /*
-                                   10010 = opcode1
-                                        ----------------------------------------------------------- = don't care
-        */
-        INST(&V::sop3, "SOP3 ()", "10010-----------------------------------------------------------"),
+        INST(&V::sop3, "SOP3 ()", "10001ppmsnccderbowwwwaalllfffkttgghhiiiiiiijjjjjjjqqqqqqquuuuuuu"),
         // 8-bit integer Multiply and Add
         /*
                                     10011 = opcode1

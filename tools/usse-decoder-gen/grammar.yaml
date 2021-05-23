@@ -679,8 +679,8 @@ VBW:
         - src2_sel: 7
         - src1_n: 7
         - src2_n: 7
-SOP:
-    description: Sum of Products
+SOP2:
+    description: Sum of Products with 2 sources
     members:
         - op1: '10000'
         - pred:
@@ -764,16 +764,74 @@ SOP:
         - src2_n:
             offset: 0
             size: 7
-SOP2:
-    description: Sum of Products 2
-    members:
-        - opcode1: '10001'
-        - DONTCARE:
-            size: 59
-SOP3:
-    description: Sum of Products 3
+SOP2M:
+    description: Sum of Products with 2 sources and a write mask
     members:
         - opcode1: '10010'
+        - pred:
+            offset: 57
+            size: 2
+        - mod1:
+            offset: 56
+            size: 1
+        - skipinv:
+            offset: 55
+            size: 1
+        - nosched:
+            offset: 54
+            size: 1
+        - cop:
+            offset: 52
+            size: 2
+        - destbankext:
+            offset: 51
+            size: 1
+        - end:
+            offset: 50
+            size: 1
+        - src1bankext:
+            offset: 49
+            size: 1
+        - src2bankext:
+            offset: 48
+            size: 1
+        - mod2:
+            offset: 47
+            size: 1
+        - wmask:
+            offset: 43
+            size: 4
+        - aop:
+            offset: 41
+            size: 2
+        - sel1:
+            offset: 38
+            size: 3
+        - sel2:
+            offset: 35
+            size: 3
+        - destbank:
+            offset: 32
+            size: 2
+        - src1bank:
+            offset: 30
+            size: 2
+        - src2bank:
+            offset: 28
+            size: 2
+        - destnum:
+            offset: 21
+            size: 7
+        - src1num:
+            offset: 7
+            size: 7
+        - src2num:
+            offset: 0
+            size: 7
+SOP3:
+    description: Sum of Products with 3 sources
+    members:
+        - opcode1: '10001'
         - pred:
             offset: 57
             size: 2

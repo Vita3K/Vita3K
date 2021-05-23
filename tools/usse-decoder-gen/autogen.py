@@ -29,7 +29,7 @@ def allocate_char(chars_used, name):
 funcdefs = []
 matchers = []
 
-d = yaml.load(open('grammar.yaml'))
+d = yaml.safe_load(open('grammar.yaml'))
 
 for k, v in d.items():
     members = []
