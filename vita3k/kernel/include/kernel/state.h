@@ -148,7 +148,7 @@ struct KernelState {
 
     ObjectStore obj_store;
 
-    SceRtcTick start_tick;
+    uint64_t start_tick;
     SceRtcTick base_tick;
     TimerStates timers;
     Ptr<uint32_t> process_param;

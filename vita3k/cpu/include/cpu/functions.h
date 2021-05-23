@@ -71,4 +71,3 @@ void set_log_code(CPUState &state, bool log);
 void set_log_mem(CPUState &state, bool log);
 bool get_log_code(CPUState &state);
 bool get_log_mem(CPUState &state);
-std::unique_ptr<ModuleRegion> get_region(CPUState &state, Address addr);

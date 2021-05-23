@@ -60,7 +60,7 @@ EXPORT(int, _sceKernelExitProcessForUser) {
 
 EXPORT(int, _sceKernelGetTimer5Reg, Ptr<uint64_t> *timer) {
     *timer = alloc<uint64_t>(host.mem, "timer5reg");
-    *(*timer).get(host.mem) = rtc_get_ticks(host.kernel.start_tick.tick);
+    *(*timer).get(host.mem) = rtc_get_ticks(host.kernel.base_tick.tick);
     return SCE_KERNEL_OK;
 }
 
@@ -137,7 +137,7 @@ EXPORT(int, sceKernelIsGameBudget) {
 }
 
 EXPORT(VitaTime, sceKernelLibcClock) {
-    return rtc_get_ticks(host.kernel.base_tick.tick) - rtc_get_ticks(host.kernel.start_tick.tick);
+    return static_cast<VitaTime>(rtc_get_ticks(host.kernel.base_tick.tick) - host.kernel.start_tick);
 }
 
 EXPORT(int, sceKernelLibcGettimeofday, VitaTimeval *timeAddr, VitaTimezone *tzAddr) {
