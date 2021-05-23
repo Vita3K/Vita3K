@@ -110,6 +110,7 @@ struct ThreadState {
 
     void suspend();
     void resume(bool step = false);
+    std::string log_stack_traceback(KernelState &kernel, MemState &mem);
 
 private:
     void clear_run_queue();

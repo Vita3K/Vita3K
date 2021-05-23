@@ -34,6 +34,7 @@
 #include <cassert>
 #include <cstring>
 #include <memory>
+#include <sstream>
 
 struct ThreadParams {
     KernelState *kernel = nullptr;
@@ -159,10 +160,6 @@ void ThreadState::raise_waiting_threads() {
     waiting_threads.clear();
 }
 
-bool is_running(KernelState &kernel, ThreadState &thread) {
-    return thread.status == ThreadStatus::run;
-}
-
 int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &argp) {
     if (status == ThreadStatus::run)
         return SCE_KERNEL_ERROR_RUNNING;
@@ -195,7 +192,7 @@ Ptr<void> ThreadState::copy_block_to_stack(MemState &mem, const Ptr<void> &data,
     std::unique_lock<std::mutex> thread_lock(mutex);
     const Address stack_top = stack.get() + stack_size;
     const Address sp = read_sp(*cpu);
-    assert(sp <= stack_top && sp >= threadstack.get());
+    assert(sp <= stack_top && sp >= stack.get());
     assert(sp - stack.get() >= size);
     const int aligned_size = align(size, 8);
     const Address data_addr = sp - aligned_size;
@@ -253,13 +250,16 @@ bool ThreadState::run_loop() {
                 break;
             }
 
-            if (hit_breakpoint(*cpu) || to_do == ThreadToDo::suspend) {
+            if (hit_breakpoint(*cpu)) {
+                to_do = ThreadToDo::suspend;
+            }
+
+            if (to_do == ThreadToDo::suspend) {
                 ThreadJob job;
                 job.ctx = save_context(*cpu);
                 job.notify = current_job->notify;
                 run_queue.erase(current_job);
                 run_queue.push_front(job);
-                to_do = ThreadToDo::suspend;
                 update_status(ThreadStatus::suspend);
             }
 
@@ -385,6 +385,20 @@ void ThreadState::resume(bool step) {
     assert(to_do == ThreadToDo::suspend);
     to_do = step ? ThreadToDo::step : ThreadToDo::run;
     something_to_do.notify_one();
+}
+
+std::string ThreadState::log_stack_traceback(KernelState &kernel, MemState &mem) {
+    constexpr Address START_OFFSET = 0;
+    constexpr Address END_OFFSET = 1024;
+    std::stringstream ss;
+    const Address sp = read_sp(*cpu);
+    for (Address addr = sp - START_OFFSET; addr <= sp + END_OFFSET; addr += 4) {
+        const Address value = *Ptr<uint32_t>(addr).get(mem);
+        const auto mod = kernel.find_module_by_addr(value);
+        if (mod)
+            ss << fmt::format("{} (module: {})\n", log_hex(value), mod->module_name);
+    }
+    return ss.str();
 }
 
 void ThreadSignal::wait() {

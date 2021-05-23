@@ -31,7 +31,6 @@ struct WatchMemory {
 
 typedef std::map<Address, WatchMemory> WatchMemoryAddrs;
 typedef std::map<Address, Breakpoint> Breakpoints;
-typedef std::vector<ModuleRegion> ModuleRegions;
 typedef std::map<Address, std::unique_ptr<Trampoline>> Trampolines;
 
 struct Debugger {
