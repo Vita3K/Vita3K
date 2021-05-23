@@ -4,16 +4,18 @@
 #include <mem/state.h>
 #include <mem/util.h>
 
-constexpr uint32_t TRAMPOLINE_SVC = 0x53;
+constexpr uint32_t TRAMPOLINE_JUMPER_SVC = 0x54;
+constexpr uint32_t TRAMPOLINE_HANDLER_SVC = 0x53;
 
 struct KernelState;
 
-typedef std::function<bool(KernelState &kernel, CPUState &cpu, MemState &mem, Address lr)> TrampolineCallback;
+typedef std::function<bool(CPUState &cpu, MemState &mem, Address lr)> TrampolineCallback;
 
 struct Trampoline {
     bool thumb_mode;
-    uint32_t original[3];
+    uint32_t original;
     Block trampoline_code;
+    Address trampoline_addr;
     Address addr;
     Address lr;
     TrampolineCallback callback;
@@ -47,7 +49,8 @@ struct Debugger {
     void remove_watch_memory_addr(KernelState &state, Address addr);
     void add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode);
     void remove_breakpoint(MemState &mem, uint32_t addr);
-    void add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, TrampolineCallback callback, bool hook_before_orig = false);
+    void add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, TrampolineCallback callback);
+    Trampoline *get_trampoline(Address addr);
     void remove_trampoline(MemState &mem, uint32_t addr);
     Address get_watch_memory_addr(Address addr);
     void update_watches();

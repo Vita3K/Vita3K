@@ -16,22 +16,22 @@ void Debugger::init(KernelState *kernel) {
 }
 
 void Debugger::add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode) {
-    Breakpoint last = {
-        thumb_mode,
-        { 0 },
-    };
+    const auto lock = std::lock_guard(mutex);
+    Breakpoint bk;
+    bk.thumb_mode = thumb_mode;
     if (thumb_mode) {
-        std::memcpy(&last.data, &mem.memory[addr], sizeof(THUMB_BREAKPOINT));
+        std::memcpy(&bk.data, &mem.memory[addr], sizeof(THUMB_BREAKPOINT));
         std::memcpy(&mem.memory[addr], THUMB_BREAKPOINT, sizeof(THUMB_BREAKPOINT));
     } else {
-        std::memcpy(&last.data, &mem.memory[addr], sizeof(ARM_BREAKPOINT));
+        std::memcpy(&bk.data, &mem.memory[addr], sizeof(ARM_BREAKPOINT));
         std::memcpy(&mem.memory[addr], ARM_BREAKPOINT, sizeof(ARM_BREAKPOINT));
     }
-    breakpoints.emplace(addr, last);
+    breakpoints.emplace(addr, bk);
     parent->invalidate_jit_cache(addr, 4);
 }
 
 void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
+    const auto lock = std::lock_guard(mutex);
     if (breakpoints.find(addr) != breakpoints.end()) {
         auto last = breakpoints[addr];
         std::memcpy(&mem.memory[addr], &last.data, last.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT));
@@ -40,55 +40,60 @@ void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
     }
 }
 
-void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, TrampolineCallback callback, bool hook_before_orig) {
-    const auto encode_thumb_and_swap = [](uint8_t type, uint32_t immed, uint16_t reg) {
-        const uint32_t inst = encode_thumb_inst(type, immed, reg);
+void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, TrampolineCallback callback) {
+    const auto swap_inst = [](uint32_t inst) {
         return (inst << 16) | ((inst >> 16) & 0xFFFF);
     };
-    const auto encode_inst = thumb_mode ? encode_thumb_and_swap : encode_arm_inst;
 
     std::unique_ptr<Trampoline> tr = std::make_unique<Trampoline>();
     tr->addr = addr;
     tr->thumb_mode = thumb_mode;
     tr->callback = callback;
     tr->trampoline_code = alloc_block(mem, 0x60, "trampoline");
-    tr->lr = tr->addr + 12;
-    if (thumb_mode)
-        tr->lr |= 1;
 
     const Address trampoline_addr = align(tr->trampoline_code.get(), 4);
+    tr->trampoline_addr = trampoline_addr;
+    if (thumb_mode)
+        tr->trampoline_addr |= 1;
+
     // Insert trampoline jumper and back up
-    uint32_t *insts = reinterpret_cast<uint32_t *>(&mem.memory[addr]);
-    memcpy(tr->original, insts, 12);
-    const Address destination = thumb_mode ? trampoline_addr | 1 : trampoline_addr;
-
-    insts[0] = encode_inst(INSTRUCTION_MOVW, (uint16_t)destination, 12);
-    insts[1] = encode_inst(INSTRUCTION_MOVT, (uint16_t)(destination >> 16), 12);
-    insts[2] = encode_inst(INSTRUCTION_BRANCH, 0, 12);
-
-    // Create trampoline
-    uint32_t *trampoline_insts = reinterpret_cast<uint32_t *>(&mem.memory[trampoline_addr]);
-    if (!hook_before_orig) {
-        memcpy(trampoline_insts, tr->original, 12);
-        trampoline_insts[3] = thumb_mode ? 0xDF53BF00 : 0xEF000053; // SVC 0x53
-        Trampoline **trampoline_host_ptr = Ptr<Trampoline *>(trampoline_addr + 16).get(mem);
-        *trampoline_host_ptr = tr.get();
-    } else {
-        trampoline_insts[0] = thumb_mode ? 0xDF53BF00 : 0xEF000053; // SVC 0x53
-        Trampoline **trampoline_host_ptr = Ptr<Trampoline *>(trampoline_addr + 4).get(mem);
-        *trampoline_host_ptr = tr.get();
-        memcpy(&trampoline_insts[3], tr->original, 12);
-        trampoline_insts[6] = encode_inst(INSTRUCTION_MOVW, (uint16_t)tr->lr, 12);
-        trampoline_insts[7] = encode_inst(INSTRUCTION_MOVT, (uint16_t)(tr->lr >> 16), 12);
-        trampoline_insts[8] = encode_inst(INSTRUCTION_BRANCH, 0, 12);
-        tr->lr = trampoline_addr + 12;
-        if (thumb_mode)
-            tr->lr |= 1;
+    uint32_t *inst = Ptr<uint32_t>(addr).get(mem);
+    tr->original = *inst;
+    uint32_t back_inst;
+    if (thumb_mode && is_thumb16(swap_inst(*inst))) {
+        *inst = (tr->original & 0xFFFF0000) | 0xDF54; // SVC 0x54
+        tr->lr = tr->addr + 2;
+        tr->lr |= 1;
+        back_inst = 0xBF000000 | (tr->original & 0xFFFF);
+    } else if (thumb_mode) {
+        *inst = 0xDF54BF00; // SVC 0x54
+        tr->lr = tr->addr + 4;
+        tr->lr |= 1;
+        back_inst = tr->original;
+    } else { // ARM
+        *inst = 0xEF000054; // SVC 0x54
+        tr->lr = tr->addr + 4;
+        back_inst = tr->original;
     }
+
+    // Create trampoline body
+    uint32_t *trampoline_insts = reinterpret_cast<uint32_t *>(&mem.memory[trampoline_addr]);
+    trampoline_insts[0] = back_inst; // original instruction; if thumb16 it's nop + original thumb16 instruction
+    trampoline_insts[1] = thumb_mode ? 0xDF53BF00 : 0xEF000053; // SVC 0x53
+    Trampoline **trampoline_host_ptr = Ptr<Trampoline *>(trampoline_addr + 8).get(mem); // interrupt handler will read this
+    *trampoline_host_ptr = tr.get();
 
     std::lock_guard<std::mutex> lock(mutex);
     trampolines.emplace(addr, std::move(tr));
-    parent->invalidate_jit_cache(addr, 12);
+    parent->invalidate_jit_cache(addr, 4);
+}
+
+Trampoline *Debugger::get_trampoline(Address addr) {
+    const auto lock = std::lock_guard(mutex);
+    const auto it = trampolines.find(addr);
+    if (it == trampolines.end())
+        return nullptr;
+    return it->second.get();
 }
 
 void Debugger::remove_trampoline(MemState &mem, uint32_t addr) {
@@ -96,9 +101,9 @@ void Debugger::remove_trampoline(MemState &mem, uint32_t addr) {
     const auto it = trampolines.find(addr);
     if (it != trampolines.end()) {
         uint32_t *insts = reinterpret_cast<uint32_t *>(&mem.memory[addr]);
-        memcpy(insts, it->second->original, 12);
+        insts[0] = it->second->original;
         trampolines.erase(it);
-        parent->invalidate_jit_cache(addr, 12);
+        parent->invalidate_jit_cache(addr, 4);
     }
 }
 
