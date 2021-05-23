@@ -188,8 +188,6 @@ bool USSETranslatorVisitor::smp(
     case 3: {
         // TODO: figure out what to fill here
         //store(inst.opr.dest, stub, 0b1111);
-
-        inst.opr.dest.num += 4;
         store(inst.opr.dest, result, 0b1111);
         break;
     }
