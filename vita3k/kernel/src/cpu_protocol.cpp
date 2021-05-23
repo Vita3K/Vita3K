@@ -47,10 +47,6 @@ Address CPUProtocol::get_watch_memory_addr(Address addr) {
     return kernel->debugger.get_watch_memory_addr(addr);
 }
 
-std::vector<ModuleRegion> &CPUProtocol::get_module_regions() {
-    return kernel->module_regions;
-}
-
 ExclusiveMonitorPtr CPUProtocol::get_exlusive_monitor() {
     return kernel->exclusive_monitor;
 }

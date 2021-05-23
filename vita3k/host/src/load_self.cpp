@@ -428,11 +428,6 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     for (const auto [seg, infos] : segment_reloc_info) {
         LOG_INFO("Loaded module segment {} @ [0x{:08X} - 0x{:08X} / 0x{:08X}] (size: 0x{:08X}) of module {}", seg, infos.addr, infos.addr + infos.size, infos.p_vaddr, infos.size, self_path);
-        kernel.module_regions.push_back({ module_info->module_nid,
-            module_info->name,
-            infos.addr,
-            static_cast<uint32_t>(infos.size),
-            infos.p_vaddr });
     }
 
     const SceKernelModuleInfoPtr sceKernelModuleInfo = std::make_shared<SceKernelModuleInfo>();

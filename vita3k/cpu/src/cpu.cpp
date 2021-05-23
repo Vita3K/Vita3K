@@ -191,15 +191,6 @@ void invalidate_jit_cache(CPUState &state, Address start, size_t length) {
     state.cpu->invalidate_jit_cache(start, length);
 }
 
-std::unique_ptr<ModuleRegion> get_region(CPUState &state, Address addr) {
-    for (const auto &region : state.protocol->get_module_regions()) {
-        if (region.start <= addr && addr < region.start + region.size) {
-            return std::make_unique<ModuleRegion>(region);
-        }
-    }
-    return nullptr;
-}
-
 std::string disassemble(CPUState &state, uint64_t at, bool thumb, uint16_t *insn_size) {
     MemState &mem = *state.mem;
     const uint8_t *const code = Ptr<const uint8_t>(static_cast<Address>(at)).get(mem);

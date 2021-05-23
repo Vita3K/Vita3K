@@ -24,18 +24,9 @@ typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::unique_ptr<CPUInterface> CPUInterfacePtr;
 typedef void *ExclusiveMonitorPtr;
 
-struct ModuleRegion {
-    uint32_t nid;
-    std::string name;
-    Address start;
-    uint32_t size;
-    Address vaddr;
-};
-
 struct CPUProtocolBase {
     virtual void call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) = 0;
     virtual Address get_watch_memory_addr(Address addr) = 0;
-    virtual std::vector<ModuleRegion> &get_module_regions() = 0;
     virtual ExclusiveMonitorPtr get_exlusive_monitor() = 0;
     virtual ~CPUProtocolBase() {}
 };

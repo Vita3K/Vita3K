@@ -186,8 +186,6 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->group("Modules");
     config->add_option("--" + cfg[e_log_level] + ",-l", command_line.log_level, "Logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
         ->check(CLI::Range( 0, 6 ))->group("Logging");
-    config->add_flag("--" + cfg[e_stack_traceback] + ",-T", command_line.stack_traceback, "Stack Traceback")
-           ->group("Logging");
     config->add_flag("--" + cfg[e_log_imports] + ",-I", command_line.log_imports, "Log Imports")
         ->group("Logging");
     config->add_flag("--" + cfg[e_log_exports] + ",-E", command_line.log_exports, "Log Exports")

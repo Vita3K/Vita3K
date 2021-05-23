@@ -457,7 +457,7 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                         auto &thread = pair.second;
                         auto thread_lock = std::unique_lock(thread->mutex);
                         lock.unlock();
-                        if (thread && thread->status == ThreadStatus::suspend) {
+                        if (thread->status == ThreadStatus::suspend) {
                             thread->resume();
                             thread->status_cond.wait(thread_lock, [&]() { return thread->status != ThreadStatus::suspend; });
                         }
@@ -484,6 +484,11 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
 
                     std::this_thread::sleep_for(std::chrono::milliseconds(watch_delay));
                 }
+
+                auto thread = state.kernel.get_thread(state.gdb.inferior_thread);
+                LOG_INFO("GDB Breakpoint triger (thread name: {}, thread_id: {})", thread->name, thread->id);
+                LOG_INFO("PC: {} LR: {}", read_pc(*thread->cpu), read_lr(*thread->cpu));
+                LOG_INFO("{}", thread->log_stack_traceback(state.kernel, state.mem));
 
                 // stop the world
                 {
