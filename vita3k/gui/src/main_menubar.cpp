@@ -51,8 +51,18 @@ static void draw_emulation_menu(GuiState &gui, HostState &host) {
     auto lang = gui.lang.main_menubar;
     const auto is_lang = !lang.empty();
     if (ImGui::BeginMenu(is_lang ? lang["emulation"].c_str() : "Emulation")) {
-        if (ImGui::MenuItem(is_lang ? lang["load_last_app"].c_str() : "Load last App", host.cfg.last_app.c_str(), false, !host.cfg.last_app.empty() && host.io.title_id.empty()))
-            pre_load_app(gui, host, host.cfg.show_live_area_screen, host.cfg.last_app);
+        if (ImGui::BeginMenu(is_lang ? lang["last_loaded_apps"].c_str() : "Last loaded Apps")) {
+            if (!host.cfg.last_loaded_apps.empty()) {
+                for (const auto &app : host.cfg.last_loaded_apps) {
+                    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+                    if (ImGui::MenuItem(get_app_index(gui, app)->title.c_str(), app.c_str(), false))
+                        pre_load_app(gui, host, host.cfg.show_live_area_screen, app);
+                    ImGui::PopStyleColor();
+                }
+            } else
+                ImGui::MenuItem("Empty", nullptr, false, false);
+            ImGui::EndMenu();
+        }
         ImGui::EndMenu();
     }
 }

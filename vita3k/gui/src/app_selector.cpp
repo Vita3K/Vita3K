@@ -86,6 +86,19 @@ void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &
     }
 }
 
+static void update_last_loaded_apps(HostState &host, const std::string &app_path) {
+    const auto last_loaded_apps_index = std::find(host.cfg.last_loaded_apps.begin(), host.cfg.last_loaded_apps.end(), app_path);
+    if ((last_loaded_apps_index != host.cfg.last_loaded_apps.end()) && (host.cfg.last_loaded_apps.front() != app_path))
+        host.cfg.last_loaded_apps.erase(last_loaded_apps_index);
+    if (last_loaded_apps_index == host.cfg.last_loaded_apps.end())
+        host.cfg.last_loaded_apps.insert(host.cfg.last_loaded_apps.begin(), app_path);
+    if (host.cfg.last_loaded_apps.size() > 10)
+        host.cfg.last_loaded_apps.pop_back();
+
+    if (host.cfg.overwrite_config)
+        config::serialize_config(host.cfg, host.cfg.config_path);
+}
+
 static std::map<std::string, uint64_t> last_time;
 
 void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::string &app_path) {
@@ -110,10 +123,7 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
                 gui.live_area.app_selector = false;
                 gui.live_area.live_area_screen = false;
                 host.io.app_path = app_path;
-                if (host.cfg.overwrite_config && (host.cfg.last_app != app_path)) {
-                    host.cfg.last_app = app_path;
-                    config::serialize_config(host.cfg, host.cfg.config_path);
-                }
+                update_last_loaded_apps(host, app_path);
             }
         } else {
             gui.live_area.live_area_screen = false;
@@ -173,10 +183,7 @@ void draw_app_close(GuiState &gui, HostState &host) {
     ImGui::SameLine(0, 20.f * SCALE.x);
     if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
         const auto app_path = gui.apps_list_opened[gui.current_app_selected];
-        if (host.cfg.overwrite_config && (host.cfg.last_app != app_path)) {
-            host.cfg.last_app = app_path;
-            config::serialize_config(host.cfg, host.cfg.config_path);
-        }
+        update_last_loaded_apps(host, app_path);
         host.kernel.stop_all_threads();
         host.load_app_path = app_path;
         host.load_exec = true;

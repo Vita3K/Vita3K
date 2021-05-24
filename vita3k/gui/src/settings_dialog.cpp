@@ -127,11 +127,14 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
 
     if (fs::exists(CUSTOM_CONFIG_PATH)) {
         pugi::xml_document custom_config_xml;
-        if (custom_config_xml.load_file(CUSTOM_CONFIG_PATH.c_str())) {
+        if (custom_config_xml.load_file(CUSTOM_CONFIG_PATH.c_str()) && !custom_config_xml.child("config").empty()) {
             config = {};
+            // Config
+            const auto config_child = custom_config_xml.child("config");
+
             // Load Core Config
-            if (!custom_config_xml.child("core").empty()) {
-                const auto core_child = custom_config_xml.child("core");
+            if (!config_child.child("core").empty()) {
+                const auto core_child = config_child.child("core");
                 config.lle_kernel = core_child.attribute("lle-kernel").as_bool();
                 config.auto_lle = core_child.attribute("auto-lle").as_bool();
                 for (auto &m : core_child.child("lle-modules"))
@@ -139,15 +142,15 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
             }
 
             // Load CPU Config
-            if (!custom_config_xml.child("cpu").empty()) {
-                const auto cpu_child = custom_config_xml.child("cpu");
+            if (!config_child.child("cpu").empty()) {
+                const auto cpu_child = config_child.child("cpu");
                 config.cpu_backend = cpu_child.attribute("cpu-backend").as_string();
                 config.cpu_opt = cpu_child.attribute("cpu-opt").as_bool();
             }
 
             // Load Emulator Config
-            if (!custom_config_xml.child("emulator").empty()) {
-                const auto emulator_child = custom_config_xml.child("emulator");
+            if (!config_child.child("emulator").empty()) {
+                const auto emulator_child = config_child.child("emulator");
                 config.disable_at9_decoder = emulator_child.attribute("disable-at9-decoder").as_bool();
                 config.disable_ngs = emulator_child.attribute("disable-ngs").as_bool();
                 config.video_playing = emulator_child.attribute("video-playing").as_bool();
@@ -155,7 +158,7 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
 
             return true;
         } else {
-            LOG_ERROR("Custom config XML found is corrupted on path: {}", CUSTOM_CONFIG_PATH.string());
+            LOG_ERROR("Custom config XML found is corrupted or invalid in path: {}", CUSTOM_CONFIG_PATH.string());
             fs::remove(CUSTOM_CONFIG_PATH);
             return false;
         }
@@ -192,8 +195,11 @@ static void save_config(GuiState &gui, HostState &host) {
         declarationUser.append_attribute("version") = "1.0";
         declarationUser.append_attribute("encoding") = "utf-8";
 
+        // Config
+        auto config_child = custom_config_xml.append_child("config");
+
         // Core
-        auto core_child = custom_config_xml.append_child("core");
+        auto core_child = config_child.append_child("core");
         core_child.append_attribute("lle-kernel") = config.lle_kernel;
         core_child.append_attribute("auto-lle") = config.auto_lle;
         auto enable_module = core_child.append_child("lle-modules");
@@ -201,12 +207,12 @@ static void save_config(GuiState &gui, HostState &host) {
             enable_module.append_child("module").append_child(pugi::node_pcdata).set_value(m.c_str());
 
         // CPU
-        auto cpu_child = custom_config_xml.append_child("cpu");
+        auto cpu_child = config_child.append_child("cpu");
         cpu_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
         cpu_child.append_attribute("cpu-opt") = config.cpu_opt;
 
         // Emulator
-        auto emulator_child = custom_config_xml.append_child("emulator");
+        auto emulator_child = config_child.append_child("emulator");
         emulator_child.append_attribute("disable-at9-decoder") = config.disable_at9_decoder;
         emulator_child.append_attribute("disable-ngs") = config.disable_ngs;
         emulator_child.append_attribute("video-playing") = config.video_playing;
@@ -259,7 +265,16 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.48f));
     const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
     auto &settings_dialog = is_custom_config ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
-    ImGui::Begin(is_custom_config ? ("Custom settings for " + host.app_path).c_str() : "Settings", &settings_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##settings", &settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::PushFont(gui.vita_font);
+    ImGui::SetWindowFontScale(0.65f);
+    const auto title = is_custom_config ? fmt::format("Settings: {} [{}]", get_app_index(gui, host.app_path)->title, host.app_path).c_str() : "Settings";
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title).x / 2.f));
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, title);
+    ImGui::PopFont();
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::SetWindowFontScale(1.f);
     ImGui::BeginTabBar("SettingsTabBar", ImGuiTabBarFlags_None);
     std::ostringstream link;
 

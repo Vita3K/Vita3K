@@ -8,7 +8,7 @@
 		<install_zip>安装 .zip 或者 .vpk</install_zip>
 	</file>
 	<emulation name="仿真拟">
-		<load_last_app>打开最后运行的APP</load_last_app>
+		<last_loaded_apps>上次加载的应用</last_loaded_apps>
 	</emulation>
 	<configuration name="配置">
 		<settings>设置</settings>

@@ -9,7 +9,7 @@
 		<install_license>Installer une License</install_license>
 	</file>
 	<emulation name="Émulation">
-		<load_last_app>Charger la Dernière App</load_last_app>
+		<last_loaded_apps>Dernières Apps chargées</last_loaded_apps>
 	</emulation>
 	<configuration name="Configuration">
 		<settings>Paramètres</settings>
