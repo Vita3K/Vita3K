@@ -57,7 +57,7 @@ struct Debugger {
 
 private:
     std::mutex mutex;
-    KernelState *parent;
+    KernelState *parent = nullptr;
     WatchMemoryAddrs watch_memory_addrs;
     Breakpoints breakpoints;
     Trampolines trampolines;
