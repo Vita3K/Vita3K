@@ -8,6 +8,7 @@ std::size_t Module::get_buffer_parameter_size() const {
     return 0;
 }
 
-void Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
+bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
+    return false;
 }
 } // namespace ngs::null

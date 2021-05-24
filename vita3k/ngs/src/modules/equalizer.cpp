@@ -9,7 +9,7 @@ std::size_t Module::get_buffer_parameter_size() const {
     return default_normal_parameter_size;
 }
 
-void Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
+bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
     // TODO: Proper implement it, for now just lower volume lol
     float *product_before = reinterpret_cast<float *>(data.parent->products[0].data);
 
@@ -23,5 +23,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     data.parent->products[1] = data.parent->products[0];
     data.parent->products[2] = data.parent->products[0];
     data.parent->products[3] = data.parent->products[0];
+
+    return false;
 }
 } // namespace ngs::equalizer
