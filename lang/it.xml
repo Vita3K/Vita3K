@@ -13,7 +13,7 @@
 		<install_zip>Installa un .zip, .vpk</install_zip>
 	</file>
 	<emulation name="Emulazione">
-		<load_last_app>Carica l'Ultima App</load_last_app>
+		<last_loaded_apps>Ultime app caricate</last_loaded_apps>
 	</emulation>
 	<configuration name="Configurazione">
 		<settings>Impostazioni</settings>

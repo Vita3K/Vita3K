@@ -87,7 +87,7 @@ void init_lang(GuiState &gui, HostState &host) {
                 // Emulation Menu
                 if (!main_menubar.child("emulation").empty()) {
                     lang_main_menubar["emulation"] = main_menubar.child("emulation").attribute("name").as_string();
-                    lang_main_menubar["load_last_app"] = main_menubar.child("emulation").child("load_last_app").text().as_string();
+                    lang_main_menubar["last_loaded_apps"] = main_menubar.child("emulation").child("last_loaded_apps").text().as_string();
                 }
 
                 // Configuration Menu
