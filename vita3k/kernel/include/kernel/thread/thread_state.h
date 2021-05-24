@@ -86,6 +86,7 @@ struct ThreadState {
     int stack_size;
     Block tls;
     int priority;
+    uint64_t start_tick;
 
     CPUStatePtr cpu;
     ThreadStatus status = ThreadStatus::dormant;

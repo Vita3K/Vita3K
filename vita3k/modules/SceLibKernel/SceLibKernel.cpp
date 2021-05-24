@@ -1161,6 +1161,7 @@ EXPORT(int, sceKernelGetThreadInfo, SceUID thid, SceKernelThreadInfo *info) {
     info->initPriority = thread->priority;
     info->currentPriority = thread->priority;
     info->entry = SceKernelThreadEntry(thread->entry_point);
+    info->runClocks = rtc_get_ticks(host.kernel.base_tick.tick) - thread->start_tick;
 
     return SCE_KERNEL_OK;
 }
