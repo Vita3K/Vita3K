@@ -1,3 +1,4 @@
+#include <cpu/disasm/functions.h>
 #include <cpu/impl/dynarmic_cpu.h>
 #include <cpu/impl/interface.h>
 #include <cpu/state.h>
@@ -5,6 +6,8 @@
 #include <util/log.h>
 
 #include <mem/ptr.h>
+
+#include <dynarmic/frontend/A32/ir_emitter.h>
 
 class ArmDynarmicCP15 : public Dynarmic::A32::Coprocessor {
     uint32_t tpidruro;
@@ -79,9 +82,27 @@ public:
     ~ArmDynarmicCallback() {}
 
     uint32_t MemoryReadCode(Dynarmic::A32::VAddr addr) override {
-        if (cpu->log_read)
-            LOG_TRACE("Fetch at addr 0x{:X}", addr);
+        if (cpu->log_mem)
+            LOG_TRACE("Instruction fetch at addr 0x{:X}", addr);
         return MemoryRead32(addr);
+    }
+
+    static void TraceInstruction(uint64_t self_, uint64_t address, uint64_t is_thumb) {
+        ArmDynarmicCallback &self = *reinterpret_cast<ArmDynarmicCallback *>(self_);
+
+        std::string disassembly = [&]() -> std::string {
+            if (!address || !Ptr<uint32_t>{ (uint32_t)address }.valid(*self.parent->mem)) {
+                return "invalid address";
+            }
+            return disassemble(*self.parent, address);
+        }();
+        LOG_TRACE("{} ({}): {} {}", log_hex(self_), self.parent->thread_id, log_hex(address), disassembly);
+    }
+
+    void PreCodeTranslationHook(bool is_thumb, Dynarmic::A32::VAddr pc, Dynarmic::A32::IREmitter &ir) override {
+        if (cpu->log_code) {
+            ir.CallHostFunction(&TraceInstruction, ir.Imm64((uint64_t)this), ir.Imm64(pc), ir.Imm64(is_thumb));
+        }
     }
 
     template <typename T>
@@ -93,7 +114,7 @@ public:
         }
 
         T ret = *ptr.get(*parent->mem);
-        if (cpu->log_read) {
+        if (cpu->log_mem) {
             LOG_TRACE("Read uint{}_t at address: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, ret);
         }
         return ret;
@@ -119,12 +140,12 @@ public:
     void MemoryWrite(Dynarmic::A32::VAddr addr, T value) {
         Ptr<T> ptr{ addr };
         if (!ptr || !ptr.valid(*parent->mem)) {
-            LOG_TRACE("Invalid write of uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
+            LOG_WARN("Invalid write of uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
             return;
         }
 
         *ptr.get(*parent->mem) = value;
-        if (cpu->log_write) {
+        if (cpu->log_mem) {
             LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}", sizeof(T) * 8, addr, value);
         }
     }
@@ -227,15 +248,15 @@ public:
     }
 };
 
-std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit(Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt) {
+std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     Dynarmic::A32::UserConfig config;
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
-    config.fastmem_pointer = (log_read || log_write) ? nullptr : parent->mem->memory.get();
+    config.fastmem_pointer = log_mem ? nullptr : parent->mem->memory.get();
     config.hook_hint_instructions = true;
     config.global_monitor = monitor;
     config.coprocessors[15] = cp15;
-    config.page_table = (log_read || log_write) ? nullptr : parent->mem->pages_cpu.get();
+    config.page_table = log_mem ? nullptr : parent->mem->pages_cpu.get();
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
 
@@ -247,9 +268,11 @@ DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, Address pc, 
     , fallback(state, pc, sp)
     , cb(std::make_unique<ArmDynarmicCallback>(*state, *this))
     , cp15(std::make_shared<ArmDynarmicCP15>())
+    , monitor(monitor)
+    , cpu_opt(cpu_opt)
     , ep(pc)
     , core_id(processor_id) {
-    jit = make_jit(monitor, cpu_opt);
+    jit = make_jit();
 
     set_pc(pc);
     set_lr(pc);
@@ -285,17 +308,27 @@ void DynarmicCPU::trigger_breakpoint() {
 }
 
 void DynarmicCPU::set_log_code(bool log) {
+    if (log_code == log)
+        return;
+
+    log_code = log;
+    jit = make_jit();
 }
 
 void DynarmicCPU::set_log_mem(bool log) {
+    if (log_mem == log)
+        return;
+
+    log_mem = log;
+    jit = make_jit();
 }
 
 bool DynarmicCPU::get_log_code() {
-    return false;
+    return log_code;
 }
 
 bool DynarmicCPU::get_log_mem() {
-    return false;
+    return log_mem;
 }
 
 void DynarmicCPU::stop() {
