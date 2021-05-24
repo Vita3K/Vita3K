@@ -863,7 +863,11 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     int highest_dest_write_offset = -1; ///< Highest offset of the component to write.
 
     for (int i = 0; i < 4; i++) {
-        const int swizzle_bit = (int)op.swizzle[i] - (int)SwizzleChannel::_X;
+        if (static_cast<int>(op.swizzle[i]) >= static_cast<int>(SwizzleChannel::_0)) {
+            continue;
+        }
+
+        const int swizzle_bit = static_cast<int>(op.swizzle[i]) - static_cast<int>(SwizzleChannel::_X);
 
         if (dest_mask & (1 << i)) {
             lowest_dest_write_offset = std::min(lowest_dest_write_offset, swizzle_bit);
