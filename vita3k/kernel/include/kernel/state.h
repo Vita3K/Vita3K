@@ -174,5 +174,5 @@ struct KernelState {
     std::shared_ptr<SceKernelModuleInfo> find_module_by_addr(Address address);
 
 private:
-    std::atomic<SceUID> next_uid{ 0 };
+    std::atomic<SceUID> next_uid{ 1 };
 };
