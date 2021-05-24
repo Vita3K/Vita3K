@@ -80,6 +80,8 @@ SceUID ThreadState::create(Ptr<const void> entry_point, KernelState &kernel, Mem
         thread->priority = init_priority;
     }
     thread->stack_size = stack_size;
+    thread->start_tick = rtc_get_ticks(kernel.base_tick.tick);
+
     auto alloc_name = fmt::format("Stack for thread {} (#{})", name, thid);
     thread->stack = alloc_block(mem, stack_size, alloc_name.c_str());
     const Address stack_top = thread->stack.get() + stack_size;
