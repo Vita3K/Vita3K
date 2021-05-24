@@ -97,7 +97,6 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
         thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::run; });
     }
 
-    primitive_lock.lock();
     return SCE_KERNEL_OK;
 }
 
