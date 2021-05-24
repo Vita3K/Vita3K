@@ -129,5 +129,7 @@ Address Debugger::get_watch_memory_addr(Address addr) {
 }
 
 void Debugger::update_watches() {
+    if (!parent)
+        return;
     parent->set_memory_watch(watch_memory);
 }
