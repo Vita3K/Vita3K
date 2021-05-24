@@ -48,16 +48,17 @@ void Module::on_state_change(ModuleData &data, const VoiceState previous) {
     }
 }
 
-void Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
+bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
     Parameters *params = data.get_parameters<Parameters>(mem);
     State *state = data.get_state<State>();
 
     assert(state);
 
     if ((state->current_buffer == -1) || (params->buffer_params[state->current_buffer].buffer.address() == 0)) {
-        return;
+        return true;
     }
 
+    bool finished = false;
     // making this maybe to early...
     if (!decoder || (params->config_data != last_config)) {
         decoder = std::make_unique<Atrac9DecoderState>(params->config_data);
@@ -80,6 +81,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
                     if (state->current_buffer == -1) {
                         data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_CALLBACK_REASON_DONE_ALL, 0, 0);
+                        finished = true;
                         // TODO: Free all occupied input routes
                         //unroute_occupied(mem, voice);
                     } else {
@@ -113,6 +115,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
             if ((state->current_buffer == -1) || (bufparam.bytes_count == 0)) {
                 // Fill it then break
                 data.fill_to_fit_granularity();
+                finished = true;
                 break;
             }
 
@@ -189,5 +192,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
     state->decoded_samples_pending = (state->decoded_samples_pending < samples_to_be_passed) ? 0 : (state->decoded_samples_pending - samples_to_be_passed);
     state->decoded_passed += samples_to_be_passed;
+
+    return finished;
 }
 }; // namespace ngs::atrac9

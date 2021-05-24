@@ -20,9 +20,10 @@ void Module::on_state_change(ModuleData &data, const VoiceState previous) {
     }
 }
 
-void Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
+bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
     Parameters *params = data.get_parameters<Parameters>(mem);
     State *state = data.get_state<State>();
+    bool finished = false;
 
     std::uint8_t *data_ptr = data.extra_storage.data();
 
@@ -36,7 +37,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
             data.extra_storage.erase(data.extra_storage.begin(), data.extra_storage.begin() + state->decoded_gran_passed * 8);
         } else {
             if ((state->current_buffer == -1) || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
-                return;
+                return true;
             }
         }
 
@@ -75,6 +76,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
             state->decoded_gran_pending = samples_to_take_per_channel;
 
             if ((state->current_buffer == -1) || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
+                finished = true;
                 break;
             } else {
                 if (state->current_byte_position_in_buffer >= params->buffer_params[state->current_buffer].bytes_count) {
@@ -92,6 +94,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
                             if (state->current_buffer == -1) {
                                 data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_CALLBACK_REASON_DONE_ALL, 0, 0);
+                                finished = true;
                                 // TODO: Free all occupied input routes
                                 //unroute_occupied(mem, voice);
                             } else {
@@ -123,5 +126,7 @@ void Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     state->decoded_gran_passed += gran_to_be_passed;
 
     state->samples_generated_since_key_on += gran_to_be_passed * 2;
+
+    return finished;
 }
 } // namespace ngs::player

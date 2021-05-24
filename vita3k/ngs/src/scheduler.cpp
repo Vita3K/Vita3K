@@ -124,15 +124,15 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         // Modify the state, in peace....
         const std::lock_guard<std::mutex> guard(*voice->voice_lock);
         std::memset(voice->products, 0, sizeof(voice->products));
-        const auto is_key_off = voice->state == ngs::VOICE_STATE_KEY_OFF;
 
+        const bool is_key_off = voice->state == ngs::VOICE_STATE_KEY_OFF;
+        bool finished = false;
         for (std::size_t i = 0; i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {
-                voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i]);
+                finished |= voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i]);
             }
         }
-
-        if (is_key_off)
+        if (is_key_off || finished)
             stop(voice);
 
         for (std::size_t i = 0; i < voice->rack->vdef->output_count(); i++) {
