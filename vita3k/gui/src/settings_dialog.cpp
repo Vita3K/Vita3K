@@ -167,6 +167,10 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
     return false;
 }
 
+static CPUBackend set_cpu_backend(std::string &cpu_backend) {
+    return cpu_backend == "Unicorn" ? CPUBackend::Unicorn : CPUBackend::Dynarmic;
+}
+
 void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
     if (!get_custom_config(gui, host, app_path)) {
         config.cpu_backend = host.cfg.cpu_backend;
@@ -178,7 +182,8 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
         config.disable_ngs = host.cfg.disable_ngs;
         config.video_playing = host.cfg.video_playing;
     }
-    config_cpu_backend = config.cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
+    config_cpu_backend = set_cpu_backend(config.cpu_backend);
+    host.app_path = app_path;
     get_modules_list(gui, host);
     host.display.imgui_render = true;
 }
@@ -255,7 +260,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
     }
     // No change it if app already running
     if (host.io.title_id.empty()) {
-        host.kernel.cpu_backend = host.cfg.current_config.cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
+        host.kernel.cpu_backend = set_cpu_backend(host.cfg.current_config.cpu_backend);
         host.kernel.cpu_opt = host.cfg.current_config.cpu_opt;
     }
 }
@@ -653,10 +658,11 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::Button("Close", BUTTON_SIZE))
         settings_dialog = false;
     ImGui::SameLine(0, 20.f * host.dpi_scale);
-    if (ImGui::Button(!host.io.title_id.empty() ? "Save & Apply" : "Save", BUTTON_SIZE)) {
+    const auto is_apply = !host.io.app_path.empty() && (!is_custom_config || (host.app_path == host.io.app_path));
+    if (ImGui::Button(is_apply ? "Save & Apply" : "Save", BUTTON_SIZE)) {
         save_config(gui, host);
-        if (!host.io.title_id.empty())
-            set_config(gui, host, host.app_path);
+        if (is_apply)
+            set_config(gui, host, host.io.app_path);
     }
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Click on Save is required to keep changes.");
