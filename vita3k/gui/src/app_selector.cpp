@@ -559,10 +559,11 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     continue;
                 const auto POS_ICON = ImGui::GetCursorPosY();
                 const auto GRID_INIT_POS = ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE / 2.f) - (10.f * SCALE.x);
+                const auto ICON_SIZE = host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size);
                 if (apps_icon.find(app.path) != apps_icon.end()) {
                     if (host.cfg.apps_list_grid)
                         ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
-                    ImGui::Image(apps_icon[app.path], host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size));
+                    ImGui::Image(apps_icon[app.path], ICON_SIZE);
                 }
                 ImGui::SetCursorPosY(POS_ICON);
                 if (host.cfg.apps_list_grid)
@@ -577,7 +578,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                 if (IS_CUSTOM_CONFIG) {
                     if (host.cfg.apps_list_grid)
                         ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
-                    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (ImGui::GetFontSize() + 26.f));
+                    ImGui::SetCursorPosY(POS_ICON + ICON_SIZE.y - ImGui::GetFontSize() - (7.8f * host.dpi_scale));
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                     ImGui::Button("CC", ImVec2(40.f * SCALE.x, 0.f));
                     ImGui::PopStyleColor();

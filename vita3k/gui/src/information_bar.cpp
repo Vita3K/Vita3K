@@ -186,7 +186,8 @@ void init_notice_info(GuiState &gui, HostState &host) {
                         });
                         notice_list[user.first].erase(notice_index);
                         save_notice_list(host);
-                    }
+                    } else
+                        notice_info_new[notice.date] = notice_list_new[user.first][notice.date];
                 }
             }
         }
@@ -247,6 +248,10 @@ void save_notice_list(HostState &host) {
         auto user_child = notice_child.append_child("user");
         user_child.append_attribute("id") = user.first.c_str();
         user_child.append_attribute("count_new") = notice_list_count_new[user.first];
+
+        std::sort(notice_list[user.first].begin(), notice_list[user.first].end(), [&](const NoticeList &na, const NoticeList &nb) {
+            return na.date > nb.date;
+        });
 
         for (const auto &notice : user.second) {
             auto info_child = user_child.append_child("info");
@@ -397,7 +402,7 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
             const auto SELECT_SIZE = ImVec2(POPUP_SIZE.x, 80.f * SCALE.y);
 
             for (const auto &notice : notice_info) {
-                if (notice.date != notice_info[0].date)
+                if (notice.date != notice_info.front().date)
                     ImGui::Separator();
                 const auto ICON_POS = ImGui::GetCursorPos();
                 if (gui.notice_info_icon.find(notice.date) != gui.notice_info_icon.end()) {
@@ -412,7 +417,7 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
                 ImGui::PushStyleColor(ImGuiCol_Header, SELECT_COLOR);
                 ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECT_COLOR_HOVERED);
                 ImGui::PushStyleColor(ImGuiCol_HeaderActive, SELECT_COLOR_ACTIVE);
-                if (ImGui::Selectable("##icon", notice_info_new[notice.date], host.io.app_path.empty() || ((notice.type == "content") && (notice.group == "theme")) || (notice.type == "trophy") ? ImGuiSelectableFlags_SpanAllColumns : ImGuiSelectableFlags_Disabled, SELECT_SIZE)) {
+                if (ImGui::Selectable("##icon", notice_info_new[notice.date], ImGuiSelectableFlags_SpanAllColumns, SELECT_SIZE)) {
                     clean_notice_info_new(host.io.user_id);
                     save_notice_list(host);
                     if (notice.type == "content") {
