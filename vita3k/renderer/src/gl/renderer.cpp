@@ -413,15 +413,6 @@ void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *
         context.render_target = reinterpret_cast<const GLRenderTarget *>(context.current_render_target);
     }
 
-    if (context.record.fragment_program && context.record.fragment_program.get(mem)->is_maskupdate) {
-        uint8_t mask = context.record.writing_mask ? 0xFF : 0;
-        set_uniform_buffer(context, false, 14, sizeof(mask), &mask, false);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->maskbuffer[0]);
-    } else {
-        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
-    }
-
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glClearDepth(context.record.depth_stencil_surface.backgroundDepth);
@@ -452,6 +443,7 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
         return;
     }
 
+    glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
     glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(stride_in_pixels));
 
     // TODO Need more check into this

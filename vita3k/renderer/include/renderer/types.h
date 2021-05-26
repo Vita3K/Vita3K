@@ -99,8 +99,9 @@ struct GxmRecordState {
     SceGxmFragmentProgramMode front_side_fragment_program_mode = SCE_GXM_FRAGMENT_PROGRAM_ENABLED;
     SceGxmFragmentProgramMode back_side_fragment_program_mode = SCE_GXM_FRAGMENT_PROGRAM_ENABLED;
 
-    bool writing_mask = false;
+    float writing_mask = 0.0f;
     bool viewport_flat = false;
+    bool is_maskupdate = false;
 };
 
 struct Context {
