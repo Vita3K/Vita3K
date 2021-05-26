@@ -100,7 +100,7 @@ void initialize_fiber(HostState &host, const ThreadStatePtr thread, SceFiber *fi
     fiber->entry = entry;
     strncpy(fiber->name, name, 32);
     fiber->argOnInitialize = argOnInitialize;
-    fiber->argOnRun = 0;
+    fiber->argOnRun = nullptr;
     fiber->addrContext = addrContext.address();
     fiber->sizeContext = sizeContext;
     fiber->cpu = new CPUContext;
