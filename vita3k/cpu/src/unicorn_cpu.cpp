@@ -344,7 +344,7 @@ CPUContext UnicornCPU::save_context() {
     }
     ctx.cpu_registers[13] = get_sp();
     ctx.cpu_registers[14] = get_lr();
-    ctx.cpu_registers[15] = get_pc();
+    ctx.set_pc(is_thumb_mode() ? get_pc() | 1 : get_pc());
 
     for (size_t i = 0; i < ctx.fpu_registers.size(); i++) {
         ctx.fpu_registers[i] = get_float_reg(i);
@@ -371,7 +371,7 @@ void UnicornCPU::load_context(CPUContext ctx) {
     }
     set_sp(ctx.get_sp());
     set_lr(ctx.get_lr());
-    set_pc(ctx.get_pc());
+    set_pc(ctx.thumb() ? ctx.get_pc() | 1 : ctx.get_pc());
 }
 
 bool UnicornCPU::hit_breakpoint() {
