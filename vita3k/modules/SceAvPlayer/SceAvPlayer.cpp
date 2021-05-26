@@ -249,16 +249,13 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         const uint32_t file_size = host.kernel.run_guest_function(player_info->file_manager.file_size.address(), { player_info->file_manager.user_data });
         auto remaining = file_size;
         uint32_t offset = 0;
-        const Ptr<uint32_t> buf_size_ptr(stack_alloc(*thread->cpu, 4));
         while (remaining) {
             const auto buf_size = std::min((uint32_t)KB(512), remaining);
-            *buf_size_ptr.get(host.mem) = buf_size;
-            host.kernel.run_guest_function(player_info->file_manager.read_file.address(), { player_info->file_manager.user_data, buf, offset, 0 });
+            host.kernel.run_guest_function(player_info->file_manager.read_file.address(), { player_info->file_manager.user_data, buf, offset, 0, buf_size });
             temp_file.write(buf_ptr, buf_size);
             offset += buf_size;
             remaining -= buf_size;
         }
-        stack_free(*thread->cpu, 4);
         free(host.mem, buf);
         temp_file.close();
         if (fs::file_size(temp_file_path) != file_size) {
