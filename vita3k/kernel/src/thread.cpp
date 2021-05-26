@@ -217,7 +217,7 @@ bool ThreadState::run_loop() {
 
             // Handle errors
             if (to_do == ThreadToDo::exit)
-                return true;
+                continue;
 
             if (res < 0) {
                 LOG_ERROR("Thread {} experienced a unicorn error.", name);
