@@ -336,7 +336,7 @@ uint32_t DynarmicCPU::get_sp() {
 }
 
 uint32_t DynarmicCPU::get_pc() {
-    return is_thumb_mode() ? jit->Regs()[15] | 1 : jit->Regs()[15];
+    return jit->Regs()[15];
 }
 
 void DynarmicCPU::set_reg(uint8_t idx, uint32_t val) {

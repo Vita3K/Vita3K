@@ -146,6 +146,7 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
     } else {
         auto pc = read_pc(cpu);
 
+        assert((pc & 1) == 0);
         uint32_t *const stub = Ptr<uint32_t>(Address(pc)).get(host.mem);
 
         stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)export_pc, 12);

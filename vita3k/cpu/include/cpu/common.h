@@ -37,6 +37,10 @@ struct CPUContext {
     std::array<uint32_t, 64> fpu_registers;
     uint32_t fpscr;
 
+    bool thumb() const {
+        return cpsr & 0x20;
+    }
+
     uint32_t get_sp() const {
         return cpu_registers[13];
     }
@@ -46,7 +50,7 @@ struct CPUContext {
     }
 
     uint32_t get_pc() const {
-        return cpsr & 0x20 ? cpu_registers[15] | 1 : cpu_registers[15];
+        return cpu_registers[15];
     }
 
     void set_sp(uint32_t val) {
@@ -62,7 +66,7 @@ struct CPUContext {
             cpsr |= 0x20;
             val = val & 0xFFFFFFFE;
         } else {
-            cpsr |= 0xFFFFFFDF;
+            cpsr &= 0xFFFFFFDF;
             val = val & 0xFFFFFFFC;
         }
         cpu_registers[15] = val;
