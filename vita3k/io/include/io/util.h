@@ -33,7 +33,7 @@ inline constexpr TtyType TTY_INOUT = TTY_IN | TTY_OUT;
 
 struct FileInfo {
     // The actual location on the Vita
-    const char *vita_loc;
+    std::string vita_loc;
     // The translated location on the Vita
     std::string translated;
     // The actual location in the preference path.
@@ -46,7 +46,7 @@ struct FileInfo {
     int access_mode;
 
     FileInfo()
-        : vita_loc(nullptr)
+        : vita_loc("")
         , open_mode(SCE_O_RDONLY)
         , file_mode(SCE_SO_IFREG | SCE_SO_IROTH)
         , access_mode(SCE_S_IRUSR) {}
@@ -62,7 +62,7 @@ protected:
 
 public:
     VitaStats() {
-        file_info.vita_loc = nullptr;
+        file_info.vita_loc = "";
     }
 
     VitaStats(const char *vita, const std::string &t, const fs::path &file) {
@@ -72,7 +72,7 @@ public:
     }
 
     const char *get_vita_loc() const {
-        return file_info.vita_loc;
+        return file_info.vita_loc.c_str();
     }
 
     const std::string &get_translated_path() const {
