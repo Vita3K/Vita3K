@@ -506,7 +506,7 @@ EXPORT(SceInt32, sceNgsVoiceGetOutputPatch, SceNgsVoiceHandle voice_handle, cons
     *handle = voice->patches[output_index][output_subindex];
     if (!(*handle) || (handle->get(host.mem))->output_sub_index == -1) {
         LOG_WARN("Getting non-existen output patch port {}:{}", output_index, output_subindex);
-        *handle = 0;
+        *handle = nullptr;
     }
 
     return 0;

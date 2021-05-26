@@ -34,7 +34,7 @@ COMMAND(handle_set_context) {
     } else {
         // Disable writing to this surface.
         // Data is still in render target though.
-        render_context->record.color_surface.data = 0;
+        render_context->record.color_surface.data = nullptr;
     }
 
     // Maybe we should disable writing to depth stencil too if it's null

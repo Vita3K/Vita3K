@@ -94,6 +94,11 @@ public:
         return *this;
     }
 
+    Ptr &operator=(std::nullptr_t) {
+        addr = 0;
+        return *this;
+    }
+
 private:
     Address addr;
 };
