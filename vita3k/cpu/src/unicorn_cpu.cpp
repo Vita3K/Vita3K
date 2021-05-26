@@ -122,7 +122,7 @@ void UnicornCPU::log_error_details(uc_err code) {
     LOG_ERROR("Executing: {}", disassemble(*this->parent, pc));
 }
 
-UnicornCPU::UnicornCPU(CPUState *state, Address pc, Address sp)
+UnicornCPU::UnicornCPU(CPUState *state)
     : parent(state) {
     uc_engine *temp_uc = nullptr;
     uc_err err = uc_open(UC_ARCH_ARM, UC_MODE_ARM, &temp_uc);
@@ -136,18 +136,9 @@ UnicornCPU::UnicornCPU(CPUState *state, Address pc, Address sp)
     err = uc_hook_add(uc.get(), &hh, UC_HOOK_INTR, reinterpret_cast<void *>(&intr_hook), this, 1, 0);
     assert(err == UC_ERR_OK);
 
-    err = uc_reg_write(uc.get(), UC_ARM_REG_SP, &sp);
-    assert(err == UC_ERR_OK);
-
     // Don't map the null page into unicorn so that unicorn returns access error instead of
     // crashing the whole emulator on invalid access
     err = uc_mem_map_ptr(uc.get(), state->mem->page_size, GB(4) - state->mem->page_size, UC_PROT_ALL, &state->mem->memory[state->mem->page_size]);
-    assert(err == UC_ERR_OK);
-
-    err = uc_reg_write(uc.get(), UC_ARM_REG_PC, &pc);
-    assert(err == UC_ERR_OK);
-
-    err = uc_reg_write(uc.get(), UC_ARM_REG_LR, &pc);
     assert(err == UC_ERR_OK);
 
     enable_vfp_fpu(uc.get());
@@ -378,9 +369,9 @@ void UnicornCPU::load_context(CPUContext ctx) {
     for (size_t i = 0; i < 16; i++) {
         set_reg(i, ctx.cpu_registers[i]);
     }
-    set_sp(ctx.cpu_registers[13]);
-    set_lr(ctx.cpu_registers[14]);
-    set_pc(ctx.cpu_registers[15]);
+    set_sp(ctx.get_sp());
+    set_lr(ctx.get_lr());
+    set_pc(ctx.get_pc());
 }
 
 bool UnicornCPU::hit_breakpoint() {

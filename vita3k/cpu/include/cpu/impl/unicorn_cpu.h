@@ -43,7 +43,7 @@ class UnicornCPU : public CPUInterface {
     int run_after_injected(uint32_t pc, bool thumb_mode);
 
 public:
-    UnicornCPU(CPUState *cpu, Address pc, Address sp);
+    UnicornCPU(CPUState *cpu);
 
     int execute_instructions_no_check(int num);
 

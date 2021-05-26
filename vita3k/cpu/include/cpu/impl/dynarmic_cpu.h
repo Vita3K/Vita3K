@@ -24,25 +24,23 @@ class DynarmicCPU : public CPUInterface {
     std::unique_ptr<ArmDynarmicCallback> cb;
     std::shared_ptr<ArmDynarmicCP15> cp15;
     Dynarmic::ExclusiveMonitor *monitor;
-    bool cpu_opt;
 
-    Address ep;
     Address tpidruro;
 
     std::size_t core_id = 0;
 
     bool exit_request = false;
     bool halted = false;
-
-    bool did_break = false;
+    bool break_ = false;
 
     bool log_mem = false;
     bool log_code = false;
+    bool cpu_opt;
 
     std::unique_ptr<Dynarmic::A32::Jit> make_jit();
 
 public:
-    DynarmicCPU(CPUState *state, std::size_t processor_id, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt);
+    DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt);
     ~DynarmicCPU();
     int run() override;
     void stop() override;
