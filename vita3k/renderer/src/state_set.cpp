@@ -44,6 +44,8 @@ COMMAND_SET_STATE(program) {
 
     if (is_fragment) {
         render_context->record.fragment_program = program.cast<const SceGxmFragmentProgram>();
+        const bool is_maskupdate = render_context->record.fragment_program.get(mem)->is_maskupdate;
+        render_context->record.is_maskupdate = is_maskupdate;
 
         switch (renderer.current_backend) {
         case Backend::OpenGL: {
@@ -259,21 +261,21 @@ COMMAND_SET_STATE(stencil_func) {
     stencil_state.compare_mask = helper.pop<std::uint8_t>();
     stencil_state.write_mask = helper.pop<std::uint8_t>();
 
-    if (is_front) {
-        render_context->record.front_stencil_state = stencil_state;
-    } else {
-        render_context->record.back_stencil_state = stencil_state;
-    }
-
-    if (render_context->record.fragment_program && render_context->record.fragment_program.get(mem)->is_maskupdate) {
+    if (render_context->record.is_maskupdate) {
         if (stencil_state.func == SCE_GXM_STENCIL_FUNC_NEVER) {
-            render_context->record.writing_mask = false;
+            render_context->record.writing_mask = 0.0f;
         } else if (stencil_state.func == SCE_GXM_STENCIL_FUNC_ALWAYS) {
-            render_context->record.writing_mask = true;
+            render_context->record.writing_mask = 1.0f;
         } else {
             assert(false);
         }
         return;
+    }
+
+    if (is_front) {
+        render_context->record.front_stencil_state = stencil_state;
+    } else {
+        render_context->record.back_stencil_state = stencil_state;
     }
 
     switch (renderer.current_backend) {

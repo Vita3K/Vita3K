@@ -51,6 +51,7 @@ struct GXMRenderVertUniformBlock {
 struct GXMRenderFragUniformBlock {
     float back_disabled = 0;
     float front_disabled = 0;
+    float writing_mask = 0;
 };
 
 void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
@@ -107,11 +108,19 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
 
     glUseProgram(program_id);
 
+    if (context.record.is_maskupdate) {
+        // Tests bypassed in maskupdate
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_STENCIL_TEST);
+        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->maskbuffer[0]);
+    } else {
+        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
+    }
+
     if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
         glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.render_target->color_attachment[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
     }
-
-    glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+    glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 
     for (std::uint32_t i = 0; i < SCE_GXM_MAX_TEXTURE_UNITS; i++) {
         if (context.texture_bind_list & (1 << i)) {
@@ -134,6 +143,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         frag_ublock.back_disabled = frag_ublock.front_disabled;
     else
         frag_ublock.back_disabled = (context.record.back_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) ? 1.0f : 0.0f;
+    frag_ublock.writing_mask = context.record.writing_mask;
 
     set_uniform_buffer(context, false, SCE_GXM_REAL_MAX_UNIFORM_BUFFER, sizeof(GXMRenderFragUniformBlock), &frag_ublock, false);
 
@@ -167,6 +177,12 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         glDrawElements(mode, static_cast<GLsizei>(count), gl_type, nullptr);
     } else {
         glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, nullptr, instance_count);
+    }
+
+    // Restore tests
+    if (context.record.is_maskupdate) {
+        sync_depth_data(context.record);
+        sync_stencil_data(context.record, mem);
     }
 
     context.last_draw_vertex_program_hash = context.record.vertex_program.get(mem)->renderer_data->hash;

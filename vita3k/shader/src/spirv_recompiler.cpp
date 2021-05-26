@@ -980,16 +980,18 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
-        spv::Id render_buf_type = b.makeStructType({ f32, f32 }, "GxmRenderFragBufferBlock");
+        spv::Id render_buf_type = b.makeStructType({ f32, f32, f32 }, "GxmRenderFragBufferBlock");
 
         b.addDecoration(render_buf_type, spv::DecorationBlock);
         b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
 
         b.addMemberDecoration(render_buf_type, 0, spv::DecorationOffset, 0);
         b.addMemberDecoration(render_buf_type, 1, spv::DecorationOffset, 4);
+        b.addMemberDecoration(render_buf_type, 2, spv::DecorationOffset, 8);
 
         b.addMemberName(render_buf_type, 0, "back_disabled");
         b.addMemberName(render_buf_type, 1, "front_disabled");
+        b.addMemberName(render_buf_type, 2, "writing_mask");
 
         translation_state.render_info_id = b.createVariable(spv::StorageClassUniform, render_buf_type, "renderFragInfo");
 
@@ -1055,23 +1057,22 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         b.createStore(color, out);
     }
 
-    if (!translate_state.is_maskupdate) {
-        spv::Id current_coord = translate_state.frag_coord_id;
+    // Discard masked fragments
+    spv::Id current_coord = translate_state.frag_coord_id;
+    spv::Id i32 = b.makeIntegerType(32, true);
+    current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord));
+    current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
+    spv::Id sampled_type = b.makeFloatType(32);
+    spv::Id v4 = b.makeVectorType(sampled_type, 4);
+    spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id), current_coord });
+    spv::Id rezero = b.makeFloatConstant(0.5f);
+    spv::Id zero = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
+    spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeBoolType(), { texel, zero });
+    spv::Id pred2 = b.createUnaryOp(spv::OpAll, b.makeBoolType(), pred);
+    spv::Builder::If cond_builder(pred2, spv::SelectionControlMaskNone, b);
+    b.makeDiscard();
+    cond_builder.makeEndIf();
 
-        spv::Id i32 = b.makeIntegerType(32, true);
-        current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord));
-        current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
-        spv::Id sampled_type = b.makeFloatType(32);
-        spv::Id v4 = b.makeVectorType(sampled_type, 4);
-        spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id), current_coord });
-        spv::Id rezero = b.makeFloatConstant(0.5f);
-        spv::Id zero = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
-        spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeBoolType(), { texel, zero });
-        spv::Id pred2 = b.createUnaryOp(spv::OpAll, b.makeBoolType(), pred);
-        spv::Builder::If cond_builder(pred2, spv::SelectionControlMaskNone, b);
-        b.makeDiscard();
-        cond_builder.makeEndIf();
-    }
     b.makeReturn(false);
     b.setBuildPoint(last_build_point);
 
@@ -1253,6 +1254,20 @@ static spv::Function *make_frag_initialize_function(spv::Builder &b, Translation
     return frag_init_func;
 }
 
+static void generate_update_mask_body(spv::Builder &b, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translate_state) {
+    const spv::Id writing_mask_var = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(2) });
+    const spv::Id writing_mask = b.createLoad(writing_mask_var);
+
+    const spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
+    const spv::Id mask_v = b.createCompositeConstruct(v4, { writing_mask, writing_mask, writing_mask, writing_mask });
+
+    const spv::Id out = b.createVariable(spv::StorageClassOutput, v4, "out_color");
+    translate_state.interfaces.push_back(out);
+    b.addDecoration(out, spv::DecorationLocation, 0);
+
+    b.createStore(mask_v, out);
+}
+
 static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     SpirvCode spirv;
 
@@ -1321,33 +1336,38 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     // Generate parameters
     SpirvShaderParameters parameters = create_parameters(b, program, utils, features, translation_state, program_type, texture_queries, hint_attributes);
 
-    if (program.is_fragment()) {
-        begin_hook_func = make_frag_initialize_function(b, translation_state);
-        end_hook_func = make_frag_finalize_function(b, parameters, program, utils, features, translation_state);
+    if (!translation_state.is_maskupdate) {
+        if (program.is_fragment()) {
+            begin_hook_func = make_frag_initialize_function(b, translation_state);
+            end_hook_func = make_frag_finalize_function(b, parameters, program, utils, features, translation_state);
+        } else {
+            end_hook_func = make_vert_finalize_function(b, parameters, program, utils, features, translation_state);
+        }
+
+        for (auto &var_to_reg : translation_state.var_to_regs) {
+            create_input_variable(b, parameters, utils, features, "", var_to_reg.pa ? RegisterBank::PRIMATTR : RegisterBank::SECATTR,
+                var_to_reg.offset, spv::NoResult, var_to_reg.size, var_to_reg.var, var_to_reg.dtype);
+        }
+
+        // Initialize vertex output to 0
+        if (program.is_vertex()) {
+            spv::Id i32_type = b.makeIntType(32);
+            spv::Id ite = b.createVariable(spv::StorageClassFunction, i32_type, "i");
+            spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
+            spv::Id rezero = b.makeFloatConstant(0.0f);
+            spv::Id rezero_v = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
+            utils::make_for_loop(b, ite, b.makeIntConstant(0), b.makeIntConstant(REG_O_COUNT / 4), [&]() {
+                Operand target_to_store;
+                spv::Id dest = b.createAccessChain(spv::StorageClassPrivate, parameters.outs, { b.createLoad(ite) });
+                b.createStore(rezero_v, dest);
+            });
+        }
+
+        generate_shader_body(b, parameters, program, features, utils, begin_hook_func, end_hook_func, texture_queries);
     } else {
-        end_hook_func = make_vert_finalize_function(b, parameters, program, utils, features, translation_state);
+        generate_update_mask_body(b, utils, features, translation_state);
     }
-
-    for (auto &var_to_reg : translation_state.var_to_regs) {
-        create_input_variable(b, parameters, utils, features, "", var_to_reg.pa ? RegisterBank::PRIMATTR : RegisterBank::SECATTR,
-            var_to_reg.offset, spv::NoResult, var_to_reg.size, var_to_reg.var, var_to_reg.dtype);
-    }
-
-    // Initialize vertex output to 0
-    if (program.is_vertex()) {
-        spv::Id i32_type = b.makeIntType(32);
-        spv::Id ite = b.createVariable(spv::StorageClassFunction, i32_type, "i");
-        spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
-        spv::Id rezero = b.makeFloatConstant(0.0f);
-        spv::Id rezero_v = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
-        utils::make_for_loop(b, ite, b.makeIntConstant(0), b.makeIntConstant(REG_O_COUNT / 4), [&]() {
-            Operand target_to_store;
-            spv::Id dest = b.createAccessChain(spv::StorageClassPrivate, parameters.outs, { b.createLoad(ite) });
-            b.createStore(rezero_v, dest);
-        });
-    }
-
-    generate_shader_body(b, parameters, program, features, utils, begin_hook_func, end_hook_func, texture_queries);
+    b.leaveFunction();
 
     // Add entry point to Builder
     auto entrypoint = b.addEntryPoint(execution_model, spv_func_main, entry_point_name.c_str());
