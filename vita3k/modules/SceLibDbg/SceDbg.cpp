@@ -35,7 +35,7 @@ EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop
     LOG_INFO("file {}, line {}, {}", filename, line, buffer.data());
 
     if (do_stop)
-        host.kernel.stop_all_threads();
+        host.kernel.exit_delete_all_threads();
 
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;

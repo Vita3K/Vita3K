@@ -104,7 +104,7 @@ EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize ar
 
     auto module_thread = host.kernel.create_thread(host.mem, moduleFileName);
     uint32_t result = module_thread->run_guest_function(entry_point.address(), { args, argp.address() });
-    module_thread->exit();
+    host.kernel.exit_delete_thread(module_thread);
 
     LOG_INFO("Module {} (at \"{}\") module_start returned {}", module->module_name, module->path, log_hex(result));
 

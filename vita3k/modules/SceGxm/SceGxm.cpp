@@ -1623,14 +1623,11 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     host.gxm.display_queue.maxPendingCount_ = params->displayQueueMaxPendingCount;
 
     const ThreadStatePtr main_thread = util::find(thread_id, host.kernel.threads);
-
-    const auto stack_size = SCE_KERNEL_STACK_SIZE_USER_DEFAULT; // TODO: Verify this is the correct stack size
-
-    host.gxm.display_queue_thread = ThreadState::create(Ptr<void>(read_pc(*main_thread->cpu)), host.kernel, host.mem, "SceGxmDisplayQueue", SCE_KERNEL_HIGHEST_PRIORITY_USER, stack_size, nullptr);
-
-    if (host.gxm.display_queue_thread < 0) {
+    const ThreadStatePtr display_queue_thread = host.kernel.create_thread(host.mem, "SceGxmDisplayQueue", Ptr<void>(0), SCE_KERNEL_HIGHEST_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, nullptr);
+    if (!display_queue_thread) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
+    host.gxm.display_queue_thread = display_queue_thread->id;
 
     GxmThreadParams gxm_params;
     gxm_params.mem = &host.mem;
@@ -3216,7 +3213,7 @@ EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
 
 EXPORT(int, sceGxmTerminate) {
     const ThreadStatePtr thread = lock_and_find(host.gxm.display_queue_thread, host.kernel.threads, host.kernel.mutex);
-    thread->exit();
+    host.kernel.exit_delete_thread(thread);
     return 0;
 }
 
