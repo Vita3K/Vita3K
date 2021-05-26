@@ -184,7 +184,7 @@ void draw_app_close(GuiState &gui, HostState &host) {
     if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
         const auto app_path = gui.apps_list_opened[gui.current_app_selected];
         update_last_loaded_apps(host, app_path);
-        host.kernel.stop_all_threads();
+        host.kernel.exit_delete_all_threads();
         host.load_app_path = app_path;
         host.load_exec = true;
     }

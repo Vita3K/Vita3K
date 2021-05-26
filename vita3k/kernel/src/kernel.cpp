@@ -26,6 +26,7 @@
 #include <util/find.h>
 #include <util/log.h>
 
+#include <SDL_thread.h>
 #include <spdlog/fmt/fmt.h>
 #include <util/lock_and_find.h>
 
@@ -44,6 +45,29 @@ void CorenumAllocator::free_corenum(const int num) {
 void CorenumAllocator::set_max_core_count(const std::size_t max) {
     const std::lock_guard<std::mutex> guard(lock);
     alloc.set_maximum(max);
+}
+
+// TODO implement cross platform debug thread name setter and eliminate SDL thread
+struct ThreadParams {
+    KernelState *kernel = nullptr;
+    SceUID thid = SCE_KERNEL_ERROR_ILLEGAL_THREAD_ID;
+    std::shared_ptr<SDL_semaphore> host_may_destroy_params = std::shared_ptr<SDL_semaphore>(SDL_CreateSemaphore(0), SDL_DestroySemaphore);
+};
+
+static int SDLCALL thread_function(void *data) {
+    assert(data != nullptr);
+    const ThreadParams params = *static_cast<const ThreadParams *>(data);
+    SDL_SemPost(params.host_may_destroy_params.get());
+    const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
+    thread->run_loop();
+    const uint32_t r0 = read_reg(*thread->cpu, 0);
+    thread->returned_value = r0;
+
+    std::lock_guard<std::mutex> lock(params.kernel->mutex);
+    params.kernel->threads.erase(thread->id);
+    params.kernel->corenum_allocator.free_corenum(get_processor_id(*thread->cpu));
+
+    return r0;
 }
 
 bool KernelState::init(MemState &mem, CallImportFunc call_import, CPUBackend cpu_backend, bool cpu_opt) {
@@ -91,6 +115,38 @@ ThreadStatePtr KernelState::get_thread(SceUID thread_id) {
     return it->second;
 }
 
+ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name) {
+    constexpr size_t DEFAULT_STACK_SIZE = 0x1000;
+    return create_thread(mem, name, Ptr<void>(0), SCE_KERNEL_DEFAULT_PRIORITY, DEFAULT_STACK_SIZE, nullptr);
+}
+
+ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, int stack_size, const SceKernelThreadOptParam *option) {
+    ThreadStatePtr thread = std::make_shared<ThreadState>();
+    thread->id = get_next_uid();
+    if (thread->init(*this, mem, name, entry_point, init_priority, stack_size, option) < 0)
+        return nullptr;
+    const auto lock = std::lock_guard(mutex);
+    threads.emplace(thread->id, thread);
+
+    ThreadParams params;
+    params.kernel = this;
+    params.thid = thread->id;
+
+    SDL_CreateThread(&thread_function, thread->name.c_str(), &params);
+    SDL_SemWait(params.host_may_destroy_params.get());
+    return thread;
+}
+
+void KernelState::exit_thread(ThreadStatePtr thread) {
+    thread->clear_run_queue();
+    stop(*thread->cpu);
+}
+
+void KernelState::exit_delete_thread(ThreadStatePtr thread) {
+    thread->clear_run_queue();
+    thread->stop_loop();
+}
+
 Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id, int key) {
     Ptr<Ptr<void>> address(0);
     //magic numbers taken from decompiled source. There is 0x400 unused bytes of unknown usage
@@ -103,17 +159,11 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
     return address;
 }
 
-void KernelState::stop_all_threads() {
+void KernelState::exit_delete_all_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
-    for (ThreadStatePtrs::iterator thread = threads.begin(); thread != threads.end(); ++thread) {
-        thread->second->exit();
+    for (auto [_, thread] : threads) {
+        exit_delete_thread(thread);
     }
-}
-
-ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name) {
-    constexpr size_t DEFAULT_STACK_SIZE = 0x1000;
-    const SceUID id = ThreadState::create(Ptr<void>(0), *this, mem, name, SCE_KERNEL_DEFAULT_PRIORITY, DEFAULT_STACK_SIZE, nullptr);
-    return lock_and_find(id, threads, mutex);
 }
 
 int KernelState::run_guest_function(Address callback_address, const std::vector<uint32_t> &args) {

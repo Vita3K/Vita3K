@@ -343,7 +343,7 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
                 return RET_ERROR(SCE_APPMGR_ERROR_TOO_LONG_ARGV);
         }
 
-        host.kernel.stop_all_threads();
+        host.kernel.exit_delete_all_threads();
 
         host.load_app_path = host.io.app_path;
         host.load_exec_path = exec_path;

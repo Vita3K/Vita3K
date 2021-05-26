@@ -406,10 +406,7 @@ EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) 
         return SCE_KERNEL_ERROR_RUNNING;
     }
 
-    if (argp && arglen > 0) {
-        new_argp = thread->copy_block_to_stack(host.mem, argp, arglen);
-    }
-    const int res = thread->start(host.kernel, arglen, new_argp);
+    const int res = thread->start(host.kernel, host.mem, arglen, argp);
     if (res < 0) {
         return RET_ERROR(res);
     }
@@ -629,10 +626,10 @@ EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
 
-    const SceUID thid = ThreadState::create(entry.cast<const void>(), host.kernel, host.mem, name, init_priority, options->stack_size, options->option.get(host.mem));
-    if (thid < 0)
-        return RET_ERROR(thid);
-    return thid;
+    const ThreadStatePtr thread = host.kernel.create_thread(host.mem, name, entry.cast<void>(), init_priority, options->stack_size, options->option.get(host.mem));
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_ERROR);
+    return thread->id;
 }
 
 int delay_thread(SceUInt delay_us) {
@@ -700,7 +697,7 @@ EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     if (!thread || thread->status != ThreadStatus::dormant) {
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     }
-    thread->exit();
+    host.kernel.exit_delete_thread(thread);
     return 0;
 }
 
@@ -712,7 +709,7 @@ EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
 
 EXPORT(int, sceKernelExitDeleteThread, int status) {
     const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    thread->exit();
+    host.kernel.exit_delete_thread(thread);
 
     return status;
 }

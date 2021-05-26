@@ -20,8 +20,8 @@
 #include <util/lock_and_find.h>
 
 EXPORT(int, sceKernelExitThread, int status) {
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    thread->halt();
+    const ThreadStatePtr thread = host.kernel.get_thread(thread_id);
+    host.kernel.exit_thread(thread);
 
     return status;
 }

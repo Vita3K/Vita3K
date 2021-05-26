@@ -997,7 +997,7 @@ EXPORT(int, sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
 
 EXPORT(int, sceKernelExitProcess, int res) {
     // TODO Handle exit code?
-    host.kernel.stop_all_threads();
+    host.kernel.exit_delete_all_threads();
 
     return SCE_KERNEL_OK;
 }
