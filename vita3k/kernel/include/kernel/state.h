@@ -162,6 +162,7 @@ struct KernelState {
     }
 
     bool init(MemState &mem, CallImportFunc call_import, CPUBackend cpu_backend, bool cpu_opt);
+    void load_process_param(MemState &mem, Ptr<uint32_t> ptr);
     ThreadStatePtr create_thread(MemState &mem, const char *name);
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, int stack_size, const SceKernelThreadOptParam *option);
     void exit_thread(ThreadStatePtr thread);

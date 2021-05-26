@@ -86,6 +86,16 @@ bool KernelState::init(MemState &mem, CallImportFunc call_import, CPUBackend cpu
     return true;
 }
 
+void KernelState::load_process_param(MemState &mem, Ptr<uint32_t> ptr) {
+    const SceProcessParam *param = ptr.cast<SceProcessParam>().get(mem);
+    if (param->version == 0) {
+        // Homebrews built with old vitasdk
+        process_param = nullptr;
+        return;
+    }
+    process_param = ptr;
+}
+
 void KernelState::set_memory_watch(bool enabled) {
     std::lock_guard<std::mutex> lock(mutex);
     for (const auto &thread : threads) {

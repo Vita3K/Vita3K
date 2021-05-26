@@ -236,13 +236,13 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
     return true;
 }
 
-static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const Config &cfg) {
+static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem, const Config &cfg) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
 
         if (nid == NID_PROCESS_PARAM) {
-            kernel.process_param = entry;
+            kernel.load_process_param(mem, entry);
             LOG_DEBUG("\tNID {} (SCE_PROC_PARAMS) at {}", log_hex(nid), log_hex(entry.address()));
             continue;
         }
@@ -270,7 +270,7 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
     return true;
 }
 
-static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, const MemState &mem, const Config &cfg) {
+static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, MemState &mem, const Config &cfg) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_exports_raw *const exports_begin = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_top);
     const sce_module_exports_raw *const exports_end = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_end);
@@ -294,7 +294,7 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
             LOG_INFO("Loading var exports from {}", lib_name ? lib_name : "unknown");
         }
 
-        if (!load_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, cfg)) {
+        if (!load_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem, cfg)) {
             return false;
         }
     }
