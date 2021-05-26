@@ -46,7 +46,7 @@ struct CPUContext {
     }
 
     uint32_t get_pc() const {
-        return cpu_registers[15];
+        return cpsr & 0x20 ? cpu_registers[15] | 1 : cpu_registers[15];
     }
 
     void set_sp(uint32_t val) {
@@ -58,6 +58,13 @@ struct CPUContext {
     }
 
     void set_pc(uint32_t val) {
+        if (val & 1) {
+            cpsr |= 0x20;
+            val = val & 0xFFFFFFFE;
+        } else {
+            cpsr |= 0xFFFFFFDF;
+            val = val & 0xFFFFFFFC;
+        }
         cpu_registers[15] = val;
     }
 

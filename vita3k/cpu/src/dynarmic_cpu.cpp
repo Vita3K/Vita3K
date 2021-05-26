@@ -199,7 +199,7 @@ public:
     void ExceptionRaised(uint32_t pc, Dynarmic::A32::Exception exception) override {
         switch (exception) {
         case Dynarmic::A32::Exception::Breakpoint: {
-            cpu->did_break = true;
+            cpu->break_ = true;
             cpu->jit->HaltExecution();
             if (cpu->is_thumb_mode())
                 cpu->set_pc(pc | 1);
@@ -263,22 +263,15 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     return std::make_unique<Dynarmic::A32::Jit>(config);
 }
 
-DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, Address pc, Address sp, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt)
+DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt)
     : parent(state)
-    , fallback(state, pc, sp)
+    , fallback(state)
     , cb(std::make_unique<ArmDynarmicCallback>(*state, *this))
     , cp15(std::make_shared<ArmDynarmicCP15>())
     , monitor(monitor)
     , cpu_opt(cpu_opt)
-    , ep(pc)
     , core_id(processor_id) {
     jit = make_jit();
-
-    set_pc(pc);
-    set_lr(pc);
-    set_sp(sp);
-    set_cpsr((ep & 1) << 5);
-    set_fpscr(fallback.get_fpscr());
 }
 
 DynarmicCPU::~DynarmicCPU() {
@@ -286,10 +279,9 @@ DynarmicCPU::~DynarmicCPU() {
 
 int DynarmicCPU::run() {
     halted = false;
-    did_break = false;
+    break_ = false;
     exit_request = false;
     jit->Run();
-    auto pc = get_pc();
     return halted;
 }
 
@@ -299,11 +291,11 @@ int DynarmicCPU::step() {
 }
 
 bool DynarmicCPU::hit_breakpoint() {
-    return did_break;
+    return break_;
 }
 
 void DynarmicCPU::trigger_breakpoint() {
-    did_break = true;
+    break_ = true;
     stop();
 }
 
@@ -344,8 +336,7 @@ uint32_t DynarmicCPU::get_sp() {
 }
 
 uint32_t DynarmicCPU::get_pc() {
-    auto out = jit->Regs()[15];
-    return out;
+    return is_thumb_mode() ? jit->Regs()[15] | 1 : jit->Regs()[15];
 }
 
 void DynarmicCPU::set_reg(uint8_t idx, uint32_t val) {
@@ -401,8 +392,8 @@ CPUContext DynarmicCPU::save_context() {
     const auto dctx = jit->SaveContext();
     ctx.cpu_registers = dctx.Regs();
     ctx.fpu_registers = dctx.ExtRegs();
-    ctx.fpscr = jit->Fpscr();
-    ctx.cpsr = jit->Cpsr();
+    ctx.fpscr = dctx.Fpscr();
+    ctx.cpsr = dctx.Cpsr();
 
     return ctx;
 }
@@ -413,10 +404,6 @@ void DynarmicCPU::load_context(CPUContext ctx) {
     dctx.ExtRegs() = ctx.fpu_registers;
     dctx.SetCpsr(ctx.cpsr);
     dctx.SetFpscr(ctx.fpscr);
-    if (ctx.cpu_registers[15] & 1) {
-        dctx.SetCpsr(ctx.cpsr | 0x20);
-        dctx.Regs()[15] = ctx.cpu_registers[15] & 0xFFFFFFFE;
-    }
     jit->LoadContext(dctx);
 }
 

@@ -46,12 +46,14 @@ SceUID get_thread_id(CPUState &state) {
     return state.thread_id;
 }
 
-CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::size_t processor_id, Address pc, Address sp, MemState &mem, CPUProtocolBase *protocol) {
+CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::size_t processor_id, MemState &mem, CPUProtocolBase *protocol) {
     CPUStatePtr state(new CPUState(), delete_cpu_state);
     state->mem = &mem;
     state->protocol = protocol;
     state->thread_id = thread_id;
 
+    // TODO: we can move this to kernel after we drop unicorn
+    // unicorn is unable to detect whether the exit was because of halt or not
     state->halt_instruction = alloc_block(mem, 4, "halt_instruction");
     const auto halt_ptr = state->halt_instruction.get_ptr<uint16_t>();
     *halt_ptr.get(mem) = 0xBF00; // NOP
@@ -65,11 +67,11 @@ CPUStatePtr init_cpu(CPUBackend backend, bool cpu_opt, SceUID thread_id, std::si
     switch (backend) {
     case CPUBackend::Dynarmic: {
         Dynarmic::ExclusiveMonitor *monitor = reinterpret_cast<Dynarmic::ExclusiveMonitor *>(protocol->get_exlusive_monitor());
-        state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, pc, sp, monitor, cpu_opt);
+        state->cpu = std::make_unique<DynarmicCPU>(state.get(), processor_id, monitor, cpu_opt);
         break;
     }
     case CPUBackend::Unicorn: {
-        state->cpu = std::make_unique<UnicornCPU>(state.get(), pc, sp);
+        state->cpu = std::make_unique<UnicornCPU>(state.get());
         break;
     }
     default:
