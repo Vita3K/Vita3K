@@ -675,6 +675,22 @@ struct SceKernelThreadInfo {
     SceInt32 reserved;
 };
 
+struct SceProcessParam {
+    SceSize size;
+    SceUInt32 magic;
+    SceUInt32 version;
+    SceUInt32 fw_version;
+    Ptr<char> main_thread_name;
+    SceInt32 main_thread_priority;
+    SceUInt32 main_thread_stacksize;
+    SceUInt32 main_thread_attribute;
+    Ptr<char> process_name;
+    SceUInt32 process_preload_disabled;
+    SceUInt32 main_thread_cpu_affinity_mask;
+    Ptr<void> sce_libc_param;
+    SceUInt32 unk;
+};
+
 struct SceKernelThreadOptParam {
     /** Size of the ::SceKernelThreadOptParam structure. */
     SceSize size;
