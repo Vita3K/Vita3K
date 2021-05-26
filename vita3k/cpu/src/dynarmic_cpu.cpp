@@ -252,11 +252,11 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     Dynarmic::A32::UserConfig config;
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
-    config.fastmem_pointer = log_mem ? nullptr : parent->mem->memory.get();
+    config.fastmem_pointer = (log_mem || !cpu_opt) ? nullptr : parent->mem->memory.get();
     config.hook_hint_instructions = true;
     config.global_monitor = monitor;
     config.coprocessors[15] = cp15;
-    config.page_table = log_mem ? nullptr : parent->mem->pages_cpu.get();
+    config.page_table = (log_mem || !cpu_opt) ? nullptr : parent->mem->pages_cpu.get();
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
 
