@@ -121,9 +121,8 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name) {
 }
 
 ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, int stack_size, const SceKernelThreadOptParam *option) {
-    ThreadStatePtr thread = std::make_shared<ThreadState>();
-    thread->id = get_next_uid();
-    if (thread->init(*this, mem, name, entry_point, init_priority, stack_size, option) < 0)
+    ThreadStatePtr thread = std::make_shared<ThreadState>(get_next_uid(), mem);
+    if (thread->init(*this, name, entry_point, init_priority, stack_size, option) < 0)
         return nullptr;
     const auto lock = std::lock_guard(mutex);
     threads.emplace(thread->id, thread);

@@ -570,7 +570,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         param.size = SceSize(buf.size());
         param.attr = arr.address();
     }
-    if (main_thread->start(host.kernel, host.mem, param.size, Ptr<void>(param.attr)) < 0) {
+    if (main_thread->start(host.kernel, param.size, Ptr<void>(param.attr)) < 0) {
         app::error_dialog("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }

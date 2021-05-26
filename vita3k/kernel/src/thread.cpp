@@ -50,7 +50,7 @@ bool ThreadSignal::send() {
     return true;
 }
 
-int ThreadState::init(KernelState &kernel, MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, int stack_size, const SceKernelThreadOptParam *option = nullptr) {
+int ThreadState::init(KernelState &kernel, const char *name, Ptr<const void> entry_point, int init_priority, int stack_size, const SceKernelThreadOptParam *option = nullptr) {
     constexpr size_t KERNEL_TLS_SIZE = 0x800;
 
     this->name = name;
@@ -142,7 +142,7 @@ void ThreadState::raise_waiting_threads() {
     waiting_threads.clear();
 }
 
-int ThreadState::start(KernelState &kernel, MemState &mem, SceSize arglen, const Ptr<void> &argp) {
+int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &argp) {
     if (status == ThreadStatus::run)
         return SCE_KERNEL_ERROR_RUNNING;
     std::unique_lock<std::mutex> thread_lock(mutex);
@@ -301,6 +301,11 @@ void ThreadState::stop_loop() {
     }
 }
 
+ThreadState::ThreadState(SceUID id, MemState &mem)
+    : id(id)
+    , mem(mem) {
+}
+
 void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus> expected) {
     if (expected)
         assert(expected.value() == this->status);
@@ -358,7 +363,7 @@ void ThreadState::resume(bool step) {
     something_to_do.notify_one();
 }
 
-std::string ThreadState::log_stack_traceback(KernelState &kernel, MemState &mem) const {
+std::string ThreadState::log_stack_traceback(KernelState &kernel) const {
     constexpr Address START_OFFSET = 0;
     constexpr Address END_OFFSET = 1024;
     std::stringstream ss;

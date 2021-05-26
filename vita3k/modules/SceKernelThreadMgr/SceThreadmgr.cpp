@@ -406,7 +406,7 @@ EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) 
         return SCE_KERNEL_ERROR_RUNNING;
     }
 
-    const int res = thread->start(host.kernel, host.mem, arglen, argp);
+    const int res = thread->start(host.kernel, arglen, argp);
     if (res < 0) {
         return RET_ERROR(res);
     }

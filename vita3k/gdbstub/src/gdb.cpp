@@ -488,7 +488,7 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                 auto thread = state.kernel.get_thread(state.gdb.inferior_thread);
                 LOG_INFO("GDB Breakpoint triger (thread name: {}, thread_id: {})", thread->name, thread->id);
                 LOG_INFO("PC: {} LR: {}", read_pc(*thread->cpu), read_lr(*thread->cpu));
-                LOG_INFO("{}", thread->log_stack_traceback(state.kernel, state.mem));
+                LOG_INFO("{}", thread->log_stack_traceback(state.kernel));
 
                 // stop the world
                 {
