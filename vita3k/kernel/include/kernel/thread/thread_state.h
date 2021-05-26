@@ -38,9 +38,17 @@ typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::function<void(CPUState &, uint32_t, SceUID)> CallImport;
 typedef std::function<std::string(Address)> ResolveNIDName;
 
+// Increase this if you hit max
+constexpr size_t MAX_ARGS_WORDS = 12;
+
+typedef std::function<void(int res)> ThreadJobNotifyCallback;
+typedef std::array<uint32_t, MAX_ARGS_WORDS> ThreadJobArgs;
+
 struct ThreadJob {
     CPUContext ctx;
-    std::function<void(int res)> notify;
+    ThreadJobNotifyCallback notify;
+    ThreadJobArgs args;
+    size_t args_size = 0;
     bool in_progress = false;
 };
 
@@ -120,6 +128,8 @@ struct ThreadState {
     std::string log_stack_traceback(KernelState &kernel) const;
 
 private:
+    void push_arguments(ThreadJob &job);
+
     CPUContext init_cpu_ctx;
     RunQueue callback_requests;
     ThreadToDo to_do = ThreadToDo::wait;

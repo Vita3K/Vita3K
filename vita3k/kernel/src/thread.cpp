@@ -147,9 +147,11 @@ int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &arg
         return SCE_KERNEL_ERROR_RUNNING;
     std::unique_lock<std::mutex> thread_lock(mutex);
 
+    ThreadJob job;
     CPUContext ctx = init_cpu_ctx;
-    ctx.cpu_registers[0] = arglen;
-    ctx.cpu_registers[1] = argp.address();
+    job.args[0] = arglen;
+    job.args[1] = argp.address();
+    job.args_size = 2;
     ctx.set_pc(entry_point);
     ctx.set_lr(cpu->halt_instruction_pc);
 
@@ -159,11 +161,9 @@ int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &arg
         const int aligned_size = align(arglen, 8);
         const Address data_addr = stack_top - aligned_size;
         memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
-        ctx.cpu_registers[1] = data_addr;
+        job.args[1] = data_addr;
         ctx.set_sp(data_addr);
     }
-
-    ThreadJob job;
     job.ctx = ctx;
 
     run_queue.push_front(job);
@@ -200,6 +200,7 @@ bool ThreadState::run_loop() {
 
             current_job = run_queue.begin();
             if (!current_job->in_progress) {
+                push_arguments(*current_job);
                 load_context(*cpu, current_job->ctx);
                 current_job->in_progress = true;
             }
@@ -252,15 +253,26 @@ bool ThreadState::run_loop() {
     }
 }
 
-int ThreadState::run_guest_function(Address callback_address, const std::vector<uint32_t> &args) {
-    assert(args.size() <= 4);
+void ThreadState::push_arguments(ThreadJob &job) {
+    Address sp = job.ctx.get_sp();
+    for (size_t i = 0; i < std::min(job.args_size, static_cast<size_t>(4)); i++) {
+        job.ctx.cpu_registers[i] = job.args[i];
+    }
+    if (job.args_size > 4) {
+        // TODO align to 16 bytes
+        const size_t remain_size = job.args_size - 4;
+        sp -= 4 * remain_size;
+        memcpy(Ptr<uint32_t>(sp).get(mem), &job.args[4], remain_size * 4);
+    }
+    job.ctx.set_sp(sp);
+}
 
+int ThreadState::run_guest_function(Address callback_address, const std::vector<uint32_t> &args) {
     std::unique_lock<std::mutex> thread_lock(mutex);
     ThreadJob job;
     CPUContext ctx = init_cpu_ctx;
-    for (int i = 0; i < args.size(); i++) {
-        ctx.cpu_registers[i] = args[i];
-    }
+    std::copy(args.begin(), args.end(), job.args.begin());
+    job.args_size = args.size();
     ctx.set_pc(callback_address);
     ctx.set_lr(cpu->halt_instruction_pc);
     job.ctx = ctx;
@@ -292,7 +304,7 @@ int ThreadState::run_guest_function(Address callback_address, const std::vector<
 
 void ThreadState::stop_loop() {
     std::lock_guard<std::mutex> lock(mutex);
-    const auto last_to_do = to_do;
+    const ThreadToDo last_to_do = to_do;
     to_do = ThreadToDo::exit;
     if (last_to_do == ThreadToDo::wait) {
         something_to_do.notify_one();
@@ -334,19 +346,15 @@ void ThreadState::clear_run_queue() {
 }
 
 void ThreadState::request_callback(Address callback_address, const std::vector<uint32_t> &args, const std::function<void(int res)> notify) {
-    assert(args.size() <= 4);
-
     const auto thread_lock = std::lock_guard(mutex);
     ThreadJob job;
     CPUContext ctx = save_context(*cpu);
-    job.notify = notify;
-    for (int i = 0; i < args.size(); i++) {
-        ctx.cpu_registers[i] = args[i];
-    }
-
+    std::copy(args.begin(), args.end(), job.args.begin());
+    job.args_size = args.size();
     ctx.set_pc(callback_address);
     ctx.set_lr(cpu->halt_instruction_pc);
     job.ctx = ctx;
+    job.notify = notify;
 
     callback_requests.push_back(job);
 }
