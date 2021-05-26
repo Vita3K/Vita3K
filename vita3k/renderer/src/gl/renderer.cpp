@@ -470,6 +470,9 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
             std::swap(pixel[1], pixel[2]);
         }
         break;
+    case SCE_GXM_COLOR_FORMAT_U4U4U4U4_ARGB:
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4_REV, pixels);
+        break;
     case SCE_GXM_COLOR_FORMAT_U8U8U8_BGR:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGB, GL_UNSIGNED_BYTE, pixels);
         break;
