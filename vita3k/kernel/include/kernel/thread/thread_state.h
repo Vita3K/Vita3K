@@ -97,8 +97,11 @@ struct ThreadState {
     std::vector<std::shared_ptr<ThreadState>> waiting_threads;
     int returned_value;
 
-    int init(KernelState &kernel, MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, int stack_size, const SceKernelThreadOptParam *option);
-    int start(KernelState &kernel, MemState &mem, SceSize arglen, const Ptr<void> &argp);
+    ThreadState() = delete;
+    ThreadState(SceUID id, MemState &mem);
+
+    int init(KernelState &kernel, const char *name, Ptr<const void> entry_point, int init_priority, int stack_size, const SceKernelThreadOptParam *option);
+    int start(KernelState &kernel, SceSize arglen, const Ptr<void> &argp);
 
     void update_status(ThreadStatus status, std::optional<ThreadStatus> expected = std::nullopt);
     Address stack_top() const;
@@ -114,13 +117,15 @@ struct ThreadState {
 
     void suspend();
     void resume(bool step = false);
-    std::string log_stack_traceback(KernelState &kernel, MemState &mem) const;
+    std::string log_stack_traceback(KernelState &kernel) const;
 
 private:
     CPUContext init_cpu_ctx;
     RunQueue callback_requests;
     ThreadToDo to_do = ThreadToDo::wait;
     std::condition_variable something_to_do;
+
+    MemState &mem;
 };
 
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
