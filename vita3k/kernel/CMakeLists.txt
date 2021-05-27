@@ -8,9 +8,11 @@ set(SOURCE_LIST
 	include/kernel/relocation.h
 	include/kernel/object_store.h
 	include/kernel/debugger.h
+	include/kernel/load_self.h
 	src/kernel.cpp
 	src/thread.cpp
 	src/debugger.cpp
+	src/load_self.cpp
 	src/cpu_protocol.cpp
 	src/sync_primitives.cpp
 	src/relocation.cpp
@@ -23,6 +25,6 @@ add_library(
 )
 
 target_include_directories(kernel PUBLIC include)
-target_link_libraries(kernel PUBLIC rtc cpu mem util)
-target_link_libraries(kernel PRIVATE sdl2 miniz vita-toolchain)
+target_link_libraries(kernel PUBLIC rtc cpu mem util nids)
+target_link_libraries(kernel PRIVATE elfio::elfio sdl2 miniz vita-toolchain)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})

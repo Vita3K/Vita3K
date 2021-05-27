@@ -15,10 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <app/functions.h>
-#include <config/state.h>
 #include <cpu/functions.h>
-#include <host/load_self.h>
+#include <kernel/load_self.h>
 #include <kernel/relocation.h>
 #include <kernel/state.h>
 #include <kernel/types.h>
@@ -57,7 +55,7 @@ using namespace ELFIO;
 
 static constexpr bool LOG_MODULE_LOADING = false;
 
-static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, const Config &cfg) {
+static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem) {
     struct VarImportsHeader {
         uint32_t unk : 7; // seems to always be 0x40
         uint32_t reloc_count : 17;
@@ -68,7 +66,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
 
-        if (cfg.log_imports) {
+        if (kernel.debugger.log_imports) {
             const char *const name = import_name(nid);
             LOG_DEBUG("\tNID {} ({}). entry: {}, *entry: {}", log_hex(nid), name, log_hex(entry.address()), log_hex(*entry.get(mem)));
         }
@@ -106,12 +104,12 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
     return true;
 }
 
-static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem, const Config &cfg) {
+static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
 
-        if (cfg.log_imports) {
+        if (kernel.debugger.log_imports) {
             const char *const name = import_name(nid);
             LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, log_hex(entry.address()));
         }
@@ -149,7 +147,7 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
     return true;
 }
 
-static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segment_address, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, const Config &cfg) {
+static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segment_address, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_imports_raw *const imports_begin = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_top);
     const sce_module_imports_raw *const imports_end = reinterpret_cast<const sce_module_imports_raw *>(base + module.import_end);
@@ -180,7 +178,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
         }
 
         std::string lib_name;
-        if (cfg.log_imports) {
+        if (kernel.debugger.log_imports) {
             lib_name = Ptr<const char>(library_name).get(mem);
             LOG_INFO("Loading func imports from {}", lib_name);
         }
@@ -189,7 +187,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(func_entry_table).get(mem);
 
         const size_t num_syms_funcs = imports->num_syms_funcs;
-        if (!load_func_imports(nids, entries, num_syms_funcs, kernel, mem, cfg)) {
+        if (!load_func_imports(nids, entries, num_syms_funcs, kernel, mem)) {
             return false;
         }
 
@@ -198,11 +196,11 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
 
         const auto var_count = imports->num_syms_vars;
 
-        if (cfg.log_imports && var_count > 0) {
+        if (kernel.debugger.log_imports && var_count > 0) {
             LOG_INFO("Loading var imports from {}", lib_name);
         }
 
-        if (!load_var_imports(var_nids, var_entries, var_count, segments, kernel, mem, cfg)) {
+        if (!load_var_imports(var_nids, var_entries, var_count, segments, kernel, mem)) {
             return false;
         }
     }
@@ -210,7 +208,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
     return true;
 }
 
-static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const Config &cfg) {
+static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -226,7 +224,7 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
         kernel.export_nids.emplace(nid, entry.address());
         kernel.nid_from_export.emplace(entry.address(), nid);
 
-        if (cfg.log_exports) {
+        if (kernel.debugger.log_exports) {
             const char *const name = import_name(nid);
 
             LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, log_hex(entry.address()));
@@ -236,7 +234,7 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
     return true;
 }
 
-static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem, const Config &cfg) {
+static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, MemState &mem) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -257,7 +255,7 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
             continue;
         }
 
-        if (cfg.log_exports) {
+        if (kernel.debugger.log_exports) {
             const char *const name = import_name(nid);
 
             LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, log_hex(entry.address()));
@@ -270,7 +268,7 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
     return true;
 }
 
-static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, MemState &mem, const Config &cfg) {
+static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, MemState &mem) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_exports_raw *const exports_begin = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_top);
     const sce_module_exports_raw *const exports_end = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_end);
@@ -278,23 +276,23 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
     for (const sce_module_exports_raw *exports = exports_begin; exports < exports_end; exports = reinterpret_cast<const sce_module_exports_raw *>(reinterpret_cast<const uint8_t *>(exports) + exports->size)) {
         const char *const lib_name = Ptr<const char>(exports->library_name).get(mem);
 
-        if (cfg.log_exports) {
+        if (kernel.debugger.log_exports) {
             LOG_INFO("Loading func exports from {}", lib_name ? lib_name : "unknown");
         }
 
         const uint32_t *const nids = Ptr<const uint32_t>(exports->nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(exports->entry_table).get(mem);
-        if (!load_func_exports(entry_point, nids, entries, exports->num_syms_funcs, kernel, cfg)) {
+        if (!load_func_exports(entry_point, nids, entries, exports->num_syms_funcs, kernel)) {
             return false;
         }
 
         const auto var_count = exports->num_syms_vars;
 
-        if (cfg.log_exports && var_count > 0) {
+        if (kernel.debugger.log_exports && var_count > 0) {
             LOG_INFO("Loading var exports from {}", lib_name ? lib_name : "unknown");
         }
 
-        if (!load_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem, cfg)) {
+        if (!load_var_exports(&nids[exports->num_syms_funcs], &entries[exports->num_syms_funcs], var_count, kernel, mem)) {
             return false;
         }
     }
@@ -305,7 +303,7 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
 /**
  * \return Negative on failure
  */
-SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &self_path, const Config &cfg) {
+SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &self_path) {
     const uint8_t *const self_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
@@ -326,7 +324,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     }
 
     if (self_path == "app0:sce_module/steroid.suprx") {
-        app::error_dialog("You're trying to load a vitamin dump. It is not supported.", nullptr);
+        LOG_CRITICAL("You're trying to load a vitamin dump. It is not supported.");
         return -1;
     }
 
@@ -399,7 +397,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         }
     }
 
-    if (cfg.dump_elfs) {
+    if (kernel.debugger.dump_elfs) {
         // Dump elf
         std::vector<uint8_t> dump_elf(self_bytes + self_header.header_len, self_bytes + self_header.self_filesize);
         Elf32_Phdr *dump_segments = reinterpret_cast<Elf32_Phdr *>(dump_elf.data() + elf.e_phoff);
@@ -485,11 +483,11 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     LOG_INFO("Loading symbols for SELF: {}", self_path);
 
-    if (!load_exports(entry_point, *module_info, module_info_segment_address, kernel, mem, cfg)) {
+    if (!load_exports(entry_point, *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
     }
 
-    if (!load_imports(*module_info, module_info_segment_address, segment_reloc_info, kernel, mem, cfg)) {
+    if (!load_imports(*module_info, module_info_segment_address, segment_reloc_info, kernel, mem)) {
         return -1;
     }
 

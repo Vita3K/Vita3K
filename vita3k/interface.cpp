@@ -19,12 +19,12 @@
 
 #include <gui/functions.h>
 #include <host/functions.h>
-#include <host/load_self.h>
 #include <host/pkg.h>
 #include <host/sfo.h>
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
+#include <kernel/load_self.h>
 
 #include <modules/module_parent.h>
 #include <touch/touch.h>
@@ -265,7 +265,7 @@ static auto pre_load_module(HostState &host, const std::vector<std::string> &lib
             res = vfs::read_file(device, module_buffer, host.pref_path, module_path);
 
         if (res) {
-            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), MODULE_PATH_ABS, host.cfg);
+            SceUID module_id = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), MODULE_PATH_ABS);
             if (module_id >= 0) {
                 const auto module = host.kernel.loaded_modules[module_id];
 
@@ -378,7 +378,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     host.self_path = !host.cfg.self_path.empty() ? host.cfg.self_path : EBOOT_PATH;
     vfs::FileBuffer eboot_buffer;
     if (vfs::read_app_file(eboot_buffer, host.pref_path, host.io.app_path, host.self_path)) {
-        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), "app0:" + host.self_path, host.cfg);
+        SceUID module_id = load_self(entry_point, host.kernel, host.mem, eboot_buffer.data(), "app0:" + host.self_path);
         if (module_id >= 0) {
             const auto module = host.kernel.loaded_modules[module_id];
 
