@@ -185,9 +185,6 @@ struct GuiState {
     std::map<std::string, User> users;
     std::map<std::string, ImGui_Texture> users_avatar;
 
-    std::string app_ver;
-    bool content_reinstall_confirm = false;
-
     MemoryEditor memory_editor;
     MemoryEditor gxp_shader_editor;
     size_t memory_editor_start = 0;

@@ -115,18 +115,9 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
             theme = true;
 
         //This was here before to check if the game files were in the zip root, since this commit
-        // allows support for the game to be inside folders and install it anyways
-        //i thought we should comment this check
-
-        //edited to be compatible right away if someone wants to uncomment it
-
-        //if (m_filename.find(sfo_path.string()) != std::string::npos)
-        //break;
-
-        if (m_filename.find("eboot.bin") != std::string::npos) {
-            extra_path = m_filename.replace(m_filename.find("eboot.bin"), strlen("eboot.bin"), "");
-            continue;
-        }
+        // allows support for the content to be inside folders and install it anyways
+        if ((m_filename.find(sfo_path.string()) != std::string::npos) && (m_filename != sfo_path.string()))
+            extra_path = m_filename.erase(m_filename.find(sfo_path.string()));
     }
 
     vfs::FileBuffer params;
@@ -185,14 +176,6 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
             } else if (status == gui::UNK_STATE) {
                 exit(0);
             }
-        } else if (gui->file_menu.archive_install_dialog && !gui->content_reinstall_confirm) {
-            vfs::FileBuffer params;
-            vfs::read_app_file(params, host.pref_path, host.app_title_id, sfo_path);
-            sfo::load(host.sfo_handle, params);
-            sfo::get_data_by_key(gui->app_ver, host.sfo_handle, "APP_VER");
-            gui->content_reinstall_confirm = true;
-            fclose(vpk_fp);
-            return false;
         }
     }
 

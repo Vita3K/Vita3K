@@ -64,7 +64,7 @@ static bool open_license(HostState &host, const fs::path &license_path) {
 bool copy_license(HostState &host, const fs::path &license_path) {
     if (open_license(host, license_path)) {
         host.license_content_id = license_buf.content_id;
-        host.license_title_id = std::string(host.license_content_id).substr(7, 9);
+        host.license_title_id = host.license_content_id.substr(7, 9);
         const auto dst_path{ fs::path(host.pref_path) / "ux0/license" / host.license_title_id };
         if (!fs::exists(dst_path))
             fs::create_directories(dst_path);
