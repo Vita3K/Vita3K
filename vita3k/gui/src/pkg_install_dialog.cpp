@@ -120,7 +120,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             if (ImGui::Button("OK", BUTTON_SIZE) && !zRIF.empty())
                 state = "install";
         } else if (state == "install") {
-            std::thread installation(([&host]() {
+            std::thread installation([&host]() {
                 if (install_pkg(std::string(pkg_path), host, zRIF, progress_callback)) {
                     std::lock_guard<std::mutex> lock(install_mutex);
                     state = "success";
@@ -128,7 +128,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                     state = "fail";
                 }
                 zRIF.clear();
-            }));
+            });
             installation.detach();
             state = "installing";
         } else if (state == "success") {

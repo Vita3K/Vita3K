@@ -523,6 +523,8 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (gui.live_area.manual)
         draw_manual(gui, host);
 
+    if (gui.file_menu.archive_install_dialog)
+        draw_archive_install_dialog(gui, host);
     if (gui.file_menu.pkg_install_dialog)
         draw_pkg_install_dialog(gui, host);
 
@@ -560,8 +562,6 @@ void draw_ui(GuiState &gui, HostState &host) {
 
     if (gui.file_menu.firmware_install_dialog)
         draw_firmware_install_dialog(gui, host);
-    if (gui.file_menu.archive_install_dialog)
-        draw_archive_install_dialog(gui, host);
     if (gui.file_menu.license_install_dialog)
         draw_license_install_dialog(gui, host);
     if (gui.debug_menu.threads_dialog)

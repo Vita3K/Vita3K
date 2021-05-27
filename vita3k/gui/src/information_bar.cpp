@@ -111,7 +111,7 @@ static bool set_notice_info(GuiState &gui, HostState &host, const NoticeList &in
             msg = !indicator["install_complete"].empty() ? indicator["install_complete"] : "Installation complete.";
         }
         vfs::FileBuffer params;
-        if (vfs::read_file(VitaIoDevice::ux0, params, host.pref_path, content_path.string() + "/sce_sys/param.sfo")) {
+        if (vfs::read_file(VitaIoDevice::ux0, params, host.pref_path, content_path / "sce_sys/param.sfo")) {
             SfoFile sfo_handle;
             sfo::load(sfo_handle, params);
             if (!sfo::get_data_by_key(name, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
