@@ -32,10 +32,12 @@ struct CPUProtocolBase {
 };
 
 struct CPUContext {
-    std::array<uint32_t, 16> cpu_registers;
-    uint32_t cpsr;
-    std::array<uint32_t, 64> fpu_registers;
-    uint32_t fpscr;
+    CPUContext() = default;
+
+    std::array<uint32_t, 16> cpu_registers{};
+    std::array<uint32_t, 64> fpu_registers{};
+    uint32_t cpsr = 0;
+    uint32_t fpscr = 0;
 
     bool thumb() const {
         return cpsr & 0x20;

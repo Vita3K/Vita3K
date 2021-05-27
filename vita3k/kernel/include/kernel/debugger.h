@@ -36,15 +36,14 @@ typedef std::map<Address, Breakpoint> Breakpoints;
 typedef std::map<Address, std::unique_ptr<Trampoline>> Trampolines;
 
 struct Debugger {
-    Debugger() = default;
-    ~Debugger() = default;
+    Debugger() = delete;
+    explicit Debugger(KernelState &kernel);
 
     bool wait_for_debugger = false;
     bool watch_import_calls = false;
     bool watch_code = false;
     bool watch_memory = false;
 
-    void init(KernelState *kernel);
     void add_watch_memory_addr(Address addr, size_t size);
     void remove_watch_memory_addr(KernelState &state, Address addr);
     void add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode);
@@ -57,7 +56,7 @@ struct Debugger {
 
 private:
     std::mutex mutex;
-    KernelState *parent = nullptr;
+    KernelState &parent;
     WatchMemoryAddrs watch_memory_addrs;
     Breakpoints breakpoints;
     Trampolines trampolines;

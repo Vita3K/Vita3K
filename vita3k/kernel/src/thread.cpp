@@ -103,7 +103,6 @@ int ThreadState::init(KernelState &kernel, const char *name, Ptr<const void> ent
 
     CPUContext ctx;
     ctx.set_sp(stack_top());
-    ctx.cpsr = 0x400001D3;
     if (option) {
         ctx.cpu_registers[0] = option->attr;
         ctx.cpu_registers[1] = option->size;

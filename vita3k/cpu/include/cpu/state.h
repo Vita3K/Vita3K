@@ -5,7 +5,9 @@
 #include <cpu/functions.h>
 
 struct CPUState {
-    SceUID thread_id;
+    CPUState() = default;
+
+    SceUID thread_id = 0;
     MemState *mem = nullptr;
     CPUProtocolBase *protocol = nullptr;
     DisasmState disasm;

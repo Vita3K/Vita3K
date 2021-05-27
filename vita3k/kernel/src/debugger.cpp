@@ -11,10 +11,6 @@ inline bool is_thumb16(uint32_t inst) {
     return (inst & 0xF8000000) < 0xE8000000;
 }
 
-void Debugger::init(KernelState *kernel) {
-    parent = kernel;
-}
-
 void Debugger::add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode) {
     const auto lock = std::lock_guard(mutex);
     Breakpoint bk;
@@ -27,7 +23,7 @@ void Debugger::add_breakpoint(MemState &mem, uint32_t addr, bool thumb_mode) {
         std::memcpy(&mem.memory[addr], ARM_BREAKPOINT, sizeof(ARM_BREAKPOINT));
     }
     breakpoints.emplace(addr, bk);
-    parent->invalidate_jit_cache(addr, 4);
+    parent.invalidate_jit_cache(addr, 4);
 }
 
 void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
@@ -36,7 +32,7 @@ void Debugger::remove_breakpoint(MemState &mem, uint32_t addr) {
         auto last = breakpoints[addr];
         std::memcpy(&mem.memory[addr], &last.data, last.thumb_mode ? sizeof(THUMB_BREAKPOINT) : sizeof(ARM_BREAKPOINT));
         breakpoints.erase(addr);
-        parent->invalidate_jit_cache(addr, 4);
+        parent.invalidate_jit_cache(addr, 4);
     }
 }
 
@@ -85,7 +81,7 @@ void Debugger::add_trampoile(MemState &mem, uint32_t addr, bool thumb_mode, Tram
 
     std::lock_guard<std::mutex> lock(mutex);
     trampolines.emplace(addr, std::move(tr));
-    parent->invalidate_jit_cache(addr, 4);
+    parent.invalidate_jit_cache(addr, 4);
 }
 
 Trampoline *Debugger::get_trampoline(Address addr) {
@@ -103,8 +99,12 @@ void Debugger::remove_trampoline(MemState &mem, uint32_t addr) {
         uint32_t *insts = reinterpret_cast<uint32_t *>(&mem.memory[addr]);
         insts[0] = it->second->original;
         trampolines.erase(it);
-        parent->invalidate_jit_cache(addr, 4);
+        parent.invalidate_jit_cache(addr, 4);
     }
+}
+
+Debugger::Debugger(KernelState &kernel)
+    : parent(kernel) {
 }
 
 void Debugger::add_watch_memory_addr(Address addr, size_t size) {
@@ -129,7 +129,5 @@ Address Debugger::get_watch_memory_addr(Address addr) {
 }
 
 void Debugger::update_watches() {
-    if (!parent)
-        return;
-    parent->set_memory_watch(watch_memory);
+    parent.set_memory_watch(watch_memory);
 }

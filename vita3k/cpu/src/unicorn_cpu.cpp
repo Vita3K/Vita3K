@@ -338,7 +338,7 @@ bool UnicornCPU::is_thumb_mode() {
 }
 
 CPUContext UnicornCPU::save_context() {
-    CPUContext ctx = {};
+    CPUContext ctx;
     for (size_t i = 0; i < 16; i++) {
         ctx.cpu_registers[i] = get_reg(i);
     }
