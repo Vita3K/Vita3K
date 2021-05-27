@@ -122,6 +122,7 @@ bool init(MemState &state) {
 #else
     mprotect(state.memory.get(), state.page_size, PROT_NONE);
 #endif
+    (*(state.pages_cpu))[0] = nullptr;
 
     return true;
 }
