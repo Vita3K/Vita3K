@@ -112,9 +112,8 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         // Tests bypassed in maskupdate
         glDisable(GL_DEPTH_TEST);
         glDisable(GL_STENCIL_TEST);
+
         glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->maskbuffer[0]);
-    } else {
-        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
     }
 
     if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
@@ -179,10 +178,11 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         glDrawElementsInstanced(mode, static_cast<GLsizei>(count), gl_type, nullptr, instance_count);
     }
 
-    // Restore tests
+    // Restore context for normal draws
     if (context.record.is_maskupdate) {
         sync_depth_data(context.record);
         sync_stencil_data(context.record, mem);
+        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
     }
 
     context.last_draw_vertex_program_hash = context.record.vertex_program.get(mem)->renderer_data->hash;

@@ -412,6 +412,7 @@ void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *
     } else {
         context.render_target = reinterpret_cast<const GLRenderTarget *>(context.current_render_target);
     }
+    glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
@@ -443,7 +444,6 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
         return;
     }
 
-    glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
     glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(stride_in_pixels));
 
     // TODO Need more check into this
