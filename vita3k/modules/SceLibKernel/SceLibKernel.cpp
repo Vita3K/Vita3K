@@ -26,8 +26,8 @@
 #include <cpu/functions.h>
 #include <dlmalloc.h>
 #include <host/functions.h>
-#include <host/load_self.h>
 #include <io/functions.h>
+#include <kernel/load_self.h>
 #include <kernel/sync_primitives.h>
 
 #include <kernel/types.h>
@@ -1244,7 +1244,7 @@ bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleIn
             return false;
         }
 
-        mod_id = load_self(entry_point, host.kernel, host.mem, data, path, host.cfg);
+        mod_id = load_self(entry_point, host.kernel, host.mem, data, path);
 
         close_file(host.io, file, export_name);
         delete[] data;

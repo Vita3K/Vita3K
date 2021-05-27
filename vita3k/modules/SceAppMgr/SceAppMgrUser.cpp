@@ -19,7 +19,6 @@
 
 #include <host/app_util.h>
 #include <host/functions.h>
-#include <host/load_self.h>
 #include <io/functions.h>
 
 #include <modules/module_parent.h>

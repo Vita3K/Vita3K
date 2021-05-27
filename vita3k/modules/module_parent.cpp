@@ -18,10 +18,10 @@
 #include <modules/module_parent.h>
 
 #include <cpu/functions.h>
-#include <host/load_self.h>
 #include <host/state.h>
 #include <io/device.h>
 #include <io/vfs.h>
+#include <kernel/load_self.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
 #include <util/arm.h>
@@ -181,7 +181,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
         Ptr<const void> lib_entry_point;
 
         if (vfs::read_file(VitaIoDevice::vs0, module_buffer, host.pref_path, module_path)) {
-            SceUID loaded_module_uid = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), module_path, host.cfg);
+            SceUID loaded_module_uid = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), module_path);
             const auto module = host.kernel.loaded_modules[loaded_module_uid];
             const auto module_name = module->module_name;
 

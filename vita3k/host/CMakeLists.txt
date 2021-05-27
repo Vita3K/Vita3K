@@ -3,14 +3,12 @@ add_library(
 	STATIC
 	include/host/app_util.h
 	include/host/functions.h
-	include/host/load_self.h
 	include/host/pkg.h
 	include/host/sce_types.h
 	include/host/sfo.h
 	include/host/state.h
 	include/host/window.h
 	src/license.cpp
-	src/load_self.cpp
 	src/pkg.cpp
 	src/pup.cpp
 	src/sce_utils.cpp

@@ -602,11 +602,11 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Debug")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("Log Imports", &host.cfg.log_imports);
+        ImGui::Checkbox("Log Imports", &host.kernel.debugger.log_imports);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module import symbols.");
-        ImGui::Checkbox("Log Exports", &host.cfg.log_exports);
+        ImGui::Checkbox("Log Exports", &host.kernel.debugger.log_exports);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module export symbols.");
         ImGui::Spacing();
@@ -626,7 +626,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Dump textures to files");
         ImGui::SameLine();
-        ImGui::Checkbox("Dump elfs", &host.cfg.dump_elfs);
+        ImGui::Checkbox("Dump elfs", &host.kernel.debugger.dump_elfs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Dump loaded code as elfs");
         ImGui::Spacing();

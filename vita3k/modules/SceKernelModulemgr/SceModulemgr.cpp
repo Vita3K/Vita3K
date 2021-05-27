@@ -16,8 +16,8 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceModulemgr.h"
-#include <host/load_self.h>
 #include <io/functions.h>
+#include <kernel/load_self.h>
 #include <kernel/state.h>
 
 #include <modules/module_parent.h>
@@ -56,7 +56,7 @@ static bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelM
             return false;
         }
 
-        mod_id = load_self(entry_point, host.kernel, host.mem, data.data(), path, host.cfg);
+        mod_id = load_self(entry_point, host.kernel, host.mem, data.data(), path);
 
         close_file(host.io, file, export_name);
         data.clear();

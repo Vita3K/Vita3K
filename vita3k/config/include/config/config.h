@@ -25,10 +25,7 @@
 // Order is code(option_type, option_name, option_default, member_name)
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_INDIVIDUAL(code)                                                                         \
-    code(bool, "log-imports", false, log_imports)                                                       \
-    code(bool, "dump-elfs", false, dump_elfs)                                                           \
     code(bool, "gdbstub", false, gdbstub)                                                               \
-    code(bool, "log-exports", false, log_exports)                                                       \
     code(bool, "log-active-shaders", false, log_active_shaders)                                         \
     code(bool, "log-uniforms", false, log_uniforms)                                                     \
     code(bool, "pstv-mode", false, pstv_mode)                                                           \

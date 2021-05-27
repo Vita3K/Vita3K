@@ -17,8 +17,8 @@
 
 #include <module/load_module.h>
 
-#include <host/load_self.h>
 #include <host/state.h>
+#include <kernel/load_self.h>
 
 bool is_lle_module(SceSysmoduleModuleId module_id, HostState &host) {
     const auto paths = sysmodule_paths[module_id];
