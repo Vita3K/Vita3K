@@ -70,6 +70,10 @@ static int SDLCALL thread_function(void *data) {
     return r0;
 }
 
+KernelState::KernelState()
+    : debugger(*this) {
+}
+
 bool KernelState::init(MemState &mem, CallImportFunc call_import, CPUBackend cpu_backend, bool cpu_opt) {
     constexpr std::size_t MAX_CORE_COUNT = 150;
 
@@ -78,7 +82,6 @@ bool KernelState::init(MemState &mem, CallImportFunc call_import, CPUBackend cpu
     start_tick = rtc_get_ticks(rtc_base_ticks());
     base_tick = { rtc_base_ticks() };
     cpu_protocol = std::make_unique<CPUProtocol>(*this, mem, call_import);
-    debugger.init(this);
     this->cpu_backend = cpu_backend;
     this->cpu_opt = cpu_opt;
     guest_func_runner = create_thread(mem, "guest function runner");

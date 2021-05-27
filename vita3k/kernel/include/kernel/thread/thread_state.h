@@ -45,9 +45,11 @@ typedef std::function<void(int res)> ThreadJobNotifyCallback;
 typedef std::array<uint32_t, MAX_ARGS_WORDS> ThreadJobArgs;
 
 struct ThreadJob {
+    ThreadJob() = default;
+
     CPUContext ctx;
-    ThreadJobNotifyCallback notify;
-    ThreadJobArgs args;
+    ThreadJobNotifyCallback notify = nullptr;
+    ThreadJobArgs args{};
     size_t args_size = 0;
     bool in_progress = false;
 };
@@ -103,10 +105,10 @@ struct ThreadState {
     ThreadSignal signal;
     std::condition_variable status_cond;
     std::vector<std::shared_ptr<ThreadState>> waiting_threads;
-    int returned_value;
+    int returned_value = 0;
 
     ThreadState() = delete;
-    ThreadState(SceUID id, MemState &mem);
+    explicit ThreadState(SceUID id, MemState &mem);
 
     int init(KernelState &kernel, const char *name, Ptr<const void> entry_point, int init_priority, int stack_size, const SceKernelThreadOptParam *option);
     int start(KernelState &kernel, SceSize arglen, const Ptr<void> &argp);

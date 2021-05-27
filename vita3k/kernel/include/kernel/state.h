@@ -115,6 +115,8 @@ struct CorenumAllocator {
 };
 
 struct KernelState {
+    KernelState();
+
     std::mutex mutex;
     Blocks blocks;
     Blocks vm_blocks;
