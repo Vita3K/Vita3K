@@ -1053,10 +1053,6 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, const
         }
     }
 
-    if (indexCount == 6378) {
-        LOG_TRACE("TEST");
-    }
-
     if (!context->state.fragment_program || !context->state.vertex_program) {
         return RET_ERROR(SCE_GXM_ERROR_NULL_PROGRAM);
     }

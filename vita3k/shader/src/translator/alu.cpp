@@ -178,14 +178,14 @@ bool USSETranslatorVisitor::vmad2(
 
     const DataType inst_dt = (dat_fmt) ? DataType::F16 : DataType::F32;
 
-    // Decode destination mask
-    dest_mask = decode_write_mask(dest_mask, dat_fmt);
-
     // Decode mandantory info first
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, false, true, 7, m_second_program);
     inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, false, true, 7, m_second_program);
     inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, true, 7, m_second_program);
     inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_bank_ext, true, 7, m_second_program);
+
+    // Decode destination mask
+    dest_mask = decode_write_mask(inst.opr.dest.bank, dest_mask, dat_fmt);
 
     // Fill in data type
     inst.opr.dest.type = inst_dt;
@@ -1510,7 +1510,7 @@ bool USSETranslatorVisitor::vdual(
                 // gpi2_slot_num_bit_1 is also unified source ext
                 op.swizzle = decode_dual_swizzle(unified_store_swizz,
                     op1_src_count >= 2 ? false : gpi2_slot_num_bit_1, comp_count_type);
-                if (gpi2_slot_num_bit_0_or_unified_store_abs)
+                if ((op1_src_count <= 2) && gpi2_slot_num_bit_0_or_unified_store_abs)
                     op.flags |= RegisterFlags::Absolute;
                 if (unified_store_neg)
                     op.flags |= RegisterFlags::Negative;
