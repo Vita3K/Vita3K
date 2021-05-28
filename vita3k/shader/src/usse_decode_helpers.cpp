@@ -407,18 +407,26 @@ usse::Operand &decode_src0(usse::Operand &src, usse::Imm6 src_n, usse::Imm1 src_
     return src;
 }
 
-usse::Imm4 decode_write_mask(usse::Imm4 write_mask, const bool f16) {
-    if (!f16) {
+usse::Imm4 decode_write_mask(RegisterBank dest_bank, usse::Imm4 write_mask, const bool f16) {
+    bool mask_f16_can_normal = (dest_bank != RegisterBank::PRIMATTR) && (dest_bank != RegisterBank::SECATTR) && (dest_bank != RegisterBank::OUTPUT) && (dest_bank != RegisterBank::FPINTERNAL) && (dest_bank != RegisterBank::TEMP);
+
+    if ((dest_bank == RegisterBank::FPINTERNAL) || (f16 && mask_f16_can_normal)) {
         return write_mask;
     }
 
     usse::Imm4 new_write_mask = 0;
-    if (write_mask & 0b0001) {
-        new_write_mask |= 0b11;
-    }
 
-    if (write_mask & 0b0100) {
-        new_write_mask |= 0b1100;
+    if (f16) {
+        if (write_mask & 0b0001) {
+            new_write_mask |= 0b11;
+        }
+
+        if (write_mask & 0b0100) {
+            new_write_mask |= 0b1100;
+        }
+    } else {
+        // F32 mask restricted with only XY
+        new_write_mask = (write_mask & 0b11);
     }
 
     return new_write_mask;

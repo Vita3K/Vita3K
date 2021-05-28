@@ -65,8 +65,6 @@ bool USSETranslatorVisitor::vmov(
     };
 
     inst.opcode = tb_decode_vmov[(Imm3)move_type];
-    dest_mask = decode_write_mask(dest_mask, move_data_type == DataType::F16);
-
     // TODO: dest mask
     // TODO: flags
     // TODO: test type
@@ -80,6 +78,8 @@ bool USSETranslatorVisitor::vmov(
 
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank_sel, dest_bank_ext, is_double_regs, reg_bits, m_second_program);
     inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank_sel, src1_bank_ext, is_double_regs, reg_bits, m_second_program);
+
+    dest_mask = decode_write_mask(inst.opr.dest.bank, dest_mask, move_data_type == DataType::F16);
 
     // Velocity uses a vec4 table, non-extended, so i assumes type=vec4, extended=false
     inst.opr.src1.swizzle = decode_vec34_swizzle(src0_swiz, false, 2);
