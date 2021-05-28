@@ -1018,7 +1018,7 @@ static void gxmSetUniformBuffers(renderer::State &state, SceGxmContext *context,
 
         // Shift all buffer by 1.
         // The ideal is: default uniform buffer block has the binding of 14. Not really ideal, so i move it to 0, and buffer 0 to 1, etc..
-        std::uint32_t bytes_to_copy = sizes.at(i) * 16;
+        std::uint32_t bytes_to_copy = sizes.at(i) * 4;
         std::uint8_t **dest = renderer::set_uniform_buffer(state, context->renderer.get(), !program.is_fragment(), static_cast<int>((i + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER), bytes_to_copy);
 
         if (dest) {
@@ -1051,6 +1051,10 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, const
         } else {
             return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
         }
+    }
+
+    if (indexCount == 6378) {
+        LOG_TRACE("TEST");
     }
 
     if (!context->state.fragment_program || !context->state.vertex_program) {
