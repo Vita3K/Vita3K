@@ -2869,11 +2869,22 @@ EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode
     }
 }
 
-EXPORT(int, sceGxmSetVisibilityBuffer, SceGxmContext *immediateContext, void *bufferBase, uint32_t stridePerCore) {
+EXPORT(int, sceGxmSetVisibilityBuffer, SceGxmContext *immediateContext, Ptr<void> bufferBase, uint32_t stridePerCore) {
     if (!immediateContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    if (immediateContext->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+
+    if (bufferBase.address() & (SCE_GXM_VISIBILITY_ALIGNMENT - 1))
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
+
+    STUBBED("Set all visible");
+
+    memset(bufferBase.get(host.mem), 0xFF, SCE_GXM_GPU_CORE_COUNT * stridePerCore);
+
+    return 0;
 }
 
 EXPORT(void, sceGxmSetWBufferEnable) {
