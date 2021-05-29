@@ -1151,7 +1151,7 @@ struct SceGxmDepthStencilSurface {
     uint32_t zlsControl;
     Ptr<void> depthData;
     Ptr<void> stencilData;
-    float backgroundDepth = 1.0;
+    float backgroundDepth = 1.0f;
     Ptr<SceGxmDepthStencilControl> control;
 };
 
