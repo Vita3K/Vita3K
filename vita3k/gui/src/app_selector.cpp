@@ -86,13 +86,16 @@ void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &
     }
 }
 
+static std::vector<std::string>::iterator get_last_loaded_apps_index(HostState &host, const std::string &app_path) {
+    return std::find(host.cfg.last_loaded_apps.begin(), host.cfg.last_loaded_apps.end(), app_path);
+}
+
 static void update_last_loaded_apps(HostState &host, const std::string &app_path) {
-    const auto last_loaded_apps_index = std::find(host.cfg.last_loaded_apps.begin(), host.cfg.last_loaded_apps.end(), app_path);
-    if ((last_loaded_apps_index != host.cfg.last_loaded_apps.end()) && (host.cfg.last_loaded_apps.front() != app_path))
-        host.cfg.last_loaded_apps.erase(last_loaded_apps_index);
-    if (last_loaded_apps_index == host.cfg.last_loaded_apps.end())
+    if ((get_last_loaded_apps_index(host, app_path) != host.cfg.last_loaded_apps.end()) && (host.cfg.last_loaded_apps.front() != app_path))
+        host.cfg.last_loaded_apps.erase(get_last_loaded_apps_index(host, app_path));
+    if (get_last_loaded_apps_index(host, app_path) == host.cfg.last_loaded_apps.end())
         host.cfg.last_loaded_apps.insert(host.cfg.last_loaded_apps.begin(), app_path);
-    if (host.cfg.last_loaded_apps.size() > 10)
+    if (host.cfg.last_loaded_apps.size() > 14)
         host.cfg.last_loaded_apps.pop_back();
 
     if (host.cfg.overwrite_config)
@@ -122,8 +125,8 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
                 gui.live_area.information_bar = false;
                 gui.live_area.app_selector = false;
                 gui.live_area.live_area_screen = false;
-                host.io.app_path = app_path;
                 update_last_loaded_apps(host, app_path);
+                host.io.app_path = app_path;
             }
         } else {
             gui.live_area.live_area_screen = false;
