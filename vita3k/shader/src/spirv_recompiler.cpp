@@ -686,12 +686,37 @@ static size_t calculate_variable_size(const SceGxmProgramParameter &parameter, c
 
 // For uniform buffer resigned in registers
 static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_bank, spv::Id block, spv::Id ite, const int start, const int vec4_count) {
+    int start_in_vec4_granularity = start / 4;
+
     utils::make_for_loop(builder, ite, builder.makeIntConstant(0), builder.makeIntConstant(vec4_count), [&]() {
         spv::Id to_copy = builder.createAccessChain(spv::StorageClassUniform, block, { builder.makeIntConstant(0), builder.createLoad(ite) });
+        spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, builder.getTypeId(builder.createLoad(ite)), builder.createLoad(ite), builder.makeIntConstant(start_in_vec4_granularity)) });
+        spv::Id dest_friend = spv::NoResult;
 
-        spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, builder.getTypeId(builder.createLoad(ite)), builder.createLoad(ite), builder.makeIntConstant(start)) });
+        if (start % 4 == 0) {
+            builder.createStore(builder.createLoad(to_copy), dest);
+        } else {
+            dest_friend = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, builder.getTypeId(builder.createLoad(ite)), builder.createLoad(ite), builder.makeIntConstant(start_in_vec4_granularity + 1)) });
 
-        builder.createStore(builder.createLoad(to_copy), dest);
+            std::vector<spv::Id> ops_copy_1 = { dest, to_copy };
+            std::vector<spv::Id> ops_copy_2 = { dest_friend, to_copy };
+
+            for (int i = 0; i < start % 4; i++) {
+                ops_copy_1.push_back(i);
+                ops_copy_2.push_back(4 + (start % 4) + i);
+            }
+
+            for (int i = 0; i < (4 - start % 4); i++) {
+                ops_copy_1.push_back(4 + i);
+                ops_copy_2.push_back((start % 4) + i);
+            }
+
+            to_copy = builder.createOp(spv::OpVectorShuffle, builder.getTypeId(to_copy), ops_copy_1);
+            spv::Id to_copy_2 = builder.createOp(spv::OpVectorShuffle, builder.getTypeId(to_copy), ops_copy_2);
+
+            builder.createStore(builder.createLoad(to_copy), dest);
+            builder.createStore(builder.createLoad(to_copy_2), dest_friend);
+        }
     });
 }
 
@@ -791,7 +816,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         if (buffer.reg_block_size > 0) {
             const uint32_t reg_block_size_in_f32v = (buffer.reg_block_size + 3) / 4;
             const auto spv_buffer = spv_params.buffers.at(buffer.index).var;
-            copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset / 4, reg_block_size_in_f32v);
+            copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset, reg_block_size_in_f32v);
         }
     }
 
