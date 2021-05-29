@@ -108,14 +108,6 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
 
     glUseProgram(program_id);
 
-    if (context.record.is_maskupdate) {
-        // Tests bypassed in maskupdate
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_STENCIL_TEST);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->maskbuffer[0]);
-    }
-
     if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
         glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.render_target->color_attachment[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
     }
@@ -128,20 +120,33 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
 
     GXMRenderVertUniformBlock vert_ublock;
-
     std::memcpy(vert_ublock.viewport_flip, context.viewport_flip, sizeof(context.viewport_flip));
     vert_ublock.viewport_flag = (context.record.viewport_flat) ? 0.0f : 1.0f;
     vert_ublock.screen_width = static_cast<float>(context.record.color_surface.width);
     vert_ublock.screen_height = static_cast<float>(context.record.color_surface.height);
-
     set_uniform_buffer(context, true, SCE_GXM_REAL_MAX_UNIFORM_BUFFER, sizeof(GXMRenderVertUniformBlock), &vert_ublock, false);
 
     GXMRenderFragUniformBlock frag_ublock;
-    frag_ublock.front_disabled = (context.record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) ? 1.0f : 0.0f;
-    if (context.record.two_sided == SCE_GXM_TWO_SIDED_DISABLED)
-        frag_ublock.back_disabled = frag_ublock.front_disabled;
-    else
-        frag_ublock.back_disabled = (context.record.back_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) ? 1.0f : 0.0f;
+    const bool both_side_fragment_program_disabled = context.record.front_side_fragment_program_mode && (context.record.front_side_fragment_program_mode || context.record.back_side_fragment_program_mode);
+    if (both_side_fragment_program_disabled) {
+        frag_ublock.front_disabled = 0.0f;
+        frag_ublock.back_disabled = 0.0f;
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+    } else {
+        frag_ublock.front_disabled = (context.record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) ? 1.0f : 0.0f;
+        if (context.record.two_sided == SCE_GXM_TWO_SIDED_DISABLED)
+            frag_ublock.back_disabled = frag_ublock.front_disabled;
+        else
+            frag_ublock.back_disabled = (context.record.back_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) ? 1.0f : 0.0f;
+    }
+
+    if (context.record.is_maskupdate) {
+        // Tests bypassed in maskupdate
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_STENCIL_TEST);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->maskbuffer[0]);
+    }
     frag_ublock.writing_mask = context.record.writing_mask;
 
     set_uniform_buffer(context, false, SCE_GXM_REAL_MAX_UNIFORM_BUFFER, sizeof(GXMRenderFragUniformBlock), &frag_ublock, false);
@@ -183,6 +188,10 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         sync_depth_data(context.record);
         sync_stencil_data(context.record, mem);
         glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
+    }
+
+    if (both_side_fragment_program_disabled) {
+        sync_blending(context.record, mem);
     }
 
     context.last_draw_vertex_program_hash = context.record.vertex_program.get(mem)->renderer_data->hash;
