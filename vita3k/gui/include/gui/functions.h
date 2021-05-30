@@ -46,6 +46,7 @@ std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host,
 std::string get_unit_size(const size_t &size);
 void get_app_param(GuiState &gui, HostState &host, const std::string &app_path);
 void get_notice_list(HostState &host);
+void get_param_info(HostState &host, const vfs::FileBuffer &param);
 void get_user_apps_title(GuiState &gui, HostState &host);
 void get_users_list(GuiState &gui, HostState &host);
 bool get_sys_apps_state(GuiState &gui);

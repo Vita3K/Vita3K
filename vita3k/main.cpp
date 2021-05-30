@@ -104,28 +104,9 @@ int main(int argc, char *argv[]) {
 
     LOG_INFO("{}", window_title);
 
-    app::AppRunType run_type;
+    app::AppRunType run_type = app::AppRunType::Unknown;
     if (cfg.run_app_path)
         run_type = app::AppRunType::Extracted;
-    else if (cfg.vpk_path)
-        run_type = app::AppRunType::Vpk;
-    else
-        run_type = app::AppRunType::Unknown;
-
-    SDL_Event ev;
-    while (SDL_PollEvent(&ev)) {
-        if (ev.type == SDL_DROPFILE) {
-            const auto drop_file = fs::path(string_utils::utf_to_wide(ev.drop.file));
-            if ((drop_file.extension() == ".vpk") || (drop_file.extension() == ".zip"))
-                *cfg.vpk_path = ev.drop.file;
-            else if ((drop_file.extension() == ".rif") || (drop_file.extension() == ".bin"))
-                copy_license(host, drop_file);
-            else
-                LOG_ERROR("File droped: [{}] is not supported.", drop_file.filename().string());
-            SDL_free(ev.drop.file);
-            break;
-        }
-    }
 
     if (!app::init(host, cfg, root_paths)) {
         app::error_dialog("Host initialization failed.", host.window.get());
@@ -138,13 +119,21 @@ int main(int argc, char *argv[]) {
     if (!cfg.console)
         gui::init(gui, host);
 
-    if (run_type == app::AppRunType::Vpk) {
+    if (cfg.content_path) {
         auto gui_ptr = cfg.console ? nullptr : &gui;
-        if (install_archive(host, gui_ptr, string_utils::utf_to_wide(*cfg.vpk_path)) && (host.app_category == "gd"))
+        const auto is_archive = (cfg.content_path->extension() == ".vpk") || (cfg.content_path->extension() == ".zip");
+        const auto is_rif = (cfg.content_path->extension() == ".rif") || (cfg.content_path->filename() == "work.bin");
+        const auto is_directory = fs::is_directory(*cfg.content_path);
+
+        if (((is_archive && install_archive(host, gui_ptr, *cfg.content_path)) || (is_directory && (install_contents(host, gui_ptr, *cfg.content_path) == 1))) && (host.app_category == "gd"))
             run_type = app::AppRunType::Extracted;
         else {
-            run_type = app::AppRunType::Unknown;
-            host.cfg.vpk_path.reset();
+            if (is_rif)
+                copy_license(host, *cfg.content_path);
+            else if (!is_archive && !is_directory)
+                LOG_ERROR("File droped: [{}] is not supported.", cfg.content_path->string());
+
+            host.cfg.content_path.reset();
             if (!cfg.console)
                 gui::init_home(gui, host);
         }

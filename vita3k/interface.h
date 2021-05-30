@@ -36,6 +36,8 @@ inline void delete_zip(mz_zip_archive *zip) {
 
 bool handle_events(HostState &host, GuiState &gui);
 
-bool install_archive(HostState &host, GuiState *gui, const fs::path &path, const std::function<void(float)> &progress_callback = nullptr);
+bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_path, const std::function<void(float)> &progress_callback = nullptr);
+uint32_t install_contents(HostState &host, GuiState *gui, const fs::path &path);
+
 ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path);
 ExitCode run_app(HostState &host, Ptr<const void> &entry_point);

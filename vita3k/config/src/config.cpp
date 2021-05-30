@@ -139,7 +139,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->group("Options");
 
     // Positional options
-    app.add_option("vpk-path", command_line.vpk_path, "Path of app in .vpk format to install & run")
+    app.add_option("content-path", command_line.content_path, "Path of app in .vpk/.zip or folder of content to install & run")
         ->default_str({});
 
     // Grouped options
@@ -233,7 +233,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         }
     }
 
-    if (cfg.console && (cfg.run_app_path || !cfg.vpk_path)) {
+    if (cfg.console && (cfg.run_app_path || !cfg.content_path)) {
         LOG_ERROR("Console mode only supports vpk for now");
         return InitConfigFailed;
     }
@@ -258,7 +258,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         logging::set_level(static_cast<spdlog::level::level_enum>(cfg.log_level));
 
-        LOG_INFO_IF(cfg.vpk_path, "input-vpk-path: {}", *cfg.vpk_path);
+        LOG_INFO_IF(cfg.content_path, "input-content-path: {}", cfg.content_path->string());
         LOG_INFO_IF(cfg.run_app_path, "input-installed-path: {}", *cfg.run_app_path);
         LOG_INFO("{}: {}", cfg[e_backend_renderer], cfg.backend_renderer);
         LOG_INFO("{}: {}", cfg[e_log_level], cfg.log_level);
