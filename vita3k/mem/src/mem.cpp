@@ -250,13 +250,17 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     const std::lock_guard<std::mutex> lock(state.protect_mutex);
     const auto it = find_write_protect(state.write_protect_tree, vaddr);
     if (it == state.write_protect_tree.end()) {
+        // HACK: keep going
+        unprotect_inner(state, vaddr, 4);
         LOG_CRITICAL("Unhandled write protected region was valid.");
-        return false;
+        return true;
     }
 
     if (vaddr < it->addr || vaddr >= it->addr + it->size) {
+        // HACK: keep going
+        unprotect_inner(state, vaddr, 4);
         LOG_CRITICAL("Unhandled write protected region was valid.");
-        return false;
+        return true;
     }
 
     for (const auto cb : it->callbacks) {
