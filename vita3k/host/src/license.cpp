@@ -63,13 +63,13 @@ static bool open_license(HostState &host, const fs::path &license_path) {
 
 bool copy_license(HostState &host, const fs::path &license_path) {
     if (open_license(host, license_path)) {
-        host.app_content_id = license_buf.content_id;
-        host.app_title_id = std::string(license_buf.content_id).substr(7, 9);
-        const auto dst_path{ fs::path(host.pref_path) / "ux0/license" / host.app_title_id };
+        host.license_content_id = license_buf.content_id;
+        host.license_title_id = std::string(host.license_content_id).substr(7, 9);
+        const auto dst_path{ fs::path(host.pref_path) / "ux0/license" / host.license_title_id };
         if (!fs::exists(dst_path))
             fs::create_directories(dst_path);
 
-        const auto license_dst_path{ dst_path / fmt::format("{}.rif", license_buf.content_id) };
+        const auto license_dst_path{ dst_path / fmt::format("{}.rif", host.license_content_id) };
         fs::copy_file(license_path, license_dst_path, fs::copy_option::overwrite_if_exists);
         if (fs::exists(license_dst_path)) {
             fs::remove(license_path);
