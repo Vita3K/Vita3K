@@ -55,8 +55,8 @@ private:
 
     // Perform comparisons with optional settings
     void check_members(const Config &rhs) {
-        if (rhs.vpk_path.has_value())
-            vpk_path = rhs.vpk_path;
+        if (rhs.content_path.has_value())
+            content_path = rhs.content_path;
         if (rhs.run_app_path.has_value())
             run_app_path = rhs.run_app_path;
         if (rhs.recompile_shader_path.has_value())
@@ -82,7 +82,7 @@ private:
 
 public:
     // Optional config settings
-    optional<std::string> vpk_path;
+    optional<fs::path> content_path;
     optional<std::string> run_app_path;
     optional<std::string> recompile_shader_path;
     optional<std::string> delete_title_id;

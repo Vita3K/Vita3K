@@ -36,8 +36,6 @@ enum class AppRunType {
     Unknown,
     /// Extracted, files are as they are on console
     Extracted,
-    /// Zipped in HENKaku-style .vpk file
-    Vpk,
 };
 
 bool init(HostState &state, Config &cfg, const Root &root_paths);
