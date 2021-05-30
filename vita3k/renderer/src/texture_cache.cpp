@@ -133,6 +133,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     if (upload) {
         cache.upload_texture_callback(index, &gxm_texture, mem);
         if (!info->use_hash) {
+            info->dirty = false;
             add_write_protect(mem, gxm_texture.data_addr << 2, size, [&cache, info, gxm_texture] {
                 if (memcmp(&info->texture, &gxm_texture, sizeof(SceGxmTexture)) == 0) {
                     info->dirty = true;
