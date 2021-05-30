@@ -55,7 +55,7 @@ struct GXMRenderFragUniformBlock {
 };
 
 void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
-    const MemState &mem, const char *base_path, const char *title_id, const Config &config) {
+    MemState &mem, const char *base_path, const char *title_id, const Config &config) {
     R_PROFILE(__func__);
 
     GLuint program_id = context.last_draw_program;

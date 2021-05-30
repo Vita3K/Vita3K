@@ -28,9 +28,7 @@ static TextureCacheHash hash_palette_data(const SceGxmTexture &texture, size_t c
     return palette_hash;
 }
 
-TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
-    R_PROFILE(__func__);
-
+static size_t get_texture_size(const SceGxmTexture &texture) {
     const SceGxmTextureFormat format = gxm::get_format(&texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
     const size_t width = gxm::get_width(&texture);
@@ -38,6 +36,14 @@ TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState 
     const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
     const size_t bpp = texture::bits_per_pixel(base_format);
     const size_t size = (bpp * stride * height) / 8;
+    return size;
+}
+
+TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
+    R_PROFILE(__func__);
+    const SceGxmTextureFormat format = gxm::get_format(&texture);
+    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
+    const size_t size = get_texture_size(texture);
     const Ptr<const void> data(texture.data_addr << 2);
     const TextureCacheHash data_hash = hash_data(data.get(mem), size);
 
@@ -51,14 +57,14 @@ TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState 
     }
 }
 
-static size_t find_lru(const TextureCacheTimestamps &timestamps, TextureCacheTimestamp current_time) {
+static size_t find_lru(const TextureCacheState &cache, TextureCacheTimestamp current_time) {
     R_PROFILE(__func__);
 
-    uint64_t oldest_age = current_time - timestamps.front();
+    uint64_t oldest_age = current_time - cache.infoes.front().timestamp;
     size_t oldest_index = 0;
 
-    for (size_t index = 1; index < timestamps.size(); ++index) {
-        const uint64_t age = current_time - timestamps[index];
+    for (size_t index = 1; index < cache.infoes.size(); ++index) {
+        const uint64_t age = current_time - cache.infoes[index].timestamp;
         if (age > oldest_age) {
             oldest_age = age;
             oldest_index = index;
@@ -68,24 +74,24 @@ static size_t find_lru(const TextureCacheTimestamps &timestamps, TextureCacheTim
     return oldest_index;
 }
 
-void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
+void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, MemState &mem) {
     R_PROFILE(__func__);
 
     size_t index = 0;
     bool configure = false;
     bool upload = false;
-    // TODO Palettes are probably quicker to hash than texture data, so if we find games use palette animation this could be optimised:
-    // Skip data hash if palette hashes differ.
-    const TextureCacheHash hash = hash_texture_data(gxm_texture, mem);
+    const size_t size = get_texture_size(gxm_texture);
 
     // Try to find GXM texture in cache.
     size_t cached_gxm_texture_index = -1;
     for (size_t a = 0; a < cache.used; a++) {
-        if (memcmp(&cache.gxm_textures[a], &gxm_texture, sizeof(SceGxmTexture)) == 0) {
+        if (memcmp(&cache.infoes[a].texture, &gxm_texture, sizeof(SceGxmTexture)) == 0) {
             cached_gxm_texture_index = a;
             break;
         }
     }
+
+    TextureCacheInfo *info;
     if (cached_gxm_texture_index == -1) {
         // Texture not found in cache.
         if (cache.used < TextureCacheSize) {
@@ -94,17 +100,29 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
             ++cache.used;
         } else {
             // Cache is full. Find least recently used texture.
-            index = find_lru(cache.timestamps, cache.timestamp);
-            LOG_DEBUG("Evicting texture {} (t = {}) from cache. Current t = {}.", index, cache.timestamps[index], cache.timestamp);
+            index = find_lru(cache, cache.timestamp);
+            LOG_DEBUG("Evicting texture {} (t = {}) from cache. Current t = {}.", index, cache.infoes[index].timestamp, cache.timestamp);
         }
         configure = true;
         upload = true;
-        cache.gxm_textures[index] = gxm_texture;
+        cache.infoes[index] = TextureCacheInfo(gxm_texture);
+        info = &cache.infoes[index];
+        info->use_hash = cache.use_protect ? size < KB(4) : true;
+        if (info->use_hash) {
+            info->hash = hash_texture_data(gxm_texture, mem);
+        }
     } else {
         // Texture is cached.
         index = cached_gxm_texture_index;
+        info = &cache.infoes[index];
         configure = false;
-        upload = (hash != cache.hashes[index]);
+        if (info->use_hash) {
+            const TextureCacheHash hash = hash_texture_data(gxm_texture, mem);
+            upload = info->hash != hash;
+            info->hash = hash;
+        } else {
+            upload = info->dirty;
+        }
     }
 
     cache.select_callback(index);
@@ -114,10 +132,16 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     }
     if (upload) {
         cache.upload_texture_callback(index, &gxm_texture, mem);
-        cache.hashes[index] = hash;
+        if (!info->use_hash) {
+            add_write_protect(mem, gxm_texture.data_addr << 2, size, [&cache, info, gxm_texture] {
+                if (memcmp(&info->texture, &gxm_texture, sizeof(SceGxmTexture)) == 0) {
+                    info->dirty = true;
+                }
+            });
+        }
     }
 
-    cache.timestamps[index] = cache.timestamp;
+    info->timestamp = cache.timestamp;
 }
 
 } // namespace texture

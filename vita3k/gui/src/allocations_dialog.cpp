@@ -33,46 +33,26 @@ void draw_allocations_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("Memory Allocations", &gui.debug_menu.allocations_dialog);
 
     const std::lock_guard<std::mutex> lock(host.mem.generation_mutex);
-
-    for (const auto &pair : host.mem.generation_names) {
+    for (const auto &pair : host.mem.page_name_map) {
         const auto generation_num = pair.first;
         const auto generation_name = pair.second;
+        const auto page = host.mem.page_table[generation_num];
 
         if (std::find(std::begin(blacklist), std::end(blacklist), generation_name) != std::end(blacklist))
             continue;
 
         if (ImGui::TreeNode(fmt::format("{}: {}", generation_num, generation_name).c_str())) {
-            int32_t index = -1;
-            int32_t count = 1;
-
-            for (int32_t a = 0; a < host.mem.allocated_pages.size(); a++) {
-                auto generation = host.mem.allocated_pages[a];
-                if (index != -1) {
-                    if (generation != generation_num)
-                        break;
-                    count++;
-                }
-
-                if (index == -1 && generation == generation_num) {
-                    index = a;
-                }
+            ImGui::Text("Range %08lx - %08lx.", generation_num * KB(4), (generation_num + page.size) * KB(4));
+            ImGui::Text("Size: %i KB (%i page[s])", page.size * 4, page.size);
+            if (ImGui::Selectable("View/Edit")) {
+                gui.memory_editor_start = generation_num * KB(4);
+                gui.memory_editor_count = page.size * KB(4);
+                gui.debug_menu.memory_editor_dialog = true;
             }
-
-            if (index == -1) {
-                ImGui::Text("Generation no longer exists.");
-            } else {
-                ImGui::Text("Range %08lx - %08lx.", index * KB(4), (index + count) * KB(4));
-                ImGui::Text("Size: %i KB (%i page[s])", count * 4, count);
-                if (ImGui::Selectable("View/Edit")) {
-                    gui.memory_editor_start = index * KB(4);
-                    gui.memory_editor_count = count * KB(4);
-                    gui.debug_menu.memory_editor_dialog = true;
-                }
-                if (ImGui::Selectable("View Disassembly")) {
-                    sprintf(gui.disassembly_address, "%08zx", index * KB(4));
-                    reevaluate_code(gui, host);
-                    gui.debug_menu.disassembly_dialog = true;
-                }
+            if (ImGui::Selectable("View Disassembly")) {
+                sprintf(gui.disassembly_address, "%08zx", page.size * KB(4));
+                reevaluate_code(gui, host);
+                gui.debug_menu.disassembly_dialog = true;
             }
             ImGui::TreePop();
         }
@@ -87,7 +67,6 @@ void draw_allocations_dialog(GuiState &gui, HostState &host) {
             gui.debug_menu.memory_editor_dialog = false;
         }
     }
-
     ImGui::End();
 }
 

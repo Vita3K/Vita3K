@@ -78,7 +78,7 @@ public:
     }
 
     bool valid(const MemState &mem) const {
-        return (mem.allocated_pages[addr / mem.page_size] != 0);
+        return is_valid_addr(mem, addr);
     }
 
     void reset() {

@@ -331,20 +331,19 @@ static std::string cmd_write_register(HostState &state, PacketCommand &command) 
 }
 
 static bool check_memory_region(Address address, Address length, MemState &mem) {
-    const auto first_page = static_cast<uint32_t>(address / mem.page_size);
-    const auto page_length = static_cast<uint32_t>(length / mem.page_size) + 1;
+    if (!address) {
+        return false;
+    }
 
-    const auto pages_start = mem.allocated_pages.begin() + first_page;
-    const auto pages_end = pages_start + page_length;
-
-    constexpr size_t empty_page = 0;
-    constexpr size_t null_page = 1;
-
-    const bool memory_empty = std::find(pages_start, pages_end, empty_page) != pages_end;
-    const bool memory_null = std::find(pages_start, pages_end, null_page) != pages_end;
-    const bool memory_safe = !(memory_empty || memory_null);
-
-    return memory_safe;
+    Address it = address;
+    bool valid = true;
+    for (; it < address + length; it += mem.page_size) {
+        if (!is_valid_addr(mem, it)) {
+            valid = false;
+            break;
+        }
+    }
+    return valid;
 }
 
 static std::string cmd_read_memory(HostState &state, PacketCommand &command) {

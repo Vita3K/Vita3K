@@ -22,9 +22,15 @@
 
 struct MemState;
 
+typedef std::function<bool(uint8_t *addr, bool write)> AccessViolationHandler;
+
 bool init(MemState &state);
 Address alloc(MemState &state, size_t size, const char *name);
 Address alloc(MemState &state, size_t size, const char *name, unsigned int alignment);
+bool add_write_protect(MemState &state, Address addr, const size_t size, WriteProtectCallback callback);
+bool remove_write_protect(MemState &state, Address addr);
+bool is_valid_addr(const MemState &state, Address addr);
+bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept;
 Block alloc_block(MemState &mem, size_t size, const char *name);
 Address alloc_at(MemState &state, Address address, size_t size, const char *name);
 void free(MemState &state, Address address);

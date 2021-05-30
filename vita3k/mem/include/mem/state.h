@@ -17,20 +17,56 @@
 
 #pragma once
 
+#include <mem/allocator.h>
 #include <mem/util.h>
 
 #include <array>
 #include <map>
 #include <mutex>
+#include <set>
+
+struct MemPage {
+    uint32_t allocated : 4;
+    uint32_t size : 28;
+};
+
+static_assert(sizeof(MemPage) == 4);
+
+typedef std::unique_ptr<uint8_t[], std::function<void(uint8_t *)>> Memory;
+typedef std::unique_ptr<MemPage[], std::function<void(MemPage *)>> PageTable;
+typedef std::map<int, std::string> PageNameMap;
+
+struct WriteProtect {
+    Address addr = 0;
+    size_t size = 0;
+    std::vector<WriteProtectCallback> callbacks;
+
+    WriteProtect() = delete;
+    explicit WriteProtect(Address addr)
+        : addr(addr) {}
+    explicit WriteProtect(Address addr, size_t size, WriteProtectCallback callback)
+        : addr(addr)
+        , size(size) {
+        callbacks.push_back(callback);
+        callbacks.reserve(5);
+    }
+
+    bool operator<(const WriteProtect &other) const {
+        return this->addr < other.addr;
+    }
+};
+
+typedef std::set<WriteProtect> WriteProtectTree;
 
 struct MemState {
-    size_t page_size = 0;
-    Generation generation = 0;
-    Memory memory;
-    std::unique_ptr<std::array<uint8_t *, MB(1)>> pages_cpu;
-
-    Allocated allocated_pages;
     std::mutex generation_mutex;
-    GenerationNames generation_names;
-    std::map<Address, Address> aligned_addr_to_original;
+    std::mutex protect_mutex;
+
+    size_t page_size = 0;
+    Memory memory;
+    PageTable page_table;
+    BitmapAllocator allocator;
+    WriteProtectTree write_protect_tree;
+
+    PageNameMap page_name_map;
 };

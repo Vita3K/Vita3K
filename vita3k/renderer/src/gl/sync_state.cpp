@@ -292,7 +292,7 @@ void sync_depth_bias(const int factor, const int unit, const bool is_front) {
     }
 }
 
-void sync_texture(GLContext &context, const MemState &mem, std::size_t index, SceGxmTexture texture,
+void sync_texture(GLContext &context, MemState &mem, std::size_t index, SceGxmTexture texture,
     const Config &config, const std::string &base_path, const std::string &title_id) {
     if (texture.data_addr == 0) {
         LOG_WARN("Texture has null data.");
