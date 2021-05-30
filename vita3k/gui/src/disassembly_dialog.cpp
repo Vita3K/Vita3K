@@ -41,7 +41,7 @@ static void evaluate_code(GuiState &gui, HostState &host, uint32_t from, uint32_
         size_t addr_page = addr / KB(4);
         size_t end_page = (addr + 4) / KB(4);
 
-        if (addr_page == 0 || host.mem.allocated_pages[addr_page] == 0 || host.mem.allocated_pages[end_page] == 0) {
+        if (addr_page == 0 || !is_valid_addr(host.mem, addr_page * KB(4))) {
             gui.disassembly.emplace_back(fmt::format("Disassembled {} instructions.", a));
             break;
         }

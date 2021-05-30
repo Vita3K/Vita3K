@@ -256,7 +256,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.hook_hint_instructions = true;
     config.global_monitor = monitor;
     config.coprocessors[15] = cp15;
-    config.page_table = (log_mem || !cpu_opt) ? nullptr : parent->mem->pages_cpu.get();
+    config.page_table = nullptr;
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
 

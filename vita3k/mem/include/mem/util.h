@@ -27,12 +27,7 @@ struct CPUState;
 struct MemState;
 
 typedef uint32_t Address;
-typedef size_t Generation;
-typedef std::unique_ptr<uint8_t[], std::function<void(uint8_t *)>> Memory;
-typedef std::vector<Generation> Allocated;
-typedef std::map<Generation, std::string> GenerationNames;
-
-typedef void (*BreakpointCallback)(CPUState &, MemState &);
+typedef std::function<void()> WriteProtectCallback;
 
 constexpr size_t KB(size_t kb) {
     return kb * 1024;
