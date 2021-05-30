@@ -84,7 +84,7 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, int &size, 
         return -1;
     }
 
-    std::uint32_t *word = &words[0] + (start_offset << 5);
+    std::uint32_t *word = &words[0] + (start_offset >> 5);
 
     // We have arrived at le word that still have free position (bit 1)
     std::uint32_t *word_end = &words[words.size() - 1];
@@ -150,7 +150,7 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, int &size, 
         word++;
     }
 
-    if (best_fit && bofmin) {
+    if (best_fit && bofmin != -1) {
         // Force allocate and then return
         const int offset = static_cast<int>(31 - bofmin + ((wordmin - &words[0]) << 5));
         if (static_cast<std::size_t>(offset + size) <= max_offset) {
@@ -168,7 +168,7 @@ static int number_of_set_bits(std::uint32_t i) {
     return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
 }
 
-int BitmapAllocator::allocated_count(const std::uint32_t offset, const std::uint32_t offset_end) {
+int BitmapAllocator::allocated_count(const std::uint32_t offset, const std::uint32_t offset_end) const {
     if (offset > offset_end) {
         return -1;
     }

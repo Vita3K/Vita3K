@@ -29,5 +29,5 @@ public:
      * 
      * @returns Number of cells already allocated on this region.
      */
-    int allocated_count(const std::uint32_t offset, const std::uint32_t offset_end);
+    int allocated_count(const std::uint32_t offset, const std::uint32_t offset_end) const;
 };
