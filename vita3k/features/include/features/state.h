@@ -7,6 +7,7 @@ struct FeatureState {
     bool support_texture_barrier = false; ///< Second option for blending. Slower but work on 3 vendors.
     bool direct_fragcolor = false;
     bool use_shader_binding = false;
+    bool image_load_store = false;
     bool spirv_shader = false;
 
     bool is_programmable_blending_supported() const {

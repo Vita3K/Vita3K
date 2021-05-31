@@ -111,7 +111,44 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
         glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.render_target->color_attachment[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
     }
-    glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
+
+    const SceGxmProgramParameter *const fragment_params = gxp::program_parameters(fragment_program_gxp);
+    std::array<bool, SCE_GXM_MAX_TEXTURE_UNITS> sampler_slot_used = { false };
+    std::vector<uint32_t> sampler_slot_need_resync;
+    for (int i = 0; i < fragment_program_gxp.parameter_count; ++i) {
+        const SceGxmProgramParameter &param = fragment_params[i];
+        if (param.category != SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+            continue;
+        }
+        sampler_slot_used[param.resource_index] = true;
+    }
+
+    const auto bind_host_texture = [&](std::string uniform_name, int image_index, GLint texture) {
+        GLint loc = glGetUniformLocation(program_id, uniform_name.c_str());
+        // It maybe a hand-written shader. So colorAttachment didn't exist
+        if (loc != -1) {
+            if (features.should_use_shader_interlock()) {
+                glBindImageTexture(image_index, texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+            } else {
+                // Tries to find unused texture slot
+                auto it = std::find(sampler_slot_used.begin(), sampler_slot_used.end(), false);
+                if (it == sampler_slot_used.end())
+                    assert(false); // hahahahahahahahahahaha
+                auto index = it - sampler_slot_used.begin();
+                sampler_slot_used[index] = true;
+                sampler_slot_need_resync.push_back(index);
+                glUniform1i(loc, index);
+                glActiveTexture(GL_TEXTURE0 + index);
+                glBindTexture(GL_TEXTURE_2D, texture);
+            }
+        }
+    };
+
+    if (features.image_load_store) {
+        glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
+    } else {
+        bind_host_texture("f_mask", shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0]);
+    }
 
     for (std::uint32_t i = 0; i < SCE_GXM_MAX_TEXTURE_UNITS; i++) {
         if (context.texture_bind_list & (1 << i)) {

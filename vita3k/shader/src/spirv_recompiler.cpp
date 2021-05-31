@@ -314,10 +314,17 @@ static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &featu
     spv::Id v4 = b.makeVectorType(f32, 4);
     spv::Id sampled_type = b.makeFloatType(32);
 
-    int sampled = 2;
-    spv::ImageFormat img_format = spv::ImageFormatRgba8;
+    int sampled = 1;
+    spv::ImageFormat img_format = spv::ImageFormatUnknown;
 
+    if (features.image_load_store) {
+        sampled = 2;
+        img_format = spv::ImageFormatRgba8;
+    }
     spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
+    if (!features.image_load_store) {
+        image_type = b.makeSampledImageType(image_type);
+    }
     spv::Id sampler = b.createVariable(spv::StorageClassUniformConstant, image_type, name.c_str());
     translation_state.interfaces.push_back(sampler);
 
@@ -611,8 +618,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
     auto mask = create_builtin_sampler(b, features, translation_state, "f_mask");
     translation_state.mask_id = mask;
-
-    b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
+    if (features.use_shader_binding) {
+        b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
+    }
 
     if (program.is_native_color()) {
         // There might be a chance that this shader also reads from OUTPUT bank. We will load last state frag data
@@ -1064,7 +1072,12 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
     spv::Id sampled_type = b.makeFloatType(32);
     spv::Id v4 = b.makeVectorType(sampled_type, 4);
-    spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id), current_coord });
+    spv::Id texel;
+    if (features.image_load_store)
+        texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id), current_coord });
+    else
+        texel = b.createOp(spv::OpImageFetch, v4, { b.createLoad(translate_state.mask_id), current_coord });
+
     spv::Id rezero = b.makeFloatConstant(0.5f);
     spv::Id zero = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
     spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeBoolType(), { texel, zero });

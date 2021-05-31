@@ -246,6 +246,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state) {
         { "GL_ARB_texture_barrier", &gl_state.features.support_texture_barrier },
         { "GL_EXT_shader_framebuffer_fetch", &gl_state.features.direct_fragcolor },
         { "GL_ARB_shading_language_packing", &gl_state.features.pack_unpack_half_through_ext },
+        { "GL_ARB_shader_image_load_store", &gl_state.features.image_load_store },
         { "GL_ARB_gl_spirv", &gl_state.features.spirv_shader }
     };
 
