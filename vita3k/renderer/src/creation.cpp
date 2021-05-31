@@ -41,7 +41,7 @@ COMMAND(handle_create_context) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        result = gl::create(*ctx);
+        result = gl::create(*ctx, config.hashless_taexture_cache);
         break;
     }
 

@@ -23,7 +23,7 @@
 
 namespace renderer::gl {
 namespace texture {
-bool init(GLTextureCacheState &cache) {
+bool init(GLTextureCacheState &cache, const bool hashless_texture_cache) {
     cache.select_callback = [&](const std::size_t index) {
         const GLuint gl_texture = cache.textures[index];
         glBindTexture(GL_TEXTURE_2D, gl_texture);
@@ -36,6 +36,8 @@ bool init(GLTextureCacheState &cache) {
     cache.upload_texture_callback = [](const std::size_t index, const void *texture, const MemState &mem) {
         upload_bound_texture(*reinterpret_cast<const SceGxmTexture *>(texture), mem);
     };
+
+    cache.use_protect = hashless_texture_cache;
 
     return cache.textures.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
 }
@@ -274,13 +276,13 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state) {
     return true;
 }
 
-bool create(std::unique_ptr<Context> &context) {
+bool create(std::unique_ptr<Context> &context, const bool hashless_texture_cache) {
     R_PROFILE(__func__);
 
     context = std::make_unique<GLContext>();
     GLContext *gl_context = reinterpret_cast<GLContext *>(context.get());
 
-    return !(!texture::init(gl_context->texture_cache) || !gl_context->vertex_array.init(reinterpret_cast<renderer::Generator *>(glGenVertexArrays), reinterpret_cast<renderer::Deleter *>(glDeleteVertexArrays)) || !gl_context->element_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers)) || !gl_context->stream_vertex_buffers.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers))
+    return !(!texture::init(gl_context->texture_cache, hashless_texture_cache) || !gl_context->vertex_array.init(reinterpret_cast<renderer::Generator *>(glGenVertexArrays), reinterpret_cast<renderer::Deleter *>(glDeleteVertexArrays)) || !gl_context->element_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers)) || !gl_context->stream_vertex_buffers.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers))
         || !gl_context->uniform_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers)));
 }
 
