@@ -30,6 +30,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 #else
+#include <signal.h>
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
@@ -389,6 +390,37 @@ static void register_access_violation_handler(AccessViolationHandler handler) {
 
 #else
 
-// TODO
+static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
+    auto context = static_cast<ucontext_t *>(uct);
+
+#ifdef __APPLE__
+    const uint64_t err = context->uc_mcontext->__es.__err;
+#else
+    const uint64_t err = context->uc_mcontext.gregs[REG_ERR];
+#endif
+
+    const bool is_executing = err & 0x10;
+    const bool is_writing = err & 0x2;
+
+    if (!is_executing) {
+        if (access_violation_handler(reinterpret_cast<uint8_t *>(info->si_addr), is_writing)) {
+            return;
+        }
+    }
+
+    raise(SIGTRAP);
+    return;
+}
+
+static void register_access_violation_handler(AccessViolationHandler handler) {
+    access_violation_handler = handler;
+    struct sigaction sa;
+    sa.sa_flags = SA_SIGINFO;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_sigaction = signal_handler;
+    if (sigaction(SIGSEGV, &sa, NULL) == -1) {
+        LOG_CRITICAL("Failed to register an exception handler");
+    }
+}
 
 #endif
