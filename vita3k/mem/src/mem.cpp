@@ -119,7 +119,8 @@ static void delete_pagetable(MemPage *page_table) {
 }
 
 bool is_valid_addr(const MemState &state, Address addr) {
-    return addr && state.allocator.allocated_count(addr / state.page_size, 1) != 0;
+    const size_t page_num = addr / state.page_size;
+    return addr && state.allocator.free_slot_count(page_num, page_num + 1) == 0;
 }
 
 static Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force) {
@@ -166,8 +167,8 @@ Address alloc(MemState &state, size_t size, const char *name, unsigned int align
     const size_t page_count = align(size, state.page_size) / state.page_size;
     const Address addr = alloc_inner(state, 0, page_count, name, false);
     const Address align_addr = align(addr, alignment);
-    const int page_num = addr / state.page_size;
-    const int align_page_num = align_addr / state.page_size;
+    const size_t page_num = addr / state.page_size;
+    const size_t align_page_num = align_addr / state.page_size;
 
     if (page_num != align_page_num) {
         const size_t remnant = align_page_num - page_num;
@@ -350,7 +351,7 @@ void free(MemState &state, Address address) {
 }
 
 uint32_t mem_available(MemState &state) {
-    return TOTAL_MEM_SIZE - state.allocator.allocated_count(0, state.allocator.max_offset) * state.page_size;
+    return state.allocator.free_slot_count(0, state.allocator.max_offset) * state.page_size;
 }
 
 const char *mem_name(Address address, MemState &state) {

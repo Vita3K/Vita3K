@@ -168,33 +168,33 @@ static int number_of_set_bits(std::uint32_t i) {
     return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;
 }
 
-int BitmapAllocator::allocated_count(const std::uint32_t offset, const std::uint32_t offset_end) const {
-    if (offset > offset_end) {
+int BitmapAllocator::free_slot_count(const std::uint32_t offset, const std::uint32_t offset_end) const {
+    if (offset >= offset_end) {
         return -1;
     }
 
     const std::uint32_t beg_off = (offset >> 5);
     const std::uint32_t end_off = (offset_end >> 5);
 
-    if ((beg_off >= words.size()) || (end_off >= words.size())) {
+    if ((beg_off >= words.size()) || (end_off > words.size())) {
         return -1;
     }
 
     std::uint32_t start_bit = offset;
     const std::uint32_t end_bit = offset_end;
 
-    std::uint32_t allocated_count = 0;
+    std::uint32_t free_count = 0;
 
-    {
-        while (start_bit < end_bit) {
-            const std::uint32_t next_end_bit = std::min<std::uint32_t>(((start_bit + 32) >> 5) << 5, end_bit);
+    while (start_bit < end_bit) {
+        const std::uint32_t next_end_bit = std::min<std::uint32_t>(((start_bit + 32) >> 5) << 5, end_bit);
 
-            std::uint32_t word_to_scan = (words[start_bit >> 5] >> (start_bit & 31)) << (31 - (next_end_bit - 1) & 31);
-            allocated_count += number_of_set_bits(word_to_scan);
+        const int left_shift = start_bit & 31;
+        const int right_shift = left_shift + (31 - (next_end_bit - 1) & 31);
+        std::uint32_t word_to_scan = words[start_bit >> 5] << left_shift >> right_shift;
+        free_count += number_of_set_bits(word_to_scan);
 
-            start_bit = next_end_bit;
-        }
+        start_bit = next_end_bit;
     }
 
-    return allocated_count;
+    return free_count;
 }
