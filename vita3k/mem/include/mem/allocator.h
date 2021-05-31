@@ -21,13 +21,6 @@ public:
     void free(const std::uint32_t offset, const int size);
     void reset();
 
-    /**
-     * @brief   Get the number of allocated cells from specified region.
-     * 
-     * @param   offset          Begin offset of the region.
-     * @param   offset_end      End offset of the region.
-     * 
-     * @returns Number of cells already allocated on this region.
-     */
-    int allocated_count(const std::uint32_t offset, const std::uint32_t offset_end) const;
+    // Count free bits in [offset, offset_end) (exclusive)
+    int free_slot_count(const std::uint32_t offset, const std::uint32_t offset_end) const;
 };
