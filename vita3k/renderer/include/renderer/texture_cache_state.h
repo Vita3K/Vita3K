@@ -34,7 +34,7 @@ typedef std::function<void(std::size_t, const void *)> TextureCacheStateConfigur
 typedef std::function<void(std::size_t, const void *, const MemState &)> TextureCacheStateUploadTextureCallback;
 
 struct TextureCacheState {
-    bool use_protect = true;
+    bool use_protect = false;
     size_t used = 0;
     TextureCacheTimestamp timestamp = 1;
     TextureCacheInfoes infoes;
