@@ -125,13 +125,17 @@ bool is_valid_addr(const MemState &state, Address addr) {
 }
 
 static Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force) {
-    // Try to find and allocate page
-    int page_num = state.allocator.allocate_from(start_page, page_count, !force);
-    if (page_num < 0) {
-        LOG_CRITICAL("Failed to allocate page");
-    }
-    if (force && page_num != start_page) {
-        LOG_CRITICAL("Failed to allocate at specific page");
+    int page_num;
+    if (force) {
+        if (state.allocator.allocate_at(start_page, page_count) < 0) {
+            LOG_CRITICAL("Failed to allocate at specific page");
+        }
+        page_num = start_page;
+    } else {
+        page_num = state.allocator.allocate_from(start_page, page_count, false);
+        if (page_num < 0) {
+            LOG_CRITICAL("Failed to allocate page");
+        }
     }
 
     const int size = page_count * state.page_size;
@@ -312,7 +316,7 @@ Address alloc(MemState &state, size_t size, const char *name) {
 Address alloc_at(MemState &state, Address address, size_t size, const char *name) {
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const uint32_t wanted_page = address / state.page_size;
-    size += address - wanted_page * state.page_size;
+    size += address % state.page_size;
     const size_t page_count = align(size, state.page_size) / state.page_size;
     alloc_inner(state, wanted_page, page_count, name, true);
     return address;
