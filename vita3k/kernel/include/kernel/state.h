@@ -52,8 +52,6 @@ struct CodecEngineBlock;
 struct ThreadState;
 
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
-typedef std::shared_ptr<SceKernelMemBlockInfo> SceKernelMemBlockInfoPtr;
-typedef std::map<SceUID, SceKernelMemBlockInfoPtr> Blocks;
 typedef std::map<SceUID, CodecEngineBlock> CodecEngineBlocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
 typedef std::map<SceUID, ThreadStatePtr> ThreadStatePtrs;
@@ -118,8 +116,6 @@ struct KernelState {
     KernelState();
 
     std::mutex mutex;
-    Blocks blocks;
-    Blocks vm_blocks;
     CodecEngineBlocks codec_blocks;
 
     Ptr<const void> tls_address = Ptr<const void>(0);

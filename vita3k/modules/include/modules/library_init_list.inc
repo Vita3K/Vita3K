@@ -1,1 +1,2 @@
 LIBRARY(SceFiber)
+LIBRARY(SceSysmem)
