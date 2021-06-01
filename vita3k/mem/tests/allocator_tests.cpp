@@ -15,15 +15,16 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <list>
 #include <mem/allocator.h>
 #include <mem/util.h>
 
 #include <gtest/gtest.h>
 
 TEST(bitmap_allocator, one_bit_allocation) {
-    BitmapAllocator allocator(KB(10));
+    BitmapAllocator allocator(KB(5));
 
-    for (int i = 0; i < KB(10); ++i) {
+    for (int i = 0; i < KB(5); ++i) {
         int size = 1;
         int inoffset = 31 - i & 31;
         int bit = (allocator.words[i >> 5] & (1 << inoffset)) >> inoffset;
@@ -36,9 +37,10 @@ TEST(bitmap_allocator, one_bit_allocation) {
 }
 
 TEST(bitmap_allocator, one_bit_free_slot) {
-    BitmapAllocator allocator(KB(10));
-    ASSERT_EQ(allocator.free_slot_count(0, KB(10)), KB(10));
-    for (int i = 0; i < KB(10); ++i) {
+    BitmapAllocator allocator(KB(5));
+
+    ASSERT_EQ(allocator.free_slot_count(0, KB(5)), KB(5));
+    for (int i = 0; i < KB(5); ++i) {
         int size = 1;
         ASSERT_EQ(allocator.free_slot_count(i, i + 1), 1);
         int ret = allocator.allocate_from(i, size, false);
@@ -46,13 +48,13 @@ TEST(bitmap_allocator, one_bit_free_slot) {
         ASSERT_EQ(size, 1);
         ASSERT_EQ(allocator.free_slot_count(i, i + 1), 0);
     }
-    ASSERT_EQ(allocator.free_slot_count(0, KB(10)), 0);
+    ASSERT_EQ(allocator.free_slot_count(0, KB(5)), 0);
 }
 
 TEST(bitmap_allocator, free_slot_count_aligned) {
-    BitmapAllocator allocator(KB(10));
+    BitmapAllocator allocator(KB(5));
 
-    for (int i = 0; i < KB(10); i += 2) {
+    for (int i = 0; i < KB(5); i += 2) {
         int size = 2;
         ASSERT_EQ(allocator.free_slot_count(i, i + 2), 2);
         int ret = allocator.allocate_from(i, size, false);
@@ -63,15 +65,89 @@ TEST(bitmap_allocator, free_slot_count_aligned) {
 }
 
 TEST(bitmap_allocator, free_slot_count_unaligned) {
-    BitmapAllocator allocator(KB(10));
+    BitmapAllocator allocator(KB(5));
 
-    for (int i = 0; KB(10) - i >= 3; i += 3) {
+    for (int i = 0; KB(5) - i >= 3; i += 3) {
         int size = 3;
         ASSERT_EQ(allocator.free_slot_count(i, i + 3), 3);
         int ret = allocator.allocate_from(i, size, false);
         ASSERT_EQ(ret, i);
         ASSERT_EQ(size, 3);
         ASSERT_EQ(allocator.free_slot_count(i, i + 3), 0);
+    }
+}
+
+TEST(bitmap_allocator, allocate_at) {
+    BitmapAllocator allocator(KB(5));
+
+    ASSERT_EQ(allocator.free_slot_count(0, KB(5)), KB(5));
+    for (int i = 0; KB(5) - i >= 4; i += 4) {
+        int size = 4;
+        ASSERT_EQ(allocator.free_slot_count(i, i + 4), 4);
+        allocator.allocate_at(i, 4);
+        ASSERT_EQ(allocator.free_slot_count(i, i + 4), 0);
+        allocator.free(i, size);
+        ASSERT_EQ(size, 4);
+        ASSERT_EQ(allocator.free_slot_count(i, i + 4), 4);
+    }
+    ASSERT_EQ(allocator.free_slot_count(0, KB(5)), KB(5));
+}
+
+TEST(bitmap_allocator, alloc_32) {
+    BitmapAllocator allocator(KB(5));
+    for (int i = 0; i < KB(5); i += 32) {
+        int size = 32;
+        ASSERT_EQ(allocator.free_slot_count(i, i + 32), 32);
+        int ret = allocator.allocate_from(i, size, false);
+        ASSERT_EQ(ret, i);
+        ASSERT_EQ(size, 32);
+        ASSERT_EQ(allocator.free_slot_count(i, i + 32), 0);
+    }
+}
+
+TEST(bitmap_allocator, battle_test) {
+    srand(time(0));
+    constexpr int MEM_SIZE = KB(10);
+    constexpr int TEST_EPOCH = KB(1000);
+    constexpr int MAX_MEM_CHUNK_SIZE = 100;
+
+    BitmapAllocator allocator(MEM_SIZE);
+    struct Page {
+        int n;
+        int size;
+    };
+
+    std::list<Page> pages;
+
+    int tracked_size = MEM_SIZE;
+    const auto free_any_page = [&]() {
+        if (!pages.empty()) {
+            auto it = pages.begin();
+            allocator.free(it->n, it->size);
+            tracked_size += it->size;
+            pages.erase(it);
+        }
+    };
+
+    for (int i = 0; i < TEST_EPOCH; ++i) {
+        int size = rand() % MAX_MEM_CHUNK_SIZE + 1;
+        while (allocator.free_slot_count(0, MEM_SIZE) < size) {
+            free_any_page();
+        }
+        ASSERT_EQ(allocator.free_slot_count(0, MEM_SIZE), tracked_size);
+        int offset = rand() % MEM_SIZE;
+        int ret = allocator.allocate_at(offset, size);
+        if (ret < 0) {
+            offset = allocator.allocate_from(0, size, rand() % 2);
+        }
+        if (offset >= 0) {
+            tracked_size -= size;
+            ASSERT_EQ(allocator.free_slot_count(offset, offset + size), 0);
+            ASSERT_EQ(allocator.free_slot_count(0, MEM_SIZE), tracked_size);
+            pages.push_back({ offset, size });
+        } else {
+            free_any_page();
+        }
     }
 }
 
