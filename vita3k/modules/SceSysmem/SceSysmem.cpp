@@ -247,8 +247,24 @@ EXPORT(int, sceKernelOpenVMDomain) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelSyncVMDomain) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSyncVMDomain, SceUID block_uid, Address base, uint32_t size) {
+    const auto state = host.kernel.obj_store.get<SysmemState>();
+    const auto guard = std::lock_guard<std::mutex>(state->mutex);
+
+    const auto it = state->vm_blocks.find(block_uid);
+    if (it == state->vm_blocks.end()) {
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
+    }
+
+    const auto block = it->second;
+    const uint32_t block_base_end = block->mappedBase.address() + block->mappedSize;
+    const uint32_t base_end = base + size;
+    if (block->mappedBase.address() > base_end || base > block_base_end) {
+        return RET_ERROR(SCE_KERNEL_ERROR_BLOCK_ERROR);
+    }
+    invalidate_jit_cache(*host.kernel.get_thread(thread_id)->cpu, base, size);
+
+    return 0;
 }
 
 BRIDGE_IMPL(sceKernelAllocMemBlock)
