@@ -166,7 +166,9 @@ int BitmapAllocator::allocate_at(const std::uint32_t start_offset, int size) {
     if (free_slot_count(start_offset, start_offset + size) != size) {
         return -1;
     }
+
     force_fill(start_offset, size, false);
+    return 0;
 }
 
 static int number_of_set_bits(std::uint32_t i) {
