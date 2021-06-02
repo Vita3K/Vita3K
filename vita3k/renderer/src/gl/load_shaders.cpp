@@ -12,8 +12,8 @@
 #include <utility>
 
 namespace renderer::gl {
-static bool load_shader(const char *hash, const char *extension, const char *base_path, char **destination, std::size_t &size_read) {
-    const auto shader_path = fs_utils::construct_file_name(base_path, "shaders", hash, extension);
+static bool load_shader(const char *hash, const char *extension, const char *base_path, const char *title_id, char **destination, std::size_t &size_read) {
+    const auto shader_path = fs_utils::construct_file_name(base_path, (fs::path("shaders") / title_id).string().c_str(), hash, extension);
     fs::ifstream is(shader_path, fs::ifstream::binary);
     if (!is) {
         return false;
@@ -47,11 +47,11 @@ R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureStat
     std::size_t read_size = 0;
     R source;
 
-    if (load_shader(hash_text.data(), shader_type_str, base_path, nullptr, read_size)) {
+    if (load_shader(hash_text.data(), shader_type_str, base_path, title_id, nullptr, read_size)) {
         source.resize((read_size + sizeof(typename R::value_type) - 1) / sizeof(typename R::value_type));
 
         char *dest_pointer = reinterpret_cast<char *>(source.data());
-        load_shader(hash_text.data(), shader_type_str, base_path, &dest_pointer, read_size);
+        load_shader(hash_text.data(), shader_type_str, base_path, title_id, &dest_pointer, read_size);
     }
 
     if (source.empty()) {
