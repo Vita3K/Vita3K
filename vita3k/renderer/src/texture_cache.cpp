@@ -28,22 +28,11 @@ static TextureCacheHash hash_palette_data(const SceGxmTexture &texture, size_t c
     return palette_hash;
 }
 
-static size_t get_texture_size(const SceGxmTexture &texture) {
-    const SceGxmTextureFormat format = gxm::get_format(&texture);
-    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
-    const size_t width = gxm::get_width(&texture);
-    const size_t height = gxm::get_height(&texture);
-    const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
-    const size_t bpp = texture::bits_per_pixel(base_format);
-    const size_t size = (bpp * stride * height) / 8;
-    return size;
-}
-
 TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem) {
     R_PROFILE(__func__);
     const SceGxmTextureFormat format = gxm::get_format(&texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
-    const size_t size = get_texture_size(texture);
+    const size_t size = texture_size(texture);
     const Ptr<const void> data(texture.data_addr << 2);
     const TextureCacheHash data_hash = hash_data(data.get(mem), size);
 
@@ -80,10 +69,10 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     size_t index = 0;
     bool configure = false;
     bool upload = false;
-    const size_t size = get_texture_size(gxm_texture);
+    const size_t size = texture_size(gxm_texture);
 
     // Try to find GXM texture in cache.
-    size_t cached_gxm_texture_index = -1;
+    int cached_gxm_texture_index = -1;
     for (size_t a = 0; a < cache.used; a++) {
         if (memcmp(&cache.infoes[a].texture, &gxm_texture, sizeof(SceGxmTexture)) == 0) {
             cached_gxm_texture_index = a;
