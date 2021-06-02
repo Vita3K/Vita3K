@@ -166,9 +166,8 @@ static Address alloc_inner(MemState &state, uint32_t start_page, int page_count,
 Address alloc(MemState &state, size_t size, const char *name, unsigned int alignment) {
     if (alignment == 0)
         return alloc(state, size, name);
-
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
-    size = align(size, alignment);
+    size += alignment;
     const size_t page_count = align(size, state.page_size) / state.page_size;
     const Address addr = alloc_inner(state, 0, page_count, name, false);
     const Address align_addr = align(addr, alignment);
@@ -176,14 +175,13 @@ Address alloc(MemState &state, size_t size, const char *name, unsigned int align
     const size_t align_page_num = align_addr / state.page_size;
 
     if (page_num != align_page_num) {
-        const size_t remnant = align_page_num - page_num;
-        state.allocator.free(page_num, remnant);
-
         MemPage &page = state.page_table[page_num];
         MemPage &align_page = state.page_table[align_page_num];
+        const size_t remnant_front = align_page_num - page_num;
+        state.allocator.free(page_num, remnant_front);
         page.allocated = 0;
         align_page.allocated = 1;
-        align_page.size = page.size - remnant;
+        align_page.size = page.size - remnant_front;
     }
 
     return align_addr;
