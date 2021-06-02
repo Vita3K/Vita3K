@@ -299,6 +299,12 @@ void sync_texture(GLContext &context, MemState &mem, std::size_t index, SceGxmTe
         return;
     }
 
+    const size_t texture_size = renderer::texture::texture_size(texture);
+    if (!is_valid_addr_range(mem, texture.data_addr << 2, (texture.data_addr << 2) + texture_size)) {
+        LOG_WARN("Texture has freed data.");
+        return;
+    }
+
     const SceGxmTextureFormat format = gxm::get_format(&texture);
     if (gxm::is_paletted_format(format) && texture.palette_addr == 0) {
         LOG_WARN("Ignoring null palette texture");

@@ -148,6 +148,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 bool is_compressed_format(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height, size_t &source_size);
 TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem);
+size_t texture_size(const SceGxmTexture &texture);
 
 } // namespace texture
 

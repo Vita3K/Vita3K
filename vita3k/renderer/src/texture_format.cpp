@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <cstring>
 
+#include <gxm/functions.h>
 #include <gxm/types.h>
 
 namespace renderer::texture {
@@ -97,6 +98,17 @@ size_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
     }
 
     return 0;
+}
+
+size_t texture_size(const SceGxmTexture &texture) {
+    const SceGxmTextureFormat format = gxm::get_format(&texture);
+    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
+    const size_t width = gxm::get_width(&texture);
+    const size_t height = gxm::get_height(&texture);
+    const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
+    const size_t bpp = bits_per_pixel(base_format);
+    const size_t size = (bpp * stride * height) / 8;
+    return size;
 }
 
 // Based on this: http://xen.firefly.nu/up/rearrange.c.html
