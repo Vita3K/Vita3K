@@ -124,6 +124,12 @@ bool is_valid_addr(const MemState &state, Address addr) {
     return addr && state.allocator.free_slot_count(page_num, page_num + 1) == 0;
 }
 
+bool is_valid_addr_range(const MemState &state, Address start, Address end) {
+    const uint32_t start_page = start / state.page_size;
+    const uint32_t end_page = (end + state.page_size - 1) / state.page_size;
+    return state.allocator.free_slot_count(start_page, end_page) == 0;
+}
+
 static Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force) {
     int page_num;
     if (force) {
