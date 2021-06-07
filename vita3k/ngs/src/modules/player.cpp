@@ -44,8 +44,6 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     State *state = data.get_state<State>();
     bool finished = false;
 
-    std::uint8_t *data_ptr = data.extra_storage.data();
-
     // If decoder hasn't been initialized or ADPCM format is going to be used
     if (!decoder || (decoder->he_adpcm != static_cast<bool>(params->type))) {
         // Create decoder specifying the desired destination sample rate
@@ -75,7 +73,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
             // Ran out of data, supply new
             // Decode new data and deliver them
             // Let's open our context
-            if ((data.extra_storage.size() < data.parent->rack->system->granularity * 2 * sizeof(float)) && (state->current_buffer != -1)) {
+            if ((data.extra_storage.size() < sizeof(float) * 2 * data.parent->rack->system->granularity) && (state->current_buffer != -1)) {
                 // Set up decoder
                 decoder->source_channels = params->channels;
                 decoder->source_frequency = params->playback_frequency;
@@ -141,7 +139,6 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                     decoder->receive(current_count + data.extra_storage.data(), nullptr);
                 }
             }
-            data_ptr = data.extra_storage.data();
 
             std::uint32_t bytes_left_in_buffer = data.extra_storage.size();
             std::uint32_t samples_to_take_per_channel = bytes_left_in_buffer / sizeof(float) / 2;
@@ -198,6 +195,13 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     }
 
     std::uint32_t gran_to_be_passed = std::min<std::uint32_t>(state->decoded_gran_pending, data.parent->rack->system->granularity);
+
+    auto const new_size = 2 * sizeof(float) * (state->decoded_gran_passed + data.parent->rack->system->granularity);
+    if (data.extra_storage.size() < new_size) {
+        LOG_TRACE("Resize extra_storage from {} to {}", data.extra_storage.size(), new_size);
+        data.extra_storage.resize(new_size);
+    }
+    std::uint8_t *data_ptr = data.extra_storage.data();
     data_ptr += 2 * sizeof(float) * state->decoded_gran_passed;
 
     data.parent->products[0].data = data_ptr;
