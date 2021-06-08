@@ -109,6 +109,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
     const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / title_id };
     const auto LICENSE_PATH{ fs::path(host.pref_path) / "ux0/license" / title_id };
     const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / title_id };
+    const auto SHADER_CACHE_PATH{ fs::path(host.base_path) / "shaders" / title_id };
     const auto SHADER_LOG_PATH{ fs::path(host.base_path) / "shaderlog" / title_id };
 
     const auto display_size = ImGui::GetIO().DisplaySize;
@@ -167,6 +168,13 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     system((OS_PREFIX + LICENSE_PATH.string()).c_str());
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
                     system((OS_PREFIX + SAVE_DATA_PATH.string()).c_str());
+                if (ImGui::MenuItem("Shader Cache")) {
+                    if (!fs::exists(SHADER_CACHE_PATH))
+                        fs::create_directories(SHADER_CACHE_PATH);
+                    system((OS_PREFIX + SHADER_CACHE_PATH.string()).c_str());
+                }
+                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem("Shader Log"))
+                    system((OS_PREFIX + SHADER_LOG_PATH.string()).c_str());
                 ImGui::EndMenu();
             }
             if (!host.cfg.show_live_area_screen && ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))
@@ -180,9 +188,10 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     fs::remove_all(LICENSE_PATH);
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
                     context_dialog = "save";
-                if (ImGui::MenuItem("Shader Log")) {
+                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem("Shader Cache"))
+                    fs::remove_all(SHADER_CACHE_PATH);
+                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem("Shader Log"))
                     fs::remove_all(SHADER_LOG_PATH);
-                }
                 ImGui::EndMenu();
             }
             if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(is_lang ? lang["update_history"].c_str() : "Update History")) {
