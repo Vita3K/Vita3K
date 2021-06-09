@@ -48,27 +48,6 @@ static const char OS_PREFIX[] = "open ";
 static const char OS_PREFIX[] = "xdg-open ";
 #endif
 
-static bool change_pref_location(const std::string &input_path, const std::string &current_path) {
-    if (fs::path(input_path).has_extension())
-        return false;
-
-    if (!fs::exists(input_path))
-        fs::create_directories(input_path);
-
-    try {
-        fs::directory_iterator it{ current_path };
-        while (it != fs::directory_iterator{}) {
-            // TODO: Move Vita directories
-
-            boost::system::error_code err;
-            it.increment(err);
-        }
-    } catch (const std::exception &err) {
-        return false;
-    }
-    return true;
-}
-
 static Config::CurrentConfig config;
 
 static void get_modules_list(GuiState &gui, HostState &host) {
@@ -273,9 +252,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("##settings", &settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushFont(gui.vita_font);
     ImGui::SetWindowFontScale(0.65f);
-    const auto title = is_custom_config ? fmt::format("Settings: {} [{}]", get_app_index(gui, host.app_path)->title, host.app_path).c_str() : "Settings";
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, title);
+    const auto title = is_custom_config ? fmt::format("Settings: {} [{}]", get_app_index(gui, host.app_path)->title, host.app_path) : "Settings";
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, title.c_str());
     ImGui::PopFont();
     ImGui::Spacing();
     ImGui::Separator();
