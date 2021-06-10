@@ -241,7 +241,7 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
 static bool copy_directories(const fs::path &src_path, const fs::path &dst_path) {
     try {
         if (!fs::exists(dst_path))
-            fs::create_directory(dst_path);
+            fs::create_directories(dst_path);
 
         for (const auto &src : fs::recursive_directory_iterator(src_path)) {
             const auto dst_parent_path = dst_path / fs::relative(src, src_path).parent_path();
@@ -305,8 +305,10 @@ static bool install_content(HostState &host, GuiState *gui, const fs::path &cont
     else
         dst_path = { fs::path(host.pref_path) / "ux0/app" / host.app_title_id };
 
-    if (!copy_directories(content_path, dst_path))
+    if (!copy_directories(content_path, dst_path)) {
+        LOG_ERROR("Failed to copy directory to: {}", dst_path.string());
         return false;
+    }
 
     if (fs::exists(dst_path / "sce_sys/package/")) {
         if (!is_nonpdrm(host, dst_path))
