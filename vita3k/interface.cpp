@@ -245,14 +245,14 @@ static bool copy_directories(const fs::path &src_path, const fs::path &dst_path)
 
         for (const auto &src : fs::recursive_directory_iterator(src_path)) {
             const auto dst_parent_path = dst_path / fs::relative(src, src_path).parent_path();
+            const auto dst_path = dst_parent_path / src.path().filename();
 
-            if (!fs::exists(dst_parent_path))
-                fs::create_directory(dst_parent_path);
-
-            LOG_INFO("Copy {}", (dst_parent_path / src.path().filename()).string());
+            LOG_INFO("Copy {}", dst_path.string());
 
             if (fs::is_regular_file(src))
-                fs::copy_file(src, dst_parent_path / src.path().filename(), fs::copy_option::overwrite_if_exists);
+                fs::copy_file(src, dst_path, fs::copy_option::overwrite_if_exists);
+            else if (!fs::exists(dst_path))
+                fs::create_directory(dst_path);
         }
 
         return true;
