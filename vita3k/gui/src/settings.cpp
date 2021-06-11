@@ -779,27 +779,23 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
                         ImGui::Begin("##delete_theme", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-                        ImGui::SetNextWindowBgAlpha(0.999f);
                         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
                         ImGui::BeginChild("##delete_theme_popup", POPUP_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                         ImGui::SetCursorPos(ImVec2(48.f * SCALE.x, 28.f * SCALE.y));
                         ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
                         ImGui::Image(gui.themes_preview[selected]["package"], SIZE_MINI_PACKAGE);
-                        ImGui::SameLine();
-                        const auto CALC_TITLE = ImGui::CalcTextSize(themes_info[selected].title.c_str(), nullptr, false, POPUP_SIZE.x - SIZE_MINI_PACKAGE.x - 48.f).y / 2.f;
+                        ImGui::SameLine(0, 22.f * SCALE.x);
+                        const auto CALC_TITLE = ImGui::CalcTextSize(themes_info[selected].title.c_str(), nullptr, false, POPUP_SIZE.x - SIZE_MINI_PACKAGE.x - (70.f * SCALE.x)).y / 2.f;
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (SIZE_MINI_PACKAGE.y / 2.f) - CALC_TITLE);
-                        ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + POPUP_SIZE.x - SIZE_MINI_PACKAGE.x - 48.f);
-                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[selected].title.c_str());
-                        ImGui::PopTextWrapPos();
+                        ImGui::TextWrapped("%s", themes_info[selected].title.c_str());
                         const auto delete_str = is_lang ? lang["delete"] : "This theme will be deleted.";
                         const auto CALC_TEXT = ImGui::CalcTextSize(delete_str.c_str());
-                        ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - (CALC_TEXT.x / 2.f), POPUP_SIZE.y / 2.f - (CALC_TEXT.y / 2.f)));
+                        ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - (CALC_TEXT.x / 2.f), POPUP_SIZE.y / 2.f));
                         ImGui::TextColored(GUI_COLOR_TEXT, delete_str.c_str());
-                        ImGui::SetCursorPos(ImVec2(50.f, POPUP_SIZE.y - (22.f + BUTTON_SIZE.y)));
-                        ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f);
+                        ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - BUTTON_SIZE.x - (20.f * SCALE.x), POPUP_SIZE.y - BUTTON_SIZE.y - (22.f * SCALE.y)));
                         if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
                             popup.clear();
-                        ImGui::SetCursorPos(ImVec2(ImGui::GetWindowSize().x - 50.f - BUTTON_SIZE.x, POPUP_SIZE.y - (22.f + BUTTON_SIZE.y)));
+                        ImGui::SameLine(0, 40.f * SCALE.x);
                         if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
                             if (selected == gui.users[host.io.user_id].theme_id) {
                                 gui.users[host.io.user_id].theme_id = "default";
@@ -820,7 +816,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                             set_scroll_pos = true;
                         }
                         ImGui::EndChild();
-                        ImGui::PopStyleVar(2);
+                        ImGui::PopStyleVar();
                         ImGui::End();
                     } else if (popup == "information") {
                         if (gui.themes_preview[selected].find("home") != gui.themes_preview[selected].end()) {
@@ -865,6 +861,11 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[selected].version.c_str());
+                        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
+                        ImGui::TextColored(GUI_COLOR_TEXT, "Content ID");
+                        ImGui::SameLine();
+                        ImGui::SetCursorPosX(INFO_POS.x);
+                        ImGui::TextWrapped("%s", selected.c_str());
                     }
                 }
             } else if (menu == "start") {
