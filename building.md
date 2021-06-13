@@ -71,7 +71,7 @@ cd Vita3K
 - Install dependencies.
 
 ```sh
-sudo apt install git cmake ninja-build libsdl2-dev pkg-config libgtk-3-dev clang
+sudo apt install git cmake ninja-build libsdl2-dev pkg-config libgtk-3-dev clang libboost-program-options-dev
 ```
 
 - Clone this repo.
