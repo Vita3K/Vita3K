@@ -209,6 +209,8 @@ struct GuiState {
     std::vector<std::string> apps_list_opened;
     int32_t current_app_selected = -1;
 
+    std::map<std::string, std::map<std::string, time_t>> time_apps;
+
     std::uint64_t current_theme_bg;
     std::map<std::string, std::map<std::string, ImGui_Texture>> themes_preview;
     std::vector<ImGui_Texture> theme_backgrounds;

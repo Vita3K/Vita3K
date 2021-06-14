@@ -129,6 +129,8 @@ void init_lang(GuiState &gui, HostState &host) {
                 lang_app_context["updated"] = app_context.child("updated").text().as_string();
                 lang_app_context["size"] = app_context.child("size").text().as_string();
                 lang_app_context["version"] = app_context.child("version").text().as_string();
+                lang_app_context["last_time_used"] = app_context.child("last_time_used").text().as_string();
+                lang_app_context["never"] = app_context.child("never").text().as_string();
             }
 
             // Common

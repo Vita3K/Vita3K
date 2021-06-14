@@ -47,6 +47,7 @@ std::string get_unit_size(const size_t &size);
 void get_app_param(GuiState &gui, HostState &host, const std::string &app_path);
 void get_notice_list(HostState &host);
 void get_param_info(HostState &host, const vfs::FileBuffer &param);
+void get_time_apps(GuiState &gui, HostState &host);
 void get_user_apps_title(GuiState &gui, HostState &host);
 void get_users_list(GuiState &gui, HostState &host);
 bool get_sys_apps_state(GuiState &gui);
@@ -80,6 +81,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path);
 void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &app_path);
 void update_notice_info(GuiState &gui, HostState &host, const std::string &type);
 void save_notice_list(HostState &host);
+void save_time_apps(GuiState &gui, HostState &host);
 
 void draw_begin(GuiState &gui, HostState &host);
 void draw_end(GuiState &host, SDL_Window *window);

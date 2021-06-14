@@ -35,6 +35,8 @@
 	<updated>Updated</updated>
 	<size>Size</size>
 	<version>Version</version>
+	<last_time_used>Last time used</last_time_used>
+	<never>Never</never>
 </app_context>
 
 <common>
