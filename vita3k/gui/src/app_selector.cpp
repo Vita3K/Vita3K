@@ -126,6 +126,8 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
                 gui.live_area.app_selector = false;
                 gui.live_area.live_area_screen = false;
                 update_last_loaded_apps(host, app_path);
+                gui.time_apps[host.io.user_id][app_path] = std::time(nullptr);
+                save_time_apps(gui, host);
                 host.io.app_path = app_path;
             }
         } else {
@@ -187,6 +189,8 @@ void draw_app_close(GuiState &gui, HostState &host) {
     if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
         const auto app_path = gui.apps_list_opened[gui.current_app_selected];
         update_last_loaded_apps(host, app_path);
+        gui.time_apps[host.io.user_id][app_path] = std::time(nullptr);
+        save_time_apps(gui, host);
         host.kernel.exit_delete_all_threads();
         host.load_app_path = app_path;
         host.load_exec = true;

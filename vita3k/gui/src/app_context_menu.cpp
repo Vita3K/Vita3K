@@ -20,6 +20,7 @@
 #include <gui/functions.h>
 
 #include <util/log.h>
+#include <util/safe_time.h>
 
 #include <pugixml.hpp>
 #include <sstream>
@@ -96,6 +97,53 @@ static const char OS_PREFIX[] = "open ";
 #else
 static const char OS_PREFIX[] = "xdg-open ";
 #endif
+
+void get_time_apps(GuiState &gui, HostState &host) {
+    gui.time_apps.clear();
+    const auto time_path{ fs::path(host.pref_path) / "ux0/user/time.xml" };
+
+    pugi::xml_document time_xml;
+    if (fs::exists(time_path)) {
+        if (time_xml.load_file(time_path.c_str())) {
+            const auto time_child = time_xml.child("time");
+            if (!time_child.child("user").empty()) {
+                for (const auto &user : time_child) {
+                    auto user_id = user.attribute("id").as_string();
+                    for (const auto &app : user)
+                        gui.time_apps[user_id][app.text().as_string()] = app.attribute("last-time-used").as_llong();
+                }
+            }
+        } else {
+            LOG_ERROR("Time XML found is corrupted on path: {}", time_path.string());
+            fs::remove(time_path);
+        }
+    }
+}
+
+void save_time_apps(GuiState &gui, HostState &host) {
+    pugi::xml_document time_xml;
+    auto declarationUser = time_xml.append_child(pugi::node_declaration);
+    declarationUser.append_attribute("version") = "1.0";
+    declarationUser.append_attribute("encoding") = "utf-8";
+
+    auto time_child = time_xml.append_child("time");
+
+    for (const auto &user : gui.time_apps) {
+        auto user_child = time_child.append_child("user");
+        user_child.append_attribute("id") = user.first.c_str();
+
+        for (const auto &app : user.second) {
+            auto app_child = user_child.append_child("app");
+            app_child.append_attribute("last-time-used") = app.second;
+            app_child.append_child(pugi::node_pcdata).set_value(app.first.c_str());
+        }
+    }
+
+    const auto time_path{ fs::path(host.pref_path) / "ux0/user/time.xml" };
+    const auto save_xml = time_xml.save_file(time_path.c_str());
+    if (!save_xml)
+        LOG_ERROR("Fail save xml");
+}
 
 static std::string context_dialog;
 static auto information = false;
@@ -305,7 +353,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
         }
         const auto name = is_lang ? lang["name"] : "Name";
         ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize((name + "  ").c_str()).x, INFO_ICON_SIZE.y + (50.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, (name + " ").c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s ", name.c_str());
         ImGui::SameLine();
         ImGui::PushTextWrapPos(display_size.x - (85.f * SCALE.x));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->title.c_str());
@@ -314,12 +362,12 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             ImGui::Spacing();
             const auto trophy_earning = is_lang ? lang["trophy_earning"] : "Trophy Earning";
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((trophy_earning + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, (trophy_earning + "  %s").c_str(), gui.app_selector.app_info.trophy.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", trophy_earning.c_str(), gui.app_selector.app_info.trophy.c_str());
             ImGui::Spacing();
             const auto parental_Controls = is_lang ? lang["parental_Controls"] : "Parental Controls";
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((parental_Controls + "  ").c_str()).x);
             const auto level = is_lang ? lang["level"] : "Level";
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (parental_Controls + "  " + level).c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", parental_Controls.c_str(), level.c_str());
             ImGui::SameLine();
             ImGui::TextColored(GUI_COLOR_TEXT, "%d", *reinterpret_cast<const uint16_t *>(APP_INDEX->parental_level.c_str()));
             ImGui::Spacing();
@@ -338,7 +386,23 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             ImGui::Spacing();
             const auto version = is_lang ? lang["version"] : "Version";
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((version + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (version + "  " + APP_INDEX->app_ver).c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", version.c_str(), APP_INDEX->app_ver.c_str());
+            ImGui::Spacing();
+            const auto last_time_used = !lang["last_time_used"].empty() ? lang["last_time_used"] : "Last time used";
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((last_time_used + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s ", last_time_used.c_str());
+            ImGui::SameLine();
+            if (gui.time_apps[host.io.user_id].find(app_path) != gui.time_apps[host.io.user_id].end()) {
+                tm date_tm = {};
+                SAFE_LOCALTIME(&gui.time_apps[host.io.user_id][app_path], &date_tm);
+                auto LAST_TIME = get_date_time(gui, host, date_tm);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", LAST_TIME["date"].c_str(), LAST_TIME["clock"].c_str());
+                if (gui.users[host.io.user_id].clock_12_hour) {
+                    ImGui::SameLine();
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", LAST_TIME["day-moment"].c_str());
+                }
+            } else
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", !lang["never"].empty() ? lang["never"].c_str() : "Never");
         }
         ImGui::End();
     }

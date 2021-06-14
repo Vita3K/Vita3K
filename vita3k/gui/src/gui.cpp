@@ -282,6 +282,8 @@ void init_home(GuiState &gui, HostState &host) {
         init_apps_icon(gui, host, gui.app_selector.user_apps);
     }
 
+    get_time_apps(gui, host);
+
     if (!gui.users.empty() && (gui.users.find(host.cfg.user_id) != gui.users.end()) && (is_cmd || host.cfg.auto_user_login)) {
         init_user(gui, host, host.cfg.user_id);
         if (!is_cmd && host.cfg.auto_user_login) {
