@@ -567,8 +567,6 @@ void draw_start_screen(GuiState &gui, HostState &host) {
 
 static std::string popup, settings_menu, menu, sub_menu, selected, title, delete_user_background, delete_theme;
 static ImGuiTextFilter search_bar;
-static float scroll_pos;
-static bool set_scroll_pos;
 
 static std::string get_date_format_sting(GuiState &gui, DateFormat &date_format) {
     std::string date_format_str;
@@ -589,6 +587,8 @@ static const std::vector<std::string> LIST_SYS_LANG = {
     u8"Русский", "Korean", "Chinese - Traditional", "Chinese - Simplified", "Suomi", "Svenska",
     "Dansk", "Norsk", "Polskis", u8"Português (Brasil)", "English (United Kingdom)", u8"Türkçe"
 };
+
+static float set_scroll_pos, current_scroll_pos, max_scroll_pos;
 
 void draw_settings(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
@@ -637,6 +637,32 @@ void draw_settings(GuiState &gui, HostState &host) {
             ImGui::SameLine();
             search_bar.Draw("##search_bar", 200 * SCALE.x);
             ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
+
+            // Draw Scroll Arrow
+            const auto ARROW_SIZE = ImVec2(50.f * SCALE.x, 60.f * SCALE.y);
+            const ImU32 ARROW_COLOR = 0xFFFFFFFF; // White
+            if (current_scroll_pos) {
+                const auto ARROW_UPP_CENTER = ImVec2(display_size.x - (45.f * SCALE.x), 135.f * SCALE.y);
+                ImGui::GetWindowDrawList()->AddTriangleFilled(
+                    ImVec2(ARROW_UPP_CENTER.x - (20.f * SCALE.x), ARROW_UPP_CENTER.y + (16.f * SCALE.y)),
+                    ImVec2(ARROW_UPP_CENTER.x, ARROW_UPP_CENTER.y - (16.f * SCALE.y)),
+                    ImVec2(ARROW_UPP_CENTER.x + (20.f * SCALE.x), ARROW_UPP_CENTER.y + (16.f * SCALE.y)), ARROW_COLOR);
+                ImGui::SetCursorPos(ImVec2(ARROW_UPP_CENTER.x - (ARROW_SIZE.x / 2.f), ARROW_UPP_CENTER.y - ARROW_SIZE.y));
+                if ((ImGui::Selectable("##upp", false, ImGuiSelectableFlags_None, ARROW_SIZE))
+                    || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_up) || ImGui::IsKeyPressed(host.cfg.keyboard_button_up))
+                    set_scroll_pos = current_scroll_pos - (340 * SCALE.y);
+            }
+            if (current_scroll_pos < max_scroll_pos) {
+                const auto ARROW_DOWN_CENTER = ImVec2(display_size.x - (45.f * SCALE.x), display_size.y - (30.f * SCALE.y));
+                ImGui::GetWindowDrawList()->AddTriangleFilled(
+                    ImVec2(ARROW_DOWN_CENTER.x + (20.f * SCALE.x), ARROW_DOWN_CENTER.y - (16.f * SCALE.y)),
+                    ImVec2(ARROW_DOWN_CENTER.x, ARROW_DOWN_CENTER.y + (16.f * SCALE.y)),
+                    ImVec2(ARROW_DOWN_CENTER.x - (20.f * SCALE.x), ARROW_DOWN_CENTER.y - (16.f * SCALE.y)), ARROW_COLOR);
+                ImGui::SetCursorPos(ImVec2(ARROW_DOWN_CENTER.x - (ARROW_SIZE.x / 2.f), ARROW_DOWN_CENTER.y - ARROW_SIZE.y));
+                if ((ImGui::Selectable("##down", false, ImGuiSelectableFlags_None, ARROW_SIZE))
+                    || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_down) || ImGui::IsKeyPressed(host.cfg.keyboard_button_down))
+                    set_scroll_pos = current_scroll_pos + (340 * SCALE.y);
+            }
         }
     }
 
@@ -714,10 +740,12 @@ void draw_settings(GuiState &gui, HostState &host) {
                     }
 
                     // Set Scroll Pos
-                    if (set_scroll_pos) {
-                        ImGui::SetScrollY(scroll_pos);
-                        set_scroll_pos = false;
+                    if (set_scroll_pos != -1) {
+                        ImGui::SetScrollY(set_scroll_pos);
+                        set_scroll_pos = -1;
                     }
+                    current_scroll_pos = ImGui::GetScrollY();
+                    max_scroll_pos = ImGui::GetScrollMaxY();
 
                     ImGui::Columns(3, nullptr, false);
                     for (const auto &theme : themes_list) {
@@ -732,10 +760,8 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
                         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                         ImGui::SetWindowFontScale(1.8f);
-                        if (ImGui::Selectable(gui.users[host.io.user_id].theme_id == theme.first ? "V" : "##preview", false, ImGuiSelectableFlags_None, SIZE_PACKAGE)) {
+                        if (ImGui::Selectable(gui.users[host.io.user_id].theme_id == theme.first ? "V" : "##preview", false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
                             selected = theme.first;
-                            scroll_pos = ImGui::GetScrollY();
-                        }
                         ImGui::SetWindowFontScale(0.6f);
                         ImGui::PopStyleColor();
                         ImGui::PopStyleVar();
@@ -771,7 +797,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                             init_theme_start_background(gui, host, selected);
                             gui.users[host.io.user_id].start_type = (selected == "default") ? "default" : "theme";
                             save_user(gui, host, host.io.user_id);
-                            set_scroll_pos = true;
+                            set_scroll_pos = current_scroll_pos;
                             selected.clear();
                         }
                     } else if (popup == "delete") {
@@ -813,7 +839,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                             delete_theme = selected;
                             popup.clear();
                             selected.clear();
-                            set_scroll_pos = true;
+                            set_scroll_pos = current_scroll_pos;
                         }
                         ImGui::EndChild();
                         ImGui::PopStyleVar();
@@ -1284,7 +1310,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         popup.clear();
                     else {
                         selected.clear();
-                        set_scroll_pos = true;
+                        set_scroll_pos = current_scroll_pos;
                     }
                 } else if (!sub_menu.empty())
                     sub_menu.clear();
