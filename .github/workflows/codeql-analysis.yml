@@ -60,7 +60,7 @@ jobs:
 
       - name: Build
         run: |
-         cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DUSE_DISCORD_RICH_PRESENCE=OFF -G Ninja
+         cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain/linux-x64.cmake -DUSE_DISCORD_RICH_PRESENCE=OFF -G Ninja
          cmake --build build --config ${{ matrix.config }}
 
       - name: Perform CodeQL Analysis
