@@ -56,7 +56,7 @@ From there, the project will be ready to build right from the Visual Studio UI.
 
 - Generate the project:
   ```cmd
-  cmake -S . -B build-windows -G "Visual Studio 2019 16" -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain/windows-x64.cmake
+  cmake -S . -B build-windows -G "Visual Studio 16 2019" -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain/windows-x64.cmake
   ```
   The line above will generate a Visual Studio 2019 project inside a folder called `build-windows`.
 
