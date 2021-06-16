@@ -24,14 +24,8 @@ enable_testing()
 ########## Boost ###########
 ############################
 
-# Configures Boost
+# Macro to configure Boost
 macro(boost_configure)
-	# Sets the location of the source root and the binary installation path for Boost
-	# Building Boost right at the CMake binary path should allow to build Vita3K for different target platforms
-	# without having to delete the boost-build folder each time the target platform changes
-	set(BOOST_SOURCEDIR "${CMAKE_SOURCE_DIR}/external/boost")
-	set(BOOST_INSTALLDIR "${CMAKE_BINARY_DIR}/external/boost/")
-
 	if (WIN32)
 		execute_process(
 			COMMAND ${BOOST_SOURCEDIR}/bootstrap.bat
@@ -46,7 +40,7 @@ macro(boost_configure)
 	endif()
 endmacro(boost_configure)
 
-# Compiles Boost
+# Macro to compile Boost
 macro(boost_compile)
 	if (CMAKE_SYSTEM_NAME STREQUAL Windows)
 		execute_process(
@@ -66,7 +60,7 @@ macro(boost_compile)
 	endif()
 endmacro(boost_compile)
 
-# Adjusts CMake paths to enable Boost as a findable package for other dependencies in the project
+# Macro to adjust CMake paths to enable Boost as a static library and findable package for other dependencies in the project
 macro(boost_set_paths)
 	set (Boost_USE_STATIC_LIBS ON)
 	find_package(Boost COMPONENTS filesystem system program_options QUIET)
@@ -86,10 +80,52 @@ macro(boost_set_paths)
 	message("Using Boost_LIBRARY_DIRS: ${BOOST_LIBRARYDIR}")
 endmacro(boost_set_paths)
 
-
-
+# Builds Boost using source code located at external/boost if the host isn't a CI environment
 if(NOT CI)
-	boost_configure()
+	# Sets the location of the source root and the binary installation path for Boost
+	# Building Boost right at the CMake binary path should allow to build Vita3K for different target platforms
+	# without having to delete the boost-build folder each time the target platform changes
+	set(BOOST_SOURCEDIR "${CMAKE_SOURCE_DIR}/external/boost")
+	set(BOOST_INSTALLDIR "${CMAKE_BINARY_DIR}/external/boost/")
+
+	# Prevents the function from using CMake cache to retrieve the path and
+	# avoid errors in case b2 was deleted between cache generation events
+	unset(b2 CACHE)
+
+	# Skips Boost configuration and b2 compilation if it already exists by trying to find b2
+	# b2 compilation takes a while and time for consecutive cache re-generations can be reduced this way
+	if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
+		find_file(
+			# Variable which holds the path to b2 if it's found
+			# If not, its value will be "b2-NOTFOUND"
+			b2
+
+			# Name of the file to look for depending on the host OS
+			b2.exe
+
+			PATHS "${BOOST_SOURCEDIR}"
+			
+			# Prevents the function from using CMake cache to retrieve the path and
+			# avoid errors in case b2 was deleted between cache generation events
+			NO_CMAKE_PATH
+		)
+	else()
+		find_file(
+			# Variable which holds the path to b2 if it's found
+			# If not, its value will be "b2-NOTFOUND"
+			b2
+
+			# Name of the file to look for depending on the host OS
+			b2
+
+			PATHS "${BOOST_SOURCEDIR}"
+		)
+	endif()
+
+	if (${b2} STREQUAL "b2-NOTFOUND")
+		boost_configure()
+	endif()
+
 	boost_compile()
 	boost_set_paths()
 endif()
