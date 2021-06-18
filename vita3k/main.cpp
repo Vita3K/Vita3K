@@ -220,6 +220,7 @@ int main(int argc, char *argv[]) {
     }
 
     gui::init_app_background(gui, host, host.io.app_path);
+    gui::update_last_time_app_used(gui, host, host.io.app_path);
 
     app::gl_screen_renderer gl_renderer;
 

@@ -8,7 +8,7 @@
 		<install_zip>Установить файл .zip или .vpk</install_zip>
 	</file>
 	<emulation name="Эмуляция">
-		<last_loaded_apps>Последние загруженные приложения</last_loaded_apps>
+		<last_apps_used>Последние использованные приложения</last_apps_used>
 	</emulation>
 	<configuration name="Конфигурация">
 		<settings>Настройки</settings>

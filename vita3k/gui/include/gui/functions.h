@@ -79,9 +79,10 @@ bool refresh_app_list(GuiState &gui, HostState &host);
 void save_user(GuiState &gui, HostState &host, const std::string &user_id);
 void set_config(GuiState &gui, HostState &host, const std::string &app_path);
 void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &app_path);
+void update_last_time_app_used(GuiState &gui, HostState &host, const std::string &app);
 void update_notice_info(GuiState &gui, HostState &host, const std::string &type);
+void update_time_app_used(GuiState &gui, HostState &host, const std::string &app);
 void save_notice_list(HostState &host);
-void save_time_apps(GuiState &gui, HostState &host);
 
 void draw_begin(GuiState &gui, HostState &host);
 void draw_end(GuiState &host, SDL_Window *window);

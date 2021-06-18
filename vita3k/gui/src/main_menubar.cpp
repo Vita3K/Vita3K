@@ -51,12 +51,13 @@ static void draw_emulation_menu(GuiState &gui, HostState &host) {
     auto lang = gui.lang.main_menubar;
     const auto is_lang = !lang.empty();
     if (ImGui::BeginMenu(is_lang ? lang["emulation"].c_str() : "Emulation")) {
-        if (ImGui::BeginMenu(is_lang ? lang["last_loaded_apps"].c_str() : "Last loaded Apps")) {
-            if (!host.cfg.last_loaded_apps.empty()) {
-                for (const auto &app : host.cfg.last_loaded_apps) {
+        if (ImGui::BeginMenu(is_lang ? lang["last_apps_used"].c_str() : "Last Apps used")) {
+            if (!gui.time_apps[host.io.user_id].empty()) {
+                for (auto i = 0; i < std::min(14, int32_t(gui.time_apps[host.io.user_id].size())); i++) {
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-                    if (ImGui::MenuItem(get_app_index(gui, app)->title.c_str(), app.c_str(), false))
-                        pre_load_app(gui, host, host.cfg.show_live_area_screen, app);
+                    const auto time_app = gui.time_apps[host.io.user_id][i];
+                    if (ImGui::MenuItem(get_app_index(gui, time_app.app)->title.c_str(), time_app.app.c_str(), false))
+                        pre_load_app(gui, host, host.cfg.show_live_area_screen, time_app.app);
                     ImGui::PopStyleColor();
                 }
             } else

@@ -494,6 +494,8 @@ bool handle_events(HostState &host, GuiState &gui) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
         switch (event.type) {
         case SDL_QUIT:
+            if (!host.io.app_path.empty())
+                gui::update_time_app_used(gui, host, host.io.app_path);
             host.kernel.exit_delete_all_threads();
             host.gxm.display_queue.abort();
             host.display.abort.exchange(true);

@@ -95,8 +95,7 @@
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_VECTOR(code)                                                                             \
     code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)              \
-    code(std::vector<uint64_t>, "ime-langs", std::vector<uint64_t>{4}, ime_langs)                       \
-    code(std::vector<std::string>, "last-loaded-apps", std::vector<std::string>{}, last_loaded_apps)                                              
+    code(std::vector<uint64_t>, "ime-langs", std::vector<uint64_t>{4}, ime_langs)
 
 // Parent macro for easier generation
 #define CONFIG_LIST(code)                                                                               \

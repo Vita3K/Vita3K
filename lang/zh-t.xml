@@ -8,7 +8,7 @@
 		<install_zip>安裝 .zip 或者 .vpk</install_zip>
 	</file>
 	<emulation name="模擬">
-		<last_loaded_apps>上次加載的應用</last_loaded_apps>
+		<last_apps_used>使用的最新應用</last_apps_used>
 	</emulation>
 	<configuration name="配置">
 		<settings>設定</settings>

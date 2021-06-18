@@ -140,11 +140,11 @@ enum DateFormat {
 struct User {
     std::string id;
     std::string name;
-    DateFormat date_format;
-    bool clock_12_hour;
+    DateFormat date_format = MM_DD_YYYY;
+    bool clock_12_hour = true;
     std::string avatar;
     std::string theme_id;
-    bool use_theme_bg;
+    bool use_theme_bg = true;
     std::string start_type;
     std::string start_path;
     std::vector<std::string> backgrounds;
@@ -166,6 +166,12 @@ struct Lang {
         std::map<std::string, std::string> common;
     };
     Common common;
+};
+
+struct TimeApp {
+    std::string app;
+    time_t last_time_used;
+    int64_t time_used;
 };
 
 struct GuiState {
@@ -209,7 +215,7 @@ struct GuiState {
     std::vector<std::string> apps_list_opened;
     int32_t current_app_selected = -1;
 
-    std::map<std::string, std::map<std::string, time_t>> time_apps;
+    std::map<std::string, std::vector<TimeApp>> time_apps;
 
     std::uint64_t current_theme_bg;
     std::map<std::string, std::map<std::string, ImGui_Texture>> themes_preview;
