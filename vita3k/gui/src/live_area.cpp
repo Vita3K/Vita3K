@@ -87,7 +87,7 @@ void init_lang(GuiState &gui, HostState &host) {
                 // Emulation Menu
                 if (!main_menubar.child("emulation").empty()) {
                     lang_main_menubar["emulation"] = main_menubar.child("emulation").attribute("name").as_string();
-                    lang_main_menubar["last_loaded_apps"] = main_menubar.child("emulation").child("last_loaded_apps").text().as_string();
+                    lang_main_menubar["last_apps_used"] = main_menubar.child("emulation").child("last_apps_used").text().as_string();
                 }
 
                 // Configuration Menu
@@ -131,6 +131,7 @@ void init_lang(GuiState &gui, HostState &host) {
                 lang_app_context["version"] = app_context.child("version").text().as_string();
                 lang_app_context["last_time_used"] = app_context.child("last_time_used").text().as_string();
                 lang_app_context["never"] = app_context.child("never").text().as_string();
+                lang_app_context["time_used"] = app_context.child("time_used").text().as_string();
             }
 
             // Common
@@ -1309,6 +1310,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, 44.0f * SCALE.y));
         if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
             if (app_path == host.io.app_path) {
+                update_time_app_used(gui, host, app_path);
                 host.kernel.exit_delete_all_threads();
                 host.load_exec = true;
             } else {

@@ -98,6 +98,33 @@ static const char OS_PREFIX[] = "open ";
 static const char OS_PREFIX[] = "xdg-open ";
 #endif
 
+static std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, HostState &host, const std::string &app) {
+    const auto time_app_index = std::find_if(gui.time_apps[host.io.user_id].begin(), gui.time_apps[host.io.user_id].end(), [&](const TimeApp &t) {
+        return t.app == app;
+    });
+
+    return time_app_index;
+}
+
+static std::string get_time_app_used(const int64_t &time_used) {
+    std::string time_app_used;
+    if (time_used < 60)
+        time_app_used = fmt::format("{}s", time_used);
+    else {
+        const std::chrono::seconds sec(time_used);
+        const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(sec).count() % 60;
+        const auto seconds = sec.count() % 60;
+        if (time_used < 3600)
+            time_app_used = fmt::format("{}m:{}s", minutes, seconds);
+        else {
+            const auto hours = std::chrono::duration_cast<std::chrono::hours>(sec).count();
+            time_app_used = fmt::format("{}h:{}m:{}s", hours, minutes, seconds);
+        }
+    }
+
+    return time_app_used;
+}
+
 void get_time_apps(GuiState &gui, HostState &host) {
     gui.time_apps.clear();
     const auto time_path{ fs::path(host.pref_path) / "ux0/user/time.xml" };
@@ -110,7 +137,7 @@ void get_time_apps(GuiState &gui, HostState &host) {
                 for (const auto &user : time_child) {
                     auto user_id = user.attribute("id").as_string();
                     for (const auto &app : user)
-                        gui.time_apps[user_id][app.text().as_string()] = app.attribute("last-time-used").as_llong();
+                        gui.time_apps[user_id].push_back({ app.text().as_string(), app.attribute("last-time-used").as_llong(), app.attribute("time-used").as_llong() });
                 }
             }
         } else {
@@ -120,7 +147,7 @@ void get_time_apps(GuiState &gui, HostState &host) {
     }
 }
 
-void save_time_apps(GuiState &gui, HostState &host) {
+static void save_time_apps(GuiState &gui, HostState &host) {
     pugi::xml_document time_xml;
     auto declarationUser = time_xml.append_child(pugi::node_declaration);
     declarationUser.append_attribute("version") = "1.0";
@@ -129,13 +156,19 @@ void save_time_apps(GuiState &gui, HostState &host) {
     auto time_child = time_xml.append_child("time");
 
     for (const auto &user : gui.time_apps) {
+        // Sort by last time used
+        std::sort(gui.time_apps[user.first].begin(), gui.time_apps[user.first].end(), [&](const TimeApp &ta, const TimeApp &tb) {
+            return ta.last_time_used > tb.last_time_used;
+        });
+
         auto user_child = time_child.append_child("user");
         user_child.append_attribute("id") = user.first.c_str();
 
         for (const auto &app : user.second) {
             auto app_child = user_child.append_child("app");
-            app_child.append_attribute("last-time-used") = app.second;
-            app_child.append_child(pugi::node_pcdata).set_value(app.first.c_str());
+            app_child.append_attribute("last-time-used") = app.last_time_used;
+            app_child.append_attribute("time-used") = app.time_used;
+            app_child.append_child(pugi::node_pcdata).set_value(app.app.c_str());
         }
     }
 
@@ -143,6 +176,23 @@ void save_time_apps(GuiState &gui, HostState &host) {
     const auto save_xml = time_xml.save_file(time_path.c_str());
     if (!save_xml)
         LOG_ERROR("Fail save xml");
+}
+
+void update_time_app_used(GuiState &gui, HostState &host, const std::string &app) {
+    const auto &time_app_index = get_time_app_index(gui, host, app);
+    time_app_index->time_used += std::time(nullptr) - time_app_index->last_time_used;
+
+    save_time_apps(gui, host);
+}
+
+void update_last_time_app_used(GuiState &gui, HostState &host, const std::string &app) {
+    const auto &time_app_index = get_time_app_index(gui, host, app);
+    if (time_app_index != gui.time_apps[host.io.user_id].end())
+        time_app_index->last_time_used = std::time(nullptr);
+    else
+        gui.time_apps[host.io.user_id].push_back({ app, std::time(nullptr), 0 });
+
+    save_time_apps(gui, host);
 }
 
 static std::string context_dialog;
@@ -392,15 +442,20 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((last_time_used + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s ", last_time_used.c_str());
             ImGui::SameLine();
-            if (gui.time_apps[host.io.user_id].find(app_path) != gui.time_apps[host.io.user_id].end()) {
+            const auto time_app_index = get_time_app_index(gui, host, app_path);
+            if (time_app_index != gui.time_apps[host.io.user_id].end()) {
                 tm date_tm = {};
-                SAFE_LOCALTIME(&gui.time_apps[host.io.user_id][app_path], &date_tm);
+                SAFE_LOCALTIME(&time_app_index->last_time_used, &date_tm);
                 auto LAST_TIME = get_date_time(gui, host, date_tm);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", LAST_TIME["date"].c_str(), LAST_TIME["clock"].c_str());
                 if (gui.users[host.io.user_id].clock_12_hour) {
                     ImGui::SameLine();
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", LAST_TIME["day-moment"].c_str());
                 }
+                ImGui::Spacing();
+                const auto time_used = !lang["time_used"].empty() ? lang["time_used"] : "Time used";
+                ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((time_used + "  ").c_str()).x);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", time_used.c_str(), get_time_app_used(time_app_index->time_used).c_str());
             } else
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", !lang["never"].empty() ? lang["never"].c_str() : "Never");
         }

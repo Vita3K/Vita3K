@@ -8,7 +8,7 @@
 		<install_zip>Installeer .zip, .vpk</install_zip>
 	</file>
 	<emulation name="Emuleren">
-		<load_last_app>Laad Laatste App</load_last_app>
+		<last_apps_used>Laatste gebruikte apps</last_apps_used>
 	</emulation>
 	<configuration name="Configuratie">
 		<settings>Instellingen</settings>

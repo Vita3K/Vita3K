@@ -9,7 +9,7 @@
 		<install_license>Installer une License</install_license>
 	</file>
 	<emulation name="Émulation">
-		<last_loaded_apps>Dernières Apps chargées</last_loaded_apps>
+		<last_apps_used>Dernières Apps utilisées</last_apps_used>
 	</emulation>
 	<configuration name="Configuration">
 		<settings>Paramètres</settings>
@@ -37,6 +37,7 @@
 	<version>Version</version>
 	<last_time_used>Dernière fois utilisé</last_time_used>
 	<never>Jamais</never>
+	<time_used>Temps utilisé</time_used>
 </app_context>
 
 <common>

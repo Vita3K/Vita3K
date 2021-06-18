@@ -49,7 +49,7 @@ public:
     }
 
     template <typename T, typename... Args>
-    bool create(Args &&... args) {
+    bool create(Args &&...args) {
         std::lock_guard<std::mutex> lock(mutex);
         auto ptr = std::make_shared<T>(std::forward<Args>(args)...);
         objs.emplace(TypeInfo::registered<T>::index, ptr);
