@@ -70,13 +70,16 @@ bool copy_license(HostState &host, const fs::path &license_path) {
             fs::create_directories(dst_path);
 
         const auto license_dst_path{ dst_path / fmt::format("{}.rif", host.license_content_id) };
-        fs::copy_file(license_path, license_dst_path, fs::copy_option::overwrite_if_exists);
-        if (fs::exists(license_dst_path)) {
-            fs::remove(license_path);
-            LOG_INFO("Success copy license file to: {}", license_dst_path.string());
-            return true;
+        if (license_path != license_dst_path) {
+            fs::copy_file(license_path, license_dst_path, fs::copy_option::overwrite_if_exists);
+            if (fs::exists(license_dst_path)) {
+                fs::remove(license_path);
+                LOG_INFO("Success copy license file to: {}", license_dst_path.string());
+                return true;
+            } else
+                LOG_ERROR("Fail copy license file to: {}", license_dst_path.string());
         } else
-            LOG_ERROR("Fail copy license file to: {}", license_dst_path.string());
+            LOG_ERROR("Source and destination license is same at: {}", license_path.string());
     } else
         LOG_ERROR("License file is corrupted at: {}", license_path.string());
 
