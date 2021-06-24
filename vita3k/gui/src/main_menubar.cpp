@@ -56,7 +56,8 @@ static void draw_emulation_menu(GuiState &gui, HostState &host) {
                 for (auto i = 0; i < std::min(14, int32_t(gui.time_apps[host.io.user_id].size())); i++) {
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                     const auto time_app = gui.time_apps[host.io.user_id][i];
-                    if (ImGui::MenuItem(get_app_index(gui, time_app.app)->title.c_str(), time_app.app.c_str(), false))
+                    const auto app_index = get_app_index(gui, time_app.app);
+                    if ((app_index != gui.app_selector.user_apps.end()) && ImGui::MenuItem(app_index->title.c_str(), time_app.app.c_str(), false))
                         pre_load_app(gui, host, host.cfg.show_live_area_screen, time_app.app);
                     ImGui::PopStyleColor();
                 }

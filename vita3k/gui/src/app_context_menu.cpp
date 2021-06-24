@@ -27,22 +27,6 @@
 
 namespace gui {
 
-void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
-    const fs::path APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
-    const auto APP_INDEX = get_app_index(gui, app_path);
-
-    LOG_INFO_IF(fs::remove_all(APP_PATH), "Application successfully deleted '{} [{}]'.", APP_INDEX->title_id, APP_INDEX->title);
-
-    if (!fs::exists(app_path)) {
-        if (gui.app_selector.user_apps_icon.find(host.app_path) != gui.app_selector.user_apps_icon.end()) {
-            gui.app_selector.user_apps_icon[host.app_path] = {};
-            gui.app_selector.user_apps_icon.erase(host.app_path);
-        }
-        gui.app_selector.user_apps.erase(APP_INDEX);
-    } else
-        LOG_ERROR("Failed to delete '{} [{}]'.", APP_INDEX->title_id, APP_INDEX->title);
-}
-
 static std::map<double, std::string> update_history_infos;
 
 static bool get_update_history(GuiState &gui, HostState &host, const std::string &app_path) {
@@ -91,7 +75,7 @@ static bool get_update_history(GuiState &gui, HostState &host, const std::string
 }
 
 #ifdef _WIN32
-static const char OS_PREFIX[] = "start ";
+static const char OS_PREFIX[] = "start \"Vita3K\" ";
 #elif __APPLE__
 static const char OS_PREFIX[] = "open ";
 #else
@@ -195,6 +179,55 @@ void update_last_time_app_used(GuiState &gui, HostState &host, const std::string
     save_time_apps(gui, host);
 }
 
+void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
+    const auto APP_INDEX = get_app_index(gui, app_path);
+    const auto title_id = APP_INDEX->title_id;
+    try {
+        const auto PREF_PATH = fs::path(host.pref_path);
+        fs::remove_all(PREF_PATH / "ux0/app" / app_path);
+
+        const auto BASE_PATH = fs::path(host.base_path);
+        const auto CUSTOM_CONFIG_PATH{ BASE_PATH / "config" / fmt::format("config_{}.xml", app_path) };
+        if (fs::exists(CUSTOM_CONFIG_PATH))
+            fs::remove_all(CUSTOM_CONFIG_PATH);
+        const auto DLC_PATH{ PREF_PATH / "ux0/addcont" / title_id };
+        if (fs::exists(DLC_PATH))
+            fs::remove_all(DLC_PATH);
+        const auto LICENSE_PATH{ PREF_PATH / "ux0/license" / title_id };
+        if (fs::exists(LICENSE_PATH))
+            fs::remove_all(LICENSE_PATH);
+        const auto PATCH_PATH{ PREF_PATH / "ux0/patch" / title_id };
+        if (fs::exists(PATCH_PATH))
+            fs::remove_all(PATCH_PATH);
+        const auto SAVE_DATA_PATH{ PREF_PATH / "ux0/user" / host.io.user_id / "savedata" / title_id };
+        if (fs::exists(SAVE_DATA_PATH))
+            fs::remove_all(SAVE_DATA_PATH);
+        const auto SHADER_CACHE_PATH{ BASE_PATH / "shaders" / title_id };
+        if (fs::exists(SHADER_CACHE_PATH))
+            fs::remove_all(SHADER_CACHE_PATH);
+        const auto SHADER_LOG_PATH{ BASE_PATH / "shaderlog" / title_id };
+        if (fs::exists(SHADER_LOG_PATH))
+            fs::remove_all(SHADER_LOG_PATH);
+
+        if (gui.app_selector.user_apps_icon.find(app_path) != gui.app_selector.user_apps_icon.end()) {
+            gui.app_selector.user_apps_icon[app_path] = {};
+            gui.app_selector.user_apps_icon.erase(app_path);
+        }
+
+        const auto time_app_index = get_time_app_index(gui, host, app_path);
+        if (time_app_index != gui.time_apps[host.io.user_id].end()) {
+            gui.time_apps[host.io.user_id].erase(time_app_index);
+            save_time_apps(gui, host);
+        }
+
+        LOG_INFO("Application successfully deleted '{} [{}]'.", title_id, APP_INDEX->title);
+
+        gui.app_selector.user_apps.erase(APP_INDEX);
+    } catch (std::exception &e) {
+        LOG_ERROR("Failed to delete '{} [{}]'.\n{}", title_id, APP_INDEX->title, e.what());
+    }
+}
+
 static std::string context_dialog;
 static auto information = false;
 
@@ -259,7 +292,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             }
             if (ImGui::BeginMenu("Open Folder")) {
                 if (ImGui::MenuItem("Application"))
-                    system((OS_PREFIX + APP_PATH.string()).c_str());
+                    system((OS_PREFIX + ("\"" + APP_PATH.string() + "\"")).c_str());
                 if (fs::exists(DLC_PATH) && ImGui::MenuItem("Dlc"))
                     system((OS_PREFIX + DLC_PATH.string()).c_str());
                 if (fs::exists(LICENSE_PATH) && ImGui::MenuItem("License"))
@@ -371,12 +404,9 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * SCALE.x));
         }
         if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
-            if (context_dialog == "app") {
-                fs::remove_all(DLC_PATH);
-                fs::remove_all(SAVE_DATA_PATH);
-                fs::remove_all(SHADER_LOG_PATH);
+            if (context_dialog == "app")
                 delete_app(gui, host, app_path);
-            } else if (context_dialog == "save")
+            else if (context_dialog == "save")
                 fs::remove_all(SAVE_DATA_PATH);
             context_dialog.clear();
         }
