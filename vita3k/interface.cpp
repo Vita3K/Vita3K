@@ -68,8 +68,10 @@ static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const
 }
 
 static bool is_nonpdrm(HostState &host, const fs::path &output_path) {
-    if (fs::exists(output_path / "sce_sys/package/work.bin")) {
-        std::string licpath = output_path.string() + "/sce_sys/package/work.bin";
+    const auto app_license_path{ fs::path(host.pref_path) / "ux0/license" / host.app_title_id / fmt::format("{}.rif", host.app_content_id) };
+    const auto is_patch_found_app_license = (host.app_category == "gp") && fs::exists(app_license_path);
+    if (fs::exists(output_path / "sce_sys/package/work.bin") || is_patch_found_app_license) {
+        std::string licpath = is_patch_found_app_license ? app_license_path.string() : output_path.string() + "/sce_sys/package/work.bin";
         LOG_INFO("Decrypt layer: {}", output_path.string());
         if (!decrypt_install_nonpdrm(host, licpath, output_path.string())) {
             LOG_ERROR("NoNpDrm installation failed, deleting data!");
