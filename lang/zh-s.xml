@@ -4,18 +4,19 @@
 	<file name="文件">
 		<open_pref_path>打开存放路径</open_pref_path>
 		<install_firmware>安装系统固件</install_firmware>
-		<install_pkg>安装 .pkg</install_pkg>
-		<install_zip>安装 .zip 或者 .vpk</install_zip>
+		<install_pkg>安装pkg</install_pkg>
+		<install_zip>安装zip、vpk</install_zip>
+		<install_license>安装授权</install_license>
 	</file>
-	<emulation name="仿真拟">
-		<last_apps_used>使用的最新应用</last_apps_used>
+	<emulation name="模拟器">
+		<last_apps_used>最近使用的应用</last_apps_used>
 	</emulation>
 	<configuration name="配置">
 		<settings>设置</settings>
 		<user_management>用户管理</user_management>
 	</configuration>
 	<controls name="控制">
-		<keyboard_controls>按键映射</keyboard_controls>
+		<keyboard_controls>键盘按键映射</keyboard_controls>
 	</controls>
 	<help name="帮助">
 		<about>关于</about>
@@ -34,6 +35,9 @@
 	<updated>升级日期</updated>
 	<size>大小</size>
 	<version>版本</version>
+	<last_time_used>最近使用的时间</last_time_used>
+	<never>从来没有</never>
+	<time_used>使用时间</time_used>
 </app_context>
 
 <common>
@@ -130,6 +134,10 @@
 	</save_data>
 </dialog>
 
+<game_data>
+	<app_close>下列应用程序即将关闭。</app_close>
+</game_data>
+
 <indicator>
 	<app_added_home>已将应用程序添加至主画面。</app_added_home>
 	<delete_all>全部删除</delete_all>
@@ -176,6 +184,28 @@
 	</date_time>
 	<language name="语言">
 		<system_language>系统语言</system_language>
+		<input_language name="输入语言">
+			<keyboards name="键盘">
+				<ime_langagues>
+					<lang id="1">丹麦语</lang>
+					<lang id="2">德语</lang>
+					<lang id="262144">英语(英国)</lang>
+					<lang id="4">英语(美国)</lang>
+					<lang id="8">西班牙语</lang>
+					<lang id="16">法语</lang>
+					<lang id="32">意大利语</lang>
+					<lang id="64">荷兰语</lang>
+					<lang id="128">挪威语</lang>
+					<lang id="256">波兰语</lang>
+					<lang id="131072">葡萄牙语（巴西）</lang>
+					<lang id="512">葡萄牙语（葡萄牙）</lang>
+					<lang id="1024">俄语</lang>
+					<lang id="2048">芬兰语</lang>
+					<lang id="4096">瑞典语</lang>
+					<lang id="524288">土耳其语</lang>
+				</ime_langagues>
+			</keyboards>
+		</input_language>
 	</language>
 </settings>
 
@@ -199,7 +229,7 @@
 	<edit_user>编辑用户</edit_user>
 	<delete_user>删除用户</delete_user>
 	<change_avatar>更换头像</change_avatar>
-	<name>用户名</name>
+	<name>名称</name>
 	<user>用户</user>
-	<confirm>更改</confirm>
+	<confirm>确认</confirm>
 </user_management>

@@ -6,7 +6,7 @@
 		<install_firmware>Installer le Firmware</install_firmware>
 		<install_pkg>Installer un .pkg</install_pkg>
 		<install_zip>Installer un .zip, .vpk</install_zip>
-		<install_license>Installer une License</install_license>
+		<install_license>Installer une Licence</install_license>
 	</file>
 	<emulation name="Émulation">
 		<last_apps_used>Dernières Apps utilisées</last_apps_used>

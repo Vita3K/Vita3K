@@ -1,16 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 
-<live_area>
-	<start>Avvia</start>
-	<continue>Continua</continue>
-</live_area>
-
 <main_menubar>
 	<file name="File">
 		<open_pref_path>Apri la Cartella Pref</open_pref_path>
 		<install_firmware>Installa il Firmware</install_firmware>
 		<install_pkg>Installa un .pkg</install_pkg>
 		<install_zip>Installa un .zip, .vpk</install_zip>
+		<install_license>Installa una licenza</install_license>
 	</file>
 	<emulation name="Emulazione">
 		<last_apps_used>Ultime app utilizzate</last_apps_used>
@@ -39,6 +35,9 @@
 	<updated>Aggiornato</updated>
 	<size>Dimensione</size>
 	<version>Versione</version>
+	<last_time_used>Ultimo usato</last_time_used>
+	<never>Mai</never>
+	<time_used>Tempo utilizzato</time_used>
 </app_context>
 
 <common>
@@ -135,6 +134,10 @@ Non spegnere il sistema né chiudere l'applicazione.</warning_saving>
 	</save_data>
 </dialog>
 
+<game_data>
+	<app_close>La seguente applicazione sarà chiusa.</app_close>
+</game_data>
+
 <indicator>
 	<app_added_home>L'applicazione è stata aggiunta alla schermata principale.</app_added_home>
 	<delete_all>Elimina tutto</delete_all>
@@ -145,6 +148,11 @@ Non spegnere il sistema né chiudere l'applicazione.</warning_saving>
 	<no_notif>Non ci sono notifiche.</no_notif>
 	<trophy_earned>Hai guadagnato un trofeo!</trophy_earned>
 </indicator>
+
+<live_area>
+	<start>Avvia</start>
+	<continue>Continua</continue>
+</live_area>
 
 <trophy_collection>
 	<details>Dettagli</details>
