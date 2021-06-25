@@ -303,7 +303,7 @@ void init_lang(GuiState &gui, HostState &host) {
                         lang_settings["keyboards"] = keyboards.attribute("name").as_string();
                         auto &lang_ime = host.ime.languages;
                         for (const auto &lang : keyboards.child("ime_langagues"))
-                            lang_ime.push_back({ SceImeLanguage(lang.attribute("id").as_uint()), lang.text().as_string() });
+                            lang_ime.push_back({ SceImeLanguage(lang.attribute("id").as_ullong()), lang.text().as_string() });
                     }
                 }
             }
