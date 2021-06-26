@@ -259,6 +259,9 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
         return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
     }
+
+    LOG_WARN("Invalid internal base format {}", log_hex(base_format));
+    return GL_RGBA;
 }
 
 GLenum translate_format(SceGxmTextureFormat src) {
@@ -333,6 +336,9 @@ GLenum translate_format(SceGxmTextureFormat src) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
         return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
     }
+
+    LOG_WARN("Invalid base format {}", log_hex(base_format));
+    return GL_RGBA;
 }
 
 GLenum translate_type(SceGxmTextureFormat format) {
@@ -444,79 +450,91 @@ GLenum translate_type(SceGxmTextureFormat format) {
 }
 
 const GLint *translate_swizzle(SceGxmTextureFormat fmt) {
-    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
-    const uint32_t swizzle = fmt & SCE_GXM_TEXTURE_SWIZZLE_MASK;
-    switch (base_format) {
-    // 1 Component.
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
-        return translate_swizzle(static_cast<SceGxmTextureSwizzle1Mode>(swizzle));
-
-    // 2 components (red-green.)
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
-        return translate_swizzle(static_cast<SceGxmTextureSwizzle2Mode>(swizzle));
-
-    // 2 components (depth-stencil.)
-    case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
-        return translate_swizzle(static_cast<SceGxmTextureSwizzle2ModeAlt>(swizzle));
-
-    // 3 components.
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
-        return translate_swizzle(static_cast<SceGxmTextureSwizzle3Mode>(swizzle));
-
-    // 4 components.
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
-        return translate_swizzle(static_cast<SceGxmTextureSwizzle4Mode>(swizzle));
-
-    // YUV420.
-    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
-    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
-        return translate_swizzle(static_cast<SceGxmTextureSwizzleYUV420Mode>(swizzle));
-
-    // YUV422.
-    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
-        return translate_swizzle(static_cast<SceGxmTextureSwizzleYUV422Mode>(swizzle));
+    switch (fmt) {
+    case SCE_GXM_TEXTURE_FORMAT_U10U10U10U2_RGBA:
+    case SCE_GXM_TEXTURE_FORMAT_F10F10F10U2_RGBA: {
+        static const GLint swizzle[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+        return swizzle;
     }
+    case SCE_GXM_TEXTURE_FORMAT_U8U8U8X8_BGR1: {
+        static const GLint swizzle[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ONE };
+        return swizzle;
+    }
+    default:
+        const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
+        const uint32_t swizzle = fmt & SCE_GXM_TEXTURE_SWIZZLE_MASK;
+        switch (base_format) {
+        // 1 Component.
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
+            return translate_swizzle(static_cast<SceGxmTextureSwizzle1Mode>(swizzle));
 
-    LOG_WARN("Invalid base format {}", log_hex(base_format));
-    return swizzle_abgr;
+        // 2 components (red-green.)
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
+            return translate_swizzle(static_cast<SceGxmTextureSwizzle2Mode>(swizzle));
+
+        // 2 components (depth-stencil.)
+        case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+            return translate_swizzle(static_cast<SceGxmTextureSwizzle2ModeAlt>(swizzle));
+
+        // 3 components.
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
+            return translate_swizzle(static_cast<SceGxmTextureSwizzle3Mode>(swizzle));
+
+        // 4 components.
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
+            return translate_swizzle(static_cast<SceGxmTextureSwizzle4Mode>(swizzle));
+
+        // YUV420.
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
+            return translate_swizzle(static_cast<SceGxmTextureSwizzleYUV420Mode>(swizzle));
+
+        // YUV422.
+        case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
+            return translate_swizzle(static_cast<SceGxmTextureSwizzleYUV422Mode>(swizzle));
+        }
+
+        LOG_WARN("Invalid base format {}", log_hex(base_format));
+        return swizzle_abgr;
+    }
 }
 
 GLenum translate_wrap_mode(SceGxmTextureAddrMode src) {
