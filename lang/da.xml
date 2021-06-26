@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<game_data>
+		<app_close>Følgende program bliver lukket.</app_close>
+	</game_data>
+
+	<live_area>
+		<start>Start</start>
+		<continue>Fortsæt</continue>
+	</live_area>
+</lang>

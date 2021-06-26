@@ -1,180 +1,188 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 
-<main_menubar>
-	<file name="File">
-		<open_pref_path>Apri la Cartella Pref</open_pref_path>
-		<install_firmware>Installa il Firmware</install_firmware>
-		<install_pkg>Installa un .pkg</install_pkg>
-		<install_zip>Installa un .zip, .vpk</install_zip>
-		<install_license>Installa una licenza</install_license>
-	</file>
-	<emulation name="Emulazione">
-		<last_apps_used>Ultime app utilizzate</last_apps_used>
-	</emulation>
-	<configuration name="Configurazione">
-		<settings>Impostazioni</settings>
-		<user_management>Gestione utenti</user_management>
-	</configuration>
-	<controls name="Controlli">
-		<keyboard_controls>Controlli della Tastiera</keyboard_controls>
-	</controls>
-	<help name="Aiuto">
-		<about>A Proposito</about>
-		<welcome>Benvevuto</welcome>
-	</help>
-</main_menubar>
+<lang>
+	<main_menubar>
+		<file name="File">
+			<open_pref_path>Apri la Cartella Pref</open_pref_path>
+			<install_firmware>Installa il Firmware</install_firmware>
+			<install_pkg>Installa un .pkg</install_pkg>
+			<install_zip>Installa un .zip, .vpk</install_zip>
+			<install_license>Installa una licenza</install_license>
+		</file>
+		<emulation name="Emulazione">
+			<last_apps_used>Ultime app utilizzate</last_apps_used>
+		</emulation>
+		<configuration name="Configurazione">
+			<settings>Impostazioni</settings>
+			<user_management>Gestione utenti</user_management>
+		</configuration>
+		<controls name="Controlli">
+			<keyboard_controls>Controlli della Tastiera</keyboard_controls>
+		</controls>
+		<help name="Aiuto">
+			<about>A Proposito</about>
+			<welcome>Benvevuto</welcome>
+		</help>
+	</main_menubar>
 
-<app_context>
-	<update_history>Cronologia degli aggiornamenti</update_history>
-	<information>Informazioni</information>
-	<app_delete>Questa applicazione e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</app_delete>
-	<save_delete>Vuoi eliminare questi dati salvati?</save_delete>
-	<name>Nome</name>
-	<trophy_earning eligible="Idoneo" ineligible="Non idoneo">Guadagno di trofei</trophy_earning>
-	<parental_Controls level="Livello">Filtro contenuti</parental_Controls>
-	<updated>Aggiornato</updated>
-	<size>Dimensione</size>
-	<version>Versione</version>
-	<last_time_used>Ultimo usato</last_time_used>
-	<never>Mai</never>
-	<time_used>Tempo utilizzato</time_used>
-</app_context>
+	<app_context>
+		<update_history>Cronologia degli aggiornamenti</update_history>
+		<information>Informazioni</information>
+		<app_delete>Questa applicazione e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</app_delete>
+		<save_delete>Vuoi eliminare questi dati salvati?</save_delete>
+		<name>Nome</name>
+		<trophy_earning eligible="Idoneo" ineligible="Non idoneo">Guadagno di trofei</trophy_earning>
+		<parental_Controls level="Livello">Filtro contenuti</parental_Controls>
+		<updated>Aggiornato</updated>
+		<size>Dimensione</size>
+		<version>Versione</version>
+		<last_time_used>Ultimo usato</last_time_used>
+		<never>Mai</never>
+		<time_used>Tempo utilizzato</time_used>
+	</app_context>
 
-<common>
-	<cancel>Annulla</cancel>
-	<delete>Elimina</delete>
-	<file_corrupted>Il file è danneggiato.</file_corrupted>
-	<no>No</no>
-	<select_all>Seleziona tutto</select_all>
-	<select>Seleziona</select>
-	<please_wait>Attendi...</please_wait>
-	<yes>Sì</yes>
-	<wday>
-		<day>domenica</day>
-		<day>lunedi</day>
-		<day>martedi</day>
-		<day>mercoledi</day>
-		<day>giovedi</day>
-		<day>venerdi</day>
-		<day>sabato</day>
-	</wday>
-	<ymonth>
-		<month>Gennaio</month>
-		<month>Febbraio</month>
-		<month>Marzo</month>
-		<month>Aprile</month>
-		<month>Maggio</month>
-		<month>Giugno</month>
-		<month>Luglio</month>
-		<month>Agosto</month>
-		<month>Settembre</month>
-		<month>Ottobre</month>
-		<month>Novembre</month>
-		<month>Dicembre</month>
-	</ymonth>
-	<small_ymonth>
-		<month>gennaio</month>
-		<month>febbraio</month>
-		<month>marzo</month>
-		<month>aprile</month>
-		<month>maggio</month>
-		<month>giugno</month>
-		<month>luglio</month>
-		<month>agosto</month>
-		<month>settembre</month>
-		<month>ottobre</month>
-		<month>novembre</month>
-		<month>dicembre</month>
-	</small_ymonth>
-	<hidden_trophy>Trofeo nascosto</hidden_trophy>
-	<one_hour_ago>1 ora fa</one_hour_ago>
-	<one_minute_ago>1 minuto fa</one_minute_ago>
-	<bronze>Bronzo</bronze>
-	<gold>Oro</gold>
-	<platinum>Platino</platinum>
-	<silver>Argento</silver>
-	<hours_ago>{} ore fa</hours_ago>
-	<minutes_ago>{} minuti fa</minutes_ago>
-</common>
+	<common>
+		<cancel>Annulla</cancel>
+		<delete>Elimina</delete>
+		<file_corrupted>Il file è danneggiato.</file_corrupted>
+		<no>No</no>
+		<select_all>Seleziona tutto</select_all>
+		<select>Seleziona</select>
+		<please_wait>Attendi...</please_wait>
+		<yes>Sì</yes>
+		<wday>
+			<day>domenica</day>
+			<day>lunedi</day>
+			<day>martedi</day>
+			<day>mercoledi</day>
+			<day>giovedi</day>
+			<day>venerdi</day>
+			<day>sabato</day>
+		</wday>
+		<ymonth>
+			<month>Gennaio</month>
+			<month>Febbraio</month>
+			<month>Marzo</month>
+			<month>Aprile</month>
+			<month>Maggio</month>
+			<month>Giugno</month>
+			<month>Luglio</month>
+			<month>Agosto</month>
+			<month>Settembre</month>
+			<month>Ottobre</month>
+			<month>Novembre</month>
+			<month>Dicembre</month>
+		</ymonth>
+		<small_ymonth>
+			<month>gennaio</month>
+			<month>febbraio</month>
+			<month>marzo</month>
+			<month>aprile</month>
+			<month>maggio</month>
+			<month>giugno</month>
+			<month>luglio</month>
+			<month>agosto</month>
+			<month>settembre</month>
+			<month>ottobre</month>
+			<month>novembre</month>
+			<month>dicembre</month>
+		</small_ymonth>
+		<hidden_trophy>Trofeo nascosto</hidden_trophy>
+		<one_hour_ago>1 ora fa</one_hour_ago>
+		<one_minute_ago>1 minuto fa</one_minute_ago>
+		<bronze>Bronzo</bronze>
+		<gold>Oro</gold>
+		<platinum>Platino</platinum>
+		<silver>Argento</silver>
+		<hours_ago>{} ore fa</hours_ago>
+		<minutes_ago>{} minuti fa</minutes_ago>
+	</common>
 
-<dialog>
-	<trophy>
-		<preparing_start_app>Preparazione per l'avvio dell'applicazione...</preparing_start_app>
-	</trophy>
-	<save_data>
-		<delete>
-			<cancel_deleting>Vuoi annullare l'eliminazione?</cancel_deleting> 
-			<deletion_complete>Eliminazione completata.</deletion_complete> 
-			<delete_saved_data>Vuoi eliminare questi dati salvati?</delete_saved_data> 
-		</delete>
-		<info>
-			<details>Dettagli</details>
-			<updated>Aggiornato</updated>
-		</info>
-		<load name="Carica">
-			<cancel_loading>Vuoi annullare il caricamento?</cancel_loading>
-			<no_saved_data>Non ci sono dati salvati.</no_saved_data>
-			<load_complete>Caricamento completato.</load_complete>
-			<loading>Caricamento in corso...</loading>
-			<load_saved_data>Vuoi caricare questi dati salvati?</load_saved_data>
-		</load>
-		<save name="Salva">
-			<cancel_saving>Vuoi annullare il salvataggio?</cancel_saving>
-			<could_not_save>Impossibile salvare il file.
-Spazio libero insufficiente sulla scheda di memoria.</could_not_save>
-			<not_free_space>Spazio libero insufficiente sulla scheda di memoria.</not_free_space>
-			<new_saved_data>Nuovi dati salvati</new_saved_data>
-			<saving_complete>Salvataggio completato.</saving_complete>
-			<save_the_data>Vuoi salvare i dati?</save_the_data>
-			<saving>Salvataggio in corso...</saving>
-			<warning_saving>Salvataggio in corso...
-Non spegnere il sistema né chiudere l'applicazione.</warning_saving>
-			<overwrite_saved_data>Vuoi sovrascrivere questi dati salvati?</overwrite_saved_data>
-		</save>
-	</save_data>
-</dialog>
+	<dialog>
+		<trophy>
+			<preparing_start_app>Preparazione per l'avvio dell'applicazione...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Vuoi annullare l'eliminazione?</cancel_deleting>
+				<deletion_complete>Eliminazione completata.</deletion_complete>
+				<delete_saved_data>Vuoi eliminare questi dati salvati?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Dettagli</details>
+				<updated>Aggiornato</updated>
+			</info>
+			<load name="Carica">
+				<cancel_loading>Vuoi annullare il caricamento?</cancel_loading>
+				<no_saved_data>Non ci sono dati salvati.</no_saved_data>
+				<load_complete>Caricamento completato.</load_complete>
+				<loading>Caricamento in corso...</loading>
+				<load_saved_data>Vuoi caricare questi dati salvati?</load_saved_data>
+			</load>
+			<save name="Salva">
+				<cancel_saving>Vuoi annullare il salvataggio?</cancel_saving>
+				<could_not_save>
+					Impossibile salvare il file.
+					Spazio libero insufficiente sulla scheda di memoria.
+				</could_not_save>
+				<not_free_space>Spazio libero insufficiente sulla scheda di memoria.</not_free_space>
+				<new_saved_data>Nuovi dati salvati</new_saved_data>
+				<saving_complete>Salvataggio completato.</saving_complete>
+				<save_the_data>Vuoi salvare i dati?</save_the_data>
+				<saving>Salvataggio in corso...</saving>
+				<warning_saving>
+					Salvataggio in corso...
+					Non spegnere il sistema né chiudere l'applicazione.
+				</warning_saving>
+				<overwrite_saved_data>Vuoi sovrascrivere questi dati salvati?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
 
-<game_data>
-	<app_close>La seguente applicazione sarà chiusa.</app_close>
-</game_data>
+	<game_data>
+		<app_close>La seguente applicazione sarà chiusa.</app_close>
+	</game_data>
 
-<indicator>
-	<app_added_home>L'applicazione è stata aggiunta alla schermata principale.</app_added_home>
-	<delete_all>Elimina tutto</delete_all>
-	<notif_deleted>Le notifiche saranno eliminate.</notif_deleted>
-	<install_failed>Impossibile installare.</install_failed>
-	<install_complete>Installazione completata.</install_complete>
-	<installing>Installazione in corso...</installing>
-	<no_notif>Non ci sono notifiche.</no_notif>
-	<trophy_earned>Hai guadagnato un trofeo!</trophy_earned>
-</indicator>
+	<indicator>
+		<app_added_home>L'applicazione è stata aggiunta alla schermata principale.</app_added_home>
+		<delete_all>Elimina tutto</delete_all>
+		<notif_deleted>Le notifiche saranno eliminate.</notif_deleted>
+		<install_failed>Impossibile installare.</install_failed>
+		<install_complete>Installazione completata.</install_complete>
+		<installing>Installazione in corso...</installing>
+		<no_notif>Non ci sono notifiche.</no_notif>
+		<trophy_earned>Hai guadagnato un trofeo!</trophy_earned>
+	</indicator>
 
-<live_area>
-	<start>Avvia</start>
-	<continue>Continua</continue>
-</live_area>
+	<live_area>
+		<start>Avvia</start>
+		<continue>Continua</continue>
+	</live_area>
 
-<trophy_collection>
-	<details>Dettagli</details>
-	<earned>Guadagnato</earned>
-	<name>Nome</name>
-	<no_trophies>Non ci sono trofei.
-Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.</no_trophies>
-	<not_earned>Non guadagnato</not_earned>
-	<original>Originale</original>
-	<sort>Ordina</sort>
-	<trophies>Trofei</trophies>
-	<grade>Grado</grade>
-	<progress>Avanzamento</progress>
-	<updated>Aggiornato</updated>
-</trophy_collection>
+	<trophy_collection>
+		<details>Dettagli</details>
+		<earned>Guadagnato</earned>
+		<name>Nome</name>
+		<no_trophies>
+			Non ci sono trofei.
+			Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.
+		</no_trophies>
+		<not_earned>Non guadagnato</not_earned>
+		<original>Originale</original>
+		<sort>Ordina</sort>
+		<trophies>Trofei</trophies>
+		<grade>Grado</grade>
+		<progress>Avanzamento</progress>
+		<updated>Aggiornato</updated>
+	</trophy_collection>
 
-<user_management>
-	<create_user>Crea utente</create_user>
-	<edit_user>Modifica utente</edit_user>
-	<delete_user>Elimina utente</delete_user>
-	<change_avatar>Cambia avatar</change_avatar>
-	<name>Nome</name>
-	<user>Utente</user>
-	<confirm>Conferma</confirm>
-</user_management>
+	<user_management>
+		<create_user>Crea utente</create_user>
+		<edit_user>Modifica utente</edit_user>
+		<delete_user>Elimina utente</delete_user>
+		<change_avatar>Cambia avatar</change_avatar>
+		<name>Nome</name>
+		<user>Utente</user>
+		<confirm>Conferma</confirm>
+	</user_management>
+</lang>
