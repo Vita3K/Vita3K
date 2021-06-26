@@ -1,172 +1,180 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<app_context>
-	<update_history>アップデート履歴</update_history>
-	<information>情報</information>
-	<app_delete>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</app_delete>
-	<save_delete>このセーブデータを削除しますか？</save_delete>
-	<name>名前</name>
-	<trophy_earning eligible="権利あり" ineligible="権利なし">トロフィー獲得</trophy_earning>
-	<parental_Controls level="レベル">ペアレンタルコントロール</parental_Controls>
-	<updated>更新日</updated>
-	<size>サイズ</size>
-	<version>バージョン</version>
-</app_context>
+<lang>
+	<app_context>
+		<update_history>アップデート履歴</update_history>
+		<information>情報</information>
+		<app_delete>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</app_delete>
+		<save_delete>このセーブデータを削除しますか？</save_delete>
+		<name>名前</name>
+		<trophy_earning eligible="権利あり" ineligible="権利なし">トロフィー獲得</trophy_earning>
+		<parental_Controls level="レベル">ペアレンタルコントロール</parental_Controls>
+		<updated>更新日</updated>
+		<size>サイズ</size>
+		<version>バージョン</version>
+	</app_context>
 
-<common>
-	<cancel>キャンセル</cancel>
-	<delete>削除</delete>
-	<file_corrupted>ファイルが壊れています。</file_corrupted>
-	<no>いいえ</no>
-	<select_all>すべて選択</select_all>
-	<select>選択</select>
-	<please_wait>しばらくお待ちください...</please_wait>
-	<yes>はい</yes>
-	<wday>
-		<day>日曜日</day>
-		<day>月曜日</day>
-		<day>火曜日</day>
-		<day>水曜日</day>
-		<day>木曜日</day>
-		<day>金曜日</day>
-		<day>土曜日</day>
-	</wday>
-	<ymonth>
-		<month>1月</month>
-		<month>2月</month>
-		<month>3月</month>
-		<month>4月</month>
-		<month>5月</month>
-		<month>6月</month>
-		<month>7月</month>
-		<month>8月</month>
-		<month>9月</month>
-		<month>10月</month>
-		<month>11月</month>
-		<month>12月</month>
-	</ymonth>
-	<small_ymonth>
-		<month>1月</month>
-		<month>2月</month>
-		<month>3月</month>
-		<month>4月</month>
-		<month>5月</month>
-		<month>6月</month>
-		<month>7月</month>
-		<month>8月</month>
-		<month>9月</month>
-		<month>10月</month>
-		<month>11月</month>
-		<month>12月</month>
-	</small_ymonth>
-	<hidden_trophy>隠しトロフィー</hidden_trophy>
-	<one_hour_ago>1時間前</one_hour_ago>
-	<one_minute_ago>1分前</one_minute_ago>
-	<bronze>ブロンズ</bronze>
-	<gold>ゴールド</gold>
-	<platinum>プラチナ</platinum>
-	<silver>シルバー</silver>
-	<hours_ago>{}時間前</hours_ago>
-	<minutes_ago>{}分前</minutes_ago>
-</common>
+	<common>
+		<cancel>キャンセル</cancel>
+		<delete>削除</delete>
+		<file_corrupted>ファイルが壊れています。</file_corrupted>
+		<no>いいえ</no>
+		<select_all>すべて選択</select_all>
+		<select>選択</select>
+		<please_wait>しばらくお待ちください...</please_wait>
+		<yes>はい</yes>
+		<wday>
+			<day>日曜日</day>
+			<day>月曜日</day>
+			<day>火曜日</day>
+			<day>水曜日</day>
+			<day>木曜日</day>
+			<day>金曜日</day>
+			<day>土曜日</day>
+		</wday>
+		<ymonth>
+			<month>1月</month>
+			<month>2月</month>
+			<month>3月</month>
+			<month>4月</month>
+			<month>5月</month>
+			<month>6月</month>
+			<month>7月</month>
+			<month>8月</month>
+			<month>9月</month>
+			<month>10月</month>
+			<month>11月</month>
+			<month>12月</month>
+		</ymonth>
+		<small_ymonth>
+			<month>1月</month>
+			<month>2月</month>
+			<month>3月</month>
+			<month>4月</month>
+			<month>5月</month>
+			<month>6月</month>
+			<month>7月</month>
+			<month>8月</month>
+			<month>9月</month>
+			<month>10月</month>
+			<month>11月</month>
+			<month>12月</month>
+		</small_ymonth>
+		<hidden_trophy>隠しトロフィー</hidden_trophy>
+		<one_hour_ago>1時間前</one_hour_ago>
+		<one_minute_ago>1分前</one_minute_ago>
+		<bronze>ブロンズ</bronze>
+		<gold>ゴールド</gold>
+		<platinum>プラチナ</platinum>
+		<silver>シルバー</silver>
+		<hours_ago>{}時間前</hours_ago>
+		<minutes_ago>{}分前</minutes_ago>
+	</common>
 
-<dialog>
-	<trophy>
-		<preparing_start_app>アプリケーションを始める準備中です...</preparing_start_app>
-	</trophy>
-	<save_data>
-		<delete>
-			<cancel_deleting>削除をキャンセルしますか？</cancel_deleting> 
-			<deletion_complete>削除しました。</deletion_complete> 
-			<delete_saved_data>このセーブデータを削除しますか？</delete_saved_data> 
-		</delete>
-		<info>
-			<details>詳細</details>
-			<updated>更新日</updated>
-		</info>
-		<load name="ロード">
-			<cancel_loading>ロードをキャンセルしますか？</cancel_loading>
-			<no_saved_data>セーブデータがありません。</no_saved_data>
-			<load_complete>ロードしました。</load_complete>
-			<loading>ロード中です...</loading>
-			<load_saved_data>このセーブデータをロードしますか？</load_saved_data>
-		</load>
-		<save name="セーブ">
-			<cancel_saving>セーブをキャンセルしますか？</cancel_saving>
-			<could_not_save>セーブできませんでした。
-メモリーカードの空き容量が不足しています。</could_not_save>
-			<not_free_space>メモリーカードの空き容量が不足しています。</not_free_space>
-			<new_saved_data>新しいセーブデータ</new_saved_data>
-			<saving_complete>セーブしました。</saving_complete>
-			<save_the_data>データをセーブしますか？</save_the_data>
-			<saving>セーブ中です...</saving>
-			<warning_saving>セーブ中です...
-電源を切ったり、アプリケーションを終了したりしないでください。</warning_saving>
-			<overwrite_saved_data>このセーブデータを上書きしますか？</overwrite_saved_data>
-		</save>
-	</save_data>
-</dialog>
-
-<indicator>
-	<app_added_home>ホーム画面にアプリケーションが追加されました。</app_added_home>
-	<delete_all>すべて削除</delete_all>
-	<notif_deleted>お知らせを削除します。</notif_deleted>
-	<install_failed>インストールできませんでした。</install_failed>
-	<install_complete>インストールしました。</install_complete>
-	<installing>インストール中です...</installing>
-	<no_notif>お知らせはありません。</no_notif>
-	<trophy_earned>トロフィーを獲得しました！</trophy_earned>
-</indicator>
-
-<live_area>
-	<start>はじめる</start>
-	<continue>つづける</continue>
-</live_area>
-
-<settings name="設定">
-	<theme_background name="テーマ&背景" default="オリジナル">
-		<theme name="テーマ">
-			<information name="情報">
-				<name>名前</name>
-				<provider>提供者</provider>
+	<dialog>
+		<trophy>
+			<preparing_start_app>アプリケーションを始める準備中です...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>削除をキャンセルしますか？</cancel_deleting>
+				<deletion_complete>削除しました。</deletion_complete>
+				<delete_saved_data>このセーブデータを削除しますか？</delete_saved_data>
+			</delete>
+			<info>
+				<details>詳細</details>
 				<updated>更新日</updated>
-				<size>サイズ</size>
-				<version>バージョン</version>
-			</information>
-			<delete>このテーマを削除します。</delete>
-		</theme>
-		<start_screen name="スタート画面">
-			<image>画像</image>
-		</start_screen>
-		<home_screen_backgrounds>ホーム画面の背景</home_screen_backgrounds>
-	</theme_background>
-	<date_time name="日付&時刻">
-		<date_format name ="日付表示">
-			<yyyy_mm_dd>年/月/日</yyyy_mm_dd>
-			<dd_mm_yyyy>日/月/年</dd_mm_yyyy>
-			<mm_dd_yyyy>月/日/年</mm_dd_yyyy>
-		</date_format>
-		<time_format name="時間表示">
-			<clock_12_hour>12時間</clock_12_hour>
-			<clock_24_hour>24時間</clock_24_hour>
-		</time_format>
-	</date_time>
-	<language name="言語">
-		<system_language>システム言語</system_language>
-	</language>
-</settings>
+			</info>
+			<load name="ロード">
+				<cancel_loading>ロードをキャンセルしますか？</cancel_loading>
+				<no_saved_data>セーブデータがありません。</no_saved_data>
+				<load_complete>ロードしました。</load_complete>
+				<loading>ロード中です...</loading>
+				<load_saved_data>このセーブデータをロードしますか？</load_saved_data>
+			</load>
+			<save name="セーブ">
+				<cancel_saving>セーブをキャンセルしますか？</cancel_saving>
+				<could_not_save>
+					セーブできませんでした。
+					メモリーカードの空き容量が不足しています。
+				</could_not_save>
+				<not_free_space>メモリーカードの空き容量が不足しています。</not_free_space>
+				<new_saved_data>新しいセーブデータ</new_saved_data>
+				<saving_complete>セーブしました。</saving_complete>
+				<save_the_data>データをセーブしますか？</save_the_data>
+				<saving>セーブ中です...</saving>
+				<warning_saving>
+					セーブ中です...
+					電源を切ったり、アプリケーションを終了したりしないでください。
+				</warning_saving>
+				<overwrite_saved_data>このセーブデータを上書きしますか？</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
 
-<trophy_collection>
-	<details>詳細</details>
-	<earned>獲得日</earned>
-	<name>名前</name>
-	<no_trophies>トロフィーがありません。
-トロフィー対応のアプリケーションで遊ぶとトロフィーを獲得できます。</no_trophies>
-	<not_earned>未獲得</not_earned>
-	<original>オリジナル</original>
-	<sort>並べ替え</sort>
-	<trophies>トロフィー数</trophies>
-	<grade>グレード</grade>
-	<progress>達成率</progress>
-	<updated>更新日</updated>
-</trophy_collection>
+	<indicator>
+		<app_added_home>ホーム画面にアプリケーションが追加されました。</app_added_home>
+		<delete_all>すべて削除</delete_all>
+		<notif_deleted>お知らせを削除します。</notif_deleted>
+		<install_failed>インストールできませんでした。</install_failed>
+		<install_complete>インストールしました。</install_complete>
+		<installing>インストール中です...</installing>
+		<no_notif>お知らせはありません。</no_notif>
+		<trophy_earned>トロフィーを獲得しました！</trophy_earned>
+	</indicator>
+
+	<live_area>
+		<start>はじめる</start>
+		<continue>つづける</continue>
+	</live_area>
+
+	<settings name="設定">
+		<theme_background name="テーマ&背景" default="オリジナル">
+			<theme name="テーマ">
+				<information name="情報">
+					<name>名前</name>
+					<provider>提供者</provider>
+					<updated>更新日</updated>
+					<size>サイズ</size>
+					<version>バージョン</version>
+				</information>
+				<delete>このテーマを削除します。</delete>
+			</theme>
+			<start_screen name="スタート画面">
+				<image>画像</image>
+			</start_screen>
+			<home_screen_backgrounds>ホーム画面の背景</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="日付&時刻">
+			<date_format name ="日付表示">
+				<yyyy_mm_dd>年/月/日</yyyy_mm_dd>
+				<dd_mm_yyyy>日/月/年</dd_mm_yyyy>
+				<mm_dd_yyyy>月/日/年</mm_dd_yyyy>
+			</date_format>
+			<time_format name="時間表示">
+				<clock_12_hour>12時間</clock_12_hour>
+				<clock_24_hour>24時間</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="言語">
+			<system_language>システム言語</system_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>詳細</details>
+		<earned>獲得日</earned>
+		<name>名前</name>
+		<no_trophies>
+			トロフィーがありません。
+			トロフィー対応のアプリケーションで遊ぶとトロフィーを獲得できます。
+		</no_trophies>
+		<not_earned>未獲得</not_earned>
+		<original>オリジナル</original>
+		<sort>並べ替え</sort>
+		<trophies>トロフィー数</trophies>
+		<grade>グレード</grade>
+		<progress>達成率</progress>
+		<updated>更新日</updated>
+	</trophy_collection>
+</lang>

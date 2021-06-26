@@ -1,205 +1,243 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<main_menubar>
-	<file name="Bestand">
-		<open_pref_path>Open Opslag Pad</open_pref_path>
-		<install_firmware>Installeer Firmware</install_firmware>
-		<install_pkg>Installeer .pkg</install_pkg>
-		<install_zip>Installeer .zip, .vpk</install_zip>
-	</file>
-	<emulation name="Emuleren">
-		<last_apps_used>Laatste gebruikte apps</last_apps_used>
-	</emulation>
-	<configuration name="Configuratie">
-		<settings>Instellingen</settings>
-		<user_management>Gebruiker Beheer</user_management>
-	</configuration>
-	<controls name="Besturing">
-		<keyboard_controls>Toetsenbord Besturing</keyboard_controls>
-	</controls>
-	<help name="Help">
-		<about>Over</about>
-		<welcome>Welkom</welcome>
-	</help>
-</main_menubar>	
+<lang>
+	<main_menubar>
+		<file name="Bestand">
+			<open_pref_path>Open Opslag Pad</open_pref_path>
+			<install_firmware>Installeer Firmware</install_firmware>
+			<install_pkg>Installeer .pkg</install_pkg>
+			<install_zip>Installeer .zip, .vpk</install_zip>
+			<install_license>Installeer een licentie</install_license>
+		</file>
+		<emulation name="Emuleren">
+			<last_apps_used>Laatste gebruikte apps</last_apps_used>
+		</emulation>
+		<configuration name="Configuratie">
+			<settings>Instellingen</settings>
+			<user_management>Gebruiker Beheer</user_management>
+		</configuration>
+		<controls name="Besturing">
+			<keyboard_controls>Toetsenbord Besturing</keyboard_controls>
+		</controls>
+		<help name="Help">
+			<about>Over</about>
+			<welcome>Welkom</welcome>
+		</help>
+	</main_menubar>
 
-<app_context>
-	<update_history>Updategeschiedenis</update_history>
-	<information>Informatie</information>
-	<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
-	<save_delete>Wil je deze opgeslagen data verwijderen?</save_delete> 
-	<name>Naam</name>
-	<trophy_earning eligible="Geschikt" ineligible="Niet geschikt">Trofeeën verdienen</trophy_earning> 
-	<parental_Controls level="Niveau">Ouderlijk toezicht</parental_Controls>
-	<updated>Geüpdatet</updated>
-	<size>Grootte</size>
-	<version>Versie</version>
-</app_context>
+	<app_context>
+		<update_history>Updategeschiedenis</update_history>
+		<information>Informatie</information>
+		<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
+		<save_delete>Wil je deze opgeslagen data verwijderen?</save_delete>
+		<name>Naam</name>
+		<trophy_earning eligible="Geschikt" ineligible="Niet geschikt">Trofeeën verdienen</trophy_earning>
+		<parental_Controls level="Niveau">Ouderlijk toezicht</parental_Controls>
+		<updated>Geüpdatet</updated>
+		<size>Grootte</size>
+		<version>Versie</version>
+		<last_time_used>Laatst gebruikt</last_time_used>
+		<never>Nooit</never>
+		<time_used>Gebruikte tijd</time_used>
+	</app_context>
 
-<common>
-	<cancel>Annuleren</cancel>
-	<delete>Verwijderen</delete>
-	<file_corrupted>Het bestand is beschadigd.</file_corrupted>
-	<no>Nee</no>
-	<select_all>Alles selecteren</select_all>
-	<select>Selecteren</select>
-	<please_wait>Een ogenblik geduld...</please_wait>
-	<yes>Ja</yes>
-	<wday>
-		<day>zondag</day>
-		<day>maandag</day>
-		<day>dinsdag</day>
-		<day>woensdag</day>
-		<day>donderdag</day>
-		<day>vrijdag</day>
-		<day>zaterdag</day>
-	</wday>
-	<ymonth>
-		<month>Januari</month>
-		<month>Februari</month>
-		<month>Maart</month>
-		<month>April</month>
-		<month>Mei</month>
-		<month>Juni</month>
-		<month>Juli</month>
-		<month>Augustus</month>
-		<month>September</month>
-		<month>Oktober</month>
-		<month>November</month>
-		<month>December</month>
-	</ymonth>
-	<small_ymonth>
-		<month>januari</month>
-		<month>februari</month>
-		<month>maart</month>
-		<month>april</month>
-		<month>mei</month>
-		<month>juni</month>
-		<month>juli</month>
-		<month>augustus</month>
-		<month>september</month>
-		<month>oktober</month>
-		<month>november</month>
-		<month>december</month>
-	</small_ymonth>
-	<hidden_trophy>Verborgen trofee</hidden_trophy>
-	<one_hour_ago>1 uur geleden</one_hour_ago>
-	<one_minute_ago>1 minuut geleden</one_minute_ago>
-	<bronze>Brons</bronze>
-	<gold>Goud</gold>
-	<platinum>Platina</platinum>
-	<silver>Zilver</silver>
-	<hours_ago>{} uur geleden</hours_ago>
-	<minutes_ago>{} minuten geleden</minutes_ago>
-</common>
+	<common>
+		<cancel>Annuleren</cancel>
+		<delete>Verwijderen</delete>
+		<file_corrupted>Het bestand is beschadigd.</file_corrupted>
+		<no>Nee</no>
+		<select_all>Alles selecteren</select_all>
+		<select>Selecteren</select>
+		<please_wait>Een ogenblik geduld...</please_wait>
+		<yes>Ja</yes>
+		<wday>
+			<day>zondag</day>
+			<day>maandag</day>
+			<day>dinsdag</day>
+			<day>woensdag</day>
+			<day>donderdag</day>
+			<day>vrijdag</day>
+			<day>zaterdag</day>
+		</wday>
+		<ymonth>
+			<month>Januari</month>
+			<month>Februari</month>
+			<month>Maart</month>
+			<month>April</month>
+			<month>Mei</month>
+			<month>Juni</month>
+			<month>Juli</month>
+			<month>Augustus</month>
+			<month>September</month>
+			<month>Oktober</month>
+			<month>November</month>
+			<month>December</month>
+		</ymonth>
+		<small_ymonth>
+			<month>januari</month>
+			<month>februari</month>
+			<month>maart</month>
+			<month>april</month>
+			<month>mei</month>
+			<month>juni</month>
+			<month>juli</month>
+			<month>augustus</month>
+			<month>september</month>
+			<month>oktober</month>
+			<month>november</month>
+			<month>december</month>
+		</small_ymonth>
+		<hidden_trophy>Verborgen trofee</hidden_trophy>
+		<one_hour_ago>1 uur geleden</one_hour_ago>
+		<one_minute_ago>1 minuut geleden</one_minute_ago>
+		<bronze>Brons</bronze>
+		<gold>Goud</gold>
+		<platinum>Platina</platinum>
+		<silver>Zilver</silver>
+		<hours_ago>{} uur geleden</hours_ago>
+		<minutes_ago>{} minuten geleden</minutes_ago>
+	</common>
 
-<dialog>
-	<trophy>
-		<preparing_start_app>Bezig met het voorbereiden voor het starten van de applicatie...</preparing_start_app>
-	</trophy>
-	<save_data>
-		<delete>
-			<cancel_deleting>Wil je het verwijderen annuleren?</cancel_deleting> 
-			<deletion_complete>Het verwijderen is voltooid.</deletion_complete> 
-			<delete_saved_data>Wil je deze opgeslagen data verwijderen?</delete_saved_data> 
-		</delete>
-		<info>
-			<details>Details</details>
-			<updated>Geüpdatet</updated>
-		</info>
-		<load name="Laden">
-			<cancel_loading>Wil je het laden annuleren?</cancel_loading>
-			<no_saved_data>Er zijn geen opgeslagen data.</no_saved_data>
-			<load_complete>Het laden is voltooid.</load_complete>
-			<loading>Bezig met laden...</loading>
-			<load_saved_data>Wil je deze opgeslagen data laden?</load_saved_data>
-		</load>
-		<save name="Opslaan">
-			<cancel_saving>Wil je het opslaan annuleren?</cancel_saving>
-			<could_not_save>Kan het bestand niet opslaan.
-Er is onvoldoende vrije ruimte op de geheugenkaart.</could_not_save>
-			<not_free_space>Er is onvoldoende vrije ruimte op de geheugenkaart.</not_free_space>
-			<new_saved_data>Nieuwe opgeslagen data</new_saved_data>
-			<saving_complete>Opslaan voltooid.</saving_complete>
-			<save_the_data>Wil je de data opslaan?</save_the_data>
-			<saving>Bezig met opslaan...</saving>
-			<warning_saving>Bezig met opslaan...
-Schakel het systeem niet uit en sluit de applicatie niet.</warning_saving>
-			<overwrite_saved_data>Wil je deze opgeslagen data overschrijven?</overwrite_saved_data>
-		</save>
-	</save_data>
-</dialog>
-
-<indicator>
-	<app_added_home>De applicatie is toegevoegd aan het beginscherm.</app_added_home>
-	<delete_all>Alles verwijderen</delete_all>
-	<notif_deleted>De meldingen worden verwijderd.</notif_deleted>
-	<install_failed>Kan niet installeren.</install_failed>
-	<install_complete>De installatie is voltooid.</install_complete>
-	<installing>Bezig met installeren...</installing>
-	<no_notif>Er zijn geen meldingen.</no_notif>
-	<trophy_earned>Je hebt een trofee gewonnen!</trophy_earned>
-</indicator>
-
-<live_area>
-	<start>Starten</start>
-	<continue>Doorgaan</continue>
-</live_area>
-
-<settings name="Instellingen">
-	<theme_background name="Thema en achtergrond" default="Standaard ">
-		<theme name="Thema">
-			<information name="Informatie">
-				<name>Naam</name>
-				<provider>Provider</provider>
+	<dialog>
+		<trophy>
+			<preparing_start_app>Bezig met het voorbereiden voor het starten van de applicatie...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Wil je het verwijderen annuleren?</cancel_deleting>
+				<deletion_complete>Het verwijderen is voltooid.</deletion_complete>
+				<delete_saved_data>Wil je deze opgeslagen data verwijderen?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Details</details>
 				<updated>Geüpdatet</updated>
-				<size>Grootte</size>
-				<version>Versie</version>
-			</information>
-			<delete>Dit thema wordt verwijderd.</delete>
-		</theme>
-		<start_screen name="Startscherm">
-			<image>Afbeelding</image>
-		</start_screen>
-		<home_screen_backgrounds>Achtergronden voor beginscherm</home_screen_backgrounds> 
-	</theme_background>
-	<date_time name="Datum en tijd">
-		<date_format name ="Datumweergave">
-			<yyyy_mm_dd>YYYY/MM/DD</yyyy_mm_dd>
-			<dd_mm_yyyy>DD/MM/YYYY</dd_mm_yyyy>
-			<mm_dd_yyyy>MM/DD/YYYY</mm_dd_yyyy>
-		</date_format>
-		<time_format name="Tijdweergave">
-			<clock_12_hour>12-uursklok</clock_12_hour>
-			<clock_24_hour>24-uursklok</clock_24_hour>
-		</time_format>
-	</date_time>
-	<language name="Taal">
-		<system_language>Systeemtaal</system_language>
-	</language>
-</settings>
+			</info>
+			<load name="Laden">
+				<cancel_loading>Wil je het laden annuleren?</cancel_loading>
+				<no_saved_data>Er zijn geen opgeslagen data.</no_saved_data>
+				<load_complete>Het laden is voltooid.</load_complete>
+				<loading>Bezig met laden...</loading>
+				<load_saved_data>Wil je deze opgeslagen data laden?</load_saved_data>
+			</load>
+			<save name="Opslaan">
+				<cancel_saving>Wil je het opslaan annuleren?</cancel_saving>
+				<could_not_save>
+					Kan het bestand niet opslaan.
+					Er is onvoldoende vrije ruimte op de geheugenkaart.
+				</could_not_save>
+				<not_free_space>Er is onvoldoende vrije ruimte op de geheugenkaart.</not_free_space>
+				<new_saved_data>Nieuwe opgeslagen data</new_saved_data>
+				<saving_complete>Opslaan voltooid.</saving_complete>
+				<save_the_data>Wil je de data opslaan?</save_the_data>
+				<saving>Bezig met opslaan...</saving>
+				<warning_saving>
+					Bezig met opslaan...
+					Schakel het systeem niet uit en sluit de applicatie niet.
+				</warning_saving>
+				<overwrite_saved_data>Wil je deze opgeslagen data overschrijven?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
 
-<trophy_collection>
-	<details>Details</details>
-	<earned>Gewonnen</earned>
-	<name>Naam</name>
-	<no_trophies>Er zijn geen trofeeën.
-Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefunctie ondersteunt.</no_trophies>
-	<not_earned>Niet verdiend</not_earned>
-	<original>Origineel</original>
-	<sort>Sorteren</sort>
-	<trophies>Trofeeën</trophies>
-	<grade>Rang</grade>
-	<progress>Voortgang</progress>
-	<updated>Geüpdatet</updated>
-</trophy_collection>
+	<game_data>
+		<app_close>De volgende applicatie wordt gesloten.</app_close>
+	</game_data>
 
-<user_management>
-	<create_user>Maak Gebruiker</create_user>
-	<edit_user>Bewerk Gebruiker</edit_user>
-	<delete_user>Verwijder Gebruiker</delete_user>
-	<change_avatar>Verander Avatar</change_avatar>
-	<name>Naam</name>
-	<user>Gebruiker</user>
-	<confirm>Bevestigen</confirm>
-</user_management>
+	<indicator>
+		<app_added_home>De applicatie is toegevoegd aan het beginscherm.</app_added_home>
+		<delete_all>Alles verwijderen</delete_all>
+		<notif_deleted>De meldingen worden verwijderd.</notif_deleted>
+		<install_failed>Kan niet installeren.</install_failed>
+		<install_complete>De installatie is voltooid.</install_complete>
+		<installing>Bezig met installeren...</installing>
+		<no_notif>Er zijn geen meldingen.</no_notif>
+		<trophy_earned>Je hebt een trofee gewonnen!</trophy_earned>
+	</indicator>
+
+	<live_area>
+		<start>Starten</start>
+		<continue>Doorgaan</continue>
+	</live_area>
+
+	<settings name="Instellingen">
+		<theme_background name="Thema en achtergrond" default="Standaard ">
+			<theme name="Thema">
+				<information name="Informatie">
+					<name>Naam</name>
+					<provider>Provider</provider>
+					<updated>Geüpdatet</updated>
+					<size>Grootte</size>
+					<version>Versie</version>
+				</information>
+				<delete>Dit thema wordt verwijderd.</delete>
+			</theme>
+			<start_screen name="Startscherm">
+				<image>Afbeelding</image>
+			</start_screen>
+			<home_screen_backgrounds>Achtergronden voor beginscherm</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Datum en tijd">
+			<date_format name ="Datumweergave">
+				<yyyy_mm_dd>YYYY/MM/DD</yyyy_mm_dd>
+				<dd_mm_yyyy>DD/MM/YYYY</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/DD/YYYY</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Tijdweergave">
+				<clock_12_hour>12-uursklok</clock_12_hour>
+				<clock_24_hour>24-uursklok</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Taal">
+			<system_language>Systeemtaal</system_language>
+			<input_language name="Invoertalen">
+				<keyboards name="Toetsenborden">
+					<ime_langagues>
+						<lang id="1">Deens</lang>
+						<lang id="2">Duits</lang>
+						<lang id="262144">Engels (Verenigd Koninkrijk)</lang>
+						<lang id="4">Engels (Verenigde Staten)</lang>
+						<lang id="8">Spaans</lang>
+						<lang id="16">Frans</lang>
+						<lang id="32">Italiaans</lang>
+						<lang id="64">Nederlands</lang>
+						<lang id="128">Noors</lang>
+						<lang id="256">Pools</lang>
+						<lang id="131072">Portugees (Brazilië)</lang>
+						<lang id="512">Portugees (Portugal)</lang>
+						<lang id="1024">Russisch</lang>
+						<lang id="2048">Fins</lang>
+						<lang id="4096">Zweeds</lang>
+						<lang id="524288">Turks</lang>
+					</ime_langagues>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>Details</details>
+		<earned>Gewonnen</earned>
+		<name>Naam</name>
+		<no_trophies>
+			Er zijn geen trofeeën.
+			Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefunctie ondersteunt.
+		</no_trophies>
+		<not_earned>Niet verdiend</not_earned>
+		<original>Origineel</original>
+		<sort>Sorteren</sort>
+		<trophies>Trofeeën</trophies>
+		<grade>Rang</grade>
+		<progress>Voortgang</progress>
+		<updated>Geüpdatet</updated>
+	</trophy_collection>
+
+	<user_management>
+		<create_user>Maak Gebruiker</create_user>
+		<edit_user>Bewerk Gebruiker</edit_user>
+		<delete_user>Verwijder Gebruiker</delete_user>
+		<change_avatar>Verander Avatar</change_avatar>
+		<name>Naam</name>
+		<user>Gebruiker</user>
+		<confirm>Bevestigen</confirm>
+	</user_management>
+</lang>
