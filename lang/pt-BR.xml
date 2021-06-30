@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<main_menubar>
+	<file name="Arquivo">
+		<open_pref_path>Abrir Caminho das Preferências</open_pref_path>
+		<install_firmware>Instalar Firmware</install_firmware>
+		<install_pkg>Instalar .pkg</install_pkg>
+		<install_zip>Instalar .zip, .vpk</install_zip>
+		<install_license>Instalar Licença</install_license>
+	</file>
+	<emulation name="Emulação">
+		<last_apps_used>Últimos Apps Usados</last_apps_used>
+	</emulation>
+	<configuration name="Configuração">
+		<settings>Configurações</settings>
+		<user_management>Gerenciamento dos Usuários</user_management>
+	</configuration>
+	<controls name="Controles">
+		<keyboard_controls>Controles do Teclado</keyboard_controls>
+	</controls>
+	<help name="Ajuda">
+		<about>Sobre</about>
+		<welcome>Bem-vindo</welcome>
+	</help>
+</main_menubar>
+<app_context>
+	<update_history>Atualizar Histórico</update_history>
+	<information>Informação</information>
+	<app_delete>Este aplicativo e todos os dados relacionados incluindo os dados salvos serão apagados.</app_delete>
+	<save_delete>Você quer apagar estes dados salvos?</save_delete>
+	<name>Nome</name>
+	<trophy_earning eligible="Elegível" ineligible="Inelegível">Ganho de Troféus</trophy_earning>
+	<parental_Controls level="Nível">Controle dos Pais</parental_Controls>
+	<updated>Atualizado</updated>
+	<size>Tamanho</size>
+	<version>Versão</version>
+	<last_time_used>Usado pela última vez</last_time_used>
+	<never>Nunca</never>
+	<time_used>Tempo usado</time_used>
+</app_context>
+<common>
+	<cancel>Cancelar</cancel>
+	<delete>Apagar</delete>
+	<file_corrupted>O arquivo está corrompido.</file_corrupted>
+	<no>Não</no>
+	<select_all>Selecionar Tudo</select_all>
+	<select>Selecionar</select>
+	<please_wait>Por favor aguarde...</please_wait>
+	<yes>Sim</yes>
+	<wday>
+		<day>Domingo</day>
+		<day>Segunda</day>
+		<day>Terça</day>
+		<day>Quarta</day>
+		<day>Quinta</day>
+		<day>Sexta</day>
+		<day>Sábado</day>
+	</wday>
+	<ymonth>
+		<month>Janeiro</month>
+		<month>Fevereiro</month>
+		<month>Março</month>
+		<month>Abril</month>
+		<month>Maio</month>
+		<month>Junho</month>
+		<month>Julho</month>
+		<month>Agosto</month>
+		<month>Setembro</month>
+		<month>Outubro</month>
+		<month>Novembro</month>
+		<month>Dezembro</month>
+	</ymonth>
+	<small_ymonth>
+		<month>janeiro</month>
+		<month>fevereiro</month>
+		<month>março</month>
+		<month>abril</month>
+		<month>maio</month>
+		<month>junho</month>
+		<month>julho</month>
+		<month>agosto</month>
+		<month>setembro</month>
+		<month>outubro</month>
+		<month>novembro</month>
+		<month>dezembro</month>
+	</small_ymonth>
+	<hidden_trophy>Troféu Escondido</hidden_trophy>
+	<one_hour_ago>1 Hora Atrás</one_hour_ago>
+	<one_minute_ago>1 Minuto Atrás</one_minute_ago>
+	<bronze>Bronze</bronze>
+	<gold>Ouro</gold>
+	<platinum>Platina</platinum>
+	<silver>Prata</silver>
+	<hours_ago>{} Horas Atrás</hours_ago>
+	<minutes_ago>{} Minutos Atrás</minutes_ago>
+</common>
+<dialog>
+	<trophy>
+		<preparing_start_app>Preparando pra iniciar o aplicativo...</preparing_start_app>
+	</trophy>
+	<save_data>
+		<delete>
+			<cancel_deleting>Você quer cancelar a exclusão?</cancel_deleting>
+			<deletion_complete>Exclusão completa.</deletion_complete>
+			<delete_saved_data>Você quer apagar estes dados salvos?</delete_saved_data>
+		</delete>
+		<info>
+			<details>Detalhes</details>
+			<updated>Atualizado</updated>
+		</info>
+		<load name="Carregar">
+			<cancel_loading>Você quer cancelar o carregamento?</cancel_loading>
+			<no_saved_data>Não há dados salvos.</no_saved_data>
+			<load_complete>Carregamento completo.</load_complete>
+			<loading>Carregamento...</loading>
+			<load_saved_data>Você quer carregar estes dados salvos?</load_saved_data>
+		</load>
+		<save name="Salvar">
+			<cancel_saving>Você quer cancelar o salvamento?</cancel_saving>
+			<could_not_save>Não pôde salvar o arquivo.
+Não há espaço livre o bastante no memory card.</could_not_save>
+			<not_free_space>Não há espaço livre o bastante no memory card.</not_free_space>
+			<new_saved_data>Novos Dados Salvos</new_saved_data>
+			<saving_complete>Salvamento completo.</saving_complete>
+			<save_the_data>Você quer salvar os dados?</save_the_data>
+			<saving>Salvando...</saving>
+			<warning_saving>Salvando...
+Não desligue o sistema ou feche o aplicativo.</warning_saving>
+			<overwrite_saved_data>Você quer sobrescrever estes dados salvos?</overwrite_saved_data>
+		</save>
+	</save_data>
+</dialog>
+<game_data>
+	<app_close>O seguinte aplicativo fechará.</app_close>
+</game_data>
+<indicator>
+	<app_added_home>O aplicativo foi adicionado na home screen.</app_added_home>
+	<delete_all>Apagar Tudo</delete_all>
+	<notif_deleted>As notificações serão apagadas.</notif_deleted>
+	<install_failed>Não pôde instalar.</install_failed>
+	<install_complete>Instalação completa.</install_complete>
+	<installing>Instalando...</installing>
+	<no_notif>Não há notificações.</no_notif>
+	<trophy_earned>Você ganhou um troféu!</trophy_earned>
+</indicator>
+<live_area>
+	<start>Iniciar</start>
+	<continue>Continuar</continue>
+</live_area>
+<settings name="Configurações">
+	<theme_background name="Tema & Cenário de Fundo" default="Padrão">
+		<theme name="Tema">
+			<information name="Informação">
+				<name>Nome</name>
+				<provider>Fornecedor</provider>
+				<updated>Atualizado</updated>
+				<size>Tamanho</size>
+				<version>Versão</version>
+			</information>
+			<delete>Este tema será apagado.</delete>
+		</theme>
+		<start_screen name="Tela Inicial">
+			<image>Imagem</image>
+		</start_screen>
+		<home_screen_backgrounds>Cenários de Fundo da Tela Inicial</home_screen_backgrounds>
+	</theme_background>
+	<date_time name="Data & Hora">
+		<date_format name="Formato da Data">
+			<yyyy_mm_dd>AAAA/MM/DD</yyyy_mm_dd>
+			<dd_mm_yyyy>DD/MM/AAAA</dd_mm_yyyy>
+			<mm_dd_yyyy>MM/DD/AAAA</mm_dd_yyyy>
+		</date_format>
+		<time_format name="Formato da Hora">
+			<clock_12_hour>Relógio de 12 Horas</clock_12_hour>
+			<clock_24_hour>Relógio de 24 Horas</clock_24_hour>
+		</time_format>
+	</date_time>
+	<language name="Idioma">
+		<system_language>Idioma do Sistema</system_language>
+		<input_language name="Idiomas dos Controles">
+			<keyboards name="Teclados">
+				<ime_langagues>
+					<lang id="1">Dinamarquês</lang>
+					<lang id="2">Alemão</lang>
+					<lang id="262144">Inglês (Reino Unido)</lang>
+					<lang id="4">Inglês (Estados Unidos)</lang>
+					<lang id="8">Espanhol</lang>
+					<lang id="16">Francês</lang>
+					<lang id="32">Italiano</lang>
+					<lang id="64">Holandês</lang>
+					<lang id="128">Norueguês</lang>
+					<lang id="256">Polonês</lang>
+					<lang id="131072">Português (Brasil)</lang>
+					<lang id="512">Português (Portugal)</lang>
+					<lang id="1024">Russo</lang>
+					<lang id="2048">Finlandês</lang>
+					<lang id="4096">Sueco</lang>
+					<lang id="524288">Turco</lang>
+				</ime_langagues>
+			</keyboards>
+		</input_language>
+	</language>
+</settings>
+<trophy_collection>
+	<details>Detalhes</details>
+	<earned>Ganhos</earned>
+	<name>Nome</name>
+	<no_trophies>Não há troféus.
+Você pode ganhar troféus usando um aplicativo que suporte a função dos troféus.</no_trophies>
+	<not_earned>Não Ganhos</not_earned>
+	<original>Original</original>
+	<sort>Organizar</sort>
+	<trophies>Troféus</trophies>
+	<grade>Grade</grade>
+	<progress>Progresso</progress>
+	<updated>Atualizado</updated>
+</trophy_collection>
+<user_management>
+	<create_user>Criar Usuário</create_user>
+	<edit_user>Editar Usuário</edit_user>
+	<delete_user>Apagar Usuário</delete_user>
+	<change_avatar>Mudar Avatar</change_avatar>
+	<name>Nome</name>
+	<user>Usuário</user>
+	<confirm>Confirmar</confirm>
+</user_management>
