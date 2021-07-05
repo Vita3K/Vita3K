@@ -78,6 +78,7 @@ static void reset_emulator(GuiState &gui, HostState &host) {
     get_sys_apps_title(gui, host);
     get_notice_list(host);
     get_users_list(gui, host);
+    save_apps_cache(gui, host);
     init_home(gui, host);
     gui.configuration_menu.settings_dialog = false;
 }
