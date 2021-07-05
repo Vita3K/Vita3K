@@ -47,6 +47,7 @@ bool refresh_app_list(GuiState &gui, HostState &host) {
     if (gui.app_selector.user_apps.empty())
         return false;
 
+    save_apps_cache(gui, host);
     init_apps_icon(gui, host, gui.app_selector.user_apps);
 
     std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {

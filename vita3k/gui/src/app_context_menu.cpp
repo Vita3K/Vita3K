@@ -223,6 +223,8 @@ void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
         LOG_INFO("Application successfully deleted '{} [{}]'.", title_id, APP_INDEX->title);
 
         gui.app_selector.user_apps.erase(APP_INDEX);
+
+        save_apps_cache(gui, host);
     } catch (std::exception &e) {
         LOG_ERROR("Failed to delete '{} [{}]'.\n{}", title_id, APP_INDEX->title, e.what());
     }

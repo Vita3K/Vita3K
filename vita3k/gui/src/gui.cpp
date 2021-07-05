@@ -275,10 +275,104 @@ void init_app_background(GuiState &gui, HostState &host, const std::string &app_
     stbi_image_free(data);
 }
 
+static bool get_apps_cache(GuiState &gui, HostState &host) {
+    const auto apps_cache_path{ fs::path(host.base_path) / "cache/apps.dat" };
+    fs::ifstream apps_cache(apps_cache_path, std::ios::in | std::ios::binary);
+    if (apps_cache.is_open()) {
+        gui.app_selector.user_apps.clear();
+        // Read size of apps list
+        size_t size;
+        apps_cache.read((char *)&size, sizeof(size));
+
+        // Check version of cache
+        size_t version_size;
+        apps_cache.read((char *)&version_size, sizeof(version_size));
+        std::vector<char> buffer(version_size); // dont trust std::string to hold buffer enough
+        apps_cache.read(buffer.data(), version_size);
+        const std::string versionInFile(buffer.begin(), buffer.end());
+        if (versionInFile != "1.00") {
+            LOG_WARN("Current version of cache: {}, is outdated, recreate it.", versionInFile);
+            return false;
+        }
+
+        // Read App info value
+        for (size_t a = 0; a < size; a++) {
+            auto read = [&apps_cache]() {
+                size_t size;
+
+                apps_cache.read((char *)&size, sizeof(size));
+
+                std::vector<char> buffer(size); // dont trust std::string to hold buffer enough
+                apps_cache.read(buffer.data(), size);
+
+                return std::string(buffer.begin(), buffer.end());
+            };
+
+            App app;
+
+            app.app_ver = read();
+            app.category = read();
+            app.content_id = read();
+            app.parental_level = read();
+            app.stitle = read();
+            app.title = read();
+            app.title_id = read();
+            app.path = read();
+
+            gui.app_selector.user_apps.push_back(app);
+        }
+        return true;
+    }
+
+    return false;
+}
+
+void save_apps_cache(GuiState &gui, HostState &host) {
+    const auto cache_path{ fs::path(host.base_path) / "cache" };
+    if (!fs::exists(cache_path))
+        fs::create_directory(cache_path);
+
+    fs::ofstream apps_cache(cache_path / "apps.dat", std::ios::out | std::ios::binary);
+    if (apps_cache.is_open()) {
+        // Write Size of apps list
+        const auto size = gui.app_selector.user_apps.size();
+        apps_cache.write((char *)&size, sizeof(size));
+
+        // Write version of cache
+        const std::string version = "1.00";
+        const auto size_ver = version.length();
+        apps_cache.write((char *)&size_ver, sizeof(size_ver));
+        apps_cache.write(version.c_str(), size_ver);
+
+        // Write Apps list
+        for (const App &app : gui.app_selector.user_apps) {
+            auto write = [&apps_cache](const std::string &i) {
+                const auto size = i.length();
+
+                apps_cache.write((char *)&size, sizeof(size));
+                apps_cache.write(i.c_str(), size);
+            };
+
+            write(app.app_ver);
+            write(app.category);
+            write(app.content_id);
+            write(app.parental_level);
+            write(app.stitle);
+            write(app.title);
+            write(app.title_id);
+            write(app.path);
+        }
+        apps_cache.close();
+    }
+}
+
 void init_home(GuiState &gui, HostState &host) {
     const auto is_cmd = host.cfg.run_app_path || host.cfg.content_path;
     if (!gui.configuration_menu.settings_dialog && (host.cfg.load_app_list || !is_cmd)) {
-        get_user_apps_title(gui, host);
+        if (!get_apps_cache(gui, host)) {
+            get_user_apps_title(gui, host);
+            save_apps_cache(gui, host);
+        }
         init_apps_icon(gui, host, gui.app_selector.user_apps);
     }
 

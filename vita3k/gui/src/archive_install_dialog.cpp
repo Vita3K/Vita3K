@@ -191,6 +191,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
                     if (delete_archive_file)
                         fs::remove(content.path);
                 }
+                save_apps_cache(gui, host);
                 archive_path = nullptr;
                 gui.file_menu.archive_install_dialog = false;
                 delete_archive_file = false;

@@ -336,7 +336,10 @@ uint32_t install_contents(HostState &host, GuiState *gui, const fs::path &path) 
             ++installed;
     }
 
-    LOG_INFO_IF(installed, "Succesfully installed {} content!", installed);
+    if (installed) {
+        gui::save_apps_cache(*gui, host);
+        LOG_INFO("Succesfully installed {} content!", installed);
+    }
 
     return installed;
 }

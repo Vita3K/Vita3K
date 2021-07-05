@@ -153,8 +153,10 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                     fs::remove(fs::path(string_utils::utf_to_wide(std::string(work_path))));
                     delete_work_file = false;
                 }
-                if (host.app_category == "gd")
+                if (host.app_category == "gd") {
                     init_user_app(gui, host, host.app_title_id);
+                    save_apps_cache(gui, host);
+                }
                 update_notice_info(gui, host, "content");
                 pkg_path = nullptr;
                 work_path = nullptr;

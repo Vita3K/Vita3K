@@ -76,6 +76,7 @@ void open_user(GuiState &gui, HostState &host);
 void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::string &app_path);
 void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path);
 bool refresh_app_list(GuiState &gui, HostState &host);
+void save_apps_cache(GuiState &gui, HostState &host);
 void save_user(GuiState &gui, HostState &host, const std::string &user_id);
 void set_config(GuiState &gui, HostState &host, const std::string &app_path);
 void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &app_path);
