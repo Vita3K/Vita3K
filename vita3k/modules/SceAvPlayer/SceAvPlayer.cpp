@@ -455,6 +455,10 @@ EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
 }
 
 EXPORT(bool, sceAvPlayerIsActive, SceUID player_handle) {
+    if (player_handle == 0) {
+        return false;
+    }
+
     const auto state = host.kernel.obj_store.get<AvPlayerState>();
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
 
