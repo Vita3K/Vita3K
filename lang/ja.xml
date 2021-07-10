@@ -112,6 +112,10 @@
 		</save_data>
 	</dialog>
 
+	<game_data>
+		<app_close>以下のアプリケーションを終了します。</app_close>
+	</game_data>
+
 	<indicator>
 		<app_added_home>ホーム画面にアプリケーションが追加されました。</app_added_home>
 		<delete_all>すべて削除</delete_all>
@@ -158,6 +162,28 @@
 		</date_time>
 		<language name="言語">
 			<system_language>システム言語</system_language>
+			<input_language name="入力言語">
+				<keyboards name="キーボード">
+					<ime_langagues>
+						<lang id="1">デンマーク語</lang>
+						<lang id="2">ドイツ語</lang>
+						<lang id="262144">英語 (イギリス)</lang>
+						<lang id="4">英語 (アメリカ)</lang>
+						<lang id="8">スペイン語</lang>
+						<lang id="16">フランス語</lang>
+						<lang id="32">イタリア語</lang>
+						<lang id="64">オランダ語</lang>
+						<lang id="128">ノルウェー語</lang>
+						<lang id="256">ポーランド語</lang>
+						<lang id="131072">ポルトガル語 (ブラジル)</lang>
+						<lang id="512">ポルトガル語 (ポルトガル)</lang>
+						<lang id="1024">ロシア語</lang>
+						<lang id="2048">フィンランド語</lang>
+						<lang id="4096">スウェーデン語</lang>
+						<lang id="524288">トルコ語</lang>
+					</ime_langagues>
+				</keyboards>
+			</input_language>
 		</language>
 	</settings>
 
