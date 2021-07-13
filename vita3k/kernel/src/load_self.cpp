@@ -33,14 +33,14 @@
 #include <sce-elf-defs.h>
 #undef SCE_ELF_DEFS_TARGET
 // clang-format on
-#include <self.h>
 #include <miniz.h>
+#include <self.h>
 
 #include <cassert>
 #include <cstring>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
 
 #define ET_SCE_EXEC 0xFE00
 
