@@ -310,7 +310,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(ImVec2(USER_POS.x, USER_POS.y - BUTTON_SIZE.y));
             if (ImGui::Button(EDIT_USER_STR.c_str(), ImVec2(AVATAR_SIZE.x, BUTTON_SIZE.y))) {
                 user_id = user.first;
-                gui.users_avatar["temp"] = gui.users_avatar[user.first];
+                gui.users_avatar["temp"] = std::move(gui.users_avatar[user.first]);
                 temp = gui.users[user.first];
                 menu = "edit";
             }
@@ -396,7 +396,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
         const auto confirm = is_lang ? gui.lang.user_management["confirm"] : "Confirm";
         if (!temp.name.empty() && check_free_name ? ImGui::Button(confirm.c_str(), BUTTON_SIZE) : ImGui::Selectable(confirm.c_str(), false, ImGuiSelectableFlags_Disabled, BUTTON_SIZE)) {
-            gui.users_avatar[user_id] = gui.users_avatar["temp"];
+            gui.users_avatar[user_id] = std::move(gui.users_avatar["temp"]);
             gui.users[user_id] = temp;
             save_user(gui, host, user_id);
             if (menu == "create")

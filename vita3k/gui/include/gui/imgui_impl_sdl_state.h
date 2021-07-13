@@ -32,6 +32,7 @@ class ImGui_Texture {
 public:
     ImGui_Texture() = default;
     ImGui_Texture(ImGui_State *new_state, void *data, int width, int height);
+    ImGui_Texture(ImGui_Texture &&texture) noexcept;
 
     void init(ImGui_State *new_state, ImTextureID texture);
     void init(ImGui_State *new_state, void *data, int width, int height);
@@ -39,6 +40,9 @@ public:
     operator bool() const;
     operator ImTextureID() const;
     bool operator==(const ImGui_Texture &texture);
+
+    ImGui_Texture &operator=(ImGui_Texture &&texture) noexcept;
+    ImGui_Texture &operator=(const ImGui_Texture &texture) = delete;
 
     ~ImGui_Texture();
 };
