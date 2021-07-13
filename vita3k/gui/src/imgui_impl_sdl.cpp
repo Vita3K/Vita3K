@@ -243,8 +243,25 @@ bool ImGui_Texture::operator==(const ImGui_Texture &texture) {
     return texture_id == texture.texture_id;
 }
 
+ImGui_Texture &ImGui_Texture::operator=(ImGui_Texture &&texture) noexcept {
+    this->state = texture.state;
+    this->texture_id = texture.texture_id;
+
+    texture.state = nullptr;
+    texture.texture_id = nullptr;
+
+    return *this;
+}
+
 ImGui_Texture::ImGui_Texture(ImGui_State *new_state, void *data, int width, int height) {
     init(new_state, data, width, height);
+}
+
+ImGui_Texture::ImGui_Texture(ImGui_Texture &&texture) noexcept
+    : state(texture.state)
+    , texture_id(texture.texture_id) {
+    texture.state = nullptr;
+    texture.texture_id = nullptr;
 }
 
 ImGui_Texture::~ImGui_Texture() {

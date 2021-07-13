@@ -28,8 +28,15 @@
 
 #include <glutil/object.h>
 
+#include <mutex>
+#include <optional>
 #include <queue>
+#include <thread>
+#include <unordered_map>
 #include <vector>
+
+struct GuiState;
+struct HostState;
 
 namespace gui {
 
@@ -60,10 +67,34 @@ struct AppInfo {
     size_t size;
 };
 
+struct IconData {
+    int32_t width = 0;
+    int32_t height = 0;
+
+    std::unique_ptr<void, void (*)(void *)> data;
+
+    IconData(); // SORRYYYYY
+};
+
+struct IconAsyncLoader {
+    std::mutex mutex;
+
+    std::unordered_map<std::string, IconData> icon_data;
+
+    std::thread thread;
+    std::atomic_bool quit = false;
+
+    void commit(GuiState &gui);
+
+    IconAsyncLoader(GuiState &gui, HostState &host, const std::vector<gui::App> &app_list);
+    ~IconAsyncLoader();
+};
+
 struct AppsSelector {
     std::vector<App> sys_apps;
     std::vector<App> user_apps;
     AppInfo app_info;
+    std::optional<IconAsyncLoader> icon_async_loader;
     std::map<std::string, ImGui_Texture> sys_apps_icon;
     std::map<std::string, ImGui_Texture> user_apps_icon;
     bool is_app_list_sorted{ false };
