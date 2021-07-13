@@ -291,7 +291,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
         item.generic_type = GenericType::SCALER;
         item.type = DataType::UINT32;
 
-        if (program.special_flags & SCE_GXM_SPECIAL_HAS_INDEX_SEMANTIC) {
+        if (program.program_flags & SCE_GXM_PROGRAM_FLAG_INDEX_USED) {
             AttributeInputSource source;
             source.semantic = SCE_GXM_PARAMETER_SEMANTIC_INDEX;
             source.name = "gl_VertexID";
@@ -302,7 +302,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             program_input.inputs.push_back(item);
         }
 
-        if (program.special_flags & SCE_GXM_SPECIAL_HAS_INSTANCE_SEMANTIC) {
+        if (program.program_flags & SCE_GXM_PROGRAM_FLAG_INSTANCE_USED) {
             AttributeInputSource source;
             source.semantic = SCE_GXM_PARAMETER_SEMANTIC_INSTANCE;
             source.name = "gl_InstanceID";

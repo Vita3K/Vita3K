@@ -1427,9 +1427,18 @@ enum SceGxmFragmentProgramInputs : int {
     _SCE_GXM_FRAGMENT_PROGRAM_INPUT_LAST = 1 << 15
 };
 
-enum SceGxmSpecialFlag {
-    SCE_GXM_SPECIAL_HAS_INDEX_SEMANTIC = 1 << 1,
-    SCE_GXM_SPECIAL_HAS_INSTANCE_SEMANTIC = 1 << 2
+enum SceGxmProgramFlags : std::uint32_t {
+    SCE_GXM_PROGRAM_FLAG_PER_INSTANCE_MODE = 1 << 1,
+    SCE_GXM_PROGRAM_FLAG_DISCARD_USED = 1 << 3,
+    SCE_GXM_PROGRAM_FLAG_DEPTH_USED = 1 << 4,
+    SCE_GXM_PROGRAM_FLAG_SPRITECOORD_USED = 1 << 5,
+    SCE_GXM_PROGRAM_FLAG_NATIVECOLOR_USED = 1 << 6,
+    SCE_GXM_PROGRAM_FLAG_FRAGCOLOR_USED = 1 << 7,
+    SCE_GXM_PROGRAM_FLAG_NATIVECOLOR_MSAA2X = 1 << 8,
+    SCE_GXM_PROGRAM_FLAG_NATIVECOLOR_MSAA4X = 1 << 9,
+    SCE_GXM_PROGRAM_FLAG_OUTPUT_UNDEFINED = 1 << 16,
+    SCE_GXM_PROGRAM_FLAG_INDEX_USED = 1 << 17,
+    SCE_GXM_PROGRAM_FLAG_INSTANCE_USED = 1 << 18,
 };
 
 struct SceGxmUniformBufferInfo {
@@ -1446,21 +1455,15 @@ struct SceGxmProgram {
     std::uint16_t sdk_version; // 0x350 - 3.50
 
     std::uint32_t size; //size of file - ignoring padding bytes at the end after SceGxmProgramParameter table
-    std::uint32_t unkC;
 
-    std::uint16_t unk10;
-    std::uint8_t unk12;
-    std::uint8_t unk13;
+    std::uint32_t binary_guid;
+    std::uint32_t source_guid;
 
-    std::uint8_t type{ 0 }; // shader profile, seems to contain more info in bits after the first(bitfield?)
-    std::uint8_t unk15;
-    std::uint8_t special_flags;
-    std::uint8_t unk17;
+    std::uint32_t program_flags;
 
     std::uint32_t buffer_flags; // Buffer flags. 2 bits per buffer. 0x1 - loaded into registers. 0x2 - read from memory
 
-    std::uint32_t texunit_flags1; // Tex unit flags. 4 bits per tex unit. 0x1 is non dependent read, 0x2 is dependent.
-    std::uint32_t texunit_flags2;
+    std::uint32_t texunit_flags[2]; // Tex unit flags. 4 bits per tex unit. 0x1 is non dependent read, 0x2 is dependent.
 
     std::uint32_t parameter_count;
     std::uint32_t parameters_offset; // Number of bytes from the start of this field to the first parameter.
@@ -1470,8 +1473,8 @@ struct SceGxmProgram {
     std::uint16_t secondary_reg_count; // (SAs)
     std::uint32_t temp_reg_count1;
     std::uint16_t temp_reg_count2; //Temp reg count in selective rate(programmable blending) phase
-    std::uint16_t unk3A; //some item count? Might be the number of primary program phases
 
+    std::uint16_t primary_program_phase_count;
     std::uint32_t primary_program_instr_count;
     std::uint32_t primary_program_offset;
 
@@ -1489,7 +1492,7 @@ struct SceGxmProgram {
 
     std::uint32_t literal_buffer_data_offset;
 
-    std::uint32_t unk_6C;
+    std::uint32_t compiler_version; // The version is shifted 4 bits to the left.
 
     std::uint32_t literals_count;
     std::uint32_t literals_offset;
@@ -1505,7 +1508,7 @@ struct SceGxmProgram {
     std::uint32_t sampler_query_info_offset; // Offset to array of uint16_t
 
     SceGxmProgramType get_type() const {
-        return static_cast<SceGxmProgramType>(type & 1);
+        return static_cast<SceGxmProgramType>(program_flags & SceGxmProgramType::Fragment);
     }
     bool is_vertex() const {
         return get_type() == SceGxmProgramType::Vertex;
@@ -1523,19 +1526,19 @@ struct SceGxmProgram {
         return (uint64_t *)((uint8_t *)&secondary_program_offset_end + secondary_program_offset_end);
     }
     bool is_discard_used() const {
-        return ((type >> 3) & 1);
+        return (program_flags & SCE_GXM_PROGRAM_FLAG_DISCARD_USED);
     }
     bool is_depth_replace_used() const {
-        return ((type >> 4) & 1);
+        return (program_flags & SCE_GXM_PROGRAM_FLAG_DEPTH_USED);
     }
     bool is_sprite_coord_used() const {
-        return ((type >> 5) & 1);
+        return (program_flags & SCE_GXM_PROGRAM_FLAG_SPRITECOORD_USED);
     }
     bool is_native_color() const {
-        return ((type >> 6) & 1);
+        return (program_flags & SCE_GXM_PROGRAM_FLAG_NATIVECOLOR_USED);
     }
     bool is_frag_color_used() const {
-        return ((type >> 7) & 1);
+        return (program_flags & SCE_GXM_PROGRAM_FLAG_FRAGCOLOR_USED);
     }
     const SceGxmProgramVertexVaryings *vertex_varyings() const {
         return reinterpret_cast<const SceGxmProgramVertexVaryings *>(varyings_offset ? reinterpret_cast<const std::uint8_t *>(&varyings_offset) + varyings_offset : nullptr);
