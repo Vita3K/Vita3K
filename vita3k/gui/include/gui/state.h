@@ -28,6 +28,7 @@
 
 #include <glutil/object.h>
 
+#include <atomic>
 #include <mutex>
 #include <optional>
 #include <queue>
