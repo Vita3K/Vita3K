@@ -230,85 +230,63 @@ SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program) {
     const SceGxmProgramVertexVaryings *vo_ptr = program.vertex_varyings();
 
     // following code is adapted from decompilation
-    const uint8_t *vo_start = nullptr;
+    const SceGxmProgramAttributeDescriptor *current_interpolant = nullptr;
     if (vo_ptr->vertex_outputs1 != 0) {
-        vo_start = reinterpret_cast<const uint8_t *>(&vo_ptr->vertex_outputs1) + vo_ptr->vertex_outputs1;
+        current_interpolant = reinterpret_cast<const SceGxmProgramAttributeDescriptor *>(reinterpret_cast<const uint8_t *>(&vo_ptr->vertex_outputs1) + vo_ptr->vertex_outputs1);
     }
-    const uint8_t *const vo_end = vo_start + 16 * vo_ptr->varyings_count;
+    const SceGxmProgramAttributeDescriptor *const interpolants_end = current_interpolant + vo_ptr->varyings_count;
 
-    if (vo_start == vo_end)
-        return _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE;
+    uint32_t result = _SCE_GXM_FRAGMENT_PROGRAM_INPUT_NONE;
 
-    const uint32_t *fi_ptr = reinterpret_cast<const uint32_t *>(vo_start + 64);
+    while (current_interpolant != interpolants_end) {
+        uint32_t interpolant_info = current_interpolant->attribute_info;
 
-    uint32_t result = 0;
-    uint8_t *vo_current = nullptr;
-    // clang-format off
-    do {
-        uint32_t fi_word1 = *(fi_ptr - 16);
-
-        if ((fi_word1 & 0xF) != 0xF) {
-            if (fi_word1 & 0x400)
-                result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE;
+        if ((interpolant_info & 0xF) != 0xF) {
+            if (interpolant_info & 0x400)
+                result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_SPRITECOORD;
             else {
-                switch (fi_word1 & 0xF) {
-                case 0: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0; break;
-                case 1: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1; break;
-                case 2: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2; break;
-                case 3: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3; break;
-                case 4: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4; break;
-                case 5: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5; break;
-                case 6: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6; break;
-                case 7: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7; break;
-                case 8: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8; break;
-                case 9: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9; break;
+                switch (interpolant_info & 0xF) {
+                case 0: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD0; break;
+                case 1: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD1; break;
+                case 2: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD2; break;
+                case 3: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD3; break;
+                case 4: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD4; break;
+                case 5: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD5; break;
+                case 6: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD6; break;
+                case 7: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD7; break;
+                case 8: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD8; break;
+                case 9: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD9; break;
                 default: break;
                 }
             }
         }
-        uint32_t fi_word2 = fi_word1 & 0xF000;
 
-        if (fi_word2 != 0xF000) {
-            if (fi_word1 & 0x40000000)
-                result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE;
-            else if (fi_word2 == 0x6000)
-                result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD6;
-            else if (fi_word2 <= 0x6000) {
-                if (fi_word2 == 0x2000)
-                    result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD2;
-                else if (fi_word2 <= 0x2000) {
-                    if (fi_word1 & 0xF000) {
-                        if (fi_word2 == 0x1000)
-                            result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD1;
-                    } else
-                        result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD0;
-                } else {
-                    switch (fi_word2) {
-                    case 0x4000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD4; break;
-                    case 0x5000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD5; break;
-                    case 0x3000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD3; break;
-                    }
-                }
-            } else if (fi_word2 == 0xA000)
-                result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR0;
-            else if (fi_word2 > 0xA000) {
-                switch (fi_word2) {
-                case 0xC000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_FOG; break;
-                case 0xD000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION; break;
-                case 0xB000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_COLOR1; break;
-                }
-            } else {
-                switch (fi_word2) {
-                case 0x8000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8; break;
-                case 0x9000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9; break;
-                case 0x7000u: result |= SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD7; break;
+        if ((interpolant_info & 0xF000) != 0xF000) {
+            if (interpolant_info & 0x40000000)
+                result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_SPRITECOORD;
+            else {
+                switch (interpolant_info & 0xF000) {
+                case 0x0000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD0; break;
+                case 0x1000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD1; break;
+                case 0x2000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD2; break;
+                case 0x3000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD3; break;
+                case 0x4000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD4; break;
+                case 0x5000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD5; break;
+                case 0x6000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD6; break;
+                case 0x7000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD7; break;
+                case 0x8000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD8; break;
+                case 0x9000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_TEXCOORD9; break;
+                case 0xA000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_COLOR0; break;
+                case 0xB000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_COLOR1; break;
+                case 0xC000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_FOG; break;
+                case 0xD000: result |= SCE_GXM_FRAGMENT_PROGRAM_INPUT_POSITION; break;
+                default: break;
                 }
             }
         }
-        vo_current = (uint8_t*)(fi_ptr - 12);
-        fi_ptr += 4;
-    } while (vo_current != vo_end);
-    // clang-format on
+
+        current_interpolant++;
+    }
 
     return static_cast<SceGxmFragmentProgramInputs>(result);
 }
