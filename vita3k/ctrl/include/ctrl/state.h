@@ -24,7 +24,6 @@ enum SceTouchSamplingState {
 
 struct Controller {
     GameControllerPtr controller;
-    HapticPtr haptic;
     int port;
 };
 

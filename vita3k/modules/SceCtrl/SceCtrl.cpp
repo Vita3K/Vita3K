@@ -317,10 +317,6 @@ static void add_new_controllers(CtrlState &state) {
                 Controller new_controller;
                 const GameControllerPtr controller(SDL_GameControllerOpen(joystick_index), SDL_GameControllerClose);
                 new_controller.controller = controller;
-                SDL_Haptic *haptic = SDL_HapticOpenFromJoystick(SDL_GameControllerGetJoystick(controller.get()));
-                SDL_HapticRumbleInit(haptic);
-                const HapticPtr handle(haptic, SDL_HapticClose);
-                new_controller.haptic = handle;
                 new_controller.port = reserve_port(state);
                 state.controllers.emplace(guid, new_controller);
                 state.controllers_num++;
@@ -545,13 +541,8 @@ EXPORT(int, sceCtrlSetActuator, int port, const SceCtrlActuator *pState) {
 
     for (const auto &controller : state.controllers) {
         if (controller.second.port == port) {
-            SDL_Haptic *handle = controller.second.haptic.get();
-            if (pState->small == 0 && pState->large == 0) {
-                SDL_HapticRumbleStop(handle);
-            } else {
-                // TODO: Look into a better implementation to distinguish both motors when available
-                SDL_HapticRumblePlay(handle, ((pState->small * 1.0f) / 510.0f) + ((pState->large * 1.0f) / 510.0f), SDL_HAPTIC_INFINITY);
-            }
+            SDL_GameControllerRumble(controller.second.controller.get(), pState->small * 655.35f, pState->large * 655.35f, SDL_HAPTIC_INFINITY);
+
             return 0;
         }
     }
