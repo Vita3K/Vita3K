@@ -30,23 +30,41 @@ jobs:
         os: [ubuntu-latest]
         config: [Release]
 
-        
+
     steps:
       - name: Set up build environment (ubuntu-latest)
         run: |
           sudo apt-get update
           sudo apt-get -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev ninja-build
-      
+
       - uses: actions/cache@v2
         with:
           path: ~/.ccache
           key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
-          
+
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           submodules: recursive
+
+      - name: Set up SDL 2.0.16 (ubuntu-latest)
+        run: |
+          SDL2VER=2.0.16
+          if [[ ! -e ~/.ccache ]]; then
+            mkdir ~/.ccache
+          fi  
+          cd ~/.ccache
+          if [[ ! -e SDL2-${SDL2VER} ]]; then
+            curl -sLO https://libsdl.org/release/SDL2-${SDL2VER}.tar.gz
+            tar -xzf SDL2-${SDL2VER}.tar.gz
+            cd SDL2-${SDL2VER}
+            ./configure --prefix=/usr
+            make && cd ../
+            rm SDL2-${SDL2VER}.tar.gz
+          fi
+          sudo make -C SDL2-${SDL2VER} install
+        if: matrix.os == 'ubuntu-latest'
 
       # Initializes the CodeQL tools for scanning.
       - name: Initialize CodeQL
