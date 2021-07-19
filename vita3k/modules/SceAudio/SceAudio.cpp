@@ -91,9 +91,19 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
     port->shared.stream = stream;
 
     const std::lock_guard<std::mutex> lock(host.audio.shared.mutex);
-    const int port_id = host.audio.shared.next_port_id++;
+
+    const int port_id = host.audio.shared.next_port_id;
     host.audio.shared.out_ports.emplace(port_id, port);
 
+    //find next lowest available port
+    int highest_port_id = host.audio.shared.out_ports.rbegin()->first;
+    for (int i = 1; i < highest_port_id + 1; i++) {
+        if (!host.audio.shared.out_ports.find(i)->second) {
+            host.audio.shared.next_port_id = i;
+            return i;
+        }
+    }
+    host.audio.shared.next_port_id = port_id + 1;
     return port_id;
 }
 
@@ -137,8 +147,12 @@ EXPORT(int, sceAudioOutOpenExtPort) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAudioOutReleasePort) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAudioOutReleasePort, int port) {
+    if (host.audio.shared.next_port_id > port) {
+        host.audio.shared.next_port_id = port;
+    }
+    host.audio.shared.out_ports.erase(port);
+    return 0;
 }
 
 EXPORT(int, sceAudioOutSetAdoptMode) {
