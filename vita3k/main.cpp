@@ -96,8 +96,13 @@ int main(int argc, char *argv[]) {
     } else {
         std::atexit(SDL_Quit);
 
-        // Enable HIDAPI rumble. This prevents SDL from disabling motion on PS4 and PS5 controllers
+        // Enable HIDAPI rumble for DS4/DS
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS4_RUMBLE, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_PS5_RUMBLE, "1");
+
+        // Enable Switch controller
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_SWITCH, "1");
+        SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
 
         if (SDL_Init(SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO) < 0) {
             app::error_dialog("SDL initialisation failed.");

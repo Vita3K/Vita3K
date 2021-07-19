@@ -29,6 +29,8 @@
 // TODO Move elsewhere.
 static uint64_t timestamp;
 
+#define SCE_CTRL_MAX_WIRELESS_NUM 4
+
 enum SceCtrlErrorCode {
     SCE_CTRL_ERROR_INVALID_ARG = 0x80340001,
     SCE_CTRL_ERROR_PRIV_REQUIRED = 0x80340002,
@@ -76,6 +78,11 @@ enum SceCtrlButtons {
 struct SceCtrlPortInfo {
     uint8_t port[5]; //!< Controller type of each port (See ::SceCtrlExternalInputMode)
     uint8_t unk[11]; //!< Unknown
+};
+
+struct SceCtrlWirelessControllerInfo {
+    SceBool connected[SCE_CTRL_MAX_WIRELESS_NUM];
+    SceInt32 reserved[12];
 };
 
 struct SceCtrlActuator {
@@ -308,7 +315,7 @@ static void remove_disconnected_controllers(CtrlState &state) {
 static void add_new_controllers(CtrlState &state) {
     const int num_joysticks = SDL_NumJoysticks();
     for (int joystick_index = 0; joystick_index < num_joysticks; ++joystick_index) {
-        if (state.controllers_num >= 4) {
+        if (state.controllers_num >= SCE_CTRL_MAX_WIRELESS_NUM) {
             return;
         }
         if (SDL_IsGameController(joystick_index)) {
@@ -404,8 +411,8 @@ EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
     remove_disconnected_controllers(state);
     add_new_controllers(state);
     info->port[0] = host.cfg.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
-    for (int i = 0; i < 4; i++) {
-        info->port[i + 1] = (host.cfg.pstv_mode && !host.ctrl.free_ports[i]) ? SCE_CTRL_TYPE_DS3 : SCE_CTRL_TYPE_UNPAIRED;
+    for (int i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
+        info->port[i + 1] = (host.cfg.pstv_mode && !host.ctrl.free_ports[i]) ? SCE_CTRL_TYPE_DS4 : SCE_CTRL_TYPE_UNPAIRED;
     }
     return 0;
 }
@@ -430,8 +437,19 @@ EXPORT(int, sceCtrlGetSamplingModeExt, SceCtrlPadInputMode *mode) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceCtrlGetWirelessControllerInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceCtrlGetWirelessControllerInfo, SceCtrlWirelessControllerInfo *pInfo) {
+    if (host.cfg.pstv_mode) {
+        CtrlState &state = host.ctrl;
+        remove_disconnected_controllers(state);
+        add_new_controllers(state);
+        if (state.controllers_num) {
+            for (auto i = 0; i < state.controllers_num; i++)
+                pInfo->connected[i] = true;
+        } else
+            pInfo->connected[0] = true;
+    }
+
+    return 0;
 }
 
 EXPORT(bool, sceCtrlIsMultiControllerSupported) {
