@@ -21,6 +21,7 @@
 
 #include <util/fs.h>
 
+#include <algorithm>
 #include <string>
 
 namespace device {

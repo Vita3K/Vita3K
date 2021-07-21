@@ -20,6 +20,8 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
+#include <algorithm>
+
 namespace gxp {
 
 const char *log_parameter_semantic(const SceGxmProgramParameter &parameter) {

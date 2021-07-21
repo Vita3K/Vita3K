@@ -18,6 +18,7 @@
 #include <ngs/modules/master.h>
 #include <util/log.h>
 
+#include <algorithm>
 #include <fstream>
 
 namespace ngs::master {

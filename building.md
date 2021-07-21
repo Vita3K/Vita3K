@@ -4,7 +4,7 @@ Vita3K uses CMake for its project configuration and generation and should in the
 
 Target OS | Host OS | [Project generator](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html) (`-G`) | C/C++ Compiler (`-DCMAKE_C_COMPILER` and `-DCMAKE_CXX_COMPILER`)
 --- | --- | --- | ---
-Windows | Windows | Visual Studio / MSBuild | `cl` a.k.a Microsoft Visual C/C++ Compiler (included as a part of the [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019) and the ` Dekstop development with C++` Visual Studio workload)
+Windows | Windows | Visual Studio / MSBuild | `cl` a.k.a Microsoft Visual C/C++ Compiler (included as a part of the [Build Tools for Visual Studio 2022](https://aka.ms/vs/17/release/vs_BuildTools.exe) and the ` Desktop development with C++` Visual Studio workload)
 macOS | macOS | Xcode | Clang (`clang` and `clang++`)
 Linux | Linux | Ninja | Clang (`clang` and `clang++`)
 
@@ -16,12 +16,12 @@ For convenience, the following building instructions are given as examples based
 
 ## Windows
 
-### Visual Studio 2019
-- Install Visual Studio 2019 and choose to install `Desktop development with C++`. You will get compiler and `cmake` required for building.
+### Visual Studio 2022
+- Install Visual Studio 2022 and choose to install `Desktop development with C++`. You will get compiler and `cmake` required for building.
 
   Example for Visual Studio 2019:
 
-  ![Required tools for VS 2019](https://i.imgur.com/bkY15Oh.png)
+  ![Required tools for VS 2022](https://i.imgur.com/bkY15Oh.png)
 
 - Install `git` to `clone` the project. Download and install `git` from [here](https://git-scm.com).
 
@@ -32,8 +32,8 @@ For convenience, the following building instructions are given as examples based
   cd Vita3K
   ```
 
-- Run Visual Studio 2019. On the project selection window open the local clone of the repository as a folder. Thanks to the integration between Visual Studio and CMake, Visual Studio will automatically setup the project for you.
-- Use the [CMake Settings Editor](https://docs.microsoft.com/en-us/cpp/build/customize-cmake-settings?view=msvc-160) to set "CMake toolchain file" to `./cmake/toolchain/windows-x64.cmake`. If asked to do so, delete and re-generate the CMake cache.
+- Run Visual Studio 2022. On the project selection window open the local clone of the repository as a folder. Thanks to the integration between Visual Studio and CMake, Visual Studio will automatically setup the project for you.
+- Use the [CMake Settings Editor](https://docs.microsoft.com/en-us/cpp/build/customize-cmake-settings?view=msvc-170) to set "CMake toolchain file" to `./cmake/toolchain/windows-x64.cmake`. If asked to do so, delete and re-generate the CMake cache.
 
 From there, the project will be ready to build right from the Visual Studio UI.
 
@@ -42,8 +42,8 @@ From there, the project will be ready to build right from the Visual Studio UI.
 -  Install:
    -  [Git](https://git-scm.com)
    -  [CMake](https://cmake.org/download/)
-   -  Either the [Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019) or Visual Studio 2019 with the ` Dekstop development with C++` workload.
-- On the Start Menu, open the `x64 Native Tools Command Prompt for Visual Studio 2019`.
+   -  Either the [Build Tools for Visual Studio 2022](https://aka.ms/vs/17/release/vs_BuildTools.exe) or Visual Studio 2022 with the ` Desktop development with C++` workload.
+- On the Start Menu, open the `x64 Native Tools Command Prompt for Visual Studio 2022`.
   <p align="center">
     <img src="./_building/vs-cmd-prompt.png">
   </p>
@@ -56,9 +56,9 @@ From there, the project will be ready to build right from the Visual Studio UI.
 
 - Generate the project:
   ```cmd
-  cmake -S . -B build-windows -G "Visual Studio 16 2019" -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain/windows-x64.cmake
+  cmake -S . -B build-windows -G "Visual Studio 17 2022" -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain/windows-x64.cmake
   ```
-  The line above will generate a Visual Studio 2019 project inside a folder called `build-windows`.
+  The line above will generate a Visual Studio 2022 project inside a folder called `build-windows`.
 
 - Build the project:
   ```cmd
