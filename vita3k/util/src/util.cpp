@@ -24,6 +24,7 @@
 #include <spdlog/sinks/msvc_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
+#include <algorithm>
 #include <codecvt> // std::codecvt_utf8
 #include <iostream>
 #include <locale> // std::wstring_convert
