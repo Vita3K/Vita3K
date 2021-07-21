@@ -388,9 +388,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::RadioButton("Circle", &host.cfg.sys_button, 0);
         ImGui::RadioButton("Cross", &host.cfg.sys_button, 1);
         ImGui::Spacing();
-        ImGui::Checkbox("Emulated Console \nSelect your Console mode.", &host.cfg.pstv_mode);
+        ImGui::Checkbox("PS TV Mode", &host.cfg.pstv_mode);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable PS TV mode.");
+            ImGui::SetTooltip("Check the box to enable emulate PS TV mode.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();

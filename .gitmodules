@@ -52,7 +52,7 @@
 	url = https://github.com/zeux/pugixml
 [submodule "external/sdl"]
 	path = external/sdl
-	url = https://github.com/Vita3K/sdl
+	url = https://github.com/Zangetsu38/sdl
 [submodule "external/sdl2-cmake-scripts"]
 	path = external/sdl2-cmake-scripts
 	url = https://github.com/tcbrindle/sdl2-cmake-scripts
