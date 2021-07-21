@@ -79,17 +79,6 @@ void draw_controls_dialog(GuiState &gui, HostState &host) {
     remapper_button(gui, host, &host.cfg.keyboard_button_down, "D-pad down", ImVec2(7.0f, 7.0f));
     remapper_button(gui, host, &host.cfg.keyboard_button_right, "D-pad right", ImVec2(7.0f, 7.0f));
     remapper_button(gui, host, &host.cfg.keyboard_button_left, "D-pad left", ImVec2(7.0f, 7.0f));
-    if (host.cfg.pstv_mode) {
-        remapper_button(gui, host, &host.cfg.keyboard_button_l1, "L1 button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_r1, "R1 button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_l2, "L2 button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_r2, "R2 button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_l3, "L3 button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_r3, "R3 button", ImVec2(7.0f, 7.0f));
-    } else {
-        remapper_button(gui, host, &host.cfg.keyboard_button_l1, "L button", ImVec2(7.0f, 7.0f));
-        remapper_button(gui, host, &host.cfg.keyboard_button_r1, "R button", ImVec2(7.0f, 7.0f));
-    }
     remapper_button(gui, host, &host.cfg.keyboard_button_square, "Square button", ImVec2(7.0f, 7.0f));
     remapper_button(gui, host, &host.cfg.keyboard_button_cross, "Cross button", ImVec2(7.0f, 7.0f));
     remapper_button(gui, host, &host.cfg.keyboard_button_circle, "Circle button", ImVec2(7.0f, 7.0f));
@@ -97,7 +86,18 @@ void draw_controls_dialog(GuiState &gui, HostState &host) {
     remapper_button(gui, host, &host.cfg.keyboard_button_start, "Start button", ImVec2(7.0f, 7.0f));
     remapper_button(gui, host, &host.cfg.keyboard_button_select, "Select button", ImVec2(7.0f, 7.0f));
     remapper_button(gui, host, &host.cfg.keyboard_button_psbutton, "PS Button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_l1, "L1 button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_r1, "R1 button", ImVec2(7.0f, 7.0f));
     ImGui::Separator();
+    ImGui::Spacing();
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Only in PS TV mode.");
+    ImGui::Spacing();
+    remapper_button(gui, host, &host.cfg.keyboard_button_l2, "L2 button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_r2, "R2 button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_l3, "L3 button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, host, &host.cfg.keyboard_button_r3, "R3 button", ImVec2(7.0f, 7.0f));
+    ImGui::Separator();
+    ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s", "GUI");
     ImGui::Text("%-16s    %-16s", "Toggle Touch", "T");
     ImGui::Text("%-16s    %-16s", "Toggle GUI visibility", "G");

@@ -224,11 +224,11 @@ EXPORT(int, sceKernelGetMemBlockInfoByRange) {
 }
 
 EXPORT(int, sceKernelGetModel) {
-    return host.cfg.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
+    return host.cfg.current_config.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
 }
 
 EXPORT(int, sceKernelGetModelForCDialog) {
-    return host.cfg.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
+    return host.cfg.current_config.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
 }
 
 EXPORT(int, sceKernelGetSubbudgetInfo) {
@@ -236,7 +236,7 @@ EXPORT(int, sceKernelGetSubbudgetInfo) {
 }
 
 EXPORT(bool, sceKernelIsPSVitaTV) {
-    return host.cfg.pstv_mode;
+    return host.cfg.current_config.pstv_mode;
 }
 
 EXPORT(int, sceKernelOpenMemBlock) {
