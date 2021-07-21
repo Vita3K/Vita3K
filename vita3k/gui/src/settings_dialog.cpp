@@ -128,6 +128,12 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
                 config.cpu_opt = cpu_child.attribute("cpu-opt").as_bool();
             }
 
+            // Load System Config
+            if (!config_child.child("system").empty()) {
+                const auto system_child = config_child.child("system");
+                system_child.attribute("pstv-mode") = config.pstv_mode;
+            }
+
             // Load Emulator Config
             if (!config_child.child("emulator").empty()) {
                 const auto emulator_child = config_child.child("emulator");
@@ -158,6 +164,7 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
         config.lle_kernel = host.cfg.lle_kernel;
         config.auto_lle = host.cfg.auto_lle;
         config.lle_modules = host.cfg.lle_modules;
+        config.pstv_mode = host.cfg.pstv_mode;
         config.disable_at9_decoder = host.cfg.disable_at9_decoder;
         config.disable_ngs = host.cfg.disable_ngs;
         config.video_playing = host.cfg.video_playing;
@@ -196,6 +203,10 @@ static void save_config(GuiState &gui, HostState &host) {
         cpu_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
         cpu_child.append_attribute("cpu-opt") = config.cpu_opt;
 
+        // System
+        auto system_child = config_child.append_child("system");
+        system_child.append_attribute("pstv-mode") = config.pstv_mode;
+
         // Emulator
         auto emulator_child = config_child.append_child("emulator");
         emulator_child.append_attribute("disable-at9-decoder") = config.disable_at9_decoder;
@@ -211,6 +222,7 @@ static void save_config(GuiState &gui, HostState &host) {
         host.cfg.lle_kernel = config.lle_kernel;
         host.cfg.auto_lle = config.auto_lle;
         host.cfg.lle_modules = config.lle_modules;
+        host.cfg.pstv_mode = config.pstv_mode;
         host.cfg.disable_at9_decoder = config.disable_at9_decoder;
         host.cfg.disable_ngs = config.disable_ngs;
         host.cfg.video_playing = config.video_playing;
@@ -225,6 +237,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.lle_kernel = config.lle_kernel;
         host.cfg.current_config.auto_lle = config.auto_lle;
         host.cfg.current_config.lle_modules = config.lle_modules;
+        host.cfg.current_config.pstv_mode = config.pstv_mode;
         host.cfg.current_config.disable_at9_decoder = config.disable_at9_decoder;
         host.cfg.current_config.disable_ngs = config.disable_ngs;
         host.cfg.current_config.video_playing = config.video_playing;
@@ -234,6 +247,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.lle_kernel = host.cfg.lle_kernel;
         host.cfg.current_config.auto_lle = host.cfg.auto_lle;
         host.cfg.current_config.lle_modules = host.cfg.lle_modules;
+        host.cfg.current_config.pstv_mode = host.cfg.pstv_mode;
         host.cfg.current_config.disable_at9_decoder = host.cfg.disable_at9_decoder;
         host.cfg.current_config.disable_ngs = host.cfg.disable_ngs;
         host.cfg.current_config.video_playing = host.cfg.video_playing;
@@ -388,9 +402,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::RadioButton("Circle", &host.cfg.sys_button, 0);
         ImGui::RadioButton("Cross", &host.cfg.sys_button, 1);
         ImGui::Spacing();
-        ImGui::Checkbox("Emulated Console \nSelect your Console mode.", &host.cfg.pstv_mode);
+        ImGui::Checkbox("PS TV Mode", &config.pstv_mode);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable PS TV mode.");
+            ImGui::SetTooltip("Check the box to enable PS TV Emulated mode.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
