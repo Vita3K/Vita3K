@@ -21,20 +21,9 @@
 
 #include "private.h"
 
-#include <sstream>
-
 namespace gui {
 
-#ifdef _WIN32
-static const char OS_PREFIX[] = "start ";
-#elif __APPLE__
-static const char OS_PREFIX[] = "open ";
-#else
-static const char OS_PREFIX[] = "xdg-open ";
-#endif
-
 void draw_welcome_dialog(GuiState &gui, HostState &host) {
-    std::ostringstream link;
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     ImGui::Begin("Welcome to Vita3K", &gui.help_menu.welcome_dialog, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -50,19 +39,15 @@ void draw_welcome_dialog(GuiState &gui, HostState &host) {
     ImGui::TextColored(GUI_COLOR_TEXT, "\nA comprehensive guide on how to set-up Vita3K can be found on the");
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 9.f);
-    if (ImGui::Button("Quickstart")) {
-        link << OS_PREFIX << "https://vita3k.org/quickstart.html";
-        system(link.str().c_str());
-    }
+    if (ImGui::Button("Quickstart"))
+        open_path("https://vita3k.org/quickstart.html");
     ImGui::SameLine();
     ImGui::TextColored(GUI_COLOR_TEXT, "page.");
     ImGui::TextColored(GUI_COLOR_TEXT, "Consult the Commercial game");
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 4.f);
-    if (ImGui::Button("compatibility")) {
-        link << OS_PREFIX << "https://vita3k.org/compatibility.html";
-        system(link.str().c_str());
-    }
+    if (ImGui::Button("compatibility"))
+        open_path("https://vita3k.org/compatibility.html");
     ImGui::SameLine();
     ImGui::TextColored(GUI_COLOR_TEXT, "list and the Homebrew compatibility list to see what runs.");
     ImGui::Spacing();
@@ -70,17 +55,13 @@ void draw_welcome_dialog(GuiState &gui, HostState &host) {
     ImGui::TextColored(GUI_COLOR_TEXT, "\nAdditional support can be found in the #help channel of the");
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 9.f);
-    if (ImGui::Button("Discord")) {
-        link << OS_PREFIX << "https://discord.gg/6aGwQzh";
-        system(link.str().c_str());
-    }
+    if (ImGui::Button("Discord"))
+        open_path("https://discord.gg/6aGwQzh");
     ImGui::TextColored(GUI_COLOR_TEXT, "Support us on");
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 4.f);
-    if (ImGui::Button("Patreon")) {
-        link << OS_PREFIX << "https://patreon.com/vita3k";
-        system(link.str().c_str());
-    }
+    if (ImGui::Button("Patreon"))
+        open_path("https://patreon.com/vita3k");
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT, "Vita3K does not condone piracy. You must dump your own games.");
     ImGui::Spacing();

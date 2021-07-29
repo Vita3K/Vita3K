@@ -71,6 +71,7 @@ void init_user(GuiState &gui, HostState &host, const std::string &user_id);
 void init_user_app(GuiState &gui, HostState &host, const std::string &app_path);
 bool init_user_background(GuiState &gui, HostState &host, const std::string &user_id, const std::string &background_path);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
+void open_path(const std::string &path);
 void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_com_id, const std::string &trophy_id);
 void open_user(GuiState &gui, HostState &host);
 void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::string &app_path);

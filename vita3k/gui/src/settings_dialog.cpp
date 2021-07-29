@@ -40,14 +40,6 @@
 
 namespace gui {
 
-#ifdef _WIN32
-static const char OS_PREFIX[] = "start ";
-#elif __APPLE__
-static const char OS_PREFIX[] = "open ";
-#else
-static const char OS_PREFIX[] = "xdg-open ";
-#endif
-
 static Config::CurrentConfig config;
 
 static void get_modules_list(GuiState &gui, HostState &host) {
@@ -275,7 +267,6 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::Separator();
     ImGui::SetWindowFontScale(1.f);
     ImGui::BeginTabBar("SettingsTabBar", ImGuiTabBarFlags_None);
-    std::ostringstream link;
 
     // Core
     if (ImGui::BeginTabItem("Core")) {
@@ -333,11 +324,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::SameLine();
         } else {
             ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the last firmware.");
-            if (ImGui::Button("Download Firmware")) {
-                std::string firmware_url = "https://www.playstation.com/en-us/support/hardware/psvita/system-software/";
-                link << OS_PREFIX << firmware_url;
-                system(link.str().c_str());
-            }
+            if (ImGui::Button("Download Firmware"))
+                open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
         }
         if (ImGui::Button("Refresh list"))
             get_modules_list(gui, host);
@@ -519,10 +507,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                 ImGui::SetTooltip("Check this box to enable font support for Korean and Traditional Chinese.\nEnabling this will use more memory and will require you to restart the emulator.");
         } else {
             ImGui::TextColored(GUI_COLOR_TEXT, "No firmware font package present.\nPlease download and install it.");
-            if (ImGui::Button("Download firmware font package")) {
-                link << OS_PREFIX << "https://bit.ly/2P2rb0r";
-                system(link.str().c_str());
-            }
+            if (ImGui::Button("Download firmware font package"))
+                open_path("https://bit.ly/2P2rb0r");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for asian region font support in gui.\nIt is also generally recommended for gui");
         }

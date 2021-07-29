@@ -211,14 +211,6 @@ void clear_temp(GuiState &gui) {
     user_id.clear();
 }
 
-#ifdef _WIN32
-static const char OS_PREFIX[] = "start ";
-#elif __APPLE__
-static const char OS_PREFIX[] = "open ";
-#else
-static const char OS_PREFIX[] = "xdg-open ";
-#endif
-
 void draw_user_management(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
@@ -335,7 +327,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
             ImGui::PopStyleColor();
             if (ImGui::BeginPopupContextItem("##user_context_menu")) {
                 if (ImGui::MenuItem("Open User Folder"))
-                    system((OS_PREFIX + (user_path / user.first).string()).c_str());
+                    open_path((user_path / user.first).string());
                 ImGui::EndPopup();
             }
             ImGui::PopID();

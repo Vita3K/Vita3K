@@ -29,7 +29,6 @@
 #include <pugixml.hpp>
 
 #include <chrono>
-#include <sstream>
 #include <stb_image.h>
 
 namespace gui {
@@ -361,14 +360,6 @@ void init_lang(GuiState &gui, HostState &host) {
 bool get_sys_apps_state(GuiState &gui) {
     return !gui.live_area.content_manager && !gui.live_area.settings && !gui.live_area.trophy_collection && !gui.live_area.manual && !gui.live_area.user_management;
 }
-
-#ifdef _WIN32
-static const char OS_PREFIX[] = "start ";
-#elif __APPLE__
-static const char OS_PREFIX[] = "open ";
-#else
-static const char OS_PREFIX[] = "xdg-open ";
-#endif
 
 struct FRAME {
     std::string id;
@@ -1018,7 +1009,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(pos_frame);
             ImGui::PushID(frame.id.c_str());
             if (ImGui::Selectable("##target_link", false, ImGuiSelectableFlags_None, scal_size_frame))
-                system((OS_PREFIX + target[app_path][frame.id]).c_str());
+                open_path(target[app_path][frame.id]);
             ImGui::PopID();
         }
 
@@ -1291,7 +1282,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         if (ImGui::Selectable("##Search", ImGuiSelectableFlags_None, false, widget_scal_size)) {
             auto search_url = "http://www.google.com/search?q=" + get_app_index(gui, app_path)->title;
             std::replace(search_url.begin(), search_url.end(), ' ', '+');
-            system((OS_PREFIX + search_url).c_str());
+            open_path(search_url);
         }
 
         if (fs::exists(manual_path) && !fs::is_empty(manual_path)) {
