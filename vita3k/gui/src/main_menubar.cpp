@@ -21,23 +21,14 @@
 
 #include "private.h"
 
-#ifdef _WIN32
-static const char OS_PREFIX[] = "start ";
-#elif __APPLE__
-static const char OS_PREFIX[] = "open ";
-#else
-static const char OS_PREFIX[] = "xdg-open ";
-#endif
-
 namespace gui {
 
 static void draw_file_menu(GuiState &gui, HostState &host) {
     auto lang = gui.lang.main_menubar;
     const auto is_lang = !lang.empty();
     if (ImGui::BeginMenu(is_lang ? lang["file"].c_str() : "File")) {
-        if (ImGui::MenuItem(is_lang ? lang["open_pref_path"].c_str() : "Open Pref Path")) {
-            system((OS_PREFIX + string_utils::wide_to_utf(host.pref_path)).c_str());
-        }
+        if (ImGui::MenuItem(is_lang ? lang["open_pref_path"].c_str() : "Open Pref Path"))
+            open_path(string_utils::wide_to_utf(host.pref_path));
         ImGui::Separator();
         ImGui::MenuItem(is_lang ? lang["install_firmware"].c_str() : "Install Firmware", nullptr, &gui.file_menu.firmware_install_dialog);
         ImGui::MenuItem(is_lang ? lang["install_pkg"].c_str() : "Install .pkg", nullptr, &gui.file_menu.pkg_install_dialog);

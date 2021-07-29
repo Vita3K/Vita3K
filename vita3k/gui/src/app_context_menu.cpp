@@ -23,7 +23,6 @@
 #include <util/safe_time.h>
 
 #include <pugixml.hpp>
-#include <sstream>
 
 namespace gui {
 
@@ -73,14 +72,6 @@ static bool get_update_history(GuiState &gui, HostState &host, const std::string
 
     return !update_history_infos.empty();
 }
-
-#ifdef _WIN32
-static const char OS_PREFIX[] = "start \"Vita3K\" ";
-#elif __APPLE__
-static const char OS_PREFIX[] = "open ";
-#else
-static const char OS_PREFIX[] = "xdg-open ";
-#endif
 
 static std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, HostState &host, const std::string &app) {
     const auto time_app_index = std::find_if(gui.time_apps[host.io.user_id].begin(), gui.time_apps[host.io.user_id].end(), [&](const TimeApp &t) {
@@ -230,6 +221,18 @@ void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
     }
 }
 
+void open_path(const std::string &path) {
+#ifdef _WIN32
+    static const char OS_PREFIX[] = "start \"Vita3K\" ";
+#elif __APPLE__
+    static const char OS_PREFIX[] = "open ";
+#else
+    static const char OS_PREFIX[] = "xdg-open ";
+#endif
+
+    system((OS_PREFIX + ("\"" + path + "\"")).c_str());
+}
+
 static std::string context_dialog;
 static auto information = false;
 
@@ -260,7 +263,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
         if (title_id.find("NPXS") == std::string::npos) {
             if (ImGui::MenuItem("Check App Compatibility")) {
                 const std::string compat_url = title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + APP_INDEX->title;
-                system((OS_PREFIX + compat_url).c_str());
+                open_path(compat_url);
             }
             if (ImGui::BeginMenu("Copy App Info")) {
                 if (ImGui::MenuItem("ID and Name")) {
@@ -294,20 +297,20 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             }
             if (ImGui::BeginMenu("Open Folder")) {
                 if (ImGui::MenuItem("Application"))
-                    system((OS_PREFIX + ("\"" + APP_PATH.string() + "\"")).c_str());
+                    open_path(APP_PATH.string());
                 if (fs::exists(DLC_PATH) && ImGui::MenuItem("Dlc"))
-                    system((OS_PREFIX + DLC_PATH.string()).c_str());
+                    open_path(DLC_PATH.string());
                 if (fs::exists(LICENSE_PATH) && ImGui::MenuItem("License"))
-                    system((OS_PREFIX + LICENSE_PATH.string()).c_str());
+                    open_path(LICENSE_PATH.string());
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
-                    system((OS_PREFIX + SAVE_DATA_PATH.string()).c_str());
+                    open_path(SAVE_DATA_PATH.string());
                 if (ImGui::MenuItem("Shader Cache")) {
                     if (!fs::exists(SHADER_CACHE_PATH))
                         fs::create_directories(SHADER_CACHE_PATH);
-                    system((OS_PREFIX + SHADER_CACHE_PATH.string()).c_str());
+                    open_path(SHADER_CACHE_PATH.string());
                 }
                 if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem("Shader Log"))
-                    system((OS_PREFIX + SHADER_LOG_PATH.string()).c_str());
+                    open_path(SHADER_LOG_PATH.string());
                 ImGui::EndMenu();
             }
             if (!host.cfg.show_live_area_screen && ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))

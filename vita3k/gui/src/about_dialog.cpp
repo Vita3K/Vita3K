@@ -21,17 +21,7 @@
 
 #include <config/version.h>
 
-#include <sstream>
-
 namespace gui {
-
-#ifdef _WIN32
-static const char OS_PREFIX[] = "start ";
-#elif __APPLE__
-static const char OS_PREFIX[] = "open ";
-#else
-static const char OS_PREFIX[] = "xdg-open ";
-#endif
 
 void draw_about_dialog(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
@@ -49,29 +39,18 @@ void draw_about_dialog(GuiState &gui, HostState &host) {
 
     ImGui::Text("If you'd like to show your support to the project, you can donate to our Patreon:");
 
-    std::ostringstream link;
-
-    if (ImGui::Button("patreon.com/vita3k")) {
-        std::string patreon_url = "https://patreon.com/vita3k";
-        link << OS_PREFIX << patreon_url;
-        system(link.str().c_str());
-    }
+    if (ImGui::Button("Patreon"))
+        open_path("https://patreon.com/vita3k");
 
     ImGui::Text("Or if you're interested in contributing, check out our Github:");
 
-    if (ImGui::Button("github.com/vita3k/vita3k")) {
-        std::string github_url = "https://github.com/vita3k/vita3k";
-        link << OS_PREFIX << github_url;
-        system(link.str().c_str());
-    }
+    if (ImGui::Button("Github"))
+        open_path("https://github.com/vita3k/vita3k");
 
     ImGui::Text("Visit our website for more info:");
 
-    if (ImGui::Button("vita3k.org")) {
-        std::string website_url = "https://vita3k.org";
-        link << OS_PREFIX << website_url;
-        system(link.str().c_str());
-    }
+    if (ImGui::Button("vita3k.org"))
+        open_path("https://vita3k.org");
 
     ImGui::End();
 }
