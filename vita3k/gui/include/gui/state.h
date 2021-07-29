@@ -74,7 +74,7 @@ struct IconData {
 
     std::unique_ptr<void, void (*)(void *)> data;
 
-    IconData(); // SORRYYYYY
+    IconData();
 };
 
 struct IconAsyncLoader {

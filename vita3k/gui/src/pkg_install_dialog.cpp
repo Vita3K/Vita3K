@@ -170,7 +170,6 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Please check log for more details.");
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button("OK", BUTTON_SIZE)) {
-                refresh_app_list(gui, host);
                 gui.file_menu.pkg_install_dialog = false;
                 pkg_path = nullptr;
                 draw_file_dialog = true;

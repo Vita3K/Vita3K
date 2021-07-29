@@ -69,6 +69,7 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
 void init_trophy_collection(GuiState &gui, HostState &host);
 void init_user(GuiState &gui, HostState &host, const std::string &user_id);
 void init_user_app(GuiState &gui, HostState &host, const std::string &app_path);
+void init_user_apps(GuiState &gui, HostState &host);
 bool init_user_background(GuiState &gui, HostState &host, const std::string &user_id, const std::string &background_path);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
 void open_path(const std::string &path);
@@ -76,7 +77,6 @@ void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_
 void open_user(GuiState &gui, HostState &host);
 void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::string &app_path);
 void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path);
-bool refresh_app_list(GuiState &gui, HostState &host);
 void save_apps_cache(GuiState &gui, HostState &host);
 void save_user(GuiState &gui, HostState &host, const std::string &user_id);
 void set_config(GuiState &gui, HostState &host, const std::string &app_path);

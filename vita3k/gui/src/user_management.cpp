@@ -473,8 +473,11 @@ void draw_user_management(GuiState &gui, HostState &host) {
                     fs::remove_all(user_path / user_id);
                     gui.users_avatar.erase(user_id);
                     gui.users.erase(get_users_index(gui, gui.users[user_id].name));
-                    if (user_id == host.io.user_id)
+                    if (gui.users.empty() || (user_id == host.io.user_id)) {
+                        host.cfg.user_id.clear();
+                        config::serialize_config(host.cfg, host.cfg.config_path);
                         host.io.user_id.clear();
+                    }
                     del_menu = "confirm";
                 }
             } else if (del_menu == "confirm") {
@@ -485,7 +488,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
                 if (ImGui::Button("OK", BUTTON_SIZE)) {
                     del_menu.clear();
                     user_id.clear();
-                    if (!gui.users.size())
+                    if (gui.users.empty())
                         menu.clear();
                 }
             }
@@ -495,7 +498,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
     ImGui::SetCursorPosY(WINDOW_SIZE.y - POS_SEPARATOR);
     ImGui::Separator();
     ImGui::SetWindowFontScale(1.f);
-    const auto USER_ALREADY_INIT = host.cfg.user_id == host.io.user_id;
+    const auto USER_ALREADY_INIT = !gui.users.empty() && !host.io.user_id.empty() && (host.cfg.user_id == host.io.user_id);
     if ((menu.empty() && USER_ALREADY_INIT) || (!menu.empty() && (menu != "confirm") && del_menu.empty())) {
         ImGui::SetCursorPos(ImVec2(54.f * SCALE.x, ImGui::GetCursorPosY() + (10.f * SCALE.y)));
         if (ImGui::Button("Cancel", ImVec2(80.f * SCALE.x, 40.f * SCALE.y))) {
@@ -512,7 +515,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
             }
         }
     }
-    if (menu.empty()) {
+    if (menu.empty() && !gui.users.empty()) {
         ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize("Automatic User Login").x / 2.f), WINDOW_SIZE.y - 50.f * SCALE.y));
         if (ImGui::Checkbox("Automatic User Login", &host.cfg.auto_user_login))
             config::serialize_config(host.cfg, host.cfg.config_path);

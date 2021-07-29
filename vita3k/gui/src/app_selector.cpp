@@ -30,43 +30,43 @@ using namespace std::string_literals;
 
 namespace gui {
 
-bool refresh_app_list(GuiState &gui, HostState &host) {
-    auto app_list_size = gui.app_selector.user_apps.size();
-
+void init_user_apps(GuiState &gui, HostState &host) {
     gui.apps_background.clear();
     gui.apps_list_opened.clear();
-    for (auto &app : gui.app_selector.user_apps_icon)
-        app.second = {};
     gui.app_selector.user_apps_icon.clear();
     gui.current_app_selected = -1;
     gui.live_area_contents.clear();
     gui.live_items.clear();
 
-    get_user_apps_title(gui, host);
+    std::thread init_apps([&gui, &host]() {
+        auto app_list_size = gui.app_selector.user_apps.size();
+        gui.app_selector.user_apps.clear();
+        get_user_apps_title(gui, host);
+        save_apps_cache(gui, host);
 
-    if (gui.app_selector.user_apps.empty())
-        return false;
+        if (gui.app_selector.user_apps.empty())
+            return false;
 
-    save_apps_cache(gui, host);
-    init_apps_icon(gui, host, gui.app_selector.user_apps);
+        gui.app_selector.is_app_list_sorted = false;
+        gui.app_selector.title_sort_state = NOT_SORTED;
 
-    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
-        return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
+        init_apps_icon(gui, host, gui.app_selector.user_apps);
+
+        if (app_list_size == gui.app_selector.user_apps.size())
+            return false;
+
+        std::string change_app_list = "new application(s) added";
+        if (app_list_size > gui.app_selector.user_apps.size()) {
+            change_app_list = "application(s) removed";
+            app_list_size -= gui.app_selector.user_apps.size();
+        } else
+            app_list_size = gui.app_selector.user_apps.size() - app_list_size;
+
+        LOG_INFO("{} {}", app_list_size, change_app_list);
+
+        return true;
     });
-
-    std::string change_app_list = "new application(s) added";
-    if (app_list_size == gui.app_selector.user_apps.size())
-        return false;
-
-    if (app_list_size > gui.app_selector.user_apps.size()) {
-        change_app_list = "application(s) removed";
-        app_list_size -= gui.app_selector.user_apps.size();
-    } else
-        app_list_size = gui.app_selector.user_apps.size() - app_list_size;
-
-    LOG_INFO("{} {}", app_list_size, change_app_list);
-
-    return true;
+    init_apps.detach();
 }
 
 std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &app_path) {
@@ -493,7 +493,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
         ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Refresh").x + ImGui::GetStyle().DisplayWindowPadding.x + (260 * SCALE.x)));
         if (ImGui::Button("Refresh"))
-            refresh_app_list(gui, host);
+            init_user_apps(gui, host);
         ImGui::PopStyleColor(3);
         ImGui::SameLine();
         ImGui::TextColored(GUI_COLOR_TEXT_BLACK, "Search");
