@@ -337,7 +337,7 @@ void init_app_background(GuiState &gui, HostState &host, const std::string &app_
     stbi_image_free(data);
 }
 
-static bool get_apps_cache(GuiState &gui, HostState &host) {
+static bool get_user_apps(GuiState &gui, HostState &host) {
     const auto apps_cache_path{ fs::path(host.base_path) / "cache/apps.dat" };
     fs::ifstream apps_cache(apps_cache_path, std::ios::in | std::ios::binary);
     if (apps_cache.is_open()) {
@@ -383,6 +383,9 @@ static bool get_apps_cache(GuiState &gui, HostState &host) {
 
             gui.app_selector.user_apps.push_back(app);
         }
+
+        init_apps_icon(gui, host, gui.app_selector.user_apps);
+
         return true;
     }
 
@@ -431,11 +434,8 @@ void save_apps_cache(GuiState &gui, HostState &host) {
 void init_home(GuiState &gui, HostState &host) {
     const auto is_cmd = host.cfg.run_app_path || host.cfg.content_path;
     if (!gui.configuration_menu.settings_dialog && (host.cfg.load_app_list || !is_cmd)) {
-        if (!get_apps_cache(gui, host)) {
-            get_user_apps_title(gui, host);
-            save_apps_cache(gui, host);
-        }
-        init_apps_icon(gui, host, gui.app_selector.user_apps);
+        if (!get_user_apps(gui, host))
+            init_user_apps(gui, host);
     }
 
     get_time_apps(gui, host);
@@ -463,9 +463,8 @@ void init_user_app(GuiState &gui, HostState &host, const std::string &app_path) 
     get_app_param(gui, host, app_path);
     init_app_icon(gui, host, app_path);
 
-    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
-        return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
-    });
+    gui.app_selector.title_sort_state = NOT_SORTED;
+    gui.app_selector.is_app_list_sorted = false;
 }
 
 std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &app_path) {
