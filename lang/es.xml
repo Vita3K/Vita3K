@@ -7,6 +7,7 @@
 			<install_firmware>Instalar Firmware</install_firmware>
 			<install_pkg>Instalar un .pkg</install_pkg>
 			<install_zip>Instalar un .zip, .vpk</install_zip>
+			<install_license>Instalar una licencia</install_license>
 		</file>
 		<emulation name="Emulación">
 			<last_apps_used>Últimas aplicaciones utilizadas</last_apps_used>
@@ -35,6 +36,9 @@
 		<updated>Actualizado</updated>
 		<size>Tamaño</size>
 		<version>Versión</version>
+		<last_time_used>Última vez que se utilizó</last_time_used>
+		<never>Nunca</never>
+		<time_used>Tiempo utilizado</time_used>
 	</app_context>
 
 	<common>
@@ -135,6 +139,10 @@
 		</save_data>
 	</dialog>
 
+	<game_data>
+		<app_close>La siguiente aplicación se cerrará.</app_close>
+	</game_data>
+
 	<indicator>
 		<app_added_home>La aplicación se ha agregado a la pantalla de inicio.</app_added_home>
 		<delete_all>Eliminar todo</delete_all>
@@ -181,6 +189,28 @@
 		</date_time>
 		<language name="Idioma">
 			<system_language>Idioma del sistema</system_language>
+			<input_language name="Idiomas de entrada">
+				<keyboards name="Teclados">
+					<ime_langagues>
+						<lang id="1">Danés</lang>
+						<lang id="2">Alemán</lang>
+						<lang id="262144">Inglés (Reino Unido)</lang>
+						<lang id="4">Inglés (Estados Unidos)</lang>
+						<lang id="8">Español</lang>
+						<lang id="16">Francés</lang>
+						<lang id="32">Italiano</lang>
+						<lang id="64">Holandés</lang>
+						<lang id="128">Noruego</lang>
+						<lang id="256">Polaco</lang>
+						<lang id="131072">Portugués (Brasil)</lang>
+						<lang id="512">Portugués (Portugal)</lang>
+						<lang id="1024">Ruso</lang>
+						<lang id="2048">Finlandés</lang>
+						<lang id="4096">Sueco</lang>
+						<lang id="524288">Turco</lang>
+					</ime_langagues>
+				</keyboards>
+			</input_language>
 		</language>
 	</settings>
 
