@@ -107,7 +107,7 @@ From there, the project will be ready to build right from the Visual Studio UI.
 - Install dependencies.
 
   ```sh
-  sudo apt install git cmake ninja-build libsdl2-dev pkg-config libgtk-3-dev clang libboost-program-options-dev
+  sudo apt install git cmake ninja-build libsdl2-dev pkg-config libgtk-3-dev clang
   ```
 
 - Clone this repo.
@@ -140,5 +140,5 @@ From there, the project will be ready to build right from the Visual Studio UI.
 
   ```sh
   brew install boost # for macOS
-  sudo apt install libboost-all-dev # for Ubuntu/Debian
+  sudo apt install libboost-filesystem-dev libboost-program-options-dev libboost-system-dev # for Ubuntu/Debian
   ```
