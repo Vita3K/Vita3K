@@ -140,5 +140,5 @@ From there, the project will be ready to build right from the Visual Studio UI.
 
   ```sh
   brew install boost # for macOS
-  sudo apt install libboost-all-dev # for Ubuntu/Debian
+  sudo apt install libboost-filesystem-dev libboost-program-options-dev libboost-system-dev # for Ubuntu/Debian
   ```
