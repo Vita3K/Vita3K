@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="文件">
+			<open_pref_path>打開存放路徑</open_pref_path>
+			<install_firmware>安裝系統固件</install_firmware>
+			<install_pkg>安裝pkg</install_pkg>
+			<install_zip>安裝zip、vpk</install_zip>
+			<install_license>安裝授權</install_license>
+		</file>
+		<emulation name="模擬器">
+			<last_apps_used>最近使用的應用</last_apps_used>
+		</emulation>
+		<configuration name="配置">
+			<settings>設置</settings>
+			<user_management>用戶管理</user_management>
+		</configuration>
+		<controls name="控制">
+			<keyboard_controls>鍵盤按鍵映射</keyboard_controls>
+		</controls>
+		<help name="幫助">
+			<about>關於</about>
+			<welcome>歡迎界面</welcome>
+		</help>
+	</main_menubar>
+
+	<app_context>
+		<update_history>更新履歷</update_history>
+		<information>資訊</information>
+		<app_delete>刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
+		<save_delete>確定要刪除此保存資料嗎?</save_delete>
+		<name>名稱</name>
+		<trophy_earning eligible="有權" ineligible="無權">獲得獎盃</trophy_earning>
+		<parental_Controls level="等級">家長監控</parental_Controls>
+		<updated>更新日</updated>
+		<size>檔案大小</size>
+		<version>版本</version>
+		<last_time_used>最近使用的時間</last_time_used>
+		<never>從來沒有</never>
+		<time_used>使用時間</time_used>
+	</app_context>
+
+	<common>
+		<cancel>取消</cancel>
+		<delete>刪除</delete>
+		<file_corrupted>檔案已毀損。</file_corrupted>
+		<no>否</no>
+		<select_all>全選</select_all>
+		<select>選擇</select>
+		<please_wait>請稍候……</please_wait>
+		<yes>是</yes>
+		<wday>
+			<day>星期日</day>
+			<day>星期一</day>
+			<day>星期二</day>
+			<day>星期三</day>
+			<day>星期四</day>
+			<day>星期五</day>
+			<day>星期六</day>
+		</wday>
+		<ymonth>
+			<month>1月</month>
+			<month>2月</month>
+			<month>3月</month>
+			<month>4月</month>
+			<month>5月</month>
+			<month>6月</month>
+			<month>7月</month>
+			<month>8月</month>
+			<month>9月</month>
+			<month>10月</month>
+			<month>11月</month>
+			<month>12月</month>
+		</ymonth>
+		<small_ymonth>
+			<month>1月</month>
+			<month>2月</month>
+			<month>3月</month>
+			<month>4月</month>
+			<month>5月</month>
+			<month>6月</month>
+			<month>7月</month>
+			<month>8月</month>
+			<month>9月</month>
+			<month>10月</month>
+			<month>11月</month>
+			<month>12月</month>
+		</small_ymonth>
+		<hidden_trophy>隱藏獎盃</hidden_trophy>
+		<one_hour_ago>1小時前</one_hour_ago>
+		<one_minute_ago>1分鐘前</one_minute_ago>
+		<bronze>Bronze（銅）</bronze>
+		<gold>Gold（金）</gold>
+		<platinum>Platinum（白金）</platinum>
+		<silver>Silver（銀）</silver>
+		<hours_ago>{}小時前</hours_ago>
+		<minutes_ago>{}分鐘前</minutes_ago>
+	</common>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>正在準備啟動應用程式……</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>確定要取消刪除嗎？</cancel_deleting>
+				<deletion_complete>已刪除。</deletion_complete>
+				<delete_saved_data>確定要刪除此保存資料嗎?</delete_saved_data>
+			</delete>
+			<info>
+				<details>詳細內容</details>
+				<updated>更新日</updated>
+			</info>
+			<load name="載入">
+				<cancel_loading>確定要取消載入嗎？</cancel_loading>
+				<no_saved_data>找不到保存資料。</no_saved_data>
+				<load_complete>已載入。</load_complete>
+				<loading>載入中……</loading>
+				<load_saved_data>確定要載入此保存資料嗎？</load_saved_data>
+			</load>
+			<save name="保存">
+				<cancel_saving>確定要取消保存嗎？</cancel_saving>
+				<could_not_save>
+					無法保存。
+					記憶卡的可用容量不足。
+				</could_not_save>
+				<not_free_space>記憶卡的可用容量不足。</not_free_space>
+				<new_saved_data>新的保存資料</new_saved_data>
+				<saving_complete>已保存。</saving_complete>
+				<save_the_data>確定要保存資料嗎？</save_the_data>
+				<saving>保存中……</saving>
+				<warning_saving>
+					保存中……
+					請勿關閉電源或結束應用程式。
+				</warning_saving>
+				<overwrite_saved_data>確定要覆寫此保存資料嗎？</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>結束下列應用程式。</app_close>
+	</game_data>
+
+	<indicator>
+		<app_added_home>已追加應用程式至主頁畫面。</app_added_home>
+		<delete_all>全部刪除</delete_all>
+		<notif_deleted>刪除最新資訊。</notif_deleted>
+		<install_failed>無法安裝。</install_failed>
+		<install_complete>已安裝。</install_complete>
+		<installing>安裝中……</installing>
+		<no_notif>找不到最新資訊。</no_notif>
+		<trophy_earned>已獲得獎盃！</trophy_earned>
+	</indicator>
+
+	<live_area>
+		<start>啟動</start>
+		<continue>繼續</continue>
+	</live_area>
+
+	<settings name="設定">
+		<theme_background name="主題&背景" default="原音">
+			<theme name="主題">
+				<information name="資訊">
+					<name>名稱</name>
+					<provider>提供者</provider>
+					<updated>更新日</updated>
+					<size>檔案大小</size>
+					<version>版本</version>
+				</information>
+				<delete>刪除此主題。</delete>
+			</theme>
+			<start_screen name="開始畫面">
+				<image>圖像</image>
+			</start_screen>
+			<home_screen_backgrounds>主頁畫面的背景</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="日期&時間">
+			<date_format name ="日期顯示方式">
+				<yyyy_mm_dd>年／月／日</yyyy_mm_dd>
+				<dd_mm_yyyy>日／月／年</dd_mm_yyyy>
+				<mm_dd_yyyy>月／日／年</mm_dd_yyyy>
+			</date_format>
+			<time_format name="時間顯示方式">
+				<clock_12_hour>12小時制</clock_12_hour>
+				<clock_24_hour>24小時制</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="語言">
+			<system_language>系統語言</system_language>
+			<input_language name="輸入語言">
+				<keyboards name="鍵盤">
+					<ime_langagues>
+						<lang id="1">丹麥文</lang>
+						<lang id="2">德文</lang>
+						<lang id="262144">英文(英國)</lang>
+						<lang id="4">英文(美國)</lang>
+						<lang id="8">西班牙文</lang>
+						<lang id="16">法文</lang>
+						<lang id="32">義大利文</lang>
+						<lang id="64">荷蘭文</lang>
+						<lang id="128">挪威文</lang>
+						<lang id="256">波蘭文</lang>
+						<lang id="131072">葡萄牙文(巴西)</lang>
+						<lang id="512">葡萄牙文(葡萄牙)</lang>
+						<lang id="1024">俄文</lang>
+						<lang id="2048">芬蘭文</lang>
+						<lang id="4096">瑞典文</lang>
+						<lang id="524288">土耳其文</lang>
+					</ime_langagues>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>詳細內容</details>
+		<earned>獲得日</earned>
+		<name>名稱</name>
+		<no_trophies>
+			找不到獎盃。
+			遊玩支援獎盃機能的應用程式即可獲得獎盃。
+		</no_trophies>
+		<not_earned>未獲得</not_earned>
+		<original>原始</original>
+		<sort>排列</sort>
+		<trophies>獎盃總數</trophies>
+		<grade>Grade（階級）</grade>
+		<progress>達成率</progress>
+		<updated>更新日</updated>
+	</trophy_collection>
+
+	<user_management>
+		<create_user>新建用戶</create_user>
+		<edit_user>編輯用戶</edit_user>
+		<delete_user>刪除用戶</delete_user>
+		<change_avatar>更換頭像</change_avatar>
+		<name>名稱</name>
+		<user>用戶</user>
+		<confirm>確認</confirm>
+	</user_management>
+</lang>
