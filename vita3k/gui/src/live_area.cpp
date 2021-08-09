@@ -50,8 +50,8 @@ void init_lang(GuiState &gui, HostState &host) {
     case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: user_lang = "pt"; break;
     case SCE_SYSTEM_PARAM_LANG_RUSSIAN: user_lang = "ru"; break;
     case SCE_SYSTEM_PARAM_LANG_KOREAN: user_lang = "ko"; break;
-    case SCE_SYSTEM_PARAM_LANG_CHINESE_T: user_lang = "zh-t"; break;
-    case SCE_SYSTEM_PARAM_LANG_CHINESE_S: user_lang = "zh-s"; break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_T: user_lang = "ch"; break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_S: user_lang = "zh"; break;
     case SCE_SYSTEM_PARAM_LANG_FINNISH: user_lang = "fi"; break;
     case SCE_SYSTEM_PARAM_LANG_SWEDISH: user_lang = "sv"; break;
     case SCE_SYSTEM_PARAM_LANG_DANISH: user_lang = "da"; break;
