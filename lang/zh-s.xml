@@ -121,19 +121,15 @@
 			</load>
 			<save name="保存">
 				<cancel_saving>要取消保存吗？</cancel_saving>
-				<could_not_save>
-					无法保存文件。
-					存储卡没有足够的空余容量。
-				</could_not_save>
+				<could_not_save>无法保存文件。
+存储卡没有足够的空余容量。</could_not_save>
 				<not_free_space>存储卡没有足够的空余容量。</not_free_space>
 				<new_saved_data>新建保存数据</new_saved_data>
 				<saving_complete>保存完毕。</saving_complete>
 				<save_the_data>要保存数据吗？</save_the_data>
 				<saving>正在保存…</saving>
-				<warning_saving>
-					正在保存…
-					请勿关闭电源或关闭应用程序。
-				</warning_saving>
+				<warning_saving>正在保存…
+请勿关闭电源或关闭应用程序。</warning_saving>
 				<overwrite_saved_data>要覆盖此保存数据吗？</overwrite_saved_data>
 			</save>
 		</save_data>
@@ -218,10 +214,8 @@
 		<details>详细信息</details>
 		<earned>获得日期</earned>
 		<name>名称</name>
-		<no_trophies>
-			找不到奖杯。
-			您可通过游玩支持奖杯功能的应用程序获得奖杯。
-		</no_trophies>
+		<no_trophies>找不到奖杯。
+您可通过游玩支持奖杯功能的应用程序获得奖杯。</no_trophies>
 		<not_earned>未获得</not_earned>
 		<original>原始</original>
 		<sort>排列</sort>

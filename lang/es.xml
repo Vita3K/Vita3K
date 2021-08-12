@@ -121,19 +121,15 @@
 			</load>
 			<save name="Guardar">
 				<cancel_saving>¿Quieres cancelar el guardado?</cancel_saving>
-				<could_not_save>
-					No se ha podido guardar el archivo.
-					No hay suficiente espacio libre en la tarjeta de memoria.
-				</could_not_save>
+				<could_not_save>No se ha podido guardar el archivo.
+No hay suficiente espacio libre en la tarjeta de memoria.</could_not_save>
 				<not_free_space>No hay suficiente espacio libre en la tarjeta de memoria.</not_free_space>
 				<new_saved_data>Nuevos datos guardados</new_saved_data>
 				<saving_complete>Guardado.</saving_complete>
 				<save_the_data>¿Quieres guardar los datos?</save_the_data>
 				<saving>Guardando...</saving>
-				<warning_saving>
-					Guardando...
-					No apagues el sistema ni cierres la aplicación.
-				</warning_saving>
+				<warning_saving>Guardando...
+No apagues el sistema ni cierres la aplicación.</warning_saving>
 				<overwrite_saved_data>¿Quieres sobrescribir estos datos guardados?</overwrite_saved_data>
 			</save>
 		</save_data>
@@ -218,10 +214,8 @@
 		<details>Detalles</details>
 		<earned>Ganado</earned>
 		<name>Nombre</name>
-		<no_trophies>
-			No hay trofeos.
-			Podrás conseguir trofeos si usas una aplicación compatible con la función de trofeos.
-		</no_trophies>
+		<no_trophies>No hay trofeos.
+Podrás conseguir trofeos si usas una aplicación compatible con la función de trofeos.</no_trophies>
 		<not_earned>No ganado</not_earned>
 		<original>Original</original>
 		<sort>Ordenar</sort>

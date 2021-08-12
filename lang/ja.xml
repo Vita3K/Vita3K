@@ -94,19 +94,15 @@
 			</load>
 			<save name="セーブ">
 				<cancel_saving>セーブをキャンセルしますか？</cancel_saving>
-				<could_not_save>
-					セーブできませんでした。
-					メモリーカードの空き容量が不足しています。
-				</could_not_save>
+				<could_not_save>セーブできませんでした。
+メモリーカードの空き容量が不足しています。</could_not_save>
 				<not_free_space>メモリーカードの空き容量が不足しています。</not_free_space>
 				<new_saved_data>新しいセーブデータ</new_saved_data>
 				<saving_complete>セーブしました。</saving_complete>
 				<save_the_data>データをセーブしますか？</save_the_data>
 				<saving>セーブ中です...</saving>
-				<warning_saving>
-					セーブ中です...
-					電源を切ったり、アプリケーションを終了したりしないでください。
-				</warning_saving>
+				<warning_saving>セーブ中です...
+電源を切ったり、アプリケーションを終了したりしないでください。</warning_saving>
 				<overwrite_saved_data>このセーブデータを上書きしますか？</overwrite_saved_data>
 			</save>
 		</save_data>
@@ -191,10 +187,8 @@
 		<details>詳細</details>
 		<earned>獲得日</earned>
 		<name>名前</name>
-		<no_trophies>
-			トロフィーがありません。
-			トロフィー対応のアプリケーションで遊ぶとトロフィーを獲得できます。
-		</no_trophies>
+		<no_trophies>トロフィーがありません。
+トロフィー対応のアプリケーションで遊ぶとトロフィーを獲得できます。</no_trophies>
 		<not_earned>未獲得</not_earned>
 		<original>オリジナル</original>
 		<sort>並べ替え</sort>

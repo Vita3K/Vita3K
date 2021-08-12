@@ -121,19 +121,15 @@
 			</load>
 			<save name="Save">
 				<cancel_saving>Do you want to cancel saving?</cancel_saving>
-				<could_not_save>
-					Could not save the file.
-					There is not enough free space on the memory card.
-				</could_not_save>
+				<could_not_save>Could not save the file.
+There is not enough free space on the memory card.</could_not_save>
 				<not_free_space>There is not enough free space on the memory card.</not_free_space>
 				<new_saved_data>New Saved Data</new_saved_data>
 				<saving_complete>Saving complete.</saving_complete>
 				<save_the_data>Do you want to save the data?</save_the_data>
 				<saving>Saving...</saving>
-				<warning_saving>
-					Saving...
-					Do not power off the system or close the application.
-				</warning_saving>
+				<warning_saving>Saving...
+Do not power off the system or close the application.</warning_saving>
 				<overwrite_saved_data>Do you want to overwrite this saved data?</overwrite_saved_data>
 			</save>
 		</save_data>
@@ -218,10 +214,8 @@
 		<details>Details</details>
 		<earned>Earned</earned>
 		<name>Name</name>
-		<no_trophies>
-			There are no trophies.
-			You can earn trophies by using an application that supports the trophy feature.
-		</no_trophies>
+		<no_trophies>There are no trophies.
+You can earn trophies by using an application that supports the trophy feature.</no_trophies>
 		<not_earned>Not Earned</not_earned>
 		<original>Original</original>
 		<sort>Sort</sort>
