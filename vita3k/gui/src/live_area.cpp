@@ -31,41 +31,58 @@
 #include <chrono>
 #include <stb_image.h>
 
+enum TypeLang {
+    GUI,
+    LIVE_AREA,
+};
+
 namespace gui {
 static std::string start, resume;
+static std::map<TypeLang, std::string> user_lang;
 
 void init_lang(GuiState &gui, HostState &host) {
-    start.clear(), resume.clear();
+    start.clear(), resume.clear(), user_lang.clear();
     gui.lang = {};
-    auto &user_lang = gui.lang.user_lang;
+
+    const auto set_lang = [&](std::string lang) {
+        user_lang[GUI] = lang;
+        user_lang[LIVE_AREA] = lang;
+    };
+
     const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
     switch (sys_lang) {
-    case SCE_SYSTEM_PARAM_LANG_JAPANESE: user_lang = "ja"; break;
-    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US: user_lang = "en"; break;
-    case SCE_SYSTEM_PARAM_LANG_FRENCH: user_lang = "fr"; break;
-    case SCE_SYSTEM_PARAM_LANG_SPANISH: user_lang = "es"; break;
-    case SCE_SYSTEM_PARAM_LANG_GERMAN: user_lang = "de"; break;
-    case SCE_SYSTEM_PARAM_LANG_ITALIAN: user_lang = "it"; break;
-    case SCE_SYSTEM_PARAM_LANG_DUTCH: user_lang = "nl"; break;
-    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: user_lang = "pt"; break;
-    case SCE_SYSTEM_PARAM_LANG_RUSSIAN: user_lang = "ru"; break;
-    case SCE_SYSTEM_PARAM_LANG_KOREAN: user_lang = "ko"; break;
-    case SCE_SYSTEM_PARAM_LANG_CHINESE_T: user_lang = "zh-t"; break;
-    case SCE_SYSTEM_PARAM_LANG_CHINESE_S: user_lang = "zh-s"; break;
-    case SCE_SYSTEM_PARAM_LANG_FINNISH: user_lang = "fi"; break;
-    case SCE_SYSTEM_PARAM_LANG_SWEDISH: user_lang = "sv"; break;
-    case SCE_SYSTEM_PARAM_LANG_DANISH: user_lang = "da"; break;
-    case SCE_SYSTEM_PARAM_LANG_NORWEGIAN: user_lang = "no"; break;
-    case SCE_SYSTEM_PARAM_LANG_POLISH: user_lang = "pl"; break;
-    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR: user_lang = "pt-br"; break;
-    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB: user_lang = "en-gb"; break;
-    case SCE_SYSTEM_PARAM_LANG_TURKISH: user_lang = "tr"; break;
+    case SCE_SYSTEM_PARAM_LANG_JAPANESE: set_lang("ja"); break;
+    case SCE_SYSTEM_PARAM_LANG_ENGLISH_US: set_lang("en"); break;
+    case SCE_SYSTEM_PARAM_LANG_FRENCH: set_lang("fr"); break;
+    case SCE_SYSTEM_PARAM_LANG_SPANISH: set_lang("es"); break;
+    case SCE_SYSTEM_PARAM_LANG_GERMAN: set_lang("de"); break;
+    case SCE_SYSTEM_PARAM_LANG_ITALIAN: set_lang("it"); break;
+    case SCE_SYSTEM_PARAM_LANG_DUTCH: set_lang("nl"); break;
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT: set_lang("pt"); break;
+    case SCE_SYSTEM_PARAM_LANG_RUSSIAN: set_lang("ru"); break;
+    case SCE_SYSTEM_PARAM_LANG_KOREAN: set_lang("ko"); break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_T:
+        user_lang[GUI] = "zh-t";
+        user_lang[LIVE_AREA] = "ch";
+        break;
+    case SCE_SYSTEM_PARAM_LANG_CHINESE_S:
+        user_lang[GUI] = "zh-s";
+        user_lang[LIVE_AREA] = "zh";
+        break;
+    case SCE_SYSTEM_PARAM_LANG_FINNISH: set_lang("fi"); break;
+    case SCE_SYSTEM_PARAM_LANG_SWEDISH: set_lang("sv"); break;
+    case SCE_SYSTEM_PARAM_LANG_DANISH: set_lang("da"); break;
+    case SCE_SYSTEM_PARAM_LANG_NORWEGIAN: set_lang("no"); break;
+    case SCE_SYSTEM_PARAM_LANG_POLISH: set_lang("pl"); break;
+    case SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR: set_lang("pt-br"); break;
+    case SCE_SYSTEM_PARAM_LANG_ENGLISH_GB: set_lang("en-gb"); break;
+    case SCE_SYSTEM_PARAM_LANG_TURKISH: set_lang("tr"); break;
     default: break;
     }
 
     pugi::xml_document lang_xml;
     const auto lang_path{ fs::path(host.base_path) / "lang" };
-    const auto lang_xml_path = (lang_path / (user_lang + ".xml")).string();
+    const auto lang_xml_path = (lang_path / (user_lang[GUI] + ".xml")).string();
     if (fs::exists(lang_xml_path)) {
         if (lang_xml.load_file(lang_xml_path.c_str())) {
             // Lang
@@ -456,7 +473,7 @@ void init_live_area(GuiState &gui, HostState &host) {
         items_pos["psmobile"]["frame4"]["size"] = ImVec2(440.f, 34.f);
     }
 
-    const auto user_lang = gui.lang.user_lang;
+    const auto live_area_lang = user_lang[LIVE_AREA];
     const auto app_path = gui.apps_list_opened[gui.current_app_selected];
     const auto is_sys_app = app_path.find("NPXS") != std::string::npos;
     const auto is_ps_app = app_path.find("PCS") != std::string::npos;
@@ -498,10 +515,10 @@ void init_live_area(GuiState &gui, HostState &host) {
 
             if (!doc.child("livearea").child("livearea-background").child("image").child("lang").text().empty()) {
                 for (const auto &livearea_background : doc.child("livearea").child("livearea-background")) {
-                    if (livearea_background.child("lang").text().as_string() == user_lang) {
+                    if (livearea_background.child("lang").text().as_string() == live_area_lang) {
                         name["livearea-background"] = livearea_background.text().as_string();
                         break;
-                    } else if (!livearea_background.child("exclude-lang").empty() && livearea_background.child("exclude-lang").text().as_string() != user_lang) {
+                    } else if (!livearea_background.child("exclude-lang").empty() && livearea_background.child("exclude-lang").text().as_string() != live_area_lang) {
                         name["livearea-background"] = livearea_background.text().as_string();
                         break;
                     } else if (livearea_background.attribute("default").as_string() == std::string("on")) {
@@ -518,19 +535,19 @@ void init_live_area(GuiState &gui, HostState &host) {
             if (!default_contents) {
                 for (const auto &gate : doc.child("livearea").child("gate")) {
                     if (gate.child("lang")) {
-                        if (gate.child("lang").text().as_string() == user_lang) {
+                        if (gate.child("lang").text().as_string() == live_area_lang) {
                             name["gate"] = gate.text().as_string();
                             break;
                         } else if (gate.attribute("default").as_string() == std::string("on"))
                             name["gate"] = gate.text().as_string();
                         else
                             for (const auto &lang : gate)
-                                if (lang.text().as_string() == user_lang) {
+                                if (lang.text().as_string() == live_area_lang) {
                                     name["gate"] = gate.text().as_string();
                                     break;
                                 }
                     } else if (gate.child("cntry")) {
-                        if (gate.child("cntry").attribute("lang").as_string() == user_lang) {
+                        if (gate.child("cntry").attribute("lang").as_string() == live_area_lang) {
                             name["gate"] = gate.text().as_string();
                             break;
                         } else
@@ -657,7 +674,7 @@ void init_live_area(GuiState &gui, HostState &host) {
                         if (frame_id.name() == std::string("liveitem")) {
                             if (!frame_id.child("cntry").empty()) {
                                 for (const auto &cntry : frame_id) {
-                                    if ((cntry.name() == std::string("cntry")) && (cntry.attribute("lang").as_string() == user_lang)) {
+                                    if ((cntry.name() == std::string("cntry")) && (cntry.attribute("lang").as_string() == live_area_lang)) {
                                         if (!frame_id.child("background").text().empty())
                                             items_name[frame]["background"].push_back({ frame_id.child("background").text().as_string() });
                                         if (!frame_id.child("image").text().empty())
@@ -674,7 +691,7 @@ void init_live_area(GuiState &gui, HostState &host) {
                             } else if (!frame_id.child("exclude-lang").empty()) {
                                 bool exclude_lang = false;
                                 for (const auto &liveitem : frame_id)
-                                    if ((liveitem.name() == std::string("exclude-lang")) && (liveitem.text().as_string() == user_lang)) {
+                                    if ((liveitem.name() == std::string("exclude-lang")) && (liveitem.text().as_string() == live_area_lang)) {
                                         exclude_lang = true;
                                         break;
                                     }
@@ -691,7 +708,7 @@ void init_live_area(GuiState &gui, HostState &host) {
                                     }
                                     break;
                                 }
-                            } else if (frame_id.child("lang").text().as_string() == user_lang) {
+                            } else if (frame_id.child("lang").text().as_string() == live_area_lang) {
                                 if (!frame_id.child("background").text().empty())
                                     items_name[frame]["background"].push_back({ frame_id.child("background").text().as_string() });
                                 if (!frame_id.child("image").text().empty())

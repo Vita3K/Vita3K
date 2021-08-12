@@ -183,7 +183,6 @@ struct User {
 };
 
 struct Lang {
-    std::string user_lang;
     std::map<std::string, std::string> main_menubar;
     std::map<std::string, std::string> app_context;
     std::map<std::string, std::string> game_data;
