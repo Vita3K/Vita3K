@@ -121,19 +121,15 @@
 			</load>
 			<save name="Salva">
 				<cancel_saving>Vuoi annullare il salvataggio?</cancel_saving>
-				<could_not_save>
-					Impossibile salvare il file.
-					Spazio libero insufficiente sulla scheda di memoria.
-				</could_not_save>
+				<could_not_save>Impossibile salvare il file.
+Spazio libero insufficiente sulla scheda di memoria.</could_not_save>
 				<not_free_space>Spazio libero insufficiente sulla scheda di memoria.</not_free_space>
 				<new_saved_data>Nuovi dati salvati</new_saved_data>
 				<saving_complete>Salvataggio completato.</saving_complete>
 				<save_the_data>Vuoi salvare i dati?</save_the_data>
 				<saving>Salvataggio in corso...</saving>
-				<warning_saving>
-					Salvataggio in corso...
-					Non spegnere il sistema né chiudere l'applicazione.
-				</warning_saving>
+				<warning_saving>Salvataggio in corso...
+Non spegnere il sistema né chiudere l'applicazione.</warning_saving>
 				<overwrite_saved_data>Vuoi sovrascrivere questi dati salvati?</overwrite_saved_data>
 			</save>
 		</save_data>
@@ -163,10 +159,8 @@
 		<details>Dettagli</details>
 		<earned>Guadagnato</earned>
 		<name>Nome</name>
-		<no_trophies>
-			Non ci sono trofei.
-			Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.
-		</no_trophies>
+		<no_trophies>Non ci sono trofei.
+Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.</no_trophies>
 		<not_earned>Non guadagnato</not_earned>
 		<original>Originale</original>
 		<sort>Ordina</sort>

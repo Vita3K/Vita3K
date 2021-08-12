@@ -94,19 +94,15 @@
 			</load>
 			<save name="저장">
 				<cancel_saving>저장을 취소하시겠습니까?</cancel_saving>
-				<could_not_save>
-					저장하지 못했습니다.
-					메모리 카드의 빈 용량이 부족합니다.
-				</could_not_save>
+				<could_not_save>저장하지 못했습니다.
+메모리 카드의 빈 용량이 부족합니다.</could_not_save>
 				<not_free_space>메모리 카드의 빈 용량이 부족합니다.</not_free_space>
 				<new_saved_data>새 저장 데이터</new_saved_data>
 				<saving_complete>저장했습니다.</saving_complete>
 				<save_the_data>데이터를 저장하시겠습니까?</save_the_data>
 				<saving>저장중입니다...</saving>
-				<warning_saving>
-					저장중입니다…
-					전원을 끄거나 애플리케이션을 종료하지 마십시오.
-				</warning_saving>
+				<warning_saving>저장중입니다…
+전원을 끄거나 애플리케이션을 종료하지 마십시오.</warning_saving>
 				<overwrite_saved_data>이 저장 데이터를 덮어쓰시겠습니까?</overwrite_saved_data>
 			</save>
 		</save_data>
@@ -191,10 +187,8 @@
 		<details>상세</details>
 		<earned>획득일</earned>
 		<name>이름</name>
-		<no_trophies>
-			트로피가 없습니다.
-			트로피에 대응하는 애플리케이션으로 즐기시면 트로피를 획득할 수 있습니다.
-		</no_trophies>
+		<no_trophies>트로피가 없습니다.
+트로피에 대응하는 애플리케이션으로 즐기시면 트로피를 획득할 수 있습니다.</no_trophies>
 		<not_earned>미획득</not_earned>
 		<original>오리지널</original>
 		<sort>정렬</sort>

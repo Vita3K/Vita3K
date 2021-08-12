@@ -121,19 +121,15 @@
 			</load>
 			<save name="保存">
 				<cancel_saving>確定要取消保存嗎？</cancel_saving>
-				<could_not_save>
-					無法保存。
-					記憶卡的可用容量不足。
-				</could_not_save>
+				<could_not_save>無法保存。
+記憶卡的可用容量不足。</could_not_save>
 				<not_free_space>記憶卡的可用容量不足。</not_free_space>
 				<new_saved_data>新的保存資料</new_saved_data>
 				<saving_complete>已保存。</saving_complete>
 				<save_the_data>確定要保存資料嗎？</save_the_data>
 				<saving>保存中……</saving>
-				<warning_saving>
-					保存中……
-					請勿關閉電源或結束應用程式。
-				</warning_saving>
+				<warning_saving>保存中……
+請勿關閉電源或結束應用程式。</warning_saving>
 				<overwrite_saved_data>確定要覆寫此保存資料嗎？</overwrite_saved_data>
 			</save>
 		</save_data>
@@ -218,10 +214,8 @@
 		<details>詳細內容</details>
 		<earned>獲得日</earned>
 		<name>名稱</name>
-		<no_trophies>
-			找不到獎盃。
-			遊玩支援獎盃機能的應用程式即可獲得獎盃。
-		</no_trophies>
+		<no_trophies>找不到獎盃。
+遊玩支援獎盃機能的應用程式即可獲得獎盃。</no_trophies>
 		<not_earned>未獲得</not_earned>
 		<original>原始</original>
 		<sort>排列</sort>

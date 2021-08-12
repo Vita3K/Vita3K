@@ -121,19 +121,15 @@
 			</load>
 			<save name="Сохранить">
 				<cancel_saving>Отменить сохранение?</cancel_saving>
-				<could_not_save>
-					Не удалось сохранить файл.
-					На карте памяти недостаточно свободного места.
-				</could_not_save>
+				<could_not_save>Не удалось сохранить файл.
+На карте памяти недостаточно свободного места.</could_not_save>
 				<not_free_space>На карте памяти недостаточно свободного места.</not_free_space>
 				<new_saved_data>Новые сохраненные данные</new_saved_data>
 				<saving_complete>Сохранение завершено.</saving_complete>
 				<save_the_data>Сохранить данные?</save_the_data>
 				<saving>Идет сохранение...</saving>
-				<warning_saving>
-					Идет сохранение...
-					Не выключайте систему и не закрывайте приложение.
-				</warning_saving>
+				<warning_saving>Идет сохранение...
+Не выключайте систему и не закрывайте приложение.</warning_saving>
 				<overwrite_saved_data>Перезаписать сохраненные данные?</overwrite_saved_data>
 			</save>
 		</save_data>
@@ -218,10 +214,8 @@
 		<details>Подробности</details>
 		<earned>Получены</earned>
 		<name>Название</name>
-		<no_trophies>
-			Призы отсутствуют.
-			Можно получать призы, используя приложение, поддерживающее функцию призов.
-		</no_trophies>
+		<no_trophies>Призы отсутствуют.
+Можно получать призы, используя приложение, поддерживающее функцию призов.</no_trophies>
 		<not_earned>Не получен</not_earned>
 		<original>Исходный</original>
 		<sort>Сортировка</sort>

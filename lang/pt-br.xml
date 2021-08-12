@@ -121,19 +121,15 @@
 			</load>
 			<save name="Salvar">
 				<cancel_saving>Você quer cancelar o salvamento?</cancel_saving>
-				<could_not_save>
-					Não pôde salvar o arquivo.
-					Não há espaço livre o bastante no memory card.
-				</could_not_save>
+				<could_not_save>Não pôde salvar o arquivo.
+Não há espaço livre o bastante no memory card.</could_not_save>
 				<not_free_space>Não há espaço livre o bastante no memory card.</not_free_space>
 				<new_saved_data>Novos Dados Salvos</new_saved_data>
 				<saving_complete>Salvamento completo.</saving_complete>
 				<save_the_data>Você quer salvar os dados?</save_the_data>
 				<saving>Salvando...</saving>
-				<warning_saving>
-					Salvando...
-					Não desligue o sistema ou feche o aplicativo.
-				</warning_saving>
+				<warning_saving>Salvando...
+Não desligue o sistema ou feche o aplicativo.</warning_saving>
 				<overwrite_saved_data>Você quer sobrescrever estes dados salvos?</overwrite_saved_data>
 			</save>
 		</save_data>
@@ -218,10 +214,8 @@
 		<details>Detalhes</details>
 		<earned>Ganhos</earned>
 		<name>Nome</name>
-		<no_trophies>
-			Não há troféus.
-			Você pode ganhar troféus usando um aplicativo que suporte a função dos troféus.
-		</no_trophies>
+		<no_trophies>Não há troféus.
+Você pode ganhar troféus usando um aplicativo que suporte a função dos troféus.</no_trophies>
 		<not_earned>Não Ganhos</not_earned>
 		<original>Original</original>
 		<sort>Organizar</sort>

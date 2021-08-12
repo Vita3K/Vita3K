@@ -443,10 +443,8 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     // Trophy Collection
     if (np_com_id_list.empty()) {
         ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
-        ImGui::SetCursorPosY(120.f * SCALE.y);
-        ImGui::PushTextWrapPos(SIZE_LIST.x);
-        ImGui::TextColored(GUI_COLOR_TEXT, !lang["no_trophies"].empty() ? lang["no_trophies"].c_str() : "There are no trophies.\nYou can earn trophies by using an application that supports the trophy feature.");
-        ImGui::PopTextWrapPos();
+        ImGui::SetCursorPosY(140.f * SCALE.y);
+        ImGui::TextWrapped(!lang["no_trophies"].empty() ? lang["no_trophies"].c_str() : "There are no trophies.\nYou can earn trophies by using an application that supports the trophy feature.");
     } else {
         // Set Scroll Pos
         if (set_scroll_pos) {
