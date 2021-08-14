@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2018 Vita3K team
+// Copyright (C) 2021 Vita3K team
 // Copyright (c) 2009 Benjamin Dobell, Glass Echidna
 //
 // This program is free software; you can redistribute it and/or modify
