@@ -61,6 +61,7 @@ If you would like to show your appreciation or even help fund development, the p
 ## Supporters
 Thank you to the following supporters:
 * Mored1984
+* soiaf
 
 If you support us on Patreon and would like your name added, please get in touch or open a Pull Request.
 
