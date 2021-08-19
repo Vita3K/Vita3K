@@ -193,6 +193,12 @@ fs::path find_in_cache(IOState &io, const std::string &system_path) {
 std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths) {
     auto relative_path = device::remove_duplicate_device(path, device);
 
+    // replace invalid slashes with proper forward slash
+    string_utils::replace(relative_path, "\\", "/");
+    string_utils::replace(relative_path, "/./", "/");
+    string_utils::replace(relative_path, "//", "/");
+    // TODO: Handle dot-dot paths
+
     switch (device) {
     case +VitaIoDevice::savedata0: // Redirect savedata0: to ux0:user/00/savedata/<title_id>
     case +VitaIoDevice::savedata1: {
