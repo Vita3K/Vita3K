@@ -276,17 +276,17 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::Checkbox("Experimental: LLE libkernel & driver_us", &config.lle_kernel);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Enable this for using libkernel and driver_us module (experimental).");
+                ImGui::SetTooltip("Enable this to use libkernel and driver_us modules (experimental).");
             ImGui::Spacing();
             if (ImGui::RadioButton("Automatic", config.auto_lle))
                 config.auto_lle = true;
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select Automatic mode for using modules list pre-set.");
+                ImGui::SetTooltip("Select Automatic mode to use a preset list of modules.");
             ImGui::SameLine();
             if (ImGui::RadioButton("Manual", !config.auto_lle))
                 config.auto_lle = false;
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select Manual mode for load custom modules list.");
+                ImGui::SetTooltip("Select Manual mode to load selected modules from the list below.");
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -403,13 +403,13 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("Disable At9 audio decoder", &config.disable_at9_decoder);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Enable this options that disables AT9 audio decoder.\nIt is required to prevent the crash in certain games such as Gravity (Rush/Daze) for the time being.");
+            ImGui::SetTooltip("Enable this option to disable the AT9 audio decoder.\nThis is required to prevent crashes in certain games, such as Gravity (Rush/Daze), for the time being.");
         ImGui::Checkbox("Disable experimental ngs support", &config.disable_ngs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Disable experimental support for advanced audio library ngs");
         ImGui::Checkbox("Enable video playing support", &config.video_playing);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Uncheck the box to disable video player.\nOn some game, disable it is required for more progress.");
+            ImGui::SetTooltip("Uncheck the box to disable the video player.\nOn some games, it is necessary to disable this for more progress.");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -425,9 +425,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
 #ifdef USE_DISCORD
         ImGui::Checkbox("Discord Rich Presence", &host.cfg.discord_rich_presence);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Enables Discord Rich Presence to show what application you're running on discord");
+            ImGui::SetTooltip("Enables Discord Rich Presence to show what application you're running on Discord");
 #endif
-        ImGui::Checkbox("Performance overlay", &host.cfg.performance_overlay);
+        ImGui::Checkbox("Performance Overlay", &host.cfg.performance_overlay);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Display performance information on the screen as an overlay.");
         ImGui::SameLine();
@@ -449,10 +449,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::Button("Change Emulator Path"))
             change_emulator_path(gui, host);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Change Vita3K emulator path like wanted.\nNeed move folder old to new manually.");
+            ImGui::SetTooltip("Change Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually.");
         if (host.cfg.pref_path != host.default_path) {
             ImGui::SameLine();
-            if (ImGui::Button("Reset Path Emulator")) {
+            if (ImGui::Button("Reset Emulator Path")) {
                 if (string_utils::utf_to_wide(host.default_path) != host.pref_path) {
                     host.pref_path = string_utils::utf_to_wide(host.default_path);
                     host.cfg.pref_path = string_utils::wide_to_utf(host.pref_path);
@@ -461,11 +461,11 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
 
                     // Refresh the working paths
                     reset_emulator(gui, host);
-                    LOG_INFO("Successfully restore default path for Vita3K files to: {}", string_utils::wide_to_utf(host.pref_path));
+                    LOG_INFO("Successfully restored default path for Vita3K files to: {}", string_utils::wide_to_utf(host.pref_path));
                 }
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Reset Vita3K emulator path to default.\nNeed move folder old to default manually.");
+                ImGui::SetTooltip("Reset Vita3K emulator path to default.\nYou will need to move your old folder to the default location manually.");
         }
         ImGui::EndTabItem();
     } else
@@ -478,15 +478,15 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("GUI Visible", &host.cfg.show_gui);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to show GUI after booting a application.");
+            ImGui::SetTooltip("Check the box to show GUI after booting an application.");
         ImGui::SameLine();
         ImGui::Checkbox("Live Area App Screen", &host.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to open Live Area by default when clicking on a application.\nIf disabled, use the right click on application to open it.");
+            ImGui::SetTooltip("Check the box to open Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
         ImGui::Spacing();
         ImGui::Checkbox("Grid Mode", &host.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable app list in grid mode.");
+            ImGui::SetTooltip("Check the box to set the app list to grid mode.");
         if (!host.cfg.apps_list_grid) {
             ImGui::Spacing();
             ImGui::SliderInt("App Icon Size", &host.cfg.icon_size, 64, 128);
@@ -568,10 +568,14 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         }
         if (!gui.theme_backgrounds.empty() || (gui.user_backgrounds.size() > 1)) {
             ImGui::Spacing();
-            ImGui::SliderInt("Delay for backgrounds", &host.cfg.delay_background, 4, 32);
+            ImGui::SliderInt("Delay for backgrounds", &host.cfg.delay_background, 4, 60);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Select the delay in seconds before changing backgrounds.");
         }
         ImGui::Spacing();
         ImGui::SliderInt("Delay for start screen", &host.cfg.delay_start, 10, 60);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select the delay in seconds before returning to the start screen.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
@@ -644,7 +648,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             set_config(gui, host, host.io.app_path);
     }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Click on Save is required to keep changes.");
+        ImGui::SetTooltip("Click on Save to keep your changes.");
 
     ImGui::End();
 }
