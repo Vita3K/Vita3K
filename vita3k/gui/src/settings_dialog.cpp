@@ -570,10 +570,12 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::SliderInt("Delay for backgrounds", &host.cfg.delay_background, 4, 60);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select the delay, in seconds, before changing backgrounds.");
+                ImGui::SetTooltip("Select the delay in seconds before changing backgrounds.");
         }
         ImGui::Spacing();
         ImGui::SliderInt("Delay for start screen", &host.cfg.delay_start, 10, 60);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select the delay in seconds before returning to the start screen.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
