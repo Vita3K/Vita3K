@@ -1353,8 +1353,8 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Using configuration set for keyboard in control setting");
             if (gui.modules.empty()) {
                 ImGui::Spacing();
-                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize("Firmware not detected, Install it is recommended for font text in Livea Area").x / 2.f));
-                ImGui::TextColored(GUI_COLOR_TEXT, "Firmware not detected, Install it is recommended for font text in Livea Area");
+                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize("Firmware not detected. Installing it is recommended for font text in Live Area").x / 2.f));
+                ImGui::TextColored(GUI_COLOR_TEXT, "Firmware not detected. Installing it is recommended for font text in Live Area");
             }
             ImGui::Spacing();
             ImGui::Separator();
