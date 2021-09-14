@@ -281,7 +281,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             if (ImGui::RadioButton("Automatic", config.auto_lle))
                 config.auto_lle = true;
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select Automatic mode to select modules automatically from a pre-set list.");
+                ImGui::SetTooltip("Select Automatic mode to use a preset list of modules.");
             ImGui::SameLine();
             if (ImGui::RadioButton("Manual", !config.auto_lle))
                 config.auto_lle = false;
