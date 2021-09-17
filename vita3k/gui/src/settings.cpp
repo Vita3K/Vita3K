@@ -584,8 +584,8 @@ static std::string get_date_format_sting(GuiState &gui, DateFormat &date_format)
 
 static const std::vector<std::string> LIST_SYS_LANG = {
     u8"日本語", "English (United States)", u8"Français", u8"Español", "Deutsch", "Italiano", "Nederlands", u8"Português (Portugal)",
-    u8"Русский", "Korean", "Chinese - Traditional", "Chinese - Simplified", "Suomi", "Svenska",
-    "Dansk", "Norsk", "Polskis", u8"Português (Brasil)", "English (United Kingdom)", u8"Türkçe"
+    u8"Русский", u8"한국어 (Korean)", u8"繁體中文 (Chinese - Traditional)", u8"简体中文 (Chinese - Simplified)", "Suomi", "Svenska",
+    "Dansk", "Norsk", "Polski", u8"Português (Brasil)", "English (United Kingdom)", u8"Türkçe"
 };
 
 static float set_scroll_pos, current_scroll_pos, max_scroll_pos;
