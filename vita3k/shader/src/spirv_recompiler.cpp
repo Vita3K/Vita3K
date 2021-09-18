@@ -1218,6 +1218,13 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                 // o_val2 = (x,y) * (2/width, -2/height) + (-1,1)
                 b.createStore(o_val2, out_var);
 
+                // Note: Depth range and user clip planes are ineffective in this mode
+                // However, that can't be directly translated, so we just gonna set it to w here
+                spv::Id z_ref = b.createAccessChain(spv::StorageClassOutput, out_var, { b.makeIntConstant(2) });
+                spv::Id w_ref = b.createAccessChain(spv::StorageClassOutput, out_var, { b.makeIntConstant(3) });
+
+                b.createStore(b.createLoad(w_ref), z_ref);
+
                 cond_builder.makeBeginElse();
 
                 if (translation_state.render_info_id != spv::NoResult) {
