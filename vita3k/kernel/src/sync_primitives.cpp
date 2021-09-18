@@ -88,7 +88,9 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
 
             thread->status = ThreadStatus::run;
 
+            thread_lock.unlock();
             primitive_lock.lock();
+
             queue->erase(data);
 
             return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
