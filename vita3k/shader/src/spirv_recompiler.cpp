@@ -443,7 +443,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             if (do_coord) {
                 coords[input_id].first = pa_iter_var;
-                coords[input_id].second = static_cast<int>(pa_dtype);
+                coords[input_id].second = static_cast<int>(DataType::F32);
             }
 
             pa_offset += ((descriptor->size >> 4) & 3) + 1;
