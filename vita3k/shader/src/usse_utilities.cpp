@@ -604,6 +604,16 @@ static spv::Id apply_modifiers(spv::Builder &b, const shader::usse::RegisterFlag
 
     spv::Id result = val;
 
+    if (flags & shader::usse::RegisterFlags::Absolute) {
+        // Absolute the result
+        if (is_uint) {
+            // It's already > 0, what do you expect more
+            return result;
+        }
+
+        result = b.createBuiltinCall(dest_type, b.import("GLSL.std.450"), GLSLstd450FAbs, { result });
+    }
+
     // Apply modifier flags
     if (flags & shader::usse::RegisterFlags::Negative) {
         // Negate the value
@@ -623,16 +633,6 @@ static spv::Id apply_modifiers(spv::Builder &b, const shader::usse::RegisterFlag
 
         std::vector<spv::Id> ops(num_comp, c0);
         result = b.createBinOp(sub_op, dest_type, (num_comp == 1) ? c0 : b.makeCompositeConstant(dest_type, ops), result);
-    }
-
-    if (flags & shader::usse::RegisterFlags::Absolute) {
-        // Absolute the result
-        if (is_uint) {
-            // It's already > 0, what do you expect more
-            return result;
-        }
-
-        result = b.createBuiltinCall(dest_type, b.import("GLSL.std.450"), GLSLstd450FAbs, { result });
     }
 
     return result;
