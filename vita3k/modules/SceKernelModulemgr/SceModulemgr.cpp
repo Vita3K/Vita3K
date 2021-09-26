@@ -94,6 +94,12 @@ EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *o
 }
 
 EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, const Ptr<void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
+    // Is workaround for fix crash on loading "rgpluginsgm_psvita" module, relate issue #1095 on github, delete this after fix it.
+    if (std::string(moduleFileName).find("rgpluginsgm_psvita") != std::string::npos) {
+        LOG_WARN("Bypass load this module: {}", moduleFileName);
+        return SCE_KERNEL_ERROR_MODULEMGR_INVALID_TYPE;
+    }
+
     SceUID mod_id;
     Ptr<const void> entry_point;
     SceKernelModuleInfoPtr module;
