@@ -175,18 +175,19 @@ void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t
         return;
     }
 
-    const uint16_t width_in_tiles = (width + 31) >> 5;
+    const uint32_t bpp = bits_per_pixel >> 3;
+    const uint32_t width_in_tiles = (width + 31) >> 5;
 
     for (uint16_t y = 0; y < height; y++) {
         for (uint16_t x = 0; x < width; x++) {
-            // Calculate texel address in title
-            const uint16_t texel_offset_in_title = (x & 0b11111) | ((y & 0b11111) << 4);
-            const uint16_t tile_address = (x & 0b111111100000) + width_in_tiles * (y & 0b111111100000);
+            // Calculate texel address in tile
+            const uint32_t texel_offset_in_tile = (x & 0b11111) | ((y & 0b11111) << 5);
+            const uint32_t tile_address = (x >> 5) + width_in_tiles * (y >> 5);
 
-            uint32_t offset = ((tile_address << 9) | (texel_offset_in_title)) * (bits_per_pixel >> 3);
+            const uint32_t offset = ((tile_address << 10) | (texel_offset_in_tile)) * bpp;
 
             // Make scanline
-            memcpy(dest + ((y * width) + x) * (bits_per_pixel >> 3), src + offset, bits_per_pixel >> 3);
+            memcpy(dest + ((y * width) + x) * bpp, src + offset, bpp);
         }
     }
 }
