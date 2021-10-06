@@ -17,11 +17,12 @@
 
 #include <crypto/aes.h>
 #include <host/sce_types.h>
-
 #include <util/fs.h>
+#include <util/string_utils.h>
+
+#include <fmt/xchar.h>
 
 #include <fstream>
-#include <util/string_utils.h>
 
 // Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
 
