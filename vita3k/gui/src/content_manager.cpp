@@ -569,7 +569,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         }
     } else {
         ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 482.f * SCALE.y), display_size, IM_COL32(39.f, 42.f, 49.f, 255.f), 0.f, ImDrawCornerFlags_All);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 482.f * SCALE.y), display_size, IM_COL32(39.f, 42.f, 49.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
         if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", ImVec2(202.f * SCALE.x, 44.f * SCALE.y))) {
             if (!menu.empty()) {
                 menu.clear();

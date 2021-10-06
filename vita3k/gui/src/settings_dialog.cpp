@@ -294,7 +294,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                 ImGui::SetTooltip("Select your desired modules.");
             ImGui::Spacing();
             ImGui::PushItemWidth(240 * host.dpi_scale);
-            if (ImGui::ListBoxHeader("##modules_list", static_cast<int>(gui.modules.size()), 8)) {
+            if (ImGui::BeginListBox("##modules_list", { 0.0f, ImGui::GetTextLineHeightWithSpacing() * 8.25f + ImGui::GetStyle().FramePadding.y * 2.0f })) {
                 for (auto &m : gui.modules) {
                     const auto module = std::find(config.lle_modules.begin(), config.lle_modules.end(), m.first);
                     const bool module_existed = (module != config.lle_modules.end());
@@ -307,7 +307,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                             config.lle_modules.push_back(m.first);
                     }
                 }
-                ImGui::ListBoxFooter();
+                ImGui::EndListBox();
             }
             ImGui::PopItemWidth();
             ImGui::Spacing();
