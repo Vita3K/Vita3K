@@ -374,8 +374,8 @@ bool USSETranslatorVisitor::vtst(
 
     const Imm4 load_mask = tb_decode_load_mask[chan_cc];
 
-    bool use_double_reg = alu_sel == 0;
-    uint8_t bits_max = (load_data_type == DataType::F32) ? 8 : 7;
+    const bool use_double_reg = alu_sel == 0;
+    const uint8_t bits_max = use_double_reg ? 8 : 7;
 
     // Build up source
     inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, use_double_reg, bits_max, m_second_program);
