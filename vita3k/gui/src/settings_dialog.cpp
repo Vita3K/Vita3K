@@ -120,10 +120,9 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
             }
 
             // Load System Config
-            if (!config_child.child("system").empty()) {
-                const auto system_child = config_child.child("system");
-                system_child.attribute("pstv-mode") = config.pstv_mode;
-            }
+            const auto system_child = config_child.child("system");
+            if (!system_child.empty())
+                config.pstv_mode = system_child.attribute("pstv-mode").as_bool();
 
             // Load Emulator Config
             if (!config_child.child("emulator").empty()) {
