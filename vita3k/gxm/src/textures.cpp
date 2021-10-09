@@ -45,9 +45,7 @@ size_t get_stride_in_bytes(const SceGxmTexture *texture) {
     return ((texture->mip_filter | (texture->min_filter << 1) | (texture->mip_count << 3) | (texture->lod_bias << 7)) + 1) * 4;
 }
 
-bool is_block_compressed_format(SceGxmTextureFormat src) {
-    const auto base_format = get_base_format(src);
-
+bool is_block_compressed_format(SceGxmTextureBaseFormat base_format) {
     return ((base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP)
         || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP)
         || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP)
@@ -61,15 +59,11 @@ bool is_block_compressed_format(SceGxmTextureFormat src) {
         || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC5));
 }
 
-bool is_paletted_format(SceGxmTextureFormat src) {
-    const auto base_format = get_base_format(src);
-
+bool is_paletted_format(SceGxmTextureBaseFormat base_format) {
     return base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P4;
 }
 
-bool is_yuv_format(SceGxmTextureFormat src) {
-    const auto base_format = get_base_format(src);
-
+bool is_yuv_format(SceGxmTextureBaseFormat base_format) {
     return ((base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2)
         || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3)
         || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_YUV422));

@@ -135,6 +135,10 @@ int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, 
     return wait_for_status(state, &status);
 }
 
+namespace color {
+size_t bits_per_pixel(SceGxmColorBaseFormat base_format);
+}
+
 struct TextureCacheState;
 
 namespace texture {

@@ -5,6 +5,7 @@ add_library(
 	include/gxm/state.h
 	include/gxm/types.h
 	src/attributes.cpp
+	src/color.cpp
 	src/gxp.cpp
 	src/stream.cpp
 	src/textures.cpp

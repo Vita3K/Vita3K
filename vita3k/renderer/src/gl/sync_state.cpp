@@ -323,7 +323,8 @@ void sync_texture(GLContext &context, MemState &mem, std::size_t index, SceGxmTe
     }
 
     const SceGxmTextureFormat format = gxm::get_format(&texture);
-    if (gxm::is_paletted_format(format) && texture.palette_addr == 0) {
+    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
+    if (gxm::is_paletted_format(base_format) && texture.palette_addr == 0) {
         LOG_WARN("Ignoring null palette texture");
         return;
     }

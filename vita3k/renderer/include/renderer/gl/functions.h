@@ -101,9 +101,9 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 
 // Texture formats.
 const GLint *translate_swizzle(SceGxmTextureFormat fmt);
-GLenum translate_internal_format(SceGxmTextureFormat src);
-GLenum translate_format(SceGxmTextureFormat src);
-GLenum translate_type(SceGxmTextureFormat format);
+GLenum translate_internal_format(SceGxmTextureBaseFormat base_format);
+GLenum translate_format(SceGxmTextureBaseFormat base_format);
+GLenum translate_type(SceGxmTextureBaseFormat base_format);
 GLenum translate_wrap_mode(SceGxmTextureAddrMode src);
 GLenum translate_minmag_filter(SceGxmTextureFilter src);
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
