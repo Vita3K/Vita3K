@@ -541,6 +541,26 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
         break;
     }
 
+    if (context.record.color_surface.surfaceType == SCE_GXM_COLOR_SURFACE_TILED) {
+        const SceGxmColorBaseFormat base_format = gxm::get_base_format(format);
+        const size_t bpp = renderer::color::bits_per_pixel(base_format);
+        const size_t bytes_per_pixel = (bpp + 7) >> 3;
+        std::vector<uint8_t> buffer;
+
+        buffer.resize(((width + 31) / 32) * ((height + 31) / 32) * 1024 * bytes_per_pixel);
+        for (int j = 0; j < height; j++) {
+            for (int hori_tile = 0; hori_tile < (width >> 5); hori_tile++) {
+                const size_t tile_position = hori_tile + (j >> 5) * ((width + 31) >> 5);
+                const size_t first_pixel_offset_in_tile = (tile_position << 10) + (j & 31) * 32;
+                const size_t first_pixel_offset_in_linear = (j * stride_in_pixels) + hori_tile * 32;
+
+                memcpy(buffer.data() + first_pixel_offset_in_tile * bytes_per_pixel,
+                    (const char *)(pixels) + first_pixel_offset_in_linear * bytes_per_pixel, 32 * bytes_per_pixel);
+            }
+        }
+        memcpy(pixels, buffer.data(), buffer.size());
+    }
+
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
     ++context.texture_cache.timestamp;
 }

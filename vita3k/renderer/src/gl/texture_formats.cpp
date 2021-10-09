@@ -204,8 +204,7 @@ static const GLint *translate_swizzle(SceGxmTextureSwizzleYUV422Mode mode) {
     return swizzle_yuyv_csc0;
 }
 
-GLenum translate_internal_format(SceGxmTextureFormat src) {
-    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(src);
+GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
     switch (base_format) {
     // 1 Component.
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
@@ -278,8 +277,7 @@ GLenum translate_internal_format(SceGxmTextureFormat src) {
     }
 }
 
-GLenum translate_format(SceGxmTextureFormat src) {
-    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(src);
+GLenum translate_format(SceGxmTextureBaseFormat base_format) {
     switch (base_format) {
     // 1 Component.
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
@@ -352,8 +350,7 @@ GLenum translate_format(SceGxmTextureFormat src) {
     }
 }
 
-GLenum translate_type(SceGxmTextureFormat format) {
-    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
+GLenum translate_type(SceGxmTextureBaseFormat base_format) {
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
         return GL_UNSIGNED_BYTE;

@@ -54,6 +54,7 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);
+    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
     const SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(gxm_texture.uaddr_mode);
     const SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(gxm_texture.vaddr_mode);
     const GLint *const swizzle = translate_swizzle(fmt);
@@ -69,11 +70,11 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, translate_minmag_filter((SceGxmTextureFilter)gxm_texture.mag_filter));
     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 
-    const GLenum internal_format = translate_internal_format(fmt);
+    const GLenum internal_format = translate_internal_format(base_format);
     auto width = static_cast<uint32_t>(gxm::get_width(&gxm_texture));
     auto height = static_cast<uint32_t>(gxm::get_height(&gxm_texture));
-    const GLenum format = translate_format(fmt);
-    const GLenum type = translate_type(fmt);
+    const GLenum format = translate_format(base_format);
+    const GLenum type = translate_type(base_format);
     const auto texture_type = gxm_texture.texture_type();
     const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
     const auto base_fmt = gxm::get_base_format(fmt);
@@ -204,6 +205,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);
+    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(fmt);
     auto width = static_cast<uint32_t>(gxm::get_width(&gxm_texture));
     auto height = static_cast<uint32_t>(gxm::get_height(&gxm_texture));
     const Ptr<uint8_t> data(gxm_texture.data_addr << 2);
@@ -216,7 +218,6 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     const void *pixels = nullptr;
 
     size_t pixels_per_stride = 0;
-    const auto base_format = gxm::get_base_format(fmt);
     size_t bpp = renderer::texture::bits_per_pixel(base_format);
     size_t bytes_per_pixel = (bpp + 7) >> 3;
 
@@ -237,7 +238,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     while (mip_index < total_mip + 1 && width && height) {
         pixels = texture_data;
 
-        if (gxm::is_paletted_format(fmt)) {
+        if (gxm::is_paletted_format(base_format)) {
             palette_texture_pixels.resize(width * height * 4);
             if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
                 renderer::texture::palette_texture_to_rgba_8(palette_texture_pixels.data(),
@@ -340,11 +341,11 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
             break;
         }
 
-        if (gxm::is_paletted_format(fmt)) {
+        if (gxm::is_paletted_format(base_format)) {
             pixels_per_stride = width;
         }
 
-        if (gxm::is_yuv_format(fmt)) {
+        if (gxm::is_yuv_format(base_format)) {
             switch (fmt) {
             case SCE_GXM_TEXTURE_FORMAT_YUV420P2_CSC0:
             case SCE_GXM_TEXTURE_FORMAT_YVU420P2_CSC0:
@@ -377,8 +378,8 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
             }
         }
 
-        const GLenum format = translate_format(fmt);
-        const GLenum type = translate_type(fmt);
+        const GLenum format = translate_format(base_format);
+        const GLenum type = translate_type(base_format);
 
         glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
 
@@ -436,15 +437,15 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
 
     size_t bpp = renderer::texture::bits_per_pixel(base_format);
     size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
-    if (gxm::is_paletted_format(format)) {
+    if (gxm::is_paletted_format(base_format)) {
         stride = width;
     }
     size_t size = (bpp * stride * height) / 8;
 
-    if (gxm::is_yuv_format(format)) {
+    if (gxm::is_yuv_format(base_format)) {
         bpp = 24;
         size = width * height * 3;
-    } else if (need_decompress_and_unswizzle_on_cpu || gxm::is_paletted_format(format)) {
+    } else if (need_decompress_and_unswizzle_on_cpu || gxm::is_paletted_format(base_format)) {
         bpp = 32;
         size = width * height * 4;
     }
@@ -452,8 +453,8 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
 
     g_pixels.resize(size);
 
-    auto gl_format = texture::translate_format(format);
-    auto gl_type = texture::translate_type(format);
+    auto gl_format = texture::translate_format(base_format);
+    auto gl_type = texture::translate_type(base_format);
 
     if (need_decompress_and_unswizzle_on_cpu) {
         gl_format = GL_RGBA;
