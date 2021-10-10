@@ -522,27 +522,42 @@ void draw_information_bar(GuiState &gui, HostState &host) {
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, INFORMATION_BAR_HEIGHT), is_theme_color ? gui.information_bar_color["bar"] : DEFAULT_BAR_COLOR, 0.f, ImDrawCornerFlags_All);
 
     if (gui.live_area.app_selector || gui.live_area.live_area_screen) {
-        const auto home_icon_center = (display_size.x / 2.f) - (32.f * ((float(gui.apps_list_opened.size())) / 2.f)) * SCALE.x;
-        // Draw Home Icon
-        ImGui::GetForegroundDrawList()->AddTriangleFilled(ImVec2(home_icon_center - (13.f * SCALE.x), 16.f * SCALE.y), ImVec2(home_icon_center, 6.f * SCALE.y), ImVec2(home_icon_center + (13.f * SCALE.x), 16.f * SCALE.y), gui.information_bar_color["indicator"]);
-        ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(home_icon_center - (8.f * SCALE.x), 16.f * SCALE.y), ImVec2(home_icon_center + (8.f * SCALE.x), 26.f * SCALE.y), gui.information_bar_color["indicator"]);
-        if (gui.current_app_selected != -1) {
-            ImGui::GetForegroundDrawList()->AddTriangleFilled(ImVec2(home_icon_center - (13.f * SCALE.x), 16.f * SCALE.y), ImVec2(home_icon_center, 6.f * SCALE.y), ImVec2(home_icon_center + (13.f * SCALE.x), 16.f * SCALE.y), IM_COL32(0.f, 0.f, 0.f, 100.f));
-            ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(home_icon_center - (8.f * SCALE.x), 16.f * SCALE.y), ImVec2(home_icon_center + (8.f * SCALE.x), 26.f * SCALE.y), IM_COL32(0.f, 0.f, 0.f, 100.f));
-        }
-        ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(home_icon_center - (3.f * SCALE.x), 18.5f * SCALE.y), ImVec2(home_icon_center + (3.f * SCALE.x), 26.f * SCALE.y), gui.information_bar_color["bar"]);
+        const auto HOME_ICON_POS_CENTER = (display_size.x / 2.f) - (32.f * ((float(gui.apps_list_opened.size())) / 2.f)) * SCALE.x;
+        const auto APP_IS_OPEN = gui.current_app_selected >= 0;
 
-        const float decal_app_icon_pos = 34.f * ((float(gui.apps_list_opened.size()) - 2) / 2.f);
+        // Draw Home Icon
+        const std::vector<ImVec2> HOME_UP_POS = { ImVec2(HOME_ICON_POS_CENTER - (13.f * SCALE.x), 16.f * SCALE.y), ImVec2(HOME_ICON_POS_CENTER, 6.f * SCALE.y), ImVec2(HOME_ICON_POS_CENTER + (13.f * SCALE.x), 16.f * SCALE.y) };
+        const auto HOME_DOWN_POS_MINI = ImVec2(HOME_ICON_POS_CENTER - (8.f * SCALE.x), 16.f * SCALE.y);
+        const auto HOME_DOWN_POS_MAX = ImVec2(HOME_ICON_POS_CENTER + (8.f * SCALE.x), 26.f * SCALE.y);
+
+        ImGui::GetForegroundDrawList()->AddTriangleFilled(HOME_UP_POS[0], HOME_UP_POS[1], HOME_UP_POS[2], gui.information_bar_color["indicator"]);
+        ImGui::GetForegroundDrawList()->AddRectFilled(HOME_DOWN_POS_MINI, HOME_DOWN_POS_MAX, gui.information_bar_color["indicator"]);
+        if (APP_IS_OPEN) {
+            ImGui::GetForegroundDrawList()->AddTriangleFilled(HOME_UP_POS[0], HOME_UP_POS[1], HOME_UP_POS[2], IM_COL32(0.f, 0.f, 0.f, 100.f));
+            ImGui::GetForegroundDrawList()->AddRectFilled(HOME_DOWN_POS_MINI, HOME_DOWN_POS_MAX, IM_COL32(0.f, 0.f, 0.f, 100.f));
+        }
+        ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(HOME_ICON_POS_CENTER - (3.f * SCALE.x), 18.5f * SCALE.y), ImVec2(HOME_ICON_POS_CENTER + (3.f * SCALE.x), 26.f * SCALE.y), gui.information_bar_color["bar"]);
+
         // Draw App Icon
+        const float decal_app_icon_pos = 34.f * ((float(gui.apps_list_opened.size()) - 2) / 2.f);
+        const auto ICON_SIZE_SCALE = 28.f * SCALE.x;
+
         for (auto a = 0; a < gui.apps_list_opened.size(); a++) {
-            const auto icon_scal_pos = ImVec2((display_size.x / 2.f) - (14.f * SCALE.x) - (decal_app_icon_pos * SCALE.x) + (a * (34 * SCALE.x)), 2.f * SCALE.y);
-            const auto icon_scal_size = ImVec2(icon_scal_pos.x + (28.0f * SCALE.x), icon_scal_pos.y + (28.f * SCALE.y));
-            if (get_app_icon(gui, gui.apps_list_opened[a])->first == gui.apps_list_opened[a])
-                ImGui::GetForegroundDrawList()->AddImageRounded(get_app_icon(gui, gui.apps_list_opened[a])->second, icon_scal_pos, icon_scal_size, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 15.f * SCALE.x, ImDrawCornerFlags_All);
+            const auto ICON_POS_MINI_SCALE = ImVec2((display_size.x / 2.f) - (14.f * SCALE.x) - (decal_app_icon_pos * SCALE.x) + (a * (34 * SCALE.x)), 2.f * SCALE.y);
+            const auto ICON_POS_MAX_SCALE = ImVec2(ICON_POS_MINI_SCALE.x + ICON_SIZE_SCALE, ICON_POS_MINI_SCALE.y + ICON_SIZE_SCALE);
+            const auto ICON_CENTER_POS = ImVec2(ICON_POS_MINI_SCALE.x + (ICON_SIZE_SCALE / 2.f), ICON_POS_MINI_SCALE.y + (ICON_SIZE_SCALE / 2.f));
+            const auto APPS_OPENED = gui.apps_list_opened[a];
+            auto &APP_ICON_TYPE = APPS_OPENED.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+
+            // Check if icon exist
+            if (APP_ICON_TYPE.find(APPS_OPENED) != APP_ICON_TYPE.end())
+                ImGui::GetForegroundDrawList()->AddImageRounded(APP_ICON_TYPE[APPS_OPENED], ICON_POS_MINI_SCALE, ICON_POS_MAX_SCALE, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 15.f * SCALE.x, ImDrawCornerFlags_All);
             else
-                ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32_WHITE, 0.f, ImDrawCornerFlags_All);
-            if ((gui.current_app_selected < 0) || (gui.apps_list_opened[gui.current_app_selected] != gui.apps_list_opened[a]))
-                ImGui::GetForegroundDrawList()->AddRectFilled(icon_scal_pos, icon_scal_size, IM_COL32(0.f, 0.f, 0.f, 140.f), 15.f * SCALE.x, ImDrawCornerFlags_All);
+                ImGui::GetForegroundDrawList()->AddCircleFilled(ICON_CENTER_POS, ICON_SIZE_SCALE / 2.f, IM_COL32_WHITE);
+
+            // hide Icon no opened
+            if (!APP_IS_OPEN || (gui.apps_list_opened[gui.current_app_selected] != APPS_OPENED))
+                ImGui::GetForegroundDrawList()->AddCircleFilled(ICON_CENTER_POS, ICON_SIZE_SCALE / 2.f, IM_COL32(0.f, 0.f, 0.f, 140.f));
         }
     }
 
