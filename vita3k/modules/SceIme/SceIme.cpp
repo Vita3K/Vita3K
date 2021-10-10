@@ -64,12 +64,13 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
 
     gui::init_ime_lang(host.ime, SceImeLanguage(host.cfg.current_ime_lang));
 
-    host.ime.edit_text.str = Ptr<SceWChar16>(alloc(host.mem, SCE_IME_MAX_TEXT_LENGTH + host.ime.param.maxTextLength + 1, "ime_str"));
+    host.ime.edit_text.str = host.ime.param.inputTextBuffer;
+    host.ime.param.inputTextBuffer = Ptr<SceWChar16>(alloc(host.mem, SCE_IME_MAX_PREEDIT_LENGTH + host.ime.param.maxTextLength + 1, "ime_str"));
     host.ime.str = reinterpret_cast<char16_t *>(host.ime.param.initialText.get(host.mem));
     if (!host.ime.str.empty())
         host.ime.caretIndex = host.ime.edit_text.caretIndex = host.ime.edit_text.preeditIndex = SceUInt32(host.ime.str.length());
     else
-        host.ime.caps_level = 2;
+        host.ime.caps_level = 1;
 
     host.ime.event_id = SCE_IME_EVENT_OPEN;
     host.ime.state = true;
