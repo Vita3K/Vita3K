@@ -139,9 +139,8 @@ static Address alloc_inner(MemState &state, uint32_t start_page, int page_count,
         page_num = start_page;
     } else {
         page_num = state.allocator.allocate_from(start_page, page_count, false);
-        if (page_num < 0) {
-            LOG_CRITICAL("Failed to allocate page");
-        }
+        if (page_num < 0)
+            return 0;
     }
 
     const int size = page_count * state.page_size;
