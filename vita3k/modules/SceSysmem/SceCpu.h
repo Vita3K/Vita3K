@@ -19,4 +19,4 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(sceKernelCpuGetCpuId)
+BRIDGE_DECL(sceKernelGetCpuId)

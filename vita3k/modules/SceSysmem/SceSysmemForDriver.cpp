@@ -17,7 +17,23 @@
 
 #include "SceSysmemForDriver.h"
 
+EXPORT(int, ksceGUIDClose) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceGUIDReferObject) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceGUIDReferObjectWithClass) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, ksceGUIDReferObjectWithClassLevel) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceGUIDReleaseObject) {
     return UNIMPLEMENTED();
 }
 
@@ -69,10 +85,6 @@ EXPORT(int, ksceKernelCreateUidObjForUid) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelCreateUserUid) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, ksceKernelCreateUserUidForClass) {
     return UNIMPLEMENTED();
 }
@@ -86,14 +98,6 @@ EXPORT(int, ksceKernelCreateUserUidForNameWithClass) {
 }
 
 EXPORT(int, ksceKernelDeleteHeap) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, ksceKernelDeleteUid) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, ksceKernelDeleteUserUid) {
     return UNIMPLEMENTED();
 }
 
@@ -189,10 +193,6 @@ EXPORT(int, ksceKernelGetNameForUid2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelGetObjForUid) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, ksceKernelGetObjectForPidForUid) {
     return UNIMPLEMENTED();
 }
@@ -202,14 +202,6 @@ EXPORT(int, ksceKernelGetObjectForUidForAttr) {
 }
 
 EXPORT(int, ksceKernelGetObjectForUidForClassTree) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, ksceKernelGetPaddr) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, ksceKernelGetPaddrList) {
     return UNIMPLEMENTED();
 }
 
@@ -246,10 +238,6 @@ EXPORT(int, ksceKernelGetUidClass) {
 }
 
 EXPORT(int, ksceKernelIsPaddrWithinSameSectionForUid) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, ksceKernelKernelUidForUserUid) {
     return UNIMPLEMENTED();
 }
 
@@ -409,14 +397,6 @@ EXPORT(int, ksceKernelSwitchVmaForPid) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, ksceKernelUidRelease) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, ksceKernelUidRetain) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, ksceKernelUnmapMemBlock) {
     return UNIMPLEMENTED();
 }
@@ -425,7 +405,31 @@ EXPORT(int, ksceKernelUserMap) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, ksceKernelVARangeToPAVector) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, ksceKernelVAtoPA) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, kscePUIDClose) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, kscePUIDOpenByGUID) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, kscePUIDtoGUID) {
+    return UNIMPLEMENTED();
+}
+
+BRIDGE_IMPL(ksceGUIDClose)
+BRIDGE_IMPL(ksceGUIDReferObject)
+BRIDGE_IMPL(ksceGUIDReferObjectWithClass)
 BRIDGE_IMPL(ksceGUIDReferObjectWithClassLevel)
+BRIDGE_IMPL(ksceGUIDReleaseObject)
 BRIDGE_IMPL(ksceKernelAddressSpaceVAtoPABySW)
 BRIDGE_IMPL(ksceKernelAllocHeapMemory)
 BRIDGE_IMPL(ksceKernelAllocHeapMemoryFromGlobalHeap)
@@ -438,13 +442,10 @@ BRIDGE_IMPL(ksceKernelCreateClass)
 BRIDGE_IMPL(ksceKernelCreateHeap)
 BRIDGE_IMPL(ksceKernelCreateUidObj2)
 BRIDGE_IMPL(ksceKernelCreateUidObjForUid)
-BRIDGE_IMPL(ksceKernelCreateUserUid)
 BRIDGE_IMPL(ksceKernelCreateUserUidForClass)
 BRIDGE_IMPL(ksceKernelCreateUserUidForName)
 BRIDGE_IMPL(ksceKernelCreateUserUidForNameWithClass)
 BRIDGE_IMPL(ksceKernelDeleteHeap)
-BRIDGE_IMPL(ksceKernelDeleteUid)
-BRIDGE_IMPL(ksceKernelDeleteUserUid)
 BRIDGE_IMPL(ksceKernelFindMemBlock)
 BRIDGE_IMPL(ksceKernelFindMemBlockByAddr)
 BRIDGE_IMPL(ksceKernelFindMemBlockByAddrForDefaultSize)
@@ -468,12 +469,9 @@ BRIDGE_IMPL(ksceKernelGetMemBlockVBase)
 BRIDGE_IMPL(ksceKernelGetNameForPidByUid)
 BRIDGE_IMPL(ksceKernelGetNameForUid)
 BRIDGE_IMPL(ksceKernelGetNameForUid2)
-BRIDGE_IMPL(ksceKernelGetObjForUid)
 BRIDGE_IMPL(ksceKernelGetObjectForPidForUid)
 BRIDGE_IMPL(ksceKernelGetObjectForUidForAttr)
 BRIDGE_IMPL(ksceKernelGetObjectForUidForClassTree)
-BRIDGE_IMPL(ksceKernelGetPaddr)
-BRIDGE_IMPL(ksceKernelGetPaddrList)
 BRIDGE_IMPL(ksceKernelGetPaddrListForLargePage)
 BRIDGE_IMPL(ksceKernelGetPaddrListForSmallPage)
 BRIDGE_IMPL(ksceKernelGetPaddrPair)
@@ -483,7 +481,6 @@ BRIDGE_IMPL(ksceKernelGetPhysicalMemoryType)
 BRIDGE_IMPL(ksceKernelGetPidContext)
 BRIDGE_IMPL(ksceKernelGetUidClass)
 BRIDGE_IMPL(ksceKernelIsPaddrWithinSameSectionForUid)
-BRIDGE_IMPL(ksceKernelKernelUidForUserUid)
 BRIDGE_IMPL(ksceKernelKernelUidForUserUidForClass)
 BRIDGE_IMPL(ksceKernelMapBlockUserVisible)
 BRIDGE_IMPL(ksceKernelMapBlockUserVisibleWithFlag)
@@ -523,7 +520,10 @@ BRIDGE_IMPL(ksceKernelStrnlenUser)
 BRIDGE_IMPL(ksceKernelStrnlenUserForPid)
 BRIDGE_IMPL(ksceKernelSwitchPidContext)
 BRIDGE_IMPL(ksceKernelSwitchVmaForPid)
-BRIDGE_IMPL(ksceKernelUidRelease)
-BRIDGE_IMPL(ksceKernelUidRetain)
 BRIDGE_IMPL(ksceKernelUnmapMemBlock)
 BRIDGE_IMPL(ksceKernelUserMap)
+BRIDGE_IMPL(ksceKernelVARangeToPAVector)
+BRIDGE_IMPL(ksceKernelVAtoPA)
+BRIDGE_IMPL(kscePUIDClose)
+BRIDGE_IMPL(kscePUIDOpenByGUID)
+BRIDGE_IMPL(kscePUIDtoGUID)

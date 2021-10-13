@@ -15,27 +15,20 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include "SceSslInternal.h"
 
-#include <module/module.h>
+EXPORT(int, sceSslInternalGetCertificateAuthority) {
+    return UNIMPLEMENTED();
+}
 
-BRIDGE_DECL(sceNpAuthAbortRequest)
-BRIDGE_DECL(sceNpAuthCreateStartRequest)
-BRIDGE_DECL(sceNpAuthDestroyRequest)
-BRIDGE_DECL(sceNpAuthGetEntitlementById)
-BRIDGE_DECL(sceNpAuthGetEntitlementByIdPrefix)
-BRIDGE_DECL(sceNpAuthGetEntitlementIdList)
-BRIDGE_DECL(sceNpAuthGetTicket)
-BRIDGE_DECL(sceNpAuthGetTicketParam)
-BRIDGE_DECL(sceNpAuthInit)
-BRIDGE_DECL(sceNpAuthTerm)
-BRIDGE_DECL(sceNpCmpNpId)
-BRIDGE_DECL(sceNpCmpNpIdInOrder)
-BRIDGE_DECL(sceNpCmpOnlineId)
-BRIDGE_DECL(sceNpCommonBase64Encode)
-BRIDGE_DECL(sceNpCommonFreeNpServerName)
-BRIDGE_DECL(sceNpCommonGetNpEnviroment)
-BRIDGE_DECL(sceNpCommonGetSystemSwVersion)
-BRIDGE_DECL(sceNpCommonMallocNpServerName)
-BRIDGE_DECL(sceNpGetPlatformType)
-BRIDGE_DECL(sceNpSetPlatformType)
+EXPORT(int, sceSslInternalIsInitalized) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSslInternalWrite) {
+    return UNIMPLEMENTED();
+}
+
+BRIDGE_IMPL(sceSslInternalGetCertificateAuthority)
+BRIDGE_IMPL(sceSslInternalIsInitalized)
+BRIDGE_IMPL(sceSslInternalWrite)

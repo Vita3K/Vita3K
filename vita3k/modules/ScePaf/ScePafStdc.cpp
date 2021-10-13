@@ -17,6 +17,10 @@
 
 #include "ScePafStdc.h"
 
+EXPORT(int, sce_paf_memalign) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sce_paf_private_abs) {
     return UNIMPLEMENTED();
 }
@@ -369,6 +373,7 @@ EXPORT(int, sce_paf_private_wmemset) {
     return UNIMPLEMENTED();
 }
 
+BRIDGE_IMPL(sce_paf_memalign)
 BRIDGE_IMPL(sce_paf_private_abs)
 BRIDGE_IMPL(sce_paf_private_atexit)
 BRIDGE_IMPL(sce_paf_private_atof)

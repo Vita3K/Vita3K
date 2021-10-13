@@ -19,5 +19,7 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(sceDebugLedInvokeHandle0)
+BRIDGE_DECL(sceDebugLedInvokeHandle1)
 BRIDGE_DECL(sceKernelGetGPI)
 BRIDGE_DECL(sceKernelSetGPO)
