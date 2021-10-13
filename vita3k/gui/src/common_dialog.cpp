@@ -27,8 +27,11 @@
 namespace gui {
 static void draw_ime_dialog(DialogState &common_dialog, float FONT_SCALE) {
     ImGui::SetNextWindowSize(ImVec2(0, 0));
-    ImGui::Begin(common_dialog.ime.title.c_str(), nullptr, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin("##ime_dialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(FONT_SCALE);
+    ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(common_dialog.ime.title).x / 2.f));
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", common_dialog.ime.title);
+    ImGui::Spacing();
     if (common_dialog.ime.multiline) {
         ImGui::InputTextMultiline(
             "",
@@ -45,9 +48,8 @@ static void draw_ime_dialog(DialogState &common_dialog, float FONT_SCALE) {
         common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_ENTER;
         common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
         common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-        std::string result = common_dialog.ime.text;
-        std::u16string result16 = string_utils::utf8_to_utf16(result);
-        memcpy(common_dialog.ime.result, result16.c_str(), result16.size() * sizeof(uint16_t) + 1);
+        const std::u16string result16 = string_utils::utf8_to_utf16(common_dialog.ime.text);
+        memcpy(common_dialog.ime.result, result16.c_str(), result16.length() * sizeof(uint16_t) + 1);
     }
     if (common_dialog.ime.cancelable) {
         ImGui::SameLine();
