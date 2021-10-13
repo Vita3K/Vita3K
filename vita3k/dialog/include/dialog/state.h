@@ -30,12 +30,12 @@ enum DialogType {
 };
 
 struct ImeState {
-    std::string title;
+    char title[SCE_IME_DIALOG_MAX_TITLE_LENGTH];
     uint32_t max_length;
     bool multiline;
     bool cancelable;
     uint16_t *result;
-    char text[256];
+    char text[SCE_IME_DIALOG_MAX_TEXT_LENGTH];
     uint32_t status;
 };
 

@@ -137,7 +137,7 @@ EXPORT(int, sceImeDialogInit, const Ptr<SceImeDialogParam> param) {
     host.common_dialog.type = IME_DIALOG;
 
     host.common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_NONE;
-    host.common_dialog.ime.title = string_utils::utf16_to_utf8(title);
+    sprintf(host.common_dialog.ime.title, "%s", string_utils::utf16_to_utf8(title).c_str());
     sprintf(host.common_dialog.ime.text, "%s", string_utils::utf16_to_utf8(text).c_str());
     host.common_dialog.ime.max_length = p->maxTextLength;
     host.common_dialog.ime.multiline = (p->option & SCE_IME_OPTION_MULTILINE);
