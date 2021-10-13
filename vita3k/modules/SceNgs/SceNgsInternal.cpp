@@ -41,7 +41,7 @@ EXPORT(int, sceNgsRackGetRequiredMemorySizeInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsRackGetVoiceHandleInternal6) {
+EXPORT(int, sceNgsRackGetVoiceHandleInternal) {
     return UNIMPLEMENTED();
 }
 
@@ -271,7 +271,7 @@ BRIDGE_IMPL(sceNgsModuleGetPresetInternal)
 BRIDGE_IMPL(sceNgsPatchCreateRoutingInternal)
 BRIDGE_IMPL(sceNgsPatchRemoveRoutingInternal)
 BRIDGE_IMPL(sceNgsRackGetRequiredMemorySizeInternal)
-BRIDGE_IMPL(sceNgsRackGetVoiceHandleInternal6)
+BRIDGE_IMPL(sceNgsRackGetVoiceHandleInternal)
 BRIDGE_IMPL(sceNgsRackInitInternal)
 BRIDGE_IMPL(sceNgsRackReleaseInternal)
 BRIDGE_IMPL(sceNgsRackSetParamErrorCallbackInternal)

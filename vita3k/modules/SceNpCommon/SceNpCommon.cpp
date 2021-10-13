@@ -73,6 +73,26 @@ EXPORT(int, sceNpCmpOnlineId) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceNpCommonBase64Encode) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceNpCommonFreeNpServerName) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceNpCommonGetNpEnviroment) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceNpCommonGetSystemSwVersion) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceNpCommonMallocNpServerName) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceNpGetPlatformType) {
     return UNIMPLEMENTED();
 }
@@ -94,5 +114,10 @@ BRIDGE_IMPL(sceNpAuthTerm)
 BRIDGE_IMPL(sceNpCmpNpId)
 BRIDGE_IMPL(sceNpCmpNpIdInOrder)
 BRIDGE_IMPL(sceNpCmpOnlineId)
+BRIDGE_IMPL(sceNpCommonBase64Encode)
+BRIDGE_IMPL(sceNpCommonFreeNpServerName)
+BRIDGE_IMPL(sceNpCommonGetNpEnviroment)
+BRIDGE_IMPL(sceNpCommonGetSystemSwVersion)
+BRIDGE_IMPL(sceNpCommonMallocNpServerName)
 BRIDGE_IMPL(sceNpGetPlatformType)
 BRIDGE_IMPL(sceNpSetPlatformType)

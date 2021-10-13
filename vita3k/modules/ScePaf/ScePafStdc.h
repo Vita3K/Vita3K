@@ -19,6 +19,7 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(sce_paf_memalign)
 BRIDGE_DECL(sce_paf_private_abs)
 BRIDGE_DECL(sce_paf_private_atexit)
 BRIDGE_DECL(sce_paf_private_atof)

@@ -17,6 +17,14 @@
 
 #include "SceDebugLed.h"
 
+EXPORT(int, sceDebugLedInvokeHandle0) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceDebugLedInvokeHandle1) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceKernelGetGPI) {
     return UNIMPLEMENTED();
 }
@@ -25,5 +33,7 @@ EXPORT(int, sceKernelSetGPO) {
     return UNIMPLEMENTED();
 }
 
+BRIDGE_IMPL(sceDebugLedInvokeHandle0)
+BRIDGE_IMPL(sceDebugLedInvokeHandle1)
 BRIDGE_IMPL(sceKernelGetGPI)
 BRIDGE_IMPL(sceKernelSetGPO)

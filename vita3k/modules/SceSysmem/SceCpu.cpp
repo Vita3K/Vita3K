@@ -17,8 +17,8 @@
 
 #include "SceCpu.h"
 
-EXPORT(int, sceKernelCpuGetCpuId) {
+EXPORT(int, sceKernelGetCpuId) {
     return UNIMPLEMENTED();
 }
 
-BRIDGE_IMPL(sceKernelCpuGetCpuId)
+BRIDGE_IMPL(sceKernelGetCpuId)
