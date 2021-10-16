@@ -95,8 +95,6 @@ struct GxmRecordState {
     SceGxmColorSurface color_surface;
     SceGxmDepthStencilSurface depth_stencil_surface;
 
-    SceGxmTexture fragment_textures[SCE_GXM_MAX_TEXTURE_UNITS];
-
     SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
     SceGxmTwoSidedMode two_sided = SCE_GXM_TWO_SIDED_DISABLED;
     SceGxmRegionClipMode region_clip_mode = SCE_GXM_REGION_CLIP_OUTSIDE;
@@ -134,8 +132,6 @@ struct Context {
 
     std::string last_draw_fragment_program_hash;
     std::string last_draw_vertex_program_hash;
-
-    std::uint8_t texture_bind_list = 0;
 };
 
 struct ShaderProgram {

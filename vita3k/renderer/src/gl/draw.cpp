@@ -95,16 +95,6 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         // Use it
         program_id = (*program).get();
         context.last_draw_program = program_id;
-
-        // Gather what textures to bind
-        context.texture_bind_list = 0;
-
-        const auto frag_params = gxp::program_parameters(fragment_program_gxp);
-        for (std::uint32_t i = 0; i < fragment_program_gxp.parameter_count; i++) {
-            if (frag_params[i].category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-                context.texture_bind_list |= (1 << frag_params[i].resource_index);
-            }
-        }
     } else {
         program_id = context.last_draw_program;
     }
@@ -129,12 +119,6 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.render_target->color_attachment[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
     }
     glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
-
-    for (std::uint32_t i = 0; i < SCE_GXM_MAX_TEXTURE_UNITS; i++) {
-        if (context.texture_bind_list & (1 << i)) {
-            gl::sync_texture(context, mem, i, context.record.fragment_textures[i], config, base_path, title_id);
-        }
-    }
 
     GXMRenderVertUniformBlock vert_ublock;
     std::memcpy(vert_ublock.viewport_flip, context.viewport_flip, sizeof(context.viewport_flip));
