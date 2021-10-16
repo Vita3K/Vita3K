@@ -86,7 +86,6 @@ struct GLTextureCacheState;
 struct TextureCacheState;
 
 // Attribute formats.
-size_t attribute_format_size(SceGxmAttributeFormat format);
 GLenum attribute_format_to_gl_type(SceGxmAttributeFormat format);
 GLboolean attribute_format_normalised(SceGxmAttributeFormat format);
 

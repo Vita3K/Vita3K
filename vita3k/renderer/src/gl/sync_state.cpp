@@ -500,7 +500,7 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
         const SceGxmProgram *vertex_program_body = vertex_program.program.get(mem);
         if (vertex_program_body && (vertex_program_body->primary_reg_count != 0)) {
             for (std::size_t i = 0; i < vertex_program.attributes.size(); i++) {
-                glvert->attribute_infos.emplace(vertex_program.attributes[i].regIndex, shader::usse::AttributeInformation(static_cast<std::uint16_t>(i), SCE_GXM_PARAMETER_TYPE_F32));
+                glvert->attribute_infos.emplace(vertex_program.attributes[i].regIndex, shader::usse::AttributeInformation(static_cast<std::uint16_t>(i), SCE_GXM_PARAMETER_TYPE_F32, false));
             }
         }
 
@@ -532,19 +532,29 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
     glBindBuffer(GL_ARRAY_BUFFER, context.vertex_stream_ring_buffer.handle());
 
     for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
+        if (glvert->attribute_infos.find(attribute.regIndex) == glvert->attribute_infos.end())
+            continue;
+
         const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
 
         const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
-        const GLenum type = attribute_format_to_gl_type(attribute_format);
+        GLenum type = attribute_format_to_gl_type(attribute_format);
         const GLboolean normalised = attribute_format_normalised(attribute_format);
 
         int attrib_location = 0;
         bool upload_integral = false;
 
-        if (glvert->attribute_infos.find(attribute.regIndex) != glvert->attribute_infos.end()) {
-            shader::usse::AttributeInformation info = glvert->attribute_infos.at(attribute.regIndex);
-            attrib_location = info.location();
+        shader::usse::AttributeInformation info = glvert->attribute_infos.at(attribute.regIndex);
+        attrib_location = info.location();
 
+        uint8_t component_count = attribute.componentCount;
+
+        if (info.regformat) {
+            const int comp_size = gxm::attribute_format_size(attribute_format);
+            component_count = (comp_size * component_count + 3) / 4;
+            type = GL_INT;
+            upload_integral = true;
+        } else {
             switch (info.gxm_type()) {
             case SCE_GXM_PARAMETER_TYPE_U8:
             case SCE_GXM_PARAMETER_TYPE_S8:
@@ -557,22 +567,22 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
             default:
                 break;
             }
+        }
 
-            const std::uint16_t stream_index = attribute.streamIndex;
+        const std::uint16_t stream_index = attribute.streamIndex;
 
-            if (upload_integral || (attribute_format == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED)) {
-                glVertexAttribIPointer(attrib_location, attribute.componentCount, type, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset + offset_in_buffer[stream_index]));
-            } else {
-                glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset + offset_in_buffer[stream_index]));
-            }
+        if (upload_integral || (attribute_format == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED)) {
+            glVertexAttribIPointer(attrib_location, component_count, type, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset + offset_in_buffer[stream_index]));
+        } else {
+            glVertexAttribPointer(attrib_location, component_count, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset + offset_in_buffer[stream_index]));
+        }
 
-            glEnableVertexAttribArray(attrib_location);
+        glEnableVertexAttribArray(attrib_location);
 
-            if (gxm::is_stream_instancing(static_cast<SceGxmIndexSource>(stream.indexSource))) {
-                glVertexAttribDivisor(attrib_location, 1);
-            } else {
-                glVertexAttribDivisor(attrib_location, 0);
-            }
+        if (gxm::is_stream_instancing(static_cast<SceGxmIndexSource>(stream.indexSource))) {
+            glVertexAttribDivisor(attrib_location, 1);
+        } else {
+            glVertexAttribDivisor(attrib_location, 0);
         }
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);
