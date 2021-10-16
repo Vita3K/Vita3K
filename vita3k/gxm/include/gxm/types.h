@@ -1221,8 +1221,8 @@ struct SceGxmProgramVertexVaryings {
     union {
         // Vertex Program variables
         struct {
-            uint32_t attrib_pa_regs[2];
-            uint32_t untyped_pa_regs[2];
+            uint64_t attrib_pa_regs;
+            uint64_t untyped_pa_regs;
         };
 
         // Fragment Program Variables
