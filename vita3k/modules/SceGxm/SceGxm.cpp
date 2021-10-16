@@ -1379,9 +1379,8 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, Ptr<SceGxmNotification> vert
     renderer::sync_surface_data(*host.renderer, context->renderer.get());
 
     // Add NOP for SceGxmFinish
-    context->renderer->render_finish_status = renderer::CommandErrorCodePending;
     renderer::add_command(context->renderer.get(), renderer::CommandOpcode::Nop, &context->renderer->render_finish_status,
-        (int)0);
+        ++host.renderer->last_scene_id);
 
     if (vertexNotification) {
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,

@@ -37,6 +37,8 @@ struct State {
     std::condition_variable command_finish_one;
     std::mutex command_finish_one_mutex;
 
+    int last_scene_id = 0;
+
     std::uint32_t scene_processed_since_last_frame = 0;
     std::uint32_t average_scene_per_frame = 1;
 
