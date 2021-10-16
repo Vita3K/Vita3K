@@ -38,6 +38,7 @@ void generic_command_free(Command *cmd) {
 }
 
 void complete_command(State &state, CommandHelper &helper, const int code) {
+    auto lock = std::unique_lock(state.command_finish_one_mutex);
     helper.complete(code);
     state.command_finish_one.notify_all();
 }

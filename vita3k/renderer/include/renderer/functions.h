@@ -54,7 +54,7 @@ void subject_done(SceGxmSyncObject *sync_object, const SyncObjectSubject subject
  */
 void subject_in_progress(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
 
-int wait_for_status(State &state, int *result_code);
+int wait_for_status(State &state, int *status, int signal, bool wake_on_equal);
 void reset_command_list(CommandList &command_list);
 void submit_command_list(State &state, renderer::Context *context, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list, const char *base_path, const char *title_id);
@@ -132,7 +132,7 @@ int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, 
 
     // Submit it
     submit_command_list(state, ctx, list);
-    return wait_for_status(state, &status);
+    return wait_for_status(state, &status, CommandErrorCodePending, false);
 }
 
 namespace color {

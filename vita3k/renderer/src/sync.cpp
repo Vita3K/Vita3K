@@ -50,20 +50,20 @@ COMMAND(handle_notification) {
 // Client side function
 void finish(State &state, Context &context) {
     // Wait for the code
-    wait_for_status(state, &context.render_finish_status);
+    wait_for_status(state, &context.render_finish_status, state.last_scene_id, true);
 }
 
-int wait_for_status(State &state, int *result_code) {
-    if (*result_code != CommandErrorCodePending) {
+int wait_for_status(State &state, int *status, int signal, bool wake_on_equal) {
+    std::unique_lock<std::mutex> lock(state.command_finish_one_mutex);
+    const bool wake_on_unequal = !wake_on_equal;
+    if ((*status == signal) ^ wake_on_unequal) {
         // Signaled, return
-        return *result_code;
+        return *status;
     }
 
     // Wait for it to get signaled
-    std::unique_lock<std::mutex> finish_mutex(state.command_finish_one_mutex);
-    state.command_finish_one.wait(finish_mutex, [&]() { return *result_code != CommandErrorCodePending; });
-
-    return *result_code;
+    state.command_finish_one.wait(lock, [&]() { return (*status == signal) ^ wake_on_unequal; });
+    return *status;
 }
 
 void wishlist(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects) {
