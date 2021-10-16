@@ -80,6 +80,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
 
     // TODO split these to functions (e.g. get_literals, get_paramters)
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
+    auto vertex_varyings_ptr = program.vertex_varyings();
 
     std::uint32_t investigated_ub = 0;
     bool seems_symbols_stripped = (program.primary_reg_count == 0);
@@ -121,10 +122,11 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
                 item.generic_type = translate_generic_type(param_type);
                 item.bank = RegisterBank::PRIMATTR;
 
-                AttributeInputSource source;
+                AttributeInputSource source = {};
                 source.name = var_name;
                 source.index = parameter.resource_index;
                 source.semantic = parameter.semantic;
+                source.regformat = (vertex_varyings_ptr->untyped_pa_regs & ((uint64_t)1 << parameter.resource_index)) != 0;
 
                 item.source = source;
                 program_input.inputs.push_back(item);
@@ -331,8 +333,6 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
 
     // Parse special semantics
     if (program.is_vertex()) {
-        auto vertex_varyings_ptr = program.vertex_varyings();
-
         Input item;
         item.component_count = 1;
         item.array_size = 1;
@@ -341,9 +341,10 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
         item.type = DataType::UINT32;
 
         if (program.program_flags & SCE_GXM_PROGRAM_FLAG_INDEX_USED) {
-            AttributeInputSource source;
+            AttributeInputSource source = {};
             source.semantic = SCE_GXM_PARAMETER_SEMANTIC_INDEX;
             source.name = "gl_VertexID";
+            source.regformat = false;
 
             item.offset = vertex_varyings_ptr->semantic_index_offset;
             item.source = source;
@@ -352,9 +353,10 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
         }
 
         if (program.program_flags & SCE_GXM_PROGRAM_FLAG_INSTANCE_USED) {
-            AttributeInputSource source;
+            AttributeInputSource source = {};
             source.semantic = SCE_GXM_PARAMETER_SEMANTIC_INSTANCE;
             source.name = "gl_InstanceID";
+            source.regformat = false;
 
             item.offset = vertex_varyings_ptr->semantic_instance_offset;
             item.source = source;

@@ -198,13 +198,16 @@ public:
 
 struct AttributeInformation {
     std::uint32_t info;
+    bool regformat;
 
     explicit AttributeInformation()
-        : info(0) {
+        : info(0)
+        , regformat(false) {
     }
 
-    explicit AttributeInformation(const std::uint16_t loc, const std::uint16_t gxm_type)
-        : info(loc | (static_cast<std::uint32_t>(gxm_type) << 16)) {
+    explicit AttributeInformation(const std::uint16_t loc, const std::uint16_t gxm_type, const bool regformat)
+        : info(loc | (static_cast<std::uint32_t>(gxm_type) << 16))
+        , regformat(regformat) {
     }
 
     std::uint16_t location() const {
