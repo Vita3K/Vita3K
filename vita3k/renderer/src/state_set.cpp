@@ -324,10 +324,15 @@ COMMAND_SET_STATE(fragment_texture) {
     const std::uint32_t texture_index = helper.pop<std::uint32_t>();
     SceGxmTexture texture = helper.pop<SceGxmTexture>();
 
-    if (texture_index >= SCE_GXM_MAX_TEXTURE_UNITS) {
-        LOG_ERROR("Out of bounds texture index {}", texture_index);
-    } else {
-        render_context->record.fragment_textures[texture_index] = texture;
+    switch (renderer.current_backend) {
+    case Backend::OpenGL:
+        gl::sync_texture(*reinterpret_cast<gl::GLContext *>(render_context), mem, texture_index, texture,
+            config, base_path, title_id);
+        break;
+
+    default:
+        REPORT_MISSING(renderer.current_backend);
+        break;
     }
 }
 
