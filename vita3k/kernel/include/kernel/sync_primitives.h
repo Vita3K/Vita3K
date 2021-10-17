@@ -84,7 +84,7 @@ struct Semaphore : SyncPrimitive {
     int max;
     int val;
 
-    ~Semaphore() = default;
+    ~Semaphore() override = default;
 };
 
 typedef std::shared_ptr<Semaphore> SemaphorePtr;
@@ -97,7 +97,7 @@ struct Mutex : SyncPrimitive {
     WaitingThreadQueuePtr waiting_threads;
     Ptr<SceKernelLwMutexWork> workarea;
 
-    ~Mutex() = default;
+    ~Mutex() override = default;
 };
 
 typedef std::shared_ptr<Mutex> MutexPtr;
@@ -107,7 +107,7 @@ struct EventFlag : SyncPrimitive {
     WaitingThreadQueuePtr waiting_threads;
     int flags;
 
-    ~EventFlag() = default;
+    ~EventFlag() override = default;
 };
 
 typedef std::shared_ptr<EventFlag> EventFlagPtr;
@@ -134,7 +134,7 @@ struct Condvar : SyncPrimitive {
     WaitingThreadQueuePtr waiting_threads;
     MutexPtr associated_mutex;
 
-    ~Condvar() = default;
+    ~Condvar() override = default;
 };
 typedef std::shared_ptr<Condvar> CondvarPtr;
 typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
@@ -154,7 +154,7 @@ struct MsgPipe : SyncPrimitive {
     WaitingThreadQueuePtr reciever_threads;
     std::list<MsgPipeData> data_buffer;
 
-    ~MsgPipe() = default;
+    ~MsgPipe() override = default;
 };
 
 typedef std::shared_ptr<MsgPipe> MsgPipePtr;

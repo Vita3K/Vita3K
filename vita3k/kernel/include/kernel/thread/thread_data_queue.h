@@ -108,7 +108,7 @@ public:
 
     ~FIFOThreadDataQueueInteratorBase() override = default;
 
-    virtual bool operator==(const ThreadDataQueueInteratorBase<T> &rhs) {
+    bool operator==(const ThreadDataQueueInteratorBase<T> &rhs) override {
         auto casted = static_cast<const FIFOThreadDataQueueInteratorBase<T> &>(rhs);
         return it == casted.it;
     }

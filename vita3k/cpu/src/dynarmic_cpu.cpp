@@ -36,7 +36,7 @@ public:
         : tpidruro(0) {
     }
 
-    ~ArmDynarmicCP15() = default;
+    ~ArmDynarmicCP15() override = default;
 
     std::optional<Callback> CompileInternalOperation(bool two, unsigned opc1, CoprocReg CRd,
         CoprocReg CRn, CoprocReg CRm,
@@ -96,7 +96,7 @@ public:
         : parent(&parent)
         , cpu(&cpu) {}
 
-    ~ArmDynarmicCallback() = default;
+    ~ArmDynarmicCallback() override = default;
 
     uint32_t MemoryReadCode(Dynarmic::A32::VAddr addr) override {
         if (cpu->log_mem)

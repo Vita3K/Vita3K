@@ -118,7 +118,7 @@ public:
         update_yaml();
     }
 
-    ~Config() = default;
+    ~Config() override = default;
 
     Config(const Config &rhs) {
         yaml_node = rhs.get();
