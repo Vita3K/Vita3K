@@ -24,7 +24,7 @@
 
 /*! \brief Base class for all CPU backend implementation */
 struct CPUInterface {
-    virtual ~CPUInterface(){};
+    virtual ~CPUInterface() = default;
 
     virtual int run() = 0;
     virtual void stop() = 0;

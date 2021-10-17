@@ -25,7 +25,7 @@ namespace app {
 
 class gl_screen_renderer {
 public:
-    gl_screen_renderer() {}
+    gl_screen_renderer() = default;
     ~gl_screen_renderer();
 
     bool init(const std::string &base_path);

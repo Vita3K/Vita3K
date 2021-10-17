@@ -53,9 +53,9 @@ const uint32_t TypeInfo::registered<T>::index = TypeInfo::add_type(1);
 
 class ObjectStore {
 public:
-    ObjectStore() {}
+    ObjectStore() = default;
 
-    ~ObjectStore() {}
+    ~ObjectStore() = default;
 
     template <typename T>
     T *get() {

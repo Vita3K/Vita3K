@@ -30,7 +30,7 @@ class vargs {
     ArgLayout currentLayout;
 
 public:
-    vargs() {}
+    vargs() = default;
 
     explicit vargs(LayoutArgsState layoutState)
         : layoutState(layoutState)

@@ -24,7 +24,7 @@
 template <typename T>
 class ThreadDataQueueInteratorBase {
 public:
-    virtual ~ThreadDataQueueInteratorBase(){};
+    virtual ~ThreadDataQueueInteratorBase() = default;
     virtual bool operator==(const ThreadDataQueueInteratorBase &rhs) = 0;
     virtual ThreadDataQueueInteratorBase<T> &operator++() = 0;
     virtual ThreadDataQueueInteratorBase<T> *clone() const = 0;
@@ -106,7 +106,7 @@ public:
         : it(it) {
     }
 
-    ~FIFOThreadDataQueueInteratorBase() override {}
+    ~FIFOThreadDataQueueInteratorBase() override = default;
 
     virtual bool operator==(const ThreadDataQueueInteratorBase<T> &rhs) {
         auto casted = static_cast<const FIFOThreadDataQueueInteratorBase<T> &>(rhs);
@@ -132,8 +132,7 @@ public:
 template <typename T>
 class FIFOThreadDataQueue : public ThreadDataQueue<T> {
 public:
-    FIFOThreadDataQueue() {
-    }
+    FIFOThreadDataQueue() = default;
 
     ThreadDataQueueInterator<T> begin() override {
         return make_iterator(c.begin());
@@ -196,7 +195,7 @@ public:
         : it(it) {
     }
 
-    ~PriorityThreadDataQueueInteratorBase() override {}
+    ~PriorityThreadDataQueueInteratorBase() override = default;
 
     bool operator==(const ThreadDataQueueInteratorBase<T> &rhs) override {
         auto casted = static_cast<const PriorityThreadDataQueueInteratorBase<T> &>(rhs);
@@ -222,7 +221,7 @@ public:
 template <typename T>
 class PriorityThreadDataQueue : public ThreadDataQueue<T> {
 public:
-    PriorityThreadDataQueue() {}
+    PriorityThreadDataQueue() = default;
 
     ThreadDataQueueInterator<T> begin() override {
         return make_iterator(c.begin());

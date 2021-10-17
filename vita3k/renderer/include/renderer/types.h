@@ -133,7 +133,7 @@ struct Context {
     std::string last_draw_fragment_program_hash;
     std::string last_draw_vertex_program_hash;
 
-    virtual ~Context() {}
+    virtual ~Context() = default;
 };
 
 struct ShaderProgram {
@@ -149,7 +149,7 @@ struct VertexProgram : ShaderProgram {
 
 struct RenderTarget {
     int holder;
-    virtual ~RenderTarget() {}
+    virtual ~RenderTarget() = default;
 };
 
 } // namespace renderer
