@@ -43,7 +43,6 @@ private:
 
     using screen_vertices_t = screen_vertex[screen_vertex_count];
 
-private:
     GLuint m_vao{ 0 };
     GLuint m_vbo{ 0 };
     SharedGLObject m_render_shader;
