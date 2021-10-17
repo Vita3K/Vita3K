@@ -788,11 +788,9 @@ private:
     const FeatureState &m_features;
 };
 
-using BlockCacheMap = std::map<shader::usse::USSEOffset, spv::Function *>;
 constexpr int sgx543_pc_bits = 20;
 
 struct USSERecompiler final {
-    BlockCacheMap cache;
     const std::uint64_t *inst;
     std::size_t count;
     spv::Builder &b;
@@ -803,13 +801,21 @@ struct USSERecompiler final {
     const SceGxmProgram *program;
     spv::Function *end_hook_func;
 
-    std::unordered_map<usse::USSEOffset, usse::USSEBlock> avail_blocks;
+    USSEBlockNode tree_block_node;
 
     explicit USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features,
         const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries);
 
     void reset(const std::uint64_t *inst, const std::size_t count);
-    spv::Function *get_or_recompile_block(const usse::USSEBlock &block);
+
+    void compile_code_node(const usse::USSECodeNode &code);
+    void compile_break_node(const usse::USSEBreakNode &node);
+    void compile_conditional_node(const usse::USSEConditionalNode &cond);
+    void compile_loop_node(const usse::USSELoopNode &loop);
+    void compile_block(const usse::USSEBlockNode &block);
+
+    spv::Id get_condition_value(const std::uint8_t pred, const bool neg = false);
+    spv::Function *compile_program_function();
 };
 
 } // namespace shader::usse

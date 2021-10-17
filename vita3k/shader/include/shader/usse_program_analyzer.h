@@ -19,10 +19,13 @@
 
 #include <array>
 #include <cstdint>
+#include <functional>
 #include <map>
+#include <memory>
 #include <queue>
 #include <shader/usse_types.h>
 #include <tuple>
+#include <vector>
 
 using UniformBufferSizes = std::array<std::uint32_t, 15>;
 
@@ -43,28 +46,137 @@ namespace shader::usse {
  * \returns True on instruction being a branch.
  */
 bool is_kill(const std::uint64_t inst);
-bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off);
+bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::int32_t &br_off);
 bool is_buffer_fetch_or_store(const std::uint64_t inst, int &base, int &cursor, int &offset, int &size);
 bool does_write_to_predicate(const std::uint64_t inst, std::uint8_t &pred);
 std::uint8_t get_predicate(const std::uint64_t inst);
 
-struct USSEBlock {
+enum USSENodeType {
+    USSE_ABSTRACT_NODE,
+    USSE_BLOCK_NODE,
+    USSE_CODE_NODE,
+    USSE_CONDITIONAL_NODE,
+    USSE_LOOP_NODE,
+    USSE_BREAK_NODE
+};
+
+class USSEBaseNode;
+using USSEBaseNodeInstance = std::unique_ptr<USSEBaseNode>;
+
+class USSEBaseNode {
+private:
+    USSENodeType type = USSE_ABSTRACT_NODE;
+
+protected:
+    std::vector<USSEBaseNodeInstance> children;
+    USSEBaseNode *parent;
+
+    USSEBaseNode *add_children_protected(USSEBaseNodeInstance &instance);
+
+public:
+    explicit USSEBaseNode(USSEBaseNode *parent, const USSENodeType type)
+        : type(type)
+        , parent(parent) {
+    }
+
+    USSENodeType node_type() const {
+        return type;
+    }
+
+    USSEBaseNode *get_parent() const {
+        return parent;
+    }
+
+    std::size_t children_count() const {
+        return children.size();
+    }
+
+    const USSEBaseNode *children_at(const std::size_t index) const {
+        return children[index].get();
+    }
+
+    void reset() {
+        children.clear();
+    }
+};
+
+class USSEBlockNode : public USSEBaseNode {
+private:
+    std::uint32_t offset; // This is like metadata
+
+public:
+    explicit USSEBlockNode(USSEBaseNode *parent, const std::uint32_t start);
+
+    USSEBaseNode *add_children(USSEBaseNodeInstance &instance);
+    std::uint32_t start_offset() const {
+        return offset;
+    }
+};
+
+class USSECodeNode : public USSEBaseNode {
+public:
     std::uint32_t offset;
     std::uint32_t size;
 
-    std::uint8_t pred; ///< The predicator requires to execute this block.
-    std::int32_t offset_link; ///< The offset of block to link at the end of the block. -1 for none.
+    std::uint8_t condition;
 
-    USSEBlock() = default;
-    USSEBlock(const std::uint32_t off, const std::uint32_t size, const std::uint8_t pred, const std::int32_t off_link)
-        : offset(off)
-        , size(size)
-        , pred(pred)
-        , offset_link(off_link) {
+    explicit USSECodeNode(USSEBaseNode *parent);
+};
+
+class USSEConditionalNode : public USSEBaseNode {
+protected:
+    std::uint8_t neg_condition;
+    std::uint32_t merge_point;
+
+public:
+    explicit USSEConditionalNode(USSEBaseNode *parent, const std::uint32_t merge_point);
+
+    USSEBlockNode *if_block() const;
+    USSEBlockNode *else_block() const;
+
+    void set_if_block(USSEBaseNodeInstance &node);
+    void set_else_block(USSEBaseNodeInstance &node);
+
+    std::uint8_t negif_condition() const {
+        return neg_condition;
     }
 
-    bool operator==(const USSEBlock &rhs) const {
-        return (offset == rhs.offset) && (size == rhs.size) && (pred == rhs.pred) && (offset_link == rhs.offset_link);
+    void set_negif_condition(const std::uint8_t condition) {
+        neg_condition = condition;
+    }
+
+    std::uint32_t get_merge_point() const {
+        return merge_point;
+    }
+};
+
+class USSELoopNode : public USSEBaseNode {
+protected:
+    std::uint32_t loop_end_offset;
+
+public:
+    explicit USSELoopNode(USSEBaseNode *parent, const std::uint32_t loop_end_offset);
+
+    USSEBlockNode *content_block() const;
+    void set_content_block(USSEBaseNodeInstance &node);
+
+    std::uint32_t get_loop_end_offset() const {
+        return loop_end_offset;
+    }
+};
+
+class USSEBreakNode : public USSEBaseNode {
+protected:
+    std::uint8_t condition;
+
+public:
+    explicit USSEBreakNode(USSEBaseNode *parent, const std::uint8_t condition)
+        : USSEBaseNode(parent, USSE_BREAK_NODE)
+        , condition(condition) {
+    }
+
+    std::uint8_t get_condition() const {
+        return condition;
     }
 };
 
@@ -88,116 +200,15 @@ struct AttributeInformation {
     }
 };
 
+using USSEOffset = std::uint32_t;
+
 using UniformBufferMap = std::map<int, UniformBuffer>;
 using AttributeInformationMap = std::map<int, AttributeInformation>;
-
-using USSEOffset = std::uint32_t;
+using AnalyzeReadFunction = std::function<std::uint64_t(USSEOffset)>;
 
 void get_attribute_informations(const SceGxmProgram &program, AttributeInformationMap &locmap);
 void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &sizes);
 int match_uniform_buffer_with_buffer_size(const SceGxmProgram &program, const SceGxmProgramParameter &parameter, const shader::usse::UniformBufferMap &buffers);
 
-template <typename F, typename H>
-void analyze(USSEOffset end_offset, F read_func, H handler_func) {
-    std::queue<USSEBlock *> blocks_queue;
-
-    auto add_block = [&](USSEOffset block_addr) {
-        USSEBlock routine = { block_addr, 0, 0, -1 };
-
-        if (auto sub_ptr = handler_func(routine)) {
-            blocks_queue.push(sub_ptr);
-        }
-    };
-
-    // Initial block, start at offset 0 of the program
-    add_block(0);
-
-    for (auto block = blocks_queue.front(); !blocks_queue.empty();) {
-        bool should_stop = false;
-
-        for (auto baddr = block->offset; baddr <= end_offset && !should_stop;) {
-            auto inst = read_func(baddr);
-
-            if (inst == 0) {
-                block->size = baddr - block->offset;
-                should_stop = true;
-
-                break;
-            }
-
-            std::uint8_t pred = get_predicate(inst);
-            std::uint32_t br_off = 0;
-
-            if (baddr == block->offset) {
-                block->pred = pred;
-            }
-
-            if (is_branch(inst, pred, br_off)) {
-                add_block(baddr + br_off);
-
-                if (block->offset == baddr) {
-                    block->pred = 0;
-                }
-
-                // No need to specify link offset. The translator will do it for us once it met BR.
-                block->size = baddr - block->offset + 1;
-                should_stop = true;
-
-                if (pred != 0) {
-                    add_block(baddr + 1);
-                }
-            } else if (is_kill(inst)) {
-                add_block(baddr + 1);
-
-                if (block->offset == baddr) {
-                    block->pred = 0;
-                }
-
-                block->size = baddr - block->offset + 1;
-                should_stop = true;
-            } else {
-                bool is_predicate_invalidated = false;
-
-                std::uint8_t predicate_writed_to = 0;
-                if (does_write_to_predicate(inst, predicate_writed_to)) {
-                    is_predicate_invalidated = ((predicate_writed_to + 1) == block->pred) || ((predicate_writed_to + 5) == block->pred);
-                }
-
-                // Either if the instruction has different predicate with the block,
-                // or the predicate value is being invalidated (overwritten)
-                // which means continuing is obselete. Stop now
-                if (pred != block->pred) {
-                    add_block(baddr);
-
-                    block->size = baddr - block->offset;
-                    block->offset_link = baddr;
-
-                    should_stop = true;
-                } else if (is_predicate_invalidated) {
-                    add_block(baddr + 1);
-
-                    block->size = baddr - block->offset + 1;
-                    block->offset_link = baddr + 1;
-
-                    should_stop = true;
-                }
-            }
-
-            baddr += 1;
-        }
-
-        if (block->size == 0) {
-            block->size = end_offset - block->offset + 1;
-        }
-
-        blocks_queue.pop();
-
-        if (!blocks_queue.empty()) {
-            block = blocks_queue.front();
-        }
-    }
-
-    // Add dummy block
-    handler_func({ end_offset + 1, 0, 0, -1 });
-}
+void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction read_func);
 } // namespace shader::usse
