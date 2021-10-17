@@ -75,12 +75,16 @@ struct SyncPrimitive {
     std::mutex mutex;
 
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+
+    virtual ~SyncPrimitive() {}
 };
 
 struct Semaphore : SyncPrimitive {
     WaitingThreadQueuePtr waiting_threads;
     int max;
     int val;
+
+    ~Semaphore() {}
 };
 
 typedef std::shared_ptr<Semaphore> SemaphorePtr;
@@ -92,6 +96,8 @@ struct Mutex : SyncPrimitive {
     ThreadStatePtr owner;
     WaitingThreadQueuePtr waiting_threads;
     Ptr<SceKernelLwMutexWork> workarea;
+
+    ~Mutex() {}
 };
 
 typedef std::shared_ptr<Mutex> MutexPtr;
@@ -100,6 +106,8 @@ typedef std::map<SceUID, MutexPtr> MutexPtrs;
 struct EventFlag : SyncPrimitive {
     WaitingThreadQueuePtr waiting_threads;
     int flags;
+
+    ~EventFlag() {}
 };
 
 typedef std::shared_ptr<EventFlag> EventFlagPtr;
@@ -125,6 +133,8 @@ struct Condvar : SyncPrimitive {
 
     WaitingThreadQueuePtr waiting_threads;
     MutexPtr associated_mutex;
+
+    ~Condvar() {}
 };
 typedef std::shared_ptr<Condvar> CondvarPtr;
 typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
@@ -143,6 +153,8 @@ struct MsgPipe : SyncPrimitive {
     WaitingThreadQueuePtr sender_threads;
     WaitingThreadQueuePtr reciever_threads;
     std::list<MsgPipeData> data_buffer;
+
+    ~MsgPipe() {}
 };
 
 typedef std::shared_ptr<MsgPipe> MsgPipePtr;

@@ -80,6 +80,8 @@ struct GLContext : public renderer::Context {
 
     std::vector<UniformSetRequest> vertex_set_requests;
     std::vector<UniformSetRequest> fragment_set_requests;
+
+    ~GLContext() {}
 };
 
 struct GLShaderStatics {
@@ -117,5 +119,7 @@ struct GLRenderTarget : public renderer::RenderTarget {
     GLObjectArray<2> renderbuffers;
     GLObjectArray<1> framebuffer;
     GLObjectArray<1> color_attachment;
+
+    ~GLRenderTarget() {}
 };
 } // namespace renderer::gl
