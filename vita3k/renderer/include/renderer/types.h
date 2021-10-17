@@ -132,6 +132,8 @@ struct Context {
 
     std::string last_draw_fragment_program_hash;
     std::string last_draw_vertex_program_hash;
+
+    virtual ~Context() {}
 };
 
 struct ShaderProgram {
@@ -147,6 +149,7 @@ struct VertexProgram : ShaderProgram {
 
 struct RenderTarget {
     int holder;
+    virtual ~RenderTarget() {}
 };
 
 } // namespace renderer
