@@ -796,81 +796,59 @@ USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, co
     , count(0)
     , b(b)
     , visitor(b, *this, program, features, utils, cur_instr, parameters, queries, true)
-    , end_hook_func(end_hook_func) {
+    , end_hook_func(end_hook_func)
+    , tree_block_node(nullptr, 0) {
 }
 
 void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count) {
     inst = _inst;
     count = _count;
-    cache.clear();
-    avail_blocks.clear();
     visitor.reset_for_new_session();
 
-    usse::analyze(
-        static_cast<shader::usse::USSEOffset>(_count - 1), [&](usse::USSEOffset off) -> std::uint64_t { return inst[off]; },
-        [&](const usse::USSEBlock &sub) -> usse::USSEBlock * {
-            auto result = avail_blocks.emplace(sub.offset, sub);
-            if (result.second) {
-                return &(result.first->second);
-            }
-
-            return nullptr;
-        });
+    usse::analyze(tree_block_node, static_cast<shader::usse::USSEOffset>(_count - 1),
+        [&](usse::USSEOffset off) -> std::uint64_t { return inst[off]; });
 }
 
-spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &block) {
-    auto result = cache.find(block.offset);
+spv::Id USSERecompiler::get_condition_value(const std::uint8_t pred, const bool neg) {
+    const ExtPredicate predicator = static_cast<ExtPredicate>(pred);
 
-    if (result != cache.end()) {
-        return result->second;
+    Operand pred_opr{};
+    pred_opr.bank = RegisterBank::PREDICATE;
+
+    bool do_neg = neg;
+
+    if (predicator >= ExtPredicate::P0 && predicator <= ExtPredicate::P3) {
+        pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::P0);
+    } else if (predicator >= ExtPredicate::NEGP0 && predicator <= ExtPredicate::NEGP1) {
+        pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::NEGP0);
+        do_neg = !do_neg;
     }
 
-    // Make a new function (subroutine)
-    spv::Block *last_build_point = b.getBuildPoint();
-    spv::Block *new_sub_block = nullptr;
+    spv::Id pred_v = visitor.load(pred_opr, 0b0001);
+    if (do_neg) {
+        std::vector<spv::Id> ops{ pred_v };
+        pred_v = b.createOp(spv::OpLogicalNot, b.makeBoolType(), ops);
+    }
 
-    const auto sub_name = fmt::format("block_{}_{}", visitor.is_translating_secondary_program() ? "sec" : "prim",
-        block.offset);
+    return pred_v;
+}
 
-    spv::Function *ret_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), sub_name.c_str(), {}, {},
-        &new_sub_block);
-
+void USSERecompiler::compile_code_node(const usse::USSECodeNode &code) {
     std::unique_ptr<spv::Builder::If> cond_builder;
-    if (block.pred != 0) {
-        spv::Id pred_v = spv::NoResult;
-        const ExtPredicate predicator = static_cast<ExtPredicate>(block.pred);
 
-        Operand pred_opr{};
-        pred_opr.bank = RegisterBank::PREDICATE;
-
-        bool do_neg = false;
-
-        if (predicator >= ExtPredicate::P0 && predicator <= ExtPredicate::P3) {
-            pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::P0);
-        } else if (predicator >= ExtPredicate::NEGP0 && predicator <= ExtPredicate::NEGP1) {
-            pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::NEGP0);
-            do_neg = true;
-        }
-
-        pred_v = visitor.load(pred_opr, 0b0001);
-        if (do_neg) {
-            std::vector<spv::Id> ops{ pred_v };
-            pred_v = b.createOp(spv::OpLogicalNot, b.makeBoolType(), ops);
-        }
-
+    if (code.condition != 0) {
         // Construct the IF
+        spv::Id pred_v = get_condition_value(code.condition);
         cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
     }
 
     const auto last_pc = cur_pc;
 
-    if (block.size > 0) {
-        LOG_TRACE("Recompiling block_{}, size = {}, id = {}", block.offset, block.size, ret_func->getId());
+    if (code.size > 0) {
+        LOG_TRACE("Compiling code_{}, size = {}", code.offset, code.size);
+        const usse::USSEOffset pc_end = code.offset + code.size - 1;
 
-        cache.emplace(block.offset, ret_func);
-        const usse::USSEOffset pc_end = block.offset + block.size - 1;
-
-        for (usse::USSEOffset pc = block.offset; pc <= pc_end; pc++) {
+        for (usse::USSEOffset pc = code.offset; pc <= pc_end; pc++) {
             cur_pc = pc;
             cur_instr = inst[pc];
 
@@ -883,25 +861,108 @@ spv::Function *USSERecompiler::get_or_recompile_block(const usse::USSEBlock &blo
         }
     }
 
-    if (block.offset + block.size >= count && !visitor.is_translating_secondary_program()) {
-        // We reach the end, for whatever the current block is.
-        // Call end hook
-        b.createFunctionCall(end_hook_func, {});
-    }
-
     if (cond_builder) {
         cond_builder->makeEndIf();
     }
+}
 
-    if (block.offset_link != -1) {
-        b.createFunctionCall(get_or_recompile_block(avail_blocks[block.offset_link]), {});
+void USSERecompiler::compile_break_node(const usse::USSEBreakNode &node) {
+    std::unique_ptr<spv::Builder::If> cond_builder;
+
+    if (node.get_condition() != 0) {
+        spv::Id pred_v = get_condition_value(node.get_condition());
+        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
     }
 
-    // Make a return
+    b.createLoopExit();
+
+    if (cond_builder)
+        cond_builder->makeEndIf();
+}
+
+void USSERecompiler::compile_conditional_node(const usse::USSEConditionalNode &cond) {
+    spv::Builder::If if_builder(get_condition_value(cond.negif_condition(), true), spv::SelectionControlMaskNone, b);
+    compile_block(*cond.if_block());
+
+    if (cond.else_block()) {
+        if_builder.makeBeginElse();
+        compile_block(*cond.else_block());
+    }
+
+    if_builder.makeEndIf();
+}
+
+void USSERecompiler::compile_loop_node(const usse::USSELoopNode &loop) {
+    spv::Builder::LoopBlocks loops = b.makeNewLoop();
+
+    b.createBranch(&loops.head);
+    b.setBuildPoint(&loops.head);
+
+    // In the head we only want to branch to body. We always do while do anyway
+    b.createLoopMerge(&loops.merge, &loops.head, 0, {});
+    b.createBranch(&loops.body);
+
+    // Emit body content
+    b.setBuildPoint(&loops.body);
+
+    // If true
+    const usse::USSEBlockNode &content_block = *(loop.content_block());
+    compile_block(content_block);
+
+    b.createBranch(&loops.continue_target);
+
+    // Emit continue target
+    b.setBuildPoint(&loops.continue_target);
+    b.createBranch(&loops.head);
+
+    // Merge point
+    b.setBuildPoint(&loops.merge);
+    b.closeLoop();
+}
+
+void USSERecompiler::compile_block(const usse::USSEBlockNode &block) {
+    for (std::size_t i = 0; i < block.children_count(); i++) {
+        const usse::USSEBaseNode *node = block.children_at(i);
+
+        switch (node->node_type()) {
+        case usse::USSE_CODE_NODE:
+            compile_code_node(static_cast<const usse::USSECodeNode &>(*node));
+            break;
+
+        case usse::USSE_BREAK_NODE:
+            compile_break_node(static_cast<const usse::USSEBreakNode &>(*node));
+            break;
+
+        case usse::USSE_LOOP_NODE:
+            compile_loop_node(static_cast<const usse::USSELoopNode &>(*node));
+            break;
+
+        case usse::USSE_CONDITIONAL_NODE:
+            compile_conditional_node(static_cast<const usse::USSEConditionalNode &>(*node));
+            break;
+
+        default:
+            LOG_ERROR("Node type not supported in this compile function!");
+            return;
+        }
+    }
+}
+
+spv::Function *USSERecompiler::compile_program_function() {
+    // Make a new function (subroutine)
+    spv::Block *last_build_point = b.getBuildPoint();
+    spv::Block *new_sub_block = nullptr;
+
+    const auto sub_name = fmt::format("{}_program", visitor.is_translating_secondary_program() ? "secondary" : "primary");
+
+    spv::Function *ret_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), sub_name.c_str(), {}, {},
+        &new_sub_block);
+
+    compile_block(tree_block_node);
+
     b.leaveFunction();
     b.setBuildPoint(last_build_point);
 
-    cur_pc = last_pc;
     return ret_func;
 }
 
@@ -942,11 +1003,13 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
             }
 
             recomp.reset(cur_phase_code.first, cur_phase_code.second);
-            spv::Function *main_block = recomp.get_or_recompile_block(recomp.avail_blocks[0]);
-
-            b.createFunctionCall(main_block, {});
+            b.createFunctionCall(recomp.compile_program_function(), {});
         }
     }
+
+    // We reach the end
+    // Call end hook. If it's discard, this is not even called, so no worry
+    b.createFunctionCall(end_hook_func, {});
 
     std::vector<spv::Id> empty_args;
     if (features.should_use_shader_interlock() && program.is_fragment() && program.is_native_color())

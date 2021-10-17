@@ -29,15 +29,20 @@ bool is_kill(const std::uint64_t inst) {
     return (inst >> 59) == 0b11111 && (((inst >> 32) & ~0xF8FFFFFF) >> 24) == 1 && ((inst >> 32) & ~0xFFCFFFFF) >> 20 == 3;
 }
 
-bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::uint32_t &br_off) {
+bool is_branch(const std::uint64_t inst, std::uint8_t &pred, std::int32_t &br_off) {
     const std::uint32_t high = (inst >> 32);
     const std::uint32_t low = static_cast<std::uint32_t>(inst);
 
     const bool br_inst_is = ((high & ~0x07FFFFFFU) >> 27 == 0b11111) && (((high & ~0xFFCFFFFFU) >> 20) == 0) && !(high & 0x00400000) && ((((high & ~0xFFFFFE3FU) >> 6) == 0) || ((high & ~0xFFFFFE3FU) >> 6) == 1);
 
     if (br_inst_is) {
-        br_off = (low & ((1 << 20) - 1));
+        br_off = static_cast<std::int32_t>(low & ((1 << 20) - 1));
         pred = (high & ~0xF8FFFFFFU) >> 24;
+
+        if (((inst & (1ULL << 38)) != 0) && (br_off & (1 << 19))) {
+            // PC bits on SGX543 is 20 bits
+            br_off |= 0xFFFFFFFF << 20;
+        }
     }
 
     return br_inst_is;
@@ -62,16 +67,16 @@ std::uint8_t get_predicate(const std::uint64_t inst) {
 
         // Kill
         if ((((inst >> 32) & ~0xF8FFFFFF) >> 24) == 1 && ((inst >> 32) & ~0xFFCFFFFF) >> 20 == 3) {
-            uint8_t pred = ((inst >> 32) & 0xFFFFF9FF) >> 9;
+            uint8_t pred = ((inst >> 32) & (~0xFFFFF9FF)) >> 9;
             switch (pred) {
             case 0:
                 return static_cast<uint8_t>(ExtPredicate::NONE);
             case 1:
-                return static_cast<uint8_t>(ExtPredicate::P0);
-            case 2:
-                return static_cast<uint8_t>(ExtPredicate::P1);
-            case 3:
                 return static_cast<uint8_t>(ExtPredicate::NEGP0);
+            case 2:
+                return static_cast<uint8_t>(ExtPredicate::NEGP1);
+            case 3:
+                return static_cast<uint8_t>(ExtPredicate::P0);
             default:
                 return 0;
             }
@@ -179,4 +184,299 @@ void get_attribute_informations(const SceGxmProgram &program, AttributeInformati
         }
     }
 }
+
+USSEBaseNode *USSEBaseNode::add_children_protected(USSEBaseNodeInstance &instance) {
+    if (!instance) {
+        return nullptr;
+    }
+
+    if (instance->node_type() == USSE_CODE_NODE) {
+        USSECodeNode *code = reinterpret_cast<USSECodeNode *>(instance.get());
+        if (code->size == 0) {
+            return nullptr;
+        }
+    }
+
+    children.push_back(std::move(instance));
+    return children.back().get();
+}
+
+USSEBlockNode::USSEBlockNode(USSEBaseNode *parent, const std::uint32_t start)
+    : USSEBaseNode(parent, USSE_BLOCK_NODE)
+    , offset(start) {
+}
+
+USSEBaseNode *USSEBlockNode::add_children(USSEBaseNodeInstance &instance) {
+    return add_children_protected(instance);
+}
+
+USSECodeNode::USSECodeNode(USSEBaseNode *parent)
+    : USSEBaseNode(parent, USSE_CODE_NODE)
+    , offset(0)
+    , size(0)
+    , condition(0) {
+}
+
+USSEConditionalNode::USSEConditionalNode(USSEBaseNode *parent, const std::uint32_t merge_point)
+    : USSEBaseNode(parent, USSE_CONDITIONAL_NODE)
+    , merge_point(merge_point) {
+    children.resize(2);
+}
+
+USSEBlockNode *USSEConditionalNode::if_block() const {
+    return reinterpret_cast<USSEBlockNode *>(children[0].get());
+}
+
+USSEBlockNode *USSEConditionalNode::else_block() const {
+    return reinterpret_cast<USSEBlockNode *>(children[1].get());
+}
+
+void USSEConditionalNode::set_if_block(USSEBaseNodeInstance &node) {
+    children[0] = std::move(node);
+}
+
+void USSEConditionalNode::set_else_block(USSEBaseNodeInstance &node) {
+    children[1] = std::move(node);
+}
+
+USSELoopNode::USSELoopNode(USSEBaseNode *parent, const std::uint32_t loop_end_offset)
+    : USSEBaseNode(parent, USSE_LOOP_NODE)
+    , loop_end_offset(loop_end_offset) {
+    children.resize(1);
+}
+
+USSEBlockNode *USSELoopNode::content_block() const {
+    return reinterpret_cast<USSEBlockNode *>(children[0].get());
+}
+
+void USSELoopNode::set_content_block(USSEBaseNodeInstance &node) {
+    children[0] = std::move(node);
+}
+
+void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction read_func) {
+    struct BlockInvestigateRequest {
+        USSEOffset begin_offset;
+        USSEOffset end_offset;
+
+        USSEBlockNode *block_node;
+    };
+
+    struct BranchInfo {
+        std::uint32_t offset;
+        std::uint32_t dest;
+
+        std::uint8_t pred;
+    };
+
+    root.reset();
+
+    std::map<std::uint32_t, BranchInfo> branches_to;
+    std::map<std::uint32_t, BranchInfo> branches_from;
+
+    std::queue<BlockInvestigateRequest> investigate_queue;
+    investigate_queue.push({ 0, end_offset, &root });
+
+    // First off query all branches first
+    // This is for easy tracing of loops and branches later, without complicating the algorithm
+    // For example, loop might be in a loop :(
+    for (usse::USSEOffset baddr = 0; baddr <= end_offset; baddr += 1) {
+        auto inst = read_func(baddr);
+
+        std::uint8_t pred = 0;
+        std::int32_t br_off = 0;
+
+        if (is_branch(inst, pred, br_off)) {
+            const std::uint32_t dest = baddr + br_off;
+            BranchInfo info = { baddr, dest, pred };
+
+            branches_to.emplace(dest, info);
+            branches_from.emplace(baddr, info);
+        }
+    }
+
+    while (!investigate_queue.empty()) {
+        BlockInvestigateRequest request = std::move(investigate_queue.front());
+        investigate_queue.pop();
+
+        std::unique_ptr<USSEBaseNode> current_code_inst = std::make_unique<USSECodeNode>(request.block_node);
+        USSECodeNode *current_code = reinterpret_cast<USSECodeNode *>(current_code_inst.get());
+
+        current_code->offset = request.begin_offset;
+        current_code->size = 0;
+
+        for (auto baddr = request.begin_offset; baddr <= request.end_offset; baddr += 1) {
+            auto inst = read_func(baddr);
+
+            if (inst == 0) {
+                break;
+            }
+
+            std::uint8_t pred = get_predicate(inst);
+
+            if (baddr == current_code->offset) {
+                current_code->condition = pred;
+            }
+
+            auto branch_from_result = branches_from.find(baddr);
+            auto branch_to_result = branches_to.find(baddr);
+
+            if (branch_from_result != branches_from.end()) {
+                bool is_break = false;
+
+                // It might be a break to exit a loop
+                // Get the nearest parent that is a loop
+                USSEBaseNode *loop_parent = request.block_node;
+                while (loop_parent && (loop_parent->node_type() != USSE_LOOP_NODE)) {
+                    loop_parent = loop_parent->get_parent();
+                }
+
+                if (loop_parent) {
+                    USSELoopNode *loop_node = reinterpret_cast<USSELoopNode *>(loop_parent);
+                    if (loop_node->get_loop_end_offset() == branch_from_result->second.dest - 1) {
+                        std::unique_ptr<USSEBaseNode> break_node = std::make_unique<USSEBreakNode>(request.block_node, branch_from_result->second.pred);
+                        current_code->size = baddr - current_code->offset;
+
+                        request.block_node->add_children(current_code_inst);
+                        request.block_node->add_children(break_node);
+
+                        current_code_inst = std::make_unique<USSECodeNode>(request.block_node);
+                        current_code = reinterpret_cast<USSECodeNode *>(current_code_inst.get());
+
+                        current_code->offset = baddr + 1;
+
+                        is_break = true;
+                    } else if (loop_node->get_loop_end_offset() < branch_from_result->second.dest) {
+                        assert(false && "Unhandled situation!");
+                    }
+                }
+
+                // Likely a normal if
+                if (!is_break) {
+                    // Some ifs may be trying to jump to parent's merge point. It's also means there's no more content
+                    // further in this block.
+                    if (branch_from_result->second.pred == 0) {
+                        USSEBaseNode *cond_parent = request.block_node;
+                        while (cond_parent && (cond_parent->node_type() != USSE_CONDITIONAL_NODE)) {
+                            cond_parent = cond_parent->get_parent();
+                        }
+
+                        if (cond_parent) {
+                            USSEConditionalNode *cond_node = reinterpret_cast<USSEConditionalNode *>(cond_parent);
+                            if (cond_node->get_merge_point() == branch_from_result->second.dest) {
+                                // Ignore this, the tree will automatically indicates this. However, we need to end the current block
+                                current_code->size = baddr - current_code->offset;
+                                request.block_node->add_children(current_code_inst);
+
+                                baddr = request.end_offset;
+                                current_code_inst = nullptr;
+                            }
+                        }
+                    }
+
+                    if (current_code_inst != nullptr) {
+                        bool else_exist = false;
+                        auto branch_from_else_result = branches_from.find(branch_from_result->second.dest - 1);
+
+                        if (branch_from_else_result != branches_from.end()) {
+                            assert((branch_from_else_result->second.pred == 0) && "Unhandled!");
+                            else_exist = true;
+                        }
+
+                        std::uint32_t merge_point = (else_exist ? branch_from_else_result->second.dest : branch_from_result->second.dest);
+
+                        // Create a new if/else tree (there might be no else :D)
+                        // The space between the branch and the jump is the content block of the if
+                        // If assuming the condition of the jump is p0, then the if will be if (!p0) content
+                        // If the instruction before the destinated jump location is another branch, it is likely the else block
+                        std::unique_ptr<USSEBaseNode> conditional_inst = std::make_unique<USSEConditionalNode>(request.block_node, merge_point);
+                        USSEConditionalNode *conditional = reinterpret_cast<USSEConditionalNode *>(conditional_inst.get());
+
+                        conditional->set_negif_condition(pred);
+
+                        std::unique_ptr<USSEBaseNode> if_block = std::make_unique<USSEBlockNode>(conditional_inst.get(), baddr);
+                        conditional->set_if_block(if_block);
+
+                        // Sometimes it jumps to the merge point of mother, so we limit the range
+                        investigate_queue.push({ baddr + 1, std::min<USSEOffset>(branch_from_result->second.dest - (else_exist ? 2 : 1), request.end_offset),
+                            conditional->if_block() });
+
+                        if (else_exist) {
+                            std::unique_ptr<USSEBaseNode> else_block = std::make_unique<USSEBlockNode>(conditional_inst.get(), branch_from_result->second.dest);
+                            conditional->set_else_block(else_block);
+
+                            investigate_queue.push({ branch_from_result->second.dest, branch_from_else_result->second.dest - 1, conditional->else_block() });
+                        }
+
+                        // End the current block code, and also add this block in
+                        current_code->size = baddr - current_code->offset;
+                        request.block_node->add_children(current_code_inst);
+                        request.block_node->add_children(conditional_inst);
+
+                        current_code_inst = std::make_unique<USSECodeNode>(request.block_node);
+                        current_code = reinterpret_cast<USSECodeNode *>(current_code_inst.get());
+
+                        current_code->offset = merge_point;
+                        baddr = current_code->offset - 1;
+                    }
+                }
+            } else if ((request.block_node->start_offset() != baddr) && (branch_to_result != branches_to.end()) && (branch_to_result->second.offset > baddr)) {
+                // Smell like a loop ! Create a loop node
+                std::unique_ptr<USSEBaseNode> loop_node_inst = std::make_unique<USSELoopNode>(request.block_node, branch_to_result->second.offset);
+                USSELoopNode *loop_node = reinterpret_cast<USSELoopNode *>(loop_node_inst.get());
+
+                std::unique_ptr<USSEBaseNode> content_block = std::make_unique<USSEBlockNode>(loop_node_inst.get(), baddr);
+                loop_node->set_content_block(content_block);
+
+                investigate_queue.push({ baddr, branch_to_result->second.offset - 1, loop_node->content_block() });
+
+                current_code->size = baddr - current_code->offset;
+
+                request.block_node->add_children(current_code_inst);
+                request.block_node->add_children(loop_node_inst);
+
+                current_code_inst = std::make_unique<USSECodeNode>(request.block_node);
+                current_code = reinterpret_cast<USSECodeNode *>(current_code_inst.get());
+
+                current_code->offset = branch_to_result->second.offset + 1;
+                baddr = current_code->offset - 1;
+            } else {
+                bool is_predicate_invalidated = false;
+
+                std::uint8_t predicate_writed_to = 0;
+                if (does_write_to_predicate(inst, predicate_writed_to)) {
+                    is_predicate_invalidated = ((predicate_writed_to + 1) == current_code->condition) || ((predicate_writed_to + 5) == current_code->condition);
+                }
+
+                std::uint32_t offset_end = 0;
+
+                // Either if the instruction has different predicate with the block,
+                // or the predicate value is being invalidated (overwritten)
+                // which means continuing is obselete. Stop now
+                if (pred != current_code->condition) {
+                    current_code->size = baddr - current_code->offset;
+                    offset_end = baddr;
+                } else if (is_predicate_invalidated) {
+                    current_code->size = baddr + 1 - current_code->offset;
+                    offset_end = baddr + 1;
+                }
+
+                if (offset_end != 0) {
+                    request.block_node->add_children(current_code_inst);
+
+                    current_code_inst = std::make_unique<USSECodeNode>(request.block_node);
+                    current_code = reinterpret_cast<USSECodeNode *>(current_code_inst.get());
+
+                    current_code->offset = offset_end;
+                    baddr = offset_end - 1;
+                }
+            }
+        }
+
+        if (current_code_inst) {
+            current_code->size = request.end_offset - current_code->offset + 1;
+            request.block_node->add_children(current_code_inst);
+        }
+    }
+}
+
 } // namespace shader::usse

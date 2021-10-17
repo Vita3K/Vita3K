@@ -521,57 +521,8 @@ bool USSETranslatorVisitor::br(
     Imm1 any_inst,
     Imm1 all_inst,
     uint32_t br_off) {
-    Opcode op = (br_type == 0) ? Opcode::BA : Opcode::BR;
+    assert(false && "Unreachable");
 
-    if (op == Opcode::BR && (br_off & (1 << 19))) {
-        // PC bits on SGX543 is 20 bits
-        br_off |= 0xFFFFFFFF << 20;
-    }
-
-    auto cur_pc = m_recompiler.cur_pc;
-
-    LOG_DISASM("{:016x}: {}{} #{}", m_instr, disasm::e_predicate_str(pred), (br_type == 0) ? "BA" : "BR", br_off + cur_pc);
-    spv::Function *br_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[br_off + cur_pc]);
-
-    m_b.setLine(m_recompiler.cur_pc);
-
-    if (pred == ExtPredicate::NONE) {
-        m_b.createFunctionCall(br_block, {});
-    } else {
-        spv::Id pred_v = spv::NoResult;
-
-        Operand pred_opr{};
-        pred_opr.bank = RegisterBank::PREDICATE;
-
-        bool do_neg = false;
-
-        if (pred >= ExtPredicate::P0 && pred <= ExtPredicate::P3) {
-            pred_opr.num = static_cast<int>(pred) - static_cast<int>(ExtPredicate::P0);
-        } else if (pred >= ExtPredicate::NEGP0 && pred <= ExtPredicate::NEGP1) {
-            pred_opr.num = static_cast<int>(pred) - static_cast<int>(ExtPredicate::NEGP0);
-            do_neg = true;
-        }
-
-        pred_v = load(pred_opr, 0b0001);
-
-        if (pred_v == spv::NoResult) {
-            LOG_ERROR("Pred not loaded");
-            return false;
-        }
-
-        if (do_neg) {
-            std::vector<spv::Id> ops{ pred_v };
-            pred_v = m_b.createOp(spv::OpLogicalNot, m_b.makeBoolType(), ops);
-        }
-
-        spv::Function *continous_block = m_recompiler.get_or_recompile_block(m_recompiler.avail_blocks[cur_pc + 1]);
-        spv::Builder::If cond_builder(pred_v, spv::SelectionControlMaskNone, m_b);
-
-        m_b.createFunctionCall(br_block, {});
-        cond_builder.makeBeginElse();
-        m_b.createFunctionCall(continous_block, {});
-        cond_builder.makeEndIf();
-    }
-
+    LOG_ERROR("Branch instruction should not be recompiled here!");
     return true;
 }
