@@ -35,9 +35,10 @@ public:
     }
 
     ~GLObjectArray() {
-        assert(deleter != nullptr);
-        deleter(static_cast<GLsizei>(names.size()), &names[0]);
-        names.fill(0);
+        if (deleter) {
+            deleter(static_cast<GLsizei>(names.size()), &names[0]);
+            names.fill(0);
+        }
     }
 
     bool init(renderer::Generator *generator, renderer::Deleter *deleter) {
