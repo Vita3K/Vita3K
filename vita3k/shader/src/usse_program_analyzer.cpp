@@ -270,7 +270,7 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction rea
 
     root.reset();
 
-    std::map<std::uint32_t, BranchInfo> branches_to;
+    std::multimap<std::uint32_t, BranchInfo> branches_to_back;
     std::map<std::uint32_t, BranchInfo> branches_from;
 
     std::queue<BlockInvestigateRequest> investigate_queue;
@@ -289,7 +289,9 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction rea
             const std::uint32_t dest = baddr + br_off;
             BranchInfo info = { baddr, dest, pred };
 
-            branches_to.emplace(dest, info);
+            if (br_off < 0)
+                branches_to_back.emplace(dest, info);
+
             branches_from.emplace(baddr, info);
         }
     }
@@ -318,10 +320,10 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction rea
             }
 
             auto branch_from_result = branches_from.find(baddr);
-            auto branch_to_result = branches_to.find(baddr);
+            auto branch_to_result = branches_to_back.equal_range(baddr);
 
             if (branch_from_result != branches_from.end()) {
-                bool is_break = false;
+                bool is_loop_stmt = false;
 
                 // It might be a break to exit a loop
                 // Get the nearest parent that is a loop
@@ -332,57 +334,83 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction rea
 
                 if (loop_parent) {
                     USSELoopNode *loop_node = reinterpret_cast<USSELoopNode *>(loop_parent);
-                    if (loop_node->get_loop_end_offset() == branch_from_result->second.dest - 1) {
-                        std::unique_ptr<USSEBaseNode> break_node = std::make_unique<USSEBreakNode>(request.block_node, branch_from_result->second.pred);
+                    std::unique_ptr<USSEBaseNode> node_to_add;
+
+                    if (loop_node->get_loop_end_offset() <= branch_from_result->second.dest - 1) {
+                        node_to_add = std::make_unique<USSEBreakNode>(request.block_node, branch_from_result->second.pred);
+
+                        is_loop_stmt = true;
+                    } else if (loop_node->content_block()->start_offset() == branch_from_result->second.dest) {
+                        assert((branch_from_result->second.pred == 0) && "Continuing and abadon further statement without a condition is crazy");
+
+                        // The loop is continuing!!!!
+                        node_to_add = std::make_unique<USSEContinueNode>(request.block_node, branch_from_result->second.pred);
+                        is_loop_stmt = true;
+                    }
+
+                    if (node_to_add) {
                         current_code->size = baddr - current_code->offset;
 
                         request.block_node->add_children(current_code_inst);
-                        request.block_node->add_children(break_node);
+                        request.block_node->add_children(node_to_add);
 
                         current_code_inst = std::make_unique<USSECodeNode>(request.block_node);
                         current_code = reinterpret_cast<USSECodeNode *>(current_code_inst.get());
 
                         current_code->offset = baddr + 1;
-
-                        is_break = true;
-                    } else if (loop_node->get_loop_end_offset() < branch_from_result->second.dest) {
-                        assert(false && "Unhandled situation!");
                     }
                 }
 
                 // Likely a normal if
-                if (!is_break) {
+                if (!is_loop_stmt) {
                     // Some ifs may be trying to jump to parent's merge point. It's also means there's no more content
                     // further in this block.
                     if (branch_from_result->second.pred == 0) {
-                        USSEBaseNode *cond_parent = request.block_node;
-                        while (cond_parent && (cond_parent->node_type() != USSE_CONDITIONAL_NODE)) {
-                            cond_parent = cond_parent->get_parent();
-                        }
+                        // Execution changed direction, follow it
+                        current_code->size = baddr - current_code->offset;
+                        request.block_node->add_children(current_code_inst);
 
-                        if (cond_parent) {
-                            USSEConditionalNode *cond_node = reinterpret_cast<USSEConditionalNode *>(cond_parent);
-                            if (cond_node->get_merge_point() == branch_from_result->second.dest) {
-                                // Ignore this, the tree will automatically indicates this. However, we need to end the current block
-                                current_code->size = baddr - current_code->offset;
-                                request.block_node->add_children(current_code_inst);
+                        baddr = branch_from_result->second.dest - 1;
 
-                                baddr = request.end_offset;
-                                current_code_inst = nullptr;
-                            }
-                        }
-                    }
+                        std::unique_ptr<USSEBaseNode> current_code_inst = std::make_unique<USSECodeNode>(request.block_node);
+                        USSECodeNode *current_code = reinterpret_cast<USSECodeNode *>(current_code_inst.get());
 
-                    if (current_code_inst != nullptr) {
+                        current_code->offset = baddr;
+                    } else {
                         bool else_exist = false;
                         auto branch_from_else_result = branches_from.find(branch_from_result->second.dest - 1);
 
+                        std::uint32_t else_end_offset = 0;
+
+                        // Simply a jump to after else
                         if (branch_from_else_result != branches_from.end()) {
                             assert((branch_from_else_result->second.pred == 0) && "Unhandled!");
-                            else_exist = true;
+
+                            // Note: There might be nastier situation where the if block ends sooner then after that is some block
+                            // of other blocks. Hope the compiler is not that nasty.
+                            // The solution is to keep track of the statement stack and finally get the final branch, but with loop also available
+                            // it is presenting itself as kind of hard
+                            if (branch_from_else_result->second.dest >= branch_from_result->second.dest) {
+                                else_end_offset = branch_from_else_result->second.dest;
+                                else_exist = true;
+                            } else {
+                                // Some blocks optimized by throwing merge to after else into inner for loop
+                                // This is logical in case the if only contains the loop.
+                                auto begin_ite = branches_from.upper_bound(branch_from_else_result->second.dest + 1);
+                                auto end_ite = branches_from.lower_bound(branch_from_result->second.dest - 1);
+
+                                if ((begin_ite != branches_from.end()) && (end_ite != branches_from.end())) {
+                                    for (; begin_ite != end_ite; begin_ite++) {
+                                        if (begin_ite->second.dest > branch_from_result->second.dest) {
+                                            else_exist = true;
+                                            else_end_offset = begin_ite->second.dest;
+                                        }
+                                    }
+                                }
+                            }
                         }
 
-                        std::uint32_t merge_point = (else_exist ? branch_from_else_result->second.dest : branch_from_result->second.dest);
+                        std::uint32_t merge_point = (else_exist ? else_end_offset : branch_from_result->second.dest);
 
                         // Create a new if/else tree (there might be no else :D)
                         // The space between the branch and the jump is the content block of the if
@@ -397,14 +425,14 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction rea
                         conditional->set_if_block(if_block);
 
                         // Sometimes it jumps to the merge point of mother, so we limit the range
-                        investigate_queue.push({ baddr + 1, std::min<USSEOffset>(branch_from_result->second.dest - (else_exist ? 2 : 1), request.end_offset),
+                        investigate_queue.push({ baddr + 1, std::min<USSEOffset>(branch_from_result->second.dest - 1, request.end_offset),
                             conditional->if_block() });
 
                         if (else_exist) {
                             std::unique_ptr<USSEBaseNode> else_block = std::make_unique<USSEBlockNode>(conditional_inst.get(), branch_from_result->second.dest);
                             conditional->set_else_block(else_block);
 
-                            investigate_queue.push({ branch_from_result->second.dest, branch_from_else_result->second.dest - 1, conditional->else_block() });
+                            investigate_queue.push({ branch_from_result->second.dest, else_end_offset - 1, conditional->else_block() });
                         }
 
                         // End the current block code, and also add this block in
@@ -419,15 +447,26 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction rea
                         baddr = current_code->offset - 1;
                     }
                 }
-            } else if ((request.block_node->start_offset() != baddr) && (branch_to_result != branches_to.end()) && (branch_to_result->second.offset > baddr)) {
+            } else if ((branches_to_back.find(baddr) != branches_to_back.end()) && (request.block_node->start_offset() != baddr)) {
+                // The loop continue target should be unconditional and farest
+                std::uint32_t found_offset = 0xFFFFFFFF;
+                for (auto ite = branch_to_result.first; ite != branch_to_result.second; ite++) {
+                    if ((ite->second.pred == 0) && ((found_offset == 0xFFFFFFFF) || (found_offset < ite->second.offset))) {
+                        found_offset = ite->second.offset;
+                    }
+                }
+
+                assert((found_offset != 0xFFFFFFFF) && "Offset to end loop not found!");
+
                 // Smell like a loop ! Create a loop node
-                std::unique_ptr<USSEBaseNode> loop_node_inst = std::make_unique<USSELoopNode>(request.block_node, branch_to_result->second.offset);
+                // The outer farest with no conditional jump should be the one we are looking for
+                std::unique_ptr<USSEBaseNode> loop_node_inst = std::make_unique<USSELoopNode>(request.block_node, found_offset);
                 USSELoopNode *loop_node = reinterpret_cast<USSELoopNode *>(loop_node_inst.get());
 
                 std::unique_ptr<USSEBaseNode> content_block = std::make_unique<USSEBlockNode>(loop_node_inst.get(), baddr);
                 loop_node->set_content_block(content_block);
 
-                investigate_queue.push({ baddr, branch_to_result->second.offset - 1, loop_node->content_block() });
+                investigate_queue.push({ baddr, found_offset - 1, loop_node->content_block() });
 
                 current_code->size = baddr - current_code->offset;
 
@@ -437,7 +476,7 @@ void analyze(USSEBlockNode &root, USSEOffset end_offset, AnalyzeReadFunction rea
                 current_code_inst = std::make_unique<USSECodeNode>(request.block_node);
                 current_code = reinterpret_cast<USSECodeNode *>(current_code_inst.get());
 
-                current_code->offset = branch_to_result->second.offset + 1;
+                current_code->offset = found_offset + 1;
                 baddr = current_code->offset - 1;
             } else {
                 bool is_predicate_invalidated = false;

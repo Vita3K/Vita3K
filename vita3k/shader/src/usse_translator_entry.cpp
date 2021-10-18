@@ -880,6 +880,20 @@ void USSERecompiler::compile_break_node(const usse::USSEBreakNode &node) {
         cond_builder->makeEndIf();
 }
 
+void USSERecompiler::compile_continue_node(const usse::USSEContinueNode &node) {
+    std::unique_ptr<spv::Builder::If> cond_builder;
+
+    if (node.get_condition() != 0) {
+        spv::Id pred_v = get_condition_value(node.get_condition());
+        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+    }
+
+    b.createLoopContinue();
+
+    if (cond_builder)
+        cond_builder->makeEndIf();
+}
+
 void USSERecompiler::compile_conditional_node(const usse::USSEConditionalNode &cond) {
     spv::Builder::If if_builder(get_condition_value(cond.negif_condition(), true), spv::SelectionControlMaskNone, b);
     compile_block(*cond.if_block());
@@ -931,6 +945,10 @@ void USSERecompiler::compile_block(const usse::USSEBlockNode &block) {
 
         case usse::USSE_BREAK_NODE:
             compile_break_node(static_cast<const usse::USSEBreakNode &>(*node));
+            break;
+
+        case usse::USSE_CONTINUE_NODE:
+            compile_continue_node(static_cast<const usse::USSEContinueNode &>(*node));
             break;
 
         case usse::USSE_LOOP_NODE:
