@@ -57,7 +57,8 @@ enum USSENodeType {
     USSE_CODE_NODE,
     USSE_CONDITIONAL_NODE,
     USSE_LOOP_NODE,
-    USSE_BREAK_NODE
+    USSE_BREAK_NODE,
+    USSE_CONTINUE_NODE
 };
 
 class USSEBaseNode;
@@ -172,6 +173,21 @@ protected:
 public:
     explicit USSEBreakNode(USSEBaseNode *parent, const std::uint8_t condition)
         : USSEBaseNode(parent, USSE_BREAK_NODE)
+        , condition(condition) {
+    }
+
+    std::uint8_t get_condition() const {
+        return condition;
+    }
+};
+
+class USSEContinueNode : public USSEBaseNode {
+protected:
+    std::uint8_t condition;
+
+public:
+    explicit USSEContinueNode(USSEBaseNode *parent, const std::uint8_t condition)
+        : USSEBaseNode(parent, USSE_CONTINUE_NODE)
         , condition(condition) {
     }
 

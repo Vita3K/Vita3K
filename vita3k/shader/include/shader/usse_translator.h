@@ -810,6 +810,7 @@ struct USSERecompiler final {
 
     void compile_code_node(const usse::USSECodeNode &code);
     void compile_break_node(const usse::USSEBreakNode &node);
+    void compile_continue_node(const usse::USSEContinueNode &node);
     void compile_conditional_node(const usse::USSEConditionalNode &cond);
     void compile_loop_node(const usse::USSELoopNode &loop);
     void compile_block(const usse::USSEBlockNode &block);
