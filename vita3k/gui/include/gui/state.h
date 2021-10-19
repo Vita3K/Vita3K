@@ -51,6 +51,14 @@ enum SortState {
     DESCENDANT
 };
 
+enum SortType {
+    APP_VER,
+    CATEGORY,
+    LAST_TIME,
+    TITLE,
+    TITLE_ID
+};
+
 struct App {
     std::string app_ver;
     std::string category;
@@ -60,6 +68,7 @@ struct App {
     std::string title;
     std::string title_id;
     std::string path;
+    time_t last_time;
 };
 
 struct AppInfo {
@@ -99,10 +108,7 @@ struct AppsSelector {
     std::map<std::string, ImGui_Texture> sys_apps_icon;
     std::map<std::string, ImGui_Texture> user_apps_icon;
     bool is_app_list_sorted{ false };
-    SortState title_id_sort_state = NOT_SORTED;
-    SortState app_ver_sort_state = NOT_SORTED;
-    SortState category_sort_state = NOT_SORTED;
-    SortState title_sort_state = NOT_SORTED;
+    std::map<SortType, SortState> app_list_sorted;
     SelectorState state = SELECT_APP;
 };
 
@@ -171,13 +177,15 @@ enum DateFormat {
 
 struct User {
     std::string id;
-    std::string name;
+    std::string name = "Vita3K";
     DateFormat date_format = MM_DD_YYYY;
     bool clock_12_hour = true;
-    std::string avatar;
-    std::string theme_id;
+    std::string avatar = "default";
+    gui::SortType sort_apps_type = gui::TITLE;
+    gui::SortState sort_apps_state = gui::ASCENDANT;
+    std::string theme_id = "default";
     bool use_theme_bg = true;
-    std::string start_type;
+    std::string start_type = "default";
     std::string start_path;
     std::vector<std::string> backgrounds;
 };

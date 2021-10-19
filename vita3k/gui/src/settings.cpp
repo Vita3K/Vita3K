@@ -1184,13 +1184,9 @@ void draw_settings(GuiState &gui, HostState &host) {
                             config::serialize_config(host.cfg, host.base_path);
                             init_lang(gui, host);
                             get_sys_apps_title(gui, host);
-                            std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {
-                                return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
-                            });
                             get_user_apps_title(gui, host);
-                            std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
-                                return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
-                            });
+                            init_last_time_apps(gui, host);
+                            save_apps_cache(gui, host);
                             gui.apps_list_opened.clear();
                             gui.live_area_contents.clear();
                             gui.live_items.clear();

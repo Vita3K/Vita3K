@@ -167,6 +167,8 @@ void update_last_time_app_used(GuiState &gui, HostState &host, const std::string
     else
         gui.time_apps[host.io.user_id].push_back({ app, std::time(nullptr), 0 });
 
+    get_app_index(gui, app)->last_time = std::time(nullptr);
+
     save_time_apps(gui, host);
 }
 
