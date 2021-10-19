@@ -52,7 +52,7 @@ struct CPUContext {
     CPUContext() = default;
 
     std::array<uint32_t, 16> cpu_registers{};
-    std::array<uint32_t, 64> fpu_registers{};
+    std::array<float, 64> fpu_registers{};
     uint32_t cpsr = 0;
     uint32_t fpscr = 0;
 
