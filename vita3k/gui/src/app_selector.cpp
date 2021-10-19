@@ -24,6 +24,7 @@
 #include <io/VitaIoDevice.h>
 
 #include <util/log.h>
+#include <util/safe_time.h>
 #include <util/string_utils.h>
 
 using namespace std::string_literals;
@@ -48,7 +49,7 @@ void init_user_apps(GuiState &gui, HostState &host) {
             return false;
 
         gui.app_selector.is_app_list_sorted = false;
-        gui.app_selector.title_sort_state = NOT_SORTED;
+        init_last_time_apps(gui, host);
 
         init_apps_icon(gui, host, gui.app_selector.user_apps);
 
@@ -67,6 +68,21 @@ void init_user_apps(GuiState &gui, HostState &host) {
         return true;
     });
     init_apps.detach();
+}
+
+void init_last_time_apps(GuiState &gui, HostState &host) {
+    const auto last_time_apps = [&](std::vector<gui::App> &apps_list) {
+        for (auto &app : apps_list) {
+            const auto TIME_APP_INDEX = std::find_if(gui.time_apps[host.io.user_id].begin(), gui.time_apps[host.io.user_id].end(), [&](const TimeApp &t) {
+                return t.app == app.path;
+            });
+
+            app.last_time = (TIME_APP_INDEX != gui.time_apps[host.io.user_id].end()) ? TIME_APP_INDEX->last_time_used : 0;
+        }
+    };
+
+    last_time_apps(gui.app_selector.sys_apps);
+    last_time_apps(gui.app_selector.user_apps);
 }
 
 std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &app_path) {
@@ -120,6 +136,7 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
         gui.live_area.app_selector = false;
         gui.live_area.live_area_screen = false;
         init_app_background(gui, host, app_path);
+        update_last_time_app_used(gui, host, app_path);
 
         if (app_path == "NPXS10008") {
             init_trophy_collection(gui, host);
@@ -235,6 +252,82 @@ static bool app_filter(const std::string &app) {
     return false;
 }
 
+static void sort_app_list(GuiState &gui, HostState &host, const SortType &type) {
+    auto &sorted = gui.app_selector.app_list_sorted[type];
+    if (gui.app_selector.is_app_list_sorted) {
+        for (auto &state : gui.app_selector.app_list_sorted)
+            state.second = (state.first == type) ? static_cast<gui::SortState>(std::max<int>(1, (state.second + 1) % 3)) : NOT_SORTED;
+
+        gui.users[host.io.user_id].sort_apps_type = type;
+        gui.users[host.io.user_id].sort_apps_state = sorted;
+
+        save_user(gui, host, host.io.user_id);
+    } else {
+        sorted = gui.users[host.io.user_id].sort_apps_state;
+        gui.app_selector.is_app_list_sorted = true;
+    }
+
+    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [&sorted, &type](const App &lhs, const App &rhs) {
+        switch (type) {
+        case APP_VER:
+            switch (sorted) {
+            case ASCENDANT:
+                return lhs.app_ver < rhs.app_ver;
+            case DESCENDANT:
+                return lhs.app_ver > rhs.app_ver;
+            }
+        case CATEGORY:
+            switch (sorted) {
+            case ASCENDANT:
+                return lhs.category < rhs.category;
+            case DESCENDANT:
+                return lhs.category > rhs.category;
+            }
+        case LAST_TIME:
+            switch (sorted) {
+            case ASCENDANT:
+                return lhs.last_time > rhs.last_time;
+            case DESCENDANT:
+                return lhs.last_time < rhs.last_time;
+            }
+        case TITLE:
+            switch (sorted) {
+            case ASCENDANT:
+                return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
+            case DESCENDANT:
+                return string_utils::toupper(lhs.title) > string_utils::toupper(rhs.title);
+            }
+        case TITLE_ID:
+            switch (sorted) {
+            case ASCENDANT:
+                return lhs.title_id < rhs.title_id;
+            case DESCENDANT:
+                return lhs.title_id > rhs.title_id;
+            }
+        }
+        return false;
+    });
+}
+
+static std::string get_label_name(GuiState &gui, const SortType &type) {
+    std::string label;
+    switch (type) {
+    case APP_VER: label = "Ver"; break;
+    case CATEGORY: label = "Cat"; break;
+    case LAST_TIME: label = "Last Time"; break;
+    case TITLE: label = "Title"; break;
+    case TITLE_ID: label = "Title ID"; break;
+    }
+
+    switch (gui.app_selector.app_list_sorted[type]) {
+    case ASCENDANT: label += " >"; break;
+    case DESCENDANT: label += " <"; break;
+    default: break;
+    }
+
+    return label;
+}
+
 static const ImU32 ARROW_COLOR = 4294967295; // White
 static float scroll_type, current_scroll_pos, max_scroll_pos;
 
@@ -307,123 +400,65 @@ void draw_app_selector(GuiState &gui, HostState &host) {
 
     switch (gui.app_selector.state) {
     case SELECT_APP:
-        std::string title_id_label = "Title ID";
+        // Sort Apps list when is not sorted
+        if (!gui.app_selector.is_app_list_sorted)
+            sort_app_list(gui, host, gui.users[host.io.user_id].sort_apps_type);
+
+        const auto title_id_label = get_label_name(gui, TITLE_ID);
         float title_id_size = (ImGui::CalcTextSize(title_id_label.c_str()).x) + (60.f * SCALE.x);
-        std::string app_ver_label = "Version";
-        float app_ver_size = (ImGui::CalcTextSize(app_ver_label.c_str()).x) + (20.f * SCALE.x);
-        std::string category_label = "Category";
-        float category_size = (ImGui::CalcTextSize(category_label.c_str()).x) + (20.f * SCALE.x);
+        const auto app_ver_label = get_label_name(gui, APP_VER);
+        float app_ver_size = (ImGui::CalcTextSize(app_ver_label.c_str()).x) + (30.f * SCALE.x);
+        const auto category_label = get_label_name(gui, CATEGORY);
+        float category_size = (ImGui::CalcTextSize(category_label.c_str()).x) + (30.f * SCALE.x);
+        const auto title_label = get_label_name(gui, TITLE);
+        const auto last_time_label = get_label_name(gui, LAST_TIME);
+        float last_time_size = (ImGui::CalcTextSize(last_time_label.c_str()).x) + (30.f * SCALE.x);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
         if (!host.cfg.apps_list_grid) {
-            ImGui::Columns(5);
+            ImGui::Columns(6);
             ImGui::SetColumnWidth(0, column_icon_size);
             if (ImGui::Button("Filter"))
                 ImGui::OpenPopup("app_filter");
             ImGui::NextColumn();
-            switch (gui.app_selector.title_id_sort_state) {
-            case ASCENDANT:
-                title_id_label += " >";
-                break;
-            case DESCENDANT:
-                title_id_label += " <";
-                break;
-            }
             ImGui::SetColumnWidth(1, title_id_size);
-            if (ImGui::Button(title_id_label.c_str())) {
-                gui.app_selector.title_id_sort_state = static_cast<gui::SortState>(std::max<int>(1, (gui.app_selector.title_id_sort_state + 1) % 3));
-                gui.app_selector.app_ver_sort_state = NOT_SORTED;
-                gui.app_selector.category_sort_state = NOT_SORTED;
-                gui.app_selector.title_sort_state = NOT_SORTED;
-                switch (gui.app_selector.title_id_sort_state) {
-                case ASCENDANT:
-                    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
-                        return lhs.title_id < rhs.title_id;
-                    });
-                    std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {
-                        return lhs.title_id < rhs.title_id;
-                    });
-                    break;
-                case DESCENDANT:
-                    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
-                        return lhs.title_id > rhs.title_id;
-                    });
-                    std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {
-                        return lhs.title_id > rhs.title_id;
-                    });
-                    break;
-                default:
-                    break;
-                }
-            }
+            if (ImGui::Button(title_id_label.c_str()))
+                sort_app_list(gui, host, TITLE_ID);
             ImGui::NextColumn();
-            switch (gui.app_selector.app_ver_sort_state) {
-            case ASCENDANT:
-                app_ver_label += " >";
-                app_ver_size += ImGui::CalcTextSize(" >").x;
-                break;
-            case DESCENDANT:
-                app_ver_label += " <";
-                app_ver_size += ImGui::CalcTextSize(" <").x;
-                break;
-            }
             ImGui::SetColumnWidth(2, app_ver_size);
-            if (ImGui::Button(app_ver_label.c_str())) {
-                gui.app_selector.title_id_sort_state = NOT_SORTED;
-                gui.app_selector.app_ver_sort_state = static_cast<gui::SortState>(std::max<int>(1, (gui.app_selector.app_ver_sort_state + 1) % 3));
-                gui.app_selector.category_sort_state = NOT_SORTED;
-                gui.app_selector.title_sort_state = NOT_SORTED;
-                switch (gui.app_selector.app_ver_sort_state) {
-                case ASCENDANT:
-                    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
-                        return lhs.app_ver < rhs.app_ver;
-                    });
-                    break;
-                case DESCENDANT:
-                    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
-                        return lhs.app_ver > rhs.app_ver;
-                    });
-                    break;
-                default:
-                    break;
-                }
-            }
+            if (ImGui::Button(app_ver_label.c_str()))
+                sort_app_list(gui, host, APP_VER);
             ImGui::NextColumn();
-            switch (gui.app_selector.category_sort_state) {
-            case ASCENDANT:
-                category_label += " >";
-                category_size += ImGui::CalcTextSize(" >").x;
-                break;
-            case DESCENDANT:
-                category_label += " <";
-                category_size += ImGui::CalcTextSize(" <").x;
-                break;
-            }
             ImGui::SetColumnWidth(3, category_size);
-            if (ImGui::Button(category_label.c_str())) {
-                gui.app_selector.title_id_sort_state = NOT_SORTED;
-                gui.app_selector.app_ver_sort_state = NOT_SORTED;
-                gui.app_selector.category_sort_state = static_cast<gui::SortState>(std::max<int>(1, (gui.app_selector.category_sort_state + 1) % 3));
-                gui.app_selector.title_sort_state = NOT_SORTED;
-                switch (gui.app_selector.category_sort_state) {
-                case ASCENDANT:
-                    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
-                        return lhs.category < rhs.category;
-                    });
-                    break;
-                case DESCENDANT:
-                    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
-                        return lhs.category > rhs.category;
-                    });
-                    break;
-                default:
-                    break;
-                }
-            }
+            if (ImGui::Button(category_label.c_str()))
+                sort_app_list(gui, host, CATEGORY);
             ImGui::NextColumn();
+            ImGui::SetColumnWidth(4, last_time_size);
+            if (ImGui::Button(last_time_label.c_str()))
+                sort_app_list(gui, host, LAST_TIME);
+            ImGui::NextColumn();
+            if (ImGui::Button(title_label.c_str()))
+                sort_app_list(gui, host, TITLE);
         } else {
             if (ImGui::Button("Filter"))
                 ImGui::OpenPopup("app_filter");
             ImGui::SameLine(0, 20.f * SCALE.x);
+            if (ImGui::Button("Sort Apps By"))
+                ImGui::OpenPopup("sort_apps");
+            if (ImGui::BeginPopup("sort_apps")) {
+                ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
+                if (ImGui::MenuItem(app_ver_label.c_str(), nullptr, gui.app_selector.app_list_sorted[APP_VER] != NOT_SORTED))
+                    sort_app_list(gui, host, APP_VER);
+                if (ImGui::MenuItem(category_label.c_str(), nullptr, gui.app_selector.app_list_sorted[CATEGORY] != NOT_SORTED))
+                    sort_app_list(gui, host, CATEGORY);
+                if (ImGui::MenuItem(last_time_label.c_str(), nullptr, gui.app_selector.app_list_sorted[LAST_TIME] != NOT_SORTED))
+                    sort_app_list(gui, host, LAST_TIME);
+                if (ImGui::MenuItem(title_label.c_str(), nullptr, gui.app_selector.app_list_sorted[TITLE] != NOT_SORTED))
+                    sort_app_list(gui, host, TITLE);
+                if (ImGui::MenuItem(title_id_label.c_str(), nullptr, gui.app_selector.app_list_sorted[TITLE_ID] != NOT_SORTED))
+                    sort_app_list(gui, host, TITLE_ID);
+                ImGui::PopStyleColor();
+                ImGui::EndPopup();
+            }
         }
         if (ImGui::BeginPopup("app_filter")) {
             ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
@@ -451,54 +486,16 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             ImGui::PopStyleColor();
             ImGui::EndPopup();
         }
-        std::string title_label = "Title";
-        switch (gui.app_selector.title_sort_state) {
-        case ASCENDANT:
-            title_label += " >";
-            break;
-        case DESCENDANT:
-            title_label += " <";
-            break;
-        default:
-            break;
-        }
-        if (ImGui::Button(title_label.c_str()) || !gui.app_selector.is_app_list_sorted) {
-            gui.app_selector.title_id_sort_state = NOT_SORTED;
-            gui.app_selector.app_ver_sort_state = NOT_SORTED;
-            gui.app_selector.category_sort_state = NOT_SORTED;
-            gui.app_selector.title_sort_state = static_cast<gui::SortState>(std::max<int>(1, (gui.app_selector.title_sort_state + 1) % 3));
-            gui.app_selector.is_app_list_sorted = true;
-            switch (gui.app_selector.title_sort_state) {
-            case ASCENDANT:
-                std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
-                    return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
-                });
-                std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {
-                    return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
-                });
-                break;
-            case DESCENDANT:
-                std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [](const App &lhs, const App &rhs) {
-                    return string_utils::toupper(lhs.title) > string_utils::toupper(rhs.title);
-                });
-                std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {
-                    return string_utils::toupper(lhs.title) > string_utils::toupper(rhs.title);
-                });
-                break;
-            default:
-                break;
-            }
-        }
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
-        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Refresh").x + ImGui::GetStyle().DisplayWindowPadding.x + (260 * SCALE.x)));
+        ImGui::PopStyleColor();
+        const auto search_bar_size = 120.f * SCALE.x;
+        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Refresh").x * SCALE.x) - search_bar_size);
         if (ImGui::Button("Refresh"))
             init_user_apps(gui, host);
-        ImGui::PopStyleColor(3);
         ImGui::SameLine();
-        ImGui::TextColored(GUI_COLOR_TEXT_BLACK, "Search");
-        ImGui::SameLine();
-        gui.app_search_bar.Draw("##app_search_bar", (120.f * SCALE.x));
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
+        ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
+        gui.app_search_bar.Draw("##app_search_bar", search_bar_size);
+        ImGui::PopStyleColor(2);
         if (!host.cfg.apps_list_grid) {
             ImGui::NextColumn();
             ImGui::Columns(1);
@@ -521,11 +518,12 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         const auto GRID_ICON_SIZE = ImVec2(128.f * SCALE.x, 128.f * SCALE.y);
         const auto GRID_COLUMN_SIZE = GRID_ICON_SIZE.x + (80.f * SCALE.x);
         if (!host.cfg.apps_list_grid) {
-            ImGui::Columns(5, nullptr, true);
+            ImGui::Columns(6, nullptr, true);
             ImGui::SetColumnWidth(0, column_icon_size);
             ImGui::SetColumnWidth(1, title_id_size);
             ImGui::SetColumnWidth(2, app_ver_size);
             ImGui::SetColumnWidth(3, category_size);
+            ImGui::SetColumnWidth(4, last_time_size);
         } else {
             ImGui::Columns(4, nullptr, false);
             ImGui::SetColumnWidth(0, GRID_COLUMN_SIZE);
@@ -580,6 +578,14 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::NextColumn();
                     ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                    ImGui::NextColumn();
+                    if (app.last_time) {
+                        tm date_tm = {};
+                        SAFE_LOCALTIME(&app.last_time, &date_tm);
+                        auto LAST_TIME = get_date_time(gui, host, date_tm);
+                        ImGui::Selectable(LAST_TIME["date"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                    } else
+                        ImGui::Selectable(!gui.lang.app_context["never"].empty() ? gui.lang.app_context["never"].c_str() : "Never", false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::NextColumn();
                     ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::PopStyleColor();

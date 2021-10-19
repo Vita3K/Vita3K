@@ -71,54 +71,51 @@ void get_users_list(GuiState &gui, HostState &host) {
             if (fs::is_directory(path) && user_xml.load_file(((path / "user.xml").c_str()))) {
                 const auto user_child = user_xml.child("user");
 
-                // Load user settings
+                // Load user id
                 std::string user_id;
                 if (!user_child.attribute("id").empty())
                     user_id = user_child.attribute("id").as_string();
                 else
                     user_id = path.path().stem().string();
 
+                // Load user name
                 auto &user = gui.users[user_id];
                 user.id = user_id;
                 if (!user_child.attribute("name").empty())
                     user.name = user_child.attribute("name").as_string();
-                else
-                    user.name = "vita3K";
 
+                // Load date format setting
                 if (!user_child.attribute("date-format").empty())
                     user.date_format = DateFormat(user_child.attribute("date-format").as_int());
-                else
-                    user.date_format = DateFormat::MM_DD_YYYY;
 
+                // Load clock setting
                 if (!user_child.attribute("clock-12-hour").empty())
                     user.clock_12_hour = user_child.attribute("clock-12-hour").as_bool();
-                else
-                    user.clock_12_hour = true;
 
+                // Load Avatar
                 if (!user_child.child("avatar").text().empty())
                     user.avatar = user_child.child("avatar").text().as_string();
-                else
-                    user.avatar = "default";
                 init_avatar(gui, host, user.id, user.avatar);
+
+                // Load sort Apps list settings
+                auto sort_apps_list = user_child.child("sort-apps-list");
+                if (!sort_apps_list.empty()) {
+                    user.sort_apps_type = SortType(sort_apps_list.attribute("type").as_uint());
+                    user.sort_apps_state = SortState(sort_apps_list.attribute("state").as_uint());
+                }
 
                 // Load theme settings
                 auto theme = user_child.child("theme");
                 if (!theme.attribute("use-background").empty())
                     user.use_theme_bg = theme.attribute("use-background").as_bool();
-                else
-                    user.use_theme_bg = true;
 
                 if (!theme.child("content-id").text().empty())
                     user.theme_id = theme.child("content-id").text().as_string();
-                else
-                    user.theme_id = "default";
 
                 // Load start screen settings
                 auto start = user_child.child("start-screen");
                 if (!start.attribute("type").empty())
                     user.start_type = start.attribute("type").as_string();
-                else
-                    user.start_type = "default";
 
                 if (!start.child("path").text().empty())
                     user.start_path = start.child("path").text().as_string();
@@ -151,6 +148,11 @@ void save_user(GuiState &gui, HostState &host, const std::string &user_id) {
     user_child.append_attribute("clock-12-hour") = user.clock_12_hour;
     user_child.append_child("avatar").append_child(pugi::node_pcdata).set_value(user.avatar.c_str());
 
+    // Save sort Apps list settings
+    auto sort_apps_list = user_child.append_child("sort-apps-list");
+    sort_apps_list.append_attribute("type") = user.sort_apps_type;
+    sort_apps_list.append_attribute("state") = user.sort_apps_state;
+
     // Save theme settings
     auto theme = user_child.append_child("theme");
     theme.append_attribute("use-background") = user.use_theme_bg;
@@ -180,6 +182,7 @@ void init_user(GuiState &gui, HostState &host, const std::string &user_id) {
     }
     init_theme(gui, host, gui.users[user_id].theme_id);
     init_notice_info(gui, host);
+    init_last_time_apps(gui, host);
 }
 
 void open_user(GuiState &gui, HostState &host) {

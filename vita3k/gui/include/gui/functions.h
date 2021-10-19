@@ -39,7 +39,7 @@ enum GenericDialogState {
 void delete_app(GuiState &gui, HostState &host, const std::string &app_path);
 void get_app_info(GuiState &gui, HostState &host, const std::string &app_path);
 size_t get_app_size(GuiState &gui, HostState &host, const std::string &app_path);
-std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string &app_path);
+std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &app_path);
 std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &app_path);
 std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &app_path);
 std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host, const tm &date_time);
@@ -66,6 +66,7 @@ void init_notice_info(GuiState &gui, HostState &host);
 bool init_theme(GuiState &gui, HostState &host, const std::string &content_id);
 void init_themes(GuiState &gui, HostState &host);
 void init_theme_start_background(GuiState &gui, HostState &host, const std::string &content_id);
+void init_last_time_apps(GuiState &gui, HostState &host);
 void init_trophy_collection(GuiState &gui, HostState &host);
 void init_user(GuiState &gui, HostState &host, const std::string &user_id);
 void init_user_app(GuiState &gui, HostState &host, const std::string &app_path);

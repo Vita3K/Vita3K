@@ -461,7 +461,6 @@ void init_user_app(GuiState &gui, HostState &host, const std::string &app_path) 
     get_app_param(gui, host, app_path);
     init_app_icon(gui, host, app_path);
 
-    gui.app_selector.title_sort_state = NOT_SORTED;
     gui.app_selector.is_app_list_sorted = false;
 }
 
@@ -474,8 +473,8 @@ std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui,
     return app_icon;
 }
 
-std::vector<App>::const_iterator get_app_index(GuiState &gui, const std::string &app_path) {
-    const auto &app_type = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
+std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &app_path) {
+    auto &app_type = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
     const auto app_index = std::find_if(app_type.begin(), app_type.end(), [&](const App &a) {
         return a.path == app_path;
     });
@@ -558,6 +557,10 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
         }
         gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, {}, {}, host.app_short_title, host.app_title, host.app_title_id, app });
     }
+
+    std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {
+        return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
+    });
 }
 
 static const char *const ymonth[] = {
