@@ -408,7 +408,8 @@ CPUContext DynarmicCPU::save_context() {
     CPUContext ctx;
     const auto dctx = jit->SaveContext();
     ctx.cpu_registers = dctx.Regs();
-    ctx.fpu_registers = dctx.ExtRegs();
+    static_assert(sizeof(ctx.fpu_registers) == sizeof(dctx.ExtRegs()));
+    memcpy(ctx.fpu_registers.data(), dctx.ExtRegs().data(), sizeof(ctx.fpu_registers));
     ctx.fpscr = dctx.Fpscr();
     ctx.cpsr = dctx.Cpsr();
 
@@ -418,7 +419,8 @@ CPUContext DynarmicCPU::save_context() {
 void DynarmicCPU::load_context(CPUContext ctx) {
     Dynarmic::A32::Context dctx;
     dctx.Regs() = ctx.cpu_registers;
-    dctx.ExtRegs() = ctx.fpu_registers;
+    static_assert(sizeof(ctx.fpu_registers) == sizeof(dctx.ExtRegs()));
+    memcpy(dctx.ExtRegs().data(), ctx.fpu_registers.data(), sizeof(ctx.fpu_registers));
     dctx.SetCpsr(ctx.cpsr);
     dctx.SetFpscr(ctx.fpscr);
     jit->LoadContext(dctx);
