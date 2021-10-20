@@ -679,7 +679,7 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (gui.live_area.app_selector)
         draw_app_selector(gui, host);
 
-    if (gui.live_area.information_bar)
+    if ((host.cfg.show_info_bar || !host.display.imgui_render || !gui.live_area.app_selector) && gui.live_area.information_bar)
         draw_information_bar(gui, host);
 
     if (gui.live_area.live_area_screen)

@@ -479,10 +479,14 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show GUI after booting an application.");
         ImGui::SameLine();
+        ImGui::Checkbox("Info Bar Visible", &host.cfg.show_info_bar);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Check the box to show info bar inside app selector.");
+        ImGui::Spacing();
         ImGui::Checkbox("Live Area App Screen", &host.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to open Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
-        ImGui::Spacing();
+        ImGui::SameLine();
         ImGui::Checkbox("Grid Mode", &host.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to set the app list to grid mode.");
