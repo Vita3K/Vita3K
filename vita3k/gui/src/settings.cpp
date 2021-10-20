@@ -189,7 +189,11 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
 bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
     std::vector<std::string> theme_bg_name;
     std::map<std::string, std::string> bar_param;
-    std::map<std::string, std::string> theme_icon_name;
+    std::map<std::string, std::string> theme_icon_name = {
+        { "NPXS10008", {} },
+        { "NPXS10015", {} },
+        { "NPXS10026", {} }
+    };
 
     gui.app_selector.sys_apps_icon.clear();
     gui.current_theme_bg = 0;
@@ -295,32 +299,35 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
     } else
         gui.information_bar_color["indicator"] = 4294967295; // White
 
-    if (!theme_icon_name.empty()) {
-        for (const auto &icon : theme_icon_name) {
-            int32_t width = 0;
-            int32_t height = 0;
-            vfs::FileBuffer buffer;
+    for (const auto &icon : theme_icon_name) {
+        int32_t width = 0;
+        int32_t height = 0;
+        vfs::FileBuffer buffer;
 
-            const auto title_id = icon.first;
-            const auto name = icon.second;
-
+        const auto title_id = icon.first;
+        const auto name = icon.second;
+        if (name.empty())
+            vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + title_id + "/sce_sys/icon0.png");
+        else
             vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + name);
 
+        if (buffer.empty()) {
+            buffer = init_default_icon(gui, host, title_id);
             if (buffer.empty()) {
-                LOG_WARN("Name: '{}', Not found icon for content id: {}.", name, content_id);
+                LOG_WARN("Name: '{}', Not found icon for system App: {}.", name, content_id);
                 continue;
-            }
-            stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-            if (!data) {
-                LOG_ERROR("Name: '{}', Invalid icon for content id: {}.", name, content_id);
-                continue;
-            }
-
-            gui.app_selector.sys_apps_icon[title_id].init(gui.imgui_state.get(), data, width, height);
-            stbi_image_free(data);
+            } else
+                LOG_INFO("Default icon found for system App {}.", title_id);
         }
-    } else
-        init_apps_icon(gui, host, gui.app_selector.sys_apps);
+        stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+        if (!data) {
+            LOG_ERROR("Name: '{}', Invalid icon for content id: {}.", name, content_id);
+            continue;
+        }
+
+        gui.app_selector.sys_apps_icon[title_id].init(gui.imgui_state.get(), data, width, height);
+        stbi_image_free(data);
+    }
 
     for (auto pos = 0; pos < theme_bg_name.size(); pos++) {
         int32_t width = 0;

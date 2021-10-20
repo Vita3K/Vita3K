@@ -202,35 +202,38 @@ static void init_font(GuiState &gui, HostState &host) {
     io.DisplayFramebufferScale = { host.dpi_scale, host.dpi_scale };
 }
 
-static IconData load_app_icon(GuiState &gui, HostState &host, const std::string &app_path) {
-    IconData image;
+vfs::FileBuffer init_default_icon(GuiState &gui, HostState &host, const std::string &app_path) {
     vfs::FileBuffer buffer;
-
-    const auto is_sys = app_path.find("NPXS") != std::string::npos;
-    if (is_sys)
-        vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/icon0.png");
-    else
-        vfs::read_app_file(buffer, host.pref_path, app_path, "sce_sys/icon0.png");
 
     const auto default_fw_icon{ fs::path(host.pref_path) / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
     const auto default_icon{ fs::path(host.base_path) / "data/image/icon.png" };
 
+    if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
+        auto icon_path = fs::exists(default_fw_icon) ? default_fw_icon.string() : default_icon.string();
+        std::ifstream image_stream(icon_path, std::ios::binary | std::ios::ate);
+        const std::size_t fsize = image_stream.tellg();
+        buffer.resize(fsize);
+        image_stream.seekg(0, std::ios::beg);
+        image_stream.read(reinterpret_cast<char *>(buffer.data()), fsize);
+    }
+
+    return buffer;
+}
+
+static IconData load_app_icon(GuiState &gui, HostState &host, const std::string &app_path) {
+    IconData image;
+    vfs::FileBuffer buffer;
+
     const auto APP_INDEX = get_app_index(gui, app_path);
 
-    if (buffer.empty()) {
-        if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
-            LOG_INFO("Default icon found for title {}, [{}] in path {}.", APP_INDEX->title_id, APP_INDEX->title, app_path);
-            auto icon_path = fs::exists(default_fw_icon) ? default_fw_icon.string() : default_icon.string();
-            std::ifstream image_stream(icon_path, std::ios::binary | std::ios::ate);
-            const std::size_t fsize = image_stream.tellg();
-            buffer.resize(fsize);
-            image_stream.seekg(0, std::ios::beg);
-            image_stream.read(reinterpret_cast<char *>(buffer.data()), fsize);
-        } else {
+    if (!vfs::read_app_file(buffer, host.pref_path, app_path, "sce_sys/icon0.png")) {
+        buffer = init_default_icon(gui, host, app_path);
+        if (buffer.empty()) {
             LOG_WARN("Default icon not found for title {}, [{}] in path {}.",
                 APP_INDEX->title_id, APP_INDEX->title, app_path);
             return {};
-        }
+        } else
+            LOG_INFO("Default icon found for App {}, [{}] in path {}.", APP_INDEX->title_id, APP_INDEX->title, app_path);
     }
     image.data.reset(stbi_load_from_memory(
         buffer.data(), static_cast<int>(buffer.size()),
@@ -245,12 +248,9 @@ static IconData load_app_icon(GuiState &gui, HostState &host, const std::string 
 }
 
 void init_app_icon(GuiState &gui, HostState &host, const std::string &app_path) {
-    const auto is_sys = app_path.find("NPXS") != std::string::npos;
-
-    auto &app_icon = is_sys ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
     IconData data = load_app_icon(gui, host, app_path);
 
-    app_icon[app_path].init(gui.imgui_state.get(), data.data.get(), data.width, data.height);
+    gui.app_selector.user_apps_icon[app_path].init(gui.imgui_state.get(), data.data.get(), data.width, data.height);
 }
 
 IconData::IconData()
@@ -259,12 +259,8 @@ IconData::IconData()
 void IconAsyncLoader::commit(GuiState &gui) {
     std::lock_guard<std::mutex> lock(mutex);
 
-    for (const auto &pair : icon_data) {
-        const auto is_sys = pair.first.find("NPXS") != std::string::npos;
-        auto &app_icon = is_sys ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
-
-        app_icon[pair.first].init(gui.imgui_state.get(), pair.second.data.get(), pair.second.width, pair.second.height);
-    }
+    for (const auto &pair : icon_data)
+        gui.app_selector.user_apps_icon[pair.first].init(gui.imgui_state.get(), pair.second.data.get(), pair.second.width, pair.second.height);
 
     icon_data.clear();
 }

@@ -67,19 +67,10 @@ static bool init_notice_icon(GuiState &gui, HostState &host, const fs::path &con
             LOG_WARN("Icon no found for trophy id: {} on NpComId: {}", info.content_id, info.id);
             return false;
         } else {
-            if (!vfs::read_app_file(buffer, host.pref_path, info.id, "sce_sys/icon0.png")) {
-                const auto default_fw_icon{ fs::path(host.pref_path) / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
-                const auto default_icon{ fs::path(host.base_path) / "data/image/icon.png" };
-                if (fs::exists(default_fw_icon) || fs::exists(default_icon)) {
-                    std::ifstream image_stream(fs::exists(default_fw_icon) ? default_fw_icon.string() : default_icon.string(), std::ios::binary | std::ios::ate);
-                    const std::size_t fsize = image_stream.tellg();
-                    buffer.resize(fsize);
-                    image_stream.seekg(0, std::ios::beg);
-                    image_stream.read(reinterpret_cast<char *>(&buffer[0]), fsize);
-                } else {
-                    LOG_WARN("Not found defaut icon for this notice content: {}", info.content_id);
-                    return false;
-                }
+            buffer = init_default_icon(gui, host, info.content_id);
+            if (buffer.empty()) {
+                LOG_WARN("Not found defaut icon for this notice content: {}", info.content_id);
+                return false;
             }
         }
     }
