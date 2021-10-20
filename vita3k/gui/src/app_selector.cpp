@@ -243,7 +243,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
-    const auto MENUBAR_BG_HEIGHT = !gui.live_area.information_bar ? 22.f * SCALE.x : INFORMATION_BAR_HEIGHT;
+    const auto MENUBAR_BG_HEIGHT = (!host.cfg.show_info_bar && host.display.imgui_render) || !gui.live_area.information_bar ? 22.f * SCALE.x : INFORMATION_BAR_HEIGHT;
 
     const auto is_background = (gui.users[host.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
 
