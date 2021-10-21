@@ -3310,9 +3310,9 @@ EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
 }
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
-    assert(texture);
-    assert(gxm::is_paletted_format(gxm::get_format(texture)));
-    return Ptr<void>(texture->palette_addr << 6);
+    const auto base_format = gxm::get_base_format(gxm::get_format(texture));
+
+    return gxm::is_paletted_format(base_format) ? Ptr<void>(texture->palette_addr << 6) : Ptr<void>();
 }
 
 EXPORT(uint32_t, sceGxmTextureGetStride, const SceGxmTexture *texture) {
