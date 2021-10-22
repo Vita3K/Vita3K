@@ -657,17 +657,30 @@ EXPORT(int, sceSaveDataDialogAbort) {
 
 static void check_empty_param(HostState &host, const SceAppUtilSaveDataSlotEmptyParam *empty_param) {
     vfs::FileBuffer thumbnail_buffer;
-    host.common_dialog.savedata.title[host.common_dialog.savedata.selected_save] = "";
-    host.common_dialog.savedata.subtitle[host.common_dialog.savedata.selected_save] = "";
-    host.common_dialog.savedata.icon_buffer[host.common_dialog.savedata.selected_save].clear();
-    host.common_dialog.savedata.has_date[host.common_dialog.savedata.selected_save] = false;
+    const auto idx = host.common_dialog.savedata.selected_save;
+    host.common_dialog.savedata.title[idx] = "";
+    host.common_dialog.savedata.subtitle[idx] = "";
+    host.common_dialog.savedata.icon_buffer[idx].clear();
+    host.common_dialog.savedata.has_date[idx] = false;
     if (empty_param) {
-        host.common_dialog.savedata.title[host.common_dialog.savedata.selected_save] = empty_param->title.get(host.mem) ? empty_param->title.get(host.mem) : (!host.common_dialog.lang.save_data["new_saved_data"].empty() ? host.common_dialog.lang.save_data["new_saved_data"] : "New Saved Data");
-        auto device = device::get_device(empty_param->iconPath.get(host.mem));
-        auto thumbnail_path = translate_path(empty_param->iconPath.get(host.mem), device, host.io.device_paths);
-        vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
-        host.common_dialog.savedata.icon_buffer[host.common_dialog.savedata.selected_save] = thumbnail_buffer;
-        host.common_dialog.savedata.icon_loaded[0] = true;
+        host.common_dialog.savedata.title[idx] = empty_param->title.get(host.mem) ? empty_param->title.get(host.mem) : (!host.common_dialog.lang.save_data["new_saved_data"].empty() ? host.common_dialog.lang.save_data["new_saved_data"] : "New Saved Data");
+        host.common_dialog.savedata.title[idx] = empty_param->title.get(host.mem) ? empty_param->title.get(host.mem) : (!host.common_dialog.lang.save_data["new_saved_data"].empty() ? host.common_dialog.lang.save_data["new_saved_data"] : "New Saved Data");
+        auto iconPath = empty_param->iconPath.get(host.mem);
+        SceUChar8 *iconBuf = reinterpret_cast<SceUChar8 *>(empty_param->iconBuf.get(host.mem));
+        auto iconBufSize = empty_param->iconBufSize;
+        if (iconPath) {
+            auto device = device::get_device(empty_param->iconPath.get(host.mem));
+            auto thumbnail_path = translate_path(empty_param->iconPath.get(host.mem), device, host.io.device_paths);
+            vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
+            host.common_dialog.savedata.icon_buffer[idx] = thumbnail_buffer;
+            host.common_dialog.savedata.icon_loaded[idx] = true;
+        } else if (iconBuf && iconBufSize != 0) {
+            thumbnail_buffer.insert(thumbnail_buffer.end(), iconBuf, iconBuf + iconBufSize);
+            host.common_dialog.savedata.icon_buffer[idx] = thumbnail_buffer;
+            host.common_dialog.savedata.icon_loaded[idx] = true;
+        } else {
+            host.common_dialog.savedata.icon_loaded[idx] = false;
+        }
     }
 }
 
@@ -683,11 +696,22 @@ static void check_save_file(SceUID fd, std::vector<SceAppUtilSaveDataSlotParam> 
         auto empty_param = host.common_dialog.savedata.list_empty_param;
         if (empty_param) {
             host.common_dialog.savedata.title[index] = empty_param->title.get(host.mem) ? empty_param->title.get(host.mem) : (!host.common_dialog.lang.save_data["new_saved_data"].empty() ? host.common_dialog.lang.save_data["new_saved_data"] : "New Saved Data");
-            auto device = device::get_device(empty_param->iconPath.get(host.mem));
-            auto thumbnail_path = translate_path(empty_param->iconPath.get(host.mem), device, host.io.device_paths);
-            vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
-            host.common_dialog.savedata.icon_buffer[index] = thumbnail_buffer;
-            host.common_dialog.savedata.icon_loaded[index] = true;
+            auto iconPath = empty_param->iconPath.get(host.mem);
+            SceUChar8 *iconBuf = reinterpret_cast<SceUChar8 *>(empty_param->iconBuf.get(host.mem));
+            auto iconBufSize = empty_param->iconBufSize;
+            if (iconPath) {
+                auto device = device::get_device(empty_param->iconPath.get(host.mem));
+                auto thumbnail_path = translate_path(empty_param->iconPath.get(host.mem), device, host.io.device_paths);
+                vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
+                host.common_dialog.savedata.icon_buffer[index] = thumbnail_buffer;
+                host.common_dialog.savedata.icon_loaded[index] = true;
+            } else if (iconBuf && iconBufSize != 0) {
+                thumbnail_buffer.insert(thumbnail_buffer.end(), iconBuf, iconBuf + iconBufSize);
+                host.common_dialog.savedata.icon_buffer[index] = thumbnail_buffer;
+                host.common_dialog.savedata.icon_loaded[index] = true;
+            } else {
+                host.common_dialog.savedata.icon_loaded[index] = false;
+            }
         }
     } else {
         read_file(&slot_param[index], host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
