@@ -192,7 +192,7 @@ void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
         const auto PATCH_PATH{ PREF_PATH / "ux0/patch" / title_id };
         if (fs::exists(PATCH_PATH))
             fs::remove_all(PATCH_PATH);
-        const auto SAVE_DATA_PATH{ PREF_PATH / "ux0/user" / host.io.user_id / "savedata" / title_id };
+        const auto SAVE_DATA_PATH{ PREF_PATH / "ux0/user" / host.io.user_id / "savedata" / APP_INDEX->savedata };
         if (fs::exists(SAVE_DATA_PATH))
             fs::remove_all(SAVE_DATA_PATH);
         const auto SHADER_CACHE_PATH{ BASE_PATH / "shaders" / title_id };
@@ -246,7 +246,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
     const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
     const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / title_id };
     const auto LICENSE_PATH{ fs::path(host.pref_path) / "ux0/license" / title_id };
-    const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / title_id };
+    const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / APP_INDEX->savedata };
     const auto SHADER_CACHE_PATH{ fs::path(host.base_path) / "shaders" / title_id };
     const auto SHADER_LOG_PATH{ fs::path(host.base_path) / "shaderlog" / title_id };
 

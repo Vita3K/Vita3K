@@ -134,7 +134,7 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path, boo
 }
 
 void init_device_paths(IOState &io) {
-    io.device_paths.savedata0 = "user/" + io.user_id + "/savedata/" + io.title_id;
+    io.device_paths.savedata0 = "user/" + io.user_id + "/savedata/" + io.savedata;
     io.device_paths.app0 = "app/" + io.app_path;
     io.device_paths.addcont0 = "addcont/" + io.title_id;
 }
@@ -142,7 +142,7 @@ void init_device_paths(IOState &io) {
 bool init_savedata_app_path(IOState &io, const fs::path &pref_path) {
     const fs::path user_id_path{ pref_path / (+VitaIoDevice::ux0)._to_string() / "user" / io.user_id };
     const fs::path savedata_path{ user_id_path / "savedata" };
-    const fs::path savedata_game_path{ savedata_path / io.title_id };
+    const fs::path savedata_game_path{ savedata_path / io.savedata };
 
     if (!fs::exists(user_id_path))
         fs::create_directory(user_id_path);
