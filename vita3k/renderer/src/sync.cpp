@@ -44,7 +44,8 @@ COMMAND(handle_notification) {
     [[maybe_unused]] const bool is_vertex = helper.pop<bool>();
 
     volatile std::uint32_t *val = nof->address.get(mem);
-    *val = nof->value;
+    if (val) // Ratchet and clank Trilogy request this
+        *val = nof->value;
 }
 
 // Client side function
