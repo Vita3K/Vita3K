@@ -198,6 +198,7 @@ int main(int argc, char *argv[]) {
     host.app_version = APP_INDEX->app_ver;
     host.app_category = APP_INDEX->category;
     host.app_content_id = APP_INDEX->content_id;
+    host.io.savedata = APP_INDEX->savedata;
     host.current_app_title = APP_INDEX->title;
     host.app_short_title = APP_INDEX->stitle;
     host.io.title_id = APP_INDEX->title_id;
