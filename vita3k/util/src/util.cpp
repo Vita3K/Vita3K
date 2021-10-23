@@ -35,8 +35,6 @@
 #include <memory>
 #include <stdexcept>
 
-#include <immintrin.h>
-
 namespace logging {
 
 static const fs::path &LOG_FILE_NAME = "vita3k.log";
@@ -257,6 +255,17 @@ std::int64_t byte_swap(std::int64_t val) {
     return byte_swap(static_cast<std::uint64_t>(val));
 }
 
+/*
+float32 to float16 conversion
+we can have 3 cases
+1 program compiled with AVX2 or F16C flags  - use fast conversion
+2 program compiled without AVX2 or F16C flags:
+2a we can include and use F16C intrinsic without AVX2 or F16C flags - autodetect and use fast or basic conversion depends of runtime cpu
+2b we can't include and use F16C intrinsic - use basic conversion
+msvc allow to include any intrinsic independent of architecture flags, other compilers disallow this
+*/
+#if (defined(__AVX__) && defined(__F16C__)) || defined(__AVX2__) || defined(_MSC_VER)
+#include <immintrin.h>
 void float_to_half_AVX_F16C(const float *src, std::uint16_t *dest, const int total) {
     float toconvert[8] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     int i = 0;
@@ -273,6 +282,7 @@ void float_to_half_AVX_F16C(const float *src, std::uint16_t *dest, const int tot
         dest += 8;
     }
 }
+#endif
 
 #if (defined(__AVX__) && defined(__F16C__)) || defined(__AVX2__)
 //forced use AVX+F16C instruction set
@@ -282,17 +292,14 @@ void float_to_half(const float *src, std::uint16_t *dest, const int total) {
     float_to_half_AVX_F16C(src, dest, total);
 }
 #else
-//check and use AVX+F16C instruction set if possible
-#include <util/instrset_detect.h>
-
+#include <util/float_to_half.h>
 void float_to_half_basic(const float *src, std::uint16_t *dest, const int total) {
-    int i = 0;
-    while (i < total) {
-        uint32_t x = *((uint32_t *)&src[i]);
-        dest[i] = ((x >> 16) & 0x8000) | ((((x & 0x7f800000) - 0x38000000) >> 13) & 0x7c00) | ((x >> 13) & 0x03ff);
-        i++;
+    for (int i = 0; i < total; i++) {
+        dest[i] = util::encode_flt16(src[i]);
     }
 }
+#if defined(_MSC_VER)
+//check and use AVX+F16C instruction set if possible
 
 // use function variable as imitation of self-modifying code.
 // on first use we check processor features and set appropriate realisation, later we immediately use appropriate realisation
@@ -300,13 +307,14 @@ void float_to_half_init(const float *src, std::uint16_t *dest, const int total);
 
 void (*float_to_half_var)(const float *src, std::uint16_t *dest, const int total) = float_to_half_init;
 
+#include <util/instrset_detect.h>
 void float_to_half_init(const float *src, std::uint16_t *dest, const int total) {
     if (util::instrset::hasF16C()) {
         float_to_half_var = float_to_half_AVX_F16C;
-        LOG_INFO("AVX+F16C instruction set supported. Use fast f32 to f16 conversion");
+        LOG_INFO("AVX+F16C instruction set is supported. Using fast f32 to f16 conversion");
     } else {
         float_to_half_var = float_to_half_basic;
-        LOG_INFO("AVX+F16C instruction set not supported. Use basic f32 to f16 conversion");
+        LOG_INFO("AVX+F16C instruction set is not supported. Using basic f32 to f16 conversion");
     }
     (*float_to_half_var)(src, dest, total);
 }
@@ -314,6 +322,11 @@ void float_to_half_init(const float *src, std::uint16_t *dest, const int total) 
 void float_to_half(const float *src, std::uint16_t *dest, const int total) {
     (*float_to_half_var)(src, dest, total);
 }
+#else
+void float_to_half(const float *src, std::uint16_t *dest, const int total) {
+    float_to_half_basic(src, dest, total);
+}
+#endif
 #endif
 
 // pent0 found on stackoverflow
