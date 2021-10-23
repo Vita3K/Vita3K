@@ -8,6 +8,7 @@ add_library(
 	include/util/exit_code.h
 	include/util/exec.h
 	include/util/find.h
+	include/util/float_to_half.h
 	include/util/fs.h
 	include/util/function_info.h
 	include/util/instrset_detect.h
