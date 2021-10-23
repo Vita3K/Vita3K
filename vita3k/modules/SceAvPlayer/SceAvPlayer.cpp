@@ -51,7 +51,7 @@ struct AvPlayerState {
 };
 
 struct SceAvPlayerMemoryAllocator {
-    uint32_t user_data;
+    uint32_t user_data = 0;
 
     // All of these should be cast to SceAvPlayerAllocator or SceAvPlayerDeallocator types.
     Ptr<void> general_allocator;
@@ -61,7 +61,7 @@ struct SceAvPlayerMemoryAllocator {
 };
 
 struct SceAvPlayerFileManager {
-    uint32_t user_data;
+    uint32_t user_data = 0;
 
     // Cast to SceAvPlayerOpenFile, SceAvPlayerCloseFile, SceAvPlayerReadFile and SceAvPlayerGetFileSize.
     Ptr<void> open_file;
@@ -71,7 +71,7 @@ struct SceAvPlayerFileManager {
 };
 
 struct SceAvPlayerEventManager {
-    uint32_t user_data;
+    uint32_t user_data = 0;
 
     // Cast to SceAvPlayerEventCallback.
     Ptr<void> event_callback;
@@ -310,7 +310,7 @@ EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, SceAvPlayerFrameInfo
     const auto state = host.kernel.obj_store.get<AvPlayerState>();
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
     if (!player_info) {
-        return SCE_AVPLAYER_ERROR_ILLEGAL_ADDR;
+        return false;
     }
     Ptr<uint8_t> buffer;
 
@@ -376,6 +376,9 @@ EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, uint stream_no,
 EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, SceAvPlayerFrameInfo *frame_info) {
     const auto state = host.kernel.obj_store.get<AvPlayerState>();
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
+    if (!player_info) {
+        return false;
+    }
 
     Ptr<uint8_t> buffer;
 
