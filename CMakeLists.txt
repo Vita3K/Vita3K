@@ -148,12 +148,6 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio" AND (CMAKE_C_COMPILER_ID MATCHES "MSV
 	string(APPEND CMAKE_CXX_FLAGS " /MP")
 endif()
 
-if ((CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-		OR (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-		OR (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse2 -mavx -mf16c")
-endif()
-
 add_subdirectory(external)
 add_subdirectory(vita3k)
 add_subdirectory(tools/gen-modules)
