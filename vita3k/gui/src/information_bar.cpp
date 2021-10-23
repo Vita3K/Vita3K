@@ -67,7 +67,7 @@ static bool init_notice_icon(GuiState &gui, HostState &host, const fs::path &con
             LOG_WARN("Icon no found for trophy id: {} on NpComId: {}", info.content_id, info.id);
             return false;
         } else {
-            buffer = init_default_icon(gui, host, info.content_id);
+            buffer = init_default_icon(gui, host);
             if (buffer.empty()) {
                 LOG_WARN("Not found defaut icon for this notice content: {}", info.content_id);
                 return false;

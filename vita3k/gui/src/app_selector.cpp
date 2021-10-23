@@ -38,6 +38,7 @@ void init_user_apps(GuiState &gui, HostState &host) {
     gui.current_app_selected = -1;
     gui.live_area_contents.clear();
     gui.live_items.clear();
+    gui.app_selector.icon_async_loader->quit = true;
 
     std::thread init_apps([&gui, &host]() {
         auto app_list_size = gui.app_selector.user_apps.size();
@@ -439,9 +440,11 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             if (ImGui::Button(title_label.c_str()))
                 sort_app_list(gui, host, TITLE);
         } else {
+            ImGui::Columns(2);
+            ImGui::SetColumnWidth(0, 90 * SCALE.x);
             if (ImGui::Button("Filter"))
                 ImGui::OpenPopup("app_filter");
-            ImGui::SameLine(0, 20.f * SCALE.x);
+            ImGui::NextColumn();
             if (ImGui::Button("Sort Apps By"))
                 ImGui::OpenPopup("sort_apps");
             if (ImGui::BeginPopup("sort_apps")) {
@@ -488,7 +491,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         }
         ImGui::PopStyleColor();
         const auto search_bar_size = 120.f * SCALE.x;
-        ImGui::SameLine(ImGui::GetColumnWidth() - (ImGui::CalcTextSize("Refresh").x * SCALE.x) - search_bar_size);
+        ImGui::SameLine(ImGui::GetColumnWidth() - ImGui::CalcTextSize("Refresh").x - search_bar_size - (78 * SCALE.x));
         if (ImGui::Button("Refresh"))
             init_user_apps(gui, host);
         ImGui::SameLine();
@@ -496,10 +499,8 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
         gui.app_search_bar.Draw("##app_search_bar", search_bar_size);
         ImGui::PopStyleColor(2);
-        if (!host.cfg.apps_list_grid) {
-            ImGui::NextColumn();
-            ImGui::Columns(1);
-        }
+        ImGui::NextColumn();
+        ImGui::Columns(1);
         ImGui::Separator();
         const auto POS_APP_LIST = ImVec2(60.f * SCALE.x, 48.f * SCALE.y + INFORMATION_BAR_HEIGHT);
         const auto SIZE_APP_LIST = ImVec2((host.cfg.apps_list_grid ? 840.f : 900.f) * SCALE.x, display_size.y - POS_APP_LIST.y);

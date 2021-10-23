@@ -312,7 +312,7 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
             vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + name);
 
         if (buffer.empty()) {
-            buffer = init_default_icon(gui, host, title_id);
+            buffer = init_default_icon(gui, host);
             if (buffer.empty()) {
                 LOG_WARN("Name: '{}', Not found icon for system App: {}.", name, content_id);
                 continue;
