@@ -168,6 +168,20 @@ void update_last_time_app_used(GuiState &gui, HostState &host, const std::string
         gui.time_apps[host.io.user_id].push_back({ app, std::time(nullptr), 0 });
 
     get_app_index(gui, app)->last_time = std::time(nullptr);
+    if (gui.users[host.io.user_id].sort_apps_type == LAST_TIME) {
+        const auto sorted = gui.app_selector.app_list_sorted[LAST_TIME];
+        std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [&sorted](const App &lhs, const App &rhs) {
+            switch (sorted) {
+            case ASCENDANT:
+                return lhs.last_time > rhs.last_time;
+            case DESCENDANT:
+                return lhs.last_time < rhs.last_time;
+            default: break;
+            }
+
+            return false;
+        });
+    }
 
     save_time_apps(gui, host);
 }

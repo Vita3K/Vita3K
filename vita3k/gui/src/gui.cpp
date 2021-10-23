@@ -202,7 +202,7 @@ static void init_font(GuiState &gui, HostState &host) {
     io.DisplayFramebufferScale = { host.dpi_scale, host.dpi_scale };
 }
 
-vfs::FileBuffer init_default_icon(GuiState &gui, HostState &host, const std::string &app_path) {
+vfs::FileBuffer init_default_icon(GuiState &gui, HostState &host) {
     vfs::FileBuffer buffer;
 
     const auto default_fw_icon{ fs::path(host.pref_path) / "vs0/data/internal/livearea/default/sce_sys/icon0.png" };
@@ -227,7 +227,7 @@ static IconData load_app_icon(GuiState &gui, HostState &host, const std::string 
     const auto APP_INDEX = get_app_index(gui, app_path);
 
     if (!vfs::read_app_file(buffer, host.pref_path, app_path, "sce_sys/icon0.png")) {
-        buffer = init_default_icon(gui, host, app_path);
+        buffer = init_default_icon(gui, host);
         if (buffer.empty()) {
             LOG_WARN("Default icon not found for title {}, [{}] in path {}.",
                 APP_INDEX->title_id, APP_INDEX->title, app_path);
