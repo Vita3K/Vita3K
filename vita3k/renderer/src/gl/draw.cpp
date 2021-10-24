@@ -128,7 +128,8 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     set_uniform_buffer(context, true, SCE_GXM_REAL_MAX_UNIFORM_BUFFER, sizeof(GXMRenderVertUniformBlock), &vert_ublock, false);
 
     GXMRenderFragUniformBlock frag_ublock;
-    const bool both_side_fragment_program_disabled = context.record.front_side_fragment_program_mode && (context.record.front_side_fragment_program_mode || context.record.back_side_fragment_program_mode);
+    const bool both_side_fragment_program_disabled = (context.record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED)
+        && ((context.record.back_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) || (context.record.two_sided == SCE_GXM_TWO_SIDED_DISABLED));
     if (both_side_fragment_program_disabled) {
         frag_ublock.front_disabled = 0.0f;
         frag_ublock.back_disabled = 0.0f;
