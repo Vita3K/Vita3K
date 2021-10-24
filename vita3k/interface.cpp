@@ -17,6 +17,7 @@
 
 #include "interface.h"
 
+#include <ctrl/functions.h>
 #include <gui/functions.h>
 #include <host/functions.h>
 #include <host/pkg.h>
@@ -27,6 +28,7 @@
 #include <kernel/load_self.h>
 
 #include <modules/module_parent.h>
+#include <touch/functions.h>
 #include <touch/touch.h>
 #include <util/find.h>
 #include <util/log.h>
@@ -399,6 +401,12 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     LOG_INFO("at9 audio decoder state: {}", !host.cfg.current_config.disable_at9_decoder);
     LOG_INFO("ngs experimental state: {}", !host.cfg.current_config.disable_ngs);
     LOG_INFO("video player state: {}", host.cfg.current_config.video_playing);
+    refresh_controllers(host.ctrl);
+    if (host.ctrl.controllers_num) {
+        LOG_INFO("{} Controllers Connected", host.ctrl.controllers_num);
+        for (auto i = 0; i < host.ctrl.controllers_num; i++)
+            LOG_INFO("Controller {}: {}", i, host.ctrl.controllers_name[i]);
+    }
     if (host.cfg.current_config.auto_lle)
         LOG_INFO("{}: enabled", host.cfg[e_auto_lle]);
     else if (!host.cfg.current_config.lle_modules.empty()) {

@@ -17,6 +17,7 @@
 
 #include "SceTouch.h"
 
+#include <touch/functions.h>
 #include <touch/touch.h>
 
 EXPORT(int, sceTouchActivateRegion) {
@@ -113,7 +114,7 @@ EXPORT(int, sceTouchGetSamplingState, SceUInt32 port, SceTouchSamplingState *pSt
     if (pState == nullptr) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-    *pState = host.ctrl.touch_mode[port];
+    *pState = host.touch.touch_mode[port];
     return 0;
 }
 
@@ -200,7 +201,7 @@ EXPORT(int, sceTouchSetSamplingState, SceUInt32 port, SceTouchSamplingState stat
     if (state != SCE_TOUCH_SAMPLING_STATE_STOP && state != SCE_TOUCH_SAMPLING_STATE_START) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-    host.ctrl.touch_mode[port] = state;
+    host.touch.touch_mode[port] = state;
     return 0;
 }
 

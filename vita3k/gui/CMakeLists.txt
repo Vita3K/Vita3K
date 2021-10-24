@@ -46,6 +46,7 @@ add_library(
 	src/trophy_collection.cpp
 	src/user_management.cpp
 	src/controls_dialog.cpp
+	src/controllers_dialog.cpp
 	src/allocations_dialog.cpp
 	src/disassembly_dialog.cpp
 	src/about_dialog.cpp

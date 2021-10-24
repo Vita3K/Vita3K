@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <touch/functions.h>
 #include <touch/touch.h>
 
 #include <SDL_events.h>
@@ -146,7 +147,7 @@ int peek_touch(const HostState &host, const SceUInt32 &port, SceTouchData *pData
             ++pData->reportNum;
         }
 
-        if (!host.ctrl.touch_mode[port]) {
+        if (!host.touch.touch_mode[port]) {
             pData->reportNum = 0;
         }
     } else if (registered_touch() == true && port == touchscreen_port) {

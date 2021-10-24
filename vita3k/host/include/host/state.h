@@ -32,6 +32,7 @@
 #include <nids/types.h>
 #include <np/state.h>
 #include <renderer/state.h>
+#include <touch/state.h>
 
 // The GDB Stub requires winsock.h on windows (included in above headers). Keep it here to prevent build errors.
 #include <gdbstub/state.h>
@@ -89,6 +90,7 @@ struct HostState {
     SceFVector2 viewport_size = { 0, 0 };
     MemState mem;
     CtrlState ctrl;
+    TouchState touch;
     KernelState kernel;
     AudioState audio;
     GxmState gxm;
