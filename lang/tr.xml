@@ -1,12 +1,237 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <lang>
+	<main_menubar>
+		<file name="Sıra">
+			<open_pref_path>Tercih klasörünü aç</open_pref_path>
+			<install_firmware>Yazılım yükle</install_firmware>
+			<install_pkg>.pkg yükle</install_pkg>
+			<install_zip>.zip, .vpk yükle</install_zip>
+			<install_license>Lisans yükle</install_license>
+		</file>
+		<emulation name="öykünme">
+			<last_apps_used>Son kullanma</last_apps_used>
+		</emulation>
+		<configuration name="Yapılandırma">
+			<settings>Ayarlar</settings>
+			<user_management>Kullanıcı yönetimi</user_management>
+		</configuration>
+		<controls name="Kontroller">
+			<keyboard_controls>Klavye kontrolleri</keyboard_controls>
+		</controls>
+		<help name="Yardım">
+			<about>Hakkında</about>
+			<welcome>Hoşgeldin</welcome>
+		</help>
+	</main_menubar>
+	
+	<app_context>
+		<update_history>Güncelleme Geçmişi</update_history>
+		<information>Bilgi</information>
+		<app_delete>Bu uygulama ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</app_delete>
+		<save_delete>Bu kayıtlı verileri silmek istiyor musunuz?</save_delete>
+		<name>Ad</name>
+		<trophy_earning eligible="Uygun" ineligible="Uygun değil">Kupa Kazanma</trophy_earning>
+		<parental_Controls level="Seviye">Ebeveyn Kontrolleri</parental_Controls>
+		<updated>üncelleme Tarihi</updated>
+		<size>Boyut</size>
+		<version>Sürüm</version>
+		<last_time_used>Son kullanma</last_time_used>
+		<never>Asla</never>
+		<time_used>Süre kullanıldı</time_used>
+	</app_context>
+
+	<common>
+		<cancel>İptal</cancel>
+		<delete>Sil</delete>
+		<file_corrupted>Dosya bozuk.</file_corrupted>
+		<no>Hayır</no>
+		<select_all>Tümünü Seç</select_all>
+		<select>Seç</select>
+		<please_wait>Lütfen bekleyin...</please_wait>
+		<yes>Evet</yes>
+		<wday>
+			<day>Pazar</day>
+			<day>Pazartesi</day>
+			<day>Salı</day>
+			<day>Çarşamba</day>
+			<day>Perşembe</day>
+			<day>Cuma</day>
+			<day>Cumartesi</day>
+		</wday>
+		<ymonth>
+			<month>Ocak</month>
+			<month>Şubat</month>
+			<month>Mart</month>
+			<month>Nisan</month>
+			<month>Mayıs</month>
+			<month>Haziran</month>
+			<month>Temmuz</month>
+			<month>Ağustos</month>
+			<month>Eylül</month>
+			<month>Ekim</month>
+			<month>Kasım</month>
+			<month>Aralık</month>
+		</ymonth>
+		<small_ymonth>
+			<month>Ocak</month>
+			<month>Şubat</month>
+			<month>Mart</month>
+			<month>Nisan</month>
+			<month>Mayıs</month>
+			<month>Haziran</month>
+			<month>Temmuz</month>
+			<month>Ağustos</month>
+			<month>Eylül</month>
+			<month>Ekim</month>
+			<month>Kasım</month>
+			<month>Aralık</month>
+		</small_ymonth>
+		<hidden_trophy>Gizli Kupa</hidden_trophy>
+		<one_hour_ago>1 Saat Önce</one_hour_ago>
+		<one_minute_ago>1 Dakika Önce</one_minute_ago>
+		<bronze>Bronz</bronze>
+		<gold>Altın</gold>
+		<platinum>Platin</platinum>
+		<silver>Gümüş</silver>
+		<hours_ago>{} Saat Önce</hours_ago>
+		<minutes_ago>{} Dakika Önce</minutes_ago>
+	</common>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Uygulama başlatma için hazırlanıyor...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Silmeyi iptal etmek istiyor musunuz?</cancel_deleting>
+				<deletion_complete>Silme tamamlandı.</deletion_complete>
+				<delete_saved_data>Bu kayıtlı verileri silmek istiyor musunuz?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Ayrıntılı Bilgi</details>
+				<updated>Güncelleme Tarihi</updated>
+			</info>
+			<load name="Yükle">
+				<cancel_loading>Yüklemeyi iptal etmek istiyor musunuz?</cancel_loading>
+				<no_saved_data>Kayıtlı veri yok.</no_saved_data>
+				<load_complete>Yükleme tamamlandı.</load_complete>
+				<loading>Yükleniyor...</loading>
+				<load_saved_data>Bu kayıtlı verileri yüklemek istiyor musunuz?</load_saved_data>
+			</load>
+			<save name="Kaydet">
+				<cancel_saving>Kaydetmeyi iptal etmek istiyor musunuz?</cancel_saving>
+				<could_not_save>Dosya kaydedilemedi.
+Hafıza kartında yeterli boş alan yok.</could_not_save>
+				<not_free_space>Hafıza kartında yeterli boş alan yok.</not_free_space>
+				<new_saved_data>Yeni Kaydedilmiş Veriler</new_saved_data>
+				<saving_complete>Kaydetme tamamlandı.</saving_complete>
+				<save_the_data>Verileri kaydetmek istiyor musunuz?</save_the_data>
+				<saving>Kaydediliyor...</saving>
+				<warning_saving>Kaydediliyor...
+Sistemi veya uygulamayı kapatmayın.</warning_saving>
+				<overwrite_saved_data>Bu kayıtlı verilerin üzerine yazmak istiyor musunuz?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
 	<game_data>
 		<app_close>Şu uygulama kapatılacak.</app_close>
 	</game_data>
+
+	<indicator>
+		<app_added_home>Uygulama, giriş ekranına eklendi.</app_added_home>
+		<delete_all>Tümünü Sil</delete_all>
+		<notif_deleted>Bildirimler silinecek.</notif_deleted>
+		<install_failed>Kurulamadı.</install_failed>
+		<install_complete>Kurulum tamamlandı.</install_complete>
+		<installing>Kuruluyor...</installing>
+		<no_notif>Bildirim yok.</no_notif>
+		<trophy_earned>Kupa kazandınız!</trophy_earned>
+	</indicator>
 
 	<live_area>
 		<start>Başlat</start>
 		<continue>Devam</continue>
 	</live_area>
+
+	<settings name="Ayarlar">
+		<theme_background name="Tema & Arkaplan" default="Varsayılan">
+			<theme name="Tema">
+				<information name="Bilgi">
+					<name>Ad</name>
+					<provider>Sağlayıcı</provider>
+					<updated>Güncelleme Tarihi</updated>
+					<size>Boyut</size>
+					<version>Sürüm</version>
+				</information>
+				<delete>Bu tema silinecek.</delete>
+			</theme>
+			<start_screen name="Başlangıç Ekranı">
+				<image>Görüntü</image>
+			</start_screen>
+			<home_screen_backgrounds>Giriş Ekranı Arka Planları</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Tarih & Saat">
+			<date_format name ="Tarih Formatı">
+				<yyyy_mm_dd>YYYY/AA/GG</yyyy_mm_dd>
+				<dd_mm_yyyy>GG/AA/YYYY</dd_mm_yyyy>
+				<mm_dd_yyyy>AA/GG/YYYY</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Saat Formatı">
+				<clock_12_hour>12 Saatlik Zaman Formatı</clock_12_hour>
+				<clock_24_hour>24 Saatlik Zaman Formatı</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Dil">
+			<system_language>Sistem Dili</system_language>
+			<input_language name="Giriş Dilleri">
+				<keyboards name="Klavyeler">
+					<ime_langagues>
+						<lang id="1">Danca</lang>
+						<lang id="2">Almanca</lang>
+						<lang id="262144">İngilizce (Birleşik Krallık)</lang>
+						<lang id="4">İngilizce (Amerika Birleşik Devletleri)</lang>
+						<lang id="8">İspanyolca</lang>
+						<lang id="16">Fransızca</lang>
+						<lang id="32">İtalyanca</lang>
+						<lang id="64">Flemenkçe</lang>
+						<lang id="128">Norveççe</lang>
+						<lang id="256">Lehçe</lang>
+						<lang id="131072">Portekizce (Brezilya)</lang>
+						<lang id="512">Portekizce (Portekiz)</lang>
+						<lang id="1024">Rusça</lang>
+						<lang id="2048">Fince</lang>
+						<lang id="4096">İsveççe</lang>
+						<lang id="524288">Türkçe</lang>
+					</ime_langagues>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>Ayrıntılı Bilgi</details>
+		<earned>Kazanıldığı Tarih</earned>
+		<name>Ad</name>
+		<no_trophies>Kupa yok.
+Kupa özelliğini destekleyen bir uygulamayı kullanarak kupa kazanabilirsiniz.</no_trophies>
+		<not_earned>Kazanılmadı</not_earned>
+		<original>Orijinal</original>
+		<sort>Sırala</sort>
+		<trophies>Kupalar</trophies>
+		<grade>Derece</grade>
+		<progress>İlerleme</progress>
+		<updated>Güncelleme Tarihi</updated>
+	</trophy_collection>
+
+	<user_management>
+		<create_user>Kullanıcı oluştur</create_user>
+		<edit_user>Kullanıcıyı düzenle</edit_user>
+		<delete_user>Kullanıcıyı sil</delete_user>
+		<change_avatar>Kullanıcı değiştir</change_avatar>
+		<name>Ad</name>
+		<user>Kullanıcı</user>
+		<confirm>Onayla</confirm>
+	</user_management>
 </lang>
