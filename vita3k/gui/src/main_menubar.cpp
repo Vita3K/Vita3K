@@ -96,6 +96,7 @@ static void draw_controls_menu(GuiState &gui) {
     const auto is_lang = !lang.empty();
     if (ImGui::BeginMenu(is_lang ? lang["controls"].c_str() : "Controls")) {
         ImGui::MenuItem(is_lang ? lang["keyboard_controls"].c_str() : "Keyboard Controls", nullptr, &gui.controls_menu.controls_dialog);
+        ImGui::MenuItem("Controllers", nullptr, &gui.controls_menu.controllers_dialog);
         ImGui::EndMenu();
     }
 }
