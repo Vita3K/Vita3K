@@ -727,6 +727,9 @@ void draw_live_area(GuiState &gui, HostState &host) {
 void draw_ui(GuiState &gui, HostState &host) {
     ImGui::PushFont(gui.vita_font);
     draw_main_menu_bar(gui, host);
+    if (gui.controls_menu.controllers_dialog)
+        draw_controllers_dialog(gui, host);
+
     ImGui::PopFont();
 
     ImGui::PushFont(gui.monospaced_font);

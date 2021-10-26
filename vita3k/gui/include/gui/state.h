@@ -155,6 +155,7 @@ struct ConfigurationMenuState {
 
 struct ControlMenuState {
     bool controls_dialog = false;
+    bool controllers_dialog = false;
 };
 
 struct HelpMenuState {
