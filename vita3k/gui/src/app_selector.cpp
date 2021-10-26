@@ -38,7 +38,8 @@ void init_user_apps(GuiState &gui, HostState &host) {
     gui.current_app_selected = -1;
     gui.live_area_contents.clear();
     gui.live_items.clear();
-    gui.app_selector.icon_async_loader->quit = true;
+    if (gui.app_selector.icon_async_loader)
+        gui.app_selector.icon_async_loader->quit = true;
 
     std::thread init_apps([&gui, &host]() {
         auto app_list_size = gui.app_selector.user_apps.size();
@@ -84,6 +85,7 @@ void init_last_time_apps(GuiState &gui, HostState &host) {
 
     last_time_apps(gui.app_selector.sys_apps);
     last_time_apps(gui.app_selector.user_apps);
+    gui.app_selector.is_app_list_sorted = false;
 }
 
 std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &app_path) {
@@ -569,7 +571,6 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::Button("CC", ImVec2(40.f * SCALE.x, 0.f));
                     ImGui::PopStyleColor();
                 }
-                ImGui::PopID();
                 if (!host.cfg.apps_list_grid) {
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
@@ -591,14 +592,14 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::PopStyleColor();
                     ImGui::PopStyleVar();
-                    ImGui::NextColumn();
                 } else {
                     ImGui::SetCursorPosX(GRID_INIT_POS - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x + (32.f * SCALE.x)).x / 2.f));
                     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE - (48.f * SCALE.x)));
                     ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && gui.users[host.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
                     ImGui::PopTextWrapPos();
-                    ImGui::NextColumn();
                 }
+                ImGui::NextColumn();
+                ImGui::PopID();
                 if (selected)
                     pre_load_app(gui, host, host.cfg.show_live_area_screen, app.path);
             }
