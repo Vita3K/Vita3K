@@ -215,12 +215,6 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state) {
     if (!gl_state.context)
         return false;
 
-    // Try adaptive vsync first, falling back to regular vsync.
-    if (SDL_GL_SetSwapInterval(-1) < 0) {
-        SDL_GL_SetSwapInterval(1);
-    }
-    LOG_INFO("Swap interval = {}", SDL_GL_GetSwapInterval());
-
     gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
 #if MICROPROFILE_ENABLED != 0
     glad_set_pre_callback(before_callback);

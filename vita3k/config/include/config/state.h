@@ -106,6 +106,7 @@ public:
         bool lle_kernel = false;
         bool auto_lle = false;
         std::vector<std::string> lle_modules = {};
+        bool vsync = true;
         bool pstv_mode = false;
         bool disable_ngs = false;
         bool video_playing = true;
