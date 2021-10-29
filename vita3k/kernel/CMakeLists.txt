@@ -9,6 +9,7 @@ set(SOURCE_LIST
 	include/kernel/object_store.h
 	include/kernel/debugger.h
 	include/kernel/load_self.h
+	include/kernel/callback.h
 	src/kernel.cpp
 	src/thread.cpp
 	src/debugger.cpp
@@ -16,6 +17,7 @@ set(SOURCE_LIST
 	src/cpu_protocol.cpp
 	src/sync_primitives.cpp
 	src/relocation.cpp
+	src/callback.cpp
 )
 
 add_library(

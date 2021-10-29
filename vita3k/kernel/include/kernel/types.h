@@ -50,6 +50,8 @@
 
 #define KERNELOBJECT_MAX_NAME_LENGTH 31
 
+#define SCE_UID_INVALID_UID (SceUID)(0xFFFFFFFF)
+
 #define SCE_ERROR_ERRNO_EINVAL 0x80010016
 
 constexpr size_t MODULE_INFO_NUM_SEGMENTS = 4;
@@ -721,4 +723,19 @@ struct SceKernelCreateThread_opt {
     SceUInt attr;
     int cpu_affinity_mask;
     Ptr<SceKernelThreadOptParam> option;
+};
+
+typedef SceInt32(SceKernelCallbackFunction)(SceUID notifyId, SceInt32 notifyCount, SceInt32 notifyArg, void *pCommon);
+
+struct SceKernelCallbackInfo {
+    SceSize size;
+    SceUID callbackId;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    SceUInt32 attr;
+    SceUID threadId;
+    SceKernelCallbackFunction *callbackFunc;
+    SceUID notifyId;
+    SceInt32 notifyCount;
+    SceInt32 notifyArg;
+    void *pCommon;
 };

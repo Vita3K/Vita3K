@@ -19,6 +19,7 @@
 
 #include <condition_variable>
 #include <cpu/state.h>
+#include <kernel/callback.h>
 #include <kernel/types.h>
 #include <list>
 #include <mem/block.h>
@@ -103,6 +104,7 @@ struct ThreadState {
     RunQueue run_queue;
 
     ThreadSignal signal;
+    std::vector<CallbackPtr> callbacks;
     std::condition_variable status_cond;
     std::vector<std::shared_ptr<ThreadState>> waiting_threads;
     int returned_value = 0;

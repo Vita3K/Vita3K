@@ -18,6 +18,7 @@
 #pragma once
 
 #include <cpu/functions.h>
+#include <kernel/callback.h>
 #include <kernel/cpu_protocol.h>
 #include <kernel/debugger.h>
 #include <kernel/sync_primitives.h>
@@ -49,8 +50,6 @@ struct InitialFiber;
 
 struct CodecEngineBlock;
 
-struct ThreadState;
-
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 typedef std::map<SceUID, CodecEngineBlock> CodecEngineBlocks;
 typedef std::map<SceUID, Ptr<Ptr<void>>> SlotToAddress;
@@ -59,6 +58,7 @@ typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
 typedef std::shared_ptr<SceKernelModuleInfo> SceKernelModuleInfoPtr;
 typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
+typedef std::map<SceUID, CallbackPtr> CallbackPtrs;
 typedef std::unordered_map<uint32_t, Address> ExportNids;
 typedef std::map<Address, uint32_t> NidFromExport;
 typedef std::map<Address, uint32_t> NotFoundVars;
@@ -129,6 +129,7 @@ struct KernelState {
     MutexPtrs lwmutexes; // also Mutexes for now
     EventFlagPtrs eventflags;
     MsgPipePtrs msgpipes;
+    CallbackPtrs callbacks;
 
     ThreadStatePtrs threads;
     ThreadStatePtr guest_func_runner;

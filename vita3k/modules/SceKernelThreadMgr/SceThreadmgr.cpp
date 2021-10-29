@@ -19,6 +19,7 @@
 #include <modules/module_parent.h>
 
 #include <host/functions.h>
+#include <kernel/callback.h>
 #include <kernel/sync_primitives.h>
 
 #include <util/lock_and_find.h>
@@ -138,8 +139,30 @@ EXPORT(int, _sceKernelExitCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetCallbackInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCallbackInfo> pInfo) {
+    if (host.kernel.callbacks.find(callbackId) != host.kernel.callbacks.end())
+        return SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID;
+
+    std::lock_guard lock(host.kernel.mutex);
+    auto cb = host.kernel.callbacks.at(callbackId);
+
+    SceKernelCallbackInfo *info = pInfo.get(host.mem);
+    if (!info)
+        return SCE_KERNEL_ERROR_ILLEGAL_ADDR; //TODO check result
+
+    if (info->size != sizeof(*info))
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE;
+
+    info->callbackId = callbackId;
+    strncpy(info->name, cb->get_name().c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
+    info->name[KERNELOBJECT_MAX_NAME_LENGTH] = '\0';
+    info->attr = 0;
+    info->threadId = cb->get_owner_thread_id();
+    info->callbackFunc = reinterpret_cast<SceKernelCallbackFunction *>(cb->get_callback_function().address());
+    info->notifyId = cb->get_notifier_id();
+    info->notifyArg = cb->get_notify_arg();
+    info->pCommon = reinterpret_cast<void *>(cb->get_user_common_ptr().address());
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelGetCondInfo) {
@@ -535,8 +558,13 @@ EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout)
     return wait_thread_end(waiter, target, stat);
 }
 
-EXPORT(int, sceKernelCancelCallback) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCancelCallback, SceUID callbackId) {
+    if (host.kernel.callbacks.find(callbackId) != host.kernel.callbacks.end())
+        return SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID;
+
+    auto cb = host.kernel.callbacks.at(callbackId);
+    cb->cancel();
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelChangeActiveCpuMask) {
@@ -565,8 +593,23 @@ EXPORT(int, sceKernelChangeThreadVfpException) {
     return UNIMPLEMENTED();
 }
 
+unsigned process_callbacks(HostState &host, SceUID thread_id) {
+    std::lock_guard lock(host.kernel.mutex);
+    unsigned num_callbacks_processed = 0;
+    ThreadStatePtr thread = host.kernel.get_thread(thread_id);
+    if (!thread->callbacks.empty())
+        for (CallbackPtr &cb : thread->callbacks)
+            if (cb->is_executable()) {
+                bool should_delete = cb->execute();
+                if (should_delete) //TODO suppport callbacks deletion
+                    LOG_WARN("Callback with name {} requested to be deleted, but this is not supported yet!");
+                num_callbacks_processed++;
+            }
+    return num_callbacks_processed;
+}
+
 EXPORT(int, sceKernelCheckCallback) {
-    return UNIMPLEMENTED();
+    return process_callbacks(host, thread_id);
 }
 
 EXPORT(int, sceKernelCheckWaitableStatus) {
@@ -617,8 +660,18 @@ EXPORT(int, sceKernelCloseTimer) {
     return STUBBED("References not implemented.");
 }
 
-EXPORT(int, sceKernelCreateCallback) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceKernelCreateCallback, Ptr<char> name, SceUInt32 attr, Ptr<SceKernelCallbackFunction> callbackFunc, Ptr<void> pCommon) {
+    if (attr || !callbackFunc.address())
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
+
+    ThreadStatePtr thread = host.kernel.get_thread(thread_id);
+    std::string cb_name = name.get(host.mem);
+    auto cb = std::make_shared<Callback>(thread_id, thread, cb_name, callbackFunc, pCommon);
+    std::lock_guard lock(host.kernel.mutex);
+    SceUID cb_uid = host.kernel.get_next_uid();
+    host.kernel.callbacks.emplace(cb_uid, cb);
+    thread->callbacks.push_back(cb);
+    return cb_uid;
 }
 
 EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry entry, int init_priority, SceKernelCreateThread_opt *options) {
@@ -641,26 +694,40 @@ int delay_thread(SceUInt delay_us) {
     return SCE_KERNEL_OK;
 }
 
+int delay_thread_cb(HostState &host, SceUID thread_id, SceUInt delay_us) {
+    auto start = std::chrono::high_resolution_clock::now(); //Meseaure the time taken to process callbacks
+    process_callbacks(host, thread_id);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+    if (delay_us > elapsed.count()) //If we spent less time than requested processing callbacks, sleep the remaining time
+        return delay_thread(delay_us - elapsed.count());
+    else //Else return directly
+        return SCE_KERNEL_OK;
+}
+
 EXPORT(int, sceKernelDelayThread, SceUInt delay) {
     return delay_thread(delay);
 }
 
 EXPORT(int, sceKernelDelayThread200, SceUInt delay) {
-    STUBBED("untested");
+    if (delay < 201)
+        delay = 201;
     return delay_thread(delay);
 }
 
 EXPORT(int, sceKernelDelayThreadCB, SceUInt delay) {
-    STUBBED("no CB");
-    return delay_thread(delay);
+    return delay_thread_cb(host, thread_id, delay);
 }
 
 EXPORT(int, sceKernelDelayThreadCB200, SceUInt delay) {
-    STUBBED("no CB, untested");
-    return delay_thread(delay);
+    if (delay < 201)
+        delay = 201;
+    return delay_thread_cb(host, thread_id, delay);
 }
 
 EXPORT(int, sceKernelDeleteCallback) {
+    //TODO
     return UNIMPLEMENTED();
 }
 
@@ -714,8 +781,13 @@ EXPORT(int, sceKernelExitDeleteThread, int status) {
     return status;
 }
 
-EXPORT(int, sceKernelGetCallbackCount) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetCallbackCount, SceUID callbackId) {
+    if (host.kernel.callbacks.find(callbackId) != host.kernel.callbacks.end())
+        return SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID;
+
+    std::lock_guard lock(host.kernel.mutex);
+    auto cb = host.kernel.callbacks.at(callbackId);
+    return cb->get_num_notifications();
 }
 
 EXPORT(int, sceKernelGetMsgPipeCreatorId) {
@@ -765,8 +837,14 @@ EXPORT(uint64_t, sceKernelGetTimerTimeWide, SceUID timer_handle) {
     return get_current_time() - timer_info->time;
 }
 
-EXPORT(int, sceKernelNotifyCallback) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelNotifyCallback, SceUID callbackId, SceInt32 notifyArg) {
+    if (host.kernel.callbacks.find(callbackId) != host.kernel.callbacks.end())
+        return SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID;
+
+    std::lock_guard lock(host.kernel.mutex);
+    auto cb = host.kernel.callbacks.at(callbackId);
+    cb->direct_notify(notifyArg);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelOpenCond) {
