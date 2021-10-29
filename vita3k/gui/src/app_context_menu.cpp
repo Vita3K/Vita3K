@@ -197,7 +197,7 @@ void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
         const auto CUSTOM_CONFIG_PATH{ BASE_PATH / "config" / fmt::format("config_{}.xml", app_path) };
         if (fs::exists(CUSTOM_CONFIG_PATH))
             fs::remove_all(CUSTOM_CONFIG_PATH);
-        const auto DLC_PATH{ PREF_PATH / "ux0/addcont" / title_id };
+        const auto DLC_PATH{ PREF_PATH / "ux0/addcont" / APP_INDEX->addcont };
         if (fs::exists(DLC_PATH))
             fs::remove_all(DLC_PATH);
         const auto LICENSE_PATH{ PREF_PATH / "ux0/license" / title_id };
@@ -258,7 +258,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
 
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
     const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
-    const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / title_id };
+    const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / APP_INDEX->addcont };
     const auto LICENSE_PATH{ fs::path(host.pref_path) / "ux0/license" / title_id };
     const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / APP_INDEX->savedata };
     const auto SHADER_CACHE_PATH{ fs::path(host.base_path) / "shaders" / title_id };
