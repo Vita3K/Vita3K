@@ -346,7 +346,7 @@ static bool get_user_apps(GuiState &gui, HostState &host) {
         std::vector<char> buffer(version_size); // dont trust std::string to hold buffer enough
         apps_cache.read(buffer.data(), version_size);
         const std::string versionInFile(buffer.begin(), buffer.end());
-        if (versionInFile != "1.01") {
+        if (versionInFile != "1.02") {
             LOG_WARN("Current version of cache: {}, is outdated, recreate it.", versionInFile);
             return false;
         }
@@ -369,6 +369,7 @@ static bool get_user_apps(GuiState &gui, HostState &host) {
             app.app_ver = read();
             app.category = read();
             app.content_id = read();
+            app.addcont = read();
             app.savedata = read();
             app.parental_level = read();
             app.stitle = read();
@@ -399,7 +400,7 @@ void save_apps_cache(GuiState &gui, HostState &host) {
         apps_cache.write((char *)&size, sizeof(size));
 
         // Write version of cache
-        const std::string version = "1.01";
+        const std::string version = "1.02";
         const auto size_ver = version.length();
         apps_cache.write((char *)&size_ver, sizeof(size_ver));
         apps_cache.write(version.c_str(), size_ver);
@@ -416,6 +417,7 @@ void save_apps_cache(GuiState &gui, HostState &host) {
             write(app.app_ver);
             write(app.category);
             write(app.content_id);
+            write(app.addcont);
             write(app.savedata);
             write(app.parental_level);
             write(app.stitle);
@@ -486,10 +488,10 @@ void get_app_param(GuiState &gui, HostState &host, const std::string &app_path) 
     if (vfs::read_app_file(param, host.pref_path, app_path, "sce_sys/param.sfo")) {
         get_param_info(host, param);
     } else {
-        host.app_savedata = host.app_short_title = host.app_title = host.app_title_id = host.app_path; // Use app path as TitleID, Savedata, Short title and Title
+        host.app_addcont = host.app_savedata = host.app_short_title = host.app_title = host.app_title_id = host.app_path; // Use app path as TitleID, addcont, Savedata, Short title and Title
         host.app_version = host.app_category = host.app_parental_level = "N/A";
     }
-    gui.app_selector.user_apps.push_back({ host.app_version, host.app_category, host.app_content_id, host.app_savedata, host.app_parental_level, host.app_short_title, host.app_title, host.app_title_id, host.app_path });
+    gui.app_selector.user_apps.push_back({ host.app_version, host.app_category, host.app_content_id, host.app_addcont, host.app_savedata, host.app_parental_level, host.app_short_title, host.app_title, host.app_title_id, host.app_path });
 }
 
 void get_param_info(HostState &host, const vfs::FileBuffer &param) {
@@ -500,6 +502,8 @@ void get_param_info(HostState &host, const vfs::FileBuffer &param) {
         host.app_version.erase(host.app_version.begin());
     sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
     sfo::get_data_by_key(host.app_content_id, sfo_handle, "CONTENT_ID");
+    if (!sfo::get_data_by_key(host.app_addcont, sfo_handle, "INSTALL_DIR_ADDCONT"))
+        sfo::get_data_by_key(host.app_addcont, sfo_handle, "TITLE_ID");
     if (!sfo::get_data_by_key(host.app_savedata, sfo_handle, "INSTALL_DIR_SAVEDATA"))
         sfo::get_data_by_key(host.app_savedata, sfo_handle, "TITLE_ID");
     sfo::get_data_by_key(host.app_parental_level, sfo_handle, "PARENTAL_LEVEL");
@@ -555,7 +559,7 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
             else
                 host.app_short_title = host.app_title = "Content Manager";
         }
-        gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, {}, {}, {}, host.app_short_title, host.app_title, host.app_title_id, app });
+        gui.app_selector.sys_apps.push_back({ host.app_version, host.app_category, {}, {}, {}, {}, host.app_short_title, host.app_title, host.app_title_id, app });
     }
 
     std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {

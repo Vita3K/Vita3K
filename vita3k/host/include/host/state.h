@@ -56,6 +56,7 @@ struct HostState {
     std::string app_version;
     std::string app_category;
     std::string app_content_id;
+    std::string app_addcont;
     std::string app_savedata;
     std::string app_parental_level;
     std::string app_short_title;

@@ -63,6 +63,7 @@ struct App {
     std::string app_ver;
     std::string category;
     std::string content_id;
+    std::string addcont;
     std::string savedata;
     std::string parental_level;
     std::string stitle;

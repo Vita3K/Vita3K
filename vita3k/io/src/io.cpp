@@ -136,7 +136,7 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path, boo
 void init_device_paths(IOState &io) {
     io.device_paths.savedata0 = "user/" + io.user_id + "/savedata/" + io.savedata;
     io.device_paths.app0 = "app/" + io.app_path;
-    io.device_paths.addcont0 = "addcont/" + io.title_id;
+    io.device_paths.addcont0 = "addcont/" + io.addcont;
 }
 
 bool init_savedata_app_path(IOState &io, const fs::path &pref_path) {
