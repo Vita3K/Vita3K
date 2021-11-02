@@ -103,7 +103,7 @@ public:
     struct CurrentConfig {
         std::string cpu_backend;
         bool cpu_opt = true;
-        bool lle_kernel = false;
+        bool lle_driver_user = false;
         bool auto_lle = false;
         std::vector<std::string> lle_modules = {};
         bool pstv_mode = false;

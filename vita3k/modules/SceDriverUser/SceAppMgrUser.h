@@ -19,7 +19,7 @@
 
 #include <module/module.h>
 
-#include "SceAppMgr.h"
+#include "../SceAppMgr/SceAppMgr.h"
 
 SceInt32 _sceAppMgrGetAppState(SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion);
 SceInt32 sceAppMgrLoadExec(const char *appPath, char *const argv[], const SceAppMgrLoadExecOptParam *optParam);

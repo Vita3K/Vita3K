@@ -423,10 +423,9 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         host.kernel.export_nids.emplace(var.nid, addr);
     }
 
-    if (host.cfg.current_config.lle_kernel) {
-        // Load kernel pre-loaded module
+    if (host.cfg.current_config.lle_driver_user) {
+        // Load Driver User pre-loaded module
         const std::vector<std::string> lib_load_list = {
-            "us/libkernel.suprx",
             "us/driver_us.suprx",
         };
 

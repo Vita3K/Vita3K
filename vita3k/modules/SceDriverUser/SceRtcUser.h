@@ -19,7 +19,7 @@
 
 #include <module/module.h>
 
-#include "SceRtc.h"
+#include "../SceRtc/SceRtc.h"
 
 BRIDGE_DECL(sceRtcCheckValid)
 BRIDGE_DECL(sceRtcCompareTick)

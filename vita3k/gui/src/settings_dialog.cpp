@@ -106,7 +106,7 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
             // Load Core Config
             if (!config_child.child("core").empty()) {
                 const auto core_child = config_child.child("core");
-                config.lle_kernel = core_child.attribute("lle-kernel").as_bool();
+                config.lle_driver_user = core_child.attribute("lle-driver-user").as_bool();
                 config.auto_lle = core_child.attribute("auto-lle").as_bool();
                 for (auto &m : core_child.child("lle-modules"))
                     config.lle_modules.push_back(m.text().as_string());
@@ -151,7 +151,7 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
     if (!get_custom_config(gui, host, app_path)) {
         config.cpu_backend = host.cfg.cpu_backend;
         config.cpu_opt = host.cfg.cpu_opt;
-        config.lle_kernel = host.cfg.lle_kernel;
+        config.lle_driver_user = host.cfg.lle_driver_user;
         config.auto_lle = host.cfg.auto_lle;
         config.lle_modules = host.cfg.lle_modules;
         config.pstv_mode = host.cfg.pstv_mode;
@@ -182,7 +182,7 @@ static void save_config(GuiState &gui, HostState &host) {
 
         // Core
         auto core_child = config_child.append_child("core");
-        core_child.append_attribute("lle-kernel") = config.lle_kernel;
+        core_child.append_attribute("lle-driver-user") = config.lle_driver_user;
         core_child.append_attribute("auto-lle") = config.auto_lle;
         auto enable_module = core_child.append_child("lle-modules");
         for (const auto &m : config.lle_modules)
@@ -209,7 +209,7 @@ static void save_config(GuiState &gui, HostState &host) {
     } else {
         host.cfg.cpu_backend = config.cpu_backend;
         host.cfg.cpu_opt = config.cpu_opt;
-        host.cfg.lle_kernel = config.lle_kernel;
+        host.cfg.lle_driver_user = config.lle_driver_user;
         host.cfg.auto_lle = config.auto_lle;
         host.cfg.lle_modules = config.lle_modules;
         host.cfg.pstv_mode = config.pstv_mode;
@@ -224,7 +224,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
     if (get_custom_config(gui, host, app_path)) {
         host.cfg.current_config.cpu_backend = config.cpu_backend;
         host.cfg.current_config.cpu_opt = config.cpu_opt;
-        host.cfg.current_config.lle_kernel = config.lle_kernel;
+        host.cfg.current_config.lle_driver_user = config.lle_driver_user;
         host.cfg.current_config.auto_lle = config.auto_lle;
         host.cfg.current_config.lle_modules = config.lle_modules;
         host.cfg.current_config.pstv_mode = config.pstv_mode;
@@ -234,7 +234,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
     } else {
         host.cfg.current_config.cpu_backend = host.cfg.cpu_backend;
         host.cfg.current_config.cpu_opt = host.cfg.cpu_opt;
-        host.cfg.current_config.lle_kernel = host.cfg.lle_kernel;
+        host.cfg.current_config.lle_driver_user = host.cfg.lle_driver_user;
         host.cfg.current_config.auto_lle = host.cfg.auto_lle;
         host.cfg.current_config.lle_modules = host.cfg.lle_modules;
         host.cfg.current_config.pstv_mode = host.cfg.pstv_mode;
@@ -273,9 +273,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (!gui.modules.empty()) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Modules Mode");
             ImGui::Spacing();
-            ImGui::Checkbox("Experimental: LLE libkernel & driver_us", &config.lle_kernel);
+            ImGui::Checkbox("Experimental: LLE DriverUser", &config.lle_driver_user);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Enable this to use libkernel and driver_us modules (experimental).");
+                ImGui::SetTooltip("Enable this to use driver_us modules (experimental).");
             ImGui::Spacing();
             if (ImGui::RadioButton("Automatic", config.auto_lle))
                 config.auto_lle = true;

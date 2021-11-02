@@ -1570,7 +1570,79 @@ EXPORT(int, sceSblACMgrIsGameProgram) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceSblGcAuthMgrAdhocBB160Auth1) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB160Auth2) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB160Auth3) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB160Auth4) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB160Auth5) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB160BroadCastDecrypt) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB160BroadCastEncrypt) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB160GetKeys) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB160Init) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceSblGcAuthMgrAdhocBB160Shutdown) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB160UniCastDecrypt) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB160UniCastEncrypt) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB224Auth1) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB224Auth2) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB224Auth3) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB224Auth4) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB224Auth5) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB224GetKeys) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrAdhocBB224Init) {
     return UNIMPLEMENTED();
 }
 
@@ -1578,7 +1650,27 @@ EXPORT(int, sceSblGcAuthMgrAdhocBB224Shutdown) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceSblGcAuthMgrGetMediaIdType01) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceSblGcAuthMgrMsSaveBBCipherFinal) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrMsSaveBBCipherInit) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrMsSaveBBCipherUpdate) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrMsSaveBBMacFinal) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrMsSaveBBMacInit) {
     return UNIMPLEMENTED();
 }
 
@@ -1587,6 +1679,30 @@ EXPORT(int, sceSblGcAuthMgrMsSaveBBMacUpdate) {
 }
 
 EXPORT(int, sceSblGcAuthMgrPcactActivation) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrPcactGetChallenge) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrPkgVry) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrPsmactCreateC1) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrPsmactVerifyR1) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrSclkGetData1) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceSblGcAuthMgrSclkSetData2) {
     return UNIMPLEMENTED();
 }
 
@@ -1882,8 +1998,37 @@ BRIDGE_IMPL(sceKernelWaitSignalCB)
 BRIDGE_IMPL(sceKernelWaitThreadEnd)
 BRIDGE_IMPL(sceKernelWaitThreadEndCB)
 BRIDGE_IMPL(sceSblACMgrIsGameProgram)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160Auth1)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160Auth2)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160Auth3)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160Auth4)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160Auth5)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160BroadCastDecrypt)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160BroadCastEncrypt)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160GetKeys)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160Init)
 BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160Shutdown)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160UniCastDecrypt)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB160UniCastEncrypt)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB224Auth1)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB224Auth2)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB224Auth3)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB224Auth4)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB224Auth5)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB224GetKeys)
+BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB224Init)
 BRIDGE_IMPL(sceSblGcAuthMgrAdhocBB224Shutdown)
+BRIDGE_IMPL(sceSblGcAuthMgrGetMediaIdType01)
 BRIDGE_IMPL(sceSblGcAuthMgrMsSaveBBCipherFinal)
+BRIDGE_IMPL(sceSblGcAuthMgrMsSaveBBCipherInit)
+BRIDGE_IMPL(sceSblGcAuthMgrMsSaveBBCipherUpdate)
+BRIDGE_IMPL(sceSblGcAuthMgrMsSaveBBMacFinal)
+BRIDGE_IMPL(sceSblGcAuthMgrMsSaveBBMacInit)
 BRIDGE_IMPL(sceSblGcAuthMgrMsSaveBBMacUpdate)
 BRIDGE_IMPL(sceSblGcAuthMgrPcactActivation)
+BRIDGE_IMPL(sceSblGcAuthMgrPcactGetChallenge)
+BRIDGE_IMPL(sceSblGcAuthMgrPkgVry)
+BRIDGE_IMPL(sceSblGcAuthMgrPsmactCreateC1)
+BRIDGE_IMPL(sceSblGcAuthMgrPsmactVerifyR1)
+BRIDGE_IMPL(sceSblGcAuthMgrSclkGetData1)
+BRIDGE_IMPL(sceSblGcAuthMgrSclkSetData2)
