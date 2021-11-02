@@ -37,6 +37,10 @@ EXPORT(int, sceMotionGetDeadband) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceMotionGetDeadbandExt) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceMotionGetDeviceLocation) {
     return UNIMPLEMENTED();
 }
@@ -57,7 +61,23 @@ EXPORT(int, sceMotionGetState) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceMotionGetStateExt) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceMotionGetStateInternal) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceMotionGetTiltCorrection) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceMotionGetTiltCorrectionExt) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceMotionInitLibraryExt) {
     return UNIMPLEMENTED();
 }
 
@@ -73,6 +93,10 @@ EXPORT(int, sceMotionReset) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceMotionResetExt) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceMotionRotateYaw) {
     return UNIMPLEMENTED();
 }
@@ -85,6 +109,10 @@ EXPORT(int, sceMotionSetDeadband) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceMotionSetDeadbandExt) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceMotionSetGyroBiasCorrection) {
     return UNIMPLEMENTED();
 }
@@ -93,7 +121,15 @@ EXPORT(int, sceMotionSetTiltCorrection) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceMotionSetTiltCorrectionExt) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sceMotionStartSampling) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceMotionStartSamplingExt) {
     return UNIMPLEMENTED();
 }
 
@@ -101,22 +137,41 @@ EXPORT(int, sceMotionStopSampling) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceMotionStopSamplingExt) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sceMotionTermLibraryExt) {
+    return UNIMPLEMENTED();
+}
+
 BRIDGE_IMPL(sceMotionGetAngleThreshold)
 BRIDGE_IMPL(sceMotionGetBasicOrientation)
 BRIDGE_IMPL(sceMotionGetDeadband)
+BRIDGE_IMPL(sceMotionGetDeadbandExt)
 BRIDGE_IMPL(sceMotionGetDeviceLocation)
 BRIDGE_IMPL(sceMotionGetGyroBiasCorrection)
 BRIDGE_IMPL(sceMotionGetMagnetometerState)
 BRIDGE_IMPL(sceMotionGetSensorState)
 BRIDGE_IMPL(sceMotionGetState)
+BRIDGE_IMPL(sceMotionGetStateExt)
+BRIDGE_IMPL(sceMotionGetStateInternal)
 BRIDGE_IMPL(sceMotionGetTiltCorrection)
+BRIDGE_IMPL(sceMotionGetTiltCorrectionExt)
+BRIDGE_IMPL(sceMotionInitLibraryExt)
 BRIDGE_IMPL(sceMotionMagnetometerOff)
 BRIDGE_IMPL(sceMotionMagnetometerOn)
 BRIDGE_IMPL(sceMotionReset)
+BRIDGE_IMPL(sceMotionResetExt)
 BRIDGE_IMPL(sceMotionRotateYaw)
 BRIDGE_IMPL(sceMotionSetAngleThreshold)
 BRIDGE_IMPL(sceMotionSetDeadband)
+BRIDGE_IMPL(sceMotionSetDeadbandExt)
 BRIDGE_IMPL(sceMotionSetGyroBiasCorrection)
 BRIDGE_IMPL(sceMotionSetTiltCorrection)
+BRIDGE_IMPL(sceMotionSetTiltCorrectionExt)
 BRIDGE_IMPL(sceMotionStartSampling)
+BRIDGE_IMPL(sceMotionStartSamplingExt)
 BRIDGE_IMPL(sceMotionStopSampling)
+BRIDGE_IMPL(sceMotionStopSamplingExt)
+BRIDGE_IMPL(sceMotionTermLibraryExt)

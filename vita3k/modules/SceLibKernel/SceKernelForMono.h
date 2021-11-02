@@ -19,12 +19,9 @@
 
 #include <module/module.h>
 
-#include "SceDisplay.h"
-
-BRIDGE_DECL(sceDisplayGetFrameBuf)
-BRIDGE_DECL(sceDisplayGetFrameBufInternal)
-BRIDGE_DECL(sceDisplayGetMaximumFrameBufResolution)
-BRIDGE_DECL(sceDisplayGetResolutionInfoInternal)
-BRIDGE_DECL(sceDisplaySetFrameBuf)
-BRIDGE_DECL(sceDisplaySetFrameBufForCompat)
-BRIDGE_DECL(sceDisplaySetFrameBufInternal)
+BRIDGE_DECL(sceKernelGetThreadContextForMono)
+BRIDGE_DECL(sceKernelResumeThreadForMono)
+BRIDGE_DECL(sceKernelSetThreadContextForMono)
+BRIDGE_DECL(sceKernelSuspendThreadForMono)
+BRIDGE_DECL(sceKernelWaitExceptionCBForMono)
+BRIDGE_DECL(sceKernelWaitExceptionForMono)
