@@ -1200,71 +1200,6 @@ EXPORT(int, sceKernelGetTimerTime, SceUID timer_handle, SceKernelSysClock *time)
     return 0;
 }
 
-/**
- * \brief Loads a dynamic module into memory if it wasn't already loaded. If it was, find it and return it. First 3 arguments are outputs.
- * \param mod_id UID of the loaded module object
- * \param entry_point Entry point (module_start) of the loaded module
- * \param module Module info
- * \param host 
- * \param export_name 
- * \param path File name of module file
- * \param error_val Error value on failure
- * \return True on success, false on failure
- */
-bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleInfoPtr &module, HostState &host, const char *export_name, const char *path, int &error_val) {
-    const auto &loaded_modules = host.kernel.loaded_modules;
-
-    auto module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [path](const auto &p) {
-        return std::string(p.second->path) == path;
-    });
-
-    if (module_iter == loaded_modules.end()) {
-        // module is not loaded, load it here
-
-        const auto file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path, export_name);
-        if (file < 0) {
-            error_val = RET_ERROR(file);
-            return false;
-        }
-        const auto size = seek_file(file, 0, SCE_SEEK_END, host.io, export_name);
-        if (size < 0) {
-            error_val = RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
-            return false;
-        }
-
-        if (seek_file(file, 0, SCE_SEEK_SET, host.io, export_name) < 0) {
-            error_val = RET_ERROR(static_cast<int>(size));
-            return false;
-        }
-
-        auto *data = new char[static_cast<int>(size) + 1]; // null-terminated char array
-        if (read_file(data, host.io, file, SceSize(size), export_name) < 0) {
-            delete[] data;
-            error_val = RET_ERROR(static_cast<int>(size));
-            return false;
-        }
-
-        mod_id = load_self(entry_point, host.kernel, host.mem, data, path);
-
-        close_file(host.io, file, export_name);
-        delete[] data;
-        if (mod_id < 0) {
-            error_val = RET_ERROR(mod_id);
-            return false;
-        }
-
-        module_iter = loaded_modules.find(mod_id);
-        module = module_iter->second;
-    } else {
-        // module is already loaded
-        module = module_iter->second;
-
-        mod_id = module_iter->first;
-        entry_point = module->start_entry;
-    }
-    return true;
-}
-
 EXPORT(SceUID, sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option) {
     return CALL_EXPORT(_sceKernelLoadModule, path, flags, option);
 }
@@ -1430,8 +1365,8 @@ EXPORT(int, sceKernelStackChkFail) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelStartModule) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes) {
+    return CALL_EXPORT(_sceKernelStartModule, uid, args, argp, flags, pOpt, pRes);
 }
 
 EXPORT(int, sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) {

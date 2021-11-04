@@ -6479,6 +6479,8 @@ NID(sceShaccCgIsParameterReferenced, 0x0E1285A6)
 NID(sceShaccCgIsParameterRegFormat, 0xA13A8A1E)
 NID(sceShaccCgSetDefaultAllocator, 0x6F01D573)
 // Module "SceShellSvc"
+// Library "SceShellSvc"
+NID(sceShellSvcGetSvcObj, 0xB31E7F1C)
 // Library "SceShellUtil"
 NID(sceShellUtilInitEvents, 0xE8AD11EC)
 NID(sceShellUtilLock, 0xA9537233)

@@ -528,6 +528,13 @@ struct SceKernelModuleInfo {
     SceUInt state; //!< see:SceKernelModuleState
 };
 
+struct SceKernelStartModuleOpt {
+    SceSize size;
+    SceUInt32 flags;
+    SceUInt32 prologue;
+    SceUInt32 start;
+};
+
 static_assert(sizeof(SceKernelModuleInfo) == 0x1B8);
 
 struct SceKernelMemBlockInfo {

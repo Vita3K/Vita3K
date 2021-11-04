@@ -23,6 +23,17 @@
 #include <modules/module_parent.h>
 #include <util/lock_and_find.h>
 
+/**
+ * \brief Loads a dynamic module into memory if it wasn't already loaded. If it was, find it and return it. First 3 arguments are outputs.
+ * \param mod_id UID of the loaded module object
+ * \param entry_point Entry point (module_start) of the loaded module
+ * \param module Module info
+ * \param host 
+ * \param export_name 
+ * \param path File name of module file
+ * \param error_val Error value on failure
+ * \return True on success, false on failure
+ */
 static bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleInfoPtr &module, HostState &host, const char *export_name, const char *path, int &error_val) {
     const auto &loaded_modules = host.kernel.loaded_modules;
 
@@ -93,6 +104,19 @@ EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *o
     return mod_id;
 }
 
+static SceUID start_module(HostState &host, const SceKernelModuleInfoPtr &module, SceSize args, const Ptr<void> argp, int *pRes) {
+    auto module_thread = host.kernel.create_thread(host.mem, module->module_name);
+    uint32_t result = module_thread->run_guest_function(module->start_entry.address(), { args, argp.address() });
+    host.kernel.exit_delete_thread(module_thread);
+
+    LOG_INFO("Module {} (at \"{}\") module_start returned {}", module->module_name, module->path, log_hex(result));
+
+    if (pRes)
+        *pRes = result;
+
+    return module->modid;
+}
+
 EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, const Ptr<void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
     // Is workaround for fix crash on loading "rgpluginsgm_psvita" module, relate issue #1095 on github, delete this after fix it.
     if (std::string(moduleFileName).find("rgpluginsgm_psvita") != std::string::npos) {
@@ -108,24 +132,17 @@ EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize ar
     if (!load_module(mod_id, entry_point, module, host, export_name, moduleFileName, error_val))
         return error_val;
 
-    auto module_thread = host.kernel.create_thread(host.mem, moduleFileName);
-    uint32_t result = module_thread->run_guest_function(entry_point.address(), { args, argp.address() });
-    host.kernel.exit_delete_thread(module_thread);
-
-    LOG_INFO("Module {} (at \"{}\") module_start returned {}", module->module_name, module->path, log_hex(result));
-
-    if (pRes)
-        *pRes = result;
-
-    return mod_id;
+    return start_module(host, module, args, argp, pRes);
 }
 
 EXPORT(int, _sceKernelOpenModule) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelStartModule) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes) {
+    const SceKernelModuleInfoPtr module = lock_and_find(uid, host.kernel.loaded_modules, host.kernel.mutex);
+
+    return start_module(host, module, args, argp, pRes);
 }
 
 EXPORT(int, _sceKernelStopModule) {

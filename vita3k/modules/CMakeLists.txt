@@ -164,6 +164,7 @@ set(SOURCE_LIST
 	SceSblUpdateMgr/SceSblSsUpdateMgr.cpp SceSblUpdateMgr/SceSblSsUpdateMgr.h
 	SceScreenShot/SceScreenShot.cpp SceScreenShot/SceScreenShot.h
 	SceShaccCg/SceShaccCg.cpp SceShaccCg/SceShaccCg.h
+	SceShellSvc/SceShellSvc.cpp SceShellSvc/SceShellSvc.h
 	SceShellSvc/SceShellUtil.cpp SceShellSvc/SceShellUtil.h
 	SceShellSvc/SceShellUtilLaunchApp.cpp SceShellSvc/SceShellUtilLaunchApp.h
 	SceShutterSound/SceShutterSound.cpp SceShutterSound/SceShutterSound.h

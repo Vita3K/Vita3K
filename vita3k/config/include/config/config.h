@@ -40,7 +40,7 @@
     code(bool, "disable-ngs", false, disable_ngs)                                                       \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
-    code(bool, "lle-driver-user", false, lle_driver_user)                                                         \
+    code(bool, "lle-driver-user", false, lle_driver_user)                                               \
     code(int, "cpu-pool-size", 10, cpu_pool_size)                                                       \
     code(bool, "auto-lle", false, auto_lle)                                                             \
     code(int, "delay-background", 4, delay_background)                                                  \
