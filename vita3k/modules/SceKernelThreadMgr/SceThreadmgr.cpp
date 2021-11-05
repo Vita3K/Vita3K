@@ -616,15 +616,15 @@ EXPORT(int, sceKernelChangeThreadVfpException) {
 }
 
 unsigned process_callbacks(HostState &host, SceUID thread_id) {
+    ThreadStatePtr thread = host.kernel.get_thread(thread_id);
     std::lock_guard lock(host.kernel.mutex);
     unsigned num_callbacks_processed = 0;
-    ThreadStatePtr thread = host.kernel.get_thread(thread_id);
     if (!thread->callbacks.empty())
         for (CallbackPtr &cb : thread->callbacks)
             if (cb->is_executable()) {
                 bool should_delete = cb->execute();
                 if (should_delete) //TODO suppport callbacks deletion
-                    LOG_WARN("Callback with name {} requested to be deleted, but this is not supported yet!");
+                    LOG_WARN("Callback with name {} requested to be deleted, but this is not supported yet!", cb->get_name());
                 num_callbacks_processed++;
             }
     return num_callbacks_processed;
@@ -682,12 +682,12 @@ EXPORT(int, sceKernelCloseTimer) {
     return STUBBED("References not implemented.");
 }
 
-EXPORT(SceUID, sceKernelCreateCallback, Ptr<char> name, SceUInt32 attr, Ptr<SceKernelCallbackFunction> callbackFunc, Ptr<void> pCommon) {
+EXPORT(SceUID, sceKernelCreateCallback, char *name, SceUInt32 attr, Ptr<SceKernelCallbackFunction> callbackFunc, Ptr<void> pCommon) {
     if (attr || !callbackFunc.address())
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ATTR);
 
     ThreadStatePtr thread = host.kernel.get_thread(thread_id);
-    std::string cb_name = name.get(host.mem);
+    std::string cb_name = name;
     auto cb = std::make_shared<Callback>(thread_id, thread, cb_name, callbackFunc, pCommon);
     std::lock_guard lock(host.kernel.mutex);
     SceUID cb_uid = host.kernel.get_next_uid();
