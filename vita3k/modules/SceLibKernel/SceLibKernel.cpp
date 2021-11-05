@@ -866,13 +866,8 @@ EXPORT(int, sceKernelCloseModule) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCreateCond, const char *name, SceUInt attr, SceUID mutexid, void *opt_param) {
-    SceUID uid;
-
-    if (auto error = condvar_create(&uid, host.kernel, export_name, name, thread_id, attr, mutexid, SyncWeight::Heavy)) {
-        return error;
-    }
-    return uid;
+EXPORT(SceUID, sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID mutexId, const SceKernelCondOptParam *pOptParam) {
+    return CALL_EXPORT(_sceKernelCreateCond, pName, attr, mutexId, pOptParam);
 }
 
 EXPORT(int, sceKernelCreateEventFlag, const char *name, unsigned int attr, unsigned int flags, SceKernelEventFlagOptParam *opt) {
@@ -1006,16 +1001,16 @@ EXPORT(SceInt32, sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCallb
     return CALL_EXPORT(_sceKernelGetCallbackInfo, callbackId, pInfo);
 }
 
-EXPORT(int, sceKernelGetCondInfo) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pInfo) {
+    return CALL_EXPORT(_sceKernelGetCondInfo, condId, pInfo);
 }
 
 EXPORT(int, sceKernelGetCurrentThreadVfpException) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetEventFlagInfo) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFlagInfo> pInfo) {
+    return CALL_EXPORT(_sceKernelGetEventFlagInfo, evfId, pInfo);
 }
 
 EXPORT(int, sceKernelGetEventInfo) {
@@ -1142,28 +1137,8 @@ EXPORT(int, sceKernelGetThreadId) {
     return thread_id;
 }
 
-EXPORT(int, sceKernelGetThreadInfo, SceUID thid, SceKernelThreadInfo *info) {
-    STUBBED("STUB");
-
-    if (!info)
-        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
-
-    // TODO: SCE_KERNEL_ERROR_ILLEGAL_CONTEXT check
-
-    if (info->size > 0x80)
-        return SCE_KERNEL_ERROR_NOSYS;
-
-    const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
-
-    strncpy(info->name, thread->name.c_str(), 0x1f);
-    info->stack = Ptr<void>(thread->stack.get());
-    info->stackSize = thread->stack_size;
-    info->initPriority = thread->priority;
-    info->currentPriority = thread->priority;
-    info->entry = SceKernelThreadEntry(thread->entry_point);
-    info->runClocks = rtc_get_ticks(host.kernel.base_tick.tick) - thread->start_tick;
-
-    return SCE_KERNEL_OK;
+EXPORT(SceInt32, sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadInfo> pInfo) {
+    return CALL_EXPORT(_sceKernelGetThreadInfo, threadId, pInfo);
 }
 
 EXPORT(int, sceKernelGetThreadRunStatus) {
