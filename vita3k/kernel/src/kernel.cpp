@@ -120,12 +120,7 @@ void KernelState::invalidate_jit_cache(Address start, size_t length) {
 }
 
 ThreadStatePtr KernelState::get_thread(SceUID thread_id) {
-    std::lock_guard<std::mutex> lock(mutex);
-    auto it = threads.find(thread_id);
-    if (it == threads.end()) {
-        return nullptr;
-    }
-    return it->second;
+    return lock_and_find(thread_id, threads, mutex);
 }
 
 ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name) {
