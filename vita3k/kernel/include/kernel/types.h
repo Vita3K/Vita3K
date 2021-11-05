@@ -554,6 +554,10 @@ struct SceKernelEventFlagOptParam {
     SceSize size;
 };
 
+struct SceKernelCondOptParam {
+    SceSize size;
+};
+
 struct SceKernelLwCondOptParam {
     SceSize size;
 };
@@ -648,6 +652,25 @@ struct SceKernelMsgPipeInfo {
     /** Number of waiting threads */
     uint32_t numSenders;
     uint32_t numReceivers;
+};
+
+struct SceKernelCondInfo {
+    SceSize size;
+    SceUID condId;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    SceUInt32 attr;
+    SceUID mutexId;
+    SceUInt32 numWaitThreads;
+};
+
+struct SceKernelEventFlagInfo {
+    SceSize size;
+    SceUID evfId;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    SceUInt32 attr;
+    SceUInt32 initPattern;
+    SceUInt32 currentPattern;
+    SceUInt32 numWaitThreads;
 };
 
 struct SceKernelSemaInfo {

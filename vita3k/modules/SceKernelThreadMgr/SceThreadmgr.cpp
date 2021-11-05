@@ -75,8 +75,14 @@ EXPORT(int, _sceKernelCancelTimer) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelCreateCond) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, _sceKernelCreateCond, const char *pName, SceUInt32 attr, SceUID mutexId, const SceKernelCondOptParam *pOptParam) {
+    SceUID uid;
+
+    if (auto error = condvar_create(&uid, host.kernel, export_name, pName, thread_id, attr, mutexId, SyncWeight::Heavy)) {
+        return error;
+    }
+
+    return uid;
 }
 
 EXPORT(SceUID, _sceKernelCreateEventFlag, const char *pName, SceUInt32 attr, SceUInt32 initPattern, const SceKernelEventFlagOptParam *pOptParam) {
@@ -165,12 +171,49 @@ EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCall
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelGetCondInfo) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pInfo) {
+    if (host.kernel.eventflags.find(condId) == host.kernel.eventflags.end())
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+
+    SceKernelCondInfo *info = pInfo.get(host.mem);
+    if (!info)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    if (info->size != sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+
+    const CondvarPtr condvar = lock_and_find(condId, host.kernel.condvars, host.kernel.mutex);
+
+    info->condId = condId;
+    std::copy(condvar->name, condvar->name + KERNELOBJECT_MAX_NAME_LENGTH, info->name);
+    info->attr = condvar->attr;
+    info->mutexId = condvar->associated_mutex->uid;
+    info->numWaitThreads = condvar->waiting_threads->size();
+
+    return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelGetEventFlagInfo) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFlagInfo> pInfo) {
+    if (host.kernel.eventflags.find(evfId) == host.kernel.eventflags.end())
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+
+    SceKernelEventFlagInfo *info = pInfo.get(host.mem);
+    if (!info)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    if (info->size != sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+
+    const EventFlagPtr eventflag = lock_and_find(evfId, host.kernel.eventflags, host.kernel.mutex);
+
+    info->evfId = evfId;
+    std::copy(eventflag->name, eventflag->name + KERNELOBJECT_MAX_NAME_LENGTH, info->name);
+    info->attr = eventflag->attr;
+    info->initPattern = eventflag->flags; // Todo, give only current pattern
+    info->currentPattern = eventflag->flags;
+    info->numWaitThreads = eventflag->waiting_threads->size();
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelGetEventInfo) {
@@ -294,23 +337,27 @@ EXPORT(int, _sceKernelGetThreadExitStatus) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetThreadInfo, SceUID thid, SceKernelThreadInfo *info) {
+EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadInfo> pInfo) {
     STUBBED("STUB");
 
+    if (host.kernel.threads.find(threadId) == host.kernel.threads.end())
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+
+    SceKernelThreadInfo *info = pInfo.get(host.mem);
     if (!info)
-        return SCE_KERNEL_ERROR_ILLEGAL_SIZE;
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    if (info->size != sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
 
     // TODO: SCE_KERNEL_ERROR_ILLEGAL_CONTEXT check
 
-    if (info->size > 0x80)
-        return SCE_KERNEL_ERROR_NOSYS;
+    const ThreadStatePtr thread = lock_and_find(threadId ? threadId : thread_id, host.kernel.threads, host.kernel.mutex);
 
-    const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
-
-    strncpy(info->name, thread->name.c_str(), 0x1f);
+    std::copy(thread->name.c_str(), thread->name.c_str() + KERNELOBJECT_MAX_NAME_LENGTH, info->name);
     info->stack = Ptr<void>(thread->stack.get());
     info->stackSize = thread->stack_size;
-    info->initPriority = thread->priority;
+    info->initPriority = thread->priority; // Todo Give only current priority
     info->currentPriority = thread->priority;
     info->entry = SceKernelThreadEntry(thread->entry_point);
 
