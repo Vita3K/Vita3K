@@ -1002,8 +1002,8 @@ EXPORT(int, sceKernelExitProcess, int res) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelGetCallbackInfo) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCallbackInfo> pInfo) {
+    return CALL_EXPORT(_sceKernelGetCallbackInfo, callbackId, pInfo);
 }
 
 EXPORT(int, sceKernelGetCondInfo) {
@@ -1091,8 +1091,8 @@ EXPORT(int, sceKernelGetRWLockInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetSemaInfo) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetSemaInfo, SceUID semaId, Ptr<SceKernelSemaInfo> pInfo) {
+    return CALL_EXPORT(_sceKernelGetSemaInfo, semaId, pInfo);
 }
 
 EXPORT(int, sceKernelGetSystemInfo) {

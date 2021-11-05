@@ -139,19 +139,18 @@ EXPORT(int, _sceKernelExitCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCallbackInfo> pInfo) {
-    if (host.kernel.callbacks.find(callbackId) != host.kernel.callbacks.end())
-        return SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID;
-
-    std::lock_guard lock(host.kernel.mutex);
-    auto cb = host.kernel.callbacks.at(callbackId);
+EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCallbackInfo> pInfo) {
+    if (host.kernel.callbacks.find(callbackId) == host.kernel.callbacks.end())
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
 
     SceKernelCallbackInfo *info = pInfo.get(host.mem);
     if (!info)
-        return SCE_KERNEL_ERROR_ILLEGAL_ADDR; //TODO check result
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR); //TODO check result
 
     if (info->size != sizeof(*info))
-        return SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE;
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+
+    const CallbackPtr cb = lock_and_find(callbackId, host.kernel.callbacks, host.kernel.mutex);
 
     info->callbackId = callbackId;
     strncpy(info->name, cb->get_name().c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
@@ -162,6 +161,7 @@ EXPORT(int, _sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCallbackI
     info->notifyId = cb->get_notifier_id();
     info->notifyArg = cb->get_notify_arg();
     info->pCommon = reinterpret_cast<void *>(cb->get_user_common_ptr().address());
+
     return SCE_KERNEL_OK;
 }
 
@@ -246,8 +246,28 @@ EXPORT(int, _sceKernelGetRWLockInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetSemaInfo) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetSemaInfo, SceUID semaId, Ptr<SceKernelSemaInfo> pInfo) {
+    if (host.kernel.semaphores.find(semaId) == host.kernel.semaphores.end())
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+
+    SceKernelSemaInfo *info = pInfo.get(host.mem);
+    if (!info)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
+
+    if (info->size != sizeof(*info))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+
+    const SemaphorePtr semaphore = lock_and_find(semaId, host.kernel.semaphores, host.kernel.mutex);
+
+    info->attr = semaphore->attr;
+    info->currentCount = host.kernel.semaphores.size();
+    info->initCount = semaphore->val;
+    info->maxCount = semaphore->max;
+    std::copy(semaphore->name, semaphore->name + KERNELOBJECT_MAX_NAME_LENGTH, info->name);
+    info->semaId = semaId;
+    info->numWaitThreads = semaphore->waiting_threads->size();
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelGetSystemInfo) {
@@ -558,12 +578,14 @@ EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout)
     return wait_thread_end(waiter, target, stat);
 }
 
-EXPORT(int, sceKernelCancelCallback, SceUID callbackId) {
-    if (host.kernel.callbacks.find(callbackId) != host.kernel.callbacks.end())
-        return SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID;
+EXPORT(SceInt32, sceKernelCancelCallback, SceUID callbackId) {
+    if (host.kernel.callbacks.find(callbackId) == host.kernel.callbacks.end())
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
 
-    auto cb = host.kernel.callbacks.at(callbackId);
+    const CallbackPtr cb = lock_and_find(callbackId, host.kernel.callbacks, host.kernel.mutex);
+
     cb->cancel();
+
     return SCE_KERNEL_OK;
 }
 
@@ -608,7 +630,7 @@ unsigned process_callbacks(HostState &host, SceUID thread_id) {
     return num_callbacks_processed;
 }
 
-EXPORT(int, sceKernelCheckCallback) {
+EXPORT(SceInt32, sceKernelCheckCallback) {
     return process_callbacks(host, thread_id);
 }
 
@@ -781,12 +803,12 @@ EXPORT(int, sceKernelExitDeleteThread, int status) {
     return status;
 }
 
-EXPORT(int, sceKernelGetCallbackCount, SceUID callbackId) {
-    if (host.kernel.callbacks.find(callbackId) != host.kernel.callbacks.end())
-        return SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID;
+EXPORT(SceInt32, sceKernelGetCallbackCount, SceUID callbackId) {
+    if (host.kernel.callbacks.find(callbackId) == host.kernel.callbacks.end())
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
 
-    std::lock_guard lock(host.kernel.mutex);
-    auto cb = host.kernel.callbacks.at(callbackId);
+    const CallbackPtr cb = lock_and_find(callbackId, host.kernel.callbacks, host.kernel.mutex);
+
     return cb->get_num_notifications();
 }
 
@@ -837,13 +859,14 @@ EXPORT(uint64_t, sceKernelGetTimerTimeWide, SceUID timer_handle) {
     return get_current_time() - timer_info->time;
 }
 
-EXPORT(int, sceKernelNotifyCallback, SceUID callbackId, SceInt32 notifyArg) {
-    if (host.kernel.callbacks.find(callbackId) != host.kernel.callbacks.end())
-        return SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID;
+EXPORT(SceInt32, sceKernelNotifyCallback, SceUID callbackId, SceInt32 notifyArg) {
+    if (host.kernel.callbacks.find(callbackId) == host.kernel.callbacks.end())
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
 
-    std::lock_guard lock(host.kernel.mutex);
-    auto cb = host.kernel.callbacks.at(callbackId);
+    const CallbackPtr cb = lock_and_find(callbackId, host.kernel.callbacks, host.kernel.mutex);
+
     cb->direct_notify(notifyArg);
+
     return SCE_KERNEL_OK;
 }
 

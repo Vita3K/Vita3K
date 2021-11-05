@@ -650,6 +650,17 @@ struct SceKernelMsgPipeInfo {
     uint32_t numReceivers;
 };
 
+struct SceKernelSemaInfo {
+    SceSize size;
+    SceUID semaId;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    SceUInt32 attr;
+    SceInt32 initCount;
+    SceInt32 currentCount;
+    SceInt32 maxCount;
+    SceUInt32 numWaitThreads;
+};
+
 struct SceKernelThreadInfo {
     /** Size of the structure */
     SceSize size;
