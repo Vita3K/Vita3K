@@ -146,7 +146,9 @@ EXPORT(int, _sceKernelExitCallback) {
 }
 
 EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCallbackInfo> pInfo) {
-    if (host.kernel.callbacks.find(callbackId) == host.kernel.callbacks.end())
+    const CallbackPtr cb = lock_and_find(callbackId, host.kernel.callbacks, host.kernel.mutex);
+
+    if (!cb)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
 
     SceKernelCallbackInfo *info = pInfo.get(host.mem);
@@ -155,8 +157,6 @@ EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCall
 
     if (info->size != sizeof(*info))
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
-
-    const CallbackPtr cb = lock_and_find(callbackId, host.kernel.callbacks, host.kernel.mutex);
 
     info->callbackId = callbackId;
     strncpy(info->name, cb->get_name().c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
@@ -626,11 +626,10 @@ EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout)
 }
 
 EXPORT(SceInt32, sceKernelCancelCallback, SceUID callbackId) {
-    if (host.kernel.callbacks.find(callbackId) == host.kernel.callbacks.end())
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
-
     const CallbackPtr cb = lock_and_find(callbackId, host.kernel.callbacks, host.kernel.mutex);
 
+    if (!cb)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
     cb->cancel();
 
     return SCE_KERNEL_OK;
@@ -664,16 +663,16 @@ EXPORT(int, sceKernelChangeThreadVfpException) {
 
 unsigned process_callbacks(HostState &host, SceUID thread_id) {
     ThreadStatePtr thread = host.kernel.get_thread(thread_id);
-    std::lock_guard lock(host.kernel.mutex);
     unsigned num_callbacks_processed = 0;
-    if (!thread->callbacks.empty())
-        for (CallbackPtr &cb : thread->callbacks)
-            if (cb->is_executable()) {
-                bool should_delete = cb->execute();
-                if (should_delete) //TODO suppport callbacks deletion
-                    LOG_WARN("Callback with name {} requested to be deleted, but this is not supported yet!", cb->get_name());
-                num_callbacks_processed++;
-            }
+    for (CallbackPtr &cb : thread->callbacks) {
+        if (cb->is_executable()) {
+            bool should_delete = cb->execute();
+            if (should_delete) //TODO suppport callbacks deletion
+                LOG_WARN("Callback with name {} requested to be deleted, but this is not supported yet!", cb->get_name());
+            num_callbacks_processed++;
+        }
+    }
+
     return num_callbacks_processed;
 }
 
@@ -851,10 +850,10 @@ EXPORT(int, sceKernelExitDeleteThread, int status) {
 }
 
 EXPORT(SceInt32, sceKernelGetCallbackCount, SceUID callbackId) {
-    if (host.kernel.callbacks.find(callbackId) == host.kernel.callbacks.end())
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
-
     const CallbackPtr cb = lock_and_find(callbackId, host.kernel.callbacks, host.kernel.mutex);
+
+    if (!cb)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
 
     return cb->get_num_notifications();
 }
@@ -907,10 +906,9 @@ EXPORT(uint64_t, sceKernelGetTimerTimeWide, SceUID timer_handle) {
 }
 
 EXPORT(SceInt32, sceKernelNotifyCallback, SceUID callbackId, SceInt32 notifyArg) {
-    if (host.kernel.callbacks.find(callbackId) == host.kernel.callbacks.end())
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
-
     const CallbackPtr cb = lock_and_find(callbackId, host.kernel.callbacks, host.kernel.mutex);
+    if (!cb)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
 
     cb->direct_notify(notifyArg);
 
