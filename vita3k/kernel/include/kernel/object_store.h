@@ -75,7 +75,8 @@ public:
     template <typename T>
     void erase() {
         auto it = objs.find(TypeInfo::registered<T>::index);
-        assert(it != objs.end());
+        if (it == objs.end())
+            return;
         objs.erase(it);
     }
 
