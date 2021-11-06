@@ -16,17 +16,18 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceKernelForVM.h"
+#include "../SceKernelThreadMgr/SceThreadmgr.h"
 
-EXPORT(int, __sceKernelGetThreadContextForVM) {
-    return UNIMPLEMENTED();
+EXPORT(int, __sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
+    return CALL_EXPORT(_sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
 }
 
-EXPORT(int, _sceKernelResumeThreadForVM) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelResumeThreadForVM, SceUID threadId) {
+    return CALL_EXPORT(sceKernelResumeThreadForVM, threadId);
 }
 
-EXPORT(int, _sceKernelSuspendThreadForVM) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelSuspendThreadForVM, SceUID threadId) {
+    return CALL_EXPORT(sceKernelSuspendThreadForVM, threadId);
 }
 
 BRIDGE_IMPL(__sceKernelGetThreadContextForVM)

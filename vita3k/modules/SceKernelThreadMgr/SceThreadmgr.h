@@ -40,6 +40,10 @@ EXPORT(int, _sceKernelPollEventFlag, SceUID event_id, unsigned int flags, unsign
 EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout);
 EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout);
 EXPORT(int, _sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout);
+EXPORT(int, _sceKernelSetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo);
+EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo);
+EXPORT(int, sceKernelResumeThreadForVM, SceUID threadId);
+EXPORT(int, sceKernelSuspendThreadForVM, SceUID threadId);
 
 BRIDGE_DECL(__sceKernelCreateLwMutex)
 BRIDGE_DECL(_sceKernelCancelEvent)

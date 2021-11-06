@@ -172,7 +172,8 @@ EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCall
 }
 
 EXPORT(SceInt32, _sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pInfo) {
-    if (host.kernel.eventflags.find(condId) == host.kernel.eventflags.end())
+    const CondvarPtr condvar = lock_and_find(condId, host.kernel.condvars, host.kernel.mutex);
+    if (!condvar)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
 
     SceKernelCondInfo *info = pInfo.get(host.mem);
@@ -181,8 +182,6 @@ EXPORT(SceInt32, _sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pI
 
     if (info->size != sizeof(*info))
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
-
-    const CondvarPtr condvar = lock_and_find(condId, host.kernel.condvars, host.kernel.mutex);
 
     info->condId = condId;
     std::copy(condvar->name, condvar->name + KERNELOBJECT_MAX_NAME_LENGTH, info->name);
@@ -194,7 +193,8 @@ EXPORT(SceInt32, _sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pI
 }
 
 EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFlagInfo> pInfo) {
-    if (host.kernel.eventflags.find(evfId) == host.kernel.eventflags.end())
+    const EventFlagPtr eventflag = lock_and_find(evfId, host.kernel.eventflags, host.kernel.mutex);
+    if (!eventflag)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
 
     SceKernelEventFlagInfo *info = pInfo.get(host.mem);
@@ -203,8 +203,6 @@ EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFla
 
     if (info->size != sizeof(*info))
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
-
-    const EventFlagPtr eventflag = lock_and_find(evfId, host.kernel.eventflags, host.kernel.mutex);
 
     info->evfId = evfId;
     std::copy(eventflag->name, eventflag->name + KERNELOBJECT_MAX_NAME_LENGTH, info->name);
@@ -290,7 +288,8 @@ EXPORT(int, _sceKernelGetRWLockInfo) {
 }
 
 EXPORT(SceInt32, _sceKernelGetSemaInfo, SceUID semaId, Ptr<SceKernelSemaInfo> pInfo) {
-    if (host.kernel.semaphores.find(semaId) == host.kernel.semaphores.end())
+    const SemaphorePtr semaphore = lock_and_find(semaId, host.kernel.semaphores, host.kernel.mutex);
+    if (!semaphore)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
 
     SceKernelSemaInfo *info = pInfo.get(host.mem);
@@ -299,8 +298,6 @@ EXPORT(SceInt32, _sceKernelGetSemaInfo, SceUID semaId, Ptr<SceKernelSemaInfo> pI
 
     if (info->size != sizeof(*info))
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
-
-    const SemaphorePtr semaphore = lock_and_find(semaId, host.kernel.semaphores, host.kernel.mutex);
 
     info->attr = semaphore->attr;
     info->currentCount = host.kernel.semaphores.size();
@@ -321,8 +318,37 @@ EXPORT(int, _sceKernelGetSystemTime) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelGetThreadContextForVM) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
+    STUBBED("Stub");
+
+    const ThreadStatePtr thread = lock_and_find(threadId, host.kernel.threads, host.kernel.mutex);
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+
+    const auto context = save_context(*thread->cpu);
+    SceKernelThreadCpuRegisterInfo *infoCpu = pCpuRegisterInfo.get(host.mem);
+    if (infoCpu) {
+        if (infoCpu->size != sizeof(*infoCpu))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+
+        infoCpu->cpsr = context.cpsr;
+        memcpy(infoCpu->reg, context.cpu_registers.data(), 16 * 4);
+        infoCpu->sb = 100000; // Todo
+        infoCpu->st = 100000; // Todo
+        infoCpu->teehbr = 100000; // Todo
+        infoCpu->tpidrurw = read_tpidruro(*thread->cpu);
+    }
+
+    SceKernelThreadVfpRegisterInfo *infoVfp = pVfpRegisterInfo.get(host.mem);
+    if (infoVfp) {
+        if (infoVfp->size != sizeof(*infoVfp))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+
+        infoVfp->fpscr = context.fpscr;
+        memcpy(infoVfp->reg, context.fpu_registers.data(), 64 * 4);
+    }
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelGetThreadCpuAffinityMask) {
@@ -340,7 +366,8 @@ EXPORT(int, _sceKernelGetThreadExitStatus) {
 EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadInfo> pInfo) {
     STUBBED("STUB");
 
-    if (host.kernel.threads.find(threadId) == host.kernel.threads.end())
+    const ThreadStatePtr thread = lock_and_find(threadId ? threadId : thread_id, host.kernel.threads, host.kernel.mutex);
+    if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
     SceKernelThreadInfo *info = pInfo.get(host.mem);
@@ -351,8 +378,6 @@ EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadIn
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
 
     // TODO: SCE_KERNEL_ERROR_ILLEGAL_CONTEXT check
-
-    const ThreadStatePtr thread = lock_and_find(threadId ? threadId : thread_id, host.kernel.threads, host.kernel.mutex);
 
     std::copy(thread->name.c_str(), thread->name.c_str() + KERNELOBJECT_MAX_NAME_LENGTH, info->name);
     info->stack = Ptr<void>(thread->stack.get());
@@ -456,7 +481,27 @@ EXPORT(int, _sceKernelSetEventWithNotifyCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelSetThreadContextForVM) {
+EXPORT(int, _sceKernelSetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
+    const ThreadStatePtr thread = lock_and_find(threadId, host.kernel.threads, host.kernel.mutex);
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+
+    SceKernelThreadCpuRegisterInfo *infoCpu = pCpuRegisterInfo.get(host.mem);
+    if (infoCpu) {
+        if (infoCpu->size != sizeof(*infoCpu))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+
+        // Todo
+    }
+
+    SceKernelThreadVfpRegisterInfo *infoVfp = pVfpRegisterInfo.get(host.mem);
+    if (infoVfp) {
+        if (infoVfp->size != sizeof(*infoVfp))
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
+
+        // Todo
+    }
+
     return UNIMPLEMENTED();
 }
 
@@ -990,8 +1035,16 @@ EXPORT(int, sceKernelRegisterCallbackToEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelResumeThreadForVM) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelResumeThreadForVM, SceUID threadId) {
+    STUBBED("STUB");
+
+    const ThreadStatePtr thread = lock_and_find(threadId, host.kernel.threads, host.kernel.mutex);
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+
+    thread->resume();
+
+    return 0;
 }
 
 EXPORT(int, sceKernelSendSignal, SceUID target_thread_id) {
@@ -1058,8 +1111,16 @@ EXPORT(int, sceKernelStopTimer, SceUID timer_handle) {
     return true;
 }
 
-EXPORT(int, sceKernelSuspendThreadForVM) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSuspendThreadForVM, SceUID threadId) {
+    STUBBED("STUB");
+
+    const ThreadStatePtr thread = lock_and_find(threadId, host.kernel.threads, host.kernel.mutex);
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+
+    thread->suspend();
+
+    return 0;
 }
 
 EXPORT(int, sceKernelTryLockMutex, SceUID mutexid, int lock_count) {

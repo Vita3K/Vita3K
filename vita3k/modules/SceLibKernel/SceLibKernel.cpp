@@ -1102,8 +1102,8 @@ EXPORT(Ptr<Ptr<void>>, sceKernelGetTLSAddr, int key) {
     return host.kernel.get_thread_tls_addr(host.mem, thread_id, key);
 }
 
-EXPORT(int, sceKernelGetThreadContextForVM) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
+    return CALL_EXPORT(_sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
 }
 
 EXPORT(int, sceKernelGetThreadCpuAffinityMask2) {
@@ -1295,8 +1295,8 @@ EXPORT(int, sceKernelSetEventWithNotifyCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelSetThreadContextForVM) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
+    return CALL_EXPORT(_sceKernelSetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
 }
 
 EXPORT(int, sceKernelSetTimerEvent, SceUID timer_handle, int32_t type, SceKernelSysClock *clock, int32_t repeats) {
