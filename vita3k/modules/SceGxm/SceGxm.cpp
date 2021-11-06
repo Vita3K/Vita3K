@@ -344,10 +344,6 @@ EXPORT(int, _sceGxmBeginScene) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceGxmMidSceneFlush) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, _sceGxmSetVertexTexture) {
     return UNIMPLEMENTED();
 }
@@ -1683,12 +1679,14 @@ EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *
     return 0;
 }
 
-EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const SceGxmNotification *vertexNotification) {
+EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const Ptr<SceGxmNotification> vertexNotification) {
+    STUBBED("STUB");
+
     if (!immediateContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (flags & 0xFFFFFFFE) {
+    if ((flags & 0xFFFFFFFE) || (immediateContext->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE)) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
@@ -1696,17 +1694,32 @@ EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    return UNIMPLEMENTED();
+    if (vertexNotification) {
+        renderer::add_command(immediateContext->renderer.get(), renderer::CommandOpcode::SignalNotification,
+            nullptr, vertexNotification, true);
+
+        // Submit our command list
+        renderer::submit_command_list(*host.renderer, immediateContext->renderer.get(), immediateContext->renderer->command_list);
+        renderer::reset_command_list(immediateContext->renderer->command_list);
+
+        host.renderer->scene_processed_since_last_frame++;
+    }
+
+    return 0;
 }
 
-EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
+EXPORT(int, _sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const Ptr<SceGxmNotification> vertexNotification) {
+    return CALL_EXPORT(sceGxmMidSceneFlush, immediateContext, flags, vertexSyncObject, vertexNotification);
+}
+
+EXPORT(int, sceGxmNotificationWait, const Ptr<SceGxmNotification> notification) {
     if (!notification) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
     // TODO: This is so horrible
-    volatile std::uint32_t *value = notification->address.get(host.mem);
-    while (*value != notification->value) {
+    volatile std::uint32_t *value = notification.get(host.mem)->address.get(host.mem);
+    while (*value != notification.get(host.mem)->value) {
     }
 
     return 0;
@@ -3774,7 +3787,6 @@ EXPORT(int, sceGxmWaitEvent) {
 }
 
 BRIDGE_IMPL(_sceGxmBeginScene)
-BRIDGE_IMPL(_sceGxmMidSceneFlush)
 BRIDGE_IMPL(_sceGxmProgramFindParameterBySemantic)
 BRIDGE_IMPL(_sceGxmProgramParameterGetSemantic)
 BRIDGE_IMPL(_sceGxmSetVertexTexture)
@@ -3850,6 +3862,7 @@ BRIDGE_IMPL(sceGxmMapFragmentUsseMemory)
 BRIDGE_IMPL(sceGxmMapMemory)
 BRIDGE_IMPL(sceGxmMapVertexUsseMemory)
 BRIDGE_IMPL(sceGxmMidSceneFlush)
+BRIDGE_IMPL(_sceGxmMidSceneFlush)
 BRIDGE_IMPL(sceGxmNotificationWait)
 BRIDGE_IMPL(sceGxmPadHeartbeat)
 BRIDGE_IMPL(sceGxmPadTriggerGpuPaTrace)
