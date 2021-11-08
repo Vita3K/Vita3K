@@ -16,21 +16,22 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceKernelForMono.h"
+#include "../SceKernelThreadMgr/SceThreadmgr.h"
 
-EXPORT(int, sceKernelGetThreadContextForMono) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetThreadContextForMono, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
+    return CALL_EXPORT(_sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
 }
 
-EXPORT(int, sceKernelResumeThreadForMono) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelResumeThreadForMono, SceUID threadId) {
+    return CALL_EXPORT(sceKernelResumeThreadForVM, threadId);
 }
 
-EXPORT(int, sceKernelSetThreadContextForMono) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSetThreadContextForMono, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
+    return CALL_EXPORT(_sceKernelSetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
 }
 
-EXPORT(int, sceKernelSuspendThreadForMono) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelSuspendThreadForMono, SceUID threadId) {
+    return CALL_EXPORT(sceKernelSuspendThreadForVM, threadId);
 }
 
 EXPORT(int, sceKernelWaitExceptionCBForMono) {

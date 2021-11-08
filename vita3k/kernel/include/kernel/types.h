@@ -735,6 +735,22 @@ struct SceKernelThreadInfo {
     SceInt32 reserved;
 };
 
+struct SceKernelThreadCpuRegisterInfo {
+    SceSize size;
+    SceUInt32 cpsr;
+    SceUInt32 reg[16];
+    SceUInt32 tpidrurw;
+    SceUInt32 teehbr;
+    SceUInt32 sb;
+    SceUInt32 st;
+};
+
+struct SceKernelThreadVfpRegisterInfo {
+    SceSize size;
+    SceUInt32 fpscr;
+    SceFloat reg[64];
+};
+
 struct SceProcessParam {
     SceSize size;
     SceUInt32 magic;
