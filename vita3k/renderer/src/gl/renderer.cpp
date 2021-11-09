@@ -235,24 +235,6 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state) {
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
 
-    // Try to parse and get version
-    const std::size_t dot_pos = version.find_first_of('.');
-
-    if (dot_pos != std::string::npos) {
-        const std::string major = version.substr(0, dot_pos);
-        const std::string minor = version.substr(dot_pos + 1);
-
-        gl_state.features.direct_pack_unpack_half = false;
-        gl_state.features.use_shader_binding = false;
-
-        if (std::atoi(major.c_str()) >= 4 && minor.length() >= 1) {
-            if (minor[0] >= '2') {
-                gl_state.features.direct_pack_unpack_half = true;
-                gl_state.features.use_shader_binding = true;
-            }
-        }
-    }
-
     if (choosen_minor_version >= 3) {
         glDebugMessageCallback(reinterpret_cast<GLDEBUGPROC>(debug_output_callback), nullptr);
     }
@@ -264,7 +246,6 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state) {
         { "GL_ARB_fragment_shader_interlock", &gl_state.features.support_shader_interlock },
         { "GL_ARB_texture_barrier", &gl_state.features.support_texture_barrier },
         { "GL_EXT_shader_framebuffer_fetch", &gl_state.features.direct_fragcolor },
-        { "GL_ARB_shading_language_packing", &gl_state.features.pack_unpack_half_through_ext },
         { "GL_ARB_gl_spirv", &gl_state.features.spirv_shader }
     };
 

@@ -44,10 +44,7 @@ std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &f
 std::vector<std::uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id);
 
 // Uniforms.
-bool set_uniform(GLuint program, const SceGxmProgram &shader_program, GLShaderStatics &statics, const MemState &mem,
-    const SceGxmProgramParameter *parameter, const void *data, bool log_uniforms);
-
-bool set_uniform_buffer(GLContext &context, const bool vertex_shader, const int block_num, const int size, const void *data, bool log_active_shader);
+bool set_uniform_buffer(GLContext &context, const bool vertex_shader, const int block_num, const int size, const void *data, bool log_active_shader, bool is_ssbo = true);
 
 bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state);
 bool create(std::unique_ptr<Context> &context, const bool hashless_texture_cache);

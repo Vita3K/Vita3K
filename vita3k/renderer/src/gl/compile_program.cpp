@@ -105,46 +105,6 @@ static SharedGLObject compile_spirv(GLenum type, const std::vector<std::uint32_t
     return shader;
 }
 
-static void bind_uniform_block_locations(GLuint gl_program, const SceGxmProgram &program) {
-    std::string name_type = (program.is_vertex() ? "vert" : "frag");
-    GLuint render_info_index = glGetUniformBlockIndex(gl_program, program.is_vertex() ? "GxmRenderVertBufferBlock" : "GXMRenderFragBufferBlock");
-
-    if (render_info_index == GL_INVALID_INDEX) {
-        LOG_ERROR("Missing render info buffer in vertex shader");
-    } else {
-        glUniformBlockBinding(gl_program, render_info_index, SCE_GXM_REAL_MAX_UNIFORM_BUFFER);
-    }
-
-    for (uint16_t buffer_index = 0; buffer_index < SCE_GXM_REAL_MAX_UNIFORM_BUFFER; buffer_index++) {
-        const SceGxmProgramParameterContainer *container = gxp::get_container_by_index(program, buffer_index);
-
-        if (!container)
-            continue;
-
-        uint32_t binding = buffer_index + 1;
-        std::string buffer_name;
-
-        if (buffer_index == 14) {
-            buffer_name = fmt::format("{}_defaultUniformBuffer", name_type);
-            binding = 0;
-        } else {
-            buffer_name = fmt::format("{}_buffer{}", name_type, binding);
-        }
-
-        if (program.is_fragment())
-            binding += SCE_GXM_REAL_MAX_UNIFORM_BUFFER + 1;
-
-        GLuint index = glGetUniformBlockIndex(gl_program, buffer_name.c_str());
-
-        if (index == GL_INVALID_INDEX) {
-            LOG_ERROR("Missing buffer {} for container index {}.", buffer_name, buffer_index);
-            continue;
-        }
-
-        glUniformBlockBinding(gl_program, index, binding);
-    }
-}
-
 static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const FeatureState &features, const std::string &hash,
     ShaderCache &cache, const GLenum type, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool spirv, bool maskupdate, const char *base_path, const char *title_id) {
     const auto cached = cache.find(hash);
@@ -217,11 +177,6 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
     glAttachShader(program->get(), vertex_shader->get());
     glLinkProgram(program->get());
 
-    if (!features.use_shader_binding) {
-        bind_uniform_block_locations(program->get(), *vertex_program_gxm.program.get(mem));
-        bind_uniform_block_locations(program->get(), *fragment_program_gxm.program.get(mem));
-    }
-
     GLint log_length = 0;
     glGetProgramiv(program->get(), GL_INFO_LOG_LENGTH, &log_length);
 
@@ -243,21 +198,6 @@ SharedGLObject compile_program(ProgramCache &program_cache, ShaderCache &vertex_
 
     glDetachShader(program->get(), fragment_shader->get());
     glDetachShader(program->get(), vertex_shader->get());
-
-    if (!features.use_shader_binding) {
-        glUseProgram(program->get());
-        const auto fragment_program_gxp = fragment_program_gxm.program.get(mem);
-        const auto parameters = gxp::program_parameters(*fragment_program_gxp);
-        for (uint32_t i = 0; i < fragment_program_gxp->parameter_count; ++i) {
-            const auto parameter = &parameters[i];
-            if (parameter->category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-                const auto name = gxp::parameter_name_raw(*parameter);
-                GLint loc = glGetUniformLocation(program->get(), name.c_str());
-                glUniform1i(loc, parameter->resource_index);
-            }
-        }
-        glUseProgram(0);
-    }
 
     program_cache.emplace(hashes, program);
 

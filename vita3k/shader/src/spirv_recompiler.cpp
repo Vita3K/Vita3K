@@ -741,10 +741,9 @@ static spv::Id create_uniform_block(spv::Builder &b, const FeatureState &feature
 
     // Default uniform buffer always has binding of 0
     const std::string buffer_var_name = fmt::format("buffer{}", base_binding);
-    spv::Id default_buffer = b.createVariable(spv::StorageClassUniform, default_buffer_type, buffer_var_name.c_str());
-    if (features.use_shader_binding)
-        b.addDecoration(default_buffer, spv::DecorationBinding, ((!is_vert) ? 16 : 0) + base_binding);
+    spv::Id default_buffer = b.createVariable(spv::StorageClassStorageBuffer, default_buffer_type, buffer_var_name.c_str());
 
+    b.addDecoration(default_buffer, spv::DecorationBinding, ((!is_vert) ? 16 : 0) + base_binding);
     b.addMemberDecoration(default_buffer_type, 0, spv::DecorationOffset, 0);
     b.addDecoration(vec4_arr_type, spv::DecorationArrayStride, 16);
     b.addMemberName(default_buffer_type, 0, "data");
@@ -855,9 +854,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     for (const auto &sampler : program_input.samplers) {
         const auto sampler_spv_var = create_param_sampler(b, sampler.name);
         samplers.emplace(sampler.index, sampler_spv_var);
-        if (features.use_shader_binding) {
-            b.addDecoration(sampler_spv_var, spv::DecorationBinding, sampler.index);
-        }
+        b.addDecoration(sampler_spv_var, spv::DecorationBinding, sampler.index);
     }
 
     // Log parameters
@@ -1000,8 +997,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         translation_state.render_info_id = b.createVariable(spv::StorageClassUniform, render_buf_type, "renderVertInfo");
 
-        if (features.use_shader_binding)
-            b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, 15);
+        b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, 15);
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
@@ -1020,8 +1016,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         translation_state.render_info_id = b.createVariable(spv::StorageClassUniform, render_buf_type, "renderFragInfo");
 
-        if (features.use_shader_binding)
-            b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, 31);
+        b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, 31);
 
         create_fragment_inputs(b, spv_params, utils, features, translation_state, texture_queries, samplers, program);
     }
@@ -1439,11 +1434,8 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
     spirv_cross::CompilerGLSL::Options options;
-    if (features.direct_pack_unpack_half) {
-        options.version = 420;
-    } else {
-        options.version = 410;
-    }
+
+    options.version = 430;
     options.es = false;
     options.enable_420pack_extension = true;
 
@@ -1452,110 +1444,6 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
 
     glsl.set_common_options(options);
     glsl.add_header_line("// Shader Name: " + shader_name);
-
-    if (!features.direct_pack_unpack_half) {
-        if (features.pack_unpack_half_through_ext) {
-            glsl.require_extension("GL_ARB_shading_language_packing");
-        } else {
-            // Emit pack/unpack ourself
-            // Please thanks Google for this.
-            // https://github.com/google/angle/blob/master/src/compiler/translator/BuiltInFunctionEmulatorGLSL.cpp
-            glsl.add_header_line(
-                "\n"
-                "uint f32tof16(float val)\n"
-                "{\n"
-                "    uint f32 = floatBitsToUint(val);\n"
-                "    uint f16 = 0u;\n"
-                "    uint sign = (f32 >> 16) & 0x8000u;\n"
-                "    int exponent = int((f32 >> 23) & 0xFFu) - 127;\n"
-                "    uint mantissa = f32 & 0x007FFFFFu;\n"
-                "    if (exponent == 128)\n"
-                "    {\n"
-                "        // Infinity or NaN\n"
-                "        // NaN bits that are masked out by 0x3FF get discarded.\n"
-                "        // This can turn some NaNs to infinity, but this is allowed by the spec.\n"
-                "        f16 = sign | (0x1Fu << 10);\n"
-                "        f16 |= (mantissa & 0x3FFu);\n"
-                "    }\n"
-                "    else if (exponent > 15)\n"
-                "    {\n"
-                "        // Overflow - flush to Infinity\n"
-                "        f16 = sign | (0x1Fu << 10);\n"
-                "    }\n"
-                "    else if (exponent > -15)\n"
-                "    {\n"
-                "        // Representable value\n"
-                "        exponent += 15;\n"
-                "        mantissa >>= 13;\n"
-                "        f16 = sign | uint(exponent << 10) | mantissa;\n"
-                "    }\n"
-                "    else\n"
-                "    {\n"
-                "        f16 = sign;\n"
-                "    }\n"
-                "    return f16;\n"
-                "}\n"
-                "\n"
-                "uint packHalf2x16(vec2 v)\n"
-                "{\n"
-                "     uint x = f32tof16(v.x);\n"
-                "     uint y = f32tof16(v.y);\n"
-                "     return (y << 16) | x;\n"
-                "}\n");
-
-            glsl.add_header_line(
-                "float f16tof32(uint val)\n"
-                "{\n"
-                "    uint sign = (val & 0x8000u) << 16;\n"
-                "    int exponent = int((val & 0x7C00u) >> 10);\n"
-                "    uint mantissa = val & 0x03FFu;\n"
-                "    float f32 = 0.0;\n"
-                "    if(exponent == 0)\n"
-                "    {\n"
-                "        if (mantissa != 0u)\n"
-                "        {\n"
-                "            const float scale = 1.0 / (1 << 24);\n"
-                "            f32 = scale * mantissa;\n"
-                "        }\n"
-                "    }\n"
-                "    else if (exponent == 31)\n"
-                "    {\n"
-                "        return uintBitsToFloat(sign | 0x7F800000u | mantissa);\n"
-                "    }\n"
-                "    else\n"
-                "    {\n"
-                "        exponent -= 15;\n"
-                "        float scale;\n"
-                "        if(exponent < 0)\n"
-                "        {\n"
-                "            // The negative unary operator is buggy on OSX.\n"
-                "            // Work around this by using abs instead.\n"
-                "            scale = 1.0 / (1 << abs(exponent));\n"
-                "        }\n"
-                "        else\n"
-                "        {\n"
-                "            scale = 1 << exponent;\n"
-                "        }\n"
-                "        float decimal = 1.0 + float(mantissa) / float(1 << 10);\n"
-                "        f32 = scale * decimal;\n"
-                "    }\n"
-                "\n"
-                "    if (sign != 0u)\n"
-                "    {\n"
-                "        f32 = -f32;\n"
-                "    }\n"
-                "\n"
-                "     return f32;\n"
-                "}\n"
-                "\n"
-                "vec2 unpackHalf2x16(uint u)\n"
-                "{\n"
-                "    uint y = (u >> 16);\n"
-                "    uint x = u & 0xFFFFu;\n"
-                "    return vec2(f16tof32(x), f16tof32(y));\n"
-                "}\n");
-        }
-    }
 
     if (features.direct_fragcolor && translation_state.last_frag_data_id != spv::NoResult) {
         glsl.require_extension("GL_EXT_shader_framebuffer_fetch");
@@ -1642,11 +1530,8 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
     gxp_stream.read(reinterpret_cast<char *>(gxp_program), gxp_file_size);
 
     FeatureState features;
-    features.direct_pack_unpack_half = true;
     features.direct_fragcolor = false;
     features.support_shader_interlock = true;
-    features.pack_unpack_half_through_ext = false;
-    features.use_shader_binding = true;
 
     convert_gxp_to_glsl(*gxp_program, shader_filepath_str.filename().string(), features, nullptr, false, true);
 
