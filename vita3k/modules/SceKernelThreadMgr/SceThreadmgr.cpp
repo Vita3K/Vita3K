@@ -710,9 +710,10 @@ unsigned process_callbacks(HostState &host, SceUID thread_id) {
     unsigned num_callbacks_processed = 0;
     for (CallbackPtr &cb : thread->callbacks) {
         if (cb->is_executable()) {
-            bool should_delete = cb->execute();
-            if (should_delete) // TODO suppport callbacks deletion
-                LOG_WARN("Callback with name {} requested to be deleted, but this is not supported yet!", cb->get_name());
+            std::string name = cb->get_name();
+            cb->execute(host.kernel, [name]() {
+                LOG_WARN("Callback with name {} requested to be deleted, but this is not supported yet!", name);
+            });
             num_callbacks_processed++;
         }
     }

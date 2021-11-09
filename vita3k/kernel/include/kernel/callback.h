@@ -22,6 +22,7 @@
 
 #define SCE_UID_INVALID_UID (SceUID)(0xFFFFFFFF)
 
+struct KernelState;
 struct ThreadState;
 typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 
@@ -107,11 +108,10 @@ struct Callback {
 
     /**
      * @brief Runs callback in the context of creator thread
-     * @return true if the callback is executed and requests to be deleted (CallbackFunction returned non-zero)
-     * @return false otherwise
      * @note Calling this method when Callback.executable() == false returns false and does nothing
+     * @note This should be called only in the creator thread
      */
-    bool execute();
+    void execute(KernelState &kernel, std::function<void()> deleter);
 
 private:
     void reset();
