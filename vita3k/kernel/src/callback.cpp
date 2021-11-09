@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <kernel/callback.h>
+#include <kernel/state.h>
 #include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 #include <mutex>
@@ -62,16 +63,17 @@ uint32_t Callback::get_num_notifications() {
     return this->num_notifications;
 }
 
-bool Callback::execute() {
+void Callback::execute(KernelState &kernel, std::function<void()> deleter) {
     std::lock_guard lock(this->_mutex);
     if (!this->is_notified())
-        return false; // We can't execute, so we don't want to be unregistered
+        return;
 
     std::vector<uint32_t> args = { (uint32_t)(this->notifier_id), this->num_notifications, (uint32_t)this->notification_arg, this->userdata.address() };
-    int cb_result = this->thread->run_guest_function(this->cb_func.address(), args);
+    int ret = kernel.run_guest_function(this->thread_id, this->cb_func.address(), args);
+    if (ret != 0) {
+        deleter();
+    }
     this->reset(); // Callbacks return to their default state after running
-
-    return cb_result != 0; // A non-zero return value indicates the callback wants to be deleted
 }
 
 /** Private methods **/
