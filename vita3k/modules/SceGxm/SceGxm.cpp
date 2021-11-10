@@ -1695,14 +1695,8 @@ EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags
     }
 
     if (vertexNotification) {
-        renderer::add_command(immediateContext->renderer.get(), renderer::CommandOpcode::SignalNotification,
-            nullptr, vertexNotification, true);
-
-        // Submit our command list
-        renderer::submit_command_list(*host.renderer, immediateContext->renderer.get(), immediateContext->renderer->command_list);
-        renderer::reset_command_list(immediateContext->renderer->command_list);
-
-        host.renderer->scene_processed_since_last_frame++;
+        volatile uint32_t *val = vertexNotification.get(host.mem)->address.get(host.mem);
+        *val = vertexNotification.get(host.mem)->value;
     }
 
     return 0;
