@@ -20,6 +20,23 @@
 #include <kernel/thread/thread_state.h>
 #include <kernel/types.h>
 #include <mutex>
+#include <util/log.h>
+
+uint32_t process_callbacks(KernelState &kernel, SceUID thread_id) {
+    ThreadStatePtr thread = kernel.get_thread(thread_id);
+    uint32_t num_callbacks_processed = 0;
+    for (CallbackPtr &cb : thread->callbacks) {
+        if (cb->is_executable()) {
+            std::string name = cb->get_name();
+            cb->execute(kernel, [name]() {
+                LOG_WARN("Callback with name {} requested to be deleted, but this is not supported yet!", name);
+            });
+            num_callbacks_processed++;
+        }
+    }
+
+    return num_callbacks_processed;
+}
 
 void Callback::notify(SceUID notifier_id, SceInt32 notify_arg) {
     std::lock_guard lock(this->_mutex);

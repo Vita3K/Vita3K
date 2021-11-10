@@ -613,13 +613,13 @@ EXPORT(int, _sceKernelWaitMultipleEventsCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
-    return semaphore_wait(host.kernel, export_name, thread_id, semaid, signal, timeout);
+EXPORT(SceInt32, _sceKernelWaitSema, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
+    return semaphore_wait(host.kernel, export_name, thread_id, semaId, needCount, pTimeout);
 }
 
-EXPORT(int, _sceKernelWaitSemaCB, SceUID semaid, int signal, SceUInt *timeout) {
-    STUBBED("NO CB");
-    return semaphore_wait(host.kernel, export_name, thread_id, semaid, signal, timeout);
+EXPORT(SceInt32, _sceKernelWaitSemaCB, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
+    process_callbacks(host.kernel, thread_id);
+    return semaphore_wait(host.kernel, export_name, thread_id, semaId, needCount, pTimeout);
 }
 
 EXPORT(int, _sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout) {
@@ -708,24 +708,8 @@ EXPORT(int, sceKernelChangeThreadVfpException) {
     return UNIMPLEMENTED();
 }
 
-unsigned process_callbacks(HostState &host, SceUID thread_id) {
-    ThreadStatePtr thread = host.kernel.get_thread(thread_id);
-    unsigned num_callbacks_processed = 0;
-    for (CallbackPtr &cb : thread->callbacks) {
-        if (cb->is_executable()) {
-            std::string name = cb->get_name();
-            cb->execute(host.kernel, [name]() {
-                LOG_WARN("Callback with name {} requested to be deleted, but this is not supported yet!", name);
-            });
-            num_callbacks_processed++;
-        }
-    }
-
-    return num_callbacks_processed;
-}
-
 EXPORT(SceInt32, sceKernelCheckCallback) {
-    return process_callbacks(host, thread_id);
+    return process_callbacks(host.kernel, thread_id);
 }
 
 EXPORT(int, sceKernelCheckWaitableStatus) {
@@ -812,7 +796,7 @@ int delay_thread(SceUInt delay_us) {
 
 int delay_thread_cb(HostState &host, SceUID thread_id, SceUInt delay_us) {
     auto start = std::chrono::high_resolution_clock::now(); // Meseaure the time taken to process callbacks
-    process_callbacks(host, thread_id);
+    process_callbacks(host.kernel, thread_id);
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 

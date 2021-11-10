@@ -382,11 +382,11 @@ SceUID semaphore_create(KernelState &kernel, const char *export_name, const char
     return uid;
 }
 
-int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, SceInt32 signal, SceUInt *timeout) {
+SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
     assert(semaid >= 0);
 
     // TODO Don't lock twice.
-    const SemaphorePtr semaphore = lock_and_find(semaid, kernel.semaphores, kernel.mutex);
+    const SemaphorePtr semaphore = lock_and_find(semaId, kernel.semaphores, kernel.mutex);
     if (!semaphore) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
     }
@@ -394,28 +394,28 @@ int semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_i
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} val: {} timeout: {} waiting_threads: {}",
             export_name, semaphore->uid, thread_id, semaphore->name, semaphore->attr, semaphore->val,
-            timeout ? *timeout : 0, semaphore->waiting_threads->size());
+            pTimeout ? *pTimeout : 0, semaphore->waiting_threads->size());
     }
 
     const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
 
     std::unique_lock<std::mutex> semaphore_lock(semaphore->mutex);
 
-    if (semaphore->val < signal) {
+    if (semaphore->val < needCount) {
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
         thread->update_status(ThreadStatus::wait, ThreadStatus::run);
 
         WaitingThreadData data;
         data.thread = thread;
         data.priority = thread->priority;
-        data.signal = signal;
+        data.signal = needCount;
 
         const auto data_it = semaphore->waiting_threads->push(data);
         thread_lock.unlock();
 
-        return handle_timeout(thread, thread_lock, semaphore_lock, semaphore->waiting_threads, data, data_it, export_name, timeout);
+        return handle_timeout(thread, thread_lock, semaphore_lock, semaphore->waiting_threads, data, data_it, export_name, pTimeout);
     } else {
-        semaphore->val -= signal;
+        semaphore->val -= needCount;
     }
 
     return SCE_KERNEL_OK;
