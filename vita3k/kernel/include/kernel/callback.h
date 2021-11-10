@@ -130,3 +130,4 @@ private:
 };
 
 typedef std::shared_ptr<Callback> CallbackPtr;
+uint32_t process_callbacks(KernelState &kernel, SceUID thread_id);

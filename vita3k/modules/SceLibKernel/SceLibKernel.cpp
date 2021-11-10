@@ -1465,13 +1465,12 @@ EXPORT(int, sceKernelWaitMultipleEventsCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelWaitSema, SceUID semaid, int signal, SceUInt *timeout) {
-    return CALL_EXPORT(_sceKernelWaitSema, semaid, signal, timeout);
+EXPORT(SceInt32, sceKernelWaitSema, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
+    return CALL_EXPORT(_sceKernelWaitSema, semaId, needCount, pTimeout);
 }
 
-EXPORT(int, sceKernelWaitSemaCB, SceUID semaid, int signal, SceUInt *timeout) {
-    STUBBED("no CB");
-    return CALL_EXPORT(_sceKernelWaitSema, semaid, signal, timeout);
+EXPORT(SceInt32, sceKernelWaitSemaCB, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
+    return CALL_EXPORT(_sceKernelWaitSemaCB, semaId, needCount, pTimeout);
 }
 
 EXPORT(int, sceKernelWaitSignal, uint32_t unknown, uint32_t delay, uint32_t timeout) {
