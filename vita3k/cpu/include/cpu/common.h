@@ -45,7 +45,7 @@ struct CPUProtocolBase {
     virtual void call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) = 0;
     virtual Address get_watch_memory_addr(Address addr) = 0;
     virtual ExclusiveMonitorPtr get_exlusive_monitor() = 0;
-    virtual ~CPUProtocolBase() {}
+    virtual ~CPUProtocolBase() = default;
 };
 
 struct CPUContext {

@@ -25,7 +25,7 @@ typedef std::function<void(CPUState &cpu, uint32_t nid, SceUID thread_id)> CallI
 
 struct CPUProtocol : public CPUProtocolBase {
     CPUProtocol(KernelState &kernel, MemState &mem, const CallImportFunc &func);
-    ~CPUProtocol();
+    ~CPUProtocol() override = default;
     void call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) override;
     Address get_watch_memory_addr(Address addr) override;
     ExclusiveMonitorPtr get_exlusive_monitor() override;

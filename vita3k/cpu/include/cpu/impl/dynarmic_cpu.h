@@ -58,7 +58,7 @@ class DynarmicCPU : public CPUInterface {
 
 public:
     DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt);
-    ~DynarmicCPU();
+    ~DynarmicCPU() override;
     int run() override;
     void stop() override;
 

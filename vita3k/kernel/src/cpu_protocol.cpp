@@ -25,9 +25,6 @@ CPUProtocol::CPUProtocol(KernelState &kernel, MemState &mem, const CallImportFun
     , mem(&mem) {
 }
 
-CPUProtocol::~CPUProtocol() {
-}
-
 void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) {
     // Handle trampoline
     // 1. Handle trampoline jumper
