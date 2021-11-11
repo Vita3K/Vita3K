@@ -107,6 +107,7 @@ set_property(TARGET FAT16 PROPERTY FOLDER externals)
 
 # The imgui target is including both imgui and imgui_club.
 add_library(imgui STATIC imgui/imgui.cpp imgui/imgui_draw.cpp imgui/imgui_tables.cpp imgui/imgui_widgets.cpp imgui/misc/cpp/imgui_stdlib.cpp)
+target_compile_definitions(imgui PRIVATE IMGUI_DISABLE_DEMO_WINDOWS)
 target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui"
 		"${CMAKE_CURRENT_SOURCE_DIR}/imgui_club/imgui_memory_editor/")
 set_property(TARGET imgui PROPERTY FOLDER externals)
@@ -173,14 +174,11 @@ set_property(TARGET dynarmic PROPERTY FOLDER externals)
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")
 
-option(YAML_CPP_BUILD_TESTS "Enable testing" OFF)
+option(BUILD_TESTING "Build the testing tree." OFF)
 option(YAML_CPP_BUILD_TOOLS "Enable parse tools" OFF)
 option(YAML_CPP_BUILD_CONTRIB "Enable contrib stuff in library" OFF)
 option(YAML_CPP_INSTALL "Enable generation of install target" OFF)
 add_subdirectory(yaml-cpp EXCLUDE_FROM_ALL)
-add_library(yaml INTERFACE)
-target_include_directories(yaml INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/yaml-cpp/include")
-target_link_libraries(yaml INTERFACE yaml-cpp)
 set_property(TARGET yaml-cpp PROPERTY FOLDER externals)
 
 add_library(rpcs3 INTERFACE)
