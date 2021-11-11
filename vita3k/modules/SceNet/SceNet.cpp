@@ -209,7 +209,7 @@ EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
 
 EXPORT(int, sceNetInit, SceNetInitParam *param) {
     if (host.net.inited) {
-        return RET_ERROR(SCE_NET_ERROR_EINTERNAL);
+        return RET_ERROR(SCE_NET_ERROR_EBUSY);
     }
 #ifdef WIN32
     WORD versionWanted = MAKEWORD(2, 2);
