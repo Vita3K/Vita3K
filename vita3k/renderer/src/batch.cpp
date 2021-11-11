@@ -57,7 +57,6 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
         { CommandOpcode::Nop, cmd_handle_nop },
         { CommandOpcode::SetState, cmd_handle_set_state },
         { CommandOpcode::SignalSyncObject, cmd_handle_signal_sync_object },
-        { CommandOpcode::SignalNotification, cmd_handle_notification },
         { CommandOpcode::DestroyRenderTarget, cmd_handle_destroy_render_target }
     };
 

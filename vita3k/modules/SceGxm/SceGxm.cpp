@@ -1379,13 +1379,13 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, Ptr<SceGxmNotification> vert
         ++host.renderer->last_scene_id);
 
     if (vertexNotification) {
-        renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
-            nullptr, vertexNotification, true);
+        volatile uint32_t *val = vertexNotification.get(host.mem)->address.get(host.mem);
+        *val = vertexNotification.get(host.mem)->value;
     }
 
     if (fragmentNotification) {
-        renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
-            nullptr, fragmentNotification, false);
+        volatile uint32_t *val = fragmentNotification.get(host.mem)->address.get(host.mem);
+        *val = fragmentNotification.get(host.mem)->value;
     }
 
     if (context->state.fragment_sync_object) {
