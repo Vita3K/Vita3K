@@ -26,6 +26,7 @@
 
 /*!
 \brief Implementation of the Texture Decompression functions.
+\PVRT2 decompression is implemented by Vita3K team.
 \file PVRCore/texture/PVRTDecompress.cpp
 \author PowerVR by Imagination, Developer Technology Team
 \copyright Copyright (c) Imagination Technologies Limited.
@@ -35,6 +36,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <vector>
 
 #include <renderer/pvrt-dec.h>
 
@@ -99,7 +101,7 @@ static Pixel32 getColorA(uint32_t u32ColorData, uint32_t uiII) {
     return color;
 }
 
-static Pixel32 getColorB(uint32_t u32ColorData) {
+static Pixel32 getColorB(uint32_t u32ColorData, uint32_t uiII) {
     Pixel32 color;
 
     // Opaque Color Mode - RGB 555
@@ -113,39 +115,53 @@ static Pixel32 getColorB(uint32_t u32ColorData) {
         color.red = static_cast<uint8_t>(((u32ColorData & 0xf000000) >> 23) | ((u32ColorData & 0xf000000) >> 27)); // 4->5 bits
         color.green = static_cast<uint8_t>(((u32ColorData & 0xf00000) >> 19) | ((u32ColorData & 0xf00000) >> 23)); // 4->5 bits
         color.blue = static_cast<uint8_t>(((u32ColorData & 0xf0000) >> 15) | ((u32ColorData & 0xf0000) >> 19)); // 4->5 bits
-        color.alpha = static_cast<uint8_t>((u32ColorData & 0x70000000) >> 27); // 3->4 bits - note 0 at right
+        color.alpha = static_cast<uint8_t>((u32ColorData & 0x70000000) >> 27) | (uiII & 1); // 3->4 bits - note 0 at right
     }
 
     return color;
 }
 
-// Use only for PVRTC-II
-static void getColorABExpanded(uint32_t colorData, Pixel128S &colorA, Pixel128S &colorB) {
-    Pixel32 colorA32 = getColorA(colorData, 1);
-    Pixel32 colorB32 = getColorB(colorData);
+static void getColorABExpanded(uint32_t uColorData, Pixel128S &colorA, Pixel128S &colorB, uint32_t ui8Bpp) {
+    Pixel32 colorA32 = getColorA(uColorData, 1);
+    Pixel32 colorB32 = getColorB(uColorData, 1);
 
-    if (colorData & (1 << 31)) {
-        // Opaque on.
-        colorA.red = (colorA32.red << 3) | (colorA32.red >> 2);
-        colorA.green = (colorA32.green << 3) | (colorA32.green >> 2);
-        colorA.blue = (colorA32.blue << 4) | (colorA32.blue);
-        colorA.alpha = (colorA32.alpha << 4) | (colorA32.alpha);
+    colorA = { static_cast<int32_t>(colorA32.red), static_cast<int32_t>(colorA32.green), static_cast<int32_t>(colorA32.blue), static_cast<int32_t>(colorA32.alpha) };
+    colorB = { static_cast<int32_t>(colorB32.red), static_cast<int32_t>(colorB32.green), static_cast<int32_t>(colorB32.blue), static_cast<int32_t>(colorB32.alpha) };
 
-        colorB.red = (colorB32.red << 3) | (colorB32.red >> 2);
-        colorB.green = (colorB32.green << 3) | (colorB32.green >> 2);
-        colorB.blue = (colorB32.blue << 3) | (colorB32.blue >> 2);
-        colorB.alpha = (colorB32.alpha << 4) | (colorB32.alpha);
+    uint32_t ui32WordWidth = 4;
+    if (ui8Bpp == 2) {
+        ui32WordWidth = 8;
+    }
+
+    colorA.red *= ui32WordWidth * 4;
+    colorA.green *= ui32WordWidth * 4;
+    colorA.blue *= ui32WordWidth * 4;
+    colorA.alpha *= ui32WordWidth * 4;
+    colorB.red *= ui32WordWidth * 4;
+    colorB.green *= ui32WordWidth * 4;
+    colorB.blue *= ui32WordWidth * 4;
+    colorB.alpha *= ui32WordWidth * 4;
+
+    if (ui8Bpp == 2) {
+        colorA.red = static_cast<int32_t>((colorA.red >> 7) + (colorA.red >> 2));
+        colorA.green = static_cast<int32_t>((colorA.green >> 7) + (colorA.green >> 2));
+        colorA.blue = static_cast<int32_t>((colorA.blue >> 7) + (colorA.blue >> 2));
+        colorA.alpha = static_cast<int32_t>((colorA.alpha >> 5) + (colorA.alpha >> 1));
+
+        colorB.red = static_cast<int32_t>((colorB.red >> 7) + (colorB.red >> 2));
+        colorB.green = static_cast<int32_t>((colorB.green >> 7) + (colorB.green >> 2));
+        colorB.blue = static_cast<int32_t>((colorB.blue >> 7) + (colorB.blue >> 2));
+        colorB.alpha = static_cast<int32_t>((colorB.alpha >> 5) + (colorB.alpha >> 1));
     } else {
-        // Opaque off
-        colorA.red = (colorA32.red << 1) | (colorA32.red >> 3);
-        colorA.green = (colorA32.green << 1) | (colorA32.green >> 3);
-        colorA.blue = (colorA32.blue << 2) | (colorA32.blue >> 1);
-        colorA.alpha = (colorA32.alpha << 1);
+        colorA.red = static_cast<int32_t>((colorA.red >> 6) + (colorA.red >> 1));
+        colorA.green = static_cast<int32_t>((colorA.green >> 6) + (colorA.green >> 1));
+        colorA.blue = static_cast<int32_t>((colorA.blue >> 6) + (colorA.blue >> 1));
+        colorA.alpha = static_cast<int32_t>((colorA.alpha >> 4) + (colorA.alpha));
 
-        colorB.red = (colorB32.red << 1) | (colorB32.red >> 3);
-        colorB.green = (colorB32.green << 1) | (colorB32.green >> 3);
-        colorB.blue = (colorB32.blue << 1) | (colorB32.blue >> 3);
-        colorB.alpha = (colorB32.alpha << 1);
+        colorB.red = static_cast<int32_t>((colorB.red >> 6) + (colorB.red >> 1));
+        colorB.green = static_cast<int32_t>((colorB.green >> 6) + (colorB.green >> 1));
+        colorB.blue = static_cast<int32_t>((colorB.blue >> 6) + (colorB.blue >> 1));
+        colorB.alpha = static_cast<int32_t>((colorB.alpha >> 4) + (colorB.alpha));
     }
 }
 
@@ -235,9 +251,11 @@ static void interpolateColors(Pixel32 P, Pixel32 Q, Pixel32 R, Pixel32 S, Pixel1
     }
 }
 
-static void unpackModulations(const PVRTCWord &word, int offsetX, int offsetY, int32_t i32ModulationValues[16][8], int32_t i32ModulationModes[16][8], uint8_t ui8Bpp) {
+static void unpackModulations(const PVRTCWord &word, const PVRTCWord &nwWord, int offsetX, int offsetY, int32_t i32ModulationValues[16][8], int32_t i32ModulationModes[16][8], uint8_t ui8Bpp, uint32_t isII) {
     uint32_t WordModMode = word.u32ColorData & 0x1;
     uint32_t ModulationBits = word.u32ModulationData;
+
+    uint32_t hardTransitionBit = nwWord.u32ColorData & (1 << 15);
 
     // Unpack differently depending on 2bpp or 4bpp modes.
     if (ui8Bpp == 2) {
@@ -284,6 +302,14 @@ static void unpackModulations(const PVRTCWord &word, int offsetX, int offsetY, i
                     if (((x ^ y) & 1) == 0) {
                         i32ModulationValues[x + offsetX][y + offsetY] = ModulationBits & 3;
                         ModulationBits >>= 2;
+                    } else {
+                        i32ModulationValues[x + offsetX][y + offsetY] = 0;
+                    }
+
+                    if (isII && hardTransitionBit && (y + offsetY >= 2) && (y + offsetY <= 5)
+                        && (x + offsetX >= 6) && (x + offsetX <= 9)) {
+                        // Non-interpolate base
+                        i32ModulationModes[x + offsetX][y + offsetY] += 20;
                     }
                 }
             } // end for y
@@ -302,6 +328,11 @@ static void unpackModulations(const PVRTCWord &word, int offsetX, int offsetY, i
                     } else {
                         i32ModulationValues[x + offsetX][y + offsetY] = 0x0;
                     }
+                    if (isII && hardTransitionBit && (y + offsetY >= 2) && (y + offsetY <= 5)
+                        && (x + offsetX >= 6) && (x + offsetX <= 9)) {
+                        // Non-interpolate base
+                        i32ModulationModes[x + offsetX][y + offsetY] += 20;
+                    }
                     ModulationBits >>= 1;
                 }
             } // end for y
@@ -313,24 +344,39 @@ static void unpackModulations(const PVRTCWord &word, int offsetX, int offsetY, i
             for (int y = 0; y < 4; y++) {
                 for (int x = 0; x < 4; x++) {
                     i32ModulationValues[y + offsetY][x + offsetX] = ModulationBits & 3;
-                    // if (i32ModulationValues==0) {}. We don't need to check 0, 0 = 0/8.
-                    if (i32ModulationValues[y + offsetY][x + offsetX] == 1) {
-                        i32ModulationValues[y + offsetY][x + offsetX] = 4;
-                    } else if (i32ModulationValues[y + offsetY][x + offsetX] == 2) {
-                        i32ModulationValues[y + offsetY][x + offsetX] = 14; //+10 tells the decompressor to punch through alpha.
-                    } else if (i32ModulationValues[y + offsetY][x + offsetX] == 3) {
-                        i32ModulationValues[y + offsetY][x + offsetX] = 8;
+
+                    // Center quater will account extra bit
+                    if (isII && hardTransitionBit && (y + offsetY >= 2) && (y + offsetY <= 5)
+                        && (x + offsetX >= 2) && (x + offsetX <= 5)) {
+                        // Use palette built up
+                        i32ModulationValues += 30;
+                    } else {
+                        // if (i32ModulationValues==0) {}. We don't need to check 0, 0 = 0/8.
+                        if (i32ModulationValues[y + offsetY][x + offsetX] == 1) {
+                            i32ModulationValues[y + offsetY][x + offsetX] = 4;
+                        } else if (i32ModulationValues[y + offsetY][x + offsetX] == 2) {
+                            i32ModulationValues[y + offsetY][x + offsetX] = 14; //+10 tells the decompressor to punch through alpha.
+                        } else if (i32ModulationValues[y + offsetY][x + offsetX] == 3) {
+                            i32ModulationValues[y + offsetY][x + offsetX] = 8;
+                        }
                     }
                     ModulationBits >>= 2;
                 } // end for x
             } // end for y
         } else {
+            // For mode 0 and 2
             for (int y = 0; y < 4; y++) {
                 for (int x = 0; x < 4; x++) {
                     i32ModulationValues[y + offsetY][x + offsetX] = ModulationBits & 3;
                     i32ModulationValues[y + offsetY][x + offsetX] *= 3;
                     if (i32ModulationValues[y + offsetY][x + offsetX] > 3) {
                         i32ModulationValues[y + offsetY][x + offsetX] -= 1;
+                    }
+                    // Center quater will account extra bit
+                    if (isII && hardTransitionBit && (y + offsetY >= 2) && (y + offsetY <= 5)
+                        && (x + offsetX >= 2) && (x + offsetX <= 5)) {
+                        // Use North west word base color
+                        i32ModulationValues[y + offsetY][x + offsetX] += 20;
                     }
                     ModulationBits >>= 2;
                 } // end for x
@@ -342,28 +388,30 @@ static void unpackModulations(const PVRTCWord &word, int offsetX, int offsetY, i
 static int32_t getModulationValues(int32_t i32ModulationValues[16][8], int32_t i32ModulationModes[16][8], uint32_t xPos, uint32_t yPos, uint8_t ui8Bpp) {
     if (ui8Bpp == 2) {
         const int RepVals0[4] = { 0, 3, 5, 8 };
+        const int modulationRealvalue = i32ModulationModes[xPos][yPos] % 10;
+        const int modulationFlag = i32ModulationModes[xPos][yPos] - modulationRealvalue;
 
         // extract the modulation value. If a simple encoding
-        if (i32ModulationModes[xPos][yPos] == 0) {
-            return RepVals0[i32ModulationValues[xPos][yPos]];
+        if (modulationRealvalue == 0) {
+            return RepVals0[i32ModulationValues[xPos][yPos]] + modulationFlag;
         } else {
             // if this is a stored value
             if (((xPos ^ yPos) & 1) == 0) {
-                return RepVals0[i32ModulationValues[xPos][yPos]];
+                return RepVals0[i32ModulationValues[xPos][yPos]] + modulationFlag;
             }
 
             // else average from the neighbours
             // if H&V interpolation...
-            else if (i32ModulationModes[xPos][yPos] == 1) {
-                return (RepVals0[i32ModulationValues[xPos][yPos - 1]] + RepVals0[i32ModulationValues[xPos][yPos + 1]] + RepVals0[i32ModulationValues[xPos - 1][yPos]] + RepVals0[i32ModulationValues[xPos + 1][yPos]] + 2) / 4;
+            else if (modulationRealvalue == 1) {
+                return (RepVals0[i32ModulationValues[xPos][yPos - 1]] + RepVals0[i32ModulationValues[xPos][yPos + 1]] + RepVals0[i32ModulationValues[xPos - 1][yPos]] + RepVals0[i32ModulationValues[xPos + 1][yPos]] + 2) / 4 + modulationFlag;
             }
             // else if H-Only
-            else if (i32ModulationModes[xPos][yPos] == 2) {
-                return (RepVals0[i32ModulationValues[xPos - 1][yPos]] + RepVals0[i32ModulationValues[xPos + 1][yPos]] + 1) / 2;
+            else if (modulationRealvalue == 2) {
+                return (RepVals0[i32ModulationValues[xPos - 1][yPos]] + RepVals0[i32ModulationValues[xPos + 1][yPos]] + 1) / 2 + modulationFlag;
             }
             // else it's V-Only
             else {
-                return (RepVals0[i32ModulationValues[xPos][yPos - 1]] + RepVals0[i32ModulationValues[xPos][yPos + 1]] + 1) / 2;
+                return (RepVals0[i32ModulationValues[xPos][yPos - 1]] + RepVals0[i32ModulationValues[xPos][yPos + 1]] + 1) / 2 + modulationFlag;
             }
         }
     } else if (ui8Bpp == 4) {
@@ -373,175 +421,95 @@ static int32_t getModulationValues(int32_t i32ModulationValues[16][8], int32_t i
     return 0;
 }
 
-// Use only for PVRTC-II
-static void pvrtcDoHardTransition(const PVRTCWord &W, Pixel128S *upscaledColorA, Pixel128S *upscaledColorB, uint32_t uiStartWordX,
-    uint32_t uiStartWordY, uint32_t ui32Width, uint32_t ui32Height, uint32_t ui8Bpp) {
-    // Check for hard transtition flag
-    if (W.u32ColorData & (1 << 15)) {
-        if ((ui8Bpp == 2) || ((ui8Bpp == 4) && ((W.u32ColorData & 0x1) == 0))) {
-            // Do the non-interpolate if it's 2bpp or 4bpp with modulation flag off
-            uint32_t uiEndWordX = uiStartWordX + (ui32Width / 2);
-            uint32_t uiEndWordY = uiStartWordY + (ui32Height / 2);
-
-            Pixel128S colorA128, colorB128;
-            getColorABExpanded(W.u32ColorData, colorA128, colorB128);
-
-            for (uiStartWordX; uiStartWordX < uiEndWordX; uiStartWordX++) {
-                for (uiStartWordY; uiStartWordY < uiEndWordY; uiStartWordY++) {
-                    upscaledColorA[uiStartWordY * ui32Width + uiStartWordX] = colorA128;
-                    upscaledColorB[uiStartWordY * ui32Width + uiStartWordX] = colorB128;
-                }
-            }
-        }
-    }
-}
-
 static void pvrtcGetUpscaledColors(const PVRTCWord &P, const PVRTCWord &Q, const PVRTCWord &R, const PVRTCWord &S, const uint32_t ui32WordWidth,
     const uint32_t ui32WordHeight, Pixel128S *upscaledColorA, Pixel128S *upscaledColorB, uint32_t ui8Bpp, uint32_t uiII) {
     // Bilinear upscale image data from 2x2 -> 4x4
     interpolateColors(getColorA(P.u32ColorData, uiII), getColorA(Q.u32ColorData, uiII), getColorA(R.u32ColorData, uiII), getColorA(S.u32ColorData, uiII), upscaledColorA, ui8Bpp);
-    interpolateColors(getColorB(P.u32ColorData), getColorB(Q.u32ColorData), getColorB(R.u32ColorData), getColorB(S.u32ColorData), upscaledColorB, ui8Bpp);
-
-    // TODO, disable for now, broken Pvrt-II texture with get black dots.
-    /*if (uiII) {
-        pvrtcDoHardTransition(P, upscaledColorA, upscaledColorB, 0, 0, ui32WordWidth, ui32WordHeight, ui8Bpp);
-        pvrtcDoHardTransition(Q, upscaledColorA, upscaledColorB, ui32WordWidth / 2, 0, ui32WordWidth, ui32WordHeight, ui8Bpp);
-        pvrtcDoHardTransition(R, upscaledColorA, upscaledColorB, 0, ui32WordHeight / 2, ui32WordWidth, ui32WordHeight, ui8Bpp);
-        pvrtcDoHardTransition(S, upscaledColorA, upscaledColorB, ui32WordWidth / 2, ui32WordHeight / 2, ui32WordWidth, ui32WordHeight, ui8Bpp);
-    }*/
+    interpolateColors(getColorB(P.u32ColorData, uiII), getColorB(Q.u32ColorData, uiII), getColorB(R.u32ColorData, uiII), getColorB(S.u32ColorData, uiII), upscaledColorB, ui8Bpp);
 }
 
-static void pvrtcGetColorFromData128(const PVRTCWord &P, Pixel128S &colorA128S, Pixel128S &colorB128S, uint32_t uiII) {
-    Pixel32 colorA = getColorA(P.u32ColorData, uiII);
-    Pixel32 colorB = getColorB(P.u32ColorData);
+static void pvrtcBuildPalette(Pixel128S &colorAP, Pixel128S &colorBP, Pixel128S &colorAQ, Pixel128S &colorBQ,
+    Pixel128S &colorAR, Pixel128S &colorBR, Pixel128S &colorAS, Pixel128S &colorBS, Pixel128S pTargetPalette[][16]) {
+    // First set palette
+    pTargetPalette[0][0] = colorAP;
+    pTargetPalette[1][0] = (colorAP * 5 + colorBP * 3) / 8;
+    pTargetPalette[2][0] = (colorAP * 3 + colorBP * 5) / 8;
+    pTargetPalette[3][0] = colorBP;
 
-    colorA128S = { colorA.red, colorA.green, colorA.blue, colorA.alpha };
-    colorB128S = { colorB.red, colorB.green, colorB.blue, colorB.alpha };
-}
+    pTargetPalette[0][1] = colorAP;
+    pTargetPalette[1][1] = colorBP;
+    pTargetPalette[2][1] = colorAQ;
+    pTargetPalette[3][1] = colorBQ;
 
-static void pvrtcBuildPalette(const PVRTCWord &P, const PVRTCWord &Q, const PVRTCWord &R, const PVRTCWord &S, uint32_t uiStartX,
-    uint32_t uiStartY, uint32_t uiWidthX, uint32_t uiWidthY, Pixel128S *pTargetPalette, uint32_t uiII) {
-    Pixel128S colorAP, colorBP, colorAQ, colorBQ, colorAR, colorBR, colorAS, colorBS;
-    getColorABExpanded(P.u32ColorData, colorAP, colorBP);
-    getColorABExpanded(Q.u32ColorData, colorAQ, colorBQ);
-    getColorABExpanded(R.u32ColorData, colorAR, colorBR);
-    getColorABExpanded(S.u32ColorData, colorAS, colorBS);
+    pTargetPalette[0][2] = colorAP;
+    pTargetPalette[1][2] = colorBP;
+    pTargetPalette[2][2] = colorAQ;
+    pTargetPalette[3][2] = colorBQ;
 
-    if ((uiStartX == 0) && (uiStartY == 0)) {
-        // Build P palette
-        // (0, 0)
-        pTargetPalette[0] = colorAP;
-        pTargetPalette[1] = (colorAP * 5 + colorBP * 3) / 8;
-        pTargetPalette[2] = (colorAP * 3 + colorBP * 5) / 8;
-        pTargetPalette[3] = colorBP;
+    pTargetPalette[0][3] = colorAP;
+    pTargetPalette[1][3] = colorBP;
+    pTargetPalette[2][3] = colorAQ;
+    pTargetPalette[3][3] = colorBQ;
 
-        // (1, 0)
-        pTargetPalette[4] = colorAP;
-        pTargetPalette[5] = colorBP;
-        pTargetPalette[6] = colorAQ;
-        pTargetPalette[7] = colorBQ;
+    pTargetPalette[0][4] = colorAP;
+    pTargetPalette[1][4] = colorBP;
+    pTargetPalette[2][4] = colorAR;
+    pTargetPalette[3][4] = colorBR;
 
-        // (0, 1)
-        pTargetPalette[8] = colorAP;
-        pTargetPalette[9] = colorBP;
-        pTargetPalette[10] = colorAR;
-        pTargetPalette[11] = colorBR;
+    pTargetPalette[0][5] = colorAP;
+    pTargetPalette[1][5] = colorBP;
+    pTargetPalette[2][5] = colorAQ;
+    pTargetPalette[3][5] = colorBR;
 
-        // (1, 1)
-        pTargetPalette[12] = colorAP;
-        pTargetPalette[13] = colorBP;
-        pTargetPalette[14] = colorAQ;
-        pTargetPalette[15] = colorBR;
+    pTargetPalette[0][6] = colorAP;
+    pTargetPalette[1][6] = colorBP;
+    pTargetPalette[2][6] = colorAQ;
+    pTargetPalette[3][6] = colorBQ;
 
-        return;
-    }
+    pTargetPalette[0][7] = colorAS;
+    pTargetPalette[1][7] = colorBP;
+    pTargetPalette[2][7] = colorAQ;
+    pTargetPalette[3][7] = colorBQ;
 
-    if ((uiStartX == uiWidthX / 2) && (uiStartY == 0)) {
-        // Build palette for Q
-        // (0, 0)
-        pTargetPalette[0] = colorAP;
-        pTargetPalette[1] = colorBP;
-        pTargetPalette[2] = colorAQ;
-        pTargetPalette[3] = colorBQ;
+    pTargetPalette[0][8] = colorAP;
+    pTargetPalette[1][8] = colorBP;
+    pTargetPalette[2][8] = colorAR;
+    pTargetPalette[3][8] = colorBR;
 
-        // (1, 0)
-        pTargetPalette[4] = colorAP;
-        pTargetPalette[5] = colorBP;
-        pTargetPalette[6] = colorAQ;
-        pTargetPalette[7] = colorBQ;
+    pTargetPalette[0][9] = colorAP;
+    pTargetPalette[1][9] = colorBP;
+    pTargetPalette[2][9] = colorAR;
+    pTargetPalette[3][9] = colorBR;
 
-        // (0, 1)
-        pTargetPalette[8] = colorAP;
-        pTargetPalette[9] = colorBP;
-        pTargetPalette[10] = colorAQ;
-        pTargetPalette[11] = colorBQ;
+    pTargetPalette[0][10] = colorAP;
+    pTargetPalette[1][10] = colorBS;
+    pTargetPalette[2][10] = colorAR;
+    pTargetPalette[3][10] = colorBQ;
 
-        // (1, 1)
-        pTargetPalette[12] = colorAS;
-        pTargetPalette[13] = colorBP;
-        pTargetPalette[14] = colorAQ;
-        pTargetPalette[15] = colorBQ;
+    pTargetPalette[0][11] = colorAS;
+    pTargetPalette[1][11] = colorBS;
+    pTargetPalette[2][11] = colorAQ;
+    pTargetPalette[3][11] = colorBQ;
 
-        return;
-    }
+    pTargetPalette[0][12] = colorAP;
+    pTargetPalette[1][12] = colorBP;
+    pTargetPalette[2][12] = colorAR;
+    pTargetPalette[3][12] = colorBR;
 
-    if ((uiStartX == 0) && (uiStartY == uiWidthY / 2)) {
-        // Build palette for R
-        // (0, 0)
-        pTargetPalette[0] = colorAP;
-        pTargetPalette[1] = colorBP;
-        pTargetPalette[2] = colorAR;
-        pTargetPalette[3] = colorBR;
+    pTargetPalette[0][13] = colorAP;
+    pTargetPalette[1][13] = colorBS;
+    pTargetPalette[2][13] = colorAR;
+    pTargetPalette[3][13] = colorBR;
 
-        // (1, 0)
-        pTargetPalette[4] = colorAP;
-        pTargetPalette[5] = colorBP;
-        pTargetPalette[6] = colorAR;
-        pTargetPalette[7] = colorBR;
+    pTargetPalette[0][14] = colorAS;
+    pTargetPalette[1][14] = colorBS;
+    pTargetPalette[2][14] = colorAR;
+    pTargetPalette[3][14] = colorBR;
 
-        // (0, 1)
-        pTargetPalette[8] = colorAP;
-        pTargetPalette[9] = colorBP;
-        pTargetPalette[10] = colorAR;
-        pTargetPalette[11] = colorBR;
-
-        // (1, 1)
-        pTargetPalette[12] = colorAP;
-        pTargetPalette[13] = colorBS;
-        pTargetPalette[14] = colorAR;
-        pTargetPalette[15] = colorBR;
-
-        return;
-    }
-
-    // Build palette for S
-    // (0, 0)
-    pTargetPalette[0] = colorAP;
-    pTargetPalette[1] = colorBS;
-    pTargetPalette[2] = colorAR;
-    pTargetPalette[3] = colorBQ;
-
-    // (1, 0)
-    pTargetPalette[4] = colorAS;
-    pTargetPalette[5] = colorBS;
-    pTargetPalette[6] = colorAQ;
-    pTargetPalette[7] = colorBQ;
-
-    // (0, 1)
-    pTargetPalette[8] = colorAS;
-    pTargetPalette[9] = colorBS;
-    pTargetPalette[10] = colorAR;
-    pTargetPalette[11] = colorBR;
-
-    // (1, 1)
-    pTargetPalette[12] = colorAS;
-    pTargetPalette[13] = colorBS;
-    pTargetPalette[14] = colorAR;
-    pTargetPalette[15] = colorBQ;
-}
-
-static uint32_t pvrtcIsLocalPalette(const PVRTCWord &W, uint32_t ui8Bpp) {
-    return ((ui8Bpp == 4) && (W.u32ColorData & 1) && (W.u32ColorData & (1 << 15)));
+    pTargetPalette[0][15] = colorAS;
+    pTargetPalette[1][15] = colorBS;
+    pTargetPalette[2][15] = colorAR;
+    pTargetPalette[3][15] = colorBQ;
 }
 
 static void pvrtcGetDecompressedPixels(const PVRTCWord &P, const PVRTCWord &Q, const PVRTCWord &R, const PVRTCWord &S, Pixel32 *pColorData, uint32_t ui8Bpp, uint32_t uiII) {
@@ -552,7 +520,17 @@ static void pvrtcGetDecompressedPixels(const PVRTCWord &P, const PVRTCWord &Q, c
     // 4bpp only needs 16 values, but 2bpp needs 32, so rather than wasting processor time we just statically allocate 32.
     Pixel128S upscaledColorA[32];
     Pixel128S upscaledColorB[32];
-    Pixel128S paletteSet[32][2][2];
+    Pixel128S paletteSet[4][16];
+
+    Pixel128S PColorA, PColorB, QColorA, QColorB, RColorA, RColorB, SColorA, SColorB;
+    if (uiII) {
+        getColorABExpanded(P.u32ColorData, PColorA, PColorB, ui8Bpp);
+        getColorABExpanded(Q.u32ColorData, QColorA, QColorB, ui8Bpp);
+        getColorABExpanded(R.u32ColorData, RColorA, RColorB, ui8Bpp);
+        getColorABExpanded(S.u32ColorData, SColorA, SColorB, ui8Bpp);
+    }
+
+    bool paletteBuilt = false;
 
     uint32_t ui32WordWidth = 4;
     uint32_t ui32WordHeight = 4;
@@ -561,50 +539,66 @@ static void pvrtcGetDecompressedPixels(const PVRTCWord &P, const PVRTCWord &Q, c
     }
 
     // Get the modulations from each word.
-    unpackModulations(P, 0, 0, i32ModulationValues, i32ModulationModes, ui8Bpp);
-    unpackModulations(Q, ui32WordWidth, 0, i32ModulationValues, i32ModulationModes, ui8Bpp);
-    unpackModulations(R, 0, ui32WordHeight, i32ModulationValues, i32ModulationModes, ui8Bpp);
-    unpackModulations(S, ui32WordWidth, ui32WordHeight, i32ModulationValues, i32ModulationModes, ui8Bpp);
-
-    uint32_t paletteUnpack[2][2] = { { pvrtcIsLocalPalette(P, ui8Bpp), pvrtcIsLocalPalette(Q, ui8Bpp) },
-        { pvrtcIsLocalPalette(R, ui8Bpp), pvrtcIsLocalPalette(S, ui8Bpp) } };
-    uint8_t paletteBuild[2][2] = { { 0, 0 }, { 0, 0 } };
-
-    uint32_t wordRegionWidth = ui32WordWidth / 2;
-    uint32_t wordRegionHeight = ui32WordHeight / 2;
+    unpackModulations(P, P, 0, 0, i32ModulationValues, i32ModulationModes, ui8Bpp, uiII);
+    unpackModulations(Q, P, ui32WordWidth, 0, i32ModulationValues, i32ModulationModes, ui8Bpp, uiII);
+    unpackModulations(R, P, 0, ui32WordHeight, i32ModulationValues, i32ModulationModes, ui8Bpp, uiII);
+    unpackModulations(S, P, ui32WordWidth, ui32WordHeight, i32ModulationValues, i32ModulationModes, ui8Bpp, uiII);
 
     pvrtcGetUpscaledColors(P, Q, R, S, ui32WordWidth, ui32WordHeight, upscaledColorA, upscaledColorB, ui8Bpp, uiII);
 
     for (uint32_t y = 0; y < ui32WordHeight; y++) {
         for (uint32_t x = 0; x < ui32WordWidth; x++) {
-            uint32_t regionX = x / wordRegionWidth;
-            uint32_t regionY = y / wordRegionHeight;
-
             int32_t mod = getModulationValues(i32ModulationValues, i32ModulationModes, x + ui32WordWidth / 2, y + ui32WordHeight / 2, ui8Bpp);
             bool punchthroughAlpha = false;
-            if (mod > 10) {
+            bool usePalette = false;
+
+            Pixel128S colorA = upscaledColorA[y * ui32WordWidth + x];
+            Pixel128S colorB = upscaledColorB[y * ui32WordWidth + x];
+
+            if (mod >= 30) {
+                usePalette = true;
+                mod -= 30;
+            } else if (mod >= 20) {
+                if (x < ui32WordWidth / 2) {
+                    if (y < ui32WordHeight / 2) {
+                        colorA = PColorA;
+                        colorB = PColorB;
+                    } else {
+                        colorA = QColorA;
+                        colorB = QColorB;
+                    }
+                } else {
+                    if (y < ui32WordHeight / 2) {
+                        colorA = RColorA;
+                        colorB = RColorB;
+                    } else {
+                        colorA = SColorA;
+                        colorB = SColorB;
+                    }
+                }
+                mod -= 20;
+            } else if (mod > 10) {
                 punchthroughAlpha = true;
                 mod -= 10;
             }
 
             Pixel128S result;
 
-            if (uiII && (paletteUnpack[regionX][regionY] == 1)) {
-                if (!paletteBuild[regionX][regionY]) {
-                    // Build a palette for this region if one does not exist.
-                    pvrtcBuildPalette(P, Q, R, S, x, y, ui32WordWidth, ui32WordHeight, paletteSet[regionX][regionY], uiII);
-                    paletteBuild[regionX][regionY] = 1;
+            if (usePalette) {
+                if (!paletteBuilt) {
+                    pvrtcBuildPalette(PColorA, PColorB, QColorA, QColorB, RColorA, RColorB, SColorA, SColorB, paletteSet);
+                    paletteBuilt = true;
                 }
 
-                result = paletteSet[regionX][regionY][(y & 3) * 4 + (x & 3)];
+                result = paletteSet[mod][y * ui32WordWidth + x];
             } else {
-                result.red = (upscaledColorA[y * ui32WordWidth + x].red * (8 - mod) + upscaledColorB[y * ui32WordWidth + x].red * mod) / 8;
-                result.green = (upscaledColorA[y * ui32WordWidth + x].green * (8 - mod) + upscaledColorB[y * ui32WordWidth + x].green * mod) / 8;
-                result.blue = (upscaledColorA[y * ui32WordWidth + x].blue * (8 - mod) + upscaledColorB[y * ui32WordWidth + x].blue * mod) / 8;
+                result.red = (colorA.red * (8 - mod) + colorB.red * mod) / 8;
+                result.green = (colorA.green * (8 - mod) + colorB.green * mod) / 8;
+                result.blue = (colorA.blue * (8 - mod) + colorB.blue * mod) / 8;
                 if (punchthroughAlpha)
                     result.alpha = 0;
                 else
-                    result.alpha = (upscaledColorA[y * ui32WordWidth + x].alpha * (8 - mod) + upscaledColorB[y * ui32WordWidth + x].alpha * mod) / 8;
+                    result.alpha = (colorA.alpha * (8 - mod) + colorB.alpha * mod) / 8;
             }
 
             // Convert the 32bit precision Result to 8 bit per channel color.
@@ -691,11 +685,8 @@ static void mapDecompressedData(Pixel32 *pOutput, int width, const Pixel32 *pWor
     for (uint32_t y = 0; y < ui32WordHeight / 2; y++) {
         for (uint32_t x = 0; x < ui32WordWidth / 2; x++) {
             pOutput[(((words.P[1] * ui32WordHeight) + y + ui32WordHeight / 2) * width + words.P[0] * ui32WordWidth + x + ui32WordWidth / 2)] = pWord[y * ui32WordWidth + x]; // map P
-
             pOutput[(((words.Q[1] * ui32WordHeight) + y + ui32WordHeight / 2) * width + words.Q[0] * ui32WordWidth + x)] = pWord[y * ui32WordWidth + x + ui32WordWidth / 2]; // map Q
-
             pOutput[(((words.R[1] * ui32WordHeight) + y) * width + words.R[0] * ui32WordWidth + x + ui32WordWidth / 2)] = pWord[(y + ui32WordHeight / 2) * ui32WordWidth + x]; // map R
-
             pOutput[(((words.S[1] * ui32WordHeight) + y) * width + words.S[0] * ui32WordWidth + x)] = pWord[(y + ui32WordHeight / 2) * ui32WordWidth + x + ui32WordWidth / 2]; // map S
         }
     }
@@ -707,7 +698,7 @@ static int pvrtcDecompress(uint8_t *pCompressedData, Pixel32 *pDecompressedData,
         ui32WordWidth = 8;
     }
 
-    uint32_t *pWordMembers = (uint32_t *)pCompressedData;
+    uint32_t *pWordMembers = reinterpret_cast<uint32_t *>(pCompressedData);
     Pixel32 *pOutData = pDecompressedData;
 
     // Calculate number of words
@@ -716,8 +707,7 @@ static int pvrtcDecompress(uint8_t *pCompressedData, Pixel32 *pDecompressedData,
 
     // Structs used for decompression
     PVRTCWordIndices indices;
-    Pixel32 *pPixels;
-    pPixels = static_cast<Pixel32 *>(malloc(ui32WordWidth * ui32WordHeight * sizeof(Pixel32)));
+    std::vector<Pixel32> pPixels(ui32WordWidth * ui32WordHeight);
 
     // For each row of words
     for (int wordY = -1; wordY < i32NumYWords - 1; wordY++) {
@@ -752,13 +742,12 @@ static int pvrtcDecompress(uint8_t *pCompressedData, Pixel32 *pDecompressedData,
             S.u32ModulationData = static_cast<uint32_t>(pWordMembers[WordOffsets[3]]);
 
             // assemble 4 words into struct to get decompressed pixels from
-            pvrtcGetDecompressedPixels(P, Q, R, S, pPixels, ui8Bpp, uiII);
-            mapDecompressedData(pOutData, ui32Width, pPixels, indices, ui8Bpp);
+            pvrtcGetDecompressedPixels(P, Q, R, S, pPixels.data(), ui8Bpp, uiII);
+            mapDecompressedData(pOutData, ui32Width, pPixels.data(), indices, ui8Bpp);
 
         } // for each word
     } // for each row of words
 
-    free(pPixels);
     // Return the data size
     return ui32Width * ui32Height / static_cast<uint32_t>((ui32WordWidth / 2));
 }
@@ -766,31 +755,33 @@ static int pvrtcDecompress(uint8_t *pCompressedData, Pixel32 *pDecompressedData,
 uint32_t PVRTDecompressPVRTC(const void *pCompressedData, uint32_t Do2bitMode, uint32_t XDim, uint32_t YDim, uint32_t DoPvrtType, uint8_t *pResultImage) {
     // Cast the output buffer to a Pixel32 pointer.
     Pixel32 *pDecompressedData = (Pixel32 *)pResultImage;
+    std::vector<Pixel32> pTempDataVector;
 
     // Check the X and Y values are at least the minimum size.
     uint32_t XTrueDim = std::max(XDim, ((Do2bitMode == 1u) ? 16u : 8u));
     uint32_t YTrueDim = std::max(YDim, 8u);
 
     // If the dimensions aren't correct, we need to create a new buffer instead of just using the provided one, as the buffer will overrun otherwise.
-    if (XTrueDim != XDim || YTrueDim != YDim) {
-        pDecompressedData = static_cast<Pixel32 *>(malloc(XTrueDim * YTrueDim * sizeof(Pixel32)));
+    if ((XTrueDim != XDim) || (YTrueDim != YDim)) {
+        pTempDataVector.resize(XTrueDim * YTrueDim);
+        pDecompressedData = pTempDataVector.data();
     }
 
     // Decompress the surface.
     int retval = pvrtcDecompress((uint8_t *)pCompressedData, pDecompressedData, XTrueDim, YTrueDim, (Do2bitMode == 1 ? 2 : 4), DoPvrtType);
 
     // If the dimensions were too small, then copy the new buffer back into the output buffer.
-    if (XTrueDim != XDim || YTrueDim != YDim) {
+    if ((XTrueDim != XDim) || (YTrueDim != YDim)) {
+        Pixel32 *pOriginalPtr = (Pixel32 *)pResultImage;
+
         // Loop through all the required pixels.
         for (uint32_t x = 0; x < XDim; ++x) {
             for (uint32_t y = 0; y < YDim; ++y) {
-                ((Pixel32 *)pResultImage)[x + y * XDim] = pDecompressedData[x + y * XTrueDim];
+                pOriginalPtr[x + y * XDim] = pTempDataVector[x + y * XTrueDim];
             }
         }
-
-        // Free the temporary buffer.
-        free(pDecompressedData);
     }
+
     return retval;
 }
 
