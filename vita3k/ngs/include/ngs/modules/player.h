@@ -28,26 +28,27 @@ enum {
     SCE_NGS_PLAYER_CALLBACK_REASON_DECODE_ERROR = 3
 };
 
-struct BufferParameter {
-    Ptr<void> buffer;
-    std::int32_t bytes_count;
-    std::int16_t loop_count;
-    std::int16_t next_buffer_index;
+struct BufferParameters {
+    const Ptr<void> buffer;
+    SceInt32 bytes_count;
+    SceInt16 loop_count;
+    SceInt16 next_buffer_index;
 };
 
-static constexpr std::uint32_t MAX_BUFFER_PARAMS = 4;
+#define MAX_BUFFER_PARAMS 4
+#define MAX_PCM_CHANNELS 2
 
-enum ParameterAudioType : std::uint8_t {
+enum ParameterAudioType : SceInt8 {
     ParameterAudioTypePCM = 0,
     ParameterAudioTypeADPCM = 1
 };
 
 struct State {
-    std::int32_t current_byte_position_in_buffer = 0;
-    std::int32_t current_buffer = 0;
-    std::int32_t samples_generated_since_key_on = 0;
-    std::int32_t bytes_consumed_since_key_on = 0;
-    std::int32_t total_bytes_consumed = 0;
+    SceInt32 current_byte_position_in_buffer = 0;
+    SceInt32 current_buffer = 0;
+    SceInt32 samples_generated_since_key_on = 0;
+    SceInt32 bytes_consumed_since_key_on = 0;
+    SceInt32 total_bytes_consumed = 0;
 
     // INTERNAL
     std::int8_t current_loop_count = 0;
@@ -56,20 +57,19 @@ struct State {
 };
 
 struct Parameters {
-    ngs::ModuleParameterHeader header;
-    BufferParameter buffer_params[MAX_BUFFER_PARAMS];
-    float playback_frequency;
-    float playback_scalar;
-    std::int32_t lead_in_samples;
-    std::int32_t limit_number_of_samples_played;
-    std::int32_t start_bytes;
-    std::int8_t channels;
-    std::int8_t channel_map[2];
+    ngs::ParametersDescriptor descriptor;
+    BufferParameters buffer_params[MAX_BUFFER_PARAMS];
+    SceFloat32 playback_frequency;
+    SceFloat32 playback_scalar;
+    SceInt32 lead_in_samples;
+    SceInt32 limit_number_of_samples_played;
+    SceInt32 start_bytes;
+    SceInt8 channels;
+    SceInt8 channel_map[MAX_PCM_CHANNELS];
     ParameterAudioType type;
-    std::int8_t unk60;
-    std::int8_t start_buffer;
-    std::int8_t unk62;
-    std::int8_t unk63;
+    SceInt8 res;
+    SceInt8 start_buffer;
+    SceInt8 padding[2];
 };
 
 struct Module : public ngs::Module {
