@@ -63,6 +63,7 @@ static constexpr SceUInt32 SCE_NGS_OK = 0;
 static constexpr SceUInt32 SCE_NGS_ERROR = 0x804A0001;
 static constexpr SceUInt32 SCE_NGS_ERROR_INVALID_ARG = 0x804A0002;
 static constexpr SceUInt32 SCE_NGS_ERROR_INVALID_STATE = 0x804A0010;
+static constexpr SceUInt32 SCE_NGS_ERROR_PARAM_OUT_OF_RANGE = 0x804A0009;
 static constexpr SceUInt32 SCE_NGS_SIZE_MISMATCH = 0x804A000D;
 
 static constexpr SceUInt32 SCE_NGS_VOICE_STATE_AVAILABLE = 0;
@@ -459,6 +460,9 @@ static SceUInt32 ngsVoiceStateFromHLEState(const ngs::VoiceState state) {
 }
 
 EXPORT(SceInt32, sceNgsVoiceGetInfo, SceNgsVoiceHandle handle, SceNgsVoiceInfo *info) {
+    if (host.cfg.current_config.disable_ngs)
+        return SCE_NGS_OK;
+
     ngs::Voice *voice = handle.get(host.mem);
     if (!voice || !info) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
@@ -473,7 +477,7 @@ EXPORT(SceInt32, sceNgsVoiceGetInfo, SceNgsVoiceHandle handle, SceNgsVoiceInfo *
     info->num_patches_per_output = static_cast<SceUInt32>(voice->rack->patches_per_output);
     info->update_passed = voice->frame_count;
 
-    return 0;
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsVoiceGetModuleBypass) {
@@ -717,8 +721,44 @@ EXPORT(SceInt32, sceNgsVoiceSetModuleCallback, SceNgsVoiceHandle voice_handle, c
     return 0;
 }
 
-EXPORT(int, sceNgsVoiceSetParamsBlock) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, SceNgsVoiceHandle voice_handle, const ngs::ModuleParameterHeader *header,
+    const SceUInt32 size, SceInt32 *num_error) {
+    if (host.cfg.current_config.disable_ngs)
+        return SCE_NGS_OK;
+
+    ngs::Voice *voice = voice_handle.get(host.mem);
+
+    const std::lock_guard<std::mutex> guard(*voice->voice_lock);
+
+    const SceUInt8 *data = reinterpret_cast<const SceUInt8 *>(header);
+    const SceUInt8 *data_end = reinterpret_cast<const SceUInt8 *>(data + size);
+
+    // after first loop, check if other module exist
+    while (data < data_end) {
+        // init Storage with module index give by app
+        ngs::ModuleData *storage = voice->module_storage(header->module_id);
+
+        // incremente data with size of struct header for go inside struct of current module
+        data += sizeof(ngs::ModuleParameterHeader);
+
+        // init descriptor parameters
+        const auto *desc = reinterpret_cast<const ngs::ParametersDescriptor *>(data);
+
+        // copy this current module inside current buffer data when it available with using descriptor size
+        if (storage) {
+            SceUInt8 *param_ptr = reinterpret_cast<SceUInt8 *>(storage->info.data.get(host.mem));
+            memcpy(param_ptr, data, desc->size);
+        } else
+            ++num_error;
+
+        // increment using the size of the descriptor of the current module to be able to move on to the next module when it exists
+        data += desc->size;
+
+        // set new header for can using on next module
+        header = reinterpret_cast<const ngs::ModuleParameterHeader *>(data);
+    }
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsVoiceSetPreset) {

@@ -38,7 +38,7 @@ void Module::on_state_change(ModuleData &data, const VoiceState previous) {
 }
 
 bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
-    Parameters *params = data.get_parameters<Parameters>(mem);
+    const Parameters *params = data.get_parameters<Parameters>(mem);
     State *state = data.get_state<State>();
     bool finished = false;
 

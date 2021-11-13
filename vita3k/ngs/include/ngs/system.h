@@ -47,6 +47,21 @@ enum VoiceState {
     VOICE_STATE_KEY_OFF = 1 << 6
 };
 
+struct ModuleParameterHeader {
+    SceInt32 module_id;
+    SceInt32 channel;
+};
+
+struct ParametersDescriptor {
+    SceUInt32 id;
+    SceUInt32 size;
+};
+
+struct BufferParamsInfo {
+    Ptr<void> data;
+    SceUInt32 size;
+};
+
 struct State;
 struct Voice;
 
@@ -61,16 +76,6 @@ struct CallbackInfo {
 };
 
 typedef void (*ModuleCallback)(CallbackInfo *info);
-
-struct ModuleParameterHeader {
-    std::int32_t module_id;
-    std::int32_t channel;
-};
-
-struct BufferParamsInfo {
-    Ptr<void> data;
-    std::uint32_t size;
-};
 
 struct ModuleData {
     Voice *parent;
