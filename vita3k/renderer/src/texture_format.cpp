@@ -237,7 +237,7 @@ static std::uint32_t pack_rgba_reversed(std::uint8_t r, std::uint8_t g, std::uin
  * \param alpha_table       alpha lookup table.
  **/
 static void decompress_block_dxt1_shared(std::uint32_t x, std::uint32_t y, std::uint32_t width, const std::uint8_t *block_storage, std::uint32_t *image,
-    const std::uint8_t *alpha_table) {
+    const std::uint8_t *alpha_table, const bool transparent_on_black) {
     std::uint16_t color0 = *reinterpret_cast<const std::uint16_t *>(block_storage);
     std::uint16_t color1 = *reinterpret_cast<const std::uint16_t *>(block_storage + 2);
 
@@ -295,7 +295,7 @@ static void decompress_block_dxt1_shared(std::uint32_t x, std::uint32_t y, std::
                     final_color = pack_rgba_reversed((r0 + r1) / 2, (g0 + g1) / 2, (b0 + b1) / 2, alpha);
                     break;
                 case 3:
-                    final_color = pack_rgba_reversed(0, 0, 0, alpha);
+                    final_color = pack_rgba_reversed(0, 0, 0, transparent_on_black ? 0 : alpha);
                     break;
                 default:
                     final_color = 0xFFFFFFFF;
@@ -316,7 +316,7 @@ static void decompress_block_dxt1(std::uint32_t x, std::uint32_t y, std::uint32_
         255, 255, 255, 255
     };
 
-    decompress_block_dxt1_shared(x, y, width, block_storage, image, alpha_table);
+    decompress_block_dxt1_shared(x, y, width, block_storage, image, alpha_table, true);
 }
 
 /**
@@ -343,7 +343,7 @@ static void decompress_block_dxt3(std::uint32_t x, std::uint32_t y, std::uint32_
         block_storage += 2;
     }
 
-    decompress_block_dxt1_shared(x, y, width, block_storage, image, alpha_table);
+    decompress_block_dxt1_shared(x, y, width, block_storage, image, alpha_table, false);
 }
 
 /**
