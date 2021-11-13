@@ -136,11 +136,15 @@ static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, v
             reinterpret_cast<std::uint32_t *>(dest), ubc_type);
         return (((width + 3) / 4) * ((height + 3) / 4) * ((ubc_type > 1) ? 16 : 8));
     } else if ((fmt >= SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) && (fmt <= SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)) {
-        // TODO, is not perfect for PVRT-II.
         pvr::PVRTDecompressPVRTC(data, (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP), width, height,
             (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP), reinterpret_cast<uint8_t *>(dest));
-        // TODO, calcule return is not sur.
-        return ((width + 3) / 4) * ((height + 3) / 4);
+
+        const bool is_2bpp = (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP);
+
+        const std::uint32_t num_xword = (width + (is_2bpp ? 7 : 3)) / (is_2bpp ? 8 : 4);
+        const std::uint32_t num_yword = (height + 3) / 4;
+
+        return num_xword * num_yword * 8;
     }
 
     return 0;

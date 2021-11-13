@@ -423,10 +423,8 @@ GLenum translate_type(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
         return GL_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
-        LOG_WARN("Not perfectly handled base format SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP");
         return GL_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
-        LOG_WARN("Not perfectly handled base format SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP");
         return GL_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
         return GL_UNSIGNED_BYTE;
