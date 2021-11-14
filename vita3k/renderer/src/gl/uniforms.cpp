@@ -24,20 +24,26 @@
 #include <algorithm>
 
 namespace renderer::gl {
-bool set_uniform_buffer(GLContext &context, const bool vertex_shader, const int block_num, const int size, const void *data, bool log_active_shader, bool is_ssbo) {
-    const int binding_base = vertex_shader ? 0 : (SCE_GXM_REAL_MAX_UNIFORM_BUFFER + 1);
-    GLenum buffer_type = (is_ssbo ? GL_SHADER_STORAGE_BUFFER : GL_UNIFORM_BUFFER);
+bool set_uniform_buffer(GLContext &context, MemState &mem, const bool vertex_shader, const int block_num, const int size, const void *data, bool log_active_shader) {
+    renderer::ShaderProgram *program = vertex_shader ? reinterpret_cast<renderer::ShaderProgram *>(context.record.vertex_program.get(mem)->renderer_data.get())
+                                                     : reinterpret_cast<renderer::ShaderProgram *>(context.record.fragment_program.get(mem)->renderer_data.get());
 
-    glBindBuffer(buffer_type, context.uniform_buffer[binding_base + block_num]);
-    glBufferData(buffer_type, size, nullptr, GL_DYNAMIC_COPY);
-    glBufferData(buffer_type, size, data, GL_DYNAMIC_COPY);
-    glBindBuffer(buffer_type, 0);
+    auto offset = program->uniform_buffer_data_offsets.at(block_num);
+    if (offset == static_cast<std::uint32_t>(-1)) {
+        return true;
+    }
 
-    glBindBufferBase(buffer_type, binding_base + block_num, context.uniform_buffer[binding_base + block_num]);
+    const int base_binding_point = vertex_shader ? 0 : 1;
+    const int base_binding_ubo_relative = vertex_shader ? 0 : (SCE_GXM_REAL_MAX_UNIFORM_BUFFER + 1);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, context.ssbo[base_binding_point]);
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, offset * 4, std::min<GLsizeiptr>(size, program->uniform_buffer_sizes.at(block_num) * 4), data);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, base_binding_point, context.ssbo[base_binding_point]);
 
     if (log_active_shader) {
         std::vector<uint8_t> my_data((uint8_t *)data, (uint8_t *)data + size);
-        context.ubo_data[binding_base + block_num] = my_data;
+        context.ubo_data[base_binding_ubo_relative + block_num] = my_data;
     }
 
     return true;

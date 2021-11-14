@@ -689,7 +689,7 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
     int start_in_vec4_granularity = start / 4;
 
     utils::make_for_loop(builder, ite, builder.makeIntConstant(0), builder.makeIntConstant(vec4_count), [&]() {
-        spv::Id to_copy = builder.createAccessChain(spv::StorageClassUniform, block, { builder.makeIntConstant(0), builder.createLoad(ite) });
+        spv::Id to_copy = builder.createAccessChain(spv::StorageClassUniform, block, { builder.createLoad(ite) });
         spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, builder.getTypeId(builder.createLoad(ite)), builder.createLoad(ite), builder.makeIntConstant(start_in_vec4_granularity)) });
         spv::Id dest_friend = spv::NoResult;
 
@@ -718,37 +718,6 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
             builder.createStore(builder.createLoad(to_copy_2), dest_friend);
         }
     });
-}
-
-static spv::Id create_uniform_block(spv::Builder &b, const FeatureState &features, const int base_binding, const int size_vec4_granularity, const bool is_vert) {
-    spv::Id f32_type = b.makeFloatType(32);
-
-    spv::Id f32_v4_type = b.makeVectorType(f32_type, 4);
-    spv::Id vec4_arr_type = b.makeArrayType(f32_v4_type, b.makeIntConstant(size_vec4_granularity), 16);
-
-    std::string name_type = (is_vert ? "vert" : "frag");
-
-    if (base_binding == 0) {
-        name_type += "_defaultUniformBuffer";
-    } else {
-        name_type += fmt::format("_buffer{}", base_binding);
-    }
-
-    // Create the default reg uniform buffer
-    spv::Id default_buffer_type = b.makeStructType({ vec4_arr_type }, name_type.c_str());
-    b.addDecoration(default_buffer_type, spv::DecorationBlock);
-    b.addDecoration(default_buffer_type, spv::DecorationGLSLShared);
-
-    // Default uniform buffer always has binding of 0
-    const std::string buffer_var_name = fmt::format("buffer{}", base_binding);
-    spv::Id default_buffer = b.createVariable(spv::StorageClassStorageBuffer, default_buffer_type, buffer_var_name.c_str());
-
-    b.addDecoration(default_buffer, spv::DecorationBinding, ((!is_vert) ? 16 : 0) + base_binding);
-    b.addMemberDecoration(default_buffer_type, 0, spv::DecorationOffset, 0);
-    b.addDecoration(vec4_arr_type, spv::DecorationArrayStride, 16);
-    b.addMemberName(default_buffer_type, 0, "data");
-
-    return default_buffer;
 }
 
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
@@ -790,31 +759,63 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     const auto program_input = shader::get_program_input(program);
 
-    int total_buffer_size = 0;
-    int last_base = 0;
     std::map<int, int> buffer_bases;
+    std::map<int, std::uint32_t> buffer_sizes;
 
     for (const auto &buffer : program_input.uniform_buffers) {
         const auto buffer_size = (buffer.size + 3) / 4;
-        total_buffer_size += buffer_size;
+        buffer_sizes.emplace(buffer.index, buffer_size);
+    }
 
-        spv::Id block = create_uniform_block(b, features, buffer.index, buffer_size, !program.is_fragment());
+    int last_base = 0;
+    int total_members = 0;
 
-        SpirvUniformBufferInfo buffer_info;
-        buffer_info.base = last_base;
-        buffer_info.size = buffer_size * 16;
-        buffer_info.var = block;
+    if (!buffer_sizes.empty()) {
+        usse::SpirvCode buffer_container_member_types;
+        const bool is_vert = (program_type == SceGxmProgramType::Vertex);
 
-        buffer_bases.emplace(buffer.index, last_base);
-        spv_params.buffers.emplace(buffer.index, buffer_info);
+        for (auto &[buffer_index, buffer_size] : buffer_sizes) {
+            SpirvUniformBufferInfo buffer_info;
+            buffer_info.base = last_base;
+            buffer_info.size = buffer_size * 16;
+            buffer_info.index_in_container = total_members++;
 
-        last_base += buffer_size * 16;
+            buffer_bases.emplace(buffer_index, last_base);
+            spv_params.buffers.emplace(buffer_index, buffer_info);
+
+            last_base += buffer_size * 16;
+
+            spv::Id buffer_type_arr = b.makeArrayType(f32_v4_type, b.makeIntConstant(buffer_size), 16);
+            b.addDecoration(buffer_type_arr, spv::DecorationArrayStride, 16);
+
+            buffer_container_member_types.push_back(buffer_type_arr);
+        }
+
+        spv::Id buffer_container_type = b.makeStructType(buffer_container_member_types,
+            is_vert ? "vertexDataType" : "fragmentDataType");
+
+        b.addDecoration(buffer_container_type, spv::DecorationBlock);
+        b.addDecoration(buffer_container_type, spv::DecorationGLSLShared);
+        b.addDecoration(buffer_container_type, spv::DecorationRestrict);
+        b.addDecoration(buffer_container_type, spv::DecorationNonWritable);
+
+        spv_params.buffer_container = b.createVariable(spv::StorageClassStorageBuffer, buffer_container_type,
+            is_vert ? "vertexData" : "fragmentData");
+
+        b.addDecoration(spv_params.buffer_container, spv::DecorationBinding, is_vert ? 0 : 1);
+
+        for (auto &[index, buffer] : spv_params.buffers) {
+            const std::string member_name = fmt::format("buffer{}", index);
+            b.addMemberDecoration(buffer_container_type, buffer.index_in_container, spv::DecorationOffset, buffer.base);
+            b.addMemberName(buffer_container_type, buffer.index_in_container, member_name.c_str());
+        }
     }
 
     for (const auto &buffer : program_input.uniform_buffers) {
         if (buffer.reg_block_size > 0) {
             const uint32_t reg_block_size_in_f32v = (buffer.reg_block_size + 3) / 4;
-            const auto spv_buffer = spv_params.buffers.at(buffer.index).var;
+            const auto spv_buffer = b.createAccessChain(spv::StorageClassStorageBuffer, spv_params.buffer_container,
+                { b.makeIntConstant(spv_params.buffers.at(buffer.index).index_in_container) });
             copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset, reg_block_size_in_f32v);
         }
     }
@@ -997,7 +998,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         translation_state.render_info_id = b.createVariable(spv::StorageClassUniform, render_buf_type, "renderVertInfo");
 
-        b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, 15);
+        b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, 2);
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
@@ -1016,7 +1017,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         translation_state.render_info_id = b.createVariable(spv::StorageClassUniform, render_buf_type, "renderFragInfo");
 
-        b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, 31);
+        b.addDecoration(translation_state.render_info_id, spv::DecorationBinding, 3);
 
         create_fragment_inputs(b, spv_params, utils, features, translation_state, texture_queries, samplers, program);
     }

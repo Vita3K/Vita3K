@@ -280,8 +280,24 @@ bool create(std::unique_ptr<Context> &context, const bool hashless_texture_cache
     context = std::make_unique<GLContext>();
     GLContext *gl_context = reinterpret_cast<GLContext *>(context.get());
 
-    return !(!texture::init(gl_context->texture_cache, hashless_texture_cache) || !gl_context->vertex_array.init(reinterpret_cast<renderer::Generator *>(glGenVertexArrays), reinterpret_cast<renderer::Deleter *>(glDeleteVertexArrays)) || !gl_context->element_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers)) || !gl_context->stream_vertex_buffers.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers))
-        || !gl_context->uniform_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers)));
+    const bool init_result = !(!texture::init(gl_context->texture_cache, hashless_texture_cache) || !gl_context->vertex_array.init(reinterpret_cast<renderer::Generator *>(glGenVertexArrays), reinterpret_cast<renderer::Deleter *>(glDeleteVertexArrays)) || !gl_context->element_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers)) || !gl_context->stream_vertex_buffers.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers))
+        || !gl_context->uniform_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers))
+        || !gl_context->ssbo.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers)));
+
+    if (!init_result) {
+        return false;
+    }
+
+    // Maxing SSBO sizes, we merge all buffers together so there's no way to reallocate safely without losing data, and the size here
+    // is acceptable (1024 * sizeof(vec4) * uniformBufferMaxCount). The maximum is 245.76 KB, GPU can hold it.
+    static constexpr std::size_t MAX_SSBO_BYTE_COUNT = 1024 * 16 * (SCE_GXM_MAX_UNIFORM_BUFFERS + 1);
+
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, gl_context->ssbo[0]);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, MAX_SSBO_BYTE_COUNT, nullptr, GL_DYNAMIC_COPY);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, gl_context->ssbo[1]);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, MAX_SSBO_BYTE_COUNT, nullptr, GL_DYNAMIC_COPY);
+
+    return true;
 }
 
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features) {
@@ -348,6 +364,20 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
     return true;
 }
 
+static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &sizes, UniformBufferSizes &offsets) {
+    std::uint32_t last_offset = 0;
+
+    for (std::size_t i = 0; i < sizes.size(); i++) {
+        if (sizes[i] != 0) {
+            // Round to vec4 unit
+            offsets[i] = last_offset;
+            last_offset += ((sizes[i] + 3) / 4 * 4);
+        } else {
+            offsets[i] = static_cast<std::uint32_t>(-1);
+        }
+    }
+}
+
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 
@@ -375,6 +405,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
         frag_program_gl->alpha_dst = translate_blend_factor(blend->alphaDst);
     }
     shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);
+    layout_ssbo_offset_from_uniform_buffer_sizes(fp->uniform_buffer_sizes, fp->uniform_buffer_data_offsets);
 
     return true;
 }
@@ -392,6 +423,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
 
     shader::usse::get_uniform_buffer_sizes(program, vp->uniform_buffer_sizes);
     shader::usse::get_attribute_informations(program, vert_program_gl->attribute_infos);
+    layout_ssbo_offset_from_uniform_buffer_sizes(vp->uniform_buffer_sizes, vp->uniform_buffer_data_offsets);
 
     if (vert_program_gl->attribute_infos.empty()) {
         vert_program_gl->stripped_symbols_checked = false;

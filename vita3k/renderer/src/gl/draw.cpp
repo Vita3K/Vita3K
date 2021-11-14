@@ -125,7 +125,11 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     vert_ublock.viewport_flag = (context.record.viewport_flat) ? 0.0f : 1.0f;
     vert_ublock.screen_width = static_cast<float>(context.record.color_surface.width);
     vert_ublock.screen_height = static_cast<float>(context.record.color_surface.height);
-    set_uniform_buffer(context, true, SCE_GXM_REAL_MAX_UNIFORM_BUFFER, sizeof(GXMRenderVertUniformBlock), &vert_ublock, false, false);
+
+    glBindBuffer(GL_UNIFORM_BUFFER, context.uniform_buffer[0]);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(GXMRenderVertUniformBlock), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(GXMRenderVertUniformBlock), &vert_ublock, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 2, context.uniform_buffer[0]);
 
     GXMRenderFragUniformBlock frag_ublock;
     const bool both_side_fragment_program_disabled = (context.record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED)
@@ -151,7 +155,10 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
     frag_ublock.writing_mask = context.record.writing_mask;
 
-    set_uniform_buffer(context, false, SCE_GXM_REAL_MAX_UNIFORM_BUFFER, sizeof(GXMRenderFragUniformBlock), &frag_ublock, false, false);
+    glBindBuffer(GL_UNIFORM_BUFFER, context.uniform_buffer[1]);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(GXMRenderFragUniformBlock), nullptr, GL_DYNAMIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, sizeof(GXMRenderFragUniformBlock), &frag_ublock, GL_DYNAMIC_DRAW);
+    glBindBufferBase(GL_UNIFORM_BUFFER, 3, context.uniform_buffer[1]);
 
     context.vertex_set_requests.clear();
     context.fragment_set_requests.clear();
