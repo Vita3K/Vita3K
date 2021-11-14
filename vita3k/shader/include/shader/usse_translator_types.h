@@ -34,7 +34,7 @@ using SpirvVarRegBank = spv::Id;
 struct SpirvUniformBufferInfo {
     std::uint32_t base;
     std::uint32_t size;
-    spv::Id var;
+    std::uint32_t index_in_container;
 };
 
 struct SpirvShaderParameters {
@@ -68,7 +68,10 @@ struct SpirvShaderParameters {
     // Sampler map. Since all banks are a flat array, sampler must be in an explicit bank.
     std::unordered_map<std::uint32_t, spv::Id> samplers;
 
-    std::unordered_map<std::uint32_t, SpirvUniformBufferInfo> buffers;
+    // Uniform buffer map contains layout info of a UBO inside the big SSBO.
+    std::map<std::uint32_t, SpirvUniformBufferInfo> buffers;
+
+    spv::Id buffer_container;
 };
 
 using Coord = std::pair<spv::Id, int>;

@@ -140,7 +140,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
                     const std::uint32_t reg_block_size = container ? container->size_in_f32 : 0;
 
                     UniformBuffer buffer;
-                    buffer.index = (parameter.container_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER;
+                    buffer.index = parameter.container_index;
                     buffer.reg_block_size = reg_block_size;
                     buffer.rw = false;
                     buffer.reg_start_offset = offset;
@@ -171,7 +171,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM_BUFFER: {
             if (uniform_buffers.find(parameter.resource_index) == uniform_buffers.end()) {
                 UniformBuffer buffer;
-                buffer.index = (parameter.resource_index + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER;
+                buffer.index = parameter.resource_index;
                 buffer.reg_block_size = 0;
                 buffer.rw = false;
                 buffer.reg_start_offset = 0;
@@ -195,7 +195,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
     }
 
     auto default_ub_ite = std::find_if(program_input.uniform_buffers.begin(), program_input.uniform_buffers.end(), [](const shader::usse::UniformBuffer &buffer) {
-        return buffer.index == 0;
+        return buffer.index == 14;
     });
 
     if ((default_ub_ite == program_input.uniform_buffers.end()) && (program.default_uniform_buffer_count != 0)) {

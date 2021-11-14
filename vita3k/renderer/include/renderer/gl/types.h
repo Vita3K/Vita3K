@@ -68,7 +68,8 @@ struct GLContext : public renderer::Context {
     GLTextureCacheState texture_cache;
     GLObjectArray<1> vertex_array;
     GLObjectArray<1> element_buffer;
-    GLObjectArray<32> uniform_buffer;
+    GLObjectArray<2> ssbo;
+    GLObjectArray<2> uniform_buffer;
     const GLRenderTarget *render_target;
 
     std::map<int, std::vector<uint8_t>> ubo_data;

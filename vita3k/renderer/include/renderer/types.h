@@ -138,7 +138,8 @@ struct Context {
 
 struct ShaderProgram {
     std::string hash;
-    UniformBufferSizes uniform_buffer_sizes;
+    UniformBufferSizes uniform_buffer_sizes; // Size of the buffer in 4-bytes unit
+    UniformBufferSizes uniform_buffer_data_offsets; // Offset of the buffer in 4-bytes unit
 };
 
 struct FragmentProgram : ShaderProgram {

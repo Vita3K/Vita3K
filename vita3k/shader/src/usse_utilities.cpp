@@ -399,7 +399,7 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &fe
     return f16_pack_func;
 }
 
-static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, const SpirvUniformBufferInfo &info, const int buffer_index) {
+static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id buffer_container, const SpirvUniformBufferInfo &info, const int buffer_index) {
     // The address can be unaligned, so we load two words around address / 4 and combine them.
     // | = address
     // s = memory[address/4] (source)
@@ -439,14 +439,14 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, const Sp
     spv::Id rem_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem, eight_cst);
     spv::Id rem_inv_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem_inv, eight_cst);
 
-    spv::Id src = b.createLoad(b.createAccessChain(spv::StorageClassPrivate, info.var, { zero_cst, base_vector, base_offset }));
+    spv::Id src = b.createLoad(b.createAccessChain(spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }));
 
     spv::Id friend_offset = b.createBinOp(spv::OpIAdd, type_i32, base_offset, one_cst);
     spv::Id friend_vector = b.createBinOp(spv::OpIAdd, type_i32, base_vector, b.createBinOp(spv::OpSDiv, type_i32, friend_offset, b.makeIntConstant(4)));
 
     friend_offset = b.createBinOp(spv::OpSRem, type_i32, friend_offset, four_cst);
 
-    spv::Id src_friend = b.createLoad(b.createAccessChain(spv::StorageClassPrivate, info.var, { zero_cst, friend_vector, friend_offset }));
+    spv::Id src_friend = b.createLoad(b.createAccessChain(spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), friend_vector, friend_offset }));
     spv::Id src_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src);
     spv::Id src_friend_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src_friend);
 
@@ -494,7 +494,7 @@ static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderP
         fetch_stacks.push(std::make_unique<spv::Builder::If>(need_final, spv::SelectionControlMaskNone, b));
 
         spv::Id subtracted_base = b.createBinOp(spv::OpISub, type_i32, addr, range_begin);
-        spv::Function *access_func = make_fetch_memory_func_for_array(b, buffer_info, index);
+        spv::Function *access_func = make_fetch_memory_func_for_array(b, params.buffer_container, buffer_info, index);
 
         b.makeReturn(false, b.createFunctionCall(access_func, { subtracted_base }));
     }

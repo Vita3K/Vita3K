@@ -1013,10 +1013,8 @@ static void gxmSetUniformBuffers(renderer::State &state, SceGxmContext *context,
             continue;
         }
 
-        // Shift all buffer by 1.
-        // The ideal is: default uniform buffer block has the binding of 14. Not really ideal, so i move it to 0, and buffer 0 to 1, etc..
         std::uint32_t bytes_to_copy = sizes.at(i) * 4;
-        std::uint8_t **dest = renderer::set_uniform_buffer(state, context->renderer.get(), !program.is_fragment(), static_cast<int>((i + 1) % SCE_GXM_REAL_MAX_UNIFORM_BUFFER), bytes_to_copy);
+        std::uint8_t **dest = renderer::set_uniform_buffer(state, context->renderer.get(), !program.is_fragment(), i, bytes_to_copy);
 
         if (dest) {
             // Calculate the number of bytes
