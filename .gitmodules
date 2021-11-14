@@ -90,3 +90,6 @@
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt.git
+[submodule "external/LibAtrac9"]
+	path = external/LibAtrac9
+	url = https://github.com/Thealexbarney/LibAtrac9/

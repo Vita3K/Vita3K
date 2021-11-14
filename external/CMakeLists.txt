@@ -277,6 +277,16 @@ set_property(TARGET psvpfsparser PROPERTY FOLDER externals)
 set_property(TARGET libzRIF PROPERTY FOLDER externals)
 set_property(TARGET libb64 PROPERTY FOLDER externals)
 
+file(GLOB LIBATRAC9_SOURCES
+    LibAtrac9/C/src/*.c
+    LibAtrac9/C/src/*.h
+)
+
+add_library(libatrac9 SHARED ${LIBATRAC9_SOURCES})
+target_include_directories(libatrac9 PUBLIC LibAtrac9/C/src)
+set_target_properties(libatrac9 PROPERTIES
+	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
 add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)

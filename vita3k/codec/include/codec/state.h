@@ -103,7 +103,10 @@ struct MjpegDecoderState : public DecoderState {
 };
 
 struct Atrac9DecoderState : public DecoderState {
+    void *decoder_handle;
     uint32_t config_data;
+
+    std::vector<std::uint8_t> result;
 
     uint32_t get_channel_count();
     uint32_t get_samples_per_superframe();
