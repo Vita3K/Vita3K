@@ -202,7 +202,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         }
     }
 
-    std::uint8_t *data_ptr = data.extra_storage.data() + params->channels * sizeof(float) * state->decoded_passed;
+    std::uint8_t *data_ptr = data.extra_storage.data() + 2 * sizeof(float) * state->decoded_passed;
     std::uint32_t samples_to_be_passed = data.parent->rack->system->granularity;
 
     data.parent->products[0].data = data_ptr;
