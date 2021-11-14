@@ -510,7 +510,7 @@ EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
 
     // Begin the command list by white washing previous command list, and restoring deferred state
     renderer::reset_command_list(deferredContext->renderer->command_list);
-    gxmContextStateRestore(*host.renderer, host.mem, deferredContext, true);
+    gxmContextStateRestore(*host.renderer, host.mem, deferredContext, false);
 
     deferredContext->state.active = true;
 
@@ -3471,12 +3471,14 @@ EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) 
 }
 
 EXPORT(int, sceGxmTextureSetFormat, SceGxmTexture *texture, SceGxmTextureFormat texFormat) {
-    STUBBED("FAST");
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
+
     texture->base_format = (texFormat & 0x1F000000) >> 24;
     texture->swizzle_format = (texFormat & 0x7000) >> 12;
+    texture->format0 = (texFormat & 0x80000000) >> 31;
+
     return SCE_KERNEL_OK;
 }
 
