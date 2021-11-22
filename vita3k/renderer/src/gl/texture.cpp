@@ -33,9 +33,14 @@ static constexpr bool log_parameter = false;
 
 namespace renderer::gl {
 namespace texture {
+GLenum get_gl_texture_type(const SceGxmTexture &gxm_texture) {
+    const std::uint32_t type = gxm_texture.texture_type();
+    return ((type == SCE_GXM_TEXTURE_CUBE) || (type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) ? GL_TEXTURE_CUBE_MAP : GL_TEXTURE_2D;
+}
+
 void bind_texture(GLTextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
-    glBindTexture(GL_TEXTURE_2D, cache.textures[0]);
+    glBindTexture(get_gl_texture_type(gxm_texture), cache.textures[0]);
     configure_bound_texture(gxm_texture);
     upload_bound_texture(gxm_texture, mem);
 }
@@ -50,6 +55,18 @@ static bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8);
 }
 
+static bool is_block_compressed_format(SceGxmTextureBaseFormat fmt) {
+    return (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_UBC2
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_UBC3
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_UBC4
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_UBC5
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP);
+}
+
 void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     R_PROFILE(__func__);
 
@@ -60,17 +77,19 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     const GLint *const swizzle = translate_swizzle(fmt);
     uint32_t mip_count = gxm_texture.true_mip_count();
 
+    const GLenum texture_bind_type = get_gl_texture_type(gxm_texture);
+
     // TODO Support mip-mapping.
     if (mip_count)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mip_count - 1);
+        glTexParameteri(texture_bind_type, GL_TEXTURE_MAX_LEVEL, mip_count - 1);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, translate_wrap_mode(uaddr));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, translate_wrap_mode(vaddr));
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_LOD_BIAS, (gxm_texture.lod_bias - 31) / 8.f);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, translate_minmag_filter((SceGxmTextureFilter)gxm_texture.min_filter));
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, translate_minmag_filter((SceGxmTextureFilter)gxm_texture.mag_filter));
-    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+    glTexParameteri(texture_bind_type, GL_TEXTURE_WRAP_S, translate_wrap_mode(uaddr));
+    glTexParameteri(texture_bind_type, GL_TEXTURE_WRAP_T, translate_wrap_mode(vaddr));
+    glTexParameterf(texture_bind_type, GL_TEXTURE_LOD_BIAS, (gxm_texture.lod_bias - 31) / 8.f);
+    glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_LOD, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2));
+    glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_FILTER, translate_minmag_filter((SceGxmTextureFilter)gxm_texture.min_filter));
+    glTexParameteri(texture_bind_type, GL_TEXTURE_MAG_FILTER, translate_minmag_filter((SceGxmTextureFilter)gxm_texture.mag_filter));
+    glTexParameteriv(texture_bind_type, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 
     const GLenum internal_format = translate_internal_format(base_format);
     auto width = static_cast<uint32_t>(gxm::get_width(&gxm_texture));
@@ -81,24 +100,48 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
     const auto base_fmt = gxm::get_base_format(fmt);
 
+    std::uint32_t org_width = width;
+    std::uint32_t org_height = height;
+
     size_t compressed_size = 0;
     uint32_t mip_index = 0;
 
-    while (mip_index < mip_count && width && height) {
+    // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
+    GLenum upload_type = GL_TEXTURE_2D;
+
+    std::uint32_t face_total_count = 1;
+    std::uint32_t face_iterated = 0;
+
+    if ((texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) {
+        upload_type = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+        face_total_count = 6;
+    }
+
+    while (face_iterated < face_total_count && width && height) {
         if (!is_swizzled && renderer::texture::is_compressed_format(base_fmt, width, height, compressed_size)) {
-            glCompressedTexImage2D(GL_TEXTURE_2D, mip_index, internal_format, width, height, 0, static_cast<GLsizei>(compressed_size), nullptr);
+            glCompressedTexImage2D(upload_type, mip_index, internal_format, width, height, 0, static_cast<GLsizei>(compressed_size), nullptr);
         } else if (!is_swizzled || (is_swizzled && can_texture_be_unswizzled_without_decode(base_fmt))) {
-            glTexImage2D(GL_TEXTURE_2D, mip_index, internal_format, width, height, 0, format, type, nullptr);
+            glTexImage2D(upload_type, mip_index, internal_format, width, height, 0, format, type, nullptr);
         } else {
             if (is_swizzled) {
                 // Data feed will later be RGBA
-                glTexImage2D(GL_TEXTURE_2D, mip_index, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+                glTexImage2D(upload_type, mip_index, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
             }
         }
 
         mip_index++;
         width /= 2;
         height /= 2;
+
+        if (mip_index == mip_count) {
+            mip_index = 0;
+            face_iterated++;
+
+            upload_type++;
+
+            width = org_width;
+            height = org_height;
+        }
     }
 }
 
@@ -233,15 +276,43 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 
     uint32_t mip_index = 0;
     uint32_t total_mip = gxm_texture.true_mip_count();
+    uint32_t face_uploaded_count = 0;
+    uint32_t face_total_count;
     size_t source_size = 0;
+    size_t total_source_so_far = 0;
+
+    // Modified during decompression
     std::uint32_t org_width = width;
     std::uint32_t org_height = height;
+
+    std::uint32_t org_width_const = width;
+    std::uint32_t org_height_const = height;
+
+    std::uint32_t face_align_bytes = 4;
 
     if (texture_type == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         total_mip = 1;
     }
 
-    while (mip_index < total_mip && width && height) {
+    // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
+    GLenum upload_type = GL_TEXTURE_2D;
+
+    face_total_count = 1;
+
+    if ((texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) {
+        upload_type = GL_TEXTURE_CUBE_MAP_POSITIVE_X;
+        face_total_count = 6;
+
+        const bool twok_align_cond1 = ((width >= 32) && (height >= 32) && ((bytes_per_pixel == 1) || (is_block_compressed_format(base_format))));
+        const bool twok_align_cond2 = ((width >= 16) && (height >= 16) && ((bytes_per_pixel == 2) || (bytes_per_pixel == 4)));
+        const bool twok_align_cond3 = ((width >= 8) && (height >= 8) && (bytes_per_pixel == 8));
+
+        if (twok_align_cond1 || twok_align_cond2 || twok_align_cond3) {
+            face_align_bytes = 2048;
+        }
+    }
+
+    while ((face_uploaded_count < face_total_count) && width && height) {
         pixels = texture_data;
 
         if (gxm::is_paletted_format(base_format)) {
@@ -390,15 +461,15 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
         glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
 
         if (need_decompress_and_unswizzle_on_cpu)
-            glTexSubImage2D(GL_TEXTURE_2D, mip_index, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+            glTexSubImage2D(upload_type, mip_index, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         else {
             size_t compressed_size = 0;
             if (renderer::texture::is_compressed_format(base_format, width, height, compressed_size)) {
                 source_size = compressed_size;
-                glCompressedTexSubImage2D(GL_TEXTURE_2D, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), pixels);
+                glCompressedTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, static_cast<GLsizei>(compressed_size), pixels);
             } else {
                 source_size = (width * height * ((bpp + 7) >> 3));
-                glTexSubImage2D(GL_TEXTURE_2D, mip_index, 0, 0, width, height, format, type, pixels);
+                glTexSubImage2D(upload_type, mip_index, 0, 0, width, height, format, type, pixels);
             }
         }
 
@@ -409,6 +480,22 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
         height /= 2;
 
         texture_data += source_size;
+        total_source_so_far += source_size;
+
+        if (mip_index == total_mip) {
+            mip_index = 0;
+            face_uploaded_count++;
+
+            width = org_width_const;
+            height = org_height_const;
+
+            upload_type++;
+
+            size_t source_unaligned_size = total_source_so_far;
+            total_source_so_far = align(total_source_so_far, face_align_bytes);
+
+            texture_data += total_source_so_far - source_unaligned_size;
+        }
     }
 }
 

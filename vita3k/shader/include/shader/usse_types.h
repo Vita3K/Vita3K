@@ -362,6 +362,7 @@ enum class GenericType {
 struct Sampler {
     std::string name;
     uint32_t index; // resource index
+    bool is_cube;
 };
 
 /**

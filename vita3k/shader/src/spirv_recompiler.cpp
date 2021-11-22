@@ -247,9 +247,9 @@ spv::StorageClass reg_type_to_spv_storage_class(usse::RegisterBank reg_type) {
     return spv::StorageClassMax;
 }
 
-static spv::Id create_param_sampler(spv::Builder &b, const std::string &name) {
+static spv::Id create_param_sampler(spv::Builder &b, const std::string &name, const spv::Dim dim_type) {
     spv::Id sampled_type = b.makeFloatType(32);
-    spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, 1, spv::ImageFormatUnknown);
+    spv::Id image_type = b.makeImageType(sampled_type, dim_type, false, false, false, 1, spv::ImageFormatUnknown);
     spv::Id sampled_image_type = b.makeSampledImageType(image_type);
     return b.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
@@ -461,6 +461,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             std::string tex_name = "";
             std::string sampling_type = "2D";
+            spv::Dim dim_type = spv::Dim2D;
             uint32_t sampler_resource_index = 0;
 
             bool anonymous = false;
@@ -472,8 +473,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     tex_name = gxp::parameter_name(parameter);
                     sampler_resource_index = parameter.resource_index;
 
-                    // ????
                     if (parameter.is_sampler_cube()) {
+                        dim_type = spv::DimCube;
                         sampling_type = "CUBE";
                     }
 
@@ -569,7 +570,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             if (anonymous) {
                 // Probably not gonna be used in future, just for non-dependent queries
-                tex_query_info.sampler = create_param_sampler(b, tex_name);
+                tex_query_info.sampler = create_param_sampler(b, tex_name, dim_type);
             } else {
                 tex_query_info.sampler = samplers[sampler_resource_index];
             }
@@ -854,7 +855,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     };
 
     for (const auto &sampler : program_input.samplers) {
-        const auto sampler_spv_var = create_param_sampler(b, sampler.name);
+        const auto sampler_spv_var = create_param_sampler(b, sampler.name, (sampler.is_cube ? spv::DimCube : spv::Dim2D));
         samplers.emplace(sampler.index, sampler_spv_var);
 
         // Prefer smaller slot index for fragments since they are gonna be used frequently.

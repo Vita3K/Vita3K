@@ -160,6 +160,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             Sampler sampler;
             sampler.name = name;
             sampler.index = parameter.resource_index;
+            sampler.is_cube = parameter.is_sampler_cube();
             program_input.samplers.push_back(sampler);
             break;
         }

@@ -46,7 +46,7 @@ struct TextureCacheInfo {
 };
 
 typedef std::array<TextureCacheInfo, TextureCacheSize> TextureCacheInfoes;
-typedef std::function<void(std::size_t)> TextureCacheStateSelectCallback;
+typedef std::function<void(std::size_t, const void *)> TextureCacheStateSelectCallback;
 typedef std::function<void(std::size_t, const void *)> TextureCacheStateConfigureTextureCallback;
 typedef std::function<void(std::size_t, const void *, const MemState &)> TextureCacheStateUploadTextureCallback;
 
