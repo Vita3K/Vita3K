@@ -385,7 +385,7 @@ bool USSETranslatorVisitor::vtst(
     inst.opr.src2.type = load_data_type;
 
     inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    inst.opr.src2.swizzle = (src2_vscomp && (load_data_type == DataType::F32)) ? (Swizzle4 SWIZZLE_CHANNEL_4(X, X, X, X)) : (Swizzle4 SWIZZLE_CHANNEL_4_DEFAULT);
+    inst.opr.src2.swizzle = (src2_vscomp && (alu_sel == 0)) ? (Swizzle4 SWIZZLE_CHANNEL_4(X, X, X, X)) : (Swizzle4 SWIZZLE_CHANNEL_4_DEFAULT);
 
     if (src1_neg) {
         inst.opr.src1.flags |= RegisterFlags::Negative;
