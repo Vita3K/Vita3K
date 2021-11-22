@@ -32,10 +32,10 @@ struct FeatureState {
     }
 
     bool should_use_shader_interlock() const {
-        return support_shader_interlock && !direct_fragcolor && !spirv_shader;
+        return support_shader_interlock && !direct_fragcolor;
     }
 
     bool should_use_texture_barrier() const {
-        return support_texture_barrier && (spirv_shader || (!support_shader_interlock && !direct_fragcolor));
+        return support_texture_barrier && !support_shader_interlock && !direct_fragcolor;
     }
 };
