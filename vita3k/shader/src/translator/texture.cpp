@@ -28,7 +28,7 @@
 using namespace shader;
 using namespace usse;
 
-spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type) {
+spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type, const spv::Id lod) {
     auto coord_id = coord.first;
 
     if (coord.second != static_cast<int>(DataType::F32)) {
@@ -47,7 +47,12 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
 
     assert(m_b.getTypeClass(m_b.getContainedTypeId(m_b.getTypeId(coord_id))) == spv::OpTypeFloat);
 
-    auto image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[4], { m_b.createLoad(tex), coord_id });
+    spv::Id image_sample = spv::NoResult;
+    if (lod == spv::NoResult) {
+        image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[4], { m_b.createLoad(tex), coord_id });
+    } else {
+        image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex), coord_id, spv::ImageOperandsLodMask, lod });
+    }
 
     if (dest_type == DataType::F16) {
         // Pack them
@@ -125,8 +130,8 @@ bool USSETranslatorVisitor::smp(
     Imm7 src1_n,
     Imm7 src2_n) {
     // LOD mode: none, bias, replace, gradient
-    if (lod_mode != 0 || dim + 1 != 2) {
-        LOG_ERROR("Sampler LOD custom mode not implemented!");
+    if ((lod_mode != 0) && (lod_mode != 2)) {
+        LOG_ERROR("Sampler LOD bias and gradient mode not implemented!");
         return true;
     }
 
@@ -156,18 +161,30 @@ bool USSETranslatorVisitor::smp(
     // Base 0, turn it to base 1
     dim += 1;
 
-    LOG_DISASM("{:016x}: {}SMP{}d.{}.{} {} {} {}", m_instr, disasm::e_predicate_str(pred), dim, disasm::data_type_str(inst.opr.dest.type), disasm::data_type_str(inst.opr.src0.type),
-        disasm::operand_to_str(inst.opr.dest, 0b0001), disasm::operand_to_str(inst.opr.src0, 0b0011), disasm::operand_to_str(inst.opr.src1, 0b0000));
+    spv::Id coord_mask = 0b0011;
+    if (dim == 3) {
+        coord_mask = 0b0111;
+    } else if (dim == 1) {
+        coord_mask = 0b0001;
+    }
+
+    LOG_DISASM("{:016x}: {}SMP{}d.{}.{} {} {} {} {}", m_instr, disasm::e_predicate_str(pred), dim, disasm::data_type_str(inst.opr.dest.type), disasm::data_type_str(inst.opr.src0.type),
+        disasm::operand_to_str(inst.opr.dest, 0b0001), disasm::operand_to_str(inst.opr.src0, coord_mask), disasm::operand_to_str(inst.opr.src1, 0b0000), (lod_mode == 0) ? "" : disasm::operand_to_str(inst.opr.src2, 0b0001));
 
     m_b.setLine(m_recompiler.cur_pc);
 
     // Generate simple stuff
     // Load the coord
-    const spv::Id coord = load(inst.opr.src0, 0b0011);
+    spv::Id coord = load(inst.opr.src0, coord_mask);
 
     if (coord == spv::NoResult) {
         LOG_ERROR("Coord not loaded");
         return false;
+    }
+
+    if (dim == 1) {
+        // It should be a line, so Y should be zero. There are only two dimensions texture, so this is a guess (seems concise)
+        coord = m_b.createCompositeConstruct(m_b.makeVectorType(m_b.makeFloatType(32), 2), { coord, m_b.makeIntConstant(0) });
     }
 
     spv::Id sampler = spv::NoResult;
@@ -178,7 +195,17 @@ bool USSETranslatorVisitor::smp(
         return true;
     }
 
-    spv::Id result = do_fetch_texture(sampler, { coord, static_cast<int>(DataType::F32) }, DataType::F32);
+    // Either LOD number or gradient number
+    spv::Id extra = spv::NoResult;
+
+    if (lod_mode != 0) {
+        inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, true, 8, m_second_program);
+        inst.opr.src2.type = inst.opr.src0.type;
+
+        extra = load(inst.opr.src2, 0b1);
+    }
+
+    spv::Id result = do_fetch_texture(sampler, { coord, static_cast<int>(DataType::F32) }, DataType::F32, extra);
 
     switch (sb_mode) {
     case 0:

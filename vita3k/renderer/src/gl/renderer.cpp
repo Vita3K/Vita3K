@@ -41,9 +41,11 @@
 namespace renderer::gl {
 namespace texture {
 bool init(GLTextureCacheState &cache, const bool hashless_texture_cache) {
-    cache.select_callback = [&](const std::size_t index) {
+    cache.select_callback = [&](const std::size_t index, const void *texture) {
+        const SceGxmTexture *texture_casted = reinterpret_cast<const SceGxmTexture *>(texture);
+
         const GLuint gl_texture = cache.textures[index];
-        glBindTexture(GL_TEXTURE_2D, gl_texture);
+        glBindTexture(get_gl_texture_type(*texture_casted), gl_texture);
     };
 
     cache.configure_texture_callback = [](const std::size_t index, const void *texture) {

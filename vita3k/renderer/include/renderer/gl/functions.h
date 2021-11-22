@@ -103,6 +103,7 @@ GLenum translate_format(SceGxmTextureBaseFormat base_format);
 GLenum translate_type(SceGxmTextureBaseFormat base_format);
 GLenum translate_wrap_mode(SceGxmTextureAddrMode src);
 GLenum translate_minmag_filter(SceGxmTextureFilter src);
+GLenum get_gl_texture_type(const SceGxmTexture &gxm_texture);
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 
 // Texture cache.
