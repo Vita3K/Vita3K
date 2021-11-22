@@ -110,6 +110,7 @@ struct TranslationState {
     std::vector<spv::Id> interfaces;
     bool is_maskupdate{};
     bool is_fragment{};
+    bool should_gl_spirv_compatible{};
 };
 
 struct VertexProgramOutputProperties {
@@ -1066,7 +1067,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         color = utils::convert_to_float(b, color, color_val_operand.type, true);
     }
 
-    if (program.is_native_color() && features.should_use_shader_interlock()) {
+    if (program.is_native_color() && features.should_use_shader_interlock() && !translate_state.should_gl_spirv_compatible) {
         spv::Id signed_i32 = b.makeIntegerType(32, true);
         spv::Id coord_id = b.createLoad(translate_state.frag_coord_id);
         spv::Id depth = b.createOp(spv::OpAccessChain, b.makeFloatType(32), { coord_id, b.makeIntConstant(2) });
@@ -1493,6 +1494,7 @@ usse::SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::st
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
     translation_state.is_maskupdate = maskupdate;
+    translation_state.should_gl_spirv_compatible = true;
 
     return convert_gxp_to_spirv_impl(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
 }
@@ -1501,6 +1503,8 @@ std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string 
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
     translation_state.is_maskupdate = maskupdate;
+    translation_state.should_gl_spirv_compatible = false;
+
     std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv_impl(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
 
     const auto source = convert_spirv_to_glsl(shader_name, spirv_binary, features, translation_state, program.is_native_color());

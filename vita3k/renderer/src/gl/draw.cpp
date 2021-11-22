@@ -174,11 +174,11 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     delete[] indices_u8;
 
     if (fragment_program_gxp.is_native_color()) {
-        if (features.should_use_texture_barrier()) {
+        if (features.should_use_shader_interlock() && !config.spirv_shader) {
+            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+        } else if (features.should_use_texture_barrier()) {
             // Needs texture barrier
             glTextureBarrier();
-        } else if (features.should_use_shader_interlock()) {
-            glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
         }
     }
 
