@@ -58,9 +58,11 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     const SceGxmTextureAddrMode uaddr = (SceGxmTextureAddrMode)(gxm_texture.uaddr_mode);
     const SceGxmTextureAddrMode vaddr = (SceGxmTextureAddrMode)(gxm_texture.vaddr_mode);
     const GLint *const swizzle = translate_swizzle(fmt);
+    uint32_t mip_count = gxm_texture.true_mip_count();
 
     // TODO Support mip-mapping.
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, gxm_texture.mip_count);
+    if (mip_count)
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, mip_count - 1);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, translate_wrap_mode(uaddr));
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, translate_wrap_mode(vaddr));
@@ -82,7 +84,7 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     size_t compressed_size = 0;
     uint32_t mip_index = 0;
 
-    while (mip_index < gxm_texture.mip_count + 1 && width && height) {
+    while (mip_index < mip_count && width && height) {
         if (!is_swizzled && renderer::texture::is_compressed_format(base_fmt, width, height, compressed_size)) {
             glCompressedTexImage2D(GL_TEXTURE_2D, mip_index, internal_format, width, height, 0, static_cast<GLsizei>(compressed_size), nullptr);
         } else if (!is_swizzled || (is_swizzled && can_texture_be_unswizzled_without_decode(base_fmt))) {
@@ -230,16 +232,16 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     const bool need_decompress_and_unswizzle_on_cpu = is_swizzled && !can_texture_be_unswizzled_without_decode(base_format);
 
     uint32_t mip_index = 0;
-    uint32_t total_mip = gxm_texture.mip_count;
+    uint32_t total_mip = gxm_texture.true_mip_count();
     size_t source_size = 0;
     std::uint32_t org_width = width;
     std::uint32_t org_height = height;
 
     if (texture_type == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
-        total_mip = 0;
+        total_mip = 1;
     }
 
-    while (mip_index < total_mip + 1 && width && height) {
+    while (mip_index < total_mip && width && height) {
         pixels = texture_data;
 
         if (gxm::is_paletted_format(base_format)) {

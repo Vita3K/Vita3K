@@ -304,7 +304,7 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     }
     // data can be empty to be filled out later.
 
-    texture->mip_count = std::min<std::uint32_t>(0, mipCount - 1);
+    texture->mip_count = std::min<std::uint32_t>(15, mipCount - 1);
     texture->format0 = (tex_format & 0x80000000) >> 31;
     texture->lod_bias = 31;
 
@@ -669,7 +669,7 @@ EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorForm
     surface->outputRegisterSize = outputRegisterSize;
 
     // Create background object, for here don't return an error
-    if (init_texture_base(export_name, &surface->backgroundTex, Ptr<void>(0), SCE_GXM_TEXTURE_FORMAT_A8R8G8B8, surface->width, surface->height, 0, SCE_GXM_TEXTURE_LINEAR) != SCE_KERNEL_OK) {
+    if (init_texture_base(export_name, &surface->backgroundTex, Ptr<void>(0), SCE_GXM_TEXTURE_FORMAT_A8R8G8B8, surface->width, surface->height, 1, SCE_GXM_TEXTURE_LINEAR) != SCE_KERNEL_OK) {
         LOG_WARN("Unable to initialize background object control texture!");
     }
 

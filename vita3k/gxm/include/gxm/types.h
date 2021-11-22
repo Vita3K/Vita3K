@@ -1138,6 +1138,11 @@ struct SceGxmTexture {
     uint32_t texture_type() const {
         return type << 29;
     }
+
+    uint32_t true_mip_count() const {
+        uint32_t count = (mip_count + 1) & 15;
+        return (count == 0) ? 1 : count; // 0 count is no mip chain, but there's still top level...
+    }
 };
 
 static_assert(sizeof(SceGxmTexture) == 16);
