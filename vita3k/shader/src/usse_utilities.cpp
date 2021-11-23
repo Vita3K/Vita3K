@@ -1108,13 +1108,16 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
         }
     }
 
-    // Floor down to nearest size comp
+    // Floor down to nearest component that a float can hold. We originally want to optimize it to store from the first offset in float unit that writes the data.
+    // But for unit size smaller than float, we have to start from the beginning in float unit.
     const int num_comp_in_float = static_cast<int>(4 / size_comp);
     nearest_swizz_on = (int)((nearest_swizz_on / num_comp_in_float) * num_comp_in_float);
 
     if (dest.type != DataType::F32) {
         std::vector<spv::Id> composites;
         spv::Id vec_comp_type = utils::unwrap_type(b, b.getTypeId(source));
+        int source_value_taken_count = 0;
+
         // We need to pack source
         for (auto i = 0; i < static_cast<int>(total_comp_source); i += num_comp_in_float) {
             // Shuffle to get the type out
@@ -1124,7 +1127,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
                     if (b.isScalar(source) || total_comp_source == 1) {
                         ops.push_back(source);
                     } else {
-                        ops.push_back(b.createOp(spv::OpVectorExtractDynamic, vec_comp_type, { source, b.makeIntConstant(std::min(i + j, (int)total_comp_source - 1)) }));
+                        ops.push_back(b.createOp(spv::OpVectorExtractDynamic, vec_comp_type, { source, b.makeIntConstant(std::min(source_value_taken_count++, (int)total_comp_source - 1)) }));
                     }
                 } else {
                     if (elem == spv::NoResult) {
