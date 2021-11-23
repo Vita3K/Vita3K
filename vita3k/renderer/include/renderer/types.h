@@ -68,7 +68,7 @@ enum class GXMState : std::uint16_t {
     PolygonMode = 6,
     PointLineWidth = 7,
     StencilFunc = 8,
-    FragmentTexture = 9,
+    Texture = 9,
     StencilRef = 10,
     VertexStream = 11,
     TwoSided = 12,

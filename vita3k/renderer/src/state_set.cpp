@@ -320,7 +320,7 @@ COMMAND_SET_STATE(stencil_ref) {
     }
 }
 
-COMMAND_SET_STATE(fragment_texture) {
+COMMAND_SET_STATE(texture) {
     const std::uint32_t texture_index = helper.pop<std::uint32_t>();
     SceGxmTexture texture = helper.pop<SceGxmTexture>();
 
@@ -402,7 +402,7 @@ COMMAND(handle_set_state) {
         { renderer::GXMState::PolygonMode, cmd_set_state_polygon_mode },
         { renderer::GXMState::PointLineWidth, cmd_set_state_point_line_width },
         { renderer::GXMState::StencilFunc, cmd_set_state_stencil_func },
-        { renderer::GXMState::FragmentTexture, cmd_set_state_fragment_texture },
+        { renderer::GXMState::Texture, cmd_set_state_texture },
         { renderer::GXMState::StencilRef, cmd_set_state_stencil_ref },
         { renderer::GXMState::TwoSided, cmd_set_state_two_sided },
         { renderer::GXMState::CullMode, cmd_set_state_cull_mode },

@@ -428,8 +428,25 @@ static void gxmContextStateRestore(renderer::State &state, MemState &mem, SceGxm
     renderer::set_stencil_ref(state, context->renderer.get(), true, context->state.front_stencil.ref);
     renderer::set_stencil_ref(state, context->renderer.get(), false, context->state.back_stencil.ref);
 
-    if (context->state.vertex_program)
+    if (context->state.vertex_program) {
         renderer::set_program(state, context->renderer.get(), context->state.vertex_program, false);
+
+        const SceGxmVertexProgram &gxm_vertex_program = *context->state.vertex_program.get(mem);
+        const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(mem);
+
+        const auto vert_paramters = gxp::program_parameters(vertex_program_gxp);
+
+        for (uint32_t i = 0; i < vertex_program_gxp.parameter_count; ++i) {
+            const auto parameter = vert_paramters[i];
+            if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+                const auto index = parameter.resource_index + SCE_GXM_MAX_TEXTURE_UNITS;
+
+                if (context->state.textures[index].data_addr != 0) {
+                    renderer::set_texture(state, context->renderer.get(), index, context->state.textures[index]);
+                }
+            }
+        }
+    }
 
     // The uniform buffer, vertex stream will be uploaded later, for now only need to resync de textures
     if (context->state.fragment_program) {
@@ -445,8 +462,8 @@ static void gxmContextStateRestore(renderer::State &state, MemState &mem, SceGxm
             if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
                 const auto index = parameter.resource_index;
 
-                if (context->state.fragment_textures[index].data_addr != 0) {
-                    renderer::set_fragment_texture(state, context->renderer.get(), index, context->state.fragment_textures[index]);
+                if (context->state.textures[index].data_addr != 0) {
+                    renderer::set_texture(state, context->renderer.get(), index, context->state.textures[index]);
                 }
             }
         }
@@ -1120,12 +1137,23 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, const
     if (context->last_precomputed) {
         // Need to re-set the data
         const auto frag_paramters = gxp::program_parameters(fragment_program_gxp);
-        auto &textures = context->state.fragment_textures;
+        const auto vert_paramters = gxp::program_parameters(vertex_program_gxp);
+
+        auto &textures = context->state.textures;
+
         for (uint32_t i = 0; i < fragment_program_gxp.parameter_count; ++i) {
             const auto parameter = frag_paramters[i];
             if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
                 const auto index = parameter.resource_index;
-                renderer::set_fragment_texture(*host.renderer, context->renderer.get(), index, textures[index]);
+                renderer::set_texture(*host.renderer, context->renderer.get(), index, textures[index]);
+            }
+        }
+
+        for (uint32_t i = 0; i < vertex_program_gxp.parameter_count; ++i) {
+            const auto parameter = vert_paramters[i];
+            if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+                const auto index = parameter.resource_index + SCE_GXM_MAX_TEXTURE_UNITS;
+                renderer::set_texture(*host.renderer, context->renderer.get(), index, textures[index]);
             }
         }
 
@@ -1271,7 +1299,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         const auto parameter = frag_paramters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
             const auto index = parameter.resource_index;
-            renderer::set_fragment_texture(*host.renderer, context->renderer.get(), index, textures[index]);
+            renderer::set_texture(*host.renderer, context->renderer.get(), index, textures[index]);
         }
     }
 
@@ -2474,10 +2502,10 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, uint32_t textureIn
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    context->state.fragment_textures[textureIndex] = *texture;
+    context->state.textures[textureIndex] = *texture;
 
     if (context->alloc_space)
-        renderer::set_fragment_texture(*host.renderer, context->renderer.get(), textureIndex, *texture);
+        renderer::set_texture(*host.renderer, context->renderer.get(), textureIndex, *texture);
 
     return 0;
 }
@@ -2812,15 +2840,21 @@ EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, uint32_t streamIndex,
 }
 
 EXPORT(int, sceGxmSetVertexTexture, SceGxmContext *context, uint32_t textureIndex, const SceGxmTexture *texture) {
-    if (!context || !texture) {
+    if (!context || !texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    }
 
     if (textureIndex > (SCE_GXM_MAX_TEXTURE_UNITS - 1)) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    return UNIMPLEMENTED();
+    // Vertex texture arrays start at MAX UNITS value, so is shader binding.
+    textureIndex += SCE_GXM_MAX_TEXTURE_UNITS;
+    context->state.textures[textureIndex] = *texture;
+
+    if (context->alloc_space)
+        renderer::set_texture(*host.renderer, context->renderer.get(), textureIndex, *texture);
+
+    return 0;
 }
 
 EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, uint32_t bufferIndex, Ptr<const void> bufferData) {
