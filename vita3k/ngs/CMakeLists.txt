@@ -5,6 +5,7 @@ add_library(
 	include/ngs/definitions/master.h
 	include/ngs/definitions/player.h
 	include/ngs/definitions/passthrough.h
+	include/ngs/definitions/scream.h
 	include/ngs/definitions/simple.h
 	include/ngs/dsp/playback_rate.h
 	include/ngs/modules/atrac9.h
@@ -22,6 +23,7 @@ add_library(
 	src/definitions/master.cpp
 	src/definitions/player.cpp
 	src/definitions/passthrough.cpp
+	src/definitions/scream.cpp
 	src/definitions/simple.cpp
 	src/dsp/playback_rate.cpp
 	src/modules/atrac9.cpp
