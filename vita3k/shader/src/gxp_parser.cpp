@@ -231,7 +231,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             item.array_size = 1;
 
             UniformBufferInputSource source;
-            source.base = buffer_info->ldst_base_value + 4;
+            source.base = buffer_info->ldst_base_value;
             source.index = buffer->second.index;
             item.source = source;
 

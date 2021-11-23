@@ -416,18 +416,9 @@ bool USSETranslatorVisitor::vpck(
 
     inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_CAST(comp_sel_0, comp_sel_1, comp_sel_2, comp_sel_3);
 
-    int offset_start_masking = 0;
-
     // For some occasions the swizzle needs to cycle from the first components to the first bit that was on in the dest mask.
     bool no_swizzle_cycle_to_mask = (is_float_data_type(inst.opr.src1.type) && is_float_data_type(inst.opr.dest.type))
         || (scale && ((inst.opr.src1.type == DataType::UINT8) || (inst.opr.dest.type == DataType::UINT8)));
-
-    for (int i = 0; i < 4; i++) {
-        if (dest_mask & (1 << i)) {
-            offset_start_masking = i;
-            break;
-        }
-    }
 
     bool should_use_src2 = false;
     constexpr Imm4 CONTIGUOUS_MASKS[] = { 0b1, 0b11, 0b111, 0b1111 };
@@ -446,12 +437,21 @@ bool USSETranslatorVisitor::vpck(
         }
     }
 
-    if (inst.opr.src1.type != DataType::F32 && !no_swizzle_cycle_to_mask) {
+    if (!no_swizzle_cycle_to_mask) {
         shader::usse::Swizzle4 swizz_temp = inst.opr.src1.swizzle;
+        const bool check_only_two_swizz = (inst.opr.src1.type == DataType::UINT8) || (inst.opr.dest.type == DataType::UINT8);
+
+        int swizz_src_taken = 0;
 
         // Cycle through swizzle with only one source
         for (int i = 0; i < 4; i++) {
-            inst.opr.src1.swizzle[(i + offset_start_masking) % 4] = swizz_temp[i];
+            if (dest_mask & (1 << i)) {
+                if (check_only_two_swizz && (dest_mask == 0b1111)) {
+                    inst.opr.src1.swizzle[i] = swizz_temp[i % 2];
+                } else {
+                    inst.opr.src1.swizzle[i] = swizz_temp[swizz_src_taken++];
+                }
+            }
         }
     }
 
@@ -617,15 +617,22 @@ bool USSETranslatorVisitor::vldst(
 
     // Seems that if it's indexed by register, offset is in bytes and based on 0x10000?
     // Maybe that's just how the memory map operates. I'm not sure. However the literals on all shader so far is that
-    static constexpr std::uint32_t REG_INDEX_BASE = 0x10000;
+    // Another thing is that, when moe expand is not enable, there seems to be 4 bytes added before fetching... No absolute prove.
+    // Maybe moe expand means it's not fetching after all? Dunno
+    std::uint32_t REG_INDEX_BASE = 0x10000;
     spv::Id reg_index_base_cst = m_b.makeIntConstant(REG_INDEX_BASE);
 
     if (inst.opr.src1.bank != shader::usse::RegisterBank::IMMEDIATE) {
         source_1 = m_b.createBinOp(spv::OpISub, m_b.getTypeId(source_1), source_1, reg_index_base_cst);
     }
 
-    spv::Id base = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), source_0, source_1);
-    base = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, source_2);
+    spv::Id i32_type = m_b.makeIntType(32);
+    spv::Id base = m_b.createBinOp(spv::OpIAdd, i32_type, source_0, source_1);
+    base = m_b.createBinOp(spv::OpIAdd, i32_type, base, source_2);
+
+    if (!moe_expand) {
+        base = m_b.createBinOp(spv::OpIAdd, i32_type, base, m_b.makeIntConstant(4));
+    }
 
     for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
         spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
