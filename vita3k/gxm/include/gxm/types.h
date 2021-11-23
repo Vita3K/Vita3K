@@ -1212,7 +1212,7 @@ struct SceGxmDeferredContextParams {
 };
 
 typedef std::array<Ptr<const void>, 15> UniformBuffers;
-typedef std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS> TextureDatas;
+typedef std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS * 2> TextureDatas;
 typedef std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> StreamDatas;
 
 struct GxmViewport {
@@ -1313,7 +1313,7 @@ struct GxmContextState {
     int back_depth_bias_units = 0;
 
     // Textures.
-    TextureDatas fragment_textures;
+    TextureDatas textures;
 
     // Mask
     bool writing_mask;

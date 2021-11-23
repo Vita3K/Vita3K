@@ -855,7 +855,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     for (const auto &sampler : program_input.samplers) {
         const auto sampler_spv_var = create_param_sampler(b, sampler.name);
         samplers.emplace(sampler.index, sampler_spv_var);
-        b.addDecoration(sampler_spv_var, spv::DecorationBinding, sampler.index);
+
+        // Prefer smaller slot index for fragments since they are gonna be used frequently.
+        b.addDecoration(sampler_spv_var, spv::DecorationBinding, sampler.index + (program.is_vertex() ? SCE_GXM_MAX_TEXTURE_UNITS : 0));
     }
 
     // Log parameters

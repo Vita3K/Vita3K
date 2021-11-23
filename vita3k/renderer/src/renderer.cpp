@@ -60,8 +60,8 @@ void set_cull_mode(State &state, Context *ctx, SceGxmCullMode cull) {
     renderer::add_state_set_command(ctx, renderer::GXMState::CullMode, cull);
 }
 
-void set_fragment_texture(State &state, Context *ctx, const std::uint32_t tex_index, const SceGxmTexture tex) {
-    renderer::add_state_set_command(ctx, renderer::GXMState::FragmentTexture, tex_index, tex);
+void set_texture(State &state, Context *ctx, const std::uint32_t tex_index, const SceGxmTexture tex) {
+    renderer::add_state_set_command(ctx, renderer::GXMState::Texture, tex_index, tex);
 }
 
 void set_viewport_real(State &state, Context *ctx, float xOffset, float yOffset, float zOffset, float xScale, float yScale, float zScale) {
