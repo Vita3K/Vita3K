@@ -42,6 +42,7 @@ add_library(
 	src/semaphores_dialog.cpp
 	src/settings.cpp
 	src/settings_dialog.cpp
+	src/themes.cpp
 	src/threads_dialog.cpp
 	src/trophy_collection.cpp
 	src/user_management.cpp
