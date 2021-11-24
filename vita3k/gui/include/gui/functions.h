@@ -65,7 +65,6 @@ void init_live_area(GuiState &gui, HostState &host);
 bool init_manual(GuiState &gui, HostState &host, const std::string &app_path);
 void init_notice_info(GuiState &gui, HostState &host);
 bool init_theme(GuiState &gui, HostState &host, const std::string &content_id);
-void init_themes(GuiState &gui, HostState &host);
 void init_theme_start_background(GuiState &gui, HostState &host, const std::string &content_id);
 void init_last_time_apps(GuiState &gui, HostState &host);
 void init_trophy_collection(GuiState &gui, HostState &host);
