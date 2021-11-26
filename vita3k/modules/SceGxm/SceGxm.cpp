@@ -1294,12 +1294,22 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     }
 
     const auto frag_paramters = gxp::program_parameters(fragment_program_gxp);
-    auto &textures = *fragment_state->textures.get(host.mem);
+    auto &frag_textures = *fragment_state->textures.get(host.mem);
     for (uint32_t i = 0; i < fragment_program_gxp.parameter_count; ++i) {
         const auto parameter = frag_paramters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
             const auto index = parameter.resource_index;
-            renderer::set_texture(*host.renderer, context->renderer.get(), index, textures[index]);
+            renderer::set_texture(*host.renderer, context->renderer.get(), index, frag_textures[index]);
+        }
+    }
+
+    const auto vert_paramters = gxp::program_parameters(vertex_program_gxp);
+    auto &vert_textures = *vertex_state->textures.get(host.mem);
+    for (uint32_t i = 0; i < vertex_program_gxp.parameter_count; ++i) {
+        const auto parameter = vert_paramters[i];
+        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+            const auto index = parameter.resource_index;
+            renderer::set_texture(*host.renderer, context->renderer.get(), index + SCE_GXM_MAX_TEXTURE_UNITS, vert_textures[index]);
         }
     }
 
@@ -1575,12 +1585,12 @@ EXPORT(uint32_t, sceGxmGetPrecomputedDrawSize, const SceGxmVertexProgram *vertex
 
 EXPORT(uint32_t, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
     assert(fragmentProgram);
-    return SCE_GXM_PRECOMPUTED_FRAGMENT_STATE_EXTRA_SIZE;
+    return SCE_GXM_PRECOMPUTED_STATE_EXTRA_SIZE;
 }
 
 EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
     assert(vertexProgram);
-    return SCE_GXM_PRECOMPUTED_VERTEX_STATE_EXTRA_SIZE;
+    return SCE_GXM_PRECOMPUTED_STATE_EXTRA_SIZE;
 }
 
 EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
@@ -1819,7 +1829,16 @@ EXPORT(int, sceGxmPrecomputedDrawSetParamsInstanced, SceGxmPrecomputedDraw *prec
     if (!precomputedDraw || !indexData) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    STUBBED("Stub, missing indexWrap");
+
+    precomputedDraw->type = primType;
+    precomputedDraw->index_format = indexType;
+    precomputedDraw->index_data = indexData;
+    precomputedDraw->vertex_count = indexCount;
+    // Todo of indexWrap
+
+    return 0;
 }
 
 EXPORT(int, sceGxmPrecomputedDrawSetVertexStream, SceGxmPrecomputedDraw *state, uint32_t streamIndex, Ptr<const void> streamData) {
@@ -1854,7 +1873,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateInit, SceGxmPrecomputedFragmentState *
     SceGxmPrecomputedFragmentState new_state;
     new_state.program = program;
 
-    MempoolObject allocator(extra_data, SCE_GXM_PRECOMPUTED_FRAGMENT_STATE_EXTRA_SIZE);
+    MempoolObject allocator(extra_data, SCE_GXM_PRECOMPUTED_STATE_EXTRA_SIZE);
     new_state.textures = allocator.alloc<TextureDatas>();
     new_state.uniform_buffers = allocator.alloc<UniformBuffers>();
 
@@ -1964,20 +1983,39 @@ EXPORT(int, sceGxmPrecomputedVertexStateInit, SceGxmPrecomputedVertexState *stat
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    MempoolObject allocator(extra_data, SCE_GXM_PRECOMPUTED_VERTEX_STATE_EXTRA_SIZE);
+    MempoolObject allocator(extra_data, SCE_GXM_PRECOMPUTED_STATE_EXTRA_SIZE);
     SceGxmPrecomputedVertexState new_state;
     new_state.program = program;
     new_state.uniform_buffers = allocator.alloc<UniformBuffers>();
+    new_state.textures = allocator.alloc<TextureDatas>();
+
+    const auto &vertex_program_gxp = *program.get(host.mem)->program.get(host.mem);
+    const auto vert_paramters = gxp::program_parameters(vertex_program_gxp);
+    int32_t max_texture_index = 0;
+    for (uint32_t i = 0; i < vertex_program_gxp.parameter_count; ++i) {
+        const auto parameter = vert_paramters[i];
+        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+            max_texture_index = std::max(max_texture_index, parameter.resource_index);
+        }
+    }
+    new_state.texture_count = static_cast<uint16_t>(max_texture_index + 1);
+
     *state = new_state;
 
     return 0;
 }
 
-EXPORT(int, sceGxmPrecomputedVertexStateSetAllTextures, SceGxmPrecomputedVertexState *precomputedState, const SceGxmTexture *textureArray) {
+EXPORT(int, sceGxmPrecomputedVertexStateSetAllTextures, SceGxmPrecomputedVertexState *precomputedState, Ptr<const SceGxmTexture> textureArray) {
     if (!precomputedState || !textureArray) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    auto &state_textures = *precomputedState->textures.get(host.mem);
+    for (int i = 0; i < precomputedState->texture_count; ++i) {
+        state_textures[i] = textureArray.get(host.mem)[i];
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetAllUniformBuffers, SceGxmPrecomputedVertexState *precomputedState, Ptr<const void> const *bufferDataArray) {
@@ -2009,7 +2047,11 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetTexture, SceGxmPrecomputedVertexState
     if (!precomputedState || !texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    auto &state_textures = *precomputedState->textures.get(host.mem);
+    state_textures[textureIndex] = *texture;
+
+    return 0;
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetUniformBuffer, SceGxmPrecomputedVertexState *precomputedState, uint32_t bufferIndex, Ptr<const void> bufferData) {
