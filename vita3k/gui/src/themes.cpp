@@ -61,16 +61,30 @@ bool init_user_background(GuiState &gui, HostState &host, const std::string &use
     return gui.user_backgrounds.find(background_path) != gui.user_backgrounds.end();
 }
 
-static std::map<std::string, std::string> start_param;
-static std::map<std::string, ImVec2> date;
-static ImU32 date_color;
+enum DateLayout {
+    NOT_SET = -1,
+    LEFT_DOWN,
+    LEFT_UP,
+    RIGHT_DOWN,
+};
+
+struct StartParam {
+    ImU32 date_color = 0xFFFFFFFF;
+    DateLayout date_layout = DateLayout::NOT_SET;
+    ImVec2 date_pos = ImVec2(900.f, 186.f);
+    ImVec2 clock_pos = ImVec2(880.f, 146.f);
+};
+
+static StartParam start_param;
 
 void init_theme_start_background(GuiState &gui, HostState &host, const std::string &content_id) {
+    std::string dateColor;
     std::string theme_start_name;
 
-    start_param.clear();
+    start_param = {};
     gui.start_background = {};
-    if (!content_id.empty() && content_id != "default") {
+
+    if (!content_id.empty() && (content_id != "default")) {
         const auto THEME_PATH_XML{ fs::path(host.pref_path) / "ux0/theme" / content_id / "theme.xml" };
         pugi::xml_document doc;
         if (doc.load_file(THEME_PATH_XML.c_str())) {
@@ -78,9 +92,9 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
 
             // Start Layout
             if (!theme.child("StartScreenProperty").child("m_dateColor").empty())
-                start_param["dateColor"] = theme.child("StartScreenProperty").child("m_dateColor").text().as_string();
+                dateColor = theme.child("StartScreenProperty").child("m_dateColor").text().as_string();
             if (!theme.child("StartScreenProperty").child("m_dateLayout").empty())
-                start_param["dateLayout"] = theme.child("StartScreenProperty").child("m_dateLayout").text().as_string();
+                start_param.date_layout = DateLayout(theme.child("StartScreenProperty").child("m_dateLayout").text().as_int());
 
             // Theme Start
             if (!theme.child("StartScreenProperty").child("m_filePath").empty()) {
@@ -89,32 +103,29 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
         }
     }
 
-    date["date"] = ImVec2(900.f, 186.f);
-    date["clock"] = ImVec2(880.f, 146.f);
-    if (!start_param["dateLayout"].empty()) {
-        switch (std::stoi(start_param["dateLayout"])) {
-        case 0:
+    if (!start_param.date_layout != DateLayout::NOT_SET) {
+        switch (start_param.date_layout) {
+        case DateLayout::LEFT_DOWN:
             break;
-        case 1:
-            date["date"].y = 468.f;
-            date["clock"].y = 426.f;
+        case DateLayout::LEFT_UP:
+            start_param.date_pos.y = 468.f;
+            start_param.clock_pos.y = 426.f;
             break;
-        case 2:
-            date["date"].x = 50.f;
-            date["clock"].x = 50.f;
+        case DateLayout::RIGHT_DOWN:
+            start_param.date_pos.x = 50.f;
+            start_param.clock_pos.x = 50.f;
             break;
         default:
-            LOG_WARN("Date layout is unknown : {}", start_param["dateLayout"]);
+            LOG_WARN("Date layout is unknown : {}", start_param.date_layout);
             break;
         }
     }
 
-    if (!start_param["dateColor"].empty()) {
+    if (!dateColor.empty()) {
         int color;
-        sscanf(start_param["dateColor"].c_str(), "%x", &color);
-        date_color = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
-    } else
-        date_color = 4294967295; // White
+        sscanf(dateColor.c_str(), "%x", &color);
+        start_param.date_color = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
+    }
 
     int32_t width = 0;
     int32_t height = 0;
@@ -147,13 +158,14 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
 
 bool init_user_start_background(GuiState &gui, const std::string &image_path) {
     const std::wstring image_path_wstr = string_utils::utf_to_wide(image_path);
-
     if (!fs::exists(image_path_wstr)) {
         LOG_WARN("Image doesn't exist: {}.", image_path);
         return false;
     }
 
+    start_param = {};
     gui.start_background = {};
+
     int32_t width = 0;
     int32_t height = 0;
 
@@ -174,11 +186,6 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
     stbi_image_free(data);
     fclose(f);
 
-    date["date"] = ImVec2(900.f, 186.f);
-    date["clock"] = ImVec2(880.f, 146.f);
-
-    date_color = 4294967295; // White
-
     return gui.start_background;
 }
 
@@ -193,7 +200,7 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
 
     gui.app_selector.sys_apps_icon.clear();
     gui.current_theme_bg = 0;
-    gui.information_bar_color.clear();
+    gui.information_bar_color = {};
     gui.theme_backgrounds.clear();
     gui.theme_backgrounds_font_color.clear();
     gui.theme_information_bar_notice.clear();
@@ -220,11 +227,11 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
                 bar_param["indicatorColor"] = theme.child("InfomationBarProperty").child("m_indicatorColor").text().as_string();
 
             // Notice Icon
-            std::map<std::string, std::string> notice_name;
+            std::map<NoticeIcon, std::string> notice_name;
             if (!theme.child("InfomationBarProperty").child("m_noNoticeFilePath").text().empty())
-                notice_name["no"] = theme.child("InfomationBarProperty").child("m_noNoticeFilePath").text().as_string();
+                notice_name[NoticeIcon::NO] = theme.child("InfomationBarProperty").child("m_noNoticeFilePath").text().as_string();
             if (!theme.child("InfomationBarProperty").child("m_newNoticeFilePath").text().empty())
-                notice_name["new"] = theme.child("InfomationBarProperty").child("m_newNoticeFilePath").text().as_string();
+                notice_name[NoticeIcon::NEW] = theme.child("InfomationBarProperty").child("m_newNoticeFilePath").text().as_string();
 
             for (const auto &notice : notice_name) {
                 int32_t width = 0;
@@ -284,16 +291,14 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
     if (!bar_param["barColor"].empty()) {
         int color;
         sscanf(bar_param["barColor"].c_str(), "%x", &color);
-        gui.information_bar_color["bar"] = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
-    } else
-        gui.information_bar_color["bar"] = 4278190080; // Black
+        gui.information_bar_color.bar = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
+    }
 
     if (!bar_param["indicatorColor"].empty()) {
         int color;
         sscanf(bar_param["indicatorColor"].c_str(), "%x", &color);
-        gui.information_bar_color["indicator"] = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
-    } else
-        gui.information_bar_color["indicator"] = 4294967295; // White
+        gui.information_bar_color.indicator = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
+    }
 
     for (const auto &icon : theme_icon_name) {
         int32_t width = 0;
@@ -385,10 +390,10 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     auto DATE_TIME = get_date_time(gui, host, const_cast<tm &>(local));
     const auto DATE_STR = DATE_TIME["date-start"];
     const auto CALC_DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str());
-    const auto DATE_INIT_SCALE = ImVec2(date["date"].x * SCALE.x, date["date"].y * SCALE.y);
+    const auto DATE_INIT_SCALE = ImVec2(start_param.date_pos.x * SCALE.x, start_param.date_pos.y * SCALE.y);
     const auto DATE_SIZE = ImVec2(CALC_DATE_SIZE.x * SCAL_DATE_FONT_SIZE, CALC_DATE_SIZE.y * SCAL_DATE_FONT_SIZE * SCAL_PIX_DATE_FONT);
-    const auto DATE_POS = ImVec2(display_size.x - (start_param["dateLayout"] == "2" ? DATE_INIT_SCALE.x + (DATE_SIZE.x * RES_SCALE.x) : DATE_INIT_SCALE.x), display_size.y - DATE_INIT_SCALE.y);
-    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, DATE_FONT_SIZE * RES_SCALE.x, DATE_POS, date_color, DATE_STR.c_str());
+    const auto DATE_POS = ImVec2(display_size.x - (start_param.date_layout == DateLayout::RIGHT_DOWN ? DATE_INIT_SCALE.x + (DATE_SIZE.x * RES_SCALE.x) : DATE_INIT_SCALE.x), display_size.y - DATE_INIT_SCALE.y);
+    ImGui::GetForegroundDrawList()->AddText(gui.vita_font, DATE_FONT_SIZE * RES_SCALE.x, DATE_POS, start_param.date_color, DATE_STR.c_str());
     ImGui::PopFont();
 
     ImGui::PushFont(gui.large_font);
@@ -406,16 +411,16 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto LARGE_FONT_DAY_MOMENT_SCALE = DAY_MOMENT_LARGE_FONT_SIZE / ImGui::GetFontSize();
     const auto DAY_MOMENT_SIZE = gui.users[host.io.user_id].clock_12_hour ? ImVec2(CALC_DAY_MOMENT_SIZE.x * LARGE_FONT_DAY_MOMENT_SCALE, CALC_DAY_MOMENT_SIZE.y * LARGE_FONT_DAY_MOMENT_SCALE * PIX_LARGE_FONT_SCALE) : ImVec2(0.f, 0.f);
 
-    auto CLOCK_POS = ImVec2(display_size.x - (date["clock"].x * SCALE.x), display_size.y - (date["clock"].y * SCALE.y));
-    if (start_param["dateLayout"] == "2")
+    auto CLOCK_POS = ImVec2(display_size.x - (start_param.clock_pos.x * SCALE.x), display_size.y - (start_param.clock_pos.y * SCALE.y));
+    if (start_param.date_layout == DateLayout::RIGHT_DOWN)
         CLOCK_POS.x -= (CLOCK_SIZE.x * RES_SCALE.x) + (DAY_MOMENT_SIZE.x * RES_SCALE.x);
     else if (std::stoi(DATE_TIME["hour"]) < 10)
         CLOCK_POS.x += ImGui::CalcTextSize("0").x * RES_SCALE.x;
 
-    ImGui::GetForegroundDrawList()->AddText(gui.large_font, LARGE_FONT_SIZE * RES_SCALE.x, CLOCK_POS, date_color, CLOCK_STR.c_str());
+    ImGui::GetForegroundDrawList()->AddText(gui.large_font, LARGE_FONT_SIZE * RES_SCALE.x, CLOCK_POS, start_param.date_color, CLOCK_STR.c_str());
     if (gui.users[host.io.user_id].clock_12_hour) {
         const auto DAY_MOMENT_POS = ImVec2(CLOCK_POS.x + ((CLOCK_SIZE.x + (6.f * SCALE.x)) * RES_SCALE.x), CLOCK_POS.y + ((CLOCK_SIZE.y - DAY_MOMENT_SIZE.y) * RES_SCALE.y));
-        ImGui::GetForegroundDrawList()->AddText(gui.large_font, DAY_MOMENT_LARGE_FONT_SIZE * RES_SCALE.x, DAY_MOMENT_POS, date_color, DAY_MOMENT_STR.c_str());
+        ImGui::GetForegroundDrawList()->AddText(gui.large_font, DAY_MOMENT_LARGE_FONT_SIZE * RES_SCALE.x, DAY_MOMENT_POS, start_param.date_color, DAY_MOMENT_STR.c_str());
     }
     ImGui::PopFont();
 
