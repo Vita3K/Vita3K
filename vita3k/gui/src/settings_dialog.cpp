@@ -64,14 +64,21 @@ static void get_modules_list(GuiState &gui, HostState &host) {
 }
 
 static void reset_emulator(GuiState &gui, HostState &host) {
+    gui.configuration_menu.settings_dialog = false;
     gui.live_area.app_selector = false;
+
+    // Clean and save new config value
+    host.cfg.auto_user_login = false;
+    host.cfg.user_id.clear();
+    host.cfg.pref_path = string_utils::wide_to_utf(host.pref_path);
+    host.io.user_id.clear();
+    config::serialize_config(host.cfg, host.cfg.config_path);
+
     get_modules_list(gui, host);
-    init_user_apps(gui, host);
     get_sys_apps_title(gui, host);
     get_notice_list(host);
     get_users_list(gui, host);
     init_home(gui, host);
-    gui.configuration_menu.settings_dialog = false;
 }
 
 static void change_emulator_path(GuiState &gui, HostState &host) {
@@ -80,10 +87,7 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
 
     if (result == NFD_OKAY && string_utils::utf_to_wide(emulator_path) != host.pref_path) {
         // Refresh the working paths
-        host.cfg.pref_path = string_utils::wide_to_utf(string_utils::utf_to_wide(emulator_path) + L'/');
-        host.pref_path = string_utils::utf_to_wide(host.cfg.pref_path);
-
-        config::serialize_config(host.cfg, host.cfg.config_path);
+        host.pref_path = string_utils::utf_to_wide(emulator_path) + L'/';
 
         // TODO: Move app old to new path
         reset_emulator(gui, host);
@@ -454,9 +458,6 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             if (ImGui::Button("Reset Emulator Path")) {
                 if (string_utils::utf_to_wide(host.default_path) != host.pref_path) {
                     host.pref_path = string_utils::utf_to_wide(host.default_path);
-                    host.cfg.pref_path = string_utils::wide_to_utf(host.pref_path);
-
-                    config::serialize_config(host.cfg, host.cfg.config_path);
 
                     // Refresh the working paths
                     reset_emulator(gui, host);

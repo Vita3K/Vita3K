@@ -332,7 +332,7 @@ void init_app_background(GuiState &gui, HostState &host, const std::string &app_
 }
 
 static bool get_user_apps(GuiState &gui, HostState &host) {
-    const auto apps_cache_path{ fs::path(host.base_path) / "cache/apps.dat" };
+    const auto apps_cache_path{ fs::path(host.pref_path) / "ux0/temp/apps.dat" };
     fs::ifstream apps_cache(apps_cache_path, std::ios::in | std::ios::binary);
     if (apps_cache.is_open()) {
         gui.app_selector.user_apps.clear();
@@ -381,19 +381,17 @@ static bool get_user_apps(GuiState &gui, HostState &host) {
         }
 
         init_apps_icon(gui, host, gui.app_selector.user_apps);
-
-        return true;
     }
 
-    return false;
+    return !gui.app_selector.user_apps.empty();
 }
 
 void save_apps_cache(GuiState &gui, HostState &host) {
-    const auto cache_path{ fs::path(host.base_path) / "cache" };
-    if (!fs::exists(cache_path))
-        fs::create_directory(cache_path);
+    const auto temp_path{ fs::path(host.pref_path) / "ux0/temp" };
+    if (!fs::exists(temp_path))
+        fs::create_directory(temp_path);
 
-    fs::ofstream apps_cache(cache_path / "apps.dat", std::ios::out | std::ios::binary);
+    fs::ofstream apps_cache(temp_path / "apps.dat", std::ios::out | std::ios::binary);
     if (apps_cache.is_open()) {
         // Write Size of apps list
         const auto size = gui.app_selector.user_apps.size();
@@ -431,7 +429,7 @@ void save_apps_cache(GuiState &gui, HostState &host) {
 
 void init_home(GuiState &gui, HostState &host) {
     const auto is_cmd = host.cfg.run_app_path || host.cfg.content_path;
-    if (!gui.configuration_menu.settings_dialog && (host.cfg.load_app_list || !is_cmd)) {
+    if (host.cfg.load_app_list || !is_cmd) {
         if (!get_user_apps(gui, host))
             init_user_apps(gui, host);
     }
