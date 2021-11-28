@@ -68,6 +68,10 @@ public:
         condempty_.notify_one();
     }
 
+    size_t size() {
+        return queue_.size();
+    }
+
     void abort() {
         aborted = true;
         condempty_.notify_all();

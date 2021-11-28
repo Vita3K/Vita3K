@@ -90,18 +90,17 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
 
 void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path,
     const char *title_id) {
-    std::uint32_t processed_count = 0;
+    const uint32_t queue_size = state.command_buffer_queue.size();
 
-    while (processed_count < state.average_scene_per_frame) {
-        auto cmd_list = state.command_buffer_queue.pop(2);
+    for (uint32_t pc = 0; pc < queue_size; pc++) {
+        auto cmd_list = state.command_buffer_queue.pop(3);
 
         if (!cmd_list) {
-            // Try to wait for a batch (about 1 or 2ms, game should be fast for this)
+            // Try to wait for a batch (about 2 or 3ms, game should be fast for this)
             return;
         }
 
         process_batch(state, features, mem, config, *cmd_list, base_path, title_id);
-        processed_count++;
     }
 }
 
