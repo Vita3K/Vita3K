@@ -480,10 +480,10 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     ImGui::SetWindowFontScale(0.8f);
                     ImGui::SetCursorPosY(Title_POS + (46.f * SCALE.y));
                     auto DATE_TIME = get_date_time(gui, host, save.date);
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
                     if (gui.users[host.io.user_id].clock_12_hour) {
                         ImGui::SameLine();
-                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                     }
                     ImGui::PopID();
                     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (6.f * SCALE.y));
@@ -507,10 +507,10 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
             ImGui::SameLine(280.f * SCALE.x);
             auto DATE_TIME = get_date_time(gui, host, gui.app_selector.app_info.updated);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
             if (gui.users[host.io.user_id].clock_12_hour) {
                 ImGui::SameLine();
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
             }
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "Size");
@@ -533,10 +533,10 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
                 ImGui::SameLine(280.f * SCALE.x);
                 auto DATE_TIME = get_date_time(gui, host, dlc.second.date);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
                 if (gui.users[host.io.user_id].clock_12_hour) {
                     ImGui::SameLine();
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                 }
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "Size");

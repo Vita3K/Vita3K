@@ -42,7 +42,7 @@ size_t get_app_size(GuiState &gui, HostState &host, const std::string &app_path)
 std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &app_path);
 std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &app_path);
 std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &app_path);
-std::map<std::string, std::string> get_date_time(GuiState &gui, HostState &host, const tm &date_time);
+std::map<DateTime, std::string> get_date_time(GuiState &gui, HostState &host, const tm &date_time);
 std::string get_unit_size(const size_t &size);
 void get_app_param(GuiState &gui, HostState &host, const std::string &app_path);
 void get_notice_list(HostState &host);

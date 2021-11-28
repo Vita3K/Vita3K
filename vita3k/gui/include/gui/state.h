@@ -178,6 +178,14 @@ enum DateFormat {
     MM_DD_YYYY
 };
 
+enum DateTime {
+    CLOCK,
+    DATE_DETAIL,
+    DATE_MINI,
+    DAY_MOMENT,
+    HOUR,
+};
+
 struct User {
     std::string id;
     std::string name = "Vita3K";

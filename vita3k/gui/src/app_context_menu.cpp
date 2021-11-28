@@ -475,10 +475,10 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             const auto updated = is_lang ? lang["updated"] : "Updated";
             ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize((updated + "  ").c_str()).x));
             auto DATE_TIME = get_date_time(gui, host, gui.app_selector.app_info.updated);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s %s", updated.c_str(), DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s %s", updated.c_str(), DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
             if (gui.users[host.io.user_id].clock_12_hour) {
                 ImGui::SameLine();
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
             }
             ImGui::Spacing();
             const auto size = is_lang ? lang["size"] : "Size";
@@ -498,10 +498,10 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                 tm date_tm = {};
                 SAFE_LOCALTIME(&time_app_index->last_time_used, &date_tm);
                 auto LAST_TIME = get_date_time(gui, host, date_tm);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", LAST_TIME["date"].c_str(), LAST_TIME["clock"].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", LAST_TIME[DateTime::DATE_MINI].c_str(), LAST_TIME[DateTime::CLOCK].c_str());
                 if (gui.users[host.io.user_id].clock_12_hour) {
                     ImGui::SameLine();
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", LAST_TIME["day-moment"].c_str());
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", LAST_TIME[DateTime::DAY_MOMENT].c_str());
                 }
                 ImGui::Spacing();
                 const auto time_used = !lang["time_used"].empty() ? lang["time_used"] : "Time used";
