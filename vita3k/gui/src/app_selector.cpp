@@ -585,7 +585,13 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                         tm date_tm = {};
                         SAFE_LOCALTIME(&app.last_time, &date_tm);
                         auto LAST_TIME = get_date_time(gui, host, date_tm);
-                        ImGui::Selectable(LAST_TIME["date"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 1.f));
+                        ImGui::Selectable(LAST_TIME["date"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size / 2.f));
+                        ImGui::PopStyleVar();
+                        const auto CLOCK_STR = gui.users[host.io.user_id].clock_12_hour ? fmt::format("{} {}", LAST_TIME["clock"], LAST_TIME["day-moment"]) : LAST_TIME["clock"];
+                        const auto HALF_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str()).x / 2.f;
+                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() - (10.f * SCALE.x) + (ImGui::GetColumnWidth() / 2.f) - HALF_CLOCK_SIZE);
+                        ImGui::Text("%s", CLOCK_STR.c_str());
                     } else
                         ImGui::Selectable(!gui.lang.app_context["never"].empty() ? gui.lang.app_context["never"].c_str() : "Never", false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::NextColumn();
