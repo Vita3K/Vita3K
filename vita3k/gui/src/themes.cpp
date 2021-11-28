@@ -62,7 +62,6 @@ bool init_user_background(GuiState &gui, HostState &host, const std::string &use
 }
 
 enum DateLayout {
-    NOT_SET = -1,
     LEFT_DOWN,
     LEFT_UP,
     RIGHT_DOWN,
@@ -70,7 +69,7 @@ enum DateLayout {
 
 struct StartParam {
     ImU32 date_color = 0xFFFFFFFF;
-    DateLayout date_layout = DateLayout::NOT_SET;
+    DateLayout date_layout = DateLayout::LEFT_DOWN;
     ImVec2 date_pos = ImVec2(900.f, 186.f);
     ImVec2 clock_pos = ImVec2(880.f, 146.f);
 };
@@ -103,22 +102,20 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
         }
     }
 
-    if (!start_param.date_layout != DateLayout::NOT_SET) {
-        switch (start_param.date_layout) {
-        case DateLayout::LEFT_DOWN:
-            break;
-        case DateLayout::LEFT_UP:
-            start_param.date_pos.y = 468.f;
-            start_param.clock_pos.y = 426.f;
-            break;
-        case DateLayout::RIGHT_DOWN:
-            start_param.date_pos.x = 50.f;
-            start_param.clock_pos.x = 50.f;
-            break;
-        default:
-            LOG_WARN("Date layout is unknown : {}", start_param.date_layout);
-            break;
-        }
+    switch (start_param.date_layout) {
+    case DateLayout::LEFT_DOWN:
+        break;
+    case DateLayout::LEFT_UP:
+        start_param.date_pos.y = 468.f;
+        start_param.clock_pos.y = 426.f;
+        break;
+    case DateLayout::RIGHT_DOWN:
+        start_param.date_pos.x = 50.f;
+        start_param.clock_pos.x = 50.f;
+        break;
+    default:
+        LOG_WARN("Date layout for this theme is unknown : {}", start_param.date_layout);
+        break;
     }
 
     if (!dateColor.empty()) {
@@ -388,7 +385,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto SCAL_DATE_FONT_SIZE = DATE_FONT_SIZE / ImGui::GetFontSize();
 
     auto DATE_TIME = get_date_time(gui, host, const_cast<tm &>(local));
-    const auto DATE_STR = DATE_TIME["date-start"];
+    const auto DATE_STR = DATE_TIME[DateTime::DATE_DETAIL];
     const auto CALC_DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str());
     const auto DATE_INIT_SCALE = ImVec2(start_param.date_pos.x * SCALE.x, start_param.date_pos.y * SCALE.y);
     const auto DATE_SIZE = ImVec2(CALC_DATE_SIZE.x * SCAL_DATE_FONT_SIZE, CALC_DATE_SIZE.y * SCAL_DATE_FONT_SIZE * SCAL_PIX_DATE_FONT);
@@ -401,11 +398,11 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     const auto LARGE_FONT_SIZE = (116.f * host.dpi_scale) * DEFAULT_FONT_SCALE;
     const auto PIX_LARGE_FONT_SCALE = (96.f * host.dpi_scale) / ImGui::GetFontSize();
 
-    const auto CLOCK_STR = DATE_TIME["clock"];
+    const auto CLOCK_STR = DATE_TIME[DateTime::CLOCK];
     const auto CALC_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str());
     const auto CLOCK_SIZE = ImVec2(CALC_CLOCK_SIZE.x, CALC_CLOCK_SIZE.y * PIX_LARGE_FONT_SCALE);
 
-    const auto DAY_MOMENT_STR = DATE_TIME["day-moment"];
+    const auto DAY_MOMENT_STR = DATE_TIME[DateTime::DAY_MOMENT];
     const auto CALC_DAY_MOMENT_SIZE = ImGui::CalcTextSize(DAY_MOMENT_STR.c_str());
     const auto DAY_MOMENT_LARGE_FONT_SIZE = (56.f * host.dpi_scale) * DEFAULT_LARGE_FONT_SCALE;
     const auto LARGE_FONT_DAY_MOMENT_SCALE = DAY_MOMENT_LARGE_FONT_SIZE / ImGui::GetFontSize();
@@ -414,7 +411,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     auto CLOCK_POS = ImVec2(display_size.x - (start_param.clock_pos.x * SCALE.x), display_size.y - (start_param.clock_pos.y * SCALE.y));
     if (start_param.date_layout == DateLayout::RIGHT_DOWN)
         CLOCK_POS.x -= (CLOCK_SIZE.x * RES_SCALE.x) + (DAY_MOMENT_SIZE.x * RES_SCALE.x);
-    else if (std::stoi(DATE_TIME["hour"]) < 10)
+    else if (std::stoi(DATE_TIME[DateTime::HOUR]) < 10)
         CLOCK_POS.x += ImGui::CalcTextSize("0").x * RES_SCALE.x;
 
     ImGui::GetForegroundDrawList()->AddText(gui.large_font, LARGE_FONT_SIZE * RES_SCALE.x, CLOCK_POS, start_param.date_color, CLOCK_STR.c_str());

@@ -629,10 +629,10 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", UPDATED);
                 ImGui::SameLine(260.f * SCALE.x);
                 auto DATE_TIME = get_date_time(gui, host, np_com_id_info[np_com_id_selected].updated);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
                 if (gui.users[host.io.user_id].clock_12_hour) {
                     ImGui::SameLine();
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                 }
                 ImGui::PushTextWrapPos(SIZE_INFO.x - 40.f);
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
@@ -711,10 +711,10 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::SameLine(250.f * SCALE.x);
                 if (trophy_info[trophy_id_selected].earned) {
                     auto DATE_TIME = get_date_time(gui, host, trophy_info[trophy_id_selected].unlocked_time);
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
                     if (gui.users[host.io.user_id].clock_12_hour) {
                         ImGui::SameLine();
-                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                     }
                 } else
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", !lang["not_earned"].empty() ? lang["not_earned"].c_str() : "Not Earned");

@@ -477,10 +477,10 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
                         auto DATE_TIME = get_date_time(gui, host, themes_info[selected].updated);
-                        ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME["date"].c_str(), DATE_TIME["clock"].c_str());
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
                         if (gui.users[host.io.user_id].clock_12_hour) {
                             ImGui::SameLine();
-                            ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME["day-moment"].c_str());
+                            ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                         }
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
                         ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["size"].c_str() : "Size");
