@@ -116,7 +116,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     glUseProgram(program_id);
 
     if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
-        glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.render_target->color_attachment[0], 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+        glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.current_color_attachment, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
     }
     glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 
@@ -180,6 +180,18 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
             // Needs texture barrier
             glTextureBarrier();
         }
+    } else if (!context.self_sampling_indices.empty()) {
+        if (features.support_texture_barrier) {
+            glTextureBarrier();
+        } else {
+            std::uint64_t ping_pong = context.surface_cache.retrieve_ping_pong_color_surface_texture_handle(context.record.color_surface.data);
+            if (ping_pong != 0) {
+                for (std::size_t i = 0; i < context.self_sampling_indices.size(); i++) {
+                    glActiveTexture(GL_TEXTURE0 + context.self_sampling_indices[i]);
+                    glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(ping_pong));
+                }
+            }
+        }
     }
 
     // Draw.
@@ -196,7 +208,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     if (context.record.is_maskupdate) {
         sync_depth_data(context.record);
         sync_stencil_data(context.record, mem);
-        glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
+        glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
     }
 
     if (both_side_fragment_program_disabled) {

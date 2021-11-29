@@ -22,6 +22,7 @@
 #include <glutil/object_array.h>
 #include <renderer/types.h>
 
+#include <renderer/gl/surface_cache.h>
 #include <renderer/texture_cache_state.h>
 #include <shader/usse_program_analyzer.h>
 
@@ -66,6 +67,8 @@ struct GLRenderTarget;
 
 struct GLContext : public renderer::Context {
     GLTextureCacheState texture_cache;
+    GLSurfaceCache surface_cache;
+
     GLObjectArray<1> vertex_array;
     GLObjectArray<1> element_buffer;
     GLObjectArray<2> ssbo;
@@ -76,6 +79,11 @@ struct GLContext : public renderer::Context {
 
     GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
     GLuint last_draw_program{ 0 };
+    GLuint current_framebuffer{ 0 };
+    GLuint current_color_attachment{ 0 };
+    GLuint current_framebuffer_height{ 0 };
+
+    std::vector<GLuint> self_sampling_indices;
 
     float viewport_flip[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
@@ -117,9 +125,7 @@ struct GLRenderTarget : public renderer::RenderTarget {
     uint16_t height;
     GLObjectArray<1> maskbuffer;
     GLObjectArray<1> masktexture;
-    GLObjectArray<2> renderbuffers;
-    GLObjectArray<1> framebuffer;
-    GLObjectArray<1> color_attachment;
+    GLObjectArray<2> attachments;
 
     ~GLRenderTarget() override = default;
 };

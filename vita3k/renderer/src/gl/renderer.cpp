@@ -307,9 +307,6 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
 
     rt = std::make_unique<GLRenderTarget>();
     GLRenderTarget *render_target = reinterpret_cast<GLRenderTarget *>(rt.get());
-    if (!render_target->renderbuffers.init(reinterpret_cast<renderer::Generator *>(glGenRenderbuffers), reinterpret_cast<renderer::Deleter *>(glDeleteRenderbuffers)) || !render_target->framebuffer.init(reinterpret_cast<renderer::Generator *>(glGenFramebuffers), reinterpret_cast<renderer::Deleter *>(glDeleteFramebuffers))) {
-        return false;
-    }
 
     if (!render_target->maskbuffer.init(reinterpret_cast<renderer::Generator *>(glGenFramebuffers), reinterpret_cast<renderer::Deleter *>(glDeleteFramebuffers))) {
         return false;
@@ -318,20 +315,15 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
     render_target->width = params.width;
     render_target->height = params.height;
 
-    int depth_fb_index = 1;
+    render_target->attachments.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
 
-    if (features.is_programmable_blending_need_to_bind_color_attachment()) {
-        depth_fb_index = 0;
-        render_target->color_attachment.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
+    glBindTexture(GL_TEXTURE_2D, render_target->attachments[0]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, params.width, params.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-        glBindTexture(GL_TEXTURE_2D, render_target->color_attachment[0]);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, params.width, params.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    } else {
-        glBindRenderbuffer(GL_RENDERBUFFER, render_target->renderbuffers[0]);
-        glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA, params.width, params.height);
-    }
+    glBindTexture(GL_TEXTURE_2D, render_target->attachments[1]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, params.width, params.height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
 
     render_target->masktexture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
     glBindTexture(GL_TEXTURE_2D, render_target->masktexture[0]);
@@ -342,25 +334,6 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, render_target->masktexture[0], 0);
     GLenum drawbuffers[1] = { GL_COLOR_ATTACHMENT0 };
     glDrawBuffers(1, drawbuffers);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    glBindRenderbuffer(GL_RENDERBUFFER, render_target->renderbuffers[depth_fb_index]);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, params.width, params.height);
-    glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-    if (features.is_programmable_blending_need_to_bind_color_attachment()) {
-        // Attach it to the framebuffer
-        glBindFramebuffer(GL_FRAMEBUFFER, render_target->framebuffer[0]);
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, render_target->color_attachment[0], 0);
-    } else {
-        glBindFramebuffer(GL_FRAMEBUFFER, render_target->framebuffer[0]);
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, render_target->renderbuffers[0]);
-    }
-
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, render_target->renderbuffers[depth_fb_index]);
-    glClearColor(0.968627450f, 0.776470588f, 0.0f, 1.0f);
-    glClearDepth(1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     return true;
@@ -446,7 +419,28 @@ void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *
     } else {
         context.render_target = reinterpret_cast<const GLRenderTarget *>(context.current_render_target);
     }
-    glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
+
+    context.surface_cache.set_render_target(context.render_target);
+
+    SceGxmColorSurface *color_surface_fin = &context.record.color_surface;
+    if (color_surface_fin->data.address() == 0) {
+        color_surface_fin = nullptr;
+    }
+
+    SceGxmDepthStencilSurface *ds_surface_fin = &context.record.depth_stencil_surface;
+    if ((ds_surface_fin->depthData.address() == 0) && (ds_surface_fin->stencilData.address() == 0)) {
+        ds_surface_fin = nullptr;
+    }
+
+    std::uint64_t current_color_attachment_handle = 0;
+    std::uint16_t current_framebuffer_height = 0;
+
+    context.current_framebuffer = static_cast<GLuint>(context.surface_cache.retrieve_framebuffer_handle(
+        color_surface_fin, ds_surface_fin, &current_color_attachment_handle, nullptr, &current_framebuffer_height));
+    context.current_color_attachment = static_cast<GLuint>(current_color_attachment_handle);
+    context.current_framebuffer_height = current_framebuffer_height;
+
+    glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
 
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);

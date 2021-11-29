@@ -21,6 +21,7 @@
 
 #include <array>
 #include <cassert>
+#include <cstddef>
 
 namespace renderer {
 typedef void Generator(GLsizei, GLuint *);
