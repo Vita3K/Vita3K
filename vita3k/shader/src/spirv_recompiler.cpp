@@ -570,7 +570,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             if (anonymous) {
                 // Probably not gonna be used in future, just for non-dependent queries
-                tex_query_info.sampler = create_param_sampler(b, tex_name, dim_type);
+                tex_query_info.sampler = create_param_sampler(b, (program.is_vertex() ? "vertTex_" : "fragTex_") + tex_name, dim_type);
             } else {
                 tex_query_info.sampler = samplers[sampler_resource_index];
             }
@@ -855,7 +855,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     };
 
     for (const auto &sampler : program_input.samplers) {
-        const auto sampler_spv_var = create_param_sampler(b, sampler.name, (sampler.is_cube ? spv::DimCube : spv::Dim2D));
+        const auto sampler_spv_var = create_param_sampler(b, (program.is_vertex() ? "vertTex_" : "fragTex_") + sampler.name, (sampler.is_cube ? spv::DimCube : spv::Dim2D));
         samplers.emplace(sampler.index, sampler_spv_var);
 
         // Prefer smaller slot index for fragments since they are gonna be used frequently.
