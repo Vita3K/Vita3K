@@ -21,11 +21,13 @@ add_library(
 	include/renderer/profile.h
 	include/renderer/pvrt-dec.h
 	include/renderer/state.h
+	include/renderer/surface_cache.h
 	include/renderer/texture_cache_state.h
 	include/renderer/types.h
 
 	include/renderer/gl/types.h
 	include/renderer/gl/state.h
+	include/renderer/gl/surface_cache.h
 	include/renderer/gl/functions.h
 
 	src/gl/attribute_formats.cpp
@@ -33,6 +35,7 @@ add_library(
 	src/gl/draw.cpp
 	src/gl/load_shaders.cpp
 	src/gl/renderer.cpp
+	src/gl/surface_cache.cpp
 	src/gl/sync_state.cpp
 	src/gl/texture_formats.cpp
 	src/gl/texture.cpp

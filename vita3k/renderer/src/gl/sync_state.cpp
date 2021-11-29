@@ -137,7 +137,7 @@ void sync_viewport_flat(GLContext &context) {
 
     context.record.viewport_flat = true;
 
-    glViewport(0, 0, display_w, display_h);
+    glViewport(0, context.current_framebuffer_height - display_h, display_w, display_h);
     glDepthRange(0, 1);
 
     if (previous_flip_y != context.viewport_flip[1]) {
@@ -177,7 +177,7 @@ void sync_viewport_real(GLContext &context, const float xOffset, const float yOf
 }
 
 void sync_clipping(GLContext &context) {
-    const GLsizei display_h = context.record.color_surface.height;
+    const GLsizei display_h = context.current_framebuffer_height;
     const GLsizei scissor_x = context.record.region_clip_min.x;
     GLsizei scissor_y = 0;
 
@@ -316,8 +316,10 @@ void sync_texture(GLContext &context, MemState &mem, std::size_t index, SceGxmTe
         return;
     }
 
+    Address data_addr = texture.data_addr << 2;
+
     const size_t texture_size = renderer::texture::texture_size(texture);
-    if (!is_valid_addr_range(mem, texture.data_addr << 2, (texture.data_addr << 2) + texture_size)) {
+    if (!is_valid_addr_range(mem, data_addr, data_addr + texture_size)) {
         LOG_WARN("Texture has freed data.");
         return;
     }
@@ -331,10 +333,36 @@ void sync_texture(GLContext &context, MemState &mem, std::size_t index, SceGxmTe
 
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));
 
-    if (config.texture_cache) {
-        renderer::texture::cache_and_bind_texture(context.texture_cache, texture, mem);
+    std::uint64_t texture_as_surface = 0;
+    if (context.record.color_surface.data.address() == data_addr) {
+        texture_as_surface = context.current_color_attachment;
+
+        if (std::find(context.self_sampling_indices.begin(), context.self_sampling_indices.end(),
+                static_cast<GLuint>(index))
+            == context.self_sampling_indices.end()) {
+            context.self_sampling_indices.push_back(static_cast<GLuint>(index));
+        }
     } else {
-        texture::bind_texture(context.texture_cache, texture, mem);
+        auto res = std::find(context.self_sampling_indices.begin(), context.self_sampling_indices.end(),
+            static_cast<GLuint>(index));
+        if (res != context.self_sampling_indices.end()) {
+            context.self_sampling_indices.erase(res);
+        }
+
+        texture_as_surface = context.surface_cache.retrieve_color_surface_texture_handle(
+            static_cast<std::uint16_t>(gxm::get_width(&texture)),
+            static_cast<std::uint16_t>(gxm::get_height(&texture)),
+            Ptr<void>(data_addr), renderer::SurfaceTextureRetrievePurpose::READING);
+    }
+
+    if (texture_as_surface != 0) {
+        glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture_as_surface));
+    } else {
+        if (config.texture_cache) {
+            renderer::texture::cache_and_bind_texture(context.texture_cache, texture, mem);
+        } else {
+            texture::bind_texture(context.texture_cache, texture, mem);
+        }
     }
 
     if (config.dump_textures) {

@@ -58,6 +58,9 @@ COMMAND(handle_set_context) {
     if (depth_stencil_surface) {
         render_context->record.depth_stencil_surface = *depth_stencil_surface;
         delete depth_stencil_surface;
+    } else {
+        render_context->record.depth_stencil_surface.depthData.reset();
+        render_context->record.depth_stencil_surface.stencilData.reset();
     }
 
     switch (renderer.current_backend) {
