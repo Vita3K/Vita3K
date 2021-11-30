@@ -1319,7 +1319,9 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
         const size_t attribute_size = gxm::attribute_format_size(attribute_format) * attribute.componentCount;
         const SceGxmVertexStream &stream = vertex_program->streams[attribute.streamIndex];
-        const size_t data_length = attribute.offset + (max_index * stream.stride) + attribute_size;
+        const SceGxmIndexSource index_source = static_cast<SceGxmIndexSource>(stream.indexSource);
+        const size_t data_passed_length = gxm::is_stream_instancing(index_source) ? ((draw->instance_count - 1) * stream.stride) : (max_index * stream.stride);
+        const size_t data_length = attribute.offset + data_passed_length + attribute_size;
         max_data_length[attribute.streamIndex] = std::max<size_t>(max_data_length[attribute.streamIndex], data_length);
         stream_used |= (1 << attribute.streamIndex);
     }
@@ -1356,7 +1358,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
 
     // Fragment texture is copied so no need to set it here.
     // Add draw command
-    renderer::draw(*host.renderer, context->renderer.get(), draw->type, draw->index_format, draw->index_data.get(host.mem), draw->vertex_count, 1);
+    renderer::draw(*host.renderer, context->renderer.get(), draw->type, draw->index_format, draw->index_data.get(host.mem), draw->vertex_count, draw->instance_count);
     context->last_precomputed = true;
     return 0;
 }
@@ -1821,6 +1823,7 @@ EXPORT(int, sceGxmPrecomputedDrawSetParams, SceGxmPrecomputedDraw *state, SceGxm
     state->index_format = index_format;
     state->index_data = index_data;
     state->vertex_count = vertex_count;
+    state->instance_count = 1;
 
     return 0;
 }
@@ -1830,13 +1833,16 @@ EXPORT(int, sceGxmPrecomputedDrawSetParamsInstanced, SceGxmPrecomputedDraw *prec
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    STUBBED("Stub, missing indexWrap");
-
     precomputedDraw->type = primType;
     precomputedDraw->index_format = indexType;
     precomputedDraw->index_data = indexData;
-    precomputedDraw->vertex_count = indexCount;
-    // Todo of indexWrap
+    if (indexWrap == 0) {
+        precomputedDraw->vertex_count = 0;
+        precomputedDraw->instance_count = 0;
+    } else {
+        precomputedDraw->vertex_count = indexWrap;
+        precomputedDraw->instance_count = indexCount / indexWrap;
+    }
 
     return 0;
 }
@@ -1918,7 +1924,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetAllUniformBuffers, SceGxmPrecompute
     if (!uniform_buffers)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    for (auto b = 0; bufferDataArray[b]; b++)
+    for (auto b = 0; b <= SCE_GXM_MAX_UNIFORM_BUFFERS; b++)
         (*uniform_buffers)[b] = bufferDataArray[b];
 
     return 0;
@@ -2026,7 +2032,7 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetAllUniformBuffers, SceGxmPrecomputedV
     if (!uniform_buffers)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    for (auto b = 0; bufferDataArray[b]; b++)
+    for (auto b = 0; b <= SCE_GXM_MAX_UNIFORM_BUFFERS; b++)
         (*uniform_buffers)[b] = bufferDataArray[b];
 
     return 0;
