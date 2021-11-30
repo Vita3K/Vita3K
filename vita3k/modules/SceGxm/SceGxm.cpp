@@ -1924,7 +1924,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetAllUniformBuffers, SceGxmPrecompute
     if (!uniform_buffers)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    for (auto b = 0; b <= SCE_GXM_MAX_UNIFORM_BUFFERS; b++)
+    for (auto b = 0; b < SCE_GXM_MAX_UNIFORM_BUFFERS; b++)
         (*uniform_buffers)[b] = bufferDataArray[b];
 
     return 0;
@@ -2032,7 +2032,7 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetAllUniformBuffers, SceGxmPrecomputedV
     if (!uniform_buffers)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    for (auto b = 0; b <= SCE_GXM_MAX_UNIFORM_BUFFERS; b++)
+    for (auto b = 0; b < SCE_GXM_MAX_UNIFORM_BUFFERS; b++)
         (*uniform_buffers)[b] = bufferDataArray[b];
 
     return 0;
