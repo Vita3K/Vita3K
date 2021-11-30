@@ -17,6 +17,9 @@
 
 #include "SceMotion.h"
 
+#include <motion/functions.h>
+#include <motion/motion.h>
+
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceMotion);
 
@@ -38,7 +41,7 @@ EXPORT(int, sceMotionGetBasicOrientation, SceFVector3 *basicOrientation) {
     return 0;
 }
 
-EXPORT(int, sceMotionGetDeadband) {
+EXPORT(SceBool, sceMotionGetDeadband) {
     TRACY_FUNC(sceMotionGetDeadband);
     return UNIMPLEMENTED();
 }
@@ -48,28 +51,39 @@ EXPORT(int, sceMotionGetDeadbandExt) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionGetDeviceLocation) {
-    TRACY_FUNC(sceMotionGetDeviceLocation);
+EXPORT(int, sceMotionGetDeviceLocation, SceMotionDeviceLocation *devLocation) {
+    TRACY_FUNC(sceMotionGetDeviceLocation, devLocation);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionGetGyroBiasCorrection) {
+EXPORT(SceBool, sceMotionGetGyroBiasCorrection) {
     TRACY_FUNC(sceMotionGetGyroBiasCorrection);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionGetMagnetometerState) {
+EXPORT(SceBool, sceMotionGetMagnetometerState) {
     TRACY_FUNC(sceMotionGetMagnetometerState);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionGetSensorState) {
-    TRACY_FUNC(sceMotionGetSensorState);
+EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numRecords) {
+    TRACY_FUNC(sceMotionGetSensorState, sensorState, numRecords);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionGetState) {
-    TRACY_FUNC(sceMotionGetState);
+EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
+    TRACY_FUNC(sceMotionGetState, motionState);
+    if (!motionState)
+        return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
+
+    STUBBED("Set value to zero");
+
+    // Set 0 to all values of motionState struct
+    memset(motionState, 0, sizeof(SceMotionState));
+
+    // Set default position to devicePosition
+    motionState->deviceQuat.z = 1;
+
     return UNIMPLEMENTED();
 }
 
@@ -83,7 +97,7 @@ EXPORT(int, sceMotionGetStateInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionGetTiltCorrection) {
+EXPORT(SceBool, sceMotionGetTiltCorrection) {
     TRACY_FUNC(sceMotionGetTiltCorrection);
     return UNIMPLEMENTED();
 }
@@ -118,18 +132,18 @@ EXPORT(int, sceMotionResetExt) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionRotateYaw) {
-    TRACY_FUNC(sceMotionRotateYaw);
+EXPORT(int, sceMotionRotateYaw, const float radians) {
+    TRACY_FUNC(sceMotionRotateYaw, radians);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionSetAngleThreshold) {
-    TRACY_FUNC(sceMotionSetAngleThreshold);
+EXPORT(int, sceMotionSetAngleThreshold, const float angle) {
+    TRACY_FUNC(sceMotionSetAngleThreshold, angle);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionSetDeadband) {
-    TRACY_FUNC(sceMotionSetDeadband);
+EXPORT(int, sceMotionSetDeadband, SceBool setValue) {
+    TRACY_FUNC(sceMotionSetDeadband, setValue);
     return UNIMPLEMENTED();
 }
 
@@ -138,13 +152,13 @@ EXPORT(int, sceMotionSetDeadbandExt) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionSetGyroBiasCorrection) {
-    TRACY_FUNC(sceMotionSetGyroBiasCorrection);
+EXPORT(int, sceMotionSetGyroBiasCorrection, SceBool setValue) {
+    TRACY_FUNC(sceMotionSetGyroBiasCorrection, setValue);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMotionSetTiltCorrection) {
-    TRACY_FUNC(sceMotionSetTiltCorrection);
+EXPORT(int, sceMotionSetTiltCorrection, SceBool setValue) {
+    TRACY_FUNC(sceMotionSetTiltCorrection, setValue);
     return UNIMPLEMENTED();
 }
 

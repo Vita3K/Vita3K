@@ -28,6 +28,7 @@
 #include <ime/state.h>
 #include <io/state.h>
 #include <kernel/state.h>
+#include <motion/state.h>
 #include <net/state.h>
 #include <ngs/state.h>
 #include <nids/types.h>
@@ -59,6 +60,8 @@ EmuEnvState::EmuEnvState()
     , gxm(*_gxm)
     , _io(new IOState)
     , io(*_io)
+    , _motion(new MotionState)
+    , motion(*_motion)
     , _net(new NetState)
     , net(*_net)
     , _netctl(new NetCtlState)
