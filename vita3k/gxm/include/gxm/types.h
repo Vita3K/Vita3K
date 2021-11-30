@@ -1690,6 +1690,7 @@ struct SceGxmPrecomputedDraw {
     SceGxmIndexFormat index_format;
     Ptr<const void> index_data;
     uint32_t vertex_count;
+    uint32_t instance_count;
 };
 
 static constexpr size_t SCE_GXM_PRECOMPUTED_STATE_EXTRA_SIZE = sizeof(TextureDatas) + sizeof(UniformBuffers);
