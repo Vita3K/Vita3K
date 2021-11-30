@@ -1227,10 +1227,10 @@ struct GxmViewport {
 };
 
 struct GxmStencilState {
-    SceGxmStencilFunc func = SCE_GXM_STENCIL_FUNC_NEVER; // TODO What's the default value?
-    SceGxmStencilOp stencil_fail = SCE_GXM_STENCIL_OP_KEEP; // TODO What's the default value?
-    SceGxmStencilOp depth_fail = SCE_GXM_STENCIL_OP_KEEP; // TODO What's the default value?
-    SceGxmStencilOp depth_pass = SCE_GXM_STENCIL_OP_KEEP; // TODO What's the default value?
+    SceGxmStencilFunc func = SCE_GXM_STENCIL_FUNC_ALWAYS;
+    SceGxmStencilOp stencil_fail = SCE_GXM_STENCIL_OP_KEEP;
+    SceGxmStencilOp depth_fail = SCE_GXM_STENCIL_OP_KEEP;
+    SceGxmStencilOp depth_pass = SCE_GXM_STENCIL_OP_KEEP;
     uint8_t compare_mask = 0xff; // TODO What's the default value?
     uint8_t write_mask = 0xff; // TODO What's the default value?
     uint8_t ref = 0; // TODO What's the default value?
