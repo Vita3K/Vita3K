@@ -46,6 +46,7 @@ struct KernelState;
 struct AudioState;
 struct GxmState;
 struct IOState;
+struct MotionState;
 struct NetState;
 struct NetCtlState;
 struct NpState;
@@ -87,6 +88,7 @@ private:
     std::unique_ptr<AudioState> _audio;
     std::unique_ptr<GxmState> _gxm;
     std::unique_ptr<IOState> _io;
+    std::unique_ptr<MotionState> _motion;
     std::unique_ptr<NetState> _net;
     std::unique_ptr<NetCtlState> _netctl;
     std::unique_ptr<ngs::State> _ngs;
@@ -141,6 +143,7 @@ public:
     GxmState &gxm;
     bool renderer_focused{};
     IOState &io;
+    MotionState &motion;
     NetState &net;
     NetCtlState &netctl;
     ngs::State &ngs;
