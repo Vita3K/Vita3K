@@ -31,15 +31,17 @@ constexpr bool REJECT_DATA_ON_PAUSE = true;
 // Uses a catchup video style if lag causes the video to go behind.
 constexpr bool CATCHUP_VIDEO_PLAYBACK = true;
 
-typedef Ptr<void> (*SceAvPlayerAllocator)(void *arguments, uint32_t alignment, uint32_t size);
-typedef void (*SceAvPlayerDeallocator)(void *arguments, void *memory);
+/*
+typedef Ptr<void> (*SceAvPlayerAllocator)(uint32_t arguments, uint32_t alignment, uint32_t size);
+typedef void (*SceAvPlayerDeallocator)(uint32_t arguments, Ptr<void> memory);
 
-typedef int (*SceAvPlayerOpenFile)(void *arguments, const char *filename);
-typedef int (*SceAvPlayerCloseFile)(void *arguments);
-typedef int (*SceAvPlayerReadFile)(void *arguments, uint8_t *buffer, uint64_t offset, uint32_t size);
-typedef uint64_t (*SceAvPlayerGetFileSize)(void *arguments);
+typedef int32_t (*SceAvPlayerOpenFile)(uint32_t arguments, Ptr<const char> filename);
+typedef int32_t (*SceAvPlayerCloseFile)(uint32_t arguments);
+typedef int32_t (*SceAvPlayerReadFile)(uint32_t arguments, Ptr<uint8_t> buffer, uint64_t offset, uint32_t size);
+typedef uint64_t (*SceAvPlayerGetFileSize)(uint32_t arguments);
 
-typedef void (*SceAvPlayerEventCallback)(void *arguments, int32_t event_id, int32_t source_id, void *event_data);
+typedef void (*SceAvPlayerEventCallback)(uint32_t arguments, int32_t event_id, int32_t source_id, Ptr<void> event_data);
+*/
 
 struct PlayerInfoState;
 typedef std::shared_ptr<PlayerInfoState> PlayerPtr;
@@ -176,7 +178,9 @@ enum SceAvPlayerErrorCode {
     SCE_AVPLAYER_ERROR_INVALID_ARGUMENT = 0x806a0002,
     SCE_AVPLAYER_ERROR_NOT_ENOUGH_MEMORY = 0x806a0003,
     SCE_AVPLAYER_ERROR_INVALID_EVENT = 0x806a0004,
-    SCE_AVPLAYER_ERROR_MAYBE_EOF = 0x806a00a1,
+    SCE_AVPLAYER_WAR_FILE_NONINTERLEAVED = 0x806a00a0,
+    SCE_AVPLAYER_WAR_LOOPING_BACK = 0x806a00a1,
+    SCE_AVPLAYER_WAR_JUMP_COMPLETE = 0x806a00a3
 };
 
 enum SceAvPlayerState {
@@ -186,7 +190,9 @@ enum SceAvPlayerState {
     SCE_AVPLAYER_STATE_PLAY = 3,
     SCE_AVPLAYER_STATE_PAUSE = 4,
     SCE_AVPLAYER_STATE_BUFFERING = 5,
-    SCE_AVPLAYER_STATE_ERROR = 32
+    SCE_AVPLAYER_TIMED_TEXT_DELIVERY = 16,
+    SCE_AVPLAYER_WARNING_ID = 32,
+    SCE_AVPLAYER_ENCRYPTION = 48
 };
 
 static inline uint64_t current_time() {
@@ -220,17 +226,19 @@ static Ptr<uint8_t> get_buffer(const PlayerPtr &player, MediaType media_type,
 }
 
 void run_event_callback(HostState &host, SceUID thread_id, const PlayerPtr player_info, uint32_t event_id, uint32_t source_id, Ptr<void> event_data) {
-    constexpr char *export_name = "SceAvPlayerEventCallback";
     if (player_info->event_manager.event_callback) {
         auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         thread->request_callback(player_info->event_manager.event_callback.address(), { player_info->event_manager.user_data, event_id, source_id, event_data.address() });
     }
 }
-//end of callback_thread
 
 EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path) {
     const auto state = host.kernel.obj_store.get<AvPlayerState>();
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
+
+    if (!player_info) {
+        return RET_ERROR(SCE_AVPLAYER_ERROR_INVALID_ARGUMENT);
+    }
 
     auto file_path = expand_path(host.io, path.get(host.mem), host.pref_path);
     if (!fs::exists(file_path) && player_info->file_manager.open_file && player_info->file_manager.close_file && player_info->file_manager.read_file && player_info->file_manager.file_size) {
@@ -246,11 +254,13 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         const auto buf_ptr = Ptr<char>(buf).get(host.mem);
         const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         host.kernel.run_guest_function(player_info->file_manager.open_file.address(), { player_info->file_manager.user_data, path.address() });
+        //TODO: support file_size > 4GB (callback function returns uint64_t, but I dont know how to get high dword of uint64_t)
         const uint32_t file_size = host.kernel.run_guest_function(player_info->file_manager.file_size.address(), { player_info->file_manager.user_data });
         auto remaining = file_size;
         uint32_t offset = 0;
         while (remaining) {
             const auto buf_size = std::min((uint32_t)KB(512), remaining);
+            //zero in 5 parameter means high dword of uint64_t parameter. see previous todo
             host.kernel.run_guest_function(player_info->file_manager.read_file.address(), { player_info->file_manager.user_data, buf, offset, 0, buf_size });
             temp_file.write(buf_ptr, buf_size);
             offset += buf_size;
@@ -258,13 +268,14 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         }
         free(host.mem, buf);
         temp_file.close();
+        host.kernel.run_guest_function(player_info->file_manager.close_file.address(), { player_info->file_manager.user_data });
         if (fs::file_size(temp_file_path) != file_size) {
             LOG_ERROR("File is corrupted or incomplete: {}", temp_file_path.string());
             return -1;
         }
-        host.kernel.run_guest_function(player_info->file_manager.close_file.address(), { player_info->file_manager.user_data });
         file_path = temp_file_path.string();
     }
+
     player_info->player.queue(file_path);
     run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_BUFFERING, 0, Ptr<void>(0)); //may be important for sound
     run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_READY, 0, Ptr<void>(0));
@@ -342,7 +353,7 @@ EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, SceAvPlayerFrameInfo
     return true;
 }
 
-EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, uint stream_no, Ptr<SceAvPlayerStreamInfo> stream_info) {
+EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, uint stream_no, SceAvPlayerStreamInfo *stream_info) {
     if (!stream_info) {
         return SCE_AVPLAYER_ERROR_ILLEGAL_ADDR;
     }
@@ -352,21 +363,20 @@ EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, uint stream_no,
     STUBBED("ALWAYS SUSPECTS 2 STREAMS: VIDEO AND AUDIO");
     const auto state = host.kernel.obj_store.get<AvPlayerState>();
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
-    auto StreamInfo = stream_info.get(host.mem);
     if (stream_no == 0) { //suspect always two streams: audio and video //first is video
         DecoderSize size = player_info->player.get_size();
-        StreamInfo->stream_type = MediaType::VIDEO;
-        StreamInfo->stream_details.video.width = size.width;
-        StreamInfo->stream_details.video.height = size.height;
-        StreamInfo->stream_details.video.aspect_ratio = static_cast<float>(size.width) / static_cast<float>(size.height);
-        strcpy(StreamInfo->stream_details.video.language, "ENG");
+        stream_info->stream_type = MediaType::VIDEO;
+        stream_info->stream_details.video.width = size.width;
+        stream_info->stream_details.video.height = size.height;
+        stream_info->stream_details.video.aspect_ratio = static_cast<float>(size.width) / static_cast<float>(size.height);
+        strcpy(stream_info->stream_details.video.language, "ENG");
     } else if (stream_no == 1) { // audio
         player_info->player.receive_audio(); //TODO: Get audio info without skipping data frames
-        StreamInfo->stream_type = MediaType::AUDIO;
-        StreamInfo->stream_details.audio.channels = player_info->player.last_channels;
-        StreamInfo->stream_details.audio.sample_rate = player_info->player.last_sample_rate;
-        StreamInfo->stream_details.audio.size = player_info->player.last_channels * player_info->player.last_sample_count * sizeof(int16_t);
-        strcpy(StreamInfo->stream_details.audio.language, "ENG");
+        stream_info->stream_type = MediaType::AUDIO;
+        stream_info->stream_details.audio.channels = player_info->player.last_channels;
+        stream_info->stream_details.audio.sample_rate = player_info->player.last_sample_rate;
+        stream_info->stream_details.audio.size = player_info->player.last_channels * player_info->player.last_sample_count * sizeof(int16_t);
+        strcpy(stream_info->stream_details.audio.language, "ENG");
     } else {
         return SCE_AVPLAYER_ERROR_INVALID_ARGUMENT;
     }
@@ -432,19 +442,6 @@ EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
         SceUID player_handle = host.kernel.get_next_uid();
         PlayerPtr player = std::make_shared<PlayerInfoState>();
         state->players[player_handle] = player;
-
-        LOG_TRACE("SceAvPlayerInfo.memory_allocator: user_data:{}, general_allocator:{}, general_deallocator:{}, texture_allocator:{}, texture_deallocator:{}",
-            log_hex(info->memory_allocator.user_data), log_hex(info->memory_allocator.general_allocator.address()), log_hex(info->memory_allocator.general_deallocator.address()),
-            log_hex(info->memory_allocator.texture_allocator.address()), log_hex(info->memory_allocator.texture_deallocator.address()));
-        LOG_TRACE("SceAvPlayerInfo.file_manager: user_data:{}, open_file:{}, close_file:{}, read_file:{}, file_size:{}",
-            log_hex(info->file_manager.user_data), log_hex(info->file_manager.open_file.address()), log_hex(info->file_manager.close_file.address()), log_hex(info->file_manager.read_file.address()),
-            log_hex(info->file_manager.file_size.address()));
-        LOG_TRACE("SceAvPlayerInfo.event_manager: user_data:{}, event_callback:{}",
-            log_hex(info->event_manager.user_data), log_hex(info->event_manager.event_callback.address()));
-        LOG_TRACE("SceAvPlayerInfo: debug_level:{}, base_priority:{}, frame_buffer_count:{}, auto_start:{}, unknown0:{}",
-            log_hex(info->debug_level), log_hex(info->base_priority), log_hex(info->frame_buffer_count), log_hex(info->auto_start),
-            log_hex(info->unknown0));
-
         player->last_frame_time = current_time();
         player->memory_allocator = info->memory_allocator;
         player->file_manager = info->file_manager;
