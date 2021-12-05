@@ -185,3 +185,6 @@ elseif(WIN32)
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dll" "$<TARGET_FILE_DIR:vita3k>")
 	endif()
 endif()
+
+# Enable Tracy profiling on the main compilation target
+target_link_libraries(vita3k PRIVATE tracy)

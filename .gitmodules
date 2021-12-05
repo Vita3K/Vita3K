@@ -96,3 +96,6 @@
 [submodule "external/soundtouch"]
 	path = external/soundtouch
 	url = https://codeberg.org/soundtouch/soundtouch.git
+[submodule "external/tracy"]
+	path = external/tracy
+	url = https://github.com/wolfpld/tracy.git
