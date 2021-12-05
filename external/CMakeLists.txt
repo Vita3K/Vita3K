@@ -297,3 +297,47 @@ option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
 add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)
 set_property(TARGET xxhash PROPERTY FOLDER externals)
+
+# Tracy
+add_library(tracy STATIC tracy/TracyClient.cpp)
+target_include_directories(tracy PUBLIC tracy)
+if(UNIX)
+	target_link_libraries(tracy PUBLIC pthread dl)
+endif()
+
+# Enable Tracy on-demand profiling mode to avoid unnecesary memory usage when the developer
+# isn't profiling by only enabling profiling after a connection has been established with
+# a Tracy server
+target_compile_definitions(tracy PUBLIC $<$<CONFIG:Debug,RelWithDebInfo>:TRACY_ON_DEMAND>)
+
+# Defining TRACY_ENABLE for both compiling Tracy and compiling the project that links
+# against it is needed for Tracy to work and avoid linking issues
+#
+# -------------------------- Options (choose one at a time) ---------------------------
+#
+# A (DEFAULT). Enable Tracy on any target that links against if the build configuration 
+# is either Debug and RelWithDebInfo
+#
+# Using generator expresions instead of a conditional with CMAKE_BUILD_TYPE is needed
+# in order for the condition to work properly on both single-config and multi-config
+# CMake project generators. More info here:
+# https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html#build-configurations
+target_compile_definitions(tracy PUBLIC $<$<CONFIG:Debug,RelWithDebInfo>:TRACY_ENABLE>)
+#
+# ----------------------------------------------------------------------------------------
+#
+# B (DO NOT COMMIT THIS). Enable Tracy on every target that links to it regardless of the
+# build configuration:
+# 
+# target_compile_definitions(tracy PUBLIC TRACY_ENABLE)
+#
+# ----------------------------------------------------------------------------------------
+#
+# C (DO NOT COMMIT THIS). If more granular control is needed (ex. only enabling Tracy for
+# certain targets), use the line below in this CMakeLists.txt file:
+#
+# target_compile_definitions(tracy PRIVATE TRACY_ENABLE)
+#
+# And then use this second one over every target you need to enable Tracy on:
+#
+# target_compile_definitions(<target> PRIVATE TRACY_ENABLE)
