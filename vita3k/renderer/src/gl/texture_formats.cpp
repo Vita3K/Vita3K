@@ -540,7 +540,7 @@ GLenum translate_wrap_mode(SceGxmTextureAddrMode src) {
     case SCE_GXM_TEXTURE_ADDR_CLAMP:
         return GL_CLAMP_TO_EDGE;
     case SCE_GXM_TEXTURE_ADDR_MIRROR_CLAMP:
-        return GL_CLAMP_TO_EDGE; // FIXME: GL_MIRROR_CLAMP_TO_EDGE is not supported in OpenGL 4.1 core.
+        return GL_MIRROR_CLAMP_TO_EDGE;
     case SCE_GXM_TEXTURE_ADDR_REPEAT_IGNORE_BORDER:
         return GL_REPEAT; // FIXME: Is this correct?
     case SCE_GXM_TEXTURE_ADDR_CLAMP_FULL_BORDER:
