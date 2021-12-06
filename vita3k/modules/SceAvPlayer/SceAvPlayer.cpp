@@ -167,8 +167,10 @@ enum class MediaType {
 
 struct SceAvPlayerStreamInfo {
     MediaType stream_type;
-    uint32_t unknown;
+    uint8_t reserved[4];
     SceAvPlayerStreamDetails stream_details;
+    uint64_t stream_duration;
+    uint64_t stream_start_time;
 };
 
 enum SceAvPlayerErrorCode {

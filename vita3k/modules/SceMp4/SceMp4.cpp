@@ -17,62 +17,88 @@
 
 #include "SceMp4.h"
 
-EXPORT(int, sceMp4CloseFile) {
+struct SceMp4FileManager {
+    uint32_t user_data = 0;
+
+    // Cast to SceMp4OpenFile, SceMp4CloseFile, SceMp4ReadFile and SceMp4GetFileSize.
+    Ptr<void> open_file;
+    Ptr<void> close_file;
+    Ptr<void> read_file;
+    Ptr<void> file_size;
+};
+
+enum class MediaType {
+    VIDEO,
+    AUDIO,
+};
+
+struct SceMp4StreamInfo {
+    MediaType stream_type;
+    SceInt32 codec_type; // (must be 1 - for stream type 0 and 2 or 4 for stream type 1)
+};
+
+EXPORT(SceInt32, sceMp4CloseFile, SceUID mp4_handler) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4EnableStream) {
+EXPORT(SceInt32, sceMp4EnableStream, SceUID mp4_handler, int32_t stream_no, bool state) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4GetNextUnit) {
+EXPORT(SceInt32, sceMp4GetNextUnit, SceUID mp4_handler, uint32_t param_2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4GetNextUnit2Ref) {
+EXPORT(SceInt32, sceMp4GetNextUnit2Ref, SceUID mp4_handler, uint32_t *param_2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4GetNextUnit3Ref) {
+EXPORT(SceInt32, sceMp4GetNextUnit3Ref, SceUID mp4_handler, uint32_t *param_2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4GetNextUnitData) {
+EXPORT(SceInt32, sceMp4GetNextUnitData, SceUID mp4_handler, void *param_2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4GetStreamInfo) {
+EXPORT(SceInt32, sceMp4GetStreamInfo, SceUID mp4_handler, int32_t stream_no, SceMp4StreamInfo *stream_info) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4JumpPTS) {
+EXPORT(SceInt32, sceMp4JumpPTS) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4OpenFile) {
-    STUBBED("Fake Size");
+EXPORT(SceInt32, sceMp4OpenFile, Ptr<const char> path, SceMp4FileManager *file_manager, int32_t param_3, int32_t memory_base, int32_t capacity, int32_t param_6, int32_t log_level) {
+    STUBBED("Fake Handle");
 
     return 13;
 }
 
-EXPORT(int, sceMp4PTSToTime) {
+EXPORT(SceInt64, sceMp4PTSToTime, SceInt64 pts) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4ReleaseBuffer) {
+EXPORT(void, sceMp4ReleaseBuffer, SceUID mp4_handler, uint32_t *buffer) {
+    buffer[0] = 0;
+    buffer[1] = 0;
+    buffer[2] = 0;
+}
+
+EXPORT(SceInt32, sceMp4Reset, SceUID mp4_handler) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4Reset) {
+EXPORT(SceInt32, sceMp4StartFileStreaming, SceUID mp4_handler, uint32_t *streams_count, SceInt64 *video_length) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4StartFileStreaming) {
+EXPORT(SceInt64, sceMp4TimeToPTS, SceInt64 Time) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceMp4TimeToPTS) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceMp4GetStreamInfo, SceUID mp4_handle, uint32_t stream_no, SceMp4StreamInfo *stream_info) {
+    return CALL_EXPORT(sceMp4GetStreamInfo, mp4_handle, stream_no, stream_info);
 }
 
 BRIDGE_IMPL(sceMp4CloseFile)
@@ -89,3 +115,4 @@ BRIDGE_IMPL(sceMp4ReleaseBuffer)
 BRIDGE_IMPL(sceMp4Reset)
 BRIDGE_IMPL(sceMp4StartFileStreaming)
 BRIDGE_IMPL(sceMp4TimeToPTS)
+BRIDGE_IMPL(_sceMp4GetStreamInfo)

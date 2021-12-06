@@ -4899,6 +4899,7 @@ NID(sceMp4ReleaseBuffer, 0x7B4832FE)
 NID(sceMp4Reset, 0x40351E1A)
 NID(sceMp4StartFileStreaming, 0x30E49E4D)
 NID(sceMp4TimeToPTS, 0x6B69F900)
+NID(_sceMp4GetStreamInfo, 0xD5B26179)
 // Module "SceMtpIfDriver"
 // Library "SceMtpIf"
 NID(sceMtpIfCancelTransfer, 0x80D1CA60)
