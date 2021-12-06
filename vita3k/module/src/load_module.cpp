@@ -28,9 +28,6 @@ bool is_lle_module(SceSysmoduleModuleId module_id, HostState &host) {
 
     // Current modules works for loading
     const auto auto_lle_modules = {
-        SCE_SYSMODULE_HTTP,
-        SCE_SYSMODULE_SSL,
-        SCE_SYSMODULE_HTTPS,
         SCE_SYSMODULE_SAS,
         SCE_SYSMODULE_PGF,
         SCE_SYSMODULE_SYSTEM_GESTURE,
@@ -40,17 +37,17 @@ bool is_lle_module(SceSysmoduleModuleId module_id, HostState &host) {
         SCE_SYSMODULE_JSON,
     };
 
-    if (!have_paths)
-        return false;
-
     if (have_paths) {
-        if (host.cfg.current_config.auto_lle) {
+        if (host.cfg.current_config.modules_mode != ModulesMode::MANUAL) {
             if (std::find(auto_lle_modules.begin(), auto_lle_modules.end(), module_id) != auto_lle_modules.end())
                 return true;
-        } else {
-            for (auto path : paths)
+        }
+
+        if (host.cfg.current_config.modules_mode != ModulesMode::AUTOMATIC) {
+            for (auto path : paths) {
                 if (std::find(host.cfg.current_config.lle_modules.begin(), host.cfg.current_config.lle_modules.end(), path) != host.cfg.current_config.lle_modules.end())
                     return true;
+            }
         }
     }
 

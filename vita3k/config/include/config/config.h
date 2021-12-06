@@ -20,6 +20,12 @@
 #include <util/log.h>
 #include <util/system.h>
 
+enum ModulesMode {
+    AUTOMATIC,
+    AUTO_MANUAL,
+    MANUAL
+};
+
 // clang-format off
 // Singular options produced in config file
 // Order is code(option_type, option_name, option_default, member_name)
@@ -42,7 +48,7 @@
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \
     code(bool, "lle-driver-user", false, lle_driver_user)                                               \
     code(int, "cpu-pool-size", 10, cpu_pool_size)                                                       \
-    code(bool, "auto-lle", false, auto_lle)                                                             \
+    code(int, "modules-mode", static_cast<int>(ModulesMode::AUTOMATIC), modules_mode)                   \
     code(int, "delay-background", 4, delay_background)                                                  \
     code(int, "delay-start", 10, delay_start)                                                           \
     code(float, "background-alpha", .300f, background_alpha)                                            \
