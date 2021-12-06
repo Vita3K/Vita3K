@@ -111,7 +111,7 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
             if (!config_child.child("core").empty()) {
                 const auto core_child = config_child.child("core");
                 config.lle_driver_user = core_child.attribute("lle-driver-user").as_bool();
-                config.auto_lle = core_child.attribute("auto-lle").as_bool();
+                config.modules_mode = core_child.attribute("modules-mode").as_int();
                 for (auto &m : core_child.child("lle-modules"))
                     config.lle_modules.push_back(m.text().as_string());
             }
@@ -156,7 +156,7 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
         config.cpu_backend = host.cfg.cpu_backend;
         config.cpu_opt = host.cfg.cpu_opt;
         config.lle_driver_user = host.cfg.lle_driver_user;
-        config.auto_lle = host.cfg.auto_lle;
+        config.modules_mode = host.cfg.modules_mode;
         config.lle_modules = host.cfg.lle_modules;
         config.pstv_mode = host.cfg.pstv_mode;
         config.disable_at9_decoder = host.cfg.disable_at9_decoder;
@@ -187,7 +187,7 @@ static void save_config(GuiState &gui, HostState &host) {
         // Core
         auto core_child = config_child.append_child("core");
         core_child.append_attribute("lle-driver-user") = config.lle_driver_user;
-        core_child.append_attribute("auto-lle") = config.auto_lle;
+        core_child.append_attribute("modules-mode") = config.modules_mode;
         auto enable_module = core_child.append_child("lle-modules");
         for (const auto &m : config.lle_modules)
             enable_module.append_child("module").append_child(pugi::node_pcdata).set_value(m.c_str());
@@ -214,7 +214,7 @@ static void save_config(GuiState &gui, HostState &host) {
         host.cfg.cpu_backend = config.cpu_backend;
         host.cfg.cpu_opt = config.cpu_opt;
         host.cfg.lle_driver_user = config.lle_driver_user;
-        host.cfg.auto_lle = config.auto_lle;
+        host.cfg.modules_mode = config.modules_mode;
         host.cfg.lle_modules = config.lle_modules;
         host.cfg.pstv_mode = config.pstv_mode;
         host.cfg.disable_at9_decoder = config.disable_at9_decoder;
@@ -229,7 +229,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.cpu_backend = config.cpu_backend;
         host.cfg.current_config.cpu_opt = config.cpu_opt;
         host.cfg.current_config.lle_driver_user = config.lle_driver_user;
-        host.cfg.current_config.auto_lle = config.auto_lle;
+        host.cfg.current_config.modules_mode = config.modules_mode;
         host.cfg.current_config.lle_modules = config.lle_modules;
         host.cfg.current_config.pstv_mode = config.pstv_mode;
         host.cfg.current_config.disable_at9_decoder = config.disable_at9_decoder;
@@ -239,7 +239,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.cpu_backend = host.cfg.cpu_backend;
         host.cfg.current_config.cpu_opt = host.cfg.cpu_opt;
         host.cfg.current_config.lle_driver_user = host.cfg.lle_driver_user;
-        host.cfg.current_config.auto_lle = host.cfg.auto_lle;
+        host.cfg.current_config.modules_mode = host.cfg.modules_mode;
         host.cfg.current_config.lle_modules = host.cfg.lle_modules;
         host.cfg.current_config.pstv_mode = host.cfg.pstv_mode;
         host.cfg.current_config.disable_at9_decoder = host.cfg.disable_at9_decoder;
@@ -281,13 +281,15 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Enable this to use driver_us modules (experimental).");
             ImGui::Spacing();
-            if (ImGui::RadioButton("Automatic", config.auto_lle))
-                config.auto_lle = true;
+            ImGui::RadioButton("Automatic", &config.modules_mode, ModulesMode::AUTOMATIC);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select Automatic mode to use a preset list of modules.");
             ImGui::SameLine();
-            if (ImGui::RadioButton("Manual", !config.auto_lle))
-                config.auto_lle = false;
+            ImGui::RadioButton("Auto & Manual", &config.modules_mode, ModulesMode::AUTO_MANUAL);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Select this mode to load Automatic module and selected modules from the list below.");
+            ImGui::SameLine();
+            ImGui::RadioButton("Manual", &config.modules_mode, ModulesMode::MANUAL);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select Manual mode to load selected modules from the list below.");
             ImGui::Spacing();
@@ -304,7 +306,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                     const bool module_existed = (module != config.lle_modules.end());
                     if (!gui.module_search_bar.PassFilter(m.first.c_str()))
                         continue;
-                    if (ImGui::Selectable(m.first.c_str(), &m.second, config.auto_lle ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None)) {
+                    if (ImGui::Selectable(m.first.c_str(), &m.second, config.modules_mode == ModulesMode::AUTOMATIC ? ImGuiSelectableFlags_Disabled : ImGuiSelectableFlags_None)) {
                         if (module_existed)
                             config.lle_modules.erase(module);
                         else

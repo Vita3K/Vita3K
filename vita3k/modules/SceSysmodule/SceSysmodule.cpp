@@ -21,18 +21,23 @@
 
 #include <module/load_module.h>
 
+static bool is_modules_enable(HostState &host, SceSysmoduleModuleId module_id) {
+    if (host.cfg.current_config.modules_mode == ModulesMode::MANUAL)
+        return !host.cfg.current_config.lle_modules.empty() && is_lle_module(module_id, host);
+    else
+        return is_lle_module(module_id, host);
+}
+
 EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId module_id) {
     if (module_id < 0 || module_id > SYSMODULE_COUNT)
         return SCE_SYSMODULE_ERROR_INVALID_VALUE;
 
-    const bool lle_modules_enabled = host.cfg.auto_lle ? true : !host.cfg.lle_modules.empty();
-
-    if (lle_modules_enabled && is_lle_module(module_id, host))
+    if (is_modules_enable(host, module_id)) {
         if (is_module_loaded(host.kernel, module_id))
             return SCE_SYSMODULE_LOADED;
         else
             return SCE_SYSMODULE_ERROR_UNLOADED;
-    else
+    } else
         return SCE_SYSMODULE_LOADED;
 }
 
@@ -44,14 +49,12 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
     if (module_id < 0 || module_id > SYSMODULE_COUNT)
         return SCE_SYSMODULE_ERROR_INVALID_VALUE;
 
-    const bool lle_modules_enabled = host.cfg.auto_lle ? true : !host.cfg.lle_modules.empty();
-
-    if (lle_modules_enabled && is_lle_module(module_id, host))
+    if (is_modules_enable(host, module_id)) {
         if (load_module(host, module_id))
             return SCE_SYSMODULE_LOADED;
         else
             return SCE_SYSMODULE_ERROR_UNLOADED;
-    else
+    } else
         return SCE_SYSMODULE_LOADED;
 }
 
