@@ -282,10 +282,16 @@ file(GLOB LIBATRAC9_SOURCES
     LibAtrac9/C/src/*.h
 )
 
-add_library(libatrac9 SHARED ${LIBATRAC9_SOURCES})
+# libatrac9 has MSVC-specific behavior that causes linking errors if the library
+# is set to be compiled as a static object
+if(MSVC)
+	add_library(libatrac9 SHARED ${LIBATRAC9_SOURCES})			# Compile as shared object
+	set_target_properties(libatrac9 PROPERTIES					# Bundle .DLL with the Vita3K executable
+		RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+else()
+	add_library(libatrac9 STATIC ${LIBATRAC9_SOURCES})			# Compile as static object
+endif()
 target_include_directories(libatrac9 PUBLIC LibAtrac9/C/src)
-set_target_properties(libatrac9 PROPERTIES
-	RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
