@@ -448,6 +448,10 @@ void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *
     }
     glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->framebuffer[0]);
 
+    if (context.record.region_clip_mode != SCE_GXM_REGION_CLIP_NONE) {
+        glDisable(GL_SCISSOR_TEST);
+    }
+
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
     glClearDepth(context.record.depth_stencil_surface.backgroundDepth);
@@ -468,6 +472,10 @@ void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *
     if (sync_stencil_data(context.record, mem)) {
         sync_stencil_func(context.record.back_stencil_state, mem, true);
         sync_stencil_func(context.record.front_stencil_state, mem, false);
+    }
+
+    if (context.record.region_clip_mode != SCE_GXM_REGION_CLIP_NONE) {
+        glEnable(GL_SCISSOR_TEST);
     }
 }
 
