@@ -123,8 +123,8 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     const bool both_side_fragment_program_disabled = (context.record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED)
         && ((context.record.back_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) || (context.record.two_sided == SCE_GXM_TWO_SIDED_DISABLED));
     if (both_side_fragment_program_disabled) {
-        frag_ublock.front_disabled = 0.0f;
-        frag_ublock.back_disabled = 0.0f;
+        frag_ublock.front_disabled = 1.0f;
+        frag_ublock.back_disabled = 1.0f;
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
     } else {
         frag_ublock.front_disabled = (context.record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) ? 1.0f : 0.0f;
