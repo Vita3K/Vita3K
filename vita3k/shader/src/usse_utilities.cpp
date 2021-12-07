@@ -1119,7 +1119,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
         int source_value_taken_count = 0;
 
         // We need to pack source
-        for (auto i = 0; i < static_cast<int>(total_comp_source); i += num_comp_in_float) {
+        for (auto i = 0; i < 4 - nearest_swizz_on; i += num_comp_in_float) {
             // Shuffle to get the type out
             std::vector<spv::Id> ops;
             for (auto j = 0; j < num_comp_in_float; j++) {
@@ -1164,6 +1164,9 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
             source = b.createCompositeConstruct(final_composite_type, composites);
             total_comp_source = static_cast<std::uint8_t>(composites.size());
         }
+
+        // Replace it with a full mask, since we have already pre-process this into storable F32
+        dest_mask = 0b1111;
     }
 
     // Now we do store!
