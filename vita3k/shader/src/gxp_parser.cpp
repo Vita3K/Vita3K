@@ -202,7 +202,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
     if ((default_ub_ite == program_input.uniform_buffers.end()) && (program.default_uniform_buffer_count != 0)) {
         // Must there be a one if possible
         UniformBuffer buffer;
-        buffer.index = 0;
+        buffer.index = 14;
         buffer.reg_block_size = program.default_uniform_buffer_count;
         buffer.reg_start_offset = 0;
         buffer.rw = false;
