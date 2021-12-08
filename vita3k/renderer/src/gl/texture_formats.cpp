@@ -403,7 +403,6 @@ GLenum translate_type(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
         return GL_INT;
     case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
-        LOG_WARN("Not perfectly handled base format SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9");
         return GL_HALF_FLOAT;
     case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
         LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10");
