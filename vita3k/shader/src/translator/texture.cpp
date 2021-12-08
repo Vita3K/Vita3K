@@ -32,7 +32,7 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     auto coord_id = coord.first;
 
     if (coord.second != static_cast<int>(DataType::F32)) {
-        coord_id = m_b.createOp(spv::OpVectorExtractDynamic, type_f32, { m_b.createLoad(coord_id), m_b.makeIntConstant(0) });
+        coord_id = m_b.createOp(spv::OpVectorExtractDynamic, type_f32, { m_b.createLoad(coord_id, spv::NoPrecision), m_b.makeIntConstant(0) });
         coord_id = utils::unpack_one(m_b, m_util_funcs, m_features, coord_id, static_cast<DataType>(coord.second));
 
         // Shuffle if number of components is larger than 2
@@ -42,22 +42,22 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     }
 
     if (m_b.isPointer(coord_id)) {
-        coord_id = m_b.createLoad(coord_id);
+        coord_id = m_b.createLoad(coord_id, spv::NoPrecision);
     }
 
     assert(m_b.getTypeClass(m_b.getContainedTypeId(m_b.getTypeId(coord_id))) == spv::OpTypeFloat);
 
     spv::Id image_sample = spv::NoResult;
     if (lod == spv::NoResult) {
-        image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[4], { m_b.createLoad(tex), coord_id });
+        image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id });
     } else {
         if (lod_mode == 2) {
-            image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex), coord_id, spv::ImageOperandsLodMask, lod });
+            image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id, spv::ImageOperandsLodMask, lod });
         } else if (lod_mode == 3) {
             spv::Id ddx = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { lod, lod, 0, 1 });
             spv::Id ddy = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { lod, lod, 2, 3 });
 
-            image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex), coord_id, spv::ImageOperandsGradMask, ddx, ddy });
+            image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id, spv::ImageOperandsGradMask, ddx, ddy });
         }
     }
 

@@ -439,14 +439,14 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
     spv::Id rem_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem, eight_cst);
     spv::Id rem_inv_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem_inv, eight_cst);
 
-    spv::Id src = b.createLoad(b.createAccessChain(spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }));
+    spv::Id src = b.createLoad(b.createAccessChain(spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }), spv::NoPrecision);
 
     spv::Id friend_offset = b.createBinOp(spv::OpIAdd, type_i32, base_offset, one_cst);
     spv::Id friend_vector = b.createBinOp(spv::OpIAdd, type_i32, base_vector, b.createBinOp(spv::OpSDiv, type_i32, friend_offset, b.makeIntConstant(4)));
 
     friend_offset = b.createBinOp(spv::OpSRem, type_i32, friend_offset, four_cst);
 
-    spv::Id src_friend = b.createLoad(b.createAccessChain(spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), friend_vector, friend_offset }));
+    spv::Id src_friend = b.createLoad(b.createAccessChain(spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), friend_vector, friend_offset }), spv::NoPrecision);
     spv::Id src_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src);
     spv::Id src_friend_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src_friend);
 
@@ -792,7 +792,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         if (op.bank == RegisterBank::INDEX) {
             op.num -= 1;
         }
-        return b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(op.num) }));
+        return b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(op.num) }), spv::NoPrecision);
     }
 
     if (op.bank == RegisterBank::IMMEDIATE || !get_reg_bank(params, op.bank)) {
@@ -863,7 +863,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         spv::Id type_i32 = b.makeIntType(32);
 
         // Calculate the "at" offset.
-        spv::Id idx_reg_val = b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, type_i32), { params.indexes, b.makeIntConstant(idx_off) }));
+        spv::Id idx_reg_val = b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, type_i32), { params.indexes, b.makeIntConstant(idx_off) }), spv::NoPrecision);
 
         spv::Id real_idx = b.createBinOp(spv::OpIAdd, type_i32, b.createBinOp(spv::OpIMul, type_i32, idx_reg_val, b.makeIntConstant(2)), b.makeIntConstant(add_off));
 
@@ -961,7 +961,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     first_pass = b.createOp(spv::OpAccessChain, comp_type, first_pass_operands);
     connected_friend = b.createOp(spv::OpAccessChain, comp_type, second_pass_operands);
 
-    first_pass = finalize(b, b.createLoad(first_pass), b.createLoad(connected_friend), extract_swizz,
+    first_pass = finalize(b, b.createLoad(first_pass, spv::NoPrecision), b.createLoad(connected_friend, spv::NoPrecision), extract_swizz,
         op.num + shift_offset, extract_mask);
 
     if (first_pass == spv::NoResult) {
@@ -1134,7 +1134,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
                         // Replace it
                         const int actual_offset_start_to_store = insert_offset + (i + nearest_swizz_on) / num_comp_in_float;
                         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(actual_offset_start_to_store >> 2) });
-                        elem = b.createOp(spv::OpVectorExtractDynamic, vec_comp_type, { b.createLoad(elem), b.makeIntConstant(actual_offset_start_to_store % 4) });
+                        elem = b.createOp(spv::OpVectorExtractDynamic, vec_comp_type, { b.createLoad(elem, spv::NoPrecision), b.makeIntConstant(actual_offset_start_to_store % 4) });
 
                         // Extract to f16
                         elem = unpack_one(b, utils, features, elem, dest.type);
@@ -1173,7 +1173,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     if (total_comp_source == 1) {
         insert_offset += (int)(nearest_swizz_on / (4 / size_comp));
         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(insert_offset >> 2) });
-        spv::Id inserted = b.createOp(spv::OpVectorInsertDynamic, bank_base_elem_type, { b.createLoad(elem), source, b.makeIntConstant(insert_offset % 4) });
+        spv::Id inserted = b.createOp(spv::OpVectorInsertDynamic, bank_base_elem_type, { b.createLoad(elem, spv::NoPrecision), source, b.makeIntConstant(insert_offset % 4) });
 
         b.createStore(inserted, elem);
         return;
@@ -1194,7 +1194,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
 
     elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset) >> 2) });
 
-    ops.push_back(b.createLoad(elem));
+    ops.push_back(b.createLoad(elem, spv::NoPrecision));
     ops.push_back(source);
 
     for (auto i = 0; i < insert_offset % 4; i++) {
@@ -1220,7 +1220,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant((insert_offset + 3) >> 2) });
 
         // Do an access chain
-        ops.push_back(b.createLoad(elem));
+        ops.push_back(b.createLoad(elem, spv::NoPrecision));
         ops.push_back(source);
 
         // Start taking value that specified in the mask
