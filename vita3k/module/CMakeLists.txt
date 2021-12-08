@@ -17,6 +17,7 @@ add_library(
 
 target_include_directories(module PUBLIC include)
 target_link_libraries(module PUBLIC host dlmalloc printf util)
+target_link_libraries(module PUBLIC tracy)
 
 add_executable(
 	module-tests
