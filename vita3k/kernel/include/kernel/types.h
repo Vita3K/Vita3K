@@ -790,9 +790,9 @@ struct SceKernelCallbackInfo {
     char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
     SceUInt32 attr;
     SceUID threadId;
-    SceKernelCallbackFunction *callbackFunc;
+    Ptr<SceKernelCallbackFunction> callbackFunc;
     SceUID notifyId;
     SceInt32 notifyCount;
     SceInt32 notifyArg;
-    void *pCommon;
+    Ptr<void> pCommon;
 };
