@@ -18,7 +18,7 @@
 #include <audio/functions.h>
 #include <audio/state.h>
 
-#include <microprofile.h>
+#include "Tracy.hpp"
 
 #include <util/log.h>
 
@@ -26,10 +26,8 @@
 #include <cassert>
 #include <cstring>
 
-#define AUDIO_PROFILE(name) MICROPROFILE_SCOPEI("Audio", name, MP_THISTLE)
-
 static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOutPort &port, const ResumeAudioThread &resume_thread) {
-    AUDIO_PROFILE(__func__);
+    ZoneScopedC(0xF6C2FF); // Tracy - Track function scope with color thistle
 
     // How much data is available?
     std::unique_lock<std::mutex> lock(port.shared.mutex);
@@ -57,7 +55,8 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
 }
 
 static void SDLCALL audio_callback(void *userdata, Uint8 *stream, int len) {
-    AUDIO_PROFILE(__func__);
+    tracy::SetThreadName("Host audio thread"); // Tracy - Declare belonging of this function to the audio thread
+    ZoneScopedC(0xF6C2FF); // Tracy - Track function scope with color thistle
 
     assert(userdata != nullptr);
     assert(stream != nullptr);
@@ -80,6 +79,8 @@ static void SDLCALL audio_callback(void *userdata, Uint8 *stream, int len) {
     for (const AudioOutPortPtr &port : ports) {
         mix_out_port(stream, state.callback.temp_buffer.data(), len, *port, state.ro.resume_thread);
     }
+
+    FrameMarkNamed("Audio"); // Tracy - End discontinuous frame for audio rendering
 }
 
 static void close_audio(void *) {
