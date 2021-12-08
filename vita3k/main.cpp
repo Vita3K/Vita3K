@@ -42,6 +42,7 @@
 #include <process.h>
 #endif
 
+#include "Tracy.hpp"
 #include <SDL.h>
 #include <chrono>
 #include <cstdlib>
@@ -77,6 +78,7 @@ static void run_execv(char *argv[], HostState &host) {
 };
 
 int main(int argc, char *argv[]) {
+    ZoneScoped; // Tracy - Track main function scope
     Root root_paths;
     root_paths.set_base_path(string_utils::utf_to_wide(SDL_GetBasePath()));
     root_paths.set_pref_path(SDL_GetPrefPath(org_name, app_name));
@@ -240,6 +242,7 @@ int main(int argc, char *argv[]) {
             later = std::chrono::system_clock::now();
 
             if (handle_events(host, gui)) {
+                ZoneScopedN("UI rendering"); // Tracy - Track UI rendering loop scope
                 gui::draw_begin(gui, host);
 
 #if USE_DISCORD
@@ -249,6 +252,7 @@ int main(int argc, char *argv[]) {
                 gui::draw_ui(gui, host);
 
                 gui::draw_end(gui, host.window.get());
+                FrameMark; // Tracy - Frame end mark for UI rendering loop
             } else {
                 return QuitRequested;
             }
@@ -352,6 +356,7 @@ int main(int argc, char *argv[]) {
     }
 
     while (handle_events(host, gui) && !host.load_exec) {
+        ZoneScopedN("Game rendering"); // Tracy - Track game rendering loop scope
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str(), host.self_name.c_str());
@@ -379,6 +384,7 @@ int main(int argc, char *argv[]) {
         }
 
         gui::draw_end(gui, host.window.get());
+        FrameMark; // Tracy - Frame end mark for game rendering loop
     }
 
 #ifdef WIN32
