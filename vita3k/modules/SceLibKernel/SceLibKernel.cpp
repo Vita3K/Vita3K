@@ -998,7 +998,7 @@ EXPORT(int, sceKernelExitProcess, int res) {
 }
 
 EXPORT(SceInt32, sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCallbackInfo> pInfo) {
-    return CALL_EXPORT(_sceKernelGetCallbackInfo, callbackId, pInfo);
+    return CALL_EXPORT(_sceKernelGetCallbackInfo, callbackId, pInfo.get(host.mem));
 }
 
 EXPORT(SceInt32, sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pInfo) {

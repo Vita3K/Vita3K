@@ -145,28 +145,27 @@ EXPORT(int, _sceKernelExitCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, Ptr<SceKernelCallbackInfo> pInfo) {
+EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallbackInfo *pInfo) {
     const CallbackPtr cb = lock_and_find(callbackId, host.kernel.callbacks, host.kernel.mutex);
 
     if (!cb)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
 
-    SceKernelCallbackInfo *info = pInfo.get(host.mem);
-    if (!info)
+    if (!pInfo)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR); //TODO check result
 
-    if (info->size != sizeof(*info))
+    if (pInfo->size != sizeof(*pInfo))
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
 
-    info->callbackId = callbackId;
-    strncpy(info->name, cb->get_name().c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
-    info->name[KERNELOBJECT_MAX_NAME_LENGTH] = '\0';
-    info->attr = 0;
-    info->threadId = cb->get_owner_thread_id();
-    info->callbackFunc = reinterpret_cast<SceKernelCallbackFunction *>(cb->get_callback_function().address());
-    info->notifyId = cb->get_notifier_id();
-    info->notifyArg = cb->get_notify_arg();
-    info->pCommon = reinterpret_cast<void *>(cb->get_user_common_ptr().address());
+    pInfo->callbackId = callbackId;
+    strncpy(pInfo->name, cb->get_name().c_str(), KERNELOBJECT_MAX_NAME_LENGTH);
+    pInfo->name[KERNELOBJECT_MAX_NAME_LENGTH] = '\0';
+    pInfo->attr = 0;
+    pInfo->threadId = cb->get_owner_thread_id();
+    pInfo->callbackFunc = cb->get_callback_function();
+    pInfo->notifyId = cb->get_notifier_id();
+    pInfo->notifyArg = cb->get_notify_arg();
+    pInfo->pCommon = cb->get_user_common_ptr();
 
     return SCE_KERNEL_OK;
 }
