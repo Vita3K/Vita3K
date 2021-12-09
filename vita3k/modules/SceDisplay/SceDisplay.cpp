@@ -15,6 +15,10 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#ifdef TRACY_ENABLE
+#include "Tracy.hpp"
+#endif
+
 #include "SceDisplay.h"
 
 #include <display/functions.h>
@@ -109,7 +113,9 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
 
     host.frame_count++;
 
-    MicroProfileFlip(nullptr);
+#ifdef TRACY_ENABLE
+    FrameMarkNamed("SCE frame buffer"); // Tracy - Secondary frame end mark for the emulated frame buffer
+#endif
 
     return SCE_DISPLAY_ERROR_OK;
 }
