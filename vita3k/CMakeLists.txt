@@ -20,7 +20,7 @@ execute_process(
 
 if(GIT_HASH STREQUAL "")
 	set(VITA3K_GIT_REV "Development version")
-elseif(GIT_BRANCH STREQUAL "master")
+elseif((GIT_BRANCH STREQUAL "master") OR (GIT_BRANCH STREQUAL "HEAD"))
 	set(VITA3K_GIT_REV "${GIT_COUNT}-${GIT_HASH}")
 else()
 	set(VITA3K_GIT_REV "${GIT_COUNT}-${GIT_HASH}-${GIT_BRANCH}")
