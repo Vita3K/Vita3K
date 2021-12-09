@@ -24,7 +24,7 @@
 
 #include <host/state.h>
 
-#include <microprofile.h>
+#include <Tracy.hpp>
 
 using ImportFn = std::function<void(HostState &host, CPUState &cpu, SceUID thread_id)>;
 using ImportVarFactory = std::function<Address(HostState &host)>;
@@ -47,7 +47,8 @@ ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), co
     constexpr std::tuple<ArgsLayout<Args...>, LayoutArgsState> args_layout = lay_out<typename BridgeTypes<Args>::ArmType...>();
 
     return [export_fn, export_name, args_layout](HostState &host, CPUState &cpu, SceUID thread_id) {
-        MICROPROFILE_SCOPEI("HLE", export_name, MP_YELLOW);
+        ZoneScopedC(0xFFF34C); // Tracy - Track function scope
+        ZoneName(export_name, sizeof(char[30])); // Tracy - Edit scope name based on export_name
 
         using Indices = std::index_sequence_for<Args...>;
         call(export_fn, export_name, std::get<0>(args_layout), std::get<1>(args_layout), Indices(), thread_id, cpu, host);

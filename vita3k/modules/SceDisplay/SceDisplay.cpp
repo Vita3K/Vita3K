@@ -19,6 +19,8 @@
 
 #include <host/functions.h>
 
+#include "Tracy.hpp"
+
 static int display_wait(HostState &host) {
     std::unique_lock<std::mutex> lock(host.display.mutex);
     host.display.condvar.wait(lock);
@@ -73,7 +75,7 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
     host.display.image_size.y = pFrameBuf->height;
     ++host.frame_count;
 
-    MicroProfileFlip(nullptr);
+    FrameMarkNamed("SCE frame buffer"); // Tracy - Secondary frame end mark for the emulated frame buffer
 
     return SCE_DISPLAY_ERROR_OK;
 }
