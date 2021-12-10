@@ -281,17 +281,13 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Enable this to use driver_us modules (experimental).");
             ImGui::Spacing();
-            ImGui::RadioButton("Automatic", &config.modules_mode, ModulesMode::AUTOMATIC);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select Automatic mode to use a preset list of modules.");
-            ImGui::SameLine();
-            ImGui::RadioButton("Auto & Manual", &config.modules_mode, ModulesMode::AUTO_MANUAL);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select this mode to load Automatic module and selected modules from the list below.");
-            ImGui::SameLine();
-            ImGui::RadioButton("Manual", &config.modules_mode, ModulesMode::MANUAL);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select Manual mode to load selected modules from the list below.");
+            for (auto m = 0; m < MODULES_MODE_COUNT; m++) {
+                if (m)
+                    ImGui::SameLine();
+                ImGui::RadioButton(config_modules_mode[m][ModulesModeType::MODE], &config.modules_mode, m);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip(config_modules_mode[m][ModulesModeType::DESCRIPTION]);
+            }
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
