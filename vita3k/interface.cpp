@@ -407,7 +407,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         for (auto i = 0; i < host.ctrl.controllers_num; i++)
             LOG_INFO("Controller {}: {}", i, host.ctrl.controllers_name[i]);
     }
-    LOG_INFO("modules mode: {}", host.cfg.current_config.modules_mode);
+    LOG_INFO("modules mode: {}", config_modules_mode[host.cfg.current_config.modules_mode][ModulesModeType::MODE]);
     if ((host.cfg.current_config.modules_mode != ModulesMode::AUTOMATIC) && !host.cfg.current_config.lle_modules.empty()) {
         std::string modules;
         for (const auto &mod : host.cfg.current_config.lle_modules) {

@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <config/config.h>
 #include <dialog/state.h>
 #include <ime/state.h>
 #include <np/state.h>
@@ -233,6 +234,26 @@ enum NoticeIcon {
     NO,
     NEW
 };
+
+enum ModulesModeType {
+    MODE,
+    DESCRIPTION,
+};
+
+static constexpr auto MODULES_MODE_COUNT = 3;
+using ConfigModuleMode = std::array<std::vector<const char *>, MODULES_MODE_COUNT>;
+
+inline ConfigModuleMode init_modules_mode() {
+    ConfigModuleMode m;
+
+    m[ModulesMode::AUTOMATIC] = { "Automatic", "Select Automatic mode to use a preset list of modules." };
+    m[ModulesMode::AUTO_MANUAL] = { "Auto & Manual", "Select this mode to load Automatic module and selected modules from the list below." };
+    m[ModulesMode::MANUAL] = { "Manual", "Select Manual mode to load selected modules from the list below." };
+
+    return m;
+}
+
+const ConfigModuleMode config_modules_mode = init_modules_mode();
 
 struct GuiState {
     std::unique_ptr<ImGui_State> imgui_state;
