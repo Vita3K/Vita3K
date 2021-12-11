@@ -377,11 +377,9 @@ void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_
 
     // Get group id corresponding trophy_id
     for (const auto &group : np_com_id_info[np_com_id].trophy_id_by_group) {
-        for (const auto &trophy : group.second) {
-            if (trophy == trophy_id) {
-                group_id_selected = group.first;
-                break;
-            }
+        if (std::any_of(std::begin(group.second), std::end(group.second), [&trophy_id](const auto &trophy) { return trophy == trophy_id; })) {
+            group_id_selected = group.first;
+            break;
         }
     }
 
