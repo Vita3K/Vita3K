@@ -1267,6 +1267,22 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     if (gui.live_area_contents[app_path].find("gate") != gui.live_area_contents[app_path].end()) {
         ImGui::SetCursorPos(GATE_POS);
         ImGui::Image(gui.live_area_contents[app_path]["gate"], GATE_SIZE);
+    } else {
+        // Draw background of gate
+        ImGui::GetWindowDrawList()->AddRectFilled(GATE_POS, ImVec2(GATE_POS.x + GATE_SIZE.x, GATE_POS.y + GATE_SIZE.y), IM_COL32(47, 51, 50, 255), 10.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
+
+        const auto ICON_SIZE_SCALE = 94.f * SCALE.x;
+        const auto ICON_CENTER_POS = ImVec2(GATE_POS.x + (GATE_SIZE.x / 2.f), GATE_POS.y + (15.5f * SCALE.y) + (ICON_SIZE_SCALE / 2.f));
+        const auto ICON_POS_MINI_SCALE = ImVec2(ICON_CENTER_POS.x - (ICON_SIZE_SCALE / 2.f), GATE_POS.y + (15.5f * SCALE.y));
+        const auto ICON_POS_MAX_SCALE = ImVec2(ICON_POS_MINI_SCALE.x + ICON_SIZE_SCALE, ICON_POS_MINI_SCALE.y + ICON_SIZE_SCALE);
+
+        // check if app icon exist
+        auto &APP_ICON_TYPE = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+        if (APP_ICON_TYPE.find(app_path) != APP_ICON_TYPE.end()) {
+            ImGui::GetWindowDrawList()->AddImageRounded(APP_ICON_TYPE[app_path], ICON_POS_MINI_SCALE, ICON_POS_MAX_SCALE,
+                ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 75.f * SCALE.x, ImDrawFlags_RoundCornersAll);
+        } else
+            ImGui::GetWindowDrawList()->AddCircleFilled(ICON_CENTER_POS, ICON_SIZE_SCALE / 2.f, IM_COL32_WHITE);
     }
     ImGui::PushID(app_path.c_str());
     ImGui::GetWindowDrawList()->AddRectFilled(POS_BUTTON, ImVec2(POS_BUTTON.x + START_BUTTON_SIZE.x, POS_BUTTON.y + START_BUTTON_SIZE.y), IM_COL32(20, 168, 222, 255), 10.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
