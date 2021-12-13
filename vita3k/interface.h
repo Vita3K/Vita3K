@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <app/functions.h>
 #include <util/exit_code.h>
 #include <util/fs.h>

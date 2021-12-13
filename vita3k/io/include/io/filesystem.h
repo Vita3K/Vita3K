@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <memory>
+
 #include <util/fs.h>
 
 #ifdef WIN32
