@@ -425,13 +425,7 @@ bool USSETranslatorVisitor::vpck(
 
     if (inst.opr.src1.type == DataType::F32 && inst.opr.src2.bank != RegisterBank::IMMEDIATE) {
         const bool is_two_source_same = inst.opr.src1.num == inst.opr.src2.num && inst.opr.src1.bank == inst.opr.src2.bank;
-        bool is_contiguous = false;
-        for (const auto mask : CONTIGUOUS_MASKS) {
-            if (dest_mask == mask) {
-                is_contiguous = true;
-                break;
-            }
-        }
+        const bool is_contiguous = std::any_of(std::begin(CONTIGUOUS_MASKS), std::end(CONTIGUOUS_MASKS), [&dest_mask](const auto mask) { return dest_mask == mask; });
         if (!is_default(inst.opr.src1.swizzle, dest_mask_to_comp_count(dest_mask)) || !is_two_source_same || !is_contiguous) {
             should_use_src2 = true;
         }
