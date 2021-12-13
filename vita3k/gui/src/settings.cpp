@@ -21,6 +21,7 @@
 #include <gui/functions.h>
 #include <ime/functions.h>
 #include <io/device.h>
+#include <numeric>
 #include <util/safe_time.h>
 
 #include <nfd.h>
@@ -109,10 +110,13 @@ static void get_themes_list(GuiState &gui, HostState &host) {
                 else
                     themes_info[content_id].provided = provider.child("m_default").text().as_string();
 
-                size_t theme_size = 0;
-                for (const auto &theme : fs::recursive_directory_iterator(theme_path / content_id))
+                const auto pred = [](const auto acc, const auto &theme) {
                     if (fs::is_regular_file(theme.path()))
-                        theme_size += fs::file_size(theme.path());
+                        return acc + fs::file_size(theme.path());
+                    return acc;
+                };
+                const auto theme_content_ids = fs::recursive_directory_iterator(theme_path / content_id);
+                const auto theme_size = std::accumulate(fs::begin(theme_content_ids), fs::end(theme_content_ids), boost::uintmax_t{}, pred);
 
                 const auto updated = fs::last_write_time(theme_path / content_id);
                 SAFE_LOCALTIME(&updated, &themes_info[content_id].updated);
