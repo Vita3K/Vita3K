@@ -17,7 +17,9 @@
 
 #include "private.h"
 
+#include <algorithm>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/range/numeric.hpp>
 
 #include <gui/functions.h>
 
@@ -29,6 +31,19 @@
 #include <util/safe_time.h>
 
 namespace gui {
+namespace {
+template <typename T>
+auto get_recursive_directory_size(const T &path) {
+    const auto &path_list = fs::recursive_directory_iterator(path);
+    const auto pred = [](const auto acc, const auto &app) {
+        if (fs::is_regular_file(app.path()))
+            return acc + fs::file_size(app.path());
+        return acc;
+    };
+    return boost::accumulate(path_list, boost::uintmax_t{}, pred);
+}
+} // namespace
+
 void get_app_info(GuiState &gui, HostState &host, const std::string &app_path) {
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
     gui.app_selector.app_info = {};
@@ -46,21 +61,14 @@ void get_app_info(GuiState &gui, HostState &host, const std::string &app_path) {
 
 size_t get_app_size(GuiState &gui, HostState &host, const std::string &app_path) {
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
-    size_t app_size = 0;
+    boost::uintmax_t app_size = 0;
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
-        for (const auto &app : fs::recursive_directory_iterator(APP_PATH)) {
-            if (fs::is_regular_file(app.path()))
-                app_size += fs::file_size(app.path());
-        }
+        app_size += get_recursive_directory_size(APP_PATH);
     }
     const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / get_app_index(gui, app_path)->title_id };
     if (fs::exists(DLC_PATH) && !fs::is_empty(DLC_PATH)) {
-        for (const auto &dlc : fs::recursive_directory_iterator(DLC_PATH)) {
-            if (fs::is_regular_file(dlc.path()))
-                app_size += fs::file_size(dlc.path());
-        }
+        app_size += get_recursive_directory_size(DLC_PATH);
     }
-
     return app_size;
 }
 
@@ -102,12 +110,7 @@ static void get_save_data_list(GuiState &gui, HostState &host) {
             const auto last_writen = fs::last_write_time(save);
             SAFE_LOCALTIME(&last_writen, &updated_tm);
 
-            size_t size = 0;
-            for (const auto &save_path : fs::recursive_directory_iterator(save)) {
-                if (fs::is_regular_file(save_path.path()))
-                    size += fs::file_size(save_path.path());
-            }
-
+            const auto size = get_recursive_directory_size(save);
             save_data_list.push_back({ get_app_index(gui, title_id)->title, title_id, size, updated_tm });
         }
     }
@@ -122,35 +125,43 @@ static std::map<std::string, std::string> space;
 void init_content_manager(GuiState &gui, HostState &host) {
     space.clear();
 
-    size_t free_size = 0;
-    free_size = fs::space(host.pref_path).free;
+    const auto free_size{ fs::space(host.pref_path).free };
     space["free"] = get_unit_size(free_size);
 
-    size_t apps_list_size = 0;
-    for (const auto &app : gui.app_selector.user_apps) {
-        apps_size[app.path] = get_app_size(gui, host, app.path);
-        apps_list_size += apps_size[app.path];
-    }
-    space["app"] = apps_list_size ? get_unit_size(apps_list_size) : "-";
+    const auto query_app = [&gui, &host] {
+        const auto &directory_list = gui.app_selector.user_apps;
+        const auto pred = [&](const auto acc, const auto &app) {
+            apps_size[app.path] = get_app_size(gui, host, app.path);
+            return acc + apps_size[app.path];
+        };
+        return boost::accumulate(directory_list, boost::uintmax_t{}, pred);
+    };
 
-    get_save_data_list(gui, host);
-    size_t save_data_list_size = 0;
-    for (const auto &save : save_data_list) {
-        save_data_list_size += save.size;
-    }
-    space["savedata"] = save_data_list_size ? get_unit_size(save_data_list_size) : "-";
+    const auto query_savedata = [] {
+        const auto &directory_list = save_data_list;
+        const auto pred = [](const auto acc, const auto &save) { return acc + save.size; };
+        return boost::accumulate(directory_list, boost::uintmax_t{}, pred);
+    };
 
-    const auto THEME_PATH{ fs::path(host.pref_path) / "ux0/theme" };
-    size_t themes_list_size = 0;
-    if (fs::exists(THEME_PATH) && !fs::is_empty(THEME_PATH)) {
-        for (const auto &themes_list : fs::directory_iterator(THEME_PATH)) {
-            for (const auto &theme : fs::recursive_directory_iterator(themes_list)) {
-                if (fs::is_regular_file(theme.path()))
-                    themes_list_size += fs::file_size(theme.path());
-            }
+    const auto query_themes = [&host] {
+        const auto THEME_PATH{ fs::path(host.pref_path) / "ux0/theme" };
+        const auto &directory_list = fs::directory_iterator(THEME_PATH);
+        const auto pred = [&](const auto acc, const auto &) { return acc + get_recursive_directory_size(THEME_PATH); };
+        if (fs::exists(THEME_PATH) && !fs::is_empty(THEME_PATH)) {
+            return boost::accumulate(directory_list, boost::uintmax_t{}, pred);
         }
-    }
-    space["themes"] = themes_list_size ? get_unit_size(themes_list_size) : "-";
+        return boost::uintmax_t{};
+    };
+
+    const auto get_list_size_or_dash = [](const auto query) {
+        const auto list_size = query();
+        return list_size ? get_unit_size(list_size) : "-";
+    };
+
+    space["app"] = get_list_size_or_dash(query_app);
+    get_save_data_list(gui, host);
+    space["savedata"] = get_list_size_or_dash(query_savedata);
+    space["themes"] = get_list_size_or_dash(query_themes);
 }
 
 static std::map<std::string, bool> contents_selected;
@@ -158,21 +169,21 @@ static std::string app_selected, size_selected_contents, menu, title;
 
 static bool get_size_selected_contents(GuiState &gui, HostState &host) {
     size_selected_contents.clear();
-    size_t contents_size = 0;
-    for (const auto &content : contents_selected) {
+    const auto pred = [](const auto acc, const auto &content) {
         if (content.second) {
             if (menu == "app")
-                contents_size += apps_size[content.first];
+                return acc + apps_size[content.first];
             else {
                 const auto save_index = std::find_if(save_data_list.begin(), save_data_list.end(), [&](const SaveData &s) {
                     return s.title_id == content.first;
                 });
-                contents_size += save_index->size;
+                return acc + save_index->size;
             }
         }
-    }
+        return acc;
+    };
+    const auto contents_size = boost::accumulate(contents_selected, size_t{}, pred);
     size_selected_contents = get_unit_size(contents_size);
-
     return contents_size;
 }
 
@@ -187,12 +198,7 @@ static std::map<std::string, Dlc> dlc_info;
 static void get_content_info(GuiState &gui, HostState &host) {
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_selected };
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
-        size_t app_size = 0;
-        for (const auto &app : fs::recursive_directory_iterator(APP_PATH)) {
-            if (fs::is_regular_file(app.path()))
-                app_size += fs::file_size(app.path());
-        }
-        gui.app_selector.app_info.size = app_size;
+        gui.app_selector.app_info.size = get_recursive_directory_size(APP_PATH);
     }
 
     dlc_info.clear();
@@ -206,11 +212,7 @@ static void get_content_info(GuiState &gui, HostState &host) {
             const auto last_writen = fs::last_write_time(dlc);
             SAFE_LOCALTIME(&last_writen, &dlc_info[content_id].date);
 
-            size_t dlc_size = 0;
-            for (const auto &content : fs::recursive_directory_iterator(dlc)) {
-                if (fs::is_regular_file(content.path()))
-                    dlc_size += fs::file_size(content.path());
-            }
+            const auto dlc_size = get_recursive_directory_size(dlc);
             dlc_info[content_id].size = get_unit_size(dlc_size);
 
             const auto content_path{ fs::path("addcont") / app_selected / content_id };
@@ -576,9 +578,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 contents_selected.clear();
             }
         }
-        const auto state = std::find_if(contents_selected.begin(), contents_selected.end(), [&](const auto &c) {
-            return !c.second;
-        }) != contents_selected.end();
+        const auto state = std::any_of(std::begin(contents_selected), std::end(contents_selected), [&](const auto &c) { return !c.second; });
         ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
         ImGui::SetCursorPos(ImVec2(display_size.x - (450.f * SCALE.x), display_size.y - (88.f * SCALE.y)));
         const auto select_all = !common["select_all"].empty() ? common["select_all"].c_str() : "Select All";
@@ -590,9 +590,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     content.second = false;
             }
         }
-        const auto is_enable = std::find_if(contents_selected.begin(), contents_selected.end(), [&](const auto &cs) {
-            return cs.second;
-        }) != contents_selected.end();
+        const auto is_enable = std::any_of(std::begin(contents_selected), std::end(contents_selected), [&](const auto &cs) { return cs.second; });
         ImGui::SameLine();
         ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
