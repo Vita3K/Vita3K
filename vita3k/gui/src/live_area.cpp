@@ -327,8 +327,11 @@ void init_lang(GuiState &gui, HostState &host) {
                             if (!keyboards.empty()) {
                                 lang_settings["keyboards"] = keyboards.attribute("name").as_string();
                                 auto &lang_ime = host.ime.languages;
-                                for (const auto &lang : keyboards.child("ime_langagues"))
-                                    lang_ime.push_back({ SceImeLanguage(lang.attribute("id").as_ullong()), lang.text().as_string() });
+                                const auto &keyboard_lang_ime = keyboards.child("ime_langagues");
+                                const auto op = [](const auto &lang) {
+                                    return std::make_pair(SceImeLanguage(lang.attribute("id").as_ullong()), lang.text().as_string());
+                                };
+                                std::transform(std::begin(keyboard_lang_ime), std::end(keyboard_lang_ime), std::back_inserter(lang_ime), op);
                             }
                         }
                     }
