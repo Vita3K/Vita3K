@@ -21,6 +21,7 @@
 #include <rif2zrif.h>
 
 #include <app/functions.h>
+#include <boost/algorithm/string/trim.hpp>
 #include <crypto/aes.h>
 #include <io/device.h>
 
