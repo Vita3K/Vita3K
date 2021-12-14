@@ -204,6 +204,17 @@ EXPORT(int, sceKernelUnregisterProcessTerminationCallback) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceLibKernel_9F793F84) {
+    //Gets a version from the process' SceKernelProcessParam. Used for PSN Auth in SceShell.
+    auto p_process_param = CALL_EXPORT(sceKernelGetProcessParam, nullptr);
+    auto process_param = p_process_param.get(host.mem);
+    if (process_param && (process_param[1] == '2PSP') && (process_param[2] != 0)) {
+        return process_param[3];
+    } else {
+        return 0;
+    }
+}
+
 BRIDGE_IMPL(_sceKernelExitProcessForUser)
 BRIDGE_IMPL(_sceKernelGetTimer5Reg)
 BRIDGE_IMPL(_sceKernelRegisterLibkernelAddresses)
@@ -235,3 +246,4 @@ BRIDGE_IMPL(sceKernelPowerTick)
 BRIDGE_IMPL(sceKernelPowerUnlock)
 BRIDGE_IMPL(sceKernelRegisterProcessTerminationCallback)
 BRIDGE_IMPL(sceKernelUnregisterProcessTerminationCallback)
+BRIDGE_IMPL(sceLibKernel_9F793F84)
