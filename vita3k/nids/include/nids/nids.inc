@@ -4239,6 +4239,7 @@ NID(sceSblGcAuthMgrPsmactCreateC1, 0x622A81E6)
 NID(sceSblGcAuthMgrPsmactVerifyR1, 0xEB6DA895)
 NID(sceSblGcAuthMgrSclkGetData1, 0x93A6570E)
 NID(sceSblGcAuthMgrSclkSetData2, 0xE088B0D0)
+NID(sceLibKernel_9F793F84, 0x9F793F84)
 // Library "SceLibRng"
 NID(sceKernelGetRandomNumber, 0xB2700165)
 // Library "SceLibSsp"
