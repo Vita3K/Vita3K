@@ -125,23 +125,29 @@ jobs:
           name: vita3k-${{ steps.git_short_sha.outputs.value }}-${{ matrix.os }}
           path: build/bin
 
-      - name: Zip Artifacts
-        uses: papeloto/action-zip@v1
-        with:
-          files: build/bin
-          dest: ${{ matrix.os }}.zip
-        if: github.ref == 'refs/heads/master'
-
-      - name: Update the CI tag
-        uses: Xotl/cool-github-releases@v1
-        with:
-          mode: update
-          isPrerelease: false
-          tag_name: continous
-          release_name: "Automatic CI builds"
-          body_mrkdwn: |
-            _This is the newest build, but Github date can't be updated. Corresponding commit: ${{ github.sha }}_
-          assets: ${{ matrix.os }}.zip
-          replace_assets: true
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-        if: github.ref == 'refs/heads/master'
+  create-release:
+    needs: [build]
+    runs-on: "ubuntu-20.04"
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+      
+      - name: Upload
+        shell: bash
+        run: |
+          mkdir artifacts/
+          files=$(find . -name "*latest")
+          for f in $files; do
+            echo "Compressing $f"
+            (cd $(basename $f) && zip -r ../artifacts/$(basename $f  | cut -d "-" -f 3)-latest.zip *)
+          done
+          ls -al artifacts/
+          wget -c https://github.com/tcnksm/ghr/releases/download/v0.14.0/ghr_v0.14.0_linux_amd64.tar.gz
+          tar xfv ghr_v0.14.0_linux_amd64.tar.gz
+          ghr_v0.14.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate -n 'Automatic CI builds' -b "Corresponding commit: ${{ github.sha }}" continuous artifacts/
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+       
