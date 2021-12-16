@@ -75,9 +75,9 @@ jobs:
           key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
           restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
 
-      - name: Set up SDL 2.0.16 (ubuntu-latest)
+      - name: Set up SDL 2.0.18 (ubuntu-latest)
         run: |
-          SDL2VER=2.0.16
+          SDL2VER=2.0.18
           if [[ ! -e ~/.ccache ]]; then
             mkdir ~/.ccache
           fi  
@@ -86,7 +86,7 @@ jobs:
             curl -sLO https://libsdl.org/release/SDL2-${SDL2VER}.tar.gz
             tar -xzf SDL2-${SDL2VER}.tar.gz
             cd SDL2-${SDL2VER}
-            ./configure --prefix=/usr
+            ./configure --prefix=/usr/local
             make && cd ../
             rm SDL2-${SDL2VER}.tar.gz
           fi

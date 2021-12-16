@@ -54,7 +54,7 @@ EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
     refresh_controllers(state);
     info->port[0] = host.cfg.current_config.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
     for (int i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
-        info->port[i + 1] = (host.cfg.current_config.pstv_mode && !host.ctrl.free_ports[i]) ? get_type_of_controller(state, i) : SCE_CTRL_TYPE_UNPAIRED;
+        info->port[i + 1] = (host.cfg.current_config.pstv_mode && !host.ctrl.free_ports[i]) ? get_type_of_controller(i) : SCE_CTRL_TYPE_UNPAIRED;
     }
     return 0;
 }

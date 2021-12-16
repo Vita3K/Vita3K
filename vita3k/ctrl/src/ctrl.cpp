@@ -69,9 +69,9 @@ static int reserve_port(CtrlState &state) {
     return 0;
 }
 
-SceCtrlExternalInputMode get_type_of_controller(const CtrlState &state, int idx) {
-    const auto name = state.controllers_name[idx];
-    return (name == "PS4 Controller") || (name == "PS5 Controller") ? SCE_CTRL_TYPE_DS4 : SCE_CTRL_TYPE_DS3;
+SceCtrlExternalInputMode get_type_of_controller(const int idx) {
+    const auto type = SDL_GameControllerTypeForIndex(idx);
+    return (type == SDL_CONTROLLER_TYPE_PS4) || (type == SDL_CONTROLLER_TYPE_PS5) ? SCE_CTRL_TYPE_DS4 : SCE_CTRL_TYPE_DS3;
 }
 
 static bool operator<(const SDL_JoystickGUID &a, const SDL_JoystickGUID &b) {
@@ -104,7 +104,7 @@ void refresh_controllers(CtrlState &state) {
                 new_controller.controller = controller;
                 new_controller.port = reserve_port(state);
                 state.controllers.emplace(guid, new_controller);
-                state.controllers_name[joystick_index] = SDL_IsGameController(joystick_index) ? SDL_GameControllerNameForIndex(joystick_index) : SDL_JoystickNameForIndex(joystick_index);
+                state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
                 state.controllers_num++;
             }
         }

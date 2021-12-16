@@ -20,7 +20,7 @@
 #include <ctrl/state.h>
 #include <host/state.h>
 
-SceCtrlExternalInputMode get_type_of_controller(const CtrlState &state, int idx);
+SceCtrlExternalInputMode get_type_of_controller(const int idx);
 int peek_data(HostState &host, int port, SceCtrlData *&pad_data, int count, bool negative, bool from_ext_function);
 int peek_data(HostState &host, int port, SceCtrlData2 *&pad_data, int count, bool negative, bool from_ext_function);
 void refresh_controllers(CtrlState &state);
