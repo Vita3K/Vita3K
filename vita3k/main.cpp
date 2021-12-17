@@ -277,6 +277,9 @@ int main(int argc, char *argv[]) {
         // Calculate FPS
         app::calculate_fps(host);
 
+        // Set shaders compiled display
+        gui::set_shaders_compiled_display(gui, host);
+
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
         gui::draw_live_area(gui, host);

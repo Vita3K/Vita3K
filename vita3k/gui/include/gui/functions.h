@@ -81,6 +81,7 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path);
 void save_apps_cache(GuiState &gui, HostState &host);
 void save_user(GuiState &gui, HostState &host, const std::string &user_id);
 void set_config(GuiState &gui, HostState &host, const std::string &app_path);
+void set_shaders_compiled_display(GuiState &gui, HostState &host);
 void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &app_path);
 void update_last_time_app_used(GuiState &gui, HostState &host, const std::string &app);
 void update_notice_info(GuiState &gui, HostState &host, const std::string &type);
@@ -96,6 +97,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
 void draw_common_dialog(GuiState &gui, HostState &host);
 void draw_ime(Ime &ime, HostState &host);
 void draw_reinstall_dialog(GenericDialogState *status, HostState &host);
+void draw_shaders_count_compiled(GuiState &gui, HostState &host);
 void draw_trophies_unlocked(GuiState &gui, HostState &host);
 void draw_perf_overlay(GuiState &gui, HostState &host);
 

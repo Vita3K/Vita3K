@@ -86,7 +86,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     if (context.record.vertex_program.get(mem)->renderer_data->hash != context.last_draw_vertex_program_hash || context.record.fragment_program.get(mem)->renderer_data->hash != context.last_draw_fragment_program_hash) {
         // Need to recompile!
         SharedGLObject program = gl::compile_program(renderer.program_cache, renderer.vertex_shader_cache,
-            renderer.fragment_shader_cache, context.record, features, mem, config.spirv_shader, gxm_fragment_program.is_maskupdate, base_path, title_id);
+            renderer.fragment_shader_cache, context.record, features, mem, config.spirv_shader, gxm_fragment_program.is_maskupdate, base_path, title_id, renderer.shaders_count_compiled);
 
         if (!program) {
             LOG_ERROR("Fail to get program!");

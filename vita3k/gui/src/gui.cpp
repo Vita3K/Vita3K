@@ -700,8 +700,11 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (gui.live_area.user_management)
         draw_user_management(gui, host);
 
+    if (!gui.shaders_compiled_display.empty())
+        draw_shaders_count_compiled(gui, host);
+
     if (!gui.trophy_unlock_display_requests.empty())
-        gui::draw_trophies_unlocked(gui, host);
+        draw_trophies_unlocked(gui, host);
 
     if (host.ime.state && !gui.live_area.app_selector && !gui.live_area.live_area_screen && get_sys_apps_state(gui))
         draw_ime(host.ime, host);
