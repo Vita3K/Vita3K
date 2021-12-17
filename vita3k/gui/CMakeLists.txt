@@ -20,6 +20,7 @@ add_library(
 	src/app_selector.cpp
 	src/archive_install_dialog.cpp
 	src/common_dialog.cpp
+	src/compile_shaders.cpp
 	src/condvars_dialog.cpp
 	src/content_manager.cpp
 	src/eventflags_dialog.cpp

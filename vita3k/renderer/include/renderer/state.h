@@ -39,6 +39,8 @@ struct State {
 
     int last_scene_id = 0;
 
+    uint32_t shaders_count_compiled;
+
     std::uint32_t scene_processed_since_last_frame = 0;
     std::uint32_t average_scene_per_frame = 1;
 

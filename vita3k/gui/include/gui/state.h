@@ -240,6 +240,11 @@ enum ModulesModeType {
     DESCRIPTION,
 };
 
+enum ShadersCompiledDisplay {
+    Time,
+    Count
+};
+
 static constexpr auto MODULES_MODE_COUNT = 3;
 using ConfigModuleMode = std::array<std::vector<const char *>, MODULES_MODE_COUNT>;
 
@@ -322,6 +327,8 @@ struct GuiState {
     std::map<std::string, std::map<std::string, std::map<std::string, std::vector<ImGui_Texture>>>> live_items;
 
     std::vector<ImGui_Texture> manuals;
+
+    std::map<ShadersCompiledDisplay, uint64_t> shaders_compiled_display;
 
     SceUID thread_watch_index = -1;
 
