@@ -34,9 +34,10 @@ EXPORT(int, sceMotionGetBasicOrientation, SceFVector3 *basicOrientation) {
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
 
     STUBBED("set default value");
-    basicOrientation->x = 0;
-    basicOrientation->y = 0;
-    basicOrientation->z = 1;
+    const SceFVector3 current_acceleration = get_acceleration(host.motion);
+    basicOrientation->x = current_acceleration.x;
+    basicOrientation->y = current_acceleration.y;
+    basicOrientation->z = current_acceleration.z;
 
     return 0;
 }
@@ -58,7 +59,7 @@ EXPORT(int, sceMotionGetDeviceLocation, SceMotionDeviceLocation *devLocation) {
 
 EXPORT(SceBool, sceMotionGetGyroBiasCorrection) {
     TRACY_FUNC(sceMotionGetGyroBiasCorrection);
-    return UNIMPLEMENTED();
+    return get_gyro_bias_correction(host.motion);
 }
 
 EXPORT(SceBool, sceMotionGetMagnetometerState) {
@@ -154,7 +155,9 @@ EXPORT(int, sceMotionSetDeadbandExt) {
 
 EXPORT(int, sceMotionSetGyroBiasCorrection, SceBool setValue) {
     TRACY_FUNC(sceMotionSetGyroBiasCorrection, setValue);
-    return UNIMPLEMENTED();
+    set_gyro_bias_correction(host.motion, setValue);
+
+    return 0;
 }
 
 EXPORT(int, sceMotionSetTiltCorrection, SceBool setValue) {
