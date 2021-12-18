@@ -18,9 +18,10 @@
 #pragma once
 
 #include <motion/motion.h>
+#include <motion/motion_input.h>
 
 #include <SDL_gamecontroller.h>
 
 struct MotionState {
-    // Put variable used by app here
+    MotionInput motion_data;
 };

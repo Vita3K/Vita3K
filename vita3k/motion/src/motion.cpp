@@ -19,4 +19,47 @@
 #include <motion/motion.h>
 #include <motion/state.h>
 
-// Put here function used for get motion states
+SceFVector3 get_acceleration(const MotionState &state) {
+    Util::Vec3f accelerometer =  state.motion_data.GetAcceleration();
+    return {
+        accelerometer.x,
+        accelerometer.y,
+        accelerometer.z,
+    };
+}
+
+SceFVector3 get_gyroscope(const MotionState &state) {
+    Util::Vec3f gyroscope = state.motion_data.GetGyroscope();
+    return {
+        gyroscope.x,
+        gyroscope.y,
+        gyroscope.z,
+    };
+}
+
+SceFVector3 get_gyro_bias(const MotionState &state) {
+    Util::Vec3f bias = state.motion_data.GetGyroscopeBias();
+    return {
+        bias.x,
+        bias.y,
+        bias.z,
+    };
+}
+
+Util::Quaternion<SceFloat> get_quaternion(const MotionState &state) {
+    return state.motion_data.GetQuaternion();
+}
+
+SceBool get_gyro_bias_correction(const MotionState &state) {
+    return state.motion_data.IsGyroBiasEnabled();
+}
+
+SceFVector3 set_gyro_bias_correction(MotionState& state, SceBool setValue) {
+    state.motion_data.EnableGyroBias(setValue);
+}
+
+void refresh_motion(MotionState &state) {
+    SceULong64 elapsed_time = 5000;
+    state.motion_data.UpdateRotation(elapsed_time);
+    state.motion_data.UpdateOrientation(elapsed_time);
+}
