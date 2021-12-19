@@ -28,6 +28,7 @@
 #include <host/state.h>
 #include <modules/module_parent.h>
 #include <renderer/functions.h>
+#include <renderer/gl/functions.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -71,7 +72,7 @@ int main(int argc, char *argv[]) {
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/app" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/addcont" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/user/00/savedata" / *cfg.delete_title_id);
-                fs::remove_all(fs::path(root_paths.get_pref_path()) / "shaderlog" / *cfg.delete_title_id);
+                fs::remove_all(fs::path(root_paths.get_base_path()) / "cache/shaders" / *cfg.delete_title_id);
             }
             if (cfg.pkg_path.has_value() && cfg.pkg_zrif.has_value()) {
                 LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
@@ -213,12 +214,6 @@ int main(int argc, char *argv[]) {
     if (host.io.title_id.find("PCS") != std::string::npos)
         host.app_sku_flag = get_license_sku_flag(host, host.app_content_id);
 
-    Ptr<const void> entry_point;
-    if (const auto err = load_app(entry_point, host, string_utils::utf_to_wide(host.io.app_path)) != Success)
-        return err;
-    if (const auto err = run_app(host, entry_point) != Success)
-        return err;
-
     if (cfg.console) {
         auto main_thread = host.kernel.threads.at(host.main_thread_id);
         auto lock = std::unique_lock<std::mutex>(main_thread->mutex);
@@ -238,6 +233,51 @@ int main(int argc, char *argv[]) {
     if (!gl_renderer.init(host.base_path))
         return RendererInitFailed;
 
+    const auto draw_app_background = [&](GuiState &gui, HostState &host) {
+        if (gui.apps_background.find(host.io.app_path) != gui.apps_background.end())
+            // Display application background
+            ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.io.app_path],
+                ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
+        // Application background not found
+        else if (!gui.theme_backgrounds.empty())
+            // Display theme background if exist
+            ImGui::GetBackgroundDrawList()->AddImage(gui.theme_backgrounds[0], ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
+        else if (!gui.user_backgrounds.empty())
+            // Display user background if exist
+            ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[0]],
+                ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
+    };
+
+    // Pre-Compile Shader only for glsl, spriv is broken
+    if (!host.cfg.spirv_shader) {
+        auto &glstate = static_cast<renderer::gl::GLState &>(*host.renderer);
+        if (renderer::gl::get_shaders_cache_hashs(glstate, host.base_path.c_str(), host.io.title_id.c_str())) {
+            for (const auto &hash : glstate.shaders_cache_hashs) {
+                // Driver acto!
+                renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
+                    host.io.title_id.c_str());
+
+                gl_renderer.render(host);
+
+                gui::draw_begin(gui, host);
+                draw_app_background(gui, host);
+
+                renderer::gl::pre_compile_program(glstate, host.base_path.c_str(), host.io.title_id.c_str(), hash);
+                gui::draw_pre_compiling_shaders_progress(gui, host, uint32_t(glstate.shaders_cache_hashs.size()));
+
+                host.display.condvar.notify_all();
+                gui::draw_end(gui, host.window.get());
+                SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, compilling shaders...", window_title, host.current_app_title, host.io.title_id).c_str());
+            }
+        }
+    }
+
+    Ptr<const void> entry_point;
+    if (const auto err = load_app(entry_point, host, string_utils::utf_to_wide(host.io.app_path)) != Success)
+        return err;
+    if (const auto err = run_app(host, entry_point) != Success)
+        return err;
+
     while (host.frame_count == 0 && !host.load_exec) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
@@ -247,19 +287,7 @@ int main(int argc, char *argv[]) {
 
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
-
-        if (gui.apps_background.find(host.io.app_path) != gui.apps_background.end())
-            // Display application background
-            ImGui::GetForegroundDrawList()->AddImage(gui.apps_background[host.io.app_path],
-                ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
-        // Application background not found
-        else if (!gui.theme_backgrounds.empty())
-            // Display theme background if exist
-            ImGui::GetForegroundDrawList()->AddImage(gui.theme_backgrounds[0], ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
-        else if (!gui.user_backgrounds.empty())
-            // Display user background if exist
-            ImGui::GetForegroundDrawList()->AddImage(gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[0]],
-                ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
+        draw_app_background(gui, host);
 
         host.display.condvar.notify_all();
         gui::draw_end(gui, host.window.get());

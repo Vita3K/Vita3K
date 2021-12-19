@@ -97,6 +97,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
 void draw_common_dialog(GuiState &gui, HostState &host);
 void draw_ime(Ime &ime, HostState &host);
 void draw_reinstall_dialog(GenericDialogState *status, HostState &host);
+void draw_pre_compiling_shaders_progress(GuiState &gui, HostState &host, const uint32_t &total);
 void draw_shaders_count_compiled(GuiState &gui, HostState &host);
 void draw_trophies_unlocked(GuiState &gui, HostState &host);
 void draw_perf_overlay(GuiState &gui, HostState &host);

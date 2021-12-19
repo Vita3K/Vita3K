@@ -36,6 +36,9 @@ struct GLState : public renderer::State {
     ShaderCache fragment_shader_cache;
     ShaderCache vertex_shader_cache;
     ProgramCache program_cache;
+
+    std::vector<ShadersHash> shaders_cache_hashs;
+    std::string shader_version = "v1";
 };
 
 } // namespace renderer::gl
