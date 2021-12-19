@@ -148,6 +148,11 @@ struct FragmentProgram : ShaderProgram {
 struct VertexProgram : ShaderProgram {
 };
 
+struct ShadersHash {
+    std::string frag;
+    std::string vert;
+};
+
 struct RenderTarget {
     int holder;
     virtual ~RenderTarget() = default;
