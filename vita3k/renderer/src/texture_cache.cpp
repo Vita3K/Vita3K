@@ -131,6 +131,14 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         }
     }
 
+// Fix memory access error in the condition check for texture cache method
+// (hashed vs hashless) in Clang compilers due to compiler optimizations
+#ifdef __clang__
+    if (!info->use_hash) {
+        std::cout << "";
+    }
+#endif
+
     cache.select_callback(index, &gxm_texture);
 
     if (configure) {
