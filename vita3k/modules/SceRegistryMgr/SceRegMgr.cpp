@@ -37,8 +37,14 @@ EXPORT(int, sceRegMgrGetKeyBin) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceRegMgrGetKeyInt) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRegMgrGetKeyInt, const char *category, const char *name, int *buf) {
+    if ((std::string(category) == "/CONFIG/PSPEMU") && (std::string(name) == "emu_list_flag")) {
+        STUBBED("Stubbed");
+        *buf = 1;
+
+        return 0;
+    } else
+        return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrGetKeyStr) {
@@ -77,7 +83,7 @@ EXPORT(int, sceRegMgrSetKeyBin) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceRegMgrSetKeyInt) {
+EXPORT(int, sceRegMgrSetKeyInt, const char *category, const char *name, int buf) {
     return UNIMPLEMENTED();
 }
 
