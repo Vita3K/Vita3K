@@ -245,7 +245,7 @@ void pre_compile_program(GLState &renderer, const char *base_path, const char *t
 }
 
 static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const FeatureState &features, const std::string &hash,
-    ShaderCache &cache, const GLenum type, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool spirv, bool maskupdate, const char *base_path, const char *title_id, const std::string &shader_version, uint32_t &shaders_count_compiled) {
+    ShaderCache &cache, const GLenum type, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool shader_cache, bool spirv, bool maskupdate, const char *base_path, const char *title_id, const std::string &shader_version, uint32_t &shaders_count_compiled) {
     const auto cached = cache.find(hash);
     if (cached == cache.end()) {
         SharedGLObject obj = nullptr;
@@ -254,7 +254,7 @@ static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const 
         if (features.spirv_shader && spirv) {
             obj = compile_spirv(type, load_spirv_shader(*program, features, hint_attributes, maskupdate, base_path, title_id));
         } else {
-            obj = compile_glsl(type, load_glsl_shader(*program, features, hint_attributes, maskupdate, base_path, title_id, shader_version));
+            obj = compile_glsl(type, load_glsl_shader(*program, features, hint_attributes, maskupdate, base_path, title_id, shader_version, shader_cache));
         }
 
         cache.emplace(hash, obj);
@@ -268,7 +268,7 @@ static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const 
 }
 
 SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, const FeatureState &features, const MemState &mem,
-    bool spirv, bool maskupdate, const char *base_path, const char *title_id) {
+    bool shader_cache, bool spirv, bool maskupdate, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 
     assert(state.fragment_program);
@@ -293,16 +293,16 @@ SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, c
 
     // No... It doesn't exist. Now we try to find each object. If it doesn't exist then we can kind
     // of compile it again.
-    const SharedGLObject fragment_shader = get_or_compile_shader(fragment_program_gxm.program.get(mem),
-        features, fragment_program.hash, renderer.fragment_shader_cache, GL_FRAGMENT_SHADER, nullptr, spirv, maskupdate, base_path, title_id, renderer.shader_version, renderer.shaders_count_compiled);
+    const SharedGLObject fragment_shader = get_or_compile_shader(fragment_program_gxm.program.get(mem), features, fragment_program.hash, renderer.fragment_shader_cache,
+        GL_FRAGMENT_SHADER, nullptr, shader_cache, spirv, maskupdate, base_path, title_id, renderer.shader_version, renderer.shaders_count_compiled);
 
     if (!fragment_shader) {
         LOG_CRITICAL("Error in get/compile fragment vertex shader:\n{}", vertex_program.hash);
         return SharedGLObject();
     }
 
-    const SharedGLObject vertex_shader = get_or_compile_shader(vertex_program_gxm.program.get(mem),
-        features, vertex_program.hash, renderer.vertex_shader_cache, GL_VERTEX_SHADER, &vertex_program_gxm.attributes, spirv, maskupdate, base_path, title_id, renderer.shader_version, renderer.shaders_count_compiled);
+    const SharedGLObject vertex_shader = get_or_compile_shader(vertex_program_gxm.program.get(mem), features, vertex_program.hash, renderer.vertex_shader_cache,
+        GL_VERTEX_SHADER, &vertex_program_gxm.attributes, shader_cache, spirv, maskupdate, base_path, title_id, renderer.shader_version, renderer.shaders_count_compiled);
 
     if (!vertex_shader) {
         LOG_CRITICAL("Error in get/compiled vertex shader:\n{}", vertex_program.hash);

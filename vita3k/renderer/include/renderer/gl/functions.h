@@ -36,12 +36,12 @@ struct FeatureState;
 namespace renderer::gl {
 
 // Compile program.
-SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, const FeatureState &features, const MemState &mem, bool spirv, bool maskupdate, const char *base_path, const char *title_id);
+SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, const FeatureState &features, const MemState &mem, bool shader_cache, bool spirv, bool maskupdate, const char *base_path, const char *title_id);
 void pre_compile_program(GLState &renderer, const char *base_path, const char *title_id, const ShadersHash &hashs);
 
 // Shaders.
 bool get_shaders_cache_hashs(GLState &renderer, const char *base_path, const char *title_id);
-std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const std::string &shader_version);
+std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const std::string &shader_version, bool shader_cache);
 std::vector<std::uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id);
 std::string pre_load_glsl_shader(const char *hash_text, const char *shader_type_str, const char *base_path, const char *title_id);
 

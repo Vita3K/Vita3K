@@ -78,6 +78,7 @@ private:
         app_args = rhs.app_args;
         load_app_list = rhs.load_app_list;
         self_path = rhs.self_path;
+        shader_cache = rhs.shader_cache;
     }
 
 public:
