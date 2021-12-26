@@ -20,7 +20,7 @@ jobs:
       - name: Move ci tag
         uses: s3krit/walking-tag-action@master
         with:
-          TAG_NAME: continous
+          TAG_NAME: continuous
           TAG_MESSAGE: Last commit build by the CI
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
