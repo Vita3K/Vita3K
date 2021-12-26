@@ -248,6 +248,10 @@ int main(int argc, char *argv[]) {
                 ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
     };
 
+    Ptr<const void> entry_point;
+    if (const auto err = load_app(entry_point, host, string_utils::utf_to_wide(host.io.app_path)) != Success)
+        return err;
+
     // Pre-Compile Shader only for glsl, spriv is broken
     if (!host.cfg.spirv_shader) {
         auto &glstate = static_cast<renderer::gl::GLState &>(*host.renderer);
@@ -272,9 +276,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    Ptr<const void> entry_point;
-    if (const auto err = load_app(entry_point, host, string_utils::utf_to_wide(host.io.app_path)) != Success)
-        return err;
     if (const auto err = run_app(host, entry_point) != Success)
         return err;
 

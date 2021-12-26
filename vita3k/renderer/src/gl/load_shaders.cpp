@@ -129,11 +129,11 @@ R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureStat
         std::string spirv_dump;
         std::string disasm_dump;
 
-        const fs::path shader_base_dir{ fs::path("cache/shaders") / title_id };
+        const fs::path shader_base_dir{ fs::path("shaderlog") / title_id };
         if (!fs::exists(base_path / shader_base_dir))
             fs::create_directories(base_path / shader_base_dir);
 
-        const auto shader_base_path = fs_utils::construct_file_name(base_path, shader_base_dir, hash_hex_ver.c_str(), ".gxp");
+        auto shader_base_path = fs_utils::construct_file_name(base_path, shader_base_dir, hash_hex_ver.c_str(), ".gxp");
 
         // Dump gxp binary
         fs::ofstream of{ shader_base_path, fs::ofstream::binary };
@@ -154,6 +154,22 @@ R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureStat
         };
 
         source = genfunc(program, hash_text.data(), features, hint_attributes, maskupdate, false, write_data_with_ext);
+
+        // Copy shader generate to shaders cache
+        shader_base_path.replace_extension(shader_type_str);
+        if (fs::exists(shader_base_path)) {
+            try {
+                const auto shaders_cache_path = fs::path("cache/shaders") / title_id;
+                if (!fs::exists(base_path / shaders_cache_path))
+                    fs::create_directories(base_path / shaders_cache_path);
+
+                const auto shader_dst_path = fs_utils::construct_file_name(base_path, shaders_cache_path, hash_hex_ver.c_str(), shader_type_str);
+                fs::copy_file(shader_base_path, shader_dst_path, fs::copy_option::overwrite_if_exists);
+                fs::remove(shader_base_path);
+            } catch (std::exception &e) {
+                LOG_ERROR("Failed to moved shaders file: \n{}", e.what());
+            }
+        }
     }
 
     return source;
