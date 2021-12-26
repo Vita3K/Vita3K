@@ -251,7 +251,7 @@ int main(int argc, char *argv[]) {
     // Pre-Compile Shader only for glsl, spriv is broken
     if (!host.cfg.spirv_shader) {
         auto &glstate = static_cast<renderer::gl::GLState &>(*host.renderer);
-        if (renderer::gl::get_shaders_cache_hashs(glstate, host.base_path.c_str(), host.io.title_id.c_str())) {
+        if (renderer::gl::get_shaders_cache_hashs(glstate, host.base_path.c_str(), host.io.title_id.c_str()) && cfg.shader_cache) {
             for (const auto &hash : glstate.shaders_cache_hashs) {
                 // Driver acto!
                 renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),

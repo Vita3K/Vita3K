@@ -92,6 +92,7 @@ enum ModulesMode {
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "video-playing", true, video_playing)                                                    \
+    code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
     code(bool, "disable-at9-decoder", false, disable_at9_decoder)

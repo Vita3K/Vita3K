@@ -367,6 +367,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::SetTooltip("Select your preferred backend renderer.");
         ImGui::Spacing();
 #endif
+        ImGui::Checkbox("Use shader cache", &host.cfg.shader_cache);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Enable shader cache to pre-compile it at boot up\nUncheck the box to disable this feature.");
         if (host.renderer->features.spirv_shader) {
             ImGui::Checkbox("Use Spir-V shader", &host.cfg.spirv_shader);
 
