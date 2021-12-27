@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 project(Vita3K)
 
-# Detects the amount of processors of the host machine and forwards the restult to CPU_COUNT
+# Detects the amount of processors of the host machine and forwards the result to CPU_COUNT
 include(ProcessorCount)
 ProcessorCount(CPU_COUNT)
 
