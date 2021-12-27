@@ -86,6 +86,44 @@ struct SceAppUtilSaveDataRemoveItem {
     uint8_t reserved[36];
 };
 
+enum SceAppUtilSaveDataSlotSearchType {
+    SCE_APPUTIL_SAVEDATA_SLOT_SEARCH_TYPE_EXIST_SLOT = 0,
+    SCE_APPUTIL_SAVEDATA_SLOT_SEARCH_TYPE_EMPTY_SLOT = 1
+};
+
+enum SceAppUtilSaveDataSlotSortKey {
+    SCE_APPUTIL_SAVEDATA_SLOT_SORT_KEY_SLOT_ID = 0,
+    SCE_APPUTIL_SAVEDATA_SLOT_SORT_KEY_USER_PARAM = 1,
+    SCE_APPUTIL_SAVEDATA_SLOT_SORT_KEY_SIZE_KIB = 2,
+    SCE_APPUTIL_SAVEDATA_SLOT_SORT_KEY_MODIFIED_TIME = 3
+};
+
+enum SceAppUtilSaveDataSlotSortType {
+    SCE_APPUTIL_SAVEDATA_SLOT_SORT_TYPE_ASCENT = 0,
+    SCE_APPUTIL_SAVEDATA_SLOT_SORT_TYPE_DESCENT = 1
+};
+
+struct SceAppUtilWorkBuffer {
+    Ptr<void> buf;
+    SceUInt32 bufSize;
+    SceChar8 reserved[32];
+};
+
+struct SceAppUtilSaveDataSlotSearchCond {
+    SceAppUtilSaveDataSlotSearchType type;
+    SceAppUtilSaveDataSlotId from;
+    SceUInt32 range;
+    SceAppUtilSaveDataSlotSortKey key;
+    SceAppUtilSaveDataSlotSortType order;
+    SceChar8 reserved[32];
+};
+
+struct SceAppUtilSlotSearchResult {
+    SceUInt32 hitNum;
+    Ptr<SceAppUtilSaveDataSlot> slotList;
+    SceChar8 reserved[32];
+};
+
 struct SceAppUtilMountPoint {
     SceChar8 data[SCE_APPUTIL_MOUNTPOINT_DATA_MAXSIZE];
 };

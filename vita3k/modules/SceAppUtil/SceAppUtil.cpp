@@ -282,8 +282,51 @@ EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveD
     return 0;
 }
 
-EXPORT(int, sceAppUtilSaveDataSlotSearch) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, const SceAppUtilSaveDataSlotSearchCond *cond,
+    SceAppUtilSlotSearchResult *result, const SceAppUtilMountPoint *mountPoint) {
+    STUBBED("No sort slot list and no read status and userParam");
+
+    if (!cond || !result)
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
+
+    if (workBuf)
+        result->slotList = Ptr<SceAppUtilSaveDataSlot>(workBuf->buf.address());
+
+    result->hitNum = 0;
+    auto slotList = result->slotList.get(host.mem);
+    for (auto i = cond->from; i < (cond->from + cond->range); i++) {
+        if (slotList) {
+            slotList[i].id = -1;
+            slotList[i].status = 0;
+            slotList[i].userParam = 0;
+            slotList[i].emptyParam = Ptr<SceAppUtilSaveDataSlotEmptyParam>(0);
+        }
+
+        const auto fd = open_file(host.io, construct_slotparam_path(i).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+        switch (cond->type) {
+        case SCE_APPUTIL_SAVEDATA_SLOT_SEARCH_TYPE_EXIST_SLOT:
+            if (fd > 0) {
+                if (slotList) {
+                    slotList[result->hitNum].id = i;
+                }
+                result->hitNum++;
+            }
+            break;
+        case SCE_APPUTIL_SAVEDATA_SLOT_SEARCH_TYPE_EMPTY_SLOT:
+            if (fd < 0) {
+                if (slotList)
+                    slotList[result->hitNum].id = i;
+                result->hitNum++;
+            }
+            break;
+        default: break;
+        }
+
+        if (fd > 0)
+            close_file(host.io, fd, export_name);
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotSetParam, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
