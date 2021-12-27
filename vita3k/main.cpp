@@ -141,7 +141,7 @@ int main(int argc, char *argv[]) {
             if (is_rif)
                 copy_license(host, *cfg.content_path);
             else if (!is_archive && !is_directory)
-                LOG_ERROR("File droped: [{}] is not supported.", cfg.content_path->string());
+                LOG_ERROR("File dropped: [{}] is not supported.", cfg.content_path->string());
 
             host.cfg.content_path.reset();
             if (!cfg.console)
@@ -267,7 +267,7 @@ int main(int argc, char *argv[]) {
 
                 host.display.condvar.notify_all();
                 gui::draw_end(gui, host.window.get());
-                SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, compilling shaders...", window_title, host.current_app_title, host.io.title_id).c_str());
+                SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, host.current_app_title, host.io.title_id).c_str());
             }
         }
     }
