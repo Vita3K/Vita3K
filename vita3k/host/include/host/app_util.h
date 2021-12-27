@@ -28,6 +28,7 @@ typedef unsigned int SceAppUtilAppParamId;
 typedef unsigned int SceAppUtilBgdlStatusType;
 
 #define SCE_APPUTIL_APPPARAM_ID_SKU_FLAG 0
+#define SCE_APPUTIL_MOUNTPOINT_DATA_MAXSIZE 16
 #define SCE_APPUTIL_NP_DRM_ADDCONT_ID_SIZE 17
 #define SCE_SYSTEM_PARAM_USERNAME_MAXSIZE 17
 
@@ -85,8 +86,8 @@ struct SceAppUtilSaveDataRemoveItem {
     uint8_t reserved[36];
 };
 
-struct SceAppUtilSaveDataMountPoint {
-    uint8_t data[16];
+struct SceAppUtilMountPoint {
+    SceChar8 data[SCE_APPUTIL_MOUNTPOINT_DATA_MAXSIZE];
 };
 
 enum SceSystemParamId {

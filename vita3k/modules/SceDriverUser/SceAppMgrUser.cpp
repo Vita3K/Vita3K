@@ -31,7 +31,7 @@ struct SceAppMgrSaveDataDataDelete {
     uint8_t reserved[32];
     Ptr<SceAppUtilSaveDataDataSaveItem> files;
     int fileNum;
-    SceAppUtilSaveDataMountPoint *mountPoint;
+    SceAppUtilMountPoint *mountPoint;
 };
 
 struct SceAppMgrSaveDataData {
@@ -41,7 +41,7 @@ struct SceAppMgrSaveDataData {
     uint8_t reserved[32];
     Ptr<SceAppUtilSaveDataDataSaveItem> files;
     int fileNum;
-    SceAppUtilSaveDataMountPoint *mountPoint;
+    SceAppUtilMountPoint *mountPoint;
     unsigned int *requiredSizeKB;
 };
 

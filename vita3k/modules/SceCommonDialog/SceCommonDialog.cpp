@@ -655,15 +655,13 @@ EXPORT(int, sceSaveDataDialogAbort) {
     return 0;
 }
 
-static void check_empty_param(HostState &host, const SceAppUtilSaveDataSlotEmptyParam *empty_param) {
+static void check_empty_param(HostState &host, const SceAppUtilSaveDataSlotEmptyParam *empty_param, const uint32_t idx) {
     vfs::FileBuffer thumbnail_buffer;
-    const auto idx = host.common_dialog.savedata.selected_save;
     host.common_dialog.savedata.title[idx] = "";
     host.common_dialog.savedata.subtitle[idx] = "";
     host.common_dialog.savedata.icon_buffer[idx].clear();
     host.common_dialog.savedata.has_date[idx] = false;
     if (empty_param) {
-        host.common_dialog.savedata.title[idx] = empty_param->title.get(host.mem) ? empty_param->title.get(host.mem) : (!host.common_dialog.lang.save_data["new_saved_data"].empty() ? host.common_dialog.lang.save_data["new_saved_data"] : "New Saved Data");
         host.common_dialog.savedata.title[idx] = empty_param->title.get(host.mem) ? empty_param->title.get(host.mem) : (!host.common_dialog.lang.save_data["new_saved_data"].empty() ? host.common_dialog.lang.save_data["new_saved_data"] : "New Saved Data");
         auto iconPath = empty_param->iconPath.get(host.mem);
         SceUChar8 *iconBuf = reinterpret_cast<SceUChar8 *>(empty_param->iconBuf.get(host.mem));
@@ -681,38 +679,17 @@ static void check_empty_param(HostState &host, const SceAppUtilSaveDataSlotEmpty
         } else {
             host.common_dialog.savedata.icon_loaded[idx] = false;
         }
+    } else {
+        host.common_dialog.savedata.title[idx] = !host.common_dialog.lang.save_data["new_saved_data"].empty() ? host.common_dialog.lang.save_data["new_saved_data"] : "New Saved Data";
+        host.common_dialog.savedata.icon_loaded[idx] = false;
     }
 }
 
 static void check_save_file(SceUID fd, std::vector<SceAppUtilSaveDataSlotParam> slot_param, int index, HostState &host, const char *export_name) {
     vfs::FileBuffer thumbnail_buffer;
     if (fd < 0) {
-        host.common_dialog.savedata.slot_info[index].isExist = 0;
-        host.common_dialog.savedata.title[index] = "";
-        host.common_dialog.savedata.subtitle[index] = "";
-        host.common_dialog.savedata.details[index] = "";
-        host.common_dialog.savedata.icon_buffer[index].clear();
-        host.common_dialog.savedata.has_date[index] = false;
         auto empty_param = host.common_dialog.savedata.list_empty_param;
-        if (empty_param) {
-            host.common_dialog.savedata.title[index] = empty_param->title.get(host.mem) ? empty_param->title.get(host.mem) : (!host.common_dialog.lang.save_data["new_saved_data"].empty() ? host.common_dialog.lang.save_data["new_saved_data"] : "New Saved Data");
-            auto iconPath = empty_param->iconPath.get(host.mem);
-            SceUChar8 *iconBuf = reinterpret_cast<SceUChar8 *>(empty_param->iconBuf.get(host.mem));
-            auto iconBufSize = empty_param->iconBufSize;
-            if (iconPath) {
-                auto device = device::get_device(empty_param->iconPath.get(host.mem));
-                auto thumbnail_path = translate_path(empty_param->iconPath.get(host.mem), device, host.io.device_paths);
-                vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
-                host.common_dialog.savedata.icon_buffer[index] = thumbnail_buffer;
-                host.common_dialog.savedata.icon_loaded[index] = true;
-            } else if (iconBuf && iconBufSize != 0) {
-                thumbnail_buffer.insert(thumbnail_buffer.end(), iconBuf, iconBuf + iconBufSize);
-                host.common_dialog.savedata.icon_buffer[index] = thumbnail_buffer;
-                host.common_dialog.savedata.icon_loaded[index] = true;
-            } else {
-                host.common_dialog.savedata.icon_loaded[index] = false;
-            }
-        }
+        check_empty_param(host, empty_param, index);
     } else {
         read_file(&slot_param[index], host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
         close_file(host.io, fd, export_name);
@@ -933,7 +910,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
             host.common_dialog.savedata.slot_id[host.common_dialog.savedata.selected_save] = user_message->targetSlot.id;
             if (!host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].isExist) {
                 empty_param = user_message->targetSlot.emptyParam.get(host.mem);
-                check_empty_param(host, empty_param);
+                check_empty_param(host, empty_param, host.common_dialog.savedata.selected_save);
             }
 
             handle_user_message(user_message, host);
@@ -943,7 +920,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
             host.common_dialog.savedata.slot_id[host.common_dialog.savedata.selected_save] = sys_message->targetSlot.id;
             if (!host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].isExist) {
                 empty_param = sys_message->targetSlot.emptyParam.get(host.mem);
-                check_empty_param(host, empty_param);
+                check_empty_param(host, empty_param, host.common_dialog.savedata.selected_save);
             }
             handle_sys_message(sys_message, host);
             break;
@@ -951,7 +928,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
             host.common_dialog.savedata.slot_id[host.common_dialog.savedata.selected_save] = p->errorCodeParam.get(host.mem)->targetSlot.id;
             if (!host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].isExist) {
                 empty_param = p->errorCodeParam.get(host.mem)->targetSlot.emptyParam.get(host.mem);
-                check_empty_param(host, empty_param);
+                check_empty_param(host, empty_param, host.common_dialog.savedata.selected_save);
             }
             host.common_dialog.savedata.btn_num = 1;
             host.common_dialog.savedata.btn[0] = "OK";
@@ -975,7 +952,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
             host.common_dialog.savedata.has_progress_bar = true;
             if (!host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].isExist) {
                 empty_param = progress_bar->targetSlot.emptyParam.get(host.mem);
-                check_empty_param(host, empty_param);
+                check_empty_param(host, empty_param, host.common_dialog.savedata.selected_save);
             }
             if (progress_bar->msg.get(host.mem) != nullptr) {
                 host.common_dialog.savedata.msg = reinterpret_cast<const char *>(progress_bar->msg.get(host.mem));
@@ -1207,7 +1184,7 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
         host.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
         if (!host.common_dialog.savedata.slot_info[0].isExist) {
             auto empty_param = sys_message->targetSlot.emptyParam.get(host.mem);
-            check_empty_param(host, empty_param);
+            check_empty_param(host, empty_param, 0);
         }
         handle_sys_message(sys_message, host);
         break;
