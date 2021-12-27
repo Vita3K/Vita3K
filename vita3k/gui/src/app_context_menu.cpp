@@ -241,6 +241,8 @@ void open_path(const std::string &path) {
     static const char OS_PREFIX[] = "open ";
 #else
     static const char OS_PREFIX[] = "xdg-open ";
+    system((OS_PREFIX + ("\"" + path + "\" & disown")).c_str());
+    return;
 #endif
 
     system((OS_PREFIX + ("\"" + path + "\"")).c_str());
