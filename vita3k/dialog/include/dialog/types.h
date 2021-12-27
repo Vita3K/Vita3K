@@ -363,10 +363,6 @@ struct SceSaveDataDialogFinishParam {
     SceChar8 reserved[36];
 };
 
-struct SceAppUtilMountPoint {
-    int8_t data[16];
-};
-
 struct SceSaveDataDialogProgressBarParam {
     SceSaveDataDialogProgressBarType barType;
     SceSaveDataDialogSystemMessageParam sysMsgParam;
