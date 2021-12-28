@@ -210,6 +210,7 @@ struct SceGxmRenderTarget {
     std::unique_ptr<renderer::RenderTarget> renderer;
     std::uint16_t width;
     std::uint16_t height;
+    SceUID driverMemBlock;
 };
 
 struct SceGxmCommandList {
@@ -849,6 +850,7 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
 
     rt->width = params->width;
     rt->height = params->height;
+    rt->driverMemBlock = params->driverMemBlock;
 
     return 0;
 }
@@ -2309,7 +2311,10 @@ EXPORT(int, sceGxmRenderTargetGetDriverMemBlock, const SceGxmRenderTarget *rende
     if (!renderTarget || !driverMemBlock) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    *driverMemBlock = renderTarget->driverMemBlock;
+
+    return 0;
 }
 
 EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
