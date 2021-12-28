@@ -331,7 +331,7 @@ static void draw_savedata_dialog(GuiState &gui, HostState &host, float FONT_SCAL
                 ImGui::SetWindowFontScale(1.2f);
                 const auto no_save_data = !host.common_dialog.lang.save_data["no_saved_data"].empty() ? host.common_dialog.lang.save_data["no_saved_data"].c_str() : "There is no saved data.";
                 ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(no_save_data).x / 2 - 10, WINDOW_SIZE.y / 2 - ImGui::CalcTextSize(no_save_data).y / 2 - 25));
-                ImGui::Text(no_save_data);
+                ImGui::Text("%s", no_save_data);
             }
         }
         ImGui::EndChild();
