@@ -263,7 +263,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::SetWindowFontScale(0.65f);
     const auto title = is_custom_config ? fmt::format("Settings: {} [{}]", get_app_index(gui, host.app_path)->title, host.app_path) : "Settings";
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, title.c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
     ImGui::PopFont();
     ImGui::Spacing();
     ImGui::Separator();
@@ -286,7 +286,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                     ImGui::SameLine();
                 ImGui::RadioButton(config_modules_mode[m][ModulesModeType::MODE], &config.modules_mode, m);
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip(config_modules_mode[m][ModulesModeType::DESCRIPTION]);
+                    ImGui::SetTooltip("%s", config_modules_mode[m][ModulesModeType::DESCRIPTION]);
             }
             ImGui::Spacing();
             ImGui::Separator();
