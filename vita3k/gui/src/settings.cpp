@@ -422,7 +422,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         const auto delete_str = is_lang ? lang["delete"] : "This theme will be deleted.";
                         const auto CALC_TEXT = ImGui::CalcTextSize(delete_str.c_str());
                         ImGui::SetCursorPos(ImVec2(POPUP_SIZE.x / 2 - (CALC_TEXT.x / 2.f), POPUP_SIZE.y / 2.f));
-                        ImGui::TextColored(GUI_COLOR_TEXT, delete_str.c_str());
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", delete_str.c_str());
                         ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - BUTTON_SIZE.x - (20.f * SCALE.x), POPUP_SIZE.y - BUTTON_SIZE.y - (22.f * SCALE.y)));
                         if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
                             popup.clear();
