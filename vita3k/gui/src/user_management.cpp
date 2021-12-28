@@ -238,7 +238,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
     const auto calc_title = ImGui::CalcTextSize(title.c_str()).y / 2.f;
     ImGui::SetCursorPos(ImVec2(54.f * SCALE.x, (32.f * SCALE.y) - calc_title));
-    ImGui::TextColored(GUI_COLOR_TEXT, title.c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
 
     const auto SIZE_USER = ImVec2(960.f * SCALE.x, 376.f * SCALE.y);
     const auto POS_SEPARATOR = 68.f * SCALE.y;
@@ -297,7 +297,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
         ImGui::SetWindowFontScale(0.9f);
         const auto calc_text = (AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize(NEW_USER_STR.c_str()).x / 2.f);
         ImGui::SetCursorPos(ImVec2(NEW_USER_POS + calc_text, AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, NEW_USER_STR.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", NEW_USER_STR.c_str());
         ImGui::SetCursorPos(AVATAR_POS);
         for (const auto &user : gui.users) {
             ImGui::PushID(user.first.c_str());
@@ -348,7 +348,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
             ImGui::SetWindowFontScale(0.9f);
             const auto calc_del_text = (AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize(DELETE_USER_STR.c_str()).x / 2.f);
             ImGui::SetCursorPos(ImVec2(DELETE_USER_POS + calc_del_text, AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCALE.y)));
-            ImGui::TextColored(GUI_COLOR_TEXT, DELETE_USER_STR.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", DELETE_USER_STR.c_str());
         } else {
             ImGui::PopStyleVar();
         }
@@ -376,7 +376,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
         const auto INPUT_NAME_SIZE = 330.f * SCALE.x;
         const auto INPUT_NAME_POS = ImVec2((SIZE_USER.x / 2.f) - (INPUT_NAME_SIZE / 2.f), 240.f * SCALE.y);
         ImGui::SetCursorPos(ImVec2(INPUT_NAME_POS.x, INPUT_NAME_POS.y - (30.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? gui.lang.user_management["name"].c_str() : "Name");
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", is_lang ? gui.lang.user_management["name"].c_str() : "Name");
         ImGui::SetCursorPos(INPUT_NAME_POS);
         ImGui::PushItemWidth(INPUT_NAME_SIZE);
         ImGui::InputText("##user_name", &temp.name);
@@ -407,12 +407,12 @@ void draw_user_management(GuiState &gui, HostState &host) {
         const std::string msg = "The following user has been created";
         const auto calc_text = (SIZE_USER.x / 2.f) - (ImGui::CalcTextSize(msg.c_str()).x / 2.f);
         ImGui::SetCursorPos(ImVec2(calc_text, (44.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, msg.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", msg.c_str());
         ImGui::SetCursorPos(AVATAR_POS);
         if (gui.users_avatar.find(user_id) != gui.users_avatar.end())
             ImGui::Image(gui.users_avatar[user_id], AVATAR_SIZE);
         ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + AVATAR_SIZE.x / 2 - ImGui::CalcTextSize(gui.users[user_id].name.c_str()).x / 2, AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, gui.users[user_id].name.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.users[user_id].name.c_str());
         ImGui::SetCursorPos(BUTTON_POS);
         if (ImGui::Button("OK", BUTTON_SIZE)) {
             clear_temp(gui);

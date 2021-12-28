@@ -461,19 +461,19 @@ void draw_settings(GuiState &gui, HostState &host) {
                         const auto INFO_POS = ImVec2(280.f * SCALE.x, 30.f * SCALE.y);
                         ImGui::SetWindowFontScale(0.94f);
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
-                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["name"].c_str() : "Name");
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", is_lang ? lang["name"].c_str() : "Name");
                         ImGui::SameLine();
                         ImGui::PushTextWrapPos(SIZE_LIST.x - (30.f * SCALE.x));
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[selected].title.c_str());
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
-                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["provider"].c_str() : "Provider");
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", is_lang ? lang["provider"].c_str() : "Provider");
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[selected].provided.c_str());
                         ImGui::PopTextWrapPos();
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
-                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["updated"].c_str() : "Updated");
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", is_lang ? lang["updated"].c_str() : "Updated");
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
                         auto DATE_TIME = get_date_time(gui, host, themes_info[selected].updated);
@@ -483,12 +483,12 @@ void draw_settings(GuiState &gui, HostState &host) {
                             ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                         }
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
-                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["size"].c_str() : "Size");
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", is_lang ? lang["size"].c_str() : "Size");
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%zu KB", themes_info[selected].size);
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
-                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["version"].c_str() : "Version");
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", is_lang ? lang["version"].c_str() : "Version");
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[selected].version.c_str());
@@ -538,7 +538,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                     ImGui::PopStyleColor();
                     ImGui::SetWindowFontScale(0.72f);
                     ImGui::SetCursorPosX(IMAGE_POS.x);
-                    ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["image"].c_str() : "Image");
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", is_lang ? lang["image"].c_str() : "Image");
                     const auto DEFAULT_POS = ImVec2(is_not_default ? (SIZE_LIST.x / 2.f) + (SIZE_PACKAGE.x / 2.f) + (30.f * SCALE.y) : (SIZE_LIST.x / 2.f) - (SIZE_PACKAGE.x / 2.f), PACKAGE_POS_Y);
                     if (gui.themes_preview["default"].find("package") != gui.themes_preview["default"].end()) {
                         ImGui::SetCursorPos(DEFAULT_POS);
@@ -551,7 +551,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::PopStyleColor();
                         ImGui::SetWindowFontScale(0.72f);
                         ImGui::SetCursorPosX(DEFAULT_POS.x);
-                        ImGui::TextColored(GUI_COLOR_TEXT, is_lang ? lang["default"].c_str() : "Default");
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", is_lang ? lang["default"].c_str() : "Default");
                     }
                     ImGui::PopStyleVar();
                     ImGui::SetWindowFontScale(0.90f);
