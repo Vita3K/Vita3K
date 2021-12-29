@@ -337,13 +337,15 @@ int main(int argc, char *argv[]) {
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
 
-        gl_renderer.render(host);
+        {
+            const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
+            gl_renderer.render(host);
+        }
 
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
         draw_app_background(gui, host);
 
-        host.display.condvar.notify_all();
         gui::draw_end(gui, host.window.get());
 
         SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.current_app_title, host.io.title_id).c_str());
@@ -354,7 +356,10 @@ int main(int argc, char *argv[]) {
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
 
-        gl_renderer.render(host);
+        {
+            const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
+            gl_renderer.render(host);
+        }
 
         // Calculate FPS
         app::calculate_fps(host);
@@ -373,7 +378,6 @@ int main(int argc, char *argv[]) {
             gui::draw_ui(gui, host);
         }
 
-        host.display.condvar.notify_all();
         gui::draw_end(gui, host.window.get());
     }
 

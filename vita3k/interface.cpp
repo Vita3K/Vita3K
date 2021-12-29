@@ -609,7 +609,6 @@ bool handle_events(HostState &host, GuiState &gui) {
             host.kernel.exit_delete_all_threads();
             host.gxm.display_queue.abort();
             host.display.abort.exchange(true);
-            host.display.condvar.notify_all();
             return false;
 
         case SDL_KEYDOWN:
