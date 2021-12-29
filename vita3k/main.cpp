@@ -331,7 +331,10 @@ int main(int argc, char *argv[]) {
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
 
-        host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.mem);
+        {
+            const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
+            host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.mem);
+        }
 
         gui::draw_begin(gui, host);
         gui::draw_common_dialog(gui, host);
@@ -347,7 +350,10 @@ int main(int argc, char *argv[]) {
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
             host.io.title_id.c_str());
 
-        host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.mem);
+        {
+            const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
+            host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.mem);
+        }
 
         // Calculate FPS
         app::calculate_fps(host);
