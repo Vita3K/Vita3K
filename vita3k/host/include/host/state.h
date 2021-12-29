@@ -21,6 +21,7 @@
 #include <config/state.h>
 #include <ctrl/state.h>
 #include <dialog/state.h>
+#include <display/state.h>
 #include <gxm/state.h>
 #include <host/sfo.h>
 #include <host/window.h>
@@ -40,18 +41,6 @@
 #include <atomic>
 #include <memory>
 #include <string>
-
-struct DisplayState {
-    Ptr<const void> base;
-    uint32_t pitch = 0;
-    uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
-    SceIVector2 image_size = { 0, 0 };
-    std::mutex mutex;
-    std::condition_variable condvar;
-    std::atomic<bool> abort{ false };
-    std::atomic<bool> imgui_render{ true };
-    std::atomic<bool> fullscreen{ false };
-};
 
 struct HostState {
     std::string app_version;

@@ -491,10 +491,6 @@ enum SceSysmoduleErrorCode {
 typedef SceUInt64 SceKernelSysClock;
 typedef Ptr<int(SceSize args, Ptr<void> argp)> SceKernelThreadEntry;
 
-enum SceDisplayPixelFormat {
-    SCE_DISPLAY_PIXELFORMAT_A8B8G8R8 = 0x00000000U
-};
-
 struct SceKernelSegmentInfo {
     SceSize size; //!< this structure size (0x18)
     SceUInt perms; //!< probably rwx in low bits
