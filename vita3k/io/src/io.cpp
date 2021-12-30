@@ -741,7 +741,7 @@ int remove_dir(IOState &io, const char *dir, const std::wstring &pref_path, cons
 
     LOG_TRACE_IF(log_file_op, "{}: Removing dir {} ({})", export_name, dir, device::construct_normalized_path(device, translated_path));
 
-    if (!fs::remove(device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio))) {
+    if (!fs::remove_all(device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio))) {
         LOG_ERROR("Cannot remove dir: {} ({})", dir, device::construct_normalized_path(device, translated_path));
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
