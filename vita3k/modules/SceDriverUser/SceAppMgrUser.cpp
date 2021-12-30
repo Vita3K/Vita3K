@@ -401,8 +401,13 @@ EXPORT(int, sceAppMgrSaveDataAddMount) {
 
 EXPORT(int, sceAppMgrSaveDataDataRemove, Ptr<SceAppMgrSaveDataDataDelete> data) {
     for (int i = 0; i < data.get(host.mem)->fileNum; i++) {
-        remove_file(host.io, construct_savedata0_path(data.get(host.mem)->files.get(host.mem)[i].dataPath.get(host.mem)).c_str(), host.pref_path, export_name);
+        const auto file = fs::path(construct_savedata0_path(data.get(host.mem)->files.get(host.mem)[i].dataPath.get(host.mem)));
+        if (fs::is_regular_file(file)) {
+            remove_file(host.io, file.string().c_str(), host.pref_path, export_name);
+        } else
+            remove_dir(host.io, file.string().c_str(), host.pref_path, export_name);
     }
+
     return 0;
 }
 

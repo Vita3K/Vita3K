@@ -185,12 +185,17 @@ std::string construct_slotparam_path(const unsigned int data) {
 
 EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceAppUtilSaveDataRemoveItem *files, unsigned int fileNum, SceAppUtilMountPoint *mountPoint) {
     for (unsigned int i = 0; i < fileNum; i++) {
-        remove_file(host.io, construct_savedata0_path(files[i].dataPath.get(host.mem)).c_str(), host.pref_path, export_name);
+        const auto file = fs::path(construct_savedata0_path(files[i].dataPath.get(host.mem)));
+        if (fs::is_regular_file(file)) {
+            remove_file(host.io, file.string().c_str(), host.pref_path, export_name);
+        } else
+            remove_dir(host.io, file.string().c_str(), host.pref_path, export_name);
     }
 
     if (slot && files[0].mode == SCE_APPUTIL_SAVEDATA_DATA_REMOVE_MODE_DEFAULT) {
         remove_file(host.io, construct_slotparam_path(slot->id).c_str(), host.pref_path, export_name);
     }
+
     return 0;
 }
 
