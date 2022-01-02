@@ -257,19 +257,12 @@ int main(int argc, char *argv[]) {
         auto &glstate = static_cast<renderer::gl::GLState &>(*host.renderer);
         if (renderer::gl::get_shaders_cache_hashs(glstate, host.base_path.c_str(), host.io.title_id.c_str()) && cfg.shader_cache) {
             for (const auto &hash : glstate.shaders_cache_hashs) {
-                // Driver acto!
-                renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-                    host.io.title_id.c_str());
-
-                gl_renderer.render(host);
-
                 gui::draw_begin(gui, host);
                 draw_app_background(gui, host);
 
                 renderer::gl::pre_compile_program(glstate, host.base_path.c_str(), host.io.title_id.c_str(), hash);
                 gui::draw_pre_compiling_shaders_progress(gui, host, uint32_t(glstate.shaders_cache_hashs.size()));
 
-                host.display.condvar.notify_all();
                 gui::draw_end(gui, host.window.get());
                 SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, host.current_app_title, host.io.title_id).c_str());
             }
