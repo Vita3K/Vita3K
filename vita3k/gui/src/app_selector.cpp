@@ -581,7 +581,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
                     ImGui::NextColumn();
                     ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::NextColumn();
-                    if (app.last_time) {
+                    if (app.last_time > 0) {
                         tm date_tm = {};
                         SAFE_LOCALTIME(&app.last_time, &date_tm);
                         auto LAST_TIME = get_date_time(gui, host, date_tm);
