@@ -182,7 +182,6 @@ void init_user(GuiState &gui, HostState &host, const std::string &user_id) {
     }
     init_theme(gui, host, gui.users[user_id].theme_id);
     init_notice_info(gui, host);
-    init_last_time_apps(gui, host);
 }
 
 void open_user(GuiState &gui, HostState &host) {
