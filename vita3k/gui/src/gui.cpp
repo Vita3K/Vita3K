@@ -428,14 +428,12 @@ void save_apps_cache(GuiState &gui, HostState &host) {
 }
 
 void init_home(GuiState &gui, HostState &host) {
-    const auto is_cmd = host.cfg.run_app_path || host.cfg.content_path;
-    if (host.cfg.load_app_list || !is_cmd) {
+    if (gui.app_selector.user_apps.empty() && (host.cfg.load_app_list || !host.cfg.run_app_path)) {
         if (!get_user_apps(gui, host))
             init_user_apps(gui, host);
     }
 
-    get_time_apps(gui, host);
-
+    const auto is_cmd = host.cfg.run_app_path || host.cfg.content_path;
     if (!gui.users.empty() && (gui.users.find(host.cfg.user_id) != gui.users.end()) && (is_cmd || host.cfg.auto_user_login)) {
         init_user(gui, host, host.cfg.user_id);
         if (!is_cmd && host.cfg.auto_user_login) {
@@ -641,6 +639,7 @@ void init(GuiState &gui, HostState &host) {
     init_lang(gui, host);
     get_notice_list(host);
     get_users_list(gui, host);
+    get_time_apps(gui, host);
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);

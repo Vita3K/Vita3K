@@ -238,6 +238,13 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
     update_progress();
 
     LOG_INFO("{} [{}] installed succesfully!", host.app_title_id, host.app_title);
+
+    if (host.cfg.content_path) {
+        gui::init_user_app(*gui, host, host.app_title_id);
+        gui::save_apps_cache(*gui, host);
+        host.cfg.content_path.reset();
+    }
+
     fclose(vpk_fp);
     return true;
 }
