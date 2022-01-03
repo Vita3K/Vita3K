@@ -376,6 +376,7 @@ static bool get_user_apps(GuiState &gui, HostState &host) {
             app.title = read();
             app.title_id = read();
             app.path = read();
+            app.last_time = 0;
 
             gui.app_selector.user_apps.push_back(app);
         }
