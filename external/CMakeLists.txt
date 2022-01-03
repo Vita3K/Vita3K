@@ -297,3 +297,6 @@ option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
 add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)
 set_property(TARGET xxhash PROPERTY FOLDER externals)
+
+# Soundtouch audio processing library for timing, pitch and playback rate manipulation
+add_subdirectory(soundtouch)
