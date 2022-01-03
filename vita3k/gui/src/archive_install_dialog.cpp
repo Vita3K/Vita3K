@@ -45,12 +45,8 @@ static float global_progress = 0;
 static float content_count = 0;
 
 static float number_of_content(const fs::path &path) {
-    float count = 0;
-    for (const auto &content : fs::directory_iterator(path)) {
-        if ((content.path().extension() == ".zip") || (content.path().extension() == ".vpk"))
-            ++count;
-    }
-    return count;
+    const auto pred = [](const auto &content) { return (content.path().extension() == ".zip") || (content.path().extension() == ".vpk"); };
+    return std::count_if(fs::begin(fs::directory_iterator(path)), fs::end(fs::directory_iterator(path)), pred);
 }
 
 void draw_archive_install_dialog(GuiState &gui, HostState &host) {
