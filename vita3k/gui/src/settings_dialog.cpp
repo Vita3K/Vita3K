@@ -74,6 +74,9 @@ static void reset_emulator(GuiState &gui, HostState &host) {
     host.io.user_id.clear();
     config::serialize_config(host.cfg, host.cfg.config_path);
 
+    // Clean User apps list
+    gui.app_selector.user_apps.clear();
+
     get_modules_list(gui, host);
     get_sys_apps_title(gui, host);
     get_notice_list(host);
