@@ -47,9 +47,8 @@ struct SceDisplayFrameBuf {
     SceUInt32 height = 0;
 };
 
+EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync);
 EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync);
-
-SceInt32 _sceDisplaySetFrameBuf(const SceDisplayFrameBuf *pParam, SceDisplaySetBufSync sync);
 
 BRIDGE_DECL(_sceDisplayGetFrameBuf)
 BRIDGE_DECL(_sceDisplayGetFrameBufInternal)

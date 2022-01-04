@@ -17,8 +17,8 @@
 
 #include "SceDisplayUser.h"
 
-EXPORT(int, sceDisplayGetFrameBuf) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
+    return CALL_EXPORT(_sceDisplayGetFrameBuf, pFrameBuf, sync);
 }
 
 EXPORT(int, sceDisplayGetFrameBufInternal) {
