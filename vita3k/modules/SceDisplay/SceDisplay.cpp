@@ -29,8 +29,19 @@ static int display_wait(HostState &host) {
     return SCE_DISPLAY_ERROR_OK;
 }
 
-EXPORT(int, _sceDisplayGetFrameBuf) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
+    if (pFrameBuf->size != sizeof(SceDisplayFrameBuf))
+        return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
+    else if (sync != SCE_DISPLAY_SETBUF_NEXTFRAME && sync != SCE_DISPLAY_SETBUF_IMMEDIATE)
+        return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
+
+    pFrameBuf->base = host.display.base;
+    pFrameBuf->pitch = host.display.pitch;
+    pFrameBuf->pixelformat = host.display.pixelformat;
+    pFrameBuf->width = host.display.image_size.x;
+    pFrameBuf->height = host.display.image_size.y;
+
+    return SCE_DISPLAY_ERROR_OK;
 }
 
 EXPORT(int, _sceDisplayGetFrameBufInternal) {
