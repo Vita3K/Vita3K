@@ -113,6 +113,8 @@ int main(int argc, char *argv[]) {
     }
 
     LOG_INFO("{}", window_title);
+    LOG_INFO("Number of logical CPU cores: {}", SDL_GetCPUCount());
+    LOG_INFO("Available ram memory: {} mo", SDL_GetSystemRAM());
 
     app::AppRunType run_type = app::AppRunType::Unknown;
     if (cfg.run_app_path)

@@ -29,12 +29,24 @@ void draw_perf_overlay(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowPos(ImVec2(PERF_OVERLAY_POS.x + host.viewport_pos.x, PERF_OVERLAY_POS.y));
     ImGui::SetNextWindowBgAlpha(0.8f);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, PERF_OVERLAY_BG_COLOR);
-
     ImGui::Begin("##performance", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::Text("FPS: %d", host.fps);
+    if (host.cfg.performance_overlay_detail >= PerfomanceOverleyDetail::MEDIUM) {
+        ImGui::Separator();
+        ImGui::Text("Avg: %d\nMin: %d Max: %d", host.avg_fps, host.min_fps, host.max_fps);
+    }
     ImGui::End();
-
     ImGui::PopStyleColor();
+
+    if (host.cfg.performance_overlay_detail == PerfomanceOverleyDetail::MAXIMUM) {
+        ImGui::SetNextWindowPos(ImVec2(PERF_OVERLAY_POS.x + host.viewport_pos.x - (11.f * host.dpi_scale), PERF_OVERLAY_POS.y + (60.f * host.dpi_scale)));
+        ImGui::SetNextWindowBgAlpha(0.f);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+        ImGui::Begin("##fps_graphic", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::PlotLines("##fps_graphic", host.fps_values, IM_ARRAYSIZE(host.fps_values), host.current_fps_offset, nullptr, 0.f, float(host.max_fps), ImVec2(160.f * host.dpi_scale, 60.f * host.dpi_scale));
+        ImGui::End();
+        ImGui::PopStyleVar();
+    }
 }
 
 } // namespace gui

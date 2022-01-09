@@ -82,6 +82,11 @@ struct HostState {
     size_t frame_count = 0;
     uint32_t sdl_ticks = 0;
     uint32_t fps = 0;
+    uint32_t avg_fps = 0;
+    uint32_t min_fps = 0;
+    uint32_t max_fps = 0;
+    float fps_values[20] = {};
+    uint32_t current_fps_offset = 0;
     uint32_t ms_per_frame = 0;
     WindowPtr window = WindowPtr(nullptr, nullptr);
     renderer::Backend backend_renderer;
