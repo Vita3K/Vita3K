@@ -31,15 +31,28 @@ void error_dialog(const std::string &message, SDL_Window *window) {
     }
 }
 
+static const uint32_t frames_size = 20;
 void calculate_fps(HostState &host) {
     const uint32_t sdl_ticks_now = SDL_GetTicks();
     const uint32_t ms = sdl_ticks_now - host.sdl_ticks;
+
     if (ms >= 1000 && host.frame_count > 0) {
+        // Set Current FPS
         host.fps = static_cast<std::uint32_t>((host.frame_count * 1000) / ms);
         host.ms_per_frame = ms / static_cast<std::uint32_t>(host.frame_count);
         host.sdl_ticks = sdl_ticks_now;
         host.frame_count = 0;
         set_window_title(host);
+
+        // Set FPS Statistics
+        host.fps_values[host.current_fps_offset] = float(host.fps);
+        host.current_fps_offset = (host.current_fps_offset + 1) % frames_size;
+        uint32_t avg_fps = 0;
+        for (uint32_t i = 0; i < frames_size; i++)
+            avg_fps += uint32_t(host.fps_values[i]);
+        host.avg_fps = avg_fps / frames_size;
+        host.min_fps = uint32_t(*std::min_element(host.fps_values, std::next(host.fps_values, frames_size)));
+        host.max_fps = uint32_t(*std::max_element(host.fps_values, std::next(host.fps_values, frames_size)));
     }
 }
 

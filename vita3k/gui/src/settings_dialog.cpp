@@ -431,13 +431,23 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Enables Discord Rich Presence to show what application you're running on Discord");
 #endif
-        ImGui::Checkbox("Performance Overlay", &host.cfg.performance_overlay);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Display performance information on the screen as an overlay.");
-        ImGui::SameLine();
         ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
+        ImGui::Separator();
+        const auto perfomance_overley_size = ImGui::CalcTextSize("Performance Overlay").x;
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (perfomance_overley_size / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Performance Overlay");
+        ImGui::Spacing();
+        ImGui::Checkbox("Performance Overlay", &host.cfg.performance_overlay);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Display performance information on the screen as an overlay.");
+        if (host.cfg.performance_overlay) {
+            ImGui::Combo("Detail Level", &host.cfg.performance_overlay_detail, "Minimum\0Medium\0Maximum\0");
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Select your preferred perfomance overley detail.");
+        }
+        ImGui::Spacing();
 #ifndef WIN32
         ImGui::Checkbox("Check to enable case-insensitive path finding on case sensitive filesystems. \nRESETS ON RESTART", &host.io.case_isens_find_enabled);
         if (ImGui::IsItemHovered())

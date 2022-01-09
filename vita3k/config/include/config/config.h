@@ -26,6 +26,12 @@ enum ModulesMode {
     MANUAL
 };
 
+enum PerfomanceOverleyDetail {
+    MINIMUM,
+    MEDIUM,
+    MAXIMUM,
+};
+
 // clang-format off
 // Singular options produced in config file
 // Order is code(option_type, option_name, option_default, member_name)
@@ -60,6 +66,7 @@ enum ModulesMode {
     code(bool, "wait-for-debugger", false, wait_for_debugger)                                           \
     code(bool, "color-surface-debug", false, color_surface_debug)                                       \
     code(bool, "performance-overlay", false, performance_overlay)                                       \
+    code(int, "perfomance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)       \
     code(std::string, "backend-renderer", "OpenGL", backend_renderer)                                   \
     code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
     code(int, "keyboard-button-start", 40, keyboard_button_start)                                       \
