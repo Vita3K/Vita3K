@@ -9,6 +9,7 @@ add_library(
 	src/gxp.cpp
 	src/stream.cpp
 	src/textures.cpp
+	src/transfer.cpp
 )
 
 target_include_directories(gxm PUBLIC include)
