@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -3815,16 +3815,155 @@ EXPORT(int, sceGxmTextureValidate, const SceGxmTexture *texture) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmTransferCopy) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorKeyValue, uint32_t colorKeyMask, SceGxmTransferColorKeyMode colorKeyMode,
+    SceGxmTransferFormat srcFormat, SceGxmTransferType srcType, const void *srcAddress, uint32_t srcX, uint32_t srcY, int32_t srcStride,
+    SceGxmTransferFormat destFormat, SceGxmTransferType destType, void *destAddress, uint32_t destX, uint32_t destY, int32_t destStride,
+    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const Ptr<SceGxmNotification> notification) {
+    if (!srcAddress || !destAddress)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    const auto src_type_is_linear = srcType == SCE_GXM_TRANSFER_LINEAR;
+    const auto src_type_is_tiled = srcType == SCE_GXM_TRANSFER_TILED;
+    const auto src_type_is_swizzled = srcType == SCE_GXM_TRANSFER_SWIZZLED;
+    const auto dest_type_is_linear = destType == SCE_GXM_TRANSFER_LINEAR;
+    const auto dest_type_is_tiled = destType == SCE_GXM_TRANSFER_TILED;
+    const auto dest_type_is_swizzled = destType == SCE_GXM_TRANSFER_SWIZZLED;
+
+    const auto is_invalide_value = (src_type_is_tiled && dest_type_is_swizzled) || (src_type_is_swizzled && dest_type_is_tiled) || (src_type_is_swizzled && dest_type_is_swizzled);
+    if (is_invalide_value)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+
+    if (!syncFlags && src_type_is_linear && dest_type_is_linear) {
+        const auto src_bpp = gxm::get_bits_per_pixel(srcFormat);
+        const auto dest_bpp = gxm::get_bits_per_pixel(destFormat);
+        const uint32_t src_bytes_per_pixel = (src_bpp + 7) >> 3;
+        const uint32_t dest_bytes_per_pixel = (dest_bpp + 7) >> 3;
+
+        for (uint32_t y = 0; y < height; y++) {
+            for (uint32_t x = 0; x < width; x++) {
+                // Set offset of source and destination
+                const auto src_offset = ((x + srcX) * src_bytes_per_pixel) + ((y + srcY) * srcStride);
+                const auto dest_offset = ((x + destX) * dest_bytes_per_pixel) + ((y + destY) * destStride);
+
+                // Set pointer of source and destination
+                const auto src_ptr = (uint8_t *)srcAddress + src_offset;
+                auto dest_ptr = (uint8_t *)destAddress + dest_offset;
+
+                // Set color of source
+                const auto src_color = *(uint32_t *)src_ptr;
+
+                // Copy result in destination depending color Key
+                switch (colorKeyMode) {
+                case SCE_GXM_TRANSFER_COLORKEY_NONE:
+                    memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
+                    break;
+                case SCE_GXM_TRANSFER_COLORKEY_PASS:
+                    if ((src_color & colorKeyMask) == colorKeyValue)
+                        memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
+                    break;
+                case SCE_GXM_TRANSFER_COLORKEY_REJECT:
+                    if ((src_color & colorKeyMask) != colorKeyValue)
+                        memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
+                    break;
+                default: break;
+                }
+            }
+        }
+    } else
+        STUBBED("No support syncFlags & convertion of SceGxmTransferType yet");
+
+    if (syncObject) {
+        SceGxmSyncObject *sync = syncObject.get(host.mem);
+        renderer::wishlist(sync, (renderer::SyncObjectSubject)(renderer::SyncObjectSubject::DisplayQueue | renderer::SyncObjectSubject::Fragment));
+    }
+
+    if (notification) {
+        volatile uint32_t *val = notification.get(host.mem)->address.get(host.mem);
+        *val = notification.get(host.mem)->value;
+    }
+
+    return 0;
 }
 
-EXPORT(int, sceGxmTransferDownscale) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, const void *srcAddress,
+    uint32_t srcX, uint32_t srcY, uint32_t srcWidth, uint32_t srcHeight, int32_t srcStride,
+    SceGxmTransferFormat destFormat, void *destAddress, uint32_t destX, uint32_t destY, int32_t destStride,
+    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const Ptr<SceGxmNotification> notification) {
+    if (!srcAddress || !destAddress)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    if (!syncFlags) {
+        const auto src_bpp = gxm::get_bits_per_pixel(srcFormat);
+        const auto dest_bpp = gxm::get_bits_per_pixel(destFormat);
+        const uint32_t src_bytes_per_pixel = (src_bpp + 7) >> 3;
+        const uint32_t dest_bytes_per_pixel = (dest_bpp + 7) >> 3;
+
+        for (uint32_t y = 0; y < srcHeight; y += 2) {
+            for (uint32_t x = 0; x < srcWidth; x += 2) {
+                // Set offset of source and destination
+                const auto src_offset = ((x + srcX) * src_bytes_per_pixel) + ((y + srcY) * srcStride);
+                const auto dest_offset = (y / 2 + destY) * destStride + (x / 2 + destX) * dest_bytes_per_pixel;
+
+                // Set pointer of source and destination
+                const auto src_ptr = (uint8_t *)srcAddress + src_offset;
+                auto dest_ptr = (uint8_t *)destAddress + dest_offset;
+
+                // Copy result in destination
+                memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
+            }
+        }
+    } else
+        STUBBED("No support syncFlags yet");
+
+    if (syncObject) {
+        SceGxmSyncObject *sync = syncObject.get(host.mem);
+        renderer::wishlist(sync, (renderer::SyncObjectSubject)(renderer::SyncObjectSubject::DisplayQueue || renderer::SyncObjectSubject::Fragment));
+    }
+
+    if (notification) {
+        volatile uint32_t *val = notification.get(host.mem)->address.get(host.mem);
+        *val = notification.get(host.mem)->value;
+    }
+
+    return 0;
 }
 
-EXPORT(int, sceGxmTransferFill) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFormat, void *destAddress,
+    uint32_t destX, uint32_t destY, uint32_t destWidth, uint32_t destHeight, int32_t destStride,
+    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const Ptr<SceGxmNotification> notification) {
+    if (!destAddress)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    const auto bpp = gxm::get_bits_per_pixel(destFormat);
+
+    if (!syncFlags) {
+        const uint32_t bytes_per_pixel = (bpp + 7) >> 3;
+        for (uint32_t y = 0; y < destHeight; y++) {
+            for (uint32_t x = 0; x < destWidth; x++) {
+                // Set offset of destination
+                const auto dest_offset = ((x + destX) * bytes_per_pixel) + ((y + destY) * destStride);
+
+                // Set pointer of destination
+                auto dest_ptr = (uint8_t *)destAddress + dest_offset;
+
+                // Fill color in destination
+                memcpy(dest_ptr, &fillColor, bytes_per_pixel);
+            }
+        }
+    } else
+        STUBBED("No support syncFlags yet");
+
+    if (syncObject) {
+        SceGxmSyncObject *sync = syncObject.get(host.mem);
+        renderer::wishlist(sync, (renderer::SyncObjectSubject)(renderer::SyncObjectSubject::DisplayQueue | renderer::SyncObjectSubject::Fragment));
+    }
+
+    if (notification) {
+        volatile uint32_t *val = notification.get(host.mem)->address.get(host.mem);
+        *val = notification.get(host.mem)->value;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceGxmTransferFinish) {

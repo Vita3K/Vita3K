@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -36,6 +36,8 @@ bool is_yuv_format(SceGxmTextureBaseFormat base_format);
 size_t attribute_format_size(SceGxmAttributeFormat format);
 size_t index_element_size(SceGxmIndexFormat format);
 bool is_stream_instancing(SceGxmIndexSource source);
+// Transfer
+uint32_t get_bits_per_pixel(SceGxmTransferFormat Format);
 } // namespace gxm
 
 namespace gxp {
