@@ -28,8 +28,18 @@ enum ModulesMode {
 
 enum PerfomanceOverleyDetail {
     MINIMUM,
+    LOW,
     MEDIUM,
     MAXIMUM,
+};
+
+enum PerfomanceOverleyPosition {
+    TOP_LEFT,
+    TOP_CENTER,
+    TOP_RIGHT,
+    BOTTOM_LEFT,
+    BOTTOM_CENTER,
+    BOTTOM_RIGHT,
 };
 
 // clang-format off
@@ -67,6 +77,7 @@ enum PerfomanceOverleyDetail {
     code(bool, "color-surface-debug", false, color_surface_debug)                                       \
     code(bool, "performance-overlay", false, performance_overlay)                                       \
     code(int, "perfomance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)       \
+    code(int, "perfomance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position)  \
     code(std::string, "backend-renderer", "OpenGL", backend_renderer)                                   \
     code(int, "keyboard-button-select", 229, keyboard_button_select)                                    \
     code(int, "keyboard-button-start", 40, keyboard_button_start)                                       \

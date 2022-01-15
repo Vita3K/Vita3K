@@ -446,9 +446,12 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Display performance information on the screen as an overlay.");
         if (host.cfg.performance_overlay) {
-            ImGui::Combo("Detail Level", &host.cfg.performance_overlay_detail, "Minimum\0Medium\0Maximum\0");
+            ImGui::Combo("Detail", &host.cfg.performance_overlay_detail, "Minimum\0Low\0Medium\0Maximum\0");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred perfomance overley detail.");
+            ImGui::Combo("Position", &host.cfg.performance_overlay_position, "Top Left\0Top Center\0Top Right\0Botttom Left\0Botttom Center\0Botttom Right\0");
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Select your preferred perfomance overley position.");
         }
         ImGui::Spacing();
 #ifndef WIN32
