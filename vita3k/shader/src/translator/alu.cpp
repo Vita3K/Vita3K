@@ -393,7 +393,11 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
     }
 
     case Opcode::OR: {
-        result = m_b.createBinOp(spv::OpBitwiseOr, source_type, vsrc1, vsrc2);
+        if (m_b.getOpCode(vsrc2) == spv::Op::OpConstant && m_b.getConstantScalar(vsrc2) == 0) {
+            result = vsrc1;
+        } else {
+            result = m_b.createBinOp(spv::OpBitwiseOr, source_type, vsrc1, vsrc2);
+        }
         break;
     }
 
