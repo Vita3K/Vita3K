@@ -75,14 +75,6 @@ bool USSETranslatorVisitor::vbw(
     BEGIN_REPEAT(repeat_count)
     GET_REPEAT(inst, RepeatMode::SLMSI);
 
-    spv::Id src1 = load(inst.opr.src1, 0b0001, src1_repeat_offset);
-    spv::Id src2 = 0;
-
-    if (src1 == spv::NoResult) {
-        LOG_ERROR("Source not loaded");
-        return false;
-    }
-
     bool immediate = src2_ext && inst.opr.src2.bank == RegisterBank::IMMEDIATE;
     uint32_t value = 0;
 
@@ -90,6 +82,8 @@ bool USSETranslatorVisitor::vbw(
         LOG_WARN("Bitwise Rotations are unsupported.");
         return false;
     }
+
+    spv::Id src2 = 0;
     if (immediate) {
         value = src2_n | (static_cast<uint32_t>(src2_sel) << 7) | (static_cast<uint32_t>(src2_exth) << 14);
         src2 = m_b.makeUintConstant(src2_invert ? ~value : value);
@@ -121,10 +115,28 @@ bool USSETranslatorVisitor::vbw(
     case Opcode::SHR: operation = spv::Op::OpShiftRightLogical; break;
     default: return false;
     }
-
-    result = m_b.createBinOp(operation, type_ui32, src1, src2);
-    if (m_b.isFloatType(m_b.getTypeId(src2))) {
-        result = m_b.createUnaryOp(spv::Op::OpBitcast, type_f32, src2);
+    //optimisation. (any OR 0 || any XOR 0 || any AND 0xFFFFFFFF) -> assign
+    bool is_const = m_b.getOpCode(src2) == spv::Op::OpConstant;
+    auto const_val = is_const ? m_b.getConstantScalar(src2) : 1; //default value is intentionally non zero
+    if ((operation == spv::Op::OpBitwiseOr || operation == spv::Op::OpBitwiseXor) && is_const && const_val == 0
+        || operation == spv::Op::OpBitwiseAnd && is_const && const_val == std::numeric_limits<decltype(const_val)>::max()) {
+        inst.opr.src1.type = DataType::F32;
+        inst.opr.dest.type = DataType::F32;
+        result = load(inst.opr.src1, 0b0001, src1_repeat_offset);
+        if (result == spv::NoResult) {
+            LOG_ERROR("Source not loaded");
+            return false;
+        }
+    } else {
+        spv::Id src1 = load(inst.opr.src1, 0b0001, src1_repeat_offset);
+        if (src1 == spv::NoResult) {
+            LOG_ERROR("Source not loaded");
+            return false;
+        }
+        result = m_b.createBinOp(operation, type_ui32, src1, src2);
+        if (m_b.isFloatType(m_b.getTypeId(src2))) {
+            result = m_b.createUnaryOp(spv::Op::OpBitcast, type_f32, src2);
+        }
     }
 
     store(inst.opr.dest, result, 0b0001, dest_repeat_offset);
