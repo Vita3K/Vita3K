@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -82,22 +82,38 @@ static std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, HostStat
 }
 
 static std::string get_time_app_used(const int64_t &time_used) {
-    std::string time_app_used;
-    if (time_used < 60)
-        time_app_used = fmt::format("{}s", time_used);
+    static const uint32_t one_min = 60;
+    static const uint32_t one_hour = one_min * 60;
+    static const uint32_t twenty_four_hours = 24;
+    static const uint32_t one_day = one_hour * twenty_four_hours;
+    static const uint32_t seven_days = 7;
+    static const uint32_t one_week = one_day * seven_days;
+
+    if (time_used < one_min)
+        return fmt::format("{}s", time_used);
     else {
         const std::chrono::seconds sec(time_used);
-        const auto minutes = std::chrono::duration_cast<std::chrono::minutes>(sec).count() % 60;
-        const auto seconds = sec.count() % 60;
-        if (time_used < 3600)
-            time_app_used = fmt::format("{}m:{}s", minutes, seconds);
+        const uint32_t minutes = std::chrono::duration_cast<std::chrono::minutes>(sec).count() % one_min;
+        const uint32_t seconds = sec.count() % one_min;
+        if (time_used < one_hour)
+            return fmt::format("{}m:{}s", minutes, seconds);
         else {
-            const auto hours = std::chrono::duration_cast<std::chrono::hours>(sec).count();
-            time_app_used = fmt::format("{}h:{}m:{}s", hours, minutes, seconds);
+            const uint32_t count_hours = std::chrono::duration_cast<std::chrono::hours>(sec).count();
+            if (time_used < one_day)
+                return fmt::format("{}h:{}m:{}s", count_hours, minutes, seconds);
+            else {
+                const uint32_t count_days = count_hours / twenty_four_hours;
+                const uint32_t hours_per_day = count_hours - (count_days * twenty_four_hours);
+                if (time_used < one_week)
+                    return fmt::format("{}d:{}h:{}m:{}s", count_days, hours_per_day, minutes, seconds);
+                else {
+                    const uint32_t count_weeks = count_days / seven_days;
+                    const uint32_t count_days_week = count_days - (count_weeks * seven_days);
+                    return fmt::format("{}w:{}d:{}h:{}m:{}s", count_weeks, count_days_week, hours_per_day, minutes, seconds);
+                }
+            }
         }
     }
-
-    return time_app_used;
 }
 
 void get_time_apps(GuiState &gui, HostState &host) {
@@ -252,7 +268,6 @@ void open_path(const std::string &path) {
 }
 
 static std::string context_dialog;
-static auto information = false;
 
 void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
@@ -352,7 +367,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     LOG_WARN("Patch note Error for title id: {} in path: {}", title_id, app_path);
             }
         }
-        if (ImGui::MenuItem(is_lang ? lang["information"].c_str() : "Information", nullptr, &information)) {
+        if (ImGui::MenuItem(is_lang ? lang["information"].c_str() : "Information", nullptr, &gui.live_area.app_information)) {
             if (title_id.find("NPXS") == std::string::npos) {
                 get_app_info(gui, host, app_path);
                 const auto app_size = get_app_size(gui, host, app_path);
@@ -437,14 +452,14 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
     }
 
     // Information
-    if (information) {
+    if (gui.live_area.app_information) {
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-        ImGui::Begin("##information", &information, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("##information", &gui.live_area.app_information, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
         ImGui::SetCursorPos(ImVec2(10.0f * SCALE.x, 10.0f * SCALE.y));
         if (ImGui::Button("X", ImVec2(40.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
-            information = false;
+            gui.live_area.app_information = false;
             gui.live_area.information_bar = true;
         }
         if (get_app_icon(gui, title_id)->first == title_id) {

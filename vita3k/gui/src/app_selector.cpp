@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -352,7 +352,9 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     if (!host.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
         gui.live_area.information_bar = true;
 
-    if (!gui.file_menu.archive_install_dialog && !gui.file_menu.firmware_install_dialog && !gui.file_menu.pkg_install_dialog && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog) {
+    const auto config_dialog = gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog || gui.controls_menu.controls_dialog;
+    const auto install_dialog = gui.file_menu.archive_install_dialog || gui.file_menu.firmware_install_dialog || gui.file_menu.pkg_install_dialog;
+    if (!config_dialog && !install_dialog && !gui.live_area.app_close && !gui.live_area.app_information) {
         if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
             last_time["start"] = 0;
         else {
