@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -100,6 +100,17 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
+            const auto fw_font_package{ fs::path(host.pref_path) / "sa0" };
+            if (!fs::exists(fw_font_package) || fs::is_empty(fw_font_package)) {
+                ImGui::TextColored(GUI_COLOR_TEXT, "No firmware font package present.\nPlease download and install it.");
+                if (ImGui::Button("Download firmware font package"))
+                    open_path("https://bit.ly/2P2rb0r");
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for asian region font support in gui.\nIt is also generally recommended for gui");
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+            }
             ImGui::Checkbox("Delete the firmware installation file?", &delete_pup_file);
             ImGui::Spacing();
             ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
@@ -108,6 +119,7 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
                     fs::remove(fs::path(string_utils::utf_to_wide(pup_path)));
                     delete_pup_file = false;
                 }
+                init_theme(gui, host, gui.users[host.cfg.user_id].theme_id);
                 fw_version.clear();
                 pup_path = nullptr;
                 gui.file_menu.firmware_install_dialog = false;
