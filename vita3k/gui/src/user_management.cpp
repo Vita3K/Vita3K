@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -29,13 +29,12 @@
 
 namespace gui {
 
-static bool init_avatar(GuiState &gui, HostState &host, const std::string &user_id, const std::string &avatar) {
+static bool init_avatar(GuiState &gui, HostState &host, const std::string &user_id, const std::string avatar) {
     gui.users_avatar[user_id] = {};
-    const auto avatar_path = avatar == "default" ? host.base_path + "/data/image/icon.png" : avatar;
-    const std::wstring avatar_path_wstr = string_utils::utf_to_wide(avatar_path);
+    const auto avatar_path = avatar == "default" ? fs::path(host.base_path) / "data/image/icon.png" : fs::path(string_utils::utf_to_wide(avatar));
 
-    if (!fs::exists(avatar_path_wstr)) {
-        LOG_WARN("Avatar image doesn't exist: {}.", avatar_path);
+    if (!fs::exists(avatar_path)) {
+        LOG_WARN("Avatar image doesn't exist: {}.", avatar_path.string());
         return false;
     }
 
@@ -43,7 +42,7 @@ static bool init_avatar(GuiState &gui, HostState &host, const std::string &user_
     int32_t height = 0;
 
 #ifdef _WIN32
-    FILE *f = _wfopen(avatar_path_wstr.c_str(), L"rb");
+    FILE *f = _wfopen(avatar_path.c_str(), L"rb");
 #else
     FILE *f = fopen(avatar_path.c_str(), "rb");
 #endif
@@ -51,7 +50,7 @@ static bool init_avatar(GuiState &gui, HostState &host, const std::string &user_
     stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!data) {
-        LOG_ERROR("Invalid or corrupted image: {}.", avatar_path);
+        LOG_ERROR("Invalid or corrupted image: {}.", avatar_path.string());
         return false;
     }
 
