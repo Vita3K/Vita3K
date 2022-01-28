@@ -354,7 +354,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
 
     const auto config_dialog = gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog || gui.controls_menu.controls_dialog;
     const auto install_dialog = gui.file_menu.archive_install_dialog || gui.file_menu.firmware_install_dialog || gui.file_menu.pkg_install_dialog;
-    if (!config_dialog && !install_dialog && !gui.live_area.app_close && !gui.live_area.app_information) {
+    if (!config_dialog && !install_dialog && !gui.live_area.app_close && !gui.live_area.app_information && !gui.help_menu.about_dialog && !gui.help_menu.welcome_dialog) {
         if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
             last_time["start"] = 0;
         else {
