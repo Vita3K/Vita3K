@@ -34,34 +34,41 @@ void draw_welcome_dialog(GuiState &gui, HostState &host) {
     ImGui::Separator();
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT, "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux and MacOS.");
-    ImGui::TextColored(GUI_COLOR_TEXT, "\nThe emulator is still in its early stages so any feedback and testing is greatly appreciated.");
-    ImGui::TextColored(GUI_COLOR_TEXT, "\nTo get started, please install the Vita firmware and font packages.");
-    ImGui::TextColored(GUI_COLOR_TEXT, "\nA comprehensive guide on how to set-up Vita3K can be found on the");
+    ImGui::Spacing();
+    ImGui::TextColored(GUI_COLOR_TEXT, "The emulator is still in its early stages so any feedback and testing is greatly appreciated.");
+    ImGui::Spacing();
+    ImGui::TextColored(GUI_COLOR_TEXT, "To get started, please install the Vita firmware and font packages.");
+    if (ImGui::Button("Download Firmware"))
+        open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
     ImGui::SameLine();
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 9.f);
+    if (ImGui::Button("Download firmware font package"))
+        open_path("https://bit.ly/2P2rb0r");
+    ImGui::Spacing();
+    ImGui::TextColored(GUI_COLOR_TEXT, "A comprehensive guide on how to set-up Vita3K can be found on the");
+    ImGui::SameLine();
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
     if (ImGui::Button("Quickstart"))
         open_path("https://vita3k.org/quickstart.html");
     ImGui::SameLine();
     ImGui::TextColored(GUI_COLOR_TEXT, "page.");
+    ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT, "Consult the Commercial game");
     ImGui::SameLine();
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 4.f);
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
     if (ImGui::Button("compatibility"))
         open_path("https://vita3k.org/compatibility.html");
     ImGui::SameLine();
     ImGui::TextColored(GUI_COLOR_TEXT, "list and the Homebrew compatibility list to see what runs.");
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT, "Contributions are welcome!");
-    ImGui::TextColored(GUI_COLOR_TEXT, "\nAdditional support can be found in the #help channel of the");
+    if (ImGui::Button("GitHub"))
+        open_path("https://github.com/Vita3K/Vita3K");
+    ImGui::Spacing();
+    ImGui::TextColored(GUI_COLOR_TEXT, "Additional support can be found in the #help channel of the");
     ImGui::SameLine();
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + 9.f);
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
     if (ImGui::Button("Discord"))
         open_path("https://discord.gg/6aGwQzh");
-    ImGui::TextColored(GUI_COLOR_TEXT, "Support us on");
-    ImGui::SameLine();
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 4.f);
-    if (ImGui::Button("Patreon"))
-        open_path("https://patreon.com/vita3k");
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT, "Vita3K does not condone piracy. You must dump your own games.");
     ImGui::Spacing();
