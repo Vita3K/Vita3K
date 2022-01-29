@@ -106,6 +106,7 @@ struct IconAsyncLoader {
 struct AppsSelector {
     std::vector<App> sys_apps;
     std::vector<App> user_apps;
+    uint32_t apps_cache_lang;
     AppInfo app_info;
     std::optional<IconAsyncLoader> icon_async_loader;
     std::map<std::string, ImGui_Texture> sys_apps_icon;
