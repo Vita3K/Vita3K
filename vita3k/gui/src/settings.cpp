@@ -650,7 +650,7 @@ void draw_settings(GuiState &gui, HostState &host) {
             }
         }
     } else if (settings_menu == "date&time") {
-        // Language
+        // Date & Time
         title = is_lang ? lang["date_time"] : "Date & Time";
         ImGui::SetWindowFontScale(1.2f);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
@@ -785,10 +785,12 @@ void draw_settings(GuiState &gui, HostState &host) {
                             host.cfg.sys_lang = lang_id;
                             config::serialize_config(host.cfg, host.base_path);
                             init_lang(gui, host);
-                            get_sys_apps_title(gui, host);
-                            get_user_apps_title(gui, host);
-                            init_last_time_apps(gui, host);
-                            save_apps_cache(gui, host);
+                            if (lang_id != gui.app_selector.apps_cache_lang) {
+                                get_sys_apps_title(gui, host);
+                                get_user_apps_title(gui, host);
+                                init_last_time_apps(gui, host);
+                                save_apps_cache(gui, host);
+                            }
                             gui.apps_list_opened.clear();
                             gui.live_area_contents.clear();
                             gui.live_items.clear();

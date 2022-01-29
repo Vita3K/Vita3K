@@ -341,15 +341,15 @@ static bool get_user_apps(GuiState &gui, HostState &host) {
         apps_cache.read((char *)&size, sizeof(size));
 
         // Check version of cache
-        size_t version_size;
-        apps_cache.read((char *)&version_size, sizeof(version_size));
-        std::vector<char> buffer(version_size); // dont trust std::string to hold buffer enough
-        apps_cache.read(buffer.data(), version_size);
-        const std::string versionInFile(buffer.begin(), buffer.end());
-        if (versionInFile != "1.02") {
+        uint32_t versionInFile;
+        apps_cache.read((char *)&versionInFile, sizeof(uint32_t));
+        if (versionInFile != 1) {
             LOG_WARN("Current version of cache: {}, is outdated, recreate it.", versionInFile);
             return false;
         }
+
+        // Read language of cache
+        apps_cache.read((char *)&gui.app_selector.apps_cache_lang, sizeof(uint32_t));
 
         // Read App info value
         for (size_t a = 0; a < size; a++) {
@@ -398,10 +398,12 @@ void save_apps_cache(GuiState &gui, HostState &host) {
         apps_cache.write((char *)&size, sizeof(size));
 
         // Write version of cache
-        const std::string version = "1.02";
-        const auto size_ver = version.length();
-        apps_cache.write((char *)&size_ver, sizeof(size_ver));
-        apps_cache.write(version.c_str(), size_ver);
+        const uint32_t versionInFile = 1;
+        apps_cache.write((char *)&versionInFile, sizeof(uint32_t));
+
+        // Write language of cache
+        gui.app_selector.apps_cache_lang = host.cfg.sys_lang;
+        apps_cache.write((char *)&gui.app_selector.apps_cache_lang, sizeof(uint32_t));
 
         // Write Apps list
         for (const App &app : gui.app_selector.user_apps) {
