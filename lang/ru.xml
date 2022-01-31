@@ -150,6 +150,14 @@
 		<trophy_earned>Вы получили приз!</trophy_earned>
 	</indicator>
 
+	<initial_setup>
+		<back>Назад</back>
+		<completed_setup>Теперь начальная установка завершена.
+Ваша система Vita3K готова!</completed_setup>
+		<select_language>Выбрать язык.</select_language>
+		<next>Далее</next>
+	</initial_setup>
+
 	<live_area>
 		<start>Запуск</start>
 		<continue>Продолжить</continue>

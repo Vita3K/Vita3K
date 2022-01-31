@@ -5,6 +5,14 @@
 		<app_close>A seguinte aplicação será fechada.</app_close>
 	</game_data>
 
+    <initial_setup>
+		<back>Retroceder</back>
+		<completed_setup>Concluiu a configuração inicial.
+O seu sistema Vita3K está pronto!</completed_setup>
+		<select_language>Selecione um idioma.</select_language>
+		<next>Seguinte</next>
+	</initial_setup>
+
 	<live_area>
 		<start>Iniciar</start>
 		<continue>Continuar</continue>

@@ -5,6 +5,14 @@
 		<app_close>Följande applikation stängs.</app_close>
 	</game_data>
 
+    <initial_setup>
+		<back>Tillbaka</back>
+		<completed_setup>Du har slutfört den första inställningen.
+Ditt Vita3K-system är redo!</completed_setup>
+		<select_language>Välj ett språk.</select_language>
+		<next>Nästa</next>
+	</initial_setup>
+
 	<live_area>
 		<start>Starta</start>
 		<continue>Fortsätt</continue>

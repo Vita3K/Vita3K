@@ -150,6 +150,14 @@ Schakel het systeem niet uit en sluit de applicatie niet.</warning_saving>
 		<trophy_earned>Je hebt een trofee gewonnen!</trophy_earned>
 	</indicator>
 
+    <initial_setup>
+		<back>Terug</back>
+		<completed_setup>Je hebt de initiële setup nu voltooid.
+Je Vita3K-systeem is gereed!</completed_setup>
+		<select_language>Selecteer een taal.</select_language>
+		<next>Volgende</next>
+	</initial_setup>
+
 	<live_area>
 		<start>Starten</start>
 		<continue>Doorgaan</continue>

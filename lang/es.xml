@@ -150,6 +150,14 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		<trophy_earned>¡Has ganado un trofeo!</trophy_earned>
 	</indicator>
 
+	<initial_setup>
+		<back>Atrás</back>
+		<completed_setup>Completaste la configuración inicial.
+¡Tu sistema Vita3K está listo!</completed_setup>
+		<select_language>Selecciona un idioma.</select_language>
+		<next>Siguiente</next>
+	</initial_setup>
+
 	<live_area>
 		<start>Iniciar</start>
 		<continue>Continuar</continue>

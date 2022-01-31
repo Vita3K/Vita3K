@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -253,6 +253,18 @@ void init_lang(GuiState &gui, HostState &host) {
                     lang_indicator["installing"] = indicator.child("installing").text().as_string();
                     lang_indicator["no_notif"] = indicator.child("no_notif").text().as_string();
                     lang_indicator["trophy_earned"] = indicator.child("trophy_earned").text().as_string();
+                }
+
+                // Initial Setup
+                if (!host.cfg.initial_setup) {
+                    const auto initial_setup = lang_child.child("initial_setup");
+                    if (!initial_setup.empty()) {
+                        auto &lang_initial_setup = gui.lang.initial_setup;
+                        lang_initial_setup["back"] = initial_setup.child("back").text().as_string();
+                        lang_initial_setup["completed_setup"] = initial_setup.child("completed_setup").text().as_string();
+                        lang_initial_setup["select_language"] = initial_setup.child("select_language").text().as_string();
+                        lang_initial_setup["next"] = initial_setup.child("next").text().as_string();
+                    }
                 }
 
                 // Live Area

@@ -119,7 +119,8 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
                     fs::remove(fs::path(string_utils::utf_to_wide(pup_path)));
                     delete_pup_file = false;
                 }
-                init_theme(gui, host, gui.users[host.cfg.user_id].theme_id);
+                if (host.cfg.initial_setup)
+                    init_theme(gui, host, gui.users[host.cfg.user_id].theme_id);
                 fw_version.clear();
                 pup_path = nullptr;
                 gui.file_menu.firmware_install_dialog = false;
