@@ -31,6 +31,7 @@ add_library(
 	${IMGUI_IMPL_VULKAN_SOURCES}
 	src/imgui_impl_sdl.cpp
 	src/information_bar.cpp
+	src/initial_setup.cpp
 	src/license_install_dialog.cpp
 	src/live_area.cpp
 	src/main_menubar.cpp

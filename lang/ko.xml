@@ -123,6 +123,14 @@
 		<trophy_earned>홈 화면에 애플리케이션이 추가되었습니다.</trophy_earned>
 	</indicator>
 
+	<initial_setup>
+		<back>Back</back>
+		<completed_setup>You have now completed initial setup.
+Your Vita3k system is ready!</completed_setup>
+		<select_language>Select a language.</select_language>
+		<next>Next</next>
+	</initial_setup>
+
 	<live_area>
 		<start>시작</start>
 		<continue>계속</continue>

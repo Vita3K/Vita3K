@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -88,7 +88,7 @@ static void init_style(HostState &host) {
     style->Colors[ImGuiCol_Header] = ImVec4(1.00f, 1.00f, 0.00f, 0.50f);
     style->Colors[ImGuiCol_HeaderHovered] = ImVec4(1.00f, 1.00f, 0.00f, 0.30f);
     style->Colors[ImGuiCol_HeaderActive] = ImVec4(1.00f, 1.00f, 0.00f, 0.70f);
-    style->Colors[ImGuiCol_Separator] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
+    style->Colors[ImGuiCol_Separator] = ImVec4(0.10f, 0.10f, 0.10f, 1.00f);
     style->Colors[ImGuiCol_SeparatorHovered] = ImVec4(0.24f, 0.23f, 0.29f, 1.00f);
     style->Colors[ImGuiCol_SeparatorActive] = ImVec4(0.56f, 0.56f, 0.58f, 1.00f);
     style->Colors[ImGuiCol_ResizeGrip] = ImVec4(0.18f, 0.18f, 0.18f, 0.20f);
@@ -129,7 +129,7 @@ static void init_font(GuiState &gui, HostState &host) {
 
     // clang-format off
     static const ImWchar latin_range[] = {
-        0x0020, 0x00FF, // Basic Latin + Latin Supplement
+        0x0020, 0x017F, // Basic Latin + Latin Supplement
         0x0400, 0x052F, // Cyrillic + Cyrillic Supplement
         0x2DE0, 0x2DFF, // Cyrillic Extended-A
         0xA640, 0xA69F, // Cyrillic Extended-B
@@ -331,6 +331,14 @@ void init_app_background(GuiState &gui, HostState &host, const std::string &app_
     stbi_image_free(data);
 }
 
+std::string get_sys_lang_name(uint32_t lang_id) {
+    const auto current_sys_lang = std::find_if(LIST_SYS_LANG.begin(), LIST_SYS_LANG.end(), [&](const auto &l) {
+        return l.first == lang_id;
+    });
+
+    return current_sys_lang->second;
+}
+
 static bool get_user_apps(GuiState &gui, HostState &host) {
     const auto apps_cache_path{ fs::path(host.pref_path) / "ux0/temp/apps.dat" };
     fs::ifstream apps_cache(apps_cache_path, std::ios::in | std::ios::binary);
@@ -350,6 +358,10 @@ static bool get_user_apps(GuiState &gui, HostState &host) {
 
         // Read language of cache
         apps_cache.read((char *)&gui.app_selector.apps_cache_lang, sizeof(uint32_t));
+        if (gui.app_selector.apps_cache_lang != host.cfg.sys_lang) {
+            LOG_WARN("Current lang of cache: {}, is diferent config: {}, recreate it.", get_sys_lang_name(gui.app_selector.apps_cache_lang), get_sys_lang_name(host.cfg.sys_lang));
+            return false;
+        }
 
         // Read App info value
         for (size_t a = 0; a < size; a++) {
@@ -630,7 +642,7 @@ ImTextureID load_image(GuiState &gui, const char *data, const std::uint32_t size
     return handle;
 }
 
-void init(GuiState &gui, HostState &host) {
+void pre_init(GuiState &gui, HostState &host) {
     ImGui::CreateContext();
     gui.imgui_state.reset(ImGui_ImplSdl_Init(host.renderer.get(), host.window.get(), host.base_path));
 
@@ -639,12 +651,15 @@ void init(GuiState &gui, HostState &host) {
     init_style(host);
     init_font(gui, host);
     init_lang(gui, host);
-    get_notice_list(host);
-    get_users_list(gui, host);
-    get_time_apps(gui, host);
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);
+}
+
+void init(GuiState &gui, HostState &host) {
+    get_notice_list(host);
+    get_users_list(gui, host);
+    get_time_apps(gui, host);
 
     if (host.cfg.show_welcome)
         gui.help_menu.welcome_dialog = true;

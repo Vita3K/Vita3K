@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -46,6 +46,35 @@
 #include <chrono>
 #include <cstdlib>
 #include <thread>
+
+static void run_execv(char *argv[], HostState &host) {
+    char *args[10];
+    args[0] = argv[0];
+    args[1] = (char *)"-a";
+    args[2] = (char *)"true";
+    if (!host.load_app_path.empty()) {
+        args[3] = (char *)"-r";
+        args[4] = host.load_app_path.data();
+        if (!host.load_exec_path.empty()) {
+            args[5] = (char *)"--self";
+            args[6] = host.load_exec_path.data();
+            if (!host.load_exec_argv.empty()) {
+                args[7] = (char *)"--app-args";
+                args[8] = host.load_exec_argv.data();
+                args[9] = NULL;
+            } else
+                args[7] = NULL;
+        } else
+            args[5] = NULL;
+    } else
+        args[3] = NULL;
+
+#ifdef WIN32
+    _execv(argv[0], args);
+#elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
+    execv(argv[0], args);
+#endif
+};
 
 int main(int argc, char *argv[]) {
     Root root_paths;
@@ -128,8 +157,22 @@ int main(int argc, char *argv[]) {
     init_libraries(host);
 
     GuiState gui;
-    if (!cfg.console)
+    if (!cfg.console) {
+        gui::pre_init(gui, host);
+        if (!host.cfg.initial_setup) {
+            while (!host.cfg.initial_setup) {
+                if (handle_events(host, gui)) {
+                    gui::draw_begin(gui, host);
+                    gui::draw_initial_setup(gui, host);
+                    gui::draw_end(gui, host.window.get());
+                } else
+                    return QuitRequested;
+            }
+            config::serialize_config(host.cfg, host.base_path);
+            run_execv(argv, host);
+        }
         gui::init(gui, host);
+    }
 
     if (cfg.content_path) {
         auto gui_ptr = cfg.console ? nullptr : &gui;
@@ -325,34 +368,8 @@ int main(int argc, char *argv[]) {
 
     app::destroy(host, gui.imgui_state.get());
 
-    if (host.load_exec) {
-        char *args[10];
-        args[0] = argv[0];
-        args[1] = (char *)"-a";
-        args[2] = (char *)"true";
-        if (!host.load_app_path.empty()) {
-            args[3] = (char *)"-r";
-            args[4] = host.load_app_path.data();
-            if (!host.load_exec_path.empty()) {
-                args[5] = (char *)"--self";
-                args[6] = host.load_exec_path.data();
-                if (!host.load_exec_argv.empty()) {
-                    args[7] = (char *)"--app-args";
-                    args[8] = host.load_exec_argv.data();
-                    args[9] = NULL;
-                } else
-                    args[7] = NULL;
-            } else
-                args[5] = NULL;
-        } else
-            args[3] = NULL;
-
-#ifdef WIN32
-        _execv(argv[0], args);
-#elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
-        execv(argv[0], args);
-#endif
-    }
+    if (host.load_exec)
+        run_execv(argv, host);
 
     return Success;
 }

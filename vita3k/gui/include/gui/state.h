@@ -1,4 +1,4 @@
-// Vita3K emulator project
+﻿// Vita3K emulator project
 // Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -209,6 +209,7 @@ struct Lang {
     std::map<std::string, std::string> app_context;
     std::map<std::string, std::string> game_data;
     std::map<std::string, std::string> indicator;
+    std::map<std::string, std::string> initial_setup;
     std::map<std::string, std::string> settings;
     std::map<std::string, std::string> trophy_collection;
     std::map<std::string, std::string> user_management;
@@ -261,6 +262,29 @@ inline ConfigModuleMode init_modules_mode() {
 }
 
 const ConfigModuleMode config_modules_mode = init_modules_mode();
+
+const std::vector<std::pair<SceSystemParamLang, std::string>> LIST_SYS_LANG = {
+    { SCE_SYSTEM_PARAM_LANG_DANISH, "Dansk" },
+    { SCE_SYSTEM_PARAM_LANG_GERMAN, "Deutsch" },
+    { SCE_SYSTEM_PARAM_LANG_ENGLISH_GB, "English (United Kingdom)" },
+    { SCE_SYSTEM_PARAM_LANG_ENGLISH_US, "English (United States)" },
+    { SCE_SYSTEM_PARAM_LANG_SPANISH, u8"Español" },
+    { SCE_SYSTEM_PARAM_LANG_FRENCH, u8"Français" },
+    { SCE_SYSTEM_PARAM_LANG_ITALIAN, "Italiano" },
+    { SCE_SYSTEM_PARAM_LANG_DUTCH, "Nederlands" },
+    { SCE_SYSTEM_PARAM_LANG_NORWEGIAN, "Norsk" },
+    { SCE_SYSTEM_PARAM_LANG_POLISH, "Polskis" },
+    { SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR, u8"Português (Brasil)" },
+    { SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT, u8"Português (Portugal)" },
+    { SCE_SYSTEM_PARAM_LANG_RUSSIAN, u8"Русский" },
+    { SCE_SYSTEM_PARAM_LANG_FINNISH, "Suomi" },
+    { SCE_SYSTEM_PARAM_LANG_SWEDISH, "Svenska" },
+    { SCE_SYSTEM_PARAM_LANG_TURKISH, u8"Türkçe" },
+    { SCE_SYSTEM_PARAM_LANG_JAPANESE, u8"日本語" },
+    { SCE_SYSTEM_PARAM_LANG_KOREAN, "Korean" },
+    { SCE_SYSTEM_PARAM_LANG_CHINESE_S, "Chinese - Simplified" },
+    { SCE_SYSTEM_PARAM_LANG_CHINESE_T, "Chinese - Traditional" },
+};
 
 struct GuiState {
     std::unique_ptr<ImGui_State> imgui_state;

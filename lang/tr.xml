@@ -150,6 +150,14 @@ Sistemi veya uygulamayı kapatmayın.</warning_saving>
 		<trophy_earned>Kupa kazandınız!</trophy_earned>
 	</indicator>
 
+	<initial_setup>
+		<back>Geri</back>
+		<completed_setup>Başlangıç ayarlarını tamamladınız.
+Vita3K sisteminiz artık hazır!</completed_setup>
+		<select_language>Dil seçin.</select_language>
+		<next>İleri</next>
+	</initial_setup>
+
 	<live_area>
 		<start>Başlat</start>
 		<continue>Devam</continue>

@@ -123,6 +123,14 @@
 		<trophy_earned>トロフィーを獲得しました！</trophy_earned>
 	</indicator>
 
+	<initial_setup>
+		<back>戻る</back>
+		<completed_setup>初めの設定が完了しました。
+Vita3Kをお楽しみください。</completed_setup>
+		<select_language>言語を選んでください。</select_language>
+		<next>次へ</next>
+	</initial_setup>
+
 	<live_area>
 		<start>はじめる</start>
 		<continue>つづける</continue>

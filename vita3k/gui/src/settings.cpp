@@ -191,12 +191,6 @@ static std::string get_date_format_sting(GuiState &gui, DateFormat &date_format)
     return date_format_str;
 }
 
-static const std::vector<std::string> LIST_SYS_LANG = {
-    u8"日本語", "English (United States)", u8"Français", u8"Español", "Deutsch", "Italiano", "Nederlands", u8"Português (Portugal)",
-    u8"Русский", "Korean", "Chinese - Traditional", "Chinese - Simplified", "Suomi", "Svenska",
-    "Dansk", "Norsk", "Polskis", u8"Português (Brasil)", "English (United Kingdom)", u8"Türkçe"
-};
-
 static float set_scroll_pos, current_scroll_pos, max_scroll_pos;
 
 void draw_settings(GuiState &gui, HostState &host) {
@@ -732,7 +726,6 @@ void draw_settings(GuiState &gui, HostState &host) {
         // Language
         if (menu.empty()) {
             title = is_lang ? lang["language"] : "Language";
-            const auto current_sys_lang = LIST_SYS_LANG[host.cfg.sys_lang];
             ImGui::Columns(2, nullptr, false);
             ImGui::SetWindowFontScale(1.2f);
             const auto sys_lang_str = is_lang ? lang["system_language"].c_str() : "System Language";
@@ -745,7 +738,7 @@ void draw_settings(GuiState &gui, HostState &host) {
             ImGui::NextColumn();
             ImGui::SetWindowFontScale(0.8f);
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(1.f, 0.5f));
-            ImGui::Selectable(current_sys_lang.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT));
+            ImGui::Selectable(get_sys_lang_name(host.cfg.sys_lang).c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT));
             ImGui::PopStyleVar();
             ImGui::SetWindowFontScale(1.2f);
             ImGui::Separator();
@@ -778,14 +771,14 @@ void draw_settings(GuiState &gui, HostState &host) {
                 ImGui::SetColumnWidth(0, 30.f * SCALE.x);
                 ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
                 for (const auto &sys_lang : LIST_SYS_LANG) {
-                    ImGui::PushID(sys_lang.c_str());
-                    if (ImGui::Selectable(current_sys_lang == sys_lang ? "V" : "##lang", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(SYS_LANG_SIZE, SIZE_PUPUP_SELECT))) {
-                        const auto lang_id = uint32_t(std::distance(LIST_SYS_LANG.begin(), std::find(LIST_SYS_LANG.begin(), LIST_SYS_LANG.end(), sys_lang)));
-                        if (lang_id != host.cfg.sys_lang) {
-                            host.cfg.sys_lang = lang_id;
+                    ImGui::PushID(sys_lang.first);
+                    const auto is_current_lang = host.cfg.sys_lang == sys_lang.first;
+                    if (ImGui::Selectable(is_current_lang ? "V" : "##lang", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(SYS_LANG_SIZE, SIZE_PUPUP_SELECT))) {
+                        if (!is_current_lang) {
+                            host.cfg.sys_lang = sys_lang.first;
                             config::serialize_config(host.cfg, host.base_path);
                             init_lang(gui, host);
-                            if (lang_id != gui.app_selector.apps_cache_lang) {
+                            if (sys_lang.first != gui.app_selector.apps_cache_lang) {
                                 get_sys_apps_title(gui, host);
                                 get_user_apps_title(gui, host);
                                 init_last_time_apps(gui, host);
@@ -801,7 +794,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         popup.clear();
                     }
                     ImGui::NextColumn();
-                    ImGui::Selectable(sys_lang.c_str(), false, ImGuiSelectableFlags_None, ImVec2(SYS_LANG_SIZE, SIZE_PUPUP_SELECT));
+                    ImGui::Selectable(sys_lang.second.c_str(), false, ImGuiSelectableFlags_None, ImVec2(SYS_LANG_SIZE, SIZE_PUPUP_SELECT));
                     ImGui::PopID();
                     ImGui::NextColumn();
                 }

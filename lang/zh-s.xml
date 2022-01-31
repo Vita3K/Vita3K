@@ -150,6 +150,14 @@
 		<trophy_earned>已获得奖杯！</trophy_earned>
 	</indicator>
 
+	<initial_setup>
+		<back>Back</back>
+		<completed_setup>You have now completed initial setup.
+Your Vita3k system is ready!</completed_setup>
+		<select_language>Select a language.</select_language>
+		<next>Next</next>
+	</initial_setup>
+
 	<live_area>
 		<start>开始</start>
 		<continue>继续</continue>
