@@ -109,15 +109,20 @@ void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &
 static std::map<std::string, uint64_t> last_time;
 
 void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::string &app_path) {
-    if (live_area) {
-        update_apps_list_opened(gui, host, app_path);
-        last_time["home"] = 0;
-        init_live_area(gui, host);
-        gui.live_area.app_selector = false;
-        gui.live_area.information_bar = true;
-        gui.live_area.live_area_screen = true;
-    } else
-        pre_run_app(gui, host, app_path);
+    if (app_path == "NPXS10003") {
+        update_last_time_app_used(gui, host, app_path);
+        open_path("http://Vita3k.org");
+    } else {
+        if (live_area) {
+            update_apps_list_opened(gui, host, app_path);
+            last_time["home"] = 0;
+            init_live_area(gui, host);
+            gui.live_area.app_selector = false;
+            gui.live_area.information_bar = true;
+            gui.live_area.live_area_screen = true;
+        } else
+            pre_run_app(gui, host, app_path);
+    }
 }
 
 void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {

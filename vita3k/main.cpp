@@ -180,7 +180,7 @@ int main(int argc, char *argv[]) {
         const auto is_rif = (cfg.content_path->extension() == ".rif") || (cfg.content_path->filename() == "work.bin");
         const auto is_directory = fs::is_directory(*cfg.content_path);
 
-        if (((is_archive && install_archive(host, gui_ptr, *cfg.content_path)) || (is_directory && (install_contents(host, gui_ptr, *cfg.content_path) == 1))) && (host.app_category == "gd"))
+        if (((is_archive && install_archive(host, gui_ptr, string_utils::utf_to_wide(cfg.content_path->string()))) || (is_directory && (install_contents(host, gui_ptr, *cfg.content_path) == 1))) && (host.app_category == "gd"))
             run_type = app::AppRunType::Extracted;
         else {
             if (is_rif)

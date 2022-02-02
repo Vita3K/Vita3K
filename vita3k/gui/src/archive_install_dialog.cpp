@@ -181,13 +181,15 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
                     host.app_category = content.category;
                     host.app_title_id = content.title_id;
                     host.app_content_id = content.content_id;
-                    update_notice_info(gui, host, "content");
-                    if (content.category == "gd")
+                    if (content.category != "theme")
+                        update_notice_info(gui, host, "content");
+                    if (content.category == "gd") {
                         init_user_app(gui, host, content.title_id);
+                        save_apps_cache(gui, host);
+                    }
                     if (delete_archive_file)
                         fs::remove(content.path);
                 }
-                save_apps_cache(gui, host);
                 archive_path = nullptr;
                 gui.file_menu.archive_install_dialog = false;
                 delete_archive_file = false;

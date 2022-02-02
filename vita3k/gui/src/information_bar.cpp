@@ -340,7 +340,7 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
 
     const auto NOTICE_SIZE = notice_info_count_new ? ImVec2(104.0f * SCALE.x, 95.0f * SCALE.y) : ImVec2(90.0f * SCALE.x, 82.0f * SCALE.y);
     const auto NOTICE_POS = ImVec2(display_size.x - NOTICE_SIZE.x, 0.f);
-    const ImU32 NOTICE_COLOR = 4294967295; // White
+    const auto NOTICE_COLOR = gui.information_bar_color.notice_font;
     const auto WINDOW_SIZE = notice_info_state ? display_size : (notice_info_count_new ? ImVec2(84.f * SCALE.x, 76.f * SCALE.y) : ImVec2(72.f * SCALE.x, 62.f * SCALE.y));
     const auto WINDOW_POS = ImVec2(notice_info_state ? 0.f : display_size.x - WINDOW_SIZE.x, 0.f);
 

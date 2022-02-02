@@ -60,15 +60,6 @@ static const char *miniz_get_error(const ZipPtr &zip) {
     return mz_zip_get_error_string(mz_zip_get_last_error(zip.get()));
 }
 
-static bool read_file_from_zip(vfs::FileBuffer &buf, const fs::path &file, const ZipPtr &zip) {
-    if (!mz_zip_reader_extract_file_to_callback(zip.get(), file.generic_path().string().c_str(), &write_to_buffer, &buf, 0)) {
-        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), file.generic_path().string());
-        return false;
-    }
-
-    return true;
-}
-
 static bool is_nonpdrm(HostState &host, const fs::path &output_path) {
     const auto app_license_path{ fs::path(host.pref_path) / "ux0/license" / host.app_title_id / fmt::format("{}.rif", host.app_content_id) };
     const auto is_patch_found_app_license = (host.app_category == "gp") && fs::exists(app_license_path);
@@ -140,29 +131,34 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
     }
 
     vfs::FileBuffer param;
-    if (!read_file_from_zip(param, fs::path(extra_path) / sfo_path, zip)) {
+    if (mz_zip_reader_extract_file_to_callback(zip.get(), (fs::path(extra_path) / sfo_path).string().c_str(), &write_to_buffer, &param, 0))
+        gui::get_param_info(host, param);
+    else if (!theme) {
+        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), sfo_path.string());
         fclose(vpk_fp);
         return false;
     }
 
-    gui::get_param_info(host, param);
-
-    fs::path output_path;
-
-    if (host.app_category == "ac") {
-        if (theme) {
-            output_path = { fs::path(host.pref_path) / "ux0/theme" / host.app_content_id };
-            host.app_title += " (Theme)";
-            host.app_category = "theme";
-        } else {
-            host.app_content_id = host.app_content_id.substr(20);
-            output_path = { fs::path(host.pref_path) / "ux0/addcont" / host.app_title_id / host.app_content_id };
-            host.app_title = host.app_title + " (DLC)";
-        }
-    } else if (host.app_category == "gp")
-        output_path = { fs::path(host.pref_path) / "ux0/patch" / host.app_title_id };
-    else
-        output_path = { fs::path(host.pref_path) / "ux0/app" / host.app_title_id };
+    auto output_path{ fs::path(host.pref_path) / "ux0" };
+    if (!param.empty()) {
+        if (host.app_category == "ac") {
+            if (theme) {
+                output_path /= fs::path("theme") / host.app_content_id;
+                host.app_title += " (Theme)";
+            } else {
+                host.app_content_id = host.app_content_id.substr(20);
+                output_path /= fs::path("addcont") / host.app_title_id / host.app_content_id;
+                host.app_title += " (DLC)";
+            }
+        } else if (host.app_category == "gp")
+            output_path /= fs::path("patch") / host.app_title_id;
+        else
+            output_path /= fs::path("app") / host.app_title_id;
+    } else {
+        host.app_category = host.app_title = "theme";
+        host.app_title_id = host.app_content_id = string_utils::wide_to_utf(archive_path.filename().replace_extension("").wstring());
+        output_path /= fs::path("theme") / host.app_content_id;
+    }
 
     const auto created = fs::create_directories(output_path);
     if (!created) {
@@ -237,12 +233,14 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
 
     update_progress();
 
-    LOG_INFO("{} [{}] installed succesfully!", host.app_title_id, host.app_title);
+    LOG_INFO("{} [{}] installed succesfully!", host.app_title, host.app_title_id);
 
-    if (host.cfg.content_path) {
-        gui::init_user_app(*gui, host, host.app_title_id);
-        gui::save_apps_cache(*gui, host);
-        host.cfg.content_path.reset();
+    if (!gui->file_menu.archive_install_dialog && (host.app_category != "theme")) {
+        gui::update_notice_info(*gui, host, "content");
+        if (host.app_category == "gd") {
+            gui::init_user_app(*gui, host, host.app_title_id);
+            gui::save_apps_cache(*gui, host);
+        }
     }
 
     fclose(vpk_fp);
@@ -277,8 +275,12 @@ static std::vector<fs::path> get_contents_path(const fs::path &path) {
     std::vector<fs::path> content_path;
 
     for (const auto &p : fs::recursive_directory_iterator(path)) {
-        if (fs::is_regular_file(p) && (p.path().filename() == "param.sfo"))
-            content_path.push_back(p.path().parent_path().parent_path());
+        if (fs::is_regular_file(p)) {
+            if (p.path().filename() == "param.sfo")
+                content_path.push_back(p.path().parent_path().parent_path());
+            else if ((p.path().filename() == "theme.xml") && (std::find(content_path.begin(), content_path.end(), p.path().parent_path()) == content_path.end()))
+                content_path.push_back(p.path().parent_path());
+        }
     }
 
     return content_path;
@@ -286,51 +288,62 @@ static std::vector<fs::path> get_contents_path(const fs::path &path) {
 
 static bool install_content(HostState &host, GuiState *gui, const fs::path &content_path) {
     const auto sfo_path{ content_path / "sce_sys/param.sfo" };
+    const auto is_param_sfo = fs::exists(sfo_path);
 
-    fs::ifstream sfo{ sfo_path, fs::ifstream::binary };
-    vfs::FileBuffer param;
-    sfo.unsetf(fs::ifstream::skipws);
-    param.reserve(fs::file_size(sfo_path));
-    param.insert(param.begin(), std::istream_iterator<uint8_t>(sfo), std::istream_iterator<uint8_t>());
+    auto dst_path{ fs::path(host.pref_path) / "ux0" };
+    if (is_param_sfo) {
+        fs::ifstream sfo{ sfo_path, fs::ifstream::binary };
+        vfs::FileBuffer param;
+        sfo.unsetf(fs::ifstream::skipws);
+        param.reserve(fs::file_size(sfo_path));
+        param.insert(param.begin(), std::istream_iterator<uint8_t>(sfo), std::istream_iterator<uint8_t>());
 
-    if (param.empty()) {
-        LOG_ERROR("Param.sfo file is corrupted or missing in path", sfo_path.string());
+        if (!param.empty()) {
+            gui::get_param_info(host, param);
+
+            if (host.app_category == "ac") {
+                if (fs::exists(content_path / "theme.xml")) {
+                    dst_path /= fs::path("theme") / host.app_content_id;
+                    host.app_title += " (Theme)";
+                    host.app_category = "theme";
+                } else {
+                    host.app_content_id = host.app_content_id.substr(20);
+                    dst_path /= fs::path("addcont") / host.app_title_id / host.app_content_id;
+                    host.app_title = host.app_title + " (DLC)";
+                }
+            } else if (host.app_category == "gp")
+                dst_path /= fs::path("patch") / host.app_title_id;
+            else
+                dst_path /= fs::path("app") / host.app_title_id;
+        } else {
+            LOG_ERROR("Param.sfo file is corrupted in path", sfo_path.string());
+            return false;
+        }
+    } else if (fs::exists(content_path / "theme.xml")) {
+        const auto content_wstr = content_path.filename().wstring();
+        host.app_title_id = string_utils::wide_to_utf(content_wstr);
+        dst_path /= fs::path("theme") / content_wstr;
+        host.app_title = "Theme";
+    } else {
+        LOG_ERROR("Param.sfo file is missing in path", sfo_path.string());
         return false;
     }
-
-    gui::get_param_info(host, param);
-
-    fs::path dst_path;
-    if (host.app_category == "ac") {
-        if (fs::exists(content_path / "theme.xml")) {
-            dst_path = { fs::path(host.pref_path) / "ux0/theme" / host.app_content_id };
-            host.app_title += " (Theme)";
-            host.app_category = "theme";
-        } else {
-            host.app_content_id = host.app_content_id.substr(20);
-            dst_path = { fs::path(host.pref_path) / "ux0/addcont" / host.app_title_id / host.app_content_id };
-            host.app_title = host.app_title + " (DLC)";
-        }
-    } else if (host.app_category == "gp")
-        dst_path = { fs::path(host.pref_path) / "ux0/patch" / host.app_title_id };
-    else
-        dst_path = { fs::path(host.pref_path) / "ux0/app" / host.app_title_id };
 
     if (!copy_directories(content_path, dst_path)) {
         LOG_ERROR("Failed to copy directory to: {}", dst_path.string());
         return false;
     }
 
-    if (fs::exists(dst_path / "sce_sys/package/")) {
-        if (!is_nonpdrm(host, dst_path))
-            return false;
-    }
+    if (fs::exists(dst_path / "sce_sys/package/") && !is_nonpdrm(host, dst_path))
+        return false;
 
     if (host.app_category == "gd")
         gui::init_user_app(*gui, host, host.app_title_id);
-    gui::update_notice_info(*gui, host, "content");
 
-    LOG_INFO("{} [{}] installed succesfully!", host.app_title_id, host.app_title);
+    if (is_param_sfo)
+        gui::update_notice_info(*gui, host, "content");
+
+    LOG_INFO("{} [{}] installed succesfully!", host.app_title, host.app_title_id);
     return true;
 }
 
@@ -574,10 +587,12 @@ bool handle_events(HostState &host, GuiState &gui) {
             const auto drop_file = fs::path(string_utils::utf_to_wide(event.drop.file));
             if ((drop_file.extension() == ".vpk") || (drop_file.extension() == ".zip"))
                 install_archive(host, &gui, drop_file);
-            else if ((drop_file.extension() == ".rif") || (drop_file.extension() == "work.bin"))
+            else if ((drop_file.extension() == ".rif") || (drop_file.filename() == "work.bin"))
                 copy_license(host, drop_file);
             else if (fs::is_directory(drop_file))
                 install_contents(host, &gui, drop_file);
+            else if (drop_file.filename() == "theme.xml")
+                install_content(host, &gui, drop_file.parent_path());
             else
                 LOG_ERROR("File droped: [{}] is not supported.", drop_file.filename().string());
             SDL_free(event.drop.file);

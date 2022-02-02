@@ -140,6 +140,7 @@ static void init_font(GuiState &gui, HostState &host) {
     };
 
     static const ImWchar extra_range[] = {
+        0x0100, 0x017F, // Latin Extended A
         0x2200, 0x22FF, // Math operators 
         0x2150, 0x218F, // Numeral forms
         0x2600, 0x26FF, // Miscellaneous symbols
@@ -543,7 +544,7 @@ void get_user_apps_title(GuiState &gui, HostState &host) {
 
 void get_sys_apps_title(GuiState &gui, HostState &host) {
     gui.app_selector.sys_apps.clear();
-    const std::vector<std::string> sys_apps_list = { "NPXS10008", "NPXS10015", "NPXS10026" };
+    const std::vector<std::string> sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026" };
     for (const auto &app : sys_apps_list) {
         vfs::FileBuffer params;
         if (vfs::read_file(VitaIoDevice::vs0, params, host.pref_path, "app/" + app + "/sce_sys/param.sfo")) {
@@ -561,7 +562,10 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
             host.app_version = "1.00";
             host.app_category = "gda";
             host.app_title_id = app;
-            if (app == "NPXS10008") {
+            if (app == "NPXS10003") {
+                host.app_short_title = "Browser";
+                host.app_title = "Internet Browser";
+            } else if (app == "NPXS10008") {
                 host.app_short_title = "Trophies";
                 host.app_title = "Trophy Collection";
             } else if (app == "NPXS10015")
