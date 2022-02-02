@@ -231,6 +231,7 @@ struct TimeApp {
 struct InfoBarColor {
     ImU32 bar = 0xFF000000;
     ImU32 indicator = 0xFFFFFFFF;
+    ImU32 notice_font = 0xFFFFFFFF;
 };
 
 enum NoticeIcon {
@@ -241,6 +242,12 @@ enum NoticeIcon {
 enum ModulesModeType {
     MODE,
     DESCRIPTION,
+};
+
+enum ThemePreviewType {
+    PACKAGE,
+    HOME,
+    START,
 };
 
 enum ShadersCompiledDisplay {
@@ -330,7 +337,7 @@ struct GuiState {
     std::map<std::string, std::vector<TimeApp>> time_apps;
 
     std::uint64_t current_theme_bg;
-    std::map<std::string, std::map<std::string, ImGui_Texture>> themes_preview;
+    std::map<std::string, std::map<ThemePreviewType, ImGui_Texture>> themes_preview;
     std::vector<ImGui_Texture> theme_backgrounds;
     std::vector<ImVec4> theme_backgrounds_font_color;
     std::map<NoticeIcon, ImGui_Texture> theme_information_bar_notice;

@@ -39,47 +39,42 @@ bool init_manual(GuiState &gui, HostState &host, const std::string &app_path) {
 
     const auto APP_INDEX = get_app_index(gui, app_path);
 
-    std::vector<std::string> manual_page_list;
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
     auto manual_path{ fs::path("sce_sys/manual/") };
 
-    if (fs::exists(APP_PATH / manual_path / fmt::format("{:0>2d}", host.cfg.sys_lang)))
-        manual_path /= fmt::format("{:0>2d}/", host.cfg.sys_lang);
+    const auto lang = fmt::format("{:0>2d}", host.cfg.sys_lang);
+    if (fs::exists(APP_PATH / manual_path / lang))
+        manual_path /= lang;
 
     if (fs::exists(APP_PATH / manual_path) && !fs::is_empty(APP_PATH / manual_path)) {
+        int32_t width, height;
         for (const auto &manual : fs::directory_iterator(APP_PATH / manual_path)) {
             if (manual.path().extension() == ".png") {
-                manual_page_list.push_back({ manual.path().filename().string() });
+                const auto page_path = manual_path / manual.path().filename().string();
+
+                vfs::FileBuffer buffer;
+                vfs::read_app_file(buffer, host.pref_path, app_path, page_path);
+
+                if (buffer.empty()) {
+                    LOG_WARN("Manual not found for title: {} [{}].", app_path, APP_INDEX->title);
+                    return false;
+                }
+                stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+                if (!data) {
+                    LOG_ERROR("Invalid manual image for title: {} [{}] in path: {}.", app_path, APP_INDEX->title, page_path.string());
+                    return false;
+                }
+
                 gui.manuals.push_back({});
+                gui.manuals.back().init(gui.imgui_state.get(), data, width, height);
+                stbi_image_free(data);
             }
         }
+        size_page["mini"] = size_page["current"] = height < width ? ImVec2(float(width), float(height)) : ImVec2(float(width * (width / 960.f)), float(height / (height / 544.f)));
+        size_page["max"] = ImVec2(float(width), float(height));
+        if (height > width)
+            zoom.first = true;
     }
-
-    int32_t width, height;
-    for (auto p = 0; p < manual_page_list.size(); p++) {
-        vfs::FileBuffer buffer;
-        std::string app_manual_path = manual_path.string();
-
-        app_manual_path += manual_page_list[p];
-
-        vfs::read_app_file(buffer, host.pref_path, app_path, app_manual_path);
-
-        if (buffer.empty()) {
-            LOG_WARN("Manual not found for title: {} [{}].", app_path, APP_INDEX->title);
-            return false;
-        }
-        stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-        if (!data) {
-            LOG_ERROR("Invalid manual image for title: {} [{}].", app_path, APP_INDEX->title);
-            return false;
-        }
-        gui.manuals[p].init(gui.imgui_state.get(), data, width, height);
-        stbi_image_free(data);
-    }
-    size_page["mini"] = size_page["current"] = height < width ? ImVec2(float(width), float(height)) : ImVec2(float(width * (width / 960.f)), float(height / (height / 544.f)));
-    size_page["max"] = ImVec2(float(width), float(height));
-    if (height > width)
-        zoom.first = true;
 
     return !gui.manuals.empty();
 }

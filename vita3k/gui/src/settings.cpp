@@ -23,6 +23,7 @@
 #include <io/device.h>
 #include <numeric>
 #include <util/safe_time.h>
+#include <util/string_utils.h>
 
 #include <nfd.h>
 #include <pugixml.hpp>
@@ -77,24 +78,24 @@ static void get_themes_list(GuiState &gui, HostState &host) {
     default: break;
     }
 
-    std::map<std::string, std::map<std::string, std::string>> theme_preview_name;
+    std::map<std::string, std::map<ThemePreviewType, std::string>> theme_preview_name;
     for (const auto &theme : fs::directory_iterator(theme_path)) {
-        if (!theme.path().empty() && fs::is_directory(theme.path())
-            && !theme.path().filename_is_dot() && !theme.path().filename_is_dot_dot()) {
+        if (!theme.path().empty() && fs::is_directory(theme.path())) {
             vfs::FileBuffer params;
-            std::string content_id = theme.path().stem().generic_string();
-            const auto theme_path_xml{ theme_path / content_id / "theme.xml" };
+            const auto content_id_wstr = theme.path().filename().wstring();
+            const auto content_id = string_utils::wide_to_utf(content_id_wstr);
+            const auto theme_path_xml{ theme_path / content_id_wstr / "theme.xml" };
             pugi::xml_document doc;
 
             if (doc.load_file(theme_path_xml.c_str())) {
                 const auto infomation = doc.child("theme").child("InfomationProperty");
 
                 // Thumbmail theme
-                theme_preview_name[content_id]["package"] = infomation.child("m_packageImageFilePath").text().as_string();
+                theme_preview_name[content_id][PACKAGE] = infomation.child("m_packageImageFilePath").text().as_string();
 
                 // Preview theme
-                theme_preview_name[content_id]["home"] = infomation.child("m_homePreviewFilePath").text().as_string();
-                theme_preview_name[content_id]["start"] = infomation.child("m_startPreviewFilePath").text().as_string();
+                theme_preview_name[content_id][HOME] = infomation.child("m_homePreviewFilePath").text().as_string();
+                theme_preview_name[content_id][START] = infomation.child("m_startPreviewFilePath").text().as_string();
 
                 // Title
                 const auto title = infomation.child("m_title");
@@ -115,10 +116,10 @@ static void get_themes_list(GuiState &gui, HostState &host) {
                         return acc + fs::file_size(theme.path());
                     return acc;
                 };
-                const auto theme_content_ids = fs::recursive_directory_iterator(theme_path / content_id);
+                const auto theme_content_ids = fs::recursive_directory_iterator(theme_path / content_id_wstr);
                 const auto theme_size = std::accumulate(fs::begin(theme_content_ids), fs::end(theme_content_ids), boost::uintmax_t{}, pred);
 
-                const auto updated = fs::last_write_time(theme_path / content_id);
+                const auto updated = fs::last_write_time(theme_path / content_id_wstr);
                 SAFE_LOCALTIME(&updated, &themes_info[content_id].updated);
 
                 themes_info[content_id].size = theme_size / KB(1);
@@ -135,10 +136,10 @@ static void get_themes_list(GuiState &gui, HostState &host) {
     });
 
     if (fs::exists(fw_theme_path) && !fs::is_empty(fw_theme_path)) {
-        theme_preview_name["default"]["package"] = "data/internal/theme/theme_defaultImage.png";
+        theme_preview_name["default"][PACKAGE] = "data/internal/theme/theme_defaultImage.png";
 
-        theme_preview_name["default"]["home"] = "data/internal/theme/defaultTheme_homeScreen.png";
-        theme_preview_name["default"]["start"] = "data/internal/theme/defaultTheme_startScreen.png";
+        theme_preview_name["default"][HOME] = "data/internal/theme/defaultTheme_homeScreen.png";
+        theme_preview_name["default"][START] = "data/internal/theme/defaultTheme_startScreen.png";
 
         themes_info["default"].title = !gui.lang.settings.empty() ? gui.lang.settings["default"] : "Default";
         themes_list.push_back({ "default", {} });
@@ -155,7 +156,7 @@ static void get_themes_list(GuiState &gui, HostState &host) {
                 if (theme.first == "default")
                     vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, name.second);
                 else
-                    vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + theme.first + "/" + name.second);
+                    vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, fs::path("theme") / string_utils::utf_to_wide(theme.first) / name.second);
 
                 if (buffer.empty()) {
                     LOG_WARN("Background, Name: '{}', Not found for title: {} [{}].", name.second, theme.first, theme.second.title);
@@ -355,8 +356,8 @@ void draw_settings(GuiState &gui, HostState &host) {
                         if (!search_bar.PassFilter(themes_info[theme.first].title.c_str()) && !search_bar.PassFilter(theme.first.c_str()))
                             continue;
                         const auto POS_IMAGE = ImGui::GetCursorPosY();
-                        if (gui.themes_preview[theme.first].find("package") != gui.themes_preview[theme.first].end())
-                            ImGui::Image(gui.themes_preview[theme.first]["package"], SIZE_PACKAGE);
+                        if (gui.themes_preview[theme.first].find(PACKAGE) != gui.themes_preview[theme.first].end())
+                            ImGui::Image(gui.themes_preview[theme.first][PACKAGE], SIZE_PACKAGE);
                         const auto POS_TITLE = ImGui::GetCursorPosY();
                         ImGui::SetCursorPosY(POS_IMAGE);
                         ImGui::PushID(theme.first.c_str());
@@ -380,13 +381,13 @@ void draw_settings(GuiState &gui, HostState &host) {
                     // Theme Select
                     title = themes_info[selected].title;
                     if (popup.empty()) {
-                        if (gui.themes_preview[selected].find("home") != gui.themes_preview[selected].end()) {
+                        if (gui.themes_preview[selected].find(HOME) != gui.themes_preview[selected].end()) {
                             ImGui::SetCursorPos(ImVec2(15.f * SCALE.x, (SIZE_LIST.y / 2.f) - (SIZE_PREVIEW.y / 2.f) - (72.f * SCALE.y)));
-                            ImGui::Image(gui.themes_preview[selected]["home"], SIZE_PREVIEW);
+                            ImGui::Image(gui.themes_preview[selected][HOME], SIZE_PREVIEW);
                         }
-                        if (gui.themes_preview[selected].find("start") != gui.themes_preview[selected].end()) {
+                        if (gui.themes_preview[selected].find(START) != gui.themes_preview[selected].end()) {
                             ImGui::SetCursorPos(ImVec2((SIZE_LIST.x / 2.f) + (15.f * SCALE.y), (SIZE_LIST.y / 2.f) - (SIZE_PREVIEW.y / 2.f) - (72.f * SCALE.y)));
-                            ImGui::Image(gui.themes_preview[selected]["start"], SIZE_PREVIEW);
+                            ImGui::Image(gui.themes_preview[selected][START], SIZE_PREVIEW);
                         }
                         ImGui::SetWindowFontScale(1.2f);
                         ImGui::SetCursorPos(ImVec2((SIZE_LIST.x / 2.f) - (BUTTON_SIZE.x / 2.f), (SIZE_LIST.y - 82.f) - BUTTON_SIZE.y));
@@ -412,7 +413,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::BeginChild("##delete_theme_popup", POPUP_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
                         ImGui::SetCursorPos(ImVec2(48.f * SCALE.x, 28.f * SCALE.y));
                         ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
-                        ImGui::Image(gui.themes_preview[selected]["package"], SIZE_MINI_PACKAGE);
+                        ImGui::Image(gui.themes_preview[selected][PACKAGE], SIZE_MINI_PACKAGE);
                         ImGui::SameLine(0, 22.f * SCALE.x);
                         const auto CALC_TITLE = ImGui::CalcTextSize(themes_info[selected].title.c_str(), nullptr, false, POPUP_SIZE.x - SIZE_MINI_PACKAGE.x - (70.f * SCALE.x)).y / 2.f;
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (SIZE_MINI_PACKAGE.y / 2.f) - CALC_TITLE);
@@ -436,7 +437,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                                 save_user(gui, host, host.io.user_id);
                                 init_theme_start_background(gui, host, "default");
                             }
-                            fs::remove_all(fs::path{ host.pref_path } / "ux0/theme" / selected);
+                            fs::remove_all(fs::path{ host.pref_path } / "ux0/theme" / string_utils::utf_to_wide(selected));
                             if (host.app_path == "NPXS10026")
                                 init_content_manager(gui, host);
                             delete_theme = selected;
@@ -448,13 +449,13 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::PopStyleVar();
                         ImGui::End();
                     } else if (popup == "information") {
-                        if (gui.themes_preview[selected].find("home") != gui.themes_preview[selected].end()) {
+                        if (gui.themes_preview[selected].find(HOME) != gui.themes_preview[selected].end()) {
                             ImGui::SetCursorPos(ImVec2(119.f * SCALE.x, 4.f * SCALE.y));
-                            ImGui::Image(gui.themes_preview[selected]["home"], SIZE_MINI_PREVIEW);
+                            ImGui::Image(gui.themes_preview[selected][HOME], SIZE_MINI_PREVIEW);
                         }
-                        if (gui.themes_preview[selected].find("start") != gui.themes_preview[selected].end()) {
+                        if (gui.themes_preview[selected].find(START) != gui.themes_preview[selected].end()) {
                             ImGui::SetCursorPos(ImVec2(SIZE_LIST.x / 2.f + (15.f * SCALE.y), 4.f * SCALE.y));
-                            ImGui::Image(gui.themes_preview[selected]["start"], SIZE_MINI_PREVIEW);
+                            ImGui::Image(gui.themes_preview[selected][START], SIZE_MINI_PREVIEW);
                         }
                         const auto INFO_POS = ImVec2(280.f * SCALE.x, 30.f * SCALE.y);
                         ImGui::SetWindowFontScale(0.94f);
@@ -506,9 +507,9 @@ void draw_settings(GuiState &gui, HostState &host) {
                     const auto is_not_default = gui.users[host.io.user_id].theme_id != "default";
                     if (is_not_default) {
                         const auto THEME_POS = ImVec2(15.f * SCALE.x, PACKAGE_POS_Y);
-                        if (gui.themes_preview[gui.users[host.io.user_id].theme_id].find("package") != gui.themes_preview[gui.users[host.io.user_id].theme_id].end()) {
+                        if (gui.themes_preview[gui.users[host.io.user_id].theme_id].find(PACKAGE) != gui.themes_preview[gui.users[host.io.user_id].theme_id].end()) {
                             ImGui::SetCursorPos(THEME_POS);
-                            ImGui::Image(gui.themes_preview[gui.users[host.io.user_id].theme_id]["package"], SIZE_PACKAGE);
+                            ImGui::Image(gui.themes_preview[gui.users[host.io.user_id].theme_id][PACKAGE], SIZE_PACKAGE);
                         }
                         ImGui::SetCursorPos(THEME_POS);
                         ImGui::SetWindowFontScale(1.8f);
@@ -538,9 +539,9 @@ void draw_settings(GuiState &gui, HostState &host) {
                     ImGui::SetCursorPosX(IMAGE_POS.x);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", is_lang ? lang["image"].c_str() : "Image");
                     const auto DEFAULT_POS = ImVec2(is_not_default ? (SIZE_LIST.x / 2.f) + (SIZE_PACKAGE.x / 2.f) + (30.f * SCALE.y) : (SIZE_LIST.x / 2.f) - (SIZE_PACKAGE.x / 2.f), PACKAGE_POS_Y);
-                    if (gui.themes_preview["default"].find("package") != gui.themes_preview["default"].end()) {
+                    if (gui.themes_preview["default"].find(PACKAGE) != gui.themes_preview["default"].end()) {
                         ImGui::SetCursorPos(DEFAULT_POS);
-                        ImGui::Image(gui.themes_preview["default"]["package"], SIZE_PACKAGE);
+                        ImGui::Image(gui.themes_preview["default"][PACKAGE], SIZE_PACKAGE);
                         ImGui::SetCursorPos(DEFAULT_POS);
                         ImGui::SetWindowFontScale(1.8f);
                         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
@@ -558,9 +559,9 @@ void draw_settings(GuiState &gui, HostState &host) {
                     const auto SELECT_BUTTON_POS = ImVec2((SIZE_LIST.x / 2.f) - (BUTTON_SIZE.x / 2.f), (SIZE_LIST.y - 82.f) - BUTTON_SIZE.y);
                     if (sub_menu == "theme") {
                         title = themes_info[gui.users[host.io.user_id].theme_id].title;
-                        if (gui.themes_preview[gui.users[host.io.user_id].theme_id].find("start") != gui.themes_preview[gui.users[host.io.user_id].theme_id].end()) {
+                        if (gui.themes_preview[gui.users[host.io.user_id].theme_id].find(START) != gui.themes_preview[gui.users[host.io.user_id].theme_id].end()) {
                             ImGui::SetCursorPos(START_PREVIEW_POS);
-                            ImGui::Image(gui.themes_preview[gui.users[host.io.user_id].theme_id]["start"], SIZE_PREVIEW);
+                            ImGui::Image(gui.themes_preview[gui.users[host.io.user_id].theme_id][START], SIZE_PREVIEW);
                         }
                         ImGui::SetCursorPos(SELECT_BUTTON_POS);
                         if ((gui.users[host.io.user_id].start_type != "theme") && (ImGui::Button(select, BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {
@@ -582,9 +583,9 @@ void draw_settings(GuiState &gui, HostState &host) {
                         sub_menu.clear();
                     } else if (sub_menu == "default") {
                         title = is_lang ? lang["default"].c_str() : "Default";
-                        if (gui.themes_preview["default"].find("start") != gui.themes_preview["default"].end()) {
+                        if (gui.themes_preview["default"].find(START) != gui.themes_preview["default"].end()) {
                             ImGui::SetCursorPos(START_PREVIEW_POS);
-                            ImGui::Image(gui.themes_preview["default"]["start"], SIZE_PREVIEW);
+                            ImGui::Image(gui.themes_preview["default"][START], SIZE_PREVIEW);
                         }
                         ImGui::SetCursorPos(SELECT_BUTTON_POS);
                         if ((gui.users[host.io.user_id].start_type != "default") && (ImGui::Button(select, BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))) {

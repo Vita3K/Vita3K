@@ -74,24 +74,32 @@ struct StartParam {
     ImVec2 clock_pos = ImVec2(880.f, 146.f);
 };
 
-static StartParam start_param;
+static ImU32 convert_hex_color(const std::string src_color) {
+    std::string result = src_color.substr(src_color.length() - 6, 6);
+    result.insert(0, "ff");
 
-void init_theme_start_background(GuiState &gui, HostState &host, const std::string &content_id) {
-    std::string dateColor;
+    int color;
+    sscanf(result.c_str(), "%x", &color);
+    return (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
+}
+
+static StartParam start_param;
+void init_theme_start_background(GuiState &gui, HostState &host, const std::string content_id) {
     std::string theme_start_name;
 
     start_param = {};
     gui.start_background = {};
 
+    const auto content_id_wstr{ fs::path(string_utils::utf_to_wide(content_id)) };
     if (!content_id.empty() && (content_id != "default")) {
-        const auto THEME_PATH_XML{ fs::path(host.pref_path) / "ux0/theme" / content_id / "theme.xml" };
+        const auto THEME_PATH_XML{ fs::path(host.pref_path) / "ux0/theme" / content_id_wstr / "theme.xml" };
         pugi::xml_document doc;
         if (doc.load_file(THEME_PATH_XML.c_str())) {
             const auto theme = doc.child("theme");
 
             // Start Layout
             if (!theme.child("StartScreenProperty").child("m_dateColor").empty())
-                dateColor = theme.child("StartScreenProperty").child("m_dateColor").text().as_string();
+                start_param.date_color = convert_hex_color(theme.child("StartScreenProperty").child("m_dateColor").text().as_string());
             if (!theme.child("StartScreenProperty").child("m_dateLayout").empty())
                 start_param.date_layout = DateLayout(theme.child("StartScreenProperty").child("m_dateLayout").text().as_int());
 
@@ -118,12 +126,6 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
         break;
     }
 
-    if (!dateColor.empty()) {
-        int color;
-        sscanf(dateColor.c_str(), "%x", &color);
-        start_param.date_color = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
-    }
-
     int32_t width = 0;
     int32_t height = 0;
     vfs::FileBuffer buffer;
@@ -137,7 +139,7 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
             return;
         }
     } else
-        vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + theme_start_name);
+        vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, fs::path("theme") / content_id_wstr / theme_start_name);
 
     if (buffer.empty()) {
         LOG_WARN("Background not found: '{}', for content id: {}.", theme_start_name, content_id);
@@ -186,10 +188,10 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
     return gui.start_background;
 }
 
-bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
+bool init_theme(GuiState &gui, HostState &host, const std::string content_id) {
     std::vector<std::string> theme_bg_name;
-    std::map<std::string, std::string> bar_param;
     std::map<std::string, std::string> theme_icon_name = {
+        { "NPXS10003", {} },
         { "NPXS10008", {} },
         { "NPXS10015", {} },
         { "NPXS10026", {} }
@@ -202,69 +204,82 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
     gui.theme_backgrounds_font_color.clear();
     gui.theme_information_bar_notice.clear();
 
+    const auto content_id_wstr = string_utils::utf_to_wide(content_id);
+
     if (content_id != "default") {
-        const auto THEME_XML_PATH{ fs::path(host.pref_path) / "ux0/theme" / content_id / "theme.xml" };
+        const auto THEME_XML_PATH{ fs::path(host.pref_path) / "ux0/theme" / content_id_wstr / "theme.xml" };
         pugi::xml_document doc;
 
         if (doc.load_file(THEME_XML_PATH.c_str())) {
             const auto theme = doc.child("theme");
 
-            // Theme Apps Icon
-            if (!theme.child("HomeProperty").child("m_trophy").child("m_iconFilePath").text().empty())
-                theme_icon_name["NPXS10008"] = theme.child("HomeProperty").child("m_trophy").child("m_iconFilePath").text().as_string();
-            if (!theme.child("HomeProperty").child("m_settings").child("m_iconFilePath").text().empty())
-                theme_icon_name["NPXS10015"] = theme.child("HomeProperty").child("m_settings").child("m_iconFilePath").text().as_string();
-            if (!theme.child("HomeProperty").child("m_hostCollabo").child("m_iconFilePath").text().empty())
-                theme_icon_name["NPXS10026"] = theme.child("HomeProperty").child("m_hostCollabo").child("m_iconFilePath").text().as_string();
+            // Home Property
+            const auto home_property = theme.child("HomeProperty");
+            if (!home_property.empty()) {
+                // Theme Apps Icon
+                if (!home_property.child("m_browser").child("m_iconFilePath").text().empty())
+                    theme_icon_name["NPXS10003"] = home_property.child("m_browser").child("m_iconFilePath").text().as_string();
+                if (!home_property.child("m_trophy").child("m_iconFilePath").text().empty())
+                    theme_icon_name["NPXS10008"] = home_property.child("m_trophy").child("m_iconFilePath").text().as_string();
+                if (!home_property.child("m_settings").child("m_iconFilePath").text().empty())
+                    theme_icon_name["NPXS10015"] = home_property.child("m_settings").child("m_iconFilePath").text().as_string();
+                if (!home_property.child("m_hostCollabo").child("m_iconFilePath").text().empty())
+                    theme_icon_name["NPXS10026"] = home_property.child("m_hostCollabo").child("m_iconFilePath").text().as_string();
 
-            // Get Bar Color
-            if (!theme.child("InfomationBarProperty").child("m_barColor").empty())
-                bar_param["barColor"] = theme.child("InfomationBarProperty").child("m_barColor").text().as_string();
-            if (!theme.child("InfomationBarProperty").child("m_indicatorColor").empty())
-                bar_param["indicatorColor"] = theme.child("InfomationBarProperty").child("m_indicatorColor").text().as_string();
+                // Home
+                for (const auto &param : home_property.child("m_bgParam")) {
+                    // Theme Background
+                    if (!param.child("m_imageFilePath").text().empty())
+                        theme_bg_name.push_back(param.child("m_imageFilePath").text().as_string());
 
-            // Notice Icon
-            std::map<NoticeIcon, std::string> notice_name;
-            if (!theme.child("InfomationBarProperty").child("m_noNoticeFilePath").text().empty())
-                notice_name[NoticeIcon::NO] = theme.child("InfomationBarProperty").child("m_noNoticeFilePath").text().as_string();
-            if (!theme.child("InfomationBarProperty").child("m_newNoticeFilePath").text().empty())
-                notice_name[NoticeIcon::NEW] = theme.child("InfomationBarProperty").child("m_newNoticeFilePath").text().as_string();
-
-            for (const auto &notice : notice_name) {
-                int32_t width = 0;
-                int32_t height = 0;
-                vfs::FileBuffer buffer;
-
-                const auto type = notice.first;
-                const auto name = notice.second;
-
-                vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + name);
-
-                if (buffer.empty()) {
-                    LOG_WARN("Notice icon, Name: '{}', Not found for content id: {}.", name, content_id);
-                    continue;
+                    // Font Color
+                    if (!param.child("m_fontColor").text().empty()) {
+                        int color;
+                        sscanf(param.child("m_fontColor").text().as_string(), "%x", &color);
+                        gui.theme_backgrounds_font_color.push_back(ImVec4((float((color >> 16) & 0xFF)) / 255.f, (float((color >> 8) & 0xFF)) / 255.f, (float((color >> 0) & 0xFF)) / 255.f, 1.f));
+                    }
                 }
-                stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
-                if (!data) {
-                    LOG_ERROR("Invalid notice icon for content id: {}.", content_id);
-                    continue;
-                }
-                gui.theme_information_bar_notice[type].init(gui.imgui_state.get(), data, width, height);
-                stbi_image_free(data);
             }
 
-            // Home
-            for (const auto &param : theme.child("HomeProperty").child("m_bgParam")) {
-                // Theme Background
-                if (!param.child("m_imageFilePath").text().empty()) {
-                    theme_bg_name.push_back(param.child("m_imageFilePath").text().as_string());
-                    gui.theme_backgrounds.push_back({});
-                }
-                // Font Color
-                if (!param.child("m_fontColor").text().empty()) {
-                    int color;
-                    sscanf(param.child("m_fontColor").text().as_string(), "%x", &color);
-                    gui.theme_backgrounds_font_color.push_back(ImVec4((float((color >> 16) & 0xFF)) / 255.f, (float((color >> 8) & 0xFF)) / 255.f, (float((color >> 0) & 0xFF)) / 255.f, 1.f));
+            // Information Bar Property
+            const auto info_bar_prop = theme.child("InfomationBarProperty");
+            if (!info_bar_prop.empty()) {
+                // Get Bar Color
+                if (!info_bar_prop.child("m_barColor").empty())
+                    gui.information_bar_color.bar = convert_hex_color(info_bar_prop.child("m_barColor").text().as_string());
+                if (!info_bar_prop.child("m_indicatorColor").empty())
+                    gui.information_bar_color.indicator = convert_hex_color(info_bar_prop.child("m_indicatorColor").text().as_string());
+                if (!info_bar_prop.child("m_noticeFontColor").empty())
+                    gui.information_bar_color.notice_font = convert_hex_color(info_bar_prop.child("m_noticeFontColor").text().as_string());
+
+                // Notice Icon
+                std::map<NoticeIcon, std::string> notice_name;
+                if (!info_bar_prop.child("m_noNoticeFilePath").text().empty())
+                    notice_name[NoticeIcon::NO] = info_bar_prop.child("m_noNoticeFilePath").text().as_string();
+                if (!info_bar_prop.child("m_newNoticeFilePath").text().empty())
+                    notice_name[NoticeIcon::NEW] = info_bar_prop.child("m_newNoticeFilePath").text().as_string();
+
+                for (const auto &notice : notice_name) {
+                    int32_t width = 0;
+                    int32_t height = 0;
+                    vfs::FileBuffer buffer;
+
+                    const auto type = notice.first;
+                    const auto name = notice.second;
+
+                    vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, fs::path("theme") / content_id_wstr / name);
+
+                    if (buffer.empty()) {
+                        LOG_WARN("Notice icon, Name: '{}', Not found for content id: {}.", name, content_id);
+                        continue;
+                    }
+                    stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
+                    if (!data) {
+                        LOG_ERROR("Invalid notice icon for content id: {}.", content_id);
+                        continue;
+                    }
+                    gui.theme_information_bar_notice[type].init(gui.imgui_state.get(), data, width, height);
+                    stbi_image_free(data);
                 }
             }
         } else
@@ -278,23 +293,9 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
             "NPXS10098",
         };
         for (const auto &bg : app_id_bg_list) {
-            if (fs::exists(fs::path(host.pref_path) / "vs0/app" / bg / "sce_sys/pic0.png")) {
-                gui.theme_backgrounds.push_back({});
+            if (fs::exists(fs::path(host.pref_path) / "vs0/app" / bg / "sce_sys/pic0.png"))
                 theme_bg_name.push_back(bg);
-            }
         }
-    }
-
-    if (!bar_param["barColor"].empty()) {
-        int color;
-        sscanf(bar_param["barColor"].c_str(), "%x", &color);
-        gui.information_bar_color.bar = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
-    }
-
-    if (!bar_param["indicatorColor"].empty()) {
-        int color;
-        sscanf(bar_param["indicatorColor"].c_str(), "%x", &color);
-        gui.information_bar_color.indicator = (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
     }
 
     for (const auto &icon : theme_icon_name) {
@@ -307,7 +308,7 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
         if (name.empty())
             vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + title_id + "/sce_sys/icon0.png");
         else
-            vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + name);
+            vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, fs::path("theme") / content_id_wstr / name);
 
         if (buffer.empty()) {
             buffer = init_default_icon(gui, host);
@@ -327,27 +328,28 @@ bool init_theme(GuiState &gui, HostState &host, const std::string &content_id) {
         stbi_image_free(data);
     }
 
-    for (auto pos = 0; pos < theme_bg_name.size(); pos++) {
+    for (const auto bg : theme_bg_name) {
         int32_t width = 0;
         int32_t height = 0;
         vfs::FileBuffer buffer;
 
         if (content_id == "default")
-            vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + theme_bg_name[pos] + "/sce_sys/pic0.png");
+            vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + bg + "/sce_sys/pic0.png");
         else
-            vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "theme/" + content_id + "/" + theme_bg_name[pos]);
+            vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, fs::path("theme") / content_id_wstr / bg);
 
         if (buffer.empty()) {
-            LOG_WARN("Background not found: '{}', for content id: {}.", theme_bg_name[pos], content_id);
+            LOG_WARN("Background not found: '{}', for content id: {}.", bg, content_id);
             continue;
         }
         stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
         if (!data) {
-            LOG_ERROR("Invalid Background: '{}', for content id: {}.", theme_bg_name[pos], content_id);
+            LOG_ERROR("Invalid Background: '{}', for content id: {}.", bg, content_id);
             continue;
         }
 
-        gui.theme_backgrounds[pos].init(gui.imgui_state.get(), data, width, height);
+        gui.theme_backgrounds.push_back({});
+        gui.theme_backgrounds.back().init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 
