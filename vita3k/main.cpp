@@ -174,13 +174,26 @@ int main(int argc, char *argv[]) {
         gui::init(gui, host);
     }
 
-    if (cfg.content_path) {
+    if (cfg.content_path.has_value()) {
         auto gui_ptr = cfg.console ? nullptr : &gui;
-        const auto is_archive = (cfg.content_path->extension() == ".vpk") || (cfg.content_path->extension() == ".zip");
-        const auto is_rif = (cfg.content_path->extension() == ".rif") || (cfg.content_path->filename() == "work.bin");
+        const auto extention = string_utils::tolower(cfg.content_path->extension().string());
+        const auto is_archive = (extention == ".vpk") || (extention == ".zip");
+        const auto is_rif = (extention == ".rif") || (extention == "work.bin");
         const auto is_directory = fs::is_directory(*cfg.content_path);
 
-        if (((is_archive && install_archive(host, gui_ptr, string_utils::utf_to_wide(cfg.content_path->string()))) || (is_directory && (install_contents(host, gui_ptr, *cfg.content_path) == 1))) && (host.app_category == "gd"))
+        const auto content_is_app = [&]() {
+            std::vector<ContentInfo> contents_info = install_archive(host, gui_ptr, string_utils::utf_to_wide(cfg.content_path->string()));
+            const auto content_index = std::find_if(contents_info.begin(), contents_info.end(), [&](const ContentInfo &c) {
+                return c.category == "gd";
+            });
+            if ((content_index != contents_info.end()) && content_index->state) {
+                host.app_title_id = content_index->title_id;
+                return true;
+            }
+
+            return false;
+        };
+        if ((is_archive && content_is_app()) || (is_directory && (install_contents(host, gui_ptr, *cfg.content_path) == 1) && (host.app_category == "gd")))
             run_type = app::AppRunType::Extracted;
         else {
             if (is_rif)
@@ -197,8 +210,10 @@ int main(int argc, char *argv[]) {
     if (run_type == app::AppRunType::Extracted) {
         host.io.app_path = cfg.run_app_path ? *cfg.run_app_path : host.app_title_id;
         gui::init_user_app(gui, host, host.io.app_path);
-        if (host.cfg.run_app_path)
+        if (host.cfg.run_app_path.has_value())
             host.cfg.run_app_path.reset();
+        else if (host.cfg.content_path.has_value())
+            host.cfg.content_path.reset();
     }
 
     if (!cfg.console) {
