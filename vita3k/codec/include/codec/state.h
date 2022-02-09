@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -146,8 +146,15 @@ private:
 
 public:
     std::uint32_t source_channels;
+
+    /**
+     * @brief Playback rate of the input audio stream without modifications
+     */
     float source_frequency;
 
+    /**
+     * @brief State of utilization of Sony's HEVAG (High Efficiency VAG) ADPCM.
+     */
     bool he_adpcm;
 
     bool send(const uint8_t *data, uint32_t size) override;

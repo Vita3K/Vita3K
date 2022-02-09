@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,6 +60,20 @@ struct Parameters {
     ngs::ParametersDescriptor descriptor;
     BufferParameters buffer_params[MAX_BUFFER_PARAMS];
     SceFloat32 playback_frequency;
+
+    /**
+     * @brief Controls playback rate scaling
+     * @details A scaling factor of 1 keeps the playback rate without changes.
+     * A value greater than 1 increases the playback rate, as well as the perceived
+     * speed of the audio and the pitch.
+     * A value lower than 1 decreases the playback rate, as well as the perceived
+     * speed of the audio and the pitch.
+     * The final playback rate compared to the original one will be the result of
+     * `playback_rate * scaling_factor`.
+     *
+     * Please note that this has nothing to do with the playback rate of the host audio
+     * stream.
+     */
     SceFloat32 playback_scalar;
     SceInt32 lead_in_samples;
     SceInt32 limit_number_of_samples_played;
@@ -75,6 +89,10 @@ struct Parameters {
 struct Module : public ngs::Module {
 private:
     std::unique_ptr<PCMDecoderState> decoder;
+
+    // Logging flag to control over playback rate scaling
+    // It gets set to false once playback rate scaling is requested to prevent log event repetition
+    bool LOG_PLAYBACK_SCALING = true;
 
 public:
     explicit Module();
