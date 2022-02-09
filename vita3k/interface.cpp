@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -60,6 +60,15 @@ static const char *miniz_get_error(const ZipPtr &zip) {
     return mz_zip_get_error_string(mz_zip_get_last_error(zip.get()));
 }
 
+static void set_theme_name(HostState &host, vfs::FileBuffer &buf) {
+    host.app_title = gui::get_theme_title_from_buffer(buf);
+    host.app_title_id = string_utils::remove_special_chars(host.app_title);
+    const auto nospace = std::remove_if(host.app_title_id.begin(), host.app_title_id.end(), isspace);
+    host.app_title_id.erase(nospace, host.app_title_id.end());
+    host.app_category = "theme";
+    host.app_title += " (Theme)";
+}
+
 static bool is_nonpdrm(HostState &host, const fs::path &output_path) {
     const auto app_license_path{ fs::path(host.pref_path) / "ux0/license" / host.app_title_id / fmt::format("{}.rif", host.app_content_id) };
     const auto is_patch_found_app_license = (host.app_category == "gp") && fs::exists(app_license_path);
@@ -77,72 +86,18 @@ static bool is_nonpdrm(HostState &host, const fs::path &output_path) {
     return false;
 }
 
-bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_path, const std::function<void(float)> &progress_callback) {
-    if (!fs::exists(archive_path)) {
-        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path().string());
-        return false;
-    }
-    const ZipPtr zip(new mz_zip_archive, delete_zip);
-    std::memset(zip.get(), 0, sizeof(*zip));
+bool install_archive_content(HostState &host, GuiState *gui, const fs::path &archive_path, const ZipPtr &zip, const std::string &content_path, const std::function<void(ArchiveContents)> &progress_callback) {
+    std::string sfo_path = "sce_sys/param.sfo";
+    std::string theme_path = "theme.xml";
+    vfs::FileBuffer buffer, theme;
 
-    FILE *vpk_fp;
-
-    if (progress_callback != nullptr) {
-        progress_callback(0);
-    }
-
-#ifdef WIN32
-    _wfopen_s(&vpk_fp, archive_path.generic_path().wstring().c_str(), L"rb");
-#else
-    vpk_fp = fopen(archive_path.generic_path().string().c_str(), "rb");
-#endif
-
-    if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
-        LOG_CRITICAL("miniz error reading archive: {}", miniz_get_error(zip));
-        fclose(vpk_fp);
-        return false;
-    }
-
-    int num_files = mz_zip_reader_get_num_files(zip.get());
-    fs::path sfo_path = "sce_sys/param.sfo";
-    bool theme = false;
-    std::string extra_path;
-
-    for (int i = 0; i < num_files; i++) {
-        mz_zip_archive_file_stat file_stat;
-        if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat))
-            continue;
-
-        std::string m_filename = std::string(file_stat.m_filename);
-
-        if (m_filename.find("sce_module/steroid.suprx") != std::string::npos) {
-            LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
-            fclose(vpk_fp);
-            return false;
-        }
-
-        if (m_filename.find("theme.xml") != std::string::npos)
-            theme = true;
-
-        //This was here before to check if the game files were in the zip root, since this commit
-        // allows support for the content to be inside folders and install it anyways
-        if ((m_filename.find(sfo_path.string()) != std::string::npos) && (m_filename != sfo_path.string()))
-            extra_path = m_filename.erase(m_filename.find(sfo_path.string()));
-    }
-
-    vfs::FileBuffer param;
-    if (mz_zip_reader_extract_file_to_callback(zip.get(), (fs::path(extra_path) / sfo_path).string().c_str(), &write_to_buffer, &param, 0))
-        gui::get_param_info(host, param);
-    else if (!theme) {
-        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), sfo_path.string());
-        fclose(vpk_fp);
-        return false;
-    }
+    const auto is_theme = mz_zip_reader_extract_file_to_callback(zip.get(), (fs::path(content_path) / theme_path).string().c_str(), &write_to_buffer, &theme, 0);
 
     auto output_path{ fs::path(host.pref_path) / "ux0" };
-    if (!param.empty()) {
+    if (mz_zip_reader_extract_file_to_callback(zip.get(), (fs::path(content_path) / sfo_path).string().c_str(), &write_to_buffer, &buffer, 0)) {
+        gui::get_param_info(host, buffer);
         if (host.app_category == "ac") {
-            if (theme) {
+            if (is_theme) {
                 output_path /= fs::path("theme") / host.app_content_id;
                 host.app_title += " (Theme)";
             } else {
@@ -150,14 +105,19 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
                 output_path /= fs::path("addcont") / host.app_title_id / host.app_content_id;
                 host.app_title += " (DLC)";
             }
-        } else if (host.app_category == "gp")
+        } else if (host.app_category == "gp") {
             output_path /= fs::path("patch") / host.app_title_id;
-        else
+            host.app_title += " (Patch)";
+        } else {
             output_path /= fs::path("app") / host.app_title_id;
+            host.app_title += " (App)";
+        }
+    } else if (is_theme) {
+        set_theme_name(host, theme);
+        output_path /= fs::path("theme") / host.app_title_id;
     } else {
-        host.app_category = host.app_title = "theme";
-        host.app_title_id = host.app_content_id = string_utils::wide_to_utf(archive_path.filename().replace_extension("").wstring());
-        output_path /= fs::path("theme") / host.app_content_id;
+        LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), sfo_path);
+        return false;
     }
 
     const auto created = fs::create_directories(output_path);
@@ -181,7 +141,6 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
             }
             if (status == gui::CANCEL_STATE) {
                 LOG_INFO("{} already installed, {}", host.app_title_id, host.app_category == "gd" ? "launching application..." : "open home");
-                fclose(vpk_fp);
                 return true;
             } else if (status == gui::UNK_STATE) {
                 exit(0);
@@ -193,33 +152,43 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
     float decrypt_progress = 0;
 
     const auto update_progress = [&]() {
-        if (progress_callback != nullptr) {
-            progress_callback(file_progress * 0.7f + decrypt_progress * 0.3f);
-        }
+        if (progress_callback)
+            progress_callback({ {}, {}, { file_progress * 0.7f + decrypt_progress * 0.3f } });
     };
 
+    int num_files = mz_zip_reader_get_num_files(zip.get());
     for (auto i = 0; i < num_files; i++) {
         mz_zip_archive_file_stat file_stat;
         if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat)) {
             continue;
         }
-        file_progress = static_cast<float>(i) / num_files * 100.0f;
-        update_progress();
-        std::string m_filename = file_stat.m_filename;
-        if (extra_path.find(m_filename) != std::string::npos) {
-            continue;
-        }
-        std::string replace_filename = m_filename.substr(extra_path.size());
-        const fs::path file_output = { output_path / replace_filename };
-        if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
-            fs::create_directories(file_output);
-        } else {
-            if (!fs::exists(file_output.parent_path())) {
-                fs::create_directories(file_output.parent_path());
-            }
+        const std::string m_filename = file_stat.m_filename;
+        if (m_filename.find(content_path) != std::string::npos) {
+            file_progress = static_cast<float>(i) / num_files * 100.0f;
+            update_progress();
 
-            LOG_INFO("Extracting {}", file_output.generic_path().string());
-            mz_zip_reader_extract_to_file(zip.get(), i, file_output.generic_path().string().c_str(), 0);
+            std::string replace_filename = m_filename.substr(content_path.size());
+            const fs::path file_output = { output_path / replace_filename };
+            if (mz_zip_reader_is_file_a_directory(zip.get(), i)) {
+                fs::create_directories(file_output);
+            } else {
+                if (!fs::exists(file_output.parent_path()))
+                    fs::create_directories(file_output.parent_path());
+
+                LOG_INFO("Extracting {}", file_output.generic_path().string());
+                mz_zip_reader_extract_to_file(zip.get(), i, file_output.generic_path().string().c_str(), 0);
+            }
+        }
+    }
+
+    // Rename directory on correct name when is request, Todo of extract zip, no support unicode
+    if (host.app_category == "theme") {
+        const auto dest = string_utils::utf_to_wide(output_path.string());
+        if (output_path != dest) {
+            if (fs::exists(dest))
+                fs::remove_all(dest);
+
+            fs::rename(output_path, dest);
         }
     }
 
@@ -243,8 +212,85 @@ bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_pat
         }
     }
 
-    fclose(vpk_fp);
     return true;
+}
+
+static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
+    int num_files = mz_zip_reader_get_num_files(zip.get());
+    std::vector<std::string> content_path;
+    std::string sfo_path = "sce_sys/param.sfo";
+    std::string theme_path = "theme.xml";
+
+    for (int i = 0; i < num_files; i++) {
+        mz_zip_archive_file_stat file_stat;
+        if (!mz_zip_reader_file_stat(zip.get(), i, &file_stat))
+            continue;
+
+        std::string m_filename = std::string(file_stat.m_filename);
+        if (m_filename.find("sce_module/steroid.suprx") != std::string::npos) {
+            LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
+            content_path.clear();
+            break;
+        }
+
+        const auto is_content = (m_filename.find(sfo_path) != std::string::npos) || (m_filename.find(theme_path) != std::string::npos);
+        if (is_content) {
+            const auto content_type = (m_filename.find(sfo_path) != std::string::npos) ? sfo_path : theme_path;
+            m_filename.erase(m_filename.find(content_type));
+            if (std::find(content_path.begin(), content_path.end(), m_filename) == content_path.end())
+                content_path.push_back(m_filename);
+        }
+    }
+
+    return content_path;
+}
+
+std::vector<ContentInfo> install_archive(HostState &host, GuiState *gui, const fs::path &archive_path, const std::function<void(ArchiveContents)> &progress_callback) {
+    if (!fs::exists(archive_path)) {
+        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path().string());
+        return {};
+    }
+    const ZipPtr zip(new mz_zip_archive, delete_zip);
+    std::memset(zip.get(), 0, sizeof(*zip));
+
+    FILE *vpk_fp;
+
+#ifdef WIN32
+    _wfopen_s(&vpk_fp, archive_path.generic_path().wstring().c_str(), L"rb");
+#else
+    vpk_fp = fopen(archive_path.generic_path().string().c_str(), "rb");
+#endif
+
+    if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {
+        LOG_CRITICAL("miniz error reading archive: {}", miniz_get_error(zip));
+        fclose(vpk_fp);
+        return {};
+    }
+
+    const auto content_path = get_archive_contents_path(zip);
+    if (content_path.empty()) {
+        fclose(vpk_fp);
+        return {};
+    }
+
+    const auto count = float(content_path.size());
+    float current = 0.f;
+    const auto update_progress = [&]() {
+        if (progress_callback)
+            progress_callback({ count, current, {} });
+    };
+    update_progress();
+
+    std::vector<ContentInfo> content_installed{};
+    for (auto &path : content_path) {
+        current++;
+        update_progress();
+        const bool state = install_archive_content(host, gui, archive_path, zip, path, progress_callback);
+        content_installed.push_back({ host.app_title, host.app_title_id, host.app_category, host.app_content_id, path, state });
+    }
+
+    fclose(vpk_fp);
+    return content_installed;
 }
 
 static bool copy_directories(const fs::path &src_path, const fs::path &dst_path) {
@@ -272,58 +318,60 @@ static bool copy_directories(const fs::path &src_path, const fs::path &dst_path)
 }
 
 static std::vector<fs::path> get_contents_path(const fs::path &path) {
-    std::vector<fs::path> content_path;
+    std::vector<fs::path> contents_path;
 
     for (const auto &p : fs::recursive_directory_iterator(path)) {
-        if (fs::is_regular_file(p)) {
-            if (p.path().filename() == "param.sfo")
-                content_path.push_back(p.path().parent_path().parent_path());
-            else if ((p.path().filename() == "theme.xml") && (std::find(content_path.begin(), content_path.end(), p.path().parent_path()) == content_path.end()))
-                content_path.push_back(p.path().parent_path());
+        const auto is_content = (p.path().filename() == "param.sfo") || (p.path().filename() == "theme.xml");
+        if (is_content) {
+            const auto content_path = (p.path().filename() == "param.sfo") ? p.path().parent_path().parent_path() : p.path().parent_path();
+            if (std::find(content_path.begin(), content_path.end(), p.path().parent_path()) == content_path.end())
+                contents_path.push_back(content_path);
         }
     }
 
-    return content_path;
+    return contents_path;
 }
 
 static bool install_content(HostState &host, GuiState *gui, const fs::path &content_path) {
     const auto sfo_path{ content_path / "sce_sys/param.sfo" };
-    const auto is_param_sfo = fs::exists(sfo_path);
+    const auto theme_path{ content_path / "theme.xml" };
+    vfs::FileBuffer buffer;
+
+    const auto get_buffer = [&](const fs::path path) {
+        fs::ifstream f{ path, fs::ifstream::binary };
+        if (!f)
+            return false;
+
+        f.unsetf(fs::ifstream::skipws);
+        buffer.reserve(fs::file_size(path));
+        buffer.insert(buffer.begin(), std::istream_iterator<uint8_t>(f), std::istream_iterator<uint8_t>());
+
+        return true;
+    };
 
     auto dst_path{ fs::path(host.pref_path) / "ux0" };
-    if (is_param_sfo) {
-        fs::ifstream sfo{ sfo_path, fs::ifstream::binary };
-        vfs::FileBuffer param;
-        sfo.unsetf(fs::ifstream::skipws);
-        param.reserve(fs::file_size(sfo_path));
-        param.insert(param.begin(), std::istream_iterator<uint8_t>(sfo), std::istream_iterator<uint8_t>());
-
-        if (!param.empty()) {
-            gui::get_param_info(host, param);
-
-            if (host.app_category == "ac") {
-                if (fs::exists(content_path / "theme.xml")) {
-                    dst_path /= fs::path("theme") / host.app_content_id;
-                    host.app_title += " (Theme)";
-                    host.app_category = "theme";
-                } else {
-                    host.app_content_id = host.app_content_id.substr(20);
-                    dst_path /= fs::path("addcont") / host.app_title_id / host.app_content_id;
-                    host.app_title = host.app_title + " (DLC)";
-                }
-            } else if (host.app_category == "gp")
-                dst_path /= fs::path("patch") / host.app_title_id;
-            else
-                dst_path /= fs::path("app") / host.app_title_id;
+    if (get_buffer(sfo_path)) {
+        gui::get_param_info(host, buffer);
+        if (host.app_category == "ac") {
+            if (fs::exists(content_path / "theme.xml")) {
+                dst_path /= fs::path("theme") / host.app_content_id;
+                host.app_title += " (Theme)";
+                host.app_category = "theme";
+            } else {
+                host.app_content_id = host.app_content_id.substr(20);
+                dst_path /= fs::path("addcont") / host.app_title_id / host.app_content_id;
+                host.app_title = host.app_title + " (DLC)";
+            }
+        } else if (host.app_category == "gp") {
+            dst_path /= fs::path("patch") / host.app_title_id;
+            host.app_title += " (Patch)";
         } else {
-            LOG_ERROR("Param.sfo file is corrupted in path", sfo_path.string());
-            return false;
+            dst_path /= fs::path("app") / host.app_title_id;
+            host.app_title += " (App)";
         }
-    } else if (fs::exists(content_path / "theme.xml")) {
-        const auto content_wstr = content_path.filename().wstring();
-        host.app_title_id = string_utils::wide_to_utf(content_wstr);
-        dst_path /= fs::path("theme") / content_wstr;
-        host.app_title = "Theme";
+    } else if (get_buffer(theme_path)) {
+        set_theme_name(host, buffer);
+        dst_path /= fs::path("theme") / string_utils::utf_to_wide(host.app_title_id);
     } else {
         LOG_ERROR("Param.sfo file is missing in path", sfo_path.string());
         return false;
@@ -340,7 +388,7 @@ static bool install_content(HostState &host, GuiState *gui, const fs::path &cont
     if (host.app_category == "gd")
         gui::init_user_app(*gui, host, host.app_title_id);
 
-    if (is_param_sfo)
+    if (host.app_category != "theme")
         gui::update_notice_info(*gui, host, "content");
 
     LOG_INFO("{} [{}] installed succesfully!", host.app_title, host.app_title_id);
@@ -585,9 +633,10 @@ bool handle_events(HostState &host, GuiState &gui) {
             break;
         case SDL_DROPFILE: {
             const auto drop_file = fs::path(string_utils::utf_to_wide(event.drop.file));
-            if ((drop_file.extension() == ".vpk") || (drop_file.extension() == ".zip"))
+            const auto extension = string_utils::tolower(drop_file.extension().string());
+            if ((extension == ".vpk") || (extension == ".zip"))
                 install_archive(host, &gui, drop_file);
-            else if ((drop_file.extension() == ".rif") || (drop_file.filename() == "work.bin"))
+            else if ((extension == ".rif") || (drop_file.filename() == "work.bin"))
                 copy_license(host, drop_file);
             else if (fs::is_directory(drop_file))
                 install_contents(host, &gui, drop_file);

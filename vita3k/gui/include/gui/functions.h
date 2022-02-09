@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,6 +47,7 @@ std::string get_unit_size(const size_t &size);
 void get_app_param(GuiState &gui, HostState &host, const std::string &app_path);
 void get_notice_list(HostState &host);
 void get_param_info(HostState &host, const vfs::FileBuffer &param);
+std::string get_theme_title_from_buffer(const vfs::FileBuffer buffer);
 void get_time_apps(GuiState &gui, HostState &host);
 void get_user_apps_title(GuiState &gui, HostState &host);
 void get_users_list(GuiState &gui, HostState &host);

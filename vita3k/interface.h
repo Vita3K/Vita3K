@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 
 #include <app/functions.h>
 #include <util/exit_code.h>
@@ -36,9 +37,24 @@ inline void delete_zip(mz_zip_archive *zip) {
     delete zip;
 }
 
+struct ArchiveContents {
+    std::optional<float> count = 0;
+    std::optional<float> current = 0;
+    std::optional<float> progress = 0;
+};
+
+struct ContentInfo {
+    std::string title;
+    std::string title_id;
+    std::string category;
+    std::string content_id;
+    std::string path;
+    bool state = false;
+};
+
 bool handle_events(HostState &host, GuiState &gui);
 
-bool install_archive(HostState &host, GuiState *gui, const fs::path &archive_path, const std::function<void(float)> &progress_callback = nullptr);
+std::vector<ContentInfo> install_archive(HostState &host, GuiState *gui, const fs::path &archive_path, const std::function<void(ArchiveContents)> &progress_callback = nullptr);
 uint32_t install_contents(HostState &host, GuiState *gui, const fs::path &path);
 
 ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path);

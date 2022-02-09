@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -26,6 +26,12 @@
 #include <stb_image.h>
 
 namespace gui {
+
+std::string get_theme_title_from_buffer(const vfs::FileBuffer buffer) {
+    pugi::xml_document doc;
+    if (doc.load_buffer(buffer.data(), buffer.size()))
+        return doc.child("theme").child("InfomationProperty").child("m_title").child("m_default").text().as_string();
+}
 
 bool init_user_background(GuiState &gui, HostState &host, const std::string &user_id, const std::string &background_path) {
     gui.user_backgrounds[background_path] = {};
