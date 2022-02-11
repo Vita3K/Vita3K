@@ -190,7 +190,7 @@ void draw_initial_setup(GuiState &gui, HostState &host) {
         ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(completed_setup).x / 2.f), (WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize()));
         ImGui::Text("%s", completed_setup);
         ImGui::SetCursorPos(BIG_BUTTON_POS);
-        if (ImGui::Button("Ok", BIG_BUTTON_SIZE))
+        if (ImGui::Button("OK", BIG_BUTTON_SIZE))
             host.cfg.initial_setup = true;
         break;
     default: break;
