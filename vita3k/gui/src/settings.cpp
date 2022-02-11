@@ -376,6 +376,10 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::PopTextWrapPos();
                         ImGui::NextColumn();
                     }
+                    if (ImGui::Selectable("##download_theme", true, ImGuiSelectableFlags_None, SIZE_PACKAGE))
+                        open_path("https://psv.altervista.org/");
+                    ImGui::TextColored(GUI_COLOR_TEXT, "Find in Altervista");
+                    ImGui::NextColumn();
                     ImGui::Columns(1);
                 } else {
                     // Theme Select
