@@ -109,7 +109,7 @@ void draw_initial_setup(GuiState &gui, HostState &host) {
             ImGui::PopID();
         }
         ImGui::PopStyleVar();
-        ImGui::PopStyleColor();
+        ImGui::PopStyleColor(3);
         ImGui::Columns(1);
         ImGui::EndChild();
         ImGui::PopStyleVar();
