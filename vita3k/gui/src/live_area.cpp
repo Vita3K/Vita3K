@@ -121,7 +121,7 @@ void init_lang(GuiState &gui, HostState &host) {
                     if (!main_menubar.child("controls").empty()) {
                         lang_main_menubar["controls"] = main_menubar.child("controls").attribute("name").as_string();
                         gui.lang.main_menubar["keyboard_controls"] = main_menubar.child("controls").child("keyboard_controls").text().as_string();
-                        gui.lang.main_menubar["controLlers"] = main_menubar.child("controls").child("controLlers").text().as_string();
+                        gui.lang.main_menubar["controllers"] = main_menubar.child("controls").child("controllers").text().as_string();
                     }
 
                     // Help Menu
