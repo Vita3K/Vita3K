@@ -6,9 +6,12 @@
 		<information>情報</information>
 		<app_delete>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</app_delete>
 		<save_delete>このセーブデータを削除しますか？</save_delete>
+		<eligible>権利あり</eligible>
+		<ineligible>権利なし</ineligible>
+		<level>レベル</level>
 		<name>名前</name>
-		<trophy_earning eligible="権利あり" ineligible="権利なし">トロフィー獲得</trophy_earning>
-		<parental_Controls level="レベル">ペアレンタルコントロール</parental_Controls>
+		<trophy_earning>トロフィー獲得</trophy_earning>
+		<parental_Controls>ペアレンタルコントロール</parental_Controls>
 		<updated>更新日</updated>
 		<size>サイズ</size>
 		<version>バージョン</version>
@@ -137,7 +140,8 @@ Vita3Kをお楽しみください。</completed_setup>
 	</live_area>
 
 	<settings name="設定">
-		<theme_background name="テーマ&背景" default="オリジナル">
+		<theme_background name="テーマ&背景">
+			<default>オリジナル</default>
 			<theme name="テーマ">
 				<information name="情報">
 					<name>名前</name>

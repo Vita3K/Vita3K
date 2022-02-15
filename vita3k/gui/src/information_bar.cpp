@@ -91,11 +91,11 @@ static bool set_notice_info(GuiState &gui, HostState &host, const NoticeList &in
     std::string msg, name;
     fs::path content_path;
 
-    auto indicator = gui.lang.indicator;
+    auto lang = gui.lang.indicator;
     if (info.type == "content") {
         if (info.group.find("gd") != std::string::npos) {
             content_path = fs::path("app") / info.id;
-            msg = !indicator["app_added_home"].empty() ? indicator["app_added_home"] : "The application has been added to the home screen.";
+            msg = lang["app_added_home"].c_str();
         } else {
             if (info.group == "ac")
                 content_path = fs::path("addcont") / info.id / info.content_id;
@@ -103,7 +103,7 @@ static bool set_notice_info(GuiState &gui, HostState &host, const NoticeList &in
                 content_path = fs::path("patch") / info.id;
             else if (info.group == "theme")
                 content_path = fs::path("theme") / info.content_id;
-            msg = !indicator["install_complete"].empty() ? indicator["install_complete"] : "Installation complete.";
+            msg = lang["install_complete"].c_str();
         }
         vfs::FileBuffer params;
         if (vfs::read_file(VitaIoDevice::ux0, params, host.pref_path, content_path / "sce_sys/param.sfo")) {
@@ -117,19 +117,19 @@ static bool set_notice_info(GuiState &gui, HostState &host, const NoticeList &in
         }
         init_notice_icon(gui, host, content_path / "sce_sys/icon0.png", info);
     } else {
-        auto common = gui.lang.common.common;
+        auto common = gui.lang.common.main;
         switch (static_cast<np::trophy::SceNpTrophyGrade>(std::stoi(info.group))) {
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
-            name = fmt::format("({}) ", !common["platinium"].empty() ? common["platinium"] : "Platinum");
+            name = fmt::format("({}) ", common["platinium"]);
             break;
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD:
-            name = fmt::format("({}) ", !common["gold"].empty() ? common["gold"] : "Gold");
+            name = fmt::format("({}) ", common["gold"]);
             break;
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER:
-            name = fmt::format("({}) ", !common["silver"].empty() ? common["silver"] : "Silver");
+            name = fmt::format("({}) ", common["silver"]);
             break;
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE:
-            name = fmt::format("({}) ", !common["bronze"].empty() ? common["bronze"] : "Bronze");
+            name = fmt::format("({}) ", common["bronze"]);
             break;
         default: break;
         }
@@ -149,7 +149,7 @@ static bool set_notice_info(GuiState &gui, HostState &host, const NoticeList &in
             LOG_WARN("Trophy sfm in conf no found for NpComId: {}", info.id);
             return false;
         }
-        msg = !indicator["trophy_earned"].empty() ? indicator["trophy_earned"] : "You have earned a trophy!";
+        msg = lang["trophy_earned"];
 
         content_path = fs::path("user") / host.io.user_id / "trophy/conf" / info.id / fmt::format("TROP{}.PNG", info.content_id);
         if (!init_notice_icon(gui, host, content_path, info))
@@ -318,15 +318,15 @@ static std::string get_notice_time(GuiState &gui, HostState &host, const time_t 
         if (gui.users[host.io.user_id].clock_12_hour)
             date += fmt::format(" {}", DATE_TIME[DateTime::DAY_MOMENT]);
     } else {
-        auto lang = gui.lang.common.common;
+        auto lang = gui.lang.common.main;
         if (diff_time >= (hour * 2))
-            date = fmt::format(!lang["hours_ago"].empty() ? lang["hours_ago"] : "{} Hours Ago", uint32_t(diff_time / hour));
+            date = fmt::format(lang["hours_ago"], uint32_t(diff_time / hour));
         else if (diff_time >= hour)
-            date = !lang["one_hour_ago"].empty() ? lang["one_hour_ago"] : "1 Hour Ago";
+            date = lang["one_hour_ago"];
         else if (diff_time >= (minute * 2))
-            date = fmt::format(!lang["minutes_ago"].empty() ? lang["minutes_ago"] : "{} Minutes Ago", uint32_t(diff_time / 60));
+            date = fmt::format(lang["minutes_ago"], uint32_t(diff_time / 60));
         else
-            date = !lang["one_minute_ago"].empty() ? lang["one_minute_ago"] : "1 Minute Ago";
+            date = lang["one_minute_ago"];
     }
 
     return date;
@@ -384,10 +384,10 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, notice_info.empty() ? 0.f : 8.0f * SCALE.x);
         ImGui::SetNextWindowPos(POPUP_POS, ImGuiCond_Always);
         ImGui::BeginChild("##notice_info_child", POPUP_SIZE, true, ImGuiWindowFlags_NoSavedSettings);
-        auto indicator = gui.lang.indicator;
+        auto lang = gui.lang.indicator;
         if (notice_info.empty()) {
             ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
-            const auto no_notif = !indicator["no_notif"].empty() ? indicator["no_notif"].c_str() : "There are no notifications";
+            const auto no_notif = lang["no_notif"].c_str();
             const auto calc_text = ImGui::CalcTextSize(no_notif);
             ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (calc_text.x / 2.f), (POPUP_SIZE.y / 2.f) - (calc_text.y / 2.f)));
             ImGui::TextColored(ImVec4(0.f, 0.f, 0.f, 1.f), "%s", no_notif);
@@ -458,19 +458,19 @@ static void draw_notice_info(GuiState &gui, HostState &host) {
             if (ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
                 ImGui::OpenPopup("...");
             if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
-                if (ImGui::Button(!indicator["delete_all"].empty() ? indicator["delete_all"].c_str() : "Delete All"))
+                if (ImGui::Button(lang["delete_all"].c_str()))
                     ImGui::OpenPopup("Delete All");
                 ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f);
                 ImGui::SetNextWindowSize(DELETE_POPUP_SIZE, ImGuiCond_Always);
                 ImGui::SetNextWindowPos(ImVec2((display_size.x / 2.f) - (DELETE_POPUP_SIZE.x / 2.f), (display_size.y / 2.f) - (DELETE_POPUP_SIZE.y / 2.f)));
                 if (ImGui::BeginPopupModal("Delete All", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
                     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-                    const auto notif_deleted = !indicator["notif_deleted"].empty() ? indicator["notif_deleted"].c_str() : "The notifications will be deleted.";
+                    const auto notif_deleted = lang["notif_deleted"].c_str();
                     auto common = host.common_dialog.lang.common;
                     ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize(notif_deleted).x / 2.f), (DELETE_POPUP_SIZE.y / 2.f) - (46.f * SCALE.y)));
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", notif_deleted);
                     ImGui::SetCursorPos(ImVec2((DELETE_POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), DELETE_POPUP_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
-                    if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+                    if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
                         ImGui::CloseCurrentPopup();
                     }
                     ImGui::SameLine(0.f, 20.f);

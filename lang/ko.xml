@@ -6,9 +6,12 @@
 		<information>정보</information>
 		<app_delete>이 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</app_delete>
 		<save_delete>이 저장 데이터를 삭제하시겠습니까?</save_delete>
+		<eligible>권리 있음</eligible>
+		<ineligible>권리 없음</ineligible>
+		<level>레벨</level>		
 		<name>이름</name>
-		<trophy_earning eligible="권리 있음" ineligible="권리 없음">트로피 획득</trophy_earning>
-		<parental_Controls level="레벨">자녀보호 기능</parental_Controls>
+		<trophy_earning>트로피 획득</trophy_earning>
+		<parental_Controls>자녀보호 기능</parental_Controls>
 		<updated>갱신일</updated>
 		<size>크기</size>
 		<version>버전</version>
@@ -137,7 +140,8 @@ Your Vita3K system is ready!</completed_setup>
 	</live_area>
 
 	<settings name="설정">
-		<theme_background name="테마 & 배경" default="오리지널">
+		<theme_background name="테마 & 배경">
+			<default>오리지널</default>
 			<theme name="테마">
 				<information name="정보">
 					<name>이름</name>

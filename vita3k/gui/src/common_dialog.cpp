@@ -124,7 +124,7 @@ static void draw_trophy_setup_dialog(DialogState &common_dialog, float FONT_SCAL
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         ImGui::BeginChild("##preparing_app_child", WINDOW_SIZE, false, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-        const auto str = !common_dialog.lang.trophy["preparing_start_app"].empty() ? common_dialog.lang.trophy["preparing_start_app"].c_str() : "Preparing to start the application...";
+        const auto str = common_dialog.lang.trophy["preparing_start_app"].c_str();
         ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
         const auto str_size = ImGui::CalcTextSize(str);
         const auto STR_POS = ImVec2((WINDOW_SIZE.x / 2.f) - (str_size.x / 2.f), (WINDOW_SIZE.y / 2.f) - (str_size.y / 2.f));
@@ -161,7 +161,7 @@ static void draw_save_info(GuiState &gui, HostState &host, float FONT_SCALE, ImV
     const ImVec2 THUMBNAIL_SIZE = ImVec2(160.f * SCALE.x, 90.f * SCALE.y);
     const auto display_size = ImGui::GetIO().DisplaySize;
     const ImVec2 WINDOW_SIZE = ImVec2(display_size.x / 1.7f, display_size.y / 1.5f);
-    auto lang = host.common_dialog.lang.save_data;
+    auto lang = host.common_dialog.lang.save_data.info;
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(WINDOW_SIZE);
     ImGui::PushStyleColor(ImGuiCol_WindowBg, GUI_COMMON_DIALOG_BG);
@@ -188,7 +188,7 @@ static void draw_save_info(GuiState &gui, HostState &host, float FONT_SCALE, ImV
     ImGui::BeginGroup();
     ImGui::PushTextWrapPos(WINDOW_SIZE.x - 75 * SCALE.x);
     ImGui::SetCursorPosX(50 * SCALE.x);
-    ImGui::Text("%s", !lang["updated"].empty() ? lang["updated"].c_str() : "Updated");
+    ImGui::Text("%s", lang["updated"].c_str());
     ImGui::SameLine();
     ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - 85 * SCALE.x);
     ImGui::Text("%s", get_save_date_time(gui, host, host.common_dialog.savedata.date[host.common_dialog.savedata.selected_save]).c_str());
@@ -196,7 +196,7 @@ static void draw_save_info(GuiState &gui, HostState &host, float FONT_SCALE, ImV
     ImGui::Spacing();
     ImGui::Spacing();
     ImGui::SetCursorPosX(50 * SCALE.x);
-    ImGui::Text("%s", !lang["details"].empty() ? lang["details"].c_str() : "Details");
+    ImGui::Text("%s", lang["details"].c_str());
     ImGui::SameLine();
     ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - 85 * SCALE.x);
     ImGui::Text("%s", host.common_dialog.savedata.details[host.common_dialog.savedata.selected_save].c_str());
@@ -329,7 +329,7 @@ static void draw_savedata_dialog(GuiState &gui, HostState &host, float FONT_SCAL
         if (host.common_dialog.savedata.display_type != SCE_SAVEDATA_DIALOG_TYPE_SAVE) {
             if (existing_saves_count == 0) {
                 ImGui::SetWindowFontScale(1.2f);
-                const auto no_save_data = !host.common_dialog.lang.save_data["no_saved_data"].empty() ? host.common_dialog.lang.save_data["no_saved_data"].c_str() : "There is no saved data.";
+                const auto no_save_data = host.common_dialog.lang.save_data.load["no_saved_data"].c_str();
                 ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(no_save_data).x / 2 - 10, WINDOW_SIZE.y / 2 - ImGui::CalcTextSize(no_save_data).y / 2 - 25));
                 ImGui::Text("%s", no_save_data);
             }

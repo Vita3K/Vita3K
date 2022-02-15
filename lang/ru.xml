@@ -30,9 +30,12 @@
 		<information>Информация</information>
 		<app_delete>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</app_delete>
 		<save_delete>Удалить эти сохраненные данные?</save_delete>
+		<eligible>Допущен</eligible>
+		<ineligible>Не допущен</ineligible>
+		<level>Уровень</level>
 		<name>Название</name>
-		<trophy_earning eligible="Допущен" ineligible="Не допущен">Полученные призы</trophy_earning>
-		<parental_Controls level="Уровень">Родительский контроль</parental_Controls>
+		<trophy_earning>Полученные призы</trophy_earning>
+		<parental_Controls>Родительский контроль</parental_Controls>
 		<updated>Обновлен</updated>
 		<size>Размер</size>
 		<version>Версия</version>
@@ -164,7 +167,8 @@
 	</live_area>
 
 	<settings name="Настройки">
-		<theme_background name="Тема и Фон" default="По умолчанию">
+		<theme_background name="Тема и Фон">
+			<default>По умолчанию</default>
 			<theme name="Тема">
 				<information name="Информация">
 					<name>Название</name>

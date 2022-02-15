@@ -24,25 +24,23 @@
 namespace gui {
 
 static void draw_file_menu(GuiState &gui, HostState &host) {
-    auto lang = gui.lang.main_menubar;
-    const auto is_lang = !lang.empty();
-    if (ImGui::BeginMenu(is_lang ? lang["file"].c_str() : "File")) {
-        if (ImGui::MenuItem(is_lang ? lang["open_pref_path"].c_str() : "Open Pref Path"))
+    auto lang = gui.lang.main_menubar.file;
+    if (ImGui::BeginMenu(lang["title"].c_str())) {
+        if (ImGui::MenuItem(lang["open_pref_path"].c_str()))
             open_path(string_utils::wide_to_utf(host.pref_path));
         ImGui::Separator();
-        ImGui::MenuItem(is_lang ? lang["install_firmware"].c_str() : "Install Firmware", nullptr, &gui.file_menu.firmware_install_dialog);
-        ImGui::MenuItem(is_lang ? lang["install_pkg"].c_str() : "Install .pkg", nullptr, &gui.file_menu.pkg_install_dialog);
-        ImGui::MenuItem(is_lang ? lang["install_zip"].c_str() : "Install .zip, .vpk", nullptr, &gui.file_menu.archive_install_dialog);
-        ImGui::MenuItem(!lang["install_license"].empty() ? lang["install_license"].c_str() : "Install License", nullptr, &gui.file_menu.license_install_dialog);
+        ImGui::MenuItem(lang["install_firmware"].c_str(), nullptr, &gui.file_menu.firmware_install_dialog);
+        ImGui::MenuItem(lang["install_pkg"].c_str(), nullptr, &gui.file_menu.pkg_install_dialog);
+        ImGui::MenuItem(lang["install_zip"].c_str(), nullptr, &gui.file_menu.archive_install_dialog);
+        ImGui::MenuItem(lang["install_license"].c_str(), nullptr, &gui.file_menu.license_install_dialog);
         ImGui::EndMenu();
     }
 }
 
 static void draw_emulation_menu(GuiState &gui, HostState &host) {
-    auto lang = gui.lang.main_menubar;
-    const auto is_lang = !lang.empty();
-    if (ImGui::BeginMenu(is_lang ? lang["emulation"].c_str() : "Emulation")) {
-        if (ImGui::BeginMenu(is_lang ? lang["last_apps_used"].c_str() : "Last Apps used")) {
+    auto lang = gui.lang.main_menubar.emulation;
+    if (ImGui::BeginMenu(lang["title"].c_str())) {
+        if (ImGui::BeginMenu(lang["last_apps_used"].c_str())) {
             if (!gui.time_apps[host.io.user_id].empty()) {
                 for (auto i = 0; i < std::min(14, int32_t(gui.time_apps[host.io.user_id].size())); i++) {
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
@@ -76,14 +74,13 @@ static void draw_debug_menu(DebugMenuState &state) {
 }
 
 static void draw_config_menu(GuiState &gui, HostState &host) {
-    auto lang = gui.lang.main_menubar;
-    const auto is_lang = !lang.empty();
+    auto lang = gui.lang.main_menubar.configuration;
     const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", host.io.app_path) };
     auto &settings_dialog = !host.io.app_path.empty() && fs::exists(CUSTOM_CONFIG_PATH) ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
-    if (ImGui::BeginMenu(is_lang ? lang["configuration"].c_str() : "Configuration")) {
-        if (ImGui::MenuItem(is_lang ? lang["settings"].c_str() : "Settings", nullptr, &settings_dialog))
+    if (ImGui::BeginMenu(lang["title"].c_str())) {
+        if (ImGui::MenuItem(lang["settings"].c_str(), nullptr, &settings_dialog))
             init_config(gui, host, host.io.app_path);
-        if (ImGui::MenuItem(is_lang ? lang["user_management"].c_str() : "User Management", nullptr, &gui.live_area.user_management, (!gui.live_area.user_management && host.io.title_id.empty()))) {
+        if (ImGui::MenuItem(lang["user_management"].c_str(), nullptr, &gui.live_area.user_management, (!gui.live_area.user_management && host.io.title_id.empty()))) {
             gui.live_area.app_selector = false;
             gui.live_area.information_bar = true;
         }
@@ -92,21 +89,19 @@ static void draw_config_menu(GuiState &gui, HostState &host) {
 }
 
 static void draw_controls_menu(GuiState &gui) {
-    auto lang = gui.lang.main_menubar;
-    const auto is_lang = !lang.empty();
-    if (ImGui::BeginMenu(is_lang ? lang["controls"].c_str() : "Controls")) {
-        ImGui::MenuItem(is_lang ? lang["keyboard_controls"].c_str() : "Keyboard Controls", nullptr, &gui.controls_menu.controls_dialog);
-        ImGui::MenuItem(is_lang ? lang["controllers"].c_str() : "Controllers", nullptr, &gui.controls_menu.controllers_dialog);
+    auto lang = gui.lang.main_menubar.controls;
+    if (ImGui::BeginMenu(lang["title"].c_str())) {
+        ImGui::MenuItem(lang["keyboard_controls"].c_str(), nullptr, &gui.controls_menu.controls_dialog);
+        ImGui::MenuItem(lang["controllers"].c_str(), nullptr, &gui.controls_menu.controllers_dialog);
         ImGui::EndMenu();
     }
 }
 
 static void draw_help_menu(GuiState &gui) {
-    auto lang = gui.lang.main_menubar;
-    const auto is_lang = !lang.empty();
-    if (ImGui::BeginMenu(is_lang ? lang["help"].c_str() : "Help")) {
-        ImGui::MenuItem(is_lang ? lang["about"].c_str() : "About", nullptr, &gui.help_menu.about_dialog);
-        ImGui::MenuItem(is_lang ? lang["welcome"].c_str() : "Welcome", nullptr, &gui.help_menu.welcome_dialog);
+    auto lang = gui.lang.main_menubar.help;
+    if (ImGui::BeginMenu(lang["title"].c_str())) {
+        ImGui::MenuItem(lang["about"].c_str(), nullptr, &gui.help_menu.about_dialog);
+        ImGui::MenuItem(lang["welcome"].c_str(), nullptr, &gui.help_menu.welcome_dialog);
         ImGui::EndMenu();
     }
 }

@@ -147,9 +147,8 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
             title = "Installing";
             ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + (20.f * host.dpi_scale)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_title.c_str());
-            const auto installing = !indicator["installing"].empty() ? indicator["installing"].c_str() : "Installing...";
             ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + (20.f * host.dpi_scale)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", installing);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", indicator["installing"].c_str());
             const float PROGRESS_BAR_WIDTH = 502.f * host.dpi_scale;
             const auto PROGRESS_BAR_POS = (ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f);
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
@@ -173,7 +172,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
             ImGui::PopStyleColor();
         } else if (state == "finished") {
-            title = !indicator["install_complete"].empty() ? indicator["install_complete"] : "Installation complete.";
+            title = indicator["install_complete"];
             ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + (5.f * SCALE.x), ImGui::GetWindowPos().y + BUTTON_SIZE.y));
             ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
             ImGui::BeginChild("##content_installed_list", ImVec2(WINDOW_SIZE.x - (10.f * SCALE.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25 * SCALE.y)), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);

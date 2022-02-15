@@ -30,9 +30,12 @@
 		<information>Bilgi</information>
 		<app_delete>Bu uygulama ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</app_delete>
 		<save_delete>Bu kayıtlı verileri silmek istiyor musunuz?</save_delete>
+		<eligible>Uygun</eligible> 
+		<ineligible>Uygun değil</ineligible>
+		<level>Seviye</level>
 		<name>Ad</name>
-		<trophy_earning eligible="Uygun" ineligible="Uygun değil">Kupa Kazanma</trophy_earning>
-		<parental_Controls level="Seviye">Ebeveyn Kontrolleri</parental_Controls>
+		<trophy_earning>Kupa Kazanma</trophy_earning>
+		<parental_Controls>Ebeveyn Kontrolleri</parental_Controls>
 		<updated>üncelleme Tarihi</updated>
 		<size>Boyut</size>
 		<version>Sürüm</version>
@@ -164,7 +167,8 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 	</live_area>
 
 	<settings name="Ayarlar">
-		<theme_background name="Tema & Arkaplan" default="Varsayılan">
+		<theme_background name="Tema & Arkaplan">
+			<default>Varsayılan</default>
 			<theme name="Tema">
 				<information name="Bilgi">
 					<name>Ad</name>

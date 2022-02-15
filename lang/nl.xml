@@ -30,9 +30,12 @@
 		<information>Informatie</information>
 		<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
 		<save_delete>Wil je deze opgeslagen data verwijderen?</save_delete>
+		<eligible>Geschikt</eligible>
+		<ineligible>Niet geschikt</ineligible>
+		<level>Niveau</level>
 		<name>Naam</name>
-		<trophy_earning eligible="Geschikt" ineligible="Niet geschikt">Trofeeën verdienen</trophy_earning>
-		<parental_Controls level="Niveau">Ouderlijk toezicht</parental_Controls>
+		<trophy_earning>Trofeeën verdienen</trophy_earning>
+		<parental_Controls>Ouderlijk toezicht</parental_Controls>
 		<updated>Geüpdatet</updated>
 		<size>Grootte</size>
 		<version>Versie</version>
@@ -164,7 +167,8 @@ Je Vita3K-systeem is gereed!</completed_setup>
 	</live_area>
 
 	<settings name="Instellingen">
-		<theme_background name="Thema en achtergrond" default="Standaard ">
+		<theme_background name="Thema en achtergrond">
+			<default>Standaard</default>
 			<theme name="Thema">
 				<information name="Informatie">
 					<name>Naam</name>

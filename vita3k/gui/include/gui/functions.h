@@ -62,7 +62,6 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path);
 void init_content_manager(GuiState &gui, HostState &host);
 vfs::FileBuffer init_default_icon(GuiState &gui, HostState &host);
 void init_home(GuiState &gui, HostState &host);
-void init_lang(GuiState &gui, HostState &host);
 void init_live_area(GuiState &gui, HostState &host);
 bool init_manual(GuiState &gui, HostState &host, const std::string &app_path);
 void init_notice_info(GuiState &gui, HostState &host);

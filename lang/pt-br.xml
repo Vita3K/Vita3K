@@ -30,9 +30,12 @@
 		<information>Informação</information>
 		<app_delete>Este aplicativo e todos os dados relacionados incluindo os dados salvos serão apagados.</app_delete>
 		<save_delete>Você quer apagar estes dados salvos?</save_delete>
+		<eligible>Elegível</eligible>
+		<ineligible>Inelegível</ineligible>
+		<level>Nível</level>
 		<name>Nome</name>
-		<trophy_earning eligible="Elegível" ineligible="Inelegível">Ganho de Troféus</trophy_earning>
-		<parental_Controls level="Nível">Controle dos Pais</parental_Controls>
+		<trophy_earning>Ganho de Troféus</trophy_earning>
+		<parental_Controls>Controle dos Pais</parental_Controls>
 		<updated>Atualizado</updated>
 		<size>Tamanho</size>
 		<version>Versão</version>
@@ -164,7 +167,8 @@ O seu sistema Vita3K está pronto!</completed_setup>
 	</live_area>
 
 	<settings name="Configurações">
-		<theme_background name="Tema & Cenário de Fundo" default="Padrão">
+		<theme_background name="Tema & Cenário de Fundo">
+			<default>Padrão</default>
 			<theme name="Tema">
 				<information name="Informação">
 					<name>Nome</name>

@@ -31,9 +31,12 @@
 		<information>Information</information>
 		<app_delete>This application and all related data, including saved data, will be deleted.</app_delete>
 		<save_delete>Do you want to delete this saved data?</save_delete>
+		<eligible>Eligible</eligible>
+		<ineligible>Ineligible</ineligible>
+		<level>Level</level>
 		<name>Name</name>
-		<trophy_earning eligible="Eligible" ineligible="Ineligible">Trophy Earning</trophy_earning>
-		<parental_Controls level="Level">Parental Controls</parental_Controls>
+		<trophy_earning>Trophy Earning</trophy_earning>
+		<parental_Controls>Parental Controls</parental_Controls>
 		<updated>Updated</updated>
 		<size>Size</size>
 		<version>Version</version>
@@ -165,7 +168,8 @@ Your Vita3K system is ready!</completed_setup>
 	</live_area>
 
 	<settings name="Settings">
-		<theme_background name="Theme & Background" default="Default">
+		<theme_background name="Theme & Background">
+			<default>Default</default>
 			<theme name="Theme">
 				<information name="Information">
 					<name>Name</name>

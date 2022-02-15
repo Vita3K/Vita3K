@@ -332,20 +332,20 @@ static void get_trophy_list(GuiState &gui, HostState &host, const std::string &n
         gui.trophy_list[trophy_id].init(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
 
-        auto common = gui.lang.common.common;
+        auto common = gui.lang.common.main;
         const auto trophy_type = np_com_id_info[np_com_id].context.trophy_kinds[std::stoi(trophy_id)];
         switch (trophy_type) {
         case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
-            trophy_info[trophy_id].type["detail"] = !common["platinum"].empty() ? common["platinum"] : "Platinum";
+            trophy_info[trophy_id].type["detail"] = common["platinum"];
             break;
         case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD:
-            trophy_info[trophy_id].type["detail"] = !common["gold"].empty() ? common["gold"] : "Gold";
+            trophy_info[trophy_id].type["detail"] = common["gold"];
             break;
         case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER:
-            trophy_info[trophy_id].type["detail"] = !common["silver"].empty() ? common["silver"] : "Silver";
+            trophy_info[trophy_id].type["detail"] = common["silver"];
             break;
         case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE:
-            trophy_info[trophy_id].type["detail"] = !common["bronze"].empty() ? common["bronze"] : "Bronze";
+            trophy_info[trophy_id].type["detail"] = common["bronze"];
             break;
         default:
             LOG_ERROR("Trophy id {} unknown type: {}", trophy_id, (SceInt32)trophy_type);
@@ -433,16 +433,12 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     ImGui::BeginChild("##trophy_collection_child", !trophy_id_selected.empty() || detail_np_com_id ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
     auto lang = gui.lang.trophy_collection;
-    const auto EARNED = !lang["earned"].empty() ? lang["earned"].c_str() : "Earned";
-    const auto GRADE = !lang["grade"].empty() ? lang["grade"].c_str() : "Grade";
-    const auto PROGRESS = !lang["progress"].empty() ? lang["progress"].c_str() : "Progress";
-    const auto UPDATED = !lang["updated"].empty() ? lang["updated"].c_str() : "Updated";
 
     // Trophy Collection
     if (np_com_id_list.empty()) {
         ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
         ImGui::SetCursorPosY(140.f * SCALE.y);
-        const char *no_trophy_string = !lang["no_trophies"].empty() ? lang["no_trophies"].c_str() : "There are no trophies.\nYou can earn trophies by using an application that supports the trophy feature.";
+        const auto no_trophy_string = lang["no_trophies"].c_str();
         ImGui::TextWrapped("%s", no_trophy_string);
     } else {
         // Set Scroll Pos
@@ -451,8 +447,8 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
             set_scroll_pos = false;
         }
 
-        auto common = gui.lang.common.common;
-        const auto hidden_trophy_str = !common["hidden_trophy"].empty() ? common["hidden_trophy"].c_str() : "Hidden Trophy";
+        auto common = gui.lang.common.main;
+        const auto hidden_trophy_str = common["hidden_trophy"].c_str();
 
         if (np_com_id_selected.empty()) {
             // Ask Delete Trophy Popup
@@ -612,7 +608,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", np_com_id_info[np_com_id_selected].name[group_id_selected == "global" ? "000" : group_id_selected].c_str());
                 ImGui::PopTextWrapPos();
                 ImGui::SetCursorPosY(SIZE_ICON_LIST.y + (20.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", PROGRESS);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["progress"].c_str());
                 ImGui::SameLine(260.f * SCALE.x);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", std::to_string(np_com_id_info[np_com_id_selected].progress[group_id_selected]).append("%").c_str());
                 ImGui::SameLine(360 * SCALE.x);
@@ -621,11 +617,11 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::ProgressBar(np_com_id_info[np_com_id_selected].progress[group_id_selected] / 100.f, ImVec2(200 * SCALE.x, 15.f * SCALE.y), "");
                 ImGui::PopStyleColor();
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (30.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", !lang["trophies"].empty() ? lang["trophies"].c_str() : "Trophies");
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["trophies"].c_str());
                 ImGui::SameLine(260.f * SCALE.x);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%d/%d\n%s", np_com_id_info[np_com_id_selected].unlocked_count[group_id_selected], np_com_id_info[np_com_id_selected].trophy_count_by_group[group_id_selected], np_com_id_info[np_com_id_selected].unlocked_type_count[group_id_selected]["detail"].c_str());
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (45.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", UPDATED);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["updated"].c_str());
                 ImGui::SameLine(260.f * SCALE.x);
                 auto DATE_TIME = get_date_time(gui, host, np_com_id_info[np_com_id_selected].updated);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
@@ -635,7 +631,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 }
                 ImGui::PushTextWrapPos(SIZE_INFO.x - 40.f);
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", !lang["details"].empty() ? lang["details"].c_str() : "Details");
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["details"].c_str());
                 ImGui::SameLine(260.f * SCALE.x);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", np_com_id_info[np_com_id_selected].detail[group_id_selected == "global" ? "000" : group_id_selected].c_str());
                 ImGui::PopTextWrapPos();
@@ -702,11 +698,11 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", hidden_trophy ? hidden_trophy_str : trophy_info[trophy_id_selected].name.c_str());
                 ImGui::PopTextWrapPos();
                 ImGui::SetCursorPosY(SIZE_TROPHY_LIST.y + (25.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", GRADE);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["grade"].c_str());
                 ImGui::SameLine(250.f * SCALE.x);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", hidden_trophy ? "?" : trophy_info[trophy_id_selected].type["detail"].c_str());
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", EARNED);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["earned"].c_str());
                 ImGui::SameLine(250.f * SCALE.x);
                 if (trophy_info[trophy_id_selected].earned) {
                     auto DATE_TIME = get_date_time(gui, host, trophy_info[trophy_id_selected].unlocked_time);
@@ -716,9 +712,9 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                     }
                 } else
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", !lang["not_earned"].empty() ? lang["not_earned"].c_str() : "Not Earned");
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["not_earned"].c_str());
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (25.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", !lang["details"].empty() ? lang["details"].c_str() : "Details");
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["details"].c_str());
                 ImGui::SameLine(250.f * SCALE.x);
                 ImGui::PushTextWrapPos(SIZE_INFO.x);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", hidden_trophy ? "-" : trophy_info[trophy_id_selected].detail.c_str());
@@ -767,13 +763,13 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
         if (ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", !lang["sort"].empty() ? lang["sort"].c_str() : "Sort");
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["sort"].c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            const auto NAME = !lang["name"].empty() ? lang["name"].c_str() : "Name";
+            const auto NAME = lang["name"].c_str();
             if (np_com_id_selected.empty()) {
-                if (ImGui::MenuItem(UPDATED, nullptr, np_com_id_sort == "updated")) {
+                if (ImGui::MenuItem(lang["updated"].c_str(), nullptr, np_com_id_sort == "updated")) {
                     std::sort(np_com_id_list.begin(), np_com_id_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.updated > tb.updated;
                     });
@@ -785,26 +781,26 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                     });
                     np_com_id_sort = "name";
                 }
-                if (ImGui::MenuItem(PROGRESS, nullptr, np_com_id_sort == "progress")) {
+                if (ImGui::MenuItem(lang["progress"].c_str(), nullptr, np_com_id_sort == "progress")) {
                     std::sort(np_com_id_list.begin(), np_com_id_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.progress > tb.progress;
                     });
                     np_com_id_sort = "progress";
                 }
             } else {
-                if (ImGui::MenuItem(!lang["original"].empty() ? lang["original"].c_str() : "Original", nullptr, trophy_sort == "original")) {
+                if (ImGui::MenuItem(lang["original"].c_str(), nullptr, trophy_sort == "original")) {
                     std::sort(trophy_list.begin(), trophy_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.id < tb.id;
                     });
                     trophy_sort = "original";
                 }
-                if (ImGui::MenuItem(EARNED, nullptr, trophy_sort == "earned")) {
+                if (ImGui::MenuItem(lang["earned"].c_str(), nullptr, trophy_sort == "earned")) {
                     std::sort(trophy_list.begin(), trophy_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.earned > tb.earned;
                     });
                     trophy_sort = "earned";
                 }
-                if (ImGui::MenuItem(GRADE, nullptr, trophy_sort == "grade")) {
+                if (ImGui::MenuItem(lang["grade"].c_str(), nullptr, trophy_sort == "grade")) {
                     std::sort(trophy_list.begin(), trophy_list.end(), [](const auto &ta, const auto &tb) {
                         return ta.grade < tb.grade;
                     });

@@ -18,6 +18,7 @@
 		</configuration>
 		<controls name="Commandes">
 			<keyboard_controls>Commandes du Clavier</keyboard_controls>
+			<controllers>Contrôleurs</controllers>
 		</controls>
 		<help name="Aide">
 			<about>À Propos</about>
@@ -30,9 +31,12 @@
 		<information>Informations</information>
 		<app_delete>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</app_delete>
 		<save_delete>Supprimer ces données sauvegardées ?</save_delete>
+ 		<eligible>Autorisé</eligible>
+		<ineligible>Non autorisé</ineligible>
+		<level>Niveau</level>
 		<name>Nom</name>
-		<trophy_earning eligible="Autorisé" ineligible="Non autorisé">Obtention de trophées</trophy_earning>
-		<parental_Controls level="Niveau">Contrôle parental</parental_Controls>
+		<trophy_earning>Obtention de trophées</trophy_earning>
+		<parental_Controls>Contrôle parental</parental_Controls>
 		<updated>Mis à jour</updated>
 		<size>Taille</size>
 		<version>Version</version>
@@ -164,7 +168,8 @@ Votre système Vita3K est prêt !</completed_setup>
 	</live_area>
 
 	<settings name="Paramètres">
-		<theme_background name="Thème et Arrière-plan" default="Par défaut">
+		<theme_background name="Thème et Arrière-plan">
+			<default>Par défaut</default>
 			<theme name="Thème">
 				<information name="Informations">
 					<name>Nom</name>

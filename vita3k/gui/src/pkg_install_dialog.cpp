@@ -132,7 +132,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             installation.detach();
             state = "installing";
         } else if (state == "success") {
-            title = !indicator["install_complete"].empty() ? indicator["install_complete"] : "Installation complete.";
+            title = indicator["install_complete"];
             ImGui::TextColored(GUI_COLOR_TEXT, "%s [%s]", host.app_title_id.c_str(), host.app_title.c_str());
             if (host.app_category == std::string("gd"))
                 ImGui::TextColored(GUI_COLOR_TEXT, "App version: %s", host.app_version.c_str());
@@ -165,7 +165,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                 state.clear();
             }
         } else if (state == "fail") {
-            title = !indicator["install_failed"].empty() ? gui.lang.indicator["install_failed"].c_str() : "Could not install.";
+            title = gui.lang.indicator["install_failed"];
             ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize("Please check log for more details.").x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f * host.dpi_scale));
             ImGui::TextColored(GUI_COLOR_TEXT, "Please check log for more details.");
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
@@ -180,9 +180,8 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             title = "Installing";
             ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + 30.f * host.dpi_scale));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_title.c_str());
-            const auto installing = !indicator["installing"].empty() ? indicator["installing"].c_str() : "Installing...";
             ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + 30.f * host.dpi_scale));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", installing);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", indicator["installing"].c_str());
             const float PROGRESS_BAR_WIDTH = 502.f * host.dpi_scale;
             ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), ImGui::GetCursorPosY() + 30.f * host.dpi_scale));
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);

@@ -18,9 +18,10 @@
 #pragma once
 
 #include <ime/types.h>
+#include <lang/state.h>
 
 struct Ime {
-    std::vector<std::pair<SceImeLanguage, std::string>> languages;
+    ImeLangState lang;
     bool state = false;
     SceImeEditText edit_text;
     SceImeParam param;

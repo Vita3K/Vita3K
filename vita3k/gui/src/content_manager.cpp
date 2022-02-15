@@ -49,10 +49,8 @@ void get_app_info(GuiState &gui, HostState &host, const std::string &app_path) {
     gui.app_selector.app_info = {};
 
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
-        const auto is_lang = !gui.lang.app_context.empty();
-        const auto eligible = is_lang ? gui.lang.app_context["eligible"] : "Eligible";
-        const auto ineligible = is_lang ? gui.lang.app_context["ineligible"] : "Ineligible";
-        gui.app_selector.app_info.trophy = fs::exists(APP_PATH / "sce_sys/trophy") ? eligible : ineligible;
+        auto lang = gui.lang.app_context;
+        gui.app_selector.app_info.trophy = fs::exists(APP_PATH / "sce_sys/trophy") ? lang["eligible"] : lang["ineligible"];
 
         const auto last_writen = fs::last_write_time(APP_PATH);
         SAFE_LOCALTIME(&last_writen, &gui.app_selector.app_info.updated);
@@ -384,7 +382,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(ImVec2(106.f * SCALE.x, ImGui::GetCursorPosY() + (76.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "Data to be Deleted: %s", size_selected_contents.c_str());
             ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (10.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCALE.y)));
-            if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+            if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
                 popup = false;
             }
             ImGui::SameLine(0, 20.f * SCALE.x);
@@ -572,7 +570,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
     } else {
         ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 482.f * SCALE.y), display_size, IM_COL32(39.f, 42.f, 49.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
-        if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", ImVec2(202.f * SCALE.x, 44.f * SCALE.y))) {
+        if (ImGui::Button(common["cancel"].c_str(), ImVec2(202.f * SCALE.x, 44.f * SCALE.y))) {
             if (!menu.empty()) {
                 menu.clear();
                 contents_selected.clear();
@@ -581,8 +579,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         const auto state = std::any_of(std::begin(contents_selected), std::end(contents_selected), [&](const auto &c) { return !c.second; });
         ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
         ImGui::SetCursorPos(ImVec2(display_size.x - (450.f * SCALE.x), display_size.y - (88.f * SCALE.y)));
-        const auto select_all = !common["select_all"].empty() ? common["select_all"].c_str() : "Select All";
-        if (ImGui::Button(state ? select_all : "Clear All", ImVec2(224.f * SCALE.x, 44.f * SCALE.y))) {
+        if (ImGui::Button(state ? common["select_all"].c_str() : "Clear All", ImVec2(224.f * SCALE.x, 44.f * SCALE.y))) {
             for (auto &content : contents_selected) {
                 if (state)
                     content.second = true;
@@ -594,8 +591,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         ImGui::SameLine();
         ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
-        const auto delete_str = !common["delete"].empty() ? common["delete"].c_str() : "Delete";
-        if (is_enable ? ImGui::Button(delete_str, ImVec2(202.f * SCALE.x, 44.f * SCALE.y)) && get_size_selected_contents(gui, host) : ImGui::Selectable(delete_str, false, ImGuiSelectableFlags_Disabled, ImVec2(194.f * SCALE.x, 36.f * SCALE.y)))
+        if (is_enable ? ImGui::Button(common["delete"].c_str(), ImVec2(202.f * SCALE.x, 44.f * SCALE.y)) && get_size_selected_contents(gui, host) : ImGui::Selectable(common["delete"].c_str(), false, ImGuiSelectableFlags_Disabled, ImVec2(194.f * SCALE.x, 36.f * SCALE.y)))
             popup = true;
         ImGui::PopStyleVar();
     }
