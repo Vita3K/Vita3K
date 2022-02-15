@@ -18,6 +18,7 @@
 		</configuration>
 		<controls name="Controls">
 			<keyboard_controls>Keyboard Controls</keyboard_controls>
+			<controllers>Controllers</controllers>
 		</controls>
 		<help name="Help">
 			<about>About</about>

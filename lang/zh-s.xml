@@ -18,6 +18,7 @@
 		</configuration>
 		<controls name="控制">
 			<keyboard_controls>键盘按键映射</keyboard_controls>
+			<controllers>手柄控制器</controllers>
 		</controls>
 		<help name="帮助">
 			<about>关于</about>
