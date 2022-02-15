@@ -61,7 +61,7 @@ jobs:
 
       - name: Set up build environment (windows-latest)
         run: |
-          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/1.78.0/boost_1_78_0-msvc-14.2-64.exe"
+          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/1.78.0/boost_1_78_0-msvc-14.3-64.exe"
           (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
           Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=C:\hostedtoolcache\windows\Boost\1.78.0\x86_64"
           Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
