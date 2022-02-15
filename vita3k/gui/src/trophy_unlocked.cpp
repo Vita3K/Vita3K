@@ -81,27 +81,27 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
     ImGui::Image((ImTextureID)gui.trophy_window_icon, ImVec2(TROPHY_WINDOW_ICON_SIZE, TROPHY_WINDOW_ICON_SIZE));
     ImGui::NextColumn();
 
-    auto common = gui.lang.common.common;
+    auto common = gui.lang.common.main;
     std::string trophy_kind_s = "?";
 
     switch (callback_data.trophy_kind) {
     case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM: {
-        trophy_kind_s = !common["platinium"].empty() ? common["platinum"] : "Platinum";
+        trophy_kind_s = common["platinum"];
         break;
     }
 
     case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD: {
-        trophy_kind_s = !common["gold"].empty() ? common["gold"] : "Gold";
+        trophy_kind_s = common["gold"];
         break;
     }
 
     case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER: {
-        trophy_kind_s = !common["silver"].empty() ? common["silver"] : "Silver";
+        trophy_kind_s = common["silver"];
         break;
     }
 
     case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE: {
-        trophy_kind_s = !common["bronze"].empty() ? common["bronze"] : "Bronze";
+        trophy_kind_s = common["bronze"];
         break;
     }
 
@@ -113,8 +113,7 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
     ImGui::SetCursorPosY(TROPHY_WINDOW_MARGIN_PADDING);
     ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "(%s) %s", trophy_kind_s.c_str(), callback_data.trophy_name.c_str());
     ImGui::SetWindowFontScale(0.8f * RES_SCALE.x);
-    const auto trophy_earned = !gui.lang.indicator["trophy_earned"].empty() ? gui.lang.indicator["trophy_earned"].c_str() : "You have earned a trophy!";
-    ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "%s", trophy_earned);
+    ImGui::TextColored(ImVec4(0.24f, 0.24f, 0.24f, 1.0f), "%s", gui.lang.indicator["trophy_earned"].c_str());
     ImGui::End();
     ImGui::PopStyleColor();
     ImGui::PopStyleVar(2);

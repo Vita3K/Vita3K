@@ -23,24 +23,8 @@
 
 namespace gui {
 
-static std::vector<std::pair<SceImeLanguage, std::string>> LIST_IME_LANG = {
-    { SCE_IME_LANGUAGE_DANISH, "Danish" }, { SCE_IME_LANGUAGE_GERMAN, "German" },
-    { SCE_IME_LANGUAGE_ENGLISH_GB, "English (United Kingdom)" }, { SCE_IME_LANGUAGE_ENGLISH_US, "English (United States)" },
-    { SCE_IME_LANGUAGE_SPANISH, "Spanish" }, { SCE_IME_LANGUAGE_FRENCH, "French" },
-    { SCE_IME_LANGUAGE_ITALIAN, "Italian" }, { SCE_IME_LANGUAGE_DUTCH, "Dutch" },
-    { SCE_IME_LANGUAGE_NORWEGIAN, "Norwegian" }, { SCE_IME_LANGUAGE_POLISH, "Polish" },
-    { SCE_IME_LANGUAGE_PORTUGUESE_BR, "Portuguese (Brazil)" }, { SCE_IME_LANGUAGE_PORTUGUESE_PT, "Portuguese (Portugal)" },
-    { SCE_IME_LANGUAGE_RUSSIAN, "Russian" }, { SCE_IME_LANGUAGE_FINNISH, "Finnish" },
-    { SCE_IME_LANGUAGE_SWEDISH, "Swedish" }, { SCE_IME_LANGUAGE_TURKISH, "Turkish" }
-};
-
-std::vector<std::pair<SceImeLanguage, std::string>> get_list_ime_lang(Ime &ime) {
-    return !ime.languages.empty() ? ime.languages : LIST_IME_LANG;
-}
-
 std::vector<std::pair<SceImeLanguage, std::string>>::const_iterator get_ime_lang_index(Ime &ime, const SceImeLanguage &lang) {
-    const auto &ime_langs = !ime.languages.empty() ? ime.languages : LIST_IME_LANG;
-    const auto &ime_lang_index = std::find_if(ime_langs.begin(), ime_langs.end(), [&](const auto &l) {
+    const auto &ime_lang_index = std::find_if(ime.lang.ime_keyboards.begin(), ime.lang.ime_keyboards.end(), [&](const auto &l) {
         return l.first == lang;
     });
 

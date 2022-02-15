@@ -31,9 +31,12 @@
 		<information>信息</information>
 		<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
 		<save_delete>要删除此保存数据吗？</save_delete>
+		<eligible>有权</eligible> 
+		<ineligible>无权</ineligible>
+		<level>级别</level>
 		<name>名称</name>
-		<trophy_earning eligible="有权" ineligible="无权">获得奖杯</trophy_earning>
-		<parental_Controls level="级别">视听者限制</parental_Controls>
+		<trophy_earning>获得奖杯</trophy_earning>
+		<parental_Controls>视听者限制</parental_Controls>
 		<updated>升级日期</updated>
 		<size>大小</size>
 		<version>版本</version>
@@ -165,7 +168,8 @@ Your Vita3K system is ready!</completed_setup>
 	</live_area>
 
 	<settings name="设定">
-		<theme_background name="主题&背景" default="原始">
+		<theme_background name="主题&背景">
+			<default>原始</default>
 			<theme name="主题">
 				<information name="信息">
 					<name>名称</name>

@@ -180,8 +180,7 @@ void draw_app_close(GuiState &gui, HostState &host) {
 
     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
     ImGui::SetCursorPos(ImVec2(50.f * SCALE.x, 108.f * SCALE.y));
-    const auto warn_app_close = !gui.lang.game_data["app_close"].empty() ? gui.lang.game_data["app_close"].c_str() : "The following application will close.";
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", warn_app_close);
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.lang.game_data["app_close"].c_str());
     if (gui.app_selector.user_apps_icon.find(host.io.app_path) != gui.app_selector.user_apps_icon.end()) {
         const auto ICON_POS_SCALE = ImVec2(152.f * SCALE.x, (display_size.y / 2.f) - (ICON_SIZE.y / 2.f) - (10.f * SCALE.y));
         const auto ICON_SIZE_SCALE = ImVec2(ICON_POS_SCALE.x + ICON_SIZE.x, ICON_POS_SCALE.y + ICON_SIZE.y);
@@ -190,7 +189,7 @@ void draw_app_close(GuiState &gui, HostState &host) {
     ImGui::SetCursorPos(ImVec2(ICON_SIZE.x + (72.f * SCALE.x), (WINDOW_SIZE.y / 2.f) - ImGui::CalcTextSize(host.current_app_title.c_str()).y + (4.f * SCALE.y)));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.current_app_title.c_str());
     ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
-    if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
+    if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
         gui.live_area.app_close = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
     if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {

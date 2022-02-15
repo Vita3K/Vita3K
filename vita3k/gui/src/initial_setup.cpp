@@ -18,6 +18,7 @@
 #include "private.h"
 
 #include <gui/functions.h>
+#include <lang/functions.h>
 
 #include <util/string_utils.h>
 
@@ -47,10 +48,7 @@ void draw_initial_setup(GuiState &gui, HostState &host) {
     const auto BIG_BUTTON_POS = ImVec2((WINDOW_SIZE.x / 2.f) - (BIG_BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BIG_BUTTON_SIZE.y - (20.f * SCALE.y));
 
     auto lang = gui.lang.initial_setup;
-    const auto back = !lang["back"].empty() ? lang["back"].c_str() : "Back";
-    const auto completed_setup = !lang["completed_setup"].empty() ? lang["completed_setup"].c_str() : "You have now completed initial setup.\nYour Vita3K system is ready !";
-    const auto select_language = !lang["select_language"].empty() ? lang["select_language"].c_str() : "Select a language";
-    const auto next = !lang["next"].empty() ? lang["next"].c_str() : "Next";
+    const auto completed_setup = lang["completed_setup"].c_str();
 
     const auto is_default_path = host.cfg.pref_path == host.default_path;
     const auto FW_PATH{ fs::path(host.pref_path) / "vs0" };
@@ -82,7 +80,7 @@ void draw_initial_setup(GuiState &gui, HostState &host) {
     ImGui::Separator();
     switch (setup) {
     case SELECT_LANGUAGE:
-        title_str = select_language;
+        title_str = lang["select_language"];
         ImGui::SetNextWindowPos(ImVec2(198.f * SCALE.x, 126.f * SCALE.y), ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
         ImGui::BeginChild("##lang_list", ImVec2(WINDOW_SIZE.x - (200.f * SCALE.x), WINDOW_SIZE.y - (108.f * SCALE.y)), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings);
@@ -100,7 +98,7 @@ void draw_initial_setup(GuiState &gui, HostState &host) {
             const auto is_current_lang = host.cfg.sys_lang == sys_lang.first;
             if (ImGui::Selectable(is_current_lang ? "V" : "##lang_list", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(WINDOW_SIZE.x, SELECT_SIZE))) {
                 host.cfg.sys_lang = sys_lang.first;
-                init_lang(gui, host);
+                lang::init_lang(gui.lang, host);
             }
             ImGui::NextColumn();
             ImGui::Selectable(sys_lang.second.c_str(), false, ImGuiSelectableFlags_None, ImVec2(WINDOW_SIZE.x, SELECT_SIZE));
@@ -203,10 +201,10 @@ void draw_initial_setup(GuiState &gui, HostState &host) {
     // Draw Button
     ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
     ImGui::SetCursorPos(ImVec2(10.f * SCALE.x, display_size.y - BUTTON_SIZE.y - (14.f * SCALE.y)));
-    if ((setup > SELECT_LANGUAGE) && ImGui::Button(back, BUTTON_SIZE))
+    if ((setup > SELECT_LANGUAGE) && ImGui::Button(lang["back"].c_str(), BUTTON_SIZE))
         setup = (InitialSetup)(setup - 1);
     ImGui::SetCursorPos(ImVec2(display_size.x - BUTTON_SIZE.x - (14.f * SCALE.x), display_size.y - BUTTON_SIZE.y - (14.f * SCALE.y)));
-    if ((setup < FINISHED) && ImGui::Button(next, BUTTON_SIZE))
+    if ((setup < FINISHED) && ImGui::Button(lang["next"].c_str(), BUTTON_SIZE))
         setup = (InitialSetup)(setup + 1);
     ImGui::SetWindowFontScale(1.f);
 

@@ -27,6 +27,7 @@
 #include <host/functions.h>
 #include <io/VitaIoDevice.h>
 #include <io/vfs.h>
+#include <lang/functions.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -581,26 +582,11 @@ void get_sys_apps_title(GuiState &gui, HostState &host) {
     });
 }
 
-static const char *const ymonth[] = {
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-};
-
-static const char *const small_ymonth[] = {
-    "january", "february", "march", "april", "may", "june",
-    "july", "august", "september", "october", "november", "december"
-};
-
-static const char *const wday[] = {
-    "Sunday", "Monday", "Tuesday", "Wednesday",
-    "Thursday", "Friday", "Saturday"
-};
-
 std::map<DateTime, std::string> get_date_time(GuiState &gui, HostState &host, const tm &date_time) {
     std::map<DateTime, std::string> date_time_str;
     if (!host.io.user_id.empty()) {
-        const auto day_str = !gui.lang.common.wday.empty() ? gui.lang.common.wday[date_time.tm_wday] : wday[date_time.tm_wday];
-        const auto month_str = !gui.lang.common.ymonth.empty() ? gui.lang.common.ymonth[date_time.tm_mon] : ymonth[date_time.tm_mon];
+        const auto day_str = gui.lang.common.wday[date_time.tm_wday];
+        const auto month_str = gui.lang.common.ymonth[date_time.tm_mon];
         const auto year = date_time.tm_year + 1900;
         const auto month = date_time.tm_mon + 1;
         switch (gui.users[host.io.user_id].date_format) {
@@ -609,7 +595,7 @@ std::map<DateTime, std::string> get_date_time(GuiState &gui, HostState &host, co
             date_time_str[DateTime::DATE_MINI] = fmt::format("{}/{}/{}", year, month, date_time.tm_mday);
             break;
         case DateFormat::DD_MM_YYYY: {
-            const auto small_month_str = !gui.lang.common.small_ymonth.empty() ? gui.lang.common.small_ymonth[date_time.tm_mon] : small_ymonth[date_time.tm_mon];
+            const auto small_month_str = gui.lang.common.small_ymonth[date_time.tm_mon];
             date_time_str[DateTime::DATE_DETAIL] = fmt::format("{} {} ({})", date_time.tm_mday, small_month_str, day_str);
             date_time_str[DateTime::DATE_MINI] = fmt::format("{}/{}/{}", date_time.tm_mday, month, year);
             break;
@@ -654,7 +640,7 @@ void pre_init(GuiState &gui, HostState &host) {
 
     init_style(host);
     init_font(gui, host);
-    init_lang(gui, host);
+    lang::init_lang(gui.lang, host);
 
     bool result = ImGui_ImplSdl_CreateDeviceObjects(gui.imgui_state.get());
     assert(result);

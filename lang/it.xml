@@ -30,9 +30,12 @@
 		<information>Informazioni</information>
 		<app_delete>Questa applicazione e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</app_delete>
 		<save_delete>Vuoi eliminare questi dati salvati?</save_delete>
+		<eligible>Idoneo</eligible>
+		<ineligible>Non idoneo</ineligible>
+		<level>Livello</level>
 		<name>Nome</name>
-		<trophy_earning eligible="Idoneo" ineligible="Non idoneo">Guadagno di trofei</trophy_earning>
-		<parental_Controls level="Livello">Filtro contenuti</parental_Controls>
+		<trophy_earning>Guadagno di trofei</trophy_earning>
+		<parental_Controls>Filtro contenuti</parental_Controls>
 		<updated>Aggiornato</updated>
 		<size>Dimensione</size>
 		<version>Versione</version>

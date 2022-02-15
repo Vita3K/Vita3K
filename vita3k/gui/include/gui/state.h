@@ -20,6 +20,7 @@
 #include <config/config.h>
 #include <dialog/state.h>
 #include <ime/state.h>
+#include <lang/state.h>
 #include <np/state.h>
 
 #include <imgui.h>
@@ -204,24 +205,6 @@ struct User {
     std::vector<std::string> backgrounds;
 };
 
-struct Lang {
-    std::map<std::string, std::string> main_menubar;
-    std::map<std::string, std::string> app_context;
-    std::map<std::string, std::string> game_data;
-    std::map<std::string, std::string> indicator;
-    std::map<std::string, std::string> initial_setup;
-    std::map<std::string, std::string> settings;
-    std::map<std::string, std::string> trophy_collection;
-    std::map<std::string, std::string> user_management;
-    struct Common {
-        std::vector<std::string> wday;
-        std::vector<std::string> ymonth;
-        std::vector<std::string> small_ymonth;
-        std::map<std::string, std::string> common;
-    };
-    Common common;
-};
-
 struct TimeApp {
     std::string app;
     time_t last_time_used;
@@ -247,7 +230,7 @@ enum ModulesModeType {
 enum ThemePreviewType {
     PACKAGE,
     HOME,
-    START,
+    LOCK,
 };
 
 enum ShadersCompiledDisplay {
@@ -305,7 +288,7 @@ struct GuiState {
     gui::LiveAreaState live_area;
     gui::AppsSelector app_selector;
 
-    Lang lang;
+    LangState lang;
 
     std::map<std::string, User> users;
     std::map<std::string, ImGui_Texture> users_avatar;

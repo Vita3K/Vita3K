@@ -256,10 +256,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
     const auto DELETE_USER_POS = AVATAR_POS.x + (SPACE_AVATAR * (gui.users.size()));
     const auto BUTTON_SIZE = ImVec2(220 * SCALE.x, 36 * SCALE.y);
     const auto BUTTON_POS = ImVec2((SIZE_USER.x / 2.f) - (BUTTON_SIZE.x / 2.f), 314.f * SCALE.y);
-    const auto is_lang = !gui.lang.user_management.empty();
-    const auto NEW_USER_STR = is_lang ? gui.lang.user_management["create_user"] : "Create User";
-    const auto EDIT_USER_STR = is_lang ? gui.lang.user_management["edit_user"] : "Edit User";
-    const auto DELETE_USER_STR = is_lang ? gui.lang.user_management["delete_user"] : "Delete User";
+    auto lang = gui.lang.user_management;
 
     if (menu.empty()) {
         // Users list
@@ -278,7 +275,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
             }
             user_id = fmt::format("{:0>2d}", id);
             auto i = 1;
-            const auto user = is_lang ? gui.lang.user_management["user"] : "User";
+            const auto user = lang["user"].c_str();
             for (i; i < gui.users.size(); i++) {
                 if (get_users_index(gui, user + std::to_string(i)) == gui.users.end())
                     break;
@@ -294,15 +291,15 @@ void draw_user_management(GuiState &gui, HostState &host) {
             init_avatar(gui, host, "temp", "default");
         }
         ImGui::SetWindowFontScale(0.9f);
-        const auto calc_text = (AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize(NEW_USER_STR.c_str()).x / 2.f);
+        const auto calc_text = (AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["create_user"].c_str()).x / 2.f);
         ImGui::SetCursorPos(ImVec2(NEW_USER_POS + calc_text, AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", NEW_USER_STR.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["create_user"].c_str());
         ImGui::SetCursorPos(AVATAR_POS);
         for (const auto &user : gui.users) {
             ImGui::PushID(user.first.c_str());
             const auto USER_POS = ImGui::GetCursorPos();
             ImGui::SetCursorPos(ImVec2(USER_POS.x, USER_POS.y - BUTTON_SIZE.y));
-            if (ImGui::Button(EDIT_USER_STR.c_str(), ImVec2(AVATAR_SIZE.x, BUTTON_SIZE.y))) {
+            if (ImGui::Button(lang["edit_user"].c_str(), ImVec2(AVATAR_SIZE.x, BUTTON_SIZE.y))) {
                 user_id = user.first;
                 gui.users_avatar["temp"] = std::move(gui.users_avatar[user.first]);
                 temp = gui.users[user.first];
@@ -343,14 +340,14 @@ void draw_user_management(GuiState &gui, HostState &host) {
                 menu = "delete";
             ImGui::PopStyleVar();
             ImGui::SetWindowFontScale(0.9f);
-            const auto calc_del_text = (AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize(DELETE_USER_STR.c_str()).x / 2.f);
+            const auto calc_del_text = (AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["delete_user"].c_str()).x / 2.f);
             ImGui::SetCursorPos(ImVec2(DELETE_USER_POS + calc_del_text, AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCALE.y)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", DELETE_USER_STR.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["delete_user"].c_str());
         } else {
             ImGui::PopStyleVar();
         }
     } else if ((menu == "create") || (menu == "edit")) {
-        title = menu == "create" ? NEW_USER_STR : EDIT_USER_STR;
+        title = menu == "create" ? lang["create_user"].c_str() : lang["edit_user"].c_str();
         ImGui::SetWindowFontScale(0.6f);
         ImGui::SetCursorPos(ImVec2(AVATAR_POS.x, AVATAR_POS.y - BUTTON_SIZE.y));
         if ((temp.avatar != "default") && ImGui::Button("Reset Avatar", ImVec2(AVATAR_SIZE.x, BUTTON_SIZE.y))) {
@@ -362,7 +359,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
             ImGui::Image(gui.users_avatar["temp"], AVATAR_SIZE);
         }
         ImGui::SetCursorPos(ImVec2(AVATAR_POS.x, AVATAR_POS.y + AVATAR_SIZE.y));
-        if (ImGui::Button(is_lang ? gui.lang.user_management["change_avatar"].c_str() : "Change Avatar", ImVec2(AVATAR_SIZE.x, BUTTON_SIZE.y))) {
+        if (ImGui::Button(lang["change_avatar"].c_str(), ImVec2(AVATAR_SIZE.x, BUTTON_SIZE.y))) {
             nfdchar_t *avatar_path;
             nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &avatar_path);
 
@@ -373,7 +370,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
         const auto INPUT_NAME_SIZE = 330.f * SCALE.x;
         const auto INPUT_NAME_POS = ImVec2((SIZE_USER.x / 2.f) - (INPUT_NAME_SIZE / 2.f), 240.f * SCALE.y);
         ImGui::SetCursorPos(ImVec2(INPUT_NAME_POS.x, INPUT_NAME_POS.y - (30.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", is_lang ? gui.lang.user_management["name"].c_str() : "Name");
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["name"].c_str());
         ImGui::SetCursorPos(INPUT_NAME_POS);
         ImGui::PushItemWidth(INPUT_NAME_SIZE);
         ImGui::InputText("##user_name", &temp.name);
@@ -386,8 +383,8 @@ void draw_user_management(GuiState &gui, HostState &host) {
         }
         ImGui::SetCursorPos(BUTTON_POS);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
-        const auto confirm = is_lang ? gui.lang.user_management["confirm"] : "Confirm";
-        if (!temp.name.empty() && check_free_name ? ImGui::Button(confirm.c_str(), BUTTON_SIZE) : ImGui::Selectable(confirm.c_str(), false, ImGuiSelectableFlags_Disabled, BUTTON_SIZE)) {
+        const auto confirm = lang["confirm"].c_str();
+        if (!temp.name.empty() && check_free_name ? ImGui::Button(confirm, BUTTON_SIZE) : ImGui::Selectable(confirm, false, ImGuiSelectableFlags_Disabled, BUTTON_SIZE)) {
             gui.users_avatar[user_id] = std::move(gui.users_avatar["temp"]);
             gui.users[user_id] = temp;
             save_user(gui, host, user_id);
@@ -416,7 +413,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
             menu.clear();
         }
     } else if (menu == "delete") {
-        title = DELETE_USER_STR;
+        title = lang["delete_user"];
         if (user_id.empty()) {
             ImGui::SetWindowFontScale(1.f);
             ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - (ImGui::CalcTextSize("Select the user you want to delete.").x / 2.f), 5.f * SCALE.y));
@@ -501,7 +498,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
     const auto USER_ALREADY_INIT = !gui.users.empty() && !host.io.user_id.empty() && (host.cfg.user_id == host.io.user_id);
     if ((menu.empty() && USER_ALREADY_INIT) || (!menu.empty() && (menu != "confirm") && del_menu.empty())) {
         ImGui::SetCursorPos(ImVec2(54.f * SCALE.x, ImGui::GetCursorPosY() + (10.f * SCALE.y)));
-        if (ImGui::Button("Cancel", ImVec2(80.f * SCALE.x, 40.f * SCALE.y))) {
+        if (ImGui::Button(gui.lang.common.main["Cancel"].c_str(), ImVec2(80.f * SCALE.x, 40.f * SCALE.y))) {
             if (!menu.empty()) {
                 if ((menu == "create") || (menu == "edit"))
                     clear_temp(gui);

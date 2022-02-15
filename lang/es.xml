@@ -30,9 +30,12 @@
 		<information>Información</information>
 		<app_delete>Se eliminarán la aplicación y todos los datos relacionados, incluidos los datos guardados.</app_delete>
 		<save_delete>¿Quieres eliminar estos datos guardados?</save_delete>
+		<eligible>Elegible</eligible>
+		<ineligible>No elegible</ineligible>
+		<level>Nivel</level>
 		<name>Nombre</name>
-		<trophy_earning eligible="Elegible" ineligible="No elegible">Ganar trofeos</trophy_earning>
-		<parental_Controls level="Nivel">Control paterno</parental_Controls>
+		<trophy_earning>Ganar trofeos</trophy_earning>
+		<parental_Controls>Control paterno</parental_Controls>
 		<updated>Actualizado</updated>
 		<size>Tamaño</size>
 		<version>Versión</version>
@@ -164,7 +167,8 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 	</live_area>
 
 	<settings name="Ajustes">
-		<theme_background name="Tema y Fondo" default="Predeterminado">
+		<theme_background name="Tema y Fondo">
+			<default>Predeterminado</default>
 			<theme name="Tema">
 				<information name="Información">
 					<name>Nombre</name>

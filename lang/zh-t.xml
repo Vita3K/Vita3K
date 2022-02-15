@@ -31,9 +31,12 @@
 		<information>資訊</information>
 		<app_delete>刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
 		<save_delete>確定要刪除此保存資料嗎?</save_delete>
+		<eligible>有權</eligible>
+		<ineligible>無權</ineligible>
+		<level>等級</level>
 		<name>名稱</name>
-		<trophy_earning eligible="有權" ineligible="無權">獲得獎盃</trophy_earning>
-		<parental_Controls level="等級">家長監控</parental_Controls>
+		<trophy_earning>獲得獎盃</trophy_earning>
+		<parental_Controls>家長監控</parental_Controls>
 		<updated>更新日</updated>
 		<size>檔案大小</size>
 		<version>版本</version>
@@ -165,7 +168,8 @@ Your Vita3K system is ready!</completed_setup>
 	</live_area>
 
 	<settings name="設定">
-		<theme_background name="主題&背景" default="原音">
+		<theme_background name="主題&背景">
+			<default>原音</default>
 			<theme name="主題">
 				<information name="資訊">
 					<name>名稱</name>

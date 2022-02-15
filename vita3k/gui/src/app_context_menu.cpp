@@ -285,7 +285,6 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
     const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
 
     auto lang = gui.lang.app_context;
-    const auto is_lang = !lang.empty();
     auto common = host.common_dialog.lang.common;
 
     // App Context Menu
@@ -345,7 +344,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             }
             if (!host.cfg.show_live_area_screen && ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))
                 init_live_area(gui, host);
-            if (ImGui::BeginMenu(!common["delete"].empty() ? common["delete"].c_str() : "Delete")) {
+            if (ImGui::BeginMenu(common["delete"].c_str())) {
                 if (ImGui::MenuItem("Application"))
                     context_dialog = "app";
                 if (fs::exists(DLC_PATH) && ImGui::MenuItem("DLC"))
@@ -360,14 +359,14 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     fs::remove_all(SHADER_LOG_PATH);
                 ImGui::EndMenu();
             }
-            if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(is_lang ? lang["update_history"].c_str() : "Update History")) {
+            if (fs::exists(APP_PATH / "sce_sys/changeinfo/") && ImGui::MenuItem(lang["update_history"].c_str())) {
                 if (get_update_history(gui, host, app_path))
                     context_dialog = "history";
                 else
                     LOG_WARN("Patch note Error for title id: {} in path: {}", title_id, app_path);
             }
         }
-        if (ImGui::MenuItem(is_lang ? lang["information"].c_str() : "Information", nullptr, &gui.live_area.app_information)) {
+        if (ImGui::MenuItem(lang["information"].c_str(), nullptr, &gui.live_area.app_information)) {
             if (title_id.find("NPXS") == std::string::npos) {
                 get_app_info(gui, host, app_path);
                 const auto app_size = get_app_size(gui, host, app_path);
@@ -421,18 +420,16 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(APP_INDEX->stitle.c_str()).x / 2.f));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->stitle.c_str());
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-            const auto app_delete = is_lang ? lang["app_delete"] : "This application and all related data, including saved data, will be deleted.";
-            const auto save_delete = is_lang ? lang["save_delete"] : "Do you want to delete this saved data?";
-            const auto ask_delete = context_dialog == "save" ? save_delete : app_delete;
-            ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(ask_delete.c_str(), 0, false, WINDOW_SIZE.x - (108.f * SCALE.x)).x / 2, (WINDOW_SIZE.y / 2) + 10));
+            const auto ask_delete = context_dialog == "save" ? lang["save_delete"].c_str() : lang["app_delete"].c_str();
+            ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(ask_delete, 0, false, WINDOW_SIZE.x - (108.f * SCALE.x)).x / 2, (WINDOW_SIZE.y / 2) + 10));
             ImGui::PushTextWrapPos(WINDOW_SIZE.x - (54.f * SCALE.x));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", ask_delete.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", ask_delete);
             ImGui::PopTextWrapPos();
             if ((context_dialog == "app") && ImGui::IsItemHovered())
                 ImGui::SetTooltip("Deleting a application may take a while\ndepending on its size and your hardware.");
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
-            if (ImGui::Button(!common["cancel"].empty() ? common["cancel"].c_str() : "Cancel", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+            if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
                 context_dialog.clear();
             }
             ImGui::SameLine();
@@ -466,46 +463,38 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * SCALE.x));
             ImGui::Image(get_app_icon(gui, title_id)->second, INFO_ICON_SIZE);
         }
-        const auto name = is_lang ? lang["name"] : "Name";
-        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize((name + "  ").c_str()).x, INFO_ICON_SIZE.y + (50.f * SCALE.y)));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s ", name.c_str());
+        ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - ImGui::CalcTextSize((lang["name"] + "  ").c_str()).x, INFO_ICON_SIZE.y + (50.f * SCALE.y)));
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s ", lang["name"].c_str());
         ImGui::SameLine();
         ImGui::PushTextWrapPos(display_size.x - (85.f * SCALE.x));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->title.c_str());
         ImGui::PopTextWrapPos();
         if (title_id.find("NPXS") == std::string::npos) {
             ImGui::Spacing();
-            const auto trophy_earning = is_lang ? lang["trophy_earning"] : "Trophy Earning";
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((trophy_earning + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", trophy_earning.c_str(), gui.app_selector.app_info.trophy.c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["trophy_earning"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["trophy_earning"].c_str(), gui.app_selector.app_info.trophy.c_str());
             ImGui::Spacing();
-            const auto parental_Controls = is_lang ? lang["parental_Controls"] : "Parental Controls";
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((parental_Controls + "  ").c_str()).x);
-            const auto level = is_lang ? lang["level"] : "Level";
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", parental_Controls.c_str(), level.c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["parental_Controls"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["parental_Controls"].c_str(), lang["level"].c_str());
             ImGui::SameLine();
             ImGui::TextColored(GUI_COLOR_TEXT, "%d", *reinterpret_cast<const uint16_t *>(APP_INDEX->parental_level.c_str()));
             ImGui::Spacing();
-            const auto updated = is_lang ? lang["updated"] : "Updated";
-            ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize((updated + "  ").c_str()).x));
+            ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize((lang["updated"] + "  ").c_str()).x));
             auto DATE_TIME = get_date_time(gui, host, gui.app_selector.app_info.updated);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s %s", updated.c_str(), DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s %s", lang["updated"].c_str(), DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
             if (gui.users[host.io.user_id].clock_12_hour) {
                 ImGui::SameLine();
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
             }
             ImGui::Spacing();
-            const auto size = is_lang ? lang["size"] : "Size";
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((size + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (size + "  " + get_unit_size(gui.app_selector.app_info.size)).c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["size"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", (lang["size"] + "  " + get_unit_size(gui.app_selector.app_info.size)).c_str());
             ImGui::Spacing();
-            const auto version = is_lang ? lang["version"] : "Version";
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((version + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", version.c_str(), APP_INDEX->app_ver.c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["version"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["version"].c_str(), APP_INDEX->app_ver.c_str());
             ImGui::Spacing();
-            const auto last_time_used = !lang["last_time_used"].empty() ? lang["last_time_used"] : "Last time used";
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((last_time_used + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s ", last_time_used.c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["last_time_used"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s ", lang["last_time_used"].c_str());
             ImGui::SameLine();
             const auto time_app_index = get_time_app_index(gui, host, app_path);
             if (time_app_index != gui.time_apps[host.io.user_id].end()) {
@@ -518,11 +507,10 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", LAST_TIME[DateTime::DAY_MOMENT].c_str());
                 }
                 ImGui::Spacing();
-                const auto time_used = !lang["time_used"].empty() ? lang["time_used"] : "Time used";
-                ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((time_used + "  ").c_str()).x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", time_used.c_str(), get_time_app_used(time_app_index->time_used).c_str());
+                ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["time_used"] + "  ").c_str()).x);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["time_used"].c_str(), get_time_app_used(time_app_index->time_used).c_str());
             } else
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", !lang["never"].empty() ? lang["never"].c_str() : "Never");
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["never"].c_str());
         }
         ImGui::End();
     }
