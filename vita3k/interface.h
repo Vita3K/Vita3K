@@ -38,9 +38,9 @@ inline void delete_zip(mz_zip_archive *zip) {
 }
 
 struct ArchiveContents {
-    std::optional<float> count = 0;
-    std::optional<float> current = 0;
-    std::optional<float> progress = 0;
+    std::optional<float> count;
+    std::optional<float> current;
+    std::optional<float> progress;
 };
 
 struct ContentInfo {
