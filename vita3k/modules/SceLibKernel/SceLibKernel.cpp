@@ -904,7 +904,7 @@ EXPORT(int, sceKernelCreateLwMutex, Ptr<SceKernelLwMutexWork> workarea, const ch
 }
 
 EXPORT(int, sceKernelCreateMsgPipe, const char *name, uint32_t type, uint32_t attr, SceSize bufSize, const SceKernelCreateMsgPipeOpt *opt) {
-    return msgpipe_create(host.kernel, export_name, name, thread_id, attr);
+    return msgpipe_create(host.kernel, export_name, name, thread_id, attr, bufSize);
 }
 
 EXPORT(int, sceKernelCreateMsgPipeWithLR) {
@@ -1321,7 +1321,7 @@ EXPORT(int, sceKernelSetTimerEvent, SceUID timer_handle, int32_t type, SceKernel
     if (!timer_info)
         return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
 
-    //TODO: Timer values for type.
+    // TODO: Timer values for type.
 
     timer_info->repeats = repeats;
 

@@ -97,6 +97,7 @@ public:
 
     virtual ThreadDataQueueInterator<T> find(const T &val) = 0;
     virtual ThreadDataQueueInterator<T> find(const ThreadStatePtr &val) = 0;
+    virtual ~ThreadDataQueue() = default;
 };
 
 template <typename T>
