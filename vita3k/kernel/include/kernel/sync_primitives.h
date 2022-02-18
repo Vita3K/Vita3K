@@ -20,8 +20,8 @@
 #include <cpu/common.h>
 #include <kernel/thread/thread_data_queue.h>
 #include <kernel/types.h>
+#include <util/byte_ring_buffer.h>
 
-struct MsgPipeData;
 struct KernelState;
 
 struct WaitingThreadData {
@@ -41,9 +41,9 @@ struct WaitingThreadData {
             int32_t flags;
         };
         // struct { }; // condvar
-        struct { //msgpipe
-            MsgPipeData *sending_data;
-        };
+        struct { // msgpipe
+            SceSize request_size;
+        } mp;
     };
 
     bool operator<(const WaitingThreadData &rhs) const {
@@ -68,6 +68,7 @@ typedef std::unique_ptr<ThreadDataQueue<WaitingThreadData>> WaitingThreadQueuePt
 // NOTE: uid is copied to sync primitives here for debugging,
 //       not really needed since they are put in std::map's
 struct SyncPrimitive {
+    // FIXME turn this into SimpleEvent!
     SceUID uid;
 
     uint32_t attr;
@@ -139,20 +140,16 @@ struct Condvar : SyncPrimitive {
 typedef std::shared_ptr<Condvar> CondvarPtr;
 typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
 
-struct MsgPipeData {
-    std::vector<char> data;
-    SceUID thread_id;
-    size_t read_size;
-    bool waiting_sender;
-    bool notify_at_empty;
-};
-
-// Unlimited buffer for now
 struct MsgPipe : SyncPrimitive {
-    std::mutex recv_mutex;
-    WaitingThreadQueuePtr sender_threads;
-    WaitingThreadQueuePtr reciever_threads;
-    std::list<MsgPipeData> data_buffer;
+    MsgPipe(std::size_t bufSize)
+        : data_buffer(bufSize) {}
+
+    WaitingThreadQueuePtr senders;
+    WaitingThreadQueuePtr receivers;
+    ByteRingBuffer data_buffer;
+
+    bool beingDeleted = false;
+    std::atomic<std::size_t> remainingThreads = 0;
 
     ~MsgPipe() override = default;
 };
@@ -194,7 +191,7 @@ SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thre
 int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id);
 
 // Message Pipe
-SceUID msgpipe_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr);
+SceUID msgpipe_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, SceSize bufSize);
 SceUID msgpipe_find(KernelState &kernel, const char *export_name, const char *name);
 int msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgpipe_id, SceUInt32 wait_mode, char *recv_buf, SceSize msg_size, SceUInt32 *timeout);
 int msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgpipe_id, SceUInt32 wait_mode, char *send_buf, SceSize msg_size, SceUInt32 *timeout);

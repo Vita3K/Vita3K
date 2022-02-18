@@ -431,12 +431,12 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     const SceKernelModuleInfoPtr sceKernelModuleInfo = std::make_shared<SceKernelModuleInfo>();
     sceKernelModuleInfo->size = sizeof(*sceKernelModuleInfo);
     strncpy(sceKernelModuleInfo->module_name, module_info->name, 28);
-    //unk28
+    // unk28
     if (module_info->module_start != 0xffffffff && module_info->module_start != 0)
         entry_point = module_info_segment_address + module_info->module_start;
     else
         entry_point = Ptr<const void>(0);
-    //unk30
+    // unk30
     if (module_info->module_stop != 0xffffffff && module_info->module_stop != 0)
         sceKernelModuleInfo->stop_entry = module_info_segment_address + module_info->module_stop;
 

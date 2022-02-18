@@ -156,7 +156,7 @@ void KernelState::exit_delete_thread(ThreadStatePtr thread) {
 
 Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id, int key) {
     Ptr<Ptr<void>> address(0);
-    //magic numbers taken from decompiled source. There is 0x400 unused bytes of unknown usage
+    // magic numbers taken from decompiled source. There is 0x400 unused bytes of unknown usage
     if (key <= 0x100 && key >= 0) {
         const ThreadStatePtr thread = util::find(thread_id, threads);
         address = thread->tls.get_ptr<Ptr<void>>() + key;
