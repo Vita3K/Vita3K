@@ -202,5 +202,6 @@ struct PlayerState {
 };
 
 void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height);
-void convert_f32_to_s16(const float *f32, int16_t *s16, uint32_t channels, uint32_t samples, uint32_t freq);
 void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest);
+bool resample_s16_to_f32(const int16_t *source_s16, int32_t source_channels, uint32_t source_samples, uint32_t source_freq,
+    float *dest_f32, int32_t dest_channels, uint32_t dest_samples, uint32_t dest_freq);

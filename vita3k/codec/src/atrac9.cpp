@@ -36,22 +36,28 @@ struct FFMPEGAtrac9Info {
     uint32_t padding;
 };
 
-void resample_f32(const int16_t *f32_s, float *f32_d, uint32_t dest_channels, uint32_t source_channels, uint32_t samples, uint32_t freq) {
+bool resample_s16_to_f32(const int16_t *source_s16, int32_t source_channels, uint32_t source_samples, uint32_t source_freq,
+    float *dest_f32, int32_t dest_channels, uint32_t dest_samples, uint32_t dest_freq) {
     const int source_channel_type = source_channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     const int dest_channel_type = dest_channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
-
     SwrContext *swr = swr_alloc_set_opts(nullptr,
-        dest_channel_type, AV_SAMPLE_FMT_FLT, freq,
-        source_channel_type, AV_SAMPLE_FMT_S16, freq,
+        dest_channel_type, AV_SAMPLE_FMT_FLT, dest_freq,
+        source_channel_type, AV_SAMPLE_FMT_S16, source_freq,
         0, nullptr);
 
     swr_init(swr);
 
-    const int result = swr_convert(swr, (uint8_t **)&f32_d, samples, (const uint8_t **)(&f32_s), samples);
+    const int result = swr_convert(swr, (uint8_t **)&dest_f32, dest_samples, (const uint8_t **)(&source_s16), source_samples);
     swr_free(&swr);
     assert(result > 0);
-}
+    return (result >= 0);
+};
 
+/*
+void resample_f32(const int16_t *f32_s, float *f32_d, uint32_t dest_channels, uint32_t source_channels, uint32_t samples, uint32_t freq) {
+    resample_s16_to_f32(f32_s, source_channels, samples, freq, f32_d, dest_channels, samples, freq);
+}
+*/
 // maybe turn these back into public funcs thanks to DecoderQuery?
 uint32_t Atrac9DecoderState::get_channel_count() {
     const std::uint8_t block_rate_index = ((config_data & (0b111 << 9)) >> 9);
@@ -145,7 +151,7 @@ bool Atrac9DecoderState::send(const uint8_t *data, uint32_t size) {
 
     int produced_time = 0;
     std::uint32_t size_used = 0;
-    std::uint32_t produce_size = info.frameSamples * info.channels * 2;
+    std::uint32_t produce_size = info.frameSamples * info.channels * sizeof(uint16_t);
 
     while ((size_used < size) && (produced_time < info.framesInSuperframe)) {
         int decode_used = 0;
@@ -165,19 +171,14 @@ bool Atrac9DecoderState::send(const uint8_t *data, uint32_t size) {
 }
 
 bool Atrac9DecoderState::receive(uint8_t *data, DecoderSize *size) {
-    Atrac9CodecInfo info;
-    Atrac9GetCodecInfo(decoder_handle, &info);
-
-    std::uint32_t sample_decoded = static_cast<std::uint32_t>(result.size() / (info.channels * 2));
-
     if (data) {
-        resample_f32(
-            reinterpret_cast<int16_t *>(result.data()),
-            reinterpret_cast<float *>(data), 2,
-            info.channels, sample_decoded, info.samplingRate);
+        memcpy(data, result.data(), result.size());
     }
 
     if (size) {
+        Atrac9CodecInfo info;
+        Atrac9GetCodecInfo(decoder_handle, &info);
+        std::uint32_t sample_decoded = static_cast<std::uint32_t>(result.size() / (info.channels * sizeof(uint16_t)));
         size->samples = sample_decoded;
     }
 
