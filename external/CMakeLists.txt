@@ -170,6 +170,8 @@ set(DYNARMIC_NO_BUNDLED_FMT ON CACHE BOOL "")
 set(DYNARMIC_FRONTENDS "A32" CACHE STRING "")
 add_subdirectory(dynarmic)
 set_property(TARGET dynarmic PROPERTY FOLDER externals)
+set_property(TARGET Zycore PROPERTY FOLDER externals)
+set_property(TARGET Zydis PROPERTY FOLDER externals)
 
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")
@@ -292,6 +294,7 @@ else()
 	add_library(libatrac9 STATIC ${LIBATRAC9_SOURCES})			# Compile as static object
 endif()
 target_include_directories(libatrac9 PUBLIC LibAtrac9/C/src)
+set_property(TARGET libatrac9 PROPERTY FOLDER externals)
 
 option(BUILD_SHARED_LIBS "Build shared library" OFF)
 option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
@@ -300,3 +303,5 @@ set_property(TARGET xxhash PROPERTY FOLDER externals)
 
 # Soundtouch audio processing library for timing, pitch and playback rate manipulation
 add_subdirectory(soundtouch)
+set_property(TARGET SoundTouch PROPERTY FOLDER externals)
+set_property(TARGET soundstretch PROPERTY FOLDER externals)
