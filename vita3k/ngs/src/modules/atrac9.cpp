@@ -183,7 +183,14 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                 data.extra_storage.resize(curr_pos + decoder->get_samples_per_superframe() * sizeof(float) * 2);
 
                 if (decoder->send(input, decoder->get_superframe_size())) {
-                    decoder->receive(data.extra_storage.data() + curr_pos, nullptr);
+                    //convert from int16 to float
+                    uint32_t const channel_count = decoder->get_channel_count();
+                    uint32_t const sample_rate = decoder->get(DecoderQuery::SAMPLE_RATE);
+                    std::vector<std::uint8_t> temporary_bytes(decoder->get_samples_per_superframe() * sizeof(int16_t) * channel_count);
+                    DecoderSize decoder_size;
+                    decoder->receive(temporary_bytes.data(), &decoder_size);
+                    resample_s16_to_f32(reinterpret_cast<const int16_t *>(temporary_bytes.data()), channel_count, decoder_size.samples, sample_rate,
+                        reinterpret_cast<float *>(data.extra_storage.data() + curr_pos), channel_count, decoder_size.samples, sample_rate);
                 } else {
                     data.parent->voice_lock->unlock();
                     data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_CALLBACK_REASON_DECODE_ERROR, state->current_byte_position_in_buffer,
