@@ -249,7 +249,7 @@ static IconData load_app_icon(GuiState &gui, HostState &host, const std::string 
     return std::move(image);
 }
 
-void init_app_icon(GuiState &gui, HostState &host, const std::string &app_path) {
+void init_app_icon(GuiState &gui, HostState &host, const std::string app_path) {
     IconData data = load_app_icon(gui, host, app_path);
 
     gui.app_selector.user_apps_icon[app_path].init(gui.imgui_state.get(), data.data.get(), data.width, data.height);
@@ -462,7 +462,7 @@ void init_home(GuiState &gui, HostState &host) {
     }
 }
 
-void init_user_app(GuiState &gui, HostState &host, const std::string &app_path) {
+void init_user_app(GuiState &gui, HostState &host, const std::string app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
     if (APP_INDEX != gui.app_selector.user_apps.end()) {
         gui.app_selector.user_apps.erase(APP_INDEX);
@@ -472,6 +472,10 @@ void init_user_app(GuiState &gui, HostState &host, const std::string &app_path) 
 
     get_app_param(gui, host, app_path);
     init_app_icon(gui, host, app_path);
+
+    const auto TIME_APP_INDEX = get_time_app_index(gui, host, app_path);
+    if (TIME_APP_INDEX != gui.time_apps[host.io.user_id].end())
+        get_app_index(gui, app_path)->last_time = TIME_APP_INDEX->last_time_used;
 
     gui.app_selector.is_app_list_sorted = false;
 }
@@ -485,7 +489,7 @@ std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui,
     return app_icon;
 }
 
-std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &app_path) {
+std::vector<App>::iterator get_app_index(GuiState &gui, const std::string app_path) {
     auto &app_type = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
     const auto app_index = std::find_if(app_type.begin(), app_type.end(), [&](const App &a) {
         return a.path == app_path;
@@ -494,7 +498,7 @@ std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &app_p
     return app_index;
 }
 
-void get_app_param(GuiState &gui, HostState &host, const std::string &app_path) {
+void get_app_param(GuiState &gui, HostState &host, const std::string app_path) {
     host.app_path = app_path;
     vfs::FileBuffer param;
     if (vfs::read_app_file(param, host.pref_path, app_path, "sce_sys/param.sfo")) {
@@ -529,7 +533,7 @@ void get_param_info(HostState &host, const vfs::FileBuffer &param) {
 }
 
 void get_user_apps_title(GuiState &gui, HostState &host) {
-    fs::path app_path{ fs::path{ host.pref_path } / "ux0/app" };
+    const fs::path app_path{ fs::path{ host.pref_path } / "ux0/app" };
     if (!fs::exists(app_path))
         return;
 
@@ -541,6 +545,8 @@ void get_user_apps_title(GuiState &gui, HostState &host) {
             get_app_param(gui, host, app_path);
         }
     }
+
+    save_apps_cache(gui, host);
 }
 
 void get_sys_apps_title(GuiState &gui, HostState &host) {

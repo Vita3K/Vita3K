@@ -45,7 +45,6 @@ void init_user_apps(GuiState &gui, HostState &host) {
         auto app_list_size = gui.app_selector.user_apps.size();
         gui.app_selector.user_apps.clear();
         get_user_apps_title(gui, host);
-        save_apps_cache(gui, host);
 
         if (gui.app_selector.user_apps.empty())
             return false;
@@ -88,7 +87,7 @@ void init_last_time_apps(GuiState &gui, HostState &host) {
     gui.app_selector.is_app_list_sorted = false;
 }
 
-std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &app_path) {
+std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string app_path) {
     return std::find(gui.apps_list_opened.begin(), gui.apps_list_opened.end(), app_path);
 }
 
@@ -108,19 +107,23 @@ void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &
 
 static std::map<std::string, uint64_t> last_time;
 
+void open_live_area(GuiState &gui, HostState &host, const std::string app_path) {
+    update_apps_list_opened(gui, host, app_path);
+    last_time["home"] = 0;
+    init_live_area(gui, host, app_path);
+    gui.live_area.app_selector = false;
+    gui.live_area.information_bar = true;
+    gui.live_area.live_area_screen = true;
+}
+
 void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::string &app_path) {
     if (app_path == "NPXS10003") {
         update_last_time_app_used(gui, host, app_path);
         open_path("http://Vita3k.org");
     } else {
-        if (live_area) {
-            update_apps_list_opened(gui, host, app_path);
-            last_time["home"] = 0;
-            init_live_area(gui, host);
-            gui.live_area.app_selector = false;
-            gui.live_area.information_bar = true;
-            gui.live_area.live_area_screen = true;
-        } else
+        if (live_area)
+            open_live_area(gui, host, app_path);
+        else
             pre_run_app(gui, host, app_path);
     }
 }
@@ -274,7 +277,7 @@ static void sort_app_list(GuiState &gui, HostState &host, const SortType &type) 
         gui.app_selector.is_app_list_sorted = true;
     }
 
-    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [&sorted, &type](const App &lhs, const App &rhs) {
+    std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [&](const App &lhs, const App &rhs) {
         switch (type) {
         case APP_VER:
             switch (sorted) {

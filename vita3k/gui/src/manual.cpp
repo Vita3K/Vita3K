@@ -31,7 +31,16 @@ static int32_t current_page;
 static std::map<std::string, ImVec2> size_page;
 static std::pair<bool, bool> zoom;
 
-bool init_manual(GuiState &gui, HostState &host, const std::string &app_path) {
+void open_manual(GuiState &gui, HostState &host, const std::string app_path) {
+    if (init_manual(gui, host, app_path)) {
+        gui.live_area.information_bar = false;
+        gui.live_area.live_area_screen = false;
+        gui.live_area.manual = true;
+    } else
+        LOG_ERROR("Error opening Manual");
+}
+
+bool init_manual(GuiState &gui, HostState &host, const std::string app_path) {
     current_page = 0;
     gui.manuals.clear();
     size_page.clear();
@@ -110,7 +119,8 @@ void draw_manual(GuiState &gui, HostState &host) {
     if (!hidden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_psbutton)) {
         gui.live_area.manual = false;
         gui.live_area.information_bar = true;
-        gui.live_area.live_area_screen = true;
+        if (!gui.live_area.app_selector)
+            gui.live_area.live_area_screen = true;
     }
 
     const auto wheel_counter = ImGui::GetIO().MouseWheel;
