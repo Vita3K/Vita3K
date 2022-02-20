@@ -598,10 +598,12 @@ bool handle_events(HostState &host, GuiState &gui) {
                     host.display.imgui_render = !host.display.imgui_render;
                 // Show/Hide Live Area during app run, TODO pause app running
                 else if (gui::get_sys_apps_state(gui) && (event.key.keysym.scancode == host.cfg.keyboard_button_psbutton)) {
-                    gui::update_apps_list_opened(gui, host, host.io.app_path);
-                    gui::init_live_area(gui, host);
-                    gui.live_area.information_bar = !gui.live_area.information_bar;
-                    gui.live_area.live_area_screen = !gui.live_area.live_area_screen;
+                    if (gui::get_app_open_list_index(gui, host.io.app_path) == gui.apps_list_opened.end())
+                        gui::open_live_area(gui, host, host.io.app_path);
+                    else {
+                        gui.live_area.information_bar = !gui.live_area.information_bar;
+                        gui.live_area.live_area_screen = !gui.live_area.live_area_screen;
+                    }
                 }
             }
             if (event.key.keysym.sym == SDLK_t)

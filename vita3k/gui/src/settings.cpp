@@ -799,7 +799,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                             gui.live_items.clear();
                             update_apps_list_opened(gui, host, "NPXS10015");
                             init_notice_info(gui, host);
-                            init_live_area(gui, host);
+                            init_live_area(gui, host, "NPXS10015");
                         }
                         popup.clear();
                     }

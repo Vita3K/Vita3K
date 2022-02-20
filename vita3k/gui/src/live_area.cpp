@@ -59,7 +59,7 @@ static std::map<std::string, std::map<std::string, uint64_t>> current_item, last
 static std::map<std::string, std::string> type;
 static std::map<std::string, int32_t> sku_flag;
 
-void init_live_area(GuiState &gui, HostState &host) {
+void init_live_area(GuiState &gui, HostState &host, const std::string app_path) {
     // Init type
     if (items_pos.empty()) {
         // Content manager
@@ -133,7 +133,6 @@ void init_live_area(GuiState &gui, HostState &host) {
     }
 
     const auto live_area_lang = gui.lang.user_lang[LIVE_AREA];
-    const auto app_path = gui.apps_list_opened[gui.current_app_selected];
     const auto is_sys_app = app_path.find("NPXS") != std::string::npos;
     const auto is_ps_app = app_path.find("PCS") != std::string::npos;
     const VitaIoDevice app_device = is_sys_app ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
@@ -508,6 +507,25 @@ inline uint64_t current_time() {
     return std::chrono::duration_cast<std::chrono::seconds>(
         std::chrono::high_resolution_clock::now().time_since_epoch())
         .count();
+}
+
+void open_search(const std::string title) {
+    auto search_url = "http://www.google.com/search?q=" + title;
+    std::replace(search_url.begin(), search_url.end(), ' ', '+');
+    open_path(search_url);
+}
+
+void update_app(GuiState &gui, HostState &host, const std::string app_path) {
+    if (gui.live_area_contents.find(app_path) != gui.live_area_contents.end())
+        gui.live_area_contents.erase(app_path);
+    if (gui.live_items.find(app_path) != gui.live_items.end())
+        gui.live_items.erase(app_path);
+
+    init_user_app(gui, host, app_path);
+    save_apps_cache(gui, host);
+
+    if (get_app_open_list_index(gui, app_path) != gui.apps_list_opened.end())
+        init_live_area(gui, host, app_path);
 }
 
 static const ImU32 ARROW_COLOR = 4294967295; // White
@@ -958,27 +976,22 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         const auto manual_path{ fs::path(host.pref_path) / "ux0/app" / app_path / "sce_sys/manual/" };
         const auto scal_widget_font_size = 23.0f / ImGui::GetFontSize();
 
-        auto search_pos = ImVec2(578.0f * SCALE.x, 505.0f * SCALE.y);
-        if (!fs::exists(manual_path) || fs::is_empty(manual_path))
-            search_pos = ImVec2(520.0f * SCALE.x, 505.0f * SCALE.y);
-
+        const auto manual_exist = fs::exists(manual_path) && !fs::is_empty(manual_path);
+        const auto search_pos = ImVec2((manual_exist ? 633.f : 578.f) * SCALE.x, 505.0f * SCALE.y);
         const auto pos_scal_search = ImVec2(display_size.x - search_pos.x, display_size.y - search_pos.y);
 
         const std::string SEARCH = "Search";
         const auto SEARCH_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(SEARCH.c_str()).x * scal_widget_font_size) * SCALE.x, (ImGui::CalcTextSize(SEARCH.c_str()).y * scal_widget_font_size) * SCALE.y);
         const auto POS_STR_SEARCH = ImVec2(pos_scal_search.x + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.x / 2.f)),
             pos_scal_search.y + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.y / 2.f)));
-        ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_search, ImVec2(pos_scal_search.x + widget_scal_size.x, pos_scal_search.y + widget_scal_size.y), IM_COL32(20, 168, 222, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
+        ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_search, ImVec2(pos_scal_search.x + widget_scal_size.x, pos_scal_search.y + widget_scal_size.y), IM_COL32(10, 169, 246, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
         ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH.c_str());
         ImGui::SetCursorPos(pos_scal_search);
-        if (ImGui::Selectable("##Search", ImGuiSelectableFlags_None, false, widget_scal_size)) {
-            auto search_url = "http://www.google.com/search?q=" + get_app_index(gui, app_path)->title;
-            std::replace(search_url.begin(), search_url.end(), ' ', '+');
-            open_path(search_url);
-        }
+        if (ImGui::Selectable("##Search", ImGuiSelectableFlags_None, false, widget_scal_size))
+            open_search(get_app_index(gui, app_path)->title);
 
-        if (fs::exists(manual_path) && !fs::is_empty(manual_path)) {
-            const auto manual_pos = ImVec2(463.0f * SCALE.x, 505.0f * SCALE.y);
+        if (manual_exist) {
+            const auto manual_pos = ImVec2(520.f * SCALE.x, 505.0f * SCALE.y);
             const auto pos_scal_manual = ImVec2(display_size.x - manual_pos.x, display_size.y - manual_pos.y);
 
             const std::string MANUAL_STR = "Manual";
@@ -988,15 +1001,22 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_manual, ImVec2(pos_scal_manual.x + widget_scal_size.x, pos_scal_manual.y + widget_scal_size.y), IM_COL32(202, 0, 106, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
             ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
             ImGui::SetCursorPos(pos_scal_manual);
-            if (ImGui::Selectable("##manual", ImGuiSelectableFlags_None, false, widget_scal_size)) {
-                if (init_manual(gui, host, app_path)) {
-                    gui.live_area.information_bar = false;
-                    gui.live_area.live_area_screen = false;
-                    gui.live_area.manual = true;
-                } else
-                    LOG_ERROR("Error opening Manual");
-            }
+            if (ImGui::Selectable("##manual", ImGuiSelectableFlags_None, false, widget_scal_size))
+                open_manual(gui, host, app_path);
         }
+
+        const auto update_pos = ImVec2((manual_exist ? 408.f : 463.f) * SCALE.x, 505.0f * SCALE.y);
+        const auto pos_scal_update = ImVec2(display_size.x - update_pos.x, display_size.y - update_pos.y);
+
+        const auto UPDATE_STR = "Update";
+        const auto UPDATE_STR_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(UPDATE_STR).x * scal_widget_font_size) * SCALE.x, (ImGui::CalcTextSize(UPDATE_STR).y * scal_widget_font_size) * SCALE.y);
+        const auto UPDATE_STR_POS = ImVec2(pos_scal_update.x + ((widget_scal_size.x / 2.f) - (UPDATE_STR_SCAL_SIZE.x / 2.f)),
+            pos_scal_update.y + ((widget_scal_size.x / 2.f) - (UPDATE_STR_SCAL_SIZE.y / 2.f)));
+        ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_update, ImVec2(pos_scal_update.x + widget_scal_size.x, pos_scal_update.y + widget_scal_size.y), IM_COL32(3, 187, 250, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
+        ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, UPDATE_STR_POS, IM_COL32(255, 255, 255, 255), UPDATE_STR);
+        ImGui::SetCursorPos(pos_scal_update);
+        if (ImGui::Selectable("##update", ImGuiSelectableFlags_None, false, widget_scal_size))
+            update_app(gui, host, app_path);
     }
 
     if (!gui.live_area.content_manager && !gui.live_area.manual) {

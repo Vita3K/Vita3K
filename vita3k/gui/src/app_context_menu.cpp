@@ -73,7 +73,7 @@ static bool get_update_history(GuiState &gui, HostState &host, const std::string
     return !update_history_infos.empty();
 }
 
-static std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, HostState &host, const std::string &app) {
+std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, HostState &host, const std::string app) {
     const auto time_app_index = std::find_if(gui.time_apps[host.io.user_id].begin(), gui.time_apps[host.io.user_id].end(), [&](const TimeApp &t) {
         return t.app == app;
     });
@@ -342,8 +342,17 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     open_path(SHADER_LOG_PATH.string());
                 ImGui::EndMenu();
             }
-            if (!host.cfg.show_live_area_screen && ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))
-                init_live_area(gui, host);
+            if (!host.cfg.show_live_area_screen && ImGui::BeginMenu("Live Area")) {
+                if (ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))
+                    open_live_area(gui, host, app_path);
+                if (ImGui::MenuItem("Search", nullptr))
+                    open_search(APP_INDEX->title);
+                if (ImGui::MenuItem("Manual", nullptr))
+                    open_manual(gui, host, app_path);
+                if (ImGui::MenuItem("Update"))
+                    update_app(gui, host, app_path);
+                ImGui::EndMenu();
+            }
             if (ImGui::BeginMenu(common["delete"].c_str())) {
                 if (ImGui::MenuItem("Application"))
                     context_dialog = "app";
