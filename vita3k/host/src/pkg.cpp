@@ -212,15 +212,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
     infile.seekg(sfo_offset);
     infile.read((char *)&sfo_buffer[0], sfo_size);
     sfo::load(sfo_file, sfo_buffer);
-    sfo::get_data_by_key(host.app_version, sfo_file, "APP_VER");
-    if (!sfo::get_data_by_key(host.app_title, sfo_file, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
-        sfo::get_data_by_key(host.app_title, sfo_file, "TITLE");
-    std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
-    boost::trim(host.app_title);
-    sfo::get_data_by_key(host.app_title_id, sfo_file, "TITLE_ID");
-    sfo::get_data_by_key(host.app_category, sfo_file, "CATEGORY");
-    sfo::get_data_by_key(host.app_content_id, sfo_file, "CONTENT_ID");
-    host.app_path = host.app_title_id;
+    sfo::get_param_info(host, sfo_buffer);
 
     if (type == PkgType::PKG_TYPE_VITA_DLC)
         host.app_content_id = host.app_content_id.substr(20);
@@ -229,26 +221,29 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
         type = PkgType::PKG_TYPE_VITA_PATCH;
     }
 
-    fs::path path;
+    auto path{ fs::path(host.pref_path) / "ux0" };
 
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
-        path = { fs::path("app") / host.app_title_id };
+        path /= fs::path("app") / host.app_title_id;
+        if (fs::exists(path))
+            fs::remove_all(path);
+        host.app_title += " (App)";
         break;
     case PkgType::PKG_TYPE_VITA_DLC:
-        path = { fs::path("addcont") / host.app_title_id / host.app_content_id };
+        path /= fs::path("addcont") / host.app_title_id / host.app_content_id;
+        host.app_title += " (DLC)";
         break;
     case PkgType::PKG_TYPE_VITA_PATCH:
-        app::error_dialog("Sorry, but game updates/patches are not supported at this time.", nullptr);
-        return false;
-        //path = { fs::path("patch") / host.app_title_id };
+        path /= fs::path("patch") / host.app_title_id;
+        host.app_title += " (Update)";
+        break;
     case PkgType::PKG_TYPE_VITA_THEME:
-        path = { fs::path("theme") / host.app_content_id };
+        path /= fs::path("theme") / host.app_content_id;
         host.app_category = "theme";
+        host.app_title += " (Theme)";
         break;
     }
-
-    const auto root_path = device::construct_emulated_path(VitaIoDevice::ux0, path.string(), host.pref_path);
 
     for (uint32_t i = 0; i < byte_swap(pkg_header.file_count); i++) {
         PkgEntry entry;
@@ -261,7 +256,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
             LOG_ERROR("The pkg file size is too small, possibly corrupted");
             return false;
         }
-        float file_count = byte_swap(pkg_header.file_count);
+        const auto file_count = (float)byte_swap(pkg_header.file_count);
         progress_callback(i / file_count * 100.f * 0.6f);
         std::vector<unsigned char> name(byte_swap(entry.name_size));
         infile.seekg(byte_swap(pkg_header.data_offset) + byte_swap(entry.name_offset));
@@ -272,9 +267,9 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
         LOG_INFO(string_name);
 
         if ((byte_swap(entry.type) & 0xFF) == 4 || (byte_swap(entry.type) & 0xFF) == 18) { // Directory
-            fs::create_directories(root_path.string() + "/" + string_name);
+            fs::create_directories(path.string() + "/" + string_name);
         } else { // File
-            std::ofstream outfile(root_path.string() + "/" + string_name, std::ios::binary);
+            std::ofstream outfile(path.string() + "/" + string_name, std::ios::binary);
 
             auto offset = byte_swap(entry.data_offset);
             auto data_size = byte_swap(entry.data_size);
@@ -295,8 +290,8 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
     }
     infile.close();
 
-    std::string title_id_src = root_path.string();
-    std::string title_id_dst = root_path.string() + "_dec";
+    std::string title_id_src = path.string();
+    std::string title_id_dst = path.string() + "_dec";
     std::string zRIF = p_zRIF;
     F00DEncryptorTypes f00d_enc_type = F00DEncryptorTypes::native;
     std::string f00d_arg = std::string();
@@ -308,6 +303,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
     progress_callback(80);
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
+    case PkgType::PKG_TYPE_VITA_PATCH:
 
         if (execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) {
             return false;
@@ -345,6 +341,10 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
         return true;
         break;
     }
+
+    if (!copy_path(host, title_id_src))
+        return false;
+
     create_license(host, zRIF);
     progress_callback(100);
     return true;

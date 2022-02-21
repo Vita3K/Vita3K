@@ -100,7 +100,7 @@ static bool set_notice_info(GuiState &gui, HostState &host, const NoticeList &in
             if (info.group == "ac")
                 content_path = fs::path("addcont") / info.id / info.content_id;
             else if (info.group.find("gp") != std::string::npos)
-                content_path = fs::path("patch") / info.id;
+                content_path = fs::path("app") / info.id;
             else if (info.group == "theme")
                 content_path = fs::path("theme") / info.content_id;
             msg = lang["install_complete"].c_str();

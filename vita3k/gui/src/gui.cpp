@@ -498,34 +498,12 @@ void get_app_param(GuiState &gui, HostState &host, const std::string &app_path) 
     host.app_path = app_path;
     vfs::FileBuffer param;
     if (vfs::read_app_file(param, host.pref_path, app_path, "sce_sys/param.sfo")) {
-        get_param_info(host, param);
+        sfo::get_param_info(host, param);
     } else {
         host.app_addcont = host.app_savedata = host.app_short_title = host.app_title = host.app_title_id = host.app_path; // Use app path as TitleID, addcont, Savedata, Short title and Title
         host.app_version = host.app_category = host.app_parental_level = "N/A";
     }
     gui.app_selector.user_apps.push_back({ host.app_version, host.app_category, host.app_content_id, host.app_addcont, host.app_savedata, host.app_parental_level, host.app_short_title, host.app_title, host.app_title_id, host.app_path });
-}
-
-void get_param_info(HostState &host, const vfs::FileBuffer &param) {
-    SfoFile sfo_handle;
-    sfo::load(sfo_handle, param);
-    sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
-    if (host.app_version[0] == '0')
-        host.app_version.erase(host.app_version.begin());
-    sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
-    sfo::get_data_by_key(host.app_content_id, sfo_handle, "CONTENT_ID");
-    if (!sfo::get_data_by_key(host.app_addcont, sfo_handle, "INSTALL_DIR_ADDCONT"))
-        sfo::get_data_by_key(host.app_addcont, sfo_handle, "TITLE_ID");
-    if (!sfo::get_data_by_key(host.app_savedata, sfo_handle, "INSTALL_DIR_SAVEDATA"))
-        sfo::get_data_by_key(host.app_savedata, sfo_handle, "TITLE_ID");
-    sfo::get_data_by_key(host.app_parental_level, sfo_handle, "PARENTAL_LEVEL");
-    if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
-        sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
-    if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
-        sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
-    std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
-    boost::trim(host.app_title);
-    sfo::get_data_by_key(host.app_title_id, sfo_handle, "TITLE_ID");
 }
 
 void get_user_apps_title(GuiState &gui, HostState &host) {
