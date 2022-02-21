@@ -31,8 +31,11 @@ bool create_license(HostState &host, const std::string &zRIF);
 bool copy_license(HostState &host, const fs::path &license_path);
 int32_t get_license_sku_flag(HostState &host, const std::string &content_id);
 
+bool copy_path(HostState &host, const fs::path src_path);
+
 namespace sfo {
 bool get_data_by_id(std::string &out_data, SfoFile &file, int id);
 bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &key);
+void get_param_info(HostState &host, const vfs::FileBuffer param);
 bool load(SfoFile &sfile, const std::vector<uint8_t> &content);
 } // namespace sfo

@@ -86,6 +86,33 @@ static bool is_nonpdrm(HostState &host, const fs::path &output_path) {
     return false;
 }
 
+static bool set_content_path(HostState &host, const bool is_theme, fs::path &dest_path) {
+    const auto app_path = dest_path / "app" / host.app_title_id;
+
+    if (host.app_category == "ac") {
+        if (is_theme) {
+            dest_path /= fs::path("theme") / host.app_content_id;
+            host.app_title += " (Theme)";
+        } else {
+            host.app_content_id = host.app_content_id.substr(20);
+            dest_path /= fs::path("addcont") / host.app_title_id / host.app_content_id;
+            host.app_title += " (DLC)";
+        }
+    } else if (host.app_category.find("gp") != std::string::npos) {
+        if (!fs::exists(app_path) || fs::is_empty(app_path)) {
+            LOG_ERROR("Install app before patch");
+            return false;
+        }
+        dest_path /= fs::path("patch") / host.app_title_id;
+        host.app_title += " (Patch)";
+    } else {
+        dest_path = app_path;
+        host.app_title += " (App)";
+    }
+
+    return true;
+}
+
 bool install_archive_content(HostState &host, GuiState *gui, const fs::path &archive_path, const ZipPtr &zip, const std::string &content_path, const std::function<void(ArchiveContents)> &progress_callback) {
     std::string sfo_path = "sce_sys/param.sfo";
     std::string theme_path = "theme.xml";
@@ -95,23 +122,9 @@ bool install_archive_content(HostState &host, GuiState *gui, const fs::path &arc
 
     auto output_path{ fs::path(host.pref_path) / "ux0" };
     if (mz_zip_reader_extract_file_to_callback(zip.get(), (fs::path(content_path) / sfo_path).string().c_str(), &write_to_buffer, &buffer, 0)) {
-        gui::get_param_info(host, buffer);
-        if (host.app_category == "ac") {
-            if (is_theme) {
-                output_path /= fs::path("theme") / host.app_content_id;
-                host.app_title += " (Theme)";
-            } else {
-                host.app_content_id = host.app_content_id.substr(20);
-                output_path /= fs::path("addcont") / host.app_title_id / host.app_content_id;
-                host.app_title += " (DLC)";
-            }
-        } else if (host.app_category == "gp") {
-            output_path /= fs::path("patch") / host.app_title_id;
-            host.app_title += " (Patch)";
-        } else {
-            output_path /= fs::path("app") / host.app_title_id;
-            host.app_title += " (App)";
-        }
+        sfo::get_param_info(host, buffer);
+        if (!set_content_path(host, is_theme, output_path))
+            return false;
     } else if (is_theme) {
         set_theme_name(host, theme);
         output_path /= fs::path("theme") / host.app_title_id;
@@ -122,12 +135,12 @@ bool install_archive_content(HostState &host, GuiState *gui, const fs::path &arc
 
     const auto created = fs::create_directories(output_path);
     if (!created) {
-        if (!gui) {
+        if (!gui || gui->file_menu.archive_install_dialog) {
             fs::remove_all(output_path);
         } else if (!gui->file_menu.archive_install_dialog) {
             gui::GenericDialogState status = gui::UNK_STATE;
 
-            while (handle_events(host, *gui) && (status == 0)) {
+            while (handle_events(host, *gui) && (status == gui::UNK_STATE)) {
                 ImGui_ImplSdl_NewFrame(gui->imgui_state.get());
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 gui::draw_ui(*gui, host);
@@ -139,11 +152,16 @@ bool install_archive_content(HostState &host, GuiState *gui, const fs::path &arc
                 ImGui_ImplSdl_RenderDrawData(gui->imgui_state.get());
                 SDL_GL_SwapWindow(host.window.get());
             }
-            if (status == gui::CANCEL_STATE) {
-                LOG_INFO("{} already installed, {}", host.app_title_id, host.app_category == "gd" ? "launching application..." : "open home");
+            switch (status) {
+            case gui::CANCEL_STATE:
+                LOG_INFO("{} already installed, {}", host.app_title_id, host.app_category.find("gd") != std::string::npos ? "launching application..." : "Open home");
                 return true;
-            } else if (status == gui::UNK_STATE) {
+            case gui::CONFIRM_STATE:
+                fs::remove_all(output_path);
+                break;
+            case gui::UNK_STATE:
                 exit(0);
+            default: break;
             }
         }
     }
@@ -200,13 +218,16 @@ bool install_archive_content(HostState &host, GuiState *gui, const fs::path &arc
             return false;
     }
 
+    if (!copy_path(host, output_path))
+        return false;
+
     update_progress();
 
     LOG_INFO("{} [{}] installed succesfully!", host.app_title, host.app_title_id);
 
     if (!gui->file_menu.archive_install_dialog && (host.app_category != "theme")) {
         gui::update_notice_info(*gui, host, "content");
-        if (host.app_category == "gd") {
+        if ((host.app_category.find("gd") != std::string::npos) || (host.app_category.find("gp") != std::string::npos)) {
             gui::init_user_app(*gui, host, host.app_title_id);
             gui::save_apps_cache(*gui, host);
         }
@@ -317,6 +338,20 @@ static bool copy_directories(const fs::path &src_path, const fs::path &dst_path)
     }
 }
 
+bool copy_path(HostState &host, const fs::path src_path) {
+    // Check if is path
+    if (host.app_category.find("gp") != std::string::npos) {
+        const auto app_path{ fs::path(host.pref_path) / "ux0/app" / host.app_title_id };
+        const auto result = copy_directories(src_path, app_path);
+
+        fs::remove_all(src_path);
+
+        return result;
+    }
+
+    return true;
+}
+
 static std::vector<fs::path> get_contents_path(const fs::path &path) {
     std::vector<fs::path> contents_path;
 
@@ -349,26 +384,16 @@ static bool install_content(HostState &host, GuiState *gui, const fs::path &cont
         return true;
     };
 
+    const auto is_theme = fs::exists(content_path / "theme.xml");
     auto dst_path{ fs::path(host.pref_path) / "ux0" };
     if (get_buffer(sfo_path)) {
-        gui::get_param_info(host, buffer);
-        if (host.app_category == "ac") {
-            if (fs::exists(content_path / "theme.xml")) {
-                dst_path /= fs::path("theme") / host.app_content_id;
-                host.app_title += " (Theme)";
-                host.app_category = "theme";
-            } else {
-                host.app_content_id = host.app_content_id.substr(20);
-                dst_path /= fs::path("addcont") / host.app_title_id / host.app_content_id;
-                host.app_title = host.app_title + " (DLC)";
-            }
-        } else if (host.app_category == "gp") {
-            dst_path /= fs::path("patch") / host.app_title_id;
-            host.app_title += " (Patch)";
-        } else {
-            dst_path /= fs::path("app") / host.app_title_id;
-            host.app_title += " (App)";
-        }
+        sfo::get_param_info(host, buffer);
+        if (!set_content_path(host, is_theme, dst_path))
+            return false;
+
+        if (exists(dst_path))
+            fs::remove_all(dst_path);
+
     } else if (get_buffer(theme_path)) {
         set_theme_name(host, buffer);
         dst_path /= fs::path("theme") / string_utils::utf_to_wide(host.app_title_id);
@@ -385,13 +410,19 @@ static bool install_content(HostState &host, GuiState *gui, const fs::path &cont
     if (fs::exists(dst_path / "sce_sys/package/") && !is_nonpdrm(host, dst_path))
         return false;
 
-    if (host.app_category == "gd")
+    if (!copy_path(host, dst_path))
+        return false;
+
+    LOG_INFO("{} [{}] installed succesfully!", host.app_title, host.app_title_id);
+
+    if ((host.app_category.find("gd") != std::string::npos) || (host.app_category.find("gp") != std::string::npos)) {
         gui::init_user_app(*gui, host, host.app_title_id);
+        gui::save_apps_cache(*gui, host);
+    }
 
     if (host.app_category != "theme")
         gui::update_notice_info(*gui, host, "content");
 
-    LOG_INFO("{} [{}] installed succesfully!", host.app_title, host.app_title_id);
     return true;
 }
 

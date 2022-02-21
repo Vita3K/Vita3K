@@ -46,7 +46,6 @@ std::map<DateTime, std::string> get_date_time(GuiState &gui, HostState &host, co
 std::string get_unit_size(const size_t &size);
 void get_app_param(GuiState &gui, HostState &host, const std::string app_path);
 void get_notice_list(HostState &host);
-void get_param_info(HostState &host, const vfs::FileBuffer &param);
 std::string get_theme_title_from_buffer(const vfs::FileBuffer buffer);
 std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, HostState &host, const std::string app);
 void get_time_apps(GuiState &gui, HostState &host);

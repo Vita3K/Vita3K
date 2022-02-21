@@ -193,8 +193,11 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
                     if (count_contents_successed) {
                         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%ld contents of this archive have successed installed:", count_contents_successed);
                         for (const auto &content : archive.second) {
-                            if (content.state)
+                            if (content.state) {
                                 ImGui::TextWrapped("%s [%s]", content.title.c_str(), content.title_id.c_str());
+                                if (content.category.find("gp") != std::string::npos)
+                                    ImGui::TextColored(GUI_COLOR_TEXT, "Update App to: %s", host.app_version.c_str());
+                            }
                         }
                     }
                     const auto count_contents_failed = count_content_state(archive.first, false);
