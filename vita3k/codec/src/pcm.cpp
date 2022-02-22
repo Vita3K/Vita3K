@@ -221,7 +221,6 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
                 }
 
                 transformed.push_back(static_cast<std::int16_t>(std::clamp(sample, -32768, 32767)));
-                produced_samples++;
 
                 hist4 = hist3;
                 hist3 = hist2;
@@ -236,6 +235,7 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
         }
 
         source_transformed = reinterpret_cast<std::uint8_t *>(transformed.data());
+        produced_samples = transformed.size() / source_channels;
     } else {
         produced_samples = size / sizeof(std::int16_t) / source_channels;
     }
@@ -252,18 +252,16 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
     swr_init(swr);
     const int dest_count = swr_get_out_samples(swr, produced_samples);
 
-    final_result.resize(dest_count * 2 * sizeof(float));
+    final_result.resize(sizeof(float) * dest_count * 2);
     if (dest_count == 0) {
         return true;
     }
 
     std::uint8_t *dest_data = &final_result[0];
 
-    const int result = swr_convert(swr, &dest_data, dest_count, (const uint8_t **)(&source_transformed), produced_samples);
+    const int result = swr_convert(swr, &dest_data, dest_count, &source_transformed, produced_samples);
     swr_free(&swr);
-
     assert(result > 0);
-
     return true;
 }
 
