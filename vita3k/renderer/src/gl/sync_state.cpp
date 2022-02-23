@@ -352,7 +352,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         texture_as_surface = state.surface_cache.retrieve_color_surface_texture_handle(
             static_cast<std::uint16_t>(gxm::get_width(&texture)),
             static_cast<std::uint16_t>(gxm::get_height(&texture)),
-            Ptr<void>(data_addr), renderer::SurfaceTextureRetrievePurpose::READING);
+            0, Ptr<void>(data_addr), renderer::SurfaceTextureRetrievePurpose::READING);
     }
 
     if (texture_as_surface != 0) {

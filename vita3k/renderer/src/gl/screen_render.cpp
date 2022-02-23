@@ -15,19 +15,20 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <app/screen_render.h>
+#include <display/state.h>
+#include <mem/state.h>
+#include <renderer/gl/screen_render.h>
 
-#include <host/state.h>
 #include <util/log.h>
 
-namespace app {
+namespace renderer::gl {
 
-bool gl_screen_renderer::init(const std::string &base_path) {
+bool ScreenRenderer::init(const std::string &base_path) {
     glGenTextures(1, &m_screen_texture);
 
     const auto builtin_shaders_path = base_path + "shaders-builtin/";
 
-    m_render_shader = gl::load_shaders(builtin_shaders_path + "render_main.vert", builtin_shaders_path + "render_main.frag");
+    m_render_shader = ::gl::load_shaders(builtin_shaders_path + "render_main.vert", builtin_shaders_path + "render_main.frag");
     if (!m_render_shader) {
         LOG_CRITICAL("Couldn't compile essential shaders for rendering. Exiting");
         return false;
@@ -45,7 +46,7 @@ bool gl_screen_renderer::init(const std::string &base_path) {
 
     glGenBuffers(1, &m_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), vertex_buffer_data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), vertex_buffer_data, GL_DYNAMIC_DRAW);
 
     posAttrib = glGetAttribLocation(*m_render_shader, "position_vertex");
     uvAttrib = glGetAttribLocation(*m_render_shader, "uv_vertex");
@@ -78,10 +79,7 @@ bool gl_screen_renderer::init(const std::string &base_path) {
     return true;
 }
 
-void gl_screen_renderer::render(const HostState &host) {
-    const DisplayState &display = host.display;
-    const MemState &mem = host.mem;
-
+void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture) {
     // Backup GL state
     glActiveTexture(GL_TEXTURE0);
     GLint last_texture;
@@ -99,50 +97,80 @@ void gl_screen_renderer::render(const HostState &host) {
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_CULL_FACE);
 
-    glViewport(static_cast<GLint>(host.viewport_pos.x), static_cast<GLint>(host.viewport_pos.y), static_cast<GLsizei>(host.viewport_size.x),
-        static_cast<GLsizei>(host.viewport_size.y));
+    glViewport(static_cast<GLint>(viewport_pos.x), static_cast<GLint>(viewport_pos.y), static_cast<GLsizei>(viewport_size.x),
+        static_cast<GLsizei>(viewport_size.y));
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if ((display.image_size.x > 0) && (display.image_size.y > 0)) {
-        glUseProgram(*m_render_shader);
-        glBindVertexArray(m_vao);
-        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    glUseProgram(*m_render_shader);
+    glBindVertexArray(m_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 
-        // 1st attribute: positions
-        glVertexAttribPointer(
-            posAttrib, // attribute index
-            3, // size
-            GL_FLOAT, // type
-            GL_FALSE, // normalized?
-            screen_vertex_size, // stride
-            reinterpret_cast<void *>(0) // array buffer offset
-        );
-        glEnableVertexAttribArray(posAttrib);
+    const float default_uv[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
 
-        // 2nd attribute: uvs
-        glVertexAttribPointer(
-            uvAttrib, // attribute index
-            2, // size
-            GL_FLOAT, // type
-            GL_FALSE, // normalized?
-            screen_vertex_size, // stride
-            reinterpret_cast<void *>(3 * sizeof(GLfloat)) // array buffer offset
-        );
-        glEnableVertexAttribArray(uvAttrib);
-
-        glBindTexture(GL_TEXTURE_2D, m_screen_texture);
-        const auto pixels = display.base.cast<void>().get(mem);
-
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, display.pitch);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.image_size.x, display.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
+    if (!uvs) {
+        uvs = default_uv;
     }
+
+    if ((uvs[0] != last_uvs[0]) || (uvs[1] != last_uvs[1]) || (uvs[2] != last_uvs[2]) || (uvs[3] != last_uvs[3])) {
+        // Reupload the data again
+        screen_vertices_t vertex_buffer_data = {
+            { { -1.f, -1.f, 0.0f }, { 0.f, 1.f } },
+            { { 1.f, -1.f, 0.0f }, { 1.f, 1.f } },
+            { { 1.f, 1.f, 0.0f }, { 1.f, 0.f } },
+            { { -1.f, 1.f, 0.0f }, { 0.f, 0.f } }
+        };
+
+        vertex_buffer_data[0].uv[0] = uvs[0];
+        vertex_buffer_data[0].uv[1] = uvs[3];
+
+        vertex_buffer_data[1].uv[0] = uvs[2];
+        vertex_buffer_data[1].uv[1] = uvs[3];
+
+        vertex_buffer_data[2].uv[0] = uvs[2];
+        vertex_buffer_data[2].uv[1] = uvs[1];
+
+        vertex_buffer_data[3].uv[0] = uvs[0];
+        vertex_buffer_data[3].uv[1] = uvs[1];
+
+        last_uvs[0] = uvs[0];
+        last_uvs[1] = uvs[1];
+        last_uvs[2] = uvs[2];
+        last_uvs[3] = uvs[3];
+
+        glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), nullptr, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), vertex_buffer_data, GL_DYNAMIC_DRAW);
+    }
+
+    // 1st attribute: positions
+    glVertexAttribPointer(
+        posAttrib, // attribute index
+        3, // size
+        GL_FLOAT, // type
+        GL_FALSE, // normalized?
+        screen_vertex_size, // stride
+        reinterpret_cast<void *>(0) // array buffer offset
+    );
+    glEnableVertexAttribArray(posAttrib);
+
+    // 2nd attribute: uvs
+    glVertexAttribPointer(
+        uvAttrib, // attribute index
+        2, // size
+        GL_FLOAT, // type
+        GL_FALSE, // normalized?
+        screen_vertex_size, // stride
+        reinterpret_cast<void *>(3 * sizeof(GLfloat)) // array buffer offset
+    );
+    glEnableVertexAttribArray(uvAttrib);
+
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
     glBindTexture(GL_TEXTURE_2D, last_texture);
 
@@ -169,7 +197,7 @@ void gl_screen_renderer::render(const HostState &host) {
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
 }
 
-void gl_screen_renderer::destroy() {
+void ScreenRenderer::destroy() {
     glDeleteBuffers(1, &m_vbo);
     m_vbo = 0;
 
@@ -180,8 +208,8 @@ void gl_screen_renderer::destroy() {
     m_screen_texture = 0;
 }
 
-gl_screen_renderer::~gl_screen_renderer() {
+ScreenRenderer::~ScreenRenderer() {
     destroy();
 }
 
-} // namespace app
+} // namespace renderer::gl

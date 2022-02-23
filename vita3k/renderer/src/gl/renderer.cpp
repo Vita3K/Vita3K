@@ -26,6 +26,7 @@
 #include <shader/spirv_recompiler.h>
 #include <shader/usse_program_analyzer.h>
 
+#include <display/state.h>
 #include <features/state.h>
 
 #include <gxm/functions.h>
@@ -198,7 +199,7 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
     LOG_DEBUG("[OPENGL - {} - {}] {}", type_str, severity_fmt, message);
 }
 
-bool create(SDL_Window *window, std::unique_ptr<State> &state, const bool hashless_texture_cache) {
+bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_path, const bool hashless_texture_cache) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
 
     // Recursively create GL version until one accepts
@@ -284,12 +285,17 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const bool hashle
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
-    return gl_state.init(hashless_texture_cache);
+    return gl_state.init(base_path, hashless_texture_cache);
 }
 
-bool GLState::init(const bool hashless_texture_cache) {
+bool GLState::init(const char *base_path, const bool hashless_texture_cache) {
     if (!texture::init(texture_cache, hashless_texture_cache)) {
         LOG_ERROR("Failed to initialize texture cache!");
+        return false;
+    }
+
+    if (!screen_renderer.init(base_path)) {
+        LOG_ERROR("Failed to initialize screen renderer");
         return false;
     }
 
@@ -591,6 +597,28 @@ void get_surface_data(GLState &renderer, GLContext &context, size_t width, size_
 
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
     ++renderer.texture_cache.timestamp;
+}
+
+void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
+    const MemState &mem) {
+    // Check if the surface exists
+    float uvs[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+    bool need_uv = true;
+    std::uint64_t surface_handle = surface_cache.sourcing_color_surface_for_presentation(display.base, display.image_size.x, display.image_size.y, display.pitch, uvs);
+
+    if (!surface_handle) {
+        // Fallback to a manual upload (likely a black !!!)
+        need_uv = false;
+
+        glBindTexture(GL_TEXTURE_2D, screen_renderer.get_resident_texture());
+        const auto pixels = display.base.cast<void>().get(mem);
+
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, display.pitch);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.image_size.x, display.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    }
+
+    screen_renderer.render(viewport_pos, viewport_size, need_uv ? uvs : nullptr, static_cast<GLuint>(surface_handle));
 }
 
 } // namespace renderer::gl

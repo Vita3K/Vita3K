@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <renderer/gl/screen_render.h>
 #include <renderer/gl/surface_cache.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache_state.h>
@@ -45,7 +46,11 @@ struct GLState : public renderer::State {
     std::vector<ShadersHash> shaders_cache_hashs;
     std::string shader_version = "v1";
 
-    bool init(const bool hashless_texture_cache);
+    ScreenRenderer screen_renderer;
+
+    bool init(const char *base_path, const bool hashless_texture_cache) override;
+    void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
+        const MemState &mem) override;
 };
 
 } // namespace renderer::gl

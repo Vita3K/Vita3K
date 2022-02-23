@@ -83,7 +83,6 @@ COMMAND(handle_destroy_render_target) {
 }
 
 COMMAND(handle_prepare_overall_buffer_storage) {
-
 }
 
 // Client
@@ -117,11 +116,11 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
     return false;
 }
 
-bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config) {
+bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const char *base_path) {
     switch (backend) {
     case Backend::OpenGL:
         state = std::make_unique<gl::GLState>();
-        if (!gl::create(window, state, config.hashless_taexture_cache))
+        if (!gl::create(window, state, base_path, config.hashless_taexture_cache))
             return false;
         break;
 #ifdef USE_VULKAN

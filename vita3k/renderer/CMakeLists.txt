@@ -29,6 +29,7 @@ add_library(
 	include/renderer/gl/types.h
 	include/renderer/gl/state.h
 	include/renderer/gl/ring_buffer.h
+	include/renderer/gl/screen_render.h
 	include/renderer/gl/surface_cache.h
 	include/renderer/gl/functions.h
 
@@ -39,6 +40,7 @@ add_library(
 	src/gl/load_shaders.cpp
 	src/gl/renderer.cpp
 	src/gl/ring_buffer.cpp
+        src/gl/screen_render.cpp
 	src/gl/surface_cache.cpp
 	src/gl/sync_state.cpp
 	src/gl/texture_formats.cpp
@@ -63,5 +65,5 @@ add_library(
 )
 
 target_include_directories(renderer PUBLIC include)
-target_link_libraries(renderer PUBLIC crypto dlmalloc stb shader glutil threads config util ${RENDERER_VULKAN_LIBRARIES})
+target_link_libraries(renderer PUBLIC crypto display dlmalloc stb shader glutil threads config util ${RENDERER_VULKAN_LIBRARIES})
 target_link_libraries(renderer PRIVATE sdl2 stb ffmpeg xxHash::xxhash)

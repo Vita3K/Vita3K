@@ -23,8 +23,8 @@ namespace renderer::gl {
 GLSurfaceCache::GLSurfaceCache() {
 }
 
-std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::uint16_t width, const std::uint16_t height,
-    Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height) {
+std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::uint16_t width, const std::uint16_t height, const std::uint16_t pixel_stride,
+    Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height, std::uint16_t *stored_width) {
     // Create the key to access the cache struct
     const std::uint64_t key = address.address();
     auto used_iterator = std::find(last_use_color_surface_index.begin(), last_use_color_surface_index.end(), key);
@@ -34,6 +34,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
         last_use_color_surface_index.push_back(key);
 
         GLColorSurfaceCacheInfo &info = color_surface_textures[key];
+
         if ((info.width < width) || (info.height < height)) {
             // May clear one frame (hopefully!)
             // This handles some situation where game may stores texture in a larger texture then rebind it
@@ -60,8 +61,17 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
             }
         }
 
+        // Use for presentation only, update anyway
+        if (purpose == SurfaceTextureRetrievePurpose::WRITING) {
+            info.pixel_stride = pixel_stride;
+        }
+
         if (stored_height) {
             *stored_height = info.height;
+        }
+
+        if (stored_width) {
+            *stored_width = info.width;
         }
 
         return info.gl_texture[0];
@@ -74,6 +84,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
     GLColorSurfaceCacheInfo &info_added = color_surface_textures[key];
     info_added.width = width;
     info_added.height = height;
+    info_added.pixel_stride = pixel_stride;
     info_added.data = address;
     info_added.flags = 0;
 
@@ -112,6 +123,10 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
 
     if (stored_height) {
         *stored_height = height;
+    }
+
+    if (stored_width) {
+        *stored_width = width;
     }
 
     return info_added.gl_texture[0];
@@ -236,7 +251,7 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(SceGxmColorSurface *co
 
     if (color) {
         color_handle = static_cast<GLuint>(retrieve_color_surface_texture_handle(color->width,
-            color->height, color->data, renderer::SurfaceTextureRetrievePurpose::WRITING, stored_height));
+            color->height, color->strideInPixels, color->data, renderer::SurfaceTextureRetrievePurpose::WRITING, stored_height));
     } else {
         color_handle = target->attachments[0];
     }
@@ -291,4 +306,32 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(SceGxmColorSurface *co
 
     return fb[0];
 }
+
+std::uint64_t GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, const std::uint32_t width, const std::uint32_t height, const std::uint32_t pitch, float *uvs) {
+    for (const auto &[base_addr, info] : color_surface_textures) {
+        // Assuming surface is stored in RGBA8
+        if ((info.pixel_stride == pitch) && (base_addr <= address.address()) && (address.address() < (base_addr + info.pixel_stride * info.height * 4))) {
+            const std::size_t data_delta = address.address() - base_addr;
+            if ((data_delta % (pitch * 4)) == 0) {
+                std::uint32_t start_sourced_line = (data_delta / (pitch * 4));
+                if ((start_sourced_line + height) > info.height) {
+                    LOG_ERROR("Trying to present non-existen segment in cached color surface!");
+                    return 0;
+                }
+
+                // Calculate uvs
+                // First two top left, the two others bottom right
+                uvs[0] = 0.0f;
+                uvs[1] = static_cast<float>(start_sourced_line) / info.height;
+                uvs[2] = static_cast<float>(width) / info.width;
+                uvs[3] = static_cast<float>(start_sourced_line + height) / info.height;
+
+                return info.gl_texture[0];
+            }
+        }
+    }
+
+    return 0;
+}
+
 } // namespace renderer::gl

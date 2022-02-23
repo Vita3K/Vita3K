@@ -181,7 +181,7 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
 #endif
 
     if (!cfg.console) {
-        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg)) {
+        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, state.base_path.data())) {
             update_viewport(state);
             return true;
         } else {

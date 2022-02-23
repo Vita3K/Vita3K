@@ -18,19 +18,25 @@
 #pragma once
 
 #include <glutil/shader.h>
+#include <util/types.h>
 
-struct HostState;
+namespace renderer::gl {
 
-namespace app {
-
-class gl_screen_renderer {
+class ScreenRenderer {
 public:
-    gl_screen_renderer() = default;
-    ~gl_screen_renderer();
+    ScreenRenderer() = default;
+    ~ScreenRenderer();
 
     bool init(const std::string &base_path);
-    void render(const HostState &state);
+    void render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture);
+
     void destroy();
+
+    // Fallback in case surface cache does not contain what we want
+    // For homebrew that does not use GXM
+    GLuint get_resident_texture() const {
+        return m_screen_texture;
+    }
 
 private:
     struct screen_vertex {
@@ -48,8 +54,10 @@ private:
     SharedGLObject m_render_shader;
     GLuint m_screen_texture{ 0 };
 
+    float last_uvs[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
+
     GLint posAttrib;
     GLint uvAttrib;
 };
 
-} // namespace app
+} // namespace renderer::gl
