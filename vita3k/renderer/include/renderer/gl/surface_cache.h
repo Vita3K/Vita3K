@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 #include <renderer/surface_cache.h>
 
 #include <array>
+#include <memory>
 #include <unordered_map>
 
 #include <glad/glad.h>
@@ -39,13 +40,30 @@ struct GLSurfaceCacheInfo {
     std::uint32_t flags = FLAG_FREE;
 };
 
+struct GLCastedTexture {
+    GLObjectArray<1> texture;
+    std::uint64_t last_used_time = 0; // Use for garbage collect on the next frame
+    std::uint32_t cropped_x = 0;
+    std::uint32_t cropped_y = 0;
+    std::uint32_t cropped_width = 0;
+    std::uint32_t cropped_height = 0;
+    SceGxmColorBaseFormat format;
+};
+
 struct GLColorSurfaceCacheInfo : public GLSurfaceCacheInfo {
     std::uint16_t width;
     std::uint16_t height;
+    std::uint16_t pixel_stride;
+    std::size_t total_bytes;
+
+    SceGxmColorBaseFormat format;
 
     Ptr<void> data;
     GLObjectArray<1> gl_texture;
     GLObjectArray<1> gl_ping_pong_texture;
+    GLObjectArray<1> gl_expected_read_texture_view;
+
+    std::vector<std::unique_ptr<GLCastedTexture>> casted_textures;
 };
 
 struct GLDepthStencilSurfaceCacheInfo : public GLSurfaceCacheInfo {
@@ -57,20 +75,29 @@ class GLSurfaceCache : public SurfaceCache {
 private:
     static constexpr std::uint32_t MAX_CACHE_SIZE_PER_CONTAINER = 20;
 
-    std::unordered_map<std::uint64_t, GLColorSurfaceCacheInfo> color_surface_textures;
+    std::map<std::uint64_t, std::unique_ptr<GLColorSurfaceCacheInfo>, std::greater<std::uint64_t>> color_surface_textures;
     std::array<GLDepthStencilSurfaceCacheInfo, MAX_CACHE_SIZE_PER_CONTAINER> depth_stencil_textures;
     std::unordered_map<std::uint64_t, GLObjectArray<1>> framebuffer_array;
 
     std::vector<std::uint64_t> last_use_color_surface_index;
     std::vector<std::size_t> last_use_depth_stencil_surface_index;
 
+    GLObjectArray<1> typeless_copy_buffer;
+    std::size_t typeless_copy_buffer_size = 0;
+
     const GLRenderTarget *target = nullptr;
+
+private:
+    void do_typeless_copy(const GLint dest_texture, const GLint source_texture, const GLenum dest_internal,
+        const GLenum dest_upload_format, const GLenum dest_type, const GLenum source_format, const GLenum source_type,
+        const int offset_x, const int offset_y, const int width, const int height, const int dest_width, const int dest_height, const std::size_t total_source_size);
 
 public:
     explicit GLSurfaceCache();
 
-    std::uint64_t retrieve_color_surface_texture_handle(const std::uint16_t width, const std::uint16_t height,
-        Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height = nullptr) override;
+    std::uint64_t retrieve_color_surface_texture_handle(const std::uint16_t width, const std::uint16_t height, const std::uint16_t pixel_stride,
+        const SceGxmColorFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height = nullptr,
+        std::uint16_t *stored_width = nullptr) override;
     std::uint64_t retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) override;
 
     // We really can't sample this around... The only usage of this function is interally load/store from this texture.
@@ -82,5 +109,7 @@ public:
     void set_render_target(const GLRenderTarget *new_target) {
         target = new_target;
     }
+
+    std::uint64_t sourcing_color_surface_for_presentation(Ptr<const void> address, const std::uint32_t width, const std::uint32_t height, const std::uint32_t pitch, float *uvs) override;
 };
 } // namespace renderer::gl

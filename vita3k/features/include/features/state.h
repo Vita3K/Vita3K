@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ struct FeatureState {
     bool support_texture_barrier = false; ///< Second option for blending. Slower but work on 3 vendors.
     bool direct_fragcolor = false;
     bool spirv_shader = false;
+    bool preserve_f16_nan_as_u16 = true; ///< Emit store of 4xU16 to draw buffer 1. This buffer is expected to be U16U16U16U16, which can be casted to F16F16F16F16. This is to preserve some drivers's behaviour of casting NaN to default value when store in framebuffer, not keeping its original value.
 
     bool is_programmable_blending_supported() const {
         return support_shader_interlock || support_texture_barrier || direct_fragcolor;

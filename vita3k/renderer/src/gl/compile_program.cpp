@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -117,7 +117,7 @@ static void save_shaders_cache_hashs(std::vector<ShadersHash> &shaders_cache_has
         shaders_hashs.write((char *)&size, sizeof(size));
 
         // Write version of cache
-        const uint32_t versionInFile = 1;
+        const uint32_t versionInFile = shader::CURRENT_VERSION;
         shaders_hashs.write((char *)&versionInFile, sizeof(uint32_t));
 
         // Write shader hash list

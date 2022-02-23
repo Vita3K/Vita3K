@@ -18,7 +18,6 @@
 #include "interface.h"
 
 #include <app/functions.h>
-#include <app/screen_render.h>
 #include <config/functions.h>
 #include <config/version.h>
 #include <gui/functions.h>
@@ -292,12 +291,7 @@ int main(int argc, char *argv[]) {
     gui::init_app_background(gui, host, host.io.app_path);
     gui::update_last_time_app_used(gui, host, host.io.app_path);
 
-    app::gl_screen_renderer gl_renderer;
-
-    if (!gl_renderer.init(host.base_path))
-        return RendererInitFailed;
-
-    const auto draw_app_background = [](GuiState &gui, HostState &host) {
+    const auto draw_app_background = [&](GuiState &gui, HostState &host) {
         if (gui.apps_background.find(host.io.app_path) != gui.apps_background.end())
             // Display application background
             ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.io.app_path],
@@ -343,7 +337,7 @@ int main(int argc, char *argv[]) {
 
         {
             const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
-            gl_renderer.render(host);
+            host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.mem);
         }
 
         gui::draw_begin(gui, host);
@@ -363,7 +357,7 @@ int main(int argc, char *argv[]) {
 
         {
             const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
-            gl_renderer.render(host);
+            host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.mem);
         }
 
         // Calculate FPS
