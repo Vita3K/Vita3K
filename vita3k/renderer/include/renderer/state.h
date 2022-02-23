@@ -26,6 +26,7 @@
 #include <mutex>
 
 struct SDL_Cursor;
+struct DisplayState;
 
 namespace renderer {
 struct State {
@@ -44,6 +45,11 @@ struct State {
 
     std::atomic<std::uint32_t> average_scene_per_frame = 1;
     std::uint32_t scene_processed_since_last_frame = 0;
+
+    virtual bool init(const char *base_path, const bool hashless_texture_cache) = 0;
+    virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
+        const MemState &mem)
+        = 0;
 
     virtual ~State() = default;
 };

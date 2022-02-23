@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -33,8 +33,8 @@ enum SurfaceTextureRetrievePurpose {
 
 class SurfaceCache {
 public:
-    virtual std::uint64_t retrieve_color_surface_texture_handle(const std::uint16_t width, const std::uint16_t height,
-        Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height = nullptr)
+    virtual std::uint64_t retrieve_color_surface_texture_handle(const std::uint16_t width, const std::uint16_t height, const std::uint16_t pixel_stride,
+        const SceGxmColorFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height = nullptr, std::uint16_t *stored_width = nullptr)
         = 0;
     virtual std::uint64_t retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) = 0;
 
@@ -43,6 +43,9 @@ public:
     virtual std::uint64_t retrieve_framebuffer_handle(const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
         std::uint64_t *color_texture_handle = nullptr, std::uint64_t *ds_texture_handle = nullptr,
         std::uint16_t *stored_height = nullptr)
+        = 0;
+
+    virtual std::uint64_t sourcing_color_surface_for_presentation(Ptr<const void> address, const std::uint32_t width, const std::uint32_t height, const std::uint32_t pitch, float *uvs)
         = 0;
 };
 } // namespace renderer

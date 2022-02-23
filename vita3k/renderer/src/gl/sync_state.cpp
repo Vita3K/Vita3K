@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -341,10 +341,20 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
             context.self_sampling_indices.erase(res);
         }
 
-        texture_as_surface = state.surface_cache.retrieve_color_surface_texture_handle(
-            static_cast<std::uint16_t>(gxm::get_width(&texture)),
-            static_cast<std::uint16_t>(gxm::get_height(&texture)),
-            Ptr<void>(data_addr), renderer::SurfaceTextureRetrievePurpose::READING);
+        SceGxmColorFormat format_target_of_texture;
+        if (color::convert_texture_format_to_color_format(format, format_target_of_texture)) {
+            std::uint16_t width = static_cast<std::uint16_t>(gxm::get_width(&texture));
+            std::uint16_t stride_in_pixels = width;
+
+            if (texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+                stride_in_pixels = static_cast<std::uint16_t>(gxm::get_stride_in_bytes(&texture)) / ((renderer::texture::bits_per_pixel(base_format) + 7) >> 3);
+            }
+
+            texture_as_surface = state.surface_cache.retrieve_color_surface_texture_handle(
+                width, static_cast<std::uint16_t>(gxm::get_height(&texture)),
+                stride_in_pixels, format_target_of_texture, Ptr<void>(data_addr),
+                renderer::SurfaceTextureRetrievePurpose::READING);
+        }
     }
 
     if (texture_as_surface != 0) {

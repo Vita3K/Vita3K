@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 // Copyright (c) 2002-2011 The ANGLE Project Authors.
 //
 // This program is free software; you can redistribute it and/or modify
@@ -617,7 +617,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
     b.addDecoration(mask, spv::DecorationBinding, MASK_TEXTURE_SLOT_IMAGE);
 
-    if (program.is_native_color()) {
+    if (program.is_frag_color_used()) {
         // There might be a chance that this shader also reads from OUTPUT bank. We will load last state frag data
         spv::Id source = spv::NoResult;
 
@@ -1007,7 +1007,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
-        spv::Id render_buf_type = b.makeStructType({ f32, f32, f32 }, "GxmRenderFragBufferBlock");
+        spv::Id render_buf_type = b.makeStructType({ f32, f32, f32, i32_type }, "GxmRenderFragBufferBlock");
 
         b.addDecoration(render_buf_type, spv::DecorationBlock);
         b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
@@ -1015,10 +1015,12 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         b.addMemberDecoration(render_buf_type, 0, spv::DecorationOffset, 0);
         b.addMemberDecoration(render_buf_type, 1, spv::DecorationOffset, 4);
         b.addMemberDecoration(render_buf_type, 2, spv::DecorationOffset, 8);
+        b.addMemberDecoration(render_buf_type, 3, spv::DecorationOffset, 12);
 
         b.addMemberName(render_buf_type, 0, "back_disabled");
         b.addMemberName(render_buf_type, 1, "front_disabled");
         b.addMemberName(render_buf_type, 2, "writing_mask");
+        b.addMemberName(render_buf_type, 3, "surface_output_format");
 
         translation_state.render_info_id = b.createVariable(spv::NoPrecision, spv::StorageClassUniform, render_buf_type, "renderFragInfo");
 
@@ -1047,14 +1049,13 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         decorations, &frag_fin_block);
 
     const SceGxmParameterType param_type = program.get_fragment_output_type();
+    auto vertex_varyings_ptr = program.vertex_varyings();
 
     Operand color_val_operand;
     color_val_operand.bank = program.is_native_color() ? RegisterBank::OUTPUT : RegisterBank::PRIMATTR;
     color_val_operand.num = 0;
     color_val_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     color_val_operand.type = std::get<0>(shader::get_parameter_type_store_and_name(param_type));
-
-    auto vertex_varyings_ptr = program.vertex_varyings();
 
     int reg_off = 0;
     if (!program.is_native_color() && vertex_varyings_ptr->output_param_type == 1) {
@@ -1064,12 +1065,16 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         }
     }
 
-    spv::Id color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
-    if (!is_float_data_type(color_val_operand.type)) {
-        color = utils::convert_to_float(b, color, color_val_operand.type, true);
-    }
+    spv::Id vec4_type = b.makeVectorType(b.makeFloatType(32), 4);
+    spv::Id one_f = b.makeFloatConstant(1.0f);
+    spv::Id color = spv::NoResult;
 
-    if (program.is_native_color() && features.should_use_shader_interlock() && !translate_state.should_gl_spirv_compatible) {
+    color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
+
+    if (!is_float_data_type(color_val_operand.type))
+        color = utils::convert_to_float(b, color, color_val_operand.type, true);
+
+    if (program.is_frag_color_used() && features.should_use_shader_interlock() && !translate_state.should_gl_spirv_compatible) {
         spv::Id signed_i32 = b.makeIntegerType(32, true);
         spv::Id coord_id = b.createLoad(translate_state.frag_coord_id, spv::NoPrecision);
         spv::Id depth = b.createOp(spv::OpAccessChain, b.makeFloatType(32), { coord_id, b.makeIntConstant(2) });
@@ -1081,6 +1086,18 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         translate_state.interfaces.push_back(out);
         b.addDecoration(out, spv::DecorationLocation, 0);
         b.createStore(color, out);
+
+        if (features.preserve_f16_nan_as_u16) {
+            const spv::Id u4 = b.makeVectorType(b.makeUintType(32), 4);
+            const spv::Id out_u16_raw = b.createVariable(spv::NoPrecision, spv::StorageClassOutput, u4, "out_color_ui");
+            translate_state.interfaces.push_back(out_u16_raw);
+            b.addDecoration(out_u16_raw, spv::DecorationLocation, 1);
+
+            color_val_operand.type = DataType::UINT16;
+            color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
+
+            b.createStore(color, out_u16_raw);
+        }
     }
 
     // Discard masked fragments
@@ -1357,7 +1374,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     if (program_type == SceGxmProgramType::Fragment) {
         b.addExecutionMode(spv_func_main, spv::ExecutionModeOriginLowerLeft);
 
-        if (program.is_native_color() && features.should_use_shader_interlock()) {
+        if (program.is_frag_color_used() && features.should_use_shader_interlock()) {
             b.addExecutionMode(spv_func_main, spv::ExecutionModePixelInterlockOrderedEXT);
             b.addExtension("SPV_EXT_fragment_shader_interlock");
             b.addCapability(spv::CapabilityFragmentShaderPixelInterlockEXT);
@@ -1436,7 +1453,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     return spirv;
 }
 
-static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode spirv_binary, const FeatureState &features, TranslationState &translation_state, bool is_native_color) {
+static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode spirv_binary, const FeatureState &features, TranslationState &translation_state, bool is_frag_color_used) {
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
     spirv_cross::CompilerGLSL::Options options;
@@ -1464,7 +1481,7 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
         glsl.set_name(translation_state.frag_coord_id, "gl_FragCoord");
     }
     if (features.support_shader_interlock) {
-        if (translation_state.is_fragment && is_native_color) {
+        if (translation_state.is_fragment && is_frag_color_used) {
             glsl.add_header_line("layout(early_fragment_tests) in;\n");
         }
         glsl.require_extension("GL_ARB_fragment_shader_interlock");
@@ -1509,10 +1526,10 @@ std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string 
 
     std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv_impl(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
 
-    const auto source = convert_spirv_to_glsl(shader_name, spirv_binary, features, translation_state, program.is_native_color());
+    const auto source = convert_spirv_to_glsl(shader_name, spirv_binary, features, translation_state, program.is_frag_color_used());
 
     if (LOG_SHADER_CODE || force_shader_debug) {
-        LOG_DEBUG("Generated GLSL:\n{}", source);
+        LOG_INFO("Generated GLSL:\n{}", source);
     }
 
     if (dumper) {
