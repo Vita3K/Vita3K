@@ -37,11 +37,11 @@ struct FFMPEGAtrac9Info {
 };
 
 bool resample_s16_to_f32(const int16_t *source_s16, int32_t source_channels, uint32_t source_samples, uint32_t source_freq,
-    float *dest_f32, int32_t dest_channels, uint32_t dest_samples, uint32_t dest_freq) {
+    float *dest_f32, uint32_t dest_samples, uint32_t dest_freq) {
     const int source_channel_type = source_channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
-    const int dest_channel_type = dest_channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+
     SwrContext *swr = swr_alloc_set_opts(nullptr,
-        dest_channel_type, AV_SAMPLE_FMT_FLT, dest_freq,
+        AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, dest_freq,
         source_channel_type, AV_SAMPLE_FMT_S16, source_freq,
         0, nullptr);
 
@@ -54,8 +54,8 @@ bool resample_s16_to_f32(const int16_t *source_s16, int32_t source_channels, uin
 };
 
 /*
-void resample_f32(const int16_t *f32_s, float *f32_d, uint32_t dest_channels, uint32_t source_channels, uint32_t samples, uint32_t freq) {
-    resample_s16_to_f32(f32_s, source_channels, samples, freq, f32_d, dest_channels, samples, freq);
+void resample_f32(const int16_t *f32_s, float *f32_d, uint32_t source_channels, uint32_t samples, uint32_t freq) {
+    resample_s16_to_f32(f32_s, source_channels, samples, freq, f32_d, samples, freq);
 }
 */
 // maybe turn these back into public funcs thanks to DecoderQuery?
