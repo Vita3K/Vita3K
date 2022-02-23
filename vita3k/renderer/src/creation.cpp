@@ -41,7 +41,7 @@ COMMAND(handle_create_context) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        result = gl::create(*ctx, config.hashless_taexture_cache);
+        result = gl::create(*ctx);
         break;
     }
 
@@ -82,6 +82,10 @@ COMMAND(handle_destroy_render_target) {
     complete_command(renderer, helper, 0);
 }
 
+COMMAND(handle_prepare_overall_buffer_storage) {
+
+}
+
 // Client
 bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     switch (state.current_backend) {
@@ -113,11 +117,11 @@ bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgra
     return false;
 }
 
-bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend) {
+bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config) {
     switch (backend) {
     case Backend::OpenGL:
         state = std::make_unique<gl::GLState>();
-        if (!gl::create(window, state))
+        if (!gl::create(window, state, config.hashless_taexture_cache))
             return false;
         break;
 #ifdef USE_VULKAN

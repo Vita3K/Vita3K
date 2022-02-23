@@ -32,10 +32,10 @@ add_library(
 	include/renderer/gl/surface_cache.h
 	include/renderer/gl/functions.h
 
+	src/gl/fence.cpp
 	src/gl/attribute_formats.cpp
 	src/gl/compile_program.cpp
 	src/gl/draw.cpp
-	src/gl/fence.cpp
 	src/gl/load_shaders.cpp
 	src/gl/renderer.cpp
 	src/gl/ring_buffer.cpp
