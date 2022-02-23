@@ -39,6 +39,18 @@
 #include <sstream>
 
 namespace renderer::gl {
+
+GLContext::GLContext()
+    : vertex_stream_ring_buffer(GL_ARRAY_BUFFER, MB(128))
+    , index_stream_ring_buffer(GL_ELEMENT_ARRAY_BUFFER, MB(64))
+    , vertex_uniform_stream_ring_buffer(GL_SHADER_STORAGE_BUFFER, MB(256))
+    , fragment_uniform_stream_ring_buffer(GL_SHADER_STORAGE_BUFFER, MB(256))
+    , vertex_info_uniform_buffer(GL_UNIFORM_BUFFER, MB(8))
+    , fragment_info_uniform_buffer(GL_UNIFORM_BUFFER, MB(8)) {
+    std::memset(&previous_vert_info, 0, sizeof(GXMRenderVertUniformBlock));
+    std::memset(&previous_frag_info, 0, sizeof(GXMRenderFragUniformBlock));
+}
+
 namespace texture {
 bool init(GLTextureCacheState &cache, const bool hashless_texture_cache) {
     cache.select_callback = [&](const std::size_t index, const void *texture) {
@@ -117,7 +129,6 @@ static GLenum translate_blend_factor(SceGxmBlendFactor src) {
 void bind_fundamental(GLContext &context) {
     // Bind the vertex array and element buffer.
     glBindVertexArray(context.vertex_array[0]);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.element_buffer[0]);
 }
 
 #if MICROPROFILE_ENABLED
@@ -187,7 +198,7 @@ static void debug_output_callback(GLenum source, GLenum type, GLuint id, GLenum 
     LOG_DEBUG("[OPENGL - {} - {}] {}", type_str, severity_fmt, message);
 }
 
-bool create(SDL_Window *window, std::unique_ptr<State> &state) {
+bool create(SDL_Window *window, std::unique_ptr<State> &state, const bool hashless_texture_cache) {
     auto &gl_state = dynamic_cast<GLState &>(*state);
 
     // Recursively create GL version until one accepts
@@ -273,31 +284,29 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state) {
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
+    return gl_state.init(hashless_texture_cache);
+}
+
+bool GLState::init(const bool hashless_texture_cache) {
+    if (!texture::init(texture_cache, hashless_texture_cache)) {
+        LOG_ERROR("Failed to initialize texture cache!");
+        return false;
+    }
+
     return true;
 }
 
-bool create(std::unique_ptr<Context> &context, const bool hashless_texture_cache) {
+bool create(std::unique_ptr<Context> &context) {
     R_PROFILE(__func__);
 
     context = std::make_unique<GLContext>();
     GLContext *gl_context = reinterpret_cast<GLContext *>(context.get());
 
-    const bool init_result = !(!texture::init(gl_context->texture_cache, hashless_texture_cache) || !gl_context->vertex_array.init(reinterpret_cast<renderer::Generator *>(glGenVertexArrays), reinterpret_cast<renderer::Deleter *>(glDeleteVertexArrays)) || !gl_context->element_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers)) || !gl_context->stream_vertex_buffers.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers))
-        || !gl_context->uniform_buffer.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers))
-        || !gl_context->ssbo.init(reinterpret_cast<renderer::Generator *>(glGenBuffers), reinterpret_cast<renderer::Deleter *>(glDeleteBuffers)));
+    const bool init_result = gl_context->vertex_array.init(reinterpret_cast<renderer::Generator *>(glGenVertexArrays), reinterpret_cast<renderer::Deleter *>(glDeleteVertexArrays));
 
     if (!init_result) {
         return false;
     }
-
-    // Maxing SSBO sizes, we merge all buffers together so there's no way to reallocate safely without losing data, and the size here
-    // is acceptable (1024 * sizeof(vec4) * uniformBufferMaxCount). The maximum is 245.76 KB, GPU can hold it.
-    static constexpr std::size_t MAX_SSBO_BYTE_COUNT = 1024 * 16 * (SCE_GXM_MAX_UNIFORM_BUFFERS + 1);
-
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, gl_context->ssbo[0]);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, MAX_SSBO_BYTE_COUNT, nullptr, GL_DYNAMIC_COPY);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, gl_context->ssbo[1]);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, MAX_SSBO_BYTE_COUNT, nullptr, GL_DYNAMIC_COPY);
 
     return true;
 }
@@ -339,7 +348,7 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
     return true;
 }
 
-static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &sizes, UniformBufferSizes &offsets) {
+static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &sizes, UniformBufferSizes &offsets, std::size_t &total_hold) {
     std::uint32_t last_offset = 0;
 
     for (std::size_t i = 0; i < sizes.size(); i++) {
@@ -351,6 +360,8 @@ static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &siz
             offsets[i] = static_cast<std::uint32_t>(-1);
         }
     }
+
+    total_hold = static_cast<std::size_t>(last_offset);
 }
 
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
@@ -380,7 +391,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
         frag_program_gl->alpha_dst = translate_blend_factor(blend->alphaDst);
     }
     shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);
-    layout_ssbo_offset_from_uniform_buffer_sizes(fp->uniform_buffer_sizes, fp->uniform_buffer_data_offsets);
+    layout_ssbo_offset_from_uniform_buffer_sizes(fp->uniform_buffer_sizes, fp->uniform_buffer_data_offsets, fp->max_total_uniform_buffer_storage);
 
     return true;
 }
@@ -398,7 +409,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
 
     shader::usse::get_uniform_buffer_sizes(program, vp->uniform_buffer_sizes);
     shader::usse::get_attribute_informations(program, vert_program_gl->attribute_infos);
-    layout_ssbo_offset_from_uniform_buffer_sizes(vp->uniform_buffer_sizes, vp->uniform_buffer_data_offsets);
+    layout_ssbo_offset_from_uniform_buffer_sizes(vp->uniform_buffer_sizes, vp->uniform_buffer_data_offsets, vp->max_total_uniform_buffer_storage);
 
     if (vert_program_gl->attribute_infos.empty()) {
         vert_program_gl->stripped_symbols_checked = false;
@@ -409,7 +420,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
     return true;
 }
 
-void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features) {
+void set_context(GLState &state, GLContext &context, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features) {
     R_PROFILE(__func__);
 
     bind_fundamental(context);
@@ -420,7 +431,7 @@ void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *
         context.render_target = reinterpret_cast<const GLRenderTarget *>(context.current_render_target);
     }
 
-    context.surface_cache.set_render_target(context.render_target);
+    state.surface_cache.set_render_target(context.render_target);
 
     SceGxmColorSurface *color_surface_fin = &context.record.color_surface;
     if (color_surface_fin->data.address() == 0) {
@@ -435,7 +446,7 @@ void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *
     std::uint64_t current_color_attachment_handle = 0;
     std::uint16_t current_framebuffer_height = 0;
 
-    context.current_framebuffer = static_cast<GLuint>(context.surface_cache.retrieve_framebuffer_handle(
+    context.current_framebuffer = static_cast<GLuint>(state.surface_cache.retrieve_framebuffer_handle(
         color_surface_fin, ds_surface_fin, &current_color_attachment_handle, nullptr, &current_framebuffer_height));
     context.current_color_attachment = static_cast<GLuint>(current_color_attachment_handle);
     context.current_framebuffer_height = current_framebuffer_height;
@@ -473,7 +484,7 @@ void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *
     }
 }
 
-void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format) {
+void get_surface_data(GLState &renderer, GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format) {
     R_PROFILE(__func__);
 
     if (!pixels)
@@ -587,18 +598,7 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
     }
 
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
-    ++context.texture_cache.timestamp;
-}
-
-void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data) {
-    glBindBuffer(GL_ARRAY_BUFFER, context.stream_vertex_buffers[stream_index]);
-
-    // Orphan the buffer, so we don't have to stall the pipeline, wait for last draw call to finish
-    // See OpenGL Insight at 28.3.2. Intel driver likes glBufferData more, so use glBufferData.
-    glBufferData(GL_ARRAY_BUFFER, length, nullptr, GL_DYNAMIC_DRAW);
-    glBufferData(GL_ARRAY_BUFFER, length, data, GL_DYNAMIC_DRAW);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    ++renderer.texture_cache.timestamp;
 }
 
 } // namespace renderer::gl

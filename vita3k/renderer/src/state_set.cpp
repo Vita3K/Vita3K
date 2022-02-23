@@ -21,6 +21,7 @@
 #include <renderer/types.h>
 
 #include <renderer/gl/functions.h>
+#include <renderer/gl/state.h>
 #include <renderer/gl/types.h>
 
 #include "driver_functions.h"
@@ -76,18 +77,6 @@ COMMAND_SET_STATE(program) {
         }
     } else {
         render_context->record.vertex_program = program.cast<const SceGxmVertexProgram>();
-
-        // Try to bind and layout vertex attributes
-        switch (renderer.current_backend) {
-        case Backend::OpenGL: {
-            gl::sync_vertex_attributes(*reinterpret_cast<gl::GLContext *>(render_context), render_context->record, mem);
-            break;
-        }
-
-        default:
-            REPORT_MISSING(renderer.current_backend);
-            break;
-        }
     }
 }
 
@@ -125,7 +114,6 @@ COMMAND_SET_STATE(uniform_buffer) {
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::set_uniform_buffer(*reinterpret_cast<gl::GLContext *>(render_context), mem, is_vertex, block_num, size, data, config.log_active_shaders);
-
         break;
     }
 
@@ -326,7 +314,7 @@ COMMAND_SET_STATE(texture) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
-        gl::sync_texture(*reinterpret_cast<gl::GLContext *>(render_context), mem, texture_index, texture,
+        gl::sync_texture(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), mem, texture_index, texture,
             config, base_path, title_id);
         break;
 
@@ -363,8 +351,12 @@ COMMAND_SET_STATE(vertex_stream) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::upload_vertex_stream(*reinterpret_cast<gl::GLContext *>(render_context), stream_index, stream_data_length,
-            stream_data);
+        renderer::GXMStreamInfo &info = render_context->record.vertex_streams[stream_index];
+        if (info.data) {
+            delete info.data;
+        }
+        info.data = stream_data;
+        info.size = stream_data_length;
 
         break;
     }
@@ -373,8 +365,6 @@ COMMAND_SET_STATE(vertex_stream) {
         REPORT_MISSING(renderer.current_backend);
         break;
     }
-
-    delete[] stream_data;
 }
 
 COMMAND_SET_STATE(fragment_program_enable) {

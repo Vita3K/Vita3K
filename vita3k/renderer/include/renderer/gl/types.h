@@ -22,7 +22,7 @@
 #include <glutil/object_array.h>
 #include <renderer/types.h>
 
-#include <renderer/gl/surface_cache.h>
+#include <renderer/gl/ring_buffer.h>
 #include <renderer/texture_cache_state.h>
 #include <shader/usse_program_analyzer.h>
 
@@ -65,14 +65,32 @@ struct GLTextureCacheState : public renderer::TextureCacheState {
 
 struct GLRenderTarget;
 
-struct GLContext : public renderer::Context {
-    GLTextureCacheState texture_cache;
-    GLSurfaceCache surface_cache;
+struct GXMRenderVertUniformBlock {
+    float viewport_flip[4];
+    float viewport_flag;
+    float screen_width;
+    float screen_height;
+};
 
+struct GXMRenderFragUniformBlock {
+    float back_disabled = 0;
+    float front_disabled = 0;
+    float writing_mask = 0;
+};
+
+struct GLContext : public renderer::Context {
     GLObjectArray<1> vertex_array;
-    GLObjectArray<1> element_buffer;
-    GLObjectArray<2> ssbo;
-    GLObjectArray<2> uniform_buffer;
+
+    RingBuffer vertex_stream_ring_buffer;
+    RingBuffer index_stream_ring_buffer;
+    RingBuffer vertex_uniform_stream_ring_buffer;
+    RingBuffer fragment_uniform_stream_ring_buffer;
+    RingBuffer vertex_info_uniform_buffer;
+    RingBuffer fragment_info_uniform_buffer;
+
+    GXMRenderVertUniformBlock previous_vert_info;
+    GXMRenderFragUniformBlock previous_frag_info;
+
     const GLRenderTarget *render_target;
 
     std::map<int, std::vector<uint8_t>> ubo_data;
@@ -90,6 +108,10 @@ struct GLContext : public renderer::Context {
     std::vector<UniformSetRequest> vertex_set_requests;
     std::vector<UniformSetRequest> fragment_set_requests;
 
+    std::pair<std::uint8_t *, std::size_t> vertex_uniform_buffer_storage_ptr{ nullptr, 0 };
+    std::pair<std::uint8_t *, std::size_t> fragment_uniform_buffer_storage_ptr{ nullptr, 0 };
+
+    explicit GLContext();
     ~GLContext() override = default;
 };
 

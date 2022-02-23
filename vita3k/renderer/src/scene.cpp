@@ -65,7 +65,7 @@ COMMAND(handle_set_context) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::set_context(*reinterpret_cast<gl::GLContext *>(render_context), mem, reinterpret_cast<const gl::GLRenderTarget *>(rt), features);
+        gl::set_context(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), mem, reinterpret_cast<const gl::GLRenderTarget *>(rt), features);
         break;
     }
 
@@ -84,7 +84,7 @@ COMMAND(handle_sync_surface_data) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::get_surface_data(*reinterpret_cast<gl::GLContext *>(render_context), width, height,
+        gl::get_surface_data(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), width, height,
             stride_in_pixels, pixels, render_context->record.color_surface.colorFormat);
 
         break;

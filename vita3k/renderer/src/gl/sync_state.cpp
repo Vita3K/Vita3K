@@ -309,7 +309,7 @@ void sync_depth_bias(const int factor, const int unit, const bool is_front) {
     }
 }
 
-void sync_texture(GLContext &context, MemState &mem, std::size_t index, SceGxmTexture texture,
+void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t index, SceGxmTexture texture,
     const Config &config, const std::string &base_path, const std::string &title_id) {
     Address data_addr = texture.data_addr << 2;
 
@@ -344,7 +344,7 @@ void sync_texture(GLContext &context, MemState &mem, std::size_t index, SceGxmTe
             context.self_sampling_indices.erase(res);
         }
 
-        texture_as_surface = context.surface_cache.retrieve_color_surface_texture_handle(
+        texture_as_surface = state.surface_cache.retrieve_color_surface_texture_handle(
             static_cast<std::uint16_t>(gxm::get_width(&texture)),
             static_cast<std::uint16_t>(gxm::get_height(&texture)),
             Ptr<void>(data_addr), renderer::SurfaceTextureRetrievePurpose::READING);
@@ -354,9 +354,9 @@ void sync_texture(GLContext &context, MemState &mem, std::size_t index, SceGxmTe
         glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture_as_surface));
     } else {
         if (config.texture_cache) {
-            renderer::texture::cache_and_bind_texture(context.texture_cache, texture, mem);
+            renderer::texture::cache_and_bind_texture(state.texture_cache, texture, mem);
         } else {
-            texture::bind_texture(context.texture_cache, texture, mem);
+            texture::bind_texture(state.texture_cache, texture, mem);
         }
     }
 
@@ -396,7 +396,14 @@ void sync_blending(const GxmRecordState &state, const MemState &mem) {
     }
 }
 
-void sync_vertex_attributes(GLContext &context, const GxmRecordState &state, const MemState &mem) {
+void clear_previous_uniform_storage(GLContext &context) {
+    context.vertex_uniform_buffer_storage_ptr.first = nullptr;
+    context.vertex_uniform_buffer_storage_ptr.second = 0;
+    context.fragment_uniform_buffer_storage_ptr.first = nullptr;
+    context.fragment_uniform_buffer_storage_ptr.second = 0;
+}
+
+void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &state, const MemState &mem) {
     // Vertex attributes.
     const SceGxmVertexProgram &vertex_program = *state.vertex_program.get(mem);
     GLVertexProgram *glvert = reinterpret_cast<GLVertexProgram *>(vertex_program.renderer_data.get());
@@ -412,6 +419,30 @@ void sync_vertex_attributes(GLContext &context, const GxmRecordState &state, con
 
         glvert->stripped_symbols_checked = true;
     }
+
+    // Each draw will upload the stream data. Assuming that, we can just bind buffer, upload data
+    // The GXM submit side should already submit used buffer, but we just delete all just in case
+    std::array<std::size_t, SCE_GXM_MAX_VERTEX_STREAMS> offset_in_buffer;
+    for (std::size_t i = 0; i < SCE_GXM_MAX_VERTEX_STREAMS; i++) {
+        if (state.vertex_streams[i].data) {
+            std::pair<std::uint8_t *, std::size_t> result = context.vertex_stream_ring_buffer.allocate(state.vertex_streams[i].size);
+            if (!result.first) {
+                LOG_ERROR("Failed to allocate vertex stream data from GPU!");
+            } else {
+                std::memcpy(result.first, state.vertex_streams[i].data, state.vertex_streams[i].size);
+                offset_in_buffer[i] = result.second;
+            }
+
+            delete[] state.vertex_streams[i].data;
+
+            state.vertex_streams[i].data = nullptr;
+            state.vertex_streams[i].size = 0;
+        } else {
+            offset_in_buffer[i] = 0;
+        }
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, context.vertex_stream_ring_buffer.handle());
 
     for (const SceGxmVertexAttribute &attribute : vertex_program.attributes) {
         const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
@@ -440,12 +471,12 @@ void sync_vertex_attributes(GLContext &context, const GxmRecordState &state, con
                 break;
             }
 
-            glBindBuffer(GL_ARRAY_BUFFER, context.stream_vertex_buffers[attribute.streamIndex]);
+            const std::uint16_t stream_index = attribute.streamIndex;
 
             if (upload_integral || (attribute_format == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED)) {
-                glVertexAttribIPointer(attrib_location, attribute.componentCount, type, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
+                glVertexAttribIPointer(attrib_location, attribute.componentCount, type, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset + offset_in_buffer[stream_index]));
             } else {
-                glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset));
+                glVertexAttribPointer(attrib_location, attribute.componentCount, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset + offset_in_buffer[stream_index]));
             }
 
             glEnableVertexAttribArray(attrib_location);
