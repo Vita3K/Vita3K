@@ -48,18 +48,16 @@ std::string pre_load_glsl_shader(const char *hash_text, const char *shader_type_
 // Uniforms.
 bool set_uniform_buffer(GLContext &context, MemState &mem, const bool vertex_shader, const int block_num, const int size, const void *data, bool log_active_shader);
 
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state);
-bool create(std::unique_ptr<Context> &context, const bool hashless_texture_cache);
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const bool hashless_texture_cache);
+bool create(std::unique_ptr<Context> &context);
 bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 void sync_rendertarget(const GLRenderTarget &rt);
-void set_context(GLContext &ctx, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features);
-void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format);
+void set_context(GLState &state, GLContext &ctx, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features);
+void get_surface_data(GLState &renderer, GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format);
 void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     void *indices, size_t count, uint32_t instance_count, MemState &mem, const char *base_path, const char *title_id, const char *self_name, const Config &config);
-
-void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data);
 
 // State
 void sync_viewport_flat(GLContext &context);
@@ -78,10 +76,11 @@ void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front);
 void sync_point_line_width(const std::uint32_t size, const bool front);
 void sync_depth_bias(const int factor, const int unit, const bool front);
 void sync_blending(const GxmRecordState &state, const MemState &mem);
-void sync_texture(GLContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config,
+void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config,
     const std::string &base_path, const std::string &title_id);
-void sync_vertex_attributes(GLContext &context, const GxmRecordState &state, const MemState &mem);
+void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &state, const MemState &mem);
 void bind_fundamental(GLContext &context);
+void clear_previous_uniform_storage(GLContext &context);
 
 struct GLTextureCacheState;
 struct TextureCacheState;

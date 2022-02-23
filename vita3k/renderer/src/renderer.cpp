@@ -128,4 +128,5 @@ std::uint8_t **set_uniform_buffer(State &state, Context *ctx, const bool is_vert
     renderer::add_state_set_command(ctx, renderer::GXMState::UniformBuffer, nullptr, is_vertex_uniform, block_number, bytes_to_copy_and_pad);
     return reinterpret_cast<std::uint8_t **>(ctx->command_list.last->data + 2);
 }
+
 } // namespace renderer

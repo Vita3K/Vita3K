@@ -88,10 +88,17 @@ enum SyncObjectSubject : std::uint32_t {
 
 struct RenderTarget;
 
+struct GXMStreamInfo {
+    std::uint8_t *data = nullptr;
+    std::size_t size = 0;
+};
+
 struct GxmRecordState {
     // Programs.
     Ptr<const SceGxmFragmentProgram> fragment_program;
     Ptr<const SceGxmVertexProgram> vertex_program;
+
+    std::array<GXMStreamInfo, SCE_GXM_MAX_VERTEX_STREAMS> vertex_streams;
 
     SceGxmColorSurface color_surface;
     SceGxmDepthStencilSurface depth_stencil_surface;
@@ -141,6 +148,8 @@ struct ShaderProgram {
     std::string hash;
     UniformBufferSizes uniform_buffer_sizes; // Size of the buffer in 4-bytes unit
     UniformBufferSizes uniform_buffer_data_offsets; // Offset of the buffer in 4-bytes unit
+
+    std::size_t max_total_uniform_buffer_storage;
 };
 
 struct FragmentProgram : ShaderProgram {
