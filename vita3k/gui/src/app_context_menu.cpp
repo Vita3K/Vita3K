@@ -73,8 +73,8 @@ static bool get_update_history(GuiState &gui, HostState &host, const std::string
     return !update_history_infos.empty();
 }
 
-std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, HostState &host, const std::string app) {
-    const auto time_app_index = std::find_if(gui.time_apps[host.io.user_id].begin(), gui.time_apps[host.io.user_id].end(), [&](const TimeApp &t) {
+std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, const std::string user_id, const std::string app) {
+    const auto time_app_index = std::find_if(gui.time_apps[user_id].begin(), gui.time_apps[user_id].end(), [&](const TimeApp &t) {
         return t.app == app;
     });
 
@@ -169,15 +169,15 @@ static void save_time_apps(GuiState &gui, HostState &host) {
         LOG_ERROR("Fail save xml");
 }
 
-void update_time_app_used(GuiState &gui, HostState &host, const std::string &app) {
-    const auto &time_app_index = get_time_app_index(gui, host, app);
+void update_time_app_used(GuiState &gui, HostState &host, const std::string app) {
+    const auto &time_app_index = get_time_app_index(gui, host.io.user_id, app);
     time_app_index->time_used += std::time(nullptr) - time_app_index->last_time_used;
 
     save_time_apps(gui, host);
 }
 
 void update_last_time_app_used(GuiState &gui, HostState &host, const std::string &app) {
-    const auto &time_app_index = get_time_app_index(gui, host, app);
+    const auto &time_app_index = get_time_app_index(gui, host.io.user_id, app);
     if (time_app_index != gui.time_apps[host.io.user_id].end())
         time_app_index->last_time_used = std::time(nullptr);
     else
@@ -202,7 +202,42 @@ void update_last_time_app_used(GuiState &gui, HostState &host, const std::string
     save_time_apps(gui, host);
 }
 
-void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
+static void erase_app_times(GuiState &gui, HostState &host, const std::string app_path) {
+    for (const auto user : gui.users) {
+        const auto TIME_APP_INDEX = get_time_app_index(gui, user.first, app_path);
+        if (TIME_APP_INDEX != gui.time_apps[user.first].end()) {
+            gui.time_apps[user.first].erase(TIME_APP_INDEX);
+        }
+    }
+
+    save_time_apps(gui, host);
+}
+
+void update_app(GuiState &gui, HostState &host, const std::string app_path) {
+    const auto APP_OPEN_LIST_INDEX = get_app_open_list_index(gui, app_path);
+
+    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path / "eboot.bin" };
+    if (fs::exists(APP_PATH)) {
+        init_user_app(gui, host, app_path);
+
+        if (APP_OPEN_LIST_INDEX != gui.apps_list_opened.end())
+            init_live_area(gui, host, app_path);
+    } else {
+        gui.live_area.live_area_screen = false;
+        gui.live_area.app_selector = true;
+
+        if (APP_OPEN_LIST_INDEX != gui.apps_list_opened.end())
+            gui.apps_list_opened.erase(APP_OPEN_LIST_INDEX);
+
+        erase_app(gui, app_path);
+
+        erase_app_times(gui, host, app_path);
+    }
+
+    save_apps_cache(gui, host);
+}
+
+void delete_app(GuiState &gui, HostState &host, const std::string app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
     const auto title_id = APP_INDEX->title_id;
     try {
@@ -232,16 +267,9 @@ void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
         if (fs::exists(SHADER_LOG_PATH))
             fs::remove_all(SHADER_LOG_PATH);
 
-        if (gui.app_selector.user_apps_icon.find(app_path) != gui.app_selector.user_apps_icon.end()) {
-            gui.app_selector.user_apps_icon[app_path] = {};
-            gui.app_selector.user_apps_icon.erase(app_path);
-        }
+        erase_app(gui, app_path);
 
-        const auto time_app_index = get_time_app_index(gui, host, app_path);
-        if (time_app_index != gui.time_apps[host.io.user_id].end()) {
-            gui.time_apps[host.io.user_id].erase(time_app_index);
-            save_time_apps(gui, host);
-        }
+        erase_app_times(gui, host, app_path);
 
         LOG_INFO("Application successfully deleted '{} [{}]'.", title_id, APP_INDEX->title);
 
@@ -290,8 +318,6 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
         ImGui::SetWindowFontScale(1.3f * RES_SCALE.x);
-        if (ImGui::MenuItem("Boot"))
-            pre_load_app(gui, host, false, app_path);
         if (title_id.find("NPXS") == std::string::npos) {
             if (ImGui::MenuItem("Check App Compatibility")) {
                 const std::string compat_url = title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + APP_INDEX->title;
@@ -342,7 +368,9 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     open_path(SHADER_LOG_PATH.string());
                 ImGui::EndMenu();
             }
-            if (!host.cfg.show_live_area_screen && ImGui::BeginMenu("Live Area")) {
+            if (ImGui::BeginMenu("Live Area")) {
+                if (ImGui::MenuItem(gui.lang.live_area[START].c_str()))
+                    pre_load_app(gui, host, false, app_path);
                 if (ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))
                     open_live_area(gui, host, app_path);
                 if (ImGui::MenuItem("Search", nullptr))
@@ -505,7 +533,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["last_time_used"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s ", lang["last_time_used"].c_str());
             ImGui::SameLine();
-            const auto time_app_index = get_time_app_index(gui, host, app_path);
+            const auto time_app_index = get_time_app_index(gui, host.io.user_id, app_path);
             if (time_app_index != gui.time_apps[host.io.user_id].end()) {
                 tm date_tm = {};
                 SAFE_LOCALTIME(&time_app_index->last_time_used, &date_tm);

@@ -462,18 +462,25 @@ void init_home(GuiState &gui, HostState &host) {
     }
 }
 
-void init_user_app(GuiState &gui, HostState &host, const std::string app_path) {
+void erase_app(GuiState &gui, const std::string app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
-    if (APP_INDEX != gui.app_selector.user_apps.end()) {
+    if (APP_INDEX != gui.app_selector.user_apps.end())
         gui.app_selector.user_apps.erase(APP_INDEX);
-        if (gui.app_selector.user_apps_icon.find(app_path) != gui.app_selector.user_apps_icon.end())
-            gui.app_selector.user_apps_icon.erase(app_path);
-    }
+    if (gui.app_selector.user_apps_icon.find(app_path) != gui.app_selector.user_apps_icon.end())
+        gui.app_selector.user_apps_icon.erase(app_path);
+    if (gui.live_area_contents.find(app_path) != gui.live_area_contents.end())
+        gui.live_area_contents.erase(app_path);
+    if (gui.live_items.find(app_path) != gui.live_items.end())
+        gui.live_items.erase(app_path);
+}
+
+void init_user_app(GuiState &gui, HostState &host, const std::string app_path) {
+    erase_app(gui, app_path);
 
     get_app_param(gui, host, app_path);
     init_app_icon(gui, host, app_path);
 
-    const auto TIME_APP_INDEX = get_time_app_index(gui, host, app_path);
+    const auto TIME_APP_INDEX = get_time_app_index(gui, host.io.user_id, app_path);
     if (TIME_APP_INDEX != gui.time_apps[host.io.user_id].end())
         get_app_index(gui, app_path)->last_time = TIME_APP_INDEX->last_time_used;
 

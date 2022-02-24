@@ -36,7 +36,8 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
-void delete_app(GuiState &gui, HostState &host, const std::string &app_path);
+void delete_app(GuiState &gui, HostState &host, const std::string app_path);
+void erase_app(GuiState &gui, const std::string app_path);
 void get_app_info(GuiState &gui, HostState &host, const std::string &app_path);
 size_t get_app_size(GuiState &gui, HostState &host, const std::string &app_path);
 std::vector<App>::iterator get_app_index(GuiState &gui, const std::string app_path);
@@ -47,7 +48,7 @@ std::string get_unit_size(const size_t &size);
 void get_app_param(GuiState &gui, HostState &host, const std::string app_path);
 void get_notice_list(HostState &host);
 std::string get_theme_title_from_buffer(const vfs::FileBuffer buffer);
-std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, HostState &host, const std::string app);
+std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, const std::string user_id, const std::string app);
 void get_time_apps(GuiState &gui, HostState &host);
 void get_user_apps_title(GuiState &gui, HostState &host);
 void get_users_list(GuiState &gui, HostState &host);
@@ -91,7 +92,7 @@ void update_app(GuiState &gui, HostState &host, const std::string app_path);
 void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &app_path);
 void update_last_time_app_used(GuiState &gui, HostState &host, const std::string &app);
 void update_notice_info(GuiState &gui, HostState &host, const std::string &type);
-void update_time_app_used(GuiState &gui, HostState &host, const std::string &app);
+void update_time_app_used(GuiState &gui, HostState &host, const std::string app);
 void save_notice_list(HostState &host);
 
 void draw_begin(GuiState &gui, HostState &host);

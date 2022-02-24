@@ -515,19 +515,6 @@ void open_search(const std::string title) {
     open_path(search_url);
 }
 
-void update_app(GuiState &gui, HostState &host, const std::string app_path) {
-    if (gui.live_area_contents.find(app_path) != gui.live_area_contents.end())
-        gui.live_area_contents.erase(app_path);
-    if (gui.live_items.find(app_path) != gui.live_items.end())
-        gui.live_items.erase(app_path);
-
-    init_user_app(gui, host, app_path);
-    save_apps_cache(gui, host);
-
-    if (get_app_open_list_index(gui, app_path) != gui.apps_list_opened.end())
-        init_live_area(gui, host, app_path);
-}
-
 static const ImU32 ARROW_COLOR = 4294967295; // White
 
 void draw_live_area_screen(GuiState &gui, HostState &host) {
