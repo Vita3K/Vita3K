@@ -91,7 +91,7 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
 void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path,
     const char *title_id) {
     const bool is_avg_scene_per_frame = !state.command_buffer_queue.size() || (state.average_scene_per_frame > 1);
-    const uint32_t queue_size = is_avg_scene_per_frame ? state.average_scene_per_frame : state.command_buffer_queue.size();
+    const uint32_t queue_size = is_avg_scene_per_frame ? state.average_scene_per_frame.load() : state.command_buffer_queue.size();
 
     for (uint32_t pc = 0; pc < queue_size; pc++) {
         auto cmd_list = state.command_buffer_queue.pop(3);
