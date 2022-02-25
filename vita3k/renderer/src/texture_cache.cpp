@@ -156,7 +156,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         }
     }
 
-    info->timestamp = cache.timestamp;
+    info->timestamp = cache.timestamp++;
 }
 
 } // namespace texture
