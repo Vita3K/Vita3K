@@ -350,14 +350,6 @@ EXPORT(int, _sceGxmSetVertexTexture) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceGxmTextureSetHeight) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _sceGxmTextureSetWidth) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return UNIMPLEMENTED();
 }
@@ -3605,6 +3597,10 @@ EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, uint32_t height) {
     return 0;
 }
 
+EXPORT(int, _sceGxmTextureSetHeight, SceGxmTexture *texture, uint32_t height) {
+    return CALL_EXPORT(sceGxmTextureSetHeight, texture, height);
+}
+
 EXPORT(int, sceGxmTextureSetLodBias, SceGxmTexture *texture, uint32_t bias) {
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
@@ -3803,12 +3799,17 @@ EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, uint32_t width) {
     if (((texture->type << 29) != SCE_GXM_TEXTURE_SWIZZLED) && ((texture->type << 29) != SCE_GXM_TEXTURE_TILED)) {
     LINEAR:
         texture->width = width - 1;
+        return 0;
     }
 
     // TODO: Add support for swizzled textures
     LOG_WARN("Unimplemented texture format detected in sceGxmTextureSetWidth call.");
 
     return 0;
+}
+
+EXPORT(int, _sceGxmTextureSetWidth, SceGxmTexture *texture, uint32_t width) {
+    return CALL_EXPORT(sceGxmTextureSetWidth, texture, width);
 }
 
 EXPORT(int, sceGxmTextureValidate, const SceGxmTexture *texture) {
