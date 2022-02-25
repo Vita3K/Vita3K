@@ -2362,7 +2362,7 @@ EXPORT(void, sceGxmSetBackDepthFunc, SceGxmContext *context, SceGxmDepthFunc dep
 }
 
 EXPORT(void, sceGxmSetBackDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
-    if (context->state.back_depth_write_enable) {
+    if (context->state.back_depth_write_enable != enable) {
         context->state.back_depth_write_enable = enable;
 
         if (context->alloc_space) {
