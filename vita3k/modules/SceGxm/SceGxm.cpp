@@ -241,6 +241,7 @@ typedef std::map<FragmentProgramCacheKey, Ptr<SceGxmFragmentProgram>> FragmentPr
 struct SceGxmShaderPatcher {
     VertexProgramCache vertex_program_cache;
     FragmentProgramCache fragment_program_cache;
+    SceGxmShaderPatcherParams params;
 };
 
 // clang-format off
@@ -3002,6 +3003,42 @@ EXPORT(int, sceGxmSetYuvProfile) {
     return UNIMPLEMENTED();
 }
 
+Address alloc_callbacked(HostState &host, const SceGxmShaderPatcherParams &shaderPatcherParams, uint size) {
+    if (!shaderPatcherParams.hostAllocCallback) {
+        LOG_ERROR("Empty hostAllocCallback");
+    }
+    return host.kernel.run_guest_function(shaderPatcherParams.hostAllocCallback.address(), { shaderPatcherParams.userData.address(), size });
+}
+
+template <typename T>
+Ptr<T> alloc_callbacked(HostState &host, const SceGxmShaderPatcherParams &shaderPatcherParams) {
+    const Address address = alloc_callbacked(host, shaderPatcherParams, sizeof(T));
+    const Ptr<T> ptr(address);
+    if (!ptr) {
+        return ptr;
+    }
+    T *const memory = ptr.get(host.mem);
+    new (memory) T;
+    return ptr;
+}
+
+template <typename T>
+Ptr<T> alloc_callbacked(HostState &host, SceGxmShaderPatcher *shaderPatcher) {
+    return alloc_callbacked<T>(host, shaderPatcher->params);
+}
+
+void free_callbacked(HostState &host, SceGxmShaderPatcher *shaderPatcher, Address data) {
+    if (!shaderPatcher->params.hostFreeCallback) {
+        LOG_ERROR("Empty hostFreeCallback");
+    }
+    host.kernel.run_guest_function(shaderPatcher->params.hostFreeCallback.address(), { shaderPatcher->params.userData.address(), data });
+}
+
+template <typename T>
+void free_callbacked(HostState &host, SceGxmShaderPatcher *shaderPatcher, Ptr<T> data) {
+    free_callbacked(host, shaderPatcher, data.address());
+}
+
 EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmFragmentProgram *fragmentProgram) {
     if (!shaderPatcher || !fragmentProgram)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
@@ -3024,12 +3061,12 @@ EXPORT(int, sceGxmShaderPatcherCreate, const SceGxmShaderPatcherParams *params, 
     if (!params || !shaderPatcher)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    *shaderPatcher = alloc<SceGxmShaderPatcher>(host.mem, __FUNCTION__);
+    *shaderPatcher = alloc_callbacked<SceGxmShaderPatcher>(host, *params);
     assert(*shaderPatcher);
     if (!*shaderPatcher) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
-
+    shaderPatcher->get(host.mem)->params = *params;
     return 0;
 }
 
@@ -3059,7 +3096,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
         return 0;
     }
 
-    *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
+    *fragmentProgram = alloc_callbacked<SceGxmFragmentProgram>(host, shaderPatcher);
     assert(*fragmentProgram);
     if (!*fragmentProgram) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
@@ -3084,7 +3121,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
     if (!shaderPatcher || !fragmentProgram)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    *fragmentProgram = alloc<SceGxmFragmentProgram>(mem, __FUNCTION__);
+    *fragmentProgram = alloc_callbacked<SceGxmFragmentProgram>(host, shaderPatcher);
     assert(*fragmentProgram);
     if (!*fragmentProgram) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
@@ -3092,7 +3129,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
 
     SceGxmFragmentProgram *const fp = fragmentProgram->get(mem);
     fp->is_maskupdate = true;
-    fp->program = alloc(mem, size_mask_gxp, __FUNCTION__);
+    fp->program = Ptr<const SceGxmProgram>(alloc_callbacked(host, shaderPatcher->params, size_mask_gxp));
     memcpy(const_cast<SceGxmProgram *>(fp->program.get(mem)), mask_gxp, size_mask_gxp);
 
     if (!renderer::create(fp->renderer_data, *host.renderer, *fp->program.get(mem), nullptr, host.renderer->gxp_ptr_map, host.base_path.c_str(), host.io.title_id.c_str())) {
@@ -3128,7 +3165,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
         return 0;
     }
 
-    *vertexProgram = alloc<SceGxmVertexProgram>(mem, __FUNCTION__);
+    *vertexProgram = alloc_callbacked<SceGxmVertexProgram>(host, shaderPatcher);
     assert(*vertexProgram);
     if (!*vertexProgram) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
@@ -3158,7 +3195,7 @@ EXPORT(int, sceGxmShaderPatcherDestroy, Ptr<SceGxmShaderPatcher> shaderPatcher) 
     if (!shaderPatcher)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    free(host.mem, shaderPatcher);
+    free_callbacked(host, shaderPatcher.get(host.mem), shaderPatcher);
 
     return 0;
 }
@@ -3220,7 +3257,7 @@ EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatch
     if (!shaderPatcher || !programHeader || !programId)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    *programId = alloc<SceGxmRegisteredProgram>(host.mem, __FUNCTION__);
+    *programId = alloc_callbacked<SceGxmRegisteredProgram>(host, shaderPatcher);
     assert(*programId);
     if (!*programId) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
@@ -3245,7 +3282,7 @@ EXPORT(int, sceGxmShaderPatcherReleaseFragmentProgram, SceGxmShaderPatcher *shad
                 break;
             }
         }
-        free(host.mem, fragmentProgram);
+        free_callbacked(host, shaderPatcher, fragmentProgram);
     }
 
     return 0;
@@ -3264,7 +3301,7 @@ EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shader
                 break;
             }
         }
-        free(host.mem, vertexProgram);
+        free_callbacked(host, shaderPatcher, vertexProgram);
     }
 
     return 0;
@@ -3274,11 +3311,12 @@ EXPORT(int, sceGxmShaderPatcherSetAuxiliarySurface) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmShaderPatcherSetUserData, SceGxmShaderPatcher *shaderPatcher, void *userData) {
+EXPORT(int, sceGxmShaderPatcherSetUserData, SceGxmShaderPatcher *shaderPatcher, Ptr<void> userData) {
     if (!shaderPatcher) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+    shaderPatcher->params.userData = userData;
+    return 0;
 }
 
 EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmShaderPatcherId programId) {
@@ -3288,7 +3326,7 @@ EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPat
     SceGxmRegisteredProgram *const rp = programId.get(host.mem);
     rp->program.reset();
 
-    free(host.mem, programId);
+    free_callbacked(host, shaderPatcher, programId);
 
     return 0;
 }
