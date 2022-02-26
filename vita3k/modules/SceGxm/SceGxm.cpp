@@ -347,10 +347,6 @@ EXPORT(int, _sceGxmBeginScene) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceGxmSetVertexTexture) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
     return UNIMPLEMENTED();
 }
@@ -2904,6 +2900,10 @@ EXPORT(int, sceGxmSetVertexTexture, SceGxmContext *context, uint32_t textureInde
         renderer::set_texture(*host.renderer, context->renderer.get(), textureIndex, *texture);
 
     return 0;
+}
+
+EXPORT(int, _sceGxmSetVertexTexture, SceGxmContext *context, uint32_t textureIndex, const SceGxmTexture *texture) {
+    return CALL_EXPORT(sceGxmSetVertexTexture, context, textureIndex, texture);
 }
 
 EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, uint32_t bufferIndex, Ptr<const void> bufferData) {
