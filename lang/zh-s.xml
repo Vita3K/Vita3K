@@ -155,7 +155,7 @@
 	</indicator>
 
 	<initial_setup>
-		<back>Back</back>
+		<back>返回</back>
 		<completed_setup>You have now completed initial setup.
 Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
@@ -239,12 +239,27 @@ Your Vita3K system is ready!</completed_setup>
 	</trophy_collection>
 
 	<user_management>
+		<select_user>选择用户</select_user>
 		<create_user>新建用户</create_user>
+		<user_created>已创建以下用户</user_created>
 		<edit_user>编辑用户</edit_user>
+		<user_name_used>！用户名已被使用。</user_name_used>
 		<delete_user>删除用户</delete_user>
+		<user_delete>请选择你想要删除的用户。</user_delete>
+		<user_delete_msg>以下用户将会删除。</user_delete_msg>
+		<user_delete_msg_1>如果删除此用户，此用户的保存数据、奖杯将会删除。</user_delete_msg_1>
+		<user_delete_warn>此用户将会删除。
+您真的想要继续吗？</user_delete_warn>
+		<user_deleted>用户已删除。</user_deleted>
 		<change_avatar>更换头像</change_avatar>
+		<reset_avatar>重置头像</reset_avatar>
 		<name>名称</name>
 		<user>用户</user>
 		<confirm>确认</confirm>
+		<cancel>取消</cancel>
+		<delete>删除</delete>
+		<yes>是</yes>
+		<no>否</no>
+		<automatic_login>自动登录用户</automatic_login>
 	</user_management>
 </lang>
