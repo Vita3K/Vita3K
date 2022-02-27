@@ -457,16 +457,16 @@ void draw_user_management(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPos(ImVec2(calc_text, 146.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, lang["user_delete_warn"].c_str());
                 ImGui::SetCursorPosX(calc_text);
-                ImGui::TextColored(GUI_COLOR_TEXT, "Are you sure you want to continue?");
+                ImGui::TextColored(GUI_COLOR_TEXT, lang["user_delete_warn_1"].c_str());
                 ImGui::SetCursorPos(BUTTON_POS);
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - BUTTON_SIZE.x - 20.f, BUTTON_POS.y));
-                if (ImGui::Button(lang["No"].c_str(), BUTTON_SIZE)) {
+                if (ImGui::Button(lang["no"].c_str(), BUTTON_SIZE)) {
                     user_id.clear();
                     del_menu.clear();
                 }
                 ImGui::SameLine(0, 40.f * SCALE.x);
-                if (ImGui::Button(lang["Yes"].c_str(), BUTTON_SIZE)) {
+                if (ImGui::Button(lang["yes"].c_str(), BUTTON_SIZE)) {
                     fs::remove_all(user_path / user_id);
                     gui.users_avatar.erase(user_id);
                     gui.users.erase(get_users_index(gui, gui.users[user_id].name));
@@ -514,7 +514,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
     }
     if (menu.empty() && !gui.users.empty()) {
         ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize("Automatic User Login").x / 2.f), WINDOW_SIZE.y - 50.f * SCALE.y));
-        if (ImGui::Checkbox(lang["Automatic User Login"].c_str(), &host.cfg.auto_user_login))
+        if (ImGui::Checkbox(lang["automatic_user_login"].c_str(), &host.cfg.auto_user_login))
             config::serialize_config(host.cfg, host.cfg.config_path);
     }
     if (!gui.users.empty() && (gui.users.find(host.cfg.user_id) != gui.users.end())) {

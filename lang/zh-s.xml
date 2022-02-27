@@ -245,11 +245,11 @@ Your Vita3K system is ready!</completed_setup>
 		<edit_user>编辑用户</edit_user>
 		<user_name_used>！用户名已被使用。</user_name_used>
 		<delete_user>删除用户</delete_user>
-		<user_delete>请选择你想要删除的用户。</user_delete>
-		<user_delete_msg>以下用户将会删除。</user_delete_msg>
+		<user_delete>请选择您想要删除的用户。</user_delete>
+		<user_delete_msg>将删除以下用户。</user_delete_msg>
 		<user_delete_msg_1>如果删除此用户，此用户的保存数据、奖杯将会删除。</user_delete_msg_1>
-		<user_delete_warn>此用户将会删除。
-您真的想要继续吗？</user_delete_warn>
+		<user_delete_warn>将删除此用户。</user_delete_warn>
+		<user_delete_warn_1>您真的想要继续吗？</user_delete_warn_1>
 		<user_deleted>用户已删除。</user_deleted>
 		<change_avatar>更换头像</change_avatar>
 		<reset_avatar>重置头像</reset_avatar>
@@ -260,6 +260,6 @@ Your Vita3K system is ready!</completed_setup>
 		<delete>删除</delete>
 		<yes>是</yes>
 		<no>否</no>
-		<automatic_login>自动登录用户</automatic_login>
+		<automatic_user_login>自动登录用户</automatic_user_login>
 	</user_management>
 </lang>

@@ -248,8 +248,8 @@ You can earn trophies by using an application that supports the trophy feature.<
 		<user_delete>Select the user you want to delete.</user_delete>
 		<user_delete_msg>The following user will be deleted.</user_delete_msg>
 		<user_delete_msg_1>If you delete the user, that user's saved data, trophies will be deleted.</user_delete_msg_1>
-		<user_delete_warn>The user will be deleted.
-Are you sure you want to continue?</user_delete_warn>
+		<user_delete_warn>The user will be deleted.</user_delete_warn>
+		<user_delete_warn_1>Are you sure you want to continue?</user_delete_warn_1>
 		<user_deleted>User deleted.</user_deleted>
 		<change_avatar>Change Avatar</change_avatar>
 		<reset_avatar>Reset Avatar</reset_avatar>
@@ -260,6 +260,6 @@ Are you sure you want to continue?</user_delete_warn>
 		<delete>Delete</delete>
 		<yes>Yes</yes>
 		<no>No</no>
-		<automatic_login>Automatic User Login</automatic_login>
+		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 </lang>

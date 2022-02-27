@@ -239,6 +239,7 @@ struct LangState {
         { "user_delete_msg", "The following user will be deleted." },
         { "user_delete_msg_1", "If you delete the user, that user's saved data, trophies will be deleted." },
         { "user_delete_warn", "The user will be deleted.\nAre you sure you want to continue?" },
+        { "user_delete_warn_1", "Are you sure you want to continue?" },
         { "user_deleted", "User deleted." },
         { "change_avatar", "Change Avatar" },
         { "reset_avatar", "Reset Avatar" },
@@ -249,7 +250,7 @@ struct LangState {
         { "delete", "Delete" },
         { "yes", "Yes" },
         { "no", "No" },
-        { "automatic_login", "Automatic User Login" },
+        { "automatic_user_login", "Automatic User Login" },
     };
     struct Common {
         std::vector<std::string> wday = {
