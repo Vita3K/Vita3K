@@ -245,11 +245,11 @@
 		<edit_user>編輯用戶</edit_user>
 		<user_name_used>！用戶名已被使用。</user_name_used>
 		<delete_user>刪除用戶</delete_user>
-		<user_delete>請選擇您想要刪除的用戶。</user_delete>
+		<user_delete>請選擇你想要刪除的用戶。</user_delete>
 		<user_delete_msg>將刪除以下用戶。</user_delete_msg>
 		<user_delete_msg_1>如果刪除該用戶，該用戶的保存資料、獎盃將會刪除。</user_delete_msg_1>
-		<user_delete_warn>將刪除該用戶。</user_delete_warn>
-		<user_delete_warn_1>您真的想要繼續嗎？</user_delete_warn_1>
+		<user_delete_warn>將刪除該用戶。
+您真的想要繼續嗎？</user_delete_warn>
 		<user_deleted>已刪除用戶。</user_deleted>
 		<change_avatar>更換頭像</change_avatar>
 		<reset_avatar>重設頭像</reset_avatar>

@@ -456,8 +456,6 @@ void draw_user_management(GuiState &gui, HostState &host) {
                 const auto calc_text = (SIZE_USER.x / 2.f) - (ImGui::CalcTextSize("Are you sure you want to continue?").x / 2.f);
                 ImGui::SetCursorPos(ImVec2(calc_text, 146.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, lang["user_delete_warn"].c_str());
-                ImGui::SetCursorPosX(calc_text);
-                ImGui::TextColored(GUI_COLOR_TEXT, lang["user_delete_warn_1"].c_str());
                 ImGui::SetCursorPos(BUTTON_POS);
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - BUTTON_SIZE.x - 20.f, BUTTON_POS.y));
