@@ -9,8 +9,8 @@
 			<install_zip>安装zip、vpk</install_zip>
 			<install_license>安装授权</install_license>
 		</file>
-		<emulation name="模拟器">
-			<last_apps_used>最近使用的应用</last_apps_used>
+		<emulation name="模拟">
+			<last_apps_used>最近使用的应用程序</last_apps_used>
 		</emulation>
 		<configuration name="配置">
 			<settings>设置</settings>
@@ -247,7 +247,7 @@ Your Vita3K system is ready!</completed_setup>
 		<delete_user>删除用户</delete_user>
 		<user_delete>请选择您想要删除的用户。</user_delete>
 		<user_delete_msg>将删除以下用户。</user_delete_msg>
-		<user_delete_msg_1>如果删除此用户，此用户的保存数据、奖杯将会删除。</user_delete_msg_1>
+		<user_delete_message>如果删除此用户，此用户的保存数据、奖杯将会删除。</user_delete_message>
 		<user_delete_warn>将删除此用户。
 您真的想要继续吗？</user_delete_warn>
 		<user_deleted>用户已删除。</user_deleted>

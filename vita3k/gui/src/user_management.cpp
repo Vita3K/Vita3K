@@ -447,7 +447,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPos(ImVec2(194.f * SCALE.x, 148.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.users[user_id].name.c_str());
                 ImGui::SetCursorPos(ImVec2(148.f * SCALE.x, 194.f * SCALE.y));
-                ImGui::TextWrapped(lang["user_delete_msg_1"].c_str());
+                ImGui::TextWrapped(lang["user_delete_message"].c_str());
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::SetCursorPos(BUTTON_POS);
                 if (ImGui::Button(lang["delete"].c_str(), BUTTON_SIZE))

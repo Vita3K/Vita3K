@@ -9,8 +9,8 @@
 			<install_zip>安裝zip、vpk</install_zip>
 			<install_license>安裝授權</install_license>
 		</file>
-		<emulation name="模擬器">
-			<last_apps_used>最近使用的應用</last_apps_used>
+		<emulation name="模擬">
+			<last_apps_used>最近使用的應用程序</last_apps_used>
 		</emulation>
 		<configuration name="配置">
 			<settings>設置</settings>
@@ -247,7 +247,7 @@ Your Vita3K system is ready!</completed_setup>
 		<delete_user>刪除用戶</delete_user>
 		<user_delete>請選擇您想要刪除的用戶。</user_delete>
 		<user_delete_msg>將刪除以下用戶。</user_delete_msg>
-		<user_delete_msg_1>如果刪除該用戶，該用戶的保存資料、獎盃將會刪除。</user_delete_msg_1>
+		<user_delete_message>如果刪除該用戶，該用戶的保存資料、獎盃將會刪除。</user_delete_message>
 		<user_delete_warn>將刪除該用戶。
 您真的想要繼續嗎？</user_delete_warn>
 		<user_deleted>已刪除用戶。</user_deleted>
