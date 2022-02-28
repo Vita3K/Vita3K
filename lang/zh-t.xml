@@ -155,9 +155,9 @@
 	</indicator>
 
 	<initial_setup>
-		<back>返回</back>
-		<completed_setup>已完成初期設定。
-請盡情享受Vita3K。</completed_setup>
+		<back>Back</back>
+		<completed_setup>You have now completed initial setup.
+Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
 		<next>Next</next>
 	</initial_setup>
