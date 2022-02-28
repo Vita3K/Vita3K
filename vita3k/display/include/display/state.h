@@ -18,6 +18,7 @@
 #pragma once
 
 #include <atomic>
+#include <kernel/callback.h>
 #include <mem/ptr.h>
 #include <memory>
 #include <mutex>
@@ -36,6 +37,7 @@ typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 struct DisplayStateVBlankWaitInfo {
     ThreadStatePtr target_thread;
     std::int32_t vsync_left;
+    bool is_cb;
 };
 
 struct DisplayState {
@@ -52,4 +54,5 @@ struct DisplayState {
     std::atomic<std::uint64_t> vblank_count{ 0 };
     std::vector<DisplayStateVBlankWaitInfo> vblank_wait_infos;
     std::uint64_t last_setframe_vblank_count = 0;
+    std::map<SceUID, CallbackPtr> vblank_callbacks{};
 };
