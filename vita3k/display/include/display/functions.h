@@ -23,4 +23,4 @@
 struct DisplayState;
 struct KernelState;
 
-void wait_vblank(DisplayState &display, KernelState &kernel, const SceUID thread_id, const int count, const bool since_last_setbuf);
+void wait_vblank(DisplayState &display, KernelState &kernel, const SceUID thread_id, const int count, const bool since_last_setbuf, const bool is_cb);
