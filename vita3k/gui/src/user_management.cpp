@@ -398,7 +398,11 @@ void draw_user_management(GuiState &gui, HostState &host) {
         ImGui::PopStyleVar();
     } else if (menu == "confirm") {
         ImGui::SetWindowFontScale(0.8f);
+<<<<<<< HEAD
         const std::string msg = lang["user_created"];
+=======
+        const std::string msg = lang["user_created"].c_str();
+>>>>>>> f0c5157c3baae86617f1c973db133c880b34877f
         const auto calc_text = (SIZE_USER.x / 2.f) - (ImGui::CalcTextSize(msg.c_str()).x / 2.f);
         ImGui::SetCursorPos(ImVec2(calc_text, (44.f * SCALE.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", msg.c_str());
