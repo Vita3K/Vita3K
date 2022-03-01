@@ -19,6 +19,9 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(sce_paf_aeabi_atexit)
+BRIDGE_DECL(sce_paf_cxa_atexit)
+BRIDGE_DECL(sce_paf_exit)
 BRIDGE_DECL(sce_paf_memalign)
 BRIDGE_DECL(sce_paf_private_abs)
 BRIDGE_DECL(sce_paf_private_atexit)
