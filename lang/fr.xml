@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="Fichier">
+			<open_pref_path>Ouvrir le Dossier Pref</open_pref_path>
+			<install_firmware>Installer le Firmware</install_firmware>
+			<install_pkg>Installer un .pkg</install_pkg>
+			<install_zip>Installer un .zip, .vpk</install_zip>
+			<install_license>Installer une Licence</install_license>
+		</file>
+		<emulation name="Émulation">
+			<last_apps_used>Dernières Apps utilisées</last_apps_used>
+		</emulation>
+		<configuration name="Configuration">
+			<settings>Paramètres</settings>
+			<user_management>Gestion des Utilisateurs</user_management>
+		</configuration>
+		<controls name="Commandes">
+			<keyboard_controls>Commandes du Clavier</keyboard_controls>
+			<controllers>Contrôleurs</controllers>
+		</controls>
+		<help name="Aide">
+			<about>À Propos</about>
+			<welcome>Bienvenue</welcome>
+		</help>
+	</main_menubar>
+
+	<app_context>
+		<update_history>Historique de mise à jour</update_history>
+		<information>Informations</information>
+		<app_delete>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</app_delete>
+		<save_delete>Supprimer ces données sauvegardées ?</save_delete>
+ 		<eligible>Autorisé</eligible>
+		<ineligible>Non autorisé</ineligible>
+		<level>Niveau</level>
+		<name>Nom</name>
+		<trophy_earning>Obtention de trophées</trophy_earning>
+		<parental_Controls>Contrôle parental</parental_Controls>
+		<updated>Mis à jour</updated>
+		<size>Taille</size>
+		<version>Version</version>
+		<last_time_used>Dernière fois utilisé</last_time_used>
+		<never>Jamais</never>
+		<time_used>Temps utilisé</time_used>
+	</app_context>
+
+	<common>
+		<cancel>Annuler</cancel>
+		<delete>Supprimer</delete>
+		<file_corrupted>Le fichier est corrompu.</file_corrupted>
+		<no>Non</no>
+		<select_all>Sélectionner tout</select_all>
+		<select>Sélectionner</select>
+		<please_wait>Merci de patienter...</please_wait>
+		<yes>Oui</yes>
+		<wday>
+			<day>dimanche</day>
+			<day>lundi</day>
+			<day>mardi</day>
+			<day>mercredi</day>
+			<day>jeudi</day>
+			<day>vendredi</day>
+			<day>samedi</day>
+		</wday>
+		<ymonth>
+			<month>Janvier</month>
+			<month>Février</month>
+			<month>Mars</month>
+			<month>Avril</month>
+			<month>Mai</month>
+			<month>Juin</month>
+			<month>Juillet</month>
+			<month>Août</month>
+			<month>Septembre</month>
+			<month>Octobre</month>
+			<month>Novembre</month>
+			<month>Décembre</month>
+		</ymonth>
+		<small_ymonth>
+			<month>janvier</month>
+			<month>février</month>
+			<month>mars</month>
+			<month>avril</month>
+			<month>mai</month>
+			<month>juin</month>
+			<month>juillet</month>
+			<month>août</month>
+			<month>septembre</month>
+			<month>octobre</month>
+			<month>novembre</month>
+			<month>décembre</month>
+		</small_ymonth>
+		<hidden_trophy>Trophée masqué</hidden_trophy>
+		<one_hour_ago>Il y a 1 heure</one_hour_ago>
+		<one_minute_ago>Il y a 1 minute</one_minute_ago>
+		<bronze>Bronze</bronze>
+		<gold>Or</gold>
+		<platinum>Platine</platinum>
+		<silver>Argent</silver>
+		<hours_ago>Il y a {} heures</hours_ago>
+		<minutes_ago>Il y a {} minutes</minutes_ago>
+	</common>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Préparation au lancement de l'application...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Annuler la suppression ?</cancel_deleting>
+				<deletion_complete>Suppression terminée.</deletion_complete>
+				<delete_saved_data>Supprimer ces données sauvegardées ?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Détails</details>
+				<updated>Mis à jour</updated>
+			</info>
+			<load name="Charger">
+				<cancel_loading>Annuler le chargement ?</cancel_loading>
+				<no_saved_data>Aucune donnée sauvegardée.</no_saved_data>
+				<load_complete>Chargement terminé.</load_complete>
+				<loading>Chargement en cours...</loading>
+				<load_saved_data>Charger ces données sauvegardées ?</load_saved_data>
+			</load>
+			<save name="Sauvegarder">
+				<cancel_saving>Annuler la sauvegarde ?</cancel_saving>
+				<could_not_save>La sauvegarde du fichier a échoué.
+Espace libre insuffisant sur la carte mémoire.</could_not_save>
+				<not_free_space>Espace libre insuffisant sur la carte mémoire.</not_free_space>
+				<new_saved_data>Nouvelles données sauvegardées</new_saved_data>
+				<saving_complete>Sauvegarde terminée.</saving_complete>
+				<save_the_data>Sauvegarder les données ?</save_the_data>
+				<saving>Sauvegarde en cours...</saving>
+				<warning_saving>Sauvegarde en cours...
+Ne pas éteindre le système, ni fermer l'application.</warning_saving>
+				<overwrite_saved_data>Écraser ces données sauvegardées ?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>L'application suivante va être fermée.</app_close>
+	</game_data>
+
+	<indicator>
+		<app_added_home>L'application a été ajoutée à l'écran d'accueil.</app_added_home>
+		<delete_all>Supprimer tout</delete_all>
+		<notif_deleted>Les notifications vont être supprimées.</notif_deleted>
+		<install_failed>L'installation a échoué.</install_failed>
+		<install_complete>Installation terminée.</install_complete>
+		<installing>Installation en cours...</installing>
+		<no_notif>Aucune notification.</no_notif>
+		<trophy_earned>Vous avez obtenu un trophée !</trophy_earned>
+	</indicator>
+
+    <initial_setup>
+		<back>Précédent</back>
+		<completed_setup>Vous avez terminé l'installation initiale.
+Votre système Vita3K est prêt !</completed_setup>
+		<select_language>Sélectionner une langue.</select_language>
+		<next>Suivant</next>
+	</initial_setup>
+
+	<live_area>
+		<start>Démarrer</start>
+		<continue>Continuer</continue>
+	</live_area>
+
+	<settings name="Paramètres">
+		<theme_background name="Thème et Arrière-plan">
+			<default>Par défaut</default>
+			<theme name="Thème">
+				<information name="Informations">
+					<name>Nom</name>
+					<provider>Prestataire</provider>
+					<updated>Mis à jour</updated>
+					<size>Taille</size>
+					<version>Version</version>
+				</information>
+				<delete>Ce thème va être supprimé.</delete>
+			</theme>
+			<start_screen name="Écran de démarrage">
+				<image>Image</image>
+			</start_screen>
+			<home_screen_backgrounds>Arrière-plans d'écran d'accueil</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Date et heure">
+			<date_format name ="Affichage de la date">
+				<yyyy_mm_dd>AAAA/MM/JJ</yyyy_mm_dd>
+				<dd_mm_yyyy>JJ/MM/AAAA</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/JJ/AAAA</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Affichage de l'heure">
+				<clock_12_hour>Affichage 12h</clock_12_hour>
+				<clock_24_hour>Affichage 24h</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Langue">
+			<system_language>Langue système</system_language>
+			<input_language name="Langue de saisie">
+				<keyboards name="Claviers">
+					<ime_langagues>
+						<lang id="1">Danois</lang>
+						<lang id="2">Allemand</lang>
+						<lang id="262144">Anglais (Royaume-Uni)</lang>
+						<lang id="4">Anglais (États-Unis)</lang>
+						<lang id="8">Espagnol</lang>
+						<lang id="16">Français</lang>
+						<lang id="32">Italien</lang>
+						<lang id="64">Néerlandais</lang>
+						<lang id="128">Norvégien</lang>
+						<lang id="256">Polonais</lang>
+						<lang id="131072">Portugais (Brésil)</lang>
+						<lang id="512">Portugais (Portugal)</lang>
+						<lang id="1024">Russe</lang>
+						<lang id="2048">Finnois</lang>
+						<lang id="4096">Suédois</lang>
+						<lang id="524288">Turc</lang>
+					</ime_langagues>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>Détails</details>
+		<earned>Obtenu</earned>
+		<name>Nom</name>
+		<no_trophies>Aucun trophée.
+Pour obtenir des trophées, utilisez une application compatible avec cette fonctionnalité.</no_trophies>
+		<not_earned>Pas obtenu</not_earned>
+		<original>Original</original>
+		<sort>Trier</sort>
+		<trophies>Trophées</trophies>
+		<grade>Rang</grade>
+		<progress>Progression</progress>
+		<updated>Mis à jour</updated>
+	</trophy_collection>
+
+	<user_management>
+		<create_user>Créer un utilisateur</create_user>
+		<edit_user>Modifier un utilisateur</edit_user>
+		<delete_user>Supprimer un utilisateur</delete_user>
+		<change_avatar>Changer d'avatar</change_avatar>
+		<name>Nom</name>
+		<user>Utilisateur</user>
+		<confirm>Confirmer</confirm>
+	</user_management>
+</lang>

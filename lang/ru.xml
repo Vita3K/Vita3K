@@ -1,0 +1,239 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="Файл">
+			<open_pref_path>Открыть предпочтенный путь файлов</open_pref_path>
+			<install_firmware>Установить прошивку</install_firmware>
+			<install_pkg>Установить файл .pkg</install_pkg>
+			<install_zip>Установить файл .zip или .vpk</install_zip>
+			<install_license>Установить лицензию</install_license>
+		</file>
+		<emulation name="Эмуляция">
+			<last_apps_used>Последние использованные приложения</last_apps_used>
+		</emulation>
+		<configuration name="Конфигурация">
+			<settings>Настройки</settings>
+			<user_management>Управление пользователями</user_management>
+		</configuration>
+		<controls name="Управление">
+			<keyboard_controls>Элементы управления клавиатурой</keyboard_controls>
+		</controls>
+		<help name="Справка">
+			<about>О программе</about>
+			<welcome>Добро пожаловать</welcome>
+		</help>
+	</main_menubar>
+
+	<app_context>
+		<update_history>Хронология обновлений</update_history>
+		<information>Информация</information>
+		<app_delete>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</app_delete>
+		<save_delete>Удалить эти сохраненные данные?</save_delete>
+		<eligible>Допущен</eligible>
+		<ineligible>Не допущен</ineligible>
+		<level>Уровень</level>
+		<name>Название</name>
+		<trophy_earning>Полученные призы</trophy_earning>
+		<parental_Controls>Родительский контроль</parental_Controls>
+		<updated>Обновлен</updated>
+		<size>Размер</size>
+		<version>Версия</version>
+		<last_time_used>Время последнего использования</last_time_used>
+		<never>Никогда</never>
+		<time_used>Время использования</time_used>
+	</app_context>
+
+	<common>
+		<cancel>Отмена</cancel>
+		<delete>Удалить</delete>
+		<file_corrupted>Файл поврежден.</file_corrupted>
+		<no>Нет</no>
+		<select_all>Выбрать все</select_all>
+		<select>Выбрать</select>
+		<please_wait>Подождите...</please_wait>
+		<yes>Да</yes>
+		<wday>
+			<day>воскресенье</day>
+			<day>понедельник</day>
+			<day>вторник</day>
+			<day>среда</day>
+			<day>четверг</day>
+			<day>пятница</day>
+			<day>суббота</day>
+		</wday>
+		<ymonth>
+			<month>Январь</month>
+			<month>Февраль</month>
+			<month>Март</month>
+			<month>Апрель</month>
+			<month>Май</month>
+			<month>Июнь</month>
+			<month>Июль</month>
+			<month>Август</month>
+			<month>Сентябрь</month>
+			<month>Октябрь</month>
+			<month>Ноябрь</month>
+			<month>Декабрь</month>
+		</ymonth>
+		<small_ymonth>
+			<month>января</month>
+			<month>февраля</month>
+			<month>марта</month>
+			<month>апреля</month>
+			<month>мая</month>
+			<month>июня</month>
+			<month>июля</month>
+			<month>августа</month>
+			<month>сентября</month>
+			<month>октября</month>
+			<month>ноября</month>
+			<month>декабря</month>
+		</small_ymonth>
+		<hidden_trophy>Скрытый приз</hidden_trophy>
+		<one_hour_ago>1 час назад</one_hour_ago>
+		<one_minute_ago>1 мин. назад</one_minute_ago>
+		<bronze>Бронзаs</bronze>
+		<gold>Золото</gold>
+		<platinum>Платина</platinum>
+		<silver>Серебро</silver>
+		<hours_ago>{} час. назад</hours_ago>
+		<minutes_ago>{} мин. назад</minutes_ago>
+	</common>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Подготовка к запуску приложения...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Отменить удаление?</cancel_deleting>
+				<deletion_complete>Удаление завершено.</deletion_complete>
+				<delete_saved_data>Удалить эти сохраненные данные?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Подробности</details>
+				<updated>Обновлен</updated>
+			</info>
+			<load name="Загрузить">
+				<cancel_loading>Отменить загрузку?</cancel_loading>
+				<no_saved_data>Отсутствуют сохраненные данные.</no_saved_data>
+				<load_complete>Загрузка завершена.</load_complete>
+				<loading>Идет загрузка...</loading>
+				<load_saved_data>Загрузить эти сохраненные данные?</load_saved_data>
+			</load>
+			<save name="Сохранить">
+				<cancel_saving>Отменить сохранение?</cancel_saving>
+				<could_not_save>Не удалось сохранить файл.
+На карте памяти недостаточно свободного места.</could_not_save>
+				<not_free_space>На карте памяти недостаточно свободного места.</not_free_space>
+				<new_saved_data>Новые сохраненные данные</new_saved_data>
+				<saving_complete>Сохранение завершено.</saving_complete>
+				<save_the_data>Сохранить данные?</save_the_data>
+				<saving>Идет сохранение...</saving>
+				<warning_saving>Идет сохранение...
+Не выключайте систему и не закрывайте приложение.</warning_saving>
+				<overwrite_saved_data>Перезаписать сохраненные данные?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>Следующее приложение будет закрыто.</app_close>
+	</game_data>
+
+	<indicator>
+		<app_added_home>Приложение добавлено на начальный экран.</app_added_home>
+		<delete_all>Удалить все</delete_all>
+		<notif_deleted>Уведомления будут удалены.</notif_deleted>
+		<install_failed>Не удалось выполнить установку.</install_failed>
+		<install_complete>Установка завершена.</install_complete>
+		<installing>Идет установка...</installing>
+		<no_notif>Уведомления отсутствуют.</no_notif>
+		<trophy_earned>Вы получили приз!</trophy_earned>
+	</indicator>
+
+	<initial_setup>
+		<back>Назад</back>
+		<completed_setup>Теперь начальная установка завершена.
+Ваша система Vita3K готова!</completed_setup>
+		<select_language>Выбрать язык.</select_language>
+		<next>Далее</next>
+	</initial_setup>
+
+	<live_area>
+		<start>Запуск</start>
+		<continue>Продолжить</continue>
+	</live_area>
+
+	<settings name="Настройки">
+		<theme_background name="Тема и Фон">
+			<default>По умолчанию</default>
+			<theme name="Тема">
+				<information name="Информация">
+					<name>Название</name>
+					<provider>Поставщик</provider>
+					<updated>Обновлен</updated>
+					<size>Размер</size>
+					<version>Версия</version>
+				</information>
+				<delete>Эта тема будет удалена.</delete>
+			</theme>
+			<start_screen name="Экран запуска">
+				<image>Изображение</image>
+			</start_screen>
+			<home_screen_backgrounds>Фон начального экрана</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Дата и время">
+			<date_format name ="Формат даты">
+				<yyyy_mm_dd>ГГГГ/ММ/ДД</yyyy_mm_dd>
+				<dd_mm_yyyy>ДД/ММ/ГГГГ</dd_mm_yyyy>
+				<mm_dd_yyyy>ММ/ДД/ГГГГ</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Формат времени">
+				<clock_12_hour>12-часовой формат</clock_12_hour>
+				<clock_24_hour>24-часовой формат</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Язык">
+			<system_language>Язык системы</system_language>
+			<input_language name="Языки ввода">
+				<keyboards name="Клавиатуры">
+					<ime_langagues>
+						<lang id="1">Датский</lang>
+						<lang id="2">Немецкий</lang>
+						<lang id="262144">Английский (Великобритания)</lang>
+						<lang id="4">Английский (США)</lang>
+						<lang id="8">Испанский</lang>
+						<lang id="16">Французский</lang>
+						<lang id="32">Итальянский</lang>
+						<lang id="64">Голландский</lang>
+						<lang id="128">Норвежский</lang>
+						<lang id="256">Польский</lang>
+						<lang id="131072">Португальский (Бразилия)</lang>
+						<lang id="512">Португальский (Португалия)</lang>
+						<lang id="1024">Русский</lang>
+						<lang id="2048">Финский</lang>
+						<lang id="4096">Шведский</lang>
+						<lang id="524288">турецкий</lang>
+					</ime_langagues>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>Подробности</details>
+		<earned>Получены</earned>
+		<name>Название</name>
+		<no_trophies>Призы отсутствуют.
+Можно получать призы, используя приложение, поддерживающее функцию призов.</no_trophies>
+		<not_earned>Не получен</not_earned>
+		<original>Исходный</original>
+		<sort>Сортировка</sort>
+		<trophies>Призы</trophies>
+		<grade>Категория</grade>
+		<progress>Выполнено</progress>
+		<updated>Обновлен</updated>
+	</trophy_collection>
+</lang>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<game_data>
+		<app_close>Folgende Anwendung wird geschlossen.</app_close>
+	</game_data>
+
+	<initial_setup>
+		<back>Zurück</back>
+		<completed_setup>Die Erstinstallation ist jetzt abgeschlossen.
+Dein Vita3K-System ist bereit!</completed_setup>
+		<select_language>Wählen eine Sprache.</select_language>
+		<next>Weiter</next>
+	</initial_setup>
+
+	<live_area>
+		<start>Starten</start>
+		<continue>Fortfahren</continue>
+	</live_area>
+</lang>

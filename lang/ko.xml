@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<app_context>
+		<update_history>업데이트 이력</update_history>
+		<information>정보</information>
+		<app_delete>이 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</app_delete>
+		<save_delete>이 저장 데이터를 삭제하시겠습니까?</save_delete>
+		<eligible>권리 있음</eligible>
+		<ineligible>권리 없음</ineligible>
+		<level>레벨</level>		
+		<name>이름</name>
+		<trophy_earning>트로피 획득</trophy_earning>
+		<parental_Controls>자녀보호 기능</parental_Controls>
+		<updated>갱신일</updated>
+		<size>크기</size>
+		<version>버전</version>
+	</app_context>
+
+	<common>
+		<cancel>취소</cancel>
+		<delete>삭제</delete>
+		<file_corrupted>파일이 손상되어 있습니다.</file_corrupted>
+		<no>아니요</no>
+		<select_all>모두 선택</select_all>
+		<select>선택</select>
+		<please_wait>잠시 기다려 주십시오...</please_wait>
+		<yes>예</yes>
+		<wday>
+			<day>일요일</day>
+			<day>월요일</day>
+			<day>화요일</day>
+			<day>수요일</day>
+			<day>목요일</day>
+			<day>금요일</day>
+			<day>토요일</day>
+		</wday>
+		<ymonth>
+			<month>1월</month>
+			<month>2월</month>
+			<month>3월</month>
+			<month>4월</month>
+			<month>5월</month>
+			<month>6월</month>
+			<month>7월</month>
+			<month>8월</month>
+			<month>9월</month>
+			<month>10월</month>
+			<month>11월</month>
+			<month>12월</month>
+		</ymonth>
+		<small_ymonth>
+			<month>1월</month>
+			<month>2월</month>
+			<month>3월</month>
+			<month>4월</month>
+			<month>5월</month>
+			<month>6월</month>
+			<month>7월</month>
+			<month>8월</month>
+			<month>9월</month>
+			<month>10월</month>
+			<month>11월</month>
+			<month>12월</month>
+		</small_ymonth>
+		<hidden_trophy>숨겨진 트로피</hidden_trophy>
+		<one_hour_ago>1 시간 전</one_hour_ago>
+		<one_minute_ago>1 분 전</one_minute_ago>
+		<bronze>브론즈</bronze>
+		<gold>골드</gold>
+		<platinum>플래티넘</platinum>
+		<silver>실버</silver>
+		<hours_ago>{} 시간 전</hours_ago>
+		<minutes_ago>{} 분 전</minutes_ago>
+	</common>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>애플리케이션을 시작하기 위한 준비중입니다...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>삭제를 취소하시겠습니까?</cancel_deleting>
+				<deletion_complete>삭제했습니다.</deletion_complete>
+				<delete_saved_data>이 저장 데이터를 삭제하시겠습니까?</delete_saved_data>
+			</delete>
+			<info>
+				<details>상세</details>
+				<updated>갱신일</updated>
+			</info>
+			<load name="불러오기">
+				<cancel_loading>불러오기를 취소하시겠습니까?</cancel_loading>
+				<no_saved_data>저장 데이터가 없습니다.</no_saved_data>
+				<load_complete>불러오기를 완료했습니다.</load_complete>
+				<loading>불러오기 중입니다...</loading>
+				<load_saved_data>이 저장 데이터를 불러오시겠습니까?</load_saved_data>
+			</load>
+			<save name="저장">
+				<cancel_saving>저장을 취소하시겠습니까?</cancel_saving>
+				<could_not_save>저장하지 못했습니다.
+메모리 카드의 빈 용량이 부족합니다.</could_not_save>
+				<not_free_space>메모리 카드의 빈 용량이 부족합니다.</not_free_space>
+				<new_saved_data>새 저장 데이터</new_saved_data>
+				<saving_complete>저장했습니다.</saving_complete>
+				<save_the_data>데이터를 저장하시겠습니까?</save_the_data>
+				<saving>저장중입니다...</saving>
+				<warning_saving>저장중입니다…
+전원을 끄거나 애플리케이션을 종료하지 마십시오.</warning_saving>
+				<overwrite_saved_data>이 저장 데이터를 덮어쓰시겠습니까?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>아래의 애플리케이션을 종료합니다.</app_close>
+	</game_data>
+
+	<indicator>
+		<app_added_home>홈 화면에 애플리케이션이 추가되었습니다.</app_added_home>
+		<delete_all>모두 삭제</delete_all>
+		<notif_deleted>알림을 삭제합니다.</notif_deleted>
+		<install_failed>설치하지 못했습니다.</install_failed>
+		<install_complete>설치했습니다.</install_complete>
+		<installing>설치중입니다...</installing>
+		<no_notif>알림이 없습니다.</no_notif>
+		<trophy_earned>홈 화면에 애플리케이션이 추가되었습니다.</trophy_earned>
+	</indicator>
+
+	<initial_setup>
+		<back>Back</back>
+		<completed_setup>You have now completed initial setup.
+Your Vita3K system is ready!</completed_setup>
+		<select_language>Select a language.</select_language>
+		<next>Next</next>
+	</initial_setup>
+
+	<live_area>
+		<start>시작</start>
+		<continue>계속</continue>
+	</live_area>
+
+	<settings name="설정">
+		<theme_background name="테마 & 배경">
+			<default>오리지널</default>
+			<theme name="테마">
+				<information name="정보">
+					<name>이름</name>
+					<provider>제공자</provider>
+					<updated>갱신일</updated>
+					<size>크기</size>
+					<version>버전</version>
+				</information>
+				<delete>이 테마를 삭제합니다.</delete>
+			</theme>
+			<start_screen name="시작 화면">
+				<image>이미지</image>
+			</start_screen>
+			<home_screen_backgrounds>홈 화면의 배경</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="날짜 & 시각">
+			<date_format name ="날짜 표시 형식">
+				<yyyy_mm_dd>년/월/일</yyyy_mm_dd>
+				<dd_mm_yyyy>일/월/년</dd_mm_yyyy>
+				<mm_dd_yyyy>월/일/년</mm_dd_yyyy>
+			</date_format>
+			<time_format name="시간 표시 형식">
+				<clock_12_hour>12 시간</clock_12_hour>
+				<clock_24_hour>24 시간</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="언어">
+			<system_language>시스템 언어</system_language>
+			<input_language name="입력 언어">
+				<keyboards name="키보드">
+					<ime_langagues>
+						<lang id="1">덴마크어</lang>
+						<lang id="2">독일어</lang>
+						<lang id="262144">영어 (영국)</lang>
+						<lang id="4">영어 (미국)</lang>
+						<lang id="8">스페인어</lang>
+						<lang id="16">프랑스어</lang>
+						<lang id="32">이탈리아어</lang>
+						<lang id="64">네덜란드어</lang>
+						<lang id="128">노르웨이어</lang>
+						<lang id="256">폴란드어</lang>
+						<lang id="131072">포르투갈어 (브라질)</lang>
+						<lang id="512">포르투갈어 (포르투갈)</lang>
+						<lang id="1024">러시아어</lang>
+						<lang id="2048">핀란드어</lang>
+						<lang id="4096">스웨덴어</lang>
+						<lang id="524288">터키어</lang>
+					</ime_langagues>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>상세</details>
+		<earned>획득일</earned>
+		<name>이름</name>
+		<no_trophies>트로피가 없습니다.
+트로피에 대응하는 애플리케이션으로 즐기시면 트로피를 획득할 수 있습니다.</no_trophies>
+		<not_earned>미획득</not_earned>
+		<original>오리지널</original>
+		<sort>정렬</sort>
+		<trophies>트로피 수</trophies>
+		<grade>그레이드</grade>
+		<progress>달성률</progress>
+		<updated>갱신일</updated>
+	</trophy_collection>
+</lang>

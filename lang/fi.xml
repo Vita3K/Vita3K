@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<game_data>
+		<app_close>Seuraava sovellus suljetaan.</app_close>
+	</game_data>
+
+	<initial_setup>
+		<back>Takaisin</back>
+		<completed_setup>Olet nyt saanut valmiiksi alkumäärityksen.
+Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
+		<select_language>Valitse kieli.</select_language>
+		<next>Seuraava</next>
+	</initial_setup>
+
+	<live_area>
+		<start>Rozpocznij</start>
+		<continue>Jatka</continue>
+	</live_area>
+</lang>

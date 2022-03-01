@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="File">
+			<open_pref_path>Open Pref Path</open_pref_path>
+			<install_firmware>Install Firmware</install_firmware>
+			<install_pkg>Install .pkg</install_pkg>
+			<install_zip>Install .zip, .vpk</install_zip>
+			<install_license>Install License</install_license>
+		</file>
+		<emulation name="Emulation">
+			<last_apps_used>Last Apps used</last_apps_used>
+		</emulation>
+		<configuration name="Configuration">
+			<settings>Settings</settings>
+			<user_management>User Management</user_management>
+		</configuration>
+		<controls name="Controls">
+			<keyboard_controls>Keyboard Controls</keyboard_controls>
+			<controllers>Controllers</controllers>
+		</controls>
+		<help name="Help">
+			<about>About</about>
+			<welcome>Welcome</welcome>
+		</help>
+	</main_menubar>
+	
+	<app_context>
+		<update_history>Update History</update_history>
+		<information>Information</information>
+		<app_delete>This application and all related data, including saved data, will be deleted.</app_delete>
+		<save_delete>Do you want to delete this saved data?</save_delete>
+		<eligible>Eligible</eligible>
+		<ineligible>Ineligible</ineligible>
+		<level>Level</level>
+		<name>Name</name>
+		<trophy_earning>Trophy Earning</trophy_earning>
+		<parental_Controls>Parental Controls</parental_Controls>
+		<updated>Updated</updated>
+		<size>Size</size>
+		<version>Version</version>
+		<last_time_used>Last time used</last_time_used>
+		<never>Never</never>
+		<time_used>Time used</time_used>
+	</app_context>
+
+	<common>
+		<cancel>Cancel</cancel>
+		<delete>Delete</delete>
+		<file_corrupted>The file is corrupt.</file_corrupted>
+		<no>No</no>
+		<select_all>Select All</select_all>
+		<select>Select</select>
+		<please_wait>Please wait...</please_wait>
+		<yes>Yes</yes>
+		<wday>
+			<day>Sunday</day>
+			<day>Monday</day>
+			<day>Tuesday</day>
+			<day>Wednesday</day>
+			<day>Thursday</day>
+			<day>Friday</day>
+			<day>Saturday</day>
+		</wday>
+		<ymonth>
+			<month>January</month>
+			<month>February</month>
+			<month>March</month>
+			<month>April</month>
+			<month>May</month>
+			<month>June</month>
+			<month>July</month>
+			<month>August</month>
+			<month>September</month>
+			<month>October</month>
+			<month>November</month>
+			<month>December</month>
+		</ymonth>
+		<small_ymonth>
+			<month>january</month>
+			<month>february</month>
+			<month>march</month>
+			<month>april</month>
+			<month>may</month>
+			<month>june</month>
+			<month>july</month>
+			<month>august</month>
+			<month>september</month>
+			<month>october</month>
+			<month>november</month>
+			<month>december</month>
+		</small_ymonth>
+		<hidden_trophy>Hidden Trophy</hidden_trophy>
+		<one_hour_ago>1 Hour Ago</one_hour_ago>
+		<one_minute_ago>1 Minute Ago</one_minute_ago>
+		<bronze>Bronze</bronze>
+		<gold>Gold</gold>
+		<platinum>Platinum</platinum>
+		<silver>Silver</silver>
+		<hours_ago>{} Hours Ago</hours_ago>
+		<minutes_ago>{} Minutes Ago</minutes_ago>
+	</common>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Preparing to start the application...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Do you want to cancel deleting?</cancel_deleting>
+				<deletion_complete>Deletion complete.</deletion_complete>
+				<delete_saved_data>Do you want to delete this saved data?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Details</details>
+				<updated>Updated</updated>
+			</info>
+			<load name="Load">
+				<cancel_loading>Do you want to cancel loading?</cancel_loading>
+				<no_saved_data>There is no saved data.</no_saved_data>
+				<load_complete>Loading complete.</load_complete>
+				<loading>Loading...</loading>
+				<load_saved_data>Do you want to load this saved data?</load_saved_data>
+			</load>
+			<save name="Save">
+				<cancel_saving>Do you want to cancel saving?</cancel_saving>
+				<could_not_save>Could not save the file.
+There is not enough free space on the memory card.</could_not_save>
+				<not_free_space>There is not enough free space on the memory card.</not_free_space>
+				<new_saved_data>New Saved Data</new_saved_data>
+				<saving_complete>Saving complete.</saving_complete>
+				<save_the_data>Do you want to save the data?</save_the_data>
+				<saving>Saving...</saving>
+				<warning_saving>Saving...
+Do not power off the system or close the application.</warning_saving>
+				<overwrite_saved_data>Do you want to overwrite this saved data?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>The following application will close.</app_close>
+	</game_data>
+
+	<indicator>
+		<app_added_home>The application has been added to the home screen.</app_added_home>
+		<delete_all>Delete All</delete_all>
+		<notif_deleted>The notifications will be deleted.</notif_deleted>
+		<install_failed>Could not install.</install_failed>
+		<install_complete>Installation complete.</install_complete>
+		<installing>Installing...</installing>
+		<no_notif>There are no notifications.</no_notif>
+		<trophy_earned>You have earned a trophy!</trophy_earned>
+	</indicator>
+
+	<initial_setup>
+		<back>Back</back>
+		<completed_setup>You have now completed initial setup.
+Your Vita3K system is ready!</completed_setup>
+		<select_language>Select a language.</select_language>
+		<next>Next</next>
+	</initial_setup>
+
+	<live_area>
+		<start>Start</start>
+		<continue>Continue</continue>
+	</live_area>
+
+	<settings name="Settings">
+		<theme_background name="Theme & Background">
+			<default>Default</default>
+			<theme name="Theme">
+				<information name="Information">
+					<name>Name</name>
+					<provider>Provider</provider>
+					<updated>Updated</updated>
+					<size>Size</size>
+					<version>Version</version>
+				</information>
+				<delete>This theme will be deleted.</delete>
+			</theme>
+			<start_screen name="Start Screen">
+				<image>Image</image>
+			</start_screen>
+			<home_screen_backgrounds>Home Screen Backgrounds</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Date & Time">
+			<date_format name ="Date Format">
+				<yyyy_mm_dd>YYYY/MM/DD</yyyy_mm_dd>
+				<dd_mm_yyyy>DD/MM/YYYY</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/DD/YYYY</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Time Format">
+				<clock_12_hour>12-Hour Clock</clock_12_hour>
+				<clock_24_hour>24-Hour Clock</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Language">
+			<system_language>System Language</system_language>
+			<input_language name="Input Languages">
+				<keyboards name="Keyboards">
+					<ime_langagues>
+						<lang id="1">Danish</lang>
+						<lang id="2">German</lang>
+						<lang id="262144">English (United Kingdom)</lang>
+						<lang id="4">English (United States)</lang>
+						<lang id="8">Spanish</lang>
+						<lang id="16">French</lang>
+						<lang id="32">Italian</lang>
+						<lang id="64">Dutch</lang>
+						<lang id="128">Norwegian</lang>
+						<lang id="256">Polish</lang>
+						<lang id="131072">Portuguese (Brazil)</lang>
+						<lang id="512">Portuguese (Portugal)</lang>
+						<lang id="1024">Russian</lang>
+						<lang id="2048">Finnish</lang>
+						<lang id="4096">Swedish</lang>
+						<lang id="524288">Turkish</lang>
+					</ime_langagues>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>Details</details>
+		<earned>Earned</earned>
+		<name>Name</name>
+		<no_trophies>There are no trophies.
+You can earn trophies by using an application that supports the trophy feature.</no_trophies>
+		<not_earned>Not Earned</not_earned>
+		<original>Original</original>
+		<sort>Sort</sort>
+		<trophies>Trophies</trophies>
+		<grade>Grade</grade>
+		<progress>Progress</progress>
+		<updated>Updated</updated>
+	</trophy_collection>
+
+	<user_management>
+		<select_user>Select your user</select_user>
+		<create_user>Create User</create_user>
+		<user_created>The following user has been created</user_created>
+		<edit_user>Edit User</edit_user>
+		<user_name_used>! This name is already in use.</user_name_used>
+		<delete_user>Delete User</delete_user>
+		<user_delete>Select the user you want to delete.</user_delete>
+		<user_delete_msg>The following user will be deleted.</user_delete_msg>
+		<user_delete_message>If you delete the user, that user's saved data, trophies will be deleted.</user_delete__message>
+		<user_delete_warn>The user will be deleted.
+Are you sure you want to continue?</user_delete_warn>
+		<user_deleted>User deleted.</user_deleted>
+		<change_avatar>Change Avatar</change_avatar>
+		<reset_avatar>Reset Avatar</reset_avatar>
+		<name>Name</name>
+		<user>User</user>
+		<confirm>Confirm</confirm>
+		<cancel>Cancel</cancel>
+		<delete>Delete</delete>
+		<yes>Yes</yes>
+		<no>No</no>
+		<automatic_user_login>Automatic User Login</automatic_user_login>
+	</user_management>
+</lang>

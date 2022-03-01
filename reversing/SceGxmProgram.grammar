@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ufwb version="1.14">
+    <grammar name="SceGxmProgram" start="id:1">
+        <description>Grammar for my file format</description>
+        <structure name="SceGxmProgram" id="1" encoding="ISO_8859-1:1987" endian="little" signed="no">
+            <string name="magic" mustmatch="yes" id="2" fillcolor="00F900" type="fixed-length" length="4">
+                <fixedvalues>
+                    <fixedvalue name="GXP" value="GXP"/>
+                </fixedvalues>
+            </string>
+            <number name="maybe_version" id="3" fillcolor="FEFB00" type="integer" length="4"/>
+            <number name="size" id="4" fillcolor="00F900" type="integer" length="4"/>
+            <binary name="maybe_hash_or_garbage" id="5" fillcolor="FF7D78" length="8"/>
+            <number name="maybe_type" id="6" type="integer" length="2"/>
+            <number name="shorts" id="7" repeatmin="7" repeatmax="7" type="integer" length="2"/>
+            <number name="maybe_parameter_count" id="8" fillcolor="FEFB00" type="integer" length="4"/>
+            <number name="maybe_offset" id="9" type="integer" length="4"/>
+            <binary name="unknown-1" id="11" length="maybe_offset-4"/>
+            <structure name="SceGxmProgramParameter" id="12" length="16" repeat="id:8" repeatmin="0" repeatmax="-1" fillcolor="FF7D78">
+                <number name="name_offset" id="17" fillcolor="00F900" type="integer" length="4"/>
+                <number name="category" id="19" fillcolor="FF9200" type="integer" length="1"/>
+                <number name="container_index" id="21" fillcolor="FEFB00" type="integer" length="4" lengthunit="bit"/>
+                <number name="component_count" id="20" fillcolor="FEFB00" type="integer" length="4" lengthunit="bit"/>
+                <binary name="unknown" id="22" length="2"/>
+                <number name="array_size" id="23" fillcolor="FF9200" type="integer" length="1"/>
+                <binary name="unknown-1" id="24" fillcolor="FF2600" length="3"/>
+                <number name="resource_index" id="25" fillcolor="FF9200" type="integer" length="1"/>
+                <binary name="remaining" id="18" fillcolor="FF2600" length="remaining"/>
+            </structure>
+        </structure>
+    </grammar>
+</ufwb>

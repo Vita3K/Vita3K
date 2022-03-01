@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<game_data>
+		<app_close>Følgende program bliver lukket.</app_close>
+	</game_data>
+
+	<initial_setup>
+		<back>Tilbage</back>
+		<completed_setup>Nu har du udført opstartsopsætningen.
+Dit Vita3K-system er klart!</completed_setup>
+		<select_language>Vælg et sprog.</select_language>
+		<next>Næste</next>
+	</initial_setup>
+
+	<live_area>
+		<start>Start</start>
+		<continue>Fortsæt</continue>
+	</live_area>
+</lang>

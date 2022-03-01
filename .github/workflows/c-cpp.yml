@@ -1,0 +1,153 @@
+name: C/C++ CI
+
+on: [push, pull_request]
+
+jobs:
+  format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Format check
+        run: .github/format-check.sh
+
+  move-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Move ci tag
+        uses: s3krit/walking-tag-action@master
+        with:
+          TAG_NAME: continuous
+          TAG_MESSAGE: Last commit build by the CI
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        if: github.ref == 'refs/heads/master'
+
+  build:
+    needs: [move-tag, format-check]
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        config: [Release]
+        include:
+          - os: macos-latest
+            cache_path: ~/Library/Caches/ccache
+            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain/macos-x64.cmake
+          - os: ubuntu-latest
+            cache_path: ~/.ccache
+            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain/linux-x64.cmake -DUSE_DISCORD_RICH_PRESENCE=OFF
+          - os: windows-latest
+            cache_path: ~\AppData\Local\Mozilla\sccache
+            extra_cmake_args: -DBOOST_ROOT=C:\hostedtoolcache\windows\Boost\1.78.0\x86_64 -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain/windows-x64.cmake -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+    steps:
+      - name: Set up build environment (macos-latest)
+        run: |
+          brew install boost ccache ninja
+          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
+        if: matrix.os == 'macos-latest'
+
+      - name: Set up build environment (ubuntu-latest)
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev ninja-build
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Set up build environment (windows-latest)
+        run: |
+          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/1.78.0/boost_1_78_0-msvc-14.3-64.exe"
+          (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
+          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=C:\hostedtoolcache\windows\Boost\1.78.0\x86_64"
+          Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+          scoop install ninja sccache --global
+          echo "${env:PATH}" >> ${env:GITHUB_PATH}
+        if: matrix.os == 'windows-latest'
+
+      - uses: actions/cache@v2
+        with:
+          path: ${{ matrix.cache_path }}
+          key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
+          restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
+
+      - name: Set up SDL 2.0.18 (ubuntu-latest)
+        run: |
+          SDL2VER=2.0.18
+          if [[ ! -e ~/.ccache ]]; then
+            mkdir ~/.ccache
+          fi  
+          cd ~/.ccache
+          if [[ ! -e SDL2-${SDL2VER} ]]; then
+            curl -sLO https://libsdl.org/release/SDL2-${SDL2VER}.tar.gz
+            tar -xzf SDL2-${SDL2VER}.tar.gz
+            cd SDL2-${SDL2VER}
+            ./configure --prefix=/usr/local
+            make && cd ../
+            rm SDL2-${SDL2VER}.tar.gz
+          fi
+          sudo make -C SDL2-${SDL2VER} install
+        if: matrix.os == 'ubuntu-latest'
+
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: CMake
+        run: |
+          cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} ${{ matrix.extra_cmake_args }} -G Ninja
+          cmake --build build --config ${{ matrix.config }}
+        if: matrix.os != 'windows-latest'
+
+      - name: CMake
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
+          cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} ${{ matrix.extra_cmake_args }} -G Ninja
+          cmake --build build --config ${{ matrix.config }}
+        if: matrix.os == 'windows-latest'
+
+      - name: CTest
+        working-directory: build
+        run: ctest --build-config ${{ matrix.config }} --output-on-failure
+
+      - name: Compute git short sha
+        id: git_short_sha
+        run: echo "::set-output name=value::$(git rev-parse --short HEAD)"
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: vita3k-${{ steps.git_short_sha.outputs.value }}-${{ matrix.os }}
+          path: build/bin
+
+  create-release:
+    needs: [build]
+    runs-on: "ubuntu-20.04"
+    if: github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+      
+      - name: Upload
+        shell: bash
+        run: |
+          mkdir artifacts/
+          files=$(find . -name "*latest")
+          for f in $files; do
+            echo "Compressing $f"
+            (cd $(basename $f) && zip -r ../artifacts/$(basename $f  | cut -d "-" -f 3)-latest.zip *)
+          done
+          ls -al artifacts/
+          wget -c https://github.com/tcnksm/ghr/releases/download/v0.14.0/ghr_v0.14.0_linux_amd64.tar.gz
+          tar xfv ghr_v0.14.0_linux_amd64.tar.gz
+          ghr_v0.14.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate -n 'Automatic CI builds' -b "Corresponding commit: ${{ github.sha }}" continuous artifacts/
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+       
