@@ -17,6 +17,10 @@
 
 #include "ScePafResource.h"
 
+EXPORT(int, _ZN3paf8Resource7Element11GetHashByIdEPS1_) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, scePafResourceGetAttribute) {
     return UNIMPLEMENTED();
 }
@@ -117,6 +121,7 @@ EXPORT(int, scePafResourceGetStyleId) {
     return UNIMPLEMENTED();
 }
 
+BRIDGE_IMPL(_ZN3paf8Resource7Element11GetHashByIdEPS1_)
 BRIDGE_IMPL(scePafResourceGetAttribute)
 BRIDGE_IMPL(scePafResourceGetAttributeChar)
 BRIDGE_IMPL(scePafResourceGetAttributeData)

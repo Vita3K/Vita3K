@@ -17,6 +17,18 @@
 
 #include "ScePafStdc.h"
 
+EXPORT(int, sce_paf_aeabi_atexit) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sce_paf_cxa_atexit) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, sce_paf_exit) {
+    return UNIMPLEMENTED();
+}
+
 EXPORT(int, sce_paf_memalign) {
     return UNIMPLEMENTED();
 }
@@ -209,8 +221,8 @@ EXPORT(int, sce_paf_private_strlcpy) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sce_paf_private_strlen) {
-    return UNIMPLEMENTED();
+EXPORT(int, sce_paf_private_strlen, const char *str) {
+    return strlen(str);
 }
 
 EXPORT(int, sce_paf_private_strncasecmp) {
@@ -373,6 +385,9 @@ EXPORT(int, sce_paf_private_wmemset) {
     return UNIMPLEMENTED();
 }
 
+BRIDGE_IMPL(sce_paf_aeabi_atexit)
+BRIDGE_IMPL(sce_paf_cxa_atexit)
+BRIDGE_IMPL(sce_paf_exit)
 BRIDGE_IMPL(sce_paf_memalign)
 BRIDGE_IMPL(sce_paf_private_abs)
 BRIDGE_IMPL(sce_paf_private_atexit)

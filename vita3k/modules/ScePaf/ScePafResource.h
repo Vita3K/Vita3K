@@ -19,6 +19,7 @@
 
 #include <module/module.h>
 
+BRIDGE_DECL(_ZN3paf8Resource7Element11GetHashByIdEPS1_)
 BRIDGE_DECL(scePafResourceGetAttribute)
 BRIDGE_DECL(scePafResourceGetAttributeChar)
 BRIDGE_DECL(scePafResourceGetAttributeData)
