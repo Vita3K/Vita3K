@@ -512,13 +512,13 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::wstrin
     std::uint64_t creation_time_ticks;
     std::uint64_t last_modification_time_ticks;
 
-#ifdef WIN32
-    struct _stat sb;
-    if (_wstat(file_path.generic_path().wstring().c_str(), &sb) < 0)
+#ifdef _WIN32
+    struct _stati64 sb;
+    if (_wstati64(file_path.generic_path().wstring().c_str(), &sb) < 0)
         return IO_ERROR_UNK();
 #else
-    struct stat sb;
-    if (stat(file_path.generic_path().string().c_str(), &sb) < 0)
+    struct stat64 sb;
+    if (stat64(file_path.generic_path().string().c_str(), &sb) < 0)
         return IO_ERROR_UNK();
 #endif
 
