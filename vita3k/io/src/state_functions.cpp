@@ -65,7 +65,12 @@ bool FileStats::seek(const SceOff offset, const SceIoSeekMode seek_mode) const {
         return false;
     }
 
-    return fseek(wrapped_file.get(), static_cast<long>(offset), base) == 0;
+#ifdef _WIN32
+    return _fseeki64(wrapped_file.get(), offset, base) == 0;
+#else
+#define _FILE_OFFSET_BITS 64
+    return fseeko(wrapped_file.get(), offset, base) == 0;
+#endif
 }
 
 SceOff FileStats::tell() const {

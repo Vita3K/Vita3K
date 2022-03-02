@@ -456,14 +456,14 @@ EXPORT(int, sceIoOpenAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoPread, const SceUID fd, void *data, const SceSize size, const SceOff offset) {
+EXPORT(SceSSize, sceIoPread, const SceUID fd, void *data, const SceSize size, const SceOff offset) {
     auto pos = tell_file(host.io, fd, export_name);
     if (pos < 0) {
-        return static_cast<int>(pos);
+        return pos;
     }
-    seek_file(fd, static_cast<int>(offset), SCE_SEEK_SET, host.io, export_name);
-    const int res = read_file(data, host.io, fd, size, export_name);
-    seek_file(fd, static_cast<int>(pos), SCE_SEEK_SET, host.io, export_name);
+    seek_file(fd, offset, SCE_SEEK_SET, host.io, export_name);
+    const auto res = read_file(data, host.io, fd, size, export_name);
+    seek_file(fd, pos, SCE_SEEK_SET, host.io, export_name);
     return res;
 }
 
@@ -471,14 +471,14 @@ EXPORT(int, sceIoPreadAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoPwrite, const SceUID fd, const void *data, const SceSize size, const SceOff offset) {
+EXPORT(SceSSize, sceIoPwrite, const SceUID fd, const void *data, const SceSize size, const SceOff offset) {
     auto pos = tell_file(host.io, fd, export_name);
     if (pos < 0) {
-        return static_cast<int>(pos);
+        return pos;
     }
-    seek_file(fd, static_cast<int>(offset), SCE_SEEK_SET, host.io, export_name);
-    const int res = write_file(fd, data, size, host.io, export_name);
-    seek_file(fd, static_cast<int>(pos), SCE_SEEK_SET, host.io, export_name);
+    seek_file(fd, offset, SCE_SEEK_SET, host.io, export_name);
+    const auto res = write_file(fd, data, size, host.io, export_name);
+    seek_file(fd, pos, SCE_SEEK_SET, host.io, export_name);
     return res;
 }
 
