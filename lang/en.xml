@@ -239,12 +239,27 @@ You can earn trophies by using an application that supports the trophy feature.<
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Select your user</select_user>
 		<create_user>Create User</create_user>
+		<user_created>The following user has been created</user_created>
 		<edit_user>Edit User</edit_user>
+		<user_name_used>! This name is already in use.</user_name_used>
 		<delete_user>Delete User</delete_user>
+		<user_delete>Select the user you want to delete.</user_delete>
+		<user_delete_msg>The following user will be deleted.</user_delete_msg>
+		<user_delete_message>If you delete the user, that user's saved data, trophies will be deleted.</user_delete__message>
+		<user_delete_warn>The user will be deleted.
+Are you sure you want to continue?</user_delete_warn>
+		<user_deleted>User deleted.</user_deleted>
 		<change_avatar>Change Avatar</change_avatar>
+		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Name</name>
 		<user>User</user>
 		<confirm>Confirm</confirm>
+		<cancel>Cancel</cancel>
+		<delete>Delete</delete>
+		<yes>Yes</yes>
+		<no>No</no>
+		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 </lang>

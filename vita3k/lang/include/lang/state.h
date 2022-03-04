@@ -229,13 +229,27 @@ struct LangState {
         { "updated", "Updated" }
     };
     std::map<std::string, std::string> user_management = {
+        { "select_user", "Select your user" },
         { "create_user", "Create User" },
+        { "user_created", "The following user has been created" },
         { "edit_user", "Edit User" },
+        { "user_name_used", "! This name is already in use." },
         { "delete_user", "Delete User" },
+        { "user_delete", "Select the user you want to delete." },
+        { "user_delete_msg", "The following user will be deleted." },
+        { "user_delete_message", "If you delete the user, that user's saved data, trophies will be deleted." },
+        { "user_delete_warn", "The user will be deleted.\nAre you sure you want to continue?" },
+        { "user_deleted", "User deleted." },
         { "change_avatar", "Change Avatar" },
+        { "reset_avatar", "Reset Avatar" },
         { "name", "Name" },
         { "user", "User" },
         { "confirm", "Confirm" },
+        { "cancel", "Cancel" },
+        { "delete", "Delete" },
+        { "yes", "Yes" },
+        { "no", "No" },
+        { "automatic_user_login", "Automatic User Login" },
     };
     struct Common {
         std::vector<std::string> wday = {
