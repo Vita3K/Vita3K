@@ -484,7 +484,7 @@ void draw_settings(GuiState &gui, HostState &host) {
                         ImGui::SetCursorPosX(INFO_POS.x);
                         auto DATE_TIME = get_date_time(gui, host, themes_info[selected].updated);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
-                        if (gui.users[host.io.user_id].clock_12_hour) {
+                        if (host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR) {
                             ImGui::SameLine();
                             ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                         }
@@ -685,13 +685,13 @@ void draw_settings(GuiState &gui, HostState &host) {
             ImGui::SetColumnWidth(0, 30.f * SCALE.x);
             ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
             if (menu == "date_format") {
-                const auto get_date_format_sting = [&](DateFormat date_format) {
+                const auto get_date_format_sting = [&](SceSystemParamDateFormat date_format) {
                     std::string date_format_str;
                     auto lang = gui.lang.settings.date_time.date_format;
                     switch (date_format) {
-                    case YYYY_MM_DD: date_format_str = lang["yyyy_mm_dd"]; break;
-                    case DD_MM_YYYY: date_format_str = lang["dd_mm_yyyy"]; break;
-                    case MM_DD_YYYY: date_format_str = lang["mm_dd_yyyy"]; break;
+                    case SCE_SYSTEM_PARAM_DATE_FORMAT_YYYYMMDD: date_format_str = lang["yyyy_mm_dd"]; break;
+                    case SCE_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY: date_format_str = lang["dd_mm_yyyy"]; break;
+                    case SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY: date_format_str = lang["mm_dd_yyyy"]; break;
                     default: break;
                     }
 
@@ -699,14 +699,14 @@ void draw_settings(GuiState &gui, HostState &host) {
                 };
 
                 for (auto f = 0; f < 3; f++) {
-                    auto date_format_value = DateFormat(f);
+                    auto date_format_value = SceSystemParamDateFormat(f);
                     const auto date_format_str = get_date_format_sting(date_format_value);
                     ImGui::PushID(date_format_str.c_str());
                     ImGui::SetCursorPosY((display_size.y / 2.f) - INFORMATION_BAR_HEIGHT - (SIZE_PUPUP_SELECT * 1.5f) + (SIZE_PUPUP_SELECT * f));
-                    if (ImGui::Selectable(gui.users[host.io.user_id].date_format == date_format_value ? "V" : "##date_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
-                        if (gui.users[host.io.user_id].date_format != date_format_value) {
-                            gui.users[host.io.user_id].date_format = date_format_value;
-                            save_user(gui, host, host.io.user_id);
+                    if (ImGui::Selectable(host.cfg.sys_date_format == date_format_value ? "V" : "##date_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
+                        if (host.cfg.sys_date_format != date_format_value) {
+                            host.cfg.sys_date_format = date_format_value;
+                            config::serialize_config(host.cfg, host.base_path);
                         }
                         menu.clear();
                     }
@@ -718,10 +718,11 @@ void draw_settings(GuiState &gui, HostState &host) {
                 }
             } else if (menu == "time_format") {
                 ImGui::SetCursorPosY((display_size.y / 2.f) - SIZE_PUPUP_SELECT - INFORMATION_BAR_HEIGHT);
-                if (ImGui::Selectable(gui.users[host.io.user_id].clock_12_hour ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
-                    if (!gui.users[host.io.user_id].clock_12_hour) {
-                        gui.users[host.io.user_id].clock_12_hour = true;
-                        save_user(gui, host, host.io.user_id);
+                const auto is_12_hour_format = host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
+                if (ImGui::Selectable(is_12_hour_format ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
+                    if (!is_12_hour_format) {
+                        host.cfg.sys_time_format = SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
+                        config::serialize_config(host.cfg, host.base_path);
                     }
                     menu.clear();
                 }
@@ -729,10 +730,10 @@ void draw_settings(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPosY((display_size.y / 2.f) - SIZE_PUPUP_SELECT - INFORMATION_BAR_HEIGHT);
                 ImGui::Selectable(date_time.time_format["clock_12_hour"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT));
                 ImGui::NextColumn();
-                if (ImGui::Selectable(!gui.users[host.io.user_id].clock_12_hour ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
-                    if (gui.users[host.io.user_id].clock_12_hour) {
-                        gui.users[host.io.user_id].clock_12_hour = false;
-                        save_user(gui, host, host.io.user_id);
+                if (ImGui::Selectable(!is_12_hour_format ? "V" : "##time_format", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(TIME_SELECT_SIZE, SIZE_PUPUP_SELECT))) {
+                    if (is_12_hour_format) {
+                        host.cfg.sys_time_format = SCE_SYSTEM_PARAM_TIME_FORMAT_24HOUR;
+                        config::serialize_config(host.cfg, host.base_path);
                     }
                     menu.clear();
                 }

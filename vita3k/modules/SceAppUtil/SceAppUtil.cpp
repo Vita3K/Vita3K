@@ -354,16 +354,27 @@ EXPORT(int, sceAppUtilStoreBrowse) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilSystemParamGetInt, unsigned int paramId, int *value) {
-    const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
-    const auto sys_button = static_cast<SceSystemParamEnterButtonAssign>(host.cfg.sys_button);
+EXPORT(SceInt32, sceAppUtilSystemParamGetInt, SceSystemParamId paramId, SceInt32 *value) {
+    if (!value)
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
 
     switch (paramId) {
     case SCE_SYSTEM_PARAM_ID_LANG:
-        *value = sys_lang;
+        *value = (SceSystemParamLang)host.cfg.sys_lang;
         return 0;
     case SCE_SYSTEM_PARAM_ID_ENTER_BUTTON:
-        *value = sys_button;
+        *value = (SceSystemParamEnterButtonAssign)host.cfg.sys_button;
+        return 0;
+    case SCE_SYSTEM_PARAM_ID_DATE_FORMAT:
+        *value = (SceSystemParamDateFormat)host.cfg.sys_date_format;
+        return 0;
+    case SCE_SYSTEM_PARAM_ID_TIME_FORMAT:
+        *value = (SceSystemParamTimeFormat)host.cfg.sys_time_format;
+        return 0;
+    case SCE_SYSTEM_PARAM_ID_TIME_ZONE:
+    case SCE_SYSTEM_PARAM_ID_SUMMERTIME:
+        STUBBED("No support Time Zone and Summer Time, give 0 value");
+        *value = 0;
         return 0;
     default:
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
@@ -374,10 +385,10 @@ EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf,
     constexpr auto devname_len = SCE_SYSTEM_PARAM_USERNAME_MAXSIZE;
     char devname[devname_len];
     switch (paramId) {
-    case SCE_SYSTEM_PARAM_ID_USERNAME:
+    case SCE_SYSTEM_PARAM_ID_USER_NAME:
         if (gethostname(devname, devname_len)) {
-            // fallback to "Vita3k"
-            std::strncpy(devname, "Vita3k", sizeof(devname));
+            // fallback to User Name
+            std::strncpy(devname, host.io.user_name.c_str(), sizeof(devname));
         }
         std::strncpy(reinterpret_cast<char *>(buf), devname, sizeof(devname));
         break;

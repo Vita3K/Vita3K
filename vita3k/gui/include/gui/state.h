@@ -176,12 +176,6 @@ enum class TrophyAnimationStage {
     END = 3
 };
 
-enum DateFormat {
-    YYYY_MM_DD,
-    DD_MM_YYYY,
-    MM_DD_YYYY
-};
-
 enum DateTime {
     CLOCK,
     DATE_DETAIL,
@@ -193,8 +187,6 @@ enum DateTime {
 struct User {
     std::string id;
     std::string name = "Vita3K";
-    DateFormat date_format = MM_DD_YYYY;
-    bool clock_12_hour = true;
     std::string avatar = "default";
     gui::SortType sort_apps_type = gui::TITLE;
     gui::SortState sort_apps_state = gui::ASCENDANT;
