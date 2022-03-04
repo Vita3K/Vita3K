@@ -173,8 +173,19 @@ void KernelState::exit_delete_all_threads() {
     }
 }
 
-int KernelState::run_guest_function(Address callback_address, const std::vector<uint32_t> &args) {
-    return this->guest_func_runner->run_guest_function(callback_address, args);
+int KernelState::run_guest_function(SceUID thread_id, Address callback_address, const std::vector<uint32_t> &args) {
+    auto old_thread_id = this->guest_func_runner->id;
+    auto old_tpidruro = read_tpidruro(*this->guest_func_runner->cpu);
+    auto thread = get_thread(thread_id);
+    if (thread) {
+        auto tpidruro = read_tpidruro(*thread->cpu);
+        this->guest_func_runner->id = thread_id;
+        write_tpidruro(*this->guest_func_runner->cpu, tpidruro);
+    }
+    int result = this->guest_func_runner->run_guest_function(callback_address, args);
+    this->guest_func_runner->id = old_thread_id;
+    write_tpidruro(*this->guest_func_runner->cpu, old_tpidruro);
+    return result;
 }
 
 std::shared_ptr<SceKernelModuleInfo> KernelState::find_module_by_addr(Address address) {

@@ -50,7 +50,7 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
         return SCE_SYSMODULE_ERROR_INVALID_VALUE;
 
     if (is_modules_enable(host, module_id)) {
-        if (load_module(host, module_id))
+        if (load_module(host, thread_id, module_id))
             return SCE_SYSMODULE_LOADED;
         else
             return SCE_SYSMODULE_ERROR_UNLOADED;

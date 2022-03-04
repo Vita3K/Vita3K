@@ -171,7 +171,7 @@ struct KernelState {
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
     void exit_delete_all_threads();
 
-    int run_guest_function(Address callback_address, const std::vector<uint32_t> &args);
+    int run_guest_function(SceUID thread_id, Address callback_address, const std::vector<uint32_t> &args);
 
     void set_memory_watch(bool enabled);
     void invalidate_jit_cache(Address start, size_t length);

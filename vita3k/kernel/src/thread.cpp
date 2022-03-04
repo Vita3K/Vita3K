@@ -200,6 +200,7 @@ bool ThreadState::run_loop() {
             current_job = run_queue.begin();
             if (!current_job->in_progress) {
                 push_arguments(*current_job);
+                set_thread_id(*cpu, id);
                 load_context(*cpu, current_job->ctx);
                 current_job->in_progress = true;
             }
@@ -344,6 +345,7 @@ void ThreadState::clear_run_queue() {
     }
 }
 
+//callback run after HLE call on the same thread
 void ThreadState::request_callback(Address callback_address, const std::vector<uint32_t> &args, const std::function<void(int res)> notify) {
     const auto thread_lock = std::lock_guard(mutex);
     ThreadJob job;

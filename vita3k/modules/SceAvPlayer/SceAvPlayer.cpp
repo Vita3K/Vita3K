@@ -253,22 +253,22 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         const Address buf = alloc(host.mem, KB(512), "AvPlayer buffer");
         const auto buf_ptr = Ptr<char>(buf).get(host.mem);
         const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-        host.kernel.run_guest_function(player_info->file_manager.open_file.address(), { player_info->file_manager.user_data, path.address() });
+        host.kernel.run_guest_function(thread_id, player_info->file_manager.open_file.address(), { player_info->file_manager.user_data, path.address() });
         // TODO: support file_size > 4GB (callback function returns uint64_t, but I dont know how to get high dword of uint64_t)
-        const uint32_t file_size = host.kernel.run_guest_function(player_info->file_manager.file_size.address(), { player_info->file_manager.user_data });
+        const uint32_t file_size = host.kernel.run_guest_function(thread_id, player_info->file_manager.file_size.address(), { player_info->file_manager.user_data });
         auto remaining = file_size;
         uint32_t offset = 0;
         while (remaining) {
             const auto buf_size = std::min((uint32_t)KB(512), remaining);
             // zero in 5 parameter means high dword of uint64_t parameter. see previous todo
-            host.kernel.run_guest_function(player_info->file_manager.read_file.address(), { player_info->file_manager.user_data, buf, offset, 0, buf_size });
+            host.kernel.run_guest_function(thread_id, player_info->file_manager.read_file.address(), { player_info->file_manager.user_data, buf, offset, 0, buf_size });
             temp_file.write(buf_ptr, buf_size);
             offset += buf_size;
             remaining -= buf_size;
         }
         free(host.mem, buf);
         temp_file.close();
-        host.kernel.run_guest_function(player_info->file_manager.close_file.address(), { player_info->file_manager.user_data });
+        host.kernel.run_guest_function(thread_id, player_info->file_manager.close_file.address(), { player_info->file_manager.user_data });
         if (fs::file_size(temp_file_path) != file_size) {
             LOG_ERROR("File is corrupted or incomplete: {}", temp_file_path.string());
             return -1;

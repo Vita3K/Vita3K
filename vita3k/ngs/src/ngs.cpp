@@ -144,7 +144,7 @@ void ModuleData::invoke_callback(KernelState &kernel, const MemState &mem, const
     info->callback_ptr = Ptr<void>(reason_ptr);
     info->userdata = user_data;
 
-    kernel.run_guest_function(callback.address(), { callback_info_addr });
+    kernel.run_guest_function(thread_id, callback.address(), { callback_info_addr });
     stack_free(*thread->cpu, sizeof(CallbackInfo));
 }
 
