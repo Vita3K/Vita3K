@@ -151,7 +151,7 @@ void init_lang(LangState &lang, HostState &host) {
                         set_lang_string(lang_save_data.load, save_data.child("load"));
 
                         // Save
-                        set_lang_string(lang_save_data.save, save_data.child("Save"));
+                        set_lang_string(lang_save_data.save, save_data.child("save"));
                     }
                 }
 
