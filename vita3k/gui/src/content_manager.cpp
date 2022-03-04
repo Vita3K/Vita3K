@@ -248,6 +248,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
     const auto is_background = gui.apps_background.find("NPXS10026") != gui.apps_background.end();
+    const auto is_12_hour_format = host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -481,7 +482,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     ImGui::SetCursorPosY(Title_POS + (46.f * SCALE.y));
                     auto DATE_TIME = get_date_time(gui, host, save.date);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
-                    if (gui.users[host.io.user_id].clock_12_hour) {
+                    if (is_12_hour_format) {
                         ImGui::SameLine();
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                     }
@@ -508,7 +509,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::SameLine(280.f * SCALE.x);
             auto DATE_TIME = get_date_time(gui, host, gui.app_selector.app_info.updated);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
-            if (gui.users[host.io.user_id].clock_12_hour) {
+            if (is_12_hour_format) {
                 ImGui::SameLine();
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
             }
@@ -534,7 +535,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 ImGui::SameLine(280.f * SCALE.x);
                 auto DATE_TIME = get_date_time(gui, host, dlc.second.date);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
-                if (gui.users[host.io.user_id].clock_12_hour) {
+                if (host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR) {
                     ImGui::SameLine();
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                 }

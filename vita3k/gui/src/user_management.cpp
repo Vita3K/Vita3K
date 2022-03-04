@@ -83,14 +83,6 @@ void get_users_list(GuiState &gui, HostState &host) {
                 if (!user_child.attribute("name").empty())
                     user.name = user_child.attribute("name").as_string();
 
-                // Load date format setting
-                if (!user_child.attribute("date-format").empty())
-                    user.date_format = DateFormat(user_child.attribute("date-format").as_int());
-
-                // Load clock setting
-                if (!user_child.attribute("clock-12-hour").empty())
-                    user.clock_12_hour = user_child.attribute("clock-12-hour").as_bool();
-
                 // Load Avatar
                 if (!user_child.child("avatar").text().empty())
                     user.avatar = user_child.child("avatar").text().as_string();
@@ -143,8 +135,6 @@ void save_user(GuiState &gui, HostState &host, const std::string &user_id) {
     auto user_child = user_xml.append_child("user");
     user_child.append_attribute("id") = user.id.c_str();
     user_child.append_attribute("name") = user.name.c_str();
-    user_child.append_attribute("date-format") = user.date_format;
-    user_child.append_attribute("clock-12-hour") = user.clock_12_hour;
     user_child.append_child("avatar").append_child(pugi::node_pcdata).set_value(user.avatar.c_str());
 
     // Save sort Apps list settings
@@ -282,8 +272,6 @@ void draw_user_management(GuiState &gui, HostState &host) {
             }
             temp.id = user_id;
             temp.name = user + std::to_string(i);
-            temp.date_format = DateFormat::MM_DD_YYYY;
-            temp.clock_12_hour = true;
             temp.avatar = "default";
             temp.theme_id = "default";
             temp.use_theme_bg = true;

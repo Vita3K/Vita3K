@@ -284,8 +284,9 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
 
-    auto lang = gui.lang.app_context;
+    const auto is_12_hour_format = host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
     auto common = host.common_dialog.lang.common;
+    auto lang = gui.lang.app_context;
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
@@ -491,7 +492,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             ImGui::SetCursorPosX(((display_size.x / 2.f) - ImGui::CalcTextSize((lang["updated"] + "  ").c_str()).x));
             auto DATE_TIME = get_date_time(gui, host, gui.app_selector.app_info.updated);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s %s", lang["updated"].c_str(), DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
-            if (gui.users[host.io.user_id].clock_12_hour) {
+            if (is_12_hour_format) {
                 ImGui::SameLine();
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
             }
@@ -511,7 +512,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                 SAFE_LOCALTIME(&time_app_index->last_time_used, &date_tm);
                 auto LAST_TIME = get_date_time(gui, host, date_tm);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", LAST_TIME[DateTime::DATE_MINI].c_str(), LAST_TIME[DateTime::CLOCK].c_str());
-                if (gui.users[host.io.user_id].clock_12_hour) {
+                if (is_12_hour_format) {
                     ImGui::SameLine();
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", LAST_TIME[DateTime::DAY_MOMENT].c_str());
                 }

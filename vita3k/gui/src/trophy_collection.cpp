@@ -406,6 +406,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "trophy" };
 
     const auto is_background = gui.apps_background.find("NPXS10008") != gui.apps_background.end();
+    const auto is_12_hour_format = host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -625,7 +626,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::SameLine(260.f * SCALE.x);
                 auto DATE_TIME = get_date_time(gui, host, np_com_id_info[np_com_id_selected].updated);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
-                if (gui.users[host.io.user_id].clock_12_hour) {
+                if (is_12_hour_format) {
                     ImGui::SameLine();
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                 }
@@ -707,7 +708,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 if (trophy_info[trophy_id_selected].earned) {
                     auto DATE_TIME = get_date_time(gui, host, trophy_info[trophy_id_selected].unlocked_time);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
-                    if (gui.users[host.io.user_id].clock_12_hour) {
+                    if (is_12_hour_format) {
                         ImGui::SameLine();
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                     }
