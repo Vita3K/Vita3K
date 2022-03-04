@@ -169,7 +169,7 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
 /**
  * \return False on failure, true on success
  */
-bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
+bool load_module(HostState &host, SceUID thread_id, SceSysmoduleModuleId module_id) {
     LOG_INFO("Loading module ID: {}", log_hex(module_id));
 
     const auto module_paths = sysmodule_paths[module_id];
@@ -194,7 +194,7 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
                 LOG_DEBUG("Running module_start of module: {}", module_name);
 
                 Ptr<void> argp = Ptr<void>();
-                const auto ret = host.kernel.run_guest_function(lib_entry_point.address(), { 0, argp.address() });
+                const auto ret = host.kernel.run_guest_function(thread_id, lib_entry_point.address(), { 0, argp.address() });
                 LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
             }
 

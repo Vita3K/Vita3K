@@ -27,7 +27,7 @@ struct KernelState;
 
 void init_libraries(HostState &host);
 void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
-bool load_module(HostState &host, SceSysmoduleModuleId module_id);
+bool load_module(HostState &host, SceUID thread_id, SceSysmoduleModuleId module_id);
 Address resolve_export(KernelState &kernel, uint32_t nid);
 uint32_t resolve_nid(KernelState &kernel, Address addr);
 std::string resolve_nid_name(KernelState &kernel, Address addr);
