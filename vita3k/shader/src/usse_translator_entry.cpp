@@ -790,7 +790,7 @@ static optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
 // Decoder/translator usage
 //
 
-USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters,
+USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const shader::Features &features, const SpirvShaderParameters &parameters,
     utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries)
     : inst(nullptr)
     , count(0)
@@ -984,7 +984,7 @@ spv::Function *USSERecompiler::compile_program_function() {
     return ret_func;
 }
 
-void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
+void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const shader::Features &features, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
     spv::Function *begin_hook_func, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries) {
     const uint64_t *primary_program = program.primary_program_start();
     const uint64_t primary_program_instr_count = program.primary_program_instr_count;

@@ -24,9 +24,10 @@
 
 #include <gxm/types.h>
 
-struct FeatureState;
+namespace shader {
+struct Features;
 
-namespace shader::usse::utils {
+namespace usse::utils {
 
 struct SpirvUtilFunctions {
     std::map<DataType, spv::Function *> unpack_funcs;
@@ -37,14 +38,14 @@ struct SpirvUtilFunctions {
 };
 
 spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 swizz, const int offset, const Imm4 dest_mask);
-spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand op, const Imm4 dest_mask, int shift_offset);
-void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest, spv::Id source, std::uint8_t dest_mask, int off);
+spv::Id load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const shader::Features &features, Operand op, const Imm4 dest_mask, int shift_offset);
+void store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const shader::Features &features, Operand dest, spv::Id source, std::uint8_t dest_mask, int off);
 
-spv::Id unpack(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
+spv::Id unpack(spv::Builder &b, SpirvUtilFunctions &utils, const shader::Features &features, spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
     const int offset);
 
-spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id scalar, const DataType type);
-spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id vec, const DataType source_type);
+spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const shader::Features &features, spv::Id scalar, const DataType type);
+spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const shader::Features &features, spv::Id vec, const DataType source_type);
 
 spv::Id fetch_memory(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, spv::Id addr);
 
@@ -109,3 +110,4 @@ void make_for_loop(spv::Builder &b, spv::Id iterator, spv::Id initial_value_ite,
     b.closeLoop();
 }
 } // namespace shader::usse::utils
+} // namespace shader

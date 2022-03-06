@@ -115,7 +115,7 @@ R load_shader_generic(const char *hash_text, const char *base_path, const char *
 }
 
 template <typename R, typename F>
-R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const char *shader_type_str, const std::string &shader_version, bool shader_cache) {
+R load_shader_generic(F genfunc, const SceGxmProgram &program, const shader::Features &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const char *shader_type_str, const std::string &shader_version, bool shader_cache) {
     const Sha256HashText hash_text = get_shader_hash(program);
     // Set Shader Hash with Version
     const std::string hash_hex_ver = shader_version + "-" + static_cast<std::string>(hash_text.data());
@@ -175,7 +175,7 @@ R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureStat
     return source;
 }
 
-std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const std::string &shader_version, bool shader_cache) {
+std::string load_glsl_shader(const SceGxmProgram &program, const shader::Features &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const std::string &shader_version, bool shader_cache) {
     SceGxmProgramType program_type = program.get_type();
 
     auto shader_type_to_str = [](SceGxmProgramType type) {
@@ -186,7 +186,7 @@ std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &f
     return load_shader_generic<std::string>(shader::convert_gxp_to_glsl, program, features, hint_attributes, maskupdate, base_path, title_id, shader_type_str, shader_version, shader_cache);
 }
 
-std::vector<std::uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id) {
+std::vector<std::uint32_t> load_spirv_shader(const SceGxmProgram &program, const shader::Features &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id) {
     return load_shader_generic<std::vector<std::uint32_t>>(shader::convert_gxp_to_spirv, program, features, hint_attributes, maskupdate, base_path, title_id, "spv", "v0", false);
 }
 

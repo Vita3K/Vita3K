@@ -31,7 +31,7 @@
 
 #include <shader/spirv_recompiler.h>
 
-#include <features/state.h>
+#include <shader/features.h>
 #include <gxm/functions.h>
 
 #include <spdlog/fmt/bin_to_hex.h>
@@ -71,7 +71,7 @@ struct GXMRenderFragUniformBlock {
     float writing_mask = 0;
 };
 
-void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
+void draw(GLState &renderer, GLContext &context, const shader::Features &features, SceGxmPrimitiveType type, SceGxmIndexFormat format, void *indices, size_t count, uint32_t instance_count,
     MemState &mem, const char *base_path, const char *title_id, const Config &config) {
     R_PROFILE(__func__);
 

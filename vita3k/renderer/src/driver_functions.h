@@ -20,7 +20,9 @@
 struct MemState;
 struct Context;
 struct Config;
-struct FeatureState;
+namespace shader {
+struct Features;
+}
 
 namespace renderer {
 
@@ -30,7 +32,7 @@ struct CommandHelper;
 
 #define COMMAND(name)                                                                                \
     void cmd_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper, \
-        const FeatureState &features, Context *render_context, const char *base_path, const char *title_id)
+        const shader::Features &features, Context *render_context, const char *base_path, const char *title_id)
 
 #define COMMAND_SET_STATE(name)                                                                                \
     void cmd_set_state_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper, \

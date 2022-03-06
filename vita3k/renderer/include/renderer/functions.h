@@ -21,7 +21,9 @@
 #include <renderer/types.h>
 
 struct MemState;
-struct FeatureState;
+namespace shader {
+struct Features;
+}
 struct Config;
 
 typedef uint32_t TextureCacheHash;
@@ -44,7 +46,7 @@ void wishlist(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
 
 /**
  * \brief Set list of subject with sync object to done.
- * 
+ *
  * This will also signals wishlists that are waiting.
  */
 void subject_done(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
@@ -58,7 +60,7 @@ int wait_for_status(State &state, int *status, int signal, bool wake_on_equal);
 void reset_command_list(CommandList &command_list);
 void submit_command_list(State &state, renderer::Context *context, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list, const char *base_path, const char *title_id);
-void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path, const char *title_id);
+void process_batches(State &state, const shader::Features &features, MemState &mem, Config &config, const char *base_path, const char *title_id);
 bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend);
 
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units);
@@ -151,9 +153,9 @@ const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState
 
 /**
  * \brief Decompresses all the blocks of a DXT compressed texture and stores the resulting pixels in 'image'.
- * 
+ *
  * Output results is in format RGBA, with each channel being 8 bits.
- * 
+ *
  * \param width            Texture width.
  * \param height           Texture height.
  * \param block_storage    Pointer to compressed DXT1 blocks.

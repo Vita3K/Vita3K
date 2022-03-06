@@ -244,7 +244,7 @@ void pre_compile_program(GLState &renderer, const char *base_path, const char *t
     }
 }
 
-static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const FeatureState &features, const std::string &hash,
+static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const shader::Features &features, const std::string &hash,
     ShaderCache &cache, const GLenum type, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool shader_cache, bool spirv, bool maskupdate, const char *base_path, const char *title_id, const std::string &shader_version, uint32_t &shaders_count_compiled) {
     const auto cached = cache.find(hash);
     if (cached == cache.end()) {
@@ -267,7 +267,7 @@ static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const 
     return cached->second;
 }
 
-SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, const FeatureState &features, const MemState &mem,
+SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, const shader::Features &features, const MemState &mem,
     bool shader_cache, bool spirv, bool maskupdate, const char *base_path, const char *title_id) {
     R_PROFILE(__func__);
 

@@ -28,9 +28,10 @@
 #include <array>
 #include <map>
 
-struct FeatureState;
+namespace shader {
+struct Features;
 
-namespace shader::usse {
+namespace usse {
 
 // For debugging SPIR-V output
 static uint32_t instr_idx = 0;
@@ -64,7 +65,7 @@ public:
     spv::Id do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type, const spv::Id lod = spv::NoResult);
 
     USSETranslatorVisitor() = delete;
-    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program, const FeatureState &features,
+    explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program, const shader::Features &features,
         utils::SpirvUtilFunctions &utils, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries,
         bool is_secondary_program = false)
         : m_util_funcs(utils)
@@ -785,7 +786,7 @@ private:
 
     const SceGxmProgram &m_program;
 
-    const FeatureState &m_features;
+    const Features &m_features;
 };
 
 constexpr int sgx543_pc_bits = 20;
@@ -803,7 +804,7 @@ struct USSERecompiler final {
 
     USSEBlockNode tree_block_node;
 
-    explicit USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features,
+    explicit USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const shader::Features &features,
         const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries);
 
     void reset(const std::uint64_t *inst, const std::size_t count);
@@ -820,3 +821,4 @@ struct USSERecompiler final {
 };
 
 } // namespace shader::usse
+} // namespace shader

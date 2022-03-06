@@ -26,7 +26,9 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-struct FeatureState;
+namespace shader {
+struct Features;
+}
 
 namespace renderer {
 Command *generic_command_allocate() {
@@ -43,10 +45,10 @@ void complete_command(State &state, CommandHelper &helper, const int code) {
     state.command_finish_one.notify_all();
 }
 
-void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list, const char *base_path,
+void process_batch(renderer::State &state, const shader::Features &features, MemState &mem, Config &config, CommandList &command_list, const char *base_path,
     const char *title_id) {
     using CommandHandlerFunc = std::function<void(renderer::State &, MemState &, Config &,
-        CommandHelper &, const FeatureState &, Context *, const char *, const char *)>;
+        CommandHelper &, const shader::Features &, Context *, const char *, const char *)>;
 
     static std::map<CommandOpcode, CommandHandlerFunc> handlers = {
         { CommandOpcode::SetContext, cmd_handle_set_context },
@@ -88,7 +90,7 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
     } while (true);
 }
 
-void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path,
+void process_batches(renderer::State &state, const shader::Features &features, MemState &mem, Config &config, const char *base_path,
     const char *title_id) {
     const bool is_avg_scene_per_frame = !state.command_buffer_queue.size() || (state.average_scene_per_frame > 1);
     const uint32_t queue_size = is_avg_scene_per_frame ? state.average_scene_per_frame.load() : state.command_buffer_queue.size();

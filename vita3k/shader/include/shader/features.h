@@ -17,7 +17,9 @@
 
 #pragma once
 
-struct FeatureState {
+namespace shader {
+
+struct Features {
     bool support_shader_interlock = false; ///< First option for blending. Using this with ordered execution mode.
     bool support_texture_barrier = false; ///< Second option for blending. Slower but work on 3 vendors.
     bool direct_fragcolor = false;
@@ -39,3 +41,5 @@ struct FeatureState {
         return support_texture_barrier && !support_shader_interlock && !direct_fragcolor;
     }
 };
+
+} // namespace shader

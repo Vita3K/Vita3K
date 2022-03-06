@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <features/state.h>
+#include <shader/features.h>
 #include <renderer/commands.h>
 #include <renderer/types.h>
 #include <threads/queue.h>
@@ -30,7 +30,7 @@ struct SDL_Cursor;
 namespace renderer {
 struct State {
     Backend current_backend;
-    FeatureState features;
+    shader::Features features;
 
     GXPPtrMap gxp_ptr_map;
     Queue<CommandList> command_buffer_queue;

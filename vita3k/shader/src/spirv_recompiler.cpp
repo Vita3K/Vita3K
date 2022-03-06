@@ -254,7 +254,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const std::string &name, co
     return b.createVariable(spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
-static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
+static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const shader::Features &features, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
     std::uint32_t total_var_comp = size / 4;
     spv::Id var = !force_id ? (b.createVariable(reg_type_to_spv_storage_class(bank), type, name)) : force_id;
     Operand dest;
@@ -310,7 +310,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
     return var;
 }
 
-static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &features, TranslationState &translation_state, const std::string &name) {
+static spv::Id create_builtin_sampler(spv::Builder &b, const shader::Features &features, TranslationState &translation_state, const std::string &name) {
     spv::Id f32 = b.makeFloatType(32);
     spv::Id v4 = b.makeVectorType(f32, 4);
     spv::Id sampled_type = b.makeFloatType(32);
@@ -325,7 +325,7 @@ static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &featu
     return sampler;
 }
 
-static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translation_state, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
+static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const shader::Features &features, TranslationState &translation_state, NonDependentTextureQueryCallInfos &tex_query_infos, SamplerMap &samplers,
     const SceGxmProgram &program) {
     static const std::unordered_map<std::uint32_t, std::pair<std::string, std::uint32_t>> name_map = {
         { 0xD000, { "v_Position", 0 } },
@@ -723,7 +723,7 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
 }
 
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
-    const FeatureState &features, TranslationState &translation_state, SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries,
+    const shader::Features &features, TranslationState &translation_state, SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries,
     const std::vector<SceGxmVertexAttribute> *hint_attributes) {
     SpirvShaderParameters spv_params = {};
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
@@ -1030,13 +1030,13 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 }
 
 static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program,
-    const FeatureState &features, utils::SpirvUtilFunctions &utils, spv::Function *begin_hook_func, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &texture_queries) {
+    const shader::Features &features, utils::SpirvUtilFunctions &utils, spv::Function *begin_hook_func, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &texture_queries) {
     // Do texture queries
     usse::convert_gxp_usse_to_spirv(b, program, features, parameters, utils, begin_hook_func, end_hook_func, texture_queries);
 }
 
 static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters,
-    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translate_state) {
+    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils, const shader::Features &features, TranslationState &translate_state) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *frag_fin_block;
@@ -1105,7 +1105,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
 }
 
 static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters,
-    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translation_state) {
+    const SceGxmProgram &program, utils::SpirvUtilFunctions &utils, const shader::Features &features, TranslationState &translation_state) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *vert_fin_block;
@@ -1286,7 +1286,7 @@ static spv::Function *make_frag_initialize_function(spv::Builder &b, Translation
     return frag_init_func;
 }
 
-static void generate_update_mask_body(spv::Builder &b, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translate_state) {
+static void generate_update_mask_body(spv::Builder &b, utils::SpirvUtilFunctions &utils, const shader::Features &features, TranslationState &translate_state) {
     const spv::Id writing_mask_var = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(2) });
     const spv::Id writing_mask = b.createLoad(writing_mask_var);
 
@@ -1300,7 +1300,7 @@ static void generate_update_mask_body(spv::Builder &b, utils::SpirvUtilFunctions
     b.createStore(mask_v, out);
 }
 
-static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
+static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const std::string &shader_hash, const shader::Features &features, TranslationState &translation_state, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     SpirvCode spirv;
 
     SceGxmProgramType program_type = program.get_type();
@@ -1435,7 +1435,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     return spirv;
 }
 
-static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode spirv_binary, const FeatureState &features, TranslationState &translation_state, bool is_native_color) {
+static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCode spirv_binary, const shader::Features &features, TranslationState &translation_state, bool is_native_color) {
     spirv_cross::CompilerGLSL glsl(std::move(spirv_binary));
 
     spirv_cross::CompilerGLSL::Options options;
@@ -1491,7 +1491,7 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
 // ***************************
 // * Functions (exposed API) *
 // ***************************
-usse::SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
+usse::SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_name, const shader::Features &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
     translation_state.is_maskupdate = maskupdate;
@@ -1500,7 +1500,7 @@ usse::SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::st
     return convert_gxp_to_spirv_impl(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
 }
 
-std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
+std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const shader::Features &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
     translation_state.is_maskupdate = maskupdate;
@@ -1537,7 +1537,7 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
 
     gxp_stream.read(reinterpret_cast<char *>(gxp_program), gxp_file_size);
 
-    FeatureState features;
+    Features features;
     features.direct_fragcolor = false;
     features.support_shader_interlock = true;
 

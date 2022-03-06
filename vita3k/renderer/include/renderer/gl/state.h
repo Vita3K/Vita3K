@@ -21,7 +21,7 @@
 #include <renderer/types.h>
 
 #include "types.h"
-#include <features/state.h>
+#include <shader/features.h>
 
 #include <SDL.h>
 

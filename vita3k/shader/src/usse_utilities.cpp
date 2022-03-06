@@ -21,7 +21,7 @@
 #include <util/log.h>
 
 #include <SPIRV/GLSL.std.450.h>
-#include <features/state.h>
+#include <shader/features.h>
 
 #include <bitset>
 
@@ -131,7 +131,7 @@ static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::Spi
 // > Eight-bit IEEE-like float: The largest value would be 01011111 and have value: 4(1 – 2-5) = 31/8 = 3.3875.
 static constexpr float MAX_FX8 = 3.3875f;
 
-static spv::Function *make_fx8_unpack_func(spv::Builder &b, const FeatureState &features) {
+static spv::Function *make_fx8_unpack_func(spv::Builder &b, const shader::Features &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *fx8_unpack_func_block;
@@ -160,7 +160,7 @@ static spv::Function *make_fx8_unpack_func(spv::Builder &b, const FeatureState &
     return fx8_unpack_func;
 }
 
-static spv::Function *make_fx8_pack_func(spv::Builder &b, const FeatureState &features) {
+static spv::Function *make_fx8_pack_func(spv::Builder &b, const shader::Features &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *fx8_pack_func_block;
@@ -185,7 +185,7 @@ static spv::Function *make_fx8_pack_func(spv::Builder &b, const FeatureState &fe
     return fx8_pack_func;
 }
 
-static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &features, DataType source_type) {
+static spv::Function *make_unpack_func(spv::Builder &b, const shader::Features &features, DataType source_type) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *unpack_func_block;
@@ -277,7 +277,7 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     return unpack_func;
 }
 
-static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &features, DataType source_type) {
+static spv::Function *make_pack_func(spv::Builder &b, const shader::Features &features, DataType source_type) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *pack_func_block;
@@ -350,7 +350,7 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     return pack_func;
 }
 
-static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &features) {
+static spv::Function *make_f16_unpack_func(spv::Builder &b, const shader::Features &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *f16_unpack_func_block;
@@ -374,7 +374,7 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &
     return f16_unpack_func;
 }
 
-static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &features) {
+static spv::Function *make_f16_pack_func(spv::Builder &b, const shader::Features &features) {
     std::vector<std::vector<spv::Decoration>> decorations;
 
     spv::Block *f16_pack_func_block;
@@ -520,7 +520,7 @@ spv::Id shader::usse::utils::fetch_memory(spv::Builder &b, const SpirvShaderPara
     return b.createFunctionCall(utils.fetch_memory, { addr });
 }
 
-spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id scalar, const DataType type) {
+spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const shader::Features &features, spv::Id scalar, const DataType type) {
     switch (type) {
     case DataType::INT8:
     case DataType::UINT8:
@@ -554,7 +554,7 @@ spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &uti
     return spv::NoResult;
 }
 
-spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id vec, const DataType source_type) {
+spv::Id shader::usse::utils::pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const shader::Features &features, spv::Id vec, const DataType source_type) {
     switch (source_type) {
     case DataType::INT8:
     case DataType::UINT8:
@@ -638,7 +638,7 @@ static spv::Id apply_modifiers(spv::Builder &b, const shader::usse::RegisterFlag
     return result;
 }
 
-spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand op, const Imm4 dest_mask, int shift_offset) {
+spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const shader::Features &features, Operand op, const Imm4 dest_mask, int shift_offset) {
     spv::Id type_f32 = b.makeFloatType(32);
 
     if (op.bank == RegisterBank::FPCONSTANT) {
@@ -984,7 +984,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     return apply_modifiers(b, op.flags, first_pass);
 }
 
-spv::Id shader::usse::utils::unpack(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
+spv::Id shader::usse::utils::unpack(spv::Builder &b, SpirvUtilFunctions &utils, const shader::Features &features, spv::Id target, const DataType type, Swizzle4 swizz, const Imm4 dest_mask,
     const int offset) {
     if (type == DataType::F32 || target == spv::NoResult) {
         return target;
@@ -1021,7 +1021,7 @@ spv::Id shader::usse::utils::unpack(spv::Builder &b, SpirvUtilFunctions &utils, 
         swizz, offset, dest_mask);
 }
 
-void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand dest,
+void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const shader::Features &features, Operand dest,
     spv::Id source, std::uint8_t dest_mask, int off) {
     if (source == spv::NoResult) {
         LOG_WARN("Source invalid");

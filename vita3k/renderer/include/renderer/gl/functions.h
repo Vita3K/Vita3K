@@ -31,18 +31,20 @@
 #include <tuple>
 
 struct MemState;
-struct FeatureState;
+namespace shader {
+struct Features;
+}
 
 namespace renderer::gl {
 
 // Compile program.
-SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, const FeatureState &features, const MemState &mem, bool shader_cache, bool spirv, bool maskupdate, const char *base_path, const char *title_id);
+SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, const shader::Features &features, const MemState &mem, bool shader_cache, bool spirv, bool maskupdate, const char *base_path, const char *title_id);
 void pre_compile_program(GLState &renderer, const char *base_path, const char *title_id, const ShadersHash &hashs);
 
 // Shaders.
 bool get_shaders_cache_hashs(GLState &renderer, const char *base_path, const char *title_id);
-std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const std::string &shader_version, bool shader_cache);
-std::vector<std::uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id);
+std::string load_glsl_shader(const SceGxmProgram &program, const shader::Features &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const std::string &shader_version, bool shader_cache);
+std::vector<std::uint32_t> load_spirv_shader(const SceGxmProgram &program, const shader::Features &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id);
 std::string pre_load_glsl_shader(const char *hash_text, const char *shader_type_str, const char *base_path, const char *title_id);
 
 // Uniforms.
@@ -50,13 +52,13 @@ bool set_uniform_buffer(GLContext &context, MemState &mem, const bool vertex_sha
 
 bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state);
 bool create(std::unique_ptr<Context> &context, const bool hashless_texture_cache);
-bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
+bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const shader::Features &features);
 bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 void sync_rendertarget(const GLRenderTarget &rt);
-void set_context(GLContext &ctx, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features);
+void set_context(GLContext &ctx, const MemState &mem, const GLRenderTarget *rt, const shader::Features &features);
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format);
-void draw(GLState &renderer, GLContext &context, const FeatureState &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
+void draw(GLState &renderer, GLContext &context, const shader::Features &features, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     void *indices, size_t count, uint32_t instance_count, MemState &mem, const char *base_path, const char *title_id, const Config &config);
 
 void upload_vertex_stream(GLContext &context, const std::size_t stream_index, const std::size_t length, const void *data);

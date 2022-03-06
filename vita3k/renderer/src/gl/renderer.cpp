@@ -26,7 +26,7 @@
 #include <shader/spirv_recompiler.h>
 #include <shader/usse_program_analyzer.h>
 
-#include <features/state.h>
+#include <shader/features.h>
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
@@ -302,7 +302,7 @@ bool create(std::unique_ptr<Context> &context, const bool hashless_texture_cache
     return true;
 }
 
-bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features) {
+bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const shader::Features &features) {
     R_PROFILE(__func__);
 
     rt = std::make_unique<GLRenderTarget>();
@@ -409,7 +409,7 @@ bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProg
     return true;
 }
 
-void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *rt, const FeatureState &features) {
+void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *rt, const shader::Features &features) {
     R_PROFILE(__func__);
 
     bind_fundamental(context);
