@@ -21,6 +21,7 @@
 
 #include <gxm/types.h>
 #include <mem/ptr.h>
+#include <renderer/gxm_types.h>
 
 namespace renderer {
 enum SurfaceTextureRetrievePurpose {

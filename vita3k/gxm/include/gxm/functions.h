@@ -19,6 +19,7 @@
 
 #include <gxm/types.h>
 
+#include <array>
 #include <string>
 
 namespace gxm {
@@ -41,6 +42,16 @@ uint32_t get_bits_per_pixel(SceGxmTransferFormat Format);
 } // namespace gxm
 
 namespace gxp {
+// Used to map GXM program parameters to GLSL data types
+enum class GenericParameterType {
+    Scalar,
+    Vector,
+    Matrix,
+    Array
+};
+
+using GxmVertexOutputTexCoordInfos = std::array<uint8_t, 10>;
+
 void log_parameter(const SceGxmProgramParameter &parameter);
 
 /**
@@ -64,7 +75,7 @@ GenericParameterType parameter_generic_type(const SceGxmProgramParameter &parame
 /**
  * \return SceGxmVertexProgramOutput (bitfield)
  */
-SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, SceGxmVertexOutputTexCoordInfos *coord_infos = nullptr);
+SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, GxmVertexOutputTexCoordInfos *coord_infos = nullptr);
 SceGxmFragmentProgramInputs get_fragment_inputs(const SceGxmProgram &program);
 
 const int get_parameter_type_size(const SceGxmParameterType type);

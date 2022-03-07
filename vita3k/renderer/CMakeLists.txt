@@ -59,5 +59,5 @@ add_library(
 )
 
 target_include_directories(renderer PUBLIC include)
-target_link_libraries(renderer PUBLIC crypto dlmalloc stb shader glutil threads config util ${RENDERER_VULKAN_LIBRARIES})
+target_link_libraries(renderer PUBLIC mem crypto dlmalloc stb shader glutil threads config util ${RENDERER_VULKAN_LIBRARIES})
 target_link_libraries(renderer PRIVATE sdl2 stb ffmpeg xxHash::xxhash)

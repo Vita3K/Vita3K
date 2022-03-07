@@ -22,6 +22,7 @@
 #include <glutil/object_array.h>
 #include <gxm/types.h>
 #include <renderer/commands.h>
+#include <renderer/gxm_types.h>
 
 #include <array>
 #include <map>

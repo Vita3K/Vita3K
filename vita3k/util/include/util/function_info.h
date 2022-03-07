@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include <cstddef>
+
 namespace util {
 
 /// Used to provide information about an arbitrary function.

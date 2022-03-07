@@ -37,7 +37,7 @@ size_t attribute_format_size(SceGxmAttributeFormat format) {
     case SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED:
         return 4;
     default:
-        LOG_ERROR("Unsupported attribute format {}", log_hex(format));
+        LOG_ERROR("Unsupported attribute format 0x{:0X}", format);
         return 4;
     }
 }
