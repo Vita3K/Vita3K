@@ -71,8 +71,8 @@ void log_parameter(const SceGxmProgramParameter &parameter) {
         category = "Unknown type";
         break;
     }
-    LOG_DEBUG("{}: name:{:s} semantic:{} type:{:d} component_count:{} container_index:{} semantic_index:{} array_size:{} resource_index:{}",
-        category, parameter_name_raw(parameter), log_parameter_semantic(parameter), parameter.type, uint8_t(parameter.component_count), log_hex(uint8_t(parameter.container_index)),
+    LOG_DEBUG("{}: name:{:s} semantic:{} type:{:d} component_count:{} container_index:0x{:0X} semantic_index:{} array_size:{} resource_index:{}",
+        category, parameter_name_raw(parameter), log_parameter_semantic(parameter), parameter.type, uint8_t(parameter.component_count), uint8_t(parameter.container_index),
         parameter.semantic_index, parameter.array_size, parameter.resource_index);
 }
 
@@ -162,7 +162,7 @@ std::string parameter_struct_name(const SceGxmProgramParameter &parameter) {
         return "";
 }
 
-SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, SceGxmVertexOutputTexCoordInfos *coord_infos) {
+SceGxmVertexProgramOutputs get_vertex_outputs(const SceGxmProgram &program, GxmVertexOutputTexCoordInfos *coord_infos) {
     if (!program.is_vertex())
         return _SCE_GXM_VERTEX_PROGRAM_OUTPUT_INVALID;
 

@@ -19,6 +19,7 @@
 
 #include <spirv_glsl.hpp>
 
+#include <map>
 #include <unordered_map>
 #include <vector>
 
