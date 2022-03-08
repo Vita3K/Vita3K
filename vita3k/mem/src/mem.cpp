@@ -40,7 +40,7 @@ constexpr size_t TOTAL_MEM_SIZE = GB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
 
-//TODO: support multiple handlers
+// TODO: support multiple handlers
 static AccessViolationHandler access_violation_handler;
 static void register_access_violation_handler(AccessViolationHandler handler);
 

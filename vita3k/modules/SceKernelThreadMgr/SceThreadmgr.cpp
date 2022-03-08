@@ -152,7 +152,7 @@ EXPORT(SceInt32, _sceKernelGetCallbackInfo, SceUID callbackId, SceKernelCallback
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
 
     if (!pInfo)
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR); //TODO check result
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR); // TODO check result
 
     if (pInfo->size != sizeof(*pInfo))
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
@@ -250,7 +250,7 @@ EXPORT(int, _sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKe
         } else {
             auto workarea_mutex_owner = mutex->workarea.get(host.mem)->owner;
             auto threads = host.kernel.threads;
-            if (threads[workarea_mutex_owner] == mutex->owner) { //something like optimisation
+            if (threads[workarea_mutex_owner] == mutex->owner) { // something like optimisation
                 info_data->currentOwnerId = workarea_mutex_owner;
             } else {
                 info_data->currentOwnerId = -1;
@@ -711,7 +711,7 @@ unsigned process_callbacks(HostState &host, SceUID thread_id) {
     for (CallbackPtr &cb : thread->callbacks) {
         if (cb->is_executable()) {
             bool should_delete = cb->execute();
-            if (should_delete) //TODO suppport callbacks deletion
+            if (should_delete) // TODO suppport callbacks deletion
                 LOG_WARN("Callback with name {} requested to be deleted, but this is not supported yet!", cb->get_name());
             num_callbacks_processed++;
         }
@@ -807,14 +807,14 @@ int delay_thread(SceUInt delay_us) {
 }
 
 int delay_thread_cb(HostState &host, SceUID thread_id, SceUInt delay_us) {
-    auto start = std::chrono::high_resolution_clock::now(); //Meseaure the time taken to process callbacks
+    auto start = std::chrono::high_resolution_clock::now(); // Meseaure the time taken to process callbacks
     process_callbacks(host, thread_id);
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-    if (delay_us > elapsed.count()) //If we spent less time than requested processing callbacks, sleep the remaining time
+    if (delay_us > elapsed.count()) // If we spent less time than requested processing callbacks, sleep the remaining time
         return delay_thread(delay_us - elapsed.count());
-    else //Else return directly
+    else // Else return directly
         return SCE_KERNEL_OK;
 }
 
@@ -839,7 +839,7 @@ EXPORT(int, sceKernelDelayThreadCB200, SceUInt delay) {
 }
 
 EXPORT(int, sceKernelDeleteCallback) {
-    //TODO
+    // TODO
     return UNIMPLEMENTED();
 }
 

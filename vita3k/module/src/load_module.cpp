@@ -32,7 +32,7 @@ bool is_lle_module(SceSysmoduleModuleId module_id, HostState &host) {
         SCE_SYSMODULE_PGF,
         SCE_SYSMODULE_SYSTEM_GESTURE,
         SCE_SYSMODULE_XML,
-        //SCE_SYSMODULE_MP4, // Is not ready for now
+        // SCE_SYSMODULE_MP4, // Is not ready for now
         SCE_SYSMODULE_ATRAC,
         SCE_SYSMODULE_JSON,
     };

@@ -415,7 +415,7 @@ COMMAND(handle_set_state) {
     auto result = handlers.find(gxm_state_to_set);
 
     if (result != handlers.end()) {
-        //LOG_TRACE("State set: {}", (int)gxm_state_to_set);
+        // LOG_TRACE("State set: {}", (int)gxm_state_to_set);
         result->second(renderer, mem, config, helper, render_context, base_path, title_id);
     }
 }

@@ -147,13 +147,13 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
 
 /**
  * \brief Try to decompress texture to 32-bit RGBA.
- * 
+ *
  * \param fmt    Texture base format.
  * \param dest   Destination texture data. Size must be sufficient enough of align(width, 4) * height * 4 (bytes).
  * \param data   Source data to decompress.
  * \param width  Texture width.
  * \param height Texture height.
- * 
+ *
  * \return Size of source taken.
  */
 static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height) {

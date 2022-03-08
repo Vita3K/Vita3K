@@ -30,7 +30,7 @@ enum EndianType {
 
 /**
  * \brief Get system endian type.
- * 
+ *
  * Can be use at both compile-time and run-time. Only supports little and big endian.
  */
 constexpr EndianType get_system_endian_type() {

@@ -35,14 +35,14 @@ struct SceGxmProgram;
 namespace shader::usse {
 /**
  * \brief Check if an instruction is a branch.
- * 
+ *
  * If the instruction is a branch, the passed references will be set
  * with the predicate and branch offset.
- * 
+ *
  * \param inst   Instruction.
  * \param pred   Reference to the value which will contains predicate.
  * \param br_off Reference to the value which will contains branch offset.
- * 
+ *
  * \returns True on instruction being a branch.
  */
 bool is_kill(const std::uint64_t inst);

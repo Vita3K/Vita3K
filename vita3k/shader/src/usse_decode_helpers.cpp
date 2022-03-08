@@ -68,11 +68,8 @@ static void double_reg(usse::OperandNum &reg, RegisterBank reg_bank) {
 // Operand bank decoding
 
 static RegisterBank decode_dest_bank(Imm2 dest_bank, bool bank_ext) {
-    if (dest_bank == 3)
-        return RegisterBank::INDEXED1;
-    else
-        // TODO: Index stuff
-        if (bank_ext)
+    // TODO: Index stuff
+    if (bank_ext)
         switch (dest_bank) {
         case 0: return RegisterBank::SECATTR;
         case 1: return RegisterBank::SPECIAL;

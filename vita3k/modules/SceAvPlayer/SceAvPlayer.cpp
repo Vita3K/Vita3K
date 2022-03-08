@@ -254,13 +254,13 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
         const auto buf_ptr = Ptr<char>(buf).get(host.mem);
         const auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
         host.kernel.run_guest_function(player_info->file_manager.open_file.address(), { player_info->file_manager.user_data, path.address() });
-        //TODO: support file_size > 4GB (callback function returns uint64_t, but I dont know how to get high dword of uint64_t)
+        // TODO: support file_size > 4GB (callback function returns uint64_t, but I dont know how to get high dword of uint64_t)
         const uint32_t file_size = host.kernel.run_guest_function(player_info->file_manager.file_size.address(), { player_info->file_manager.user_data });
         auto remaining = file_size;
         uint32_t offset = 0;
         while (remaining) {
             const auto buf_size = std::min((uint32_t)KB(512), remaining);
-            //zero in 5 parameter means high dword of uint64_t parameter. see previous todo
+            // zero in 5 parameter means high dword of uint64_t parameter. see previous todo
             host.kernel.run_guest_function(player_info->file_manager.read_file.address(), { player_info->file_manager.user_data, buf, offset, 0, buf_size });
             temp_file.write(buf_ptr, buf_size);
             offset += buf_size;
@@ -277,7 +277,7 @@ EXPORT(int32_t, sceAvPlayerAddSource, SceUID player_handle, Ptr<const char> path
     }
 
     player_info->player.queue(file_path);
-    run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_BUFFERING, 0, Ptr<void>(0)); //may be important for sound
+    run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_BUFFERING, 0, Ptr<void>(0)); // may be important for sound
     run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_READY, 0, Ptr<void>(0));
     return 0;
 }
@@ -363,7 +363,7 @@ EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, uint stream_no,
     STUBBED("ALWAYS SUSPECTS 2 STREAMS: VIDEO AND AUDIO");
     const auto state = host.kernel.obj_store.get<AvPlayerState>();
     const PlayerPtr &player_info = lock_and_find(player_handle, state->players, state->mutex);
-    if (stream_no == 0) { //suspect always two streams: audio and video //first is video
+    if (stream_no == 0) { // suspect always two streams: audio and video //first is video
         DecoderSize size = player_info->player.get_size();
         stream_info->stream_type = MediaType::VIDEO;
         stream_info->stream_details.video.width = size.width;
@@ -371,7 +371,7 @@ EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, uint stream_no,
         stream_info->stream_details.video.aspect_ratio = static_cast<float>(size.width) / static_cast<float>(size.height);
         strcpy(stream_info->stream_details.video.language, "ENG");
     } else if (stream_no == 1) { // audio
-        player_info->player.receive_audio(); //TODO: Get audio info without skipping data frames
+        player_info->player.receive_audio(); // TODO: Get audio info without skipping data frames
         stream_info->stream_type = MediaType::AUDIO;
         stream_info->stream_details.audio.channels = player_info->player.last_channels;
         stream_info->stream_details.audio.sample_rate = player_info->player.last_sample_rate;
@@ -417,9 +417,9 @@ EXPORT(bool, sceAvPlayerGetVideoData, SceUID player_handle, SceAvPlayerFrameInfo
     } else {
         buffer = get_buffer(player_info, MediaType::VIDEO, host.mem, H264DecoderState::buffer_size(size), false);
     }
-    //TODO: catch eof error and call
-    //uint32_t buf = SCE_AVPLAYER_ERROR_MAYBE_EOF;
-    //run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_ERROR, 0, &buf);
+    // TODO: catch eof error and call
+    // uint32_t buf = SCE_AVPLAYER_ERROR_MAYBE_EOF;
+    // run_event_callback(host, thread_id, player_info, SCE_AVPLAYER_STATE_ERROR, 0, &buf);
 
     frame_info->timestamp = player_info->player.last_timestamp;
     frame_info->stream_details.video.width = size.width;

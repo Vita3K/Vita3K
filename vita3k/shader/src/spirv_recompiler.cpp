@@ -438,8 +438,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 do_coord = true;
             } else if (input_id == 0xD000) {
                 // Not sure, comment out for now
-                //input_id = 10;
-                //do_coord = true;
+                // input_id = 10;
+                // do_coord = true;
             }
 
             if (do_coord) {
@@ -501,7 +501,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 break;
             }
             case 1: {
-                //Maybe char?
+                // Maybe char?
                 LOG_WARN("Unsupported texture component: {}", component_type);
                 break;
             }
@@ -1152,16 +1152,16 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD8, "v_TexCoord8", calculate_copy_comp_count(coord_infos[8]), 12);
     add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_TEXCOORD9, "v_TexCoord9", calculate_copy_comp_count(coord_infos[9]), 13);
     // TODO: this should be translated to gl_PointSize
-    //add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE, "v_Psize", 1);
+    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_PSIZE, "v_Psize", 1);
     // TODO: these should be translated to gl_ClipDistance
-    //add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, "v_Clip0", 1);
-    //add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, "v_Clip1", 1);
-    //add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, "v_Clip2", 1);
-    //add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, "v_Clip3", 1);
-    //add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, "v_Clip4", 1);
-    //add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, "v_Clip5", 1);
-    //add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "v_Clip6", 1);
-    //add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "v_Clip7", 1);
+    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP0, "v_Clip0", 1);
+    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP1, "v_Clip1", 1);
+    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP2, "v_Clip2", 1);
+    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP3, "v_Clip3", 1);
+    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP4, "v_Clip4", 1);
+    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP5, "v_Clip5", 1);
+    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP6, "v_Clip6", 1);
+    // add_vertex_output_info(SCE_GXM_VERTEX_PROGRAM_OUTPUT_CLIP7, "v_Clip7", 1);
 
     Operand o_op;
     o_op.bank = RegisterBank::OUTPUT;
@@ -1445,7 +1445,7 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
     options.enable_420pack_extension = true;
 
     // TODO: this might be needed in the future
-    //options.vertex.flip_vert_y = true;
+    // options.vertex.flip_vert_y = true;
 
     glsl.set_common_options(options);
     glsl.add_header_line("// Shader Name: " + shader_name);

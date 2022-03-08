@@ -214,7 +214,7 @@ bool USSETranslatorVisitor::smp(
         break;
     case 3: {
         // TODO: figure out what to fill here
-        //store(inst.opr.dest, stub, 0b1111);
+        // store(inst.opr.dest, stub, 0b1111);
         store(inst.opr.dest, result, 0b1111);
         break;
     }

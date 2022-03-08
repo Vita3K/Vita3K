@@ -28,7 +28,7 @@
 // Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
 
 void register_keys(KeyStore &SCE_KEYS, int type) {
-    //case 0 registers external(retail), 1 registers internal proto keys, proto_keys not added.
+    // case 0 registers external(retail), 1 registers internal proto keys, proto_keys not added.
     switch (type) {
     case 0:
         SCE_KEYS.register_keys(
@@ -858,7 +858,7 @@ void self2elf(const std::string &infile, const std::string &outfile, KeyStore &S
     fileout.close();
 }
 
-//Credits to the vitasdk team/contributors for vita-make-fself https://github.com/vitasdk/vita-toolchain/blob/master/src/vita-make-fself.c
+// Credits to the vitasdk team/contributors for vita-make-fself https://github.com/vitasdk/vita-toolchain/blob/master/src/vita-make-fself.c
 
 void make_fself(const std::string &input_file, const std::string &output_file) {
     std::ifstream filein(input_file, std::ios::binary);

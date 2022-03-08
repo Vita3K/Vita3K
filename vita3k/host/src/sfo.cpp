@@ -90,8 +90,8 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
 
         memcpy(&sfile.entries[i].data.first[0], &content[sfile.header.key_table_start + sfile.entries[i].entry.key_offset], keySize);
 
-        //Quick hack to remove garbage null terminator caused by reading directly
-        //to buffer
+        // Quick hack to remove garbage null terminator caused by reading directly
+        // to buffer
         sfile.entries[i].data.first = sfile.entries[i].data.first.c_str();
     }
 
@@ -103,8 +103,8 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
         // The last of data is a terminator
         memcpy(&sfile.entries[i].data.second[0], &content[sfile.header.data_table_start + sfile.entries[i].entry.data_offset], dataSize - 1);
 
-        //Quick hack to remove garbage null terminator caused by reading directly
-        //to buffer
+        // Quick hack to remove garbage null terminator caused by reading directly
+        // to buffer
         sfile.entries[i].data.second = sfile.entries[i].data.second.c_str();
     }
 

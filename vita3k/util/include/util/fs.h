@@ -54,13 +54,13 @@ public:
 namespace fs_utils {
 
 /**
-  * \brief  Construct a file name (optionally with an extension) to be placed in a Vita3K directory.
-  * \param  base_path   The main output path for the file.
-  * \param  folder_path The sub-directory/sub-directories to output to.
-  * \param  file_name   The name of the file.
-  * \param  extension   The extension of the file (optional)
-  * \return A complete Boost.Filesystem file path normalized.
-  */
+ * \brief  Construct a file name (optionally with an extension) to be placed in a Vita3K directory.
+ * \param  base_path   The main output path for the file.
+ * \param  folder_path The sub-directory/sub-directories to output to.
+ * \param  file_name   The name of the file.
+ * \param  extension   The extension of the file (optional)
+ * \return A complete Boost.Filesystem file path normalized.
+ */
 inline fs::path construct_file_name(const fs::path &base_path, const fs::path &folder_path, const fs::path &file_name, const fs::path &extension = "") {
     fs::path full_file_path{ base_path / folder_path / file_name };
     if (!extension.empty())

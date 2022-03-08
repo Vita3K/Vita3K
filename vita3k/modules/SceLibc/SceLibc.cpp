@@ -183,9 +183,9 @@ EXPORT(int, __cxa_guard_release) {
 }
 
 EXPORT(void, __cxa_set_dso_handle_main, Ptr<void> dso) {
-    //LOG_WARN("__cxa_set_dso_handle_main(dso=*0x%x)", dso);
+    // LOG_WARN("__cxa_set_dso_handle_main(dso=*0x%x)", dso);
     g_dso = dso;
-    //return UNIMPLEMENTED();
+    // return UNIMPLEMENTED();
 }
 
 EXPORT(int, __set_exidx_main) {

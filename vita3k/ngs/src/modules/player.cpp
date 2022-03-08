@@ -173,7 +173,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                                 data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_CALLBACK_REASON_DONE_ALL, 0, 0);
                                 finished = true;
                                 // TODO: Free all occupied input routes
-                                //unroute_occupied(mem, voice);
+                                // unroute_occupied(mem, voice);
                             } else {
                                 data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_CALLBACK_REASON_DONE_ONE_BUFFER, prev_index,
                                     params->buffer_params[state->current_buffer].buffer.address());
