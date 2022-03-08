@@ -25,8 +25,8 @@
 #include <dlmalloc.h>
 
 namespace renderer {
-#define REPORT_MISSING(backend) //LOG_ERROR("Unimplemented graphics API handler with backend {}", (int)backend)
-#define REPORT_STUBBED() //LOG_INFO("Stubbed")
+#define REPORT_MISSING(backend) // LOG_ERROR("Unimplemented graphics API handler with backend {}", (int)backend)
+#define REPORT_STUBBED() // LOG_INFO("Stubbed")
 
 struct Command;
 
@@ -42,26 +42,26 @@ enum class CommandOpcode : std::uint8_t {
     CreateRenderTarget = 1,
 
     /**
-         * Do draw.
-         */
+     * Do draw.
+     */
     Draw = 2,
 
     /**
-         * This is like a NOP. It only signals back to client.
-         */
+     * This is like a NOP. It only signals back to client.
+     */
     Nop = 3,
 
     /**
-         * Set a GXM state.
-         */
+     * Set a GXM state.
+     */
     SetState = 4,
 
     SetContext = 5,
     SyncSurfaceData = 6,
 
     /**
-         * Signal sync object that fragment has been done.
-         */
+     * Signal sync object that fragment has been done.
+     */
     SignalSyncObject = 9,
 
     SignalNotification = 10,

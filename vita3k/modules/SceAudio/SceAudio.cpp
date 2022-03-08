@@ -170,7 +170,7 @@ EXPORT(int, sceAudioOutSetPortVolume_forUser) {
 }
 
 EXPORT(int, sceAudioOutSetVolume, int port, SceAudioOutChannelFlag ch, int *vol) {
-    if (!ch) //no channel selected, no changes
+    if (!ch) // no channel selected, no changes
         return 0;
 
     const AudioOutPortPtr prt = lock_and_find(port, host.audio.shared.out_ports, host.audio.shared.mutex);
@@ -182,7 +182,7 @@ EXPORT(int, sceAudioOutSetVolume, int port, SceAudioOutChannelFlag ch, int *vol)
     const int volume = static_cast<int>(SDL_MIX_MAXVOLUME * volume_level);
 
     prt->volume = volume;
-    //then update channel volumes in case there was a change
+    // then update channel volumes in case there was a change
     prt->left_channel_volume = left;
     prt->right_channel_volume = right;
 

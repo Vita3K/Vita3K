@@ -115,9 +115,9 @@ bool USSETranslatorVisitor::vbw(
     case Opcode::SHR: operation = spv::Op::OpShiftRightLogical; break;
     default: return false;
     }
-    //optimisation. (any OR 0 || any XOR 0 || any AND 0xFFFFFFFF) -> assign
+    // optimisation. (any OR 0 || any XOR 0 || any AND 0xFFFFFFFF) -> assign
     bool is_const = m_b.getOpCode(src2) == spv::Op::OpConstant;
-    auto const_val = is_const ? m_b.getConstantScalar(src2) : 1; //default value is intentionally non zero
+    auto const_val = is_const ? m_b.getConstantScalar(src2) : 1; // default value is intentionally non zero
     if ((operation == spv::Op::OpBitwiseOr || operation == spv::Op::OpBitwiseXor) && is_const && const_val == 0
         || operation == spv::Op::OpBitwiseAnd && is_const && const_val == std::numeric_limits<decltype(const_val)>::max()) {
         inst.opr.src1.type = DataType::F32;

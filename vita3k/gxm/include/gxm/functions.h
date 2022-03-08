@@ -44,9 +44,9 @@ namespace gxp {
 void log_parameter(const SceGxmProgramParameter &parameter);
 
 /**
-* \brief Returns raw parameter name from GXP
-*        Therefore, if parameter belongs in a struct, includes it in the form of "struct_name.field_name"
-*/
+ * \brief Returns raw parameter name from GXP
+ *        Therefore, if parameter belongs in a struct, includes it in the form of "struct_name.field_name"
+ */
 std::string parameter_name_raw(const SceGxmProgramParameter &parameter);
 
 /**

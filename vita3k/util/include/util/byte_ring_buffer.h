@@ -6,7 +6,7 @@
 
 #include <cassert>
 
-//Ring buffer for bytes - not multi-thread safe, bring your own locks
+// Ring buffer for bytes - not multi-thread safe, bring your own locks
 class ByteRingBuffer {
 public:
     ByteRingBuffer(std::size_t size)
@@ -26,16 +26,16 @@ public:
             return 0;
         }
 
-        const std::size_t insertSize = std::min(size, Free()); //Biggest we can insert in buffer
-        if (start <= end) { //There is space between 'end' and buffer end, and potentially between 0 and 'start'
-            const std::size_t bufEndInsertSize = std::min(capacity - end, insertSize); //Size of data to put between 'end' and buffer end
-            const std::size_t bufStartInsertSize = std::min(start, insertSize - bufEndInsertSize); //Size of data to put between 0 and start
+        const std::size_t insertSize = std::min(size, Free()); // Biggest we can insert in buffer
+        if (start <= end) { // There is space between 'end' and buffer end, and potentially between 0 and 'start'
+            const std::size_t bufEndInsertSize = std::min(capacity - end, insertSize); // Size of data to put between 'end' and buffer end
+            const std::size_t bufStartInsertSize = std::min(start, insertSize - bufEndInsertSize); // Size of data to put between 0 and start
 
             assert((bufEndInsertSize + bufStartInsertSize) == insertSize);
 
             memcpy(&buffer[end], static_cast<const char *>(in), bufEndInsertSize);
             memcpy(&buffer[0], static_cast<const char *>(in) + bufEndInsertSize, bufStartInsertSize);
-        } else { //There is space between 'end' and 'start'
+        } else { // There is space between 'end' and 'start'
             memcpy(&buffer[end], static_cast<const char *>(in), insertSize);
         }
 
@@ -45,7 +45,7 @@ public:
     }
 
     std::size_t Remove(void *out, std::size_t size) {
-        std::size_t removed = Peek(out, size); //If empty, Peek should copy 0
+        std::size_t removed = Peek(out, size); // If empty, Peek should copy 0
         start = (start + removed) % capacity;
         used -= removed;
         return removed;
@@ -57,11 +57,11 @@ public:
         }
 
         const std::size_t extractSize = std::min(size, Used());
-        if (start < end) { //Data between 'start' and 'end'-1
+        if (start < end) { // Data between 'start' and 'end'-1
             memcpy(out, &buffer[start], extractSize);
-        } else { //Data between 'start' and buffer end, and potentially between 0 and 'end'-1
-            const std::size_t bufTailSize = std::min(capacity - start, extractSize); //Size of stuff to copy between 'start' and buffer end
-            const std::size_t bufHeadSize = std::min(end, extractSize - bufTailSize); //Size of stuff to copy at buffer start
+        } else { // Data between 'start' and buffer end, and potentially between 0 and 'end'-1
+            const std::size_t bufTailSize = std::min(capacity - start, extractSize); // Size of stuff to copy between 'start' and buffer end
+            const std::size_t bufHeadSize = std::min(end, extractSize - bufTailSize); // Size of stuff to copy at buffer start
 
             assert((bufTailSize + bufHeadSize) == extractSize);
             memcpy(out, &buffer[start], bufTailSize);
@@ -74,7 +74,7 @@ private:
     std::unique_ptr<char[]> buffer;
     const std::size_t capacity;
 
-    //buffer[start] -> buffer[end - 1] is used
+    // buffer[start] -> buffer[end - 1] is used
     std::size_t start = 0;
     std::size_t end = 0;
     std::size_t used = 0;

@@ -205,7 +205,7 @@ EXPORT(int, sceKernelUnregisterProcessTerminationCallback) {
 }
 
 EXPORT(int, sceLibKernel_9F793F84) {
-    //Gets a version from the process' SceKernelProcessParam. Used for PSN Auth in SceShell.
+    // Gets a version from the process' SceKernelProcessParam. Used for PSN Auth in SceShell.
     auto p_process_param = CALL_EXPORT(sceKernelGetProcessParam, nullptr);
     auto process_param = p_process_param.get(host.mem);
     if (process_param && (process_param[1] == '2PSP') && (process_param[2] != 0)) {

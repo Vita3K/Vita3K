@@ -42,13 +42,13 @@ bool deinit(NpTrophyState &state);
 
 /**
  * \brief Create a new trophy context.
- * 
+ *
  * Only one context per 1 communication ID.
- * 
+ *
  * \param np           NP state.
  * \param io           IO state.
  * \param custom_comm  Custom communication ID. If this is null, the one passed in NP initialization will be used.
- * 
+ *
  * \returns uint32_t(-1) on failure, else the handle to the context.
  */
 np::trophy::ContextHandle create_trophy_context(NpState &np, IOState *io, const std::wstring &pref_path,

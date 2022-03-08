@@ -214,7 +214,7 @@ bool is_compressed_format(SceGxmTextureBaseFormat base_format, std::uint32_t wid
 
 /**
  * \brief Helper method that packs RGBA channels into a single 4 byte pixel, but reversed for little endian.
- * 
+ *
  * \param r   red channel.
  * \param g   green channel.
  * \param b   blue channel.
@@ -227,7 +227,7 @@ static std::uint32_t pack_rgba_reversed(std::uint8_t r, std::uint8_t g, std::uin
 /**
  * \brief Decompresses one block of a DXT1 texture and stores the resulting pixels at the appropriate offset in 'image',
  *        with custom alpha table.
- * 
+ *
  * \param x                 x-coordinate of the first pixel in the block.
  * \param y                 y-coordinate of the first pixel in the block.
  * \param width             width of the texture being decompressed.
@@ -321,7 +321,7 @@ static void decompress_block_dxt1(std::uint32_t x, std::uint32_t y, std::uint32_
 
 /**
  * \brief Decompresses one block of a DXT3 texture and stores the resulting pixels at the appropriate offset in 'image'.
- * 
+ *
  * \param x                 x-coordinate of the first pixel in the block.
  * \param y                 y-coordinate of the first pixel in the block.
  * \param width             width of the texture being decompressed.
@@ -348,7 +348,7 @@ static void decompress_block_dxt3(std::uint32_t x, std::uint32_t y, std::uint32_
 
 /**
  * \brief Decompresses one block of a DXT5 texture and stores the resulting pixels at the appropriate offset in 'image'.
- * 
+ *
  * \param x                 x-coordinate of the first pixel in the block.
  * \param y                 y-coordinate of the first pixel in the block.
  * \param width             width of the texture being decompressed.
@@ -441,9 +441,9 @@ static void decompress_block_dxt5(std::uint32_t x, std::uint32_t y, std::uint32_
 
 /**
  * \brief Decompresses all the blocks of a DXT compressed texture and stores the resulting pixels in 'image'.
- * 
+ *
  * Output results is in format RGBA, with each channel being 8 bits.
- * 
+ *
  * \param width            Texture width.
  * \param height           Texture height.
  * \param block_storage    Pointer to compressed DXT1 blocks.

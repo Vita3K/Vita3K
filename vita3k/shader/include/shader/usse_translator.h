@@ -119,7 +119,7 @@ public:
      *        write/dest mask
      *
      * \returns A copy of given operand
-    */
+     */
     spv::Id load(Operand op, const Imm4 dest_mask, int shift_offset = 0);
 
     void reset_for_new_session() {

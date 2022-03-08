@@ -44,7 +44,7 @@ void wishlist(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
 
 /**
  * \brief Set list of subject with sync object to done.
- * 
+ *
  * This will also signals wishlists that are waiting.
  */
 void subject_done(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
@@ -151,9 +151,9 @@ const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState
 
 /**
  * \brief Decompresses all the blocks of a DXT compressed texture and stores the resulting pixels in 'image'.
- * 
+ *
  * Output results is in format RGBA, with each channel being 8 bits.
- * 
+ *
  * \param width            Texture width.
  * \param height           Texture height.
  * \param block_storage    Pointer to compressed DXT1 blocks.

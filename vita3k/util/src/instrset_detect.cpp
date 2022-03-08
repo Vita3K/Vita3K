@@ -1,17 +1,17 @@
 /**************************  instrset_detect.cpp   ****************************
-* Author:        Agner Fog
-* Date created:  2012-05-30
-* Last modified: 2019-08-01
-* Version:       2.00.00
-* Project:       vector class library
-* Description:
-* Functions for checking which instruction sets are supported.
-*
-* (c) Copyright 2012-2019 Agner Fog.
-* Apache License version 2.0 or later.
-******************************************************************************/
+ * Author:        Agner Fog
+ * Date created:  2012-05-30
+ * Last modified: 2019-08-01
+ * Version:       2.00.00
+ * Project:       vector class library
+ * Description:
+ * Functions for checking which instruction sets are supported.
+ *
+ * (c) Copyright 2012-2019 Agner Fog.
+ * Apache License version 2.0 or later.
+ ******************************************************************************/
 
-//some code from instrset.h was also added and
+// some code from instrset.h was also added and
 
 #include <util/instrset_detect.h>
 // Header files for non-vector intrinsic functions including _BitScanReverse(int), __cpuid(int[4],int), _xgetbv(int)

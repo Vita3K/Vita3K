@@ -15,10 +15,10 @@ template <typename Function>
 struct FunctionInfo : public FunctionInfo<decltype(&Function::operator())> {};
 
 /**
-* Partial specialization for function types.
-*
-* This is used as the supporting base for all other specializations.
-*/
+ * Partial specialization for function types.
+ *
+ * This is used as the supporting base for all other specializations.
+ */
 template <typename R, typename... Args>
 struct FunctionInfo<R(Args...)> {
     static constexpr size_t args_count = sizeof...(Args);

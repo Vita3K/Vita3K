@@ -286,9 +286,9 @@ void float_to_half_AVX_F16C(const float *src, std::uint16_t *dest, const int tot
 #endif
 
 #if (defined(__AVX__) && defined(__F16C__)) || defined(__AVX2__)
-//forced use AVX+F16C instruction set
-//AVX2 checked intentionally cause MSVC does not have __F16C__ macros
-//and checking AVX is not enough for some CPU architectures (Intel Sandy bridge)
+// forced use AVX+F16C instruction set
+// AVX2 checked intentionally cause MSVC does not have __F16C__ macros
+// and checking AVX is not enough for some CPU architectures (Intel Sandy bridge)
 void float_to_half(const float *src, std::uint16_t *dest, const int total) {
     float_to_half_AVX_F16C(src, dest, total);
 }
@@ -300,7 +300,7 @@ void float_to_half_basic(const float *src, std::uint16_t *dest, const int total)
     }
 }
 #if defined(_MSC_VER)
-//check and use AVX+F16C instruction set if possible
+// check and use AVX+F16C instruction set if possible
 
 // use function variable as imitation of self-modifying code.
 // on first use we check processor features and set appropriate realisation, later we immediately use appropriate realisation

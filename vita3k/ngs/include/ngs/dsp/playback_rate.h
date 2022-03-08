@@ -33,9 +33,9 @@
 
 namespace ngs::dsp::playback_rate {
 /**
-    * @brief Playback rate scaling settings to be passed to a playback rate
-    * scaling object
-    */
+ * @brief Playback rate scaling settings to be passed to a playback rate
+ * scaling object
+ */
 struct scaling_settings {
     // Scaling factor in a scale of 1
     float scaling_factor = 1;
@@ -48,8 +48,8 @@ struct scaling_settings {
 };
 
 /**
-    * @brief Playback rate scaler abstraction class
-    */
+ * @brief Playback rate scaler abstraction class
+ */
 class Scaler {
     // Actual scaler object
     soundtouch::SoundTouch scaler;
@@ -64,28 +64,28 @@ class Scaler {
 
 public:
     /**
-            * @brief Construct a new Scaler object
-            *
-            * @param settings Scaling settings
-            */
+     * @brief Construct a new Scaler object
+     *
+     * @param settings Scaling settings
+     */
     Scaler(ngs::dsp::playback_rate::scaling_settings *settings);
 
     /**
-            * @brief Take an audio input buffer and apply playback rate scaling according to
-            * the settings of the provided decoder.
-            *
-            * @param audio_input Floating-point PCM audio samples that need to be scaled
-            * @return The size in samples of the resulting audio buffer due to the scaling
-            * process
-            */
+     * @brief Take an audio input buffer and apply playback rate scaling according to
+     * the settings of the provided decoder.
+     *
+     * @param audio_input Floating-point PCM audio samples that need to be scaled
+     * @return The size in samples of the resulting audio buffer due to the scaling
+     * process
+     */
     unsigned int scale(std::vector<std::uint8_t> *audio_input);
 
     /**
-            * @brief Get audio data resulting of the scaling process
-            *
-            * @param audio_output Pointer to a vector with enough size to fit the amount of samples
-            * specified in the return of `Scaler::scale()`
-            */
+     * @brief Get audio data resulting of the scaling process
+     *
+     * @param audio_output Pointer to a vector with enough size to fit the amount of samples
+     * specified in the return of `Scaler::scale()`
+     */
     int receive(std::vector<std::uint8_t> *audio_output);
 };
 

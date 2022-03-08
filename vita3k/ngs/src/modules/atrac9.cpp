@@ -100,7 +100,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                         data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_CALLBACK_REASON_DONE_ALL, 0, 0);
                         finished = true;
                         // TODO: Free all occupied input routes
-                        //unroute_occupied(mem, voice);
+                        // unroute_occupied(mem, voice);
                     } else {
                         data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_CALLBACK_REASON_DONE_ONE_BUFFER, prev_index,
                             params->buffer_params[state->current_buffer].buffer.address());
@@ -183,7 +183,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                 data.extra_storage.resize(curr_pos + decoder->get_samples_per_superframe() * sizeof(float) * 2);
 
                 if (decoder->send(input, decoder->get_superframe_size())) {
-                    //convert from int16 to float
+                    // convert from int16 to float
                     uint32_t const channel_count = decoder->get_channel_count();
                     uint32_t const sample_rate = decoder->get(DecoderQuery::SAMPLE_RATE);
                     std::vector<std::uint8_t> temporary_bytes(decoder->get_samples_per_superframe() * sizeof(int16_t) * channel_count);

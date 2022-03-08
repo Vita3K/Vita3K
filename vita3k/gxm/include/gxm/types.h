@@ -1514,11 +1514,11 @@ struct SceGxmUniformBufferInfo {
 struct SceGxmProgram {
     std::uint32_t magic; // should be "GXP\0"
 
-    std::uint8_t major_version; //min 1
-    std::uint8_t minor_version; //min 4
+    std::uint8_t major_version; // min 1
+    std::uint8_t minor_version; // min 4
     std::uint16_t sdk_version; // 0x350 - 3.50
 
-    std::uint32_t size; //size of file - ignoring padding bytes at the end after SceGxmProgramParameter table
+    std::uint32_t size; // size of file - ignoring padding bytes at the end after SceGxmProgramParameter table
 
     std::uint32_t binary_guid;
     std::uint32_t source_guid;
@@ -1536,7 +1536,7 @@ struct SceGxmProgram {
     std::uint16_t primary_reg_count; // (PAs)
     std::uint16_t secondary_reg_count; // (SAs)
     std::uint32_t temp_reg_count1;
-    std::uint16_t temp_reg_count2; //Temp reg count in selective rate(programmable blending) phase
+    std::uint16_t temp_reg_count2; // Temp reg count in selective rate(programmable blending) phase
 
     std::uint16_t primary_program_phase_count;
     std::uint32_t primary_program_instr_count;

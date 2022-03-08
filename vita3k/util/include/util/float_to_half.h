@@ -15,8 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-//original source:https://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion
-//public domain
+// original source:https://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion
+// public domain
 
 #include <climits> // CHAR_BIT
 #include <cstdint> // uint32_t, uint64_t, etc.
@@ -77,7 +77,7 @@ struct raw_float_type_info {
 using raw_flt16_type_info = raw_float_type_info<std::uint16_t, 10, 5>;
 using raw_flt32_type_info = raw_float_type_info<std::uint32_t, 23, 8>;
 using raw_flt64_type_info = raw_float_type_info<std::uint64_t, 52, 11>;
-//using raw_flt128_type_info = raw_float_type_info< uint128_t, 112, 15 >;
+// using raw_flt128_type_info = raw_float_type_info< uint128_t, 112, 15 >;
 
 template <typename T, int SIG_BITS = std::numeric_limits<T>::digits - 1,
     int EXP_BITS = sizeof(T) * CHAR_BIT - SIG_BITS - 1>
@@ -123,13 +123,13 @@ struct raw_float_encoder {
             bits = std::bit_cast<raw_type>(norm);
             bits += (bits >> sig_diff) & 1; // add tie breaking bias
             bits += (raw_type(1) << (sig_diff - 1)) - 1; // round up to half
-            //if( is_sub ) bits = std::bit_cast< raw_type >( subn );
+            // if( is_sub ) bits = std::bit_cast< raw_type >( subn );
             bits ^= -is_sub & (std::bit_cast<raw_type>(subn) ^ bits);
         }
         bits >>= sig_diff; // truncate
-        //if( enc::inf < bits ) bits = enc::inf; // fix overflow
+        // if( enc::inf < bits ) bits = enc::inf; // fix overflow
         bits ^= -(enc::inf < bits) & (enc::inf ^ bits);
-        //if( is_nan ) bits = enc::qnan;
+        // if( is_nan ) bits = enc::qnan;
         bits ^= -is_nan & (enc::qnan ^ bits);
         bits |= sign >> bit_diff; // restore sign
         return enc_type(bits);
@@ -149,7 +149,7 @@ struct raw_float_encoder {
         bits = (sign << bit_diff) | (bits << sig_diff);
         auto val = std::bit_cast<F>(bits) * std::bit_cast<F>(bias_mul);
         bits = std::bit_cast<raw_type>(val);
-        //if( !is_norm ) bits |= flt::inf;
+        // if( !is_norm ) bits |= flt::inf;
         bits |= -!is_norm & flt::inf;
         return std::bit_cast<F>(bits);
     }
