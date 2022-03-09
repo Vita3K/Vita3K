@@ -40,6 +40,7 @@
 #include <fstream>
 #include <functional>
 #include <iterator>
+#include <list>
 #include <map>
 #include <sstream>
 #include <utility>
