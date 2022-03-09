@@ -200,16 +200,16 @@ bool USSETranslatorVisitor::i8mad(
 
     if (csel1) {
         // RGB will be full alpha
-        src1_swizz[0] = usse::SwizzleChannel::_W;
-        src1_swizz[1] = usse::SwizzleChannel::_W;
-        src1_swizz[2] = usse::SwizzleChannel::_W;
+        src1_swizz[0] = usse::SwizzleChannel::C_W;
+        src1_swizz[1] = usse::SwizzleChannel::C_W;
+        src1_swizz[2] = usse::SwizzleChannel::C_W;
     }
 
     if (csel2) {
         // RGB will be full alpha
-        src2_swizz[0] = usse::SwizzleChannel::_W;
-        src2_swizz[1] = usse::SwizzleChannel::_W;
-        src2_swizz[2] = usse::SwizzleChannel::_W;
+        src2_swizz[0] = usse::SwizzleChannel::C_W;
+        src2_swizz[1] = usse::SwizzleChannel::C_W;
+        src2_swizz[2] = usse::SwizzleChannel::C_W;
     }
 
     inst.opr.src1.swizzle = src1_swizz;
@@ -253,14 +253,14 @@ bool USSETranslatorVisitor::i8mad(
         case 2:
             // Use src0 full alpha
             shuffle_ops.insert(shuffle_ops.end(), { 3, 3, 3 });
-            add_swizz_rgb = { usse::SwizzleChannel::_W, usse::SwizzleChannel::_W, usse::SwizzleChannel::_W };
+            add_swizz_rgb = { usse::SwizzleChannel::C_W, usse::SwizzleChannel::C_W, usse::SwizzleChannel::C_W };
 
             break;
 
         case 3:
             // Use src1 full alpha
             shuffle_ops.insert(shuffle_ops.end(), { 7, 7, 7 });
-            add_swizz_rgb = { usse::SwizzleChannel::_W, usse::SwizzleChannel::_W, usse::SwizzleChannel::_W };
+            add_swizz_rgb = { usse::SwizzleChannel::C_W, usse::SwizzleChannel::C_W, usse::SwizzleChannel::C_W };
             add_swizz_rgb_src0 = false;
 
             break;

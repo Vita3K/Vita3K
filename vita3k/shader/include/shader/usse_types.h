@@ -103,18 +103,18 @@ inline ExtPredicate ext_vec_predicate_to_ext(ExtVecPredicate pred) {
     }
 }
 
-// NOTE: prepended with "_" to allow for '1' and '2' (so that everything is 1 character long)
+// NOTE: prepended with "C_" to allow for '1' and '2' (so that everything is 1 character long)
 enum class SwizzleChannel {
-    _X,
-    _Y,
-    _Z,
-    _W,
-    _0, // zero
-    _1, // one
-    _2, // two
-    _H, // half
+    C_X,
+    C_Y,
+    C_Z,
+    C_W,
+    C_0, // zero
+    C_1, // one
+    C_2, // two
+    C_H, // half
 
-    _UNDEFINED,
+    C_UNDEFINED,
 };
 
 template <unsigned N>
@@ -124,9 +124,9 @@ using Swizzle3 = Swizzle<3>;
 using Swizzle4 = Swizzle<4>;
 
 #define SWIZZLE_CHANNEL_3(ch1, ch2, ch3) \
-    { SwizzleChannel::_##ch1, SwizzleChannel::_##ch2, SwizzleChannel::_##ch3 }
+    { SwizzleChannel::C_##ch1, SwizzleChannel::C_##ch2, SwizzleChannel::C_##ch3 }
 #define SWIZZLE_CHANNEL_4(ch1, ch2, ch3, ch4) \
-    { SwizzleChannel::_##ch1, SwizzleChannel::_##ch2, SwizzleChannel::_##ch3, SwizzleChannel::_##ch4 }
+    { SwizzleChannel::C_##ch1, SwizzleChannel::C_##ch2, SwizzleChannel::C_##ch3, SwizzleChannel::C_##ch4 }
 #define SWIZZLE_CHANNEL_4_CAST(ch1, ch2, ch3, ch4) \
     { static_cast<SwizzleChannel>(ch1), static_cast<SwizzleChannel>(ch2), static_cast<SwizzleChannel>(ch3), static_cast<SwizzleChannel>(ch4) }
 
@@ -137,7 +137,7 @@ using Swizzle4 = Swizzle<4>;
 #define SWIZZLE_CHANNEL_3_DEFAULT SWIZZLE_CHANNEL_3(X, Y, Z)
 
 inline Swizzle4 to_swizzle4(Swizzle3 sw) {
-    return Swizzle4{ sw[0], sw[1], sw[2], SwizzleChannel::_X };
+    return Swizzle4{ sw[0], sw[1], sw[2], SwizzleChannel::C_X };
 }
 
 inline bool is_default(Swizzle4 sw, Imm4 sw_len = 4) {
@@ -145,10 +145,10 @@ inline bool is_default(Swizzle4 sw, Imm4 sw_len = 4) {
 
     // clang-format off
     switch (sw_len) {
-    case 4: if (sw[3] != SwizzleChannel::_W) res = false; [[fallthrough]];
-    case 3: if (sw[2] != SwizzleChannel::_Z) res = false; [[fallthrough]];
-    case 2: if (sw[1] != SwizzleChannel::_Y) res = false; [[fallthrough]];
-    case 1: if (sw[0] != SwizzleChannel::_X) res = false;
+    case 4: if (sw[3] != SwizzleChannel::C_W) res = false; [[fallthrough]];
+    case 3: if (sw[2] != SwizzleChannel::C_Z) res = false; [[fallthrough]];
+    case 2: if (sw[1] != SwizzleChannel::C_Y) res = false; [[fallthrough]];
+    case 1: if (sw[0] != SwizzleChannel::C_X) res = false;
     }
     // clang-format on
 

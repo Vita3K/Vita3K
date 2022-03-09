@@ -83,7 +83,7 @@ bool USSETranslatorVisitor::vmad(
 
     // Swizzleee
     if (type == 1) {
-        inst.opr.dest.swizzle[3] = usse::SwizzleChannel::_X;
+        inst.opr.dest.swizzle[3] = usse::SwizzleChannel::C_X;
     }
 
     inst.opr.src1.swizzle = decode_vec34_swizzle(src1_swiz, src1_swiz_ext, type);
@@ -315,15 +315,15 @@ bool USSETranslatorVisitor::vdp(
 
     // Decode first source swizzle
     const SwizzleChannel tb_swizz_dec[] = {
-        SwizzleChannel::_X,
-        SwizzleChannel::_Y,
-        SwizzleChannel::_Z,
-        SwizzleChannel::_W,
-        SwizzleChannel::_0,
-        SwizzleChannel::_1,
-        SwizzleChannel::_2,
-        SwizzleChannel::_H,
-        SwizzleChannel::_UNDEFINED
+        SwizzleChannel::C_X,
+        SwizzleChannel::C_Y,
+        SwizzleChannel::C_Z,
+        SwizzleChannel::C_W,
+        SwizzleChannel::C_0,
+        SwizzleChannel::C_1,
+        SwizzleChannel::C_2,
+        SwizzleChannel::C_H,
+        SwizzleChannel::C_UNDEFINED
     };
 
     inst.opr.src1.swizzle[0] = tb_swizz_dec[src1_swiz_x];
