@@ -43,18 +43,18 @@ void USSETranslatorVisitor::store(Operand dest, spv::Id source, std::uint8_t des
 
 spv::Id USSETranslatorVisitor::swizzle_to_spv_comp(spv::Id composite, spv::Id type, SwizzleChannel swizzle) {
     switch (swizzle) {
-    case SwizzleChannel::_X:
-    case SwizzleChannel::_Y:
-    case SwizzleChannel::_Z:
-    case SwizzleChannel::_W:
+    case SwizzleChannel::C_X:
+    case SwizzleChannel::C_Y:
+    case SwizzleChannel::C_Z:
+    case SwizzleChannel::C_W:
         return m_b.createCompositeExtract(composite, type, static_cast<Imm4>(swizzle));
 
     // TODO: Implement these with OpCompositeExtract
-    case SwizzleChannel::_0: break;
-    case SwizzleChannel::_1: break;
-    case SwizzleChannel::_2: break;
+    case SwizzleChannel::C_0: break;
+    case SwizzleChannel::C_1: break;
+    case SwizzleChannel::C_2: break;
 
-    case SwizzleChannel::_H: break;
+    case SwizzleChannel::C_H: break;
     }
 
     LOG_WARN("Swizzle channel {} unsupported", static_cast<Imm4>(swizzle));

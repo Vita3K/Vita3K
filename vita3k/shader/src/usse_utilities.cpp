@@ -29,19 +29,19 @@ using namespace shader::usse;
 
 static spv::Id get_correspond_constant_with_channel(spv::Builder &b, shader::usse::SwizzleChannel swizz) {
     switch (swizz) {
-    case shader::usse::SwizzleChannel::_0: {
+    case shader::usse::SwizzleChannel::C_0: {
         return b.makeFloatConstant(0.0f);
     }
 
-    case shader::usse::SwizzleChannel::_1: {
+    case shader::usse::SwizzleChannel::C_1: {
         return b.makeFloatConstant(1.0f);
     }
 
-    case shader::usse::SwizzleChannel::_2: {
+    case shader::usse::SwizzleChannel::C_2: {
         return b.makeFloatConstant(2.0f);
     }
 
-    case shader::usse::SwizzleChannel::_H: {
+    case shader::usse::SwizzleChannel::C_H: {
         return b.makeFloatConstant(0.5f);
     }
 
@@ -70,10 +70,10 @@ spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id se
     // Try to plant a composite construct
     for (auto i = 0; i < 4; i++) {
         if (dest_mask & (1 << i)) {
-            if ((int)swizz[i] >= (int)SwizzleChannel::_0) {
+            if ((int)swizz[i] >= (int)SwizzleChannel::C_0) {
                 ops.push_back(get_correspond_constant_with_channel(b, swizz[i]));
             } else {
-                int access_offset = offset % 4 + (int)swizz[i] - (int)SwizzleChannel::_X;
+                int access_offset = offset % 4 + (int)swizz[i] - (int)SwizzleChannel::C_X;
                 spv::Id access_base = first;
 
                 if (access_offset >= first_comp_count) {
@@ -652,16 +652,16 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     else                                                             \
         return b.makeFloatConstant(static_cast<float>(cnst))
             switch (ch) {
-            case SwizzleChannel::_0:
+            case SwizzleChannel::C_0:
                 GEN_CONSTANT(0);
                 break;
-            case SwizzleChannel::_1:
+            case SwizzleChannel::C_1:
                 GEN_CONSTANT(1);
                 break;
-            case SwizzleChannel::_2:
+            case SwizzleChannel::C_2:
                 GEN_CONSTANT(2);
                 break;
-            case SwizzleChannel::_H:
+            case SwizzleChannel::C_H:
                 GEN_CONSTANT(0.5f);
                 break;
             default: break;
@@ -675,7 +675,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         // Load constants. Ignore mask
         if ((op.type == DataType::F32) || (op.type == DataType::UINT32)) {
             auto get_f32_from_bank = [&](const int num) -> spv::Id {
-                int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X);
+                int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::C_X);
                 std::uint32_t value = 0;
 
                 switch (swizz_val >> 1) {
@@ -706,7 +706,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
             }
         } else if ((op.type == DataType::F16) || (op.type == DataType::UINT16)) {
             auto get_f16_from_bank = [&](const int num) -> spv::Id {
-                const int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::_X);
+                const int swizz_val = static_cast<int>(op.swizzle[num]) - static_cast<int>(SwizzleChannel::C_X);
                 float value = 0;
 
                 switch (swizz_val & 3) {
@@ -798,7 +798,7 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     if (op.bank == RegisterBank::IMMEDIATE || !get_reg_bank(params, op.bank)) {
         if (op.bank != RegisterBank::INDEXED1 && op.bank != RegisterBank::INDEXED2) {
             if (dest_comp_count == 1) {
-                if ((int)op.swizzle[0] >= (int)SwizzleChannel::_0) {
+                if ((int)op.swizzle[0] >= (int)SwizzleChannel::C_0) {
                     return get_correspond_constant_with_channel(b, op.swizzle[0]);
                 }
             }
@@ -880,11 +880,11 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
     int highest_dest_write_offset = -1; ///< Highest offset of the component to write.
 
     for (int i = 0; i < 4; i++) {
-        if (static_cast<int>(op.swizzle[i]) >= static_cast<int>(SwizzleChannel::_0)) {
+        if (static_cast<int>(op.swizzle[i]) >= static_cast<int>(SwizzleChannel::C_0)) {
             continue;
         }
 
-        const int swizzle_bit = static_cast<int>(op.swizzle[i]) - static_cast<int>(SwizzleChannel::_X);
+        const int swizzle_bit = static_cast<int>(op.swizzle[i]) - static_cast<int>(SwizzleChannel::C_X);
 
         if (dest_mask & (1 << i)) {
             lowest_dest_write_offset = std::min(lowest_dest_write_offset, swizzle_bit);

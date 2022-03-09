@@ -203,35 +203,35 @@ std::string swizzle_to_str(Swizzle<s> swizz, Imm4 write_mask) {
     for (std::size_t i = 0; i < s; i++) {
         if (write_mask & (1 << i)) {
             switch (swizz[i]) {
-            case SwizzleChannel::_X: {
+            case SwizzleChannel::C_X: {
                 swizzstr += "x";
                 break;
             }
-            case SwizzleChannel::_Y: {
+            case SwizzleChannel::C_Y: {
                 swizzstr += "y";
                 break;
             }
-            case SwizzleChannel::_Z: {
+            case SwizzleChannel::C_Z: {
                 swizzstr += "z";
                 break;
             }
-            case SwizzleChannel::_W: {
+            case SwizzleChannel::C_W: {
                 swizzstr += "w";
                 break;
             }
-            case SwizzleChannel::_0: {
+            case SwizzleChannel::C_0: {
                 swizzstr += "0";
                 break;
             }
-            case SwizzleChannel::_1: {
+            case SwizzleChannel::C_1: {
                 swizzstr += "1";
                 break;
             }
-            case SwizzleChannel::_2: {
+            case SwizzleChannel::C_2: {
                 swizzstr += "2";
                 break;
             }
-            case SwizzleChannel::_H: {
+            case SwizzleChannel::C_H: {
                 swizzstr += "H";
                 break;
             }
