@@ -213,9 +213,9 @@ void delete_app(GuiState &gui, HostState &host, const std::string &app_path) {
         const auto CUSTOM_CONFIG_PATH{ BASE_PATH / "config" / fmt::format("config_{}.xml", app_path) };
         if (fs::exists(CUSTOM_CONFIG_PATH))
             fs::remove_all(CUSTOM_CONFIG_PATH);
-        const auto DLC_PATH{ PREF_PATH / "ux0/addcont" / APP_INDEX->addcont };
-        if (fs::exists(DLC_PATH))
-            fs::remove_all(DLC_PATH);
+        const auto ADDCONT_PATH{ PREF_PATH / "ux0/addcont" / APP_INDEX->addcont };
+        if (fs::exists(ADDCONT_PATH))
+            fs::remove_all(ADDCONT_PATH);
         const auto LICENSE_PATH{ PREF_PATH / "ux0/license" / title_id };
         if (fs::exists(LICENSE_PATH))
             fs::remove_all(LICENSE_PATH);
@@ -275,7 +275,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
 
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
     const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
-    const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / APP_INDEX->addcont };
+    const auto ADDCONT_PATH{ fs::path(host.pref_path) / "ux0/addcont" / APP_INDEX->addcont };
     const auto LICENSE_PATH{ fs::path(host.pref_path) / "ux0/license" / title_id };
     const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / APP_INDEX->savedata };
     const auto SHADER_CACHE_PATH{ fs::path(host.base_path) / "cache/shaders" / title_id };
@@ -331,8 +331,8 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             if (ImGui::BeginMenu("Open Folder")) {
                 if (ImGui::MenuItem("Application"))
                     open_path(APP_PATH.string());
-                if (fs::exists(DLC_PATH) && ImGui::MenuItem("Dlc"))
-                    open_path(DLC_PATH.string());
+                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem("AddCont"))
+                    open_path(ADDCONT_PATH.string());
                 if (fs::exists(LICENSE_PATH) && ImGui::MenuItem("License"))
                     open_path(LICENSE_PATH.string());
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
@@ -357,8 +357,8 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
             if (ImGui::BeginMenu(common["delete"].c_str())) {
                 if (ImGui::MenuItem("Application"))
                     context_dialog = "app";
-                if (fs::exists(DLC_PATH) && ImGui::MenuItem("DLC"))
-                    fs::remove_all(DLC_PATH);
+                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem("AddCont"))
+                    fs::remove_all(ADDCONT_PATH);
                 if (fs::exists(LICENSE_PATH) && ImGui::MenuItem("License"))
                     fs::remove_all(LICENSE_PATH);
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
