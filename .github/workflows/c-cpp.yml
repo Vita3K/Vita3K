@@ -64,7 +64,8 @@ jobs:
           $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/1.78.0/boost_1_78_0-msvc-14.3-64.exe"
           (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
           Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=C:\hostedtoolcache\windows\Boost\1.78.0\x86_64"
-          Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')
+          iwr -useb 'https://raw.githubusercontent.com/scoopinstaller/install/master/install.ps1' -outfile 'install.ps1'
+          .\install.ps1 -RunAsAdmin
           scoop install ninja sccache --global
           echo "${env:PATH}" >> ${env:GITHUB_PATH}
         if: matrix.os == 'windows-latest'
