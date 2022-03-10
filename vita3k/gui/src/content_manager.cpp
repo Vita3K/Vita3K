@@ -63,9 +63,9 @@ size_t get_app_size(GuiState &gui, HostState &host, const std::string &app_path)
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
         app_size += get_recursive_directory_size(APP_PATH);
     }
-    const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / get_app_index(gui, app_path)->title_id };
-    if (fs::exists(DLC_PATH) && !fs::is_empty(DLC_PATH)) {
-        app_size += get_recursive_directory_size(DLC_PATH);
+    const auto ADDCONT_PATH{ fs::path(host.pref_path) / "ux0/addcont" / get_app_index(gui, app_path)->title_id };
+    if (fs::exists(ADDCONT_PATH) && !fs::is_empty(ADDCONT_PATH)) {
+        app_size += get_recursive_directory_size(ADDCONT_PATH);
     }
     return app_size;
 }
@@ -185,13 +185,13 @@ static bool get_size_selected_contents(GuiState &gui, HostState &host) {
     return contents_size;
 }
 
-struct Dlc {
+struct AddCont {
     std::string name;
     std::string size;
     tm date;
 };
 
-static std::map<std::string, Dlc> dlc_info;
+static std::map<std::string, AddCont> addcont_info;
 
 static void get_content_info(GuiState &gui, HostState &host) {
     const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_selected };
@@ -199,29 +199,29 @@ static void get_content_info(GuiState &gui, HostState &host) {
         gui.app_selector.app_info.size = get_recursive_directory_size(APP_PATH);
     }
 
-    dlc_info.clear();
-    const auto DLC_PATH{ fs::path(host.pref_path) / "ux0/addcont" / app_selected };
-    if (fs::exists(DLC_PATH) && !fs::is_empty(DLC_PATH)) {
-        for (const auto &dlc : fs::directory_iterator(DLC_PATH)) {
-            const auto content_id = dlc.path().stem().string();
+    addcont_info.clear();
+    const auto ADDCONT_PATH{ fs::path(host.pref_path) / "ux0/addcont" / app_selected };
+    if (fs::exists(ADDCONT_PATH) && !fs::is_empty(ADDCONT_PATH)) {
+        for (const auto &addcont : fs::directory_iterator(ADDCONT_PATH)) {
+            const auto content_id = addcont.path().stem().string();
 
             tm updated_tm = {};
 
-            const auto last_writen = fs::last_write_time(dlc);
-            SAFE_LOCALTIME(&last_writen, &dlc_info[content_id].date);
+            const auto last_writen = fs::last_write_time(addcont);
+            SAFE_LOCALTIME(&last_writen, &addcont_info[content_id].date);
 
-            const auto dlc_size = get_recursive_directory_size(dlc);
-            dlc_info[content_id].size = get_unit_size(dlc_size);
+            const auto addcont_size = get_recursive_directory_size(addcont);
+            addcont_info[content_id].size = get_unit_size(addcont_size);
 
             const auto content_path{ fs::path("addcont") / app_selected / content_id };
             vfs::FileBuffer params;
             if (vfs::read_file(VitaIoDevice::ux0, params, host.pref_path, content_path.string() + "/sce_sys/param.sfo")) {
                 SfoFile sfo_handle;
                 sfo::load(sfo_handle, params);
-                if (!sfo::get_data_by_key(dlc_info[content_id].name, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
-                    sfo::get_data_by_key(dlc_info[content_id].name, sfo_handle, "TITLE");
+                if (!sfo::get_data_by_key(addcont_info[content_id].name, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+                    sfo::get_data_by_key(addcont_info[content_id].name, sfo_handle, "TITLE");
             }
-            boost::trim(dlc_info[content_id].name);
+            boost::trim(addcont_info[content_id].name);
         }
     }
 }
@@ -521,19 +521,19 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::TextColored(GUI_COLOR_TEXT, "Version");
             ImGui::SameLine(280.f * SCALE.x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, app_selected)->app_ver.c_str());
-            for (const auto &dlc : dlc_info) {
+            for (const auto &addcont : addcont_info) {
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (40.f * SCALE.y));
                 ImGui::Separator();
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (40.f * SCALE.y));
                 ImGui::SetWindowFontScale(1.2f);
                 ImGui::TextColored(GUI_COLOR_TEXT, "+");
                 ImGui::SameLine(0, 30.f * SCALE.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", dlc.second.name.c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", addcont.second.name.c_str());
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
                 ImGui::SameLine(280.f * SCALE.x);
-                auto DATE_TIME = get_date_time(gui, host, dlc.second.date);
+                auto DATE_TIME = get_date_time(gui, host, addcont.second.date);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
                 if (host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR) {
                     ImGui::SameLine();
@@ -542,7 +542,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "Size");
                 ImGui::SameLine(280.f * SCALE.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", dlc.second.size.c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", addcont.second.size.c_str());
             }
         }
     }
