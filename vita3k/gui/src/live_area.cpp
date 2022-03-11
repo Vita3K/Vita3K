@@ -713,7 +713,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                 std::vector<ImVec4> str_color;
 
                 if (!str_tag.color.empty()) {
-                    int color;
+                    uint color = 0xFFFFFFFF;
 
                     if (frame.autoflip)
                         sscanf(str[app_path][frame.id][current_item[app_path][frame.id]].color.c_str(), "#%x", &color);
