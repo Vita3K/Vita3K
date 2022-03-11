@@ -429,7 +429,6 @@ bool USSETranslatorVisitor::vtstmsk(
     Imm7 src2_n) {
     DataType load_data_type;
     Opcode test_op = decode_test_inst(alu_sel, alu_op, prec, load_data_type);
-    Imm4 dest_mask;
     Instruction inst;
 
     if (test_op == Opcode::INVALID) {
