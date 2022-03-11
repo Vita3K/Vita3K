@@ -128,7 +128,7 @@ struct MempoolObject {
     Ptr<T> alloc_and_init(const MemState &mem, Args... args) {
         Ptr<T> result = alloc_raw(sizeof(T)).cast<T>();
         T *ptr = result.get(mem);
-        ptr = new (ptr) T(args...);
+        new (ptr) T(args...);
         return result;
     }
 

@@ -145,7 +145,7 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, int &size, 
                         if (!best_fit) {
                             // Force allocate and then return
                             const int offset = static_cast<int>(31 - boff + ((bword - &words[0]) << 5));
-                            if (static_cast<std::size_t>(offset + size) <= max_offset) {
+                            if ((static_cast<std::size_t>(offset) + size) <= max_offset) {
                                 size = force_fill(static_cast<const std::uint32_t>(offset), size, false);
                                 return offset;
                             }
@@ -170,7 +170,7 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, int &size, 
     if (best_fit && bofmin != -1) {
         // Force allocate and then return
         const int offset = static_cast<int>(31 - bofmin + ((wordmin - &words[0]) << 5));
-        if (static_cast<std::size_t>(offset + size) <= max_offset) {
+        if ((static_cast<std::size_t>(offset) + size) <= max_offset) {
             size = force_fill(static_cast<std::uint32_t>(offset), size, false);
             return offset;
         }
