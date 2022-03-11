@@ -32,11 +32,11 @@ Context::Context(const CommunicationID &comm_id, IOState *io, const SceUID troph
     , trophy_file_stream(trophy_stream)
     , trophy_progress_output_file_path(output_progress_path)
     , io(io) {
-    trophy_file.read_func = [&](void *dest, std::uint32_t amount) -> bool {
+    trophy_file.read_func = [this](void *dest, std::uint32_t amount) -> bool {
         return read_file(dest, *this->io, this->trophy_file_stream, amount, "parse_trophy_file");
     };
 
-    trophy_file.seek_func = [&](std::uint32_t amount) -> bool {
+    trophy_file.seek_func = [this](std::uint32_t amount) -> bool {
         return seek_file(this->trophy_file_stream, amount, SCE_SEEK_SET, *this->io, "parse_trophy_file");
     };
 }
