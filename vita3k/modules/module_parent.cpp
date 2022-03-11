@@ -182,15 +182,13 @@ bool load_module(HostState &host, SceSysmoduleModuleId module_id) {
 
         if (vfs::read_file(VitaIoDevice::vs0, module_buffer, host.pref_path, module_path)) {
             SceUID loaded_module_uid = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), module_path);
-            const auto module = host.kernel.loaded_modules[loaded_module_uid];
-            const auto module_name = module->module_name;
-
-            if (loaded_module_uid >= 0) {
-                LOG_INFO("Module {} (at \"{}\") loaded", module_name, module_path);
-            } else {
+            if (loaded_module_uid < 0) {
                 LOG_ERROR("Error when loading module at \"{}\"", module_path);
                 return false;
             }
+            const auto module = host.kernel.loaded_modules[loaded_module_uid];
+            const auto module_name = module->module_name;
+            LOG_INFO("Module {} (at \"{}\") loaded", module_name, module_path);
 
             if (lib_entry_point) {
                 LOG_DEBUG("Running module_start of module: {}", module_name);
