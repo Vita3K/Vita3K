@@ -26,7 +26,7 @@
 namespace sfo {
 
 bool get_data_by_id(std::string &out_data, SfoFile &file, int id) {
-    if (file.entries.size() < id) {
+    if (id < 0 || file.entries.size() < id) {
         return false;
     }
 
