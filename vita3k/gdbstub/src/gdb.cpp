@@ -360,7 +360,7 @@ static std::string cmd_read_memory(HostState &state, PacketCommand &command) {
 
     std::stringstream stream;
 
-    for (int a = 0; a < length; a++) {
+    for (uint32_t a = 0; a < length; a++) {
         stream << fmt::format("{:0>2x}", static_cast<uint8_t>(state.mem.memory[address + a]));
     }
 
@@ -683,8 +683,20 @@ const static PacketFunctionBundle functions[] = {
     { "S", cmd_deprecated },
 };
 
+template <class T, class U>
+constexpr bool cmp_less(T t, U u) noexcept {
+    using UT = std::make_unsigned_t<T>;
+    using UU = std::make_unsigned_t<U>;
+    if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
+        return t < u;
+    else if constexpr (std::is_signed_v<T>)
+        return t < 0 ? true : UT(t) < u;
+    else
+        return u < 0 ? false : t < UU(u);
+}
+
 static bool command_begins_with(PacketCommand &command, const std::string &small) {
-    if (small.size() > command.content_length)
+    if (!cmp_less(small.size(), command.content_length))
         return false;
 
     return std::memcmp(command.content_start, small.c_str(), small.size()) == 0;
@@ -704,12 +716,11 @@ static int64_t server_next(HostState &state) {
         return -1;
 
     const int64_t length = recv(state.gdb.client_socket, buffer, sizeof(buffer), 0);
-    buffer[length] = '\0';
-
     if (length <= 0) {
         LOG_GDB("GDB Server Connection Closed");
         return -1;
     }
+    buffer[length] = '\0';
 
     for (int64_t a = 0; a < length; a++) {
         switch (buffer[a]) {
