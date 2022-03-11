@@ -31,6 +31,7 @@ std::string get_theme_title_from_buffer(const vfs::FileBuffer buffer) {
     pugi::xml_document doc;
     if (doc.load_buffer(buffer.data(), buffer.size()))
         return doc.child("theme").child("InfomationProperty").child("m_title").child("m_default").text().as_string();
+    return "Internal error";
 }
 
 bool init_user_background(GuiState &gui, HostState &host, const std::string &user_id, const std::string &background_path) {
