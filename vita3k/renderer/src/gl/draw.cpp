@@ -87,12 +87,10 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         // Need to recompile!
         SharedGLObject program = gl::compile_program(renderer, context.record, features, mem, config.shader_cache, config.spirv_shader, gxm_fragment_program.is_maskupdate, base_path, title_id);
 
-        if (!program) {
-            LOG_ERROR("Fail to get program!");
-        }
+        LOG_ERROR_IF(!program, "Fail to get program!");
 
         // Use it
-        program_id = (*program).get();
+        program_id = program ? (*program).get() : 0;
         context.last_draw_program = program_id;
     } else {
         program_id = context.last_draw_program;
