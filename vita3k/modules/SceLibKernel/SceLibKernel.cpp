@@ -427,7 +427,7 @@ EXPORT(SceOff, sceIoLseek, const SceUID fd, const SceOff offset, const SceIoSeek
     Ptr<_sceIoLseekOpt> options = Ptr<_sceIoLseekOpt>(stack_alloc(*thread->cpu, sizeof(_sceIoLseekOpt)));
     options.get(host.mem)->offset = offset;
     options.get(host.mem)->whence = whence;
-    int res = CALL_EXPORT(_sceIoLseek, fd, options);
+    SceOff res = CALL_EXPORT(_sceIoLseek, fd, options);
     stack_free(*thread->cpu, sizeof(_sceIoLseekOpt));
     return res;
 }
