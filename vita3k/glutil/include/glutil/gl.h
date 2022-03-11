@@ -18,3 +18,4 @@
 #pragma once
 
 #include <glad/glad.h>
+#undef APIENTRY
