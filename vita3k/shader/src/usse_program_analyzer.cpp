@@ -82,6 +82,11 @@ std::uint8_t get_predicate(const std::uint64_t inst) {
             }
         }
 
+        // Load immediate
+        if (((((inst >> 32) & ~0xF8FFFFFF) >> 24) == 4) && (((inst >> 32) & ~0xFFCFFFFF) >> 20 == 2)) {
+            return (((inst >> 32) & ~0xFFFFF1FF) >> 9);
+        }
+
         return 0;
     }
     // VMAD normal version, predicates only occupied two bits

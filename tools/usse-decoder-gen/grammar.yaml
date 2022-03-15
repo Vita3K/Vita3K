@@ -80,7 +80,7 @@ V32NMAD:
         - opcode1: '00001'
         - pred:
             size: 3
-            type: ExtPredicate
+            type: ExtVecPredicate
         - skipinv:
             size: 1
             type: bool
@@ -117,7 +117,7 @@ V16NMAD:
         - opcode1: '00010'
         - pred:
             size: 3
-            type: ExtPredicate
+            type: ExtVecPredicate
         - skipinv:
             size: 1
             type: bool
@@ -148,20 +148,21 @@ V16NMAD:
         - op2: 3
         - src1_n: 6
         - src2_n: 6
+
 VMAD:
     description: "Vector multiply-add"
     members:
         - opcode1: '00011'
         - pred:
             size: 3
-            type: ExtPredicate
+            type: ExtVecPredicate
         - skipinv: 1
         - gpi1_swiz_ext: 1
         - present_bit_1: '1'
         - opcode2: 1
         - dest_use_bank_ext: 1
         - end: 1
-        - src0_bank_ext: 1
+        - src1_bank_ext: 1
         - repeat_mode: 
             size: 2
             type: RepeatMode
@@ -173,31 +174,31 @@ VMAD:
             size: 1
             type: bool
         - write_mask: 4
-        - src0_neg: 1
-        - src0_abs: 1
+        - src1_neg: 1
+        - src1_abs: 1
         - gpi1_neg: 1
         - gpi1_abs: 1
         - gpi0_swiz_ext: 1
         - dest_bank: 2
-        - src0_bank: 2
+        - src1_bank: 2
         - gpi0_n: 2
         - dest_n: 6
         - gpi0_swiz: 4
         - gpi1_swiz: 4
         - gpi1_n: 2
         - gpi0_neg: 1
-        - src0_swiz_ext:
+        - src1_swiz_ext:
             size: 1
             offset: 10
-        - src0_swiz: 4
-        - src0_n: 6
+        - src1_swiz: 4
+        - src1_n: 6
 VDP:
     description: Vector Dot Product (single issue)
     members:
         - opcode1: '00011'
         - pred:
             size: 3
-            type: ExtPredicate
+            type: ExtVecPredicate
         - skipinv: 1
         - clip_plane_enable:
             size: 1
@@ -206,7 +207,7 @@ VDP:
         - opcode2: 1
         - dest_use_bank_ext: 1
         - end: 1
-        - src0_bank_ext: 1
+        - src1_bank_ext: 1
         - repeat_mode: 
             size: 2
             type: RepeatMode
@@ -218,19 +219,19 @@ VDP:
             size: 1
             type: bool
         - write_mask: 4
-        - src0_neg: 1
-        - src0_abs: 1
+        - src1_neg: 1
+        - src1_abs: 1
         - clip_plane_n: 3
         - dest_bank: 2 
-        - src0_bank: 2
+        - src1_bank: 2
         - gpi0_n: 2
         - dest_n: 6
         - gpi0_swiz: 4
-        - src0_swiz_w: 3
-        - src0_swiz_z: 3
-        - src0_swiz_y: 3
-        - src0_swiz_x: 3
-        - src0_n: 6
+        - src1_swiz_w: 3
+        - src1_swiz_z: 3
+        - src1_swiz_y: 3
+        - src1_swiz_x: 3
+        - src1_n: 6
 # 00100 00101
 VDUAL:
     description: Dual issue instruction
@@ -898,13 +899,94 @@ SOP3:
         - src2n:
             offset: 0
             size: 7
-
 I8MAD:
-    description: 8-bit Integer multiply-add
+    description: 8-bit integer Multiply and Add
     members:
         - opcode1: '10011'
-        - DONTCARE:
-            size: 59
+        - pred:
+            size: 2
+            offset: 57
+        - cmod1:
+            size: 1
+            offset: 56
+        - skipinv:
+            size: 1
+            offset: 55
+        - nosched:
+            size: 1
+            offset: 54
+        - csel0:
+            size: 2
+            offset: 52
+        - dest_bank_ext:
+            size: 1
+            offset: 51
+        - end:
+            size: 1
+            offset: 50
+        - src1_bank_ext:
+            size: 1
+            offset: 49
+        - src2_bank_ext:
+            size: 1
+            offset: 48
+        - cmod2:
+            size: 1
+            offset: 47
+        - repeat_count:
+            size: 3
+            offset: 44
+        - saturated:
+            size: 1
+            offset: 43
+        - cmod0:
+            size: 1
+            offset: 42
+        - asel0:
+            size: 1
+            offset: 41
+        - amod2:
+            size: 1
+            offset: 40
+        - amod1:
+            size: 1
+            offset: 39
+        - amod0:
+            size: 1
+            offset: 38
+        - csel1:
+            size: 1
+            offset: 37
+        - csel2:
+            size: 1
+            offset: 36
+        - src0_neg:
+            size: 1
+            offset: 35
+        - src0_bank:
+            size: 1
+            offset: 34
+        - dest_bank:
+            size: 2
+            offset: 32
+        - src1_bank:
+            size: 2
+            offset: 30
+        - src2_bank:
+            size: 2
+            offset: 28
+        - dest_num:
+            size: 7
+            offset: 21
+        - src0_num:
+            size: 7
+            offset: 14
+        - src1_num:
+            size: 7
+            offset: 7
+        - src2_num:
+            size: 7
+            offset: 0
 I16MAD:
     description: 16-bit Integer multiply-add
     members:
@@ -1401,6 +1483,54 @@ KILL:
 #         - src2_n:
 #             size: 7
 #             offset: 0
+LIMM:
+    description: Load immediate value
+    members:
+        - op1: '11111'
+        - op2:
+            match: '100'
+            size: 3
+            offset: 56
+        - skipinv:
+            size: 1
+            offset: 55
+            type: bool
+        - nosched:
+            size: 1
+            offset: 54
+            type: bool
+        - opcat: 
+            match: '10'
+            size: 2
+            offset: 52
+        - dest_bank_ext:
+            size: 1
+            offset: 51
+            type: bool
+        - end:
+            size: 1
+            offset: 50
+            type: bool
+        - imm_value_bits26to31:
+            offset: 44
+            size: 6
+        - pred:
+            type: ExtPredicate
+            size: 3
+            offset: 41
+        - imm_value_bits21to25:
+            size: 5
+            offset: 36
+        - dest_bank:
+            size: 2
+            offset: 32
+        - dest_num:
+            size: 7
+            offset: 21
+        - imm_value_first_21bits:
+            size: 21
+            offset: 0
+        
 SPEC:
     description: Special
     members:

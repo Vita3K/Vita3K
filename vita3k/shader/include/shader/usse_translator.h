@@ -437,8 +437,6 @@ public:
         Imm6 src2_n,
         Imm1 comp_sel_0_bit0);
 
-    spv::Id vtst_impl(Instruction inst, ExtPredicate pred, int zero_test, int sign_test, Imm4 load_mask, bool mask);
-
     bool vtst(ExtPredicate pred,
         Imm1 skipinv,
         Imm1 onceonly,
@@ -586,8 +584,7 @@ public:
         Imm7 src1n,
         Imm7 src2n);
 
-    bool i8mad(
-        Imm2 pred,
+    bool i8mad(Imm2 pred,
         Imm1 cmod1,
         Imm1 skipinv,
         Imm1 nosched,
@@ -741,6 +738,17 @@ public:
 
     bool kill(ShortPredicate pred);
 
+    bool limm(bool skipinv,
+        bool nosched,
+        bool dest_bank_ext,
+        bool end,
+        Imm6 imm_value_bits26to31,
+        ExtPredicate pred,
+        Imm5 imm_value_bits21to25,
+        Imm2 dest_bank,
+        Imm7 dest_num,
+        Imm21 imm_value_first_21bits);
+
     bool spec(bool special,
         SpecialCategory category);
 
@@ -772,6 +780,8 @@ public:
         Imm7 src2_n);
     // Instructions end
 private:
+    spv::Id vtst_impl(Instruction inst, ExtPredicate pred, int zero_test, int sign_test, Imm4 load_mask, bool mask);
+
     // SPIR-V emitter
     spv::Builder &m_b;
 
