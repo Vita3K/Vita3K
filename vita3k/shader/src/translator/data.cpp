@@ -637,3 +637,31 @@ bool USSETranslatorVisitor::vldst(
 
     return true;
 }
+
+bool USSETranslatorVisitor::limm(
+    bool skipinv,
+    bool nosched,
+    bool dest_bank_ext,
+    bool end,
+    Imm6 imm_value_bits26to31,
+    ExtPredicate pred,
+    Imm5 imm_value_bits21to25,
+    Imm2 dest_bank,
+    Imm7 dest_num,
+    Imm21 imm_value_first_21bits) {
+    Instruction inst;
+    inst.opcode = Opcode::MOV;
+
+    std::uint32_t imm_value = imm_value_first_21bits | (imm_value_bits21to25 << 21) | (imm_value_bits26to31 << 26);
+    spv::Id const_imm_id = m_b.makeUintConstant(imm_value);
+
+    inst.dest_mask = 0b1;
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_num, dest_bank, dest_bank_ext, false, 7, m_second_program);
+    inst.opr.dest.type = DataType::UINT32;
+
+    const std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
+    LOG_DISASM("{} {} #0x{:X}", disasm_str, disasm::operand_to_str(inst.opr.dest, 0b1, 0), imm_value);
+
+    store(inst.opr.dest, const_imm_id, 0b1);
+    return true;
+}
