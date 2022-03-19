@@ -64,6 +64,7 @@ struct HostState {
     std::string load_app_path;
     std::string load_exec_argv;
     std::string load_exec_path;
+    std::string self_name;
     std::string self_path;
     Config cfg;
     std::unique_ptr<CPUProtocolBase> cpu_protocol;

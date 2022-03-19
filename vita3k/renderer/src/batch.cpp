@@ -44,9 +44,9 @@ void complete_command(State &state, CommandHelper &helper, const int code) {
 }
 
 void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list, const char *base_path,
-    const char *title_id) {
+    const char *title_id, const char *self_name) {
     using CommandHandlerFunc = std::function<void(renderer::State &, MemState &, Config &,
-        CommandHelper &, const FeatureState &, Context *, const char *, const char *)>;
+        CommandHelper &, const FeatureState &, Context *, const char *, const char *, const char *)>;
 
     static std::map<CommandOpcode, CommandHandlerFunc> handlers = {
         { CommandOpcode::SetContext, cmd_handle_set_context },
@@ -74,7 +74,7 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
             LOG_ERROR("Unimplemented command opcode {}", static_cast<int>(cmd->opcode));
         } else {
             CommandHelper helper(cmd);
-            handler->second(state, mem, config, helper, features, command_list.context, base_path, title_id);
+            handler->second(state, mem, config, helper, features, command_list.context, base_path, title_id, self_name);
         }
 
         Command *last_cmd = cmd;
@@ -89,7 +89,7 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
 }
 
 void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path,
-    const char *title_id) {
+    const char *title_id, const char *self_name) {
     const bool is_avg_scene_per_frame = !state.command_buffer_queue.size() || (state.average_scene_per_frame > 1);
     const uint32_t queue_size = is_avg_scene_per_frame ? state.average_scene_per_frame.load() : state.command_buffer_queue.size();
 
@@ -101,7 +101,7 @@ void process_batches(renderer::State &state, const FeatureState &features, MemSt
             return;
         }
 
-        process_batch(state, features, mem, config, *cmd_list, base_path, title_id);
+        process_batch(state, features, mem, config, *cmd_list, base_path, title_id, self_name);
     }
 }
 

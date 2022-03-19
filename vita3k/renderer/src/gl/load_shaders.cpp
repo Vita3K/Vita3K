@@ -30,9 +30,9 @@
 
 namespace renderer::gl {
 
-bool get_shaders_cache_hashs(GLState &renderer, const char *base_path, const char *title_id) {
-    const auto shaders_hashs_path{ fs::path(base_path) / "cache/shaders" / title_id / "hashs.dat" };
-    fs::ifstream shaders_hashs(shaders_hashs_path, std::ios::in | std::ios::binary);
+bool get_shaders_cache_hashs(GLState &renderer, const char *base_path, const char *title_id, const char *self_name) {
+    const auto shaders_path{ fs::path(base_path) / "cache/shaders" / title_id / self_name };
+    fs::ifstream shaders_hashs(shaders_path / "hashs.dat", std::ios::in | std::ios::binary);
     if (shaders_hashs.is_open()) {
         renderer.shaders_cache_hashs.clear();
         // Read size of hashes list
@@ -43,6 +43,9 @@ bool get_shaders_cache_hashs(GLState &renderer, const char *base_path, const cha
         uint32_t versionInFile;
         shaders_hashs.read((char *)&versionInFile, sizeof(uint32_t));
         if (versionInFile != 1) {
+            shaders_hashs.close();
+            fs::remove_all(shaders_path);
+            fs::remove_all(fs::path(base_path) / "shaderlog" / title_id / self_name);
             LOG_WARN("Current version of cache: {}, is outdated, recreate it.", versionInFile);
             return false;
         }
@@ -71,8 +74,8 @@ bool get_shaders_cache_hashs(GLState &renderer, const char *base_path, const cha
     return !renderer.shaders_cache_hashs.empty();
 }
 
-static bool load_shader(const char *hash, const char *extension, const char *base_path, const char *title_id, char **destination, std::size_t &size_read) {
-    const auto shader_path = fs_utils::construct_file_name(base_path, (fs::path("cache/shaders") / title_id).string().c_str(), hash, extension);
+static bool load_shader(const char *hash, const char *extension, const char *base_path, const char *title_id, const char *self_name, char **destination, std::size_t &size_read) {
+    const auto shader_path = fs_utils::construct_file_name(base_path, (fs::path("cache/shaders") / title_id / self_name).string().c_str(), hash, extension);
     fs::ifstream is(shader_path, fs::ifstream::binary);
     if (!is) {
         return false;
@@ -100,28 +103,28 @@ static const Sha256HashText get_shader_hash(const SceGxmProgram &program) {
 }
 
 template <typename R>
-R load_shader_generic(const char *hash_text, const char *base_path, const char *title_id, const char *shader_type_str) {
+R load_shader_generic(const char *hash_text, const char *base_path, const char *title_id, const char *self_name, const char *shader_type_str) {
     std::size_t read_size = 0;
     R source;
 
-    if (load_shader(hash_text, shader_type_str, base_path, title_id, nullptr, read_size)) {
+    if (load_shader(hash_text, shader_type_str, base_path, title_id, self_name, nullptr, read_size)) {
         source.resize((read_size + sizeof(typename R::value_type) - 1) / sizeof(typename R::value_type));
 
         char *dest_pointer = reinterpret_cast<char *>(source.data());
-        load_shader(hash_text, shader_type_str, base_path, title_id, &dest_pointer, read_size);
+        load_shader(hash_text, shader_type_str, base_path, title_id, self_name, &dest_pointer, read_size);
     }
 
     return source;
 }
 
 template <typename R, typename F>
-R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const char *shader_type_str, const std::string &shader_version, bool shader_cache) {
+R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const char *self_name, const char *shader_type_str, const std::string &shader_version, bool shader_cache) {
     const Sha256HashText hash_text = get_shader_hash(program);
     // Set Shader Hash with Version
     const std::string hash_hex_ver = shader_version + "-" + static_cast<std::string>(hash_text.data());
 
     // Todo, spirv shader no can load any shader, is totaly broken
-    R source = shader_cache ? load_shader_generic<R>(hash_hex_ver.c_str(), base_path, title_id, shader_type_str) : R{};
+    R source = shader_cache ? load_shader_generic<R>(hash_hex_ver.c_str(), base_path, title_id, self_name, shader_type_str) : R{};
 
     if (source.empty()) {
         LOG_INFO("Generating {} shader {}", shader_type_str, hash_text.data());
@@ -129,7 +132,7 @@ R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureStat
         std::string spirv_dump;
         std::string disasm_dump;
 
-        const fs::path shader_base_dir{ fs::path("shaderlog") / title_id };
+        const fs::path shader_base_dir{ fs::path("shaderlog") / title_id / self_name };
         if (!fs::exists(base_path / shader_base_dir))
             fs::create_directories(base_path / shader_base_dir);
 
@@ -159,7 +162,7 @@ R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureStat
         shader_base_path.replace_extension(shader_type_str);
         if (fs::exists(shader_base_path)) {
             try {
-                const auto shaders_cache_path = fs::path("cache/shaders") / title_id;
+                const auto shaders_cache_path = fs::path("cache/shaders") / title_id / self_name;
                 if (!fs::exists(base_path / shaders_cache_path))
                     fs::create_directories(base_path / shaders_cache_path);
 
@@ -175,7 +178,7 @@ R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureStat
     return source;
 }
 
-std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const std::string &shader_version, bool shader_cache) {
+std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const char *self_name, const std::string &shader_version, bool shader_cache) {
     SceGxmProgramType program_type = program.get_type();
 
     auto shader_type_to_str = [](SceGxmProgramType type) {
@@ -183,15 +186,15 @@ std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &f
     };
 
     const char *shader_type_str = shader_type_to_str(program_type);
-    return load_shader_generic<std::string>(shader::convert_gxp_to_glsl, program, features, hint_attributes, maskupdate, base_path, title_id, shader_type_str, shader_version, shader_cache);
+    return load_shader_generic<std::string>(shader::convert_gxp_to_glsl, program, features, hint_attributes, maskupdate, base_path, title_id, self_name, shader_type_str, shader_version, shader_cache);
 }
 
-std::vector<std::uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id) {
-    return load_shader_generic<std::vector<std::uint32_t>>(shader::convert_gxp_to_spirv, program, features, hint_attributes, maskupdate, base_path, title_id, "spv", "v0", false);
+std::vector<std::uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const char *self_name) {
+    return load_shader_generic<std::vector<std::uint32_t>>(shader::convert_gxp_to_spirv, program, features, hint_attributes, maskupdate, base_path, title_id, self_name, "spv", "v0", false);
 }
 
-std::string pre_load_glsl_shader(const char *hash_text, const char *shader_type_str, const char *base_path, const char *title_id) {
-    return load_shader_generic<std::string>(hash_text, base_path, title_id, shader_type_str);
+std::string pre_load_glsl_shader(const char *hash_text, const char *shader_type_str, const char *base_path, const char *title_id, const char *self_name) {
+    return load_shader_generic<std::string>(hash_text, base_path, title_id, self_name, shader_type_str);
 }
 
 } // namespace renderer::gl

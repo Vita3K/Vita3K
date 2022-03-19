@@ -30,7 +30,7 @@ struct CommandHelper;
 
 #define COMMAND(name)                                                                                \
     void cmd_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper, \
-        const FeatureState &features, Context *render_context, const char *base_path, const char *title_id)
+        const FeatureState &features, Context *render_context, const char *base_path, const char *title_id, const char *self_name)
 
 #define COMMAND_SET_STATE(name)                                                                                \
     void cmd_set_state_##name(renderer::State &renderer, MemState &mem, Config &config, CommandHelper &helper, \

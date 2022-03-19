@@ -119,7 +119,7 @@ COMMAND(handle_draw) {
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
         gl::draw(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context),
-            features, type, format, indicies, count, instance_count, mem, base_path, title_id, config);
+            features, type, format, indicies, count, instance_count, mem, base_path, title_id, self_name, config);
 
         break;
     }
