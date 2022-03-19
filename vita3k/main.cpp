@@ -293,7 +293,7 @@ int main(int argc, char *argv[]) {
     if (!gl_renderer.init(host.base_path))
         return RendererInitFailed;
 
-    const auto draw_app_background = [&](GuiState &gui, HostState &host) {
+    const auto draw_app_background = [](GuiState &gui, HostState &host) {
         if (gui.apps_background.find(host.io.app_path) != gui.apps_background.end())
             // Display application background
             ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.io.app_path],
@@ -315,12 +315,12 @@ int main(int argc, char *argv[]) {
     // Pre-Compile Shader only for glsl, spriv is broken
     if (!host.cfg.spirv_shader) {
         auto &glstate = static_cast<renderer::gl::GLState &>(*host.renderer);
-        if (renderer::gl::get_shaders_cache_hashs(glstate, host.base_path.c_str(), host.io.title_id.c_str()) && cfg.shader_cache) {
+        if (renderer::gl::get_shaders_cache_hashs(glstate, host.base_path.c_str(), host.io.title_id.c_str(), host.self_name.c_str()) && cfg.shader_cache) {
             for (const auto &hash : glstate.shaders_cache_hashs) {
                 gui::draw_begin(gui, host);
                 draw_app_background(gui, host);
 
-                renderer::gl::pre_compile_program(glstate, host.base_path.c_str(), host.io.title_id.c_str(), hash);
+                renderer::gl::pre_compile_program(glstate, host.base_path.c_str(), host.io.title_id.c_str(), host.self_name.c_str(), hash);
                 gui::draw_pre_compiling_shaders_progress(gui, host, uint32_t(glstate.shaders_cache_hashs.size()));
 
                 gui::draw_end(gui, host.window.get());
@@ -335,7 +335,7 @@ int main(int argc, char *argv[]) {
     while (host.frame_count == 0 && !host.load_exec) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-            host.io.title_id.c_str());
+            host.io.title_id.c_str(), host.self_name.c_str());
 
         {
             const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
@@ -354,7 +354,7 @@ int main(int argc, char *argv[]) {
     while (handle_events(host, gui) && !host.load_exec) {
         // Driver acto!
         renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-            host.io.title_id.c_str());
+            host.io.title_id.c_str(), host.self_name.c_str());
 
         {
             const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);

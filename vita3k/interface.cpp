@@ -585,6 +585,9 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     } else
         return FileNotFound;
 
+    // Set self name from self path, can contain folder, get file name only
+    host.self_name = fs::path(host.self_path).filename().string();
+
     return Success;
 }
 
