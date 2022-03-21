@@ -1255,31 +1255,29 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     SceGxmPrecomputedVertexState *vertex_state = context->state.precomputed_vertex_state.cast<SceGxmPrecomputedVertexState>().get(host.mem);
     SceGxmPrecomputedFragmentState *fragment_state = context->state.precomputed_fragment_state.cast<SceGxmPrecomputedFragmentState>().get(host.mem);
 
-    if (!vertex_state)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_PRECOMPUTED_VERTEX_STATE);
-    if (!fragment_state)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_PRECOMPUTED_FRAGMENT_STATE);
-
     // not sure if precomputed uses current program... maybe it does?
     // anyway states have to be made on a program to program basis so this should be safe
-    const SceGxmFragmentProgram *fragment_program = fragment_state->program.get(host.mem);
-    const SceGxmVertexProgram *vertex_program = vertex_state->program.get(host.mem);
+    const Ptr<const SceGxmFragmentProgram> fragment_program_gptr = fragment_state ? fragment_state->program : context->state.fragment_program;
+    const Ptr<const SceGxmVertexProgram> vertex_program_gptr = vertex_state ? vertex_state->program : context->state.vertex_program;
+
+    const SceGxmFragmentProgram *fragment_program = fragment_program_gptr.get(host.mem);
+    const SceGxmVertexProgram *vertex_program = vertex_program_gptr.get(host.mem);
 
     if (!vertex_program || !fragment_program) {
         return RET_ERROR(SCE_GXM_ERROR_NULL_PROGRAM);
     }
 
-    renderer::set_program(*host.renderer, context->renderer.get(), fragment_state->program, true);
-    renderer::set_program(*host.renderer, context->renderer.get(), vertex_state->program, false);
+    renderer::set_program(*host.renderer, context->renderer.get(), fragment_program_gptr, true);
+    renderer::set_program(*host.renderer, context->renderer.get(), vertex_program_gptr, false);
 
     // Set uniforms
     const SceGxmProgram &vertex_program_gxp = *vertex_program->program.get(host.mem);
     const SceGxmProgram &fragment_program_gxp = *fragment_program->program.get(host.mem);
 
-    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, *vertex_state->uniform_buffers.get(host.mem), vertex_program->renderer_data->uniform_buffer_sizes,
+    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, (vertex_state ? (*vertex_state->uniform_buffers.get(host.mem)) : context->state.vertex_uniform_buffers), vertex_program->renderer_data->uniform_buffer_sizes,
         host.kernel, host.mem, thread_id);
 
-    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, *fragment_state->uniform_buffers.get(host.mem), fragment_program->renderer_data->uniform_buffer_sizes,
+    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, (fragment_state ? (*fragment_state->uniform_buffers.get(host.mem)) : context->state.fragment_uniform_buffers), fragment_program->renderer_data->uniform_buffer_sizes,
         host.kernel, host.mem, thread_id);
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
@@ -1294,7 +1292,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     }
 
     const auto frag_paramters = gxp::program_parameters(fragment_program_gxp);
-    auto &frag_textures = *fragment_state->textures.get(host.mem);
+    SceGxmTexture *frag_textures = fragment_state ? fragment_state->textures.get(host.mem)->data() : context->state.textures.data();
     for (uint32_t i = 0; i < fragment_program_gxp.parameter_count; ++i) {
         const auto parameter = frag_paramters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
@@ -1304,7 +1302,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     }
 
     const auto vert_paramters = gxp::program_parameters(vertex_program_gxp);
-    auto &vert_textures = *vertex_state->textures.get(host.mem);
+    SceGxmTexture *vert_textures = vertex_state ? vertex_state->textures.get(host.mem)->data() : (context->state.textures.data() + SCE_GXM_MAX_TEXTURE_UNITS);
     for (uint32_t i = 0; i < vertex_program_gxp.parameter_count; ++i) {
         const auto parameter = vert_paramters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {

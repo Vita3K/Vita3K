@@ -51,7 +51,11 @@ TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState 
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
     const size_t size = texture_size(texture);
     const Ptr<const void> data(texture.data_addr << 2);
-    const TextureCacheHash data_hash = hash_data(data.get(mem), size);
+    TextureCacheHash data_hash = 0;
+
+    if (data.address()) {
+        data_hash = hash_data(data.get(mem), size);
+    }
 
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
@@ -129,6 +133,10 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         } else {
             upload = info->dirty;
         }
+    }
+
+    if (gxm_texture.data_addr == 0) {
+        upload = false;
     }
 
 // Fix memory access error in the condition check for texture cache method
