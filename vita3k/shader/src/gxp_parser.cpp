@@ -149,13 +149,16 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
                     buffer.index = parameter.container_index;
                     buffer.reg_block_size = reg_block_size;
                     buffer.rw = false;
-                    buffer.reg_start_offset = offset;
+                    buffer.reg_start_offset = container ? container->base_sa_offset : offset;
                     buffer.size = parameter.resource_index + parameter_size_in_f32;
                     uniform_buffers.emplace(parameter.container_index, buffer);
                 } else {
                     auto &buffer = uniform_buffers.at(parameter.container_index);
                     buffer.size = std::max(parameter.resource_index + parameter_size_in_f32, buffer.size);
-                    buffer.reg_start_offset = std::min(buffer.reg_start_offset, static_cast<uint32_t>(offset));
+
+                    if (!container) {
+                        buffer.reg_start_offset = std::min(buffer.reg_start_offset, static_cast<uint32_t>(offset));
+                    }
                 }
             }
             break;
