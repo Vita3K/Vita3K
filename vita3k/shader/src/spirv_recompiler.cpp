@@ -104,6 +104,7 @@ struct TranslationState {
     std::string hash;
     spv::Id last_frag_data_id = spv::NoResult;
     spv::Id color_attachment_id = spv::NoResult;
+    spv::Id color_attachment_raw_id = spv::NoResult;
     spv::Id mask_id = spv::NoResult;
     spv::Id frag_coord_id = spv::NoResult; ///< gl_FragCoord, not built-in in SPIR-V.
     spv::Id render_info_id = spv::NoResult;
@@ -312,14 +313,24 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 }
 
 static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &features, TranslationState &translation_state, const std::string &name) {
-    spv::Id f32 = b.makeFloatType(32);
-    spv::Id v4 = b.makeVectorType(f32, 4);
     spv::Id sampled_type = b.makeFloatType(32);
 
     int sampled = 2;
     spv::ImageFormat img_format = spv::ImageFormatRgba8;
 
     spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
+    spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
+    translation_state.interfaces.push_back(sampler);
+
+    return sampler;
+}
+
+static spv::Id create_builtin_sampler_for_raw(spv::Builder &b, const FeatureState &features, TranslationState &translation_state, const std::string &name) {
+    spv::Id ui32 = b.makeUintType(32);
+    int sampled = 2;
+    spv::ImageFormat img_format = spv::ImageFormatRgba16ui;
+
+    spv::Id image_type = b.makeImageType(ui32, spv::Dim2D, false, false, false, sampled, img_format);
     spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
     translation_state.interfaces.push_back(sampler);
 
@@ -621,6 +632,22 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         // There might be a chance that this shader also reads from OUTPUT bank. We will load last state frag data
         spv::Id source = spv::NoResult;
 
+        Operand target_to_store;
+
+        target_to_store.bank = RegisterBank::OUTPUT;
+        target_to_store.num = 0;
+        target_to_store.type = std::get<0>(shader::get_parameter_type_store_and_name(program.get_fragment_output_type()));
+
+        auto store_source_result = [&](const bool direct_store = false) {
+            if (source != spv::NoResult) {
+                if (!direct_store && !is_float_data_type(target_to_store.type)) {
+                    source = utils::convert_to_int(b, source, target_to_store.type, true);
+                }
+
+                utils::store(b, parameters, utils, features, target_to_store, source, 0b1111, 0);
+            }
+        };
+
         if (features.direct_fragcolor) {
             // The GPU supports gl_LastFragData. It's only OpenGL though
             // TODO: Make this not emit with OpenGL
@@ -634,7 +661,8 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             translation_state.last_frag_data_id = last_frag_data_arr;
         } else if (features.support_shader_interlock || features.support_texture_barrier) {
             // Create a global sampler, which is our color attachment
-            auto color_attachment = create_builtin_sampler(b, features, translation_state, "f_colorAttachment");
+            spv::Id color_attachment = create_builtin_sampler(b, features, translation_state, "f_colorAttachment");
+            spv::Id color_attachment_raw = spv::NoResult;
 
             b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
             translation_state.color_attachment_id = color_attachment;
@@ -643,7 +671,30 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord, spv::NoPrecision));
             current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
 
-            source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
+            if (features.preserve_f16_nan_as_u16) {
+                spv::Id uiv4 = b.makeVectorType(b.makeUintType(32), 4);
+
+                color_attachment_raw = create_builtin_sampler_for_raw(b, features, translation_state, "f_colorAttachment_rawUI");
+                b.addDecoration(color_attachment_raw, spv::DecorationBinding, COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE);
+                translation_state.color_attachment_raw_id = color_attachment_raw;
+
+                spv::Id load_normal_cond = b.createBinOp(spv::OpFOrdLessThan, b.makeBoolType(), b.createAccessChain(spv::StorageClassPrivate, translation_state.render_info_id, { b.makeIntConstant(3) }), b.makeFloatConstant(0.5f));
+                spv::Builder::If cond_builder(load_normal_cond, spv::SelectionControlMaskNone, b);
+
+                source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
+                store_source_result();
+                cond_builder.makeBeginElse();
+                color_attachment = color_attachment_raw;
+                source = b.createOp(spv::OpImageRead, uiv4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
+                target_to_store.type = DataType::UINT16;
+                store_source_result(true);
+                cond_builder.makeEndIf();
+
+                // Generated here already, so empty it out to prevent further gen
+                source = spv::NoResult;
+            } else {
+                source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
+            }
         } else {
             // Try to initialize outs[0] to some nice value. In case the GPU has garbage data for our shader
             spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
@@ -651,18 +702,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             source = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
         }
 
-        if (source != spv::NoResult) {
-            Operand target_to_store;
-
-            target_to_store.bank = RegisterBank::OUTPUT;
-            target_to_store.num = 0;
-            target_to_store.type = std::get<0>(shader::get_parameter_type_store_and_name(program.get_fragment_output_type()));
-            if (!is_float_data_type(target_to_store.type)) {
-                source = utils::convert_to_int(b, source, target_to_store.type, true);
-            }
-
-            utils::store(b, parameters, utils, features, target_to_store, source, 0b1111, 0);
-        }
+        store_source_result();
     }
 }
 
@@ -1007,7 +1047,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
-        spv::Id render_buf_type = b.makeStructType({ f32, f32, f32, i32_type }, "GxmRenderFragBufferBlock");
+        spv::Id render_buf_type = b.makeStructType({ f32, f32, f32, f32 }, "GxmRenderFragBufferBlock");
 
         b.addDecoration(render_buf_type, spv::DecorationBlock);
         b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
@@ -1020,7 +1060,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         b.addMemberName(render_buf_type, 0, "back_disabled");
         b.addMemberName(render_buf_type, 1, "front_disabled");
         b.addMemberName(render_buf_type, 2, "writing_mask");
-        b.addMemberName(render_buf_type, 3, "surface_output_format");
+        b.addMemberName(render_buf_type, 3, "use_raw_image");
 
         translation_state.render_info_id = b.createVariable(spv::NoPrecision, spv::StorageClassUniform, render_buf_type, "renderFragInfo");
 
@@ -1081,6 +1121,13 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), coord_id);
         translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { translated_id, translated_id, 0, 1 });
         b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
+
+        if (features.preserve_f16_nan_as_u16) {
+            color_val_operand.type = DataType::UINT16;
+            color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
+
+            b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_raw_id, spv::NoPrecision), translated_id, color });
+        }
     } else {
         spv::Id out = b.createVariable(spv::NoPrecision, spv::StorageClassOutput, b.makeVectorType(b.makeFloatType(32), 4), "out_color");
         translate_state.interfaces.push_back(out);
