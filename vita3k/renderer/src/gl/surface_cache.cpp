@@ -128,14 +128,6 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
 
             bool store_rawly = false;
 
-            if (color::is_write_surface_stored_rawly(base_format)) {
-                surface_internal_format = color::get_raw_store_internal_type(base_format);
-                surface_upload_format = color::get_raw_store_upload_format_type(base_format);
-                surface_data_type = color::get_raw_store_upload_data_type(base_format);
-
-                store_rawly = true;
-            }
-
             auto remake_and_apply_filters_to_current_binded = [&]() {
                 glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, width, height, 0, surface_upload_format, surface_data_type, nullptr);
 
@@ -146,6 +138,19 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 }
             };
+
+            if (info.gl_expected_read_texture_view[0]) {
+                glBindTexture(GL_TEXTURE_2D, info.gl_ping_pong_texture[0]);
+                remake_and_apply_filters_to_current_binded();
+            }
+
+            if (color::is_write_surface_stored_rawly(base_format)) {
+                surface_internal_format = color::get_raw_store_internal_type(base_format);
+                surface_upload_format = color::get_raw_store_upload_format_type(base_format);
+                surface_data_type = color::get_raw_store_upload_data_type(base_format);
+
+                store_rawly = true;
+            }
 
             // This handles some situation where game may stores texture in a larger texture then rebind it
             glBindTexture(GL_TEXTURE_2D, info.gl_texture[0]);
@@ -308,8 +313,14 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
                                     return 0;
                                 }
 
-                                glTextureView(info.gl_expected_read_texture_view[0], GL_TEXTURE_2D, info.gl_texture[0], surface_internal_format, 0, 1, 0, 1);
+                                glBindTexture(GL_TEXTURE_2D, info.gl_expected_read_texture_view[0]);
+                                glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, width, height, 0, surface_upload_format, surface_data_type, nullptr);
+                                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                             }
+
+                            glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.gl_expected_read_texture_view[0], GL_TEXTURE_2D,
+                                0, 0, 0, 0, width, height, 1);
 
                             return info.gl_expected_read_texture_view[0];
                         }
@@ -373,6 +384,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     } else {
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
