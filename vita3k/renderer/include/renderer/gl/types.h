@@ -76,6 +76,7 @@ struct GXMRenderFragUniformBlock {
     float back_disabled = 0;
     float front_disabled = 0;
     float writing_mask = 0;
+    float use_raw_image = 0;
 };
 
 struct GLContext : public renderer::Context {

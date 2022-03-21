@@ -99,8 +99,14 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
 
     glUseProgram(program_id);
 
+    const bool use_raw_image = color::is_write_surface_stored_rawly(gxm::get_base_format(context.record.color_surface.colorFormat));
+
     if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
-        glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.current_color_attachment, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+        if (use_raw_image) {
+            glBindImageTexture(shader::COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE, context.current_color_attachment, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16UI);
+        } else {
+            glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.current_color_attachment, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
+        }
     }
     glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 
@@ -142,6 +148,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         glBindFramebuffer(GL_FRAMEBUFFER, context.render_target->maskbuffer[0]);
     }
     frag_ublock.writing_mask = context.record.writing_mask;
+    frag_ublock.use_raw_image = static_cast<float>(use_raw_image);
 
     if (memcmp(&context.previous_frag_info, &frag_ublock, sizeof(GXMRenderFragUniformBlock)) != 0) {
         std::pair<std::uint8_t *, std::size_t> allocated_buffer = context.fragment_info_uniform_buffer.allocate(sizeof(GXMRenderFragUniformBlock));
