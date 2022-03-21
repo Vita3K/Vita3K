@@ -259,6 +259,11 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     auto height = static_cast<uint32_t>(gxm::get_height(&gxm_texture));
     const Ptr<uint8_t> data(gxm_texture.data_addr << 2);
     uint8_t *texture_data = data.get(mem);
+
+    if (!texture_data) {
+        return;
+    }
+
     std::vector<uint8_t> texture_data_decompressed;
     std::vector<uint8_t> texture_pixels_lineared; // TODO Move to context to avoid frequent allocation?
     std::vector<uint32_t> palette_texture_pixels;
