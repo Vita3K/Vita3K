@@ -34,7 +34,7 @@ enum SurfaceTextureRetrievePurpose {
 class SurfaceCache {
 public:
     virtual std::uint64_t retrieve_color_surface_texture_handle(const std::uint16_t width, const std::uint16_t height, const std::uint16_t pixel_stride,
-        const SceGxmColorFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height = nullptr, std::uint16_t *stored_width = nullptr)
+        const SceGxmColorBaseFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height = nullptr, std::uint16_t *stored_width = nullptr)
         = 0;
     virtual std::uint64_t retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) = 0;
 

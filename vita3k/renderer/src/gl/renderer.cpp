@@ -569,7 +569,7 @@ static void post_process_pixels_data(std::uint32_t *pixels, std::uint8_t *source
 void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSurface &surface) {
     GLint tex_handle = static_cast<GLint>(renderer.surface_cache.retrieve_color_surface_texture_handle(static_cast<std::uint16_t>(surface.width),
         static_cast<std::uint16_t>(surface.height), static_cast<std::uint16_t>(surface.strideInPixels),
-        surface.colorFormat, surface.data, renderer::SurfaceTextureRetrievePurpose::READING));
+        gxm::get_base_format(surface.colorFormat), surface.data, renderer::SurfaceTextureRetrievePurpose::READING));
 
     if (tex_handle == 0) {
         return;
