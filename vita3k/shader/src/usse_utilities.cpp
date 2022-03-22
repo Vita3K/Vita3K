@@ -1256,17 +1256,20 @@ spv::Id shader::usse::utils::unwrap_type(spv::Builder &b, spv::Id type) {
 }
 
 // will break in 32-bit host
-static float get_int_normalize_constants(DataType type) {
+static std::pair<float, float> get_int_normalize_range_constants(DataType type) {
     switch (type) {
     case DataType::UINT8:
+        return { 0.0f, 255.0f };
     case DataType::INT8:
-        return 255.0f;
+        return { 128.0f, 127.0f };
     case DataType::UINT16:
+        return { 0.0f, 65535.0f };
     case DataType::INT16:
-        return 65535.0f;
+        return { 32768.0f, 32767.0f };
     case DataType::UINT32:
+        return { 0.0f, 4294967295.0f };
     case DataType::INT32:
-        return 4294967295.0f;
+        return { 2147483648.0f, 2147483647.0f };
     default:
         assert(false);
     }
@@ -1289,18 +1292,31 @@ spv::Id shader::usse::utils::convert_to_float(spv::Builder &b, spv::Id opr, Data
     const auto target_type = b.isVector(opr) ? b.makeVectorType(b.makeFloatType(32), comp_count) : b.makeFloatType(32);
     assert(b.isIntType(spv_type) || b.isUintType(spv_type));
 
-    if (b.isIntType(spv_type)) {
+    const auto is_sint = b.isIntType(spv_type);
+
+    if (is_sint) {
         opr = b.createUnaryOp(spv::OpConvertSToF, target_type, opr);
     } else {
         opr = b.createUnaryOp(spv::OpConvertUToF, target_type, opr);
     }
 
     if (normal) {
-        const auto constant = get_int_normalize_constants(type);
-        const auto normalizer = b.makeFloatConstant(constant);
+        const auto constant_range = get_int_normalize_range_constants(type);
+        const auto normalizer = b.makeFloatConstant(constant_range.second);
         const auto normalizer_vec = create_constant_vector_or_scalar(b, normalizer, comp_count);
+        const auto zero_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(0.0f), comp_count);
+        const auto b_vec_type = b.makeVectorType(b.makeBoolType(), comp_count);
 
-        opr = b.createBinOp(spv::OpFDiv, target_type, opr, normalizer_vec);
+        if (is_sint) {
+            const auto normalizer_neg = b.makeFloatConstant(constant_range.first);
+            const auto normalize_vec_neg = create_constant_vector_or_scalar(b, normalizer_neg, comp_count);
+
+            opr = b.createTriOp(spv::OpSelect, target_type, b.createBinOp(spv::OpFOrdLessThan, b_vec_type, opr, zero_vec),
+                b.createBinOp(spv::OpFDiv, target_type, opr, normalize_vec_neg),
+                b.createBinOp(spv::OpFDiv, target_type, opr, normalizer_vec));
+        } else {
+            opr = b.createBinOp(spv::OpFDiv, target_type, opr, normalizer_vec);
+        }
     }
     return opr;
 }
@@ -1316,14 +1332,25 @@ spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataTy
     const auto target_type = b.isVector(opr) ? b.makeVectorType(target_comp_type, comp_count) : target_comp_type;
 
     if (normal) {
-        const auto constant = get_int_normalize_constants(type);
-        const auto normalizer = b.makeFloatConstant(constant);
+        const auto constant_range = get_int_normalize_range_constants(type);
+        const auto normalizer = b.makeFloatConstant(constant_range.second);
         const auto normalizer_vec = create_constant_vector_or_scalar(b, normalizer, comp_count);
-        const auto zero_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(0.0), comp_count);
-        const auto one_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(1.0), comp_count);
+        const auto range_begin_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(is_uint ? -1.f : 0.f), comp_count);
+        const auto range_end_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(1.f), comp_count);
+        const auto zero_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(0.f), comp_count);
+        const auto b_vec_type = b.makeVectorType(b.makeBoolType(), comp_count);
 
-        opr = b.createBuiltinCall(opr_type, b.import("GLSL.std.450"), GLSLstd450FClamp, { opr, zero_vec, one_vec });
-        opr = b.createBinOp(spv::OpFMul, opr_type, opr, normalizer_vec);
+        opr = b.createBuiltinCall(opr_type, b.import("GLSL.std.450"), GLSLstd450FClamp, { opr, range_begin_vec, range_end_vec });
+        if (is_uint) {
+            opr = b.createBinOp(spv::OpFMul, opr_type, opr, normalizer_vec);
+        } else {
+            const auto normalizer_neg = b.makeFloatConstant(constant_range.first);
+            const auto normalize_vec_neg = create_constant_vector_or_scalar(b, normalizer_neg, comp_count);
+
+            opr = b.createTriOp(spv::OpSelect, opr_type, b.createBinOp(spv::OpFOrdLessThan, b_vec_type, opr, zero_vec),
+                b.createBinOp(spv::OpFMul, opr_type, opr, normalize_vec_neg),
+                b.createBinOp(spv::OpFMul, opr_type, opr, normalizer_vec));
+        }
     }
 
     if (!is_uint) {
