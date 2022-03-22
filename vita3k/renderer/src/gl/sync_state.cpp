@@ -341,8 +341,8 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
             context.self_sampling_indices.erase(res);
         }
 
-        SceGxmColorFormat format_target_of_texture;
-        if (color::convert_texture_format_to_color_format(format, format_target_of_texture)) {
+        SceGxmColorBaseFormat format_target_of_texture;
+        if (color::convert_base_texture_format_to_base_color_format(gxm::get_base_format(format), format_target_of_texture)) {
             std::uint16_t width = static_cast<std::uint16_t>(gxm::get_width(&texture));
             std::uint16_t stride_in_pixels = width;
 
@@ -359,6 +359,11 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
     if (texture_as_surface != 0) {
         glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture_as_surface));
+        const GLint *swizzle = texture::translate_swizzle(format);
+
+        if (swizzle) {
+            glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+        }
     } else {
         if (config.texture_cache) {
             renderer::texture::cache_and_bind_texture(state.texture_cache, texture, mem);

@@ -59,15 +59,13 @@ void GLSurfaceCache::do_typeless_copy(const GLint dest_texture, const GLint sour
 }
 
 std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::uint16_t width, const std::uint16_t height, const std::uint16_t pixel_stride,
-    const SceGxmColorFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height, std::uint16_t *stored_width) {
+    const SceGxmColorBaseFormat base_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height, std::uint16_t *stored_width) {
     // Create the key to access the cache struct
     const std::uint64_t key = address.address();
 
-    SceGxmColorBaseFormat base_format = gxm::get_base_format(color_format);
     GLenum surface_internal_format = color::translate_internal_format(base_format);
     GLenum surface_upload_format = color::translate_format(base_format);
     GLenum surface_data_type = color::translate_type(base_format);
-    const GLint *surface_swizzle = color::translate_swizzle(color_format);
 
     std::size_t bytes_per_stride = pixel_stride * color::bytes_per_pixel(base_format);
     std::size_t total_surface_size = bytes_per_stride * height;
@@ -238,7 +236,6 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
                             for (std::size_t i = 0; i < casted_vec.size();) {
                                 if ((casted_vec[i]->cropped_height == height) && (casted_vec[i]->cropped_width == width) && (casted_vec[i]->cropped_y == start_sourced_line) && (casted_vec[i]->cropped_x == start_x) && (casted_vec[i]->format == base_format)) {
                                     glBindTexture(GL_TEXTURE_2D, casted_vec[i]->texture[0]);
-                                    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, surface_swizzle);
 
                                     if (color::bytes_per_pixel_in_gl_storage(base_format) == color::bytes_per_pixel_in_gl_storage(info.format)) {
                                         glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, static_cast<int>(start_x), static_cast<int>(start_sourced_line), 0, casted_vec[i]->texture[0], GL_TEXTURE_2D,
@@ -292,8 +289,6 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
                             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                         }
-
-                        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, surface_swizzle);
 
                         casted_info.format = base_format;
                         casted_info.cropped_x = start_x;
@@ -549,7 +544,7 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const MemState &mem, S
 
     if (color) {
         color_handle = static_cast<GLuint>(retrieve_color_surface_texture_handle(color->width,
-            color->height, color->strideInPixels, color->colorFormat, color->data,
+            color->height, color->strideInPixels, gxm::get_base_format(color->colorFormat), color->data,
             renderer::SurfaceTextureRetrievePurpose::WRITING, stored_height));
     } else {
         color_handle = target->attachments[0];
@@ -625,11 +620,18 @@ std::uint64_t GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
     if (info.pixel_stride == pitch) {
         // In assumption the format is RGBA8
         const std::size_t data_delta = address.address() - ite->first;
+        std::uint32_t limited_height = height;
         if ((data_delta % (pitch * 4)) == 0) {
             std::uint32_t start_sourced_line = (data_delta / (pitch * 4));
             if ((start_sourced_line + height) > info.height) {
-                LOG_ERROR("Trying to present non-existen segment in cached color surface!");
-                return 0;
+                // Sometimes the surface is just missing a little bit of lines
+                if (start_sourced_line < info.height) {
+                    // Just limit the height and display it
+                    limited_height = info.height - start_sourced_line;
+                } else {
+                    LOG_ERROR("Trying to present non-existen segment in cached color surface!");
+                    return 0;
+                }
             }
 
             // Calculate uvs
@@ -637,7 +639,7 @@ std::uint64_t GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
             uvs[0] = 0.0f;
             uvs[1] = static_cast<float>(start_sourced_line) / info.height;
             uvs[2] = static_cast<float>(width) / info.width;
-            uvs[3] = static_cast<float>(start_sourced_line + height) / info.height;
+            uvs[3] = static_cast<float>(start_sourced_line + limited_height) / info.height;
 
             return info.gl_texture[0];
         }

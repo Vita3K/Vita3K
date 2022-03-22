@@ -122,7 +122,7 @@ GLenum translate_type(SceGxmColorBaseFormat base_format);
 const GLint *translate_swizzle(SceGxmColorFormat fmt);
 size_t bytes_per_pixel(SceGxmColorBaseFormat base_format);
 size_t bytes_per_pixel_in_gl_storage(SceGxmColorBaseFormat base_format);
-bool convert_texture_format_to_color_format(SceGxmTextureFormat format, SceGxmColorFormat &color_format);
+bool convert_base_texture_format_to_base_color_format(SceGxmTextureBaseFormat format, SceGxmColorBaseFormat &color_format);
 bool is_write_surface_stored_rawly(SceGxmColorBaseFormat base_format);
 GLenum get_raw_store_internal_type(SceGxmColorBaseFormat base_format);
 GLenum get_raw_store_upload_format_type(SceGxmColorBaseFormat base_format);
