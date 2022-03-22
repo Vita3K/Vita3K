@@ -298,7 +298,7 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
                 inst.opr.dest.num, disasm::operand_to_str(inst.opr.src1, load_mask), disasm::operand_to_str(inst.opr.src2, load_mask));
         }
 
-        lhs = do_alu_op(inst, load_mask);
+        lhs = do_alu_op(inst, load_mask, mask ? mask : 0b1);
 
         const spv::Id c0_type = utils::make_vector_or_scalar_type(m_b, m_b.makeFloatType(32), mask ? 4 : 1);
         spv::Id c0 = utils::make_uniform_vector_from_type(m_b, c0_type, 0.0f);

@@ -97,7 +97,7 @@ spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id se
     return b.createCompositeConstruct(b.makeVectorType(target_type, static_cast<int>(ops.size())), ops);
 }
 
-static size_t dest_mask_to_comp_count(shader::usse::Imm4 dest_mask) {
+size_t shader::usse::utils::dest_mask_to_comp_count(shader::usse::Imm4 dest_mask) {
     std::bitset<4> bs(dest_mask);
     const auto bit_count = bs.count();
     assert(bit_count <= 4 && bit_count > 0);
