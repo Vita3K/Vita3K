@@ -55,6 +55,8 @@ spv::Id unwrap_type(spv::Builder &b, spv::Id type);
 spv::Id convert_to_float(spv::Builder &b, spv::Id opr, DataType type, bool normal);
 spv::Id convert_to_int(spv::Builder &b, spv::Id opr, DataType type, bool normal);
 
+size_t dest_mask_to_comp_count(shader::usse::Imm4 dest_mask);
+
 template <typename T>
 spv::Id make_uniform_vector_from_type(spv::Builder &b, spv::Id type, T val) {
     const int num_comp = b.getNumTypeComponents(type);

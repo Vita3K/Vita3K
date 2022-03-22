@@ -29,6 +29,18 @@
 using namespace shader;
 using namespace usse;
 
+static spv::Id postprocess_dot_result_for_store(spv::Builder &b, spv::Id dot_result, shader::usse::Imm4 mask) {
+    const std::size_t comp_count = utils::dest_mask_to_comp_count(mask);
+    if (comp_count == 1) {
+        return dot_result;
+    }
+
+    spv::Id type_result = b.makeVectorType(b.getTypeId(dot_result), comp_count);
+    std::vector<spv::Id> comps(comp_count, dot_result);
+
+    return b.createCompositeConstruct(type_result, comps);
+}
+
 bool USSETranslatorVisitor::vmad(
     ExtVecPredicate pred,
     Imm1 skipinv,
@@ -362,7 +374,7 @@ bool USSETranslatorVisitor::vdp(
     }
 
     spv::Id result = m_b.createBinOp(spv::OpDot, type_f32, lhs, rhs);
-
+    result = postprocess_dot_result_for_store(m_b, result, write_mask);
     store(inst.opr.dest, result, write_mask, 0);
 
     // Rotate write mask
@@ -372,7 +384,7 @@ bool USSETranslatorVisitor::vdp(
     return true;
 }
 
-spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_mask) {
+spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_mask, const Imm4 possible_dest_mask) {
     spv::Id vsrc1 = load(inst.opr.src1, source_mask, 0);
     spv::Id vsrc2 = load(inst.opr.src2, source_mask, 0);
     std::vector<spv::Id> ids;
@@ -474,6 +486,7 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
     case Opcode::VDP:
     case Opcode::VF16DP: {
         result = m_b.createBinOp(spv::OpDot, m_b.makeFloatType(32), vsrc1, vsrc2);
+        result = postprocess_dot_result_for_store(m_b, result, possible_dest_mask);
         break;
     }
 
@@ -576,6 +589,10 @@ bool USSETranslatorVisitor::v32nmad(
     // Dot only produces one result. But use full components
     if ((inst.opcode == Opcode::VF16DP) || (inst.opcode == Opcode::VDP)) {
         source_mask = 0b1111;
+
+        if (utils::dest_mask_to_comp_count(dest_mask) != 1) {
+            LOG_TRACE("VNMAD is VDP but has dest mask with more than 1 component active. Please report to developer to handle this!");
+        }
     }
 
     ExtPredicate pred_translated = ext_vec_predicate_to_ext(pred);
@@ -585,7 +602,7 @@ bool USSETranslatorVisitor::v32nmad(
 
     // Recompile
     m_b.setLine(m_recompiler.cur_pc);
-    spv::Id result = do_alu_op(inst, source_mask);
+    spv::Id result = do_alu_op(inst, source_mask, dest_mask);
 
     if (result != spv::NoResult) {
         store(inst.opr.dest, result, dest_mask, 0);
