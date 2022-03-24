@@ -369,16 +369,30 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred backend renderer.");
         ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
 #endif
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Shaders").x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Shaders");
+        ImGui::Spacing();
         ImGui::Checkbox("Use shader cache", &host.cfg.shader_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Enable shader cache to pre-compile it at boot up\nUncheck the box to disable this feature.");
+        ImGui::SameLine();
         if (host.renderer->features.spirv_shader) {
             ImGui::Checkbox("Use Spir-V shader", &host.cfg.spirv_shader);
 
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, "
                                   "and not all GPU are compatible with this.");
+            }
+        }
+        const auto shaders_cache_path{ fs::path(host.base_path) / "cache/shaders" };
+        if (fs::exists(shaders_cache_path) && !fs::is_empty(shaders_cache_path)) {
+            ImGui::Spacing();
+            if (ImGui::Button("Clean Shaders Cache and Log")) {
+                fs::remove_all(shaders_cache_path);
+                fs::remove_all(fs::path(host.base_path) / "shaderlog");
             }
         }
         ImGui::EndTabItem();
@@ -440,7 +454,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Separator();
         const auto perfomance_overley_size = ImGui::CalcTextSize("Performance Overlay").x;
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (perfomance_overley_size / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Performance Overlay");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Performance Overlay");
         ImGui::Spacing();
         ImGui::Checkbox("Performance Overlay", &host.cfg.performance_overlay);
         if (ImGui::IsItemHovered())
@@ -460,7 +474,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::SetTooltip("Allows emulator to attempt searching for files regardless of case on non-windows platforms");
 #endif
         ImGui::Separator();
-        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Emulated System Storage Folder");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Emulated System Storage Folder");
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
         ImGui::TextColored(GUI_COLOR_TEXT, "Current emulator folder: %s", host.cfg.pref_path.c_str());
