@@ -1284,9 +1284,9 @@ static spv::Id create_constant_vector_or_scalar(spv::Builder &b, spv::Id constan
 }
 
 spv::Id shader::usse::utils::convert_to_float(spv::Builder &b, spv::Id opr, DataType type, bool normal) {
-    auto spv_type = unwrap_type(b, b.getTypeId(opr));
-    int comp_count = b.isVector(opr) ? 1 : b.getNumComponents(opr);
-    auto target_type = b.isVector(opr) ? b.makeVectorType(b.makeFloatType(32), b.getNumComponents(opr)) : b.makeFloatType(32);
+    const auto spv_type = unwrap_type(b, b.getTypeId(opr));
+    const auto comp_count = b.isVector(opr) ? b.getNumComponents(opr) : 1;
+    const auto target_type = b.isVector(opr) ? b.makeVectorType(b.makeFloatType(32), comp_count) : b.makeFloatType(32);
     assert(b.isIntType(spv_type) || b.isUintType(spv_type));
 
     if (b.isIntType(spv_type)) {
@@ -1306,14 +1306,14 @@ spv::Id shader::usse::utils::convert_to_float(spv::Builder &b, spv::Id opr, Data
 }
 
 spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataType type, bool normal) {
-    auto opr_type = b.getTypeId(opr);
-    auto spv_type = unwrap_type(b, b.getTypeId(opr));
+    const auto opr_type = b.getTypeId(opr);
+    const auto spv_type = unwrap_type(b, b.getTypeId(opr));
     assert(b.isFloatType(spv_type));
 
-    int comp_count = b.isVector(opr) ? 1 : b.getNumComponents(opr);
-    bool is_uint = is_unsigned_integer_data_type(type);
-    auto target_comp_type = is_uint ? b.makeUintType(32) : b.makeIntType(32);
-    auto target_type = b.isVector(opr) ? b.makeVectorType(target_comp_type, b.getNumComponents(opr)) : target_comp_type;
+    const auto comp_count = b.isVector(opr) ? b.getNumComponents(opr) : 1;
+    const auto is_uint = is_unsigned_integer_data_type(type);
+    const auto target_comp_type = is_uint ? b.makeUintType(32) : b.makeIntType(32);
+    const auto target_type = b.isVector(opr) ? b.makeVectorType(target_comp_type, comp_count) : target_comp_type;
 
     if (normal) {
         const auto constant = get_int_normalize_constants(type);
