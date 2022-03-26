@@ -79,6 +79,8 @@ public:
     bool need_rebuild = false;
     // is fxaa used
     bool enable_fxaa = false;
+    // is linear filtering used
+    bool enable_linear_filter = true;
 
     ScreenRenderer(VKState &state);
 

@@ -69,6 +69,7 @@ struct State {
         = 0;
     virtual void swap_window(SDL_Window *window) = 0;
     virtual void set_fxaa(bool enable_fxaa) = 0;
+    virtual void set_linear_filter(bool enable_linear_filter) = 0;
     virtual int get_max_anisotropic_filtering() = 0;
     virtual void set_anisotropic_filtering(int anisotropic_filtering) = 0;
     virtual void set_surface_sync_state(bool disable) {

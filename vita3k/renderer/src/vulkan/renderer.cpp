@@ -596,6 +596,10 @@ void VKState::set_fxaa(bool enable_fxaa) {
     screen_renderer.enable_fxaa = enable_fxaa;
 }
 
+void VKState::set_linear_filter(bool enable_linear_filter) {
+    screen_renderer.enable_linear_filter = enable_linear_filter;
+}
+
 bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     assert(features.support_memory_mapping);
     // the adress should be 4K aligned

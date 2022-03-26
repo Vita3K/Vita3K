@@ -750,6 +750,10 @@ void GLState::set_fxaa(bool enable_fxaa) {
     screen_renderer.enable_fxaa = enable_fxaa;
 }
 
+void GLState::set_linear_filter(bool enable_linear_filter) {
+    screen_renderer.enable_linear_filter = enable_linear_filter;
+}
+
 int GLState::get_max_anisotropic_filtering() {
     float max_aniso;
     glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_aniso);
