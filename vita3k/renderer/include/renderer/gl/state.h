@@ -50,6 +50,7 @@ struct GLState : public renderer::State {
         const GxmState &gxm, MemState &mem) override;
     void swap_window(SDL_Window *window) override;
     void set_fxaa(bool enable_fxaa) override;
+    void set_linear_filter(bool enable_linear_filter) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
 

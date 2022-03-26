@@ -39,6 +39,7 @@ public:
     }
 
     bool enable_fxaa;
+    bool enable_linear_filter;
 
 private:
     struct screen_vertex {

@@ -648,8 +648,8 @@ void ScreenRenderer::create_surface_image() {
 
     vk::SamplerCreateInfo sampler_info{
         // use linear as it renders a lot better compared to nearest (although it adds a slight blur)
-        .magFilter = vk::Filter::eLinear,
-        .minFilter = vk::Filter::eLinear,
+        .magFilter = enable_linear_filter ? vk::Filter::eLinear : vk::Filter::eNearest,
+        .minFilter = enable_linear_filter ? vk::Filter::eLinear : vk::Filter::eNearest,
         .addressModeU = vk::SamplerAddressMode::eClampToEdge,
         .addressModeV = vk::SamplerAddressMode::eClampToEdge,
         .addressModeW = vk::SamplerAddressMode::eClampToEdge,

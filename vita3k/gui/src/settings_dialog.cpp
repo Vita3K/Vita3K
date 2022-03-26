@@ -527,10 +527,18 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid visual tearing.");
         }
+
+        // Anti-aliasing FXAA
         ImGui::Spacing();
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
+
+        // Linear Filter
+        ImGui::Spacing();
+        ImGui::Checkbox("Enable Linear Filter (Reboot to Appy)", &emuenv.cfg.enable_linear_filter);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("The image will be softer, which could help with aliasing.\nDisabling Linear filtering will result in a more sharper aliased image.");
 
         ImGui::Spacing();
         ImGui::Separator();
