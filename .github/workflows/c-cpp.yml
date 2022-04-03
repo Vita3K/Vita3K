@@ -7,7 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -70,7 +70,7 @@ jobs:
           echo "${env:PATH}" >> ${env:GITHUB_PATH}
         if: matrix.os == 'windows-latest'
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v3
         with:
           path: ${{ matrix.cache_path }}
           key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
@@ -94,7 +94,7 @@ jobs:
           sudo make -C SDL2-${SDL2VER} install
         if: matrix.os == 'ubuntu-latest'
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
           submodules: recursive
@@ -121,7 +121,7 @@ jobs:
         id: git_short_sha
         run: echo "::set-output name=value::$(git rev-parse --short HEAD)"
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: vita3k-${{ steps.git_short_sha.outputs.value }}-${{ matrix.os }}
           path: build/bin
@@ -131,11 +131,11 @@ jobs:
     runs-on: "ubuntu-20.04"
     if: github.ref == 'refs/heads/master'
     steps:
-      - uses: actions/checkout@v2
-      
+      - uses: actions/checkout@v3
+
       - name: Download Artifacts
-        uses: actions/download-artifact@v2
-      
+        uses: actions/download-artifact@v3
+
       - name: Upload
         shell: bash
         run: |
