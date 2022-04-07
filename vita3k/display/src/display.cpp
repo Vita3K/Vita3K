@@ -55,9 +55,9 @@ static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
 
                     display.vblank_wait_infos.pop_back();
                 }
-
-                display.vblank_count++;
             }
+
+            display.vblank_count++;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(TARGET_MS_PER_FRAME));
     }
