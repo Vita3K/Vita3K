@@ -10,7 +10,7 @@
 			<install_license>Installiere Lizenz</install_license>
 		</file>
 		<emulation name="Emulation">
-			<last_apps_used>Zuletzt benutzte Apps</last_apps_used>
+			<last_apps_used>Zuletzt benutzte Anwendungen</last_apps_used>
 		</emulation>
 		<configuration name="Konfiguration">
 			<settings>Einstellungen</settings>
@@ -29,7 +29,7 @@
 	<app_context>
 		<update_history>Update-Verlauf</update_history>
 		<information>Information</information>
-		<app_delete>Diese App und alle damit verbundenen Daten, wie Nutzerdaten, werden gelöscht.</app_delete>
+		<app_delete>Diese Anwendung und alle damit verbundenen Daten, wie Nutzerdaten, werden gelöscht.</app_delete>
 		<save_delete>Möchtest du die diese Nutzerdaten löschen?</save_delete>
 		<eligible>berechtigt</eligible>
 		<ineligible>nicht berechtigt</ineligible>
@@ -104,7 +104,7 @@
 
 	<dialog>
 		<trophy>
-			<preparing_start_app>Bereite das Starten der App vor...</preparing_start_app>
+			<preparing_start_app>Bereite das Starten der Anwendung vor...</preparing_start_app>
 		</trophy>
 		<save_data>
 			<delete>
@@ -133,7 +133,7 @@ Es fehlt freier Platz auf der Speicherkarte.</could_not_save>
 				<save_the_data>Diese Nutzerdaten speichern?</save_the_data>
 				<saving>Speichere...</saving>
 				<warning_saving>Speichere...
-Schalte die Konsole nicht aus und beende nicht die App.</warning_saving>
+Schalte die Konsole nicht aus und beende nicht die Anwendung.</warning_saving>
 				<overwrite_saved_data>Vorhandene Nutzerdaten überschreiben?</overwrite_saved_data>
 			</save>
 		</save_data>
@@ -144,7 +144,7 @@ Schalte die Konsole nicht aus und beende nicht die App.</warning_saving>
 	</game_data>
 
 	<indicator>
-		<app_added_home>Die App wurde dem Startbildschirm hinzugefügt.</app_added_home>
+		<app_added_home>Die Anwendung wurde dem Startbildschirm hinzugefügt.</app_added_home>
 		<delete_all>Lösche alle</delete_all>
 		<notif_deleted>Alle Benachrichtigungen werden gelöscht.</notif_deleted>
 		<install_failed>Installieren hat nicht geklappt.</install_failed>
@@ -228,7 +228,7 @@ Dein Vita3K-System ist bereit!</completed_setup>
 		<earned>Errungen</earned>
 		<name>Name</name>
 		<no_trophies>Keine Trophäen da.
-Du kannst Trophäen in Apps verdienen, die die Trophäen-Funktionen unterstützen.</no_trophies>
+Du kannst Trophäen in Anwendungen verdienen, die die Trophäen-Funktionen unterstützen.</no_trophies>
 		<not_earned>Nicht errungen</not_earned>
 		<original>Original</original>
 		<sort>Sortierung</sort>
