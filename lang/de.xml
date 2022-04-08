@@ -1,20 +1,265 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <lang>
+	<main_menubar>
+		<file name="Datei">
+			<open_pref_path>Öffne Präferenzen-Pfad...</open_pref_path>
+			<install_firmware>Installiere Firmware</install_firmware>
+			<install_pkg>Installiere .pkg</install_pkg>
+			<install_zip>Installiere .zip, .vpk</install_zip>
+			<install_license>Installiere Lizenz</install_license>
+		</file>
+		<emulation name="Emulation">
+			<last_apps_used>Zuletzt benutzte Apps</last_apps_used>
+		</emulation>
+		<configuration name="Konfiguration">
+			<settings>Einstellungen</settings>
+			<user_management>Benutzer</user_management>
+		</configuration>
+		<controls name="Steuerung">
+			<keyboard_controls>Tastatur</keyboard_controls>
+			<controllers>Controller</controllers>
+		</controls>
+		<help name="Hilfe">
+			<about>Über</about>
+			<welcome>Willkommen</welcome>
+		</help>
+	</main_menubar>
+
+	<app_context>
+		<update_history>Update-Verlauf</update_history>
+		<information>Information</information>
+		<app_delete>Diese App und alle damit verbundenen Daten, wie Nutzerdaten, werden gelöscht.</app_delete>
+		<save_delete>Möchtest du die diese Nutzerdaten löschen?</save_delete>
+		<eligible>berechtigt</eligible>
+		<ineligible>nicht berechtigt</ineligible>
+		<level>Level</level>
+		<name>Name</name>
+		<trophy_earning>Trophäen-Freischaltung</trophy_earning>
+		<parental_Controls>Einstellungen für Eltern</parental_Controls>
+		<updated>Aktualisiert</updated>
+		<size>Größe</size>
+		<version>Version</version>
+		<last_time_used>Zuletzt benutzt</last_time_used>
+		<never>Nie</never>
+		<time_used>Nutzungsdauer</time_used>
+	</app_context>
+
+	<common>
+		<cancel>Abbrechen</cancel>
+		<delete>Löschen</delete>
+		<file_corrupted>Die Datei ist beschädigt.</file_corrupted>
+		<no>Nein</no>
+		<select_all>Wähle alle aus</select_all>
+		<select>Wählen</select>
+		<please_wait>Bitte warten...</please_wait>
+		<yes>Ja</yes>
+		<wday>
+			<day>Sonntag</day>
+			<day>Montag</day>
+			<day>Dienstag</day>
+			<day>Mittwoch</day>
+			<day>Donnerstag</day>
+			<day>Freitag</day>
+			<day>Samstag</day>
+		</wday>
+		<ymonth>
+			<month>Januar</month>
+			<month>Februar</month>
+			<month>März</month>
+			<month>April</month>
+			<month>Mai</month>
+			<month>Juni</month>
+			<month>Juli</month>
+			<month>August</month>
+			<month>September</month>
+			<month>Oktober</month>
+			<month>November</month>
+			<month>Dezember</month>
+		</ymonth>
+		<small_ymonth>
+			<month>januar</month>
+			<month>februar</month>
+			<month>märz</month>
+			<month>april</month>
+			<month>mai</month>
+			<month>juni</month>
+			<month>juli</month>
+			<month>august</month>
+			<month>september</month>
+			<month>oktober</month>
+			<month>november</month>
+			<month>dezember</month>
+		</small_ymonth>
+		<hidden_trophy>Geheime Trophäe</hidden_trophy>
+		<one_hour_ago>Vor 1 Stunde</one_hour_ago>
+		<one_minute_ago>Vor 1 Minute</one_minute_ago>
+		<bronze>Bronze</bronze>
+		<gold>Gold</gold>
+		<platinum>Platin</platinum>
+		<silver>Silber</silver>
+		<hours_ago>Vor {} Stunden</hours_ago>
+		<minutes_ago>Vor {} Minuten</minutes_ago>
+	</common>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Bereite das Starten der App vor...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Möchtest du das Löschen abbrechen?</cancel_deleting>
+				<deletion_complete>Fertig gelöscht.</deletion_complete>
+				<delete_saved_data>Diese Nutzerdaten löschen?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Details</details>
+				<updated>Aktualisiert</updated>
+			</info>
+			<load name="Laden">
+				<cancel_loading>Möchtest du das Laden abbrechen?</cancel_loading>
+				<no_saved_data>Keine Nutzerdaten vorhanden.</no_saved_data>
+				<load_complete>Fertig geladen.</load_complete>
+				<loading>Lade...</loading>
+				<load_saved_data>Diese Nutzerdaten laden?</load_saved_data>
+			</load>
+			<save name="Speichern">
+				<cancel_saving>Möchtest du das Speichern abbrechen?</cancel_saving>
+				<could_not_save>Konnte die Datei nicht speichern.
+Es fehlt freier Platz auf der Speicherkarte.</could_not_save>
+				<not_free_space>Es fehlt freier Platz auf der Speicherkarte.</not_free_space>
+				<new_saved_data>Neue Nutzerdaten</new_saved_data>
+				<saving_complete>Fertig gespeichert.</saving_complete>
+				<save_the_data>Diese Nutzerdaten speichern?</save_the_data>
+				<saving>Speichere...</saving>
+				<warning_saving>Speichere...
+Schalte die Konsole nicht aus und beende nicht die App.</warning_saving>
+				<overwrite_saved_data>Vorhandene Nutzerdaten überschreiben?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
 	<game_data>
-		<app_close>Folgende Anwendung wird geschlossen.</app_close>
+		<app_close>Die folgende App wird geschlossen.</app_close>
 	</game_data>
+
+	<indicator>
+		<app_added_home>Die App wurde dem Startbildschirm hinzugefügt.</app_added_home>
+		<delete_all>Lösche alle</delete_all>
+		<notif_deleted>Alle Benachrichtigungen werden gelöscht.</notif_deleted>
+		<install_failed>Installieren hat nicht geklappt.</install_failed>
+		<install_complete>Fertig installiert.</install_complete>
+		<installing>Installiere...</installing>
+		<no_notif>Es gibt keine Benachrichtigungen.</no_notif>
+		<trophy_earned>Du hast eine Trophäe freigeschaltet!</trophy_earned>
+	</indicator>
 
 	<initial_setup>
 		<back>Zurück</back>
-		<completed_setup>Die Erstinstallation ist jetzt abgeschlossen.
-Dein Vita3K-System ist bereit!</completed_setup>
-		<select_language>Wählen eine Sprache.</select_language>
+		<completed_setup>Du hast die Ersteinrichtung abgeschlossen.
+Dein Vita3K-System ist startklar!</completed_setup>
+		<select_language>Wähle eine Sprache.</select_language>
 		<next>Weiter</next>
 	</initial_setup>
 
 	<live_area>
 		<start>Starten</start>
-		<continue>Fortfahren</continue>
+		<continue>Weiter</continue>
 	</live_area>
+
+	<settings name="Einstellungen">
+		<theme_background name="Theme &amp; Hintergrund">
+			<default>Standard</default>
+			<theme name="Theme">
+				<information name="Informationen">
+					<name>Name</name>
+					<provider>Anbieter</provider>
+					<updated>Aktualisiert</updated>
+					<size>Größe</size>
+					<version>Version</version>
+				</information>
+				<delete>Dieses Theme wird gelöscht.</delete>
+			</theme>
+			<start_screen name="Startbildschirm">
+				<image>Bild</image>
+			</start_screen>
+			<home_screen_backgrounds>Hintergründe für Startbildschirm</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Datum &amp; Uhrzeit">
+			<date_format name ="Datums-Format">
+				<yyyy_mm_dd>JJJJ-MM-TT</yyyy_mm_dd>
+				<dd_mm_yyyy>TT.MM.JJJJ</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/TT/JJJJ</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Uhrzeit-Format">
+				<clock_12_hour>12-Stunden-Uhr</clock_12_hour>
+				<clock_24_hour>24-Stunden-Uhr</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Sprache">
+			<system_language>Anzeigesprache</system_language>
+			<input_language name="Eingabesprachen">
+				<keyboards name="Tastaturen">
+					<ime_langagues>
+						<lang id="1">Dänisch</lang>
+						<lang id="2">Deutsch</lang>
+						<lang id="262144">Englisch (UK)</lang>
+						<lang id="4">Englisch (USA)</lang>
+						<lang id="8">Spanisch</lang>
+						<lang id="16">Französisch</lang>
+						<lang id="32">Italienisch</lang>
+						<lang id="64">Niederländisch</lang>
+						<lang id="128">Norwegisch</lang>
+						<lang id="256">Polnisch</lang>
+						<lang id="131072">Portugiesisch (Brasilien)</lang>
+						<lang id="512">Portugiesisch (Portugal)</lang>
+						<lang id="1024">Russisch</lang>
+						<lang id="2048">Finnisch</lang>
+						<lang id="4096">Schwedisch</lang>
+						<lang id="524288">Türkisch</lang>
+					</ime_langagues>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>Details</details>
+		<earned>Errungen</earned>
+		<name>Name</name>
+		<no_trophies>Keine Trophäen da.
+Du kannst Trophäen in Apps verdienen, die die Trophäen-Funktionen unterstützen.</no_trophies>
+		<not_earned>Nicht errungen</not_earned>
+		<original>Original</original>
+		<sort>Sortierung</sort>
+		<trophies>Trophäen</trophies>
+		<grade>Wertigkeit</grade>
+		<progress>Fortschritt</progress>
+		<updated>Aktualisiert</updated>
+	</trophy_collection>
+
+	<user_management>
+		<select_user>Wähle deine Benutzer:in</select_user>
+		<create_user>Erstelle Benutzer:in</create_user>
+		<user_created>Die folgende Benutzer:in wurde erstellt</user_created>
+		<edit_user>Verwalte Benutzer</edit_user>
+		<user_name_used>! Der Name wird schon verwendet.</user_name_used>
+		<delete_user>Lösche Benutzer:in</delete_user>
+		<user_delete>Wähle die Benutzer:in, der gelöscht werden soll.</user_delete>
+		<user_delete_msg>Die folgende Benutzer:in wird gelöscht.</user_delete_msg>
+		<user_delete_message>Wenn du die Benutzer:in löscht, werden alle zugehörigen Nutzerdaten und Trophäen gelöscht.</user_delete_message>
+		<user_delete_warn>Die Benutzer:in wird gelöscht.
+Willst du wirklich fortfahren?</user_delete_warn>
+		<user_deleted>Benutzer:in gelöscht.</user_deleted>
+		<change_avatar>Ändere Avatar</change_avatar>
+		<reset_avatar>Setze Avatar zurück</reset_avatar>
+		<name>Name</name>
+		<user>Benutzer:in</user>
+		<confirm>Bestätigen</confirm>
+		<cancel>Abbrechen</cancel>
+		<delete>Löschen</delete>
+		<yes>Ja</yes>
+		<no>Nein</no>
+		<automatic_user_login>Automatisches Einloggen</automatic_user_login>
+	</user_management>
 </lang>
