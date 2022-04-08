@@ -140,7 +140,7 @@ Schalte die Konsole nicht aus und beende nicht die App.</warning_saving>
 	</dialog>
 
 	<game_data>
-		<app_close>Die folgende App wird geschlossen.</app_close>
+		<app_close>Folgende Anwendung wird geschlossen.</app_close>
 	</game_data>
 
 	<indicator>
@@ -156,15 +156,15 @@ Schalte die Konsole nicht aus und beende nicht die App.</warning_saving>
 
 	<initial_setup>
 		<back>Zurück</back>
-		<completed_setup>Du hast die Ersteinrichtung abgeschlossen.
-Dein Vita3K-System ist startklar!</completed_setup>
+		<completed_setup>Die Erstinstallation ist jetzt abgeschlossen.
+Dein Vita3K-System ist bereit!</completed_setup>
 		<select_language>Wähle eine Sprache.</select_language>
 		<next>Weiter</next>
 	</initial_setup>
 
 	<live_area>
 		<start>Starten</start>
-		<continue>Weiter</continue>
+		<continue>Fortfahren</continue>
 	</live_area>
 
 	<settings name="Einstellungen">
@@ -241,12 +241,12 @@ Du kannst Trophäen in Apps verdienen, die die Trophäen-Funktionen unterstütze
 	<user_management>
 		<select_user>Wähle deine Benutzer:in</select_user>
 		<create_user>Erstelle Benutzer:in</create_user>
-		<user_created>Die folgende Benutzer:in wurde erstellt</user_created>
+		<user_created>Folgende Benutzer:in wurde erstellt</user_created>
 		<edit_user>Verwalte Benutzer</edit_user>
 		<user_name_used>! Der Name wird schon verwendet.</user_name_used>
 		<delete_user>Lösche Benutzer:in</delete_user>
 		<user_delete>Wähle die Benutzer:in, der gelöscht werden soll.</user_delete>
-		<user_delete_msg>Die folgende Benutzer:in wird gelöscht.</user_delete_msg>
+		<user_delete_msg>Folgende Benutzer:in wird gelöscht.</user_delete_msg>
 		<user_delete_message>Wenn du die Benutzer:in löscht, werden alle zugehörigen Nutzerdaten und Trophäen gelöscht.</user_delete_message>
 		<user_delete_warn>Die Benutzer:in wird gelöscht.
 Willst du wirklich fortfahren?</user_delete_warn>
