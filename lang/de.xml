@@ -242,7 +242,7 @@ Du kannst Trophäen in Anwendungen verdienen, die die Trophäen-Funktionen unter
 		<select_user>Wähle dein Profil</select_user>
 		<create_user>Erstelle Profil</create_user>
 		<user_created>Folgendes Profil wurde erstellt</user_created>
-		<edit_user>Verwalte Profile</edit_user>
+		<edit_user>Verwalten</edit_user>
 		<user_name_used>! Der Name wird schon verwendet.</user_name_used>
 		<delete_user>Lösche Profil</delete_user>
 		<user_delete>Wähle das Profil, das gelöscht werden soll.</user_delete>
