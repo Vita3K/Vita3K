@@ -29,8 +29,8 @@
 	<app_context>
 		<update_history>Update-Verlauf</update_history>
 		<information>Information</information>
-		<app_delete>Diese Anwendung und alle damit verbundenen Daten, wie Nutzerdaten, werden gelöscht.</app_delete>
-		<save_delete>Möchtest du die diese Nutzerdaten löschen?</save_delete>
+		<app_delete>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</app_delete>
+		<save_delete>Willst du die Nutzerdaten löschen?</save_delete>
 		<eligible>berechtigt</eligible>
 		<ineligible>nicht berechtigt</ineligible>
 		<level>Level</level>
@@ -108,7 +108,7 @@
 		</trophy>
 		<save_data>
 			<delete>
-				<cancel_deleting>Möchtest du das Löschen abbrechen?</cancel_deleting>
+				<cancel_deleting>Willst du das Löschen abbrechen?</cancel_deleting>
 				<deletion_complete>Fertig gelöscht.</deletion_complete>
 				<delete_saved_data>Diese Nutzerdaten löschen?</delete_saved_data>
 			</delete>
@@ -117,14 +117,14 @@
 				<updated>Aktualisiert</updated>
 			</info>
 			<load name="Laden">
-				<cancel_loading>Möchtest du das Laden abbrechen?</cancel_loading>
+				<cancel_loading>Willst du das Laden abbrechen?</cancel_loading>
 				<no_saved_data>Keine Nutzerdaten vorhanden.</no_saved_data>
 				<load_complete>Fertig geladen.</load_complete>
 				<loading>Lade...</loading>
 				<load_saved_data>Diese Nutzerdaten laden?</load_saved_data>
 			</load>
 			<save name="Speichern">
-				<cancel_saving>Möchtest du das Speichern abbrechen?</cancel_saving>
+				<cancel_saving>Willst du das Speichern abbrechen?</cancel_saving>
 				<could_not_save>Konnte die Datei nicht speichern.
 Es fehlt freier Platz auf der Speicherkarte.</could_not_save>
 				<not_free_space>Es fehlt freier Platz auf der Speicherkarte.</not_free_space>
@@ -239,22 +239,22 @@ Du kannst Trophäen in Anwendungen verdienen, die die Trophäen-Funktionen unter
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Wähle deine Benutzer:in</select_user>
-		<create_user>Erstelle Benutzer:in</create_user>
-		<user_created>Folgende Benutzer:in wurde erstellt</user_created>
-		<edit_user>Verwalte Benutzer</edit_user>
+		<select_user>Wähle dein Profil</select_user>
+		<create_user>Erstelle Profil</create_user>
+		<user_created>Folgendes Profil wurde erstellt</user_created>
+		<edit_user>Verwalte Profile</edit_user>
 		<user_name_used>! Der Name wird schon verwendet.</user_name_used>
-		<delete_user>Lösche Benutzer:in</delete_user>
-		<user_delete>Wähle die Benutzer:in, der gelöscht werden soll.</user_delete>
-		<user_delete_msg>Folgende Benutzer:in wird gelöscht.</user_delete_msg>
-		<user_delete_message>Wenn du die Benutzer:in löscht, werden alle zugehörigen Nutzerdaten und Trophäen gelöscht.</user_delete_message>
-		<user_delete_warn>Die Benutzer:in wird gelöscht.
+		<delete_user>Lösche Profil</delete_user>
+		<user_delete>Wähle das Profil, das gelöscht werden soll.</user_delete>
+		<user_delete_msg>Folgendes Profil wird gelöscht.</user_delete_msg>
+		<user_delete_message>Wenn du das Profil löscht, werden alle zugehörigen Nutzerdaten und Trophäen gelöscht.</user_delete_message>
+		<user_delete_warn>Das Profil wird gelöscht.
 Willst du wirklich fortfahren?</user_delete_warn>
-		<user_deleted>Benutzer:in gelöscht.</user_deleted>
+		<user_deleted>Profil gelöscht.</user_deleted>
 		<change_avatar>Ändere Avatar</change_avatar>
 		<reset_avatar>Setze Avatar zurück</reset_avatar>
 		<name>Name</name>
-		<user>Benutzer:in</user>
+		<user>Profil</user>
 		<confirm>Bestätigen</confirm>
 		<cancel>Abbrechen</cancel>
 		<delete>Löschen</delete>
