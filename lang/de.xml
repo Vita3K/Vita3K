@@ -168,9 +168,9 @@ Dein Vita3K-System ist bereit!</completed_setup>
 	</live_area>
 
 	<settings name="Einstellungen">
-		<theme_background name="Theme &amp; Hintergrund">
+		<theme_background name="Design und Hintergrund">
 			<default>Standard</default>
-			<theme name="Theme">
+			<theme name="Design">
 				<information name="Informationen">
 					<name>Name</name>
 					<provider>Anbieter</provider>
@@ -178,32 +178,32 @@ Dein Vita3K-System ist bereit!</completed_setup>
 					<size>Größe</size>
 					<version>Version</version>
 				</information>
-				<delete>Dieses Theme wird gelöscht.</delete>
+				<delete>Dieses Design wird gelöscht.</delete>
 			</theme>
 			<start_screen name="Startbildschirm">
 				<image>Bild</image>
 			</start_screen>
 			<home_screen_backgrounds>Hintergründe für Startbildschirm</home_screen_backgrounds>
 		</theme_background>
-		<date_time name="Datum &amp; Uhrzeit">
-			<date_format name ="Datums-Format">
-				<yyyy_mm_dd>JJJJ-MM-TT</yyyy_mm_dd>
-				<dd_mm_yyyy>TT.MM.JJJJ</dd_mm_yyyy>
+		<date_time name="Datum und Uhrzeit">
+			<date_format name ="Datumsdarstellung">
+				<yyyy_mm_dd>JJJJ/MM/TT</yyyy_mm_dd>
+				<dd_mm_yyyy>TT/MM/JJJJ</dd_mm_yyyy>
 				<mm_dd_yyyy>MM/TT/JJJJ</mm_dd_yyyy>
 			</date_format>
-			<time_format name="Uhrzeit-Format">
+			<time_format name="Zeitdarstellung">
 				<clock_12_hour>12-Stunden-Uhr</clock_12_hour>
 				<clock_24_hour>24-Stunden-Uhr</clock_24_hour>
 			</time_format>
 		</date_time>
 		<language name="Sprache">
-			<system_language>Anzeigesprache</system_language>
+			<system_language>Systemsprache</system_language>
 			<input_language name="Eingabesprachen">
 				<keyboards name="Tastaturen">
 					<ime_langagues>
 						<lang id="1">Dänisch</lang>
 						<lang id="2">Deutsch</lang>
-						<lang id="262144">Englisch (UK)</lang>
+						<lang id="262144">Englisch (Großbritannien)</lang>
 						<lang id="4">Englisch (USA)</lang>
 						<lang id="8">Spanisch</lang>
 						<lang id="16">Französisch</lang>
