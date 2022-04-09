@@ -109,7 +109,7 @@
 		<save_data>
 			<delete>
 				<cancel_deleting>Willst du das Löschen abbrechen?</cancel_deleting>
-				<deletion_complete>Fertig gelöscht.</deletion_complete>
+				<deletion_complete>Daten gelöscht.</deletion_complete>
 				<delete_saved_data>Diese Nutzerdaten löschen?</delete_saved_data>
 			</delete>
 			<info>
@@ -119,7 +119,7 @@
 			<load name="Laden">
 				<cancel_loading>Willst du das Laden abbrechen?</cancel_loading>
 				<no_saved_data>Keine Nutzerdaten vorhanden.</no_saved_data>
-				<load_complete>Fertig geladen.</load_complete>
+				<load_complete>Daten geladen.</load_complete>
 				<loading>Lade...</loading>
 				<load_saved_data>Diese Nutzerdaten laden?</load_saved_data>
 			</load>
@@ -129,7 +129,7 @@
 Es fehlt freier Platz auf der Speicherkarte.</could_not_save>
 				<not_free_space>Es fehlt freier Platz auf der Speicherkarte.</not_free_space>
 				<new_saved_data>Neue Nutzerdaten</new_saved_data>
-				<saving_complete>Fertig gespeichert.</saving_complete>
+				<saving_complete>Daten gespeichert.</saving_complete>
 				<save_the_data>Diese Nutzerdaten speichern?</save_the_data>
 				<saving>Speichere...</saving>
 				<warning_saving>Speichere...
@@ -147,8 +147,8 @@ Schalte die Konsole nicht aus und beende nicht die Anwendung.</warning_saving>
 		<app_added_home>Die Anwendung wurde dem Startbildschirm hinzugefügt.</app_added_home>
 		<delete_all>Lösche alle</delete_all>
 		<notif_deleted>Alle Benachrichtigungen werden gelöscht.</notif_deleted>
-		<install_failed>Installieren hat nicht geklappt.</install_failed>
-		<install_complete>Fertig installiert.</install_complete>
+		<install_failed>Installation fehlgeschlagen.</install_failed>
+		<install_complete>Installation abgeschlossen.</install_complete>
 		<installing>Installiere...</installing>
 		<no_notif>Es gibt keine Benachrichtigungen.</no_notif>
 		<trophy_earned>Du hast eine Trophäe freigeschaltet!</trophy_earned>
@@ -225,11 +225,11 @@ Dein Vita3K-System ist bereit!</completed_setup>
 
 	<trophy_collection>
 		<details>Details</details>
-		<earned>Errungen</earned>
+		<earned>Verdient</earned>
 		<name>Name</name>
-		<no_trophies>Keine Trophäen da.
+		<no_trophies>Du hast noch keine Trophäen.
 Du kannst Trophäen in Anwendungen verdienen, die die Trophäen-Funktionen unterstützen.</no_trophies>
-		<not_earned>Nicht errungen</not_earned>
+		<not_earned>Nicht verdient</not_earned>
 		<original>Original</original>
 		<sort>Sortierung</sort>
 		<trophies>Trophäen</trophies>
