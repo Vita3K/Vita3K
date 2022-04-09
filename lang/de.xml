@@ -33,10 +33,10 @@
 		<save_delete>Möchtest du die diese Nutzerdaten löschen?</save_delete>
 		<eligible>berechtigt</eligible>
 		<ineligible>nicht berechtigt</ineligible>
-		<level>Level</level>
+		<level>Stufe</level>
 		<name>Name</name>
 		<trophy_earning>Trophäen-Freischaltung</trophy_earning>
-		<parental_Controls>Einstellungen für Eltern</parental_Controls>
+		<parental_Controls>Kindersicherung</parental_Controls>
 		<updated>Aktualisiert</updated>
 		<size>Größe</size>
 		<version>Version</version>
