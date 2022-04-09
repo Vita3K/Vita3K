@@ -14,7 +14,7 @@
 		</emulation>
 		<configuration name="Konfiguration">
 			<settings>Einstellungen</settings>
-			<user_management>Benutzer</user_management>
+			<user_management>Profile</user_management>
 		</configuration>
 		<controls name="Steuerung">
 			<keyboard_controls>Tastatur</keyboard_controls>
