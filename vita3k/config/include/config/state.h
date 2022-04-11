@@ -100,7 +100,18 @@ public:
     bool console = false;
     bool load_app_list = false;
 
-    // Current config
+    /**
+     * @brief Available HLE modules for advanced profiling using Tracy
+     *
+     * Advanced profiling using Tracy allows for function calls to be logged with their arguments
+     */
+    const std::vector<std::string> tracy_available_advanced_profiling_modules = {};
+
+    /**
+     * @brief Config struct for per-app configurable settings
+     *
+     * All the settings that appear in this struct can be adjusted using app-specific custom config files.
+     */
     struct CurrentConfig {
         std::string cpu_backend;
         bool cpu_opt = true;
@@ -113,6 +124,15 @@ public:
         bool disable_at9_decoder = false;
     };
 
+    /**
+     * @brief Config struct for per-app configurable settings
+     *
+     * All the settings that appear in this struct can be adjusted using app-specific custom config files.
+     *
+     * If no app-specific config file is loaded, the values of these settings will be exactly
+     * the same values as the ones set on an app-agnostic level (global emulator settings). If an app-specific config
+     * file is loaded, the values of these settings will match those of the loaded app-specific config file.
+     */
     CurrentConfig current_config;
 
     Config() {

@@ -116,7 +116,8 @@ enum PerfomanceOverleyPosition {
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
-    code(bool, "disable-at9-decoder", false, disable_at9_decoder)
+    code(bool, "disable-at9-decoder", false, disable_at9_decoder)                                       \
+    code(bool, "tracy-primitive-impl", false, tracy_primitive_impl)
 
 // Vector members produced in the config file
 // Order is code(option_type, option_name, default_value)
@@ -124,7 +125,8 @@ enum PerfomanceOverleyPosition {
 // When adding in a new macro for generation, ALL options must be stated.
 #define CONFIG_VECTOR(code)                                                                             \
     code(std::vector<std::string>, "lle-modules", std::vector<std::string>{}, lle_modules)              \
-    code(std::vector<uint64_t>, "ime-langs", std::vector<uint64_t>{4}, ime_langs)
+    code(std::vector<uint64_t>, "ime-langs", std::vector<uint64_t>{4}, ime_langs)                       \
+    code(std::vector<std::string>, "tracy-advanced-profiling-modules", std::vector<std::string>{}, tracy_advanced_profiling_modules)
 
 // Parent macro for easier generation
 #define CONFIG_LIST(code)                                                                               \
