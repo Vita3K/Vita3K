@@ -28,7 +28,7 @@
 using namespace shader;
 using namespace usse;
 
-spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type, const spv::Id lod) {
+spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type, const int lod_mode, const spv::Id lod) {
     auto coord_id = coord.first;
 
     if (coord.second != static_cast<int>(DataType::F32)) {
@@ -51,7 +51,14 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     if (lod == spv::NoResult) {
         image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[4], { m_b.createLoad(tex), coord_id });
     } else {
-        image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex), coord_id, spv::ImageOperandsLodMask, lod });
+        if (lod_mode == 2) {
+            image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex), coord_id, spv::ImageOperandsLodMask, lod });
+        } else if (lod_mode == 3) {
+            spv::Id ddx = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { lod, lod, 0, 1 });
+            spv::Id ddy = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { lod, lod, 2, 3 });
+
+            image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex), coord_id, spv::ImageOperandsGradMask, ddx, ddy });
+        }
     }
 
     if (dest_type == DataType::F16) {
@@ -98,7 +105,7 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
         default:
             assert(false);
         }
-        spv::Id fetch_result = do_fetch_texture(texture_query.sampler, texture_query.coord, static_cast<DataType>(texture_query.store_type));
+        spv::Id fetch_result = do_fetch_texture(texture_query.sampler, texture_query.coord, static_cast<DataType>(texture_query.store_type), 0, 0);
 
         store_op.num = texture_query.dest_offset;
         store(store_op, fetch_result, dest_mask);
@@ -130,8 +137,8 @@ bool USSETranslatorVisitor::smp(
     Imm7 src1_n,
     Imm7 src2_n) {
     // LOD mode: none, bias, replace, gradient
-    if ((lod_mode != 0) && (lod_mode != 2)) {
-        LOG_ERROR("Sampler LOD bias and gradient mode not implemented!");
+    if ((lod_mode != 0) && (lod_mode != 2) && (lod_mode != 3)) {
+        LOG_ERROR("Sampler LOD replace not implemented!");
         return true;
     }
 
@@ -202,10 +209,21 @@ bool USSETranslatorVisitor::smp(
         inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, true, 8, m_second_program);
         inst.opr.src2.type = inst.opr.src0.type;
 
-        extra = load(inst.opr.src2, 0b1);
+        switch (lod_mode) {
+        case 2:
+            extra = load(inst.opr.src2, 0b1);
+            break;
+
+        case 3:
+            extra = load(inst.opr.src2, 0b1111);
+            break;
+
+        default:
+            break;
+        }
     }
 
-    spv::Id result = do_fetch_texture(sampler, { coord, static_cast<int>(DataType::F32) }, DataType::F32, extra);
+    spv::Id result = do_fetch_texture(sampler, { coord, static_cast<int>(DataType::F32) }, DataType::F32, lod_mode, extra);
 
     switch (sb_mode) {
     case 0:
