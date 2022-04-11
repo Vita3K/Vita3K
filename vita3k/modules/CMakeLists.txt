@@ -10,6 +10,7 @@ set(SOURCE_LIST
 	SceAppUtil/SceAppUtilExt.cpp SceAppUtil/SceAppUtilExt.h
 	SceAtrac/SceAtrac.cpp SceAtrac/SceAtrac.h
 	SceAudio/SceAudio.cpp SceAudio/SceAudio.h
+	SceAudio/SceAudio_tracy.cpp
 	SceAudiodec/SceAudiodecUser.cpp SceAudiodec/SceAudiodecUser.h
 	SceAudioenc/SceAudioencUser.cpp SceAudioenc/SceAudioencUser.h
 	SceAudioIn/SceAudioIn.cpp SceAudioIn/SceAudioIn.h
