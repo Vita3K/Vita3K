@@ -1196,7 +1196,12 @@ EXPORT(int, vscanf_s) {
 }
 
 EXPORT(int, vsnprintf, char *s, size_t n, const char *format, va_list arg) {
-    return snprintf(s, n, format, "");
+    // Disable warninig here is needed to compile on windows because we
+    // are turning some warnings into errors to allow makepkg default flags
+#pragma warning(push)
+#pragma warning(disable : 4774)
+    return snprintf(s, n, format, arg);
+#pragma warning(pop)
 }
 
 EXPORT(int, vsnprintf_s) {
