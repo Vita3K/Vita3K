@@ -367,7 +367,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
         const auto check_free_name = (menu == "create" ? free_name : (temp.name == gui.users[user_id].name) || free_name);
         if (!check_free_name) {
             ImGui::SetCursorPos(ImVec2(INPUT_NAME_POS.x + INPUT_NAME_SIZE + 10.f, INPUT_NAME_POS.y));
-            ImGui::TextColored(GUI_COLOR_TEXT, lang["user_name_used"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_name_used"].c_str());
         }
         ImGui::SetCursorPos(BUTTON_POS);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
@@ -407,7 +407,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - (ImGui::CalcTextSize("Select the user you want to delete.").x / 2.f), 5.f * SCALE.y));
             const auto CHILD_DELETE_USER_SIZE = ImVec2(674 * SCALE.x, 308.f * SCALE.y);
             const auto SELECT_SIZE = ImVec2(674.f * SCALE.x, 46.f * SCALE.y);
-            ImGui::TextColored(GUI_COLOR_TEXT, lang["user_delete"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_delete"].c_str());
             ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
             ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (168.f * SCALE.y)), ImGuiCond_Always, ImVec2(0.5f, 0.f));
             ImGui::BeginChild("##delete_user_child", CHILD_DELETE_USER_SIZE, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
@@ -431,11 +431,11 @@ void draw_user_management(GuiState &gui, HostState &host) {
             ImGui::SetWindowFontScale(0.8f);
             if (del_menu.empty()) {
                 ImGui::SetCursorPos(ImVec2(148.f * SCALE.x, 100.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, lang["user_delete_msg"].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_delete_msg"].c_str());
                 ImGui::SetCursorPos(ImVec2(194.f * SCALE.x, 148.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.users[user_id].name.c_str());
                 ImGui::SetCursorPos(ImVec2(148.f * SCALE.x, 194.f * SCALE.y));
-                ImGui::TextWrapped(lang["user_delete_message"].c_str());
+                ImGui::TextWrapped("%s", lang["user_delete_message"].c_str());
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::SetCursorPos(BUTTON_POS);
                 if (ImGui::Button(lang["delete"].c_str(), BUTTON_SIZE))
@@ -443,7 +443,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
             } else if (del_menu == "warn") {
                 const auto calc_text = (SIZE_USER.x / 2.f) - (ImGui::CalcTextSize("Are you sure you want to continue?").x / 2.f);
                 ImGui::SetCursorPos(ImVec2(calc_text, 146.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, lang["user_delete_warn"].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_delete_warn"].c_str());
                 ImGui::SetCursorPos(BUTTON_POS);
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - BUTTON_SIZE.x - 20.f, BUTTON_POS.y));
@@ -465,7 +465,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
                 }
             } else if (del_menu == "confirm") {
                 ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - (ImGui::CalcTextSize("User Deleted.").x / 2.f), 146.f * SCALE.y));
-                ImGui::TextColored(GUI_COLOR_TEXT, lang["user_deleted"].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_deleted"].c_str());
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::SetCursorPos(BUTTON_POS);
                 if (ImGui::Button("OK", BUTTON_SIZE)) {
