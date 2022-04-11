@@ -26,6 +26,7 @@
 #include "vargs.h"
 #include "write_return_value.h"
 
+#include <config/functions.h>
 #include <host/state.h>
 
 using ImportFn = std::function<void(HostState &host, CPUState &cpu, SceUID thread_id)>;
@@ -50,8 +51,9 @@ ImportFn bridge(Ret (*export_fn)(HostState &, SceUID, const char *, Args...), co
 
     return [export_fn, export_name, args_layout](HostState &host, CPUState &cpu, SceUID thread_id) {
 #ifdef TRACY_ENABLE
-        ZoneScopedC(0xFFF34C); // Tracy - Track function scope
-        ZoneName(export_name, sizeof(export_name)); // Tracy - Edit scope name based on export_name
+        ZoneNamed(___tracy_scoped_zone, host.cfg.tracy_primitive_impl); // Tracy - Track function scope
+        ZoneColorV(___tracy_scoped_zone, 0xFFF34C); // Tracy - Change color to yellow
+        ZoneNameV(___tracy_scoped_zone, export_name, sizeof(export_name)); // Tracy - Edit scope name based on export_name
 #endif
 
         using Indices = std::index_sequence_for<Args...>;

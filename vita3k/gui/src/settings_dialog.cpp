@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "imgui.h"
 #include "private.h"
 
 #include <config/functions.h>
@@ -29,6 +30,7 @@
 
 #include <cpu/functions.h>
 
+#include <string>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -40,6 +42,18 @@
 
 namespace gui {
 
+/**
+ * @brief Struct used to abstract the code that manages app-specific config files
+ *
+ * This struct matches in type to the one found in `host.cfg.current_config` and is
+ * used to collect the proper values that must be set in `host.cfg.current_config`
+ * depending on whether an app-specific config file is being used or not.
+ *
+ * If an app-specific config file is loaded, then the values in this struct will be
+ * set to those of the app-specific config file before getting used to set up `host.cfg.current_config`
+ * with those same values. If an app-specific config isn't loaded, then the values in this struct
+ * will be set those of the global emulator settings before getting used to set up `host.cfg.current_config`.
+ */
 static Config::CurrentConfig config;
 
 static void get_modules_list(GuiState &gui, HostState &host) {
@@ -100,6 +114,20 @@ static void change_emulator_path(GuiState &gui, HostState &host) {
 
 static CPUBackend config_cpu_backend;
 
+/**
+ * @brief Set up `config` with the values contained in the custom config file of a certain PlayStation Vita application
+ *
+ * If a custom config is found, the configuration values found in the file will be assigned to
+ * `config`.
+ *
+ * @param gui State of the Vita3K GUI
+ * @param host State of the emulated PlayStation Vita environment
+ * @param app_path Path to the app or game to get the custom config for
+ * @return true A custom config for the application has been found, and `config` has been set up with
+ * the setting values contained in the custom config file.
+ * @return false A custom config for the application has not been found or a custom config has been found
+ * but it's corrupted or invalid.
+ */
 static bool get_custom_config(GuiState &gui, HostState &host, const std::string &app_path) {
     const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
 
@@ -154,7 +182,16 @@ static CPUBackend set_cpu_backend(std::string &cpu_backend) {
     return cpu_backend == "Unicorn" ? CPUBackend::Unicorn : CPUBackend::Dynarmic;
 }
 
+/**
+ * @brief Initialize the `config` struct with the values set in the global emulator config.
+ *
+ * @param gui State of the Vita3K GUI
+ * @param host State of the emulated PlayStation Vita environment
+ * @param app_path Path to the app or game to get the custom config for
+ */
 void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
+    // If no app-specific config file is being used for the initialized application,
+    // set up `config` with the values set in the global emulator configuration
     if (!get_custom_config(gui, host, app_path)) {
         config.cpu_backend = host.cfg.cpu_backend;
         config.cpu_opt = host.cfg.cpu_opt;
@@ -172,6 +209,17 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
     host.display.imgui_render = true;
 }
 
+/**
+ * @brief Save settings to file
+ *
+ * The function serves to save settings for both app-specific custom settings files and
+ * the global emulator settings file. The function automatically determines which file the
+ * function has to work with by detecting the kind of settings dialog the user is using
+ * from the GUI state.
+ *
+ * @param gui State of the Vita3K GUI
+ * @param host State of the emulated PlayStation Vita environment
+ */
 static void save_config(GuiState &gui, HostState &host) {
     if (gui.configuration_menu.custom_settings_dialog) {
         const auto CONFIG_PATH{ fs::path(host.base_path) / "config" };
@@ -227,7 +275,18 @@ static void save_config(GuiState &gui, HostState &host) {
     config::serialize_config(host.cfg, host.cfg.config_path);
 }
 
+/**
+ * @brief Set up the config parameters on the emulated PlayStation Vita environment
+ * that are susceptible to vary via app-specific config files with the proper values
+ * depending on whether app-specific config files are being used or not.
+ *
+ * @param gui State of the Vita3K GUI
+ * @param host State of the emulated PlayStation Vita environment
+ * @param app_path Path to the app or game to get the custom config for
+ */
 void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
+    // If a config file is in use, call `get_custom_config()` and set the config
+    // parameters with the values stored in the app-specific custom config file
     if (get_custom_config(gui, host, app_path)) {
         host.cfg.current_config.cpu_backend = config.cpu_backend;
         host.cfg.current_config.cpu_opt = config.cpu_opt;
@@ -238,7 +297,10 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.disable_at9_decoder = config.disable_at9_decoder;
         host.cfg.current_config.disable_ngs = config.disable_ngs;
         host.cfg.current_config.video_playing = config.video_playing;
-    } else {
+    }
+
+    // Else inherit the values from the global emulator config
+    else {
         host.cfg.current_config.cpu_backend = host.cfg.cpu_backend;
         host.cfg.current_config.cpu_opt = host.cfg.cpu_opt;
         host.cfg.current_config.lle_driver_user = host.cfg.lle_driver_user;
@@ -662,6 +724,69 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             host.kernel.debugger.watch_import_calls = !host.kernel.debugger.watch_import_calls;
             host.kernel.debugger.update_watches();
         }
+
+#ifdef TRACY_ENABLE
+        // Tracy profiler settings
+        ImGui::Spacing();
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Tracy Profiler");
+
+        ImGui::Text("The Tracy profiler implementation in the emulator allows among other\n"
+                    "things to track the functions that a game calls in real-time\n"
+                    "and visualize them in a timeline with timings for every frame and audio buffer.");
+
+        // Primitive Tracy implementation
+        ImGui::Checkbox("Primitive implementation", &host.cfg.tracy_primitive_impl);
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("The primitive Tracy implementation for HLE modules allows for\n"
+                              "all HLE module calls to be logged without manual instrumentation needed.\n"
+                              "However it is just a general workaround that doesn't count for statistic\n"
+                              "analysis neither for trace searching on Tracy.\n\n"
+                              "Due to the amount of functions being logged due to this implementation\n"
+                              "Tracy logs can become gigabytes long in a matter of minutes. Because of this\n"
+                              "it is only recommended to be used when the module(s) to debug aren't available for\n"
+                              "advanced profiling or a more general overview of the function calls is needed and\n"
+                              "in a PC with at least 12GB (Linux) or 16GB (Windows) of RAM.");
+        }
+
+        // ImGui::Text("The Tracy profiler is not available in Release builds, please compile Vita3K\nfrom source using"
+        // " either the RelWithDebInfo or Debug builds in order to use it.");
+
+        // Text to display along the modules list
+        const std::string tracy_modules_list_label = "Available modules for advanced profiling\n\n"
+                                                     "Modules enabled for advanced profiling don't\n"
+                                                     "only provide function call timings but\n"
+                                                     "also log the arguments they were called\n"
+                                                     "with for every single function call\n"
+                                                     "except arguments driving a large amount\n"
+                                                     "of data such as large sized arrays.\n\n"
+                                                     "Advanced profiling requires functions to\n"
+                                                     "be manually instrumented in source code.";
+
+        // Tracy modules list
+        if (ImGui::BeginListBox(tracy_modules_list_label.c_str(), { 0.0f, ImGui::GetTextLineHeightWithSpacing() * 8.25f + ImGui::GetStyle().FramePadding.y * 2.0f })) {
+            // For every HLE module available for advanced profiling using Tracy
+            for (auto &module : host.cfg.tracy_available_advanced_profiling_modules) {
+                // Get activation state and position in vector of activated modules
+                bool activation_state = false;
+                int index = -1;
+                activation_state = config::is_tracy_advanced_profiling_active_for_module(host.cfg.tracy_advanced_profiling_modules, module, &index);
+
+                // Create selectable item using module name and get activation state
+                if (ImGui::Selectable(module.c_str(), activation_state)) {
+                    // Change activation state if module is clicked/selected
+                    if (activation_state == true) {
+                        // Deactivate module by deleting the name of the module from the vector
+                        host.cfg.tracy_advanced_profiling_modules.erase(host.cfg.tracy_advanced_profiling_modules.begin() + index);
+                    } else {
+                        // Activate module by appending the name of the module to the vector
+                        host.cfg.tracy_advanced_profiling_modules.push_back(module);
+                    }
+                }
+            }
+            ImGui::EndListBox();
+        }
+#endif // TRACY_ENABLE
+
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();

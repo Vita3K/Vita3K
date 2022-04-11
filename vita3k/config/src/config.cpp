@@ -24,6 +24,7 @@
 #include <util/string_utils.h>
 
 #include <CLI11.hpp>
+#include <vector>
 
 #ifndef VITA3K_CPP17
 #include <boost/optional/optional_io.hpp>
@@ -275,5 +276,30 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
     return Success;
 }
+
+#ifdef TRACY_ENABLE
+bool is_tracy_advanced_profiling_active_for_module(std::vector<std::string> &active_modules, std::string module, int *index) {
+    bool result = false;
+    // Retrieve index for module name in the list of enabled modules
+    auto iterator = std::find(active_modules.begin(), active_modules.end(), module);
+
+    // Check the index the iterator references to (`std::find()` returns `last` if no match was found)
+    if (iterator == active_modules.end()) {
+        // Return false if no match is found in the active modules vector
+        result = false;
+    } else {
+        // Return true if there was at least one match
+        result = true;
+    }
+
+    // If index is being requested and the module name was found
+    if ((index != nullptr) && (result)) {
+        // Calculate the distance between the first element in the module and
+        *index = std::distance(active_modules.begin(), iterator);
+    }
+
+    return result;
+}
+#endif // TRACY_ENABLE
 
 } // namespace config
