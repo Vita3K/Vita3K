@@ -19,7 +19,9 @@
 
 #include <host/app_util.h>
 #include <host/functions.h>
+#include <io/device.h>
 #include <io/functions.h>
+#include <io/io.h>
 
 #include <modules/module_parent.h>
 #include <util/find.h>
@@ -182,8 +184,29 @@ EXPORT(int, sceAppMgrGetCurrentBgmState2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGetDevInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrGetDevInfo, const char *dev, uint64_t *max_size, uint64_t *free_size) {
+    if (dev == nullptr) {
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+    }
+
+    auto device = device::get_device(dev);
+    if (device == VitaIoDevice::_INVALID) {
+        LOG_ERROR("Cannot find device for path: {}", dev);
+        return RET_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+
+    fs::path dev_path = device._to_string();
+    fs::path path = host.pref_path / dev_path;
+    fs::space_info space = fs::space(path);
+
+    // TODO: Use free or available?
+    // free = free space available on the whole partition
+    // available = free space available to a non-privileged process
+    // Using available in case the drive is nearly full and the game tries to write since available will always be smaller
+    *free_size = space.available;
+    *max_size = space.capacity;
+
+    return 0;
 }
 
 EXPORT(int, sceAppMgrGetFgAppInfo) {
