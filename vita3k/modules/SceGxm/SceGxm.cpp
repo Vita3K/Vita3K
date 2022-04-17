@@ -1392,7 +1392,7 @@ EXPORT(int, sceGxmEndCommandList, SceGxmContext *deferredContext, SceGxmCommandL
     return 0;
 }
 
-EXPORT(int, sceGxmEndScene, SceGxmContext *context, Ptr<SceGxmNotification> vertexNotification, Ptr<SceGxmNotification> fragmentNotification) {
+EXPORT(int, sceGxmEndScene, SceGxmContext *context, SceGxmNotification *vertexNotification, SceGxmNotification *fragmentNotification) {
     const MemState &mem = host.mem;
 
     if (!context) {
@@ -1416,12 +1416,12 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, Ptr<SceGxmNotification> vert
 
     if (vertexNotification) {
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
-            nullptr, vertexNotification, true);
+            nullptr, *vertexNotification, true);
     }
 
     if (fragmentNotification) {
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
-            nullptr, fragmentNotification, false);
+            nullptr, *fragmentNotification, false);
     }
 
     if (context->state.fragment_sync_object) {
@@ -1740,14 +1740,16 @@ EXPORT(int, _sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flag
     return CALL_EXPORT(sceGxmMidSceneFlush, immediateContext, flags, vertexSyncObject, vertexNotification);
 }
 
-EXPORT(int, sceGxmNotificationWait, const Ptr<SceGxmNotification> notification) {
+EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
     if (!notification) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
     // TODO: This is so horrible
-    volatile std::uint32_t *value = notification.get(host.mem)->address.get(host.mem);
-    while (*value != notification.get(host.mem)->value) {
+    volatile std::uint32_t *value = notification->address.get(host.mem);
+    const std::uint32_t target_value = notification->value;
+
+    while (*value != target_value) {
     }
 
     return 0;
