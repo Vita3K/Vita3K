@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gxm/types.h>
 #include <mem/ptr.h>
 #include <threads/queue.h>
 
@@ -24,6 +25,9 @@
 #include <mutex>
 
 typedef void SceGxmDisplayQueueCallback(Ptr<const void> callbackData);
+static constexpr std::uint64_t SCENE_TIME_UNDEF = 0xFFFFFFFFFFFFFFFF;
+static constexpr std::uint64_t GPU_SYNCING_DISABLE_SCENE_DELTA = 40;
+static constexpr std::uint64_t GPU_INSERT_FENCE_SCENE_DELTA = 30;
 
 struct SceGxmInitializeParams {
     uint32_t flags = 0;
@@ -46,11 +50,33 @@ struct MemoryMapInfo {
     std::uint32_t perm;
 };
 
+struct SurfaceSyncingInfo {
+    Address addr = 0;
+    std::size_t size = 0;
+    std::uint32_t width = 0;
+    std::uint32_t height = 0;
+    std::uint32_t stride = 0;
+    SceGxmColorFormat sync_format;
+    SceGxmColorSurfaceType surface_type;
+    std::uint64_t scene_time_last_memaccess = SCENE_TIME_UNDEF;
+    std::uint64_t scene_time_passed = 0;
+    bool reprotect_needed = false;
+
+    bool should_insert_protect_fence() const {
+        return ((scene_time_last_memaccess == SCENE_TIME_UNDEF) || (scene_time_passed - scene_time_last_memaccess >= GPU_INSERT_FENCE_SCENE_DELTA));
+    }
+
+    bool syncing_disabled() const {
+        return ((scene_time_last_memaccess == SCENE_TIME_UNDEF) || (scene_time_passed - scene_time_last_memaccess >= GPU_SYNCING_DISABLE_SCENE_DELTA));
+    }
+};
+
 struct GxmState {
     SceGxmInitializeParams params;
     Queue<DisplayCallback> display_queue;
     Ptr<uint32_t> notification_region;
     SceUID display_queue_thread;
     std::map<Address, MemoryMapInfo> memory_mapped_regions;
+    std::array<SurfaceSyncingInfo, 40> surface_syncing_infoes;
     std::mutex callback_lock;
 };
