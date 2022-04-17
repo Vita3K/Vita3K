@@ -40,12 +40,12 @@ COMMAND(handle_signal_sync_object) {
 }
 
 COMMAND(handle_notification) {
-    SceGxmNotification *nof = helper.pop<Ptr<SceGxmNotification>>().get(mem);
+    SceGxmNotification nof = helper.pop<SceGxmNotification>();
     [[maybe_unused]] const bool is_vertex = helper.pop<bool>();
 
-    volatile std::uint32_t *val = nof->address.get(mem);
+    volatile std::uint32_t *val = nof.address.get(mem);
     if (val) // Ratchet and clank Trilogy request this
-        *val = nof->value;
+        *val = nof.value;
 }
 
 // Client side function
