@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <gxm/functions.h>
 #include <gxm/types.h>
 #include <renderer/commands.h>
 #include <renderer/state.h>
@@ -76,16 +77,35 @@ COMMAND(handle_set_context) {
 }
 
 COMMAND(handle_sync_surface_data) {
-    const size_t width = render_context->record.color_surface.width;
-    const size_t height = render_context->record.color_surface.height;
-    const size_t stride_in_pixels = render_context->record.color_surface.strideInPixels;
-    const Address data = render_context->record.color_surface.data.address();
+    SceGxmColorSurface *surface = &render_context->record.color_surface;
+    if (helper.cmd->status) {
+        surface = helper.pop<SceGxmColorSurface *>();
+        if (!surface) {
+            complete_command(renderer, helper, 1);
+            return;
+        }
+    }
+    const size_t width = surface->width;
+    const size_t height = surface->height;
+    const size_t stride_in_pixels = surface->strideInPixels;
+    const Address data = surface->data.address();
     uint32_t *const pixels = Ptr<uint32_t>(data).get(mem);
+
+    // We protect the data to track syncing. If this is called then the data is definitely protected somehow.
+    // We just unprotect and reprotect again :D
+    const std::size_t total_size = height * gxm::get_stride_in_bytes(surface->colorFormat, stride_in_pixels);
+
+    open_access_parent_protect_segment(mem, data);
+    unprotect_inner(mem, data, total_size);
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::get_surface_data(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), width, height,
-            stride_in_pixels, pixels, render_context->record.color_surface.colorFormat);
+        if (helper.cmd->status) {
+            gl::lookup_and_get_surface_data(static_cast<gl::GLState &>(renderer), mem, *surface);
+        } else {
+            gl::get_surface_data(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), width, height,
+                stride_in_pixels, pixels, surface->colorFormat, surface->surfaceType);
+        }
 
         break;
     }
@@ -107,6 +127,18 @@ COMMAND(handle_sync_surface_data) {
         }
     }
 #endif
+
+    // Need to reprotect. In the case of explicit get, 100% chance it will be unlock later anyway.
+    // No need to bother. Assumption of course.
+    if (!helper.cmd->status && is_protecting(mem, data)) {
+        protect_inner(mem, data, total_size, MEM_PERM_NONE);
+    }
+
+    close_access_parent_protect_segment(mem, data);
+
+    if (helper.cmd->status) {
+        complete_command(renderer, helper, 0);
+    }
 }
 
 COMMAND(handle_draw) {

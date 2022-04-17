@@ -21,4 +21,47 @@ namespace gxm {
 SceGxmColorBaseFormat get_base_format(SceGxmColorFormat src) {
     return static_cast<SceGxmColorBaseFormat>(src & SCE_GXM_COLOR_BASE_FORMAT_MASK);
 }
+
+size_t bits_per_pixel(SceGxmColorBaseFormat base_format) {
+    switch (base_format) {
+    case SCE_GXM_COLOR_BASE_FORMAT_U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_S8:
+        return 8;
+    case SCE_GXM_COLOR_BASE_FORMAT_U5U6U5:
+    case SCE_GXM_COLOR_BASE_FORMAT_U1U5U5U5:
+    case SCE_GXM_COLOR_BASE_FORMAT_U4U4U4U4:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U3U3U2:
+    case SCE_GXM_COLOR_BASE_FORMAT_F16:
+    case SCE_GXM_COLOR_BASE_FORMAT_S16:
+    case SCE_GXM_COLOR_BASE_FORMAT_U16:
+    case SCE_GXM_COLOR_BASE_FORMAT_S5S5U6:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_S8S8:
+        return 16;
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8:
+        return 24;
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_F16F16:
+    case SCE_GXM_COLOR_BASE_FORMAT_F32:
+    case SCE_GXM_COLOR_BASE_FORMAT_S16S16:
+    case SCE_GXM_COLOR_BASE_FORMAT_U16U16:
+    case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
+    case SCE_GXM_COLOR_BASE_FORMAT_U8S8S8U8:
+    case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
+    case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
+    case SCE_GXM_COLOR_BASE_FORMAT_SE5M9M9M9:
+    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
+        return 32;
+    case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
+    case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
+        return 64;
+    }
+
+    return 0;
+}
+
+size_t get_stride_in_bytes(const SceGxmColorFormat src, const std::size_t stride_in_pixels) {
+    return (bits_per_pixel(get_base_format(src)) >> 3) * stride_in_pixels;
+}
+
 } // namespace gxm

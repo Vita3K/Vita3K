@@ -115,7 +115,7 @@ const GLint *translate_swizzle(SceGxmColorFormat fmt) {
 }
 
 size_t bytes_per_pixel(SceGxmColorBaseFormat base_format) {
-    return renderer::color::bits_per_pixel(base_format) >> 3;
+    return gxm::bits_per_pixel(base_format) >> 3;
 }
 
 size_t bytes_per_pixel_in_gl_storage(SceGxmColorBaseFormat base_format) {

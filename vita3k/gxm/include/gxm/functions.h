@@ -25,6 +25,8 @@
 namespace gxm {
 // Color.
 SceGxmColorBaseFormat get_base_format(SceGxmColorFormat src);
+size_t bits_per_pixel(SceGxmColorBaseFormat base_format);
+size_t get_stride_in_bytes(const SceGxmColorFormat src, const std::size_t stride_in_pixels);
 // Textures.
 size_t get_width(const SceGxmTexture *texture);
 size_t get_height(const SceGxmTexture *texture);
