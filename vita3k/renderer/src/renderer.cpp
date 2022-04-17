@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <renderer/commands.h>
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <renderer/types.h>
@@ -103,6 +104,14 @@ void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndex
 
 void sync_surface_data(State &state, Context *ctx) {
     renderer::add_command(ctx, renderer::CommandOpcode::SyncSurfaceData, nullptr);
+}
+
+void sync_surface_data_explicit_sync(State &state, SceGxmColorSurface &color_surface) {
+    // Unsupported for now
+    if (state.worker_thread_id == std::this_thread::get_id())
+        return;
+
+    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::SyncSurfaceData, &color_surface);
 }
 
 bool create_context(State &state, std::unique_ptr<Context> &context) {

@@ -93,7 +93,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
         // 2. Same base address, but width and height change to be larger, or format change if write. Remake a new one for both read and write sitatation.
         // 3. Out of cache range. In write case, create a new one, in read case, lul
         // 4. Read situation with smaller width and height, probably need to extract the needed region out.
-        const bool addr_in_range_of_cache = ((key + total_surface_size) <= (ite->first + info.total_bytes));
+        bool addr_in_range_of_cache = ((key + total_surface_size) <= (ite->first + info.total_bytes));
         const bool cache_probably_freed = ((ite->first != key) && addr_in_range_of_cache && (purpose == SurfaceTextureRetrievePurpose::WRITING));
         const bool surface_extent_changed = (info.width < width) || (info.height < height);
         bool surface_stat_changed = false;
@@ -163,6 +163,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
             }
 
             info.casted_textures.clear();
+            addr_in_range_of_cache = true;
         }
         if ((purpose == SurfaceTextureRetrievePurpose::WRITING) && (swizzle != info.swizzle)) {
             info.swizzle = swizzle;
@@ -353,6 +354,10 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
                 last_use_color_surface_index.erase(used_iterator);
             }
         }
+    }
+
+    if (purpose != SurfaceTextureRetrievePurpose::WRITING) {
+        return 0;
     }
 
     std::unique_ptr<GLColorSurfaceCacheInfo> info_added = std::make_unique<GLColorSurfaceCacheInfo>();

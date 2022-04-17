@@ -289,6 +289,8 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
 }
 
 bool GLState::init(const char *base_path, const bool hashless_texture_cache) {
+    worker_thread_id = std::this_thread::get_id();
+
     if (!texture::init(texture_cache, hashless_texture_cache)) {
         LOG_ERROR("Failed to initialize texture cache!");
         return false;

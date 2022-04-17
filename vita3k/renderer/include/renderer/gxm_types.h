@@ -220,6 +220,7 @@ struct GxmContextState {
     Ptr<void> memory_callback_userdata;
 
     bool active = false;
+    std::uint32_t surface_flags = 0;
 };
 
 struct SceGxmFragmentProgram {

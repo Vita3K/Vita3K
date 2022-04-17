@@ -88,6 +88,7 @@ void set_context(State &state, Context *ctx, RenderTarget *target, SceGxmColorSu
 std::uint8_t **set_vertex_stream(State &state, Context *ctx, const std::size_t index, const std::size_t data_len);
 void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count, const std::uint32_t instance_count);
 void sync_surface_data(State &state, Context *ctx);
+void sync_surface_data_explicit_sync(State &state, SceGxmColorSurface &color_surface);
 
 bool create_context(State &state, std::unique_ptr<Context> &context);
 void destroy_context(State &state, std::unique_ptr<Context> &context);
