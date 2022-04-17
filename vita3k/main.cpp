@@ -337,7 +337,7 @@ int main(int argc, char *argv[]) {
 
         {
             const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
-            host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.mem);
+            host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.gxm, host.mem);
         }
 
         gui::draw_begin(gui, host);
@@ -357,7 +357,7 @@ int main(int argc, char *argv[]) {
 
         {
             const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
-            host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.mem);
+            host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.gxm, host.mem);
         }
 
         // Calculate FPS

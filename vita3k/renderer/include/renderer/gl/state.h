@@ -50,7 +50,7 @@ struct GLState : public renderer::State {
 
     bool init(const char *base_path, const bool hashless_texture_cache) override;
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
-        const MemState &mem) override;
+        const GxmState &gxm, MemState &mem) override;
 };
 
 } // namespace renderer::gl
