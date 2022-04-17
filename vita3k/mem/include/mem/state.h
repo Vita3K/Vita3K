@@ -36,27 +36,38 @@ typedef std::unique_ptr<uint8_t[], std::function<void(uint8_t *)>> Memory;
 typedef std::unique_ptr<MemPage[], std::function<void(MemPage *)>> PageTable;
 typedef std::map<int, std::string> PageNameMap;
 
-struct WriteProtect {
+struct ProtectBlockInfo {
     Address addr = 0;
     size_t size = 0;
-    std::vector<WriteProtectCallback> callbacks;
+    ProtectCallback callback;
 
-    WriteProtect() = delete;
-    explicit WriteProtect(Address addr)
-        : addr(addr) {}
-    explicit WriteProtect(Address addr, size_t size, WriteProtectCallback callback)
-        : addr(addr)
-        , size(size) {
-        callbacks.push_back(callback);
-        callbacks.reserve(5);
-    }
-
-    bool operator<(const WriteProtect &other) const {
+    bool operator<(const ProtectBlockInfo &other) const {
         return this->addr < other.addr;
     }
 };
 
-typedef std::set<WriteProtect> WriteProtectTree;
+struct ProtectSegmentInfo {
+    Address addr = 0;
+    size_t size = 0;
+    std::set<ProtectBlockInfo> blocks;
+    std::int32_t ref_count = 0; // When reference count is active, we don't interfere protection.
+    std::uint32_t perm = 0;
+
+    ProtectSegmentInfo() = delete;
+    explicit ProtectSegmentInfo(Address addr)
+        : addr(addr) {}
+    explicit ProtectSegmentInfo(Address addr, size_t size, std::uint32_t perm)
+        : addr(addr)
+        , size(size)
+        , perm(perm) {
+    }
+
+    bool operator<(const ProtectSegmentInfo &other) const {
+        return this->addr < other.addr;
+    }
+};
+
+typedef std::set<ProtectSegmentInfo> ProtectSegmentTrees;
 
 struct MemState {
     std::mutex generation_mutex;
@@ -66,7 +77,7 @@ struct MemState {
     Memory memory;
     PageTable page_table;
     BitmapAllocator allocator;
-    WriteProtectTree write_protect_tree;
+    ProtectSegmentTrees protect_tree;
 
     PageNameMap page_name_map;
 };

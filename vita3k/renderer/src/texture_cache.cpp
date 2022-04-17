@@ -21,6 +21,7 @@
 
 #include <gxm/functions.h>
 #include <mem/ptr.h>
+#include <util/align.h>
 #include <util/log.h>
 
 #include <algorithm> // find
@@ -101,6 +102,23 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         }
     }
 
+    Address range_protect_begin = 0;
+    Address range_protect_end = 0;
+    bool should_use_hash = true;
+
+    // To prevent protecting too commonly accessed data that belongs to the page where the texture also resides
+    // (for example, uniform buffer value and texture data got mixed, so page faults are triggered too many, it's not always good).
+    // This works under the assumption that once this big enough texture decided to modify. It will have to modify either all of its data,
+    // or replace with an entire new texture.
+    if (cache.use_protect && size >= mem.page_size * 4) {
+        range_protect_begin = align(gxm_texture.data_addr << 2, mem.page_size);
+        range_protect_end = align_down((gxm_texture.data_addr << 2) + size, mem.page_size);
+
+        if (range_protect_end - range_protect_begin >= mem.page_size * 4) {
+            should_use_hash = false;
+        }
+    }
+
     TextureCacheInfo *info;
     if (cached_gxm_texture_index == -1) {
         // Texture not found in cache.
@@ -117,7 +135,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         upload = true;
         cache.infoes[index] = TextureCacheInfo(gxm_texture);
         info = &cache.infoes[index];
-        info->use_hash = cache.use_protect ? size < KB(4) : true;
+        info->use_hash = should_use_hash;
         if (info->use_hash) {
             info->hash = hash_texture_data(gxm_texture, mem);
         }
@@ -156,10 +174,12 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         cache.upload_texture_callback(index, &gxm_texture, mem);
         if (!info->use_hash) {
             info->dirty = false;
-            add_write_protect(mem, gxm_texture.data_addr << 2, size, [&cache, info, gxm_texture] {
+            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MEM_PERM_READONLY, [&cache, info, gxm_texture](Address, bool) {
                 if (memcmp(&info->texture, &gxm_texture, sizeof(SceGxmTexture)) == 0) {
                     info->dirty = true;
                 }
+
+                return true;
             });
         }
     }
