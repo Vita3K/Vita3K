@@ -27,7 +27,7 @@ struct CPUState;
 struct MemState;
 
 typedef uint32_t Address;
-typedef std::function<void()> WriteProtectCallback;
+typedef std::function<bool(Address, bool)> ProtectCallback;
 
 constexpr size_t KB(size_t kb) {
     return kb * 1024;

@@ -24,11 +24,22 @@ struct MemState;
 
 typedef std::function<bool(uint8_t *addr, bool write)> AccessViolationHandler;
 
+enum {
+    MEM_PERM_NONE = 0,
+    MEM_PERM_READONLY = 1 << 0,
+    MEM_PERM_WRITE = 1 << 1,
+    MEM_PERM_READWRITE = MEM_PERM_READONLY | MEM_PERM_WRITE
+};
+
 bool init(MemState &state);
 Address alloc(MemState &state, size_t size, const char *name);
 Address alloc(MemState &state, size_t size, const char *name, unsigned int alignment);
-bool add_write_protect(MemState &state, Address addr, const size_t size, WriteProtectCallback callback);
-bool remove_write_protect(MemState &state, Address addr);
+void protect_inner(MemState &state, Address addr, size_t size, const std::uint32_t perm);
+void unprotect_inner(MemState &state, Address addr, size_t size);
+bool add_protect(MemState &state, Address addr, const size_t size, const std::uint32_t perm, ProtectCallback callback);
+void open_access_parent_protect_segment(MemState &mem, Address addr);
+void close_access_parent_protect_segment(MemState &mem, Address addr);
+bool is_protecting(MemState &state, Address addr, std::uint32_t *perm = nullptr);
 bool is_valid_addr(const MemState &state, Address addr);
 bool is_valid_addr_range(const MemState &state, Address start, Address end);
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept;

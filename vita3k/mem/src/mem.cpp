@@ -192,7 +192,7 @@ Address alloc(MemState &state, size_t size, const char *name, unsigned int align
     return align_addr;
 }
 
-static void align_to_page(MemState &state, WriteProtect &protect) {
+static void align_to_page(MemState &state, ProtectSegmentInfo &protect) {
     const Address end = align(protect.addr + protect.size, state.page_size);
     const Address addr = align_down(protect.addr, state.page_size);
     const size_t size = end - addr;
@@ -200,7 +200,7 @@ static void align_to_page(MemState &state, WriteProtect &protect) {
     protect.size = size;
 }
 
-static bool overlap_in_page(MemState &state, const WriteProtect &a, const WriteProtect &b) {
+static bool overlap_in_page(MemState &state, const ProtectSegmentInfo &a, const ProtectSegmentInfo &b) {
     const Address a_start = align_down(a.addr, state.page_size);
     const Address a_end = align(a.addr + a.size, state.page_size);
     const Address b_start = align_down(b.addr, state.page_size);
@@ -208,7 +208,7 @@ static bool overlap_in_page(MemState &state, const WriteProtect &a, const WriteP
     return a_start <= b_end && b_start <= a_end;
 }
 
-static void unprotect_inner(MemState &state, Address addr, size_t size) {
+void unprotect_inner(MemState &state, Address addr, size_t size) {
     if (LOG_PROTECT) {
         fmt::print("Unprotect: {} {}\n", log_hex(addr), size);
     }
@@ -221,28 +221,25 @@ static void unprotect_inner(MemState &state, Address addr, size_t size) {
 #endif
 }
 
-static void protect_inner(MemState &state, Address addr, size_t size) {
+void protect_inner(MemState &state, Address addr, size_t size, const std::uint32_t perm) {
 #ifdef WIN32
     DWORD old_protect = 0;
-    const BOOL ret = VirtualProtect(&state.memory[addr], size - 1, PAGE_READONLY, &old_protect);
+    const BOOL ret = VirtualProtect(&state.memory[addr], size - 1, (perm == MEM_PERM_NONE) ? PAGE_NOACCESS : ((perm == MEM_PERM_READONLY) ? PAGE_READONLY : PAGE_READWRITE), &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", log_hex(GetLastError()));
+
 #else
-    mprotect(&state.memory[addr], size, PROT_READ);
+    mprotect(&state.memory[addr], size, (perm == MEM_PERM_NONE) ? PROT_NONE : ((perm == MEM_PERM_READONLY) ? PROT_READ : (PROT_READ | PROT_WRITE)));
 #endif
 }
 
-static WriteProtectTree::iterator find_write_protect(WriteProtectTree &tree, Address addr) {
+static ProtectSegmentTrees::iterator find_protect_segment(ProtectSegmentTrees &tree, Address addr) {
     if (tree.empty()) {
         return tree.end();
     }
-    return --tree.upper_bound(WriteProtect(addr));
+    return --tree.upper_bound(ProtectSegmentInfo(addr));
 }
 
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept {
-    // We only use write protect for now
-    if (!write) {
-        return false;
-    }
     const uintptr_t memory_addr = reinterpret_cast<uintptr_t>(state.memory.get());
     const uintptr_t fault_addr = reinterpret_cast<uintptr_t>(addr);
     if (fault_addr < memory_addr || fault_addr >= memory_addr + TOTAL_MEM_SIZE) {
@@ -256,57 +253,138 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
         fmt::print("Access: {}\n", log_hex(vaddr));
     }
 
-    const std::lock_guard<std::mutex> lock(state.protect_mutex);
-    const auto it = find_write_protect(state.write_protect_tree, vaddr);
-    if (it == state.write_protect_tree.end()) {
+    const std::unique_lock<std::mutex> lock(state.protect_mutex);
+    const auto it = find_protect_segment(state.protect_tree, vaddr);
+    if (it == state.protect_tree.end()) {
         // HACK: keep going
         unprotect_inner(state, vaddr, 4);
-        LOG_CRITICAL("Unhandled write protected region was valid.");
+        LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
         return true;
     }
 
     if (vaddr < it->addr || vaddr >= it->addr + it->size) {
         // HACK: keep going
         unprotect_inner(state, vaddr, 4);
-        LOG_CRITICAL("Unhandled write protected region was valid.");
+        LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
         return true;
     }
 
-    for (const auto cb : it->callbacks) {
-        cb();
+    Address previous_beg = it->addr;
+
+    for (auto ite = it->blocks.begin(); ite != it->blocks.end();) {
+        if (ite->callback(vaddr, write)) {
+            Address beg_unpr = align_down(ite->addr, state.page_size);
+            Address end_unpr = align(ite->addr + ite->size, state.page_size);
+            unprotect_inner(state, beg_unpr, end_unpr - beg_unpr);
+
+            ite = const_cast<std::set<ProtectBlockInfo> &>(it->blocks).erase(ite);
+        } else {
+            ite++;
+        }
     }
-    unprotect_inner(state, it->addr, it->size);
-    state.write_protect_tree.erase(it);
+
+    if ((it->blocks.size() == 0) && (it->ref_count == 0)) {
+        unprotect_inner(state, it->addr, it->size);
+        state.protect_tree.erase(it);
+    } else {
+        Address beg_region = it->blocks.begin()->addr;
+        Address end_region = it->blocks.rbegin()->addr + it->blocks.rbegin()->size;
+
+        beg_region = align_down(beg_region, state.page_size);
+        end_region = align(end_region, state.page_size);
+
+        if (beg_region != previous_beg) {
+            ProtectSegmentInfo info = std::move(*it);
+            info.addr = beg_region;
+            info.size = end_region - beg_region;
+
+            state.protect_tree.erase(it);
+            state.protect_tree.emplace(std::move(info));
+        } else {
+            const_cast<std::size_t &>(it->size) = end_region - beg_region;
+        }
+    }
+
     return true;
 }
 
-bool add_write_protect(MemState &state, Address addr, const size_t size, WriteProtectCallback callback) {
+bool add_protect(MemState &state, Address addr, const size_t size, const std::uint32_t perm, ProtectCallback callback) {
     const std::lock_guard<std::mutex> lock(state.protect_mutex);
-    WriteProtect protect(addr, size, callback);
+    ProtectSegmentInfo protect(addr, size, perm);
     align_to_page(state, protect);
 
-    auto it = find_write_protect(state.write_protect_tree, protect.addr);
-    while (it != state.write_protect_tree.end() && overlap_in_page(state, *it, protect)) {
+    ProtectBlockInfo block;
+    block.addr = addr;
+    block.size = size;
+    block.callback = callback;
+
+    protect.blocks.emplace(block);
+
+    auto it = find_protect_segment(state.protect_tree, protect.addr);
+    while (it != state.protect_tree.end() && overlap_in_page(state, *it, protect)) {
         const Address start = std::min(it->addr, protect.addr);
         protect.size = std::max(it->addr + it->size, protect.addr + protect.size) - start;
         protect.addr = start;
-        protect.callbacks.insert(protect.callbacks.end(), it->callbacks.begin(), it->callbacks.end());
-        state.write_protect_tree.erase(it++);
+        protect.ref_count = it->ref_count; // Transfer access count to new block
+        protect.blocks.insert(it->blocks.begin(), it->blocks.end());
+
+        state.protect_tree.erase(it++);
     }
-    state.write_protect_tree.emplace(protect);
 
-    protect_inner(state, protect.addr, protect.size);
+    if (protect.ref_count == 0) {
+        protect_inner(state, protect.addr, protect.size, perm);
+    }
 
+    state.protect_tree.emplace(protect);
     return true;
 }
 
-bool remove_write_protect(MemState &state, Address addr) {
-    const auto it = find_write_protect(state.write_protect_tree, addr);
-    if (it == state.write_protect_tree.end())
-        return false;
-    unprotect_inner(state, it->addr, it->size);
-    state.write_protect_tree.erase(it);
-    return true;
+bool is_protecting(MemState &state, Address addr, std::uint32_t *perm) {
+    const std::lock_guard<std::mutex> lock(state.protect_mutex);
+    auto ite = find_protect_segment(state.protect_tree, addr);
+
+    if ((ite != state.protect_tree.end()) && (addr >= ite->addr) && (addr < ite->addr + ite->size)) {
+        if (perm) {
+            *perm = ite->perm;
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+void open_access_parent_protect_segment(MemState &state, Address addr) {
+    const std::lock_guard<std::mutex> lock(state.protect_mutex);
+    auto ite = find_protect_segment(state.protect_tree, addr);
+
+    if ((ite != state.protect_tree.end()) && (addr >= ite->addr) && (addr < ite->addr + ite->size)) {
+        const_cast<std::int32_t &>(ite->ref_count)++;
+    } else {
+        ProtectSegmentInfo protect(align_down(addr, state.page_size), 0, 0);
+        protect.ref_count = 1;
+
+        state.protect_tree.emplace(protect);
+    }
+}
+
+void close_access_parent_protect_segment(MemState &state, Address addr) {
+    const std::lock_guard<std::mutex> lock(state.protect_mutex);
+    auto ite = find_protect_segment(state.protect_tree, addr);
+
+    if (ite != state.protect_tree.end()) {
+        if (ite->ref_count > 0) {
+            const_cast<std::int32_t &>(ite->ref_count)--;
+        }
+
+        if (ite->ref_count == 0) {
+            if ((ite->blocks.size() == 0) || (ite->size == 0)) {
+                state.protect_tree.erase(ite);
+            } else {
+                protect_inner(state, ite->addr, ite->size, ite->perm);
+            }
+        }
+    }
 }
 
 Address alloc(MemState &state, size_t size, const char *name) {
