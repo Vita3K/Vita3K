@@ -24,6 +24,7 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <thread>
 
 struct SDL_Cursor;
 struct DisplayState;
@@ -50,6 +51,8 @@ struct State {
     uint32_t programs_count_pre_compiled;
 
     std::atomic<bool> should_display;
+
+    std::thread::id worker_thread_id;
 
     virtual bool init(const char *base_path, const bool hashless_texture_cache) = 0;
     virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,

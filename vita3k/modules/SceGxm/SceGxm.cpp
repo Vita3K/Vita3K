@@ -717,11 +717,17 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
     if (colorSurface) {
         color_surface_copy = new SceGxmColorSurface;
         *color_surface_copy = *colorSurface;
+
+        context->state.color_surface = *colorSurface;
+        context->state.surface_flags |= 1;
     }
 
     if (depthStencil) {
         depth_stencil_surface_copy = new SceGxmDepthStencilSurface;
         *depth_stencil_surface_copy = *depthStencil;
+
+        context->state.depth_stencil_surface = *depthStencil;
+        context->state.surface_flags |= 2;
     }
 
     renderer::set_context(*emuenv.renderer, context->renderer.get(), renderTarget->renderer.get(), color_surface_copy,
@@ -1583,6 +1589,134 @@ EXPORT(int, sceGxmEndCommandList, SceGxmContext *deferredContext, SceGxmCommandL
     return 0;
 }
 
+static bool update_surface_syncing_last_active_time(EmuEnvState &emuenv, Address target_region, std::size_t size, Address fault_addr) {
+    if ((target_region > fault_addr) || (fault_addr >= (target_region + size))) {
+        return false;
+    }
+
+    for (std::size_t i = 0; i < emuenv.gxm.surface_syncing_infoes.size(); i++) {
+        if ((emuenv.gxm.surface_syncing_infoes[i].addr == target_region) && (size == emuenv.gxm.surface_syncing_infoes[i].size)) {
+            if (emuenv.gxm.surface_syncing_infoes[i].syncing_disabled()) {
+                emuenv.mem.protect_mutex.unlock();
+
+                // We must get it up to date immediately! This is expected to not call often
+                // For some AAA games they grab a copy off this. So not every frame, (hope so!)
+                SceGxmColorSurface sync_info;
+                sync_info.data = emuenv.gxm.surface_syncing_infoes[i].addr;
+                sync_info.width = emuenv.gxm.surface_syncing_infoes[i].width;
+                sync_info.height = emuenv.gxm.surface_syncing_infoes[i].height;
+                sync_info.strideInPixels = emuenv.gxm.surface_syncing_infoes[i].stride;
+                sync_info.colorFormat = emuenv.gxm.surface_syncing_infoes[i].sync_format;
+                sync_info.surfaceType = emuenv.gxm.surface_syncing_infoes[i].surface_type;
+
+                renderer::sync_surface_data_explicit_sync(*emuenv.renderer, sync_info);
+
+                emuenv.mem.protect_mutex.lock();
+            }
+
+            emuenv.gxm.surface_syncing_infoes[i].scene_time_last_memaccess = emuenv.gxm.surface_syncing_infoes[i].scene_time_passed;
+            emuenv.gxm.surface_syncing_infoes[i].reprotect_needed = true;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void try_apply_color_surface_syncing(EmuEnvState &emuenv, SceGxmContext *context) {
+    if (context->state.surface_flags & 1) {
+        const std::size_t color_surface_size = gxm::get_stride_in_bytes(context->state.color_surface.colorFormat,
+                                                   context->state.color_surface.strideInPixels)
+            * context->state.color_surface.height;
+        const Address color_surface_addr = context->state.color_surface.data.address();
+
+        // For not messing with other content, we only watch the region where the data belongs
+        const Address color_surface_aligned_beg_addr = align(color_surface_addr, emuenv.mem.page_size);
+        const Address color_surface_aligned_end_addr = align_down(color_surface_addr + color_surface_size, emuenv.mem.page_size);
+
+        if (color_surface_aligned_end_addr - color_surface_aligned_beg_addr < emuenv.mem.page_size) {
+            // Not possible to watch without degrading performance, and the payback is low. Syncing is way better
+            renderer::sync_surface_data(*emuenv.renderer, context->renderer.get());
+            return;
+        }
+
+        // Try to see if we can put a sync right here. Else we can sync later in a protect if needed.
+        bool found = false;
+        for (std::size_t i = 0; i < emuenv.gxm.surface_syncing_infoes.size(); i++) {
+            if ((emuenv.gxm.surface_syncing_infoes[i].addr == color_surface_addr) && (emuenv.gxm.surface_syncing_infoes[i].size == color_surface_size)) {
+                emuenv.gxm.surface_syncing_infoes[i].scene_time_passed++;
+                found = true;
+
+                if (!emuenv.gxm.surface_syncing_infoes[i].syncing_disabled()) {
+                    // Immediately do a sync. Avoid protecting too much cause page fault is expensive
+                    renderer::sync_surface_data(*emuenv.renderer, context->renderer.get());
+                }
+
+                // Insert a bit early to check and ensure continous sync. Wait for it to come
+                // is expensive.
+                if (emuenv.gxm.surface_syncing_infoes[i].reprotect_needed && emuenv.gxm.surface_syncing_infoes[i].should_insert_protect_fence()) {
+                    add_protect(emuenv.mem, color_surface_aligned_beg_addr, color_surface_aligned_end_addr - color_surface_aligned_beg_addr, MEM_PERM_NONE, [&emuenv, color_surface_addr, color_surface_size](Address fault, bool is_write) {
+                        return update_surface_syncing_last_active_time(emuenv, color_surface_addr, color_surface_size, fault);
+                    });
+
+                    emuenv.gxm.surface_syncing_infoes[i].reprotect_needed = false;
+                }
+
+                break;
+            }
+        }
+
+        if (!found) {
+            // Choose a free slot first
+            bool found_free = false;
+            std::size_t oldest_inactive_index = 0;
+
+            for (std::size_t i = 0; i < emuenv.gxm.surface_syncing_infoes.size(); i++) {
+                if ((emuenv.gxm.surface_syncing_infoes[i].addr == 0) || (emuenv.gxm.surface_syncing_infoes[i].addr == color_surface_addr)) {
+                    emuenv.gxm.surface_syncing_infoes[i].addr = color_surface_addr;
+                    emuenv.gxm.surface_syncing_infoes[i].size = color_surface_size;
+                    emuenv.gxm.surface_syncing_infoes[i].width = context->state.color_surface.width;
+                    emuenv.gxm.surface_syncing_infoes[i].height = context->state.color_surface.height;
+                    emuenv.gxm.surface_syncing_infoes[i].stride = context->state.color_surface.strideInPixels;
+                    emuenv.gxm.surface_syncing_infoes[i].sync_format = context->state.color_surface.colorFormat;
+                    emuenv.gxm.surface_syncing_infoes[i].surface_type = context->state.color_surface.surfaceType;
+                    emuenv.gxm.surface_syncing_infoes[i].scene_time_last_memaccess = SCENE_TIME_UNDEF;
+                    emuenv.gxm.surface_syncing_infoes[i].scene_time_passed = 1;
+                    emuenv.gxm.surface_syncing_infoes[i].reprotect_needed = false;
+
+                    found_free = true;
+                    break;
+                }
+
+                if (i != 0) {
+                    if (emuenv.gxm.surface_syncing_infoes[i].scene_time_last_memaccess < emuenv.gxm.surface_syncing_infoes[oldest_inactive_index].scene_time_last_memaccess) {
+                        oldest_inactive_index = i;
+                    }
+                }
+            }
+
+            if (!found_free) {
+                emuenv.gxm.surface_syncing_infoes[oldest_inactive_index].addr = color_surface_addr;
+                emuenv.gxm.surface_syncing_infoes[oldest_inactive_index].size = color_surface_size;
+                emuenv.gxm.surface_syncing_infoes[oldest_inactive_index].width = context->state.color_surface.width;
+                emuenv.gxm.surface_syncing_infoes[oldest_inactive_index].height = context->state.color_surface.height;
+                emuenv.gxm.surface_syncing_infoes[oldest_inactive_index].stride = context->state.color_surface.strideInPixels;
+                emuenv.gxm.surface_syncing_infoes[oldest_inactive_index].sync_format = context->state.color_surface.colorFormat;
+                emuenv.gxm.surface_syncing_infoes[oldest_inactive_index].surface_type = context->state.color_surface.surfaceType;
+                emuenv.gxm.surface_syncing_infoes[oldest_inactive_index].scene_time_last_memaccess = SCENE_TIME_UNDEF;
+                emuenv.gxm.surface_syncing_infoes[oldest_inactive_index].scene_time_passed = 1;
+                emuenv.gxm.surface_syncing_infoes[oldest_inactive_index].reprotect_needed = false;
+            }
+
+            // Protecting the data, to track sync progress. The first active will always do a sync to prevent unwanted flash
+            renderer::sync_surface_data(*emuenv.renderer, context->renderer.get());
+            add_protect(emuenv.mem, color_surface_aligned_beg_addr, color_surface_aligned_end_addr - color_surface_aligned_beg_addr, MEM_PERM_NONE, [&emuenv, color_surface_addr, color_surface_size](Address fault, bool is_write) {
+                return update_surface_syncing_last_active_time(emuenv, color_surface_addr, color_surface_size, fault);
+            });
+        }
+    }
+}
+
 EXPORT(int, sceGxmEndScene, SceGxmContext *context, SceGxmNotification *vertexNotification, SceGxmNotification *fragmentNotification) {
     const MemState &mem = emuenv.mem;
 
@@ -1599,7 +1733,8 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, SceGxmNotification *vertexNo
     }
 
     // Add command to end the scene
-    renderer::sync_surface_data(*emuenv.renderer, context->renderer.get());
+    // TODO: Proper syncing of depth stencil surface. For now we don't care, but it's certainly essential!
+    try_apply_color_surface_syncing(emuenv, context);
 
     if (vertexNotification) {
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
