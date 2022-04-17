@@ -51,7 +51,6 @@ add_library(
 	${RENDERER_VULKAN_SOURCES}
 
 	src/batch.cpp
-	src/color_format.cpp
 	src/creation.cpp
 	src/driver_functions.h
 	src/pvrt-dec.cpp

@@ -260,7 +260,8 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
         { "GL_ARB_fragment_shader_interlock", &gl_state.features.support_shader_interlock },
         { "GL_ARB_texture_barrier", &gl_state.features.support_texture_barrier },
         { "GL_EXT_shader_framebuffer_fetch", &gl_state.features.direct_fragcolor },
-        { "GL_ARB_gl_spirv", &gl_state.features.spirv_shader }
+        { "GL_ARB_gl_spirv", &gl_state.features.spirv_shader },
+        { "GL_ARB_get_texture_sub_image", &gl_state.features.support_get_texture_sub_image }
     };
 
     for (int i = 0; i < total_extensions; i++) {
@@ -484,84 +485,43 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     }
 }
 
-void get_surface_data(GLState &renderer, GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format) {
-    R_PROFILE(__func__);
+static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_TO_GL_FORMAT = {
+    { SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR, { GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV } },
+    { SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB, { GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV } },
+    { SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA, { GL_RGBA, GL_UNSIGNED_BYTE } },
+    { SCE_GXM_COLOR_FORMAT_U4U4U4U4_ARGB, { GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4_REV } },
+    { SCE_GXM_COLOR_FORMAT_U8U8U8_BGR, { GL_RGB, GL_UNSIGNED_BYTE } },
+    { SCE_GXM_COLOR_FORMAT_U5U6U5_RGB, { GL_RGB, GL_UNSIGNED_SHORT_5_6_5 } },
+    { SCE_GXM_COLOR_FORMAT_U8U8_AR, { GL_RG, GL_UNSIGNED_BYTE } },
+    { SCE_GXM_COLOR_FORMAT_U8_A, { GL_ALPHA, GL_UNSIGNED_BYTE } },
+    { SCE_GXM_COLOR_FORMAT_U8_R, { GL_RED, GL_UNSIGNED_BYTE } },
+    { SCE_GXM_COLOR_FORMAT_U2F10F10F10_ABGR, { GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV } },
+    { SCE_GXM_COLOR_FORMAT_U2U10U10U10_ABGR, { GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV } },
+    { SCE_GXM_COLOR_FORMAT_U10U10U10U2_RGBA, { GL_BGRA, GL_UNSIGNED_INT_10_10_10_2 } },
+    { SCE_GXM_COLOR_FORMAT_U10U10U10U2_BGRA, { GL_BGRA, GL_UNSIGNED_INT_10_10_10_2 } },
+    { SCE_GXM_COLOR_FORMAT_F16_R, { GL_RED, GL_HALF_FLOAT } },
+    { SCE_GXM_COLOR_FORMAT_F16F16_GR, { GL_RG, GL_HALF_FLOAT } },
+    { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ABGR, { GL_RGBA, GL_HALF_FLOAT } },
+    { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ARGB, { GL_BGRA, GL_HALF_FLOAT } },
+    { SCE_GXM_COLOR_FORMAT_F32_R, { GL_RED, GL_FLOAT } },
+    { SCE_GXM_COLOR_FORMAT_F32F32_GR, { GL_RG, GL_FLOAT } },
+    { SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR, { GL_BGR, GL_HALF_FLOAT } },
+    { SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB, { GL_RGB, GL_HALF_FLOAT } }
+};
 
-    if (!pixels)
-        return;
-
-    glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(stride_in_pixels));
-
-    // TODO Need more check into this
+void post_process_pixels_data(std::uint32_t *pixels, const std::uint32_t width, const std::uint32_t height, const std::uint32_t stride,
+    SceGxmColorFormat format, SceGxmColorSurfaceType surface_type) {
     switch (format) {
-    case SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, pixels);
-        break;
     case SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         for (int i = 0; i < width * height; ++i) {
             uint8_t *pixel = reinterpret_cast<uint8_t *>(&pixels[i]);
             std::swap(pixel[0], pixel[3]);
             std::swap(pixel[1], pixel[2]);
         }
         break;
-    case SCE_GXM_COLOR_FORMAT_U4U4U4U4_ARGB:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_BGRA, GL_UNSIGNED_SHORT_4_4_4_4_REV, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_U8U8U8_BGR:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGB, GL_UNSIGNED_BYTE, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_U5U6U5_RGB:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGB, GL_UNSIGNED_SHORT_5_6_5, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_U16_R:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RED, GL_UNSIGNED_SHORT, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_U8U8_AR:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RG, GL_UNSIGNED_BYTE, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_U8_A:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_ALPHA, GL_UNSIGNED_BYTE, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_U8_R:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RED, GL_UNSIGNED_BYTE, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_U2F10F10F10_ABGR:
-    case SCE_GXM_COLOR_FORMAT_U2U10U10U10_ABGR:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_U10U10U10U2_RGBA:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_INT_10_10_10_2, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_U10U10U10U2_BGRA:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_BGRA, GL_UNSIGNED_INT_10_10_10_2, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_F16_R:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RED, GL_HALF_FLOAT, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_F16F16_GR:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RG, GL_HALF_FLOAT, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_F16F16F16F16_ABGR:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_HALF_FLOAT, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_F16F16F16F16_ARGB:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_BGRA, GL_HALF_FLOAT, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_F32_R:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RED, GL_FLOAT, pixels);
-        break;
-    case SCE_GXM_COLOR_FORMAT_F32F32_GR:
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RG, GL_FLOAT, pixels);
-        break;
     case SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB:
     case SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR: {
         std::vector<uint16_t> temp_bytes(width * height * 3);
-        GLenum rfmt = (format == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR) ? GL_BGR : GL_RGB;
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), rfmt, GL_HALF_FLOAT, temp_bytes.data());
         for (int i = 0, iptr = 0; i < width * height; ++i) {
             uint32_t pixel = 0;
             pixel |= (uint32_t(temp_bytes[iptr++] << 17) & (0x3FFFF << 18)); // Exp + 9 bits
@@ -572,14 +532,12 @@ void get_surface_data(GLState &renderer, GLContext &context, size_t width, size_
         break;
     }
     default:
-        LOG_ERROR("Color format not implemented: {}, report this to developer", format);
-        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         break;
     }
 
-    if (context.record.color_surface.surfaceType == SCE_GXM_COLOR_SURFACE_TILED) {
+    if (surface_type == SCE_GXM_COLOR_SURFACE_TILED) {
         const SceGxmColorBaseFormat base_format = gxm::get_base_format(format);
-        const size_t bpp = renderer::color::bits_per_pixel(base_format);
+        const size_t bpp = gxm::bits_per_pixel(base_format);
         const size_t bytes_per_pixel = (bpp + 7) >> 3;
         std::vector<uint8_t> buffer;
 
@@ -588,7 +546,7 @@ void get_surface_data(GLState &renderer, GLContext &context, size_t width, size_
             for (int hori_tile = 0; hori_tile < (width >> 5); hori_tile++) {
                 const size_t tile_position = hori_tile + (j >> 5) * ((width + 31) >> 5);
                 const size_t first_pixel_offset_in_tile = (tile_position << 10) + (j & 31) * 32;
-                const size_t first_pixel_offset_in_linear = (j * stride_in_pixels) + hori_tile * 32;
+                const size_t first_pixel_offset_in_linear = (j * stride) + hori_tile * 32;
 
                 memcpy(buffer.data() + first_pixel_offset_in_tile * bytes_per_pixel,
                     (const char *)(pixels) + first_pixel_offset_in_linear * bytes_per_pixel, 32 * bytes_per_pixel);
@@ -596,6 +554,68 @@ void get_surface_data(GLState &renderer, GLContext &context, size_t width, size_
         }
         memcpy(pixels, buffer.data(), buffer.size());
     }
+}
+
+void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSurface &surface) {
+    GLint tex_handle = static_cast<GLint>(renderer.surface_cache.retrieve_color_surface_texture_handle(static_cast<std::uint16_t>(surface.width),
+        static_cast<std::uint16_t>(surface.height), static_cast<std::uint16_t>(surface.strideInPixels),
+        surface.colorFormat, surface.data, renderer::SurfaceTextureRetrievePurpose::READING));
+
+    if (tex_handle == 0) {
+        return;
+    }
+
+    glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(surface.strideInPixels));
+    std::uint32_t width = surface.width;
+    std::uint32_t height = surface.height;
+    SceGxmColorFormat format = surface.colorFormat;
+
+    std::size_t buffer_size = gxm::get_stride_in_bytes(surface.colorFormat, surface.strideInPixels) * height;
+
+    auto format_gl = GXM_COLOR_FORMAT_TO_GL_FORMAT.find(format);
+    if (format_gl == GXM_COLOR_FORMAT_TO_GL_FORMAT.end()) {
+        LOG_ERROR("Color format not implemented: {}, report this to developer", format);
+        return;
+    }
+
+    std::uint32_t *pixels = surface.data.cast<std::uint32_t>().get(mem);
+    if (!pixels) {
+        return;
+    }
+
+    if (renderer.features.support_get_texture_sub_image) {
+        glGetTextureSubImage(tex_handle, 0, 0, 0, 0, width, height, 1, format_gl->second.first, format_gl->second.second,
+            buffer_size, pixels);
+    } else {
+        GLint last_texture = 0;
+
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+        glBindTexture(GL_TEXTURE_2D, tex_handle);
+        glGetTexImage(GL_TEXTURE_2D, 0, format_gl->second.first, format_gl->second.second, pixels);
+        glBindTexture(GL_TEXTURE_2D, last_texture);
+    }
+
+    post_process_pixels_data(pixels, width, height, surface.strideInPixels, surface.colorFormat, surface.surfaceType);
+    glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+}
+
+void get_surface_data(GLState &renderer, GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format, SceGxmColorSurfaceType surface_type) {
+    R_PROFILE(__func__);
+
+    if (pixels == nullptr) {
+        return;
+    }
+
+    glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(stride_in_pixels));
+
+    auto format_gl = GXM_COLOR_FORMAT_TO_GL_FORMAT.find(format);
+    if (format_gl == GXM_COLOR_FORMAT_TO_GL_FORMAT.end()) {
+        LOG_ERROR("Color format not implemented: {}, report this to developer", format);
+        return;
+    }
+
+    glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), format_gl->second.first, format_gl->second.second, pixels);
+    post_process_pixels_data(pixels, width, height, stride_in_pixels, format, surface_type);
 
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
     ++renderer.texture_cache.timestamp;
