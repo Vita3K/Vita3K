@@ -18,6 +18,7 @@
 #pragma once
 
 #include <module/module.h>
+#include <modules/module_parent.h>
 
 enum SceAudiodecCodec : uint32_t {
     SCE_AUDIODEC_TYPE_AT9 = 0x1003,
@@ -44,9 +45,10 @@ union SceAudiodecInitParam {
     SceAudiodecInitStreamParam celp;
 };
 
-EXPORT(SceInt32, sceAudiodecInitLibrary, SceUInt32 codecType, SceAudiodecInitParam *pInitParam);
-EXPORT(SceInt32, sceAudiodecTermLibrary, SceUInt32 codecType);
+EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodecInitParam *pInitParam);
+EXPORT(SceInt32, sceAudiodecTermLibrary, SceAudiodecCodec codecType);
 
+LIBRARY_INIT_DECL(SceAudiodec);
 BRIDGE_DECL(sceAudiodecClearContext)
 BRIDGE_DECL(sceAudiodecCreateDecoder)
 BRIDGE_DECL(sceAudiodecCreateDecoderExternal)
