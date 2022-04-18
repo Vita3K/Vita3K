@@ -33,10 +33,13 @@ enum {
 
 typedef std::shared_ptr<DecoderState> DecoderPtr;
 typedef std::map<SceUID, DecoderPtr> DecoderStates;
+typedef std::vector<SceUID> CodecDecoders;
+typedef std::map<SceAudiodecCodec, CodecDecoders> CodecDecodersMap;
 
 struct AudiodecState {
     std::mutex mutex;
     DecoderStates decoders;
+    CodecDecodersMap codecs;
 };
 
 struct SceAudiodecInfoAt9 {
@@ -90,6 +93,11 @@ struct SceAudiodecCtrl {
     Ptr<SceAudiodecInfo> info;
 };
 
+LIBRARY_INIT_IMPL(SceAudiodec) {
+    host.kernel.obj_store.create<AudiodecState>();
+}
+LIBRARY_INIT_REGISTER(SceAudiodec)
+
 EXPORT(int, sceAudiodecClearContext) {
     return UNIMPLEMENTED();
 }
@@ -100,6 +108,7 @@ EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec co
 
     SceUID handle = host.kernel.get_next_uid();
     ctrl->handle = handle;
+    state->codecs[codec].push_back(handle);
 
     switch (codec) {
     case SCE_AUDIODEC_TYPE_AT9: {
@@ -204,8 +213,11 @@ EXPORT(int, sceAudiodecGetInternalError) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, sceAudiodecInitLibrary, SceUInt32 codecType, SceAudiodecInitParam *pInitParam) {
-    host.kernel.obj_store.create<AudiodecState>();
+EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodecInitParam *pInitParam) {
+    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    std::lock_guard<std::mutex> lock(state->mutex);
+
+    state->codecs[codecType] = CodecDecoders();
     return 0;
 }
 
@@ -213,8 +225,15 @@ EXPORT(int, sceAudiodecPartlyDecode) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, sceAudiodecTermLibrary, SceUInt32 codecType) {
-    host.kernel.obj_store.erase<AudiodecState>();
+EXPORT(SceInt32, sceAudiodecTermLibrary, SceAudiodecCodec codecType) {
+    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    std::lock_guard<std::mutex> lock(state->mutex);
+
+    // remove decoders associeted with codecType
+    for (auto handle : state->codecs[codecType]) {
+        state->decoders.erase(handle);
+    }
+    state->codecs.erase(codecType);
     return 0;
 }
 
