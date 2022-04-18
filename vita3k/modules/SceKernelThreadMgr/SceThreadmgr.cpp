@@ -136,6 +136,9 @@ EXPORT(int, _sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea) {
 }
 
 EXPORT(int, _sceKernelDeleteLwMutex, Ptr<SceKernelLwMutexWork> workarea) {
+    if (!workarea)
+        return SCE_KERNEL_ERROR_ILLEGAL_ADDR;
+
     const auto lightweight_mutex_id = workarea.get(host.mem)->uid;
 
     return mutex_delete(host.kernel, export_name, thread_id, lightweight_mutex_id, SyncWeight::Light);
