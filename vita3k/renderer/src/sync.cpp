@@ -71,13 +71,13 @@ void wishlist(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects) {
     {
         const std::lock_guard<std::mutex> mutex_guard(sync_object->lock);
 
-        if (sync_object->done & subjects) {
+        if ((sync_object->done & subjects) == subjects) {
             return;
         }
     }
 
     std::unique_lock<std::mutex> finish_mutex(sync_object->lock);
-    sync_object->cond.wait(finish_mutex, [&]() { return sync_object->done & subjects; });
+    sync_object->cond.wait(finish_mutex, [&]() { return ((sync_object->done & subjects) == subjects); });
 }
 
 void subject_done(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects) {
