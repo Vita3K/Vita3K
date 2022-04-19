@@ -30,12 +30,12 @@ static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
     while (!display.abort.load()) {
         {
             const std::lock_guard<std::mutex> guard(display.mutex);
-            if (!display.vblank_wait_infos.empty()) {
-                // Notify callback in each VBLANK start
-                for (auto &cb : display.vblank_callbacks)
-                    cb.second->event_notify(cb.second->get_notifier_id());
+            // Notify Vblank callback in each VBLANK start
+            for (auto &cb : display.vblank_callbacks)
+                cb.second->event_notify(cb.second->get_notifier_id());
 
-                auto &vblank_wait_info = display.vblank_wait_infos.back();
+            for (std::size_t i = 0; i < display.vblank_wait_infos.size();) {
+                auto &vblank_wait_info = display.vblank_wait_infos[i];
                 if (--vblank_wait_info.vsync_left == 0) {
                     ThreadStatePtr target_wait = vblank_wait_info.target_thread;
 
@@ -53,7 +53,9 @@ static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
                         }
                     }
 
-                    display.vblank_wait_infos.pop_back();
+                    display.vblank_wait_infos.erase(display.vblank_wait_infos.begin() + i);
+                } else {
+                    i++;
                 }
             }
 
@@ -73,6 +75,9 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const SceUID thread
         return;
     }
 
+    auto thread_lock = std::unique_lock(wait_thread->mutex);
+    thread_lock.unlock();
+
     {
         const std::lock_guard<std::mutex> guard(display.mutex);
         if (since_last_setbuf) {
@@ -83,12 +88,10 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const SceUID thread
                 count -= static_cast<int>(blank_passed);
             }
         }
-        display.vblank_wait_infos.insert(display.vblank_wait_infos.begin(), { wait_thread, count, is_cb });
+
+        wait_thread->suspend();
+        display.vblank_wait_infos.push_back({ wait_thread, count, is_cb });
     }
 
-    auto thread_lock = std::unique_lock(wait_thread->mutex);
-    thread_lock.unlock();
-
-    wait_thread->suspend();
     wait_thread->status_cond.wait(thread_lock, [=]() { return wait_thread->status != ThreadStatus::suspend; });
 }
