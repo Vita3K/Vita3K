@@ -57,6 +57,7 @@ struct GLColorSurfaceCacheInfo : public GLSurfaceCacheInfo {
     std::size_t total_bytes;
 
     SceGxmColorBaseFormat format;
+    std::uint32_t swizzle;
 
     Ptr<void> data;
     GLObjectArray<1> gl_texture;
@@ -96,8 +97,8 @@ public:
     explicit GLSurfaceCache();
 
     std::uint64_t retrieve_color_surface_texture_handle(const std::uint16_t width, const std::uint16_t height, const std::uint16_t pixel_stride,
-        const SceGxmColorBaseFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height = nullptr,
-        std::uint16_t *stored_width = nullptr) override;
+        const SceGxmColorBaseFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
+        std::uint16_t *stored_height = nullptr, std::uint16_t *stored_width = nullptr) override;
     std::uint64_t retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) override;
 
     // We really can't sample this around... The only usage of this function is interally load/store from this texture.

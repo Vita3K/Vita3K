@@ -326,8 +326,11 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));
 
     std::uint64_t texture_as_surface = 0;
+    const GLint *swizzle_surface = nullptr;
+
     if (context.record.color_surface.data.address() == data_addr) {
         texture_as_surface = context.current_color_attachment;
+        swizzle_surface = color::translate_swizzle(context.record.color_surface.colorFormat);
 
         if (std::find(context.self_sampling_indices.begin(), context.self_sampling_indices.end(),
                 static_cast<GLuint>(index))
@@ -350,10 +353,14 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                 stride_in_pixels = static_cast<std::uint16_t>(gxm::get_stride_in_bytes(&texture)) / ((renderer::texture::bits_per_pixel(base_format) + 7) >> 3);
             }
 
+            std::uint32_t swizz_raw = 0;
+
             texture_as_surface = state.surface_cache.retrieve_color_surface_texture_handle(
                 width, static_cast<std::uint16_t>(gxm::get_height(&texture)),
                 stride_in_pixels, format_target_of_texture, Ptr<void>(data_addr),
-                renderer::SurfaceTextureRetrievePurpose::READING);
+                renderer::SurfaceTextureRetrievePurpose::READING, swizz_raw);
+
+            swizzle_surface = color::translate_swizzle(static_cast<SceGxmColorFormat>(format_target_of_texture | swizz_raw));
         }
     }
 
@@ -362,7 +369,29 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         const GLint *swizzle = texture::translate_swizzle(format);
 
         if (swizzle) {
-            glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+            if (swizzle_surface) {
+                if (std::memcmp(swizzle_surface, swizzle, 16) != 0) {
+                    // Surface is stored in RGBA in GPU memory, unless in other circumstances. So we must reverse order
+                    for (int i = 0; i < 4; i++) {
+                        if ((swizzle[i] < GL_RED) || (swizzle[i] > GL_ALPHA)) {
+                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
+                        } else {
+                            for (int j = 0; j < 4; j++) {
+                                if (swizzle[i] == swizzle_surface[j]) {
+                                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R + i, GL_RED + j);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    const GLint default_rgba[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+                    glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, default_rgba);
+                }
+            } else {
+                LOG_TRACE("No surface swizzle found, use default texture swizzle");
+                glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+            }
         }
     } else {
         if (config.texture_cache) {

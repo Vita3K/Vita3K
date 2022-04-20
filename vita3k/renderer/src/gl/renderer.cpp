@@ -499,15 +499,15 @@ static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_T
     { SCE_GXM_COLOR_FORMAT_U2F10F10F10_ABGR, { GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV } },
     { SCE_GXM_COLOR_FORMAT_U2U10U10U10_ABGR, { GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV } },
     { SCE_GXM_COLOR_FORMAT_U10U10U10U2_RGBA, { GL_BGRA, GL_UNSIGNED_INT_10_10_10_2 } },
-    { SCE_GXM_COLOR_FORMAT_U10U10U10U2_BGRA, { GL_BGRA, GL_UNSIGNED_INT_10_10_10_2 } },
+    { SCE_GXM_COLOR_FORMAT_U10U10U10U2_BGRA, { GL_RGBA, GL_UNSIGNED_INT_10_10_10_2 } },
     { SCE_GXM_COLOR_FORMAT_F16_R, { GL_RED, GL_HALF_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F16F16_GR, { GL_RG, GL_HALF_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ABGR, { GL_RGBA, GL_HALF_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F16F16F16F16_ARGB, { GL_BGRA, GL_HALF_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F32_R, { GL_RED, GL_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F32F32_GR, { GL_RG, GL_FLOAT } },
-    { SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR, { GL_BGR, GL_HALF_FLOAT } },
-    { SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB, { GL_RGB, GL_HALF_FLOAT } }
+    { SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR, { GL_RGB, GL_HALF_FLOAT } },
+    { SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB, { GL_BGR, GL_HALF_FLOAT } }
 };
 
 static bool format_need_temp_storage(SceGxmColorFormat format, std::vector<std::uint8_t> &storage, const std::uint32_t width, const std::uint32_t height) {
@@ -567,9 +567,10 @@ static void post_process_pixels_data(std::uint32_t *pixels, std::uint8_t *source
 }
 
 void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSurface &surface) {
+    std::uint32_t swizzle = 0;
     GLint tex_handle = static_cast<GLint>(renderer.surface_cache.retrieve_color_surface_texture_handle(static_cast<std::uint16_t>(surface.width),
         static_cast<std::uint16_t>(surface.height), static_cast<std::uint16_t>(surface.strideInPixels),
-        gxm::get_base_format(surface.colorFormat), surface.data, renderer::SurfaceTextureRetrievePurpose::READING));
+        gxm::get_base_format(surface.colorFormat), surface.data, renderer::SurfaceTextureRetrievePurpose::READING, swizzle));
 
     if (tex_handle == 0) {
         return;
@@ -673,13 +674,12 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
     if (check_for_cache)
         surface_handle = surface_cache.sourcing_color_surface_for_presentation(display.frame.base, display.frame.image_size.x, display.frame.image_size.y, display.frame.pitch, uvs);
 
+    GLint last_texture = 0;
+    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+
     if (!surface_handle) {
         // Fallback to a manual upload (likely a black !!!)
         need_uv = false;
-
-        GLint last_texture = 0;
-
-        glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
         glBindTexture(GL_TEXTURE_2D, screen_renderer.get_resident_texture());
 
         // Maybe a victim of surface locking (early from client GXM) when no frame yet renders!
@@ -700,9 +700,15 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
             close_access_parent_protect_segment(mem, display.frame.base.address());
         }
 
-        glBindTexture(GL_TEXTURE_2D, last_texture);
         surface_handle = screen_renderer.get_resident_texture();
+    } else {
+        const GLint standard_swizzle[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
+
+        glBindTexture(GL_TEXTURE_2D, surface_handle);
+        glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, standard_swizzle);
     }
+
+    glBindTexture(GL_TEXTURE_2D, last_texture);
 
     screen_renderer.render(viewport_pos, viewport_size, need_uv ? uvs : nullptr, static_cast<GLuint>(surface_handle));
 }
