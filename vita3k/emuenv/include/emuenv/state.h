@@ -54,6 +54,7 @@ struct DialogState;
 struct Ime;
 struct SfoFile;
 struct GDBState;
+struct HTTPState;
 
 typedef int32_t SceInt;
 struct IVector2 {
@@ -95,6 +96,7 @@ private:
     std::unique_ptr<Ime> _ime;
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
+    std::unique_ptr<HTTPState> _http;
 
 public:
     // App info contained in its `param.sfo` file
@@ -152,6 +154,7 @@ public:
     float res_width_dpi_scale{};
     float res_height_dpi_scale{};
     GDBState &gdb;
+    HTTPState &http;
 
     EmuEnvState();
     // declaring a destructor is necessary to forward declare unique_ptrs

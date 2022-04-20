@@ -16,6 +16,25 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceSsl.h"
+#include "SceSsl_tracy.h"
+#include "Tracy.hpp"
+
+#include <http/state.h>
+#include <openssl/ssl.h>
+#include <util/types.h>
+
+enum SceSslErrorCode {
+    SCE_SSL_ERROR_BEFORE_INIT = 0x80435001,
+    SCE_SSL_ERROR_ALREADY_INITED = 0x80435020,
+    SCE_SSL_ERROR_OUT_OF_MEMORY = 0x80435022,
+    SCE_SSL_ERROR_INTERNAL = 0x80435026,
+    SCE_SSL_ERROR_NOT_FOUND = 0x80435025,
+    SCE_SSL_ERROR_INVALID_VALUE = 0x804351fe,
+    SCE_SSL_ERROR_INVALID_FORMAT = 0x80435108,
+    SCE_SSL_ERROR_R_ERROR_BASE = 0x80435200,
+    SCE_SSL_ERROR_R_ERROR_FAILED = 0x80435201,
+    SCE_SSL_ERROR_R_ERROR_UNKNOWN = 0x804352ff,
+};
 
 EXPORT(int, sceSslFreeSslCertName) {
     return UNIMPLEMENTED();
@@ -53,12 +72,46 @@ EXPORT(int, sceSslGetSubjectName) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSslInit) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceSslInit, SceSize poolSize) {
+#ifdef TRACY_ENABLE
+    // --- Tracy logging --- START
+    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
+    ZoneNamedN(___tracy_scoped_zone, "sceSslInit", _tracy_activation_state);
+    tracy_sceSslInit(&___tracy_scoped_zone, _tracy_activation_state, poolSize);
+    // --- Tracy logging --- END
+#endif
+    if (emuenv.http.sslInited)
+        return RET_ERROR(SCE_SSL_ERROR_ALREADY_INITED);
+
+    if (poolSize == 0)
+        return RET_ERROR(SCE_SSL_ERROR_INVALID_VALUE);
+
+    STUBBED("ignore poolSize");
+    SSL_library_init();
+    SSL_load_error_strings();
+
+    if (emuenv.http.inited && !emuenv.http.ssl_ctx)
+        emuenv.http.ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+
+    emuenv.http.sslInited = true;
+
+    return 0;
 }
 
-EXPORT(int, sceSslTerm) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceSslTerm) {
+#ifdef TRACY_ENABLE
+    // --- Tracy logging --- START
+    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
+    ZoneNamedN(___tracy_scoped_zone, "sceSslTerm", _tracy_activation_state);
+    tracy_sceSslTerm(&___tracy_scoped_zone, _tracy_activation_state);
+    // --- Tracy logging --- END
+#endif
+    if (!emuenv.http.sslInited)
+        return RET_ERROR(SCE_SSL_ERROR_BEFORE_INIT);
+
+    emuenv.http.sslInited = false;
+
+    return 0;
 }
 
 BRIDGE_IMPL(sceSslFreeSslCertName)

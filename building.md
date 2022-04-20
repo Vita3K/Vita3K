@@ -115,7 +115,7 @@ Note: The CMake preset `linux-ninja-clang` makes use of the LLD linker, which wi
 - Install dependencies.
 
   ```sh
-  sudo apt install git cmake ninja-build libsdl2-dev pkg-config libgtk-3-dev clang lld xdg-desktop-portal
+  sudo apt install git cmake ninja-build libsdl2-dev pkg-config libgtk-3-dev clang lld xdg-desktop-portal openssl
   ```
 
 - Clone this repo.

@@ -121,6 +121,11 @@ enum PerfomanceOverleyPosition {
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
+    code(bool, "http-enable", true, http_enable)                                                        \
+    code(int, "http-timeout-attempts", 50, http_timeout_attempts)                                       \
+    code(int, "http-timeout-sleep-ms", 100, http_timeout_sleep_ms)                                      \
+    code(int, "http-read-end-attempts", 10, http_read_end_attempts)                                     \
+    code(int, "http-read-end-sleep-ms", 250, http_read_end_sleep_ms)                                    \
     code(bool, "tracy-primitive-impl", false, tracy_primitive_impl)
 
 // Vector members produced in the config file

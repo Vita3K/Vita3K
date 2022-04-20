@@ -60,6 +60,7 @@ set(SOURCE_LIST
 	SceHandwriting/SceHandwriting.cpp SceHandwriting/SceHandwriting.h
 	SceHid/SceHid.cpp SceHid/SceHid.h
 	SceHttp/SceHttp.cpp SceHttp/SceHttp.h
+	SceHttp/SceHttp_tracy.cpp
 	SceIme/SceIme.cpp SceIme/SceIme.h
 	SceIncomingDialog/SceIncomingDialog.cpp SceIncomingDialog/SceIncomingDialog.h
 	SceIofilemgr/SceIofilemgr.cpp SceIofilemgr/SceIofilemgr.h
@@ -172,6 +173,7 @@ set(SOURCE_LIST
 	SceSmart/SceSmart.cpp SceSmart/SceSmart.h
 	SceSqlite/SceSqlite.cpp SceSqlite/SceSqlite.h
 	SceSsl/SceSsl.cpp SceSsl/SceSsl.h
+	SceSsl/SceSsl_tracy.cpp
 	SceSsl/SceSslInternal.cpp SceSsl/SceSslInternal.h
 	SceStdio/SceStdio.cpp SceStdio/SceStdio.h
 	SceSulpha/SceSulpha.cpp SceSulpha/SceSulpha.h
@@ -211,6 +213,6 @@ set(SOURCE_LIST
 
 add_library(modules STATIC ${SOURCE_LIST})
 target_include_directories(modules PUBLIC include)
-target_link_libraries(modules PRIVATE audio codec ctrl dialog display gui gxm kernel mem net ngs np packages renderer rtc sdl2 touch xxHash::xxhash)
+target_link_libraries(modules PRIVATE audio codec ctrl dialog display gui gxm kernel mem net ngs np ssl packages renderer rtc sdl2 touch xxHash::xxhash)
 target_link_libraries(modules PUBLIC module)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})
