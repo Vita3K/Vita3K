@@ -59,7 +59,8 @@ void GLSurfaceCache::do_typeless_copy(const GLint dest_texture, const GLint sour
 }
 
 std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::uint16_t width, const std::uint16_t height, const std::uint16_t pixel_stride,
-    const SceGxmColorBaseFormat base_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint16_t *stored_height, std::uint16_t *stored_width) {
+    const SceGxmColorBaseFormat base_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
+    std::uint16_t *stored_height, std::uint16_t *stored_width) {
     // Create the key to access the cache struct
     const std::uint64_t key = address.address();
 
@@ -162,6 +163,11 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
             }
 
             info.casted_textures.clear();
+        }
+        if ((purpose == SurfaceTextureRetrievePurpose::WRITING) && (swizzle != info.swizzle)) {
+            info.swizzle = swizzle;
+        } else if (purpose == SurfaceTextureRetrievePurpose::READING) {
+            swizzle = info.swizzle;
         }
         if (!addr_in_range_of_cache) {
             if (purpose == SurfaceTextureRetrievePurpose::WRITING) {
@@ -357,6 +363,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
     info_added->data = address;
     info_added->total_bytes = bytes_per_stride * height;
     info_added->format = base_format;
+    info_added->swizzle = swizzle;
     info_added->flags = 0;
 
     if (!info_added->gl_texture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures))) {
@@ -555,9 +562,10 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const MemState &mem, S
     GLuint ds_handle = 0;
 
     if (color) {
+        std::uint32_t swizzle_set = color->colorFormat & SCE_GXM_COLOR_SWIZZLE_MASK;
         color_handle = static_cast<GLuint>(retrieve_color_surface_texture_handle(color->width,
             color->height, color->strideInPixels, gxm::get_base_format(color->colorFormat), color->data,
-            renderer::SurfaceTextureRetrievePurpose::WRITING, stored_height));
+            renderer::SurfaceTextureRetrievePurpose::WRITING, swizzle_set, stored_height));
     } else {
         color_handle = target->attachments[0];
     }
