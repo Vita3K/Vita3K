@@ -105,6 +105,11 @@ size_t texture_size(const SceGxmTexture &texture) {
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
     const size_t width = gxm::get_width(&texture);
     const size_t height = gxm::get_height(&texture);
+    if ((base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP) || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP)) {
+        return ((width + 7) / 8 * 8) * ((height + 3) / 4 * 4) / 4;
+    } else if ((base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP) || (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP)) {
+        return ((width + 3) / 4 * 4) * ((height + 3) / 4 * 4) / 2;
+    }
     const size_t stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
     const size_t bpp = bits_per_pixel(base_format);
     const size_t size = (bpp * stride * height) / 8;
