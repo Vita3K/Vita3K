@@ -54,6 +54,9 @@
 
 // Credit to jfhs for their GDB stub for RPCS3 which this stub is based on.
 
+// A gdb remote protocol doc is available here:
+// https://sourceware.org/gdb/onlinedocs/gdb/Remote-Protocol.html
+
 typedef char PacketData[1200];
 
 struct PacketCommand {
@@ -124,8 +127,10 @@ static PacketCommand parse_command(char *data, int64_t length) {
     if (length > 1)
         command.begin_index = 1;
     for (int64_t a = 0; a < length; a++) {
-        if (data[a] == '#')
+        if (data[a] == '#') {
             command.end_index = a;
+            break;
+        }
     }
 
     command.is_valid = command.begin_index != -1 && command.end_index != -1
@@ -140,8 +145,6 @@ static PacketCommand parse_command(char *data, int64_t length) {
     command.checksum = static_cast<uint8_t>(parse_hex(std::string(command.checksum_start, 2)));
 
     command.is_valid = make_checksum(command.content_start, command.content_length) == command.checksum;
-    if (!command.is_valid)
-        return command;
 
     return command;
 }
@@ -268,8 +271,14 @@ static void modify_reg(CPUState &state, uint32_t reg, uint32_t value) {
 
 static std::string cmd_read_registers(HostState &state, PacketCommand &command) {
     if (state.gdb.current_thread == -1
-        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end())
-        return "E00";
+        || state.kernel.threads.find(state.gdb.current_thread) == state.kernel.threads.end()) {
+        std::stringstream stream;
+        for (uint32_t a = 0; a <= 15; a++) {
+            stream << "xxxxxxxx";
+        }
+
+        return stream.str();
+    }
 
     CPUState &cpu = *state.kernel.threads[state.gdb.current_thread]->cpu.get();
 
@@ -331,19 +340,11 @@ static std::string cmd_write_register(HostState &state, PacketCommand &command) 
 }
 
 static bool check_memory_region(Address address, Address length, MemState &mem) {
-    if (!address) {
+    if (address < mem.page_size) {
         return false;
     }
 
-    Address it = address;
-    bool valid = true;
-    for (; it < address + length; it += mem.page_size) {
-        if (!is_valid_addr(mem, it)) {
-            valid = false;
-            break;
-        }
-    }
-    return valid;
+    return is_valid_addr_range(mem, address, address + length);
 }
 
 static std::string cmd_read_memory(HostState &state, PacketCommand &command) {
@@ -437,19 +438,18 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
             // step or run that thread
 
             if (state.gdb.inferior_thread != 0) {
-                const auto guard = std::lock_guard(state.kernel.mutex);
+                std::unique_lock<std::mutex> lock(state.kernel.mutex);
                 auto thread = state.kernel.threads[state.gdb.inferior_thread];
-                auto thread_lock = std::unique_lock(thread->mutex);
                 thread->resume(step);
                 if (step) {
                     // Wait until it finish stepping
                     // TODO if that thread waits for sync primitive, dead lock.
-                    thread->status_cond.wait(thread_lock, [&]() { return thread->status == ThreadStatus::suspend; });
+                    thread->status_cond.wait(lock, [&]() { return thread->status == ThreadStatus::suspend; });
                 }
             }
 
             if (!step) {
-                // resume the worlld
+                // resume the world
                 {
                     auto lock = std::unique_lock(state.kernel.mutex);
                     for (const auto pair : state.kernel.threads) {
@@ -466,6 +466,8 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                 // wait until some thread triger breakpoint
                 bool did_break = false;
                 while (!did_break) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(watch_delay));
+
                     auto lock = std::unique_lock(state.kernel.mutex);
 
                     if (state.gdb.server_die)
@@ -478,15 +480,11 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                             break;
                         }
                     }
-
-                    lock.unlock();
-
-                    std::this_thread::sleep_for(std::chrono::milliseconds(watch_delay));
                 }
 
                 auto thread = state.kernel.get_thread(state.gdb.inferior_thread);
                 LOG_INFO("GDB Breakpoint triger (thread name: {}, thread_id: {})", thread->name, thread->id);
-                LOG_INFO("PC: {} LR: {}", read_pc(*thread->cpu), read_lr(*thread->cpu));
+                LOG_INFO("PC: {:#08x} LR: {:#08x}", read_pc(*thread->cpu), read_lr(*thread->cpu));
                 LOG_INFO("{}", thread->log_stack_traceback(state.kernel));
 
                 // stop the world
@@ -543,8 +541,6 @@ static std::string cmd_die(HostState &state, PacketCommand &command) {
 
 static std::string cmd_attached(HostState &state, PacketCommand &command) { return "1"; }
 
-static std::string cmd_thread_status(HostState &state, PacketCommand &command) { return "T0"; }
-
 static std::string cmd_reason(HostState &state, PacketCommand &command) { return "S05"; }
 
 static std::string cmd_get_first_thread(HostState &state, PacketCommand &command) {
@@ -583,8 +579,14 @@ static std::string cmd_add_breakpoint(HostState &state, PacketCommand &command) 
     const uint64_t first = content.find(',');
     const uint64_t second = content.find(',', first + 1);
     const uint32_t type = static_cast<uint32_t>(std::stol(content.substr(1, first - 1)));
-    const uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
-    const uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
+    uint32_t address = parse_hex(content.substr(first + 1, second - 1 - first));
+    uint32_t kind = static_cast<uint32_t>(std::stol(content.substr(second + 1, content.size() - second - 1)));
+
+    if ((address & 0x3) != 0) {
+        // ARM32 code is 4-byte-aligned, assume it corresponds to a thumb instruction
+        kind = 2;
+        address &= ~0x3;
+    }
 
     LOG_GDB("GDB Server New Breakpoint at {} ({}, {}).", log_hex(address), type, kind);
 
@@ -649,7 +651,6 @@ const static PacketFunctionBundle functions[] = {
     { "qsThreadInfo", cmd_get_next_thread },
     { "qSupported", cmd_supported },
     { "qAttached", cmd_attached },
-    { "qTStatus", cmd_thread_status },
     { "qC", cmd_get_current_thread },
     { "q", cmd_unimplemented },
     { "Q", cmd_unimplemented },
@@ -680,20 +681,8 @@ const static PacketFunctionBundle functions[] = {
     { "S", cmd_deprecated },
 };
 
-template <class T, class U>
-constexpr bool cmp_less(T t, U u) noexcept {
-    using UT = std::make_unsigned_t<T>;
-    using UU = std::make_unsigned_t<U>;
-    if constexpr (std::is_signed_v<T> == std::is_signed_v<U>)
-        return t < u;
-    else if constexpr (std::is_signed_v<T>)
-        return t < 0 ? true : UT(t) < u;
-    else
-        return u < 0 ? false : t < UU(u);
-}
-
 static bool command_begins_with(PacketCommand &command, const std::string &small) {
-    if (!cmp_less(small.size(), command.content_length))
+    if (small.size() > command.content_length)
         return false;
 
     return std::memcmp(command.content_start, small.c_str(), small.size()) == 0;
@@ -734,10 +723,13 @@ static int64_t server_next(HostState &state) {
 
             PacketCommand command = parse_command(buffer + a, length - a);
             if (command.is_valid) {
+                bool recognized = false;
+
                 for (const auto &function : functions) {
                     if (command_begins_with(command, function.name)) {
                         LOG_GDB("GDB Server Recognized Command as {}. {}", function.name,
                             std::string(command.content_start, command.content_length));
+                        recognized = true;
                         state.gdb.last_reply = function.function(state, command);
                         if (state.gdb.server_die)
                             break;
@@ -745,7 +737,9 @@ static int64_t server_next(HostState &state) {
                         break;
                     }
                 }
-                LOG_GDB("GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
+
+                if (!recognized)
+                    LOG_GDB("GDB Server Unrecognized Command. {}", std::string(command.content_start, command.content_length));
 
                 a += command.content_length + 3;
 

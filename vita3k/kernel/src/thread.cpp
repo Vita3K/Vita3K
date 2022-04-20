@@ -169,7 +169,7 @@ int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &arg
     run_queue.push_front(job);
 
     if (kernel.debugger.wait_for_debugger) {
-        to_do = ThreadToDo::suspend;
+        to_do = ThreadToDo::wait;
         status = ThreadStatus::suspend;
         kernel.debugger.wait_for_debugger = false;
     } else {
