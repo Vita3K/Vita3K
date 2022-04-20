@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Move ci tag
-        uses: weareyipyip/walking-tag-action@master
+        uses: merryhime/walking-tag-action@master
         with:
           tag-name: continuous
           tag-message: Last commit build by the CI
