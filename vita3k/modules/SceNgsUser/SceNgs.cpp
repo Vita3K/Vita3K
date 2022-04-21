@@ -78,6 +78,9 @@ EXPORT(int, sceNgsAT9GetSectionDetails, const std::uint32_t samples_start, const
     if (host.cfg.current_config.disable_ngs) {
         return -1;
     }
+    if (!info) {
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+    }
     // Check magic!
     if ((config_data & 0xFF) != 0xFE && info) {
         return RET_ERROR(SCE_NGS_ERROR);
