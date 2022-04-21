@@ -1217,6 +1217,15 @@ static bool operator<(const FragmentProgramCacheKey &a, const FragmentProgramCac
     return b.blend_info < a.blend_info;
 }
 
+void init_notification(EmuEnvState &emuenv, SceGxmNotification *notification) {
+    if (notification->address) {
+        uint32_t &actual_value = *notification->address.get(emuenv.mem);
+        if (actual_value == notification->value) {
+            actual_value = ~notification->value;
+        }
+    }
+}
+
 static int init_texture_base(const char *export_name, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat tex_format, uint32_t width, uint32_t height, uint32_t mipCount,
     const SceGxmTextureType &texture_type) {
     if (width > 4096 || height > 4096 || mipCount > 13) {
@@ -2285,11 +2294,13 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, SceGxmNotification *vertexNo
     renderer::sync_surface_data(*emuenv.renderer, context->renderer.get());
 
     if (vertexNotification) {
+        init_notification(emuenv, vertexNotification);
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
             nullptr, *vertexNotification, true);
     }
 
     if (fragmentNotification) {
+        init_notification(emuenv, fragmentNotification);
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
             nullptr, *fragmentNotification, false);
     }
@@ -2616,7 +2627,7 @@ EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *
     return 0;
 }
 
-EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const SceGxmNotification *vertexNotification) {
+EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, SceGxmNotification *vertexNotification) {
     TRACY_FUNC(sceGxmMidSceneFlush, immediateContext, flags, vertexSyncObject, vertexNotification);
     STUBBED("Surfaces not flushed back to memory");
 
@@ -2633,8 +2644,9 @@ EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags
     }
 
     if (vertexNotification)
-        renderer::add_command(immediateContext->renderer.get(), renderer::CommandOpcode::SignalNotification,
-            nullptr, *vertexNotification, true);
+        init_notification(emuenv, vertexNotification);
+    renderer::add_command(immediateContext->renderer.get(), renderer::CommandOpcode::SignalNotification,
+        nullptr, *vertexNotification, true);
 
     // send the commands recorded up to now
     renderer::submit_command_list(*emuenv.renderer, immediateContext->renderer.get(), immediateContext->renderer->command_list);
@@ -2643,7 +2655,7 @@ EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags
     return 0;
 }
 
-EXPORT(int, _sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const SceGxmNotification *vertexNotification) {
+EXPORT(int, _sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, SceGxmNotification *vertexNotification) {
     TRACY_FUNC(_sceGxmMidSceneFlush, immediateContext, flags, vertexSyncObject, vertexNotification);
     return CALL_EXPORT(sceGxmMidSceneFlush, immediateContext, flags, vertexSyncObject, vertexNotification);
 }
@@ -5016,7 +5028,7 @@ EXPORT(int, sceGxmTextureValidate, const SceGxmTexture *texture) {
 EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorKeyValue, uint32_t colorKeyMask, SceGxmTransferColorKeyMode colorKeyMode,
     SceGxmTransferFormat srcFormat, SceGxmTransferType srcType, Ptr<void> srcAddress, uint32_t srcX, uint32_t srcY, int32_t srcStride,
     SceGxmTransferFormat destFormat, SceGxmTransferType destType, Ptr<void> destAddress, uint32_t destX, uint32_t destY, int32_t destStride,
-    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const SceGxmNotification *notification) {
+    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, SceGxmNotification *notification) {
     TRACY_FUNC(sceGxmTransferCopy, width, height, colorKeyValue, colorKeyMask, colorKeyMode, srcFormat, srcType, srcAddress, srcX);
 #ifdef TRACY_ENABLE
     if (_tracy_activation_state) {
@@ -5077,8 +5089,10 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
 
     renderer::transfer_copy(*emuenv.renderer, colorKeyValue, colorKeyMask, colorKeyMode, images, srcType, destType);
 
-    if (notification)
+    if (notification) {
+        init_notification(emuenv, notification);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
+    }
 
     if (syncObject) {
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,
@@ -5091,7 +5105,7 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
 EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> srcAddress,
     uint32_t srcX, uint32_t srcY, uint32_t srcWidth, uint32_t srcHeight, int32_t srcStride,
     SceGxmTransferFormat destFormat, Ptr<void> destAddress, uint32_t destX, uint32_t destY, int32_t destStride,
-    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const SceGxmNotification *notification) {
+    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, SceGxmNotification *notification) {
     TRACY_FUNC(sceGxmTransferDownscale, srcFormat, srcX, srcY, srcWidth, srcHeight, srcStride, destFormat, destAddress, destX);
 #ifdef TRACY_ENABLE
     if (_tracy_activation_state) {
@@ -5132,8 +5146,10 @@ EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> s
 
     renderer::transfer_downscale(*emuenv.renderer, src, dest);
 
-    if (notification)
+    if (notification) {
+        init_notification(emuenv, notification);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
+    }
 
     if (syncObject) {
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,
@@ -5145,7 +5161,7 @@ EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> s
 
 EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFormat, Ptr<void> destAddress,
     uint32_t destX, uint32_t destY, uint32_t destWidth, uint32_t destHeight, int32_t destStride,
-    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const SceGxmNotification *notification) {
+    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, SceGxmNotification *notification) {
     TRACY_FUNC(sceGxmTransferFill, fillColor, destFormat, destAddress, destX, destY, destWidth, destHeight, destStride, syncObject);
 #ifdef TRACY_ENABLE
     if (_tracy_activation_state) {
@@ -5175,8 +5191,10 @@ EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFor
     dest->stride = destStride;
     renderer::transfer_fill(*emuenv.renderer, fillColor, dest);
 
-    if (notification)
+    if (notification) {
+        init_notification(emuenv, notification);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
+    }
 
     if (syncObject) {
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,
