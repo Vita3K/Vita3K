@@ -223,7 +223,12 @@ EXPORT(SceInt32, sceFiberFinalize, SceFiber *fiber) {
         return RET_ERROR(SCE_FIBER_ERROR_NULL);
     }
 
+    if (fiber->status == FiberStatus::RUN) {
+        return RET_ERROR(SCE_FIBER_ERROR_STATE);
+    }
+
     delete fiber->cpu;
+    fiber->cpu = nullptr;
     return 0;
 }
 
