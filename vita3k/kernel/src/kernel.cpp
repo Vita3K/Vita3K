@@ -15,6 +15,10 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#ifdef TRACY_ENABLE
+#include "Tracy.hpp"
+#endif
+
 #include <kernel/state.h>
 
 #include <kernel/thread/thread_state.h>
@@ -59,6 +63,15 @@ static int SDLCALL thread_function(void *data) {
     const ThreadParams params = *static_cast<const ThreadParams *>(data);
     SDL_SemPost(params.host_may_destroy_params.get());
     const ThreadStatePtr thread = lock_and_find(params.thid, params.kernel->threads, params.kernel->mutex);
+#ifdef TRACY_ENABLE
+    if (!thread->name.empty()) {
+        tracy::SetThreadName(thread->name.c_str());
+    } else {
+        std::string th_name = "TID:" + std::to_string(thread->id);
+        tracy::SetThreadName(th_name.c_str());
+    }
+#endif
+
     thread->run_loop();
     const uint32_t r0 = read_reg(*thread->cpu, 0);
     thread->returned_value = r0;
