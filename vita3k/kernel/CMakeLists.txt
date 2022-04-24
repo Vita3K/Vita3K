@@ -29,4 +29,7 @@ add_library(
 target_include_directories(kernel PUBLIC include)
 target_link_libraries(kernel PUBLIC rtc cpu mem util nids)
 target_link_libraries(kernel PRIVATE elfio::elfio sdl2 miniz vita-toolchain)
+if(TRACY_ENABLE_ON_CORE_COMPONENTS)
+	target_link_libraries(kernel PRIVATE tracy)
+endif()
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})
