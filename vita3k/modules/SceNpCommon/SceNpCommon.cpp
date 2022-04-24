@@ -21,8 +21,24 @@ EXPORT(int, sceNpAuthAbortRequest) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpAuthCreateStartRequest) {
-    return UNIMPLEMENTED();
+struct SceNpAuthRequestParameter {
+    SceSize size;
+    uint32_t version;
+    Ptr<const char> serviceId;
+    Ptr<const void> cookie;
+    SceSize cookieSize;
+    Ptr<const char> entitlementId;
+    SceUInt32 consumedCount;
+    Ptr<void> ticketCb; // int (*ticketCb)(SceNpAuthRequestId, int, void *);
+    Ptr<void> cbArg;
+};
+
+EXPORT(int, sceNpAuthCreateStartRequest, const SceNpAuthRequestParameter *param) {
+    const ThreadStatePtr thread = host.kernel.get_thread(thread_id);
+    // todo: this callback function should be called from sceNpCheckCallback
+    STUBBED("Immediately call ticket callback");
+    thread->request_callback(param->ticketCb.address(), { 1, 1, param->cbArg.address() });
+    return 1;
 }
 
 EXPORT(int, sceNpAuthDestroyRequest) {
