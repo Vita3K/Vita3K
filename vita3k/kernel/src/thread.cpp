@@ -367,8 +367,12 @@ void ThreadState::suspend() {
 }
 
 void ThreadState::resume(bool step) {
-    assert(to_do == ThreadToDo::wait);
-    to_do = step ? ThreadToDo::step : ThreadToDo::run;
+    assert(to_do == ThreadToDo::wait || to_do == ThreadToDo::suspend);
+
+    {
+        const auto thread_lock = std::lock_guard(mutex);
+        to_do = step ? ThreadToDo::step : ThreadToDo::run;
+    }
     something_to_do.notify_one();
 }
 
