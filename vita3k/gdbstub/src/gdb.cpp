@@ -454,13 +454,13 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                     auto lock = std::unique_lock(state.kernel.mutex);
                     for (const auto pair : state.kernel.threads) {
                         auto &thread = pair.second;
-                        auto thread_lock = std::unique_lock(thread->mutex);
-                        lock.unlock();
                         if (thread->status == ThreadStatus::suspend) {
+                            lock.unlock();
                             thread->resume();
-                            thread->status_cond.wait(thread_lock, [&]() { return thread->status != ThreadStatus::suspend; });
+                            lock.lock();
+
+                            thread->status_cond.wait(lock, [&]() { return thread->status != ThreadStatus::suspend; });
                         }
-                        lock.lock();
                     }
                 }
                 // wait until some thread triger breakpoint
@@ -494,13 +494,10 @@ static std::string cmd_continue(HostState &state, PacketCommand &command) {
                     auto lock = std::unique_lock(state.kernel.mutex);
                     for (const auto pair : state.kernel.threads) {
                         auto thread = pair.second;
-                        auto thread_lock = std::unique_lock(thread->mutex);
-                        lock.unlock();
                         if (thread->status == ThreadStatus::run) {
                             thread->suspend();
-                            thread->status_cond.wait(thread_lock, [=]() { return thread->status == ThreadStatus::suspend || thread->status == ThreadStatus::dormant; });
+                            thread->status_cond.wait(lock, [=]() { return thread->status == ThreadStatus::suspend || thread->status == ThreadStatus::dormant; });
                         }
-                        lock.lock();
                     }
                 }
             }
