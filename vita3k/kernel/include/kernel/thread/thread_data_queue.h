@@ -89,8 +89,7 @@ public:
     virtual ThreadDataQueueInterator<T> begin() = 0;
     virtual ThreadDataQueueInterator<T> end() = 0;
     virtual void erase(const ThreadDataQueueInterator<T> &it) = 0;
-    virtual void erase(const T &val) = 0;
-    virtual void push(const T &val) = 0;
+    virtual ThreadDataQueueInterator<T> push(const T &val) = 0;
     virtual void pop() = 0;
     virtual bool empty() = 0;
     virtual size_t size() = 0;
@@ -148,14 +147,9 @@ public:
         c.erase(base->it);
     }
 
-    void erase(const T &val) override {
-        // TODO better search algo
-        auto it = std::find(c.begin(), c.end(), val);
-        c.erase(it);
-    }
-
-    void push(const T &val) override {
+    ThreadDataQueueInterator<T> push(const T &val) override {
         c.push_back(val);
+        return make_iterator(--c.end());
     }
 
     void pop() override {
@@ -237,12 +231,9 @@ public:
         c.erase(base->it);
     }
 
-    void erase(const T &val) override {
-        c.erase(val);
-    }
-
-    void push(const T &val) override {
-        c.insert(val);
+    ThreadDataQueueInterator<T> push(const T &val) override {
+        auto it = c.insert(val);
+        return make_iterator(it);
     }
 
     void pop() override {
