@@ -679,7 +679,11 @@ SceUID eventflag_create(KernelState &kernel, const char *export_name, SceUID thr
     event->flags = initPattern;
     std::copy(pName, pName + KERNELOBJECT_MAX_NAME_LENGTH, event->name);
     event->attr = attr;
-    event->waiting_threads = std::make_unique<PriorityThreadDataQueue<WaitingThreadData>>();
+    if (event->attr & SCE_KERNEL_ATTR_TH_PRIO) {
+        event->waiting_threads = std::make_unique<PriorityThreadDataQueue<WaitingThreadData>>();
+    } else {
+        event->waiting_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
+    }
 
     const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
     kernel.eventflags.emplace(uid, event);
@@ -706,8 +710,6 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
     const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
 
     std::unique_lock<std::mutex> event_lock(event->mutex);
-
-    bool is_fifo = (event->attr & SCE_KERNEL_ATTR_TH_FIFO);
 
     if (outBits) {
         *outBits = event->flags & flags;
@@ -736,7 +738,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         data.thread = thread;
         data.wait = wait;
         data.flags = flags;
-        data.priority = is_fifo ? 0 : thread->priority;
+        data.priority = thread->priority;
 
         event->waiting_threads->push(data);
         event_lock.unlock();
