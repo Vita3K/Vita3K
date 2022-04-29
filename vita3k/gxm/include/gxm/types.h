@@ -233,7 +233,7 @@ enum SceGxmParameterSemantic {
     SCE_GXM_PARAMETER_SEMANTIC_INSTANCE
 };
 
-enum SceGxmTextureType {
+enum SceGxmTextureType : unsigned int {
     SCE_GXM_TEXTURE_SWIZZLED = 0x00000000u,
     SCE_GXM_TEXTURE_CUBE = 0x40000000u,
     SCE_GXM_TEXTURE_LINEAR = 0x60000000u,

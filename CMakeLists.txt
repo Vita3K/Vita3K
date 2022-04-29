@@ -28,7 +28,7 @@ enable_testing()
 macro(boost_configure)
 	if (WIN32)
 		execute_process(
-			COMMAND ${BOOST_SOURCEDIR}/bootstrap.bat
+			COMMAND ${BOOST_SOURCEDIR}/bootstrap.bat --with-toolset=${BOOST_TOOLSET}
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
 		)
 	elseif(UNIX)
@@ -44,7 +44,7 @@ endmacro(boost_configure)
 macro(boost_compile)
 	if (CMAKE_SYSTEM_NAME STREQUAL Windows)
 		execute_process(
-			COMMAND ${BOOST_SOURCEDIR}/b2 -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} toolset=msvc stage
+			COMMAND ${BOOST_SOURCEDIR}/b2 -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} address-model=64 --architecture=x64 toolset=${BOOST_TOOLSET} stage
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
 		)
 	elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
@@ -91,6 +91,15 @@ if(NOT CI)
 	# Prevents the function from using CMake cache to retrieve the path and
 	# avoid errors in case b2 was deleted between cache generation events
 	unset(b2 CACHE)
+	
+	#set toolset for windows
+	if (WIN32)
+		if (CMAKE_GENERATOR_TOOLSET STREQUAL clangcl)
+			set(BOOST_TOOLSET clang-win)
+		else()	
+			set(BOOST_TOOLSET msvc)
+		endif()
+	endif()
 
 	# Skips Boost configuration and b2 compilation if it already exists by trying to find b2
 	# b2 compilation takes a while and time for consecutive cache re-generations can be reduced this way
@@ -143,7 +152,7 @@ if(WIN32)
 endif()
 
 # Allow per-translation-unit parallel builds when using MSVC
-if(CMAKE_GENERATOR MATCHES "Visual Studio" AND (CMAKE_C_COMPILER_ID MATCHES "MSVC|Intel" OR CMAKE_CXX_COMPILER_ID MATCHES "MSVC|Intel"))
+if(CMAKE_GENERATOR MATCHES "Visual Studio" AND (CMAKE_C_COMPILER_ID MATCHES "MSVC|Intel|Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "MSVC|Intel|Clang"))
 	string(APPEND CMAKE_C_FLAGS " /MP")
 	string(APPEND CMAKE_CXX_FLAGS " /MP")
 endif()
