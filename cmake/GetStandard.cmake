@@ -16,7 +16,11 @@ function(get_standard_for_build)
 		# VS 2015.3+ does not have a C++11 option
 		set(COMPILER_TEST "/std:c++17;/std:c++14;INVALID")
 	elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(Apple)?Clang$")
-		set(COMPILER_TEST "-std=c++17;-std=c++14;-std=c++11")
+		if(MSVC) ##for msvc-clang
+			set(COMPILER_TEST "/std:c++17;/std:c++14;/std:c++11")
+		else()
+			set(COMPILER_TEST "-std=c++17;-std=c++14;-std=c++11")
+		endif()
 	else()
 		set(COMPILER_TEST "-std:c++17;-std:c++14;-std:c++11")
 	endif()
