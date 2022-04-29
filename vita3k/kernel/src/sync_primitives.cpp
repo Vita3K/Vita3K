@@ -795,11 +795,7 @@ SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thre
                 event->flags &= ~waiting_flags;
             }
 
-            const std::unique_lock<std::mutex> waiting_thread_lock(waiting_thread->mutex, std::try_to_lock);
-            if (!waiting_thread_lock) {
-                ++it;
-                continue;
-            }
+            const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
 
             waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
 
