@@ -153,20 +153,28 @@ EXPORT(int, sceClibMemsetChk) {
 }
 
 EXPORT(Ptr<void>, sceClibMspaceCalloc, Ptr<void> space, uint32_t elements, uint32_t size) {
+    const std::lock_guard<std::mutex> guard(host.kernel.mutex);
+
     void *address = mspace_calloc(space.get(host.mem), elements, size);
     return Ptr<void>(address, host.mem);
 }
 
 EXPORT(Ptr<void>, sceClibMspaceCreate, Ptr<void> base, uint32_t capacity) {
+    const std::lock_guard<std::mutex> guard(host.kernel.mutex);
+
     mspace space = create_mspace_with_base(base.get(host.mem), capacity, 0);
     return Ptr<void>(space, host.mem);
 }
 
 EXPORT(uint32_t, sceClibMspaceDestroy, Ptr<void> space) {
+    const std::lock_guard<std::mutex> guard(host.kernel.mutex);
+
     return destroy_mspace(space.get(host.mem));
 }
 
 EXPORT(void, sceClibMspaceFree, Ptr<void> space, Ptr<void> address) {
+    const std::lock_guard<std::mutex> guard(host.kernel.mutex);
+
     mspace_free(space.get(host.mem), address.get(host.mem));
 }
 
@@ -175,6 +183,8 @@ EXPORT(int, sceClibMspaceIsHeapEmpty) {
 }
 
 EXPORT(Ptr<void>, sceClibMspaceMalloc, Ptr<void> space, uint32_t size) {
+    const std::lock_guard<std::mutex> guard(host.kernel.mutex);
+
     void *address = mspace_malloc(space.get(host.mem), size);
     return Ptr<void>(address, host.mem);
 }
@@ -192,11 +202,15 @@ EXPORT(int, sceClibMspaceMallocUsableSize) {
 }
 
 EXPORT(Ptr<void>, sceClibMspaceMemalign, Ptr<void> space, uint32_t alignment, uint32_t size) {
+    const std::lock_guard<std::mutex> guard(host.kernel.mutex);
+
     void *address = mspace_memalign(space.get(host.mem), alignment, size);
     return Ptr<void>(address, host.mem);
 }
 
 EXPORT(Ptr<void>, sceClibMspaceRealloc, Ptr<void> space, Ptr<void> address, uint32_t size) {
+    const std::lock_guard<std::mutex> guard(host.kernel.mutex);
+
     void *new_address = mspace_realloc(space.get(host.mem), address.get(host.mem), size);
     return Ptr<void>(new_address, host.mem);
 }
