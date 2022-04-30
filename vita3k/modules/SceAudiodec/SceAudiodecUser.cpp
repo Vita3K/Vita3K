@@ -93,8 +93,16 @@ struct SceAudiodecCtrl {
     Ptr<SceAudiodecInfo> info;
 };
 
-constexpr size_t NORMAL_ES_BUFFER_SIZE = KB(8);
-constexpr size_t NORMAL_PCM_BUFFER_SIZE = KB(4);
+constexpr uint32_t SCE_AUDIODEC_AT9_MAX_ES_SIZE = 1024;
+constexpr uint32_t SCE_AUDIODEC_MP3_MAX_ES_SIZE = 1441;
+// max size is 1792 for AAC ES if adts is enabled
+constexpr uint32_t SCE_AUDIODEC_AAC_MAX_ES_SIZE = 1536;
+constexpr uint32_t SCE_AUDIODEC_CELP_MAX_ES_SIZE = 27;
+
+// this value is multiplied by 2 if sbr is enabled
+constexpr uint32_t SCE_AUDIODEC_AAC_MAX_PCM_SIZE = KB(2);
+constexpr uint32_t SCE_AUDIODEC_MP3_V1_MAX_PCM_SIZE = 2304;
+constexpr uint32_t SCE_AUDIODEC_MP3_V2_MAX_PCM_SIZE = 1152;
 
 LIBRARY_INIT_IMPL(SceAudiodec) {
     host.kernel.obj_store.create<AudiodecState>();
@@ -119,7 +127,7 @@ static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCod
         DecoderPtr decoder = std::make_shared<Atrac9DecoderState>(info.config_data);
         state->decoders[handle] = decoder;
 
-        ctrl->es_size_max = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
+        ctrl->es_size_max = SCE_AUDIODEC_AT9_MAX_ES_SIZE;
         ctrl->pcm_size_max = decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME)
             * decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t);
         info.channels = decoder->get(DecoderQuery::CHANNELS);
@@ -130,34 +138,35 @@ static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCod
         return host.cfg.current_config.disable_at9_decoder ? -1 : 0;
     }
     case SCE_AUDIODEC_TYPE_AAC: {
-        // Todo of AAC support, currently crash.
-        /* SceAudiodecInfoAac &info = ctrl->info.get(host.mem)->aac;
+        SceAudiodecInfoAac &info = ctrl->info.get(host.mem)->aac;
         DecoderPtr decoder = std::make_shared<AacDecoderState>(info.sample_rate, info.channels);
         state->decoders[handle] = decoder;
 
-        ctrl->es_size_max = NORMAL_ES_BUFFER_SIZE;
-        ctrl->pcm_size_max = NORMAL_PCM_BUFFER_SIZE;
-        info.channels = decoder->get(DecoderQuery::CHANNELS);
-        info.sample_rate = decoder->get(DecoderQuery::SAMPLE_RATE);*/
-        // no outs :O
+        ctrl->es_size_max = SCE_AUDIODEC_AAC_MAX_ES_SIZE;
+        if (info.is_adts)
+            ctrl->es_size_max += 0x100;
+        ctrl->pcm_size_max = info.channels * SCE_AUDIODEC_AAC_MAX_PCM_SIZE;
+        if (info.is_sbr)
+            ctrl->pcm_size_max *= 2;
 
-        LOG_WARN("Hack for AAC codec");
-        return -1;
+        LOG_WARN_IF(info.is_adts || info.is_sbr, "report it to dev, is_adts: {}, is_sbr: {}", info.is_adts, info.is_sbr);
+
+        return 0;
     }
     case SCE_AUDIODEC_TYPE_MP3: {
         SceAudiodecInfoMp3 &info = ctrl->info.get(host.mem)->mp3;
         DecoderPtr decoder = std::make_shared<Mp3DecoderState>(info.channels);
         state->decoders[handle] = decoder;
 
-        ctrl->es_size_max = 1441;
+        ctrl->es_size_max = SCE_AUDIODEC_MP3_MAX_ES_SIZE;
 
         switch (info.version) {
         case SCE_AUDIODEC_MP3_MPEG_VERSION_1:
-            ctrl->pcm_size_max = 1152 * info.channels * sizeof(int16_t);
+            ctrl->pcm_size_max = info.channels * SCE_AUDIODEC_MP3_V1_MAX_PCM_SIZE;
             return 0;
         case SCE_AUDIODEC_MP3_MPEG_VERSION_2:
         case SCE_AUDIODEC_MP3_MPEG_VERSION_2_5:
-            ctrl->pcm_size_max = 576 * info.channels * sizeof(int16_t);
+            ctrl->pcm_size_max = info.channels * SCE_AUDIODEC_MP3_V2_MAX_PCM_SIZE;
             return 0;
         default:
             LOG_ERROR("Invalid MPEG version {}.", log_hex(info.version));
@@ -192,12 +201,10 @@ EXPORT(int, sceAudiodecDecode, SceAudiodecCtrl *ctrl) {
 
     DecoderSize size = {};
 
-    const auto es_size = std::min(decoder->get_es_size(ctrl->es_data.get(host.mem)), ctrl->es_size_max);
-
-    decoder->send(ctrl->es_data.get(host.mem), es_size);
+    decoder->send(ctrl->es_data.get(host.mem), ctrl->es_size_max);
     decoder->receive(ctrl->pcm_data.get(host.mem), &size);
 
-    ctrl->es_size_used = es_size;
+    ctrl->es_size_used = std::min(decoder->get_es_size(), ctrl->es_size_max);
     ctrl->pcm_size_given = size.samples * decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t);
     assert(ctrl->es_size_used <= ctrl->es_size_max);
     assert(ctrl->pcm_size_given <= ctrl->pcm_size_max);

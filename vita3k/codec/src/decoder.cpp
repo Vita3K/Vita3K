@@ -29,7 +29,7 @@ uint32_t DecoderState::get(DecoderQuery query) {
     return 0;
 }
 
-uint32_t DecoderState::get_es_size(const uint8_t *data) {
+uint32_t DecoderState::get_es_size() {
     return std::numeric_limits<uint32_t>::max();
 }
 

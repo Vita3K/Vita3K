@@ -143,8 +143,13 @@ uint32_t Atrac9DecoderState::get(DecoderQuery query) {
     }
 }
 
+uint32_t Atrac9DecoderState::get_es_size() {
+    return get_superframe_size();
+}
+
 bool Atrac9DecoderState::send(const uint8_t *data, uint32_t size) {
     result.clear();
+    size = std::min(size, get_superframe_size());
 
     Atrac9CodecInfo info;
     Atrac9GetCodecInfo(decoder_handle, &info);
