@@ -130,20 +130,19 @@ static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCod
         return host.cfg.current_config.disable_at9_decoder ? -1 : 0;
     }
     case SCE_AUDIODEC_TYPE_AAC: {
-        LOG_WARN("Hack for LLE MP4"); // Remove this after implement AAC or impelment SceMP4 in HLE
-        return -1;
         // Todo of AAC support, currently crash.
-        /*
-            SceAudiodecInfoAac &info = ctrl->info.get(host.mem)->aac;
-            DecoderPtr decoder = std::make_shared<AacDecoderState>(info.sample_rate, info.channels);
-            host.kernel.decoders[handle] = decoder;
+        /* SceAudiodecInfoAac &info = ctrl->info.get(host.mem)->aac;
+        DecoderPtr decoder = std::make_shared<AacDecoderState>(info.sample_rate, info.channels);
+        state->decoders[handle] = decoder;
 
-            ctrl->es_size_max = NORMAL_ES_BUFFER_SIZE;
-            ctrl->pcm_size_max = NORMAL_PCM_BUFFER_SIZE;
-            // no outs :O
+        ctrl->es_size_max = NORMAL_ES_BUFFER_SIZE;
+        ctrl->pcm_size_max = NORMAL_PCM_BUFFER_SIZE;
+        info.channels = decoder->get(DecoderQuery::CHANNELS);
+        info.sample_rate = decoder->get(DecoderQuery::SAMPLE_RATE);*/
+        // no outs :O
 
-            return 0;
-       */
+        LOG_WARN("Hack for AAC codec");
+        return -1;
     }
     case SCE_AUDIODEC_TYPE_MP3: {
         SceAudiodecInfoMp3 &info = ctrl->info.get(host.mem)->mp3;

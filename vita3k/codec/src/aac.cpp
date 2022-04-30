@@ -13,6 +13,20 @@ extern "C" {
 
 #include <util/log.h>
 
+static void convert_f32_to_s16(const float *f32, int16_t *s16, uint32_t channels, uint32_t samples, uint32_t freq) {
+    const int channel_type = channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+
+    SwrContext *swr = swr_alloc_set_opts(nullptr,
+        channel_type, AV_SAMPLE_FMT_S16, freq,
+        channel_type, AV_SAMPLE_FMT_FLTP, freq,
+        0, nullptr);
+    swr_init(swr);
+
+    const int result = swr_convert(swr, (uint8_t **)&s16, samples, (const uint8_t **)(f32), samples);
+    swr_free(&swr);
+    assert(result > 0);
+}
+
 size_t AacDecoderState::read_packet_cache(uint8_t *data, size_t size) {
     size_t data_read = 0;
 
@@ -62,10 +76,10 @@ bool AacDecoderState::send(const uint8_t *data, uint32_t size) {
         int err = avformat_open_input(&format_ptr, "", nullptr, nullptr);
         assert(err == 0);
 
-        //        AVCodec *codec = nullptr;
-        //        stream_id = av_find_best_stream(format_ptr, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
-        //        assert(stream_id >= 0);
-        //        assert(context->codec == codec);
+        // AVCodec *codec = nullptr;
+        // stream_id = av_find_best_stream(format_ptr, AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
+        // assert(stream_id >= 0);
+        // assert(context->codec == codec);
     }
 
     AVPacket *packet = av_packet_alloc();
@@ -101,8 +115,8 @@ bool AacDecoderState::receive(uint8_t *data, DecoderSize *size) {
         convert_f32_to_s16(
             reinterpret_cast<float *>(frame->extended_data),
             reinterpret_cast<int16_t *>(data),
-            frame->channels, frame->channels,
-            frame->nb_samples, frame->sample_rate);
+            frame->channels, frame->nb_samples,
+            frame->sample_rate);
     }
 
     if (size) {
