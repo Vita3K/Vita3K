@@ -251,6 +251,7 @@ set_property(TARGET spirv-cross-glsl PROPERTY FOLDER externals)
 add_library(dlmalloc STATIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc/dlmalloc.cc")
 target_include_directories(dlmalloc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc")
 target_compile_definitions(dlmalloc PUBLIC ONLY_MSPACES=1)
+target_compile_definitions(dlmalloc PUBLIC USE_LOCK=0)
 set_property(TARGET dlmalloc PROPERTY FOLDER externals)
 
 add_subdirectory(pugixml)
