@@ -29,6 +29,7 @@ struct AVIOContext;
 struct AVCodecContext;
 struct AVFormatContext;
 struct AVCodecParserContext;
+struct AVCodec;
 
 union DecoderSize {
     struct {
@@ -66,7 +67,7 @@ struct DecoderState {
     virtual void flush();
     virtual bool send(const uint8_t *data, uint32_t size) = 0;
     virtual bool receive(uint8_t *data, DecoderSize *size = nullptr) = 0;
-    virtual uint32_t get_es_size(const uint8_t *data);
+    virtual uint32_t get_es_size();
 
     virtual ~DecoderState();
 };
@@ -122,6 +123,7 @@ struct Atrac9DecoderState : public DecoderState {
     uint32_t get_superframe_size();
 
     uint32_t get(DecoderQuery query) override;
+    uint32_t get_es_size() override;
 
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size) override;
@@ -131,8 +133,10 @@ struct Atrac9DecoderState : public DecoderState {
 };
 
 struct Mp3DecoderState : public DecoderState {
+    uint32_t es_size_used;
+
     uint32_t get(DecoderQuery query) override;
-    uint32_t get_es_size(const uint8_t *data) override;
+    uint32_t get_es_size() override;
 
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size) override;
@@ -171,24 +175,14 @@ public:
 };
 
 struct AacDecoderState : public DecoderState {
-    std::shared_ptr<uint8_t> io_buffer;
-    std::shared_ptr<AVIOContext> io_context;
-
-    int stream_id = -1;
-    std::shared_ptr<AVFormatContext> format_context;
-
-    // Stores previous packet data that has not been used yet by the format context.
-    // Temporary workaround for the Codec API.
-    uint32_t packet_coarse_index = 0;
-    uint32_t packet_fine_index = 0;
-    std::vector<std::vector<uint8_t>> packet_cache;
-
-    size_t read_packet_cache(uint8_t *data, size_t size);
-
+    AVCodec *codec;
+    AVFrame *frame;
+    uint32_t es_size_used;
     uint32_t get(DecoderQuery query) override;
 
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size) override;
+    uint32_t get_es_size() override;
 
     explicit AacDecoderState(uint32_t sample_rate, uint32_t channels);
 };
