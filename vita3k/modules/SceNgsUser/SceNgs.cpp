@@ -566,7 +566,7 @@ EXPORT(int, sceNgsVoiceKill, SceNgsVoiceHandle voice_handle) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    voice->rack->system->voice_scheduler.stop(voice);
+    voice->rack->system->voice_scheduler.stop(voice, thread_id);
     return 0;
 }
 
@@ -654,7 +654,7 @@ EXPORT(int, sceNgsVoicePause, SceNgsVoiceHandle handle) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    if (!voice->rack->system->voice_scheduler.pause(voice)) {
+    if (!voice->rack->system->voice_scheduler.pause(voice, thread_id)) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
 

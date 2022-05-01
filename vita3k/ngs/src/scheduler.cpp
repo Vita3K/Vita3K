@@ -33,8 +33,8 @@ bool VoiceScheduler::deque_voice_impl(Voice *voice) {
     return true;
 }
 
-bool VoiceScheduler::deque_voice(Voice *voice) {
-    if (updater.has_value() && (updater.value() == std::this_thread::get_id())) {
+bool VoiceScheduler::deque_voice(Voice *voice, const SceUID thread_id) {
+    if (updater == thread_id) {
         pending_deque.push_back(voice);
         return true;
     }
@@ -82,7 +82,7 @@ bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
     return false;
 }
 
-bool VoiceScheduler::pause(Voice *voice) {
+bool VoiceScheduler::pause(Voice *voice, const SceUID thread_id) {
     if (voice->state == ngs::VOICE_STATE_AVAILABLE || voice->state == ngs::VOICE_STATE_PAUSED) {
         return true;
     }
@@ -91,7 +91,7 @@ bool VoiceScheduler::pause(Voice *voice) {
         voice->transition(ngs::VOICE_STATE_PAUSED);
 
         // Remove from the list
-        deque_voice(voice);
+        deque_voice(voice, thread_id);
 
         return true;
     }
@@ -107,13 +107,13 @@ bool VoiceScheduler::resume(const MemState &mem, Voice *voice) {
     return play(mem, voice);
 }
 
-bool VoiceScheduler::stop(Voice *voice) {
+bool VoiceScheduler::stop(Voice *voice, const SceUID thread_id) {
     if (voice->state == ngs::VOICE_STATE_AVAILABLE || voice->state == ngs::VOICE_STATE_FINALIZING) {
         return false;
     }
 
     voice->transition(ngs::VOICE_STATE_AVAILABLE);
-    deque_voice(voice);
+    deque_voice(voice, thread_id);
 
     return true;
 }
@@ -130,7 +130,7 @@ bool VoiceScheduler::off(Voice *voice) {
 
 void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID thread_id) {
     const std::lock_guard<std::mutex> guard(lock);
-    updater = std::this_thread::get_id();
+    updater = thread_id;
 
     // Do a first routine to clear inputs from previous update session
     for (ngs::Voice *voice : queue) {
@@ -150,7 +150,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
             }
         }
         if (is_key_off || finished)
-            stop(voice);
+            stop(voice, thread_id);
 
         for (std::size_t i = 0; i < voice->rack->vdef->output_count(); i++) {
             if (voice->products[i].data)
@@ -165,7 +165,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
     }
 
     pending_deque.clear();
-    updater.reset();
+    updater = 0; // clear value (set to invalid thread id)
 }
 
 std::int32_t VoiceScheduler::get_position(Voice *v) {
