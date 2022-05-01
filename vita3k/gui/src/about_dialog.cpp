@@ -25,22 +25,23 @@ namespace gui {
 
 // Add any new developer/contribor in alphabetic order
 static std::vector<const char *> developers_list = {
-    "1whatleytay", "frangarcj", "IllusionMan1212", "KorewaWatchful", "pent0",
-    "petmac", "Rinnegatamante", "sunho", "VelocityRa", "Zangetsu38 "
+    "1whatleytay", "bookmist", "frangarcj", "IllusionMan1212", "KorewaWatchful",
+    "pent0", "petmac", "Rinnegatamante", "sunho", "VelocityRa",
+    "Zangetsu38"
 };
 
 static std::vector<const char *> contributors_list = {
-    "0nza1101", "0x8080", "BogdanTheGeek", "bookmist", "bsinky",
-    "bythos14", "Cpasjuste", "CreepNT", "d3m3vilurr", "DerRM",
+    "0nza1101", "0x8080", "BogdanTheGeek", "bsinky", "bythos14",
+    "Cpasjuste", "CreepNT", "Croden1999", "d3m3vilurr", "DerRM",
     "devnoname120", "dracc", "EXtremeExploit", "Felipefpl", "Frain-Breeze",
     "francois-berder", "FromAlaska", "Ghabry", "hobyst", "ichisadashioko",
     "isJuhn", "jlachniet", "Johnnynator", "johnothwolo", "kd-11",
-    "korenkonder", "MaddTheSane", "Margen67", "merryhime", "mkersey",
-    "mrcmunir", "muemart", "NeveHanter", "Nicba1010", "Princess-of-Sleeping",
-    "qurious-pixel", "Ristellise", "scribam", "smitdylan2001", "strikersh",
-    "Talkashie", "TarikYildiz366", "TehPsychedelic", "thp", "tcoyvwac",
-    "TingPing", "TomasKralCZ", "totlmstr", "wfscans", "xyzz",
-    "yousifd", "Yunotchi"
+    "korenkonder", "Macdu", "MaddTheSane", "Margen67", "merryhime ",
+    " mkersey", "mrcmunir", "muemart", "NeveHanter", "Nicba1010",
+    "Princess-of-Sleeping", "qurious-pixel", "Ristellise", "scribam", "smitdylan2001",
+    "strikersh", "Talkashie", "TarikYildiz366", "TehPsychedelic", "thp",
+    "tcoyvwac", "TingPing", "TomasKralCZ", "totlmstr", "wfscans",
+    "xerpi", "xyzz", "yousifd", "Yunotchi"
 };
 
 void draw_about_dialog(GuiState &gui, HostState &host) {
