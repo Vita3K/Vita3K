@@ -81,8 +81,12 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
     std::unique_lock<std::mutex> &primitive_lock, WaitingThreadQueuePtr &queue,
     const WaitingThreadData &data, const ThreadDataQueueInterator<WaitingThreadData> &data_it,
     const char *export_name, SceUInt *const timeout) {
-    if (timeout && *timeout > 0) {
-        auto status = thread->status_cond.wait_for(primitive_lock, std::chrono::microseconds{ *timeout }, [&] { return thread->status == ThreadStatus::run; });
+    if (timeout) {
+        bool status = false;
+
+        if (*timeout > 0) {
+            status = thread->status_cond.wait_for(primitive_lock, std::chrono::microseconds{ *timeout }, [&] { return thread->status == ThreadStatus::run; });
+        }
 
         if (!status) {
             *timeout = 0; // Time run out, so remaining time is 0
