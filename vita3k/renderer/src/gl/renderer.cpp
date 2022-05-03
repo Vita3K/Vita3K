@@ -476,9 +476,8 @@ void set_context(GLContext &context, const MemState &mem, const GLRenderTarget *
 void get_surface_data(GLContext &context, size_t width, size_t height, size_t stride_in_pixels, uint32_t *pixels, SceGxmColorFormat format) {
     R_PROFILE(__func__);
 
-    if (pixels == nullptr) {
+    if (!pixels)
         return;
-    }
 
     glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(stride_in_pixels));
 
@@ -540,6 +539,9 @@ void get_surface_data(GLContext &context, size_t width, size_t height, size_t st
         break;
     case SCE_GXM_COLOR_FORMAT_F16F16F16F16_ARGB:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_BGRA, GL_HALF_FLOAT, pixels);
+        break;
+    case SCE_GXM_COLOR_FORMAT_F32_R:
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RED, GL_FLOAT, pixels);
         break;
     case SCE_GXM_COLOR_FORMAT_F32F32_GR:
         glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), GL_RG, GL_FLOAT, pixels);
