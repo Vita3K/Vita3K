@@ -97,8 +97,8 @@ struct SceGxmDeferredContextParams {
 };
 
 typedef std::array<Ptr<const void>, 15> UniformBuffers;
-typedef std::array<SceGxmTexture, SCE_GXM_MAX_TEXTURE_UNITS * 2> TextureDatas;
-typedef std::array<Ptr<const void>, SCE_GXM_MAX_VERTEX_STREAMS> StreamDatas;
+typedef SceGxmTexture TextureData;
+typedef Ptr<const void> StreamData;
 
 struct GxmViewport {
     SceGxmViewportMode enable = SCE_GXM_VIEWPORT_ENABLED;
@@ -167,7 +167,7 @@ struct GxmContextState {
     uint32_t vdm_buffer_size;
 
     // Vertex streams.
-    StreamDatas stream_data;
+    std::array<StreamData, SCE_GXM_MAX_TEXTURE_UNITS * 2> stream_data;
 
     // Depth.
     SceGxmDepthFunc front_depth_func = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
@@ -198,7 +198,7 @@ struct GxmContextState {
     int back_depth_bias_units = 0;
 
     // Textures.
-    TextureDatas textures;
+    std::array<TextureData, SCE_GXM_MAX_TEXTURE_UNITS * 2> textures;
 
     // Mask
     bool writing_mask;
@@ -273,14 +273,12 @@ struct SceGxmVertexProgram {
     std::unique_ptr<renderer::VertexProgram> renderer_data;
 };
 
-static constexpr size_t SCE_GXM_PRECOMPUTED_DRAW_EXTRA_SIZE = sizeof(StreamDatas);
-
 struct SceGxmPrecomputedDraw {
     Ptr<const SceGxmVertexProgram> program;
 
     SceGxmPrimitiveType type;
 
-    Ptr<StreamDatas> stream_data;
+    Ptr<StreamData> stream_data;
     uint16_t stream_count;
 
     SceGxmIndexFormat index_format;
@@ -289,12 +287,10 @@ struct SceGxmPrecomputedDraw {
     uint32_t instance_count;
 };
 
-static constexpr size_t SCE_GXM_PRECOMPUTED_STATE_EXTRA_SIZE = sizeof(TextureDatas) + sizeof(UniformBuffers);
-
 struct SceGxmPrecomputedFragmentState {
     Ptr<const SceGxmFragmentProgram> program;
 
-    Ptr<TextureDatas> textures;
+    Ptr<TextureData> textures;
     uint16_t texture_count;
 
     Ptr<UniformBuffers> uniform_buffers;
@@ -303,7 +299,7 @@ struct SceGxmPrecomputedFragmentState {
 struct SceGxmPrecomputedVertexState {
     Ptr<const SceGxmVertexProgram> program;
 
-    Ptr<TextureDatas> textures;
+    Ptr<TextureData> textures;
     uint16_t texture_count;
 
     Ptr<UniformBuffers> uniform_buffers;
