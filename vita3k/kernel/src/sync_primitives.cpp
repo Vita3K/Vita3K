@@ -387,7 +387,7 @@ SceUID semaphore_create(KernelState &kernel, const char *export_name, const char
 }
 
 SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
-    assert(semaid >= 0);
+    assert(semaId >= 0);
 
     // TODO Don't lock twice.
     const SemaphorePtr semaphore = lock_and_find(semaId, kernel.semaphores, kernel.mutex);
