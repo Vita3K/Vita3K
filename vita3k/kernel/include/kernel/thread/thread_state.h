@@ -98,6 +98,7 @@ struct ThreadState {
 
     int priority;
     uint64_t start_tick;
+    uint64_t last_vblank_waited;
 
     CPUStatePtr cpu;
     ThreadStatus status = ThreadStatus::dormant;

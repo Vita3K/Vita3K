@@ -22,8 +22,20 @@
 #include <util/lock_and_find.h>
 #include <util/types.h>
 
-static int display_wait(HostState &host, SceUID current_thread, const std::int32_t vcount, const bool is_since_setbuf, const bool is_cb) {
-    wait_vblank(host.display, host.kernel, current_thread, vcount, is_since_setbuf, is_cb);
+static int display_wait(HostState &host, SceUID thread_id, int vcount, const bool is_since_setbuf, const bool is_cb) {
+    const auto &thread = host.kernel.get_thread(thread_id);
+
+    // this part should not need a mutex
+    const uint64_t vblank_count = host.display.vblank_count.load();
+    // the wait is considered starting from the last time the thread resumed
+    // from a vblank wait (sceDisplayWait...) and not from the time this function was called
+    // but we still need to wait at least for one vblank
+    const uint64_t next_vsync = vblank_count + 1;
+    const uint64_t min_vsync = thread->last_vblank_waited + vcount;
+    thread->last_vblank_waited = std::max(next_vsync, min_vsync);
+    vcount = static_cast<int>(thread->last_vblank_waited - vblank_count);
+
+    wait_vblank(host.display, host.kernel, thread, vcount, is_since_setbuf, is_cb);
 
     if (host.display.abort.load())
         return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
@@ -150,11 +162,11 @@ EXPORT(SceInt32, sceDisplayWaitSetFrameBufCB) {
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBufMulti, SceUInt vcount) {
-    return display_wait(host, thread_id, static_cast<std::int32_t>(vcount), true, false);
+    return display_wait(host, thread_id, static_cast<int>(vcount), true, false);
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBufMultiCB, SceUInt vcount) {
-    return display_wait(host, thread_id, static_cast<std::int32_t>(vcount), true, true);
+    return display_wait(host, thread_id, static_cast<int>(vcount), true, true);
 }
 
 EXPORT(SceInt32, sceDisplayWaitVblankStart) {
@@ -166,11 +178,11 @@ EXPORT(SceInt32, sceDisplayWaitVblankStartCB) {
 }
 
 EXPORT(SceInt32, sceDisplayWaitVblankStartMulti, SceUInt vcount) {
-    return display_wait(host, thread_id, static_cast<std::int32_t>(vcount), false, false);
+    return display_wait(host, thread_id, static_cast<int>(vcount), false, false);
 }
 
 EXPORT(SceInt32, sceDisplayWaitVblankStartMultiCB, SceUInt vcount) {
-    return display_wait(host, thread_id, static_cast<std::int32_t>(vcount), false, true);
+    return display_wait(host, thread_id, static_cast<int>(vcount), false, true);
 }
 
 BRIDGE_IMPL(_sceDisplayGetFrameBuf)

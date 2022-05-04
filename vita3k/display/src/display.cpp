@@ -64,8 +64,7 @@ static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
     }
 }
 
-void wait_vblank(DisplayState &display, KernelState &kernel, const SceUID thread_id, int count, const bool since_last_setbuf, const bool is_cb) {
-    const ThreadStatePtr wait_thread = util::find(thread_id, kernel.threads);
+void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePtr &wait_thread, int count, const bool since_last_setbuf, const bool is_cb) {
     if (!wait_thread) {
         return;
     }
