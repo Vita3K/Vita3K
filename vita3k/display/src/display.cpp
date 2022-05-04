@@ -58,18 +58,13 @@ static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
                     i++;
                 }
             }
-
-            display.vblank_count++;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(TARGET_MS_PER_FRAME));
+        display.vblank_count++;
     }
 }
 
 void wait_vblank(DisplayState &display, KernelState &kernel, const SceUID thread_id, int count, const bool since_last_setbuf, const bool is_cb) {
-    if (!display.vblank_thread) {
-        display.vblank_thread = std::make_unique<std::thread>(vblank_sync_thread, std::ref(display), std::ref(kernel));
-    }
-
     const ThreadStatePtr wait_thread = util::find(thread_id, kernel.threads);
     if (!wait_thread) {
         return;
@@ -80,6 +75,11 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const SceUID thread
 
     {
         const std::lock_guard<std::mutex> guard(display.mutex);
+
+        if (!display.vblank_thread) {
+            display.vblank_thread = std::make_unique<std::thread>(vblank_sync_thread, std::ref(display), std::ref(kernel));
+        }
+
         if (since_last_setbuf) {
             const std::size_t blank_passed = display.vblank_count - display.last_setframe_vblank_count;
             if (blank_passed >= count) {
