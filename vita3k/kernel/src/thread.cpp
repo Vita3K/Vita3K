@@ -70,6 +70,7 @@ int ThreadState::init(KernelState &kernel, const char *name, Ptr<const void> ent
     }
     this->stack_size = stack_size;
     start_tick = rtc_get_ticks(kernel.base_tick.tick);
+    last_vblank_waited = 0;
 
     cpu = init_cpu(kernel.cpu_backend, kernel.cpu_opt, id, static_cast<std::size_t>(core_num), mem, kernel.cpu_protocol.get());
     if (!cpu) {
