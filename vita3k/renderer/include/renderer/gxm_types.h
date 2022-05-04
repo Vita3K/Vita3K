@@ -167,7 +167,7 @@ struct GxmContextState {
     uint32_t vdm_buffer_size;
 
     // Vertex streams.
-    std::array<StreamData, SCE_GXM_MAX_TEXTURE_UNITS * 2> stream_data;
+    std::array<StreamData, SCE_GXM_MAX_VERTEX_STREAMS> stream_data;
 
     // Depth.
     SceGxmDepthFunc front_depth_func = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
