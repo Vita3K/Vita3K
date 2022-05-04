@@ -115,7 +115,7 @@ EXPORT(SceInt32, sceDisplayGetRefreshRate, float *pFps) {
 }
 
 EXPORT(SceInt32, sceDisplayGetVcount) {
-    return static_cast<int>(host.display.vblank_count.load());
+    return static_cast<SceInt32>(host.display.vblank_count.load()) & 0xFFFF;
 }
 
 EXPORT(int, sceDisplayGetVcountInternal) {
