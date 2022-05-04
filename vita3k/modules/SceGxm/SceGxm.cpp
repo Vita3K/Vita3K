@@ -344,11 +344,11 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
 }
 
 uint16_t get_gxp_texture_count(const SceGxmProgram &program_gxp) {
-    const auto vert_paramters = gxp::program_parameters(program_gxp);
+    const auto parameters = gxp::program_parameters(program_gxp);
 
     uint16_t max_texture_index = 0;
     for (uint32_t i = 0; i < program_gxp.parameter_count; ++i) {
-        const auto parameter = vert_paramters[i];
+        const auto parameter = parameters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
             max_texture_index = std::max(max_texture_index, static_cast<uint16_t>(parameter.resource_index));
         }
@@ -1884,7 +1884,7 @@ EXPORT(int, sceGxmPrecomputedDrawSetVertexStream, SceGxmPrecomputedDraw *state, 
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    auto stream_data = state->stream_data.get(host.mem);
+    const auto stream_data = state->stream_data.get(host.mem);
     stream_data[streamIndex] = streamData;
 
     return 0;
@@ -2152,7 +2152,7 @@ EXPORT(Ptr<SceGxmProgramParameter>, _sceGxmProgramFindParameterBySemantic, const
 }
 
 EXPORT(uint32_t, sceGxmProgramGetDefaultUniformBufferSize, const SceGxmProgram *program) {
-    return program->default_uniform_buffer_count * 4;
+    return program->default_uniform_buffer_count * sizeof(Ptr<const void>);
 }
 
 EXPORT(uint32_t, sceGxmProgramGetFragmentProgramInputs, Ptr<const SceGxmProgram> program_) {
