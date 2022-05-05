@@ -33,7 +33,7 @@ enum {
 
 typedef std::shared_ptr<DecoderState> DecoderPtr;
 typedef std::map<SceUID, DecoderPtr> DecoderStates;
-typedef std::vector<SceUID> CodecDecoders;
+typedef std::set<SceUID> CodecDecoders;
 typedef std::map<SceAudiodecCodec, CodecDecoders> CodecDecodersMap;
 
 struct AudiodecState {
@@ -111,7 +111,7 @@ static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCod
 
     SceUID handle = host.kernel.get_next_uid();
     ctrl->handle = handle;
-    state->codecs[codec].push_back(handle);
+    state->codecs[codec].insert(handle);
 
     switch (codec) {
     case SCE_AUDIODEC_TYPE_AT9: {
@@ -218,15 +218,17 @@ EXPORT(int, sceAudiodecDeleteDecoder, SceAudiodecCtrl *ctrl) {
     std::lock_guard<std::mutex> lock(state->mutex);
     state->decoders.erase(ctrl->handle);
 
+    // there are at most 4 different codecs, we can afford to look
+    // at all of them (the handle is in one of them)
+    for (auto &codec : state->codecs) {
+        codec.second.erase(ctrl->handle);
+    }
+
     return 0;
 }
 
 EXPORT(int, sceAudiodecDeleteDecoderExternal, SceAudiodecCtrl *ctrl, void *context) {
-    const auto state = host.kernel.obj_store.get<AudiodecState>();
-    std::lock_guard<std::mutex> lock(state->mutex);
-    state->decoders.erase(ctrl->handle);
-
-    return 0;
+    return CALL_EXPORT(sceAudiodecDeleteDecoder, ctrl);
 }
 
 EXPORT(int, sceAudiodecDeleteDecoderResident) {
@@ -258,8 +260,8 @@ EXPORT(SceInt32, sceAudiodecTermLibrary, SceAudiodecCodec codecType) {
     const auto state = host.kernel.obj_store.get<AudiodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
 
-    // remove decoders associeted with codecType
-    for (auto handle : state->codecs[codecType]) {
+    // remove decoders associated with codecType
+    for (auto &handle : state->codecs[codecType]) {
         state->decoders.erase(handle);
     }
     state->codecs.erase(codecType);
