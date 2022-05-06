@@ -75,12 +75,6 @@ target_include_directories(googletest PRIVATE googletest/googletest)
 target_compile_definitions(googletest PUBLIC GTEST_HAS_PTHREAD=0)
 set_property(TARGET googletest PROPERTY FOLDER externals)
 
-add_library(microprofile STATIC microprofile/microprofile.cpp microprofile/microprofile.h)
-target_include_directories(microprofile PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/microprofile")
-set_property(TARGET microprofile PROPERTY CXX_STANDARD 11)
-target_compile_definitions(microprofile PUBLIC MICROPROFILE_ENABLED=0 MICROPROFILE_GPU_TIMERS=0)
-set_property(TARGET microprofile PROPERTY FOLDER externals)
-
 if(WIN32)
 	add_library(nativefiledialog STATIC nativefiledialog-cmake/src/nfd_win.cpp nativefiledialog-cmake/src/nfd_common.c)
 	target_include_directories(nativefiledialog PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog-cmake/src/include")
