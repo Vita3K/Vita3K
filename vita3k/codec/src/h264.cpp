@@ -107,7 +107,10 @@ bool H264DecoderState::receive(uint8_t *data, DecoderSize *size) {
         *size = { static_cast<uint32_t>(context->width), static_cast<uint32_t>(context->height) };
     }
 
-    pts_out = frame->pts == AV_NOPTS_VALUE ? ~0ull : frame->pts;
+    width_out = frame->width;
+    height_out = frame->height;
+
+    pts_out = frame->pts;
 
     av_frame_free(&frame);
     return true;
@@ -118,6 +121,11 @@ void H264DecoderState::configure(void *options) {
 
     pts = static_cast<uint64_t>(opt->pts_upper) << 32u | static_cast<uint64_t>(opt->pts_lower);
     dts = static_cast<uint64_t>(opt->dts_upper) << 32u | static_cast<uint64_t>(opt->dts_lower);
+}
+
+void H264DecoderState::get_res(uint32_t &width, uint32_t &height) {
+    width = width_out;
+    height = height_out;
 }
 
 void H264DecoderState::get_pts(uint32_t &upper, uint32_t &lower) {
