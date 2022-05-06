@@ -34,8 +34,13 @@ add_library(
 )
 
 target_include_directories(shader PUBLIC include)
-target_link_libraries(shader PUBLIC features gxm util microprofile spirv-cross-glsl)
+target_link_libraries(shader PUBLIC features gxm util spirv-cross-glsl)
 target_link_libraries(shader PRIVATE SPIRV)
+
+# Marshmallow Tracy linking
+if(TRACY_ENABLE_ON_CORE_COMPONENTS)
+	target_link_libraries(shader PRIVATE tracy)
+endif()
 
 add_executable(
 	shader-tests

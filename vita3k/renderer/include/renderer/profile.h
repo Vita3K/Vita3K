@@ -17,6 +17,13 @@
 
 #pragma once
 
-#include <microprofile.h>
+#ifdef TRACY_ENABLE
 
-#define R_PROFILE(name) MICROPROFILE_SCOPEI("renderer", name, MP_BLUE)
+#include "Tracy.hpp"
+#define R_PROFILE(name) ZoneNamedNC(___tracy_scoped_zone, name, 0x0055FF, false);
+
+#else
+
+#define R_PROFILE(name)
+
+#endif // TRACY_ENABLE
