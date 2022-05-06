@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -76,6 +76,9 @@ bool H264DecoderState::send(const uint8_t *data, uint32_t size) {
         return false;
     }
 
+    packet->pts = parser->pts;
+    packet->dts = parser->dts;
+
     error = avcodec_send_packet(context, packet);
     av_packet_free(&packet);
     if (error < 0) {
@@ -104,6 +107,8 @@ bool H264DecoderState::receive(uint8_t *data, DecoderSize *size) {
         *size = { static_cast<uint32_t>(context->width), static_cast<uint32_t>(context->height) };
     }
 
+    pts_out = frame->pts == AV_NOPTS_VALUE ? ~0ull : frame->pts;
+
     av_frame_free(&frame);
     return true;
 }
@@ -113,6 +118,11 @@ void H264DecoderState::configure(void *options) {
 
     pts = static_cast<uint64_t>(opt->pts_upper) << 32u | static_cast<uint64_t>(opt->pts_lower);
     dts = static_cast<uint64_t>(opt->dts_upper) << 32u | static_cast<uint64_t>(opt->dts_lower);
+}
+
+void H264DecoderState::get_pts(uint32_t &upper, uint32_t &lower) {
+    upper = pts_out >> 32u;
+    lower = pts_out & 0xFFFFFFFF;
 }
 
 H264DecoderState::H264DecoderState(uint32_t width, uint32_t height) {

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -128,6 +128,8 @@ struct SceAvcdecArrayPicture {
 EXPORT(int, sceAvcdecCreateDecoder, uint32_t codec_type, SceAvcdecCtrl *decoder, const SceAvcdecQueryDecoderInfo *query) {
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
     const auto state = host.kernel.obj_store.get<VideodecState>();
+    std::lock_guard<std::mutex> lock(state->mutex);
+
     SceUID handle = host.kernel.get_next_uid();
     decoder->handle = handle;
 
@@ -163,12 +165,14 @@ EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceA
     options.dts_lower = au->dts.lower;
 
     // This is quite long...
-    uint8_t *output = picture->pPicture.get(host.mem)[0].get(host.mem)->frame.pPicture[0].cast<uint8_t>().get(host.mem);
+    SceAvcdecPicture *pPicture = picture->pPicture.get(host.mem)[0].get(host.mem);
+    uint8_t *output = pPicture->frame.pPicture[0].cast<uint8_t>().get(host.mem);
 
     // TODO: decoding can be done async I think
     decoder_info->configure(&options);
     decoder_info->send(reinterpret_cast<uint8_t *>(au->es.pBuf.get(host.mem)), au->es.size);
     decoder_info->receive(output);
+    decoder_info->get_pts(pPicture->info.pts.upper, pPicture->info.pts.lower);
 
     picture->numOfOutput++;
 
