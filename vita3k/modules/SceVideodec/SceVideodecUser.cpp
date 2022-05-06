@@ -172,6 +172,7 @@ EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceA
     decoder_info->configure(&options);
     decoder_info->send(reinterpret_cast<uint8_t *>(au->es.pBuf.get(host.mem)), au->es.size);
     decoder_info->receive(output);
+    decoder_info->get_res(pPicture->frame.frameWidth, pPicture->frame.frameHeight);
     decoder_info->get_pts(pPicture->info.pts.upper, pPicture->info.pts.lower);
 
     picture->numOfOutput++;

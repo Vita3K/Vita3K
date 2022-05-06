@@ -37,6 +37,10 @@ void DecoderState::get_pts(uint32_t &upper, uint32_t &lower) {
     // do nothing
 }
 
+void DecoderState::get_res(uint32_t &width, uint32_t &height) {
+    // do nothing
+}
+
 uint32_t DecoderState::get_es_size(const uint8_t *data) {
     return std::numeric_limits<uint32_t>::max();
 }
