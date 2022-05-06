@@ -128,7 +128,7 @@ static void before_callback(const char *name, void *funcptr, int len_args, ...) 
 #endif // MICROPROFILE_ENABLED
 
 static void after_callback(const char *name, void *funcptr, int len_args, ...) {
-    MICROPROFILE_LEAVE();
+    // MICROPROFILE_LEAVE();
     for (GLenum error = glad_glGetError(); error != GL_NO_ERROR; error = glad_glGetError()) {
 #ifndef NDEBUG
         std::stringstream gl_error;

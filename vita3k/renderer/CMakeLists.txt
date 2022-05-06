@@ -61,3 +61,8 @@ add_library(
 target_include_directories(renderer PUBLIC include)
 target_link_libraries(renderer PUBLIC mem crypto dlmalloc stb shader glutil threads config util ${RENDERER_VULKAN_LIBRARIES})
 target_link_libraries(renderer PRIVATE sdl2 stb ffmpeg xxHash::xxhash)
+
+# Marshmallow Tracy linking
+if(TRACY_ENABLE_ON_CORE_COMPONENTS)
+	target_link_libraries(renderer PRIVATE tracy)
+endif()

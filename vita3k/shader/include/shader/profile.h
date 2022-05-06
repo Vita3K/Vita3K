@@ -17,6 +17,13 @@
 
 #pragma once
 
-#include <microprofile.h>
+#ifdef TRACY_ENABLE
 
-#define SHADER_PROFILE(name) MICROPROFILE_SCOPEI("SHADER", name, MP_BLUE)
+#include "Tracy.hpp"
+#define SHADER_PROFILE(name) ZoneNamedNC(___tracy_scoped_zone, name, 0x000035, false);
+
+#else
+
+#define SHADER_PROFILE(name)
+
+#endif // TRACY_ENABLE
