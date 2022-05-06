@@ -38,9 +38,6 @@
 [submodule "external/libfat16"]
 	path = external/libfat16
 	url = https://github.com/Vita3K/libfat16
-[submodule "external/microprofile"]
-	path = external/microprofile
-	url = https://github.com/jonasmr/microprofile
 [submodule "external/nativefiledialog-cmake"]
 	path = external/nativefiledialog-cmake
 	url = https://github.com/Vita3K/nativefiledialog-cmake
