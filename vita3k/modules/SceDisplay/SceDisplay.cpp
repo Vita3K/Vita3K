@@ -27,15 +27,20 @@ static int display_wait(HostState &host, SceUID thread_id, int vcount, const boo
 
     // this part should not need a mutex
     const uint64_t vblank_count = host.display.vblank_count.load();
-    // the wait is considered starting from the last time the thread resumed
-    // from a vblank wait (sceDisplayWait...) and not from the time this function was called
-    // but we still need to wait at least for one vblank
-    const uint64_t next_vsync = vblank_count + 1;
-    const uint64_t min_vsync = thread->last_vblank_waited + vcount;
-    thread->last_vblank_waited = std::max(next_vsync, min_vsync);
+    if (is_since_setbuf) {
+        thread->last_vblank_waited = host.display.last_setframe_vblank_count + vcount;
+    } else {
+        // the wait is considered starting from the last time the thread resumed
+        // from a vblank wait (sceDisplayWait...) and not from the time this function was called
+        // but we still need to wait at least for one vblank
+        const uint64_t next_vsync = vblank_count + 1;
+        const uint64_t min_vsync = thread->last_vblank_waited + vcount;
+        thread->last_vblank_waited = std::max(next_vsync, min_vsync);
+    }
     vcount = static_cast<int>(thread->last_vblank_waited - vblank_count);
 
-    wait_vblank(host.display, host.kernel, thread, vcount, is_since_setbuf, is_cb);
+    if (vcount > 0)
+        wait_vblank(host.display, host.kernel, thread, vcount, is_cb);
 
     if (host.display.abort.load())
         return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
