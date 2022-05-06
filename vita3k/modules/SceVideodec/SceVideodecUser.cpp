@@ -19,12 +19,12 @@
 #include <codec/state.h>
 #include <util/lock_and_find.h>
 
-typedef std::shared_ptr<DecoderState> DecoderPtr;
-typedef std::map<SceUID, DecoderPtr> DecoderStates;
+typedef std::shared_ptr<H264DecoderState> H264DecoderPtr;
+typedef std::map<SceUID, H264DecoderPtr> H264DecoderStates;
 
 struct VideodecState {
     std::mutex mutex;
-    DecoderStates decoders;
+    H264DecoderStates decoders;
 };
 
 enum SceVideodecType {
@@ -156,7 +156,7 @@ EXPORT(int, sceAvcdecCscInternal) {
 
 EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceAvcdecArrayPicture *picture) {
     const auto state = host.kernel.obj_store.get<VideodecState>();
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
+    const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
 
     H264DecoderOptions options = {};
     options.pts_upper = au->pts.upper;
@@ -198,7 +198,7 @@ EXPORT(int, sceAvcdecDecodeAuNongameapp) {
 
 EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
     const auto state = host.kernel.obj_store.get<VideodecState>();
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
+    const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
 
     return H264DecoderState::buffer_size(
         { decoder_info->get(DecoderQuery::WIDTH), decoder_info->get(DecoderQuery::HEIGHT) });
@@ -206,7 +206,7 @@ EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
 
 EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
     const auto state = host.kernel.obj_store.get<VideodecState>();
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
+    const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
 
     decoder_info->flush();
 
@@ -243,7 +243,7 @@ EXPORT(int, sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp) {
 
 EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *picture) {
     const auto state = host.kernel.obj_store.get<VideodecState>();
-    const DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
+    const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
 
     uint8_t *output = picture->pPicture.get(host.mem)[0].get(host.mem)->frame.pPicture[0].cast<uint8_t>().get(host.mem);
     decoder_info->receive(output);
