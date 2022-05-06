@@ -64,7 +64,7 @@ static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
     }
 }
 
-void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePtr &wait_thread, int count, const bool since_last_setbuf, const bool is_cb) {
+void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePtr &wait_thread, int count, const bool is_cb) {
     if (!wait_thread) {
         return;
     }
@@ -79,18 +79,9 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePt
             display.vblank_thread = std::make_unique<std::thread>(vblank_sync_thread, std::ref(display), std::ref(kernel));
         }
 
-        if (since_last_setbuf) {
-            const std::size_t blank_passed = display.vblank_count - display.last_setframe_vblank_count;
-            if (blank_passed >= count) {
-                return;
-            } else {
-                count -= static_cast<int>(blank_passed);
-            }
-        }
-
         wait_thread->suspend();
         display.vblank_wait_infos.push_back({ wait_thread, count, is_cb });
     }
 
-    wait_thread->status_cond.wait(thread_lock, [=]() { return wait_thread->status != ThreadStatus::suspend; });
+    wait_thread->status_cond.wait(thread_lock, [=]() { return wait_thread->status == ThreadStatus::run; });
 }
