@@ -170,12 +170,12 @@ EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceA
 
     // TODO: decoding can be done async I think
     decoder_info->configure(&options);
-    decoder_info->send(reinterpret_cast<uint8_t *>(au->es.pBuf.get(host.mem)), au->es.size);
-    decoder_info->receive(output);
-    decoder_info->get_res(pPicture->frame.frameWidth, pPicture->frame.frameHeight);
-    decoder_info->get_pts(pPicture->info.pts.upper, pPicture->info.pts.lower);
-
-    picture->numOfOutput++;
+    const auto send = decoder_info->send(reinterpret_cast<uint8_t *>(au->es.pBuf.get(host.mem)), au->es.size);
+    if (send && decoder_info->receive(output)) {
+        decoder_info->get_res(pPicture->frame.frameWidth, pPicture->frame.frameHeight);
+        decoder_info->get_pts(pPicture->info.pts.upper, pPicture->info.pts.lower);
+        picture->numOfOutput++;
+    }
 
     return 0;
 }
