@@ -303,6 +303,6 @@ add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)
 set_property(TARGET xxhash PROPERTY FOLDER externals)
 
 # Soundtouch audio processing library for timing, pitch and playback rate manipulation
+set(SOUNDSTRETCH OFF CACHE BOOL "Build soundstretch command line utility." FORCE)
 add_subdirectory(soundtouch)
 set_property(TARGET SoundTouch PROPERTY FOLDER externals)
-set_property(TARGET soundstretch PROPERTY FOLDER externals)
