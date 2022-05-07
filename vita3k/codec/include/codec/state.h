@@ -66,7 +66,6 @@ struct DecoderState {
     virtual void flush();
     virtual bool send(const uint8_t *data, uint32_t size) = 0;
     virtual bool receive(uint8_t *data, DecoderSize *size = nullptr) = 0;
-    virtual void configure(void *options);
     virtual uint32_t get_es_size(const uint8_t *data);
 
     virtual ~DecoderState();
@@ -95,7 +94,7 @@ struct H264DecoderState : public DecoderState {
 
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size = nullptr) override;
-    void configure(void *options) override;
+    void configure(void *options);
     void get_res(uint32_t &width, uint32_t &height);
     void get_pts(uint32_t &upper, uint32_t &lower);
 
