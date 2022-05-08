@@ -67,17 +67,25 @@ int wait_for_status(State &state, int *status, int signal, bool wake_on_equal) {
     return *status;
 }
 
-void wishlist(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects) {
-    {
-        const std::lock_guard<std::mutex> mutex_guard(sync_object->lock);
+typedef std::function<bool()> SyncPredicate;
 
-        if ((sync_object->done & subjects) == subjects) {
-            return;
-        }
-    }
-
+void wishlist_predicate(SceGxmSyncObject *sync_object, const SyncPredicate &predicate) {
     std::unique_lock<std::mutex> finish_mutex(sync_object->lock);
-    sync_object->cond.wait(finish_mutex, [&]() { return ((sync_object->done & subjects) == subjects); });
+
+    if (predicate())
+        return;
+
+    sync_object->cond.wait(finish_mutex, predicate);
+}
+
+void wishlist(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects) {
+    wishlist_predicate(sync_object, [&]() { return ((sync_object->done & subjects) == subjects); });
+}
+
+void wishlist_display_entry(SceGxmSyncObject *sync_object) {
+    wishlist_predicate(sync_object, [&]() {
+        return (sync_object->done & SyncObjectSubject::DisplayQueue) || sync_object->nb_in_display_queue > 0;
+    });
 }
 
 void subject_done(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects) {
@@ -89,9 +97,27 @@ void subject_done(SceGxmSyncObject *sync_object, const SyncObjectSubject subject
     sync_object->cond.notify_all();
 }
 
+void subject_done_display_entry(SceGxmSyncObject *sync_object) {
+    {
+        const std::lock_guard<std::mutex> mutex_guard(sync_object->lock);
+        sync_object->nb_in_display_queue--;
+        if (sync_object->nb_in_display_queue == 0) {
+            sync_object->done |= SyncObjectSubject::DisplayQueue;
+        }
+    }
+
+    sync_object->cond.notify_all();
+}
+
 void subject_in_progress(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects) {
     const std::lock_guard<std::mutex> mutex_guard(sync_object->lock);
     sync_object->done &= ~subjects;
+}
+
+void subject_in_progress_display_entry(SceGxmSyncObject *sync_object) {
+    const std::lock_guard<std::mutex> mutex_guard(sync_object->lock);
+    sync_object->done &= ~SyncObjectSubject::DisplayQueue;
+    sync_object->nb_in_display_queue++;
 }
 
 void submit_command_list(State &state, renderer::Context *context, CommandList &command_list) {

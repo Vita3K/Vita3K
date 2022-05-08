@@ -123,7 +123,10 @@ enum class SceGxmLastReserveStatus {
 };
 
 struct SceGxmSyncObject {
-    std::uint32_t done;
+    uint32_t done;
+    // number of times this object is used in an entry of the display
+    // queue that is currently being processed
+    uint32_t nb_in_display_queue;
 
     std::mutex lock;
     std::condition_variable cond;
