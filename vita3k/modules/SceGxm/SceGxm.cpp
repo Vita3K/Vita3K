@@ -1019,8 +1019,11 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     SceGxmSyncObject *oldBufferSync = oldBuffer.get(host.mem);
     SceGxmSyncObject *newBufferSync = newBuffer.get(host.mem);
 
-    renderer::subject_in_progress(oldBufferSync, renderer::SyncObjectSubject::DisplayQueue);
-    renderer::subject_in_progress(newBufferSync, renderer::SyncObjectSubject::DisplayQueue);
+    renderer::wishlist_display_entry(oldBufferSync);
+    renderer::wishlist_display_entry(newBufferSync);
+
+    renderer::subject_in_progress_display_entry(oldBufferSync);
+    renderer::subject_in_progress_display_entry(newBufferSync);
 
     display_callback.data = address;
     display_callback.pc = host.gxm.params.displayQueueCallback.address();
@@ -1657,8 +1660,8 @@ static int SDLCALL thread_function(void *data) {
         free(*params.mem, display_callback->data);
 
         // Should not block anymore.
-        renderer::subject_done(oldBuffer, renderer::SyncObjectSubject::DisplayQueue);
-        renderer::subject_done(newBuffer, renderer::SyncObjectSubject::DisplayQueue);
+        renderer::subject_done_display_entry(oldBuffer);
+        renderer::subject_done_display_entry(newBuffer);
     }
 
     return 0;

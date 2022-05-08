@@ -42,6 +42,8 @@ void finish(State &state, Context &context);
  */
 void wishlist(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
 
+void wishlist_display_entry(SceGxmSyncObject *sync_object);
+
 /**
  * \brief Set list of subject with sync object to done.
  *
@@ -49,10 +51,14 @@ void wishlist(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
  */
 void subject_done(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
 
+void subject_done_display_entry(SceGxmSyncObject *sync_object);
+
 /**
  * Set some subjects to be in progress.
  */
 void subject_in_progress(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
+
+void subject_in_progress_display_entry(SceGxmSyncObject *sync_object);
 
 int wait_for_status(State &state, int *status, int signal, bool wake_on_equal);
 void reset_command_list(CommandList &command_list);
