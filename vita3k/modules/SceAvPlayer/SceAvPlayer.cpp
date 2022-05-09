@@ -437,21 +437,18 @@ EXPORT(bool, sceAvPlayerGetVideoDataEx, SceUID player_handle, SceAvPlayerFrameIn
 
 EXPORT(SceUID, sceAvPlayerInit, SceAvPlayerInfo *info) {
     host.kernel.obj_store.create<AvPlayerState>();
-    if (host.cfg.current_config.video_playing) {
-        const auto state = host.kernel.obj_store.get<AvPlayerState>();
-        SceUID player_handle = host.kernel.get_next_uid();
-        PlayerPtr player = std::make_shared<PlayerInfoState>();
-        state->players[player_handle] = player;
-        player->last_frame_time = current_time();
-        player->memory_allocator = info->memory_allocator;
-        player->file_manager = info->file_manager;
-        player->event_manager = info->event_manager;
-        // Result is defined as a void *, but I just call it SceUID because it is easier to deal with. Same size.
-        return player_handle;
-    } else {
-        LOG_WARN("Video is skipped");
-        return 0;
-    }
+    const auto state = host.kernel.obj_store.get<AvPlayerState>();
+    SceUID player_handle = host.kernel.get_next_uid();
+    PlayerPtr player = std::make_shared<PlayerInfoState>();
+    state->players[player_handle] = player;
+
+    player->last_frame_time = current_time();
+    player->memory_allocator = info->memory_allocator;
+    player->file_manager = info->file_manager;
+    player->event_manager = info->event_manager;
+
+    // Result is defined as a void *, but I just call it SceUID because it is easier to deal with. Same size.
+    return player_handle;
 }
 
 EXPORT(bool, sceAvPlayerIsActive, SceUID player_handle) {
