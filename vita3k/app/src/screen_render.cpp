@@ -104,7 +104,7 @@ void gl_screen_renderer::render(const HostState &host) {
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if ((display.image_size.x > 0) && (display.image_size.y > 0)) {
+    if ((display.frame.image_size.x > 0) && (display.frame.image_size.y > 0)) {
         glUseProgram(*m_render_shader);
         glBindVertexArray(m_vao);
         glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
@@ -132,10 +132,10 @@ void gl_screen_renderer::render(const HostState &host) {
         glEnableVertexAttribArray(uvAttrib);
 
         glBindTexture(GL_TEXTURE_2D, m_screen_texture);
-        const auto pixels = display.base.cast<void>().get(mem);
+        const auto pixels = display.frame.base.cast<void>().get(mem);
 
-        glPixelStorei(GL_UNPACK_ROW_LENGTH, display.pitch);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.image_size.x, display.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, display.frame.pitch);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, display.frame.image_size.x, display.frame.image_size.y, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

@@ -32,7 +32,7 @@ static int display_wait(HostState &host, SceUID thread_id, int vcount, const boo
     // this part should not need a mutex
     const uint64_t vblank_count = host.display.vblank_count.load();
     if (is_since_setbuf) {
-        thread->last_vblank_waited = host.display.last_setframe_vblank_count + vcount;
+        vcount = host.display.last_setframe_vblank_count + vcount - vblank_count;
     } else {
         // the wait is considered starting from the last time the thread resumed
         // from a vblank wait (sceDisplayWait...) and not from the time this function was called
@@ -40,8 +40,8 @@ static int display_wait(HostState &host, SceUID thread_id, int vcount, const boo
         const uint64_t next_vsync = vblank_count + 1;
         const uint64_t min_vsync = thread->last_vblank_waited + vcount;
         thread->last_vblank_waited = std::max(next_vsync, min_vsync);
+        vcount = static_cast<int>(thread->last_vblank_waited - vblank_count);
     }
-    vcount = static_cast<int>(thread->last_vblank_waited - vblank_count);
 
     if (vcount > 0)
         wait_vblank(host.display, host.kernel, thread, vcount, is_cb);
@@ -58,11 +58,21 @@ EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDispl
     else if (sync != SCE_DISPLAY_SETBUF_NEXTFRAME && sync != SCE_DISPLAY_SETBUF_IMMEDIATE)
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
 
-    pFrameBuf->base = host.display.base;
-    pFrameBuf->pitch = host.display.pitch;
-    pFrameBuf->pixelformat = host.display.pixelformat;
-    pFrameBuf->width = host.display.image_size.x;
-    pFrameBuf->height = host.display.image_size.y;
+    const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
+
+    DisplayFrameInfo *info;
+    // ignore value of sync in GetFrameBuf
+    if (host.display.has_next_frame) {
+        info = &host.display.next_frame;
+    } else {
+        info = &host.display.frame;
+    }
+
+    pFrameBuf->base = info->base;
+    pFrameBuf->pitch = info->pitch;
+    pFrameBuf->pixelformat = info->pixelformat;
+    pFrameBuf->width = info->image_size.x;
+    pFrameBuf->height = info->image_size.y;
 
     return SCE_DISPLAY_ERROR_OK;
 }
@@ -103,11 +113,22 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
     {
         const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
 
-        host.display.base = pFrameBuf->base;
-        host.display.pitch = pFrameBuf->pitch;
-        host.display.pixelformat = pFrameBuf->pixelformat;
-        host.display.image_size.x = pFrameBuf->width;
-        host.display.image_size.y = pFrameBuf->height;
+        DisplayFrameInfo *info;
+        if (sync == SCE_DISPLAY_SETBUF_NEXTFRAME) {
+            info = &host.display.next_frame;
+            host.display.has_next_frame = true;
+        } else {
+            // we are supposed to swap the displayed buffer in the middle of the frame
+            // which we do not support
+            STUBBED("SCE_DISPLAY_SETBUF_IMMEDIATE is not supported");
+            info = &host.display.frame;
+        }
+
+        info->base = pFrameBuf->base;
+        info->pitch = pFrameBuf->pitch;
+        info->pixelformat = pFrameBuf->pixelformat;
+        info->image_size.x = pFrameBuf->width;
+        info->image_size.y = pFrameBuf->height;
         host.display.last_setframe_vblank_count = host.display.vblank_count.load();
     }
 

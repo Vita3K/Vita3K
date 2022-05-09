@@ -30,6 +30,17 @@ static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
     while (!display.abort.load()) {
         {
             const std::lock_guard<std::mutex> guard(display.mutex);
+
+            {
+                const std::lock_guard<std::mutex> guard_info(display.display_info_mutex);
+                display.vblank_count++;
+                // register framebuf change made by _sceDisplaySetFrameBuf
+                if (display.has_next_frame) {
+                    display.frame = display.next_frame;
+                    display.has_next_frame = false;
+                }
+            }
+
             // Notify Vblank callback in each VBLANK start
             for (auto &cb : display.vblank_callbacks)
                 cb.second->event_notify(cb.second->get_notifier_id());
@@ -59,8 +70,9 @@ static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
                 }
             }
         }
-        std::this_thread::sleep_for(std::chrono::milliseconds(TARGET_MS_PER_FRAME));
-        display.vblank_count++;
+        const auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        const auto time_left = TARGET_MS_PER_FRAME - (time_ms % TARGET_MS_PER_FRAME);
+        std::this_thread::sleep_for(std::chrono::milliseconds(time_left));
     }
 }
 

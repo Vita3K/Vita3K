@@ -40,13 +40,19 @@ struct DisplayStateVBlankWaitInfo {
     bool is_cb;
 };
 
-struct DisplayState {
+struct DisplayFrameInfo {
     Ptr<const void> base;
     uint32_t pitch = 0;
     uint32_t pixelformat = SCE_DISPLAY_PIXELFORMAT_A8B8G8R8;
     SceIVector2 image_size = { 0, 0 };
-    std::mutex mutex;
+};
+
+struct DisplayState {
+    DisplayFrameInfo frame;
     std::mutex display_info_mutex;
+    bool has_next_frame = false;
+    DisplayFrameInfo next_frame;
+    std::mutex mutex;
     std::unique_ptr<std::thread> vblank_thread;
     std::atomic<bool> abort{ false };
     std::atomic<bool> imgui_render{ true };
