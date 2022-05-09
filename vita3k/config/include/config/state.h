@@ -122,7 +122,6 @@ public:
         std::vector<std::string> lle_modules = {};
         bool pstv_mode = false;
         bool disable_ngs = false;
-        bool video_playing = true;
         bool disable_at9_decoder = false;
     };
 

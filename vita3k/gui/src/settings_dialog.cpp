@@ -164,7 +164,6 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
                 const auto emulator_child = config_child.child("emulator");
                 config.disable_at9_decoder = emulator_child.attribute("disable-at9-decoder").as_bool();
                 config.disable_ngs = emulator_child.attribute("disable-ngs").as_bool();
-                config.video_playing = emulator_child.attribute("video-playing").as_bool();
             }
 
             return true;
@@ -201,7 +200,6 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
         config.pstv_mode = host.cfg.pstv_mode;
         config.disable_at9_decoder = host.cfg.disable_at9_decoder;
         config.disable_ngs = host.cfg.disable_ngs;
-        config.video_playing = host.cfg.video_playing;
     }
     config_cpu_backend = set_cpu_backend(config.cpu_backend);
     host.app_path = app_path;
@@ -256,7 +254,6 @@ static void save_config(GuiState &gui, HostState &host) {
         auto emulator_child = config_child.append_child("emulator");
         emulator_child.append_attribute("disable-at9-decoder") = config.disable_at9_decoder;
         emulator_child.append_attribute("disable-ngs") = config.disable_ngs;
-        emulator_child.append_attribute("video-playing") = config.video_playing;
 
         const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
         if (!save_xml)
@@ -270,7 +267,6 @@ static void save_config(GuiState &gui, HostState &host) {
         host.cfg.pstv_mode = config.pstv_mode;
         host.cfg.disable_at9_decoder = config.disable_at9_decoder;
         host.cfg.disable_ngs = config.disable_ngs;
-        host.cfg.video_playing = config.video_playing;
     }
     config::serialize_config(host.cfg, host.cfg.config_path);
 }
@@ -296,11 +292,8 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.pstv_mode = config.pstv_mode;
         host.cfg.current_config.disable_at9_decoder = config.disable_at9_decoder;
         host.cfg.current_config.disable_ngs = config.disable_ngs;
-        host.cfg.current_config.video_playing = config.video_playing;
-    }
-
-    // Else inherit the values from the global emulator config
-    else {
+    } else {
+        // Else inherit the values from the global emulator config
         host.cfg.current_config.cpu_backend = host.cfg.cpu_backend;
         host.cfg.current_config.cpu_opt = host.cfg.cpu_opt;
         host.cfg.current_config.lle_driver_user = host.cfg.lle_driver_user;
@@ -309,7 +302,6 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.pstv_mode = host.cfg.pstv_mode;
         host.cfg.current_config.disable_at9_decoder = host.cfg.disable_at9_decoder;
         host.cfg.current_config.disable_ngs = host.cfg.disable_ngs;
-        host.cfg.current_config.video_playing = host.cfg.video_playing;
     }
     // No change it if app already running
     if (host.io.title_id.empty()) {
@@ -490,9 +482,6 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Disable experimental ngs support", &config.disable_ngs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Disable experimental support for advanced audio library ngs");
-        ImGui::Checkbox("Enable video playing support", &config.video_playing);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Uncheck the box to disable the video player.\nOn some games, it is necessary to disable this for more progress.");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
