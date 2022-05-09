@@ -166,7 +166,8 @@ EXPORT(int, sceHttpGetStatusCode) {
 }
 
 EXPORT(int, sceHttpInit) {
-    return UNIMPLEMENTED();
+    STUBBED("Fail when called");
+    return -1;
 }
 
 EXPORT(int, sceHttpParseResponseHeader) {
