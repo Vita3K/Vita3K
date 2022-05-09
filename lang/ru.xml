@@ -18,6 +18,7 @@
 		</configuration>
 		<controls name="Управление">
 			<keyboard_controls>Элементы управления клавиатурой</keyboard_controls>
+			<controllers>Контроллеры</controllers>
 		</controls>
 		<help name="Справка">
 			<about>О программе</about>
@@ -236,4 +237,29 @@
 		<progress>Выполнено</progress>
 		<updated>Обновлен</updated>
 	</trophy_collection>
+
+	<user_management>
+		<select_user>Выберите пользователя</select_user>
+		<create_user>Создать пользователя</create_user>
+		<user_created>Пользователь был создан</user_created>
+		<edit_user>Изменить пользователя</edit_user>
+		<user_name_used>! Это имя уже используется.</user_name_used>
+		<delete_user>Удалить пользователя</delete_user>
+		<user_delete>Выберите пользователя, которого хотите удалить.</user_delete>
+		<user_delete_msg>Выбранный пользователь был удалён.</user_delete_msg>
+		<user_delete_message>Если Вы удалите пользователя, сохранённая информация, трофеи будут удалены.</user_delete_message>
+		<user_delete_warn>Пользователь будет удалён.
+Вы хотите продолжить?</user_delete_warn>
+		<user_deleted>Пользователь удалён.</user_deleted>
+		<change_avatar>Сменить аватар</change_avatar>
+		<reset_avatar>Сбросить аватар</reset_avatar>
+		<name>Имя</name>
+		<user>Пользователь</user>
+		<confirm>Подтвердить</confirm>
+		<cancel>Отмена</cancel>
+		<delete>Удалить</delete>
+		<yes>Да</yes>
+		<no>Нет</no>
+		<automatic_user_login>Автоматический вход пользователя</automatic_user_login>
+	</user_management>
 </lang>
