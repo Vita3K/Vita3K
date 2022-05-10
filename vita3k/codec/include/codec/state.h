@@ -52,7 +52,7 @@ enum class DecoderQuery {
     BIT_RATE,
     SAMPLE_RATE,
 
-    AT9_BLOCK_ALIGN,
+    AT9_SAMPLE_PER_FRAME,
     AT9_SAMPLE_PER_SUPERFRAME,
     AT9_FRAMES_IN_SUPERFRAME,
     AT9_SUPERFRAME_SIZE,
@@ -112,15 +112,11 @@ struct MjpegDecoderState : public DecoderState {
 
 struct Atrac9DecoderState : public DecoderState {
     void *decoder_handle;
-    uint32_t config_data;
-
-    std::vector<std::uint8_t> result;
-
-    uint32_t get_channel_count();
-    uint32_t get_samples_per_superframe();
-    uint32_t get_block_align();
-    uint32_t get_frames_in_superframe();
-    uint32_t get_superframe_size();
+    void *atrac9_info;
+    uint32_t es_size_used;
+    std::vector<uint8_t> result;
+    int superframe_frame_idx;
+    int superframe_data_left;
 
     uint32_t get(DecoderQuery query) override;
     uint32_t get_es_size() override;

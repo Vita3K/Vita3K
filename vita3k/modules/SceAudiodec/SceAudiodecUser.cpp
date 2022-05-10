@@ -128,7 +128,7 @@ static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCod
         state->decoders[handle] = decoder;
 
         ctrl->es_size_max = SCE_AUDIODEC_AT9_MAX_ES_SIZE;
-        ctrl->pcm_size_max = decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME)
+        ctrl->pcm_size_max = decoder->get(DecoderQuery::AT9_SAMPLE_PER_FRAME)
             * decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t);
         info.channels = decoder->get(DecoderQuery::CHANNELS);
         info.bit_rate = decoder->get(DecoderQuery::BIT_RATE);
