@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -123,6 +123,10 @@ uint32_t Mp3DecoderState::get_es_size() {
     return es_size_used;
 }
 
+void Mp3DecoderState::clear_context() {
+    codec->flush(context);
+}
+
 uint32_t Mp3DecoderState::get(DecoderQuery query) {
     switch (query) {
     case DecoderQuery::CHANNELS: return context->channels;
@@ -186,7 +190,7 @@ bool Mp3DecoderState::receive(uint8_t *data, DecoderSize *size) {
 }
 
 Mp3DecoderState::Mp3DecoderState(uint32_t channels) {
-    AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_MP3);
+    codec = avcodec_find_decoder(AV_CODEC_ID_MP3);
     assert(codec);
 
     context = avcodec_alloc_context3(codec);
