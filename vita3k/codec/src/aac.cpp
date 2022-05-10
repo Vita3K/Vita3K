@@ -74,7 +74,6 @@ bool AacDecoderState::receive(uint8_t *data, DecoderSize *size) {
         size->samples = frame->nb_samples;
     }
 
-    av_frame_free(&frame);
     return true;
 }
 
@@ -98,4 +97,8 @@ AacDecoderState::AacDecoderState(uint32_t sample_rate, uint32_t channels) {
 
     int err = avcodec_open2(context, codec, nullptr);
     assert(err == 0);
+}
+
+AacDecoderState::~AacDecoderState() {
+    av_frame_free(&frame);
 }
