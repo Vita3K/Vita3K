@@ -24,7 +24,7 @@
 // Code heavily influenced by PPSSSPP's SceDisplay.cpp
 
 static constexpr int TARGET_FPS = 60;
-static constexpr int TARGET_MS_PER_FRAME = 1000 / TARGET_FPS;
+static constexpr int64_t TARGET_MICRO_PER_FRAME = 1000000LL / TARGET_FPS;
 
 static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
     while (!display.abort.load()) {
@@ -70,9 +70,9 @@ static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
                 }
             }
         }
-        const auto time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        const auto time_left = TARGET_MS_PER_FRAME - (time_ms % TARGET_MS_PER_FRAME);
-        std::this_thread::sleep_for(std::chrono::milliseconds(time_left));
+        const auto time_ms = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        const auto time_left = TARGET_MICRO_PER_FRAME - (time_ms % TARGET_MICRO_PER_FRAME);
+        std::this_thread::sleep_for(std::chrono::microseconds(time_left));
     }
 }
 
