@@ -38,8 +38,10 @@ void calculate_fps(HostState &host) {
 
     if (ms >= 1000 && host.frame_count > 0) {
         // Set Current FPS
-        host.fps = static_cast<std::uint32_t>((host.frame_count * 1000) / ms);
-        host.ms_per_frame = ms / static_cast<std::uint32_t>(host.frame_count);
+        // round division to nearest integer instead of truncating
+        const uint32_t frame_count = static_cast<std::uint32_t>(host.frame_count);
+        host.fps = (frame_count * 1000 + ms / 2) / ms;
+        host.ms_per_frame = (ms + frame_count / 2) / frame_count;
         host.sdl_ticks = sdl_ticks_now;
         host.frame_count = 0;
         set_window_title(host);
