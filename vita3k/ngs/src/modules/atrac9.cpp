@@ -136,7 +136,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                 break;
             }
 
-            std::uint32_t superframe_size = decoder->get_superframe_size();
+            std::uint32_t superframe_size = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
 
             // Ran out of data, supply new
             // Decode new data and deliver them
@@ -178,31 +178,42 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                     input = temporary_bytes.data();
                 }
 
-                const std::size_t curr_pos = state->decoded_samples_pending * sizeof(float) * 2;
+                std::size_t curr_pos = state->decoded_samples_pending * sizeof(float) * 2;
 
-                data.extra_storage.resize(curr_pos + decoder->get_samples_per_superframe() * sizeof(float) * 2);
+                data.extra_storage.resize(curr_pos + decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME) * sizeof(float) * 2);
 
-                if (decoder->send(input, decoder->get_superframe_size())) {
+                bool got_decode_error = false;
+                // decode a whole superframe at a time
+                for (int frame = 0; frame < decoder->get(DecoderQuery::AT9_FRAMES_IN_SUPERFRAME); frame++) {
+                    if (!decoder->send(input, 0)) {
+                        got_decode_error = true;
+                        break;
+                    }
+
                     // convert from int16 to float
-                    uint32_t const channel_count = decoder->get_channel_count();
+                    uint32_t const channel_count = decoder->get(DecoderQuery::CHANNELS);
                     uint32_t const sample_rate = decoder->get(DecoderQuery::SAMPLE_RATE);
-                    std::vector<std::uint8_t> temporary_bytes(decoder->get_samples_per_superframe() * sizeof(int16_t) * channel_count);
+                    std::vector<std::uint8_t> temporary_bytes(decoder->get(DecoderQuery::AT9_SAMPLE_PER_FRAME) * sizeof(int16_t) * channel_count);
                     DecoderSize decoder_size;
                     decoder->receive(temporary_bytes.data(), &decoder_size);
                     resample_s16_to_f32(reinterpret_cast<const int16_t *>(temporary_bytes.data()), channel_count, decoder_size.samples, sample_rate,
                         reinterpret_cast<float *>(data.extra_storage.data() + curr_pos), decoder_size.samples, sample_rate);
-                } else {
+
+                    curr_pos += decoder->get(DecoderQuery::AT9_SAMPLE_PER_FRAME) * sizeof(float) * 2;
+                }
+
+                if (got_decode_error) {
                     data.parent->voice_lock->unlock();
                     data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_CALLBACK_REASON_DECODE_ERROR, state->current_byte_position_in_buffer,
                         params->buffer_params[state->current_buffer].buffer.address());
                     data.parent->voice_lock->lock();
                 }
 
-                state->samples_generated_since_key_on += decoder->get_samples_per_superframe();
-                state->bytes_consumed_since_key_on += decoder->get_superframe_size();
-                state->total_bytes_consumed += decoder->get_superframe_size();
+                state->samples_generated_since_key_on += decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME);
+                state->bytes_consumed_since_key_on += decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
+                state->total_bytes_consumed += decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
 
-                state->decoded_samples_pending += decoder->get_samples_per_superframe();
+                state->decoded_samples_pending += decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME);
             }
 
             try_cycle_to_next_buffer();
