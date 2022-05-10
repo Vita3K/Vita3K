@@ -185,6 +185,7 @@ struct AacDecoderState : public DecoderState {
     uint32_t get_es_size() override;
 
     explicit AacDecoderState(uint32_t sample_rate, uint32_t channels);
+    ~AacDecoderState();
 };
 
 struct PlayerState {
