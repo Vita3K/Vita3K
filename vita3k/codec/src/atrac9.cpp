@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavutil/opt.h>
 #include <libswresample/swresample.h>
+#include <structures.h>
 }
 
 #include <error_codes.h>
@@ -72,6 +73,15 @@ uint32_t Atrac9DecoderState::get_es_size() {
     return es_size_used;
 }
 
+void Atrac9DecoderState::clear_context() {
+    Atrac9CodecInfo *info = reinterpret_cast<Atrac9CodecInfo *>(atrac9_info);
+    superframe_frame_idx = 0;
+    superframe_data_left = info->superframeSize;
+
+    // hopefully this is enough
+    reinterpret_cast<Atrac9Handle *>(decoder_handle)->Frame.IndexInSuperframe = 0;
+}
+
 bool Atrac9DecoderState::send(const uint8_t *data, uint32_t size) {
     Atrac9CodecInfo *info = reinterpret_cast<Atrac9CodecInfo *>(atrac9_info);
 
@@ -110,7 +120,8 @@ bool Atrac9DecoderState::receive(uint8_t *data, DecoderSize *size) {
     return true;
 }
 
-Atrac9DecoderState::Atrac9DecoderState(uint32_t config_data) {
+Atrac9DecoderState::Atrac9DecoderState(uint32_t config_data)
+    : config_data(config_data) {
     decoder_handle = Atrac9GetHandle();
     const int err = Atrac9InitDecoder(decoder_handle, reinterpret_cast<uint8_t *>(&config_data));
 

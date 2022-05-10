@@ -109,8 +109,13 @@ LIBRARY_INIT_IMPL(SceAudiodec) {
 }
 LIBRARY_INIT_REGISTER(SceAudiodec)
 
-EXPORT(int, sceAudiodecClearContext) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAudiodecClearContext, SceAudiodecCtrl *ctrl) {
+    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    const DecoderPtr &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
+
+    decoder->clear_context();
+
+    return 0;
 }
 
 static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec) {

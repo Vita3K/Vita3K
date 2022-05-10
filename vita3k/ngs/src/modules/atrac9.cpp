@@ -207,6 +207,9 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                     data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_CALLBACK_REASON_DECODE_ERROR, state->current_byte_position_in_buffer,
                         params->buffer_params[state->current_buffer].buffer.address());
                     data.parent->voice_lock->lock();
+
+                    // clear the context or we'll get en error next time we cant to decode
+                    decoder->clear_context();
                 }
 
                 state->samples_generated_since_key_on += decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME);

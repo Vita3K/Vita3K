@@ -33,6 +33,8 @@ uint32_t DecoderState::get_es_size() {
     return std::numeric_limits<uint32_t>::max();
 }
 
+void DecoderState::clear_context() {}
+
 void DecoderState::flush() {
     avcodec_flush_buffers(context);
 }
