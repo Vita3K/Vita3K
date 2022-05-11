@@ -21,12 +21,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest]
         config: [Release]
         include:
-          - os: macos-latest
-            cache_path: ~/Library/Caches/ccache
-            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain/macos-x64.cmake
           - os: ubuntu-latest
             cache_path: ~/.ccache
             extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain/linux-x64.cmake -DUSE_DISCORD_RICH_PRESENCE=OFF

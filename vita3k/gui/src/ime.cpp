@@ -157,19 +157,19 @@ void init_ime_lang(Ime &ime, const SceImeLanguage &lang) {
         break;
     case SCE_IME_LANGUAGE_PORTUGUESE_BR:
     case SCE_IME_LANGUAGE_PORTUGUESE_PT:
-        space_str = u8"Espaço";
+        space_str = reinterpret_cast<const char *>(u8"Espaço");
         break;
     case SCE_IME_LANGUAGE_RUSSIAN:
-        space_str = u8"П р о б е л";
+        space_str = reinterpret_cast<const char *>(u8"П р о б е л");
         break;
     case SCE_IME_LANGUAGE_FINNISH:
-        space_str = u8"Välilyönti";
+        space_str = reinterpret_cast<const char *>(u8"Välilyönti");
         break;
     case SCE_IME_LANGUAGE_SWEDISH:
         space_str = "Blanksteg";
         break;
     case SCE_IME_LANGUAGE_TURKISH:
-        space_str = u8"Boşluk";
+        space_str = reinterpret_cast<const char *>(u8"Boşluk");
         break;
     default:
         space_str = "Space";
@@ -216,7 +216,7 @@ void init_ime_lang(Ime &ime, const SceImeLanguage &lang) {
         };
         break;
     case SCE_IME_LANGUAGE_RUSSIAN:
-        second_keyboard = { { FIRST, "ABC" }, { SECOND, u8"РУ" } };
+        second_keyboard = { { FIRST, "ABC" }, { SECOND, reinterpret_cast<const char *>(u8"РУ") } };
         lang_key = {
             { FIRST, { u"й", u"ц", u"у", u"к", u"е", u"н", u"г", u"ш", u"щ", u"з", u"х", u"ъ" } },
             { SECOND, { u"ё", u"ф", u"ы", u"в", u"а", u"п", u"р", u"о", u"л", u"д", u"ж", u"э" } },

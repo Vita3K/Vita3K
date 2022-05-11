@@ -48,9 +48,6 @@ macro(configure_boost)
 endmacro(configure_boost)
 
 configure_boost()
-if(${STANDARD_NUM} GREATER 14)
-	add_definitions(-DVITA3K_CPP${STANDARD_NUM})
-endif()
 
 if (USE_DISCORD_RICH_PRESENCE)
 	add_definitions(-DUSE_DISCORD)
@@ -103,9 +100,6 @@ if(USE_DISCORD_RICH_PRESENCE)
 endif()
 if(LINUX)
 	target_link_libraries(vita3k PRIVATE stdc++fs)
-endif()
-if(${STANDARD_NUM} GREATER 14)
-	target_compile_features(vita3k PUBLIC cxx_std_${STANDARD_NUM})
 endif()
 
 set_target_properties(vita3k PROPERTIES OUTPUT_NAME Vita3K

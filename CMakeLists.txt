@@ -5,7 +5,7 @@ project(Vita3K)
 include(ProcessorCount)
 ProcessorCount(CPU_COUNT)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -137,14 +137,6 @@ if(NOT CI)
 
 	boost_compile()
 	boost_set_paths()
-endif()
-
-include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/GetStandard.cmake")
-get_standard_for_build()
-if(${CPP17_SUPPORTED})
-	set(STANDARD_NUM 17)
-else()
-	set(STANDARD_NUM 11)
 endif()
 
 if(WIN32)

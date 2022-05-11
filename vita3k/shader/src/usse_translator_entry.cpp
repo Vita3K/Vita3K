@@ -24,9 +24,9 @@
 #include <shader/usse_translator.h>
 #include <shader/usse_translator_types.h>
 #include <util/log.h>
-#include <util/optional.h>
 
 #include <map>
+#include <optional>
 
 namespace shader::usse {
 
@@ -34,7 +34,7 @@ template <typename Visitor>
 using USSEMatcher = shader::decoder::Matcher<Visitor, uint64_t>;
 
 template <typename V>
-static optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
+static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
     static const std::vector<USSEMatcher<V>> table = {
 #define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
         // clang-format off
@@ -821,12 +821,7 @@ static optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
     const auto matches_instruction = [instruction](const auto &matcher) { return matcher.Matches(instruction); };
 
     auto iter = std::find_if(table.begin(), table.end(), matches_instruction);
-    return iter != table.end() ? optional<const USSEMatcher<V>>(*iter) :
-#ifdef VITA3K_CPP17
-                               std::nullopt;
-#else
-                               boost::none;
-#endif
+    return iter != table.end() ? std::optional<const USSEMatcher<V>>(*iter) : std::nullopt;
 }
 
 //
