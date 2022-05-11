@@ -37,119 +37,140 @@ enable_testing()
 ########## Boost ###########
 ############################
 
-# Macro to configure Boost
-macro(boost_configure)
-	if (WIN32)
+# Macro to build Boost buildsystem executable
+macro(b2_build)
+	if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
 		execute_process(
 			COMMAND ${BOOST_SOURCEDIR}/bootstrap.bat --with-toolset=${BOOST_TOOLSET}
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
+            OUTPUT_QUIET
 		)
-	elseif(UNIX)
+	elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
 		execute_process(
 			COMMAND chmod +x ${BOOST_SOURCEDIR}/tools/build/src/engine/build.sh
 			COMMAND sh ${BOOST_SOURCEDIR}/bootstrap.sh
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
+            OUTPUT_QUIET
+		)
+    elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+		execute_process(
+			COMMAND chmod +x ${BOOST_SOURCEDIR}/tools/build/src/engine/build.sh
+			COMMAND sh ${BOOST_SOURCEDIR}/bootstrap.sh --with-toolset=${BOOST_TOOLSET}
+			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
+            OUTPUT_QUIET
 		)
 	endif()
-endmacro(boost_configure)
+endmacro(b2_build)
 
 # Macro to compile Boost
 macro(boost_compile)
-	if (CMAKE_SYSTEM_NAME STREQUAL Windows)
+	if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
 		execute_process(
-			COMMAND ${BOOST_SOURCEDIR}/b2 -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} address-model=64 --architecture=x64 toolset=${BOOST_TOOLSET} stage
+			COMMAND ${b2} -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} address-model=64 --architecture=x64 toolset=${BOOST_TOOLSET} cxxflags=${BOOST_CXX_FLAGS} stage
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
+            OUTPUT_QUIET
 		)
-	elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+	elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 		execute_process(
-			COMMAND ${BOOST_SOURCEDIR}/b2 -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} stage
+			COMMAND ${b2} -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} cxxflags=${BOOST_CXX_FLAGS} stage
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
+            OUTPUT_QUIET
 		)
-	elseif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+	elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		execute_process(
-			COMMAND ${BOOST_SOURCEDIR}/b2 --ignore-site-config -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} stage
+			COMMAND ${b2} --ignore-site-config -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} toolset=${BOOST_TOOLSET} cxxflags=${BOOST_CXX_FLAGS} stage
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
+            OUTPUT_QUIET
 		)
 	endif()
 endmacro(boost_compile)
 
-# Macro to adjust CMake paths to enable Boost as a static library and findable package for other dependencies in the project
-macro(boost_set_paths)
-	set (Boost_USE_STATIC_LIBS ON)
-	find_package(Boost COMPONENTS filesystem system program_options QUIET)
+option(VITA3K_FORCE_CUSTOM_BOOST "Force Vita3K build process to use the Boost version included with the repository" OFF)
+option(VITA3K_FORCE_SYSTEM_BOOST "Force Vita3K build process to use the Boost version in the system and CMake's default paths and ignore the Boost version included with Vita3K" OFF)
 
-	if (${Boost_FOUND})
-		set(BOOST_INCLUDEDIR ${Boost_INCLUDE_DIRS})
-		set(BOOST_LIBRARYDIR ${Boost_LIBRARIES})
-	else()
-		message("Setting up ext-boost environment variables")
-		set(BOOST_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/external/boost")
-		set(BOOST_INCLUDEDIR "${BOOST_ROOT}/boost")
-		set(BOOST_LIBRARYDIR "${BOOST_INSTALLDIR}/lib")
-	endif()
+# If build process isn't set to forcefully use system Boost
+if(NOT VITA3K_FORCE_SYSTEM_BOOST)
+    # find_package(Boost ...) setting
+    set(Boost_USE_STATIC_LIBS ON)
 
-	message("Using Boost_VERSION: ${BOOST_ROOT}")
-	message("Using Boost_INCLUDE_DIRS: ${BOOST_INCLUDEDIR}")
-	message("Using Boost_LIBRARY_DIRS: ${BOOST_LIBRARYDIR}")
-endmacro(boost_set_paths)
+    # First, try to find Boost without any hints (system Boost)
+    if(NOT VITA3K_FORCE_CUSTOM_BOOST)
+        find_package(Boost COMPONENTS filesystem system program_options QUIET)
+    endif()
 
-# Builds Boost using source code located at external/boost if the host isn't a CI environment
-if(NOT CI)
-	# Sets the location of the source root and the binary installation path for Boost
-	# Building Boost right at the CMake binary path should allow to build Vita3K for different target platforms
-	# without having to delete the boost-build folder each time the target platform changes
-	set(BOOST_SOURCEDIR "${CMAKE_SOURCE_DIR}/external/boost")
-	set(BOOST_INSTALLDIR "${CMAKE_BINARY_DIR}/external/boost/")
+    # If system Boost hasn't been found, then enable hints to find custom Boost
+    if (NOT Boost_FOUND)
+        message(STATUS "A Boost distribution that meets the requirements needed for the project hasn't been found in your system. Falling back to custom Boost distribution...")
+    
+        # Set path hints for Boost search inside the repository folder and assist in compilation if needed
+        set(BOOST_SOURCEDIR "${CMAKE_SOURCE_DIR}/external/boost")       # For internal use
+        set(BOOST_INSTALLDIR "${CMAKE_BINARY_DIR}/external/boost")      # For internal use
+        set(BOOST_ROOT "${BOOST_SOURCEDIR}")                            # find_package(Boost ...) hint
+        set(BOOST_INCLUDEDIR "${BOOST_SOURCEDIR}")                      # find_package(Boost ...) hint
+        set(BOOST_LIBRARYDIR "${BOOST_INSTALLDIR}/lib")                 # find_package(Boost ...) hint
 
-	# Prevents the function from using CMake cache to retrieve the path and
-	# avoid errors in case b2 was deleted between cache generation events
-	unset(b2 CACHE)
-	
-	#set toolset for windows
-	if (WIN32)
-		if (CMAKE_GENERATOR_TOOLSET STREQUAL clangcl)
-			set(BOOST_TOOLSET clang-win)
-		else()	
-			set(BOOST_TOOLSET msvc)
-		endif()
-	endif()
+        # Find Boost again to check for a existing compilation of the custom distribution
+        find_package(Boost COMPONENTS filesystem system program_options QUIET)
 
-	# Skips Boost configuration and b2 compilation if it already exists by trying to find b2
-	# b2 compilation takes a while and time for consecutive cache re-generations can be reduced this way
-	if (${CMAKE_HOST_SYSTEM_NAME} STREQUAL "Windows")
-		find_file(
-			# Variable which holds the path to b2 if it's found
-			# If not, its value will be "b2-NOTFOUND"
-			b2
+        # If no build of the custom distribution is found, compile it
+        if(NOT Boost_FOUND)
+            message(STATUS "No existing custom distribution of Boost has been found in ${BOOST_INSTALLDIR}. Proceeding to compile Boost...")
 
-			# Name of the file to look for depending on the host OS
-			b2.exe
+            # Set compilation toolset for b2 and Boost builds
+            if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+                if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+                    if(CMAKE_GENERATOR_TOOLSET STREQUAL "ClangCL")
+                        # Proper toolset should be "clang-win", but b2 has a bug that makes it spam Visual Studio instances if set
+                        # Since Clang for Windows is ABI-compatible with MSVC, using MSVC is fine
+                        set(BOOST_TOOLSET "msvc")
+                    else()
+                        message(WARNING "Boost compilation on Windows requires the use of a clang-cl compiler running inside a Visual Studio Developer CLI environment with a Windows C++ SDK available.")
+                        set(BOOST_TOOLSET "msvc")
+                    endif()
+                else()
+                    set(BOOST_TOOLSET "msvc")
+                endif()
+            elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+                if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+                    set(BOOST_TOOLSET "clang")
+                else(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+                    set(BOOST_TOOLSET "gcc")
+                endif()
+            endif()
 
-			PATHS "${BOOST_SOURCEDIR}"
-			
-			# Prevents the function from using CMake cache to retrieve the path and
-			# avoid errors in case b2 was deleted between cache generation events
-			NO_CMAKE_PATH
-		)
-	else()
-		find_file(
-			# Variable which holds the path to b2 if it's found
-			# If not, its value will be "b2-NOTFOUND"
-			b2
+            # Determine b2 executable name depending on host system
+            if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+                set(b2_EXECUTABLE_NAME "b2.exe")
+            else()
+                set(b2_EXECUTABLE_NAME "b2")
+            endif()
 
-			# Name of the file to look for depending on the host OS
-			b2
+            # Find b2
+            find_program(b2 NAME ${b2_EXECUTABLE_NAME} PATHS ${BOOST_SOURCEDIR} NO_CACHE)
 
-			PATHS "${BOOST_SOURCEDIR}"
-		)
-	endif()
+            # Compile b2 if it isn't found
+            if(b2 STREQUAL "b2-NOTFOUND")
+                message(STATUS "The b2 buildsystem executable hasn't been found in your system. Compiling b2...")
+                b2_build()
 
-	if (${b2} STREQUAL "b2-NOTFOUND")
-		boost_configure()
-	endif()
+                # Find b2 again after compilation
+                find_program(b2 NAME ${b2_EXECUTABLE_NAME} PATHS ${BOOST_SOURCEDIR} NO_CACHE)
+            endif()
 
-	boost_compile()
-	boost_set_paths()
+            # Compile Boost
+            message(STATUS "Compiling Boost...")
+            boost_compile()
+
+            # Find Boost again
+            find_package(Boost COMPONENTS filesystem system program_options QUIET)
+        else()
+            message(STATUS "Custom Boost distribution found in ${BOOST_INSTALLDIR}")
+        endif()
+    endif()
+else()
+    # Try to find Boost on the system and CMake's default paths
+    set(Boost_USE_STATIC_LIBS ON)
+    find_package(Boost COMPONENTS filesystem system program_options QUIET)
 endif()
 
 if(WIN32)
