@@ -26,10 +26,6 @@
 #include <CLI11.hpp>
 #include <vector>
 
-#ifndef VITA3K_CPP17
-#include <boost/optional/optional_io.hpp>
-#endif
-
 #include <exception>
 #include <iostream>
 

@@ -21,8 +21,9 @@
 #include <config/yaml.h>
 
 #include <util/fs.h>
-#include <util/optional.h>
 #include <util/vector_utils.h>
+
+#include <optional>
 
 // Enum based on members in Config file
 // Used for easier getting of options and their names for config files
@@ -83,12 +84,12 @@ private:
 
 public:
     // Optional config settings
-    optional<fs::path> content_path;
-    optional<std::string> run_app_path;
-    optional<std::string> recompile_shader_path;
-    optional<std::string> delete_title_id;
-    optional<std::string> pkg_path;
-    optional<std::string> pkg_zrif;
+    std::optional<fs::path> content_path;
+    std::optional<std::string> run_app_path;
+    std::optional<std::string> recompile_shader_path;
+    std::optional<std::string> delete_title_id;
+    std::optional<std::string> pkg_path;
+    std::optional<std::string> pkg_zrif;
 
     // Setting not present in the YAML file
     fs::path config_path = {};

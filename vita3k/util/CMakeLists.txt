@@ -24,27 +24,5 @@ add_library(
 	src/instrset_detect.cpp
 )
 
-set(INCLUDE_BEGIN "#pragma once
-
-/*
-    THIS IS AN AUTOMATICALLY GENERATED FILE. DO NOT EDIT!
-*/")
-
-if(${STANDARD_NUM} GREATER 14)
-	set(INCLUDE_HEADER "optional")
-	set(NAMESPACE "std::optional")
-else()
-	set(INCLUDE_HEADER "boost/optional.hpp")
-	set(NAMESPACE "boost::optional")
-endif()
-
-set(INCLUDE_COMPLETE "${INCLUDE_BEGIN}
-
-#include <${INCLUDE_HEADER}>
-using ${NAMESPACE}\;
-")
-
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/include/util/optional.h" ${INCLUDE_COMPLETE})
-
-target_include_directories(util PUBLIC include ${CMAKE_CURRENT_BINARY_DIR}/include)
+target_include_directories(util PUBLIC include)
 target_link_libraries(util PUBLIC ${Boost_LIBRARIES} fmt spdlog)
