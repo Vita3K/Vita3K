@@ -141,6 +141,6 @@ Atrac9DecoderState::Atrac9DecoderState(uint32_t config_data)
 
 Atrac9DecoderState::~Atrac9DecoderState() {
     Atrac9ReleaseHandle(decoder_handle);
-    delete atrac9_info;
+    delete reinterpret_cast<Atrac9CodecInfo *>(atrac9_info);
     context = nullptr;
 }

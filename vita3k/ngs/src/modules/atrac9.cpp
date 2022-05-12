@@ -200,6 +200,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                         reinterpret_cast<float *>(data.extra_storage.data() + curr_pos), decoder_size.samples, sample_rate);
 
                     curr_pos += decoder->get(DecoderQuery::AT9_SAMPLE_PER_FRAME) * sizeof(float) * 2;
+                    input += decoder->get_es_size();
                 }
 
                 if (got_decode_error) {
