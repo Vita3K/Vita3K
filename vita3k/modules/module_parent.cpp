@@ -82,6 +82,7 @@ const std::array<VarExport, var_exports_size> &get_var_exports() {
  * \return Resolved address, 0 if not found
  */
 Address resolve_export(KernelState &kernel, uint32_t nid) {
+    const std::shared_lock<std::shared_mutex> lock(kernel.export_nids_mutex);
     const ExportNids::iterator export_address = kernel.export_nids.find(nid);
     if (export_address == kernel.export_nids.end()) {
         return 0;
