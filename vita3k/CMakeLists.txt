@@ -58,6 +58,7 @@ if (USE_VULKAN)
 endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(NOT MSVC)
 	add_compile_options(-Wformat -Werror=format-security)

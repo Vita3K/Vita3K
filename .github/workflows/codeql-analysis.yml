@@ -29,7 +29,7 @@ jobs:
         # https://docs.github.com/en/github/finding-security-vulnerabilities-and-errors-in-your-code/configuring-code-scanning#overriding-automatic-language-detection
         os: [ubuntu-latest]
         config: [Release]
-
+        cmake_preset: [linux-ninja-clang]
 
     steps:
       - name: Set up build environment (ubuntu-latest)
@@ -78,8 +78,8 @@ jobs:
 
       - name: Build
         run: |
-         cmake -B build -DCI=ON -DCMAKE_BUILD_TYPE=${{ matrix.config }} -DCMAKE_TOOLCHAIN_FILE=./cmake/toolchain/linux-x64.cmake -DUSE_DISCORD_RICH_PRESENCE=OFF -G Ninja
-         cmake --build build --config ${{ matrix.config }}
+         cmake -DCI=ON --preset ${{ matrix.cmake_preset }}
+         cmake --build build/${{ matrix.cmake_preset }} --config ${{ matrix.config }}
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2

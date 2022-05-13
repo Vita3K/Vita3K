@@ -1,0 +1,214 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 23,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "description": "Base hidden preset to set general options",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "USE_DISCORD_RICH_PRESENCE": true
+      }
+    },
+    {
+      "name": "windows",
+      "inherits": "base",
+      "displayName": "Windows default",
+      "description": "Windows native build using default generator and default compiler",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "windows-vs2022",
+      "inherits": "windows",
+      "displayName": "Windows with Visual Studio 2022",
+      "description": "Windows native build using Visual Studio 2022 generator and default toolchain/compiler",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64"
+    },
+    {
+      "name": "windows-vs2022-clang",
+      "inherits": "windows-vs2022",
+      "displayName": "Windows with Visual Studio 2022 and Clang",
+      "description": "Windows native build using Visual Studio 2022 generator and the ClangCL/LLVM toolchain",
+      "toolset": "ClangCL"
+    },
+    {
+      "name": "windows-ninja",
+      "inherits": "windows",
+      "displayName": "Windows with Ninja",
+      "description": "Windows native build using Ninja Multi-Config and default compiler",
+      "generator": "Ninja Multi-Config"
+    },
+    {
+      "name": "windows-ninja-clang",
+      "inherits": "windows-ninja",
+      "displayName": "Windows with Ninja and Clang",
+      "description": "Windows native build using Ninja Multi-Config and Clang compiler",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-cl",
+        "CMAKE_CXX_COMPILER": "clang-cl"
+      }
+    },
+    {
+      "name": "linux",
+      "inherits": "base",
+      "displayName": "Linux default",
+      "description": "Linux native build using default generator and default compiler",
+      "cacheVariables": {
+        "USE_DISCORD_RICH_PRESENCE": false
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "linux-ninja",
+      "inherits": "linux",
+      "displayName": "Linux with Ninja",
+      "description": "Linux native build using Ninja Multi-Config generator and default compiler",
+      "generator": "Ninja Multi-Config"
+    },
+    {
+      "name": "linux-ninja-clang",
+      "inherits": "linux-ninja",
+      "displayName": "Linux with Ninja and Clang",
+      "description": "Linux native build using Ninja Multi-Config generator and Clang compiler",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "linux-ninja-gnu",
+      "inherits": "linux-ninja",
+      "displayName": "Linux with Ninja and GNU GCC",
+      "description": "Linux native build using Ninja Multi-Config generator and GNU GCC compiler",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "macos",
+      "inherits": "base",
+      "displayName": "macOS default",
+      "description": "macOS native build using default generator and default compiler",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Darwin"
+      }
+    },
+    {
+      "name": "macos-ninja",
+      "inherits": "macos",
+      "displayName": "macOS with Ninja",
+      "description": "Linux native build using Ninja Multi-Config generator and default compiler",
+      "generator": "Ninja Multi-Config"
+    },
+    {
+      "name": "macos-xcode",
+      "inherits": "macos",
+      "displayName": "macOS with Xcode",
+      "description": "Linux native build using Xcode generator and default compiler",
+      "generator": "Xcode"
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "windows-vs2022-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information and no compiler optimizations",
+      "configuration": "Debug",
+      "configurePreset": "windows-vs2022"
+    },
+    {
+      "name": "windows-vs2022-relwithdebinfo",
+      "displayName": "Release with debugging information",
+      "description": "Build with compiler optimizations enabled and limited debugging information",
+      "configuration": "RelWithDebInfo",
+      "configurePreset": "windows-vs2022"
+    },
+    {
+      "name": "windows-vs2022-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information",
+      "configuration": "Release",
+      "configurePreset": "windows-vs2022"
+    },
+    {
+      "name": "windows-vs2022-clang-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information and no compiler optimizations",
+      "configuration": "Debug",
+      "configurePreset": "windows-vs2022-clang"
+    },
+    {
+      "name": "windows-vs2022-clang-relwithdebinfo",
+      "displayName": "Release with debugging information",
+      "description": "Build with compiler optimizations enabled and limited debugging information",
+      "configuration": "RelWithDebInfo",
+      "configurePreset": "windows-vs2022-clang"
+    },
+    {
+      "name": "windows-vs2022-clang-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information",
+      "configuration": "Release",
+      "configurePreset": "windows-vs2022-clang"
+    },
+    {
+      "name": "linux-ninja-clang-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information and no compiler optimizations",
+      "configuration": "Debug",
+      "configurePreset": "linux-ninja-clang"
+    },
+    {
+      "name": "linux-ninja-clang-relwithdebinfo",
+      "displayName": "Release with debugging information",
+      "description": "Build with compiler optimizations enabled and limited debugging information",
+      "configuration": "RelWithDebInfo",
+      "configurePreset": "linux-ninja-clang"
+    },
+    {
+      "name": "linux-ninja-clang-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information",
+      "configuration": "Release",
+      "configurePreset": "linux-ninja-clang"
+    },
+    {
+      "name": "linux-ninja-gnu-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information and no compiler optimizations",
+      "configuration": "Debug",
+      "configurePreset": "linux-ninja-gnu"
+    },
+    {
+      "name": "linux-ninja-gnu-relwithdebinfo",
+      "displayName": "Release with debugging information",
+      "description": "Build with compiler optimizations enabled and limited debugging information",
+      "configuration": "RelWithDebInfo",
+      "configurePreset": "linux-ninja-gnu"
+    },
+    {
+      "name": "linux-ninja-gnu-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information",
+      "configuration": "Release",
+      "configurePreset": "linux-ninja-gnu"
+    }
+  ]
+}
