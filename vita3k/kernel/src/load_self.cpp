@@ -91,7 +91,10 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
             export_address = stub_symval_ptr.address();
 
             // Use same stub for other var imports
-            kernel.export_nids.emplace(nid, export_address);
+            {
+                const std::unique_lock<std::shared_mutex> lock_exclusive(kernel.export_nids_mutex);
+                kernel.export_nids.emplace(nid, export_address);
+            }
             kernel.not_found_vars.emplace(export_address, nid);
         }
 
@@ -221,7 +224,10 @@ static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids
         if (nid == NID_MODULE_STOP || nid == NID_MODULE_EXIT)
             continue;
 
-        kernel.export_nids.emplace(nid, entry.address());
+        {
+            const std::unique_lock<std::shared_mutex> lock(kernel.export_nids_mutex);
+            kernel.export_nids.emplace(nid, entry.address());
+        }
         kernel.nid_from_export.emplace(entry.address(), nid);
 
         if (kernel.debugger.log_exports) {
@@ -261,7 +267,10 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
             LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, log_hex(entry.address()));
         }
 
-        kernel.export_nids.emplace(nid, entry.address());
+        {
+            const std::unique_lock<std::shared_mutex> lock(kernel.export_nids_mutex);
+            kernel.export_nids.emplace(nid, entry.address());
+        }
         kernel.nid_from_export.emplace(entry.address(), nid);
     }
 

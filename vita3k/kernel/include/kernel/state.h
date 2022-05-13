@@ -35,6 +35,7 @@
 #include <mutex>
 #include <optional>
 #include <queue>
+#include <shared_mutex>
 #include <unordered_map>
 #include <vector>
 
@@ -137,6 +138,7 @@ struct KernelState {
     SceKernelModuleInfoPtrs loaded_modules;
     LoadedSysmodules loaded_sysmodules;
     ExportNids export_nids;
+    std::shared_mutex export_nids_mutex;
     NidFromExport nid_from_export;
 
     bool cpu_opt;
