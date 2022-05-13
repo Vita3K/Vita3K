@@ -15,3 +15,5 @@ build
 /docs/html/
 # clangd cache
 .cache
+# CMake user presets
+CMakeUserPresets.json
