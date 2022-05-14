@@ -714,15 +714,15 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
 
     std::unique_lock<std::mutex> event_lock(event->mutex);
 
-    if (outBits) {
-        *outBits = event->flags & flags;
-    }
-
     bool condition;
     if (wait & SCE_EVENT_WAITOR) {
         condition = event->flags & flags;
     } else {
         condition = (event->flags & flags) == flags;
+    }
+
+    if (outBits) {
+        *outBits = event->flags;
     }
 
     if (condition) {
@@ -733,6 +733,8 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         if (wait & SCE_EVENT_WAITCLEAR_PAT) {
             event->flags &= ~flags;
         }
+
+        return SCE_KERNEL_OK;
     } else if (dowait) {
         std::unique_lock<std::mutex> thread_lock(thread->mutex);
         thread->update_status(ThreadStatus::wait, ThreadStatus::run);
@@ -741,15 +743,22 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         data.thread = thread;
         data.wait = wait;
         data.flags = flags;
+        data.outBits = outBits;
         data.priority = thread->priority;
 
         const auto data_it = event->waiting_threads->push(data);
         thread_lock.unlock();
 
-        return handle_timeout(thread, thread_lock, event_lock, event->waiting_threads, data, data_it, export_name, timeout);
+        const int err = handle_timeout(thread, thread_lock, event_lock, event->waiting_threads, data, data_it, export_name, timeout);
+        if (err < 0 && outBits) {
+            // set it only if a timeout occurs
+            // otherwise set in eventflag_set
+            *outBits = event->flags;
+        }
+        return err;
+    } else {
+        return RET_ERROR(SCE_KERNEL_ERROR_EVF_COND);
     }
-
-    return SCE_KERNEL_OK;
 }
 
 SceInt32 eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
@@ -792,6 +801,10 @@ SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thre
         }
 
         if (condition) {
+            if (waiting_thread_data.outBits) {
+                *waiting_thread_data.outBits = event->flags;
+            }
+
             if (waiting_thread_data.wait & SCE_EVENT_WAITCLEAR) {
                 event->flags = 0;
             }

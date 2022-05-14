@@ -39,6 +39,7 @@ struct WaitingThreadData {
         struct { // event flags
             int32_t wait;
             int32_t flags;
+            uint32_t *outBits;
         };
         // struct { }; // condvar
         struct { // msgpipe
