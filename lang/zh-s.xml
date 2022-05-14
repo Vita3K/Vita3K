@@ -27,11 +27,26 @@
 	</main_menubar>
 
 	<app_context>
+		<boot>运行</boot> 
+		<check_app_compatibility>查看应用程序兼容性</check_app_compatibility>
+		<copy_app_info>复制应用程序信息</copy_app_info>
+		<id_and_name>ID和名称</id_and_name>
+		<custom_config>自定义配置</custom_config>
+		<create>创建</create>
+		<edit>编辑</edit>
+		<remove>移除</remove>
+		<open_folder>打开文件夹</open_folder>
+		<application>应用程序</application>
+		<addcont>DLC追加内容</addcont>
+		<license>授权</license>
+		<save_data>保存数据</save_data>
+		<shader_cache>着色器缓存</shader_cache>
+		<shader_log>着色器日志</shader_log>
 		<update_history>更新历史记录</update_history>
 		<information>信息</information>
 		<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
 		<save_delete>要删除此保存数据吗？</save_delete>
-		<eligible>有权</eligible> 
+		<eligible>有权</eligible>
 		<ineligible>无权</ineligible>
 		<level>级别</level>
 		<name>名称</name>

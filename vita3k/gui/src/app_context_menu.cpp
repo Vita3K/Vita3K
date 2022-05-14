@@ -291,15 +291,15 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
         ImGui::SetWindowFontScale(1.3f * RES_SCALE.x);
-        if (ImGui::MenuItem("Boot"))
+        if (ImGui::MenuItem(lang["boot"].c_str()))
             pre_load_app(gui, host, false, app_path);
         if (title_id.find("NPXS") == std::string::npos) {
-            if (ImGui::MenuItem("Check App Compatibility")) {
+            if (ImGui::MenuItem(lang["check_app_compatibility"].c_str())) {
                 const std::string compat_url = title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + APP_INDEX->title;
                 open_path(compat_url);
             }
-            if (ImGui::BeginMenu("Copy App Info")) {
-                if (ImGui::MenuItem("ID and Name")) {
+            if (ImGui::BeginMenu(lang["copy_app_info"].c_str())) {
+                if (ImGui::MenuItem(lang["id_and_name"].c_str())) {
                     ImGui::LogToClipboard();
                     ImGui::LogText("%s [%s]", title_id.c_str(), APP_INDEX->title.c_str());
                     ImGui::LogFinish();
@@ -309,37 +309,37 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     ImGui::LogText("%s", title_id.c_str());
                     ImGui::LogFinish();
                 }
-                if (ImGui::MenuItem("Name")) {
+                if (ImGui::MenuItem(lang["name"].c_str())) {
                     ImGui::LogToClipboard();
                     ImGui::LogText("%s", APP_INDEX->title.c_str());
                     ImGui::LogFinish();
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Custom Config")) {
+            if (ImGui::BeginMenu(lang["custom_config"].c_str())) {
                 if (!fs::exists(CUSTOM_CONFIG_PATH)) {
-                    if (ImGui::MenuItem("Create", nullptr, &gui.configuration_menu.custom_settings_dialog))
+                    if (ImGui::MenuItem(lang["create"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
                         init_config(gui, host, app_path);
                 } else {
-                    if (ImGui::MenuItem("Edit", nullptr, &gui.configuration_menu.custom_settings_dialog))
+                    if (ImGui::MenuItem(lang["edit"].c_str(), nullptr, &gui.configuration_menu.custom_settings_dialog))
                         init_config(gui, host, app_path);
-                    if (ImGui::MenuItem("Remove"))
+                    if (ImGui::MenuItem(lang["remove"].c_str()))
                         fs::remove(CUSTOM_CONFIG_PATH);
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Open Folder")) {
-                if (ImGui::MenuItem("Application"))
+            if (ImGui::BeginMenu(lang["open_folder"].c_str())) {
+                if (ImGui::MenuItem(lang["application"].c_str()))
                     open_path(APP_PATH.string());
-                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem("AddCont"))
+                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang["addcont"].c_str()))
                     open_path(ADDCONT_PATH.string());
-                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem("License"))
+                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang["license"].c_str()))
                     open_path(LICENSE_PATH.string());
-                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
+                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(lang["save_data"].c_str()))
                     open_path(SAVE_DATA_PATH.string());
-                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem("Shader Cache"))
+                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang["shader_cache"].c_str()))
                     open_path(SHADER_CACHE_PATH.string());
-                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem("Shader Log"))
+                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang["shader_log"].c_str()))
                     open_path(SHADER_LOG_PATH.string());
                 ImGui::EndMenu();
             }
@@ -355,17 +355,17 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu(common["delete"].c_str())) {
-                if (ImGui::MenuItem("Application"))
+                if (ImGui::MenuItem(lang["application"].c_str()))
                     context_dialog = "app";
-                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem("AddCont"))
+                if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang["addcont"].c_str()))
                     fs::remove_all(ADDCONT_PATH);
-                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem("License"))
+                if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang["license"].c_str()))
                     fs::remove_all(LICENSE_PATH);
-                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem("Save Data"))
+                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(lang["save_data"].c_str()))
                     context_dialog = "save";
-                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem("Shader Cache"))
+                if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang["shader_cache"].c_str()))
                     fs::remove_all(SHADER_CACHE_PATH);
-                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem("Shader Log"))
+                if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang["shader_log"].c_str()))
                     fs::remove_all(SHADER_LOG_PATH);
                 ImGui::EndMenu();
             }

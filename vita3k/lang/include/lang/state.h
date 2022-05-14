@@ -100,21 +100,21 @@ struct LangState {
             { "install_firmware", "Install Firmware" },
             { "install_pkg", "Install .pkg" },
             { "install_zip", "Install .zip, .vpk" },
-            { "install_license", "Install License" },
+            { "install_license", "Install License" }
         };
         std::map<std::string, std::string> emulation = {
             { "title", "Emulation" },
-            { "last_apps_used", "Last Apps used" },
+            { "last_apps_used", "Last Apps used" }
         };
         std::map<std::string, std::string> configuration = {
             { "title", "Configuration" },
             { "settings", "Settings" },
-            { "user_management", "User Management" },
+            { "user_management", "User Management" }
         };
         std::map<std::string, std::string> controls = {
             { "title", "Controls" },
             { "keyboard_controls", "Keyboard Controls" },
-            { "controllers", "Controllers" },
+            { "controllers", "Controllers" }
         };
         std::map<std::string, std::string> help = {
             { "title", "Help" },
@@ -124,6 +124,21 @@ struct LangState {
     };
     MainMenubar main_menubar;
     std::map<std::string, std::string> app_context = {
+        { "boot", "Boot" },
+        { "check_app_compatibility", "Check App Compatibility" },
+        { "copy_app_info", "Copy App Info" },
+        { "id_and_name", "ID and Name" },
+        { "custom_config", "Custom Config" },
+        { "create", "Create" },
+        { "edit", "Edit" },
+        { "remove", "Remove" },
+        { "open_folder", "Open Folder" },
+        { "application", "Application" },
+        { "addcont", "DLCs" },
+        { "license", "License" },
+        { "save_data", "Save Data" },
+        { "shader_cache", "Shader Cache" },
+        { "shader_log", "Shader Log" },
         { "update_history", "Update History" },
         { "information", "Information" },
         { "app_delete", "This application and all related data, including saved data, will be deleted." },
@@ -249,7 +264,7 @@ struct LangState {
         { "delete", "Delete" },
         { "yes", "Yes" },
         { "no", "No" },
-        { "automatic_user_login", "Automatic User Login" },
+        { "automatic_user_login", "Automatic User Login" }
     };
     struct Common {
         std::vector<std::string> wday = {
