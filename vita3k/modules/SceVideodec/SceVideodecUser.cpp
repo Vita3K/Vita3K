@@ -157,6 +157,7 @@ EXPORT(int, sceAvcdecCscInternal) {
 EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceAvcdecArrayPicture *picture) {
     const auto state = host.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
+    assert(picture->numOfElm == 1);
 
     H264DecoderOptions options = {};
     options.pts_upper = au->pts.upper;
@@ -174,7 +175,9 @@ EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceA
     if (send && decoder_info->receive(output)) {
         decoder_info->get_res(pPicture->frame.frameWidth, pPicture->frame.frameHeight);
         decoder_info->get_pts(pPicture->info.pts.upper, pPicture->info.pts.lower);
-        picture->numOfOutput++;
+        picture->numOfOutput = 1;
+    } else {
+        picture->numOfOutput = 0;
     }
 
     return 0;
@@ -247,6 +250,9 @@ EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *
 
     uint8_t *output = picture->pPicture.get(host.mem)[0].get(host.mem)->frame.pPicture[0].cast<uint8_t>().get(host.mem);
     decoder_info->receive(output);
+
+    assert(picture->numOfOutput > 0);
+    picture->numOfOutput--;
 
     return 0;
 }
