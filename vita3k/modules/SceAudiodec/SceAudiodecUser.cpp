@@ -200,25 +200,42 @@ EXPORT(int, sceAudiodecCreateDecoderResident) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAudiodecDecode, SceAudiodecCtrl *ctrl) {
+static int decode_audio_frames(HostState &host, SceAudiodecCtrl *ctrl, SceUInt32 nb_frames) {
     const auto state = host.kernel.obj_store.get<AudiodecState>();
     const DecoderPtr &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
 
-    DecoderSize size = {};
+    uint8_t *es_data = ctrl->es_data.get(host.mem);
+    uint8_t *pcm_data = ctrl->pcm_data.get(host.mem);
 
-    decoder->send(ctrl->es_data.get(host.mem), ctrl->es_size_max);
-    decoder->receive(ctrl->pcm_data.get(host.mem), &size);
+    ctrl->es_size_used = 0;
+    ctrl->pcm_size_given = 0;
 
-    ctrl->es_size_used = std::min(decoder->get_es_size(), ctrl->es_size_max);
-    ctrl->pcm_size_given = size.samples * decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t);
-    assert(ctrl->es_size_used <= ctrl->es_size_max);
-    assert(ctrl->pcm_size_given <= ctrl->pcm_size_max);
+    for (uint32_t frame = 0; frame < nb_frames; frame++) {
+        DecoderSize size;
+
+        decoder->send(es_data, ctrl->es_size_max);
+        decoder->receive(pcm_data, &size);
+
+        uint32_t es_size_used = std::min(decoder->get_es_size(), ctrl->es_size_max);
+        assert(es_size_used <= ctrl->es_size_max);
+        ctrl->es_size_used += es_size_used;
+        es_data += es_size_used;
+
+        uint32_t pcm_size_given = size.samples * decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t);
+        assert(pcm_size_given <= ctrl->pcm_size_max);
+        ctrl->pcm_size_given += pcm_size_given;
+        pcm_data += pcm_size_given;
+    }
 
     return 0;
 }
 
-EXPORT(int, sceAudiodecDecodeNFrames) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAudiodecDecode, SceAudiodecCtrl *ctrl) {
+    return decode_audio_frames(host, ctrl, 1);
+}
+
+EXPORT(int, sceAudiodecDecodeNFrames, SceAudiodecCtrl *ctrl, SceUInt32 nFrames) {
+    return decode_audio_frames(host, ctrl, nFrames);
 }
 
 EXPORT(int, sceAudiodecDecodeNStreams) {
