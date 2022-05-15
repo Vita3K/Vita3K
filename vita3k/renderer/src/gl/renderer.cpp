@@ -457,27 +457,19 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
         glDisable(GL_SCISSOR_TEST);
     }
 
-    glEnable(GL_DEPTH_TEST);
-    glDepthMask(GL_TRUE);
-    glClearDepth(context.record.depth_stencil_surface.backgroundDepth);
-    glClear(GL_DEPTH_BUFFER_BIT);
-    glDisable(GL_DEPTH_TEST);
-
     sync_mask(context, mem);
+
     // TODO: Take request to force load from given memory
+    // Sync depth/stencil based on depth stencil surface.
+    sync_depth_data(context.record);
+    sync_depth_func(context.record.front_depth_func, true);
+    sync_depth_func(context.record.back_depth_func, false);
+    sync_depth_write_enable(context.record.front_depth_write_mode, true);
+    sync_depth_write_enable(context.record.back_depth_write_mode, false);
 
-    // Sync enable/disable depth/stencil based on depth stencil surface.
-    if (sync_depth_data(context.record)) {
-        sync_depth_func(context.record.front_depth_func, true);
-        sync_depth_func(context.record.back_depth_func, false);
-        sync_depth_write_enable(context.record.front_depth_write_mode, true);
-        sync_depth_write_enable(context.record.back_depth_write_mode, false);
-    }
-
-    if (sync_stencil_data(context.record, mem)) {
-        sync_stencil_func(context.record.back_stencil_state, mem, true);
-        sync_stencil_func(context.record.front_stencil_state, mem, false);
-    }
+    sync_stencil_data(context.record, mem);
+    sync_stencil_func(context.record.back_stencil_state, mem, true);
+    sync_stencil_func(context.record.front_stencil_state, mem, false);
 
     if (context.record.region_clip_mode != SCE_GXM_REGION_CLIP_NONE) {
         glEnable(GL_SCISSOR_TEST);
