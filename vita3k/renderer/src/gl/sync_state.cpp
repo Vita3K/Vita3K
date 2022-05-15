@@ -236,15 +236,12 @@ void sync_depth_write_enable(const SceGxmDepthWriteMode mode, const bool is_fron
         glDepthMask(mode == SCE_GXM_DEPTH_WRITE_ENABLED ? GL_TRUE : GL_FALSE);
 }
 
-bool sync_depth_data(const renderer::GxmRecordState &state) {
+void sync_depth_data(const renderer::GxmRecordState &state) {
     // Depth test.
-    if (state.depth_stencil_surface.depthData) {
-        glEnable(GL_DEPTH_TEST);
-        return true;
-    }
-
-    glDisable(GL_DEPTH_TEST);
-    return false;
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glClearDepth(state.depth_stencil_surface.backgroundDepth);
+    glClear(GL_DEPTH_BUFFER_BIT);
 }
 
 void sync_stencil_func(const GxmStencilState &state, const MemState &mem, const bool is_back_stencil) {
@@ -258,18 +255,13 @@ void sync_stencil_func(const GxmStencilState &state, const MemState &mem, const 
     glStencilMaskSeparate(face, state.write_mask);
 }
 
-bool sync_stencil_data(const GxmRecordState &state, const MemState &mem) {
-    // Stencil.
-    if (state.depth_stencil_surface.stencilData) {
-        glEnable(GL_STENCIL_TEST);
-        glStencilMask(GL_TRUE);
+void sync_stencil_data(const GxmRecordState &state, const MemState &mem) {
+    glEnable(GL_STENCIL_TEST);
+    glStencilMask(GL_TRUE);
+    if (state.depth_stencil_surface.control) {
         glClearStencil(state.depth_stencil_surface.control.get(mem)->backgroundStencil);
         glClear(GL_STENCIL_BUFFER_BIT);
-        return true;
     }
-
-    glDisable(GL_STENCIL_TEST);
-    return false;
 }
 
 void sync_polygon_mode(const SceGxmPolygonMode mode, const bool front) {
