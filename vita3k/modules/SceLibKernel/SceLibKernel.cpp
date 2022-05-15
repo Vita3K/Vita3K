@@ -934,8 +934,8 @@ EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int init_count
     return uid;
 }
 
-EXPORT(int, sceKernelCreateRWLock) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceKernelCreateRWLock, const char *name, SceUInt32 attr, SceKernelMutexOptParam *opt_param) {
+    return CALL_EXPORT(_sceKernelCreateRWLock, name, attr, opt_param);
 }
 
 EXPORT(SceUID, sceKernelCreateSema, const char *name, SceUInt attr, int initVal, int maxVal, Ptr<SceKernelSemaOptParam> option) {
@@ -1229,20 +1229,20 @@ EXPORT(int, sceKernelLockMutexCB, SceUID mutexid, int lock_count, unsigned int *
     return CALL_EXPORT(_sceKernelLockMutex, mutexid, lock_count, timeout);
 }
 
-EXPORT(int, sceKernelLockReadRWLock) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelLockReadRWLock, SceUID lock_id, SceUInt32 *timeout) {
+    return CALL_EXPORT(_sceKernelLockReadRWLock, lock_id, timeout);
 }
 
-EXPORT(int, sceKernelLockReadRWLockCB) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelLockReadRWLockCB, SceUID lock_id, SceUInt32 *timeout) {
+    return CALL_EXPORT(_sceKernelLockReadRWLockCB, lock_id, timeout);
 }
 
-EXPORT(int, sceKernelLockWriteRWLock) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelLockWriteRWLock, SceUID lock_id, SceUInt32 *timeout) {
+    return CALL_EXPORT(_sceKernelLockWriteRWLock, lock_id, timeout);
 }
 
-EXPORT(int, sceKernelLockWriteRWLockCB) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelLockWriteRWLockCB, SceUID lock_id, SceUInt32 *timeout) {
+    return CALL_EXPORT(_sceKernelLockWriteRWLockCB, lock_id, timeout);
 }
 
 EXPORT(int, sceKernelOpenModule) {

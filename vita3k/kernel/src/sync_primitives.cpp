@@ -353,7 +353,181 @@ MutexPtr mutex_get(KernelState &kernel, const char *export_name, SceUID thread_i
 }
 
 // **************
-// * Sempaphore *
+// * RWLock *
+// **************
+
+SceUID rwlock_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr) {
+    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+    }
+
+    const RWLockPtr rwlock = std::make_shared<RWLock>();
+    const SceUID uid = kernel.get_next_uid();
+    rwlock->uid = uid;
+    std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, rwlock->name);
+    rwlock->attr = attr;
+
+    if (rwlock->attr & SCE_KERNEL_ATTR_TH_PRIO) {
+        rwlock->waiting_threads = std::make_unique<PriorityThreadDataQueue<WaitingThreadData>>();
+    } else {
+        rwlock->waiting_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
+    }
+
+    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+    kernel.rwlocks.emplace(uid, rwlock);
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {}",
+            export_name, uid, thread_id, name, attr);
+    }
+
+    return uid;
+}
+
+SceInt32 rwlock_lock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id, uint32_t *timeout, bool is_write) {
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
+    const RWLockPtr rwlock = lock_and_find(lock_id, kernel.rwlocks, kernel.mutex);
+
+    if (!rwlock)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} timeout: {} waiting_threads: {}",
+            export_name, lock_id, thread_id, rwlock->name, rwlock->attr, timeout ? *timeout : 0,
+            rwlock->waiting_threads->size());
+    }
+
+    std::unique_lock<std::mutex> rwlock_lock(rwlock->mutex);
+
+    // if it is a read lock, it is always recursive
+    bool is_recursive = !is_write || (rwlock->attr & SCE_KERNEL_MUTEX_ATTR_RECURSIVE);
+
+    // cases where we don't need to wait :
+    if (rwlock->state == RWLockState::Unlocked // the lock is unlocked
+        || (!is_write && rwlock->state == RWLockState::ReadLocked) // we want a read lock when the lock is readlocked
+        || (is_recursive && rwlock->owners.count(thread) > 0)) { // the thread asking has already locked this lock
+
+        auto it = rwlock->owners.find(thread);
+        if (it != rwlock->owners.end()) {
+            // increase the count
+            it->second++;
+        } else {
+            rwlock->owners.emplace(thread, 1);
+        }
+
+        rwlock->state = is_write ? RWLockState::WriteLocked : RWLockState::ReadLocked;
+
+        return SCE_KERNEL_OK;
+    } else if (!is_recursive && rwlock->owners.count(thread) > 0) {
+        return RET_ERROR(SCE_KERNEL_ERROR_RW_LOCK_RECURSIVE);
+    } else {
+        // we need to wait
+
+        std::unique_lock<std::mutex> thread_lock(thread->mutex);
+        thread->update_status(ThreadStatus::wait, ThreadStatus::run);
+
+        WaitingThreadData data;
+        data.thread = thread;
+        data.is_write = is_write;
+        data.priority = thread->priority;
+
+        const auto data_it = rwlock->waiting_threads->push(data);
+        thread_lock.unlock();
+
+        return handle_timeout(thread, thread_lock, rwlock_lock, rwlock->waiting_threads, data, data_it, export_name, timeout);
+    }
+}
+
+SceInt32 rwlock_unlock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id, bool is_write) {
+    const ThreadStatePtr current_thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const RWLockPtr rwlock = lock_and_find(lock_id, kernel.rwlocks, kernel.mutex);
+
+    if (!rwlock)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} waiting_threads: {}",
+            export_name, lock_id, thread_id, rwlock->name, rwlock->attr,
+            rwlock->waiting_threads->size());
+    }
+
+    const std::lock_guard<std::mutex> rwlock_lock(rwlock->mutex);
+
+    auto it = rwlock->owners.find(current_thread);
+    if (it == rwlock->owners.end()) {
+        return RET_ERROR(SCE_KERNEL_ERROR_RW_LOCK_FAILED_TO_UNLOCK);
+    }
+
+    // decrease the lock count
+    it->second--;
+    if (it->second == 0)
+        rwlock->owners.erase(current_thread);
+
+    // if it is still locked
+    if (!rwlock->owners.empty())
+        return SCE_KERNEL_OK;
+
+    rwlock->state = RWLockState::Unlocked;
+
+    if (!rwlock->waiting_threads->empty()) {
+        for (auto it = rwlock->waiting_threads->begin(); it != rwlock->waiting_threads->end();) {
+            const auto &waiting_thread_data = *it;
+            const auto waiting_thread = waiting_thread_data.thread;
+            const auto waiting_is_write = waiting_thread_data.is_write;
+
+            if (rwlock->state == RWLockState::ReadLocked && waiting_is_write) {
+                // only awaken read threads
+                it++;
+                continue;
+            }
+
+            auto old_it = it;
+            it++;
+            rwlock->waiting_threads->erase(old_it);
+
+            const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
+            waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
+            rwlock->owners.emplace(waiting_thread, 1);
+
+            if (waiting_is_write) {
+                rwlock->state = RWLockState::WriteLocked;
+                break;
+            }
+            rwlock->state = RWLockState::ReadLocked;
+        }
+    }
+
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 rwlock_delete(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id) {
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
+    const RWLockPtr rwlock = lock_and_find(lock_id, kernel.rwlocks, kernel.mutex);
+
+    if (!rwlock)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} waiting_threads: {}",
+            export_name, lock_id, thread_id, rwlock->name, rwlock->attr,
+            rwlock->waiting_threads->size());
+    }
+
+    const std::lock_guard<std::mutex> mutex_lock(rwlock->mutex);
+
+    if (rwlock->waiting_threads->empty()) {
+        const std::lock_guard<std::mutex> kernel_guard(kernel.mutex);
+        kernel.rwlocks.erase(lock_id);
+    } else {
+        // TODO:
+        LOG_WARN("Can't delete sync object, it has waiting threads.");
+    }
+
+    return SCE_KERNEL_OK;
+}
+
+// **************
+// * Semaphore *
 // **************
 
 SceUID semaphore_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, int init_val, int max_val) {

@@ -128,6 +128,7 @@ struct KernelState {
     CondvarPtrs lwcondvars;
     MutexPtrs mutexes;
     MutexPtrs lwmutexes; // also Mutexes for now
+    RWLockPtrs rwlocks;
     EventFlagPtrs eventflags;
     MsgPipePtrs msgpipes;
     CallbackPtrs callbacks;
