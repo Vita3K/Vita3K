@@ -33,6 +33,9 @@ struct WaitingThreadData {
         struct { // mutex
             int32_t lock_count;
         };
+        struct { // rwlock
+            bool is_write;
+        };
         struct { // semaphore
             int32_t signal;
         };
@@ -105,6 +108,26 @@ struct Mutex : SyncPrimitive {
 typedef std::shared_ptr<Mutex> MutexPtr;
 typedef std::map<SceUID, MutexPtr> MutexPtrs;
 
+enum class RWLockState {
+    Unlocked,
+    ReadLocked,
+    WriteLocked,
+};
+
+// the int value is the lock count for recursive locks
+typedef std::map<ThreadStatePtr, int> RWLockOwners;
+
+struct RWLock : SyncPrimitive {
+    RWLockState state;
+    RWLockOwners owners;
+    WaitingThreadQueuePtr waiting_threads;
+
+    ~RWLock() override = default;
+};
+
+typedef std::shared_ptr<RWLock> RWLockPtr;
+typedef std::map<SceUID, RWLockPtr> RWLockPtrs;
+
 struct EventFlag : SyncPrimitive {
     WaitingThreadQueuePtr waiting_threads;
     int flags;
@@ -170,6 +193,12 @@ int mutex_try_lock(KernelState &kernel, MemState &mem, const char *export_name, 
 int mutex_unlock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, int unlock_count, SyncWeight weight);
 int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, SyncWeight weight);
 MutexPtr mutex_get(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, SyncWeight weight);
+
+// RWLock
+SceUID rwlock_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr);
+SceInt32 rwlock_lock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id, uint32_t *timeout, bool is_write);
+SceInt32 rwlock_unlock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id, bool is_write);
+SceInt32 rwlock_delete(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID lock_id);
 
 // Semaphore
 SceUID semaphore_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, int initVal, int maxVal);

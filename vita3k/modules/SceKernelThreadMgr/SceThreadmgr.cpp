@@ -109,8 +109,8 @@ EXPORT(int, _sceKernelCreateMutex, const char *name, SceUInt attr, int init_coun
     return uid;
 }
 
-EXPORT(int, _sceKernelCreateRWLock) {
-    return UNIMPLEMENTED();
+EXPORT(SceUID, _sceKernelCreateRWLock, const char *name, SceUInt32 attr, SceKernelMutexOptParam *opt_param) {
+    return rwlock_create(host.kernel, host.mem, export_name, name, thread_id, attr);
 }
 
 EXPORT(int, _sceKernelCreateSema, const char *name, SceUInt attr, int initVal, Ptr<SceKernelCreateSema_opt> opt) {
@@ -427,20 +427,22 @@ EXPORT(int, _sceKernelLockMutexCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelLockReadRWLock) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelLockReadRWLock, SceUID lock_id, SceUInt32 *timeout) {
+    return rwlock_lock(host.kernel, host.mem, export_name, thread_id, lock_id, timeout, false);
 }
 
-EXPORT(int, _sceKernelLockReadRWLockCB) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelLockReadRWLockCB, SceUID lock_id, SceUInt32 *timeout) {
+    STUBBED("No CB");
+    return rwlock_lock(host.kernel, host.mem, export_name, thread_id, lock_id, timeout, false);
 }
 
-EXPORT(int, _sceKernelLockWriteRWLock) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelLockWriteRWLock, SceUID lock_id, SceUInt32 *timeout) {
+    return rwlock_lock(host.kernel, host.mem, export_name, thread_id, lock_id, timeout, true);
 }
 
-EXPORT(int, _sceKernelLockWriteRWLockCB) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelLockWriteRWLockCB, SceUID lock_id, SceUInt32 *timeout) {
+    STUBBED("No CB");
+    return rwlock_lock(host.kernel, host.mem, export_name, thread_id, lock_id, timeout, true);
 }
 
 EXPORT(int, _sceKernelPMonThreadGetCounter) {
@@ -646,10 +648,9 @@ int wait_thread_end(ThreadStatePtr &waiter, ThreadStatePtr &target, int *stat) {
             return 0;
         }
 
+        waiter->update_status(ThreadStatus::wait);
         target->waiting_threads.push_back(waiter);
     }
-
-    waiter->status = ThreadStatus::wait;
     waiter->status_cond.wait(waiter_lock, [&]() { return waiter->status == ThreadStatus::run; });
     return 0;
 }
@@ -658,7 +659,7 @@ EXPORT(int, _sceKernelWaitThreadEnd, SceUID thid, int *stat, SceUInt *timeout) {
     auto waiter = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     auto target = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
     if (!target) {
-        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
     return wait_thread_end(waiter, target, stat);
 }
@@ -667,8 +668,9 @@ EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout)
     auto waiter = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
     auto target = lock_and_find(thid, host.kernel.threads, host.kernel.mutex);
     if (!target) {
-        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
+    STUBBED("No CB");
     return wait_thread_end(waiter, target, stat);
 }
 
@@ -847,8 +849,8 @@ EXPORT(int, sceKernelDeleteMutex, SceUID mutexid) {
     return mutex_delete(host.kernel, export_name, thread_id, mutexid, SyncWeight::Heavy);
 }
 
-EXPORT(int, sceKernelDeleteRWLock) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelDeleteRWLock, SceUID lock_id) {
+    return rwlock_delete(host.kernel, host.mem, export_name, thread_id, lock_id);
 }
 
 EXPORT(int, sceKernelDeleteSema, SceUID semaid) {
@@ -1126,12 +1128,12 @@ EXPORT(int, sceKernelUnlockMutex, SceUID mutexid, int unlock_count) {
     return mutex_unlock(host.kernel, export_name, thread_id, mutexid, unlock_count, SyncWeight::Heavy);
 }
 
-EXPORT(int, sceKernelUnlockReadRWLock) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelUnlockReadRWLock, SceUID lock_id) {
+    return rwlock_unlock(host.kernel, host.mem, export_name, thread_id, lock_id, false);
 }
 
-EXPORT(int, sceKernelUnlockWriteRWLock) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelUnlockWriteRWLock, SceUID lock_id) {
+    return rwlock_unlock(host.kernel, host.mem, export_name, thread_id, lock_id, true);
 }
 
 EXPORT(int, sceKernelUnregisterCallbackFromEvent) {
