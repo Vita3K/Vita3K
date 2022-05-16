@@ -37,6 +37,7 @@ bool is_yuv_format(SceGxmTextureBaseFormat base_format);
 size_t attribute_format_size(SceGxmAttributeFormat format);
 size_t index_element_size(SceGxmIndexFormat format);
 bool is_stream_instancing(SceGxmIndexSource source);
+bool convert_color_format_to_texture_format(SceGxmColorFormat format, SceGxmTextureFormat &dest_format);
 // Transfer
 uint32_t get_bits_per_pixel(SceGxmTransferFormat Format);
 } // namespace gxm
