@@ -447,7 +447,7 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     std::uint16_t current_framebuffer_height = 0;
 
     context.current_framebuffer = static_cast<GLuint>(state.surface_cache.retrieve_framebuffer_handle(
-        color_surface_fin, ds_surface_fin, &current_color_attachment_handle, nullptr, &current_framebuffer_height));
+        mem, color_surface_fin, ds_surface_fin, &current_color_attachment_handle, nullptr, &current_framebuffer_height));
     context.current_color_attachment = static_cast<GLuint>(current_color_attachment_handle);
     context.current_framebuffer_height = current_framebuffer_height;
 

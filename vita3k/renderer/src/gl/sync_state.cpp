@@ -240,8 +240,12 @@ void sync_depth_data(const renderer::GxmRecordState &state) {
     // Depth test.
     glEnable(GL_DEPTH_TEST);
     glDepthMask(GL_TRUE);
-    glClearDepth(state.depth_stencil_surface.backgroundDepth);
-    glClear(GL_DEPTH_BUFFER_BIT);
+
+    // If force load is enabled to load saved depth and depth data memory exists (the second condition is just for safe, may sometimes contradict its usefulness, hopefully won't)
+    if (((state.depth_stencil_surface.zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED) == 0) && (state.depth_stencil_surface.depthData)) {
+        glClearDepth(state.depth_stencil_surface.backgroundDepth);
+        glClear(GL_DEPTH_BUFFER_BIT);
+    }
 }
 
 void sync_stencil_func(const GxmStencilState &state, const MemState &mem, const bool is_back_stencil) {
@@ -256,9 +260,10 @@ void sync_stencil_func(const GxmStencilState &state, const MemState &mem, const 
 }
 
 void sync_stencil_data(const GxmRecordState &state, const MemState &mem) {
+    // Stencil test.
     glEnable(GL_STENCIL_TEST);
     glStencilMask(GL_TRUE);
-    if (state.depth_stencil_surface.control) {
+    if (((state.depth_stencil_surface.zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED) == 0) && state.depth_stencil_surface.control) {
         glClearStencil(state.depth_stencil_surface.control.get(mem)->backgroundStencil);
         glClear(GL_STENCIL_BUFFER_BIT);
     }

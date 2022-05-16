@@ -23,6 +23,8 @@
 #include <mem/ptr.h>
 #include <renderer/gxm_types.h>
 
+struct MemState;
+
 namespace renderer {
 enum SurfaceTextureRetrievePurpose {
     READING,
@@ -37,8 +39,8 @@ public:
     virtual std::uint64_t retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) = 0;
 
     // We really can't sample this around... The only usage of this function is interally load/store from this texture.
-    virtual std::uint64_t retrieve_depth_stencil_texture_handle(const SceGxmDepthStencilSurface &surface) = 0;
-    virtual std::uint64_t retrieve_framebuffer_handle(SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
+    virtual std::uint64_t retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface) = 0;
+    virtual std::uint64_t retrieve_framebuffer_handle(const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
         std::uint64_t *color_texture_handle = nullptr, std::uint64_t *ds_texture_handle = nullptr,
         std::uint16_t *stored_height = nullptr)
         = 0;
