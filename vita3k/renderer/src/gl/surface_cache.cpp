@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -142,15 +142,25 @@ std::uint64_t GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Pt
     return info.gl_ping_pong_texture[0];
 }
 
-std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const SceGxmDepthStencilSurface &surface) {
+std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface) {
     if (!target) {
         LOG_ERROR("Unable to retrieve Depth Stencil texture with no active render target!");
         return 0;
     }
 
+    bool packed_ds = false;
+    if (surface.control) {
+        const SceGxmDepthStencilControl *control = surface.control.get(mem);
+        if (control && (control->format == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24)) {
+            packed_ds = true;
+        }
+    }
+
     std::size_t found_index = static_cast<std::size_t>(-1);
+
+    // The whole depth stencil struct is reserved for future use
     for (std::size_t i = 0; i < depth_stencil_textures.size(); i++) {
-        if (std::memcmp(&depth_stencil_textures[i].surface, &surface, sizeof(SceGxmDepthStencilSurface)) == 0) {
+        if ((depth_stencil_textures[i].surface.depthData == surface.depthData) && (packed_ds || (!packed_ds && (depth_stencil_textures[i].surface.stencilData == surface.stencilData)))) {
             found_index = i;
             break;
         }
@@ -219,7 +229,7 @@ std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const SceGxm
     return depth_stencil_textures[found_index].gl_texture[0];
 }
 
-std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
+std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
     std::uint64_t *color_texture_handle, std::uint64_t *ds_texture_handle, std::uint16_t *stored_height) {
     if (!target) {
         LOG_ERROR("Unable to retrieve framebuffer with no active render target!");
@@ -242,7 +252,7 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(SceGxmColorSurface *co
     }
 
     if (ds_handle) {
-        ds_handle = static_cast<GLuint>(retrieve_depth_stencil_texture_handle(*depth_stencil));
+        ds_handle = static_cast<GLuint>(retrieve_depth_stencil_texture_handle(mem, *depth_stencil));
     } else {
         ds_handle = target->attachments[1];
     }
