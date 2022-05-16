@@ -30,7 +30,9 @@ EXPORT(int, sceAudioOutGetAdopt, SceAudioOutPortType type) {
     // --- Tracy logging --- END
 #endif
 
-    return UNIMPLEMENTED();
+    // this is used in case the vita is using voice chat, not useful for us
+    // all types of audio ports are always enabled
+    return 1;
 }
 
 EXPORT(int, sceAudioOutGetConfig, int port, SceAudioOutConfigType type) {
@@ -144,7 +146,16 @@ EXPORT(int, sceAudioOutGetRestSample, int port) {
     // --- Tracy logging --- END
 #endif
 
-    return UNIMPLEMENTED();
+    const AudioOutPortPtr prt = lock_and_find(port, host.audio.shared.out_ports, host.audio.shared.mutex);
+    if (!prt) {
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+    }
+
+    const int bytes_available = SDL_AudioStreamAvailable(prt->shared.stream.get());
+    assert(host.audio.ro.spec.format == AUDIO_S16LSB);
+
+    // we have the number of bytes left, we can convert it back to the number of samples left
+    return bytes_available / (host.audio.ro.spec.channels * sizeof(int16_t));
 }
 
 EXPORT(int, sceAudioOutOpenExtPort) {
@@ -167,7 +178,12 @@ EXPORT(int, sceAudioOutReleasePort, int port) {
     // --- Tracy logging --- END
 #endif
 
-    return UNIMPLEMENTED();
+    const std::lock_guard<std::mutex> guard(host.audio.shared.mutex);
+    if (!host.audio.shared.out_ports.erase(port)) {
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceAudioOutSetAdoptMode) {
