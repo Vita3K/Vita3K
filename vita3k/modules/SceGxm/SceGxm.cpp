@@ -935,6 +935,7 @@ EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, S
     SceGxmDepthStencilSurface tmp_surface;
     tmp_surface.depthData = depthData;
     tmp_surface.stencilData = stencilData;
+    tmp_surface.zlsControl = SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_DISABLED | SCE_GXM_DEPTH_STENCIL_FORCE_STORE_DISABLED;
 
     tmp_surface.control = alloc<SceGxmDepthStencilControl>(host.mem, "gxm depth stencil control");
     SceGxmDepthStencilControl control;

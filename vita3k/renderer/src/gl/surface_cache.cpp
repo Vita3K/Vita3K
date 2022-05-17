@@ -464,7 +464,7 @@ std::uint64_t GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Pt
     return info.gl_ping_pong_texture[0];
 }
 
-std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface) {
+std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, std::int32_t force_width, std::int32_t force_height, const bool is_reading) {
     if (!target) {
         LOG_ERROR("Unable to retrieve Depth Stencil texture with no active render target!");
         return 0;
@@ -476,6 +476,14 @@ std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSta
         if (control && (control->format == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24)) {
             packed_ds = true;
         }
+    }
+
+    if (force_width < 0) {
+        force_width = target->width;
+    }
+
+    if (force_height < 0) {
+        force_height = target->height;
     }
 
     std::size_t found_index = static_cast<std::size_t>(-1);
@@ -495,7 +503,28 @@ std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSta
             last_use_depth_stencil_surface_index.push_back(found_index);
         }
 
+        GLDepthStencilSurfaceCacheInfo &cached_info = depth_stencil_textures[found_index];
+        bool need_remake = false;
+        if (cached_info.width < force_width) {
+            cached_info.width = force_width;
+            need_remake = true;
+        }
+
+        if (cached_info.height < force_height) {
+            cached_info.height = force_height;
+            need_remake = true;
+        }
+
+        if (need_remake) {
+            glBindTexture(GL_TEXTURE_2D, depth_stencil_textures[found_index].gl_texture[0]);
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, cached_info.width, cached_info.height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+        }
+
         return depth_stencil_textures[found_index].gl_texture[0];
+    }
+
+    if (is_reading) {
+        return 0;
     }
 
     // Now that everything goes well, we can start rearranging
@@ -544,9 +573,11 @@ std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSta
     last_use_depth_stencil_surface_index.push_back(found_index);
     depth_stencil_textures[found_index].flags = 0;
     depth_stencil_textures[found_index].surface = surface;
+    depth_stencil_textures[found_index].width = force_width;
+    depth_stencil_textures[found_index].height = force_height;
 
     glBindTexture(GL_TEXTURE_2D, depth_stencil_textures[found_index].gl_texture[0]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, target->width, target->height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, force_width, force_height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, nullptr);
 
     return depth_stencil_textures[found_index].gl_texture[0];
 }
@@ -576,6 +607,7 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const MemState &mem, S
     }
 
     if (depth_stencil) {
+        SceGxmDepthStencilSurface surface_copy = *depth_stencil;
         ds_handle = static_cast<GLuint>(retrieve_depth_stencil_texture_handle(mem, *depth_stencil));
     } else {
         ds_handle = target->attachments[1];

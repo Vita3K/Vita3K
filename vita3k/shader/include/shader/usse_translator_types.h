@@ -84,6 +84,7 @@ struct NonDependentTextureQueryCallInfo {
 
     std::uint32_t dest_offset = 0;
     int store_type = 0; ///< For sampling method later
+    int prod_pos = -1;
 };
 
 using NonDependentTextureQueryCallInfos = std::vector<NonDependentTextureQueryCallInfo>;
