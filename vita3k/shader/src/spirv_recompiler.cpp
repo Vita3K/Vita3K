@@ -507,9 +507,10 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             std::string component_type_str = "????";
             DataType store_type = DataType::F16;
             switch (component_type) {
+            // 0 should be raw sample, but they always provide enough space
             case 0: {
-                component_type_str = "uchar";
-                store_type = DataType::UINT8;
+                component_type_str = "raw32x";
+                store_type = DataType::F32;
                 break;
             }
             case 1: {
@@ -529,6 +530,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             }
             default: {
                 LOG_WARN("Unsupported texture component: {}", component_type);
+                break;
             }
             }
 
@@ -540,15 +542,18 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             }
 
             int tex_coord_comp_count = 2;
+            int prod_pos = -1;
 
             if (swizzle_texcoord == 0x300) {
                 swizzle_str = ".xyz";
                 tex_coord_comp_count = 3;
+                prod_pos = 2;
             } else if (swizzle_texcoord == 0x200) {
                 swizzle_str = ".xyw";
 
                 // Not really sure
                 tex_coord_comp_count = 4;
+                prod_pos = 3;
             }
 
             std::string centroid_str;
@@ -557,11 +562,11 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 centroid_str = "_CENTROID";
             }
 
-            uint32_t num_component = 0;
+            uint32_t num_component = 4;
 
             if ((descriptor->component_info & 0x40) != 0x40) {
                 num_component = 4;
-            }
+            } /* else number of components = texture pixel component count. Too bad its not yet supported */
 
             std::string texcoord_name = (tex_coord_index == 10) ? "POINTCOORD" : ("TEXCOORD" + std::to_string(tex_coord_index));
             LOG_TRACE("pa{} = tex{}{}<{}{}>({}, {}{}{})", pa_offset, sampling_type, projecting,
@@ -579,6 +584,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             tex_query_info.dest_offset = pa_offset;
 
             tex_query_info.coord_index = tex_coord_index;
+            tex_query_info.prod_pos = prod_pos;
 
             if (anonymous && (samplers.find(sampler_resource_index) == samplers.end())) {
                 // Probably not gonna be used in future, just for non-dependent queries

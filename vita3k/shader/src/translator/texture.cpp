@@ -105,7 +105,13 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
         default:
             assert(false);
         }
-        spv::Id fetch_result = do_fetch_texture(texture_query.sampler, texture_query.coord, static_cast<DataType>(texture_query.store_type), 0, 0);
+
+        spv::Id lod = spv::NoResult;
+        if (texture_query.prod_pos >= 0) {
+            lod = m_b.createVectorExtractDynamic(texture_query.coord.first, m_b.makeFloatType(32), m_b.makeIntConstant(texture_query.prod_pos));
+        }
+
+        spv::Id fetch_result = do_fetch_texture(texture_query.sampler, texture_query.coord, static_cast<DataType>(texture_query.store_type), lod ? 2 : 0, lod);
 
         store_op.num = texture_query.dest_offset;
         store(store_op, fetch_result, dest_mask);
