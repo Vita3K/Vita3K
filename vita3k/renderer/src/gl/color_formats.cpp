@@ -199,6 +199,10 @@ bool is_write_surface_stored_rawly(SceGxmColorBaseFormat base_format) {
     return (base_format == SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16);
 }
 
+bool is_write_surface_non_linearity_filtering(SceGxmColorBaseFormat base_format) {
+    return ((base_format == SCE_GXM_COLOR_BASE_FORMAT_F32) || (base_format == SCE_GXM_COLOR_BASE_FORMAT_F32F32));
+}
+
 GLenum get_raw_store_internal_type(SceGxmColorBaseFormat base_format) {
     switch (base_format) {
     case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
@@ -262,7 +266,8 @@ bool convert_base_texture_format_to_base_color_format(SceGxmTextureBaseFormat fo
         { SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10, SCE_GXM_COLOR_BASE_FORMAT_F11F11F10 },
         { SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9, SCE_GXM_COLOR_BASE_FORMAT_SE5M9M9M9 },
         { SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9, SCE_GXM_COLOR_BASE_FORMAT_SE5M9M9M9 },
-        { SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10, SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10 }
+        { SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10, SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10 },
+        { SCE_GXM_TEXTURE_BASE_FORMAT_U32U32, SCE_GXM_COLOR_BASE_FORMAT_F32F32 }
     };
 
     auto ite = TEXTURE_TO_COLOR_FORMAT_MAPPING.find(format);
