@@ -977,8 +977,11 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, SceKernelThreadEntry ent
     return res;
 }
 
-EXPORT(SceUID, sceKernelCreateTimer, const char *name, uint32_t flags, const void *next) {
-    assert(!next);
+EXPORT(SceUID, sceKernelCreateTimer, const char *name, uint32_t flags, const uint32_t *opt_params) {
+    // opt_params is not used by the firmware but if it is not null,
+    // the firmware checks if its first field (its size) is at most 4.
+    if (opt_params && opt_params[0] > 4)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
 
     SceUID handle = host.kernel.get_next_uid();
 
