@@ -42,14 +42,14 @@ void get_buffer_parameter(const std::uint32_t start_sample, const std::uint32_t 
     const std::uint32_t samples_per_frame = 1 << sample_rate_index_to_frame_sample_power[sample_rate_index];
     const std::uint32_t samples_per_superframe = samples_per_frame * frame_per_superframe;
 
-    const std::uint32_t num_superframe = (num_samples + samples_per_superframe - 1) / samples_per_superframe;
+    const std::uint32_t start_superframe = (start_sample / samples_per_superframe);
+    const std::uint32_t num_superframe = (start_sample + num_samples + samples_per_superframe - 1) / samples_per_superframe - start_superframe;
+
     parameter.num_bytes = num_superframe * bytes_per_superframe;
     parameter.is_super_packet = (frame_per_superframe == 1) ? 0 : 1;
-
-    const std::uint32_t start_superframe = (start_sample / superframe_index);
     parameter.start_byte_offset = start_superframe * bytes_per_superframe;
     parameter.start_skip = (start_sample - (start_superframe * samples_per_superframe));
-    parameter.end_skip = (num_superframe * samples_per_superframe) - num_samples;
+    parameter.end_skip = (start_superframe + num_superframe) * samples_per_superframe - (start_sample + num_samples);
 }
 
 std::size_t Module::get_buffer_parameter_size() const {
