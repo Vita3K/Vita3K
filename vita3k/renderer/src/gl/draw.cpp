@@ -104,7 +104,9 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
         if (use_raw_image) {
             glBindImageTexture(shader::COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE, context.current_color_attachment, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16UI);
+            glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, 0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
         } else {
+            glBindImageTexture(shader::COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE, 0, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16UI);
             glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.current_color_attachment, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA8);
         }
     }

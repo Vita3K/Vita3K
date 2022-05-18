@@ -941,6 +941,7 @@ EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, S
     SceGxmDepthStencilControl control;
     control.disabled = false;
     control.format = depthStencilFormat;
+    control.backgroundStencil = 0;
     memcpy(tmp_surface.control.get(host.mem), &control, sizeof(SceGxmDepthStencilControl));
     memcpy(surface, &tmp_surface, sizeof(SceGxmDepthStencilSurface));
     return 0;
