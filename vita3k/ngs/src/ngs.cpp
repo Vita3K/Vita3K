@@ -97,7 +97,7 @@ ModuleData::ModuleData()
 }
 
 BufferParamsInfo *ModuleData::lock_params(const MemState &mem) {
-    const std::lock_guard<std::mutex> guard(*parent->voice_lock);
+    const std::lock_guard<std::mutex> guard(*parent->voice_mutex);
 
     // Save a copy of previous set of data
     if (flags & PARAMS_LOCK) {
@@ -116,7 +116,7 @@ BufferParamsInfo *ModuleData::lock_params(const MemState &mem) {
 }
 
 bool ModuleData::unlock_params() {
-    const std::lock_guard<std::mutex> guard(*parent->voice_lock);
+    const std::lock_guard<std::mutex> guard(*parent->voice_mutex);
 
     if (flags & PARAMS_LOCK) {
         flags &= ~PARAMS_LOCK;
@@ -168,11 +168,11 @@ void Voice::init(Rack *mama) {
         patches[i].resize(mama->patches_per_output);
 
     inputs.init(rack->system->granularity, 1);
-    voice_lock = std::make_unique<std::mutex>();
+    voice_mutex = std::make_unique<std::mutex>();
 }
 
 Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, std::int32_t dest_index, Voice *dest) {
-    const std::lock_guard<std::mutex> guard(*voice_lock);
+    const std::lock_guard<std::mutex> guard(*voice_mutex);
 
     if (index >= MAX_OUTPUT_PORT) {
         // We don't have enough port for you!
@@ -221,7 +221,7 @@ Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int3
 }
 
 bool Voice::remove_patch(const MemState &mem, const Ptr<Patch> patch) {
-    const std::lock_guard<std::mutex> guard(*voice_lock);
+    const std::lock_guard<std::mutex> guard(*voice_mutex);
     bool found = false;
 
     for (std::uint8_t i = 0; i < patches.size(); i++) {

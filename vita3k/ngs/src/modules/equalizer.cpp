@@ -26,7 +26,7 @@ std::size_t Module::get_buffer_parameter_size() const {
     return default_normal_parameter_size;
 }
 
-bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
+bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     // TODO: Proper implement it, for now just lower volume lol
     float *product_before = reinterpret_cast<float *>(data.parent->products[0].data);
 

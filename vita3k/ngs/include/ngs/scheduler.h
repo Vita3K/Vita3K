@@ -38,11 +38,11 @@ struct VoiceScheduler {
     std::vector<Voice *> queue;
     std::vector<Voice *> pending_deque;
 
-    std::mutex lock;
+    std::recursive_mutex mutex;
     SceUID updater;
 
 protected:
-    bool deque_voice(Voice *voice, const SceUID thread_id);
+    bool deque_voice(Voice *voice);
     bool deque_voice_impl(Voice *voice);
 
     bool resort_to_respect_dependencies(const MemState &mem, Voice *source);
@@ -51,9 +51,9 @@ protected:
 
 public:
     bool play(const MemState &mem, Voice *voice);
-    bool pause(Voice *voice, const SceUID thread_id);
+    bool pause(Voice *voice);
     bool resume(const MemState &mem, Voice *voice);
-    bool stop(Voice *voice, const SceUID thread_id);
+    bool stop(Voice *voice);
     bool off(Voice *voice);
 
     void update(KernelState &kern, const MemState &mem, const SceUID thread_id);
