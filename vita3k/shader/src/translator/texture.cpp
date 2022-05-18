@@ -49,7 +49,11 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
 
     spv::Id image_sample = spv::NoResult;
     if (lod == spv::NoResult) {
-        image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id });
+        if (lod_mode == 4) {
+            image_sample = m_b.createOp(spv::OpImageSampleProjImplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id });
+        } else {
+            image_sample = m_b.createOp(spv::OpImageSampleImplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id });
+        }
     } else {
         if (lod_mode == 2) {
             image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id, spv::ImageOperandsLodMask, lod });
@@ -106,12 +110,15 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
             assert(false);
         }
 
-        spv::Id lod = spv::NoResult;
+        bool proj = (texture_query.prod_pos >= 0);
+        shader::usse::Coord coord_inst = texture_query.coord;
+
         if (texture_query.prod_pos >= 0) {
-            lod = m_b.createVectorExtractDynamic(texture_query.coord.first, m_b.makeFloatType(32), m_b.makeIntConstant(texture_query.prod_pos));
+            coord_inst.first = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { texture_query.coord.first, texture_query.coord.first, 0, 1, static_cast<spv::Id>(texture_query.prod_pos) });
+            proj = true;
         }
 
-        spv::Id fetch_result = do_fetch_texture(texture_query.sampler, texture_query.coord, static_cast<DataType>(texture_query.store_type), lod ? 2 : 0, lod);
+        spv::Id fetch_result = do_fetch_texture(texture_query.sampler, coord_inst, static_cast<DataType>(texture_query.store_type), proj ? 4 : 0, 0);
 
         store_op.num = texture_query.dest_offset;
         store(store_op, fetch_result, dest_mask);

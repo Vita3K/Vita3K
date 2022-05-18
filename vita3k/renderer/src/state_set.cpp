@@ -257,7 +257,7 @@ COMMAND_SET_STATE(point_line_width) {
 COMMAND_SET_STATE(stencil_func) {
     // Is this the pain that driver guys have to suffer?
     const bool is_front = helper.pop<bool>();
-    GxmStencilState stencil_state;
+    GxmStencilState &stencil_state = is_front ? render_context->record.front_stencil_state : render_context->record.back_stencil_state;
 
     stencil_state.func = helper.pop<SceGxmStencilFunc>();
     stencil_state.stencil_fail = helper.pop<SceGxmStencilOp>();
@@ -275,12 +275,6 @@ COMMAND_SET_STATE(stencil_func) {
             assert(false);
         }
         return;
-    }
-
-    if (is_front) {
-        render_context->record.front_stencil_state = stencil_state;
-    } else {
-        render_context->record.back_stencil_state = stencil_state;
     }
 
     switch (renderer.current_backend) {
