@@ -556,6 +556,11 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 prod_pos = 3;
             }
 
+            // Cube has no projection. 3 components are just for normal sampling
+            if (dim_type == spv::DimCube) {
+                prod_pos = -1;
+            }
+
             std::string centroid_str;
 
             if ((descriptor->attribute_info & 0x10) == 0x10) {
