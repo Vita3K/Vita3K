@@ -83,7 +83,7 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
     const char *export_name, SceUInt *const timeout) {
     if (timeout) {
         bool status = false;
-
+        auto start = std::chrono::steady_clock::now();
         if (*timeout > 0) {
             status = thread->status_cond.wait_for(primitive_lock, std::chrono::microseconds{ *timeout }, [&] { return thread->status == ThreadStatus::run; });
         }
@@ -98,6 +98,14 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
             queue->erase(data_it);
 
             return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
+        } else {
+            auto end = std::chrono::steady_clock::now();
+            uint32_t real_timeout = static_cast<uint32_t>(std::chrono::duration_cast<std::chrono::microseconds>(end - start).count());
+            if (real_timeout > *timeout) {
+                *timeout = 0;
+            } else {
+                *timeout = *timeout - real_timeout;
+            }
         }
     } else {
         thread->status_cond.wait(primitive_lock, [&] { return thread->status == ThreadStatus::run; });
@@ -1066,7 +1074,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
     // TODO Don't lock twice.
     const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
     if (!event) {
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
     }
 
     if (LOG_SYNC_PRIMITIVES) {
@@ -1074,6 +1082,10 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
                   " waiting_threads: {}",
             export_name, event->uid, thread_id, event->name, event->attr, event->flags, flags, timeout ? *timeout : 0,
             event->waiting_threads->size());
+    }
+
+    if ((event->attr & 0x1000) == 0 && event->waiting_threads->size() > 0) {
+        return RET_ERROR(SCE_KERNEL_ERROR_EVF_MULTI);
     }
 
     const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
