@@ -39,7 +39,7 @@ void Module::on_state_change(ModuleData &data, const VoiceState previous) {
     }
 }
 
-bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
+bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     const Parameters *params = data.get_parameters<Parameters>(mem);
     State *state = data.get_state<State>();
     bool finished = false;
@@ -167,7 +167,8 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                             state->current_loop_count = 0;
                             state->current_byte_position_in_buffer = 0;
 
-                            data.parent->voice_lock->unlock();
+                            voice_lock.unlock();
+                            scheduler_lock.unlock();
 
                             if (state->current_buffer == -1) {
                                 data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_CALLBACK_REASON_DONE_ALL, 0, 0);
@@ -179,13 +180,18 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                                     params->buffer_params[state->current_buffer].buffer.address());
                             }
 
-                            data.parent->voice_lock->lock();
+                            scheduler_lock.lock();
+                            voice_lock.lock();
                         }
                     } else {
-                        data.parent->voice_lock->unlock();
+                        voice_lock.unlock();
+                        scheduler_lock.unlock();
+
                         data.invoke_callback(kern, mem, thread_id, SCE_NGS_PLAYER_CALLBACK_REASON_START_LOOP, state->current_loop_count,
                             params->buffer_params[state->current_buffer].buffer.address());
-                        data.parent->voice_lock->lock();
+
+                        scheduler_lock.lock();
+                        voice_lock.lock();
                     }
 
                     state->current_byte_position_in_buffer = 0;

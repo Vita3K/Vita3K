@@ -26,7 +26,7 @@ Module::Module()
     : ngs::Module(ngs::BussType::BUSS_MASTER) {
 }
 
-bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
+bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     // Merge all voices. This buss manually outputs 2 channels
     if (data.voice_state_data.empty()) {
         data.voice_state_data.resize(data.parent->rack->system->granularity * sizeof(std::uint16_t) * 2);

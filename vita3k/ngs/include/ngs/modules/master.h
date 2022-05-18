@@ -23,7 +23,7 @@ namespace ngs::master {
 struct Module : public ngs::Module {
 public:
     explicit Module();
-    bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) override;
+    bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) override;
     std::size_t get_buffer_parameter_size() const override {
         return 0;
     }

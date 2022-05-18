@@ -33,15 +33,10 @@ bool VoiceScheduler::deque_voice_impl(Voice *voice) {
     return true;
 }
 
-bool VoiceScheduler::deque_voice(Voice *voice, const SceUID thread_id) {
-    if (updater == thread_id) {
-        pending_deque.push_back(voice);
-        return true;
-    }
+bool VoiceScheduler::deque_voice(Voice *voice) {
+    const std::lock_guard<std::recursive_mutex> guard(mutex);
 
-    lock.lock();
     const bool result = deque_voice_impl(voice);
-    lock.unlock();
 
     return result;
 }
@@ -72,7 +67,7 @@ bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
             }
         }
 
-        const std::lock_guard<std::mutex> guard(lock);
+        const std::lock_guard<std::recursive_mutex> guard(mutex);
         queue.insert(queue.begin() + lowest_dest_pos, voice);
 
         return true;
@@ -82,7 +77,7 @@ bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
     return false;
 }
 
-bool VoiceScheduler::pause(Voice *voice, const SceUID thread_id) {
+bool VoiceScheduler::pause(Voice *voice) {
     if (voice->state == ngs::VOICE_STATE_AVAILABLE || voice->state == ngs::VOICE_STATE_PAUSED) {
         return true;
     }
@@ -91,7 +86,7 @@ bool VoiceScheduler::pause(Voice *voice, const SceUID thread_id) {
         voice->transition(ngs::VOICE_STATE_PAUSED);
 
         // Remove from the list
-        deque_voice(voice, thread_id);
+        deque_voice(voice);
 
         return true;
     }
@@ -107,13 +102,13 @@ bool VoiceScheduler::resume(const MemState &mem, Voice *voice) {
     return play(mem, voice);
 }
 
-bool VoiceScheduler::stop(Voice *voice, const SceUID thread_id) {
+bool VoiceScheduler::stop(Voice *voice) {
     if (voice->state == ngs::VOICE_STATE_AVAILABLE || voice->state == ngs::VOICE_STATE_FINALIZING) {
         return false;
     }
 
     voice->transition(ngs::VOICE_STATE_AVAILABLE);
-    deque_voice(voice, thread_id);
+    deque_voice(voice);
 
     return true;
 }
@@ -129,28 +124,31 @@ bool VoiceScheduler::off(Voice *voice) {
 }
 
 void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID thread_id) {
-    const std::lock_guard<std::mutex> guard(lock);
+    std::unique_lock<std::recursive_mutex> scheduler_lock(mutex);
     updater = thread_id;
 
+    // make a copy of the queue, this way we have no issue if it is modified in a callbck
+    std::vector<ngs::Voice *> queue_copy = queue;
+
     // Do a first routine to clear inputs from previous update session
-    for (ngs::Voice *voice : queue) {
+    for (ngs::Voice *voice : queue_copy) {
         voice->inputs.reset_inputs();
     }
 
-    for (ngs::Voice *voice : queue) {
+    for (ngs::Voice *voice : queue_copy) {
         // Modify the state, in peace....
-        const std::lock_guard<std::mutex> guard(*voice->voice_lock);
+        std::unique_lock<std::mutex> voice_lock(*voice->voice_mutex);
         std::memset(voice->products, 0, sizeof(voice->products));
 
         const bool is_key_off = voice->state == ngs::VOICE_STATE_KEY_OFF;
         bool finished = false;
         for (std::size_t i = 0; i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {
-                finished |= voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i]);
+                finished |= voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i], scheduler_lock, voice_lock);
             }
         }
         if (is_key_off || finished)
-            stop(voice, thread_id);
+            stop(voice);
 
         for (std::size_t i = 0; i < voice->rack->vdef->output_count(); i++) {
             if (voice->products[i].data)
@@ -160,16 +158,11 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         voice->frame_count++;
     }
 
-    for (ngs::Voice *nominee : pending_deque) {
-        deque_voice_impl(nominee);
-    }
-
-    pending_deque.clear();
     updater = 0; // clear value (set to invalid thread id)
 }
 
 std::int32_t VoiceScheduler::get_position(Voice *v) {
-    const std::lock_guard<std::mutex> guard(lock);
+    const std::lock_guard<std::recursive_mutex> guard(mutex);
     auto result = std::find(queue.begin(), queue.end(), v);
 
     if (result != queue.end()) {
@@ -205,7 +198,7 @@ bool VoiceScheduler::resort_to_respect_dependencies(const MemState &mem, Voice *
             if (dest_pos < position) {
                 // Switch to the end. Resort dependencies for this one that just got sorted too.
                 {
-                    const std::lock_guard<std::mutex> guard(lock);
+                    const std::lock_guard<std::recursive_mutex> guard(mutex);
                     std::rotate(queue.begin() + dest_pos, queue.begin() + dest_pos + 1, queue.end());
                 }
 

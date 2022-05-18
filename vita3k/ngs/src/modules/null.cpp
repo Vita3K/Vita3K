@@ -25,7 +25,7 @@ std::size_t Module::get_buffer_parameter_size() const {
     return 0;
 }
 
-bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data) {
+bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     return false;
 }
 } // namespace ngs::null
