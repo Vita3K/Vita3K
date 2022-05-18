@@ -443,13 +443,13 @@ static SceUInt32 ngsVoiceStateFromHLEState(const ngs::VoiceState state) {
         return SCE_NGS_VOICE_STATE_FINALIZE;
 
     case ngs::VoiceState::VOICE_STATE_KEY_OFF:
-        return SCE_NGS_VOICE_STATE_KEY_OFF;
+        return SCE_NGS_VOICE_STATE_FINALIZE | SCE_NGS_VOICE_STATE_KEY_OFF;
 
     case ngs::VoiceState::VOICE_STATE_PAUSED:
-        return SCE_NGS_VOICE_STATE_PAUSED;
+        return SCE_NGS_VOICE_STATE_ACTIVE | SCE_NGS_VOICE_STATE_PAUSED;
 
     case ngs::VoiceState::VOICE_STATE_PENDING:
-        return SCE_NGS_VOICE_STATE_PENDING;
+        return SCE_NGS_VOICE_STATE_AVAILABLE | SCE_NGS_VOICE_STATE_PENDING;
 
     case ngs::VoiceState::VOICE_STATE_UNLOADING:
         return SCE_NGS_VOICE_STATE_UNLOADING;
@@ -555,6 +555,7 @@ EXPORT(SceInt32, sceNgsVoiceKeyOff, SceNgsVoiceHandle voice_handle) {
     }
 
     voice->rack->system->voice_scheduler.off(voice);
+    voice->rack->system->voice_scheduler.stop(voice, thread_id);
     return SCE_NGS_OK;
 }
 

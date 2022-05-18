@@ -38,13 +38,13 @@ constexpr size_t default_passthrough_parameter_size = 140;
 constexpr size_t default_normal_parameter_size = 100;
 
 enum VoiceState {
-    VOICE_STATE_AVAILABLE = 1 << 0,
-    VOICE_STATE_ACTIVE = 1 << 1,
-    VOICE_STATE_FINALIZING = 1 << 2,
-    VOICE_STATE_UNLOADING = 1 << 3,
-    VOICE_STATE_PENDING = 1 << 4,
-    VOICE_STATE_PAUSED = 1 << 5,
-    VOICE_STATE_KEY_OFF = 1 << 6
+    VOICE_STATE_AVAILABLE,
+    VOICE_STATE_ACTIVE,
+    VOICE_STATE_FINALIZING,
+    VOICE_STATE_UNLOADING,
+    VOICE_STATE_PENDING,
+    VOICE_STATE_PAUSED,
+    VOICE_STATE_KEY_OFF
 };
 
 struct ModuleParameterHeader {
