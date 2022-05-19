@@ -287,6 +287,10 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             host.common_dialog.msg.message = "Cannot perform this operation. No memory card is inserted.";
             host.common_dialog.msg.btn_num = 0;
             break;
+        case SCE_MSG_DIALOG_SYSMSG_TYPE_NOSPACE_CONTINUABLE:
+            host.common_dialog.msg.message = "There is not enough free space on the memory card.";
+            host.common_dialog.msg.btn_num = 0;
+            break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_MIC_DISABLED:
             host.common_dialog.msg.message = "You must enable the microphone.";
             host.common_dialog.msg.btn_num = 0;
