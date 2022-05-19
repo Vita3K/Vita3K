@@ -1316,9 +1316,8 @@ static optional<DualSrcLayout> get_dual_op2_src_layout(uint8_t op1_count, uint8_
             switch (src_config) {
             case 0: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::INTERNAL1, DualSrcId::NONE });
             case 1: return optional<DualSrcLayout>({ DualSrcId::UNIFIED, DualSrcId::INTERNAL1, DualSrcId::NONE });
-            case 2:
-            case 3:
-                return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::NONE });
+            case 2: return optional<DualSrcLayout>({ DualSrcId::INTERAL0, DualSrcId::UNIFIED, DualSrcId::NONE });
+            case 3: return optional<DualSrcLayout>({ DualSrcId::INTERNAL1, DualSrcId::UNIFIED, DualSrcId::NONE });
             default: return {};
             }
         case 3:
