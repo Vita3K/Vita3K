@@ -70,6 +70,8 @@ struct GXMRenderVertUniformBlock {
     float viewport_flag;
     float screen_width;
     float screen_height;
+    float padding;
+    float integral_texture_query_format[SCE_GXM_MAX_TEXTURE_UNITS];
 };
 
 struct GXMRenderFragUniformBlock {
@@ -77,6 +79,7 @@ struct GXMRenderFragUniformBlock {
     float front_disabled = 0;
     float writing_mask = 0;
     float use_raw_image = 0;
+    float integral_texture_query_format[SCE_GXM_MAX_TEXTURE_UNITS];
 };
 
 struct GLContext : public renderer::Context {
@@ -91,6 +94,9 @@ struct GLContext : public renderer::Context {
 
     GXMRenderVertUniformBlock previous_vert_info;
     GXMRenderFragUniformBlock previous_frag_info;
+
+    GXMRenderVertUniformBlock current_vert_render_info;
+    GXMRenderFragUniformBlock current_frag_render_info;
 
     const GLRenderTarget *render_target;
 

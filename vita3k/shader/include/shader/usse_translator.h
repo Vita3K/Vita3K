@@ -60,14 +60,14 @@ public:
     int repeat_increase[4][4];
     int repeat_multiplier[4];
 
-    void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries);
+    void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries, const spv::Id translation_state_id);
     spv::Id do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type, const int lod_mode,
         const spv::Id lod = spv::NoResult);
 
     USSETranslatorVisitor() = delete;
     explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program, const FeatureState &features,
         utils::SpirvUtilFunctions &utils, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries,
-        bool is_secondary_program = false)
+        const spv::Id render_info_id, bool is_secondary_program = false)
         : m_util_funcs(utils)
         , m_second_program(is_secondary_program)
         , m_b(_b)
@@ -112,7 +112,7 @@ public:
             }
         }
 
-        do_texture_queries(queries);
+        do_texture_queries(queries, render_info_id);
     }
 
     /*
@@ -838,7 +838,8 @@ struct USSERecompiler final {
     USSEBlockNode tree_block_node;
 
     explicit USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features,
-        const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries);
+        const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func,
+        const NonDependentTextureQueryCallInfos &queries, const spv::Id render_info_id);
 
     void reset(const std::uint64_t *inst, const std::size_t count);
 

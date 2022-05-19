@@ -84,7 +84,7 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     return image_sample;
 }
 
-void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries) {
+void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries, const spv::Id translation_state_id) {
     Operand store_op;
     store_op.bank = RegisterBank::PRIMATTR;
     store_op.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
@@ -106,6 +106,7 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
             dest_mask = 0b1;
             break;
         }
+
         default:
             assert(false);
         }
@@ -119,9 +120,53 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
         }
 
         spv::Id fetch_result = do_fetch_texture(texture_query.sampler, coord_inst, static_cast<DataType>(texture_query.store_type), proj ? 4 : 0, 0);
-
         store_op.num = texture_query.dest_offset;
-        store(store_op, fetch_result, dest_mask);
+
+        if (static_cast<DataType>(texture_query.store_type) == DataType::UNK) {
+            // Manual check
+            spv::Id sampler_integral_query_format = m_b.createAccessChain(spv::StorageClassPrivate, translation_state_id, { m_b.makeIntConstant(4), m_b.makeIntConstant(texture_query.sampler_index / 4), m_b.makeIntConstant(texture_query.sampler_index % 4) });
+            spv::Id bool_type = m_b.makeBoolType();
+
+            spv::Builder::If if_builder(m_b.createBinOp(spv::OpFOrdGreaterThanEqual, bool_type, sampler_integral_query_format, m_b.makeFloatConstant(INTEGRAL_TEX_QUERY_TYPE_8BIT_SIGNED)), spv::SelectionControlMaskNone, m_b);
+
+            spv::Id packed8 = utils::convert_to_int(m_b, fetch_result, DataType::INT8, true);
+            packed8 = utils::pack_one(m_b, m_util_funcs, m_features, packed8, DataType::INT8);
+
+            dest_mask = 0b1;
+            store(store_op, packed8, dest_mask);
+            if_builder.makeBeginElse();
+
+            spv::Builder::If if_builder_2(m_b.createBinOp(spv::OpFOrdGreaterThanEqual, bool_type, sampler_integral_query_format, m_b.makeIntConstant(INTEGRAL_TEX_QUERY_TYPE_8BIT_UNSIGNED)), spv::SelectionControlMaskNone, m_b);
+
+            packed8 = utils::convert_to_int(m_b, fetch_result, DataType::UINT8, true);
+            packed8 = utils::pack_one(m_b, m_util_funcs, m_features, packed8, DataType::UINT8);
+
+            dest_mask = 0b1;
+            store(store_op, packed8, dest_mask);
+
+            if_builder_2.makeBeginElse();
+            spv::Builder::If if_builder_3(m_b.createBinOp(spv::OpFOrdGreaterThanEqual, bool_type, sampler_integral_query_format, m_b.makeIntConstant(INTEGRAL_TEX_QUERY_TYPE_16BIT)), spv::SelectionControlMaskNone, m_b);
+
+            spv::Id pack1 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { fetch_result, fetch_result, 0, 1 });
+            pack1 = utils::pack_one(m_b, m_util_funcs, m_features, pack1, DataType::F16);
+
+            spv::Id pack2 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { fetch_result, fetch_result, 2, 3 });
+            pack2 = utils::pack_one(m_b, m_util_funcs, m_features, pack2, DataType::F16);
+
+            spv::Id packedu16 = m_b.createCompositeConstruct(type_f32_v[2], { pack1, pack2 });
+            dest_mask = 0b11;
+            store(store_op, packedu16, dest_mask);
+
+            if_builder_3.makeBeginElse();
+            dest_mask = 0b1111;
+            store(store_op, fetch_result, dest_mask);
+
+            if_builder_3.makeEndIf();
+            if_builder_2.makeEndIf();
+            if_builder.makeEndIf();
+        } else {
+            store(store_op, fetch_result, dest_mask);
+        }
     }
 }
 

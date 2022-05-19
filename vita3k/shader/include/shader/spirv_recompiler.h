@@ -35,6 +35,10 @@ namespace shader {
 static constexpr int COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0;
 static constexpr int MASK_TEXTURE_SLOT_IMAGE = 1;
 static constexpr int COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE = 3;
+static constexpr float INTEGRAL_TEX_QUERY_TYPE_8BIT_SIGNED = 3.0;
+static constexpr float INTEGRAL_TEX_QUERY_TYPE_8BIT_UNSIGNED = 2.0;
+static constexpr float INTEGRAL_TEX_QUERY_TYPE_16BIT = 1.0;
+static constexpr float INTEGRAL_TEX_QUERY_TYPE_32BIT = 0.0;
 static constexpr std::uint32_t CURRENT_VERSION = 2;
 
 // Dump generated SPIR-V disassembly up to this point
