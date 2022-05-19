@@ -520,9 +520,33 @@ static optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
         // 16-bit Integer multiply-add
         /*
                                        10100 = opcode1
-                                            ----------------------------------------------------------- = don't care
+                                            pp = pred (2 bits, ShortPredicate)
+                                              a = abs (1 bit)
+                                               s = skipinv (1 bit)
+                                                n = nosched (1 bit)
+                                                 r = src2_neg (1 bit)
+                                                  e = sel1h_upper8 (1 bit)
+                                                   d = dest_bank_ext (1 bit)
+                                                    b = end (1 bit)
+                                                     c = src1_bank_ext (1 bit)
+                                                      k = src2_bank_ext (1 bit)
+                                                       - = don't care
+                                                        ttt = repeat_count (3 bits)
+                                                           mm = mode (2 bits)
+                                                             ff = src2_format (2 bits)
+                                                               oo = src1_format (2 bits)
+                                                                 l = sel2h_upper8 (1 bit)
+                                                                  hh = or_shift (2 bits)
+                                                                    g = src0_bank (1 bit)
+                                                                     ii = dest_bank (2 bits)
+                                                                       jj = src1_bank (2 bits)
+                                                                         qq = src2_bank (2 bits)
+                                                                           uuuuuuu = dest_n (7 bits)
+                                                                                  vvvvvvv = src0_n (7 bits)
+                                                                                         wwwwwww = src1_n (7 bits)
+                                                                                                xxxxxxx = src2_n (7 bits)
         */
-        INST(&V::i16mad, "I16MAD ()", "10100-----------------------------------------------------------"),
+        INST(&V::i16mad, "I16MAD ()", "10100ppasnredbck-tttmmffoolhhgiijjqquuuuuuuvvvvvvvwwwwwwwxxxxxxx"),
         // 32-bit Integer multiply-add
         /*
                                        10101 = opcode1

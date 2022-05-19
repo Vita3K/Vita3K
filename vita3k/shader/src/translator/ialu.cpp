@@ -315,8 +315,97 @@ bool USSETranslatorVisitor::i8mad2() {
     return true;
 }
 
-bool USSETranslatorVisitor::i16mad() {
-    LOG_DISASM("Unimplmenet Opcode: i16mad");
+bool USSETranslatorVisitor::i16mad(
+    ShortPredicate pred,
+    Imm1 abs,
+    Imm1 skipinv,
+    Imm1 nosched,
+    Imm1 src2_neg,
+    Imm1 sel1h_upper8,
+    Imm1 dest_bank_ext,
+    Imm1 end,
+    Imm1 src1_bank_ext,
+    Imm1 src2_bank_ext,
+    Imm3 repeat_count,
+    Imm2 mode,
+    Imm2 src2_format,
+    Imm2 src1_format,
+    Imm1 sel2h_upper8,
+    Imm2 or_shift,
+    Imm1 src0_bank,
+    Imm2 dest_bank,
+    Imm2 src1_bank,
+    Imm2 src2_bank,
+    Imm7 dest_n,
+    Imm7 src0_n,
+    Imm7 src1_n,
+    Imm7 src2_n) {
+    if ((mode == 1) || (mode == 3)) {
+        LOG_DISASM("Saturation in i16mad not yet supported!");
+    }
+
+    Instruction inst;
+    inst.opcode = Opcode::IMA16;
+    DataType operate_type = ((mode == 0) || (mode == 1)) ? DataType::UINT16 : DataType::INT16;
+    bool is_signed = (mode >= 2);
+
+    inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_bank_ext, false, 7, m_second_program);
+    inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, false, false, 7, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, false, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_bank_ext, false, 7, m_second_program);
+
+    inst.opr.dest.type = inst.opr.src0.type = inst.opr.src1.type = inst.opr.src2.type = operate_type;
+    std::uint8_t mask_src1 = 0b1;
+    std::uint8_t mask_src2 = 0b1;
+    if (src1_format != 0) {
+        if (src1_format == 1) {
+            inst.opr.src1.type = (is_signed ? DataType::INT8 : DataType::UINT8);
+        } else {
+            LOG_DISASM("Only support selecting non sign-extended 8-bit integer for SRC1!");
+        }
+
+        if (sel1h_upper8) {
+            mask_src1 = 0b10;
+        }
+    }
+
+    if (src2_format != 0) {
+        if (src2_format == 1) {
+            inst.opr.src2.type = (is_signed ? DataType::INT8 : DataType::UINT8);
+        } else {
+            LOG_DISASM("Only support selecting non sign-extended 8-bit integer for SRC2!");
+        }
+
+        if (sel2h_upper8) {
+            mask_src2 = 0b10;
+        }
+    }
+
+    BEGIN_REPEAT(repeat_count);
+    GET_REPEAT(inst, RepeatMode::SLMSI);
+
+    LOG_DISASM("{:016x}: {}{} {} {} {} {}", m_instr, disasm::s_predicate_str(pred), "IMAD16", disasm::operand_to_str(inst.opr.dest, 0b11),
+        disasm::operand_to_str(inst.opr.src0, 0b11), disasm::operand_to_str(inst.opr.src1, mask_src1) + ((src1_format != 0) ? "-8bits" : ""),
+        disasm::operand_to_str(inst.opr.src2, mask_src2) + ((src2_format != 0) ? "-8bits" : ""));
+
+    inst.opr.src0.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+    spv::Id source0 = load(inst.opr.src0, 0b11, src0_repeat_offset);
+    spv::Id source1 = load(inst.opr.src1, mask_src1, src1_repeat_offset);
+    spv::Id source2 = load(inst.opr.src2, mask_src2, src2_repeat_offset);
+
+    spv::Id source0_type = m_b.getTypeId(source0);
+    source1 = m_b.createCompositeConstruct(source0_type, { source1, source1 });
+    source2 = m_b.createCompositeConstruct(source0_type, { source2, source2 });
+
+    auto mul_result = m_b.createBinOp(spv::OpIMul, source0_type, source0, source1);
+    auto add_result = m_b.createBinOp(spv::OpIAdd, source0_type, mul_result, source2);
+
+    if (add_result != spv::NoResult) {
+        store(inst.opr.dest, add_result, 0b1, dest_repeat_offset);
+    }
+
+    END_REPEAT();
+
     return true;
 }
 
