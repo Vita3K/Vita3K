@@ -27,6 +27,8 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
+#include <shader/spirv_recompiler.h>
+
 #include <cmath>
 
 namespace renderer::gl {
@@ -306,6 +308,22 @@ void sync_depth_bias(const int factor, const int unit, const bool is_front) {
     }
 }
 
+static float get_integral_query_format(const SceGxmTextureBaseFormat format) {
+    if ((format == SCE_GXM_TEXTURE_BASE_FORMAT_S8) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8)) {
+        return shader::INTEGRAL_TEX_QUERY_TYPE_8BIT_SIGNED;
+    }
+
+    if ((format == SCE_GXM_TEXTURE_BASE_FORMAT_U16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_U16U16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S16S16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16)) {
+        return shader::INTEGRAL_TEX_QUERY_TYPE_16BIT;
+    }
+
+    if ((format == SCE_GXM_TEXTURE_BASE_FORMAT_U32) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_U32U32) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S32)) {
+        return shader::INTEGRAL_TEX_QUERY_TYPE_32BIT;
+    }
+
+    return shader::INTEGRAL_TEX_QUERY_TYPE_8BIT_UNSIGNED;
+}
+
 void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t index, SceGxmTexture texture,
     const Config &config, const std::string &base_path, const std::string &title_id) {
     Address data_addr = texture.data_addr << 2;
@@ -321,6 +339,13 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
     if (gxm::is_paletted_format(base_format) && texture.palette_addr == 0) {
         LOG_WARN("Ignoring null palette texture");
         return;
+    }
+
+    if (index >= SCE_GXM_MAX_TEXTURE_UNITS) {
+        // Vertex textures
+        context.current_vert_render_info.integral_texture_query_format[index - SCE_GXM_MAX_TEXTURE_UNITS] = get_integral_query_format(base_format);
+    } else {
+        context.current_frag_render_info.integral_texture_query_format[index] = get_integral_query_format(base_format);
     }
 
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));

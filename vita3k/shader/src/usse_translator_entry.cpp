@@ -834,11 +834,11 @@ static optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
 //
 
 USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters,
-    utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries)
+    utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const spv::Id render_info_id)
     : inst(nullptr)
     , count(0)
     , b(b)
-    , visitor(b, *this, program, features, utils, cur_instr, parameters, queries, true)
+    , visitor(b, *this, program, features, utils, cur_instr, parameters, queries, render_info_id, true)
     , end_hook_func(end_hook_func)
     , tree_block_node(nullptr, 0) {
 }
@@ -1028,7 +1028,7 @@ spv::Function *USSERecompiler::compile_program_function() {
 }
 
 void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
-    spv::Function *begin_hook_func, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries) {
+    spv::Function *begin_hook_func, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const spv::Id render_info_id) {
     const uint64_t *primary_program = program.primary_program_start();
     const uint64_t primary_program_instr_count = program.primary_program_instr_count;
 
@@ -1048,7 +1048,7 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
 
     // Decode and recompile
     // TODO: Reuse this
-    usse::USSERecompiler recomp(b, program, features, parameters, utils, end_hook_func, queries);
+    usse::USSERecompiler recomp(b, program, features, parameters, utils, end_hook_func, queries, render_info_id);
 
     // Set the program
     recomp.program = &program;
