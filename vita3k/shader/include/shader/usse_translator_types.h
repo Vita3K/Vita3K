@@ -81,6 +81,7 @@ struct NonDependentTextureQueryCallInfo {
     spv::Id sampler;
     Coord coord;
     int coord_index = 0;
+    int sampler_index = 0;
 
     std::uint32_t dest_offset = 0;
     int store_type = 0; ///< For sampling method later
