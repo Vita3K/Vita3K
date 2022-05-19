@@ -614,7 +614,30 @@ public:
         Imm7 src1_num,
         Imm7 src2_num);
 
-    bool i16mad();
+    bool i16mad(ShortPredicate pred,
+        Imm1 abs,
+        Imm1 skipinv,
+        Imm1 nosched,
+        Imm1 src2_neg,
+        Imm1 sel1h_upper8,
+        Imm1 dest_bank_ext,
+        Imm1 end,
+        Imm1 src1_bank_ext,
+        Imm1 src2_bank_ext,
+        Imm3 repeat_count,
+        Imm2 mode,
+        Imm2 src2_format,
+        Imm2 src1_format,
+        Imm1 sel2h_upper8,
+        Imm2 or_shift,
+        Imm1 src0_bank,
+        Imm2 dest_bank,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm7 src0_n,
+        Imm7 src1_n,
+        Imm7 src2_n);
 
     bool i32mad(ShortPredicate pred,
         Imm1 src0_high,
