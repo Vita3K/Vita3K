@@ -93,7 +93,8 @@ std::int32_t VoiceInputManager::receive(ngs::Patch *patch, const VoiceProduct &p
 ModuleData::ModuleData()
     : callback(0)
     , user_data(0)
-    , flags(0) {
+    , flags(0)
+    , is_bypassed(false) {
 }
 
 BufferParamsInfo *ModuleData::lock_params(const MemState &mem) {
@@ -104,11 +105,9 @@ BufferParamsInfo *ModuleData::lock_params(const MemState &mem) {
         return nullptr;
     }
 
-    if (info.data) {
-        const std::uint8_t *current_data = info.data.cast<const std::uint8_t>().get(mem);
-        last_info.resize(info.size);
-        std::copy(current_data, current_data + info.size, last_info.data());
-    }
+    const std::uint8_t *current_data = info.data.cast<const std::uint8_t>().get(mem);
+    last_info.resize(info.size);
+    memcpy(last_info.data(), current_data, info.size);
 
     flags |= PARAMS_LOCK;
 
@@ -128,24 +127,8 @@ bool ModuleData::unlock_params() {
 
 void ModuleData::invoke_callback(KernelState &kernel, const MemState &mem, const SceUID thread_id, const std::uint32_t reason1,
     const std::uint32_t reason2, Address reason_ptr) {
-    if (!callback) {
-        return;
-    }
-
-    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
-    const Address callback_info_addr = stack_alloc(*thread->cpu, sizeof(CallbackInfo));
-
-    CallbackInfo *info = Ptr<CallbackInfo>(callback_info_addr).get(mem);
-    info->rack_handle = Ptr<void>(parent->rack, mem);
-    info->voice_handle = Ptr<void>(parent, mem);
-    info->module_id = parent->rack->modules[index]->module_id();
-    info->callback_reason = reason1;
-    info->callback_reason_2 = reason2;
-    info->callback_ptr = Ptr<void>(reason_ptr);
-    info->userdata = user_data;
-
-    kernel.run_guest_function(thread_id, callback.address(), { callback_info_addr });
-    stack_free(*thread->cpu, sizeof(CallbackInfo));
+    return parent->invoke_callback(kernel, mem, thread_id, callback, user_data, parent->rack->modules[index]->module_id(),
+        reason1, reason2, reason_ptr);
 }
 
 void ModuleData::fill_to_fit_granularity() {
@@ -264,6 +247,93 @@ void Voice::transition(const VoiceState new_state) {
         if (rack->modules[i])
             rack->modules[i]->on_state_change(datas[i], old);
     }
+}
+
+bool Voice::parse_params(const MemState &mem, const ModuleParameterHeader *header) {
+    ModuleData *storage = module_storage(header->module_id);
+
+    if (!storage)
+        return false;
+
+    if (storage->flags & ModuleData::PARAMS_LOCK)
+        return false;
+
+    if (header->descriptor.size > storage->info.size)
+        return false;
+
+    memcpy(storage->info.data.get(mem), &header->descriptor + 1, header->descriptor.size);
+
+    return true;
+}
+
+SceInt32 Voice::parse_params_block(const MemState &mem, const ModuleParameterHeader *header, const SceUInt32 size) {
+    const SceUInt8 *data = reinterpret_cast<const SceUInt8 *>(header);
+    const SceUInt8 *data_end = reinterpret_cast<const SceUInt8 *>(data + size);
+
+    SceInt32 num_error = 0;
+
+    // after first loop, check if other module exist
+    while (data < data_end) {
+        if (!parse_params(mem, header))
+            num_error++;
+
+        // increment by the size of the header alone + the descriptor size
+        data += 2 * sizeof(SceUInt32) + header->descriptor.size;
+
+        // set new header for next module
+        header = reinterpret_cast<const ngs::ModuleParameterHeader *>(data);
+    }
+
+    return num_error;
+}
+
+bool Voice::set_preset(const MemState &mem, const VoicePreset *preset) {
+    // we ignore the name for now
+    const uint8_t *data_origin = reinterpret_cast<const uint8_t *>(preset);
+
+    if (preset->preset_data_offset) {
+        const auto *preset_data = reinterpret_cast<const ModuleParameterHeader *>(data_origin + preset->preset_data_offset);
+        auto nb_errors = parse_params_block(mem, preset_data, preset->preset_data_size);
+        if (nb_errors > 0)
+            return false;
+    }
+
+    if (preset->bypass_flags_offset) {
+        const auto *bypass_flags = reinterpret_cast<const SceUInt32 *>(data_origin + preset->bypass_flags_offset);
+        // should we disable bypass on all modules first?
+        for (int i = 0; i < preset->bypass_flags_nb; i++) {
+            ModuleData *module_data = module_storage(*bypass_flags);
+            if (!module_data)
+                return false;
+            module_data->is_bypassed = true;
+
+            bypass_flags++;
+        }
+    }
+
+    return true;
+}
+
+void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceUID thread_id, Ptr<NgsCallback> callback, Ptr<void> user_data,
+    const std::uint32_t module_id, const std::uint32_t reason1, const std::uint32_t reason2, Address reason_ptr) {
+    if (!callback) {
+        return;
+    }
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
+    const Address callback_info_addr = stack_alloc(*thread->cpu, sizeof(CallbackInfo));
+
+    CallbackInfo *info = Ptr<CallbackInfo>(callback_info_addr).get(mem);
+    info->rack_handle = Ptr<void>(rack, mem);
+    info->voice_handle = Ptr<void>(this, mem);
+    info->module_id = module_id;
+    info->callback_reason = reason1;
+    info->callback_reason_2 = reason2;
+    info->callback_ptr = Ptr<void>(reason_ptr);
+    info->userdata = user_data;
+
+    kernel.run_guest_function(thread_id, callback.address(), { callback_info_addr });
+    stack_free(*thread->cpu, sizeof(CallbackInfo));
 }
 
 std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameters) {

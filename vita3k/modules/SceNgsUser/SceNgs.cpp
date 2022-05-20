@@ -74,6 +74,15 @@ static constexpr SceUInt32 SCE_NGS_VOICE_STATE_PENDING = 1 << 4;
 static constexpr SceUInt32 SCE_NGS_VOICE_STATE_PAUSED = 1 << 5;
 static constexpr SceUInt32 SCE_NGS_VOICE_STATE_KEY_OFF = 1 << 6;
 
+static constexpr SceUInt32 SCE_NGS_MODULE_FLAG_NOT_BYPASSED = 0;
+static constexpr SceUInt32 SCE_NGS_MODULE_FLAG_BYPASSED = 2;
+
+static constexpr SceUInt32 SCE_NGS_VOICE_INIT_BASE = 0;
+static constexpr SceUInt32 SCE_NGS_VOICE_INIT_ROUTING = 1;
+static constexpr SceUInt32 SCE_NGS_VOICE_INIT_PRESET = 2;
+static constexpr SceUInt32 SCE_NGS_VOICE_INIT_CALLBACKS = 4;
+static constexpr SceUInt32 SCE_NGS_VOICE_INIT_ALL = 7;
+
 EXPORT(int, sceNgsAT9GetSectionDetails, const std::uint32_t samples_start, const std::uint32_t num_samples, const std::uint32_t config_data, ngs::atrac9::SkipBufferInfo *info) {
     if (host.cfg.current_config.disable_ngs) {
         return -1;
@@ -283,8 +292,22 @@ EXPORT(SceUInt32, sceNgsSystemUpdate, SceNgsSynthSystemHandle handle) {
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsVoiceBypassModule) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceNgsVoiceBypassModule, SceNgsVoiceHandle voice_handle, const SceUInt32 module, const SceUInt32 bypass_flag) {
+    if (host.cfg.current_config.disable_ngs) {
+        return 0;
+    }
+
+    ngs::Voice *voice = voice_handle.get(host.mem);
+
+    ngs::ModuleData *storage = voice->module_storage(module);
+
+    if (!storage)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    // no need to lock a mutex for this
+    storage->is_bypassed = (bypass_flag & SCE_NGS_MODULE_FLAG_BYPASSED);
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetAtrac9Voice) {
@@ -483,8 +506,24 @@ EXPORT(SceInt32, sceNgsVoiceGetInfo, SceNgsVoiceHandle handle, SceNgsVoiceInfo *
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsVoiceGetModuleBypass) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsVoiceGetModuleBypass, SceNgsVoiceHandle voice_handle, const SceUInt32 module, SceUInt32 *bypass_flag) {
+    if (host.cfg.current_config.disable_ngs) {
+        return 0;
+    }
+
+    ngs::Voice *voice = voice_handle.get(host.mem);
+
+    ngs::ModuleData *storage = voice->module_storage(module);
+
+    if (!storage)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    if (storage->is_bypassed)
+        *bypass_flag = SCE_NGS_MODULE_FLAG_BYPASSED;
+    else
+        *bypass_flag = SCE_NGS_MODULE_FLAG_NOT_BYPASSED;
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsVoiceGetModuleType) {
@@ -539,8 +578,51 @@ EXPORT(SceInt32, sceNgsVoiceGetStateData, SceNgsVoiceHandle voice_handle, const 
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsVoiceInit) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceNgsVoiceInit, SceNgsVoiceHandle voice_handle, const ngs::VoicePreset *preset, const SceUInt32 init_flags) {
+    if (host.cfg.current_config.disable_ngs) {
+        return 0;
+    }
+
+    ngs::Voice *voice = voice_handle.get(host.mem);
+
+    if (!voice)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    if (voice->state == ngs::VoiceState::VOICE_STATE_ACTIVE)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_STATE);
+
+    std::lock_guard<std::mutex> guard(*voice->voice_mutex);
+
+    if (init_flags == SCE_NGS_VOICE_INIT_BASE || init_flags == SCE_NGS_VOICE_INIT_ALL) {
+        voice->state = ngs::VoiceState::VOICE_STATE_AVAILABLE;
+    }
+
+    if (init_flags & SCE_NGS_VOICE_INIT_ROUTING) {
+        // reset all patches
+        for (auto &patches : voice->patches) {
+            for (auto &patch : patches) {
+                if (patch) {
+                    patch.get(host.mem)->output_sub_index = -1;
+                }
+            }
+        }
+    }
+
+    if (init_flags & SCE_NGS_VOICE_INIT_PRESET) {
+        if (!preset)
+            return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+        if (!voice->set_preset(host.mem, preset))
+            return RET_ERROR(SCE_NGS_ERROR);
+    }
+
+    if (init_flags & SCE_NGS_VOICE_INIT_CALLBACKS) {
+        for (auto &module_data : voice->datas) {
+            module_data.callback = Ptr<ngs::NgsCallback>();
+        }
+    }
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(SceInt32, sceNgsVoiceKeyOff, SceNgsVoiceHandle voice_handle) {
@@ -555,6 +637,10 @@ EXPORT(SceInt32, sceNgsVoiceKeyOff, SceNgsVoiceHandle voice_handle) {
     }
 
     voice->rack->system->voice_scheduler.off(voice);
+
+    // call the finish callback, I got no idea what the module id should be in this case
+    voice->invoke_callback(host.kernel, host.mem, thread_id, voice->finished_callback, voice->finished_callback_user_data, 0);
+
     voice->rack->system->voice_scheduler.stop(voice);
     return SCE_NGS_OK;
 }
@@ -589,13 +675,11 @@ EXPORT(SceUInt32, sceNgsVoiceLockParams, SceNgsVoiceHandle voice_handle, SceUInt
     }
 
     ngs::ModuleData *data = voice->module_storage(module);
-
     if (!data) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
     ngs::BufferParamsInfo *info = data->lock_params(host.mem);
-
     if (!info) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
@@ -704,8 +788,17 @@ EXPORT(int, sceNgsVoiceResume, SceNgsVoiceHandle handle) {
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsVoiceSetFinishedCallback) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceNgsVoiceSetFinishedCallback, SceNgsVoiceHandle voice_handle, Ptr<ngs::NgsCallback> callback, Ptr<void> user_data) {
+    if (host.cfg.current_config.disable_ngs) {
+        return 0;
+    }
+
+    ngs::Voice *voice = voice_handle.get(host.mem);
+
+    voice->finished_callback = callback;
+    voice->finished_callback_user_data = user_data;
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(SceInt32, sceNgsVoiceSetModuleCallback, SceNgsVoiceHandle voice_handle, const SceUInt32 module, Ptr<ngs::ModuleCallback> callback, Ptr<void> user_data) {
@@ -731,45 +824,37 @@ EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, SceNgsVoiceHandle voice_handle, cons
         return SCE_NGS_OK;
 
     ngs::Voice *voice = voice_handle.get(host.mem);
+    if (!voice)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
     const std::lock_guard<std::mutex> guard(*voice->voice_mutex);
 
-    const SceUInt8 *data = reinterpret_cast<const SceUInt8 *>(header);
-    const SceUInt8 *data_end = reinterpret_cast<const SceUInt8 *>(data + size);
+    *num_error = voice->parse_params_block(host.mem, header, size);
 
-    // after first loop, check if other module exist
-    while (data < data_end) {
-        // init Storage with module index give by app
-        ngs::ModuleData *storage = voice->module_storage(header->module_id);
+    if (*num_error == 0)
+        return SCE_NGS_OK;
+    else
+        return RET_ERROR(SCE_NGS_ERROR);
+}
 
-        // incremente data with size of struct header for go inside struct of current module
-        data += sizeof(ngs::ModuleParameterHeader);
-
-        // init descriptor parameters
-        const auto *desc = reinterpret_cast<const ngs::ParametersDescriptor *>(data);
-
-        // copy this current module inside current buffer data when it available with using descriptor size
-        if (storage) {
-            SceUInt8 *param_ptr = reinterpret_cast<SceUInt8 *>(storage->info.data.get(host.mem));
-            memcpy(param_ptr, data, desc->size);
-        } else
-            ++num_error;
-
-        // increment using the size of the descriptor of the current module to be able to move on to the next module when it exists
-        data += desc->size;
-
-        // set new header for can using on next module
-        header = reinterpret_cast<const ngs::ModuleParameterHeader *>(data);
+EXPORT(SceInt32, sceNgsVoiceSetPreset, SceNgsVoiceHandle voice_handle, const ngs::VoicePreset *preset) {
+    if (host.cfg.current_config.disable_ngs) {
+        return 0;
     }
+
+    if (!voice_handle || !preset)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    ngs::Voice *voice = voice_handle.get(host.mem);
+
+    const std::lock_guard<std::mutex> guard(*voice->voice_mutex);
+    if (!voice->set_preset(host.mem, preset))
+        return RET_ERROR(SCE_NGS_ERROR);
 
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsVoiceSetPreset) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(SceUInt32, sceNgsVoiceUnlockParams, SceNgsVoiceHandle handle, const SceUInt32 module_index) {
+EXPORT(SceInt32, sceNgsVoiceUnlockParams, SceNgsVoiceHandle handle, const SceUInt32 module_index) {
     if (host.cfg.current_config.disable_ngs) {
         return 0;
     }
