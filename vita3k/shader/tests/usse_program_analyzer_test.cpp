@@ -16,7 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <gtest/gtest.h>
-#include <shader/usse_program_analyzer.h>
+#include <shader/program_analyzer.h>
 
 #include <unordered_map>
 

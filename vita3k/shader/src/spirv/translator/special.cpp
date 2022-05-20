@@ -15,16 +15,25 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <shader/spirv/translator.h>
 
-#include <gxm/functions.h>
-#include <gxm/types.h>
-#include <shader/translator_types.h>
+#include <SPIRV/GLSL.std.450.h>
+#include <SPIRV/SpvBuilder.h>
+
+#include <shader/decoder_helpers.h>
+#include <shader/disasm.h>
 #include <shader/types.h>
+#include <util/log.h>
 
-namespace shader {
+using namespace shader;
+using namespace usse;
 
-usse::GenericType translate_generic_type(const gxp::GenericParameterType &type);
-std::tuple<usse::DataType, std::string> get_parameter_type_store_and_name(const SceGxmParameterType &type);
-usse::ProgramInput get_program_input(const SceGxmProgram &program);
-} // namespace shader
+bool USSETranslatorVisitorSpirv::kill(
+    ShortPredicate pred) {
+    LOG_DISASM("{:016x}: KILL {}", m_instr, disasm::s_predicate_str(pred));
+
+    m_b.setLine(m_recompiler.cur_pc);
+    m_b.makeDiscard();
+
+    return true;
+}

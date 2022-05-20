@@ -24,7 +24,7 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
-#include <shader/spirv_recompiler.h>
+#include <shader/recompiler.h>
 
 #include <gxm/functions.h>
 #include <vector>

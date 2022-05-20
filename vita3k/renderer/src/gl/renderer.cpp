@@ -23,8 +23,8 @@
 #include <renderer/gl/functions.h>
 #include <renderer/gl/types.h>
 
-#include <shader/spirv_recompiler.h>
-#include <shader/usse_program_analyzer.h>
+#include <shader/program_analyzer.h>
+#include <shader/recompiler.h>
 
 #include <display/state.h>
 #include <features/state.h>

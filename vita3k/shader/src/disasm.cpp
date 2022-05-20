@@ -15,9 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <shader/usse_disasm.h>
-
-#include <shader/usse_types.h>
+#include <shader/disasm.h>
+#include <shader/types.h>
 
 #include <string>
 #include <unordered_map>
@@ -35,7 +34,7 @@ std::string *disasm_storage = nullptr;
 const std::string &opcode_str(const Opcode &e) {
     static const std::unordered_map<Opcode, const std::string> names = {
 #define OPCODE(n) { Opcode::n, std::string(#n) },
-#include "shader/usse_opcodes.inc"
+#include "shader/opcodes.inc"
 #undef OPCODE
     };
     return names.at(e);

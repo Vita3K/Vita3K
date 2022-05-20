@@ -27,7 +27,7 @@
 #include <gxm/types.h>
 #include <util/log.h>
 
-#include <shader/spirv_recompiler.h>
+#include <shader/recompiler.h>
 
 #include <cmath>
 
@@ -212,7 +212,8 @@ void sync_clipping(GLContext &context) {
 }
 
 void sync_cull(const GxmRecordState &state) {
-    // Culling.
+    // Culling. We set front face to CCW by default. So we flip all faces here
+    // Because GL Y axis is negated.
     switch (state.cull_mode) {
     case SCE_GXM_CULL_CCW:
         glEnable(GL_CULL_FACE);
@@ -251,7 +252,8 @@ void sync_depth_data(const renderer::GxmRecordState &state) {
 }
 
 void sync_stencil_func(const GxmStencilState &state, const MemState &mem, const bool is_back_stencil) {
-    const GLenum face = is_back_stencil ? GL_BACK : GL_FRONT;
+    // We flip faces in OpenGL in constrast to GXM's coordinate system
+    const GLenum face = is_back_stencil ? GL_FRONT : GL_BACK;
 
     glStencilOpSeparate(face,
         translate_stencil_op(state.stencil_fail),

@@ -23,7 +23,7 @@
 #include <map>
 #include <memory>
 #include <queue>
-#include <shader/usse_types.h>
+#include <shader/types.h>
 #include <tuple>
 #include <vector>
 

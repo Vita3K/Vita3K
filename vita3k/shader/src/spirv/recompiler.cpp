@@ -16,18 +16,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <shader/spirv_recompiler.h>
-#include <shader/usse_disasm.h>
-#include <shader/usse_program_analyzer.h>
-#include <shader/usse_utilities.h>
+#include <shader/disasm.h>
+#include <shader/program_analyzer.h>
+#include <shader/recompiler.h>
+#include <shader/spirv/utilities.h>
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <shader/gxp_parser.h>
 #include <shader/profile.h>
-#include <shader/usse_translator_entry.h>
-#include <shader/usse_translator_types.h>
-#include <shader/usse_utilities.h>
+#include <shader/spirv/translator_entry.h>
+#include <shader/translator_types.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/overloaded.h>
@@ -987,6 +986,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                        [&](const AttributeInputSource &s) {
                            add_var_to_reg(input, s.name, s.semantic, true, s.regformat, in_fcount_allocated / 4);
                            in_fcount_allocated += ((input.array_size * input.component_count + 3) / 4 * 4);
+                       },
+                       [&](const NonDependentSamplerSampleSource &s) {
+                           // TODO!
                        } },
             input.source);
     }
@@ -1403,6 +1405,8 @@ static void generate_update_mask_body(spv::Builder &b, utils::SpirvUtilFunctions
     b.createStore(mask_v, out);
 }
 
+void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump = nullptr);
+
 static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     SpirvCode spirv;
 
@@ -1603,6 +1607,7 @@ usse::SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::st
     return convert_gxp_to_spirv_impl(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
 }
 
+/*
 std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
@@ -1626,7 +1631,7 @@ std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string 
     }
 
     return source;
-}
+}*/
 
 void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
     const fs::path shader_filepath_str{ shader_filepath };

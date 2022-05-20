@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <shader/usse_types.h>
+#include <shader/types.h>
 
 #include <fstream>
 #include <memory>

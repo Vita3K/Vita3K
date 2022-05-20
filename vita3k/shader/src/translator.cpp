@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2022 Vita3K team
+// Copyright (C) 2021 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,21 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <shader/usse_translator_entry.h>
-
-#include <gxm/types.h>
 #include <shader/decoder_detail.h>
+#include <shader/disasm.h>
 #include <shader/matcher.h>
-#include <shader/usse_disasm.h>
-#include <shader/usse_translator.h>
-#include <shader/usse_translator_types.h>
+#include <shader/translator.h>
+
 #include <util/log.h>
 #include <util/optional.h>
 
-#include <map>
+#include <bitset>
 
 namespace shader::usse {
-
 template <typename Visitor>
 using USSEMatcher = shader::decoder::Matcher<Visitor, uint64_t>;
 
@@ -829,60 +825,26 @@ static optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
 #endif
 }
 
-//
-// Decoder/translator usage
-//
-
-USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters,
-    utils::SpirvUtilFunctions &utils, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const spv::Id render_info_id)
-    : inst(nullptr)
+USSERecompiler::USSERecompiler(const SceGxmProgram &program_)
+    : program(&program_)
+    , inst(nullptr)
     , count(0)
-    , b(b)
-    , visitor(b, *this, program, features, utils, cur_instr, parameters, queries, render_info_id, true)
-    , end_hook_func(end_hook_func)
+    , visitor(nullptr)
     , tree_block_node(nullptr, 0) {
 }
 
 void USSERecompiler::reset(const std::uint64_t *_inst, const std::size_t _count) {
     inst = _inst;
     count = _count;
-    visitor.reset_for_new_session();
+    visitor->reset_for_new_session();
 
     usse::analyze(tree_block_node, static_cast<shader::usse::USSEOffset>(_count - 1),
         [&](usse::USSEOffset off) -> std::uint64_t { return inst[off]; });
 }
 
-spv::Id USSERecompiler::get_condition_value(const std::uint8_t pred, const bool neg) {
-    const ExtPredicate predicator = static_cast<ExtPredicate>(pred);
-
-    Operand pred_opr{};
-    pred_opr.bank = RegisterBank::PREDICATE;
-
-    bool do_neg = neg;
-
-    if (predicator >= ExtPredicate::P0 && predicator <= ExtPredicate::P3) {
-        pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::P0);
-    } else if (predicator >= ExtPredicate::NEGP0 && predicator <= ExtPredicate::NEGP1) {
-        pred_opr.num = static_cast<int>(predicator) - static_cast<int>(ExtPredicate::NEGP0);
-        do_neg = !do_neg;
-    }
-
-    spv::Id pred_v = visitor.load(pred_opr, 0b0001);
-    if (do_neg) {
-        std::vector<spv::Id> ops{ pred_v };
-        pred_v = b.createOp(spv::OpLogicalNot, b.makeBoolType(), ops);
-    }
-
-    return pred_v;
-}
-
 void USSERecompiler::compile_code_node(const usse::USSECodeNode &code) {
-    std::unique_ptr<spv::Builder::If> cond_builder;
-
     if (code.condition != 0) {
-        // Construct the IF
-        spv::Id pred_v = get_condition_value(code.condition);
-        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+        begin_condition(code.condition);
     }
 
     const auto last_pc = cur_pc;
@@ -898,83 +860,15 @@ void USSERecompiler::compile_code_node(const usse::USSECodeNode &code) {
             // Recompile the instruction, to the current block
             auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
             if (decoder.has_value())
-                decoder->call(visitor, cur_instr);
+                decoder->call(*visitor, cur_instr);
             else
                 LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
         }
     }
 
-    if (cond_builder) {
-        cond_builder->makeEndIf();
+    if (code.condition != 0) {
+        end_condition();
     }
-}
-
-void USSERecompiler::compile_break_node(const usse::USSEBreakNode &node) {
-    std::unique_ptr<spv::Builder::If> cond_builder;
-
-    if (node.get_condition() != 0) {
-        spv::Id pred_v = get_condition_value(node.get_condition());
-        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
-    }
-
-    b.createLoopExit();
-
-    if (cond_builder)
-        cond_builder->makeEndIf();
-}
-
-void USSERecompiler::compile_continue_node(const usse::USSEContinueNode &node) {
-    std::unique_ptr<spv::Builder::If> cond_builder;
-
-    if (node.get_condition() != 0) {
-        spv::Id pred_v = get_condition_value(node.get_condition());
-        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
-    }
-
-    b.createLoopContinue();
-
-    if (cond_builder)
-        cond_builder->makeEndIf();
-}
-
-void USSERecompiler::compile_conditional_node(const usse::USSEConditionalNode &cond) {
-    spv::Builder::If if_builder(get_condition_value(cond.negif_condition(), true), spv::SelectionControlMaskNone, b);
-    compile_block(*cond.if_block());
-
-    if (cond.else_block()) {
-        if_builder.makeBeginElse();
-        compile_block(*cond.else_block());
-    }
-
-    if_builder.makeEndIf();
-}
-
-void USSERecompiler::compile_loop_node(const usse::USSELoopNode &loop) {
-    spv::Builder::LoopBlocks loops = b.makeNewLoop();
-
-    b.createBranch(&loops.head);
-    b.setBuildPoint(&loops.head);
-
-    // In the head we only want to branch to body. We always do while do anyway
-    b.createLoopMerge(&loops.merge, &loops.head, 0, {});
-    b.createBranch(&loops.body);
-
-    // Emit body content
-    b.setBuildPoint(&loops.body);
-
-    // If true
-    const usse::USSEBlockNode &content_block = *(loop.content_block());
-    compile_block(content_block);
-
-    b.createBranch(&loops.continue_target);
-
-    // Emit continue target
-    b.setBuildPoint(&loops.continue_target);
-    b.createBranch(&loops.head);
-
-    // Merge point
-    b.setBuildPoint(&loops.merge);
-    b.closeLoop();
 }
 
 void USSERecompiler::compile_block(const usse::USSEBlockNode &block) {
@@ -1009,72 +903,16 @@ void USSERecompiler::compile_block(const usse::USSEBlockNode &block) {
     }
 }
 
-spv::Function *USSERecompiler::compile_program_function() {
-    // Make a new function (subroutine)
-    spv::Block *last_build_point = b.getBuildPoint();
-    spv::Block *new_sub_block = nullptr;
-
-    const auto sub_name = fmt::format("{}_program", visitor.is_translating_secondary_program() ? "secondary" : "primary");
-
-    spv::Function *ret_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), sub_name.c_str(), {}, {},
-        &new_sub_block);
-
-    compile_block(tree_block_node);
-
-    b.leaveFunction();
-    b.setBuildPoint(last_build_point);
-
-    return ret_func;
+size_t USSETranslatorVisitor::dest_mask_to_comp_count(Imm4 dest_mask) {
+    std::bitset<4> bs(dest_mask);
+    const auto bit_count = bs.count();
+    return bit_count;
 }
 
-void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
-    spv::Function *begin_hook_func, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const spv::Id render_info_id) {
-    const uint64_t *primary_program = program.primary_program_start();
-    const uint64_t primary_program_instr_count = program.primary_program_instr_count;
-
-    const uint64_t *secondary_program_start = program.secondary_program_start();
-    const uint64_t *secondary_program_end = program.secondary_program_end();
-
-    std::map<ShaderPhase, std::pair<const std::uint64_t *, std::uint64_t>> shader_code;
-
-    // Collect instructions of Pixel (primary) phase
-    shader_code[ShaderPhase::Pixel] = std::make_pair(primary_program, primary_program_instr_count);
-
-    // Collect instructions of Sample rate (secondary) phase
-    shader_code[ShaderPhase::SampleRate] = std::make_pair(secondary_program_start, secondary_program_end - secondary_program_start);
-
-    if (begin_hook_func)
-        b.createFunctionCall(begin_hook_func, {});
-
-    // Decode and recompile
-    // TODO: Reuse this
-    usse::USSERecompiler recomp(b, program, features, parameters, utils, end_hook_func, queries, render_info_id);
-
-    // Set the program
-    recomp.program = &program;
-
-    for (auto phase = 0; phase < (uint32_t)ShaderPhase::Max; ++phase) {
-        const auto cur_phase_code = shader_code[(ShaderPhase)phase];
-
-        if (cur_phase_code.second != 0) {
-            if (static_cast<ShaderPhase>(phase) == ShaderPhase::SampleRate) {
-                recomp.visitor.set_secondary_program(true);
-            } else {
-                recomp.visitor.set_secondary_program(false);
-            }
-
-            recomp.reset(cur_phase_code.first, cur_phase_code.second);
-            b.createFunctionCall(recomp.compile_program_function(), {});
-        }
-    }
-
-    // We reach the end
-    // Call end hook. If it's discard, this is not even called, so no worry
-    b.createFunctionCall(end_hook_func, {});
-
-    std::vector<spv::Id> empty_args;
-    if (features.should_use_shader_interlock() && program.is_fragment() && program.is_frag_color_used())
-        b.createNoResultOp(spv::OpEndInvocationInterlockEXT);
+size_t dest_mask_to_comp_count(shader::usse::Imm4 dest_mask) {
+    std::bitset<4> bs(dest_mask);
+    const auto bit_count = bs.count();
+    assert(bit_count <= 4 && bit_count > 0);
+    return bit_count;
 }
-
 } // namespace shader::usse
