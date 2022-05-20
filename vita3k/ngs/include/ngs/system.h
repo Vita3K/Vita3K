@@ -47,14 +47,24 @@ enum VoiceState {
     VOICE_STATE_KEY_OFF
 };
 
-struct ModuleParameterHeader {
-    SceInt32 module_id;
-    SceInt32 channel;
+struct VoicePreset {
+    SceInt32 name_offset;
+    SceUInt32 name_length;
+    SceInt32 preset_data_offset;
+    SceUInt32 preset_data_size;
+    SceInt32 bypass_flags_offset;
+    SceUInt32 bypass_flags_nb;
 };
 
 struct ParametersDescriptor {
     SceUInt32 id;
     SceUInt32 size;
+};
+
+struct ModuleParameterHeader {
+    SceInt32 module_id;
+    SceInt32 channel;
+    ParametersDescriptor descriptor;
 };
 
 struct BufferParamsInfo {
@@ -75,7 +85,8 @@ struct CallbackInfo {
     Ptr<void> userdata;
 };
 
-typedef void (*ModuleCallback)(CallbackInfo *info);
+typedef std::function<void(CallbackInfo *info)> NgsCallback;
+typedef NgsCallback ModuleCallback;
 
 struct ModuleData {
     Voice *parent;
@@ -83,6 +94,8 @@ struct ModuleData {
 
     Ptr<ModuleCallback> callback;
     Ptr<void> user_data;
+
+    bool is_bypassed;
 
     std::vector<std::uint8_t> voice_state_data; ///< Voice state.
     std::vector<std::uint8_t> extra_storage; ///< Local data storage for module.
@@ -221,6 +234,9 @@ struct Voice {
     std::unique_ptr<std::mutex> voice_mutex;
     VoiceProduct products[MAX_VOICE_OUTPUT];
 
+    Ptr<NgsCallback> finished_callback;
+    Ptr<void> finished_callback_user_data;
+
     void init(Rack *mama);
 
     ModuleData *module_storage(const std::uint32_t index);
@@ -229,6 +245,13 @@ struct Voice {
     Ptr<Patch> patch(const MemState &mem, const std::int32_t index, std::int32_t subindex, std::int32_t dest_index, Voice *dest);
 
     void transition(const VoiceState new_state);
+    bool parse_params(const MemState &mem, const ModuleParameterHeader *header);
+    // Return the number of errors that happened
+    SceInt32 parse_params_block(const MemState &mem, const ModuleParameterHeader *header, const SceUInt32 size);
+    bool set_preset(const MemState &mem, const VoicePreset *preset);
+
+    void invoke_callback(KernelState &kernel, const MemState &mem, const SceUID thread_id, Ptr<NgsCallback> callback, Ptr<void> user_data,
+        const std::uint32_t module_id, const std::uint32_t reason = 0, const std::uint32_t reason2 = 0, Address reason_ptr = 0);
 };
 
 struct System;

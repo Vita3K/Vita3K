@@ -140,15 +140,28 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         std::unique_lock<std::mutex> voice_lock(*voice->voice_mutex);
         std::memset(voice->products, 0, sizeof(voice->products));
 
-        const bool is_key_off = voice->state == ngs::VOICE_STATE_KEY_OFF;
         bool finished = false;
+        uint32_t finished_module = 0;
+
         for (std::size_t i = 0; i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {
-                finished |= voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i], scheduler_lock, voice_lock);
+                if (voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i], scheduler_lock, voice_lock)) {
+                    finished = true;
+                    finished_module = voice->rack->modules[i]->module_id();
+                }
             }
         }
-        if (is_key_off || finished)
+        if (finished) {
+            if (voice->finished_callback) {
+                voice_lock.unlock();
+                scheduler_lock.unlock();
+                voice->invoke_callback(kern, mem, thread_id, voice->finished_callback, voice->finished_callback_user_data, finished_module);
+                voice_lock.lock();
+                scheduler_lock.lock();
+            }
+
             stop(voice);
+        }
 
         for (std::size_t i = 0; i < voice->rack->vdef->output_count(); i++) {
             if (voice->products[i].data)
