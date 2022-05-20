@@ -1551,7 +1551,7 @@ bool USSETranslatorVisitor::vdual(
                 break;
             case DualSrcId::INTERAL2:
                 op.bank = RegisterBank::FPINTERNAL;
-                op.num = code_info.src_count >= 2 ? (gpi2_slot_num_bit_1 << 1u | gpi2_slot_num_bit_0_or_unified_store_abs) : 2;
+                op.num = op1_src_count >= 2 ? (gpi2_slot_num_bit_1 << 1u | gpi2_slot_num_bit_0_or_unified_store_abs) : 2;
                 op.swizzle = SWIZZLE_CHANNEL_4(X, Y, Z, W);
                 break;
             default:
@@ -1572,7 +1572,8 @@ bool USSETranslatorVisitor::vdual(
 
     auto do_dual_op = [&](Opcode code, std::vector<Operand> &ops, Operand &dest,
                           Imm4 write_mask_dest, const DualOpInfo &code_info) {
-        uint32_t write_mask_source = code_info.vector_load ? write_mask_dest : 0b0001;
+        const auto is_vdp = (code == Opcode::VDP) || (code == Opcode::VSSQ);
+        const uint32_t write_mask_source = code_info.vector_load ? (is_vdp ? (0b1111u >> (uint32_t)!comp_count_type) : write_mask_dest) : 0b0001;
 
         spv::Id result;
 
