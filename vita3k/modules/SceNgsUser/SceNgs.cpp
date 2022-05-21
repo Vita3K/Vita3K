@@ -458,35 +458,40 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetTemplate1) {
     return get_voice_definition(host.ngs, host.mem, ngs::BussType::BUSS_NORMAL_PLAYER);
 }
 
-static SceUInt32 ngsVoiceStateFromHLEState(const ngs::VoiceState state) {
-    switch (state) {
+static SceUInt32 ngsVoiceStateFromHLEState(const ngs::Voice *voice) {
+    SceUInt32 state;
+    switch (voice->state) {
     case ngs::VoiceState::VOICE_STATE_AVAILABLE:
-        return SCE_NGS_VOICE_STATE_AVAILABLE;
+        state = SCE_NGS_VOICE_STATE_AVAILABLE;
+        break;
 
     case ngs::VoiceState::VOICE_STATE_ACTIVE:
-        return SCE_NGS_VOICE_STATE_ACTIVE;
+        state = SCE_NGS_VOICE_STATE_ACTIVE;
+        break;
 
     case ngs::VoiceState::VOICE_STATE_FINALIZING:
-        return SCE_NGS_VOICE_STATE_FINALIZE;
-
-    case ngs::VoiceState::VOICE_STATE_KEY_OFF:
-        return SCE_NGS_VOICE_STATE_FINALIZE | SCE_NGS_VOICE_STATE_KEY_OFF;
-
-    case ngs::VoiceState::VOICE_STATE_PAUSED:
-        return SCE_NGS_VOICE_STATE_ACTIVE | SCE_NGS_VOICE_STATE_PAUSED;
-
-    case ngs::VoiceState::VOICE_STATE_PENDING:
-        return SCE_NGS_VOICE_STATE_AVAILABLE | SCE_NGS_VOICE_STATE_PENDING;
+        state = SCE_NGS_VOICE_STATE_FINALIZE;
+        break;
 
     case ngs::VoiceState::VOICE_STATE_UNLOADING:
-        return SCE_NGS_VOICE_STATE_UNLOADING;
+        state = SCE_NGS_VOICE_STATE_UNLOADING;
+        break;
 
     default:
         assert(false && "Invalid voice state to translate");
-        break;
+        return 0;
     }
 
-    return SCE_NGS_VOICE_STATE_AVAILABLE;
+    if (voice->is_pending)
+        state |= SCE_NGS_VOICE_STATE_PENDING;
+
+    if (voice->is_paused)
+        state |= SCE_NGS_VOICE_STATE_PAUSED;
+
+    if (voice->is_keyed_off)
+        state |= SCE_NGS_VOICE_STATE_KEY_OFF;
+
+    return state;
 }
 
 EXPORT(SceInt32, sceNgsVoiceGetInfo, SceNgsVoiceHandle handle, SceNgsVoiceInfo *info) {
@@ -500,7 +505,7 @@ EXPORT(SceInt32, sceNgsVoiceGetInfo, SceNgsVoiceHandle handle, SceNgsVoiceInfo *
 
     const std::lock_guard<std::mutex> guard(*voice->voice_mutex);
 
-    info->voice_state = ngsVoiceStateFromHLEState(voice->state);
+    info->voice_state = ngsVoiceStateFromHLEState(voice);
     info->num_modules = static_cast<SceUInt32>(voice->datas.size());
     info->num_inputs = static_cast<SceUInt32>(voice->inputs.inputs.size());
     info->num_outputs = voice->rack->vdef->output_count();
@@ -613,11 +618,11 @@ EXPORT(SceInt32, sceNgsVoiceInit, SceNgsVoiceHandle voice_handle, const ngs::Voi
     }
 
     if (init_flags & SCE_NGS_VOICE_INIT_PRESET) {
-        if (!preset)
-            return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
-
-        if (!voice->set_preset(host.mem, preset))
+        if (!preset) {
+            STUBBED("Default preset not implemented");
+        } else if (!voice->set_preset(host.mem, preset)) {
             return RET_ERROR(SCE_NGS_ERROR);
+        }
     }
 
     if (init_flags & SCE_NGS_VOICE_INIT_CALLBACKS) {
@@ -640,11 +645,13 @@ EXPORT(SceInt32, sceNgsVoiceKeyOff, SceNgsVoiceHandle voice_handle) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
+    voice->is_keyed_off = true;
     voice->rack->system->voice_scheduler.off(voice);
 
     // call the finish callback, I got no idea what the module id should be in this case
     voice->invoke_callback(host.kernel, host.mem, thread_id, voice->finished_callback, voice->finished_callback_user_data, 0);
 
+    voice->is_keyed_off = false;
     voice->rack->system->voice_scheduler.stop(voice);
     return SCE_NGS_OK;
 }
@@ -661,6 +668,7 @@ EXPORT(int, sceNgsVoiceKill, SceNgsVoiceHandle voice_handle) {
     }
 
     voice->rack->system->voice_scheduler.stop(voice);
+
     return 0;
 }
 
@@ -746,6 +754,9 @@ EXPORT(int, sceNgsVoicePause, SceNgsVoiceHandle handle) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
+    if (voice->is_paused)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_STATE);
+
     if (!voice->rack->system->voice_scheduler.pause(voice)) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
@@ -759,14 +770,15 @@ EXPORT(SceUInt32, sceNgsVoicePlay, SceNgsVoiceHandle handle) {
     }
 
     ngs::Voice *voice = handle.get(host.mem);
-
     if (!voice) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
+    voice->is_pending = true;
     if (!voice->rack->system->voice_scheduler.play(host.mem, voice)) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
+    voice->is_pending = false;
 
     return SCE_NGS_OK;
 }
@@ -777,12 +789,11 @@ EXPORT(int, sceNgsVoiceResume, SceNgsVoiceHandle handle) {
     }
 
     ngs::Voice *voice = handle.get(host.mem);
-
     if (!voice) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    if (voice->state != ngs::VOICE_STATE_PAUSED)
+    if (!voice->is_paused)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_STATE);
 
     if (!voice->rack->system->voice_scheduler.resume(host.mem, voice)) {

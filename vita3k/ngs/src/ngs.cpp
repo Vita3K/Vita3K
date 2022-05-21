@@ -145,6 +145,9 @@ void ModuleData::fill_to_fit_granularity() {
 void Voice::init(Rack *mama) {
     rack = mama;
     state = VoiceState::VOICE_STATE_AVAILABLE;
+    is_pending = false;
+    is_paused = false;
+    is_keyed_off = false;
 
     datas.resize(mama->modules.size());
 

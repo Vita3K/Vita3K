@@ -42,9 +42,6 @@ enum VoiceState {
     VOICE_STATE_ACTIVE,
     VOICE_STATE_FINALIZING,
     VOICE_STATE_UNLOADING,
-    VOICE_STATE_PENDING,
-    VOICE_STATE_PAUSED,
-    VOICE_STATE_KEY_OFF
 };
 
 struct VoicePreset {
@@ -222,6 +219,9 @@ struct Voice {
 
     std::vector<ModuleData> datas;
     VoiceState state;
+    bool is_pending;
+    bool is_paused;
+    bool is_keyed_off;
     std::uint32_t frame_count;
 
     using Patches = std::vector<Ptr<Patch>>;

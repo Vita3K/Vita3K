@@ -60,6 +60,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
             // Delete data from previous processing if memory isn't empty
             data.extra_storage.erase(data.extra_storage.begin(), data.extra_storage.begin() + state->decoded_gran_passed * 8);
         } else {
+            
             // If memory is already empty and there's no buffer in need of processing or the current buffer has no data then stop processing
             if ((state->current_buffer == -1) || (params->buffer_params[state->current_buffer].bytes_count == 0)) {
                 return true;
