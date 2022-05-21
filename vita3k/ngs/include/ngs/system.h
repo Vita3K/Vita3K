@@ -64,7 +64,6 @@ struct ParametersDescriptor {
 struct ModuleParameterHeader {
     SceInt32 module_id;
     SceInt32 channel;
-    ParametersDescriptor descriptor;
 };
 
 struct BufferParamsInfo {
