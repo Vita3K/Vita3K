@@ -20,12 +20,13 @@
 #include <codec/state.h>
 #include <ngs/system.h>
 
+struct SwrContext;
+
 namespace ngs::player {
 enum {
-    SCE_NGS_PLAYER_CALLBACK_REASON_DONE_ALL = 0,
-    SCE_NGS_PLAYER_CALLBACK_REASON_DONE_ONE_BUFFER = 1,
-    SCE_NGS_PLAYER_CALLBACK_REASON_START_LOOP = 2,
-    SCE_NGS_PLAYER_CALLBACK_REASON_DECODE_ERROR = 3
+    SCE_NGS_PLAYER_END_OF_DATA = 0,
+    SCE_NGS_PLAYER_SWAPPED_BUFFER = 1,
+    SCE_NGS_PLAYER_LOOPED_BUFFER = 2,
 };
 
 struct BufferParameters {
@@ -48,12 +49,17 @@ struct State {
     SceInt32 current_buffer = 0;
     SceInt32 samples_generated_since_key_on = 0;
     SceInt32 bytes_consumed_since_key_on = 0;
+    SceInt32 samples_generated_total = 0;
     SceInt32 total_bytes_consumed = 0;
 
     // INTERNAL
     std::int8_t current_loop_count = 0;
-    std::uint32_t decoded_gran_pending = 0;
-    std::uint32_t decoded_gran_passed = 0;
+    std::uint32_t decoded_samples_pending = 0;
+    std::uint32_t decoded_samples_passed = 0;
+    // needed for he_adpcm because a same decoder can be used for many voices
+    std::int32_t adpcm_history[4] = { 0, 0, 0, 0 };
+    // used if the input must be resampled
+    SwrContext *swr = nullptr;
 };
 
 struct Parameters {
@@ -89,10 +95,6 @@ struct Parameters {
 struct Module : public ngs::Module {
 private:
     std::unique_ptr<PCMDecoderState> decoder;
-
-    // Logging flag to control over playback rate scaling
-    // It gets set to false once playback rate scaling is requested to prevent log event repetition
-    bool LOG_PLAYBACK_SCALING = true;
 
 public:
     explicit Module();

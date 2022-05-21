@@ -30,6 +30,7 @@ struct AVCodecContext;
 struct AVFormatContext;
 struct AVCodecParserContext;
 struct AVCodec;
+struct SwrContext;
 
 union DecoderSize {
     struct {
@@ -152,13 +153,12 @@ struct PCMDecoderState : public DecoderState {
 private:
     std::vector<std::uint8_t> final_result;
     float dest_frequency;
-
-    std::int32_t adpcm_history1;
-    std::int32_t adpcm_history2;
-    std::int32_t adpcm_history3;
-    std::int32_t adpcm_history4;
+    SwrContext *swr_mono_to_stereo;
+    SwrContext *swr_stereo;
 
 public:
+    std::int32_t adpcm_history[4];
+
     std::uint32_t source_channels;
 
     /**
@@ -175,6 +175,7 @@ public:
     bool receive(uint8_t *data, DecoderSize *size) override;
 
     explicit PCMDecoderState(const float dest_frequency);
+    ~PCMDecoderState();
 };
 
 struct AacDecoderState : public DecoderState {
@@ -234,5 +235,3 @@ struct PlayerState {
 void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height);
 void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest);
 std::string codec_error_name(int error);
-bool resample_s16_to_f32(const int16_t *source_s16, int32_t source_channels, uint32_t source_samples, uint32_t source_freq,
-    float *dest_f32, uint32_t dest_samples, uint32_t dest_freq);

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -83,7 +83,9 @@ static constexpr SceUInt32 SCE_NGS_VOICE_INIT_PRESET = 2;
 static constexpr SceUInt32 SCE_NGS_VOICE_INIT_CALLBACKS = 4;
 static constexpr SceUInt32 SCE_NGS_VOICE_INIT_ALL = 7;
 
-EXPORT(int, sceNgsAT9GetSectionDetails, const std::uint32_t samples_start, const std::uint32_t num_samples, const std::uint32_t config_data, ngs::atrac9::SkipBufferInfo *info) {
+static constexpr SceInt32 SCE_NGS_SAMPLE_OFFSET_FROM_AT9_HEADER = 1 << 31;
+
+EXPORT(int, sceNgsAT9GetSectionDetails, std::uint32_t samples_start, const std::uint32_t num_samples, const std::uint32_t config_data, ngs::atrac9::SkipBufferInfo *info) {
     if (host.cfg.current_config.disable_ngs) {
         return -1;
     }
@@ -94,6 +96,7 @@ EXPORT(int, sceNgsAT9GetSectionDetails, const std::uint32_t samples_start, const
     if ((config_data & 0xFF) != 0xFE && info) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
+    samples_start &= ~SCE_NGS_SAMPLE_OFFSET_FROM_AT9_HEADER;
 
     get_buffer_parameter(samples_start, num_samples, config_data, *info);
     return 0;

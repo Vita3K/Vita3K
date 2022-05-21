@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -181,10 +181,10 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
         }
 
         for (std::uint32_t i = 0; i < size / bytes_per_frame; i++) {
-            int32_t hist1 = adpcm_history1;
-            int32_t hist2 = adpcm_history2;
-            int32_t hist3 = adpcm_history3;
-            int32_t hist4 = adpcm_history4;
+            int32_t hist1 = adpcm_history[0];
+            int32_t hist2 = adpcm_history[1];
+            int32_t hist3 = adpcm_history[2];
+            int32_t hist4 = adpcm_history[3];
 
             const std::uint8_t *frame = reinterpret_cast<const std::uint8_t *>(data + bytes_per_frame * i);
 
@@ -228,10 +228,10 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
                 hist1 = sample;
             }
 
-            adpcm_history1 = hist1;
-            adpcm_history2 = hist2;
-            adpcm_history3 = hist3;
-            adpcm_history4 = hist4;
+            adpcm_history[0] = hist1;
+            adpcm_history[1] = hist2;
+            adpcm_history[2] = hist3;
+            adpcm_history[3] = hist4;
         }
 
         source_transformed = reinterpret_cast<std::uint8_t *>(transformed.data());
@@ -244,12 +244,8 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
     const int source_channel_type = (source_channels == 2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     const int dest_channel_type = AV_CH_LAYOUT_STEREO;
 
-    SwrContext *swr = swr_alloc_set_opts(nullptr,
-        dest_channel_type, AV_SAMPLE_FMT_FLT, static_cast<int>(dest_frequency),
-        source_channel_type, AV_SAMPLE_FMT_S16, static_cast<int>(source_frequency),
-        0, nullptr);
+    SwrContext *swr = (source_channels == 2) ? swr_stereo : swr_mono_to_stereo;
 
-    swr_init(swr);
     const int dest_count = swr_get_out_samples(swr, produced_samples);
 
     final_result.resize(sizeof(float) * dest_count * 2);
@@ -259,9 +255,9 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
 
     std::uint8_t *dest_data = &final_result[0];
 
+    // the result value contains the actual amount of converted sample, but it should be the same as
+    // dest_count because we are not resampling
     const int result = swr_convert(swr, &dest_data, dest_count, &source_transformed, produced_samples);
-    swr_free(&swr);
-    assert(result > 0);
     return true;
 }
 
@@ -271,7 +267,7 @@ bool PCMDecoderState::receive(uint8_t *data, DecoderSize *size) {
     }
 
     if (size) {
-        size->samples = static_cast<std::uint32_t>(final_result.size() / sizeof(float));
+        size->samples = static_cast<std::uint32_t>(final_result.size() / sizeof(float) / 2);
     }
 
     return true;
@@ -282,8 +278,24 @@ PCMDecoderState::PCMDecoderState(const float dest_frequency)
     , he_adpcm(false)
     , source_channels(2)
     , source_frequency(48000.0f)
-    , adpcm_history1(0)
-    , adpcm_history2(0)
-    , adpcm_history3(0)
-    , adpcm_history4(0) {
+    , adpcm_history{ 0, 0, 0, 0 } {
+    // we are not resampling, we don't care about the sample rate
+    swr_mono_to_stereo = swr_alloc_set_opts(nullptr,
+        AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, 48000,
+        AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, 48000,
+        0, nullptr);
+
+    swr_init(swr_mono_to_stereo);
+
+    swr_stereo = swr_alloc_set_opts(nullptr,
+        AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, 48000,
+        AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, 48000,
+        0, nullptr);
+
+    swr_init(swr_stereo);
+}
+
+PCMDecoderState::~PCMDecoderState() {
+    swr_free(&swr_mono_to_stereo);
+    swr_free(&swr_stereo);
 }
