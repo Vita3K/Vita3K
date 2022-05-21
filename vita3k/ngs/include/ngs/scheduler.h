@@ -44,6 +44,7 @@ struct VoiceScheduler {
 protected:
     bool deque_voice(Voice *voice);
     bool deque_voice_impl(Voice *voice);
+    void deque_insert(const MemState &mem, Voice *voice);
 
     bool resort_to_respect_dependencies(const MemState &mem, Voice *source);
 

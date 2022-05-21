@@ -41,53 +41,52 @@ bool VoiceScheduler::deque_voice(Voice *voice) {
     return result;
 }
 
-bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
-    // Should Enqueue
-    if ((voice->state == ngs::VOICE_STATE_AVAILABLE) || (voice->state == ngs::VOICE_STATE_PAUSED)) {
-        // Transition
-        voice->transition(ngs::VOICE_STATE_ACTIVE);
+void VoiceScheduler::deque_insert(const MemState &mem, Voice *voice) {
+    int32_t lowest_dest_pos = static_cast<std::int32_t>(queue.size());
 
-        std::int32_t lowest_dest_pos = static_cast<std::int32_t>(queue.size());
-
-        // Check its dependencies position
-        for (std::uint8_t i = 0; i < voice->patches.size(); i++) {
-            for (const auto &patch : voice->patches[i]) {
-                if (!patch) {
-                    continue;
-                }
-
-                Voice *dest = patch.get(mem)->dest;
-                const std::int32_t pos = get_position(dest);
-
-                if (pos == -1) {
-                    continue;
-                }
-
-                lowest_dest_pos = std::min<std::int32_t>(lowest_dest_pos, pos);
+    // Check its dependencies position
+    for (std::uint8_t i = 0; i < voice->patches.size(); i++) {
+        for (const auto &patch : voice->patches[i]) {
+            if (!patch) {
+                continue;
             }
+
+            Voice *dest = patch.get(mem)->dest;
+            const std::int32_t pos = get_position(dest);
+
+            if (pos == -1) {
+                continue;
+            }
+
+            lowest_dest_pos = std::min<std::int32_t>(lowest_dest_pos, pos);
         }
+    }
 
-        const std::lock_guard<std::recursive_mutex> guard(mutex);
-        queue.insert(queue.begin() + lowest_dest_pos, voice);
+    const std::lock_guard<std::recursive_mutex> guard(mutex);
+    queue.insert(queue.begin() + lowest_dest_pos, voice);
+}
 
-        return true;
-    } else if (voice->state == ngs::VOICE_STATE_ACTIVE)
-        return true;
+bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
+    if (voice->state != ngs::VOICE_STATE_AVAILABLE)
+        return false;
 
-    return false;
+    // Transition
+    voice->transition(ngs::VOICE_STATE_ACTIVE);
+
+    // Should Enqueue
+    if (!voice->is_paused)
+        deque_insert(mem, voice);
+
+    return true;
 }
 
 bool VoiceScheduler::pause(Voice *voice) {
-    if (voice->state == ngs::VOICE_STATE_AVAILABLE || voice->state == ngs::VOICE_STATE_PAUSED) {
-        return true;
-    }
-
-    if (voice->state == ngs::VOICE_STATE_ACTIVE || voice->state == ngs::VOICE_STATE_PENDING) {
-        voice->transition(ngs::VOICE_STATE_PAUSED);
+    if (!voice->is_paused) {
+        voice->is_paused = true;
 
         // Remove from the list
-        deque_voice(voice);
-
+        if (voice->state == ngs::VOICE_STATE_ACTIVE || voice->state == ngs::VOICE_STATE_FINALIZING)
+            deque_voice(voice);
         return true;
     }
 
@@ -95,30 +94,34 @@ bool VoiceScheduler::pause(Voice *voice) {
 }
 
 bool VoiceScheduler::resume(const MemState &mem, Voice *voice) {
-    if (voice->state != ngs::VOICE_STATE_PAUSED) {
+    if (!voice->is_paused) {
         return false;
     }
 
-    return play(mem, voice);
+    voice->is_paused = false;
+
+    if (voice->state == ngs::VOICE_STATE_ACTIVE || voice->state == ngs::VOICE_STATE_FINALIZING)
+        deque_insert(mem, voice);
+
+    return true;
 }
 
 bool VoiceScheduler::stop(Voice *voice) {
-    if (voice->state == ngs::VOICE_STATE_AVAILABLE || voice->state == ngs::VOICE_STATE_FINALIZING) {
+    if (voice->state != ngs::VOICE_STATE_ACTIVE && voice->state != ngs::VOICE_STATE_FINALIZING)
         return false;
-    }
 
     voice->transition(ngs::VOICE_STATE_AVAILABLE);
-    deque_voice(voice);
+    if (!voice->is_paused)
+        deque_voice(voice);
 
     return true;
 }
 
 bool VoiceScheduler::off(Voice *voice) {
-    if (voice->state == ngs::VOICE_STATE_KEY_OFF || voice->state == ngs::VOICE_STATE_FINALIZING) {
+    if (voice->state != ngs::VOICE_STATE_ACTIVE)
         return false;
-    }
 
-    voice->transition(ngs::VOICE_STATE_KEY_OFF);
+    voice->transition(ngs::VOICE_STATE_FINALIZING);
 
     return true;
 }
@@ -152,6 +155,8 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
             }
         }
         if (finished) {
+            voice->is_keyed_off = true;
+            voice->transition(VoiceState::VOICE_STATE_FINALIZING);
             if (voice->finished_callback) {
                 voice_lock.unlock();
                 scheduler_lock.unlock();
@@ -159,6 +164,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
                 voice_lock.lock();
                 scheduler_lock.lock();
             }
+            voice->is_keyed_off = false;
 
             stop(voice);
         }
