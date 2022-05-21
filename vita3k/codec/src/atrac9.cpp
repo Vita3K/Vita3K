@@ -37,23 +37,6 @@ struct FFMPEGAtrac9Info {
     uint32_t padding;
 };
 
-bool resample_s16_to_f32(const int16_t *source_s16, int32_t source_channels, uint32_t source_samples, uint32_t source_freq,
-    float *dest_f32, uint32_t dest_samples, uint32_t dest_freq) {
-    const int source_channel_type = source_channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
-
-    SwrContext *swr = swr_alloc_set_opts(nullptr,
-        AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, dest_freq,
-        source_channel_type, AV_SAMPLE_FMT_S16, source_freq,
-        0, nullptr);
-
-    swr_init(swr);
-
-    const int result = swr_convert(swr, (uint8_t **)&dest_f32, dest_samples, (const uint8_t **)(&source_s16), source_samples);
-    swr_free(&swr);
-    assert(result > 0);
-    return (result >= 0);
-};
-
 uint32_t Atrac9DecoderState::get(DecoderQuery query) {
     Atrac9CodecInfo *info = reinterpret_cast<Atrac9CodecInfo *>(atrac9_info);
 

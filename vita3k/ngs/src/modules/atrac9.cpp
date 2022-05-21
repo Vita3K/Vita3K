@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,7 +19,15 @@
 #include <util/bytes.h>
 #include <util/log.h>
 
+extern "C" {
+#include <libswresample/swresample.h>
+}
+
 namespace ngs::atrac9 {
+
+SwrContext *Module::swr_mono_to_stereo = nullptr;
+SwrContext *Module::swr_stereo = nullptr;
+
 Module::Module()
     : ngs::Module(ngs::BussType::BUSS_ATRAC9)
     , last_config(0) {}
@@ -62,13 +70,15 @@ void Module::on_state_change(ModuleData &data, const VoiceState previous) {
         state->current_byte_position_in_buffer = 0;
         state->current_loop_count = 0;
         state->current_buffer = 0;
+    } else if (data.parent->is_keyed_off) {
+        state->samples_generated_since_key_on = 0;
+        state->bytes_consumed_since_key_on = 0;
     }
 }
 
 bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     const Parameters *params = data.get_parameters<Parameters>(mem);
     State *state = data.get_state<State>();
-
     assert(state);
 
     if ((state->current_buffer == -1) || (params->buffer_params[state->current_buffer].buffer.address() == 0)) {
@@ -202,8 +212,33 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                     std::vector<std::uint8_t> temporary_bytes(decoder->get(DecoderQuery::AT9_SAMPLE_PER_FRAME) * sizeof(int16_t) * channel_count);
                     DecoderSize decoder_size;
                     decoder->receive(temporary_bytes.data(), &decoder_size);
-                    resample_s16_to_f32(reinterpret_cast<const int16_t *>(temporary_bytes.data()), channel_count, decoder_size.samples, sample_rate,
-                        reinterpret_cast<float *>(data.extra_storage.data() + curr_pos), decoder_size.samples, sample_rate);
+
+                    SwrContext *swr;
+                    if (channel_count == 1) {
+                        if (!swr_mono_to_stereo) {
+                            swr_mono_to_stereo = swr_alloc_set_opts(nullptr,
+                                AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, 480000,
+                                AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, 480000,
+                                0, nullptr);
+                            swr_init(swr_mono_to_stereo);
+                        }
+
+                        swr = swr_mono_to_stereo;
+                    } else {
+                        if (!swr_stereo) {
+                            swr_stereo = swr_alloc_set_opts(nullptr,
+                                AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, 480000,
+                                AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, 480000,
+                                0, nullptr);
+                            swr_init(swr_stereo);
+                        }
+
+                        swr = swr_stereo;
+                    }
+
+                    const uint8_t *swr_data_in = reinterpret_cast<uint8_t *>(temporary_bytes.data());
+                    uint8_t *swr_data_out = reinterpret_cast<uint8_t *>(data.extra_storage.data() + curr_pos);
+                    const int result = swr_convert(swr, &swr_data_out, decoder_size.samples, &swr_data_in, decoder_size.samples);
 
                     curr_pos += decoder->get(DecoderQuery::AT9_SAMPLE_PER_FRAME) * sizeof(float) * 2;
                     input += decoder->get_es_size();
@@ -224,6 +259,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                 }
 
                 state->samples_generated_since_key_on += decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME);
+                state->samples_generated_total += decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME);
                 state->bytes_consumed_since_key_on += decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
                 state->total_bytes_consumed += decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
 
@@ -241,6 +277,11 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
     state->decoded_samples_pending = (state->decoded_samples_pending < samples_to_be_passed) ? 0 : (state->decoded_samples_pending - samples_to_be_passed);
     state->decoded_passed += samples_to_be_passed;
+
+    if (finished) {
+        state->samples_generated_since_key_on = 0;
+        state->bytes_consumed_since_key_on = 0;
+    }
 
     return finished;
 }

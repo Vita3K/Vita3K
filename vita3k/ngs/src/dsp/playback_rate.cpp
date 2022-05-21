@@ -50,9 +50,9 @@ unsigned int Scaler::scale(std::vector<std::uint8_t> *audio_input) {
     unsigned int input_elements_amount = 0;
     input_elements_amount = audio_input->size();
 
-    // Real amount of input floating point elements/samples
+    // Real amount of input floating point elements
     unsigned int real_elements_amount = 0;
-    real_elements_amount = input_elements_amount / 4;
+    real_elements_amount = input_elements_amount / sizeof(float);
 
     // Fixed length buffer for floating-point input samples
     const unsigned int bufferSize = 2048;
@@ -68,84 +68,70 @@ unsigned int Scaler::scale(std::vector<std::uint8_t> *audio_input) {
     }
 
     // Amount of input samples that have already been passed to scaler
-    unsigned int already_passed_samples = 0;
+    unsigned int already_passed_elements = 0;
 
     // Loop to control the i/o of audio data into/from scaler based on fixed-sized buffers
     do {
         // Amount of input samples passed to scaler this round
-        unsigned int samples_to_pass_this_round = 0;
-        if ((real_elements_amount - already_passed_samples) < bufferSize) {
-            samples_to_pass_this_round = real_elements_amount - already_passed_samples;
+        unsigned int elements_to_pass_this_round = 0;
+        if ((real_elements_amount - already_passed_elements) < bufferSize) {
+            elements_to_pass_this_round = real_elements_amount - already_passed_elements;
         } else {
-            samples_to_pass_this_round = bufferSize;
+            elements_to_pass_this_round = bufferSize;
         }
 
-        // Perform conversion between uint8_t and float
-        // Input audio buffer is a uint8_t array, which in reality is an array
-        // of floating-point 32-bit (4 bytes) values stored in LSB order
-        // https://wiki.libsdl.org/SDL_AudioFormat
-        for (unsigned int i = 0; i < samples_to_pass_this_round; i++) {
-            std::memcpy(&fsamples_input[i], audio_input->data() + (i + already_passed_samples) * sizeof(float), sizeof(float));
-        }
+        memcpy(fsamples_input, audio_input->data() + already_passed_elements * sizeof(float), elements_to_pass_this_round * sizeof(float));
 
         // Pass audio input samples to scaler
-        this->scaler.putSamples(fsamples_input, samples_to_pass_this_round / this->settings->channels);
-        already_passed_samples += samples_to_pass_this_round;
+        this->scaler.putSamples(fsamples_input, elements_to_pass_this_round / this->settings->channels);
+        already_passed_elements += elements_to_pass_this_round;
 
         // Amount of received samples from scaler on the last receive call
-        unsigned int last_received_samples = 0;
+        unsigned int last_received_elements = 0;
         // Amount of output samples that have been collected from scaler
-        unsigned int already_written_samples = 0;
+        unsigned int already_written_elements = 0;
         do {
             // Dump samples into fixed array for temporal values and get the amount of returned samples
-            last_received_samples = this->scaler.receiveSamples(fsamples_output_receive, bufferSize / this->settings->channels) * this->settings->channels;
+            last_received_elements = this->scaler.receiveSamples(fsamples_output_receive, bufferSize / this->settings->channels) * this->settings->channels;
 
             // Resize output vector to receive the new samples just dumped into the fixed array
-            this->fsamples_output.resize(this->fsamples_output.size() + last_received_samples);
+            this->fsamples_output.resize(this->fsamples_output.size() + last_received_elements);
 
             // Append samples to the cumulative output vector
-            for (unsigned int i = 0; i < last_received_samples; i += 1) {
-                this->fsamples_output.at(already_written_samples + i) = fsamples_output_receive[i];
-            }
+            memcpy(fsamples_output.data() + already_written_elements, fsamples_output_receive, last_received_elements * sizeof(float));
 
-            already_written_samples += last_received_samples;
+            already_written_elements += last_received_elements;
 
-        } while (last_received_samples != 0);
+        } while (last_received_elements != 0);
 
         // Flush remaining samples and append
         this->scaler.flush();
         do {
             // Dump samples into fixed array for temporal values and get the amount of returned samples
-            last_received_samples = this->scaler.receiveSamples(fsamples_output_receive, bufferSize / this->settings->channels) * this->settings->channels;
+            last_received_elements = this->scaler.receiveSamples(fsamples_output_receive, bufferSize / this->settings->channels) * this->settings->channels;
 
             // Resize output vector to receive the new samples just dumped into the fixed array
-            this->fsamples_output.resize(this->fsamples_output.size() + last_received_samples);
+            this->fsamples_output.resize(this->fsamples_output.size() + last_received_elements);
 
             // Append samples to the cumulative output vector
-            for (unsigned int i = 0; i < last_received_samples; i += 1) {
-                this->fsamples_output.at(already_written_samples + i) = fsamples_output_receive[i];
-            }
+            memcpy(fsamples_output.data() + already_written_elements, fsamples_output_receive, last_received_elements * sizeof(float));
 
-            already_written_samples += last_received_samples;
+            already_written_elements += last_received_elements;
 
-        } while (last_received_samples != 0);
+        } while (last_received_elements != 0);
 
-    } while (already_passed_samples < real_elements_amount);
+    } while (already_passed_elements < real_elements_amount);
 
     // Clear internal buffers of scaler
     this->scaler.clear();
 
-    resulting_samples_count = fsamples_output.size();
+    resulting_samples_count = fsamples_output.size() / this->settings->channels;
 
     return resulting_samples_count;
 };
 
 int Scaler::receive(std::vector<std::uint8_t> *audio_output) {
-    // Convert from floating-point sample values vector to uint8_t vector
-    // storing each 8 bits of each sample value in one element in LSB order
-    for (unsigned int i = 0; i < this->fsamples_output.size(); i++) {
-        std::memcpy(audio_output->data() + i * sizeof(float), this->fsamples_output.data() + i, sizeof(float));
-    }
+    memcpy(audio_output->data(), fsamples_output.data(), fsamples_output.size() * sizeof(float));
 
     return 0;
 };
