@@ -111,14 +111,15 @@ EXPORT(int, sceNgsPatchCreateRouting, ngs::PatchSetupInfo *patch_info, SceNgsPat
     if (host.cfg.current_config.disable_ngs) {
         return 0;
     }
-    assert(handle);
+
+    if (!patch_info || !handle)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
     // Make the scheduler order this right based on dependencies request
     ngs::Voice *source = patch_info->source.get(host.mem);
 
-    if (!source) {
+    if (!source)
         return RET_ERROR(SCE_NGS_ERROR);
-    }
 
     LOG_TRACE("Patching 0x{:X}:{}:{} to 0x{:X}:{}", patch_info->source.address(), patch_info->source_output_index,
         patch_info->source_output_index, patch_info->dest.address(), patch_info->dest_input_index);
@@ -296,6 +297,9 @@ EXPORT(SceInt32, sceNgsVoiceBypassModule, SceNgsVoiceHandle voice_handle, const 
     if (host.cfg.current_config.disable_ngs) {
         return 0;
     }
+
+    if (!voice_handle)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
     ngs::Voice *voice = voice_handle.get(host.mem);
 
@@ -795,6 +799,9 @@ EXPORT(SceInt32, sceNgsVoiceSetFinishedCallback, SceNgsVoiceHandle voice_handle,
 
     ngs::Voice *voice = voice_handle.get(host.mem);
 
+    if (!voice)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
     voice->finished_callback = callback;
     voice->finished_callback_user_data = user_data;
 
@@ -807,6 +814,10 @@ EXPORT(SceInt32, sceNgsVoiceSetModuleCallback, SceNgsVoiceHandle voice_handle, c
     }
 
     ngs::Voice *voice = voice_handle.get(host.mem);
+
+    if (!voice)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
     ngs::ModuleData *storage = voice->module_storage(module);
     if (!storage) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
@@ -860,6 +871,10 @@ EXPORT(SceInt32, sceNgsVoiceUnlockParams, SceNgsVoiceHandle handle, const SceUIn
     }
 
     ngs::Voice *voice = handle.get(host.mem);
+
+    if (!voice)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
     ngs::ModuleData *data = voice->module_storage(module_index);
 
     if (!data) {

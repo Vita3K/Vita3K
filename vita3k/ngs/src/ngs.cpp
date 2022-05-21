@@ -258,10 +258,11 @@ bool Voice::parse_params(const MemState &mem, const ModuleParameterHeader *heade
     if (storage->flags & ModuleData::PARAMS_LOCK)
         return false;
 
-    if (header->descriptor.size > storage->info.size)
+    const auto *descr = reinterpret_cast<const ParametersDescriptor *>(header + 1);
+    if (descr->size > storage->info.size)
         return false;
 
-    memcpy(storage->info.data.get(mem), &header->descriptor + 1, header->descriptor.size);
+    memcpy(storage->info.data.get(mem), descr, descr->size);
 
     return true;
 }
@@ -278,7 +279,7 @@ SceInt32 Voice::parse_params_block(const MemState &mem, const ModuleParameterHea
             num_error++;
 
         // increment by the size of the header alone + the descriptor size
-        data += 2 * sizeof(SceUInt32) + header->descriptor.size;
+        data += sizeof(ModuleParameterHeader) + reinterpret_cast<const ParametersDescriptor *>(header + 1)->size;
 
         // set new header for next module
         header = reinterpret_cast<const ngs::ModuleParameterHeader *>(data);
