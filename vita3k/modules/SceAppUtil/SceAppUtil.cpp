@@ -139,10 +139,6 @@ EXPORT(int, sceAppUtilLaunchWebBrowser) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilLoadSafeMemory) {
-    return UNIMPLEMENTED();
-}
-
 EXPORT(int, sceAppUtilMusicMount) {
     return UNIMPLEMENTED();
 }
@@ -342,8 +338,53 @@ EXPORT(int, sceAppUtilSaveDataUmount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppUtilSaveSafeMemory) {
-    return UNIMPLEMENTED();
+static SceInt32 SafeMemory(HostState &host, const void *buf, SceSize bufSize, SceOff offset, const char *export_name, bool save) {
+    std::vector<char> safe_mem(SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE);
+    const auto safe_mem_path = construct_savedata0_path("sce_sys/safemem", "dat");
+
+    // Open file when it exist
+    const auto safe_mem_file = open_file(host.io, safe_mem_path.c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+
+    // Read file for set data inside safe mem when it exist
+    const SceInt32 res = read_file(safe_mem.data(), host.io, safe_mem_file, SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE, export_name);
+    close_file(host.io, safe_mem_file, export_name);
+
+    const auto fd = open_file(host.io, safe_mem_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
+    if (safe_mem_file < 0) {
+        // When file no exist create it with set buffer inside data for save it
+        memcpy(&safe_mem[offset], buf, bufSize);
+        write_file(fd, safe_mem.data(), SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE, host.io, export_name);
+    } else {
+        // Check if is save or load mode
+        if (save) {
+            memcpy(&safe_mem[offset], buf, bufSize);
+            write_file(fd, safe_mem.data(), SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE, host.io, export_name);
+        } else
+            memcpy(&buf, &safe_mem[offset], bufSize);
+    }
+
+    close_file(host.io, fd, export_name);
+
+    return res;
+}
+
+EXPORT(SceInt32, sceAppUtilLoadSafeMemory, void *buf, SceSize bufSize, SceOff offset) {
+    if (!buf || (offset + bufSize > SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE))
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
+
+    const auto res = SafeMemory(host, buf, bufSize, offset, export_name, false);
+
+    // Load can return 0 when file no exist
+    return res > 0 ? bufSize : 0;
+}
+
+EXPORT(SceInt32, sceAppUtilSaveSafeMemory, const void *buf, SceSize bufSize, SceOff offset) {
+    if (!buf || (offset + bufSize > SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE))
+        return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
+
+    SafeMemory(host, buf, bufSize, offset, export_name, true);
+
+    return bufSize;
 }
 
 EXPORT(int, sceAppUtilShutdown) {
