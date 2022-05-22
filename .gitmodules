@@ -90,9 +90,6 @@
 [submodule "external/LibAtrac9"]
 	path = external/LibAtrac9
 	url = https://github.com/Thealexbarney/LibAtrac9/
-[submodule "external/soundtouch"]
-	path = external/soundtouch
-	url = https://codeberg.org/soundtouch/soundtouch.git
 [submodule "external/tracy"]
 	path = external/tracy
 	url = https://github.com/wolfpld/tracy.git
