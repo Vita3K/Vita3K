@@ -296,22 +296,6 @@ option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
 add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)
 set_property(TARGET xxhash PROPERTY FOLDER externals)
 
-# Soundtouch audio processing library for timing, pitch and playback rate manipulation
-set(SOUNDSTRETCH OFF CACHE BOOL "Build soundstretch command line utility." FORCE)
-add_subdirectory(soundtouch)
-set_property(TARGET SoundTouch PROPERTY FOLDER externals)
-if(MSVC AND CMAKE_GENERATOR_TOOLSET STREQUAL clangcl)
-	get_target_property(defs SoundTouch COMPILE_DEFINITIONS)
-	set_property(TARGET SoundTouch PROPERTY COMPILE_DEFINITIONS "")
-	foreach(def IN LISTS defs) 
-		if (def MATCHES "/.*")
-			target_compile_options(SoundTouch PRIVATE ${def})
-		else()
-			target_compile_definitions(SoundTouch PRIVATE ${def})
-		endif()
-	endforeach()
-endif()
-
 # Tracy
 option(TRACY_ENABLE_ON_CORE_COMPONENTS
 		"Enable and require Tracy to compile core components such as the renderer, shader recompiler and
