@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,7 +21,8 @@
 #include <util/lock_and_find.h>
 
 enum {
-    SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION = 0x807F2801
+    SCE_AUDIODEC_ERROR_API_FAIL = 0x807F0000,
+    SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION = 0x807F2801,
 };
 
 enum {
@@ -200,7 +201,7 @@ EXPORT(int, sceAudiodecCreateDecoderResident) {
     return UNIMPLEMENTED();
 }
 
-static int decode_audio_frames(HostState &host, SceAudiodecCtrl *ctrl, SceUInt32 nb_frames) {
+static int decode_audio_frames(HostState &host, const char *export_name, SceAudiodecCtrl *ctrl, SceUInt32 nb_frames) {
     const auto state = host.kernel.obj_store.get<AudiodecState>();
     const DecoderPtr &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
 
@@ -212,9 +213,10 @@ static int decode_audio_frames(HostState &host, SceAudiodecCtrl *ctrl, SceUInt32
 
     for (uint32_t frame = 0; frame < nb_frames; frame++) {
         DecoderSize size;
-
-        decoder->send(es_data, ctrl->es_size_max);
-        decoder->receive(pcm_data, &size);
+        if (!decoder->send(es_data, ctrl->es_size_max)
+            || !decoder->receive(pcm_data, &size)) {
+            return RET_ERROR(SCE_AUDIODEC_ERROR_API_FAIL);
+        }
 
         uint32_t es_size_used = std::min(decoder->get_es_size(), ctrl->es_size_max);
         assert(es_size_used <= ctrl->es_size_max);
@@ -231,11 +233,11 @@ static int decode_audio_frames(HostState &host, SceAudiodecCtrl *ctrl, SceUInt32
 }
 
 EXPORT(int, sceAudiodecDecode, SceAudiodecCtrl *ctrl) {
-    return decode_audio_frames(host, ctrl, 1);
+    return decode_audio_frames(host, export_name, ctrl, 1);
 }
 
 EXPORT(int, sceAudiodecDecodeNFrames, SceAudiodecCtrl *ctrl, SceUInt32 nFrames) {
-    return decode_audio_frames(host, ctrl, nFrames);
+    return decode_audio_frames(host, export_name, ctrl, nFrames);
 }
 
 EXPORT(int, sceAudiodecDecodeNStreams) {
