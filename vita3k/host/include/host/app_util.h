@@ -20,12 +20,12 @@
 #include <mem/ptr.h>
 #include <util/types.h>
 
-typedef unsigned int SceAppUtilBootAttribute;
-typedef unsigned int SceAppUtilAppEventType;
-typedef unsigned int SceAppUtilSaveDataSlotId;
-typedef unsigned int SceAppUtilSaveDataSlotStatus;
-typedef unsigned int SceAppUtilAppParamId;
-typedef unsigned int SceAppUtilBgdlStatusType;
+typedef SceUInt32 SceAppUtilBootAttribute;
+typedef SceUInt32 SceAppUtilAppEventType;
+typedef SceUInt32 SceAppUtilSaveDataSlotId;
+typedef SceUInt32 SceAppUtilSaveDataSlotStatus;
+typedef SceUInt32 SceAppUtilAppParamId;
+typedef SceUInt32 SceAppUtilBgdlStatusType;
 
 #define SCE_APPUTIL_APPPARAM_ID_SKU_FLAG 0
 #define SCE_APPUTIL_MOUNTPOINT_DATA_MAXSIZE 16
