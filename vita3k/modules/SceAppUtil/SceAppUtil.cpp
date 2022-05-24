@@ -341,29 +341,24 @@ EXPORT(int, sceAppUtilSaveDataUmount) {
 static SceInt32 SafeMemory(HostState &host, const void *buf, SceSize bufSize, SceOff offset, const char *export_name, bool save) {
     std::vector<char> safe_mem(SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE);
     const auto safe_mem_path = construct_savedata0_path("sce_sys/safemem", "dat");
+    SceInt32 res = 0;
 
     // Open file when it exist
-    const auto safe_mem_file = open_file(host.io, safe_mem_path.c_str(), SCE_O_RDONLY, host.pref_path, export_name);
-
-    // Read file for set data inside safe mem when it exist
-    const SceInt32 res = read_file(safe_mem.data(), host.io, safe_mem_file, SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE, export_name);
-    close_file(host.io, safe_mem_file, export_name);
-
-    const auto fd = open_file(host.io, safe_mem_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
-    if (safe_mem_file < 0) {
-        // When file no exist create it with set buffer inside data for save it
-        memcpy(&safe_mem[offset], buf, bufSize);
-        write_file(fd, safe_mem.data(), SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE, host.io, export_name);
-    } else {
-        // Check if is save or load mode
-        if (save) {
-            memcpy(&safe_mem[offset], buf, bufSize);
-            write_file(fd, safe_mem.data(), SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE, host.io, export_name);
-        } else
-            memcpy(&buf, &safe_mem[offset], bufSize);
+    const auto fd = open_file(host.io, safe_mem_path.c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+    if (fd > 0) {
+        // Read file for set data inside safe mem when it exist
+        res = read_file(safe_mem.data(), host.io, fd, SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE, export_name);
+        close_file(host.io, fd, export_name);
     }
 
-    close_file(host.io, fd, export_name);
+    if ((fd < 0) || save) {
+        // When safe mem no exist or in save mode, write it with set buffer inside data
+        const auto fd = open_file(host.io, safe_mem_path.c_str(), SCE_O_WRONLY | SCE_O_CREAT, host.pref_path, export_name);
+        memcpy(&safe_mem[offset], buf, bufSize);
+        write_file(fd, safe_mem.data(), SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE, host.io, export_name);
+        close_file(host.io, fd, export_name);
+    } else
+        memcpy(&buf, &safe_mem[offset], bufSize);
 
     return res;
 }

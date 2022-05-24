@@ -296,8 +296,7 @@ SceUID open_file(IOState &io, const char *path, const int flags, const std::wstr
     auto system_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio);
     // Do not allow any new files if they do not have a write flag.
     if (!fs::exists(system_path)) {
-        const auto have_create = (flags & SCE_O_CREAT);
-        if (!have_create) {
+        if (!(flags & SCE_O_CREAT)) {
             if (io.case_isens_find_enabled) {
                 // Attempt a case-insensitive file search.
                 const auto original_system_path = system_path;
@@ -319,7 +318,7 @@ SceUID open_file(IOState &io, const char *path, const int flags, const std::wstr
                 LOG_ERROR("Missing file at {} (target path: {})", system_path.string(), path);
                 return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
             }
-        } else if (have_create) {
+        } else {
             if (!fs::exists(system_path.parent_path())) {
                 fs::create_directories(system_path.parent_path());
             }
