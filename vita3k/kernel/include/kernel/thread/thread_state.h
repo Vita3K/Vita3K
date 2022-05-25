@@ -97,6 +97,7 @@ struct ThreadState {
     Block tls;
 
     int priority;
+    SceInt32 affinity_mask;
     uint64_t start_tick;
     uint64_t last_vblank_waited;
 
@@ -113,7 +114,7 @@ struct ThreadState {
     ThreadState() = delete;
     explicit ThreadState(SceUID id, MemState &mem);
 
-    int init(KernelState &kernel, const char *name, Ptr<const void> entry_point, int init_priority, int stack_size, const SceKernelThreadOptParam *option);
+    int init(KernelState &kernel, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
     int start(KernelState &kernel, SceSize arglen, const Ptr<void> &argp);
 
     void update_status(ThreadStatus status, std::optional<ThreadStatus> expected = std::nullopt);

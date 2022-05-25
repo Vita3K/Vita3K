@@ -1692,7 +1692,7 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     host.gxm.display_queue.maxPendingCount_ = params->displayQueueMaxPendingCount;
 
     const ThreadStatePtr main_thread = util::find(thread_id, host.kernel.threads);
-    const ThreadStatePtr display_queue_thread = host.kernel.create_thread(host.mem, "SceGxmDisplayQueue", Ptr<void>(0), SCE_KERNEL_HIGHEST_PRIORITY_USER, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, nullptr);
+    const ThreadStatePtr display_queue_thread = host.kernel.create_thread(host.mem, "SceGxmDisplayQueue", Ptr<void>(0), SCE_KERNEL_HIGHEST_PRIORITY_USER, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, SCE_KERNEL_STACK_SIZE_USER_DEFAULT, nullptr);
     if (!display_queue_thread) {
         return RET_ERROR(SCE_GXM_ERROR_DRIVER);
     }
