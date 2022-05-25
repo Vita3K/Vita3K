@@ -50,7 +50,7 @@ bool ThreadSignal::send() {
     return true;
 }
 
-int ThreadState::init(KernelState &kernel, const char *name, Ptr<const void> entry_point, int init_priority, int stack_size, const SceKernelThreadOptParam *option = nullptr) {
+int ThreadState::init(KernelState &kernel, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option = nullptr) {
     constexpr size_t KERNEL_TLS_SIZE = 0x800;
 
     this->name = name;
@@ -68,6 +68,7 @@ int ThreadState::init(KernelState &kernel, const char *name, Ptr<const void> ent
     } else {
         priority = init_priority;
     }
+    this->affinity_mask = affinity_mask;
     this->stack_size = stack_size;
     start_tick = rtc_get_ticks(kernel.base_tick.tick);
     last_vblank_waited = 0;

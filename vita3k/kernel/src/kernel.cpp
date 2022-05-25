@@ -138,12 +138,12 @@ ThreadStatePtr KernelState::get_thread(SceUID thread_id) {
 
 ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name) {
     constexpr size_t DEFAULT_STACK_SIZE = 0x1000;
-    return create_thread(mem, name, Ptr<void>(0), SCE_KERNEL_DEFAULT_PRIORITY, DEFAULT_STACK_SIZE, nullptr);
+    return create_thread(mem, name, Ptr<void>(0), SCE_KERNEL_DEFAULT_PRIORITY, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, DEFAULT_STACK_SIZE, nullptr);
 }
 
-ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, int stack_size, const SceKernelThreadOptParam *option) {
+ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option) {
     ThreadStatePtr thread = std::make_shared<ThreadState>(get_next_uid(), mem);
-    if (thread->init(*this, name, entry_point, init_priority, stack_size, option) < 0)
+    if (thread->init(*this, name, entry_point, init_priority, affinity_mask, stack_size, option) < 0)
         return nullptr;
     const auto lock = std::lock_guard(mutex);
     threads.emplace(thread->id, thread);

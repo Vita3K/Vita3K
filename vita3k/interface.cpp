@@ -730,7 +730,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         return ::resolve_nid_name(host.kernel, addr);
     };
 
-    const ThreadStatePtr thread = host.kernel.create_thread(host.mem, host.io.title_id.c_str(), entry_point, SCE_KERNEL_DEFAULT_PRIORITY_USER, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN), nullptr);
+    const ThreadStatePtr thread = host.kernel.create_thread(host.mem, host.io.title_id.c_str(), entry_point, SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN), nullptr);
     if (!thread) {
         app::error_dialog("Failed to init main thread.", host.window.get());
         return InitThreadFailed;

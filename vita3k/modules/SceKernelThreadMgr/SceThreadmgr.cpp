@@ -353,8 +353,13 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelGetThreadCpuAffinityMask) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelGetThreadCpuAffinityMask, SceUID thid) {
+    const ThreadStatePtr thread = host.kernel.get_thread(thid ? thid : thread_id);
+
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+
+    return thread->affinity_mask;
 }
 
 EXPORT(int, _sceKernelGetThreadEventInfo) {
@@ -386,6 +391,8 @@ EXPORT(SceInt32, _sceKernelGetThreadInfo, SceUID threadId, Ptr<SceKernelThreadIn
     info->stackSize = thread->stack_size;
     info->initPriority = thread->priority; // Todo Give only current priority
     info->currentPriority = thread->priority;
+    info->initCpuAffinityMask = thread->affinity_mask; // Todo Give init affinity
+    info->currentCpuAffinityMask = thread->affinity_mask;
     info->entry = SceKernelThreadEntry(thread->entry_point);
 
     return SCE_KERNEL_OK;
@@ -688,22 +695,51 @@ EXPORT(int, sceKernelChangeActiveCpuMask) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelChangeThreadCpuAffinityMask) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelChangeThreadCpuAffinityMask, SceUID thid, SceInt32 affinity_mask) {
+    const ThreadStatePtr thread = host.kernel.get_thread(thid ? thid : thread_id);
+
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+
+    const SceInt32 old_affinity = thread->affinity_mask;
+
+    if (affinity_mask & ~SCE_KERNEL_CPU_MASK_USER_ALL)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_CPU_AFFINITY_MASK);
+
+    thread->affinity_mask = affinity_mask;
+    return old_affinity;
 }
 
-EXPORT(int, sceKernelChangeThreadPriority, SceUID thid, int priority) {
-    STUBBED("STUB");
+EXPORT(SceInt32, sceKernelChangeThreadPriority2, SceUID thid, SceInt32 priority) {
+    const ThreadStatePtr thread = host.kernel.get_thread(thid ? thid : thread_id);
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
 
-    const ThreadStatePtr thread = lock_and_find(thid ? thid : thread_id, host.kernel.threads, host.kernel.mutex);
-    const std::lock_guard<std::mutex> lock(thread->mutex);
-    thread.get()->priority = priority;
+    const SceInt32 old_priority = thread->priority;
+
+    if (priority == SCE_KERNEL_CURRENT_THREAD_PRIORITY) {
+        priority = host.kernel.get_thread(thread_id)->priority;
+    }
+
+    if (priority >= SCE_KERNEL_HIGHEST_DEFAULT_PRIORITY
+        && priority <= SCE_KERNEL_LOWEST_DEFAULT_PRIORITY) {
+        priority = SCE_KERNEL_GAME_DEFAULT_PRIORITY_ACTUAL + (priority - SCE_KERNEL_DEFAULT_PRIORITY);
+    }
+
+    if (priority < SCE_KERNEL_HIGHEST_PRIORITY_USER || priority > SCE_KERNEL_LOWEST_PRIORITY_USER)
+        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_PRIORITY);
+
+    thread->priority = priority;
+
+    return old_priority;
+}
+
+EXPORT(SceInt32, sceKernelChangeThreadPriority, SceUID thid, SceInt32 priority) {
+    auto err = CALL_EXPORT(sceKernelChangeThreadPriority2, thid, priority);
+    if (err < 0)
+        return err;
 
     return SCE_KERNEL_OK;
-}
-
-EXPORT(int, sceKernelChangeThreadPriority2) {
-    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelChangeThreadVfpException) {
@@ -777,11 +813,11 @@ EXPORT(SceUID, sceKernelCreateCallback, char *name, SceUInt32 attr, Ptr<SceKerne
 }
 
 EXPORT(int, sceKernelCreateThreadForUser, const char *name, SceKernelThreadEntry entry, int init_priority, SceKernelCreateThread_opt *options) {
-    if (options->cpu_affinity_mask > 0x70000) {
+    if (options->cpu_affinity_mask & ~SCE_KERNEL_CPU_MASK_USER_ALL) {
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_CPU_AFFINITY);
     }
 
-    const ThreadStatePtr thread = host.kernel.create_thread(host.mem, name, entry.cast<void>(), init_priority, options->stack_size, options->option.get(host.mem));
+    const ThreadStatePtr thread = host.kernel.create_thread(host.mem, name, entry.cast<void>(), init_priority, options->cpu_affinity_mask, options->stack_size, options->option.get(host.mem));
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_ERROR);
     return thread->id;
@@ -905,8 +941,8 @@ EXPORT(uint64_t, sceKernelGetSystemTimeWide) {
     return get_current_time();
 }
 
-EXPORT(int, sceKernelGetThreadCpuAffinityMask) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetThreadCpuAffinityMask, SceUID thid) {
+    return CALL_EXPORT(_sceKernelGetThreadCpuAffinityMask, thid);
 }
 
 EXPORT(int, sceKernelGetThreadStackFreeSize) {

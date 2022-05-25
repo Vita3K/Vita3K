@@ -1137,13 +1137,26 @@ EXPORT(int, sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThread
     return CALL_EXPORT(_sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
 }
 
-EXPORT(int, sceKernelGetThreadCpuAffinityMask2) {
-    STUBBED("STUB");
-    return 0x01 << 16;
+EXPORT(SceInt32, sceKernelGetThreadCpuAffinityMask2, SceUID thid) {
+    const SceInt32 affinity = CALL_EXPORT(_sceKernelGetThreadCpuAffinityMask, thid);
+
+    // I guess the difference between this function and sceKernelGetThreadCpuAffinityMask
+    // is that if the result is SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT (=0)
+    // it gets converted into its real affinity (SCE_KERNEL_CPU_MASK_USER_ALL)
+    // either way without this dragon quest builder does not boot
+    if (affinity == SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT)
+        return SCE_KERNEL_CPU_MASK_USER_ALL;
+
+    return affinity;
 }
 
-EXPORT(int, sceKernelGetThreadCurrentPriority) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelGetThreadCurrentPriority) {
+    const ThreadStatePtr thread = host.kernel.get_thread(thread_id);
+
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+
+    return thread->priority;
 }
 
 EXPORT(int, sceKernelGetThreadEventInfo) {
