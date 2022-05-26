@@ -384,18 +384,16 @@ bool USSETranslatorVisitor::i16mad(
     BEGIN_REPEAT(repeat_count);
     GET_REPEAT(inst, RepeatMode::SLMSI);
 
-    LOG_DISASM("{:016x}: {}{} {} {} {} {}", m_instr, disasm::s_predicate_str(pred), "IMAD16", disasm::operand_to_str(inst.opr.dest, 0b11),
-        disasm::operand_to_str(inst.opr.src0, 0b11), disasm::operand_to_str(inst.opr.src1, mask_src1) + ((src1_format != 0) ? "-8bits" : ""),
+    LOG_DISASM("{:016x}: {}{} {} {} {} {}", m_instr, disasm::s_predicate_str(pred), "IMAD16", disasm::operand_to_str(inst.opr.dest, 0b1),
+        disasm::operand_to_str(inst.opr.src0, 0b1), disasm::operand_to_str(inst.opr.src1, mask_src1) + ((src1_format != 0) ? "-8bits" : ""),
         disasm::operand_to_str(inst.opr.src2, mask_src2) + ((src2_format != 0) ? "-8bits" : ""));
 
     inst.opr.src0.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    spv::Id source0 = load(inst.opr.src0, 0b11, src0_repeat_offset);
+    spv::Id source0 = load(inst.opr.src0, 0b1, src0_repeat_offset);
     spv::Id source1 = load(inst.opr.src1, mask_src1, src1_repeat_offset);
     spv::Id source2 = load(inst.opr.src2, mask_src2, src2_repeat_offset);
 
     spv::Id source0_type = m_b.getTypeId(source0);
-    source1 = m_b.createCompositeConstruct(source0_type, { source1, source1 });
-    source2 = m_b.createCompositeConstruct(source0_type, { source2, source2 });
 
     auto mul_result = m_b.createBinOp(spv::OpIMul, source0_type, source0, source1);
     auto add_result = m_b.createBinOp(spv::OpIAdd, source0_type, mul_result, source2);
