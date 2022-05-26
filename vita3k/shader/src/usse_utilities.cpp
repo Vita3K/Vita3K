@@ -792,7 +792,33 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         if (op.bank == RegisterBank::INDEX) {
             op.num -= 1;
         }
-        return b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(op.num) }), spv::NoPrecision);
+        spv::Id result = b.createLoad(b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(op.num) }), spv::NoPrecision);
+
+        if (!is_float_data_type(op.type) && size_comp < sizeof(int32_t)) {
+            spv::Id mask;
+            spv::Id type;
+            switch (op.type) {
+            case DataType::UINT8:
+                mask = b.makeUintConstant(0xFF);
+                type = b.makeUintType(32);
+                break;
+            case DataType::INT8:
+                mask = b.makeIntConstant(0xFF);
+                type = b.makeIntType(32);
+                break;
+            case DataType::UINT16:
+                mask = b.makeUintConstant(0xFFFF);
+                type = b.makeUintType(32);
+                break;
+            default: // DataType::UINT16
+                mask = b.makeIntConstant(0xFFFF);
+                type = b.makeIntType(32);
+                break;
+            }
+            result = b.createBinOp(spv::OpBitwiseAnd, type, result, mask);
+        }
+
+        return result;
     }
 
     if (op.bank == RegisterBank::IMMEDIATE || !get_reg_bank(params, op.bank)) {
@@ -1040,10 +1066,13 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
                 source = b.createOp(spv::OpBitcast, b.makeIntType(32), ops);
             }
 
-            if (dest.type == DataType::UINT16 || dest.type == DataType::INT16) {
-                source = b.createBinOp(spv::OpBitwiseAnd, b.makeIntType(32), source, b.makeIntConstant(0xFFFF));
-            } else if (dest.type == DataType::UINT8 || dest.type == DataType::INT8) {
-                source = b.createBinOp(spv::OpBitwiseAnd, b.makeIntType(32), source, b.makeIntConstant(0xFF));
+            // if dest is a 8 or 16 bits integer
+            // Todo: keep the content of the upper bits of idx (not done right now)
+            if (!is_float_data_type(dest.type) && get_data_type_size(dest.type) < 4) {
+                spv::Id mask = (get_data_type_size(dest.type) == 1)
+                    ? b.makeIntConstant(0xFF)
+                    : b.makeIntConstant(0xFFFF);
+                source = b.createBinOp(spv::OpBitwiseAnd, b.makeIntType(32), source, mask);
             }
         }
 
