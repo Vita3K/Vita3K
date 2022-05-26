@@ -497,12 +497,12 @@ bool USSETranslatorVisitor::vpck(
         source = utils::finalize(m_b, source1, source2, inst.opr.src1.swizzle, 0, dest_mask);
     }
 
-    // source is float destination is int
+    // source is int destination is float
     if (is_float_data_type(inst.opr.dest.type) && !is_float_data_type(inst.opr.src1.type)) {
         source = utils::convert_to_float(m_b, source, inst.opr.src1.type, scale);
     }
 
-    // source is int destination is float
+    // source is float destination is int
     if (!is_float_data_type(inst.opr.dest.type) && is_float_data_type(inst.opr.src1.type)) {
         source = utils::convert_to_int(m_b, source, inst.opr.dest.type, scale);
     }

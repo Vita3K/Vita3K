@@ -66,9 +66,10 @@ bool USSETranslatorVisitor::vbw(
     inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, false, 7, m_second_program);
     inst.opr.dest = decode_dest(inst.opr.dest, dest_n, dest_bank, dest_ext, false, 7, m_second_program);
 
-    inst.opr.src1.type = DataType::UINT32;
-    inst.opr.src2.type = DataType::UINT32;
-    inst.opr.dest.type = DataType::UINT32;
+    DataType type = bitwise_partial ? DataType::UINT16 : DataType::UINT32;
+    inst.opr.src1.type = type;
+    inst.opr.src2.type = type;
+    inst.opr.dest.type = type;
 
     set_repeat_multiplier(1, 1, 1, 1);
 
@@ -120,8 +121,8 @@ bool USSETranslatorVisitor::vbw(
     auto const_val = is_const ? m_b.getConstantScalar(src2) : 1; // default value is intentionally non zero
     if ((operation == spv::Op::OpBitwiseOr || operation == spv::Op::OpBitwiseXor) && is_const && const_val == 0
         || operation == spv::Op::OpBitwiseAnd && is_const && const_val == std::numeric_limits<decltype(const_val)>::max()) {
-        inst.opr.src1.type = DataType::F32;
-        inst.opr.dest.type = DataType::F32;
+        inst.opr.src1.type = bitwise_partial ? DataType::F16 : DataType::F32;
+        inst.opr.dest.type = bitwise_partial ? DataType::F16 : DataType::F32;
         result = load(inst.opr.src1, 0b0001, src1_repeat_offset);
         if (result == spv::NoResult) {
             LOG_ERROR("Source not loaded");
@@ -141,7 +142,7 @@ bool USSETranslatorVisitor::vbw(
 
     store(inst.opr.dest, result, 0b0001, dest_repeat_offset);
 
-    LOG_DISASM("{:016x}: {}{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode),
+    LOG_DISASM("{:016x}: {}{}{} {} {} {}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode), bitwise_partial ? "16" : "",
         disasm::operand_to_str(inst.opr.dest, 0b0001, dest_repeat_offset), disasm::operand_to_str(inst.opr.src1, 0b0001, src1_repeat_offset),
         immediate ? log_hex(value) : disasm::operand_to_str(inst.opr.src2, 0b0001, src2_repeat_offset));
 
