@@ -1039,6 +1039,12 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
                 std::vector<spv::Id> ops{ source };
                 source = b.createOp(spv::OpBitcast, b.makeIntType(32), ops);
             }
+
+            if (dest.type == DataType::UINT16 || dest.type == DataType::INT16) {
+                source = b.createBinOp(spv::OpBitwiseAnd, b.makeIntType(32), source, b.makeIntConstant(0xFFFF));
+            } else if (dest.type == DataType::UINT8 || dest.type == DataType::INT8) {
+                source = b.createBinOp(spv::OpBitwiseAnd, b.makeIntType(32), source, b.makeIntConstant(0xFF));
+            }
         }
 
         spv::Id var = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, b.getContainedTypeId(b.getContainedTypeId(b.getTypeId(bank_base)))), { bank_base, b.makeIntConstant(dest.num) });
