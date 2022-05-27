@@ -20,6 +20,7 @@
 #include <mem/ptr.h>
 #include <threads/queue.h>
 
+#include <map>
 #include <mutex>
 
 typedef void SceGxmDisplayQueueCallback(Ptr<const void> callbackData);
@@ -39,10 +40,17 @@ struct DisplayCallback {
     Address new_buffer;
 };
 
+struct MemoryMapInfo {
+    Address offset;
+    std::uint32_t size;
+    std::uint32_t perm;
+};
+
 struct GxmState {
     SceGxmInitializeParams params;
     Queue<DisplayCallback> display_queue;
     Ptr<uint32_t> notification_region;
     SceUID display_queue_thread;
+    std::map<Address, MemoryMapInfo> memory_mapped_regions;
     std::mutex callback_lock;
 };
