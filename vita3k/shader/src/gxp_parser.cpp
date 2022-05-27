@@ -81,6 +81,9 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
     // TODO split these to functions (e.g. get_literals, get_paramters)
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
+    std::uint32_t investigated_ub = 0;
+    bool seems_symbols_stripped = (program.primary_reg_count == 0);
+
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
 
@@ -136,6 +139,9 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
                 }
                 const uint32_t parameter_size = parameter.array_size * vector_size;
                 const uint32_t parameter_size_in_f32 = (parameter_size + 3) / 4;
+
+                investigated_ub |= (1 << parameter.container_index);
+
                 if (uniform_buffers.find(parameter.container_index) == uniform_buffers.end()) {
                     const std::uint32_t reg_block_size = container ? container->size_in_f32 : 0;
 
@@ -191,7 +197,15 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
         }
     }
 
-    for (auto &[_, buffer] : uniform_buffers) {
+    for (auto &[index, buffer] : uniform_buffers) {
+        static constexpr std::uint32_t MAXIMUM_GXP_ARRAY_SIZE = 1024;
+        if ((((investigated_ub & (1 << index)) == 0) && seems_symbols_stripped) || (buffer.size == MAXIMUM_GXP_ARRAY_SIZE)) {
+            // Symbols stripped shader with uniform buffer not referencing any uniform parameters, or
+            // buffer that has the potential of outsizing 1024 (due to limits on the size variable), will
+            // got their buffer turns to MAX_UB_IN_VEC4_UNIT here. Their upload amount will be controlled!
+            buffer.size = SCE_GXM_MAX_UB_IN_FLOAT_UNIT;
+        }
+
         program_input.uniform_buffers.push_back(buffer);
     }
 
@@ -209,6 +223,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
         buffer.size = program.default_uniform_buffer_count;
 
         program_input.uniform_buffers.push_back(buffer);
+        uniform_buffers.emplace(14, buffer);
     }
 
     const auto buffer_infoes = reinterpret_cast<const SceGxmUniformBufferInfo *>(
@@ -258,7 +273,20 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
             item.component_count = 1;
             item.array_size = 1;
             DependentSamplerInputSource source;
-            source.name = sampler->name;
+
+            if (sampler == program_input.samplers.end()) {
+                source.name = fmt::format("anonymousSampler{}", rsc_index);
+
+                Sampler sampler_info;
+                sampler_info.name = source.name;
+                sampler_info.index = rsc_index;
+                sampler_info.is_cube = false; // I don't know :(
+
+                program_input.samplers.push_back(std::move(sampler_info));
+            } else {
+                source.name = sampler->name;
+            }
+
             source.index = rsc_index;
             item.source = source;
 
