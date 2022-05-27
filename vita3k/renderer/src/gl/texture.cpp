@@ -49,6 +49,7 @@ static bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt
     return (fmt == SCE_GXM_TEXTURE_BASE_FORMAT_P4
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_P8
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8
