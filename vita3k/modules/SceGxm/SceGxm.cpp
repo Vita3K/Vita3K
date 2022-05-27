@@ -1049,13 +1049,31 @@ EXPORT(int, sceGxmDisplayQueueFinish) {
     return 0;
 }
 
-static void gxmSetUniformBuffers(renderer::State &state, SceGxmContext *context, const SceGxmProgram &program, const UniformBuffers &buffers, const UniformBufferSizes &sizes, KernelState &kern, const MemState &mem, const SceUID current_thread) {
+static void gxmSetUniformBuffers(renderer::State &state, GxmState &gxm, SceGxmContext *context, const SceGxmProgram &program, const UniformBuffers &buffers, const UniformBufferSizes &sizes, KernelState &kern, const MemState &mem, const SceUID current_thread) {
     for (std::size_t i = 0; i < buffers.size(); i++) {
         if (!buffers[i] || sizes.at(i) == 0) {
             continue;
         }
 
         std::uint32_t bytes_to_copy = sizes.at(i) * 4;
+        if (sizes.at(i) == SCE_GXM_MAX_UB_IN_FLOAT_UNIT) {
+            auto ite = gxm.memory_mapped_regions.lower_bound(buffers[i].address());
+            if ((ite != gxm.memory_mapped_regions.end()) && ((ite->first + ite->second.size) > buffers[i].address())) {
+                // Bound the size
+                bytes_to_copy = std::min<std::uint32_t>(ite->first + ite->second.size - buffers[i].address(), bytes_to_copy);
+            }
+
+            // Check other UB friends and bound the size
+            for (std::size_t j = 0; j < SCE_GXM_MAX_UNIFORM_BUFFERS; j++) {
+                if (i == j) {
+                    continue;
+                }
+
+                if (buffers[j].address() > buffers[i].address()) {
+                    bytes_to_copy = std::min<std::uint32_t>(buffers[j].address() - buffers[i].address(), bytes_to_copy);
+                }
+            }
+        }
         std::uint8_t **dest = renderer::set_uniform_buffer(state, context->renderer.get(), !program.is_fragment(), i, bytes_to_copy);
 
         if (dest) {
@@ -1154,9 +1172,9 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, const
     const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(host.mem);
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(host.mem);
 
-    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, context->state.vertex_uniform_buffers, gxm_vertex_program.renderer_data->uniform_buffer_sizes,
+    gxmSetUniformBuffers(*host.renderer, host.gxm, context, vertex_program_gxp, context->state.vertex_uniform_buffers, gxm_vertex_program.renderer_data->uniform_buffer_sizes,
         host.kernel, host.mem, thread_id);
-    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, context->state.fragment_uniform_buffers, gxm_fragment_program.renderer_data->uniform_buffer_sizes,
+    gxmSetUniformBuffers(*host.renderer, host.gxm, context, fragment_program_gxp, context->state.fragment_uniform_buffers, gxm_fragment_program.renderer_data->uniform_buffer_sizes,
         host.kernel, host.mem, thread_id);
 
     if (context->last_precomputed) {
@@ -1299,10 +1317,10 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     const SceGxmProgram &vertex_program_gxp = *vertex_program->program.get(host.mem);
     const SceGxmProgram &fragment_program_gxp = *fragment_program->program.get(host.mem);
 
-    gxmSetUniformBuffers(*host.renderer, context, vertex_program_gxp, (vertex_state ? (*vertex_state->uniform_buffers.get(host.mem)) : context->state.vertex_uniform_buffers), vertex_program->renderer_data->uniform_buffer_sizes,
+    gxmSetUniformBuffers(*host.renderer, host.gxm, context, vertex_program_gxp, (vertex_state ? (*vertex_state->uniform_buffers.get(host.mem)) : context->state.vertex_uniform_buffers), vertex_program->renderer_data->uniform_buffer_sizes,
         host.kernel, host.mem, thread_id);
 
-    gxmSetUniformBuffers(*host.renderer, context, fragment_program_gxp, (fragment_state ? (*fragment_state->uniform_buffers.get(host.mem)) : context->state.fragment_uniform_buffers), fragment_program->renderer_data->uniform_buffer_sizes,
+    gxmSetUniformBuffers(*host.renderer, host.gxm, context, fragment_program_gxp, (fragment_state ? (*fragment_state->uniform_buffers.get(host.mem)) : context->state.fragment_uniform_buffers), fragment_program->renderer_data->uniform_buffer_sizes,
         host.kernel, host.mem, thread_id);
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
@@ -1730,13 +1748,21 @@ EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, uint32_t size, uint32_t
 }
 
 EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
-    STUBBED("always return success");
-
     if (!base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    return 0;
+    // Check if it has already been mapped
+    // Some games intentionally overlapping mapped region. Nothing we can do. Allow it, bear your own consequences.
+    GxmState &gxm = host.gxm;
+
+    auto ite = gxm.memory_mapped_regions.lower_bound(base.address());
+    if ((ite == gxm.memory_mapped_regions.end()) || (ite->first != base.address())) {
+        gxm.memory_mapped_regions.emplace(base.address(), MemoryMapInfo{ base.address(), size, attribs });
+        return 0;
+    }
+
+    return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 }
 
 EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *offset) {
@@ -4053,11 +4079,17 @@ EXPORT(int, sceGxmUnmapFragmentUsseMemory, void *base) {
     return 0;
 }
 
-EXPORT(int, sceGxmUnmapMemory, void *base) {
+EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
     if (!base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
+    auto ite = host.gxm.memory_mapped_regions.find(base.address());
+    if (ite == host.gxm.memory_mapped_regions.end()) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+
+    host.gxm.memory_mapped_regions.erase(ite);
     return 0;
 }
 
