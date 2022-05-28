@@ -149,7 +149,7 @@ bool USSETranslatorVisitor::vmad(
     auto mul_result = m_b.createBinOp(spv::OpFMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
     auto add_result = m_b.createBinOp(spv::OpFAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
-    store(inst.opr.dest, add_result, write_mask, 0);
+    store(inst.opr.dest, add_result, write_mask, dest_repeat_offset);
     END_REPEAT()
 
     return true;
