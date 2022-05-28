@@ -54,7 +54,6 @@ public:
     const GLuint operator[](size_t i) const {
         assert(i >= 0);
         assert(i < names.size());
-        assert(names[i] != 0);
         return names[i];
     }
 

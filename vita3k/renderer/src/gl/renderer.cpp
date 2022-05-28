@@ -143,13 +143,7 @@ static void before_callback(const char *name, void *funcptr, int len_args, ...) 
 static void after_callback(const char *name, void *funcptr, int len_args, ...) {
     // MICROPROFILE_LEAVE();
     for (GLenum error = glad_glGetError(); error != GL_NO_ERROR; error = glad_glGetError()) {
-#ifndef NDEBUG
-        std::stringstream gl_error;
-        gl_error << error;
-        LOG_ERROR("OpenGL: {} set error {}.", name, gl_error.str());
-#else
-        LOG_ERROR("OpenGL error: {}", log_hex(static_cast<std::uint32_t>(error)));
-#endif
+        LOG_ERROR("OpenGL: {} set error {}.", name, error);
     }
 }
 
@@ -205,21 +199,23 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
 
     // Recursively create GL version until one accepts
     // Major 4 is mandantory
+    // We use glBufferStorage which needs OpenGL 4.4
     const int accept_gl_version[] = {
+        6, // OpenGL 4.6
         5, // OpenGL 4.5
-        3, // OpenGL 4.3
-        2, // OpenGL 4.2
-        1 // OpenGL 4.1
+        4, // OpenGL 4.4
     };
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+#ifndef NDEBUG
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
+#endif
 
     int choosen_minor_version = 0;
 
     for (int i = 0; i < sizeof(accept_gl_version) / sizeof(int); i++) {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, accept_gl_version[i]);
-
         gl_state.context = GLContextPtr(SDL_GL_CreateContext(window), SDL_GL_DeleteContext);
         if (gl_state.context) {
             choosen_minor_version = accept_gl_version[i];
@@ -250,9 +246,11 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
     LOG_INFO("GL_VERSION = {}", glGetString(GL_VERSION));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
 
+#ifndef NDEBUG
     if (choosen_minor_version >= 3) {
         glDebugMessageCallback(reinterpret_cast<GLDEBUGPROC>(debug_output_callback), nullptr);
     }
+#endif
 
     int total_extensions = 0;
     glGetIntegerv(GL_NUM_EXTENSIONS, &total_extensions);
@@ -346,7 +344,9 @@ bool create(std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &p
 
     render_target->masktexture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));
     glBindTexture(GL_TEXTURE_2D, render_target->masktexture[0]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, params.width, params.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    // we need to make the masktexture format immutable, otherwise image load operations
+    // won't work on mesa drivers
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, params.width, params.height);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindFramebuffer(GL_FRAMEBUFFER, render_target->maskbuffer[0]);
@@ -647,6 +647,9 @@ void get_surface_data(GLState &renderer, GLContext &context, size_t width, size_
 
 void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
     const GxmState &gxm, MemState &mem) {
+    if (!display.frame.base)
+        return;
+
     // Check if the surface exists
     float uvs[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     bool need_uv = true;
