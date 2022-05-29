@@ -988,7 +988,7 @@ EXPORT(int, sceGxmDestroyContext, Ptr<SceGxmContext> context) {
     if (!context)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    free(host.mem, context);
+    renderer::destroy_context(*host.renderer, context.get(host.mem)->renderer);
 
     return 0;
 }

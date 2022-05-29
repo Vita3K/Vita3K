@@ -54,6 +54,13 @@ COMMAND(handle_create_context) {
     complete_command(renderer, helper, result);
 }
 
+COMMAND(handle_destroy_context) {
+    std::unique_ptr<Context> *ctx = helper.pop<std::unique_ptr<Context> *>();
+    ctx->reset();
+
+    complete_command(renderer, helper, 0);
+}
+
 COMMAND(handle_create_render_target) {
     std::unique_ptr<RenderTarget> *render_target = helper.pop<std::unique_ptr<RenderTarget> *>();
     SceGxmRenderTargetParams *params = helper.pop<SceGxmRenderTargetParams *>();

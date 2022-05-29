@@ -90,6 +90,7 @@ void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndex
 void sync_surface_data(State &state, Context *ctx);
 
 bool create_context(State &state, std::unique_ptr<Context> &context);
+void destroy_context(State &state, std::unique_ptr<Context> &context);
 bool create_render_target(State &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams *params);
 void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt);
 
