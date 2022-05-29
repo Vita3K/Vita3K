@@ -23,4 +23,5 @@
 struct DisplayState;
 struct KernelState;
 
+void start_sync_thread(DisplayState &display, KernelState &kernel);
 void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePtr &wait_thread, const int count, const bool is_cb);

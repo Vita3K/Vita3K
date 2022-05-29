@@ -76,6 +76,10 @@ static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
     }
 }
 
+void start_sync_thread(DisplayState &display, KernelState &kernel) {
+    display.vblank_thread = std::make_unique<std::thread>(vblank_sync_thread, std::ref(display), std::ref(kernel));
+}
+
 void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePtr &wait_thread, int count, const bool is_cb) {
     if (!wait_thread) {
         return;
@@ -86,10 +90,6 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePt
 
     {
         const std::lock_guard<std::mutex> guard(display.mutex);
-
-        if (!display.vblank_thread) {
-            display.vblank_thread = std::make_unique<std::thread>(vblank_sync_thread, std::ref(display), std::ref(kernel));
-        }
 
         wait_thread->suspend();
         display.vblank_wait_infos.push_back({ wait_thread, count, is_cb });
