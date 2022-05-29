@@ -66,7 +66,8 @@ enum class CommandOpcode : std::uint8_t {
 
     SignalNotification = 10,
 
-    DestroyRenderTarget = 11
+    DestroyRenderTarget = 11,
+    DestroyContext = 12
 };
 
 enum CommandErrorCode {

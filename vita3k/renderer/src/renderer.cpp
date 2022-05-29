@@ -109,6 +109,10 @@ bool create_context(State &state, std::unique_ptr<Context> &context) {
     return renderer::send_single_command(state, nullptr, renderer::CommandOpcode::CreateContext, &context);
 }
 
+void destroy_context(State &state, std::unique_ptr<Context> &context) {
+    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::DestroyContext, &context);
+}
+
 bool create_render_target(State &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams *params) {
     return renderer::send_single_command(state, nullptr, renderer::CommandOpcode::CreateRenderTarget, &rt, params);
 }
