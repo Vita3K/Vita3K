@@ -128,12 +128,14 @@ bool USSETranslatorVisitor::vmad(
 
     m_b.setLine(m_recompiler.cur_pc);
 
+    set_repeat_multiplier(2, 2, 2, 4);
+
     // Write mask is a 4-bit immidiate
     // If a bit is one, a swizzle is active
     BEGIN_REPEAT(repeat_count)
     GET_REPEAT(inst, repeat_mode);
 
-    LOG_DISASM("{} {} {} {} {}", disasm_str, disasm::operand_to_str(inst.opr.dest, write_mask), disasm::operand_to_str(inst.opr.src0, write_mask, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, write_mask, src1_repeat_offset),
+    LOG_DISASM("{} {} {} {} {}", disasm_str, disasm::operand_to_str(inst.opr.dest, write_mask, dest_repeat_offset), disasm::operand_to_str(inst.opr.src0, write_mask, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, write_mask, src1_repeat_offset),
         disasm::operand_to_str(inst.opr.src2, write_mask, src2_repeat_offset));
 
     // SRC1 and SRC2 here is actually GPI0 and GPI1.
@@ -151,6 +153,8 @@ bool USSETranslatorVisitor::vmad(
 
     store(inst.opr.dest, add_result, write_mask, dest_repeat_offset);
     END_REPEAT()
+
+    reset_repeat_multiplier();
 
     return true;
 }
