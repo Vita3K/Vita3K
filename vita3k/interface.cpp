@@ -18,6 +18,7 @@
 #include "interface.h"
 
 #include <ctrl/functions.h>
+#include <display/functions.h>
 #include <gui/functions.h>
 #include <host/functions.h>
 #include <host/pkg.h>
@@ -777,6 +778,8 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         app::error_dialog("Failed to run main thread.", host.window.get());
         return RunThreadFailed;
     }
+
+    start_sync_thread(host.display, host.kernel);
 
     return Success;
 }
