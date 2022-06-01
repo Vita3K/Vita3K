@@ -50,8 +50,7 @@ static void vblank_sync_thread(DisplayState &display, KernelState &kernel) {
                 if (--vblank_wait_info.vsync_left == 0) {
                     ThreadStatePtr target_wait = vblank_wait_info.target_thread;
 
-                    target_wait->resume();
-                    target_wait->status_cond.notify_all();
+                    target_wait->update_status(ThreadStatus::run);
 
                     if (vblank_wait_info.is_cb) {
                         for (auto &callback : display.vblank_callbacks) {
@@ -86,12 +85,11 @@ void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePt
     }
 
     auto thread_lock = std::unique_lock(wait_thread->mutex);
-    thread_lock.unlock();
 
     {
         const std::lock_guard<std::mutex> guard(display.mutex);
 
-        wait_thread->suspend();
+        wait_thread->update_status(ThreadStatus::wait);
         display.vblank_wait_infos.push_back({ wait_thread, count, is_cb });
     }
 
