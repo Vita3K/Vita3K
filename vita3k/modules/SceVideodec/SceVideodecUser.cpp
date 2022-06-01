@@ -27,6 +27,10 @@ struct VideodecState {
     H264DecoderStates decoders;
 };
 
+enum {
+    SCE_AVCDEC_ERROR_INVALID_PARAM = 0x80620002,
+};
+
 enum SceVideodecType {
     SCE_VIDEODEC_TYPE_HW_AVCDEC = 0x1001
 };
@@ -157,6 +161,8 @@ EXPORT(int, sceAvcdecCscInternal) {
 EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceAvcdecArrayPicture *picture) {
     const auto state = host.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
+    if (!decoder_info)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
 
     H264DecoderOptions options = {};
     options.pts_upper = au->pts.upper;
@@ -199,6 +205,8 @@ EXPORT(int, sceAvcdecDecodeAuNongameapp) {
 EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
     const auto state = host.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
+    if (!decoder_info)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
 
     return H264DecoderState::buffer_size(
         { decoder_info->get(DecoderQuery::WIDTH), decoder_info->get(DecoderQuery::HEIGHT) });
@@ -207,6 +215,8 @@ EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
 EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
     const auto state = host.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
+    if (!decoder_info)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
 
     decoder_info->flush();
 
@@ -244,6 +254,8 @@ EXPORT(int, sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp) {
 EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *picture) {
     const auto state = host.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
+    if (!decoder_info)
+        return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
 
     uint8_t *output = picture->pPicture.get(host.mem)[0].get(host.mem)->frame.pPicture[0].cast<uint8_t>().get(host.mem);
     decoder_info->receive(output);
