@@ -59,23 +59,47 @@ LIBRARY_INIT_IMPL(SceSysmem) {
 LIBRARY_INIT_REGISTER(SceSysmem)
 
 EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOpt *optp) {
-    const auto state = host.kernel.obj_store.get<SysmemState>();
-    const auto guard = std::lock_guard<std::mutex>(state->mutex);
-
     MemState &mem = host.mem;
-    assert(name != nullptr);
     assert(type != 0);
 
-    if (size < 0x1000 || (size & 0xFFF) != 0) {
+    if (!name || !size) {
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
 
-    Ptr<void> address;
-    if (optp == nullptr) {
-        address = alloc(mem, size, name);
-    } else {
-        address = alloc(mem, size, name, optp->alignment);
+    int min_alignement;
+    switch (type) {
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
+        min_alignement = 0x1000;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
+        min_alignement = 0x40000;
+        break;
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
+        min_alignement = 0x100000;
+        break;
+    default:
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
+
+    if (size % min_alignement != 0)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+
+    SceSize alignement = min_alignement;
+    if (optp) {
+        alignement = optp->alignment;
+        // alignment must be a power of 2 at least equal to min_alignement
+        if ((alignement & (alignement - 1)) || alignement < min_alignement)
+            return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    }
+
+    const auto state = host.kernel.obj_store.get<SysmemState>();
+    const auto guard = std::lock_guard<std::mutex>(state->mutex);
+
+    Ptr<void> address = Ptr<void>(alloc(mem, size, name, alignement));
+
     if (!address) {
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     }
