@@ -106,8 +106,10 @@ int toggle_touchscreen() {
 }
 
 int peek_touch(const HostState &host, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count) {
-    memset(pData, 0, sizeof(*pData));
-    pData->timeStamp = timestamp++; // TODO Use the real time and units.
+    memset(pData, 0, sizeof(SceTouchData));
+
+    std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
+    pData->timeStamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
 
     if (host.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         // return one empty touch data
@@ -145,6 +147,7 @@ int peek_touch(const HostState &host, const SceUInt32 &port, SceTouchData *pData
             } else {
                 pData->report[pData->reportNum].y = static_cast<uint16_t>(108 + touch_pos_viewport.y * 781);
             }
+            pData->report[pData->reportNum].id = 1;
             ++pData->reportNum;
         }
 
@@ -155,9 +158,10 @@ int peek_touch(const HostState &host, const SceUInt32 &port, SceTouchData *pData
         pData[0] = recover_touch_events();
     }
 
+    // the other buffers are used when a call to ReadTouch is late
     for (uint8_t i = 1; i < count; i++) {
-        memcpy(&pData[i], &pData[0], sizeof(SceTouchData));
+        memset(&pData[i], 0, sizeof(SceTouchData));
     }
 
-    return count;
+    return 1;
 }
