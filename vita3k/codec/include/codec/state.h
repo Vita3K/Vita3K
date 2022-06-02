@@ -91,6 +91,8 @@ struct H264DecoderState : public DecoderState {
     uint64_t dts = ~0ull;
     uint64_t pts_out = ~0ull;
 
+    bool is_stopped = true;
+
     static uint32_t buffer_size(DecoderSize size);
 
     uint32_t get(DecoderQuery query) override;

@@ -183,6 +183,8 @@ EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceA
         picture->numOfOutput++;
     }
 
+    decoder_info->is_stopped = false;
+
     return 0;
 }
 
@@ -219,6 +221,7 @@ EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
         return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
 
     decoder_info->flush();
+    decoder_info->is_stopped = true;
 
     return 0;
 }
@@ -257,8 +260,24 @@ EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *
     if (!decoder_info)
         return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
 
-    uint8_t *output = picture->pPicture.get(host.mem)[0].get(host.mem)->frame.pPicture[0].cast<uint8_t>().get(host.mem);
-    decoder_info->receive(output);
+    if (!decoder_info->is_stopped) {
+        SceAvcdecPicture *pPicture = picture->pPicture.get(host.mem)[0].get(host.mem);
+        uint8_t *output = pPicture->frame.pPicture[0].cast<uint8_t>().get(host.mem);
+
+        // the ps vita expects us to be able to return one frame, however ffmpeg does not allow it,so return a black frame instead
+        DecoderSize size;
+        size.width = decoder_info->get(DecoderQuery::WIDTH);
+        size.height = decoder_info->get(DecoderQuery::HEIGHT);
+        memset(output, 0, H264DecoderState::buffer_size(size));
+        // we get the values from the last frame, maybe we should slightly increase the pts value?
+        decoder_info->get_res(pPicture->frame.frameWidth, pPicture->frame.frameHeight);
+        decoder_info->get_pts(pPicture->info.pts.upper, pPicture->info.pts.lower);
+
+        picture->numOfOutput = 1;
+    } else {
+        picture->numOfOutput = 0;
+    }
+    decoder_info->is_stopped = true;
 
     return 0;
 }
