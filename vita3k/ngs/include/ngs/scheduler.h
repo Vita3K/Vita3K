@@ -23,7 +23,9 @@
 
 #include <thread>
 
+#include <condition_variable>
 #include <optional>
+#include <queue>
 #include <vector>
 
 struct MemState;
@@ -33,16 +35,38 @@ namespace ngs {
 struct PatchSetupInfo;
 struct Voice;
 struct Patch;
+struct Rack;
+struct System;
+struct State;
+
+enum class PendingType {
+    ReleaseRack
+    // TODO add voice operations during system lock
+};
+
+struct OperationPending {
+    PendingType type;
+    System *system;
+    union {
+        // ReleaseRack
+        struct {
+            State *state;
+            Rack *rack;
+            // can't use a ptr, otherwise the default constructor is deleted
+            Address callback;
+        } release_data;
+    };
+};
 
 struct VoiceScheduler {
     std::vector<Voice *> queue;
-    std::vector<Voice *> pending_deque;
+    std::queue<OperationPending> operations_pending;
 
     std::recursive_mutex mutex;
-    SceUID updater;
+    std::condition_variable_any condvar;
+    bool is_updating = false;
 
 protected:
-    bool deque_voice(Voice *voice);
     bool deque_voice_impl(Voice *voice);
     void deque_insert(const MemState &mem, Voice *voice);
 
@@ -51,6 +75,8 @@ protected:
     std::int32_t get_position(Voice *v);
 
 public:
+    bool deque_voice(Voice *voice);
+
     bool play(const MemState &mem, Voice *voice);
     bool pause(Voice *voice);
     bool resume(const MemState &mem, Voice *voice);

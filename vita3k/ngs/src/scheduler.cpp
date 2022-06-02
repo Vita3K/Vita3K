@@ -18,6 +18,8 @@
 #include <ngs/scheduler.h>
 #include <ngs/system.h>
 
+#include <kernel/state.h>
+
 #include <algorithm>
 #include <cstring>
 
@@ -128,7 +130,7 @@ bool VoiceScheduler::off(Voice *voice) {
 
 void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID thread_id) {
     std::unique_lock<std::recursive_mutex> scheduler_lock(mutex);
-    updater = thread_id;
+    is_updating = true;
 
     // make a copy of the queue, this way we have no issue if it is modified in a callbck
     std::vector<ngs::Voice *> queue_copy = queue;
@@ -177,7 +179,22 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         voice->frame_count++;
     }
 
-    updater = 0; // clear value (set to invalid thread id)
+    while (!operations_pending.empty()) {
+        OperationPending &op = operations_pending.front();
+
+        switch (op.type) {
+        case PendingType::ReleaseRack:
+            release_rack(*op.release_data.state, mem, op.system, op.release_data.rack);
+            // run callback (we know it is defined)
+            kern.run_guest_function(thread_id, op.release_data.callback, { Ptr<void>(op.release_data.rack, mem).address() });
+            break;
+        }
+
+        operations_pending.pop();
+    }
+
+    is_updating = false;
+    condvar.notify_all();
 }
 
 std::int32_t VoiceScheduler::get_position(Voice *v) {
