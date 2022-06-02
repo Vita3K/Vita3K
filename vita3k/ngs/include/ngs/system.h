@@ -81,14 +81,11 @@ struct CallbackInfo {
     Ptr<void> userdata;
 };
 
-typedef std::function<void(CallbackInfo *info)> NgsCallback;
-typedef NgsCallback ModuleCallback;
-
 struct ModuleData {
     Voice *parent;
     std::uint32_t index;
 
-    Ptr<ModuleCallback> callback;
+    Ptr<void> callback;
     Ptr<void> user_data;
 
     bool is_bypassed;
@@ -233,7 +230,7 @@ struct Voice {
     std::unique_ptr<std::mutex> voice_mutex;
     VoiceProduct products[MAX_VOICE_OUTPUT];
 
-    Ptr<NgsCallback> finished_callback;
+    Ptr<void> finished_callback;
     Ptr<void> finished_callback_user_data;
 
     void init(Rack *mama);
@@ -249,7 +246,7 @@ struct Voice {
     SceInt32 parse_params_block(const MemState &mem, const ModuleParameterHeader *header, const SceUInt32 size);
     bool set_preset(const MemState &mem, const VoicePreset *preset);
 
-    void invoke_callback(KernelState &kernel, const MemState &mem, const SceUID thread_id, Ptr<NgsCallback> callback, Ptr<void> user_data,
+    void invoke_callback(KernelState &kernel, const MemState &mem, const SceUID thread_id, Ptr<void> callback, Ptr<void> user_data,
         const std::uint32_t module_id, const std::uint32_t reason = 0, const std::uint32_t reason2 = 0, Address reason_ptr = 0);
 };
 
@@ -287,7 +284,9 @@ bool deliver_data(const MemState &mem, Voice *source, const std::uint8_t output_
     const VoiceProduct &data_to_deliver);
 
 bool init_system(State &ngs, const MemState &mem, SystemInitParameters *parameters, Ptr<void> memspace, const std::uint32_t memspace_size);
+void release_system(State &ngs, const MemState &mem, System *system);
 bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo *init_info, const RackDescription *description);
+void release_rack(State &ngs, const MemState &mem, System *system, Rack *rack);
 
 Ptr<VoiceDefinition> get_voice_definition(State &ngs, MemState &mem, ngs::BussType type);
 } // namespace ngs

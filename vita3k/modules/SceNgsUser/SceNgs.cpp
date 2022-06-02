@@ -233,8 +233,37 @@ EXPORT(SceUInt32, sceNgsRackInit, SceNgsSynthSystemHandle sys_handle, ngs::Buffe
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsRackRelease) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsRackRelease, SceNgsRackHandle rack_handle, Ptr<void> callback) {
+    ngs::Rack *rack = rack_handle.get(host.mem);
+
+    if (!rack)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    std::unique_lock<std::recursive_mutex> lock(rack->system->voice_scheduler.mutex);
+    if (!rack->system->voice_scheduler.is_updating) {
+        ngs::release_rack(host.ngs, host.mem, rack->system, rack);
+    } else if (!callback) {
+        // wait for the update to finish
+        // if this is called in an interrupt handler it will softlock ngs
+        // but I don't think this is allowed (and if it is I don't know how to prevent this)
+        static int has_happened = false;
+        LOG_WARN_IF(!has_happened, "sceNgsRackRelease called in a synchronous way during a ngs update, contact devs if your game softlocks now.");
+        has_happened = true;
+
+        rack->system->voice_scheduler.condvar.wait(lock);
+        ngs::release_rack(host.ngs, host.mem, rack->system, rack);
+    } else {
+        // destroy rack asynchronously
+        ngs::OperationPending op;
+        op.type = ngs::PendingType::ReleaseRack;
+        op.system = rack->system;
+        op.release_data.state = &host.ngs;
+        op.release_data.rack = rack;
+        op.release_data.callback = callback.address();
+        rack->system->voice_scheduler.operations_pending.push(op);
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceNgsRackSetParamErrorCallback) {
@@ -269,8 +298,25 @@ EXPORT(int, sceNgsSystemLock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsSystemRelease) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNgsSystemRelease, SceNgsSynthSystemHandle sys_handle) {
+    ngs::System *system = sys_handle.get(host.mem);
+    if (!system)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
+    {
+        std::unique_lock<std::recursive_mutex> lock(system->voice_scheduler.mutex);
+        if (system->voice_scheduler.is_updating) {
+            static int has_happened = false;
+            LOG_WARN_IF(!has_happened, "sceNgsSystemRelease called during a ngs update, contact devs if your game softlocks now.");
+            has_happened = true;
+
+            system->voice_scheduler.condvar.wait(lock);
+        }
+    }
+
+    ngs::release_system(host.ngs, host.mem, system);
+
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsSystemSetFlags) {
@@ -630,7 +676,7 @@ EXPORT(SceInt32, sceNgsVoiceInit, SceNgsVoiceHandle voice_handle, const ngs::Voi
 
     if (init_flags & SCE_NGS_VOICE_INIT_CALLBACKS) {
         for (auto &module_data : voice->datas) {
-            module_data.callback = Ptr<ngs::NgsCallback>();
+            module_data.callback = Ptr<void>();
         }
     }
 
@@ -806,7 +852,7 @@ EXPORT(int, sceNgsVoiceResume, SceNgsVoiceHandle handle) {
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoiceSetFinishedCallback, SceNgsVoiceHandle voice_handle, Ptr<ngs::NgsCallback> callback, Ptr<void> user_data) {
+EXPORT(SceInt32, sceNgsVoiceSetFinishedCallback, SceNgsVoiceHandle voice_handle, Ptr<void> callback, Ptr<void> user_data) {
     if (host.cfg.current_config.disable_ngs) {
         return 0;
     }
@@ -822,7 +868,7 @@ EXPORT(SceInt32, sceNgsVoiceSetFinishedCallback, SceNgsVoiceHandle voice_handle,
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoiceSetModuleCallback, SceNgsVoiceHandle voice_handle, const SceUInt32 module, Ptr<ngs::ModuleCallback> callback, Ptr<void> user_data) {
+EXPORT(SceInt32, sceNgsVoiceSetModuleCallback, SceNgsVoiceHandle voice_handle, const SceUInt32 module, Ptr<void> callback, Ptr<void> user_data) {
     if (host.cfg.current_config.disable_ngs) {
         return 0;
     }

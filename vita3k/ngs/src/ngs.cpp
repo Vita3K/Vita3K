@@ -319,7 +319,7 @@ bool Voice::set_preset(const MemState &mem, const VoicePreset *preset) {
     return true;
 }
 
-void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceUID thread_id, Ptr<NgsCallback> callback, Ptr<void> user_data,
+void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceUID thread_id, Ptr<void> callback, Ptr<void> user_data,
     const std::uint32_t module_id, const std::uint32_t reason1, const std::uint32_t reason2, Address reason_ptr) {
     if (!callback) {
         return;
@@ -390,6 +390,20 @@ bool init_system(State &ngs, const MemState &mem, SystemInitParameters *paramete
     return true;
 }
 
+void release_system(State &ngs, const MemState &mem, System *system) {
+    // this function assumes no ngs mutex is being held
+
+    // release all the racks first
+    for (size_t i = 0; i < system->racks.size(); i++)
+        release_rack(ngs, mem, system, system->racks[i]);
+
+    const auto it = std::find(ngs.systems.begin(), ngs.systems.end(), system);
+    if (it != ngs.systems.end())
+        ngs.systems.erase(it);
+
+    system->~System();
+}
+
 bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo *init_info, const RackDescription *description) {
     Rack *rack = init_info->data.cast<Rack>().get(mem);
     rack = new (rack) Rack(system, init_info->data, init_info->size);
@@ -441,6 +455,27 @@ bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo
     system->racks.push_back(rack);
 
     return true;
+}
+
+void release_rack(State &ngs, const MemState &mem, System *system, Rack *rack) {
+    // this function should only be called outside of ngs update and with the scheduler mutex acquired (except when releasing the system)
+    if (!rack)
+        return;
+
+    // remove all queued voices
+    for (const auto &voice : rack->voices) {
+        system->voice_scheduler.deque_voice(voice.get(mem));
+        voice.get(mem)->~Voice();
+        // no need to free the voice from the rack
+    }
+
+    // remove from system
+    const auto it = std::find(system->racks.begin(), system->racks.end(), rack);
+    if (it != system->racks.end())
+        system->racks.erase(it);
+
+    // free pointer memory
+    rack->~Rack();
 }
 
 Ptr<VoiceDefinition> create_voice_definition(State &ngs, MemState &mem, ngs::BussType type) {
