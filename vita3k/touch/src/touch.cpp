@@ -159,7 +159,7 @@ int peek_touch(const HostState &host, const SceUInt32 &port, SceTouchData *pData
     }
 
     // the other buffers are used when a call to ReadTouch is late
-    for (uint8_t i = 1; i < count; i++) {
+    for (uint32_t i = 1; i < count; i++) {
         memset(&pData[i], 0, sizeof(SceTouchData));
     }
 
