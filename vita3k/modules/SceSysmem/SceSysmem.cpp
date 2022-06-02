@@ -58,6 +58,8 @@ LIBRARY_INIT_IMPL(SceSysmem) {
 }
 LIBRARY_INIT_REGISTER(SceSysmem)
 
+constexpr SceUInt32 SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT = 4;
+
 EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOpt *optp) {
     MemState &mem = host.mem;
     assert(type != 0);
@@ -66,39 +68,40 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
 
-    int min_alignement;
+    int min_alignment;
     switch (type) {
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
-        min_alignement = 0x1000;
+        min_alignment = 0x1000;
         break;
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
-        min_alignement = 0x40000;
+        min_alignment = 0x40000;
         break;
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW:
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW:
-        min_alignement = 0x100000;
+        min_alignment = 0x100000;
         break;
     default:
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
 
-    if (size % min_alignement != 0)
-        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    // size should be a multiple of min_alignment
 
-    SceSize alignement = min_alignement;
-    if (optp) {
-        alignement = optp->alignment;
-        // alignment must be a power of 2 at least equal to min_alignement
-        if ((alignement & (alignement - 1)) || alignement < min_alignement)
+    SceSize alignment = min_alignment;
+    if (optp && (optp->attr & SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT)) {
+        alignment = optp->alignment;
+        // alignment must be a power of 2
+        // it should also be at least min_alignment but it looks like it is not the case in games like uncharted
+        // and the ps vita does not return an error
+        if (alignment & (alignment - 1))
             return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
 
     const auto state = host.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
-    Ptr<void> address = Ptr<void>(alloc(mem, size, name, alignement));
+    Ptr<void> address = Ptr<void>(alloc(mem, size, name, alignment));
 
     if (!address) {
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
