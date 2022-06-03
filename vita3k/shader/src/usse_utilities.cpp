@@ -1090,8 +1090,6 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
     // register boundary, translate it to just a createStore
     auto total_comp_source = static_cast<std::uint8_t>(b.getNumComponents(source));
 
-    const std::size_t size_comp = get_data_type_size(dest.type);
-
     spv::Id source_elm_type_id = b.getTypeId(source);
     if (b.isVectorType(source_elm_type_id)) {
         source_elm_type_id = b.getContainedTypeId(source_elm_type_id);
@@ -1124,6 +1122,8 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
         dest.num <<= 2;
         off <<= 2;
     }
+
+    const std::size_t size_comp = get_data_type_size(dest.type);
 
     spv::Id bank_base = *get_reg_bank(params, dest.bank);
 
