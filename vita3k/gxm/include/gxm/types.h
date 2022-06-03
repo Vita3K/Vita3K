@@ -46,7 +46,7 @@ enum SceGxmContextType {
     SCE_GXM_CONTEXT_TYPE_DEFERRED
 };
 
-enum SceGxmColorMask {
+enum SceGxmColorMask : uint8_t {
     SCE_GXM_COLOR_MASK_NONE = 0,
     SCE_GXM_COLOR_MASK_A = (1 << 0),
     SCE_GXM_COLOR_MASK_R = (1 << 1),
@@ -55,7 +55,7 @@ enum SceGxmColorMask {
     SCE_GXM_COLOR_MASK_ALL = (SCE_GXM_COLOR_MASK_A | SCE_GXM_COLOR_MASK_B | SCE_GXM_COLOR_MASK_G | SCE_GXM_COLOR_MASK_R)
 };
 
-enum SceGxmBlendFunc {
+enum SceGxmBlendFunc : uint8_t {
     SCE_GXM_BLEND_FUNC_NONE,
     SCE_GXM_BLEND_FUNC_ADD,
     SCE_GXM_BLEND_FUNC_SUBTRACT,
@@ -64,7 +64,7 @@ enum SceGxmBlendFunc {
     SCE_GXM_BLEND_FUNC_MAX
 };
 
-enum SceGxmBlendFactor {
+enum SceGxmBlendFactor : uint8_t {
     SCE_GXM_BLEND_FACTOR_ZERO,
     SCE_GXM_BLEND_FACTOR_ONE,
     SCE_GXM_BLEND_FACTOR_SRC_COLOR,
