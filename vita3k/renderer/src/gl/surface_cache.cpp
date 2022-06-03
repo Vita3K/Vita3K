@@ -75,7 +75,13 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
     auto ite = color_surface_textures.lower_bound(key);
     bool invalidated = false;
 
+    bool overlap = false;
     if (ite != color_surface_textures.end()) {
+        // if the surface found does not overlap the surface we want, it's useless to look at it
+        overlap = (ite->first + ite->second->total_bytes) > key;
+    }
+
+    if (overlap) {
         GLColorSurfaceCacheInfo &info = *ite->second;
         auto used_iterator = std::find(last_use_color_surface_index.begin(), last_use_color_surface_index.end(), ite->first);
 
@@ -173,166 +179,166 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
             if (purpose == SurfaceTextureRetrievePurpose::WRITING) {
                 invalidated = true;
             }
-        } else {
+        } else if ((purpose == SurfaceTextureRetrievePurpose::READING) && addr_in_range_of_cache) {
             // If we read and it's still in range
-            if ((purpose == SurfaceTextureRetrievePurpose::READING) && addr_in_range_of_cache) {
-                if (used_iterator != last_use_color_surface_index.end()) {
-                    last_use_color_surface_index.erase(used_iterator);
-                }
+            if (used_iterator != last_use_color_surface_index.end()) {
+                last_use_color_surface_index.erase(used_iterator);
+            }
 
-                last_use_color_surface_index.push_back(ite->first);
+            last_use_color_surface_index.push_back(ite->first);
 
-                if (info.flags & GLSurfaceCacheInfo::FLAG_DIRTY) {
-                    // We can't use this texture sadly :( If it uses for writing of course it will be gud gud
-                    return 0;
-                }
+            if (info.flags & GLSurfaceCacheInfo::FLAG_DIRTY) {
+                // We can't use this texture sadly :( If it uses for writing of course it will be gud gud
+                return 0;
+            }
 
-                bool castable = (info.pixel_stride == pixel_stride);
+            bool castable = (info.pixel_stride == pixel_stride);
 
-                std::size_t bytes_per_pixel_requested = color::bytes_per_pixel(base_format);
-                std::size_t bytes_per_pixel_in_store = color::bytes_per_pixel(info.format);
+            std::size_t bytes_per_pixel_requested = color::bytes_per_pixel(base_format);
+            std::size_t bytes_per_pixel_in_store = color::bytes_per_pixel(info.format);
 
-                // Check if castable. Technically the income format should be texture format, but this is for easier logic.
-                // When it's required. I may change :p
-                if (base_format != info.format) {
-                    if (bytes_per_pixel_requested > bytes_per_pixel_in_store) {
-                        castable = (((bytes_per_pixel_requested % bytes_per_pixel_in_store) == 0) && (info.pixel_stride % pixel_stride == 0) && ((info.pixel_stride / pixel_stride) == (bytes_per_pixel_requested / bytes_per_pixel_in_store)));
-                    } else {
-                        castable = (((bytes_per_pixel_in_store % bytes_per_pixel_requested) == 0) && (pixel_stride % info.pixel_stride == 0) && ((pixel_stride / info.pixel_stride) == (bytes_per_pixel_in_store / bytes_per_pixel_requested)));
-                    }
-
-                    if (castable) {
-                        // Check if the GL implementation actually store raw like this (a safe check)
-                        if ((bytes_per_pixel_requested != color::bytes_per_pixel_in_gl_storage(base_format)) || (bytes_per_pixel_in_store != color::bytes_per_pixel_in_gl_storage(info.format))) {
-                            LOG_ERROR("One or both two surface formats requested=0x{:X} and inStore=0x{:X} does not support bit-casting. Please report to developers!",
-                                base_format, info.format);
-
-                            return 0;
-                        }
-                    } else {
-                        LOG_ERROR("Two surface formats requested=0x{:X} and inStore=0x{:X} are not castable!", base_format, info.format);
-                        return 0;
-                    }
+            // Check if castable. Technically the income format should be texture format, but this is for easier logic.
+            // When it's required. I may change :p
+            if (base_format != info.format) {
+                if (bytes_per_pixel_requested > bytes_per_pixel_in_store) {
+                    castable = (((bytes_per_pixel_requested % bytes_per_pixel_in_store) == 0) && (info.pixel_stride % pixel_stride == 0) && ((info.pixel_stride / pixel_stride) == (bytes_per_pixel_requested / bytes_per_pixel_in_store)));
+                } else {
+                    castable = (((bytes_per_pixel_in_store % bytes_per_pixel_requested) == 0) && (pixel_stride % info.pixel_stride == 0) && ((pixel_stride / info.pixel_stride) == (bytes_per_pixel_in_store / bytes_per_pixel_requested)));
                 }
 
                 if (castable) {
-                    const std::size_t data_delta = address.address() - ite->first;
-                    std::size_t start_sourced_line = data_delta / bytes_per_stride;
-                    std::size_t start_x = (data_delta % bytes_per_stride) / color::bytes_per_pixel(base_format);
+                    // Check if the GL implementation actually store raw like this (a safe check)
+                    if ((bytes_per_pixel_requested != color::bytes_per_pixel_in_gl_storage(base_format)) || (bytes_per_pixel_in_store != color::bytes_per_pixel_in_gl_storage(info.format))) {
+                        LOG_ERROR("One or both two surface formats requested=0x{:X} and inStore=0x{:X} does not support bit-casting. Please report to developers!",
+                            base_format, info.format);
 
-                    if (static_cast<std::uint16_t>(start_sourced_line + height) > info.height) {
-                        LOG_ERROR("Trying to present non-existen segment in cached color surface!");
+                        return 0;
+                    }
+                } else {
+                    static bool has_happened = false;
+                    LOG_ERROR_IF(!has_happened, "Two surface formats requested=0x{:X} and inStore=0x{:X} are not castable!", base_format, info.format);
+                    has_happened = true;
+                    return 0;
+                }
+            }
+
+            if (castable) {
+                const std::size_t data_delta = address.address() - ite->first;
+                std::size_t start_sourced_line = data_delta / bytes_per_stride;
+                std::size_t start_x = (data_delta % bytes_per_stride) / color::bytes_per_pixel(base_format);
+
+                if (static_cast<std::uint16_t>(start_sourced_line + height) > info.height) {
+                    LOG_ERROR("Trying to present non-existen segment in cached color surface!");
+                    return 0;
+                }
+
+                if ((start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format)) {
+                    std::uint64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
+                        std::chrono::steady_clock::now().time_since_epoch())
+                                                     .count();
+
+                    std::vector<std::unique_ptr<GLCastedTexture>> &casted_vec = info.casted_textures;
+
+                    GLenum source_format, source_data_type = 0;
+
+                    if (color::is_write_surface_stored_rawly(info.format)) {
+                        source_format = color::get_raw_store_upload_format_type(info.format);
+                        source_data_type = color::get_raw_store_upload_data_type(info.format);
+                    } else {
+                        source_format = color::translate_format(info.format);
+                        source_data_type = color::translate_type(info.format);
+                    }
+
+                    if ((base_format != info.format) || (info.height != height) || (info.width != width) || (ite->first != address.address())) {
+                        // Look in cast cache and grab one. The cache really does not store immediate grab on now, but rather to reduce the synchronization in the pipeline (use different texture)
+                        for (std::size_t i = 0; i < casted_vec.size();) {
+                            if ((casted_vec[i]->cropped_height == height) && (casted_vec[i]->cropped_width == width) && (casted_vec[i]->cropped_y == start_sourced_line) && (casted_vec[i]->cropped_x == start_x) && (casted_vec[i]->format == base_format)) {
+                                glBindTexture(GL_TEXTURE_2D, casted_vec[i]->texture[0]);
+
+                                if (color::bytes_per_pixel_in_gl_storage(base_format) == color::bytes_per_pixel_in_gl_storage(info.format)) {
+                                    glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, static_cast<int>(start_x), static_cast<int>(start_sourced_line), 0, casted_vec[i]->texture[0], GL_TEXTURE_2D,
+                                        0, 0, 0, 0, width, height, 1);
+                                } else {
+                                    do_typeless_copy(casted_vec[i]->texture[0], info.gl_texture[0], surface_internal_format, surface_upload_format,
+                                        surface_data_type, source_format, source_data_type, static_cast<int>(start_x), static_cast<int>(start_sourced_line), info.width,
+                                        height, width, height, info.total_bytes);
+                                }
+
+                                casted_vec[i]->last_used_time = current_time;
+                                return casted_vec[i]->texture[0];
+                            } else {
+                                if (current_time - info.casted_textures[i]->last_used_time >= CASTED_UNUSED_TEXTURE_PURGE_SECS) {
+                                    casted_vec.erase(casted_vec.begin() + i);
+                                    continue;
+                                }
+                            }
+
+                            i++;
+                        }
+                    }
+
+                    // Try to crop + cast
+                    std::unique_ptr<GLCastedTexture> casted_info_unq = std::make_unique<GLCastedTexture>();
+                    GLCastedTexture &casted_info = *casted_info_unq;
+
+                    if (!casted_info.texture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures))) {
+                        LOG_ERROR("Failed to initialise cast color surface texture!");
                         return 0;
                     }
 
-                    if ((start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format)) {
-                        std::uint64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
-                            std::chrono::steady_clock::now().time_since_epoch())
-                                                         .count();
+                    glBindTexture(GL_TEXTURE_2D, casted_info.texture[0]);
 
-                        std::vector<std::unique_ptr<GLCastedTexture>> &casted_vec = info.casted_textures;
+                    if (color::bytes_per_pixel_in_gl_storage(base_format) == color::bytes_per_pixel_in_gl_storage(info.format)) {
+                        glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, width, height, 0, surface_upload_format, surface_data_type, nullptr);
 
-                        GLenum source_format, source_data_type = 0;
+                        // Make it a complete texture (what kind of requirement is this)?
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-                        if (color::is_write_surface_stored_rawly(info.format)) {
-                            source_format = color::get_raw_store_upload_format_type(info.format);
-                            source_data_type = color::get_raw_store_upload_data_type(info.format);
-                        } else {
-                            source_format = color::translate_format(info.format);
-                            source_data_type = color::translate_type(info.format);
-                        }
-
-                        if ((base_format != info.format) || (info.height != height) || (info.width != width) || (ite->first != address.address())) {
-                            // Look in cast cache and grab one. The cache really does not store immediate grab on now, but rather to reduce the synchronization in the pipeline (use different texture)
-                            for (std::size_t i = 0; i < casted_vec.size();) {
-                                if ((casted_vec[i]->cropped_height == height) && (casted_vec[i]->cropped_width == width) && (casted_vec[i]->cropped_y == start_sourced_line) && (casted_vec[i]->cropped_x == start_x) && (casted_vec[i]->format == base_format)) {
-                                    glBindTexture(GL_TEXTURE_2D, casted_vec[i]->texture[0]);
-
-                                    if (color::bytes_per_pixel_in_gl_storage(base_format) == color::bytes_per_pixel_in_gl_storage(info.format)) {
-                                        glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, static_cast<int>(start_x), static_cast<int>(start_sourced_line), 0, casted_vec[i]->texture[0], GL_TEXTURE_2D,
-                                            0, 0, 0, 0, width, height, 1);
-                                    } else {
-                                        do_typeless_copy(casted_vec[i]->texture[0], info.gl_texture[0], surface_internal_format, surface_upload_format,
-                                            surface_data_type, source_format, source_data_type, static_cast<int>(start_x), static_cast<int>(start_sourced_line), info.width,
-                                            height, width, height, info.total_bytes);
-                                    }
-
-                                    casted_vec[i]->last_used_time = current_time;
-                                    return casted_vec[i]->texture[0];
-                                } else {
-                                    if (current_time - info.casted_textures[i]->last_used_time >= CASTED_UNUSED_TEXTURE_PURGE_SECS) {
-                                        casted_vec.erase(casted_vec.begin() + i);
-                                        continue;
-                                    }
-                                }
-
-                                i++;
-                            }
-                        }
-
-                        // Try to crop + cast
-                        std::unique_ptr<GLCastedTexture> casted_info_unq = std::make_unique<GLCastedTexture>();
-                        GLCastedTexture &casted_info = *casted_info_unq;
-
-                        if (!casted_info.texture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures))) {
-                            LOG_ERROR("Failed to initialise cast color surface texture!");
-                            return 0;
-                        }
-
-                        glBindTexture(GL_TEXTURE_2D, casted_info.texture[0]);
-
-                        if (color::bytes_per_pixel_in_gl_storage(base_format) == color::bytes_per_pixel_in_gl_storage(info.format)) {
-                            glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, width, height, 0, surface_upload_format, surface_data_type, nullptr);
-
-                            // Make it a complete texture (what kind of requirement is this)?
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-                            glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, start_sourced_line, 0, casted_info.texture[0], GL_TEXTURE_2D,
-                                0, 0, 0, 0, width, height, 1);
-                        } else {
-                            // TODO: Copy sub region of typeless copy is still not handled ((
-                            // We must do a typeless copy (RPCS3)
-                            do_typeless_copy(casted_info.texture[0], info.gl_texture[0], surface_internal_format, surface_upload_format,
-                                surface_data_type, source_format, source_data_type, static_cast<int>(start_x), static_cast<int>(start_sourced_line), info.width,
-                                height, width, height, info.total_bytes);
-
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-                        }
-
-                        casted_info.format = base_format;
-                        casted_info.cropped_x = start_x;
-                        casted_info.cropped_y = start_sourced_line;
-                        casted_info.cropped_width = width;
-                        casted_info.cropped_height = height;
-                        casted_info.last_used_time = current_time;
-                        casted_vec.push_back(std::move(casted_info_unq));
-
-                        return casted_info.texture[0];
+                        glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, start_sourced_line, 0, casted_info.texture[0], GL_TEXTURE_2D,
+                            0, 0, 0, 0, width, height, 1);
                     } else {
-                        if (color::is_write_surface_stored_rawly(info.format)) {
-                            // Create a texture view
-                            if (!info.gl_expected_read_texture_view[0]) {
-                                if (!info.gl_expected_read_texture_view.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures))) {
-                                    LOG_ERROR("Unable to initialize texture view for casting texture!");
-                                    return 0;
-                                }
+                        // TODO: Copy sub region of typeless copy is still not handled ((
+                        // We must do a typeless copy (RPCS3)
+                        do_typeless_copy(casted_info.texture[0], info.gl_texture[0], surface_internal_format, surface_upload_format,
+                            surface_data_type, source_format, source_data_type, static_cast<int>(start_x), static_cast<int>(start_sourced_line), info.width,
+                            height, width, height, info.total_bytes);
 
-                                glBindTexture(GL_TEXTURE_2D, info.gl_expected_read_texture_view[0]);
-                                glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, width, height, 0, surface_upload_format, surface_data_type, nullptr);
-                                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                                glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    }
+
+                    casted_info.format = base_format;
+                    casted_info.cropped_x = start_x;
+                    casted_info.cropped_y = start_sourced_line;
+                    casted_info.cropped_width = width;
+                    casted_info.cropped_height = height;
+                    casted_info.last_used_time = current_time;
+                    casted_vec.push_back(std::move(casted_info_unq));
+
+                    return casted_info.texture[0];
+                } else {
+                    if (color::is_write_surface_stored_rawly(info.format)) {
+                        // Create a texture view
+                        if (!info.gl_expected_read_texture_view[0]) {
+                            if (!info.gl_expected_read_texture_view.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures))) {
+                                LOG_ERROR("Unable to initialize texture view for casting texture!");
+                                return 0;
                             }
 
-                            glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.gl_expected_read_texture_view[0], GL_TEXTURE_2D,
-                                0, 0, 0, 0, width, height, 1);
-
-                            return info.gl_expected_read_texture_view[0];
+                            glBindTexture(GL_TEXTURE_2D, info.gl_expected_read_texture_view[0]);
+                            glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, width, height, 0, surface_upload_format, surface_data_type, nullptr);
+                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                         }
 
-                        return info.gl_texture[0];
+                        glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.gl_expected_read_texture_view[0], GL_TEXTURE_2D,
+                            0, 0, 0, 0, width, height, 1);
+
+                        return info.gl_expected_read_texture_view[0];
                     }
+
+                    return info.gl_texture[0];
                 }
             }
         }
@@ -353,6 +359,11 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
                 last_use_color_surface_index.erase(used_iterator);
             }
         }
+    }
+
+    if (purpose != SurfaceTextureRetrievePurpose::WRITING) {
+        // not part of a surface, let the texture cache handle it
+        return 0;
     }
 
     std::unique_ptr<GLColorSurfaceCacheInfo> info_added = std::make_unique<GLColorSurfaceCacheInfo>();
