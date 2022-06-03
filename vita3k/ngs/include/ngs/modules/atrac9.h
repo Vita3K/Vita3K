@@ -22,10 +22,11 @@
 
 namespace ngs::atrac9 {
 enum {
-    SCE_NGS_AT9_CALLBACK_REASON_DONE_ALL = 0,
-    SCE_NGS_AT9_CALLBACK_REASON_DONE_ONE_BUFFER = 1,
-    SCE_NGS_AT9_CALLBACK_REASON_START_LOOP = 2,
-    SCE_NGS_AT9_CALLBACK_REASON_DECODE_ERROR = 3
+    SCE_NGS_AT9_END_OF_DATA = 0,
+    SCE_NGS_AT9_SWAPPED_BUFFER = 1,
+    SCE_NGS_AT9_HEADER_ERROR = 2,
+    SCE_NGS_AT9_DECODE_ERROR = 3,
+    SCE_NGS_AT9_LOOPED_BUFFER = 4
 };
 
 struct BufferParameters {
@@ -82,6 +83,9 @@ private:
 
     static SwrContext *swr_mono_to_stereo;
     static SwrContext *swr_stereo;
+
+    // return false if data could not be decoded (error or no more data available)
+    bool decode_more_data(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, const Parameters *params, State *state, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock);
 
 public:
     explicit Module();
