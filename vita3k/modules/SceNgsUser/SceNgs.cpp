@@ -233,7 +233,10 @@ EXPORT(SceUInt32, sceNgsRackInit, SceNgsSynthSystemHandle sys_handle, ngs::Buffe
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsRackRelease, SceNgsRackHandle rack_handle, Ptr<void> callback) {
+EXPORT(SceInt32, sceNgsRackRelease, SceNgsRackHandle rack_handle, Ptr<void> callback) {
+    if (host.cfg.current_config.disable_ngs)
+        return SCE_NGS_OK;
+
     ngs::Rack *rack = rack_handle.get(host.mem);
 
     if (!rack)
@@ -263,7 +266,7 @@ EXPORT(int, sceNgsRackRelease, SceNgsRackHandle rack_handle, Ptr<void> callback)
         rack->system->voice_scheduler.operations_pending.push(op);
     }
 
-    return 0;
+    return SCE_NGS_OK;
 }
 
 EXPORT(int, sceNgsRackSetParamErrorCallback) {
@@ -298,7 +301,10 @@ EXPORT(int, sceNgsSystemLock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsSystemRelease, SceNgsSynthSystemHandle sys_handle) {
+EXPORT(SceInt32, sceNgsSystemRelease, SceNgsSynthSystemHandle sys_handle) {
+    if (host.cfg.current_config.disable_ngs)
+        return SCE_NGS_OK;
+
     ngs::System *system = sys_handle.get(host.mem);
     if (!system)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
@@ -351,6 +357,8 @@ EXPORT(SceInt32, sceNgsVoiceBypassModule, SceNgsVoiceHandle voice_handle, const 
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
     ngs::Voice *voice = voice_handle.get(host.mem);
+    if (!voice)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
     ngs::ModuleData *storage = voice->module_storage(module);
 
@@ -564,12 +572,13 @@ EXPORT(SceInt32, sceNgsVoiceGetInfo, SceNgsVoiceHandle handle, SceNgsVoiceInfo *
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsVoiceGetModuleBypass, SceNgsVoiceHandle voice_handle, const SceUInt32 module, SceUInt32 *bypass_flag) {
-    if (host.cfg.current_config.disable_ngs) {
-        return 0;
-    }
+EXPORT(SceInt32, sceNgsVoiceGetModuleBypass, SceNgsVoiceHandle voice_handle, const SceUInt32 module, SceUInt32 *bypass_flag) {
+    if (host.cfg.current_config.disable_ngs)
+        return SCE_NGS_OK;
 
     ngs::Voice *voice = voice_handle.get(host.mem);
+    if (!voice)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
     ngs::ModuleData *storage = voice->module_storage(module);
 
@@ -626,11 +635,12 @@ EXPORT(SceInt32, sceNgsVoiceGetStateData, SceNgsVoiceHandle voice_handle, const 
     }
 
     ngs::Voice *voice = voice_handle.get(host.mem);
-    ngs::ModuleData *storage = voice->module_storage(module);
-
-    if (!storage) {
+    if (!voice)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
-    }
+
+    ngs::ModuleData *storage = voice->module_storage(module);
+    if (!storage)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
     std::memcpy(mem, storage->voice_state_data.data(), std::min<std::size_t>(mem_size, storage->voice_state_data.size()));
     return SCE_NGS_OK;
@@ -909,14 +919,15 @@ EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, SceNgsVoiceHandle voice_handle, cons
 }
 
 EXPORT(SceInt32, sceNgsVoiceSetPreset, SceNgsVoiceHandle voice_handle, const ngs::VoicePreset *preset) {
-    if (host.cfg.current_config.disable_ngs) {
-        return 0;
-    }
+    if (host.cfg.current_config.disable_ngs)
+        return SCE_NGS_OK;
 
     if (!voice_handle || !preset)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
     ngs::Voice *voice = voice_handle.get(host.mem);
+    if (!voice)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
     const std::lock_guard<std::mutex> guard(*voice->voice_mutex);
     if (!voice->set_preset(host.mem, preset))
