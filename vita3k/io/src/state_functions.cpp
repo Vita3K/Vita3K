@@ -15,15 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <io/state.h>
-
 #ifdef _WIN32
 #include <io.h>
 #else
+#define _FILE_OFFSET_BITS 64
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
 #endif
+
+#include <io/state.h>
+
 SceOff FileStats::read(void *input_data, const int element_size, const SceSize element_count) const {
     if (!wrapped_file)
         return -1;
@@ -68,7 +70,6 @@ bool FileStats::seek(const SceOff offset, const SceIoSeekMode seek_mode) const {
 #ifdef _WIN32
     return _fseeki64(wrapped_file.get(), offset, base) == 0;
 #else
-#define _FILE_OFFSET_BITS 64
     return fseeko(wrapped_file.get(), offset, base) == 0;
 #endif
 }
@@ -77,5 +78,9 @@ SceOff FileStats::tell() const {
     if (!wrapped_file)
         return -1;
 
-    return ftell(wrapped_file.get());
+#ifdef _WIN32
+    return _ftelli64(wrapped_file.get());
+#else
+    return ftello(wrapped_file.get());
+#endif
 }
