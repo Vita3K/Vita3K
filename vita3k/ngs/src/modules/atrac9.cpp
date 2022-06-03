@@ -108,12 +108,12 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
                 // TODO: Free all occupied input routes
                 // unroute_occupied(mem, voice);
             } else {
-                data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_SWAPPED_BUFFER, state->current_loop_count,
+                data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_SWAPPED_BUFFER, prev_index,
                     params->buffer_params[state->current_buffer].buffer.address());
             }
         } else {
             // from what I understand, SCE_NGS_AT9_SWAPPED_BUFFER must be called even when it's just the current buffer looping
-            data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_SWAPPED_BUFFER, state->current_loop_count,
+            data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_SWAPPED_BUFFER, prev_index,
                 params->buffer_params[state->current_buffer].buffer.address());
             data.invoke_callback(kern, mem, thread_id, SCE_NGS_AT9_LOOPED_BUFFER, state->current_loop_count,
                 params->buffer_params[state->current_buffer].buffer.address());
