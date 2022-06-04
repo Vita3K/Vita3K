@@ -106,6 +106,202 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
     return SCE_KERNEL_OK;
 }
 
+// *****************
+// * Simple events *
+// *****************
+
+SceUID simple_event_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr, SceUInt32 init_pattern) {
+    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+    }
+
+    const SceUID uid = kernel.get_next_uid();
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} pattern: {:#b}",
+            export_name, uid, thread_id, name, attr, init_pattern);
+    }
+
+    const SimpleEventPtr event = std::make_shared<SimpleEvent>();
+    event->uid = uid;
+    event->pattern = init_pattern;
+    std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, event->name);
+    event->attr = attr;
+    if (event->attr & SCE_KERNEL_ATTR_TH_PRIO) {
+        event->waiting_threads = std::make_unique<PriorityThreadDataQueue<WaitingThreadData>>();
+    } else {
+        event->waiting_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
+    }
+
+    event->last_user_data = 0;
+    event->auto_reset = (event->attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
+    event->cb_wakeup_only = (event->attr & SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY);
+
+    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+    kernel.simple_events.emplace(uid, event);
+
+    return uid;
+}
+
+SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait) {
+    const SimpleEventPtr event = lock_and_find(event_id, kernel.simple_events, kernel.mutex);
+    if (!event) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_pattern: {:#b} wait_pattern: {:#b} timeout: {}"
+                  " waiting_threads: {}",
+            export_name, event->uid, thread_id, event->name, event->attr, event->pattern, wait_pattern, timeout ? *timeout : 0,
+            event->waiting_threads->size());
+    }
+
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
+
+    std::unique_lock<std::mutex> event_lock(event->mutex);
+
+    if (result_pattern)
+        *result_pattern = event->pattern;
+
+    if (event->pattern & wait_pattern) {
+        if (event->auto_reset) {
+            SceUInt32 common = event->pattern & wait_pattern;
+            SceUInt32 first_common_bit = common & (-common);
+            event->pattern &= ~first_common_bit;
+        }
+
+        if (user_data)
+            *user_data = event->last_user_data;
+
+        return SCE_KERNEL_OK;
+    } else if (is_wait) {
+        std::unique_lock<std::mutex> thread_lock(thread->mutex);
+        thread->update_status(ThreadStatus::wait, ThreadStatus::run);
+
+        WaitingThreadData data;
+        data.thread = thread;
+        data.result_pattern = result_pattern;
+        data.user_data = user_data;
+        data.pattern = wait_pattern;
+        data.priority = thread->priority;
+
+        const auto data_it = event->waiting_threads->push(data);
+        thread_lock.unlock();
+
+        const int err = handle_timeout(thread, thread_lock, event_lock, event->waiting_threads, data, data_it, export_name, timeout);
+        if (err < 0) {
+            // set it only if a timeout occurs
+            // otherwise set in simple_event_setorpulse
+            if (user_data)
+                *user_data = event->last_user_data;
+            if (result_pattern)
+                *result_pattern = event->pattern;
+        }
+        return err;
+    } else {
+        return SCE_KERNEL_ERROR_EVENT_COND;
+    }
+}
+
+SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 pattern, SceUInt64 user_data, bool is_set) {
+    const SimpleEventPtr event = lock_and_find(event_id, kernel.simple_events, kernel.mutex);
+    if (!event) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_pattern: {:#b} set_pattern: {:#b}"
+                  " waiting_threads: {}",
+            export_name, event->uid, thread_id, event->name, event->attr, event->pattern, pattern,
+            event->waiting_threads->size());
+    }
+
+    const SceUInt32 old_pattern = event->pattern;
+    const SceUInt64 old_user_data = event->last_user_data;
+    const SceUInt32 new_pattern = event->pattern | pattern;
+
+    const std::lock_guard<std::mutex> event_lock(event->mutex);
+    event->pattern = new_pattern;
+    event->last_user_data = user_data;
+
+    for (auto it = event->waiting_threads->begin(); it != event->waiting_threads->end();) {
+        const auto waiting_thread_data = *it;
+        const auto waiting_thread = waiting_thread_data.thread;
+        const auto waiting_pattern = waiting_thread_data.pattern;
+
+        if (event->pattern & waiting_pattern) {
+            if (waiting_thread_data.result_pattern)
+                *waiting_thread_data.result_pattern = new_pattern;
+
+            if (waiting_thread_data.user_data)
+                *waiting_thread_data.user_data = event->last_user_data;
+
+            if (event->auto_reset) {
+                SceUInt32 common = event->pattern & waiting_pattern;
+                SceUInt32 common_first_bit = common & (-common);
+                event->pattern &= ~common_first_bit;
+            }
+
+            const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
+
+            waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
+
+            event->waiting_threads->erase(it++);
+        } else {
+            ++it;
+        }
+    }
+
+    if (!is_set) {
+        event->pattern = old_pattern;
+        event->last_user_data = old_user_data;
+    }
+
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 simple_event_clear(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 clear_pattern) {
+    const SimpleEventPtr event = lock_and_find(event_id, kernel.simple_events, kernel.mutex);
+    if (!event) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} clear_pattern: {:#b}",
+            export_name, event_id, thread_id, clear_pattern);
+    }
+
+    const std::lock_guard<std::mutex> event_lock(event->mutex);
+
+    event->pattern &= clear_pattern;
+
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 simple_event_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id) {
+    const SimpleEventPtr event = lock_and_find(event_id, kernel.simple_events, kernel.mutex);
+    if (!event) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_pattern: {:#b} waiting_threads: {}",
+            export_name, event->uid, thread_id, event->name, event->attr, event->pattern, event->waiting_threads->size());
+    }
+
+    const std::lock_guard<std::mutex> event_lock(event->mutex);
+
+    if (event->waiting_threads->empty()) {
+        const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+        kernel.eventflags.erase(event_id);
+    } else {
+        // TODO:
+        LOG_WARN("Can't delete sync object, it has waiting threads.");
+    }
+
+    return SCE_KERNEL_OK;
+}
+
 // *********
 // * Mutex *
 // *********
@@ -828,7 +1024,7 @@ SceUID eventflag_clear(KernelState &kernel, const char *export_name, SceUID evfI
     }
 
     if (LOG_SYNC_PRIMITIVES) {
-        LOG_DEBUG("{}: uid: {} thread_id: {} bitPattern: {:#b}",
+        LOG_DEBUG("{}: uid: {} bitPattern: {:#b}",
             export_name, evfId, bitPattern);
     }
 
@@ -931,7 +1127,7 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         }
         return err;
     } else {
-        return RET_ERROR(SCE_KERNEL_ERROR_EVF_COND);
+        return SCE_KERNEL_ERROR_EVF_COND;
     }
 }
 

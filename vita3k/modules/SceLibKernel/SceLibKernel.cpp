@@ -960,8 +960,8 @@ EXPORT(int, sceKernelCreateSema_16XX, const char *name, SceUInt attr, int initVa
     return res;
 }
 
-EXPORT(SceUID, sceKernelCreateSimpleEvent, const char *pName, SceUInt32 attr, SceUInt32 initPattern, const SceKernelSimpleEventOptParam *pOptParam) {
-    return eventflag_create(host.kernel, export_name, thread_id, pName, attr, initPattern);
+EXPORT(SceUID, sceKernelCreateSimpleEvent, const char *name, SceUInt32 attr, SceUInt32 init_pattern, const SceKernelSimpleEventOptParam *pOptParam) {
+    return CALL_EXPORT(_sceKernelCreateSimpleEvent, name, attr, init_pattern, pOptParam);
 }
 
 EXPORT(SceUID, sceKernelCreateThread, const char *name, SceKernelThreadEntry entry, int init_priority, int stack_size, SceUInt attr, int cpu_affinity_mask, Ptr<SceKernelThreadOptParam> option) {
@@ -1269,8 +1269,8 @@ EXPORT(int, sceKernelPMonThreadGetCounter) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelPollEvent) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelPollEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
+    return CALL_EXPORT(_sceKernelPollEvent, event_id, bit_pattern, result_pattern, user_data);
 }
 
 EXPORT(int, sceKernelPollEventFlag, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits) {
@@ -1451,12 +1451,12 @@ EXPORT(int, sceKernelWaitCondCB, SceUID cond_id, SceUInt32 *timeout) {
     return condvar_wait(host.kernel, host.mem, export_name, thread_id, cond_id, timeout, SyncWeight::Heavy);
 }
 
-EXPORT(int, sceKernelWaitEvent) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelWaitEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout) {
+    return CALL_EXPORT(_sceKernelWaitEvent, event_id, bit_pattern, result_pattern, user_data, timeout);
 }
 
-EXPORT(int, sceKernelWaitEventCB) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelWaitEventCB, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout) {
+    return CALL_EXPORT(_sceKernelWaitEventCB, event_id, bit_pattern, result_pattern, user_data, timeout);
 }
 
 EXPORT(SceInt32, sceKernelWaitEventFlag, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {

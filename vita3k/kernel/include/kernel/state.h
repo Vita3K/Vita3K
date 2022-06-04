@@ -123,6 +123,7 @@ struct KernelState {
     unsigned int tls_psize = 0;
     unsigned int tls_msize = 0;
 
+    SimpleEventPtrs simple_events;
     SemaphorePtrs semaphores;
     CondvarPtrs condvars;
     CondvarPtrs lwcondvars;

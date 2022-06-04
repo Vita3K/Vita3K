@@ -39,6 +39,11 @@ struct WaitingThreadData {
         struct { // semaphore
             int32_t signal;
         };
+        struct { // simple events
+            int32_t pattern;
+            uint32_t *result_pattern;
+            uint64_t *user_data;
+        };
         struct { // event flags
             int32_t wait;
             int32_t flags;
@@ -72,7 +77,6 @@ typedef std::unique_ptr<ThreadDataQueue<WaitingThreadData>> WaitingThreadQueuePt
 // NOTE: uid is copied to sync primitives here for debugging,
 //       not really needed since they are put in std::map's
 struct SyncPrimitive {
-    // FIXME turn this into SimpleEvent!
     SceUID uid;
 
     uint32_t attr;
@@ -83,6 +87,20 @@ struct SyncPrimitive {
 
     virtual ~SyncPrimitive() = default;
 };
+
+struct SimpleEvent : SyncPrimitive {
+    WaitingThreadQueuePtr waiting_threads;
+    SceUInt32 pattern;
+    SceUInt64 last_user_data;
+
+    bool auto_reset;
+    bool cb_wakeup_only;
+
+    ~SimpleEvent() override = default;
+};
+
+typedef std::shared_ptr<SimpleEvent> SimpleEventPtr;
+typedef std::map<SceUID, SimpleEventPtr> SimpleEventPtrs;
 
 struct Semaphore : SyncPrimitive {
     WaitingThreadQueuePtr waiting_threads;
@@ -185,6 +203,13 @@ enum class SyncWeight {
     Light, // lightweight
     Heavy // 'heavy'weight
 };
+
+// simple events
+SceUID simple_event_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr, SceUInt32 init_pattern);
+SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait);
+SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 pattern, SceUInt64 user_data, bool is_set);
+SceInt32 simple_event_clear(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 clear_pattern);
+SceInt32 simple_event_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id);
 
 // Mutex
 SceUID mutex_create(SceUID *uid_out, KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, int init_count, Ptr<SceKernelLwMutexWork> workarea, SyncWeight weight);
