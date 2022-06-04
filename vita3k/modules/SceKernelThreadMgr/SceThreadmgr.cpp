@@ -121,8 +121,8 @@ EXPORT(int, _sceKernelCreateSema_16XX, const char *name, SceUInt attr, int initV
     return semaphore_create(host.kernel, export_name, name, thread_id, attr, initVal, opt.get(host.mem)->maxVal);
 }
 
-EXPORT(SceUID, _sceKernelCreateSimpleEvent, const char *pName, SceUInt32 attr, SceUInt32 initPattern, const SceKernelSimpleEventOptParam *pOptParam) {
-    return eventflag_create(host.kernel, export_name, thread_id, pName, attr, initPattern);
+EXPORT(SceUID, _sceKernelCreateSimpleEvent, const char *name, SceUInt32 attr, SceUInt32 init_pattern, const SceKernelSimpleEventOptParam *pOptParam) {
+    return simple_event_create(host.kernel, host.mem, export_name, name, thread_id, attr, init_pattern);
 }
 
 EXPORT(int, _sceKernelCreateTimer) {
@@ -456,8 +456,8 @@ EXPORT(int, _sceKernelPMonThreadGetCounter) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelPollEvent) {
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelPollEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data) {
+    return simple_event_waitorpoll(host.kernel, export_name, thread_id, event_id, bit_pattern, result_pattern, user_data, nullptr, false);
 }
 
 EXPORT(int, _sceKernelPollEventFlag, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits) {
@@ -579,12 +579,13 @@ EXPORT(int, _sceKernelWaitCondCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelWaitEvent) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelWaitEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout) {
+    return simple_event_waitorpoll(host.kernel, export_name, thread_id, event_id, bit_pattern, result_pattern, user_data, timeout, true);
 }
 
-EXPORT(int, _sceKernelWaitEventCB) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelWaitEventCB, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout) {
+    STUBBED("no CB");
+    return simple_event_waitorpoll(host.kernel, export_name, thread_id, event_id, bit_pattern, result_pattern, user_data, timeout, false);
 }
 
 EXPORT(SceInt32, _sceKernelWaitEventFlag, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
@@ -754,8 +755,8 @@ EXPORT(int, sceKernelCheckWaitableStatus) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, sceKernelClearEvent, SceUID eventId, SceUInt32 clearPattern) {
-    return eventflag_clear(host.kernel, export_name, eventId, clearPattern);
+EXPORT(SceInt32, sceKernelClearEvent, SceUID event_id, SceUInt32 clear_pattern) {
+    return simple_event_clear(host.kernel, export_name, thread_id, event_id, clear_pattern);
 }
 
 EXPORT(SceInt32, sceKernelClearEventFlag, SceUID evfId, SceUInt32 bitPattern) {
@@ -893,8 +894,8 @@ EXPORT(int, sceKernelDeleteSema, SceUID semaid) {
     return semaphore_delete(host.kernel, export_name, thread_id, semaid);
 }
 
-EXPORT(int, sceKernelDeleteSimpleEvent) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelDeleteSimpleEvent, SceUID event_id) {
+    return simple_event_delete(host.kernel, export_name, thread_id, event_id);
 }
 
 EXPORT(int, sceKernelDeleteThread, SceUID thid) {
@@ -1052,8 +1053,8 @@ EXPORT(int, sceKernelPollSema, SceUID semaid, int32_t needCount) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelPulseEvent) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelPulseEvent, SceUID event_id, SceUInt32 set_pattern, SceUInt64 user_data) {
+    return simple_event_setorpulse(host.kernel, export_name, thread_id, event_id, set_pattern, user_data, false);
 }
 
 EXPORT(int, sceKernelRegisterCallbackToEvent) {
@@ -1081,8 +1082,8 @@ EXPORT(int, sceKernelSendSignal, SceUID target_thread_id) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelSetEvent) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelSetEvent, SceUID event_id, SceUInt32 set_pattern, SceUInt64 user_data) {
+    return simple_event_setorpulse(host.kernel, export_name, thread_id, event_id, set_pattern, user_data, true);
 }
 
 EXPORT(SceInt32, sceKernelSetEventFlag, SceUID evfId, SceUInt32 bitPattern) {
