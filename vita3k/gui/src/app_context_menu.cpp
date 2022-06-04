@@ -277,6 +277,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
     const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
     const auto ADDCONT_PATH{ fs::path(host.pref_path) / "ux0/addcont" / APP_INDEX->addcont };
     const auto LICENSE_PATH{ fs::path(host.pref_path) / "ux0/license" / title_id };
+    const auto MANUAL_PATH{ APP_PATH / "sce_sys/manual" };
     const auto SAVE_DATA_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / APP_INDEX->savedata };
     const auto SHADER_CACHE_PATH{ fs::path(host.base_path) / "cache/shaders" / title_id };
     const auto SHADER_LOG_PATH{ fs::path(host.base_path) / "shaderlog" / title_id };
@@ -348,7 +349,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
                     open_live_area(gui, host, app_path);
                 if (ImGui::MenuItem("Search", nullptr))
                     open_search(APP_INDEX->title);
-                if (ImGui::MenuItem("Manual", nullptr))
+                if (fs::exists(MANUAL_PATH) && !fs::is_empty(MANUAL_PATH) && ImGui::MenuItem("Manual", nullptr))
                     open_manual(gui, host, app_path);
                 if (ImGui::MenuItem("Update"))
                     update_app(gui, host, app_path);
