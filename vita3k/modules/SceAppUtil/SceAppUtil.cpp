@@ -280,7 +280,7 @@ EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveD
 
 EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, const SceAppUtilSaveDataSlotSearchCond *cond,
     SceAppUtilSlotSearchResult *result, const SceAppUtilMountPoint *mountPoint) {
-    STUBBED("No sort slot list and no read status and userParam");
+    STUBBED("No sort slot list");
 
     if (!cond || !result)
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
@@ -303,6 +303,11 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, co
         case SCE_APPUTIL_SAVEDATA_SLOT_SEARCH_TYPE_EXIST_SLOT:
             if (fd > 0) {
                 if (slotList) {
+                    SceAppUtilSaveDataSlotParam param;
+                    memset(&param, 0, sizeof(SceAppUtilSaveDataSlotParam));
+                    read_file(&param, host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
+                    slotList[result->hitNum].userParam = param.userParam;
+                    slotList[result->hitNum].status = param.status;
                     slotList[result->hitNum].id = i;
                 }
                 result->hitNum++;
