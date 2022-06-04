@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -162,7 +162,6 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
             // Load Emulator Config
             if (!config_child.child("emulator").empty()) {
                 const auto emulator_child = config_child.child("emulator");
-                config.disable_at9_decoder = emulator_child.attribute("disable-at9-decoder").as_bool();
                 config.disable_ngs = emulator_child.attribute("disable-ngs").as_bool();
             }
 
@@ -198,7 +197,6 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
         config.modules_mode = host.cfg.modules_mode;
         config.lle_modules = host.cfg.lle_modules;
         config.pstv_mode = host.cfg.pstv_mode;
-        config.disable_at9_decoder = host.cfg.disable_at9_decoder;
         config.disable_ngs = host.cfg.disable_ngs;
     }
     config_cpu_backend = set_cpu_backend(config.cpu_backend);
@@ -252,7 +250,6 @@ static void save_config(GuiState &gui, HostState &host) {
 
         // Emulator
         auto emulator_child = config_child.append_child("emulator");
-        emulator_child.append_attribute("disable-at9-decoder") = config.disable_at9_decoder;
         emulator_child.append_attribute("disable-ngs") = config.disable_ngs;
 
         const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
@@ -265,7 +262,6 @@ static void save_config(GuiState &gui, HostState &host) {
         host.cfg.modules_mode = config.modules_mode;
         host.cfg.lle_modules = config.lle_modules;
         host.cfg.pstv_mode = config.pstv_mode;
-        host.cfg.disable_at9_decoder = config.disable_at9_decoder;
         host.cfg.disable_ngs = config.disable_ngs;
     }
     config::serialize_config(host.cfg, host.cfg.config_path);
@@ -290,7 +286,6 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.modules_mode = config.modules_mode;
         host.cfg.current_config.lle_modules = config.lle_modules;
         host.cfg.current_config.pstv_mode = config.pstv_mode;
-        host.cfg.current_config.disable_at9_decoder = config.disable_at9_decoder;
         host.cfg.current_config.disable_ngs = config.disable_ngs;
     } else {
         // Else inherit the values from the global emulator config
@@ -300,7 +295,6 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.modules_mode = host.cfg.modules_mode;
         host.cfg.current_config.lle_modules = host.cfg.lle_modules;
         host.cfg.current_config.pstv_mode = host.cfg.pstv_mode;
-        host.cfg.current_config.disable_at9_decoder = host.cfg.disable_at9_decoder;
         host.cfg.current_config.disable_ngs = host.cfg.disable_ngs;
     }
     // No change it if app already running
@@ -476,12 +470,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("Disable At9 audio decoder", &config.disable_at9_decoder);
+        ImGui::Checkbox("Disable ngs support", &config.disable_ngs);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Enable this option to disable the AT9 audio decoder.\nThis is required to prevent crashes in certain games, such as Gravity (Rush/Daze), for the time being.");
-        ImGui::Checkbox("Disable experimental ngs support", &config.disable_ngs);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Disable experimental support for advanced audio library ngs");
+            ImGui::SetTooltip("Disable support for advanced audio library ngs");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

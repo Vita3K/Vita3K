@@ -141,7 +141,7 @@ static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCod
         info.sample_rate = decoder->get(DecoderQuery::SAMPLE_RATE);
         info.super_frame_size = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
         info.frames_in_super_frame = decoder->get(DecoderQuery::AT9_FRAMES_IN_SUPERFRAME);
-        return host.cfg.current_config.disable_at9_decoder ? -1 : 0;
+        return 0;
     }
     case SCE_AUDIODEC_TYPE_AAC: {
         SceAudiodecInfoAac &info = ctrl->info.get(host.mem)->aac;

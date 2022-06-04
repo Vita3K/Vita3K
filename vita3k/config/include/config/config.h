@@ -115,7 +115,6 @@ enum PerfomanceOverleyPosition {
     code(bool, "shader-cache", true, shader_cache)                                                      \
     code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
-    code(bool, "disable-at9-decoder", false, disable_at9_decoder)                                       \
     code(bool, "tracy-primitive-impl", false, tracy_primitive_impl)
 
 // Vector members produced in the config file
