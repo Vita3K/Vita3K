@@ -283,8 +283,46 @@ EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodec
     return 0;
 }
 
-EXPORT(int, sceAudiodecPartlyDecode) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAudiodecPartlyDecode, SceAudiodecCtrl *ctrl, SceUInt32 samples_offset, SceUInt32 samples_to_decode) {
+    // this function is only called by libatrac
+    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    if (state->codecs[SCE_AUDIODEC_TYPE_AT9].count(ctrl->handle) == 0) {
+        STUBBED("Call to sceAudiodecPartlyDecode with a codec other than Atrac9, report it to the devs");
+    }
+
+    const std::shared_ptr<DecoderState> &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
+
+    uint8_t *es_data = ctrl->es_data.get(host.mem);
+    uint8_t *pcm_data = ctrl->pcm_data.get(host.mem);
+
+    // TODO: if the offset is too big, do not decode the first superframes (doesn't seem to happen with libatrac)
+    const uint32_t bytes_per_sample = decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t);
+    ctrl->es_size_used = 0;
+    ctrl->pcm_size_given = 0;
+    std::vector<uint8_t> temp_storage;
+    temp_storage.reserve((samples_offset + samples_to_decode) * bytes_per_sample);
+
+    while (ctrl->pcm_size_given < (samples_offset + samples_to_decode) * bytes_per_sample) {
+        DecoderSize size;
+        if (!decoder->send(es_data, ctrl->es_size_max)) {
+            return RET_ERROR(SCE_AUDIODEC_ERROR_API_FAIL);
+        }
+        const uint32_t es_size_used = decoder->get_es_size();
+        assert(es_size_used <= ctrl->es_size_max);
+        ctrl->es_size_used += es_size_used;
+        es_data += es_size_used;
+
+        decoder->receive(nullptr, &size);
+        const uint32_t pcm_size_given = size.samples * bytes_per_sample;
+        ctrl->pcm_size_given += pcm_size_given;
+        const uint32_t old_size = temp_storage.size();
+        temp_storage.resize(old_size + pcm_size_given);
+        decoder->receive(temp_storage.data() + old_size, &size);
+    }
+
+    memcpy(pcm_data + samples_offset * bytes_per_sample, temp_storage.data() + samples_offset * bytes_per_sample, samples_to_decode * bytes_per_sample);
+
+    return 0;
 }
 
 EXPORT(SceInt32, sceAudiodecTermLibrary, SceAudiodecCodec codecType) {
