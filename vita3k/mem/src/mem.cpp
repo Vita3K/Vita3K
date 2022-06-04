@@ -60,20 +60,27 @@ bool init(MemState &state) {
 
     assert(state.page_size >= 4096); // Limit imposed by Unicorn.
 
+    void *preferred_address = reinterpret_cast<void *>(1ULL << 34);
+
 #ifdef WIN32
-    state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+    state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(preferred_address, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
     if (!state.memory) {
-        LOG_CRITICAL("VirtualAlloc failed: {}", log_hex(GetLastError()));
-        return false;
+        // fallback
+        state.memory = Memory(static_cast<uint8_t *>(VirtualAlloc(nullptr, TOTAL_MEM_SIZE, MEM_RESERVE, PAGE_NOACCESS)), delete_memory);
+
+        if (!state.memory) {
+            LOG_CRITICAL("VirtualAlloc failed: {}", log_hex(GetLastError()));
+            return false;
+        }
     }
 #else
     // http://man7.org/linux/man-pages/man2/mmap.2.html
-    void *const addr = nullptr;
     const int prot = PROT_NONE;
     const int flags = MAP_PRIVATE | MAP_ANONYMOUS;
     const int fd = 0;
     const off_t offset = 0;
-    state.memory = Memory(static_cast<uint8_t *>(mmap(addr, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
+    // preferred_address is only a hint for mmap, if it can't use it, the kernel will choose itself the address
+    state.memory = Memory(static_cast<uint8_t *>(mmap(preferred_address, TOTAL_MEM_SIZE, prot, flags, fd, offset)), delete_memory);
     if (state.memory.get() == MAP_FAILED) {
         LOG_CRITICAL("mmap failed");
         return false;
