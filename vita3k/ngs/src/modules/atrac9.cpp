@@ -76,6 +76,17 @@ void Module::on_state_change(ModuleData &data, const VoiceState previous) {
     }
 }
 
+void Module::on_param_change(const MemState &mem, ModuleData &data) {
+    State *state = data.get_state<State>();
+    const Parameters *old_params = reinterpret_cast<Parameters *>(data.last_info.data());
+    const Parameters *new_params = reinterpret_cast<Parameters *>(data.info.data.get(mem));
+
+    // if playback scaling changed, reset the resampler
+    if (state->swr && (old_params->playback_frequency != new_params->playback_frequency || old_params->playback_scalar != new_params->playback_scalar)) {
+        swr_free(&state->swr);
+    }
+}
+
 bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, const Parameters *params, State *state, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     int current_buffer = state->current_buffer;
     const BufferParameters &bufparam = params->buffer_params[current_buffer];
@@ -144,15 +155,25 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
         return true;
     }
     // now we are sure we have a buffer with some data in it
+    uint8_t *input = bufparam.buffer.cast<uint8_t>().get(mem) + state->current_byte_position_in_buffer;
 
     const uint32_t superframe_size = decoder->get(DecoderQuery::AT9_SUPERFRAME_SIZE);
     uint32_t frame_bytes_gotten = bufparam.bytes_count - state->current_byte_position_in_buffer;
-    if (frame_bytes_gotten < superframe_size) {
-        // I don't think this should happen
-        static bool has_happened = false;
-        LOG_CRITICAL_IF(!has_happened, "The supplied buffer isn't big enough for an atrac9 superframe or isn't aligned, report it to devs");
-        has_happened = true;
-        return false;
+    if (frame_bytes_gotten < superframe_size || !temp_buffer.empty()) {
+        // the superframe overlaps two buffers...
+        uint32_t bytes_transfered = std::min<uint32_t>(frame_bytes_gotten, superframe_size - temp_buffer.size());
+        uint32_t old_size = temp_buffer.size();
+        temp_buffer.resize(old_size + bytes_transfered);
+        memcpy(temp_buffer.data() + old_size, input, bytes_transfered);
+
+        if (temp_buffer.size() < superframe_size) {
+            // continue getting data
+            state->current_byte_position_in_buffer = bufparam.bytes_count;
+            return true;
+        }
+        // make the byte position negative, will be positive at the end
+        state->current_byte_position_in_buffer = -old_size;
+        input = temp_buffer.data();
     }
 
     std::size_t curr_pos = state->decoded_samples_pending * sizeof(float) * 2;
@@ -163,26 +184,26 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
     uint32_t decoded_size = samples_per_superframe;
     uint32_t decoded_start_offset = 0;
 
-    // remove skipped samples at the beginnning and the end of the buffer
-    // in case you have more than a superframe of samples (I don't know if this can happen)
-    const uint32_t sample_index = (state->current_byte_position_in_buffer / superframe_size) * samples_per_superframe;
-    if (bufparam.samples_discard_start_off > sample_index) {
-        // first chunk
-        const uint32_t skipped_samples = std::min(samples_per_superframe, bufparam.samples_discard_start_off - sample_index);
-        decoded_start_offset += skipped_samples;
-        decoded_size -= skipped_samples;
+    // if the superframe is across two buffers, I don't know how to interpret the skipped samples (which are in the middle of the frame)...
+    if (temp_buffer.empty()) {
+        // remove skipped samples at the beginnning and the end of the buffer
+        // in case you have more than a superframe of samples skipped (I don't know if this can happen)
+        const uint32_t sample_index = (state->current_byte_position_in_buffer / superframe_size) * samples_per_superframe;
+        if (bufparam.samples_discard_start_off > sample_index) {
+            // first chunk
+            const uint32_t skipped_samples = std::min(samples_per_superframe, bufparam.samples_discard_start_off - sample_index);
+            decoded_start_offset += skipped_samples;
+            decoded_size -= skipped_samples;
+        }
+
+        const uint32_t samples_left_after = (frame_bytes_gotten / superframe_size - 1) * samples_per_superframe;
+        if (bufparam.samples_discard_end_off > samples_left_after) {
+            // last chunk
+            const uint32_t skipped_samples = std::min(samples_per_superframe, bufparam.samples_discard_end_off - samples_left_after);
+            decoded_size -= bufparam.samples_discard_end_off;
+        }
     }
 
-    const uint32_t samples_left_after = (frame_bytes_gotten / superframe_size - 1) * samples_per_superframe;
-    if (bufparam.samples_discard_end_off > samples_left_after) {
-        // last chunk
-        const uint32_t skipped_samples = std::min(samples_per_superframe, bufparam.samples_discard_end_off - samples_left_after);
-        decoded_size -= bufparam.samples_discard_end_off;
-    }
-
-    data.extra_storage.resize(curr_pos + decoded_size * sizeof(float) * 2);
-
-    auto *input = bufparam.buffer.cast<uint8_t>().get(mem) + state->current_byte_position_in_buffer;
     std::vector<uint8_t> decoded_superframe_samples(decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME) * sizeof(float) * 2);
     uint32_t decoded_superframe_pos = 0;
     bool got_decode_error = false;
@@ -231,7 +252,47 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
         input += decoder->get_es_size();
         state->current_byte_position_in_buffer += decoder->get_es_size();
     }
-    memcpy(data.extra_storage.data() + curr_pos, decoded_superframe_samples.data() + decoded_start_offset * sizeof(float) * 2, decoded_size * sizeof(float) * 2);
+
+    const int32_t sample_rate = data.parent->rack->system->sample_rate;
+    if (params->playback_scalar != 1 || static_cast<int>(round(params->playback_frequency)) != sample_rate) {
+        static bool LOG_PLAYBACK_SCALING = true;
+        LOG_INFO_IF(LOG_PLAYBACK_SCALING, "The currently running game requests playback rate scaling when decoding audio. Audio might crackle.");
+        LOG_PLAYBACK_SCALING = false;
+
+        // resample the audio
+        int src_sample_rate = static_cast<int>(params->playback_frequency);
+        if (params->playback_scalar != 1.0)
+            src_sample_rate *= params->playback_scalar;
+
+        if (!state->swr) {
+            state->swr = swr_alloc_set_opts(nullptr,
+                AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, sample_rate,
+                AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, src_sample_rate,
+                0, nullptr);
+
+            swr_init(state->swr);
+        }
+        // assume the skipped samples happen before the scaling
+        int scaled_samples_amount = swr_get_out_samples(state->swr, decoded_size);
+        std::vector<std::uint8_t> scaled_data(scaled_samples_amount * sizeof(float) * 2, 0);
+
+        uint8_t *scaled_dest_data = scaled_data.data();
+        const uint8_t *scaled_src_data = decoded_superframe_samples.data() + decoded_start_offset * sizeof(float) * 2;
+        scaled_samples_amount = swr_convert(state->swr, &scaled_dest_data, scaled_samples_amount, &scaled_src_data, samples_per_superframe);
+        assert(scaled_samples_amount > 0);
+
+        // Allocate memory to accommodate the result of the scaling process into the queue for the final audio buffer
+        data.extra_storage.resize(curr_pos + scaled_samples_amount * sizeof(float) * 2);
+
+        // Pass scaled audio data into the queue for the final audio buffer
+        memcpy(data.extra_storage.data() + curr_pos, scaled_data.data(), scaled_samples_amount * sizeof(float) * 2);
+        decoded_size = scaled_samples_amount;
+
+    } else {
+        data.extra_storage.resize(curr_pos + decoded_size * sizeof(float) * 2);
+
+        memcpy(data.extra_storage.data() + curr_pos, decoded_superframe_samples.data() + decoded_start_offset * sizeof(float) * 2, decoded_size * sizeof(float) * 2);
+    }
 
     if (got_decode_error) {
         voice_lock.unlock();
@@ -246,6 +307,8 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
         // clear the context or we'll get en error next time we cant to decode
         decoder->clear_context();
     }
+
+    temp_buffer.clear();
 
     state->samples_generated_since_key_on += decoded_size;
     state->samples_generated_total += decoded_size;
@@ -275,15 +338,13 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     // call decode more data until we either have an error or reached end of data
     while (static_cast<std::int32_t>(state->decoded_samples_pending) < data.parent->rack->system->granularity) {
         if (!decode_more_data(kern, mem, thread_id, data, params, state, scheduler_lock, voice_lock)) {
-            // still give something in the output buffer
-            data.fill_to_fit_granularity();
-            data.parent->products[0].data = data.extra_storage.data();
-            // we are done
-            state->samples_generated_since_key_on = 0;
-            state->bytes_consumed_since_key_on = 0;
-            return true;
+            state->is_finished = true;
+            break;
         }
     }
+
+    // make sure the buffer is big enough
+    data.fill_to_fit_granularity();
 
     std::uint8_t *data_ptr = data.extra_storage.data() + 2 * sizeof(float) * state->decoded_passed;
     std::uint32_t samples_to_be_passed = data.parent->rack->system->granularity;
@@ -292,6 +353,14 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
     state->decoded_samples_pending = (state->decoded_samples_pending < samples_to_be_passed) ? 0 : (state->decoded_samples_pending - samples_to_be_passed);
     state->decoded_passed += samples_to_be_passed;
+
+    if (state->decoded_samples_pending == 0 && state->is_finished) {
+        // we are done
+        state->samples_generated_since_key_on = 0;
+        state->bytes_consumed_since_key_on = 0;
+        state->is_finished = false;
+        return true;
+    }
 
     return false;
 }

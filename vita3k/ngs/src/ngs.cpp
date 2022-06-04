@@ -115,8 +115,11 @@ BufferParamsInfo *ModuleData::lock_params(const MemState &mem) {
     return &info;
 }
 
-bool ModuleData::unlock_params() {
+bool ModuleData::unlock_params(const MemState &mem) {
     const std::lock_guard<std::mutex> guard(*parent->voice_mutex);
+
+    if (parent->rack->modules[index])
+        parent->rack->modules[index]->on_param_change(mem, *this);
 
     if (flags & PARAMS_LOCK) {
         flags &= ~PARAMS_LOCK;
@@ -133,8 +136,8 @@ void ModuleData::invoke_callback(KernelState &kernel, const MemState &mem, const
 }
 
 void ModuleData::fill_to_fit_granularity() {
-    const std::size_t start_fill = extra_storage.size();
-    const std::size_t to_fill = parent->rack->system->granularity * 2 * sizeof(float) - start_fill;
+    const int start_fill = extra_storage.size();
+    const int to_fill = parent->rack->system->granularity * 2 * sizeof(float) - start_fill;
 
     if (to_fill > 0) {
         extra_storage.resize(start_fill + to_fill);
