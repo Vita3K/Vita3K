@@ -601,15 +601,23 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
         buffer_size = storage_v.size();
     }
 
+    const SceGxmColorBaseFormat base_format = gxm::get_base_format(format);
+
+    GLenum gl_format = format_gl->second.first;
+    GLenum gl_type = format_gl->second.second;
+    if (color::is_write_surface_stored_rawly(base_format)) {
+        gl_format = color::get_raw_store_upload_format_type(base_format);
+        gl_type = color::get_raw_store_upload_data_type(base_format);
+    }
+
     if (renderer.features.support_get_texture_sub_image) {
-        glGetTextureSubImage(tex_handle, 0, 0, 0, 0, width, height, 1, format_gl->second.first, format_gl->second.second,
-            buffer_size, temp_store);
+        glGetTextureSubImage(tex_handle, 0, 0, 0, 0, width, height, 1, gl_format, gl_type, buffer_size, temp_store);
     } else {
         GLint last_texture = 0;
 
         glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
         glBindTexture(GL_TEXTURE_2D, tex_handle);
-        glGetTexImage(GL_TEXTURE_2D, 0, format_gl->second.first, format_gl->second.second, temp_store);
+        glGetTexImage(GL_TEXTURE_2D, 0, gl_format, gl_type, temp_store);
         glBindTexture(GL_TEXTURE_2D, last_texture);
     }
 
@@ -639,7 +647,18 @@ void get_surface_data(GLState &renderer, GLContext &context, size_t width, size_
         temp_store = storage_v.data();
     }
 
-    glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), format_gl->second.first, format_gl->second.second, temp_store);
+    const SceGxmColorBaseFormat base_format = gxm::get_base_format(format);
+    if (color::is_write_surface_stored_rawly(base_format)) {
+        // we can't get the content of raw textures with glReadPixels
+        GLint last_texture = 0;
+
+        glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+        glBindTexture(GL_TEXTURE_2D, context.current_color_attachment);
+        glGetTexImage(GL_TEXTURE_2D, 0, color::get_raw_store_upload_format_type(base_format), color::get_raw_store_upload_data_type(base_format), temp_store);
+        glBindTexture(GL_TEXTURE_2D, last_texture);
+    } else {
+        glReadPixels(0, 0, static_cast<GLsizei>(width), static_cast<GLsizei>(height), format_gl->second.first, format_gl->second.second, temp_store);
+    }
     post_process_pixels_data(pixels, temp_store, width, height, stride_in_pixels, format, surface_type);
 
     glPixelStorei(GL_PACK_ROW_LENGTH, 0);
