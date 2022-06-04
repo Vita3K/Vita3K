@@ -49,6 +49,17 @@ void Module::on_state_change(ModuleData &data, const VoiceState previous) {
     }
 }
 
+void Module::on_param_change(const MemState &mem, ModuleData &data) {
+    State *state = data.get_state<State>();
+    const Parameters *old_params = reinterpret_cast<Parameters *>(data.last_info.data());
+    const Parameters *new_params = reinterpret_cast<Parameters *>(data.info.data.get(mem));
+
+    // if playback scaling changed, reset the resampler
+    if (state->swr && (old_params->playback_frequency != new_params->playback_frequency || old_params->playback_scalar != new_params->playback_scalar)) {
+        swr_free(&state->swr);
+    }
+}
+
 bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     Parameters *params = data.get_parameters<Parameters>(mem);
     State *state = data.get_state<State>();

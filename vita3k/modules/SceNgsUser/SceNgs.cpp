@@ -952,7 +952,7 @@ EXPORT(SceInt32, sceNgsVoiceUnlockParams, SceNgsVoiceHandle handle, const SceUIn
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    if (!data->unlock_params()) {
+    if (!data->unlock_params(host.mem)) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
 

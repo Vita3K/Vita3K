@@ -20,6 +20,8 @@
 #include <codec/state.h>
 #include <ngs/system.h>
 
+struct SwrContext;
+
 namespace ngs::atrac9 {
 enum {
     SCE_NGS_AT9_END_OF_DATA = 0,
@@ -74,12 +76,17 @@ struct State {
     std::int8_t current_loop_count = 0;
     std::uint32_t decoded_samples_pending = 0;
     std::uint32_t decoded_passed = 0;
+    // used if the input must be resampled
+    SwrContext *swr = nullptr;
+    // set to true if all the input has been read but not all data has been processed
+    bool is_finished = false;
 };
 
 struct Module : public ngs::Module {
 private:
     std::unique_ptr<Atrac9DecoderState> decoder;
     std::uint32_t last_config;
+    std::vector<uint8_t> temp_buffer;
 
     static SwrContext *swr_mono_to_stereo;
     static SwrContext *swr_stereo;
@@ -94,6 +101,7 @@ public:
     std::uint32_t module_id() const override { return 0x5CAA; }
     std::size_t get_buffer_parameter_size() const override;
     void on_state_change(ModuleData &v, const VoiceState previous) override;
+    void on_param_change(const MemState &mem, ModuleData &data) override;
 };
 
 void get_buffer_parameter(std::uint32_t start_sample, std::uint32_t num_samples, std::uint32_t info, SkipBufferInfo &parameter);

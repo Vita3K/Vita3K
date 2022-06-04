@@ -102,5 +102,6 @@ public:
     std::uint32_t module_id() const override { return 0x5CE6; }
     std::size_t get_buffer_parameter_size() const override;
     void on_state_change(ModuleData &v, const VoiceState previous) override;
+    void on_param_change(const MemState &mem, ModuleData &data) override;
 };
 } // namespace ngs::player

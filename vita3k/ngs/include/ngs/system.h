@@ -130,7 +130,7 @@ struct ModuleData {
         const std::uint32_t reason2, Address reason_ptr);
 
     BufferParamsInfo *lock_params(const MemState &mem);
-    bool unlock_params();
+    bool unlock_params(const MemState &mem);
 };
 
 struct Module {
@@ -144,6 +144,7 @@ struct Module {
     virtual std::uint32_t module_id() const { return 0; }
     virtual std::size_t get_buffer_parameter_size() const = 0;
     virtual void on_state_change(ModuleData &v, const VoiceState previous) {}
+    virtual void on_param_change(const MemState &mem, ModuleData &data) {}
 };
 
 static constexpr std::uint32_t MAX_VOICE_OUTPUT = 8;
