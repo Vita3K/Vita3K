@@ -142,6 +142,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
                 } else {
+                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
                 }
             };
@@ -179,7 +180,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
             if (purpose == SurfaceTextureRetrievePurpose::WRITING) {
                 invalidated = true;
             }
-        } else if ((purpose == SurfaceTextureRetrievePurpose::READING) && addr_in_range_of_cache) {
+        } else if (purpose == SurfaceTextureRetrievePurpose::READING) {
             // If we read and it's still in range
             if (used_iterator != last_use_color_surface_index.end()) {
                 last_use_color_surface_index.erase(used_iterator);
@@ -354,10 +355,8 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
             } else {
                 return 0;
             }
-        } else if (invalidated) {
-            if (used_iterator != last_use_color_surface_index.end()) {
-                last_use_color_surface_index.erase(used_iterator);
-            }
+        } else if (used_iterator != last_use_color_surface_index.end()) {
+            last_use_color_surface_index.erase(used_iterator);
         }
     }
 
@@ -406,7 +405,12 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     }
 
-    color_surface_textures.emplace(address.address(), std::move(info_added));
+    if (color_surface_textures.count(key) > 0) {
+        static bool has_happened = false;
+        LOG_WARN_IF(!has_happened, "Two different surfaces have the same base adress, this is not handled, an openGL error will happen.");
+        has_happened = true;
+    }
+    color_surface_textures.emplace(key, std::move(info_added));
 
     // Now that everything goes well, we can start rearranging
     if (last_use_color_surface_index.size() >= MAX_CACHE_SIZE_PER_CONTAINER) {
