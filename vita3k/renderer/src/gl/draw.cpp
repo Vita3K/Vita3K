@@ -151,6 +151,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
     frag_ublock.writing_mask = context.record.writing_mask;
     frag_ublock.use_raw_image = static_cast<float>(use_raw_image);
+    frag_ublock.res_multiplier = renderer.res_multiplier;
 
     if (memcmp(&context.previous_frag_info, &frag_ublock, sizeof(GXMRenderFragUniformBlock)) != 0) {
         std::pair<std::uint8_t *, std::size_t> allocated_buffer = context.fragment_info_uniform_buffer.allocate(sizeof(GXMRenderFragUniformBlock));

@@ -499,6 +499,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
     LOG_INFO("{}: {}", host.cfg[e_cpu_backend], host.cfg.current_config.cpu_backend);
     LOG_INFO_IF(host.kernel.cpu_backend == CPUBackend::Dynarmic, "CPU Optimisation state: {}", host.cfg.current_config.cpu_opt);
     LOG_INFO("ngs state: {}", !host.cfg.current_config.disable_ngs);
+    LOG_INFO("Resolution multiplier: {}", host.cfg.resolution_multiplier);
     refresh_controllers(host.ctrl);
     if (host.ctrl.controllers_num) {
         LOG_INFO("{} Controllers Connected", host.ctrl.controllers_num);

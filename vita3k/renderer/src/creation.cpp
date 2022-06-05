@@ -69,7 +69,7 @@ COMMAND(handle_create_render_target) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        result = gl::create(*render_target, *params, features);
+        result = gl::create(static_cast<gl::GLState &>(renderer), *render_target, *params, features);
         break;
     }
 

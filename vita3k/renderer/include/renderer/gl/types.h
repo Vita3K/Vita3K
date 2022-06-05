@@ -80,6 +80,7 @@ struct GXMRenderFragUniformBlock {
     float writing_mask = 0;
     float use_raw_image = 0;
     float integral_texture_query_format[SCE_GXM_MAX_TEXTURE_UNITS];
+    int32_t res_multiplier = 0;
 };
 
 struct GLContext : public renderer::Context {

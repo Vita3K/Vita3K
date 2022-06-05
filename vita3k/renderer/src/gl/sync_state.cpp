@@ -108,10 +108,11 @@ static GLenum translate_stencil_func(SceGxmStencilFunc stencil_func) {
     return GL_ALWAYS;
 }
 
-void sync_mask(GLContext &context, const MemState &mem) {
+void sync_mask(const GLState &state, GLContext &context, const MemState &mem) {
     auto control = context.record.depth_stencil_surface.control.get(mem);
-    auto width = context.render_target->width;
-    auto height = context.render_target->height;
+    // mask is not upscaled
+    auto width = context.render_target->width / state.res_multiplier;
+    auto height = context.render_target->height / state.res_multiplier;
     GLubyte initial_byte;
     if (control) {
         initial_byte = control->backgroundMask ? 0xFF : 0;
@@ -127,7 +128,7 @@ void sync_mask(GLContext &context, const MemState &mem) {
     glBindTexture(GL_TEXTURE_2D, texId);
 }
 
-void sync_viewport_flat(GLContext &context) {
+void sync_viewport_flat(const GLState &state, GLContext &context) {
     const GLsizei display_w = context.record.color_surface.width;
     const GLsizei display_h = context.record.color_surface.height;
     const float previous_flip_y = context.viewport_flip[1];
@@ -139,17 +140,17 @@ void sync_viewport_flat(GLContext &context) {
 
     context.record.viewport_flat = true;
 
-    glViewport(0, context.current_framebuffer_height - display_h, display_w, display_h);
+    glViewport(0, (context.current_framebuffer_height - display_h) * state.res_multiplier, display_w * state.res_multiplier, display_h * state.res_multiplier);
     glDepthRange(0, 1);
 
     if (previous_flip_y != context.viewport_flip[1]) {
         // We need to sync again state that uses the flip
         sync_cull(context.record);
-        sync_clipping(context);
+        sync_clipping(state, context);
     }
 }
 
-void sync_viewport_real(GLContext &context, const float xOffset, const float yOffset, const float zOffset,
+void sync_viewport_real(const GLState &state, GLContext &context, const float xOffset, const float yOffset, const float zOffset,
     const float xScale, const float yScale, const float zScale) {
     const GLfloat ymin = yOffset + yScale;
     const GLfloat ymax = yOffset - yScale - 1;
@@ -168,17 +169,17 @@ void sync_viewport_real(GLContext &context, const float xOffset, const float yOf
 
     context.record.viewport_flat = false;
 
-    glViewportIndexedf(0, x, y, w, h);
+    glViewportIndexedf(0, x * state.res_multiplier, y * state.res_multiplier, w * state.res_multiplier, h * state.res_multiplier);
     glDepthRange(zOffset - zScale, zOffset + zScale);
 
     if (previous_flip_y != context.viewport_flip[1]) {
         // We need to sync again state that uses the flip
         sync_cull(context.record);
-        sync_clipping(context);
+        sync_clipping(state, context);
     }
 }
 
-void sync_clipping(GLContext &context) {
+void sync_clipping(const GLState &state, GLContext &context) {
     const GLsizei display_h = context.current_framebuffer_height;
     const GLsizei scissor_x = context.record.region_clip_min.x;
     GLsizei scissor_y = 0;
@@ -201,7 +202,7 @@ void sync_clipping(GLContext &context) {
         break;
     case SCE_GXM_REGION_CLIP_OUTSIDE:
         glEnable(GL_SCISSOR_TEST);
-        glScissor(scissor_x, scissor_y, scissor_w, scissor_h);
+        glScissor(scissor_x * state.res_multiplier, scissor_y * state.res_multiplier, scissor_w * state.res_multiplier, scissor_h * state.res_multiplier);
         break;
     case SCE_GXM_REGION_CLIP_INSIDE:
         // TODO: Implement SCE_GXM_REGION_CLIP_INSIDE
@@ -385,7 +386,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
             std::uint32_t swizz_raw = 0;
 
             texture_as_surface = state.surface_cache.retrieve_color_surface_texture_handle(
-                width, height, stride_in_pixels, format_target_of_texture, Ptr<void>(data_addr),
+                state, width, height, stride_in_pixels, format_target_of_texture, Ptr<void>(data_addr),
                 renderer::SurfaceTextureRetrievePurpose::READING, swizz_raw);
 
             swizzle_surface = color::translate_swizzle(static_cast<SceGxmColorFormat>(format_target_of_texture | swizz_raw));
@@ -398,7 +399,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
             lookup_temp.depthData = data_addr;
             lookup_temp.stencilData.reset();
 
-            texture_as_surface = state.surface_cache.retrieve_depth_stencil_texture_handle(mem, lookup_temp, width, height, true);
+            texture_as_surface = state.surface_cache.retrieve_depth_stencil_texture_handle(state, mem, lookup_temp, width, height, true);
             if (texture_as_surface) {
                 only_nearest = true;
             }

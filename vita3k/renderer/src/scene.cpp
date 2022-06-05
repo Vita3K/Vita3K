@@ -85,6 +85,13 @@ COMMAND(handle_sync_surface_data) {
             return;
         }
     }
+
+    if (renderer.disable_surface_sync) {
+        if (helper.cmd->status)
+            complete_command(renderer, helper, 0);
+        return;
+    }
+
     const size_t width = surface->width;
     const size_t height = surface->height;
     const size_t stride_in_pixels = surface->strideInPixels;
@@ -103,8 +110,7 @@ COMMAND(handle_sync_surface_data) {
         if (helper.cmd->status) {
             gl::lookup_and_get_surface_data(static_cast<gl::GLState &>(renderer), mem, *surface);
         } else {
-            gl::get_surface_data(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), width, height,
-                stride_in_pixels, pixels, surface->colorFormat, surface->surfaceType);
+            gl::get_surface_data(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), pixels, *surface);
         }
 
         break;

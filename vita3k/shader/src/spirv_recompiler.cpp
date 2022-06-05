@@ -428,6 +428,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             // TODO how about centroid?
             if (input_id == 0xD000) {
+                // do we need to divide the frag_coord_id by the resolution multiplier?
                 pa_iter_var = translation_state.frag_coord_id;
             } else {
                 pa_iter_var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, pa_iter_type, pa_name.c_str());
@@ -1038,6 +1039,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     spv::Id f32 = b.makeFloatType(32);
+    spv::Id i32 = b.makeIntType(32);
     spv::Id v4 = b.makeVectorType(f32, 4);
     spv::Id texture_format_arr = b.makeArrayType(v4, b.makeIntConstant(4), 16);
     b.addDecoration(texture_format_arr, spv::DecorationArrayStride, 16);
@@ -1066,7 +1068,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
-        spv::Id render_buf_type = b.makeStructType({ f32, f32, f32, f32, texture_format_arr }, "GxmRenderFragBufferBlock");
+        spv::Id render_buf_type = b.makeStructType({ f32, f32, f32, f32, texture_format_arr, i32 }, "GxmRenderFragBufferBlock");
 
         b.addDecoration(render_buf_type, spv::DecorationBlock);
         b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
@@ -1076,12 +1078,15 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         b.addMemberDecoration(render_buf_type, 2, spv::DecorationOffset, 8);
         b.addMemberDecoration(render_buf_type, 3, spv::DecorationOffset, 12);
         b.addMemberDecoration(render_buf_type, 4, spv::DecorationOffset, 16);
+        b.addMemberDecoration(render_buf_type, 5, spv::DecorationOffset, 80);
 
+        // TODO: create enum to refer to these fields
         b.addMemberName(render_buf_type, 0, "back_disabled");
         b.addMemberName(render_buf_type, 1, "front_disabled");
         b.addMemberName(render_buf_type, 2, "writing_mask");
         b.addMemberName(render_buf_type, 3, "use_raw_image");
         b.addMemberName(render_buf_type, 4, "integral_query_formats");
+        b.addMemberName(render_buf_type, 5, "res_multiplier");
 
         translation_state.render_info_id = b.createVariable(spv::NoPrecision, spv::StorageClassUniform, render_buf_type, "renderFragInfo");
 
@@ -1137,7 +1142,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         color = utils::convert_to_float(b, color, color_val_operand.type, true);
 
     if (program.is_frag_color_used() && features.should_use_shader_interlock() && !translate_state.should_gl_spirv_compatible) {
-        spv::Id signed_i32 = b.makeIntegerType(32, true);
+        spv::Id signed_i32 = b.makeIntType(32);
         spv::Id coord_id = b.createLoad(translate_state.frag_coord_id, spv::NoPrecision);
         spv::Id depth = b.createOp(spv::OpAccessChain, b.makeFloatType(32), { coord_id, b.makeIntConstant(2) });
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), coord_id);
@@ -1172,8 +1177,15 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     // Discard masked fragments
     spv::Id current_coord = translate_state.frag_coord_id;
     spv::Id i32 = b.makeIntegerType(32, true);
+    spv::Id v2i32 = b.makeVectorType(i32, 2);
     current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord, spv::NoPrecision));
-    current_coord = b.createOp(spv::OpVectorShuffle, b.makeVectorType(i32, 2), { current_coord, current_coord, 0, 1 });
+    current_coord = b.createOp(spv::OpVectorShuffle, v2i32, { current_coord, current_coord, 0, 1 });
+
+    // the mask is not upscaled
+    spv::Id res_multiplier = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(5) });
+    res_multiplier = b.createCompositeConstruct(v2i32, { res_multiplier, res_multiplier });
+    current_coord = b.createBinOp(spv::OpSDiv, v2i32, current_coord, res_multiplier);
+
     spv::Id sampled_type = b.makeFloatType(32);
     spv::Id v4 = b.makeVectorType(sampled_type, 4);
     spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id, spv::NoPrecision), current_coord });

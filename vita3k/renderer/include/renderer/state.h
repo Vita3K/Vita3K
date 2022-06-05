@@ -33,6 +33,8 @@ namespace renderer {
 struct State {
     Backend current_backend;
     FeatureState features;
+    int res_multiplier;
+    bool disable_surface_sync;
 
     GXPPtrMap gxp_ptr_map;
     Queue<CommandList> command_buffer_queue;
