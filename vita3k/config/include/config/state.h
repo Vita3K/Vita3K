@@ -122,6 +122,8 @@ public:
         std::vector<std::string> lle_modules = {};
         bool pstv_mode = false;
         bool disable_ngs = false;
+        int resolution_multiplier = 1;
+        bool disable_surface_sync = false;
     };
 
     /**

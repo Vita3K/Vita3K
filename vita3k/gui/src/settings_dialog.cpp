@@ -154,6 +154,13 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
                 config.cpu_opt = cpu_child.attribute("cpu-opt").as_bool();
             }
 
+            // Load GPU Config
+            if (!config_child.child("gpu").empty()) {
+                const auto gpu_child = config_child.child("gpu");
+                config.resolution_multiplier = gpu_child.attribute("resolution-multiplier").as_int();
+                config.disable_surface_sync = gpu_child.attribute("disable-surface-sync").as_bool();
+            }
+
             // Load System Config
             const auto system_child = config_child.child("system");
             if (!system_child.empty())
@@ -196,6 +203,8 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
         config.lle_driver_user = host.cfg.lle_driver_user;
         config.modules_mode = host.cfg.modules_mode;
         config.lle_modules = host.cfg.lle_modules;
+        config.resolution_multiplier = host.cfg.resolution_multiplier;
+        config.disable_surface_sync = host.cfg.disable_surface_sync;
         config.pstv_mode = host.cfg.pstv_mode;
         config.disable_ngs = host.cfg.disable_ngs;
     }
@@ -203,6 +212,8 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
     host.app_path = app_path;
     get_modules_list(gui, host);
     host.display.imgui_render = true;
+    host.renderer->res_multiplier = config.resolution_multiplier;
+    host.renderer->disable_surface_sync = config.disable_surface_sync;
 }
 
 /**
@@ -244,6 +255,11 @@ static void save_config(GuiState &gui, HostState &host) {
         cpu_child.append_attribute("cpu-backend") = config.cpu_backend.c_str();
         cpu_child.append_attribute("cpu-opt") = config.cpu_opt;
 
+        // GPU
+        auto gpu_child = config_child.append_child("gpu");
+        gpu_child.append_attribute("resolution-multiplier") = config.resolution_multiplier;
+        gpu_child.append_attribute("disable-surface-sync") = config.disable_surface_sync;
+
         // System
         auto system_child = config_child.append_child("system");
         system_child.append_attribute("pstv-mode") = config.pstv_mode;
@@ -262,6 +278,8 @@ static void save_config(GuiState &gui, HostState &host) {
         host.cfg.modules_mode = config.modules_mode;
         host.cfg.lle_modules = config.lle_modules;
         host.cfg.pstv_mode = config.pstv_mode;
+        host.cfg.resolution_multiplier = config.resolution_multiplier;
+        host.cfg.disable_surface_sync = config.disable_surface_sync;
         host.cfg.disable_ngs = config.disable_ngs;
     }
     config::serialize_config(host.cfg, host.cfg.config_path);
@@ -286,6 +304,8 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.modules_mode = config.modules_mode;
         host.cfg.current_config.lle_modules = config.lle_modules;
         host.cfg.current_config.pstv_mode = config.pstv_mode;
+        host.cfg.current_config.resolution_multiplier = config.resolution_multiplier;
+        host.cfg.current_config.disable_surface_sync = config.disable_surface_sync;
         host.cfg.current_config.disable_ngs = config.disable_ngs;
     } else {
         // Else inherit the values from the global emulator config
@@ -295,12 +315,17 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.modules_mode = host.cfg.modules_mode;
         host.cfg.current_config.lle_modules = host.cfg.lle_modules;
         host.cfg.current_config.pstv_mode = host.cfg.pstv_mode;
+        host.cfg.current_config.resolution_multiplier = host.cfg.resolution_multiplier;
+        host.cfg.current_config.disable_surface_sync = host.cfg.disable_surface_sync;
         host.cfg.current_config.disable_ngs = host.cfg.disable_ngs;
     }
+    // can be changed while ingame
+    host.renderer->disable_surface_sync = host.cfg.current_config.disable_surface_sync;
     // No change it if app already running
     if (host.io.title_id.empty()) {
         host.kernel.cpu_backend = set_cpu_backend(host.cfg.current_config.cpu_backend);
         host.kernel.cpu_opt = host.cfg.current_config.cpu_opt;
+        host.renderer->res_multiplier = host.cfg.current_config.resolution_multiplier;
     }
 }
 
@@ -412,7 +437,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
 #ifdef USE_VULKAN
         static const char *LIST_BACKEND_RENDERER[] = { "OpenGL", "Vulkan" };
-        if (ImGui::Combo("Backend Renderer (Reboot for apply)", reinterpret_cast<int *>(&host.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
+        if (ImGui::Combo("Backend Renderer (Reboot to apply)", reinterpret_cast<int *>(&host.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
             host.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(host.backend_renderer)];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred backend renderer.");
@@ -420,6 +445,36 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Separator();
         ImGui::Spacing();
 #endif
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Resolution Upscaling").x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Resolution Upscaling");
+        ImGui::Spacing();
+        if (!host.io.title_id.empty())
+            ImGui::BeginDisabled();
+        ImGui::PushItemWidth(-70.f * host.dpi_scale);
+        if (ImGui::SliderInt("##res_scal", &config.resolution_multiplier, 1, 8, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
+            if (config.resolution_multiplier > 1)
+                config.disable_surface_sync = true;
+        }
+        ImGui::PopItemWidth();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Enable upscaling for Vita3K.\nExperimental: games are not guaranteed to render properly at more than 1x");
+        ImGui::SameLine();
+        if (ImGui::Button("Reset", ImVec2(60.f * host.dpi_scale, 0))) {
+            config.resolution_multiplier = 1;
+            config.disable_surface_sync = false;
+        }
+        ImGui::Spacing();
+        const auto res_scal = fmt::format("{}x{}", 960 * config.resolution_multiplier, 544 * config.resolution_multiplier);
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * host.dpi_scale));
+        ImGui::Text("%s", res_scal.c_str());
+        if (!host.io.title_id.empty())
+            ImGui::EndDisabled();
+        ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Speed hack, disable surface syncing between cpu and gpu.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Shaders").x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Shaders");
         ImGui::Spacing();

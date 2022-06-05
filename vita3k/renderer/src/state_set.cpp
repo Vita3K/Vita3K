@@ -46,7 +46,7 @@ COMMAND_SET_STATE(region_clip) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL: {
-        gl::sync_clipping(*reinterpret_cast<gl::GLContext *>(render_context));
+        gl::sync_clipping(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context));
         break;
     }
 
@@ -138,7 +138,7 @@ COMMAND_SET_STATE(viewport) {
 
         switch (renderer.current_backend) {
         case Backend::OpenGL:
-            gl::sync_viewport_real(*reinterpret_cast<gl::GLContext *>(render_context), xOffset, yOffset, zOffset, xScale, yScale, zScale);
+            gl::sync_viewport_real(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), xOffset, yOffset, zOffset, xScale, yScale, zScale);
             break;
 
         default:
@@ -148,7 +148,7 @@ COMMAND_SET_STATE(viewport) {
     } else {
         switch (renderer.current_backend) {
         case Backend::OpenGL:
-            gl::sync_viewport_flat(*reinterpret_cast<gl::GLContext *>(render_context));
+            gl::sync_viewport_flat(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context));
             break;
 
         default:

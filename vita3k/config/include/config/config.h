@@ -58,6 +58,8 @@ enum PerfomanceOverleyPosition {
     code(bool, "show-live-area-screen", true, show_live_area_screen)                                    \
     code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \
+    code(int, "resolution-multiplier", 1, resolution_multiplier)                                        \
+    code(bool, "disable-surface-sync", false, disable_surface_sync)                                     \
     code(bool, "texture-cache", true, texture_cache)                                                    \
     code(bool, "hashless-texture-cache", false, hashless_texture_cache)                                 \
     code(bool, "disable-ngs", false, disable_ngs)                                                       \

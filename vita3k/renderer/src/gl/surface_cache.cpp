@@ -58,18 +58,24 @@ void GLSurfaceCache::do_typeless_copy(const GLint dest_texture, const GLint sour
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GL_NONE);
 }
 
-std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::uint16_t width, const std::uint16_t height, const std::uint16_t pixel_stride,
+std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint16_t pixel_stride,
     const SceGxmColorBaseFormat base_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
     std::uint16_t *stored_height, std::uint16_t *stored_width) {
     // Create the key to access the cache struct
     const std::uint64_t key = address.address();
+
+    const uint32_t original_width = width;
+    const uint32_t original_height = height;
+
+    width *= state.res_multiplier;
+    height *= state.res_multiplier;
 
     GLenum surface_internal_format = color::translate_internal_format(base_format);
     GLenum surface_upload_format = color::translate_format(base_format);
     GLenum surface_data_type = color::translate_type(base_format);
 
     std::size_t bytes_per_stride = pixel_stride * color::bytes_per_pixel(base_format);
-    std::size_t total_surface_size = bytes_per_stride * height;
+    std::size_t total_surface_size = bytes_per_stride * original_height;
 
     // Of course, this works under the assumption that range must be unique :D
     auto ite = color_surface_textures.lower_bound(key);
@@ -86,11 +92,11 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
         auto used_iterator = std::find(last_use_color_surface_index.begin(), last_use_color_surface_index.end(), ite->first);
 
         if (stored_height) {
-            *stored_height = info.height;
+            *stored_height = info.original_height;
         }
 
         if (stored_width) {
-            *stored_width = info.width;
+            *stored_width = info.original_width;
         }
 
         // There are four situations I think of:
@@ -128,6 +134,8 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
             // Remake locally to avoid making changes to framebuffer array
             info.width = width;
             info.height = height;
+            info.original_width = original_width;
+            info.original_height = original_height;
             info.pixel_stride = pixel_stride;
             info.format = base_format;
             info.total_bytes = total_surface_size;
@@ -225,8 +233,8 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
 
             if (castable) {
                 const std::size_t data_delta = address.address() - ite->first;
-                std::size_t start_sourced_line = data_delta / bytes_per_stride;
-                std::size_t start_x = (data_delta % bytes_per_stride) / color::bytes_per_pixel(base_format);
+                std::size_t start_sourced_line = (data_delta / bytes_per_stride) * state.res_multiplier;
+                std::size_t start_x = (data_delta % bytes_per_stride) / color::bytes_per_pixel(base_format) * state.res_multiplier;
 
                 if (static_cast<std::uint16_t>(start_sourced_line + height) > info.height) {
                     LOG_ERROR("Trying to present non-existen segment in cached color surface!");
@@ -257,11 +265,11 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
                                 glBindTexture(GL_TEXTURE_2D, casted_vec[i]->texture[0]);
 
                                 if (color::bytes_per_pixel_in_gl_storage(base_format) == color::bytes_per_pixel_in_gl_storage(info.format)) {
-                                    glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, static_cast<int>(start_x), static_cast<int>(start_sourced_line), 0, casted_vec[i]->texture[0], GL_TEXTURE_2D,
+                                    glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), 0, casted_vec[i]->texture[0], GL_TEXTURE_2D,
                                         0, 0, 0, 0, width, height, 1);
                                 } else {
                                     do_typeless_copy(casted_vec[i]->texture[0], info.gl_texture[0], surface_internal_format, surface_upload_format,
-                                        surface_data_type, source_format, source_data_type, static_cast<int>(start_x), static_cast<int>(start_sourced_line), info.width,
+                                        surface_data_type, source_format, source_data_type, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), info.width,
                                         height, width, height, info.total_bytes);
                                 }
 
@@ -296,13 +304,13 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-                        glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, start_sourced_line, 0, casted_info.texture[0], GL_TEXTURE_2D,
+                        glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), 0, casted_info.texture[0], GL_TEXTURE_2D,
                             0, 0, 0, 0, width, height, 1);
                     } else {
                         // TODO: Copy sub region of typeless copy is still not handled ((
                         // We must do a typeless copy (RPCS3)
                         do_typeless_copy(casted_info.texture[0], info.gl_texture[0], surface_internal_format, surface_upload_format,
-                            surface_data_type, source_format, source_data_type, static_cast<int>(start_x), static_cast<int>(start_sourced_line), info.width,
+                            surface_data_type, source_format, source_data_type, static_cast<GLint>(start_x), static_cast<GLint>(start_sourced_line), info.width,
                             height, width, height, info.total_bytes);
 
                         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -369,9 +377,11 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const std::u
 
     info_added->width = width;
     info_added->height = height;
+    info_added->original_width = original_width;
+    info_added->original_height = original_height;
     info_added->pixel_stride = pixel_stride;
     info_added->data = address;
-    info_added->total_bytes = bytes_per_stride * height;
+    info_added->total_bytes = bytes_per_stride * original_height;
     info_added->format = base_format;
     info_added->swizzle = swizzle;
     info_added->flags = 0;
@@ -474,11 +484,14 @@ std::uint64_t GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Pt
     return info.gl_ping_pong_texture[0];
 }
 
-std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, std::int32_t force_width, std::int32_t force_height, const bool is_reading) {
+std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state, const MemState &mem, const SceGxmDepthStencilSurface &surface, std::int32_t force_width, std::int32_t force_height, const bool is_reading) {
     if (!target) {
         LOG_ERROR("Unable to retrieve Depth Stencil texture with no active render target!");
         return 0;
     }
+
+    force_width *= state.res_multiplier;
+    force_height *= state.res_multiplier;
 
     bool packed_ds = false;
     if (surface.control) {
@@ -592,7 +605,7 @@ std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSta
     return depth_stencil_textures[found_index].gl_texture[0];
 }
 
-std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
+std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
     std::uint64_t *color_texture_handle, std::uint64_t *ds_texture_handle, std::uint16_t *stored_height) {
     if (!target) {
         LOG_ERROR("Unable to retrieve framebuffer with no active render target!");
@@ -609,7 +622,7 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const MemState &mem, S
 
     if (color) {
         std::uint32_t swizzle_set = color->colorFormat & SCE_GXM_COLOR_SWIZZLE_MASK;
-        color_handle = static_cast<GLuint>(retrieve_color_surface_texture_handle(color->width,
+        color_handle = static_cast<GLuint>(retrieve_color_surface_texture_handle(state, color->width,
             color->height, color->strideInPixels, gxm::get_base_format(color->colorFormat), color->data,
             renderer::SurfaceTextureRetrievePurpose::WRITING, swizzle_set, stored_height));
     } else {
@@ -618,7 +631,7 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const MemState &mem, S
 
     if (depth_stencil) {
         SceGxmDepthStencilSurface surface_copy = *depth_stencil;
-        ds_handle = static_cast<GLuint>(retrieve_depth_stencil_texture_handle(mem, *depth_stencil));
+        ds_handle = static_cast<GLuint>(retrieve_depth_stencil_texture_handle(state, mem, *depth_stencil));
     } else {
         ds_handle = target->attachments[1];
     }
@@ -676,11 +689,14 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const MemState &mem, S
     return fb[0];
 }
 
-std::uint64_t GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, const std::uint32_t width, const std::uint32_t height, const std::uint32_t pitch, float *uvs) {
+std::uint64_t GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier) {
     auto ite = color_surface_textures.lower_bound(address.address());
     if (ite == color_surface_textures.end()) {
         return 0;
     }
+
+    width *= res_multiplier;
+    height *= res_multiplier;
 
     const GLColorSurfaceCacheInfo &info = *ite->second;
 
@@ -689,7 +705,7 @@ std::uint64_t GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
         const std::size_t data_delta = address.address() - ite->first;
         std::uint32_t limited_height = height;
         if ((data_delta % (pitch * 4)) == 0) {
-            std::uint32_t start_sourced_line = (data_delta / (pitch * 4));
+            std::uint32_t start_sourced_line = (data_delta / (pitch * 4)) * res_multiplier;
             if ((start_sourced_line + height) > info.height) {
                 // Sometimes the surface is just missing a little bit of lines
                 if (start_sourced_line < info.height) {
