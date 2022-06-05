@@ -66,45 +66,6 @@ static SharedGLObject compile_glsl(GLenum type, const std::string &source) {
     return shader;
 }
 
-static SharedGLObject compile_spirv(GLenum type, const std::vector<std::uint32_t> &source) {
-    R_PROFILE(__func__);
-
-    const SharedGLObject shader = std::make_shared<GLObject>();
-    if (!shader->init(glCreateShader(type), glDeleteShader)) {
-        return SharedGLObject();
-    }
-
-    const GLchar *source_glchar = reinterpret_cast<const GLchar *>(source.data());
-    const GLint length = static_cast<GLint>(source.size() * sizeof(std::uint32_t));
-
-    GLuint need_compile[1] = { shader->get() };
-    const char *shader_entry = (type == GL_VERTEX_SHADER) ? "main_vs" : "main_fs";
-
-    glShaderBinary(1, need_compile, GL_SHADER_BINARY_FORMAT_SPIR_V_ARB, source_glchar, length);
-    glSpecializeShaderARB(need_compile[0], shader_entry, 0, nullptr, nullptr);
-
-    GLint log_length = 0;
-    glGetShaderiv(shader->get(), GL_INFO_LOG_LENGTH, &log_length);
-
-    // Intel driver returns an info log length of at least 1 even if it is empty.
-    if (log_length > 1) {
-        std::vector<GLchar> log;
-        log.resize(log_length);
-        glGetShaderInfoLog(shader->get(), log_length, nullptr, log.data());
-
-        LOG_ERROR("{}", log.data());
-    }
-
-    GLint is_compiled = GL_FALSE;
-    glGetShaderiv(shader->get(), GL_COMPILE_STATUS, &is_compiled);
-    assert(is_compiled != GL_FALSE);
-    if (!is_compiled) {
-        return SharedGLObject();
-    }
-
-    return shader;
-}
-
 static void save_shaders_cache_hashs(std::vector<ShadersHash> &shaders_cache_hashs, const char *base_path, const char *title_id, const char *self_name) {
     const auto shaders_path{ fs::path(base_path) / "cache/shaders" / title_id / self_name };
     if (!fs::exists(shaders_path))
@@ -245,17 +206,11 @@ void pre_compile_program(GLState &renderer, const char *base_path, const char *t
 }
 
 static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const FeatureState &features, const std::string &hash,
-    ShaderCache &cache, const GLenum type, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool shader_cache, bool spirv, bool maskupdate, const char *base_path, const char *title_id, const char *self_name, const std::string &shader_version, uint32_t &shaders_count_compiled) {
+    ShaderCache &cache, const GLenum type, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool shader_cache, bool maskupdate, const char *base_path, const char *title_id, const char *self_name, const std::string &shader_version, uint32_t &shaders_count_compiled) {
     const auto cached = cache.find(hash);
     if (cached == cache.end()) {
-        SharedGLObject obj = nullptr;
-
         // Need to compile new one and add it to cache
-        if (features.spirv_shader && spirv) {
-            obj = compile_spirv(type, load_spirv_shader(*program, features, hint_attributes, maskupdate, base_path, title_id, self_name));
-        } else {
-            obj = compile_glsl(type, load_glsl_shader(*program, features, hint_attributes, maskupdate, base_path, title_id, self_name, shader_version, shader_cache));
-        }
+        const SharedGLObject obj = compile_glsl(type, load_glsl_shader(*program, features, hint_attributes, maskupdate, base_path, title_id, self_name, shader_version, shader_cache));
 
         cache.emplace(hash, obj);
 
@@ -268,7 +223,7 @@ static SharedGLObject get_or_compile_shader(const SceGxmProgram *program, const 
 }
 
 SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, const FeatureState &features, const MemState &mem,
-    bool shader_cache, bool spirv, bool maskupdate, const char *base_path, const char *title_id, const char *self_name) {
+    bool shader_cache, bool maskupdate, const char *base_path, const char *title_id, const char *self_name) {
     R_PROFILE(__func__);
 
     assert(state.fragment_program);
@@ -294,7 +249,7 @@ SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, c
     // No... It doesn't exist. Now we try to find each object. If it doesn't exist then we can kind
     // of compile it again.
     const SharedGLObject fragment_shader = get_or_compile_shader(fragment_program_gxm.program.get(mem), features, fragment_program.hash, renderer.fragment_shader_cache,
-        GL_FRAGMENT_SHADER, nullptr, shader_cache, spirv, maskupdate, base_path, title_id, self_name, renderer.shader_version, renderer.shaders_count_compiled);
+        GL_FRAGMENT_SHADER, nullptr, shader_cache, maskupdate, base_path, title_id, self_name, renderer.shader_version, renderer.shaders_count_compiled);
 
     if (!fragment_shader) {
         LOG_CRITICAL("Error in get/compile fragment vertex shader:\n{}", vertex_program.hash);
@@ -302,7 +257,7 @@ SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, c
     }
 
     const SharedGLObject vertex_shader = get_or_compile_shader(vertex_program_gxm.program.get(mem), features, vertex_program.hash, renderer.vertex_shader_cache,
-        GL_VERTEX_SHADER, &vertex_program_gxm.attributes, shader_cache, spirv, maskupdate, base_path, title_id, self_name, renderer.shader_version, renderer.shaders_count_compiled);
+        GL_VERTEX_SHADER, &vertex_program_gxm.attributes, shader_cache, maskupdate, base_path, title_id, self_name, renderer.shader_version, renderer.shaders_count_compiled);
 
     if (!vertex_shader) {
         LOG_CRITICAL("Error in get/compiled vertex shader:\n{}", vertex_program.hash);
@@ -312,12 +267,10 @@ SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, c
     const SharedGLObject program = compile_program(renderer.program_cache, fragment_shader, vertex_shader, hashes);
 
     // Save shader cache haches
-    if (!spirv) {
-        const auto shader_cache_hash_index = get_shaders_hash_index(renderer.shaders_cache_hashs, fragment_program.hash, vertex_program.hash);
-        if (shader_cache_hash_index == renderer.shaders_cache_hashs.end()) {
-            renderer.shaders_cache_hashs.push_back({ fragment_program.hash, vertex_program.hash });
-            save_shaders_cache_hashs(renderer.shaders_cache_hashs, base_path, title_id, self_name);
-        }
+    const auto shader_cache_hash_index = get_shaders_hash_index(renderer.shaders_cache_hashs, fragment_program.hash, vertex_program.hash);
+    if (shader_cache_hash_index == renderer.shaders_cache_hashs.end()) {
+        renderer.shaders_cache_hashs.push_back({ fragment_program.hash, vertex_program.hash });
+        save_shaders_cache_hashs(renderer.shaders_cache_hashs, base_path, title_id, self_name);
     }
 
     return program;

@@ -481,15 +481,6 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Use shader cache", &host.cfg.shader_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Enable shader cache to pre-compile it at boot up\nUncheck the box to disable this feature.");
-        ImGui::SameLine();
-        if (host.renderer->features.spirv_shader) {
-            ImGui::Checkbox("Use Spir-V shader", &host.cfg.spirv_shader);
-
-            if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, "
-                                  "and not all GPU are compatible with this.");
-            }
-        }
         const auto shaders_cache_path{ fs::path(host.base_path) / "cache/shaders" };
         if (fs::exists(shaders_cache_path) && !fs::is_empty(shaders_cache_path)) {
             ImGui::Spacing();

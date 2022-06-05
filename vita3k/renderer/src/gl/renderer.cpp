@@ -259,7 +259,6 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
         { "GL_ARB_fragment_shader_interlock", &gl_state.features.support_shader_interlock },
         { "GL_ARB_texture_barrier", &gl_state.features.support_texture_barrier },
         { "GL_EXT_shader_framebuffer_fetch", &gl_state.features.direct_fragcolor },
-        { "GL_ARB_gl_spirv", &gl_state.features.spirv_shader },
         { "GL_ARB_get_texture_sub_image", &gl_state.features.support_get_texture_sub_image }
     };
 

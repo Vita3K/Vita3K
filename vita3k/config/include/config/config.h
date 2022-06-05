@@ -115,7 +115,6 @@ enum PerfomanceOverleyPosition {
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "shader-cache", true, shader_cache)                                                      \
-    code(bool, "spirv-shader", false, spirv_shader)                                                     \
     code(uint64_t, "current-ime-lang", 4, current_ime_lang)                                             \
     code(bool, "tracy-primitive-impl", false, tracy_primitive_impl)
 

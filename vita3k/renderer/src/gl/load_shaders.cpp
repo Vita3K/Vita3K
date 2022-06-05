@@ -191,10 +191,6 @@ std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &f
     return load_shader_generic<std::string>(shader::convert_gxp_to_glsl, program, features, hint_attributes, maskupdate, base_path, title_id, self_name, shader_type_str, shader_version, shader_cache);
 }
 
-std::vector<std::uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const char *self_name) {
-    return load_shader_generic<std::vector<std::uint32_t>>(shader::convert_gxp_to_spirv, program, features, hint_attributes, maskupdate, base_path, title_id, self_name, "spv", "v0", false);
-}
-
 std::string pre_load_glsl_shader(const char *hash_text, const char *shader_type_str, const char *base_path, const char *title_id, const char *self_name) {
     return load_shader_generic<std::string>(hash_text, base_path, title_id, self_name, shader_type_str);
 }
