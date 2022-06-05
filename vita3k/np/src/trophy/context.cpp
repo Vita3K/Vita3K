@@ -404,7 +404,7 @@ np::trophy::ContextHandle create_trophy_context(NpState &np, IOState *io, const 
     }
 
     // Initialize the stream
-    const auto unique_trophy_folder = fmt::format("{}_{:0>2d}/", custom_comm->data, custom_comm->num);
+    const auto unique_trophy_folder = fmt::format("{}_{:0>2d}/", std::string(custom_comm->data, 9), custom_comm->num);
     const auto trophy_file_path = device::construct_normalized_path(VitaIoDevice::app0, "sce_sys/trophy/" + unique_trophy_folder + "TROPHY.TRP");
 
     // Try to open the file
