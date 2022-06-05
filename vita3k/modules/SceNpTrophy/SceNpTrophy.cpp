@@ -56,7 +56,7 @@ EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const 
     }
 
     np::trophy::Context *ctx_ptr = get_trophy_context(host.np.trophy_state, *context);
-    LOG_TRACE("Trophy context for {}_{:0>2d} create successfuly!", ctx_ptr->comm_id.data, ctx_ptr->comm_id.num);
+    LOG_TRACE("Trophy context for {}_{:0>2d} create successfuly!", std::string(ctx_ptr->comm_id.data, 9), ctx_ptr->comm_id.num);
 
     return 0;
 }
@@ -307,7 +307,7 @@ static int do_trophy_callback(HostState &host, np::trophy::Context *context, Sce
         return SCE_NP_TROPHY_ERROR_INVALID_TROPHY_ID;
     }
 
-    callback_data.np_com_id = fmt::format("{}_{:0>2d}", context->comm_id.data, context->comm_id.num);
+    callback_data.np_com_id = fmt::format("{}_{:0>2d}", std::string(context->comm_id.data, 9), context->comm_id.num);
     callback_data.trophy_id = fmt::format("{:0>3d}", trophy_id);
     callback_data.trophy_kind = context->trophy_kinds[trophy_id];
     if (!context->get_trophy_details(trophy_id, callback_data.trophy_name, callback_data.trophy_detail)) {
