@@ -91,12 +91,6 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
     int current_buffer = state->current_buffer;
     const BufferParameters &bufparam = params->buffer_params[current_buffer];
 
-    if (params->playback_frequency != 48000 || params->playback_scalar != 1.0) {
-        static bool has_happened = false;
-        LOG_WARN_IF(!has_happened, "Playback rate scaling not implemented for ngs atrac9 player");
-        has_happened = true;
-    }
-
     if (!data.extra_storage.empty()) {
         data.extra_storage.erase(data.extra_storage.begin(), data.extra_storage.begin() + state->decoded_passed * sizeof(float) * 2);
         state->decoded_passed = 0;
