@@ -85,20 +85,28 @@ struct SceGxmContext {
         last_precomputed = false;
     }
 
-    bool make_new_alloc_space(KernelState &kern, const MemState &mem, const SceUID thread_id) {
-        if (alloc_space && ((state.vdm_buffer_size != 0) || (state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE))) {
+    bool make_new_alloc_space(KernelState &kern, const MemState &mem, const SceUID thread_id, bool force = false) {
+        if (alloc_space && (state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE)) {
             return false;
+        }
+
+        if (!force && alloc_space && alloc_space < alloc_space_end) {
+            // we already have spare space
+            return true;
         }
 
         std::uint32_t actual_size = 0;
 
-        if (state.vdm_buffer) {
+        if (state.vdm_buffer && state.vdm_buffer_size > 0) {
             alloc_space = state.vdm_buffer.cast<std::uint8_t>().get(mem);
             actual_size = state.vdm_buffer_size;
 
             if (state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
                 command_allocator.reset();
                 command_allocator.set_maximum(state.vdm_buffer_size / sizeof(renderer::Command));
+            } else {
+                // setting the vdm buffer size to 0 means we are using it
+                state.vdm_buffer_size = 0;
             }
         } else {
             static constexpr std::uint32_t DEFAULT_SIZE = sizeof(renderer::Command) * 4096;
@@ -124,7 +132,7 @@ struct SceGxmContext {
         }
 
         if (alloc_space + size > alloc_space_end) {
-            if (!make_new_alloc_space(kern, mem, thread_id)) {
+            if (!make_new_alloc_space(kern, mem, thread_id, true)) {
                 return nullptr;
             }
         }
@@ -195,8 +203,8 @@ struct SceGxmContext {
         const std::lock_guard<std::mutex> guard(lock);
 
         SceGxmCommandDataCopyInfo *info = linearly_allocate<SceGxmCommandDataCopyInfo>(kern, mem, thread_id);
-        alloc_space += sizeof(SceGxmCommandDataCopyInfo);
 
+        alloc_space += sizeof(SceGxmCommandDataCopyInfo);
         info->next = nullptr;
         info->dest_pointer = nullptr;
         info->source_data = nullptr;
@@ -472,6 +480,30 @@ static void gxmContextStateRestore(renderer::State &state, MemState &mem, SceGxm
                 }
             }
         }
+    }
+}
+
+static void gxmContextDraw(SceUID thread_id, HostState &host, SceGxmContext *context, SceGxmPrimitiveType draw_type, SceGxmIndexFormat index_format, const void *index_data, uint32_t vertex_count, uint32_t instance_count) {
+    void *data_copy = nullptr;
+    uint32_t index_size = vertex_count * gxm::index_element_size(index_format);
+    if (context->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+        data_copy = new uint8_t[index_size];
+        memcpy(data_copy, index_data, vertex_count * gxm::index_element_size(index_format));
+    }
+
+    // Fragment texture is copied so no need to set it here.
+    // Add draw command
+    renderer::draw(*host.renderer, context->renderer.get(), draw_type, index_format, data_copy, vertex_count, instance_count);
+
+    if (context->state.type == SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+        SceGxmCommandDataCopyInfo *new_info = context->supply_new_info(host.kernel, host.mem, thread_id);
+
+        uint8_t **dest_copy = reinterpret_cast<uint8_t **>(context->renderer->command_list.last->data + sizeof(SceGxmPrimitiveType) + sizeof(SceGxmIndexFormat));
+        new_info->dest_pointer = dest_copy;
+        new_info->source_data = reinterpret_cast<const uint8_t *>(index_data);
+        new_info->source_data_size = vertex_count * gxm::index_element_size(index_format);
+
+        context->add_info(new_info);
     }
 }
 
@@ -846,6 +878,7 @@ EXPORT(int, sceGxmCreateDeferredContext, SceGxmDeferredContextParams *params, Pt
 
     // Create a generic context. This is only used for storing command list
     ctx->renderer = std::make_unique<renderer::Context>();
+
     return 0;
 }
 
@@ -1261,9 +1294,7 @@ static int gxmDrawElementGeneral(HostState &host, const char *export_name, const
         }
     }
 
-    // Fragment texture is copied so no need to set it here.
-    // Add draw command
-    renderer::draw(*host.renderer, context->renderer.get(), primType, indexType, indexData, indexCount, instanceCount);
+    gxmContextDraw(thread_id, host, context, primType, indexType, indexData, indexCount, instanceCount);
 
     return 0;
 }
@@ -1399,9 +1430,8 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         }
     }
 
-    // Fragment texture is copied so no need to set it here.
-    // Add draw command
-    renderer::draw(*host.renderer, context->renderer.get(), draw->type, draw->index_format, draw->index_data.get(host.mem), draw->vertex_count, draw->instance_count);
+    gxmContextDraw(thread_id, host, context, draw->type, draw->index_format, draw->index_data.get(host.mem), draw->vertex_count, draw->instance_count);
+
     context->last_precomputed = true;
     return 0;
 }
@@ -2550,6 +2580,9 @@ EXPORT(int, sceGxmSetDeferredContextVdmBuffer, SceGxmContext *deferredContext, P
     // Use the one specified
     deferredContext->state.vdm_buffer = mem;
     deferredContext->state.vdm_buffer_size = size;
+
+    // make sure the next call will use the new vdm buffer
+    deferredContext->alloc_space = deferredContext->alloc_space_end;
 
     return 0;
 }
