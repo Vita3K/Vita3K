@@ -184,7 +184,7 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
 }
 
 static CPUBackend set_cpu_backend(std::string &cpu_backend) {
-    return cpu_backend == "Unicorn" ? CPUBackend::Unicorn : CPUBackend::Dynarmic;
+    return cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
 }
 
 /**
@@ -414,9 +414,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("CPU")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        static const char *LIST_CPU_BACKEND[] = { "Unicorn", "Dynarmic" };
+        static const char *LIST_CPU_BACKEND[] = { "Dynarmic", "Unicorn" };
+        static const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic", "Unicorn (deprecated)" };
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Cpu Backend");
-        if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND, IM_ARRAYSIZE(LIST_CPU_BACKEND)))
+        if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND_DISPLAY, IM_ARRAYSIZE(LIST_CPU_BACKEND_DISPLAY)))
             config.cpu_backend = LIST_CPU_BACKEND[int(config_cpu_backend)];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred cpu backend.");
@@ -483,7 +484,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::SetTooltip("Enable shader cache to pre-compile it at boot up\nUncheck the box to disable this feature.");
         ImGui::SameLine();
         if (host.renderer->features.spirv_shader) {
-            ImGui::Checkbox("Use Spir-V shader", &host.cfg.spirv_shader);
+            ImGui::Checkbox("Use Spir-V shader (deprecated)", &host.cfg.spirv_shader);
 
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, "

@@ -107,8 +107,8 @@ struct CPUContext {
 };
 
 enum class CPUBackend {
+    Dynarmic,
     Unicorn,
-    Dynarmic
 };
 
 union DoubleReg {
