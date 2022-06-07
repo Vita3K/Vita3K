@@ -95,10 +95,7 @@ std::uint8_t **set_vertex_stream(State &state, Context *ctx, const std::size_t i
 }
 
 void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count, const std::uint32_t instance_count) {
-    std::uint8_t *a_copy = new std::uint8_t[index_count * gxm::index_element_size(index_type)];
-
-    std::memcpy(a_copy, index_data, index_count * gxm::index_element_size(index_type));
-    renderer::add_command(ctx, renderer::CommandOpcode::Draw, nullptr, prim_type, index_type, a_copy, index_count, instance_count);
+    renderer::add_command(ctx, renderer::CommandOpcode::Draw, nullptr, prim_type, index_type, index_data, index_count, instance_count);
 }
 
 void sync_surface_data(State &state, Context *ctx) {
