@@ -689,7 +689,7 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const State &state, co
     return fb[0];
 }
 
-std::uint64_t GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier) {
+std::uint64_t GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier, SceFVector2 &texture_size) {
     auto ite = color_surface_textures.lower_bound(address.address());
     if (ite == color_surface_textures.end()) {
         return 0;
@@ -723,6 +723,9 @@ std::uint64_t GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
             uvs[1] = static_cast<float>(start_sourced_line) / info.height;
             uvs[2] = static_cast<float>(width) / info.width;
             uvs[3] = static_cast<float>(start_sourced_line + limited_height) / info.height;
+
+            texture_size.x = info.width;
+            texture_size.y = info.height;
 
             return info.gl_texture[0];
         }

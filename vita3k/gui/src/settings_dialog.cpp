@@ -159,6 +159,7 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
                 const auto gpu_child = config_child.child("gpu");
                 config.resolution_multiplier = gpu_child.attribute("resolution-multiplier").as_int();
                 config.disable_surface_sync = gpu_child.attribute("disable-surface-sync").as_bool();
+                config.enable_fxaa = gpu_child.attribute("enable-fxaa").as_bool();
             }
 
             // Load System Config
@@ -205,6 +206,7 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
         config.lle_modules = host.cfg.lle_modules;
         config.resolution_multiplier = host.cfg.resolution_multiplier;
         config.disable_surface_sync = host.cfg.disable_surface_sync;
+        config.enable_fxaa = host.cfg.enable_fxaa;
         config.pstv_mode = host.cfg.pstv_mode;
         config.disable_ngs = host.cfg.disable_ngs;
     }
@@ -214,6 +216,7 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
     host.display.imgui_render = true;
     host.renderer->res_multiplier = config.resolution_multiplier;
     host.renderer->disable_surface_sync = config.disable_surface_sync;
+    host.renderer->set_fxaa(config.enable_fxaa);
 }
 
 /**
@@ -259,6 +262,7 @@ static void save_config(GuiState &gui, HostState &host) {
         auto gpu_child = config_child.append_child("gpu");
         gpu_child.append_attribute("resolution-multiplier") = config.resolution_multiplier;
         gpu_child.append_attribute("disable-surface-sync") = config.disable_surface_sync;
+        gpu_child.append_attribute("enable-fxaa") = config.enable_fxaa;
 
         // System
         auto system_child = config_child.append_child("system");
@@ -280,6 +284,7 @@ static void save_config(GuiState &gui, HostState &host) {
         host.cfg.pstv_mode = config.pstv_mode;
         host.cfg.resolution_multiplier = config.resolution_multiplier;
         host.cfg.disable_surface_sync = config.disable_surface_sync;
+        host.cfg.enable_fxaa = config.enable_fxaa;
         host.cfg.disable_ngs = config.disable_ngs;
     }
     config::serialize_config(host.cfg, host.cfg.config_path);
@@ -306,6 +311,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.pstv_mode = config.pstv_mode;
         host.cfg.current_config.resolution_multiplier = config.resolution_multiplier;
         host.cfg.current_config.disable_surface_sync = config.disable_surface_sync;
+        host.cfg.current_config.enable_fxaa = config.enable_fxaa;
         host.cfg.current_config.disable_ngs = config.disable_ngs;
     } else {
         // Else inherit the values from the global emulator config
@@ -317,10 +323,12 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.pstv_mode = host.cfg.pstv_mode;
         host.cfg.current_config.resolution_multiplier = host.cfg.resolution_multiplier;
         host.cfg.current_config.disable_surface_sync = host.cfg.disable_surface_sync;
+        host.cfg.current_config.enable_fxaa = host.cfg.enable_fxaa;
         host.cfg.current_config.disable_ngs = host.cfg.disable_ngs;
     }
     // can be changed while ingame
     host.renderer->disable_surface_sync = host.cfg.current_config.disable_surface_sync;
+    host.renderer->set_fxaa(host.cfg.enable_fxaa);
     // No change it if app already running
     if (host.io.title_id.empty()) {
         host.kernel.cpu_backend = set_cpu_backend(host.cfg.current_config.cpu_backend);
@@ -472,6 +480,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Speed hack, disable surface syncing between cpu and gpu.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
+        ImGui::Spacing();
+        ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes the game look slightly blurry.");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

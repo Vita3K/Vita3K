@@ -51,7 +51,7 @@ public:
         std::uint16_t *stored_height = nullptr)
         = 0;
 
-    virtual std::uint64_t sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier)
+    virtual std::uint64_t sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier, SceFVector2 &texture_size)
         = 0;
 };
 } // namespace renderer

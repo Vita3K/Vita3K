@@ -741,9 +741,11 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         }
     }
 
+    SceFVector2 texture_size;
+
     if (check_for_cache)
         surface_handle = surface_cache.sourcing_color_surface_for_presentation(
-            display.frame.base, display.frame.image_size.x, display.frame.image_size.y, display.frame.pitch, uvs, this->res_multiplier);
+            display.frame.base, display.frame.image_size.x, display.frame.image_size.y, display.frame.pitch, uvs, this->res_multiplier, texture_size);
 
     GLint last_texture = 0;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
@@ -771,6 +773,9 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
             close_access_parent_protect_segment(mem, display.frame.base.address());
         }
 
+        texture_size.x = static_cast<float>(display.frame.image_size.x);
+        texture_size.y = static_cast<float>(display.frame.image_size.y);
+
         surface_handle = screen_renderer.get_resident_texture();
     } else {
         const GLint standard_swizzle[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ALPHA };
@@ -781,7 +786,11 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
 
     glBindTexture(GL_TEXTURE_2D, last_texture);
 
-    screen_renderer.render(viewport_pos, viewport_size, need_uv ? uvs : nullptr, static_cast<GLuint>(surface_handle));
+    screen_renderer.render(viewport_pos, viewport_size, need_uv ? uvs : nullptr, static_cast<GLuint>(surface_handle), texture_size);
+}
+
+void GLState::set_fxaa(bool enable_fxaa) {
+    screen_renderer.enable_fxaa = enable_fxaa;
 }
 
 } // namespace renderer::gl

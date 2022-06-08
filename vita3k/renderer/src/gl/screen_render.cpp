@@ -28,8 +28,9 @@ bool ScreenRenderer::init(const std::string &base_path) {
 
     const auto builtin_shaders_path = base_path + "shaders-builtin/";
 
-    m_render_shader = ::gl::load_shaders(builtin_shaders_path + "render_main.vert", builtin_shaders_path + "render_main.frag");
-    if (!m_render_shader) {
+    m_render_shader_nofilter = ::gl::load_shaders(builtin_shaders_path + "render_main.vert", builtin_shaders_path + "render_main.frag");
+    m_render_shader_fxaa = ::gl::load_shaders(builtin_shaders_path + "render_main.vert", builtin_shaders_path + "render_main_fxaa.frag");
+    if (!m_render_shader_nofilter || !m_render_shader_fxaa) {
         LOG_CRITICAL("Couldn't compile essential shaders for rendering. Exiting");
         return false;
     }
@@ -48,8 +49,10 @@ bool ScreenRenderer::init(const std::string &base_path) {
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertex_buffer_data), vertex_buffer_data, GL_DYNAMIC_DRAW);
 
-    posAttrib = glGetAttribLocation(*m_render_shader, "position_vertex");
-    uvAttrib = glGetAttribLocation(*m_render_shader, "uv_vertex");
+    const auto &shader = enable_fxaa ? m_render_shader_fxaa : m_render_shader_nofilter;
+
+    GLint posAttrib = glGetAttribLocation(*shader, "position_vertex");
+    GLint uvAttrib = glGetAttribLocation(*shader, "uv_vertex");
 
     // 1st attribute: positions
     glVertexAttribPointer(
@@ -79,7 +82,7 @@ bool ScreenRenderer::init(const std::string &base_path) {
     return true;
 }
 
-void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture) {
+void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size) {
     // Backup GL state
     glActiveTexture(GL_TEXTURE0);
     GLint last_texture;
@@ -102,7 +105,12 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(*m_render_shader);
+    const auto &shader = enable_fxaa ? m_render_shader_fxaa : m_render_shader_nofilter;
+
+    const GLint posAttrib = glGetAttribLocation(*shader, "position_vertex");
+    const GLint uvAttrib = glGetAttribLocation(*shader, "uv_vertex");
+
+    glUseProgram(*shader);
     glBindVertexArray(m_vao);
     glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 
@@ -164,6 +172,11 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
         reinterpret_cast<void *>(3 * sizeof(GLfloat)) // array buffer offset
     );
     glEnableVertexAttribArray(uvAttrib);
+
+    if (enable_fxaa) {
+        const GLint invScreenLocation = glGetUniformLocation(*shader, "inv_frame_size");
+        glUniform2f(invScreenLocation, 1 / texture_size.x, 1 / texture_size.y);
+    }
 
     glBindTexture(GL_TEXTURE_2D, texture);
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
