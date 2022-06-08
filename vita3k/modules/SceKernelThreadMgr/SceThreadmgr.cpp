@@ -572,8 +572,8 @@ EXPORT(int, _sceKernelUnlockLwMutex) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelWaitCond) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelWaitCond, SceUID condId, SceUInt32 *pTimeout) {
+    return condvar_wait(host.kernel, host.mem, export_name, thread_id, condId, pTimeout, SyncWeight::Heavy);
 }
 
 EXPORT(SceInt32, _sceKernelWaitCondCB, SceUID condId, SceUInt32 *pTimeout) {
