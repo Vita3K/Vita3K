@@ -407,7 +407,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             }
             ImGui::SameLine();
         } else {
-            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the last firmware.");
+            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the firmware.");
             if (ImGui::Button("Download Firmware"))
                 open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
         }
@@ -455,7 +455,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
 #endif
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Resolution Upscaling").x / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Resolution Upscaling");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Internal Resolution Upscaling");
         ImGui::Spacing();
         if (!host.io.title_id.empty())
             ImGui::BeginDisabled();
@@ -480,7 +480,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::EndDisabled();
         ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Speed hack, disable surface syncing between cpu and gpu.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
+            ImGui::SetTooltip("Speed hack, disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on).");
         ImGui::Spacing();
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
         if (ImGui::IsItemHovered())
@@ -493,14 +493,14 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("Use shader cache", &host.cfg.shader_cache);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Enable shader cache to pre-compile it at boot up\nUncheck the box to disable this feature.");
+            ImGui::SetTooltip("Enables shader cache to pre-compile it at boot up\nUncheck the box to disable this feature.");
         ImGui::SameLine();
         if (host.renderer->features.spirv_shader) {
             ImGui::Checkbox("Use Spir-V shader (deprecated)", &host.cfg.spirv_shader);
 
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, "
-                                  "and not all GPU are compatible with this.");
+                                  "and not all GPUs are compatible with this.");
             }
         }
         const auto shaders_cache_path{ fs::path(host.base_path) / "cache/shaders" };
@@ -528,7 +528,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("PS TV Mode", &config.pstv_mode);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable PS TV Emulated mode.");
+            ImGui::SetTooltip("Check this box to enable PS TV mode.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
@@ -623,7 +623,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SameLine();
         ImGui::Checkbox("Info Bar Visible", &host.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to show info bar inside app selector.");
+            ImGui::SetTooltip("Check the box to show a info bar inside app selector.");
         ImGui::Spacing();
         ImGui::Checkbox("Live Area App Screen", &host.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
@@ -654,7 +654,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             if (ImGui::Button("Download firmware font package"))
                 open_path("https://bit.ly/2P2rb0r");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for asian region font support in gui.\nIt is also generally recommended for gui");
+                ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for asian region font support in GUI.\nIt is also generally recommended for GUI");
         }
         ImGui::Spacing();
         ImGui::Separator();
