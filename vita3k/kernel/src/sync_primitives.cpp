@@ -1274,12 +1274,12 @@ SceUID msgpipe_find(KernelState &kernel, const char *export_name, const char *na
     return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
 }
 
-int msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgpipe_id, SceUInt32 wait_mode, char *recv_buf, SceSize msg_size, SceUInt32 *timeout) {
-    assert(msgpipe_id >= 0);
+SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgPipeId, SceUInt32 waitMode, void *pRecvBuf, SceSize recvSize, SceUInt32 *pTimeout) {
+    assert(msgPipeId >= 0);
 
-    const bool ASAP = !(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
+    const bool ASAP = !(waitMode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
 
-    const MsgPipePtr msgpipe = lock_and_find(msgpipe_id, kernel.msgpipes, kernel.mutex);
+    const MsgPipePtr msgpipe = lock_and_find(msgPipeId, kernel.msgpipes, kernel.mutex);
     if (!msgpipe) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
     }
@@ -1287,18 +1287,18 @@ int msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id,
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" pipe attr: {} wait_mode: {:#b} ({})"
                   " senders: {} receivers: {}",
-            export_name, msgpipe->uid, thread_id, msgpipe->name, msgpipe->attr, wait_mode, ASAP ? "ASAP" : "FULL",
+            export_name, msgpipe->uid, thread_id, msgpipe->name, msgpipe->attr, waitMode, ASAP ? "ASAP" : "FULL",
             msgpipe->senders->size(), msgpipe->receivers->size());
     }
 
-    if (msg_size > msgpipe->data_buffer.Capacity())
+    if (recvSize > msgpipe->data_buffer.Capacity())
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
 
     const auto copyOut = [&] {
-        if (wait_mode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE) {
-            return msgpipe->data_buffer.Peek(recv_buf, msg_size);
+        if (waitMode & SCE_KERNEL_MSG_PIPE_MODE_DONT_REMOVE) {
+            return msgpipe->data_buffer.Peek(pRecvBuf, recvSize);
         } else {
-            return msgpipe->data_buffer.Remove(recv_buf, msg_size);
+            return msgpipe->data_buffer.Remove(pRecvBuf, recvSize);
         }
     };
 
@@ -1321,7 +1321,7 @@ int msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id,
     };
 
     std::size_t availableSize = msgpipe->data_buffer.Used();
-    if ((availableSize >= msg_size) || (ASAP && availableSize >= 1)) { // Copy out and return.
+    if ((availableSize >= recvSize) || (ASAP && availableSize >= 1)) { // Copy out and return.
         SceSize copied_size = (SceSize)copyOut();
         wakeup_senders();
         return copied_size;
@@ -1329,7 +1329,7 @@ int msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id,
         WaitingThreadData wait_data;
         wait_data.thread = thread;
         wait_data.priority = thread->priority;
-        wait_data.mp.request_size = (ASAP) ? 1 : msg_size; // If ASAP, we can read as low as 1 byte
+        wait_data.mp.request_size = (ASAP) ? 1 : recvSize; // If ASAP, we can read as low as 1 byte
 
         msgpipe->receivers->push(wait_data);
 
@@ -1343,17 +1343,17 @@ int msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id,
             SceSize readSize = (SceSize)copyOut();
             // msgpipe->receivers->erase(wait_data); //we've already been erased by the sender
             wakeup_senders();
-            return (int)readSize;
+            return readSize;
         };
 
         msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
-        if (!timeout) { // No timeout - loop forever until we can fill the buffer
+        if (!pTimeout) { // No timeout - loop forever until we can fill the buffer
             do {
                 // FIXME sleep on SimpleEvent
                 thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::run; });
 
                 availableSize = msgpipe->data_buffer.Used();
-            } while ((availableSize < msg_size) && (ASAP && (availableSize < 1)) && !msgpipe->beingDeleted);
+            } while ((availableSize < recvSize) && (ASAP && (availableSize < 1)) && !msgpipe->beingDeleted);
 
             if (msgpipe->beingDeleted) {
                 std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
@@ -1362,7 +1362,7 @@ int msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id,
 
             return finish();
         } else { // There's a timeout - wait until we can fill buffer or timeout
-            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *timeout }, [&] { return thread->status == ThreadStatus::run; });
+            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::run; });
             if (msgpipe->beingDeleted) {
                 std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
                 return SCE_KERNEL_ERROR_WAIT_DELETE;
@@ -1379,12 +1379,12 @@ int msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id,
 }
 
 // FIXME this should be SendVector!
-int msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgpipe_id, SceUInt32 wait_mode, char *send_buf, SceSize msg_size, SceUInt32 *timeout) {
-    assert(msgpipe_id >= 0);
+SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgPipeId, SceUInt32 waitMode, const void *pSendBuf, SceSize sendSize, SceUInt32 *pTimeout) {
+    assert(msgPipeId >= 0);
 
-    const bool ASAP = !(wait_mode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
+    const bool ASAP = !(waitMode & SCE_KERNEL_MSG_PIPE_MODE_FULL);
 
-    const MsgPipePtr msgpipe = lock_and_find(msgpipe_id, kernel.msgpipes, kernel.mutex);
+    const MsgPipePtr msgpipe = lock_and_find(msgPipeId, kernel.msgpipes, kernel.mutex);
     if (!msgpipe) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
     }
@@ -1392,11 +1392,11 @@ int msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id,
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" pipe attr: {} wait_mode: {:#b}"
                   " senders: {} receivers: {}",
-            export_name, msgpipe->uid, thread_id, msgpipe->name, msgpipe->attr, wait_mode,
+            export_name, msgpipe->uid, thread_id, msgpipe->name, msgpipe->attr, waitMode,
             msgpipe->senders->size(), msgpipe->receivers->size());
     }
 
-    if (msg_size > msgpipe->data_buffer.Capacity())
+    if (sendSize > msgpipe->data_buffer.Capacity())
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
 
     const auto wakeup_receivers = [&] { // TODO is this correct?
@@ -1419,8 +1419,8 @@ int msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id,
 
     // If ASAP and there's at least 1 free byte, or FULL and there's enough space, copy and return directly.
     std::size_t freeSize = msgpipe->data_buffer.Free();
-    if ((freeSize >= msg_size) || (ASAP && (freeSize >= 1))) {
-        SceSize copied_size = (SceSize)msgpipe->data_buffer.Insert(send_buf, msg_size);
+    if ((freeSize >= sendSize) || (ASAP && (freeSize >= 1))) {
+        SceSize copied_size = (SceSize)msgpipe->data_buffer.Insert(pSendBuf, sendSize);
 
         wakeup_receivers();
 
@@ -1429,7 +1429,7 @@ int msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id,
         WaitingThreadData wait_data;
         wait_data.thread = thread;
         wait_data.priority = thread->priority;
-        wait_data.mp.request_size = (ASAP) ? 1 : msg_size; // If ASAP, we can insert as low as 1 byte
+        wait_data.mp.request_size = (ASAP) ? 1 : sendSize; // If ASAP, we can insert as low as 1 byte
 
         msgpipe->senders->push(wait_data);
 
@@ -1440,20 +1440,20 @@ int msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id,
             msgpipe_lock.lock(); // Lock message pipe again
             thread->update_status(ThreadStatus::run, ThreadStatus::wait); // Wake up
 
-            SceSize insertedSize = (SceSize)msgpipe->data_buffer.Insert(send_buf, msg_size);
+            SceSize insertedSize = (SceSize)msgpipe->data_buffer.Insert(pSendBuf, sendSize);
             // msgpipe->senders->erase(wait_data); //Don't erase ourselves - recv will do it
             wakeup_receivers();
             return (int)insertedSize;
         };
 
         msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
-        if (!timeout) { // No timeout - loop forever until we can fill the buffer
+        if (!pTimeout) { // No timeout - loop forever until we can fill the buffer
             do {
                 // FIXME sleep on SimpleEvent
                 thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::run; });
 
                 freeSize = msgpipe->data_buffer.Free();
-            } while (((freeSize >= msg_size) || (ASAP && (freeSize >= 1))) || msgpipe->beingDeleted);
+            } while (((freeSize >= sendSize) || (ASAP && (freeSize >= 1))) || msgpipe->beingDeleted);
 
             if (msgpipe->beingDeleted) {
                 std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
@@ -1462,7 +1462,7 @@ int msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id,
 
             return finish();
         } else { // There's a timeout - wait until we can fill buffer or timeout
-            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *timeout }, [&] { return thread->status == ThreadStatus::run; });
+            auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::run; });
             if (msgpipe->beingDeleted) {
                 std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
                 return SCE_KERNEL_ERROR_WAIT_DELETE;

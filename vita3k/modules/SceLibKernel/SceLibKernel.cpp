@@ -1232,7 +1232,7 @@ EXPORT(int, sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_c
 }
 
 EXPORT(int, sceKernelLockLwMutexCB, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
-    STUBBED("no CB");
+    process_callbacks(host.kernel, thread_id);
     return CALL_EXPORT(_sceKernelLockLwMutex, workarea, lock_count, ptimeout);
 }
 
@@ -1240,9 +1240,8 @@ EXPORT(int, sceKernelLockMutex, SceUID mutexid, int lock_count, unsigned int *ti
     return CALL_EXPORT(_sceKernelLockMutex, mutexid, lock_count, timeout);
 }
 
-EXPORT(int, sceKernelLockMutexCB, SceUID mutexid, int lock_count, unsigned int *timeout) {
-    STUBBED("no CB");
-    return CALL_EXPORT(_sceKernelLockMutex, mutexid, lock_count, timeout);
+EXPORT(SceInt32, sceKernelLockMutexCB, SceUID mutexId, SceInt32 lockCount, SceUInt32 *pTimeout) {
+    return CALL_EXPORT(_sceKernelLockMutexCB, mutexId, lockCount, pTimeout);
 }
 
 EXPORT(SceInt32, sceKernelLockReadRWLock, SceUID lock_id, SceUInt32 *timeout) {
@@ -1285,19 +1284,20 @@ EXPORT(int, sceKernelPulseEventWithNotifyCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelReceiveMsgPipe, SceUID msgpipe_id, char *recv_buf, SceSize msg_size, SceUInt32 wait_mode, SceSize *result, SceUInt32 *timeout) {
-    const auto ret = msgpipe_recv(host.kernel, export_name, thread_id, msgpipe_id, wait_mode, recv_buf, msg_size, timeout);
+EXPORT(SceInt32, sceKernelReceiveMsgPipe, SceUID msgPipeId, void *pRecvBuf, SceSize recvSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+    const auto ret = msgpipe_recv(host.kernel, export_name, thread_id, msgPipeId, waitMode, pRecvBuf, recvSize, pTimeout);
     if (ret < 0) {
         return ret;
     }
-    if (result) {
-        *result = ret;
+    if (pResult) {
+        *pResult = ret;
     }
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelReceiveMsgPipeCB) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelReceiveMsgPipeCB, SceUID msgPipeId, void *pRecvBuf, SceSize recvSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+    process_callbacks(host.kernel, thread_id);
+    return CALL_EXPORT(sceKernelReceiveMsgPipe, msgPipeId, pRecvBuf, recvSize, waitMode, pResult, pTimeout);
 }
 
 EXPORT(int, sceKernelReceiveMsgPipeVector) {
@@ -1312,19 +1312,20 @@ EXPORT(int, sceKernelRegisterThreadEventHandler) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelSendMsgPipe, SceUID msgpipe_id, char *send_buf, SceSize msg_size, SceUInt32 wait_mode, SceSize *result, SceUInt32 *timeout) {
-    const auto ret = msgpipe_send(host.kernel, export_name, thread_id, msgpipe_id, wait_mode, send_buf, msg_size, timeout);
+EXPORT(SceInt32, sceKernelSendMsgPipe, SceUID msgPipeId, const void *pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+    const auto ret = msgpipe_send(host.kernel, export_name, thread_id, msgPipeId, waitMode, pSendBuf, sendSize, pTimeout);
     if (ret < 0) {
         return ret;
     }
-    if (result) {
-        *result = ret;
+    if (pResult) {
+        *pResult = ret;
     }
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelSendMsgPipeCB) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelSendMsgPipeCB, SceUID msgPipeId, const void *pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
+    process_callbacks(host.kernel, thread_id);
+    return CALL_EXPORT(sceKernelSendMsgPipe, msgPipeId, pSendBuf, sendSize, waitMode, pResult, pTimeout);
 }
 
 EXPORT(int, sceKernelSendMsgPipeVector) {
@@ -1446,9 +1447,8 @@ EXPORT(int, sceKernelWaitCond, SceUID cond_id, SceUInt32 *timeout) {
     return condvar_wait(host.kernel, host.mem, export_name, thread_id, cond_id, timeout, SyncWeight::Heavy);
 }
 
-EXPORT(int, sceKernelWaitCondCB, SceUID cond_id, SceUInt32 *timeout) {
-    STUBBED("no CB");
-    return condvar_wait(host.kernel, host.mem, export_name, thread_id, cond_id, timeout, SyncWeight::Heavy);
+EXPORT(SceInt32, sceKernelWaitCondCB, SceUID condId, SceUInt32 *pTimeout) {
+    return CALL_EXPORT(_sceKernelWaitCondCB, condId, pTimeout);
 }
 
 EXPORT(SceInt32, sceKernelWaitEvent, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout) {
@@ -1464,8 +1464,7 @@ EXPORT(SceInt32, sceKernelWaitEventFlag, SceUID evfId, SceUInt32 bitPattern, Sce
 }
 
 EXPORT(SceInt32, sceKernelWaitEventFlagCB, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout) {
-    STUBBED("no CB");
-    return eventflag_wait(host.kernel, export_name, thread_id, evfId, bitPattern, waitMode, pResultPat, pTimeout);
+    return CALL_EXPORT(_sceKernelWaitEventFlagCB, evfId, bitPattern, waitMode, pResultPat, pTimeout);
 }
 
 EXPORT(int, sceKernelWaitException) {
@@ -1481,10 +1480,8 @@ EXPORT(int, sceKernelWaitLwCond, Ptr<SceKernelLwCondWork> workarea, SceUInt32 *t
     return condvar_wait(host.kernel, host.mem, export_name, thread_id, cond_id, timeout, SyncWeight::Light);
 }
 
-EXPORT(int, sceKernelWaitLwCondCB, Ptr<SceKernelLwCondWork> workarea, SceUInt32 *timeout) {
-    STUBBED("no CB");
-    const auto cond_id = workarea.get(host.mem)->uid;
-    return condvar_wait(host.kernel, host.mem, export_name, thread_id, cond_id, timeout, SyncWeight::Light);
+EXPORT(SceInt32, sceKernelWaitLwCondCB, Ptr<SceKernelLwCondWork> pWork, SceUInt32 *pTimeout) {
+    return CALL_EXPORT(_sceKernelWaitLwCondCB, pWork, pTimeout);
 }
 
 EXPORT(int, sceKernelWaitMultipleEvents) {
