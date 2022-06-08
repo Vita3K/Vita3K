@@ -60,6 +60,7 @@ enum PerfomanceOverleyPosition {
     code(bool, "archive-log", false, archive_log)                                                       \
     code(int, "resolution-multiplier", 1, resolution_multiplier)                                        \
     code(bool, "disable-surface-sync", false, disable_surface_sync)                                     \
+    code(bool, "enable-fxaa", false, enable_fxaa)                                                       \
     code(bool, "texture-cache", true, texture_cache)                                                    \
     code(bool, "hashless-texture-cache", false, hashless_texture_cache)                                 \
     code(bool, "disable-ngs", false, disable_ngs)                                                       \

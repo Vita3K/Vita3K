@@ -28,7 +28,7 @@ public:
     ~ScreenRenderer();
 
     bool init(const std::string &base_path);
-    void render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture);
+    void render(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const float *uvs, const GLuint texture, const SceFVector2 texture_size);
 
     void destroy();
 
@@ -37,6 +37,8 @@ public:
     GLuint get_resident_texture() const {
         return m_screen_texture;
     }
+
+    bool enable_fxaa;
 
 private:
     struct screen_vertex {
@@ -51,13 +53,11 @@ private:
 
     GLuint m_vao{ 0 };
     GLuint m_vbo{ 0 };
-    SharedGLObject m_render_shader;
+    SharedGLObject m_render_shader_nofilter;
+    SharedGLObject m_render_shader_fxaa;
     GLuint m_screen_texture{ 0 };
 
     float last_uvs[4] = { 0.0f, 0.0f, 1.0f, 1.0f };
-
-    GLint posAttrib;
-    GLint uvAttrib;
 };
 
 } // namespace renderer::gl

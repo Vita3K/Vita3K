@@ -53,6 +53,7 @@ struct State {
     virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem)
         = 0;
+    virtual void set_fxaa(bool enable_fxaa) = 0;
 
     virtual ~State() = default;
 };
