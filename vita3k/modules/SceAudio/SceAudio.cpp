@@ -279,6 +279,9 @@ EXPORT(int, sceAudioOutSetVolume, int port, SceAudioOutChannelFlag ch, int *vol)
 
     const AudioOutPortPtr prt = lock_and_find(port, host.audio.shared.out_ports, host.audio.shared.mutex);
 
+    if (!prt)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+
     // Unsure of what happens if only one channel is selected, this will break if program passes a size 1 int array
     const int left = (ch & SCE_AUDIO_VOLUME_FLAG_L_CH) ? vol[0] : prt->left_channel_volume;
     const int right = (ch & SCE_AUDIO_VOLUME_FLAG_R_CH) ? vol[1] : prt->right_channel_volume;
