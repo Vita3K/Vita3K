@@ -60,8 +60,8 @@ void calculate_fps(HostState &host) {
 
 void set_window_title(HostState &host) {
     const std::string title_to_set = fmt::format("{} | {} ({}) | {} ms/frame ({} frames/sec) | {}x{} {}", window_title,
-        host.current_app_title, host.io.title_id, host.ms_per_frame, host.fps, 960 * host.cfg.current_config.resolution_multiplier,
-        544 * host.cfg.current_config.resolution_multiplier, host.cfg.current_config.enable_fxaa ? "| FXAA" : "");
+        host.current_app_title, host.io.title_id, host.ms_per_frame, host.fps, host.display.frame.image_size.x * host.cfg.current_config.resolution_multiplier,
+        host.display.frame.image_size.y * host.cfg.current_config.resolution_multiplier, host.cfg.current_config.enable_fxaa ? "| FXAA" : "");
 
     SDL_SetWindowTitle(host.window.get(), title_to_set.c_str());
 }
