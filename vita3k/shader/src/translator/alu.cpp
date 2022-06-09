@@ -1680,7 +1680,7 @@ bool USSETranslatorVisitor::vdual(
     store(op1.opr.dest, op1_result, op1_write_mask);
     store(op2.opr.dest, op2_result, op2_write_mask);
 
-    LOG_DISASM(disasm_str);
+    LOG_DISASM("{}", disasm_str);
 
     return true;
 }

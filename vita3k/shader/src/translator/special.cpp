@@ -73,7 +73,7 @@ bool USSETranslatorVisitor::smlsi(
     Imm8 src0_inc,
     Imm8 src1_inc,
     Imm8 src2_inc) {
-    std::string disasm_str = "{:016x}: SMLSI ";
+    std::string disasm_str = fmt::format("{:016x}: SMLSI ", m_instr);
 
     auto parse_increment = [&](const int idx, const Imm1 inc_mode, const Imm8 inc_value) {
         if (inc_mode) {
@@ -101,7 +101,7 @@ bool USSETranslatorVisitor::smlsi(
     parse_increment(1, src1_inc_mode, src1_inc);
     parse_increment(2, src2_inc_mode, src2_inc);
 
-    LOG_DISASM(disasm_str, m_instr);
+    LOG_DISASM("{}", disasm_str);
 
     return true;
 }

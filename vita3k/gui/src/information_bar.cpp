@@ -78,7 +78,7 @@ static bool init_notice_icon(GuiState &gui, HostState &host, const fs::path &con
     }
     stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
     if (!data) {
-        LOG_ERROR("Invalid icon for notice id: {}, [{}] in path {}.", info.id, content_path.string());
+        LOG_ERROR("Invalid icon for notice id: {} in path {}.", info.id, content_path.string());
         return false;
     }
     gui.notice_info_icon[info.time].init(gui.imgui_state.get(), data, width, height);
@@ -320,11 +320,11 @@ static std::string get_notice_time(GuiState &gui, HostState &host, const time_t 
     } else {
         auto lang = gui.lang.common.main;
         if (diff_time >= (hour * 2))
-            date = fmt::format(lang["hours_ago"], uint32_t(diff_time / hour));
+            date = fmt::format(fmt::runtime(lang["hours_ago"]), uint32_t(diff_time / hour));
         else if (diff_time >= hour)
             date = lang["one_hour_ago"];
         else if (diff_time >= (minute * 2))
-            date = fmt::format(lang["minutes_ago"], uint32_t(diff_time / 60));
+            date = fmt::format(fmt::runtime(lang["minutes_ago"]), uint32_t(diff_time / 60));
         else
             date = lang["one_minute_ago"];
     }

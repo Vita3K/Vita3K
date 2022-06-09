@@ -173,7 +173,7 @@ bool USSETranslatorVisitor::vmov(
         disasm::operand_to_str(inst.opr.dest, dest_mask, dest_repeat_offset), conditional_str, disasm::operand_to_str(inst.opr.src1, dest_mask, src1_repeat_offset),
         is_conditional ? fmt::format(": {}", disasm::operand_to_str(inst.opr.src2, dest_mask, src2_repeat_offset)) : "");
 
-    LOG_DISASM(disasm_str);
+    LOG_DISASM("{}", disasm_str);
 
     spv::Id source_to_compare_with_0 = spv::NoResult;
     spv::Id source_1 = load(inst.opr.src1, dest_mask, src1_repeat_offset);
