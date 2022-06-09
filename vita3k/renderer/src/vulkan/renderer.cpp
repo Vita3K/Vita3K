@@ -573,4 +573,15 @@ void close(std::unique_ptr<renderer::State> &state) {
     vulkan_state.device.destroy();
     vulkan_state.instance.destroy();
 }
+
+bool VulkanState::init(const char *base_path, const bool hashless_texture_cache) {
+    return true;
+}
+
+void VulkanState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
+    const GxmState &gxm, MemState &mem) {
+}
+
+void VulkanState::set_fxaa(bool enable_fxaa) {
+}
 } // namespace renderer::vulkan
