@@ -397,7 +397,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             }
             ImGui::PopItemWidth();
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT, "Modules Search");
+            ImGui::TextColored(GUI_COLOR_TEXT, "Search modules");
             gui.module_search_bar.Draw("##module_search_bar", 200 * host.dpi_scale);
             ImGui::Spacing();
             if (ImGui::Button("Clear list")) {
@@ -407,7 +407,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             }
             ImGui::SameLine();
         } else {
-            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the firmware.");
+            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the PS Vita firmware.");
             if (ImGui::Button("Download Firmware"))
                 open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
         }
@@ -480,7 +480,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::EndDisabled();
         ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Speed hack, disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on).");
+            ImGui::SetTooltip("Speed hack, disables surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on).");
         ImGui::Spacing();
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
         if (ImGui::IsItemHovered())
@@ -493,7 +493,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("Use shader cache", &host.cfg.shader_cache);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Enables shader cache to pre-compile it at boot up\nUncheck the box to disable this feature.");
+            ImGui::SetTooltip("Enables shader cache to pre-compile it at boot up\nUncheck to disable this feature.");
         ImGui::SameLine();
         if (host.renderer->features.spirv_shader) {
             ImGui::Checkbox("Use Spir-V shader (deprecated)", &host.cfg.spirv_shader);
@@ -520,7 +520,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("System")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Enter Button Assignment \nSelect your 'Enter' Button.");
+        ImGui::TextColored(GUI_COLOR_TEXT, "Enter button assingment \nSelect your 'Enter' button.");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and get default confirmation button.");
         ImGui::RadioButton("Circle", &host.cfg.sys_button, 0);
@@ -551,7 +551,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("Archive Log", &host.cfg.archive_log);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable Archiving Log.");
+            ImGui::SetTooltip("Check the box to enable log archiving.");
         ImGui::SameLine();
 #ifdef USE_DISCORD
         ImGui::Checkbox("Discord Rich Presence", &host.cfg.discord_rich_presence);
@@ -581,7 +581,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
 #ifndef WIN32
         ImGui::Checkbox("Check to enable case-insensitive path finding on case sensitive filesystems. \nRESETS ON RESTART", &host.io.case_isens_find_enabled);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Allows emulator to attempt searching for files regardless of case on non-windows platforms");
+            ImGui::SetTooltip("Allows emulator to attempt searching for files regardless of case on non-Windows platforms");
 #endif
         ImGui::Separator();
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Emulated System Storage Folder");
@@ -623,11 +623,11 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SameLine();
         ImGui::Checkbox("Info Bar Visible", &host.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to show a info bar inside app selector.");
+            ImGui::SetTooltip("Check the box to show an info bar inside app selector.");
         ImGui::Spacing();
         ImGui::Checkbox("Live Area App Screen", &host.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to open Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
+            ImGui::SetTooltip("Check the box to open the Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
         ImGui::SameLine();
         ImGui::Checkbox("Grid Mode", &host.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
@@ -654,7 +654,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             if (ImGui::Button("Download firmware font package"))
                 open_path("https://bit.ly/2P2rb0r");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for asian region font support in GUI.\nIt is also generally recommended for GUI");
+                ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for Asian region font support in GUI.\nIt is also generally recommended for GUI");
         }
         ImGui::Spacing();
         ImGui::Separator();
