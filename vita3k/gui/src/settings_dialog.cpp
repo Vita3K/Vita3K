@@ -528,7 +528,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("PS TV Mode", &config.pstv_mode);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check this box to enable PS TV mode.");
+            ImGui::SetTooltip("Check to enable PS TV mode.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
