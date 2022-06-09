@@ -202,12 +202,13 @@ bool is_compressed_format(SceGxmTextureBaseFormat base_format, std::uint32_t wid
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-        return ((width + 3) / 4) * ((height + 3) / 4) * ((base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1) ? 8 : 16);
+        source_size = ((width + 3) / 4) * ((height + 3) / 4) * ((base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1) ? 8 : 16);
+        return true;
     default:
         break;
     }
 
-    return 0;
+    return false;
 }
 
 // =========================== COMPRESSION ============================
