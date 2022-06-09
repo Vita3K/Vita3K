@@ -169,7 +169,7 @@ EXPORT(Ptr<void>, sceClibMspaceCreate, Ptr<void> base, uint32_t capacity) {
 EXPORT(uint32_t, sceClibMspaceDestroy, Ptr<void> space) {
     const std::lock_guard<std::mutex> guard(host.kernel.mutex);
 
-    return destroy_mspace(space.get(host.mem));
+    return static_cast<uint32_t>(destroy_mspace(space.get(host.mem)));
 }
 
 EXPORT(void, sceClibMspaceFree, Ptr<void> space, Ptr<void> address) {
@@ -470,13 +470,13 @@ EXPORT(int, sceIoOpenAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceSSize, sceIoPread, const SceUID fd, void *data, const SceSize size, const SceOff offset) {
+EXPORT(SceSSize, sceIoPread, SceUID fd, void *buf, SceSize nbyte, SceOff offset) {
     auto pos = tell_file(host.io, fd, export_name);
     if (pos < 0) {
-        return pos;
+        return static_cast<SceSSize>(pos);
     }
     seek_file(fd, offset, SCE_SEEK_SET, host.io, export_name);
-    const auto res = read_file(data, host.io, fd, size, export_name);
+    const auto res = read_file(buf, host.io, fd, nbyte, export_name);
     seek_file(fd, pos, SCE_SEEK_SET, host.io, export_name);
     return res;
 }
@@ -485,13 +485,13 @@ EXPORT(int, sceIoPreadAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceSSize, sceIoPwrite, const SceUID fd, const void *data, const SceSize size, const SceOff offset) {
+EXPORT(SceSSize, sceIoPwrite, SceUID fd, const void *buf, SceSize nbyte, SceOff offset) {
     auto pos = tell_file(host.io, fd, export_name);
     if (pos < 0) {
-        return pos;
+        return static_cast<SceSSize>(pos);
     }
     seek_file(fd, offset, SCE_SEEK_SET, host.io, export_name);
-    const auto res = write_file(fd, data, size, host.io, export_name);
+    const auto res = write_file(fd, buf, nbyte, host.io, export_name);
     seek_file(fd, pos, SCE_SEEK_SET, host.io, export_name);
     return res;
 }
