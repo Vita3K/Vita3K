@@ -57,7 +57,7 @@ public:
     spv::Id out;
 
     // Contains repeat increasement offset
-    int repeat_increase[4][4];
+    int repeat_increase[4][17];
     int repeat_multiplier[4];
 
     void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries, const spv::Id translation_state_id);
@@ -189,7 +189,7 @@ private:
 
     void reset_repeat_increase() {
         for (int i = 0; i < 4; i++) {
-            for (int j = 0; j < 4; j++) {
+            for (int j = 0; j < 17; j++) {
                 repeat_increase[i][j] = j;
             }
         }
