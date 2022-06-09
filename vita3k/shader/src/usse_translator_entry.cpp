@@ -288,8 +288,7 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
                                                 e = end (1 bit)
                                                  r = src1_bank_ext (1 bit)
                                                   c = src2_bank_ext (1 bit)
-                                                   - = don't care
-                                                    aaa = repeat_count (3 bits, RepeatCount)
+                                                   aaaa = repeat_count (4 bits, RepeatCount)
                                                        fff = src_fmt (3 bits)
                                                           ttt = dest_fmt (3 bits)
                                                              mmmm = dest_mask (4 bits)
@@ -306,7 +305,7 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
                                                                                             wwwwww = src2_n (6 bits)
                                                                                                   x = comp_sel_0_bit0 (1 bit)
         */
-        INST(&V::vpck, "VPCK ()", "01000pppsnuyderc-aaaffftttmmmmbbkkllgggggggoohiijjqqqqqqvwwwwwwx"),
+        INST(&V::vpck, "VPCK ()", "01000pppsnuydercaaaaffftttmmmmbbkkllgggggggoohiijjqqqqqqvwwwwwwx"),
         // Test Instructions
         /*
                                    01001 = op1

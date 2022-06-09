@@ -87,8 +87,8 @@ bool USSETranslatorVisitor::smlsi(
 
             disasm_str += ") ";
         } else {
-            // Parse value as immidiate
-            for (int i = 0; i < 4; i++) {
+            // Parse value as immediate
+            for (int i = 0; i < 17; i++) {
                 repeat_increase[idx][i] = i * static_cast<std::int8_t>(inc_value);
             }
 
