@@ -520,7 +520,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("System")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Enter button assingment \nSelect your 'Enter' button.");
+        ImGui::TextColored(GUI_COLOR_TEXT, "Enter button assignment \nSelect your 'Enter' button.");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and get default confirmation button.");
         ImGui::RadioButton("Circle", &host.cfg.sys_button, 0);
