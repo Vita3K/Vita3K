@@ -730,19 +730,19 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Debug")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("Log Imports", &host.kernel.debugger.log_imports);
+        ImGui::Checkbox("Import logging", &host.kernel.debugger.log_imports);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module import symbols.");
-        ImGui::Checkbox("Log Exports", &host.kernel.debugger.log_exports);
+        ImGui::Checkbox("Export logging", &host.kernel.debugger.log_exports);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module export symbols.");
         ImGui::Spacing();
-        ImGui::Checkbox("Log Shaders", &host.cfg.log_active_shaders);
+        ImGui::Checkbox("Shader logging", &host.cfg.log_active_shaders);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shaders being used on each draw call.");
-        ImGui::Checkbox("Log Uniforms", &host.cfg.log_uniforms);
+        ImGui::Checkbox("Uniform logging", &host.cfg.log_uniforms);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shader uniform names and values.");
         ImGui::SameLine();
@@ -754,7 +754,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Dumps textures to files");
         ImGui::SameLine();
-        ImGui::Checkbox("ELF dumping", &host.kernel.debugger.dump_elfs);
+        ImGui::Checkbox("Dump ELFs", &host.kernel.debugger.dump_elfs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Dump loaded code as ELFs");
         ImGui::Spacing();
@@ -776,7 +776,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
 #ifdef TRACY_ENABLE
         // Tracy profiler settings
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Tracy Profiler");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Tracy profiler");
 
         ImGui::Text("The Tracy profiler implementation in the emulator allows among other\n"
                     "things to track the functions that a game calls in real-time\n"
