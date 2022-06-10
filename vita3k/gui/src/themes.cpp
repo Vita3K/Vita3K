@@ -433,7 +433,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
 
     if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
         gui.live_area.start_screen = false;
-        gui.live_area.app_selector = true;
+        gui.live_area.home_screen = true;
     }
 
     ImGui::End();

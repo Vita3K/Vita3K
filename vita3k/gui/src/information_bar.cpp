@@ -1,5 +1,5 @@
 ﻿// Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -506,8 +506,8 @@ void draw_information_bar(GuiState &gui, HostState &host) {
     const ImU32 DEFAULT_BAR_COLOR = 0xFF000000; // Black
     const ImU32 DEFAULT_INDICATOR_COLOR = 0xFFFFFFFF; // White
     const auto is_12_hour_format = host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
-    const auto is_notif_pos = !gui.live_area.start_screen && (gui.live_area.live_area_screen || gui.live_area.app_selector) ? 78.f * SCALE.x : 0.f;
-    const auto is_theme_color = gui.live_area.app_selector || gui.live_area.live_area_screen || gui.live_area.start_screen;
+    const auto is_notif_pos = !gui.live_area.start_screen && (gui.live_area.live_area_screen || gui.live_area.home_screen) ? 78.f * SCALE.x : 0.f;
+    const auto is_theme_color = gui.live_area.home_screen || gui.live_area.live_area_screen || gui.live_area.start_screen;
     const auto indicator_color = gui.information_bar_color.indicator;
     const auto bar_color = gui.information_bar_color.bar;
 
@@ -517,7 +517,7 @@ void draw_information_bar(GuiState &gui, HostState &host) {
 
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, INFORMATION_BAR_HEIGHT), is_theme_color ? bar_color : DEFAULT_BAR_COLOR, 0.f, ImDrawFlags_RoundCornersAll);
 
-    if (gui.live_area.app_selector || gui.live_area.live_area_screen) {
+    if (gui.live_area.home_screen || gui.live_area.live_area_screen) {
         const auto HOME_ICON_POS_CENTER = (display_size.x / 2.f) - (32.f * ((float(gui.apps_list_opened.size())) / 2.f)) * SCALE.x;
         const auto APP_IS_OPEN = gui.current_app_selected >= 0;
 

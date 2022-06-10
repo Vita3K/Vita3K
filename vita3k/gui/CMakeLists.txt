@@ -17,7 +17,6 @@ add_library(
 	include/gui/imgui_impl_sdl.h
 	include/gui/state.h
 	src/app_context_menu.cpp
-	src/app_selector.cpp
 	src/archive_install_dialog.cpp
 	src/common_dialog.cpp
 	src/compile_shaders.cpp
@@ -25,8 +24,9 @@ add_library(
 	src/content_manager.cpp
 	src/eventflags_dialog.cpp
 	src/firmware_install_dialog.cpp
-	src/ime.cpp
 	src/gui.cpp
+	src/home_screen.cpp
+	src/ime.cpp
 	src/imgui_impl_sdl_gl3.cpp
 	${IMGUI_IMPL_VULKAN_SOURCES}
 	src/imgui_impl_sdl.cpp

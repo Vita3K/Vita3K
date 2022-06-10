@@ -292,23 +292,26 @@ int main(int argc, char *argv[]) {
     gui::update_last_time_app_used(gui, host, host.io.app_path);
 
     const auto draw_app_background = [&](GuiState &gui, HostState &host) {
+        const auto pos_min = ImVec2(host.viewport_pos.x, host.viewport_pos.y);
+        const auto pos_max = ImVec2(pos_min.x + host.viewport_size.x, pos_min.y + host.viewport_size.y);
+
         if (gui.apps_background.find(host.io.app_path) != gui.apps_background.end())
             // Display application background
-            ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.io.app_path],
-                ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
+            ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.io.app_path], pos_min, pos_max);
         // Application background not found
         else if (!gui.theme_backgrounds.empty())
             // Display theme background if exist
-            ImGui::GetBackgroundDrawList()->AddImage(gui.theme_backgrounds[0], ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
+            ImGui::GetBackgroundDrawList()->AddImage(gui.theme_backgrounds[0], pos_min, pos_max);
         else if (!gui.user_backgrounds.empty())
             // Display user background if exist
-            ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[0]],
-                ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize);
+            ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[0]], pos_min, pos_max);
     };
 
     Ptr<const void> entry_point;
     if (const auto err = load_app(entry_point, host, string_utils::utf_to_wide(host.io.app_path)) != Success)
         return err;
+
+    gui.live_area.information_bar = false;
 
     // Pre-Compile Shader only for glsl, spriv is broken
     if (!host.cfg.spirv_shader) {
@@ -370,7 +373,7 @@ int main(int argc, char *argv[]) {
         gui::draw_common_dialog(gui, host);
         gui::draw_live_area(gui, host);
 
-        if (host.cfg.performance_overlay && !gui.live_area.app_selector && !gui.live_area.live_area_screen && gui::get_sys_apps_state(gui))
+        if (host.cfg.performance_overlay && !gui.live_area.home_screen && !gui.live_area.live_area_screen && gui::get_sys_apps_state(gui))
             gui::draw_perf_overlay(gui, host);
 
         if (host.display.imgui_render) {

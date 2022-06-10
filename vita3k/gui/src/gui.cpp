@@ -672,10 +672,10 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (gui.live_area.app_close)
         draw_app_close(gui, host);
 
-    if (gui.live_area.app_selector)
-        draw_app_selector(gui, host);
+    if (gui.live_area.home_screen)
+        draw_home_screen(gui, host);
 
-    if ((host.cfg.show_info_bar || !host.display.imgui_render || !gui.live_area.app_selector) && gui.live_area.information_bar)
+    if ((host.cfg.show_info_bar || !host.display.imgui_render || !gui.live_area.home_screen) && gui.live_area.information_bar)
         draw_information_bar(gui, host);
 
     if (gui.live_area.live_area_screen)
@@ -697,7 +697,7 @@ void draw_live_area(GuiState &gui, HostState &host) {
     if (!gui.trophy_unlock_display_requests.empty())
         draw_trophies_unlocked(gui, host);
 
-    if (host.ime.state && !gui.live_area.app_selector && !gui.live_area.live_area_screen && get_sys_apps_state(gui))
+    if (host.ime.state && !gui.live_area.home_screen && !gui.live_area.live_area_screen && get_sys_apps_state(gui))
         draw_ime(host.ime, host);
 
     // System App

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -119,7 +119,7 @@ void draw_manual(GuiState &gui, HostState &host) {
     if (!hidden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_psbutton)) {
         gui.live_area.manual = false;
         gui.live_area.information_bar = true;
-        if (!gui.live_area.app_selector)
+        if (!gui.live_area.home_screen)
             gui.live_area.live_area_screen = true;
     }
 

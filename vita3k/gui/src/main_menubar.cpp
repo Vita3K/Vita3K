@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -81,7 +81,7 @@ static void draw_config_menu(GuiState &gui, HostState &host) {
         if (ImGui::MenuItem(lang["settings"].c_str(), nullptr, &settings_dialog))
             init_config(gui, host, host.io.app_path);
         if (ImGui::MenuItem(lang["user_management"].c_str(), nullptr, &gui.live_area.user_management, (!gui.live_area.user_management && host.io.title_id.empty()))) {
-            gui.live_area.app_selector = false;
+            gui.live_area.home_screen = false;
             gui.live_area.information_bar = true;
         }
         ImGui::EndMenu();

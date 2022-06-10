@@ -1031,7 +1031,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
                 gui.apps_list_opened.erase(get_app_open_list_index(gui, app_path));
                 if (gui.current_app_selected == 0) {
                     gui.live_area.live_area_screen = false;
-                    gui.live_area.app_selector = true;
+                    gui.live_area.home_screen = true;
                 }
                 --gui.current_app_selected;
             }
@@ -1091,7 +1091,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     if ((ImGui::Selectable("##left", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_l1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_left) || (wheel_counter == 1)) {
         if (gui.current_app_selected == 0) {
             gui.live_area.live_area_screen = false;
-            gui.live_area.app_selector = true;
+            gui.live_area.home_screen = true;
         }
         --gui.current_app_selected;
     }

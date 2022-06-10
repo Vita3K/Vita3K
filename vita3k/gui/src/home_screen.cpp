@@ -111,7 +111,7 @@ void open_live_area(GuiState &gui, HostState &host, const std::string app_path) 
     update_apps_list_opened(gui, host, app_path);
     last_time["home"] = 0;
     init_live_area(gui, host, app_path);
-    gui.live_area.app_selector = false;
+    gui.live_area.home_screen = false;
     gui.live_area.information_bar = true;
     gui.live_area.live_area_screen = true;
 }
@@ -134,8 +134,7 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
             if (!host.io.app_path.empty())
                 gui.live_area.app_close = true;
             else {
-                gui.live_area.information_bar = false;
-                gui.live_area.app_selector = false;
+                gui.live_area.home_screen = false;
                 gui.live_area.live_area_screen = false;
                 host.io.app_path = app_path;
             }
@@ -144,7 +143,7 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
             gui.live_area.information_bar = false;
         }
     } else {
-        gui.live_area.app_selector = false;
+        gui.live_area.home_screen = false;
         gui.live_area.live_area_screen = false;
         init_app_background(gui, host, app_path);
         update_last_time_app_used(gui, host, app_path);
@@ -341,7 +340,7 @@ static std::string get_label_name(GuiState &gui, const SortType &type) {
 static const ImU32 ARROW_COLOR = 4294967295; // White
 static float scroll_type, current_scroll_pos, max_scroll_pos;
 
-void draw_app_selector(GuiState &gui, HostState &host) {
+void draw_home_screen(GuiState &gui, HostState &host) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
     const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
@@ -354,8 +353,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::SetNextWindowBgAlpha(is_background ? host.cfg.background_alpha : 0.f);
-    ImGui::Begin("##app_selector", &gui.live_area.app_selector, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::SetWindowFontScale(1.1f * RES_SCALE.x);
+    ImGui::Begin("##home_screen", &gui.live_area.home_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
     if (!host.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
         gui.live_area.information_bar = true;
 
@@ -371,7 +369,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             while (last_time["start"] + host.cfg.delay_start < current_time()) {
                 last_time["start"] += host.cfg.delay_start;
                 last_time["home"] = 0;
-                gui.live_area.app_selector = false;
+                gui.live_area.home_screen = false;
                 gui.live_area.information_bar = true;
                 gui.live_area.start_screen = true;
             }
@@ -412,20 +410,23 @@ void draw_app_selector(GuiState &gui, HostState &host) {
 
     switch (gui.app_selector.state) {
     case SELECT_APP:
+        ImGui::SetWindowFontScale(0.9f * RES_SCALE.x);
+
         // Sort Apps list when is not sorted
         if (!gui.app_selector.is_app_list_sorted)
             sort_app_list(gui, host, gui.users[host.io.user_id].sort_apps_type);
 
         const auto title_id_label = get_label_name(gui, TITLE_ID);
-        float title_id_size = (ImGui::CalcTextSize(title_id_label.c_str()).x) + (60.f * SCALE.x);
+        float title_id_size = (ImGui::CalcTextSize("PCSX12345").x + (40.f * SCALE.x));
         const auto app_ver_label = get_label_name(gui, APP_VER);
-        float app_ver_size = (ImGui::CalcTextSize(app_ver_label.c_str()).x) + (30.f * SCALE.x);
+        float app_ver_size = (ImGui::CalcTextSize(app_ver_label.c_str()).x) + (38.f * SCALE.x);
         const auto category_label = get_label_name(gui, CATEGORY);
-        float category_size = (ImGui::CalcTextSize(category_label.c_str()).x) + (30.f * SCALE.x);
+        float category_size = (ImGui::CalcTextSize(category_label.c_str()).x) + (38.f * SCALE.x);
         const auto title_label = get_label_name(gui, TITLE);
         const auto last_time_label = get_label_name(gui, LAST_TIME);
-        float last_time_size = (ImGui::CalcTextSize(last_time_label.c_str()).x) + (30.f * SCALE.x);
+        float last_time_size = (ImGui::CalcTextSize(last_time_label.c_str()).x) + (38.f * SCALE.x);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+        ImGui::SetCursorPosY(4.f * SCALE.y);
         if (!host.cfg.apps_list_grid) {
             ImGui::Columns(6);
             ImGui::SetColumnWidth(0, column_icon_size);
@@ -513,11 +514,11 @@ void draw_app_selector(GuiState &gui, HostState &host) {
         ImGui::NextColumn();
         ImGui::Columns(1);
         ImGui::Separator();
-        const auto POS_APP_LIST = ImVec2(60.f * SCALE.x, 48.f * SCALE.y + INFORMATION_BAR_HEIGHT);
+        const auto POS_APP_LIST = ImVec2(60.f * SCALE.x, INFORMATION_BAR_HEIGHT + (36.f * SCALE.y));
         const auto SIZE_APP_LIST = ImVec2((host.cfg.apps_list_grid ? 840.f : 900.f) * SCALE.x, display_size.y - POS_APP_LIST.y);
         ImGui::SetNextWindowPos(host.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
         ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
-
+    
         // Set Scroll Pos
         current_scroll_pos = ImGui::GetScrollY();
         max_scroll_pos = ImGui::GetScrollMaxY();
@@ -543,7 +544,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             ImGui::SetColumnWidth(2, GRID_COLUMN_SIZE);
             ImGui::SetColumnWidth(3, GRID_COLUMN_SIZE);
         }
-        ImGui::SetWindowFontScale(0.9f);
+        ImGui::SetWindowFontScale(1.1f);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
             for (const auto &app : apps_list) {
@@ -654,7 +655,7 @@ void draw_app_selector(GuiState &gui, HostState &host) {
             || ImGui::IsKeyPressed(host.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right)) {
             last_time["start"] = 0;
             ++gui.current_app_selected;
-            gui.live_area.app_selector = false;
+            gui.live_area.home_screen = false;
             gui.live_area.live_area_screen = true;
         }
     }
