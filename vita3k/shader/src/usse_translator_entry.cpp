@@ -521,8 +521,8 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
                                        10100 = opcode1
                                             pp = pred (2 bits, ShortPredicate)
                                               a = abs (1 bit)
-                                               s = skipinv (1 bit)
-                                                n = nosched (1 bit)
+                                               s = skipinv (1 bit, bool)
+                                                n = nosched (1 bit, bool)
                                                  r = src2_neg (1 bit)
                                                   e = sel1h_upper8 (1 bit)
                                                    d = dest_bank_ext (1 bit)
@@ -530,7 +530,7 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
                                                      c = src1_bank_ext (1 bit)
                                                       k = src2_bank_ext (1 bit)
                                                        - = don't care
-                                                        ttt = repeat_count (3 bits)
+                                                        ttt = repeat_count (3 bits, RepeatCount)
                                                            mm = mode (2 bits)
                                                              ff = src2_format (2 bits)
                                                                oo = src1_format (2 bits)

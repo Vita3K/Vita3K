@@ -449,9 +449,8 @@ VPCK:
         - src1_bank_ext: 1
         - src2_bank_ext: 1
         - repeat_count:
-            size: 3
+            size: 4
             type: RepeatCount
-            offset: 44
         - src_fmt: 3
         - dest_fmt: 3
         - dest_mask: 4
@@ -991,8 +990,59 @@ I16MAD:
     description: 16-bit Integer multiply-add
     members:
         - opcode1: '10100'
-        - DONTCARE:
-            size: 59
+        - pred:
+            size: 2
+            type: ShortPredicate
+        - abs:
+            size: 1
+        - skipinv:
+            size: 1
+            type: bool
+        - nosched:
+            size: 1
+            type: bool
+        - src2_neg:
+            size: 1
+        - sel1h_upper8:
+            size: 1
+        - dest_bank_ext:
+            size: 1
+        - end:
+            size: 1
+        - src1_bank_ext:
+            size: 1
+        - src2_bank_ext:
+            size: 1
+        - repeat_count:
+            size: 3
+            offset: 44
+            type: RepeatCount
+        - mode:
+            size: 2
+        - src2_format:
+            size: 2
+        - src1_format:
+            size: 2
+        - sel2h_upper8:
+            size: 1
+        - or_shift:
+            size: 2
+        - src0_bank:
+            size: 1
+        - dest_bank:
+            size: 2
+        - src1_bank:
+            size: 2
+        - src2_bank:
+            size: 2
+        - dest_n:
+            size: 7
+        - src0_n:
+            size: 7
+        - src1_n:
+            size: 7
+        - src2_n:
+            size: 7
 I32MAD:
     description: 32-bit Integer multiply-add
     members:
