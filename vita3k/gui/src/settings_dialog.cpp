@@ -359,9 +359,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
         if (!gui.modules.empty()) {
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Modules Mode");
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Modules mode");
             ImGui::Spacing();
-            ImGui::Checkbox("Experimental: LLE DriverUser", &config.lle_driver_user);
+            ImGui::Checkbox("LLE DriverUser", &config.lle_driver_user);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Enable this to use driver_us modules (experimental).");
             ImGui::Spacing();
@@ -375,7 +375,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Modules List");
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Modules list");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your desired modules.");
             ImGui::Spacing();
@@ -397,7 +397,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             }
             ImGui::PopItemWidth();
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT, "Modules Search");
+            ImGui::TextColored(GUI_COLOR_TEXT, "Search modules");
             gui.module_search_bar.Draw("##module_search_bar", 200 * host.dpi_scale);
             ImGui::Spacing();
             if (ImGui::Button("Clear list")) {
@@ -407,7 +407,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             }
             ImGui::SameLine();
         } else {
-            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the last firmware.");
+            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the PS Vita firmware.");
             if (ImGui::Button("Download Firmware"))
                 open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
         }
@@ -424,16 +424,16 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         static const char *LIST_CPU_BACKEND[] = { "Dynarmic", "Unicorn" };
         static const char *LIST_CPU_BACKEND_DISPLAY[] = { "Dynarmic", "Unicorn (deprecated)" };
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Cpu Backend");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "CPU Backend");
         if (ImGui::Combo("##cpu_backend", reinterpret_cast<int *>(&config_cpu_backend), LIST_CPU_BACKEND_DISPLAY, IM_ARRAYSIZE(LIST_CPU_BACKEND_DISPLAY)))
             config.cpu_backend = LIST_CPU_BACKEND[int(config_cpu_backend)];
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select your preferred cpu backend.");
+            ImGui::SetTooltip("Select your preferred CPU backend.");
         if (config_cpu_backend == CPUBackend::Dynarmic) {
             ImGui::Spacing();
             ImGui::Checkbox("Enable optimizations", &config.cpu_opt);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Enable additional CPU JIT optimizations.");
+                ImGui::SetTooltip("Enables additional CPU JIT optimizations.");
         }
         ImGui::EndTabItem();
     } else
@@ -446,7 +446,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
 #ifdef USE_VULKAN
         static const char *LIST_BACKEND_RENDERER[] = { "OpenGL", "Vulkan" };
-        if (ImGui::Combo("Backend Renderer (Reboot to apply)", reinterpret_cast<int *>(&host.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
+        if (ImGui::Combo("Backend renderer (Reboot to apply)", reinterpret_cast<int *>(&host.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
             host.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(host.backend_renderer)];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred backend renderer.");
@@ -454,8 +454,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Separator();
         ImGui::Spacing();
 #endif
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Resolution Upscaling").x / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Resolution Upscaling");
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Internal Resolution Upscaling").x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Internal Resolution Upscaling");
         ImGui::Spacing();
         if (!host.io.title_id.empty())
             ImGui::BeginDisabled();
@@ -480,11 +480,11 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::EndDisabled();
         ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Speed hack, disable surface syncing between cpu and gpu.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
+            ImGui::SetTooltip("Speed hack, disables surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on).");
         ImGui::Spacing();
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes the game look slightly blurry.");
+            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -493,14 +493,14 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("Use shader cache", &host.cfg.shader_cache);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Enable shader cache to pre-compile it at boot up\nUncheck the box to disable this feature.");
+            ImGui::SetTooltip("Enables shader cache to pre-compile it at game startup\nUncheck to disable this feature.");
         ImGui::SameLine();
         if (host.renderer->features.spirv_shader) {
             ImGui::Checkbox("Use Spir-V shader (deprecated)", &host.cfg.spirv_shader);
 
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, "
-                                  "and not all GPU are compatible with this.");
+                                  "and not all GPUs are compatible with this.");
             }
         }
         const auto shaders_cache_path{ fs::path(host.base_path) / "cache/shaders" };
@@ -520,7 +520,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("System")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Enter Button Assignment \nSelect your 'Enter' Button.");
+        ImGui::TextColored(GUI_COLOR_TEXT, "Enter button assignment \nSelect your 'Enter' button.");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and get default confirmation button.");
         ImGui::RadioButton("Circle", &host.cfg.sys_button, 0);
@@ -528,7 +528,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("PS TV Mode", &config.pstv_mode);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable PS TV Emulated mode.");
+            ImGui::SetTooltip("Check to enable PS TV mode.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
@@ -551,20 +551,20 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Checkbox("Archive Log", &host.cfg.archive_log);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable Archiving Log.");
+            ImGui::SetTooltip("Enables log archiving.");
         ImGui::SameLine();
 #ifdef USE_DISCORD
         ImGui::Checkbox("Discord Rich Presence", &host.cfg.discord_rich_presence);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Enables Discord Rich Presence to show what application you're running on Discord");
+            ImGui::SetTooltip("Enables Discord Rich Presence to show what application you're running on Discord.");
 #endif
         ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
         ImGui::Separator();
-        const auto perfomance_overley_size = ImGui::CalcTextSize("Performance Overlay").x;
+        const auto perfomance_overley_size = ImGui::CalcTextSize("Performance overlay").x;
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (perfomance_overley_size / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Performance Overlay");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Performance overlay");
         ImGui::Spacing();
         ImGui::Checkbox("Performance Overlay", &host.cfg.performance_overlay);
         if (ImGui::IsItemHovered())
@@ -581,22 +581,22 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
 #ifndef WIN32
         ImGui::Checkbox("Check to enable case-insensitive path finding on case sensitive filesystems. \nRESETS ON RESTART", &host.io.case_isens_find_enabled);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Allows emulator to attempt searching for files regardless of case on non-windows platforms");
+            ImGui::SetTooltip("Allows emulator to attempt searching for files regardless of case on non-Windows platforms");
 #endif
         ImGui::Separator();
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Emulated System Storage Folder");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Emulated system storage folder");
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
         ImGui::TextColored(GUI_COLOR_TEXT, "Current emulator folder: %s", host.cfg.pref_path.c_str());
         ImGui::PopItemWidth();
         ImGui::Spacing();
-        if (ImGui::Button("Change Emulator Path"))
+        if (ImGui::Button("Change emulator path"))
             change_emulator_path(gui, host);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Change Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually.");
+            ImGui::SetTooltip("Changes Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually.");
         if (host.cfg.pref_path != host.default_path) {
             ImGui::SameLine();
-            if (ImGui::Button("Reset Emulator Path")) {
+            if (ImGui::Button("Reset emulator path")) {
                 if (string_utils::utf_to_wide(host.default_path) != host.pref_path) {
                     host.pref_path = string_utils::utf_to_wide(host.default_path);
 
@@ -606,7 +606,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                 }
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Reset Vita3K emulator path to default.\nYou will need to move your old folder to the default location manually.");
+                ImGui::SetTooltip("Resets Vita3K emulator path to default.\nYou will need to move your old folder to the default location manually.");
         }
         ImGui::EndTabItem();
     } else
@@ -617,17 +617,17 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("GUI")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("GUI Visible", &host.cfg.show_gui);
+        ImGui::Checkbox("GUI visible", &host.cfg.show_gui);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show GUI after booting an application.");
         ImGui::SameLine();
-        ImGui::Checkbox("Info Bar Visible", &host.cfg.show_info_bar);
+        ImGui::Checkbox("Info bar visible", &host.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to show info bar inside app selector.");
+            ImGui::SetTooltip("Check the box to show an info bar inside app selector.");
         ImGui::Spacing();
-        ImGui::Checkbox("Live Area App Screen", &host.cfg.show_live_area_screen);
+        ImGui::Checkbox("Live Area app screen", &host.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to open Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
+            ImGui::SetTooltip("Check the box to open the Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
         ImGui::SameLine();
         ImGui::Checkbox("Grid Mode", &host.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
@@ -641,20 +641,20 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        const auto font_size = ImGui::CalcTextSize("Font Support").x;
+        const auto font_size = ImGui::CalcTextSize("Font support").x;
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (font_size / 2.f));
-        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Font Support");
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Font support");
         ImGui::Spacing();
         if (gui.fw_font) {
             ImGui::Checkbox("Asia Region", &host.cfg.asia_font_support);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Check this box to enable font support for Korean and Traditional Chinese.\nEnabling this will use more memory and will require you to restart the emulator.");
+                ImGui::SetTooltip("Enables font support for Korean and Traditional Chinese.\nEnabling this will use more memory and will require you to restart the emulator.");
         } else {
             ImGui::TextColored(GUI_COLOR_TEXT, "No firmware font package present.\nPlease download and install it.");
             if (ImGui::Button("Download firmware font package"))
                 open_path("https://bit.ly/2P2rb0r");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for asian region font support in gui.\nIt is also generally recommended for gui");
+                ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for Asian region font support in GUI.\nIt is also generally recommended for GUI");
         }
         ImGui::Spacing();
         ImGui::Separator();
@@ -730,19 +730,19 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Debug")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("Log Imports", &host.kernel.debugger.log_imports);
+        ImGui::Checkbox("Import logging", &host.kernel.debugger.log_imports);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module import symbols.");
-        ImGui::Checkbox("Log Exports", &host.kernel.debugger.log_exports);
+        ImGui::Checkbox("Export logging", &host.kernel.debugger.log_exports);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module export symbols.");
         ImGui::Spacing();
-        ImGui::Checkbox("Log Shaders", &host.cfg.log_active_shaders);
+        ImGui::Checkbox("Shader logging", &host.cfg.log_active_shaders);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shaders being used on each draw call.");
-        ImGui::Checkbox("Log Uniforms", &host.cfg.log_uniforms);
+        ImGui::Checkbox("Uniform logging", &host.cfg.log_uniforms);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shader uniform names and values.");
         ImGui::SameLine();
@@ -750,13 +750,13 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");
         ImGui::Spacing();
-        ImGui::Checkbox("Dump textures", &host.cfg.dump_textures);
+        ImGui::Checkbox("Texture dumping", &host.cfg.dump_textures);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Dump textures to files");
+            ImGui::SetTooltip("Dumps textures to files");
         ImGui::SameLine();
-        ImGui::Checkbox("Dump elfs", &host.kernel.debugger.dump_elfs);
+        ImGui::Checkbox("ELF dumping", &host.kernel.debugger.dump_elfs);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Dump loaded code as elfs");
+            ImGui::SetTooltip("Dump loaded code as ELFs");
         ImGui::Spacing();
         if (ImGui::Button(host.kernel.debugger.watch_code ? "Unwatch code" : "Watch code")) {
             host.kernel.debugger.watch_code = !host.kernel.debugger.watch_code;
@@ -776,7 +776,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
 #ifdef TRACY_ENABLE
         // Tracy profiler settings
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Tracy Profiler");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Tracy profiler");
 
         ImGui::Text("The Tracy profiler implementation in the emulator allows among other\n"
                     "things to track the functions that a game calls in real-time\n"
