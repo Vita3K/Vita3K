@@ -794,7 +794,7 @@ EXPORT(int, sceGxmColorSurfaceSetFormat, SceGxmColorSurface *surface, SceGxmColo
         LOG_WARN("Unable to convert color surface type 0x{:X} to texture format enum for background texture of color surface!", static_cast<std::uint32_t>(format));
     }
 
-    CALL_EXPORT(sceGxmTextureSetFormat, &surface->backgroundTex, tex_format);
+    return CALL_EXPORT(sceGxmTextureSetFormat, &surface->backgroundTex, tex_format);
 }
 
 EXPORT(int, sceGxmColorSurfaceSetGammaMode, SceGxmColorSurface *surface, SceGxmColorSurfaceGammaMode gammaMode) {

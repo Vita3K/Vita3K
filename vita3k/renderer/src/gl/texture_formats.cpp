@@ -274,6 +274,9 @@ GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
         return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+    default:
+        LOG_ERROR("Missing case texture base format {}, fallback to GL_RGBA", base_format);
+        return GL_RGBA;
     }
 }
 
@@ -347,6 +350,9 @@ GLenum translate_format(SceGxmTextureBaseFormat base_format) {
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
         return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+    default:
+        LOG_ERROR("Missing case texture base format {}, fallback to GL_RGBA", base_format);
+        return GL_RGBA;
     }
 }
 
