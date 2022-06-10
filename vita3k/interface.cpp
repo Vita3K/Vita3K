@@ -592,6 +592,12 @@ static void handle_window_event(HostState &state, const SDL_WindowEvent event) {
     }
 }
 
+static void switch_full_screen(HostState &host) {
+    host.display.fullscreen = !host.display.fullscreen;
+
+    SDL_SetWindowFullscreen(host.window.get(), host.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+}
+
 bool handle_events(HostState &host, GuiState &gui) {
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
@@ -632,14 +638,9 @@ bool handle_events(HostState &host, GuiState &gui) {
             }
             if (event.key.keysym.sym == SDLK_t)
                 toggle_touchscreen();
-            if (event.key.keysym.sym == SDLK_F11) {
-                host.display.fullscreen = !host.display.fullscreen;
+            if (event.key.keysym.sym == SDLK_F11)
+                switch_full_screen(host);
 
-                if (host.display.fullscreen.load())
-                    SDL_MaximizeWindow(host.window.get());
-
-                SDL_SetWindowFullscreen(host.window.get(), host.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
-            }
             break;
 
         case SDL_WINDOWEVENT:
@@ -771,6 +772,9 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
     }
 
     start_sync_thread(host.display, host.kernel);
+
+    if (host.cfg.boot_apps_full_screen && !host.display.fullscreen.load())
+        switch_full_screen(host);
 
     return Success;
 }

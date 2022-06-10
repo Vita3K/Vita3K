@@ -338,7 +338,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     auto &settings_dialog = is_custom_config ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     ImGui::Begin("##settings", &settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushFont(gui.vita_font);
-    ImGui::SetWindowFontScale(0.65f);
+    ImGui::SetWindowFontScale(0.8f);
     const auto title = is_custom_config ? fmt::format("Settings: {} [{}]", get_app_index(gui, host.app_path)->title, host.app_path) : "Settings";
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
@@ -528,6 +528,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
+        ImGui::Checkbox("Boot apps in full screen", &host.cfg.boot_apps_full_screen);
+        ImGui::Spacing();
         ImGui::Checkbox("Disable ngs support", &config.disable_ngs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Disable support for advanced audio library ngs");
@@ -574,6 +576,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::SetTooltip("Allows emulator to attempt searching for files regardless of case on non-Windows platforms");
 #endif
         ImGui::Separator();
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Emulated System Storage Folder").x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Emulated System Storage Folder");
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
