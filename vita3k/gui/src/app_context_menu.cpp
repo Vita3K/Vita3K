@@ -291,7 +291,7 @@ void draw_app_context_menu(GuiState &gui, HostState &host, const std::string &ap
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
-        ImGui::SetWindowFontScale(1.3f * RES_SCALE.x);
+        ImGui::SetWindowFontScale(1.1f);
         if (ImGui::MenuItem(lang["boot"].c_str()))
             pre_load_app(gui, host, false, app_path);
         if (title_id.find("NPXS") == std::string::npos) {

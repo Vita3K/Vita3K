@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -564,7 +564,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 if (!gui.apps_list_opened.empty() && gui.apps_list_opened[gui.current_app_selected] == "NPXS10026")
                     gui.live_area.live_area_screen = true;
                 else
-                    gui.live_area.app_selector = true;
+                    gui.live_area.home_screen = true;
                 gui.live_area.content_manager = false;
             }
         }

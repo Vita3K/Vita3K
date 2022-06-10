@@ -118,7 +118,6 @@ public:
     struct CurrentConfig {
         std::string cpu_backend;
         bool cpu_opt = true;
-        bool lle_driver_user = false;
         int modules_mode = ModulesMode::AUTOMATIC;
         std::vector<std::string> lle_modules = {};
         bool pstv_mode = false;

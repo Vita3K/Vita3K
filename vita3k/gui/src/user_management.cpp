@@ -494,7 +494,7 @@ void draw_user_management(GuiState &gui, HostState &host) {
                     menu.clear();
             } else if (USER_ALREADY_INIT) {
                 gui.live_area.user_management = false;
-                gui.live_area.app_selector = true;
+                gui.live_area.home_screen = true;
             }
         }
     }

@@ -529,15 +529,6 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
         host.kernel.export_nids.emplace(var.nid, addr);
     }
 
-    if (host.cfg.current_config.lle_driver_user) {
-        // Load Driver User pre-loaded module
-        const std::vector<std::string> lib_load_list = {
-            "us/driver_us.suprx",
-        };
-
-        pre_load_module(host, lib_load_list, VitaIoDevice::os0);
-    }
-
     // Load pre-loaded libraries
     const auto module_app_path{ fs::path(host.pref_path) / "ux0/app" / host.io.app_path / "sce_module" };
     const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);

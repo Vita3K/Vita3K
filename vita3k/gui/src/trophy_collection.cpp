@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -755,7 +755,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
             if (!gui.apps_list_opened.empty() && (gui.current_app_selected >= 0))
                 gui.live_area.live_area_screen = true;
             else
-                gui.live_area.app_selector = true;
+                gui.live_area.home_screen = true;
             gui.live_area.trophy_collection = false;
         }
     }
