@@ -754,7 +754,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Dumps textures to files");
         ImGui::SameLine();
-        ImGui::Checkbox("ELF Dumping", &host.kernel.debugger.dump_elfs);
+        ImGui::Checkbox("ELF dumping", &host.kernel.debugger.dump_elfs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Dump loaded code as ELFs");
         ImGui::Spacing();
