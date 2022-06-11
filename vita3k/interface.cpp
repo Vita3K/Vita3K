@@ -774,7 +774,7 @@ ExitCode run_app(HostState &host, Ptr<const void> &entry_point) {
         return RunThreadFailed;
     }
 
-    start_sync_thread(host.display, host.kernel);
+    start_sync_thread(host);
 
     if (host.cfg.boot_apps_full_screen && !host.display.fullscreen.load())
         switch_full_screen(host);

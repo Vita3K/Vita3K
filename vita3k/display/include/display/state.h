@@ -36,7 +36,7 @@ typedef std::shared_ptr<ThreadState> ThreadStatePtr;
 
 struct DisplayStateVBlankWaitInfo {
     ThreadStatePtr target_thread;
-    std::int32_t vsync_left;
+    uint64_t target_vcount;
     bool is_cb;
 };
 
