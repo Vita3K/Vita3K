@@ -130,7 +130,7 @@ EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
 
-    return peek_touch(host, port, pData, nBufs);
+    return touch_get(thread_id, host, port, pData, nBufs, true);
 }
 
 EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
@@ -141,7 +141,7 @@ EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
 
-    return peek_touch(host, port, pData, nBufs);
+    return touch_get(thread_id, host, port, pData, nBufs, true);
 }
 
 EXPORT(int, sceTouchPeekRegion) {
@@ -159,8 +159,7 @@ EXPORT(int, sceTouchRead, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
     if (pData == nullptr) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-
-    return peek_touch(host, port, pData, nBufs);
+    return touch_get(thread_id, host, port, pData, nBufs, false);
 }
 
 EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
@@ -171,7 +170,7 @@ EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
 
-    return peek_touch(host, port, pData, nBufs);
+    return touch_get(thread_id, host, port, pData, nBufs, false);
 }
 
 EXPORT(int, sceTouchReadRegion) {
