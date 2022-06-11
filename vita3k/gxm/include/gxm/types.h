@@ -388,6 +388,11 @@ enum SceGxmTextureBaseFormat {
     SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10 = 0x9A000000
 };
 
+template <typename T>
+constexpr static inline uint32_t operator|(const SceGxmTextureBaseFormat a, const T b) {
+    return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
+};
+
 enum SceGxmTextureFormat {
     // Supported formats
 
@@ -808,6 +813,11 @@ enum SceGxmColorBaseFormat {
     SCE_GXM_COLOR_BASE_FORMAT_F11F11F10 = 0x21000000,
     SCE_GXM_COLOR_BASE_FORMAT_SE5M9M9M9 = 0x31000000,
     SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10 = 0x41000000
+};
+
+template <typename T>
+constexpr static inline uint32_t operator|(const SceGxmColorBaseFormat a, const T b) {
+    return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
 };
 
 enum SceGxmColorFormat {
