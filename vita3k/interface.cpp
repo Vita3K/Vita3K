@@ -596,6 +596,9 @@ static void switch_full_screen(HostState &host) {
     host.display.fullscreen = !host.display.fullscreen;
 
     SDL_SetWindowFullscreen(host.window.get(), host.display.fullscreen.load() ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+
+    // Refresh Viewport Size
+    app::update_viewport(host);
 }
 
 bool handle_events(HostState &host, GuiState &gui) {
