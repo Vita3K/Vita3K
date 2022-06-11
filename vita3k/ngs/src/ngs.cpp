@@ -438,6 +438,7 @@ bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo
         }
 
         Voice *v = voice.get(mem);
+        new (v) Voice();
         v->init(rack);
 
         // Allocate parameter buffer info for each voice
