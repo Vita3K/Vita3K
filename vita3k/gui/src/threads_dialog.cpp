@@ -75,6 +75,8 @@ void draw_threads_dialog(GuiState &gui, HostState &host) {
         case ThreadStatus::dormant:
             run_state = "Dormant";
             break;
+        case ThreadStatus::suspend:
+            run_state = "Suspended";
         }
         if (ImGui::Selectable(fmt::format("{:0>8X}         {:<32}   {:<16}   {:0>8X}",
                 thread.first, th_state->name, run_state, th_state->stack.get())

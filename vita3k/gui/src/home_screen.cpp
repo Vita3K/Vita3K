@@ -233,6 +233,8 @@ static bool app_filter(const std::string &app) {
     };
 
     switch (app_region) {
+    case ALL:
+        break;
     case USA:
         if (filter_app_region({ "PCSA", "PCSE" }))
             return true;
@@ -284,6 +286,8 @@ static void sort_app_list(GuiState &gui, HostState &host, const SortType &type) 
                 return lhs.app_ver < rhs.app_ver;
             case DESCENDANT:
                 return lhs.app_ver > rhs.app_ver;
+            default:
+                break;
             }
         case CATEGORY:
             switch (sorted) {
@@ -291,6 +295,8 @@ static void sort_app_list(GuiState &gui, HostState &host, const SortType &type) 
                 return lhs.category < rhs.category;
             case DESCENDANT:
                 return lhs.category > rhs.category;
+            default:
+                break;
             }
         case LAST_TIME:
             switch (sorted) {
@@ -298,6 +304,8 @@ static void sort_app_list(GuiState &gui, HostState &host, const SortType &type) 
                 return lhs.last_time > rhs.last_time;
             case DESCENDANT:
                 return lhs.last_time < rhs.last_time;
+            default:
+                break;
             }
         case TITLE:
             switch (sorted) {
@@ -305,6 +313,8 @@ static void sort_app_list(GuiState &gui, HostState &host, const SortType &type) 
                 return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
             case DESCENDANT:
                 return string_utils::toupper(lhs.title) > string_utils::toupper(rhs.title);
+            default:
+                break;
             }
         case TITLE_ID:
             switch (sorted) {
@@ -312,6 +322,8 @@ static void sort_app_list(GuiState &gui, HostState &host, const SortType &type) 
                 return lhs.title_id < rhs.title_id;
             case DESCENDANT:
                 return lhs.title_id > rhs.title_id;
+            default:
+                break;
             }
         }
         return false;
@@ -518,7 +530,7 @@ void draw_home_screen(GuiState &gui, HostState &host) {
         const auto SIZE_APP_LIST = ImVec2((host.cfg.apps_list_grid ? 840.f : 900.f) * SCALE.x, display_size.y - POS_APP_LIST.y);
         ImGui::SetNextWindowPos(host.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
         ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
-    
+
         // Set Scroll Pos
         current_scroll_pos = ImGui::GetScrollY();
         max_scroll_pos = ImGui::GetScrollMaxY();
@@ -549,10 +561,8 @@ void draw_home_screen(GuiState &gui, HostState &host) {
         const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
             for (const auto &app : apps_list) {
                 bool selected = false;
-                if (app_region != ALL) {
-                    if ((app.title_id.find("NPXS") == std::string::npos) && app_filter(app.title_id))
-                        continue;
-                }
+                if ((app.title_id.find("NPXS") == std::string::npos) && app_filter(app.title_id))
+                    continue;
                 if (!gui.app_search_bar.PassFilter(app.title.c_str()) && !gui.app_search_bar.PassFilter(app.title_id.c_str()))
                     continue;
                 const auto POS_ICON = ImGui::GetCursorPosY();
