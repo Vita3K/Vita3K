@@ -49,7 +49,21 @@ static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemStat
     return result;
 }
 
-#pragma pack(push, 1)
+struct SceGxmCommandList;
+
+// Represent the data range in the vita memory that is taken by a command list
+// If the command list goes through multiple vdm buffers there will be multiple command ranges
+struct CommandListRange {
+    Address start;
+    Address end;
+    SceGxmCommandList *command_list;
+
+    bool operator<(const CommandListRange &other) const {
+        // the ranges are all disjoints, so no problem for ordering
+        return start < other.start;
+    }
+};
+
 struct SceGxmCommandDataCopyInfo {
     std::uint8_t **dest_pointer;
     const std::uint8_t *source_data;
@@ -57,7 +71,20 @@ struct SceGxmCommandDataCopyInfo {
 
     SceGxmCommandDataCopyInfo *next = nullptr;
 };
-#pragma pack(pop)
+
+typedef std::set<CommandListRange>::iterator RangeIterator;
+
+struct SceGxmCommandList {
+    renderer::CommandList *list;
+    SceGxmCommandDataCopyInfo *copy_info;
+
+    // the locations on the vita memory that correspond to this command list
+    // this part is not copied in the command list given to the game by endCommandList
+    std::stack<RangeIterator> memory_ranges;
+};
+
+// Seems on real vita, this is the maximum size, I got stack corrupt if try to write more
+static_assert(sizeof(SceGxmCommandList) - sizeof(std::stack<CommandListRange>) <= 32);
 
 struct SceGxmContext {
     GxmContextState state;
@@ -71,11 +98,16 @@ struct SceGxmContext {
     SceGxmCommandDataCopyInfo *infos = nullptr;
     SceGxmCommandDataCopyInfo *last_info = nullptr;
 
-    std::uint8_t *alloc_space = nullptr;
-    std::uint8_t *alloc_space_end = nullptr;
+    uint8_t *alloc_space = nullptr;
+    uint8_t *alloc_space_end = nullptr;
 
     BitmapAllocator command_allocator;
     bool last_precomputed = false;
+
+    // this is used for deferred contexts
+    uint8_t *alloc_space_start = nullptr;
+    std::set<CommandListRange> command_list_ranges;
+    SceGxmCommandList *curr_command_list = nullptr;
 
     explicit SceGxmContext(std::mutex &callback_lock_)
         : callback_lock(callback_lock_) {
@@ -83,6 +115,71 @@ struct SceGxmContext {
 
     void reset_recording() {
         last_precomputed = false;
+    }
+
+    void free_command_list(SceGxmCommandList *command_list) {
+        // command list has been overwritten, free the memory
+        // everything except the command_list except was allocated using malloc
+        renderer::Command *cmd = command_list->list->first;
+        while (cmd != command_list->list->last) {
+            renderer::Command *next = cmd->next;
+            memset(cmd, 0, sizeof(renderer::Command));
+            free(cmd);
+            cmd = next;
+        }
+        free(cmd);
+        free(command_list->list);
+
+        auto *copy_info = command_list->copy_info;
+        while (copy_info) {
+            auto *next = copy_info->next;
+            memset(copy_info, 0, sizeof(copy_info));
+            free(copy_info);
+            copy_info = next;
+        }
+
+        // we also need to delete all ranges occupied by this list
+        while (!command_list->memory_ranges.empty()) {
+            command_list_ranges.erase(command_list->memory_ranges.top());
+            command_list->memory_ranges.pop();
+        }
+
+        delete command_list;
+    }
+
+    // check if there are any command list which have been overwritten, meaning we can free their content
+    void deferred_check_for_free(const CommandListRange &new_range) {
+        // delete all command list that overlaps
+        RangeIterator it = command_list_ranges.upper_bound(new_range);
+        if (it != command_list_ranges.begin()) {
+            // get the first element before
+            it--;
+            if (it->end <= new_range.start) {
+                it++;
+            }
+        }
+
+        // now we can go from left to right and stop when it doesn't overlap anymore;
+        while (it != command_list_ranges.end() && it->start < new_range.end) {
+            RangeIterator to_delete = it;
+            // we must keep it not invalidated
+            while (it != command_list_ranges.end() && it->command_list == to_delete->command_list)
+                it++;
+
+            free_command_list(to_delete->command_list);
+        }
+    }
+
+    // insert new memory range used by a command list
+    void insert_new_memory_range(const MemState &mem) {
+        CommandListRange range = {
+            Ptr<void>(alloc_space_start, mem).address(),
+            Ptr<void>(alloc_space, mem).address(),
+            curr_command_list
+        };
+        deferred_check_for_free(range);
+        RangeIterator it = command_list_ranges.emplace(std::move(range)).first;
+        curr_command_list->memory_ranges.push(it);
     }
 
     bool make_new_alloc_space(KernelState &kern, const MemState &mem, const SceUID thread_id, bool force = false) {
@@ -93,6 +190,11 @@ struct SceGxmContext {
         if (!force && alloc_space && alloc_space < alloc_space_end) {
             // we already have spare space
             return true;
+        }
+
+        if (state.active && state.type == SCE_GXM_CONTEXT_TYPE_DEFERRED) {
+            // update memory ranges
+            insert_new_memory_range(mem);
         }
 
         std::uint32_t actual_size = 0;
@@ -109,7 +211,7 @@ struct SceGxmContext {
                 state.vdm_buffer_size = 0;
             }
         } else {
-            static constexpr std::uint32_t DEFAULT_SIZE = sizeof(renderer::Command) * 4096;
+            static constexpr std::uint32_t DEFAULT_SIZE = 1024;
 
             Ptr<void> space = gxmRunDeferredMemoryCallback(kern, mem, callback_lock, actual_size, state.vdm_memory_callback,
                 state.memory_callback_userdata, DEFAULT_SIZE, thread_id);
@@ -122,6 +224,7 @@ struct SceGxmContext {
             alloc_space = space.cast<std::uint8_t>().get(mem);
         }
 
+        alloc_space_start = alloc_space;
         alloc_space_end = alloc_space + actual_size;
         return true;
     }
@@ -131,16 +234,20 @@ struct SceGxmContext {
             return nullptr;
         }
 
-        if (alloc_space + size > alloc_space_end) {
+        // allocate 8 bytes in the vdm memory to make it look like the vdm buffer is getting used
+        // otherwise we would never know when to free our command lists
+        constexpr uint32_t allocated_on_vdm = 8;
+
+        if (alloc_space + allocated_on_vdm > alloc_space_end) {
             if (!make_new_alloc_space(kern, mem, thread_id, true)) {
                 return nullptr;
             }
         }
 
-        std::uint8_t *result = alloc_space;
-        alloc_space += size;
+        alloc_space += allocated_on_vdm;
 
-        return result;
+        // the data returned is not part of the vita memory (our commands are too big and do not fit)
+        return reinterpret_cast<uint8_t *>(malloc(size));
     }
 
     template <typename T>
@@ -204,7 +311,6 @@ struct SceGxmContext {
 
         SceGxmCommandDataCopyInfo *info = linearly_allocate<SceGxmCommandDataCopyInfo>(kern, mem, thread_id);
 
-        alloc_space += sizeof(SceGxmCommandDataCopyInfo);
         info->next = nullptr;
         info->dest_pointer = nullptr;
         info->source_data = nullptr;
@@ -221,14 +327,6 @@ struct SceGxmRenderTarget {
     std::uint16_t scenesPerFrame;
     SceUID driverMemBlock;
 };
-
-struct SceGxmCommandList {
-    renderer::CommandList *list;
-    SceGxmCommandDataCopyInfo *copy_info;
-};
-
-// Seems on real vita, this is the maximum size, I got stack corrupt if try to write more
-static_assert(sizeof(SceGxmCommandList) <= 32);
 
 typedef std::uint32_t VertexCacheHash;
 
@@ -525,9 +623,14 @@ EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
     deferredContext->infos = nullptr;
     deferredContext->last_info = nullptr;
 
+    deferredContext->curr_command_list = new SceGxmCommandList();
+
     if (!deferredContext->make_new_alloc_space(host.kernel, host.mem, thread_id)) {
         return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED);
     }
+
+    // in case the same vdm buffer was used for two consecutive command lists
+    deferredContext->alloc_space_start = deferredContext->alloc_space;
 
     if (!deferredContext->state.vertex_ring_buffer) {
         deferredContext->state.vertex_ring_buffer = gxmRunDeferredMemoryCallback(host.kernel, host.mem, host.gxm.callback_lock, deferredContext->state.vertex_ring_buffer_size,
@@ -548,9 +651,6 @@ EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
     }
 
     // Set command allocate functions
-    // These commands are never gonna be freed from the server side, so this should be fine to set each begin
-    // command list. Why did I make it set each begin command list, at least this is a prevention of thread die
-    // - no callback gonna run...
     KernelState *kernel = &host.kernel;
     MemState *mem = &host.mem;
 
@@ -558,8 +658,8 @@ EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
         return deferredContext->allocate_new_command(*kernel, *mem, thread_id);
     };
 
-    deferredContext->renderer->free_func = [deferredContext](renderer::Command *cmd) {
-        return deferredContext->free_new_command(cmd);
+    deferredContext->renderer->free_func = [](renderer::Command *cmd) {
+        // do not delete here, commands will be deleted when they are overwritten
     };
 
     // Begin the command list by white washing previous command list, and restoring deferred state
@@ -1445,18 +1545,20 @@ EXPORT(int, sceGxmEndCommandList, SceGxmContext *deferredContext, SceGxmCommandL
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_COMMAND_LIST);
     }
 
-    // Try to allocate memory for storing command list from renderer
-    int total_to_allocate = (sizeof(renderer::CommandList) + sizeof(renderer::Command) - 1) / sizeof(renderer::Command);
+    // only set the first two fields for commandList (its size is assumed to be 32 bytes by the game)
+    commandList->copy_info = deferredContext->infos;
+    commandList->list = deferredContext->linearly_allocate<renderer::CommandList>(host.kernel, host.mem,
+        thread_id);
 
-    {
-        const std::lock_guard<std::mutex> guard(deferredContext->lock);
-
-        commandList->copy_info = deferredContext->infos;
-        commandList->list = deferredContext->linearly_allocate<renderer::CommandList>(host.kernel, host.mem,
-            thread_id);
-    }
+    // also update our own command list
+    deferredContext->curr_command_list->copy_info = commandList->copy_info;
+    deferredContext->curr_command_list->list = commandList->list;
 
     *commandList->list = deferredContext->renderer->command_list;
+
+    // insert last memory range
+    deferredContext->insert_new_memory_range(host.mem);
+    deferredContext->curr_command_list = nullptr;
 
     // Reset active state
     deferredContext->state.active = false;
