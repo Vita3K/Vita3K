@@ -180,10 +180,12 @@ set_property(TARGET yaml-cpp PROPERTY FOLDER externals)
 add_library(rpcs3 INTERFACE)
 target_include_directories(rpcs3 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/include")
 
-if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip")
-message(STATUS "Downloading discord gamesdk...")
-file(DOWNLOAD https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip
-	"${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip" SHOW_PROGRESS)
+if(USE_DISCORD_RICH_PRESENCE)
+	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip")
+		message(STATUS "Downloading discord gamesdk...")
+		file(DOWNLOAD https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip
+		"${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip" SHOW_PROGRESS)
+	endif()
 endif()
 
 if(USE_DISCORD_RICH_PRESENCE)
