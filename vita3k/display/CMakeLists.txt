@@ -3,7 +3,6 @@ add_library(
 	STATIC
 	include/display/state.h
 	include/display/functions.h
-
 	src/display.cpp
 )
 

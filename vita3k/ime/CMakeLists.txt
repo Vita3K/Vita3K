@@ -1,6 +1,6 @@
 add_library(
-ime
-INTERFACE
+    ime
+    INTERFACE
 )
 
 target_include_directories(ime INTERFACE include)

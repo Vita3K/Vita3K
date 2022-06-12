@@ -59,6 +59,12 @@ endif()
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
+if(MSVC)
+	add_compile_options(/W4 /we4774)
+else()
+	add_compile_options(-Wformat -Werror=format-security)
+endif()
+
 add_subdirectory(app)
 add_subdirectory(audio)
 add_subdirectory(config)

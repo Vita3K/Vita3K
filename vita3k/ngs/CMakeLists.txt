@@ -32,7 +32,8 @@ add_library(
 	src/modules/passthrough.cpp
 	src/ngs.cpp
 	src/route.cpp
-	src/scheduler.cpp)
+	src/scheduler.cpp
+)
 
 target_include_directories(ngs PUBLIC include)
 target_link_libraries(ngs PUBLIC codec)

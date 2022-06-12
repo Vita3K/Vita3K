@@ -1,6 +1,7 @@
-add_library(codec STATIC
+add_library(
+    codec
+    STATIC
     include/codec/state.h
-
     src/atrac9.cpp
     src/decoder.cpp
     src/aac.cpp
@@ -8,7 +9,8 @@ add_library(codec STATIC
     src/mjpeg.cpp
     src/mp3.cpp
     src/pcm.cpp
-    src/player.cpp)
+    src/player.cpp
+)
 
 target_include_directories(codec PUBLIC include)
 target_link_libraries(codec PRIVATE ffmpeg libatrac9 util) 

@@ -24,7 +24,12 @@
 #include <np/state.h>
 
 #include <imgui.h>
+// Disable warninig here is needed to compile on windows because we
+// are turning some warnings into errors to allow makepkg default flags
+#pragma warning(push)
+#pragma warning(disable : 4774)
 #include <imgui_memory_editor.h>
+#pragma warning(pop)
 
 #include <gui/imgui_impl_sdl_state.h>
 
