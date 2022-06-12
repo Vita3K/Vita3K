@@ -1030,9 +1030,19 @@ enum SceGxmDepthStencilForceLoadMode {
     SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED = 0x00000002u
 };
 
+template <typename T>
+constexpr static inline uint32_t operator|(const SceGxmDepthStencilForceLoadMode a, const T b) {
+    return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
+};
+
 enum SceGxmDepthStencilForceStoreMode {
     SCE_GXM_DEPTH_STENCIL_FORCE_STORE_DISABLED = 0x00000000u,
     SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED = 0x00000004u
+};
+
+template <typename T>
+constexpr static inline uint32_t operator|(const SceGxmDepthStencilForceStoreMode a, const T b) {
+    return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
 };
 
 enum SceGxmColorSurfaceDitherMode {
