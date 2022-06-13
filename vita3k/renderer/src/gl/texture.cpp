@@ -41,7 +41,7 @@ GLenum get_gl_texture_type(const SceGxmTexture &gxm_texture) {
 void bind_texture(GLTextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem) {
     R_PROFILE(__func__);
     glBindTexture(get_gl_texture_type(gxm_texture), cache.textures[0]);
-    configure_bound_texture(gxm_texture);
+    configure_bound_texture(cache, gxm_texture);
     upload_bound_texture(gxm_texture, mem);
 }
 
@@ -68,7 +68,7 @@ static bool is_block_compressed_format(SceGxmTextureBaseFormat fmt) {
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP);
 }
 
-void configure_bound_texture(const SceGxmTexture &gxm_texture) {
+void configure_bound_texture(const renderer::TextureCacheState &state, const SceGxmTexture &gxm_texture) {
     R_PROFILE(__func__);
 
     const SceGxmTextureFormat fmt = gxm::get_format(&gxm_texture);
@@ -91,6 +91,11 @@ void configure_bound_texture(const SceGxmTexture &gxm_texture) {
     glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_FILTER, translate_minmag_filter((SceGxmTextureFilter)gxm_texture.min_filter));
     glTexParameteri(texture_bind_type, GL_TEXTURE_MAG_FILTER, translate_minmag_filter((SceGxmTextureFilter)gxm_texture.mag_filter));
     glTexParameteriv(texture_bind_type, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+
+    // anisotropic filtering
+    // we don't need to check for the existence of this extension because it is considered an ubiquitous extension
+    // for now we apply anisotropic filtering to all textures
+    glTexParameterf(texture_bind_type, GL_TEXTURE_MAX_ANISOTROPY_EXT, static_cast<float>(state.anisotropic_filtering));
 
     const GLenum internal_format = translate_internal_format(base_format);
     auto width = static_cast<uint32_t>(gxm::get_width(&gxm_texture));

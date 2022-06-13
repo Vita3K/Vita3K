@@ -94,7 +94,7 @@ namespace texture {
 
 // Textures.
 void bind_texture(GLTextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem);
-void configure_bound_texture(const SceGxmTexture &gxm_texture);
+void configure_bound_texture(const renderer::TextureCacheState &state, const SceGxmTexture &gxm_texture);
 void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem);
 
 // Texture formats.

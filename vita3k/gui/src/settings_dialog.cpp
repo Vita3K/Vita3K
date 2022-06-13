@@ -159,6 +159,7 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
                 config.resolution_multiplier = gpu_child.attribute("resolution-multiplier").as_int();
                 config.disable_surface_sync = gpu_child.attribute("disable-surface-sync").as_bool();
                 config.enable_fxaa = gpu_child.attribute("enable-fxaa").as_bool();
+                config.anisotropic_filtering = gpu_child.attribute("anisotropic-filtering").as_int();
             }
 
             // Load System Config
@@ -205,6 +206,7 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
         config.resolution_multiplier = host.cfg.resolution_multiplier;
         config.disable_surface_sync = host.cfg.disable_surface_sync;
         config.enable_fxaa = host.cfg.enable_fxaa;
+        config.anisotropic_filtering = host.cfg.anisotropic_filtering;
         config.pstv_mode = host.cfg.pstv_mode;
         config.disable_ngs = host.cfg.disable_ngs;
     }
@@ -215,6 +217,7 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
     host.renderer->res_multiplier = config.resolution_multiplier;
     host.renderer->disable_surface_sync = config.disable_surface_sync;
     host.renderer->set_fxaa(config.enable_fxaa);
+    host.renderer->set_anisotropic_filtering(config.anisotropic_filtering);
 }
 
 /**
@@ -260,6 +263,7 @@ static void save_config(GuiState &gui, HostState &host) {
         gpu_child.append_attribute("resolution-multiplier") = config.resolution_multiplier;
         gpu_child.append_attribute("disable-surface-sync") = config.disable_surface_sync;
         gpu_child.append_attribute("enable-fxaa") = config.enable_fxaa;
+        gpu_child.append_attribute("anti-aliasing") = config.anisotropic_filtering;
 
         // System
         auto system_child = config_child.append_child("system");
@@ -281,6 +285,7 @@ static void save_config(GuiState &gui, HostState &host) {
         host.cfg.resolution_multiplier = config.resolution_multiplier;
         host.cfg.disable_surface_sync = config.disable_surface_sync;
         host.cfg.enable_fxaa = config.enable_fxaa;
+        host.cfg.anisotropic_filtering = config.anisotropic_filtering;
         host.cfg.disable_ngs = config.disable_ngs;
     }
     config::serialize_config(host.cfg, host.cfg.config_path);
@@ -307,6 +312,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.resolution_multiplier = config.resolution_multiplier;
         host.cfg.current_config.disable_surface_sync = config.disable_surface_sync;
         host.cfg.current_config.enable_fxaa = config.enable_fxaa;
+        host.cfg.current_config.anisotropic_filtering = config.anisotropic_filtering;
         host.cfg.current_config.disable_ngs = config.disable_ngs;
     } else {
         // Else inherit the values from the global emulator config
@@ -318,11 +324,13 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.resolution_multiplier = host.cfg.resolution_multiplier;
         host.cfg.current_config.disable_surface_sync = host.cfg.disable_surface_sync;
         host.cfg.current_config.enable_fxaa = host.cfg.enable_fxaa;
+        host.cfg.current_config.anisotropic_filtering = host.cfg.anisotropic_filtering;
         host.cfg.current_config.disable_ngs = host.cfg.disable_ngs;
     }
     // can be changed while ingame
     host.renderer->disable_surface_sync = host.cfg.current_config.disable_surface_sync;
     host.renderer->set_fxaa(host.cfg.enable_fxaa);
+    host.renderer->set_anisotropic_filtering(host.cfg.anisotropic_filtering);
     // No change it if app already running
     if (host.io.title_id.empty()) {
         host.kernel.cpu_backend = set_cpu_backend(host.cfg.current_config.cpu_backend);
@@ -476,6 +484,18 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
         ImGui::Spacing();
+
+        static int max_anisotropic_filtering_log = -1;
+        static int anisotropic_filtering_log = 0;
+        if (max_anisotropic_filtering_log == -1)
+            max_anisotropic_filtering_log = static_cast<int>(log2f(host.renderer->get_max_anisotropic_filtering()));
+
+        if (ImGui::SliderInt("Anisotropic filtering", &anisotropic_filtering_log, 0, max_anisotropic_filtering_log, ""))
+            config.anisotropic_filtering = 1 << anisotropic_filtering_log;
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped relative to the viewer.\n It has no drawback but can impact performance.");
+        ImGui::Text("%dx", config.anisotropic_filtering);
+
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Shaders").x / 2.f));

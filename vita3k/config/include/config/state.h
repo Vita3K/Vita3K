@@ -125,6 +125,7 @@ public:
         int resolution_multiplier = 1;
         bool disable_surface_sync = false;
         bool enable_fxaa = false;
+        int anisotropic_filtering = 1;
     };
 
     /**

@@ -168,7 +168,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
     cache.select_callback(index, &gxm_texture);
 
     if (configure) {
-        cache.configure_texture_callback(index, &gxm_texture);
+        cache.configure_texture_callback(cache, index, &gxm_texture);
     }
     if (upload) {
         cache.upload_texture_callback(index, &gxm_texture, mem);
