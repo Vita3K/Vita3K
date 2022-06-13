@@ -231,6 +231,8 @@ struct LangState {
     };
     Settings settings;
     std::map<std::string, std::string> trophy_collection = {
+        { "delete_trophy", "Delete Trophy" },
+        { "trophy_deleted", "This trophy information saved on this user will be deleted." },
         { "details", "Details" },
         { "earned", "Earned" },
         { "name", "Name" },

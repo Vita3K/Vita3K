@@ -239,6 +239,8 @@ Your Vita3K system is ready!</completed_setup>
 	</settings>
 
 	<trophy_collection>
+		<delete_trophy>Delete Trophy</delete_trophy>
+		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Details</details>
 		<earned>Earned</earned>
 		<name>Name</name>
