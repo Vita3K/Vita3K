@@ -73,7 +73,6 @@ bool copy_license(HostState &host, const fs::path &license_path) {
         if (license_path != license_dst_path) {
             fs::copy_file(license_path, license_dst_path, fs::copy_option::overwrite_if_exists);
             if (fs::exists(license_dst_path)) {
-                fs::remove(license_path);
                 LOG_INFO("Success copy license file to: {}", license_dst_path.string());
                 return true;
             } else
