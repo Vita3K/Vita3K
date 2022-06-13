@@ -472,8 +472,8 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + POPUP_SIZE.x - SIZE_ICON_LIST.x - (55.f * SCALE.x));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", np_com_id_info[delete_np_com_id].name["000"].c_str());
                 ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
-                ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize("This trophy information saved on this user will be deleted.").x / 2.f), POPUP_SIZE.y / 2.f));
-                ImGui::TextColored(GUI_COLOR_TEXT, "This trophy information saved on this user will be deleted.");
+                ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["trophy_deleted"].c_str()).x / 2.f), POPUP_SIZE.y / 2.f));
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["trophy_deleted"].c_str());
                 ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCALE.y)));
                 const auto cancel_str = !host.common_dialog.lang.common["cancel"].empty() ? host.common_dialog.lang.common["cancel"].c_str() : "Cancel";
                 if (ImGui::Button(cancel_str, BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
@@ -524,7 +524,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
 
                 // Trophy Context Menu
                 if (ImGui::BeginPopupContextItem("##trophy_context_menu")) {
-                    if (ImGui::MenuItem("Delete Trophy"))
+                    if (ImGui::MenuItem(lang["delete_trophy"].c_str()))
                         delete_np_com_id = np_com.id;
                     ImGui::EndPopup();
                 }

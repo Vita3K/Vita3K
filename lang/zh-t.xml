@@ -239,6 +239,8 @@ Your Vita3K system is ready!</completed_setup>
 	</settings>
 
 	<trophy_collection>
+		<delete_trophy>刪除獎盃</delete_trophy>
+		<trophy_deleted>此用戶保存的獎杯資訊將被刪除。</trophy_deleted>
 		<details>詳細內容</details>
 		<earned>獲得日</earned>
 		<name>名稱</name>
@@ -262,7 +264,7 @@ Your Vita3K system is ready!</completed_setup>
 		<delete_user>刪除用戶</delete_user>
 		<user_delete>請選擇您想要刪除的用戶。</user_delete>
 		<user_delete_msg>將刪除以下用戶。</user_delete_msg>
-		<user_delete_message>如果刪除該用戶，該用戶的保存資料、獎盃將會刪除。</user_delete_message>
+		<user_delete_message>如果刪除該用戶，該用戶的保存資料、獎盃將被刪除。</user_delete_message>
 		<user_delete_warn>將刪除該用戶。
 您真的想要繼續嗎？</user_delete_warn>
 		<user_deleted>已刪除用戶。</user_deleted>
