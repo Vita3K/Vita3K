@@ -27,6 +27,7 @@ namespace gui {
 
 static std::string state, title, zRIF;
 nfdchar_t *work_path;
+static bool delete_work_file;
 
 void draw_license_install_dialog(GuiState &gui, HostState &host) {
     const auto display_size = ImGui::GetIO().DisplaySize;
@@ -96,9 +97,15 @@ void draw_license_install_dialog(GuiState &gui, HostState &host) {
     } else if (state == "success") {
         title = !indicator["install_complete"].empty() ? indicator["install_complete"] : "Installation complete.";
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Succes install license.\nContent ID: %s\nTitle ID: %s", host.license_content_id.c_str(), host.license_title_id.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "Successfully installed license.\nContent ID: %s\nTitle ID: %s", host.license_content_id.c_str(), host.license_title_id.c_str());
+        if (work_path)
+            ImGui::Checkbox("Delete the work.bin/rif file?", &delete_work_file);
         ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - 20.f));
         if (ImGui::Button("OK", BUTTON_SIZE)) {
+            if (delete_work_file) {
+                fs::remove(fs::path(string_utils::utf_to_wide(std::string(work_path))));
+                delete_work_file = false;
+            }
             work_path = nullptr;
             gui.file_menu.license_install_dialog = false;
             state.clear();
