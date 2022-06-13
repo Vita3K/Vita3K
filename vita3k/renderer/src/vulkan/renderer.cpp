@@ -584,4 +584,11 @@ void VulkanState::render_frame(const SceFVector2 &viewport_pos, const SceFVector
 
 void VulkanState::set_fxaa(bool enable_fxaa) {
 }
+
+int VulkanState::get_max_anisotropic_filtering() {
+    return 1;
+}
+
+void VulkanState::set_anisotropic_filtering(int anisotropic_filtering) {
+}
 } // namespace renderer::vulkan

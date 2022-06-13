@@ -54,6 +54,8 @@ struct State {
         const GxmState &gxm, MemState &mem)
         = 0;
     virtual void set_fxaa(bool enable_fxaa) = 0;
+    virtual int get_max_anisotropic_filtering() = 0;
+    virtual void set_anisotropic_filtering(int anisotropic_filtering) = 0;
 
     virtual ~State() = default;
 };

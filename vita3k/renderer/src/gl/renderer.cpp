@@ -62,8 +62,8 @@ bool init(GLTextureCacheState &cache, const bool hashless_texture_cache) {
         glBindTexture(get_gl_texture_type(*texture_casted), gl_texture);
     };
 
-    cache.configure_texture_callback = [](const std::size_t index, const void *texture) {
-        configure_bound_texture(*reinterpret_cast<const SceGxmTexture *>(texture));
+    cache.configure_texture_callback = [](const renderer::TextureCacheState &text_cache, const std::size_t index, const void *texture) {
+        configure_bound_texture(text_cache, *reinterpret_cast<const SceGxmTexture *>(texture));
     };
 
     cache.upload_texture_callback = [](const std::size_t index, const void *texture, const MemState &mem) {
@@ -791,6 +791,16 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
 
 void GLState::set_fxaa(bool enable_fxaa) {
     screen_renderer.enable_fxaa = enable_fxaa;
+}
+
+int GLState::get_max_anisotropic_filtering() {
+    float max_aniso;
+    glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_aniso);
+    return static_cast<int>(max_aniso);
+}
+
+void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
+    texture_cache.anisotropic_filtering = anisotropic_filtering;
 }
 
 } // namespace renderer::gl

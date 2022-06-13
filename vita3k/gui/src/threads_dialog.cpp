@@ -51,6 +51,10 @@ void draw_thread_details_dialog(GuiState &gui, HostState &host) {
         ImGui::Text("r%02i: %08x   r%02i: %08x", a, registers[a], a + 6, registers[a + 6]);
     }
     ImGui::Text("r12: %08x", registers[12]);
+    ImGui::Separator();
+    for (int i = 0; i < 15; i++) {
+        ImGui::Text("Stack %d: %08x", i, *Ptr<uint32_t>(sp + i * 4).get(host.mem));
+    }
 
     ImGui::End();
 }

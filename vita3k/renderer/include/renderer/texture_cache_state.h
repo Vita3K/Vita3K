@@ -45,13 +45,16 @@ struct TextureCacheInfo {
     TextureCacheInfo() = default;
 };
 
+struct TextureCacheState;
+
 typedef std::array<TextureCacheInfo, TextureCacheSize> TextureCacheInfoes;
 typedef std::function<void(std::size_t, const void *)> TextureCacheStateSelectCallback;
-typedef std::function<void(std::size_t, const void *)> TextureCacheStateConfigureTextureCallback;
+typedef std::function<void(TextureCacheState &, std::size_t, const void *)> TextureCacheStateConfigureTextureCallback;
 typedef std::function<void(std::size_t, const void *, const MemState &)> TextureCacheStateUploadTextureCallback;
 
 struct TextureCacheState {
     bool use_protect = false;
+    int anisotropic_filtering = 1;
     size_t used = 0;
     TextureCacheTimestamp timestamp = 1;
     TextureCacheInfoes infoes;
