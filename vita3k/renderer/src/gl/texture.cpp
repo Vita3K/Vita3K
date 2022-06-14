@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -326,14 +326,31 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
     while ((face_uploaded_count < face_total_count) && width && height) {
         pixels = texture_data;
 
+        // Get pixels per stride
+        switch (texture_type) {
+        case SCE_GXM_TEXTURE_SWIZZLED:
+        case SCE_GXM_TEXTURE_CUBE:
+        case SCE_GXM_TEXTURE_TILED:
+        case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
+        case SCE_GXM_TEXTURE_CUBE_ARBITRARY:
+            pixels_per_stride = static_cast<size_t>(width);
+            break;
+        case SCE_GXM_TEXTURE_LINEAR:
+            pixels_per_stride = static_cast<size_t>((width + 7) & ~7);
+            break;
+        case SCE_GXM_TEXTURE_LINEAR_STRIDED:
+            pixels_per_stride = static_cast<size_t>(gxm::get_stride_in_bytes(&gxm_texture) / bytes_per_pixel);
+            break;
+        }
+
         if (gxm::is_paletted_format(base_format)) {
             palette_texture_pixels.resize(width * height * 4);
             if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P8) {
                 renderer::texture::palette_texture_to_rgba_8(palette_texture_pixels.data(),
-                    reinterpret_cast<const uint8_t *>(pixels), width, height, renderer::texture::get_texture_palette(gxm_texture, mem));
+                    reinterpret_cast<const uint8_t *>(pixels), width, height, pixels_per_stride, renderer::texture::get_texture_palette(gxm_texture, mem));
             } else {
                 renderer::texture::palette_texture_to_rgba_4(reinterpret_cast<uint32_t *>(palette_texture_pixels.data()),
-                    reinterpret_cast<const uint8_t *>(pixels), width, height, renderer::texture::get_texture_palette(gxm_texture, mem));
+                    reinterpret_cast<const uint8_t *>(pixels), width, height, pixels_per_stride, renderer::texture::get_texture_palette(gxm_texture, mem));
             }
             pixels = palette_texture_pixels.data();
             bytes_per_pixel = 4;
@@ -362,8 +379,6 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                 bpp = 32;
                 pixels = texture_data_decompressed.data();
             }
-
-            pixels_per_stride = width;
 
             switch (base_format) {
             case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
@@ -415,17 +430,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
             break;
         }
         case SCE_GXM_TEXTURE_LINEAR:
-            pixels_per_stride = (width + 7) & ~7;
-
-            break;
         case SCE_GXM_TEXTURE_LINEAR_STRIDED:
-            pixels_per_stride = gxm::get_stride_in_bytes(&gxm_texture) / bytes_per_pixel;
-
-            break;
-        default:
-            LOG_ERROR("Unimplemented Texture type: {} ", log_hex(gxm_texture.texture_type()));
-            pixels_per_stride = (width + 7) & ~7; // NOTE: This is correct only with linear textures.
-
             break;
         }
 
@@ -575,7 +580,7 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
     const auto tex_filename = fmt::format("tex_{}_{:08X}_{}.png", tex_index, hash, hex(program_hash).data());
     const auto filepath = texturelog_path / tex_filename;
 
-    if (!stbi_write_png(filepath.string().c_str(), width, height, components, (void *)g_pixels.data(), stride * components))
+    if (!stbi_write_png(filepath.string().c_str(), static_cast<int>(width), static_cast<int>(height), static_cast<int>(components), (void *)g_pixels.data(), static_cast<int>(stride * components)))
         LOG_WARN("Failed to save texture: {}", filepath.string());
 }
 

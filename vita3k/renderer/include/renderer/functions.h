@@ -147,8 +147,8 @@ struct TextureCacheState;
 namespace texture {
 
 // Paletted textures.
-void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
-void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const uint32_t *palette);
+void palette_texture_to_rgba_4(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const size_t stride, const uint32_t *palette);
+void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, size_t width, size_t height, const size_t stride, const uint32_t *palette);
 void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_t height);
 const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem);
 
