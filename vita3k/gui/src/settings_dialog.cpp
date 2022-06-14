@@ -188,6 +188,8 @@ static CPUBackend set_cpu_backend(std::string &cpu_backend) {
     return cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
 }
 
+static int current_aniso_filter_log, max_aniso_filter_log;
+
 /**
  * @brief Initialize the `config` struct with the values set in the global emulator config.
  *
@@ -211,13 +213,11 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
         config.disable_ngs = host.cfg.disable_ngs;
     }
     config_cpu_backend = set_cpu_backend(config.cpu_backend);
+    current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
+    max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(host.renderer->get_max_anisotropic_filtering())));
     host.app_path = app_path;
     get_modules_list(gui, host);
     host.display.imgui_render = true;
-    host.renderer->res_multiplier = config.resolution_multiplier;
-    host.renderer->disable_surface_sync = config.disable_surface_sync;
-    host.renderer->set_fxaa(config.enable_fxaa);
-    host.renderer->set_anisotropic_filtering(config.anisotropic_filtering);
 }
 
 /**
@@ -329,8 +329,8 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
     }
     // can be changed while ingame
     host.renderer->disable_surface_sync = host.cfg.current_config.disable_surface_sync;
-    host.renderer->set_fxaa(host.cfg.enable_fxaa);
-    host.renderer->set_anisotropic_filtering(host.cfg.anisotropic_filtering);
+    host.renderer->set_fxaa(host.cfg.current_config.enable_fxaa);
+    host.renderer->set_anisotropic_filtering(host.cfg.current_config.anisotropic_filtering);
     // No change it if app already running
     if (host.io.title_id.empty()) {
         host.kernel.cpu_backend = set_cpu_backend(host.cfg.current_config.cpu_backend);
@@ -346,7 +346,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     auto &settings_dialog = is_custom_config ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     ImGui::Begin("##settings", &settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushFont(gui.vita_font);
-    ImGui::SetWindowFontScale(0.8f);
+    ImGui::SetWindowFontScale(0.7f);
     const auto title = is_custom_config ? fmt::format("Settings: {} [{}]", get_app_index(gui, host.app_path)->title, host.app_path) : "Settings";
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
@@ -466,10 +466,16 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Enable upscaling for Vita3K.\nExperimental: games are not guaranteed to render properly at more than 1x");
         ImGui::SameLine();
+        if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
+            ImGui::BeginDisabled();
+        ImGui::PushID("Res scal");
         if (ImGui::Button("Reset", ImVec2(60.f * host.dpi_scale, 0))) {
             config.resolution_multiplier = 1;
             config.disable_surface_sync = false;
         }
+        ImGui::PopID();
+        if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
+            ImGui::EndDisabled();
         ImGui::Spacing();
         const auto res_scal = fmt::format("{}x{}", 960 * config.resolution_multiplier, 544 * config.resolution_multiplier);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * host.dpi_scale));
@@ -484,18 +490,29 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
         ImGui::Spacing();
-
-        static int max_anisotropic_filtering_log = -1;
-        static int anisotropic_filtering_log = 0;
-        if (max_anisotropic_filtering_log == -1)
-            max_anisotropic_filtering_log = static_cast<int>(log2f(host.renderer->get_max_anisotropic_filtering()));
-
-        if (ImGui::SliderInt("Anisotropic filtering", &anisotropic_filtering_log, 0, max_anisotropic_filtering_log, ""))
-            config.anisotropic_filtering = 1 << anisotropic_filtering_log;
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Anisotropic Filtering").x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Anisotropic Filtering");
+        ImGui::Spacing();
+        ImGui::PushItemWidth(-70.f * host.dpi_scale);
+        if (ImGui::SliderInt("##aniso_filter", &current_aniso_filter_log, 0, max_aniso_filter_log, fmt::format("{}x", config.anisotropic_filtering).c_str()))
+            config.anisotropic_filtering = 1 << current_aniso_filter_log;
+        ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped relative to the viewer.\n It has no drawback but can impact performance.");
-        ImGui::Text("%dx", config.anisotropic_filtering);
-
+            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped relative to the viewer.\nIt has no drawback but can impact performance.");
+        ImGui::SameLine();
+        if (config.anisotropic_filtering == 1)
+            ImGui::BeginDisabled();
+        ImGui::PushID("Aniso filter");
+        if (ImGui::Button("Reset", ImVec2(60.f * host.dpi_scale, 0))) {
+            config.anisotropic_filtering = 1;
+            current_aniso_filter_log = 0;
+        }
+        ImGui::PopID();
+        if (config.anisotropic_filtering == 1)
+            ImGui::EndDisabled();
+        ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Shaders").x / 2.f));
