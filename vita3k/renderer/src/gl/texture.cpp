@@ -350,7 +350,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
                     reinterpret_cast<const uint8_t *>(pixels), width, height, pixels_per_stride, renderer::texture::get_texture_palette(gxm_texture, mem));
             } else {
                 renderer::texture::palette_texture_to_rgba_4(reinterpret_cast<uint32_t *>(palette_texture_pixels.data()),
-                    reinterpret_cast<const uint8_t *>(pixels), width, height, pixels_per_stride, renderer::texture::get_texture_palette(gxm_texture, mem));
+                    reinterpret_cast<const uint8_t *>(pixels), width, height, pixels_per_stride / 2, renderer::texture::get_texture_palette(gxm_texture, mem));
             }
             pixels = palette_texture_pixels.data();
             bytes_per_pixel = 4;
