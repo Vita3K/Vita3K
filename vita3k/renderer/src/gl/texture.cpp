@@ -340,6 +340,8 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
             break;
         case SCE_GXM_TEXTURE_LINEAR_STRIDED:
             pixels_per_stride = static_cast<size_t>(gxm::get_stride_in_bytes(&gxm_texture) / bytes_per_pixel);
+            if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P4) // P4 textures are the only one not byte aligned, therefore bytes_per_pixel should be 0.5 and not 1, correct it here
+                pixels_per_stride *= 2;
             break;
         }
 
