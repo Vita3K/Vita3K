@@ -263,7 +263,7 @@ static void save_config(GuiState &gui, HostState &host) {
         gpu_child.append_attribute("resolution-multiplier") = config.resolution_multiplier;
         gpu_child.append_attribute("disable-surface-sync") = config.disable_surface_sync;
         gpu_child.append_attribute("enable-fxaa") = config.enable_fxaa;
-        gpu_child.append_attribute("anti-aliasing") = config.anisotropic_filtering;
+        gpu_child.append_attribute("anisotropic-filtering") = config.anisotropic_filtering;
 
         // System
         auto system_child = config_child.append_child("system");
