@@ -2821,14 +2821,17 @@ EXPORT(void, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMod
     }
 }
 
-EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, uint8_t compareMask, uint8_t writeMask) {
-    if ((context->state.front_stencil.func != func) || (context->state.front_stencil.stencil_fail != stencilFail) || (context->state.front_stencil.depth_fail != depthFail) || (context->state.front_stencil.depth_pass != depthPass) || (context->state.front_stencil.compare_mask != compareMask) || (context->state.front_stencil.write_mask != writeMask)) {
+EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, int32_t compareMask, uint32_t writeMask) {
+    // compareMask and depthMask should be uint8_t, however the compiler optimizes the call if this is the case...
+    const uint8_t compare_mask = static_cast<uint8_t>(compareMask);
+    const uint8_t write_mask = static_cast<uint8_t>(writeMask);
+    if ((context->state.front_stencil.func != func) || (context->state.front_stencil.stencil_fail != stencilFail) || (context->state.front_stencil.depth_fail != depthFail) || (context->state.front_stencil.depth_pass != depthPass) || (context->state.front_stencil.compare_mask != compare_mask) || (context->state.front_stencil.write_mask != write_mask)) {
         context->state.front_stencil.func = func;
         context->state.front_stencil.depth_fail = depthFail;
         context->state.front_stencil.depth_pass = depthPass;
         context->state.front_stencil.stencil_fail = stencilFail;
-        context->state.front_stencil.compare_mask = compareMask;
-        context->state.front_stencil.write_mask = writeMask;
+        context->state.front_stencil.compare_mask = compare_mask;
+        context->state.front_stencil.write_mask = write_mask;
 
         if (context->alloc_space)
             renderer::set_stencil_func(*host.renderer, context->renderer.get(), true, func, stencilFail, depthFail, depthPass, compareMask, writeMask);

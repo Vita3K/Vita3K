@@ -293,12 +293,21 @@ COMMAND_SET_STATE(stencil_ref) {
     REPORT_STUBBED();
 
     const bool is_front = helper.pop<bool>();
-    const unsigned char sref = helper.pop<const unsigned char>();
+    const uint8_t sref = helper.pop<const unsigned char>();
 
-    if (is_front) {
-        render_context->record.front_stencil_state.ref = sref;
-    } else {
-        render_context->record.back_stencil_state.ref = sref;
+    GxmStencilState &stencil_state = is_front ? render_context->record.front_stencil_state : render_context->record.back_stencil_state;
+
+    stencil_state.ref = sref;
+
+    switch (renderer.current_backend) {
+    case Backend::OpenGL: {
+        gl::sync_stencil_func(stencil_state, mem, !is_front);
+        break;
+    }
+
+    default:
+        REPORT_MISSING(renderer.current_backend);
+        break;
     }
 }
 
