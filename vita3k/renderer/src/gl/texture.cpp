@@ -328,18 +328,20 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
 
         // Get pixels per stride
         switch (texture_type) {
+        case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
+        case SCE_GXM_TEXTURE_CUBE_ARBITRARY:
+            width = nearest_power_of_two(width);
+            height = nearest_power_of_two(height);
         case SCE_GXM_TEXTURE_SWIZZLED:
         case SCE_GXM_TEXTURE_CUBE:
         case SCE_GXM_TEXTURE_TILED:
-        case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
-        case SCE_GXM_TEXTURE_CUBE_ARBITRARY:
             pixels_per_stride = static_cast<size_t>(width);
             break;
         case SCE_GXM_TEXTURE_LINEAR:
             pixels_per_stride = static_cast<size_t>((width + 7) & ~7);
             break;
         case SCE_GXM_TEXTURE_LINEAR_STRIDED:
-            pixels_per_stride = static_cast<size_t>(gxm::get_stride_in_bytes(&gxm_texture) / bytes_per_pixel);
+            pixels_per_stride = gxm::get_stride_in_bytes(&gxm_texture) / bytes_per_pixel;
             if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_P4) // P4 textures are the only one not byte aligned, therefore bytes_per_pixel should be 0.5 and not 1, correct it here
                 pixels_per_stride *= 2;
             break;
@@ -365,14 +367,6 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
         case SCE_GXM_TEXTURE_TILED:
         case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
         case SCE_GXM_TEXTURE_CUBE_ARBITRARY: {
-            org_width = width;
-            org_height = height;
-
-            if ((texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY)) {
-                width = nearest_power_of_two(width);
-                height = nearest_power_of_two(height);
-            }
-
             if (need_decompress_and_unswizzle_on_cpu) {
                 // Must decompress them
                 texture_data_decompressed.resize(width * height * 4);
