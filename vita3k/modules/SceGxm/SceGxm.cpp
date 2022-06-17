@@ -694,12 +694,13 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
 
     context->state.fragment_sync_object = fragmentSyncObject;
 
-    if (fragmentSyncObject.get(host.mem) != nullptr) {
+    if (fragmentSyncObject) {
         SceGxmSyncObject *sync = fragmentSyncObject.get(host.mem);
 
-        // Wait for both display queue and fragment stage to be done.
+        // Wait for the display queue to be done.
         // If it's offline render, the sync object already has the display queue subject done, so don't worry.
-        renderer::wishlist(sync, (renderer::SyncObjectSubject)(renderer::SyncObjectSubject::DisplayQueue | renderer::SyncObjectSubject::Fragment));
+        renderer::add_command(context->renderer.get(), renderer::CommandOpcode::WaitSyncObject,
+            nullptr, fragmentSyncObject, sync->last_display);
     }
 
     // TODO This may not be right.
@@ -728,8 +729,6 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
 
     const std::uint32_t xmax = (validRegion ? validRegion->xMax : renderTarget->width - 1);
     const std::uint32_t ymax = (validRegion ? validRegion->yMax : renderTarget->height - 1);
-
-    host.renderer->scene_processed_since_last_frame++;
 
     CALL_EXPORT(sceGxmSetDefaultRegionClipAndViewport, context, xmax, ymax);
     return 0;
@@ -1162,25 +1161,36 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
     SceGxmSyncObject *oldBufferSync = oldBuffer.get(host.mem);
     SceGxmSyncObject *newBufferSync = newBuffer.get(host.mem);
 
-    renderer::wishlist_display_entry(oldBufferSync);
-    renderer::wishlist_display_entry(newBufferSync);
-
-    renderer::subject_in_progress_display_entry(oldBufferSync);
-    renderer::subject_in_progress_display_entry(newBufferSync);
-
     display_callback.data = address;
     display_callback.pc = host.gxm.params.displayQueueCallback.address();
-    display_callback.old_buffer = oldBuffer.address();
-    display_callback.new_buffer = newBuffer.address();
-    host.gxm.display_queue.push(display_callback);
+    display_callback.old_buffer = oldBuffer;
+    display_callback.new_buffer = newBuffer;
+    display_callback.new_buffer_timestamp = newBufferSync->timestamp_ahead++;
 
-    host.renderer->average_scene_per_frame = host.renderer->scene_processed_since_last_frame;
-    host.renderer->scene_processed_since_last_frame = 0;
+    if (newBuffer == host.gxm.last_fbo_sync_object) {
+        // don't know why, some games like NFS send twice in a row the same buffer to the front...
+        // act like it is not displaying anymore
+        renderer::subject_done(newBufferSync, newBufferSync->last_display);
+    }
+
+    newBufferSync->last_display = newBufferSync->timestamp_ahead;
+    host.gxm.last_fbo_sync_object = newBuffer;
+
+    // needed the first time the sync object is used as the old front buffer
+    if (oldBufferSync->last_display == 0) {
+        oldBufferSync->timestamp_ahead++;
+        oldBufferSync->last_display = oldBufferSync->timestamp_ahead;
+    }
+
+    // function may be blocking here (expected behavior)
+    host.gxm.display_queue.push(display_callback);
 
     return 0;
 }
 
 EXPORT(int, sceGxmDisplayQueueFinish) {
+    host.gxm.display_queue.wait_empty();
+
     return 0;
 }
 
@@ -1587,10 +1597,6 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, SceGxmNotification *vertexNo
     // Add command to end the scene
     renderer::sync_surface_data(*host.renderer, context->renderer.get());
 
-    // Add NOP for SceGxmFinish
-    renderer::add_command(context->renderer.get(), renderer::CommandOpcode::Nop, &context->renderer->render_finish_status,
-        ++host.renderer->last_scene_id);
-
     if (vertexNotification) {
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
             nullptr, *vertexNotification, true);
@@ -1602,12 +1608,10 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, SceGxmNotification *vertexNo
     }
 
     if (context->state.fragment_sync_object) {
-        // Add NOP for our sync object
         SceGxmSyncObject *sync = context->state.fragment_sync_object.get(mem);
+        uint32_t cmd_timestamp = ++sync->timestamp_ahead;
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalSyncObject,
-            nullptr, context->state.fragment_sync_object);
-
-        renderer::subject_in_progress(sync, renderer::SyncObjectSubject::Fragment);
+            nullptr, context->state.fragment_sync_object, cmd_timestamp);
     }
 
     // Submit our command list
@@ -1654,15 +1658,16 @@ EXPORT(int, sceGxmExecuteCommandList, SceGxmContext *context, SceGxmCommandList 
     return 0;
 }
 
-EXPORT(void, sceGxmFinish, SceGxmContext *context) {
+EXPORT(int, sceGxmFinish, SceGxmContext *context) {
     assert(context);
 
     if (!context)
-        return;
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_THREAD);
 
-    // Wait on this context's rendering finish code. There is one for sync object and one specifically
-    // for SceGxmFinish.
-    renderer::finish(*host.renderer, *context->renderer);
+    // Wait on this context's rendering finish code.
+    renderer::finish(*host.renderer, context->renderer.get());
+
+    return 0;
 }
 
 EXPORT(SceGxmPassType, sceGxmFragmentProgramGetPassType, const SceGxmFragmentProgram *fragmentProgram) {
@@ -1803,7 +1808,7 @@ static int SDLCALL thread_function(void *data) {
     const GxmThreadParams params = *static_cast<const GxmThreadParams *>(data);
     SDL_SemPost(params.host_may_destroy_params.get());
     while (true) {
-        auto display_callback = params.gxm->display_queue.pop();
+        auto display_callback = params.gxm->display_queue.top();
         if (!display_callback)
             break;
 
@@ -1811,7 +1816,7 @@ static int SDLCALL thread_function(void *data) {
         SceGxmSyncObject *newBuffer = Ptr<SceGxmSyncObject>(display_callback->new_buffer).get(*params.mem);
 
         // Wait for fragment on the new buffer to finish
-        renderer::wishlist(newBuffer, renderer::SyncObjectSubject::Fragment);
+        renderer::wishlist(newBuffer, display_callback->new_buffer_timestamp);
 
         // Now run callback
         const ThreadStatePtr display_thread = util::find(params.thid, params.kernel->threads);
@@ -1819,9 +1824,10 @@ static int SDLCALL thread_function(void *data) {
 
         free(*params.mem, display_callback->data);
 
-        // Should not block anymore.
-        renderer::subject_done_display_entry(oldBuffer);
-        renderer::subject_done_display_entry(newBuffer);
+        // The only thing old buffer should be waiting for is to stop being displayed
+        renderer::subject_done(oldBuffer, std::min(oldBuffer->timestamp_current + 1, oldBuffer->timestamp_ahead.load()));
+
+        params.gxm->display_queue.pop();
     }
 
     return 0;
@@ -1912,8 +1918,8 @@ EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *
     return 0;
 }
 
-EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const Ptr<SceGxmNotification> vertexNotification) {
-    STUBBED("STUB");
+EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const SceGxmNotification *vertexNotification) {
+    STUBBED("Surfaces not flushed back to memory");
 
     if (!immediateContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
@@ -1927,15 +1933,18 @@ EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (vertexNotification) {
-        volatile uint32_t *val = vertexNotification.get(host.mem)->address.get(host.mem);
-        *val = vertexNotification.get(host.mem)->value;
-    }
+    if (vertexNotification)
+        renderer::add_command(immediateContext->renderer.get(), renderer::CommandOpcode::SignalNotification,
+            nullptr, *vertexNotification, true);
+
+    // send the commands recorded up to now
+    renderer::submit_command_list(*host.renderer, immediateContext->renderer.get(), immediateContext->renderer->command_list);
+    renderer::reset_command_list(immediateContext->renderer->command_list);
 
     return 0;
 }
 
-EXPORT(int, _sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const Ptr<SceGxmNotification> vertexNotification) {
+EXPORT(int, _sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const SceGxmNotification *vertexNotification) {
     return CALL_EXPORT(sceGxmMidSceneFlush, immediateContext, flags, vertexSyncObject, vertexNotification);
 }
 
@@ -1944,11 +1953,12 @@ EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    // TODO: This is so horrible
-    volatile std::uint32_t *value = notification->address.get(host.mem);
+    std::uint32_t *value = notification->address.get(host.mem);
     const std::uint32_t target_value = notification->value;
 
-    while (*value != target_value) {
+    std::unique_lock<std::mutex> lock(host.renderer->notification_mutex);
+    if (*value != target_value) {
+        host.renderer->notification_ready.wait(lock, [&]() { return *value == target_value; });
     }
 
     return 0;
@@ -3544,8 +3554,11 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
-    // Set all subjects to be done.
-    syncObject->get(host.mem)->done = 0xFFFFFFFF;
+    // Set as if the last display was already done
+    SceGxmSyncObject *sync = syncObject->get(host.mem);
+    sync->last_display = 0;
+    sync->timestamp_current = 0;
+    sync->timestamp_ahead = 0;
 
     return 0;
 }
@@ -4070,9 +4083,9 @@ EXPORT(int, sceGxmTextureValidate, const SceGxmTexture *texture) {
 }
 
 EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorKeyValue, uint32_t colorKeyMask, SceGxmTransferColorKeyMode colorKeyMode,
-    SceGxmTransferFormat srcFormat, SceGxmTransferType srcType, const void *srcAddress, uint32_t srcX, uint32_t srcY, int32_t srcStride,
-    SceGxmTransferFormat destFormat, SceGxmTransferType destType, void *destAddress, uint32_t destX, uint32_t destY, int32_t destStride,
-    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const Ptr<SceGxmNotification> notification) {
+    SceGxmTransferFormat srcFormat, SceGxmTransferType srcType, Ptr<void> srcAddress, uint32_t srcX, uint32_t srcY, int32_t srcStride,
+    SceGxmTransferFormat destFormat, SceGxmTransferType destType, Ptr<void> destAddress, uint32_t destX, uint32_t destY, int32_t destStride,
+    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const SceGxmNotification *notification) {
     if (!srcAddress || !destAddress)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -4083,145 +4096,139 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
     const auto dest_type_is_tiled = destType == SCE_GXM_TRANSFER_TILED;
     const auto dest_type_is_swizzled = destType == SCE_GXM_TRANSFER_SWIZZLED;
 
-    const auto is_invalide_value = (src_type_is_tiled && dest_type_is_swizzled) || (src_type_is_swizzled && dest_type_is_tiled) || (src_type_is_swizzled && dest_type_is_swizzled);
-    if (is_invalide_value)
+    const auto is_invalid_value = (src_type_is_tiled && dest_type_is_swizzled) || (src_type_is_swizzled && dest_type_is_tiled) || (src_type_is_swizzled && dest_type_is_swizzled);
+    if (is_invalid_value)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
-    if (!syncFlags && src_type_is_linear && dest_type_is_linear) {
-        const auto src_bpp = gxm::get_bits_per_pixel(srcFormat);
-        const auto dest_bpp = gxm::get_bits_per_pixel(destFormat);
-        const uint32_t src_bytes_per_pixel = (src_bpp + 7) >> 3;
-        const uint32_t dest_bytes_per_pixel = (dest_bpp + 7) >> 3;
+    uint32_t cmd_timestamp;
+    if (syncObject) {
+        SceGxmSyncObject *sync = syncObject.get(host.mem);
+        renderer::send_single_command(*host.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
+            syncObject, sync->last_display);
+        cmd_timestamp = ++sync->timestamp_ahead;
+    }
 
-        for (uint32_t y = 0; y < height; y++) {
-            for (uint32_t x = 0; x < width; x++) {
-                // Set offset of source and destination
-                const auto src_offset = ((x + srcX) * src_bytes_per_pixel) + ((y + srcY) * srcStride);
-                const auto dest_offset = ((x + destX) * dest_bytes_per_pixel) + ((y + destY) * destStride);
+    // needed, otherwise the command is not big enough
+    SceGxmTransferImage *images = new SceGxmTransferImage[2];
 
-                // Set pointer of source and destination
-                const auto src_ptr = (uint8_t *)srcAddress + src_offset;
-                auto dest_ptr = (uint8_t *)destAddress + dest_offset;
+    SceGxmTransferImage *src = &images[0];
+    src->format = srcFormat;
+    src->address = srcAddress;
+    src->x = srcX;
+    src->y = srcY;
+    src->width = width;
+    src->height = height;
+    src->stride = srcStride;
 
-                // Set color of source
-                const auto src_color = *(uint32_t *)src_ptr;
+    SceGxmTransferImage *dest = &images[1];
+    dest->format = destFormat;
+    dest->address = destAddress;
+    dest->x = destX;
+    dest->y = destY;
+    dest->width = width;
+    dest->height = height;
+    dest->stride = destStride;
 
-                // Copy result in destination depending color Key
-                switch (colorKeyMode) {
-                case SCE_GXM_TRANSFER_COLORKEY_NONE:
-                    memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
-                    break;
-                case SCE_GXM_TRANSFER_COLORKEY_PASS:
-                    if ((src_color & colorKeyMask) == colorKeyValue)
-                        memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
-                    break;
-                case SCE_GXM_TRANSFER_COLORKEY_REJECT:
-                    if ((src_color & colorKeyMask) != colorKeyValue)
-                        memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
-                    break;
-                default: break;
-                }
-            }
-        }
-    } else
-        STUBBED("No support syncFlags & convertion of SceGxmTransferType yet");
+    renderer::transfer_copy(*host.renderer, colorKeyValue, colorKeyMask, colorKeyMode, images, srcType, destType);
+
+    if (notification)
+        renderer::send_single_command(*host.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
 
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(host.mem);
-        renderer::wishlist(sync, (renderer::SyncObjectSubject)(renderer::SyncObjectSubject::DisplayQueue | renderer::SyncObjectSubject::Fragment));
-    }
-
-    if (notification) {
-        volatile uint32_t *val = notification.get(host.mem)->address.get(host.mem);
-        *val = notification.get(host.mem)->value;
+        renderer::send_single_command(*host.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,
+            syncObject, cmd_timestamp);
     }
 
     return 0;
 }
 
-EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, const void *srcAddress,
+EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> srcAddress,
     uint32_t srcX, uint32_t srcY, uint32_t srcWidth, uint32_t srcHeight, int32_t srcStride,
-    SceGxmTransferFormat destFormat, void *destAddress, uint32_t destX, uint32_t destY, int32_t destStride,
-    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const Ptr<SceGxmNotification> notification) {
+    SceGxmTransferFormat destFormat, Ptr<void> destAddress, uint32_t destX, uint32_t destY, int32_t destStride,
+    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const SceGxmNotification *notification) {
     if (!srcAddress || !destAddress)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    if (!syncFlags) {
-        const auto src_bpp = gxm::get_bits_per_pixel(srcFormat);
-        const auto dest_bpp = gxm::get_bits_per_pixel(destFormat);
-        const uint32_t src_bytes_per_pixel = (src_bpp + 7) >> 3;
-        const uint32_t dest_bytes_per_pixel = (dest_bpp + 7) >> 3;
+    uint32_t cmd_timestamp;
+    if (syncObject) {
+        SceGxmSyncObject *sync = syncObject.get(host.mem);
+        renderer::send_single_command(*host.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
+            syncObject, sync->last_display);
+        cmd_timestamp = ++sync->timestamp_ahead;
+    }
 
-        for (uint32_t y = 0; y < srcHeight; y += 2) {
-            for (uint32_t x = 0; x < srcWidth; x += 2) {
-                // Set offset of source and destination
-                const auto src_offset = ((x + srcX) * src_bytes_per_pixel) + ((y + srcY) * srcStride);
-                const auto dest_offset = (y / 2 + destY) * destStride + (x / 2 + destX) * dest_bytes_per_pixel;
+    SceGxmTransferImage *src = new SceGxmTransferImage;
+    src->format = srcFormat;
+    src->address = srcAddress;
+    src->x = srcX;
+    src->y = srcY;
+    src->width = srcWidth;
+    src->height = srcHeight;
+    src->stride = srcStride;
 
-                // Set pointer of source and destination
-                const auto src_ptr = (uint8_t *)srcAddress + src_offset;
-                auto dest_ptr = (uint8_t *)destAddress + dest_offset;
+    SceGxmTransferImage *dest = new SceGxmTransferImage;
+    dest->format = destFormat;
+    dest->address = destAddress;
+    dest->x = destX;
+    dest->y = destY;
+    dest->stride = destStride;
 
-                // Copy result in destination
-                memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
-            }
-        }
-    } else
-        STUBBED("No support syncFlags yet");
+    renderer::transfer_downscale(*host.renderer, src, dest);
+
+    if (notification)
+        renderer::send_single_command(*host.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
 
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(host.mem);
-        renderer::wishlist(sync, (renderer::SyncObjectSubject)(renderer::SyncObjectSubject::DisplayQueue || renderer::SyncObjectSubject::Fragment));
-    }
-
-    if (notification) {
-        volatile uint32_t *val = notification.get(host.mem)->address.get(host.mem);
-        *val = notification.get(host.mem)->value;
+        renderer::send_single_command(*host.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,
+            syncObject, cmd_timestamp);
     }
 
     return 0;
 }
 
-EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFormat, void *destAddress,
+EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFormat, Ptr<void> destAddress,
     uint32_t destX, uint32_t destY, uint32_t destWidth, uint32_t destHeight, int32_t destStride,
-    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const Ptr<SceGxmNotification> notification) {
+    Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const SceGxmNotification *notification) {
     if (!destAddress)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    const auto bpp = gxm::get_bits_per_pixel(destFormat);
+    uint32_t cmd_timestamp;
+    if (syncObject) {
+        SceGxmSyncObject *sync = syncObject.get(host.mem);
+        renderer::send_single_command(*host.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
+            syncObject, sync->last_display);
+        cmd_timestamp = ++sync->timestamp_ahead;
+    }
 
-    if (!syncFlags) {
-        const uint32_t bytes_per_pixel = (bpp + 7) >> 3;
-        for (uint32_t y = 0; y < destHeight; y++) {
-            for (uint32_t x = 0; x < destWidth; x++) {
-                // Set offset of destination
-                const auto dest_offset = ((x + destX) * bytes_per_pixel) + ((y + destY) * destStride);
+    SceGxmTransferImage *dest = new SceGxmTransferImage;
+    dest->format = destFormat;
+    dest->address = destAddress;
+    dest->x = destX;
+    dest->y = destY;
+    dest->width = destWidth;
+    dest->height = destHeight;
+    dest->stride = destStride;
+    renderer::transfer_fill(*host.renderer, fillColor, dest);
 
-                // Set pointer of destination
-                auto dest_ptr = (uint8_t *)destAddress + dest_offset;
-
-                // Fill color in destination
-                memcpy(dest_ptr, &fillColor, bytes_per_pixel);
-            }
-        }
-    } else
-        STUBBED("No support syncFlags yet");
+    if (notification)
+        renderer::send_single_command(*host.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
 
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(host.mem);
-        renderer::wishlist(sync, (renderer::SyncObjectSubject)(renderer::SyncObjectSubject::DisplayQueue | renderer::SyncObjectSubject::Fragment));
-    }
-
-    if (notification) {
-        volatile uint32_t *val = notification.get(host.mem)->address.get(host.mem);
-        *val = notification.get(host.mem)->value;
+        renderer::send_single_command(*host.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,
+            syncObject, cmd_timestamp);
     }
 
     return 0;
 }
 
 EXPORT(int, sceGxmTransferFinish) {
-    return UNIMPLEMENTED();
+    // same as sceGxmFinish
+    renderer::finish(*host.renderer, nullptr);
+
+    return 0;
 }
 
 EXPORT(int, sceGxmUnmapFragmentUsseMemory, void *base) {

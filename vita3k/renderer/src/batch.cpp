@@ -16,11 +16,10 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <renderer/commands.h>
+#include <renderer/driver_functions.h>
 #include <renderer/functions.h>
 #include <renderer/state.h>
 #include <renderer/types.h>
-
-#include "driver_functions.h"
 
 #include <functional>
 #include <util/log.h>
@@ -43,20 +42,35 @@ void complete_command(State &state, CommandHelper &helper, const int code) {
     state.command_finish_one.notify_all();
 }
 
+bool is_cmd_ready(MemState &mem, CommandList &command_list) {
+    // we check if the cmd starts with a WaitSyncObject and if this is the case if it is ready
+    if (!command_list.first || command_list.first->opcode != CommandOpcode::WaitSyncObject)
+        return true;
+
+    SceGxmSyncObject *sync = reinterpret_cast<Ptr<SceGxmSyncObject> *>(&command_list.first->data[0])->get(mem);
+    const uint32_t timestamp = *reinterpret_cast<uint32_t *>(&command_list.first->data[4]);
+
+    return sync->timestamp_current >= timestamp;
+}
+
 void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list, const char *base_path,
     const char *title_id, const char *self_name) {
     using CommandHandlerFunc = std::function<void(renderer::State &, MemState &, Config &,
         CommandHelper &, const FeatureState &, Context *, const char *, const char *, const char *)>;
 
-    static std::map<CommandOpcode, CommandHandlerFunc> handlers = {
+    const static std::map<CommandOpcode, CommandHandlerFunc> handlers = {
         { CommandOpcode::SetContext, cmd_handle_set_context },
         { CommandOpcode::SyncSurfaceData, cmd_handle_sync_surface_data },
         { CommandOpcode::CreateContext, cmd_handle_create_context },
         { CommandOpcode::CreateRenderTarget, cmd_handle_create_render_target },
         { CommandOpcode::Draw, cmd_handle_draw },
+        { CommandOpcode::TransferCopy, cmd_handle_transfer_copy },
+        { CommandOpcode::TransferDownscale, cmd_handle_transfer_downscale },
+        { CommandOpcode::TransferFill, cmd_handle_transfer_fill },
         { CommandOpcode::Nop, cmd_handle_nop },
         { CommandOpcode::SetState, cmd_handle_set_state },
         { CommandOpcode::SignalSyncObject, cmd_handle_signal_sync_object },
+        { CommandOpcode::WaitSyncObject, cmd_handle_wait_sync_object },
         { CommandOpcode::SignalNotification, cmd_handle_notification },
         { CommandOpcode::DestroyRenderTarget, cmd_handle_destroy_render_target },
         { CommandOpcode::DestroyContext, cmd_handle_destroy_context }
@@ -91,17 +105,16 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
 
 void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path,
     const char *title_id, const char *self_name) {
-    const bool is_avg_scene_per_frame = !state.command_buffer_queue.size() || (state.average_scene_per_frame > 1);
-    const uint32_t queue_size = is_avg_scene_per_frame ? state.average_scene_per_frame.load() : state.command_buffer_queue.size();
+    while (!state.should_display.exchange(false)) {
+        auto cmd_list = state.command_buffer_queue.top(3);
 
-    for (uint32_t pc = 0; pc < queue_size; pc++) {
-        auto cmd_list = state.command_buffer_queue.pop(3);
-
-        if (!cmd_list) {
+        if (!cmd_list || !is_cmd_ready(mem, *cmd_list)) {
             // Try to wait for a batch (about 2 or 3ms, game should be fast for this)
+            state.should_display = false;
             return;
         }
 
+        state.command_buffer_queue.pop();
         process_batch(state, features, mem, config, *cmd_list, base_path, title_id, self_name);
     }
 }

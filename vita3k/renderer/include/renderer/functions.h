@@ -35,34 +35,24 @@ struct VertexProgram;
 
 bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
-void finish(State &state, Context &context);
+void finish(State &state, Context *context);
 
 /**
  * \brief Wait for all subjects to be done with the given sync object.
  */
-void wishlist(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
-
-void wishlist_display_entry(SceGxmSyncObject *sync_object);
+void wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp);
 
 /**
  * \brief Set list of subject with sync object to done.
  *
  * This will also signals wishlists that are waiting.
  */
-void subject_done(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
-
-void subject_done_display_entry(SceGxmSyncObject *sync_object);
-
-/**
- * Set some subjects to be in progress.
- */
-void subject_in_progress(SceGxmSyncObject *sync_object, const SyncObjectSubject subjects);
-
-void subject_in_progress_display_entry(SceGxmSyncObject *sync_object);
+void subject_done(SceGxmSyncObject *sync_object, const uint32_t timestamp);
 
 int wait_for_status(State &state, int *status, int signal, bool wake_on_equal);
 void reset_command_list(CommandList &command_list);
 void submit_command_list(State &state, renderer::Context *context, CommandList &command_list);
+bool is_cmd_ready(MemState &mem, CommandList &command_list);
 void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list, const char *base_path, const char *title_id);
 void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path, const char *title_id, const char *self_name);
 bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const char *base_path);
@@ -87,6 +77,9 @@ std::uint8_t **set_uniform_buffer(State &state, Context *ctx, const bool is_vert
 void set_context(State &state, Context *ctx, RenderTarget *target, SceGxmColorSurface *color_surface, SceGxmDepthStencilSurface *depth_stencil_surface);
 std::uint8_t **set_vertex_stream(State &state, Context *ctx, const std::size_t index, const std::size_t data_len);
 void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count, const std::uint32_t instance_count);
+void transfer_copy(State &state, uint32_t colorKeyValue, uint32_t colorKeyMask, SceGxmTransferColorKeyMode colorKeyMode, const SceGxmTransferImage *images, SceGxmTransferType srcType, SceGxmTransferType destType);
+void transfer_downscale(State &state, const SceGxmTransferImage *src, const SceGxmTransferImage *dest);
+void transfer_fill(State &state, uint32_t fillColor, const SceGxmTransferImage *dest);
 void sync_surface_data(State &state, Context *ctx);
 
 bool create_context(State &state, std::unique_ptr<Context> &context);
@@ -123,11 +116,11 @@ bool add_state_set_command(Context *ctx, const GXMState state, Args... arguments
 }
 
 template <typename... Args>
-int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, Args... arguments) {
+int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, bool wait, Args... arguments) {
     // Make a temporary command list
     int status = CommandErrorCodePending; // Pending.
     auto cmd = make_command(ctx ? ctx->alloc_func : generic_command_allocate, ctx ? ctx->free_func : generic_command_free,
-        opcode, &status, arguments...);
+        opcode, wait ? &status : nullptr, arguments...);
 
     if (!cmd) {
         return CommandErrorArgumentsTooLarge;
@@ -139,7 +132,10 @@ int send_single_command(State &state, Context *ctx, const CommandOpcode opcode, 
 
     // Submit it
     submit_command_list(state, ctx, list);
-    return wait_for_status(state, &status, CommandErrorCodePending, false);
+    if (wait)
+        return wait_for_status(state, &status, CommandErrorCodePending, false);
+    else
+        return 0;
 }
 
 struct TextureCacheState;

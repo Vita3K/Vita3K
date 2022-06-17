@@ -80,12 +80,6 @@ enum class GXMState : std::uint16_t {
     TotalState
 };
 
-enum SyncObjectSubject : std::uint32_t {
-    None = 0,
-    Fragment = 1 << 0,
-    DisplayQueue = 1 << 1
-};
-
 struct RenderTarget;
 
 struct GXMStreamInfo {

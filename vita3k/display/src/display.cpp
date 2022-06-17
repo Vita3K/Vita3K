@@ -40,6 +40,7 @@ static void vblank_sync_thread(HostState &host) {
                 if (display.has_next_frame) {
                     display.frame = display.next_frame;
                     display.has_next_frame = false;
+                    host.renderer->should_display = true;
                 }
             }
 
