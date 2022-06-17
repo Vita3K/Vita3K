@@ -178,6 +178,25 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
     uint32_t decoded_size = samples_per_superframe;
     uint32_t decoded_start_offset = 0;
 
+    // some games (like Muramasa) send the atrac9 files with the header, we need to skip it
+    if (memcmp(input, "RIFF", 4) == 0
+        && memcmp(input + 8, "WAVE", 4) == 0) {
+        // file header is 12 bytes long
+        input += 3 * sizeof(uint32_t);
+        state->current_byte_position_in_buffer += 3 * sizeof(uint32_t);
+
+        while (memcmp(input, "data", 4) != 0) {
+            // each chunk has a 4-byte identifier followed by its size (minus 8) in an int32
+            const int32_t header_data = 2 * sizeof(uint32_t) + *reinterpret_cast<int32_t *>(input + 4);
+            state->current_byte_position_in_buffer += header_data;
+            input += header_data;
+        }
+
+        state->current_byte_position_in_buffer += 2 * sizeof(uint32_t);
+        input += 2 * sizeof(uint32_t);
+        return true;
+    }
+
     // if the superframe is across two buffers, I don't know how to interpret the skipped samples (which are in the middle of the frame)...
     if (temp_buffer.empty()) {
         // remove skipped samples at the beginnning and the end of the buffer
