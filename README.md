@@ -4,7 +4,7 @@
 
 ## Introduction
 
-Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS.
+Vita3K is an experimental PlayStation Vita emulator for Windows and Linux.
 
 * [Website](https://vita3k.org/) (information for users)
 * [Wiki](https://github.com/Vita3K/Vita3K/wiki) (information for developers)
@@ -43,7 +43,6 @@ Vita3K is licensed under the **GPLv2** license. This is largely dictated by exte
     * [vita3k-bin](https://aur.archlinux.org/packages/vita3k-bin)<sup><small>AUR</small></sup>
     * [vita3k-git](https://aur.archlinux.org/packages/vita3k-git)<sup><small>AUR</small></sup>
   * Other distributions: [Download Artifact](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
-* [macOS](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
 
 ## Building
 
