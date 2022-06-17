@@ -17,14 +17,13 @@
 
 #include <gxm/types.h>
 #include <renderer/commands.h>
+#include <renderer/driver_functions.h>
 #include <renderer/state.h>
 #include <renderer/types.h>
 
 #include <renderer/gl/functions.h>
 #include <renderer/gl/state.h>
 #include <renderer/gl/types.h>
-
-#include "driver_functions.h"
 
 #include <util/align.h>
 #include <util/log.h>

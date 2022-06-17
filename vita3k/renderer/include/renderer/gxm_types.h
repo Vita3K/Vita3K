@@ -123,10 +123,13 @@ enum class SceGxmLastReserveStatus {
 };
 
 struct SceGxmSyncObject {
-    uint32_t done;
-    // number of times this object is used in an entry of the display
-    // queue that is currently being processed
-    uint32_t nb_in_display_queue;
+    // timestamp_current is the timestamp for what has already been processed by the renderer
+    std::atomic<uint32_t> timestamp_current;
+    // timestamp_ahead is the timestamp for everything that has been asked to SceGxm so far (timestamp_ahead >= timestamp_current)
+    std::atomic<uint32_t> timestamp_ahead;
+
+    // timestamp for the last time the object was displayed
+    std::uint32_t last_display;
 
     std::mutex lock;
     std::condition_variable cond;
@@ -230,7 +233,7 @@ struct SceGxmFragmentProgram {
 };
 
 struct SceGxmNotification {
-    Ptr<volatile uint32_t> address;
+    Ptr<uint32_t> address;
     uint32_t value;
 };
 
@@ -311,3 +314,13 @@ struct SceGxmPrecomputedVertexState {
 static_assert(SCE_GXM_PRECOMPUTED_DRAW_WORD_COUNT * sizeof(uint32_t) >= sizeof(SceGxmPrecomputedDraw), "Precomputed Draw Size Too Big");
 static_assert(SCE_GXM_PRECOMPUTED_VERTEX_STATE_WORD_COUNT * sizeof(uint32_t) >= sizeof(SceGxmPrecomputedVertexState), "Precomputed Vertex State Size Too Big");
 static_assert(SCE_GXM_PRECOMPUTED_FRAGMENT_STATE_WORD_COUNT * sizeof(uint32_t) >= sizeof(SceGxmPrecomputedFragmentState), "Precomputed Fragment State Size Too Big");
+
+struct SceGxmTransferImage {
+    SceGxmTransferFormat format;
+    Ptr<void> address;
+    uint32_t x;
+    uint32_t y;
+    uint32_t width;
+    uint32_t height;
+    int32_t stride;
+};

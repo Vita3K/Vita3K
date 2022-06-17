@@ -17,6 +17,7 @@ add_library(
 	renderer
 	STATIC
 	include/renderer/commands.h
+	include/renderer/driver_functions.h
 	include/renderer/functions.h
 	include/renderer/profile.h
 	include/renderer/pvrt-dec.h
@@ -52,7 +53,6 @@ add_library(
 
 	src/batch.cpp
 	src/creation.cpp
-	src/driver_functions.h
 	src/pvrt-dec.cpp
 	src/renderer.cpp
 	src/scene.cpp

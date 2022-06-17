@@ -98,24 +98,36 @@ void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndex
     renderer::add_command(ctx, renderer::CommandOpcode::Draw, nullptr, prim_type, index_type, index_data, index_count, instance_count);
 }
 
+void transfer_copy(State &state, uint32_t colorKeyValue, uint32_t colorKeyMask, SceGxmTransferColorKeyMode colorKeyMode, const SceGxmTransferImage *images, SceGxmTransferType srcType, SceGxmTransferType destType) {
+    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::TransferCopy, false, colorKeyValue, colorKeyMask, colorKeyMode, images, srcType, destType);
+}
+
+void transfer_downscale(State &state, const SceGxmTransferImage *src, const SceGxmTransferImage *dest) {
+    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::TransferDownscale, false, src, dest);
+}
+
+void transfer_fill(State &state, uint32_t fillColor, const SceGxmTransferImage *dest) {
+    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::TransferFill, false, fillColor, dest);
+}
+
 void sync_surface_data(State &state, Context *ctx) {
     renderer::add_command(ctx, renderer::CommandOpcode::SyncSurfaceData, nullptr);
 }
 
 bool create_context(State &state, std::unique_ptr<Context> &context) {
-    return renderer::send_single_command(state, nullptr, renderer::CommandOpcode::CreateContext, &context);
+    return renderer::send_single_command(state, nullptr, renderer::CommandOpcode::CreateContext, true, &context);
 }
 
 void destroy_context(State &state, std::unique_ptr<Context> &context) {
-    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::DestroyContext, &context);
+    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::DestroyContext, true, &context);
 }
 
 bool create_render_target(State &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams *params) {
-    return renderer::send_single_command(state, nullptr, renderer::CommandOpcode::CreateRenderTarget, &rt, params);
+    return renderer::send_single_command(state, nullptr, renderer::CommandOpcode::CreateRenderTarget, true, &rt, params);
 }
 
 void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt) {
-    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::DestroyRenderTarget, &rt);
+    renderer::send_single_command(state, nullptr, renderer::CommandOpcode::DestroyRenderTarget, true, &rt);
 }
 
 void set_uniform(State &state, Context *ctx, const bool is_vertex_uniform, const SceGxmProgramParameter *parameter, const void *data) {

@@ -41,13 +41,15 @@ struct State {
     std::condition_variable command_finish_one;
     std::mutex command_finish_one_mutex;
 
+    std::condition_variable notification_ready;
+    std::mutex notification_mutex;
+
     int last_scene_id = 0;
 
     uint32_t shaders_count_compiled;
     uint32_t programs_count_pre_compiled;
 
-    std::atomic<std::uint32_t> average_scene_per_frame = 1;
-    std::uint32_t scene_processed_since_last_frame = 0;
+    std::atomic<bool> should_display;
 
     virtual bool init(const char *base_path, const bool hashless_texture_cache) = 0;
     virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,

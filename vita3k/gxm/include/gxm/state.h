@@ -40,8 +40,9 @@ struct SceGxmInitializeParams {
 struct DisplayCallback {
     Address pc;
     Address data;
-    Address old_buffer;
-    Address new_buffer;
+    Ptr<SceGxmSyncObject> old_buffer;
+    Ptr<SceGxmSyncObject> new_buffer;
+    uint32_t new_buffer_timestamp;
 };
 
 struct MemoryMapInfo {
@@ -74,6 +75,7 @@ struct SurfaceSyncingInfo {
 struct GxmState {
     SceGxmInitializeParams params;
     Queue<DisplayCallback> display_queue;
+    Ptr<SceGxmSyncObject> last_fbo_sync_object;
     Ptr<uint32_t> notification_region;
     SceUID display_queue_thread;
     std::map<Address, MemoryMapInfo> memory_mapped_regions;

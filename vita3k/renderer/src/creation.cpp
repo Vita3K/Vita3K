@@ -17,6 +17,7 @@
 
 #include <gxm/types.h>
 #include <renderer/commands.h>
+#include <renderer/driver_functions.h>
 #include <renderer/state.h>
 #include <renderer/texture_cache_state.h>
 #include <renderer/types.h>
@@ -26,8 +27,6 @@
 #include <renderer/vulkan/functions.h>
 #endif
 #include <renderer/texture_cache_state.h>
-
-#include "driver_functions.h"
 
 #include <gxm/types.h>
 #include <renderer/functions.h>

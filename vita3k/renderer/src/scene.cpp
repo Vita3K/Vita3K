@@ -18,10 +18,10 @@
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <renderer/commands.h>
+#include <renderer/driver_functions.h>
 #include <renderer/state.h>
 #include <renderer/types.h>
 
-#include "driver_functions.h"
 #include <renderer/gl/functions.h>
 #include <renderer/gl/types.h>
 
@@ -168,4 +168,114 @@ COMMAND(handle_draw) {
     }
     }
 }
+
+COMMAND(handle_transfer_copy) {
+    const uint32_t colorKeyValue = helper.pop<uint32_t>();
+    const uint32_t colorKeyMask = helper.pop<uint32_t>();
+    const SceGxmTransferColorKeyMode colorKeyMode = helper.pop<SceGxmTransferColorKeyMode>();
+    const SceGxmTransferImage *images = helper.pop<SceGxmTransferImage *>();
+    const SceGxmTransferImage *src = &images[0];
+    const SceGxmTransferImage *dest = &images[1];
+    const SceGxmTransferType src_type = helper.pop<SceGxmTransferType>();
+    const SceGxmTransferType dst_type = helper.pop<SceGxmTransferType>();
+
+    if (src_type == dst_type) {
+        const auto src_bpp = gxm::get_bits_per_pixel(src->format);
+        const auto dest_bpp = gxm::get_bits_per_pixel(dest->format);
+        const uint32_t src_bytes_per_pixel = (src_bpp + 7) >> 3;
+        const uint32_t dest_bytes_per_pixel = (dest_bpp + 7) >> 3;
+
+        for (uint32_t x = 0; x < src->width; x++) {
+            for (uint32_t y = 0; y < src->height; y++) {
+                // Set offset of source and destination
+                const auto src_offset = ((x + src->x) * src_bytes_per_pixel) + ((y + src->y) * src->stride);
+                const auto dest_offset = ((x + dest->x) * dest_bytes_per_pixel) + ((y + dest->y) * dest->stride);
+
+                // Set pointer of source and destination
+                const auto src_ptr = (uint8_t *)src->address.get(mem) + src_offset;
+                auto dest_ptr = (uint8_t *)dest->address.get(mem) + dest_offset;
+
+                // Set color of source
+                const auto src_color = *(uint32_t *)src_ptr;
+
+                // Copy result in destination depending color Key
+                switch (colorKeyMode) {
+                case SCE_GXM_TRANSFER_COLORKEY_NONE:
+                    memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
+                    break;
+                case SCE_GXM_TRANSFER_COLORKEY_PASS:
+                    if ((src_color & colorKeyMask) == colorKeyValue)
+                        memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
+                    break;
+                case SCE_GXM_TRANSFER_COLORKEY_REJECT:
+                    if ((src_color & colorKeyMask) != colorKeyValue)
+                        memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
+                    break;
+                default: break;
+                }
+            }
+        }
+    } else
+        LOG_WARN("No convertion of SceGxmTransferType support yet");
+
+    // TODO: handle case where dest is a cached surface
+
+    delete[] images;
+}
+
+COMMAND(handle_transfer_downscale) {
+    const SceGxmTransferImage *src = helper.pop<SceGxmTransferImage *>();
+    const SceGxmTransferImage *dest = helper.pop<SceGxmTransferImage *>();
+
+    const auto src_bpp = gxm::get_bits_per_pixel(src->format);
+    const auto dest_bpp = gxm::get_bits_per_pixel(dest->format);
+    const uint32_t src_bytes_per_pixel = (src_bpp + 7) >> 3;
+    const uint32_t dest_bytes_per_pixel = (dest_bpp + 7) >> 3;
+
+    for (uint32_t y = 0; y < src->height; y += 2) {
+        for (uint32_t x = 0; x < src->width; x += 2) {
+            // Set offset of source and destination
+            const auto src_offset = ((x + src->x) * src_bytes_per_pixel) + ((y + src->y) * src->stride);
+            const auto dest_offset = (x / 2 + dest->x) * dest_bytes_per_pixel + (y / 2 + dest->y) * dest->stride;
+
+            // Set pointer of source and destination
+            const auto src_ptr = (uint8_t *)src->address.get(mem) + src_offset;
+            auto dest_ptr = (uint8_t *)dest->address.get(mem) + dest_offset;
+
+            // Copy result in destination
+            memcpy(dest_ptr, src_ptr, dest_bytes_per_pixel);
+        }
+    }
+
+    // TODO: handle case where dest is a cached surface
+
+    delete src;
+    delete dest;
+}
+
+COMMAND(handle_transfer_fill) {
+    const uint32_t fill_color = helper.pop<uint32_t>();
+    const SceGxmTransferImage *dest = helper.pop<SceGxmTransferImage *>();
+
+    const auto bpp = gxm::get_bits_per_pixel(dest->format);
+
+    const uint32_t bytes_per_pixel = (bpp + 7) >> 3;
+    for (uint32_t y = 0; y < dest->height; y++) {
+        for (uint32_t x = 0; x < dest->width; x++) {
+            // Set offset of destination
+            const auto dest_offset = ((x + dest->x) * bytes_per_pixel) + ((y + dest->y) * dest->stride);
+
+            // Set pointer of destination
+            auto dest_ptr = (uint8_t *)dest->address.get(mem) + dest_offset;
+
+            // Fill color in destination
+            memcpy(dest_ptr, &fill_color, bytes_per_pixel);
+        }
+    }
+
+    // TODO: handle case where dest is a cached surface
+
+    delete dest;
+}
+
 } // namespace renderer

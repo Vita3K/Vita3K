@@ -30,6 +30,28 @@ class Queue {
 public:
     unsigned int maxPendingCount_;
 
+    std::unique_ptr<T> top(const int ms = 0) {
+        T item{ T() };
+        {
+            std::unique_lock<std::mutex> mlock(mutex_);
+            if (ms == 0) {
+                while (!aborted && queue_.empty()) {
+                    condempty_.wait(mlock);
+                }
+            } else {
+                if (queue_.empty()) {
+                    condempty_.wait_for(mlock, std::chrono::microseconds(ms));
+                }
+            }
+            if (aborted || queue_.empty()) {
+                return {};
+            }
+
+            item = queue_.front();
+        }
+        return std::make_unique<T>(item);
+    }
+
     std::unique_ptr<T> pop(const int ms = 0) {
         T item{ T() };
         {
@@ -50,7 +72,7 @@ public:
             item = queue_.front();
             queue_.pop();
         }
-        cond_.notify_one();
+        cond_.notify_all();
         return std::make_unique<T>(item);
     }
 
@@ -81,6 +103,12 @@ public:
     void reset() {
         queue_.clear();
         aborted = false;
+    }
+
+    void wait_empty() {
+        std::unique_lock<std::mutex> mlock(mutex_);
+        if (!aborted && !queue_.empty())
+            cond_.wait(mlock, [&]() { return aborted || queue_.empty(); });
     }
 
     Queue() = default;
