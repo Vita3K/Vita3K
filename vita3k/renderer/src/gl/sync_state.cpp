@@ -410,8 +410,8 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         glBindTexture(GL_TEXTURE_2D, static_cast<GLuint>(texture_as_surface));
 
         if (only_nearest) {
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-            glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         }
 
         if (base_format != SCE_GXM_TEXTURE_BASE_FORMAT_X8U24) {
