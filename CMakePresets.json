@@ -169,6 +169,48 @@
       "configurePreset": "windows-vs2022-clang"
     },
     {
+      "name": "windows-ninja-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information and no compiler optimizations",
+      "configuration": "Debug",
+      "configurePreset": "windows-ninja"
+    },
+    {
+      "name": "windows-ninja-relwithdebinfo",
+      "displayName": "Release with debugging information",
+      "description": "Build with compiler optimizations enabled and limited debugging information",
+      "configuration": "RelWithDebInfo",
+      "configurePreset": "windows-ninja"
+    },
+    {
+      "name": "windows-ninja-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information",
+      "configuration": "Release",
+      "configurePreset": "windows-ninja"
+    },
+    {
+      "name": "windows-ninja-clang-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information and no compiler optimizations",
+      "configuration": "Debug",
+      "configurePreset": "windows-ninja-clang"
+    },
+    {
+      "name": "windows-ninja-clang-relwithdebinfo",
+      "displayName": "Release with debugging information",
+      "description": "Build with compiler optimizations enabled and limited debugging information",
+      "configuration": "RelWithDebInfo",
+      "configurePreset": "windows-ninja-clang"
+    },
+    {
+      "name": "windows-ninja-clang-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information",
+      "configuration": "Release",
+      "configurePreset": "windows-ninja-clang"
+    },
+    {
       "name": "linux-ninja-clang-debug",
       "displayName": "Debug",
       "description": "Build with debugging information and no compiler optimizations",
