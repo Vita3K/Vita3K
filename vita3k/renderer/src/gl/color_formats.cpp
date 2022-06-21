@@ -145,6 +145,7 @@ GLenum translate_type(SceGxmColorBaseFormat base_format) {
         return GL_HALF_FLOAT;
 
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
+    case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
         return GL_UNSIGNED_INT_2_10_10_10_REV;
 
     case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
