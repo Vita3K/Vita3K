@@ -29,11 +29,18 @@ jobs:
             extra_cmake_args:
             cmake_preset: linux-ninja-clang
           - os: windows-latest
-            cache_path: ~\AppData\Local\Mozilla\sccache
-            extra_cmake_args: -DBOOST_ROOT=C:\hostedtoolcache\windows\Boost\1.78.0\x86_64 -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+            cache_path: |
+                C:\vcpkg\installed
+                C:\vcpkg\packages
+            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
             cmake_preset: windows-ninja
 
     steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
       - name: Set up build environment (macos-latest)
         run: |
           brew install boost ccache ninja
@@ -46,22 +53,24 @@ jobs:
           sudo apt-get -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev ninja-build
         if: matrix.os == 'ubuntu-latest'
 
-      - name: Set up build environment (windows-latest)
-        run: |
-          $Url = "https://sourceforge.net/projects/boost/files/boost-binaries/1.78.0/boost_1_78_0-msvc-14.3-64.exe"
-          (New-Object System.Net.WebClient).DownloadFile($Url, "$env:TEMP\boost.exe")
-          Start-Process -Wait -FilePath "$env:TEMP\boost.exe" "/SILENT","/SP-","/SUPPRESSMSGBOXES","/DIR=C:\hostedtoolcache\windows\Boost\1.78.0\x86_64"
-          iwr -useb 'https://raw.githubusercontent.com/scoopinstaller/install/master/install.ps1' -outfile 'install.ps1'
-          .\install.ps1 -RunAsAdmin
-          scoop install ninja sccache --global
-          echo "${env:PATH}" >> ${env:GITHUB_PATH}
+      - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows-latest'
-
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+            variant: sccache
+        if: matrix.os == 'windows-latest'
+ 
       - uses: actions/cache@v3
         with:
           path: ${{ matrix.cache_path }}
-          key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
-          restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
+          key: cache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
+          restore-keys: |
+            cache-${{ matrix.os }}-${{ matrix.config }}-
+
+      - name: Set up build environment (windows-latest)
+        run: |
+          vcpkg install boost-system:x64-windows boost-filesystem:x64-windows boost-program-options:x64-windows boost-icl:x64-windows boost-variant:x64-windows
+        if: matrix.os == 'windows-latest'
 
       - name: Set up SDL 2.0.20 (ubuntu-latest)
         run: |
@@ -81,24 +90,10 @@ jobs:
           sudo make -C SDL2-${SDL2VER} install
         if: matrix.os == 'ubuntu-latest'
 
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          submodules: recursive
-
       - name: CMake
         run: |
           cmake -DCI=ON ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
           cmake --build build/${{ matrix.cmake_preset }} --config ${{ matrix.config }}
-        if: matrix.os != 'windows-latest'
-
-      - name: CMake
-        shell: cmd
-        run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\Common7\Tools\VsDevCmd.bat" -arch=x64
-          cmake -DCI=ON ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
-          cmake --build build/${{ matrix.cmake_preset }} --config ${{ matrix.config }}
-        if: matrix.os == 'windows-latest'
 
       - name: CTest
         working-directory: build/${{ matrix.cmake_preset }}
