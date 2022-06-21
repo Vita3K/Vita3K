@@ -100,6 +100,9 @@ GLenum translate_internal_format(SceGxmColorBaseFormat base_format) {
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
         return GL_RGBA;
 
+    case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
+        return GL_R11F_G11F_B10F;
+
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
         return GL_RG32F;
 
@@ -122,6 +125,9 @@ GLenum translate_format(SceGxmColorBaseFormat base_format) {
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
         return GL_RG;
 
+    case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
+        return GL_RGB;
+
     default:
         return GL_RGBA;
     }
@@ -140,6 +146,9 @@ GLenum translate_type(SceGxmColorBaseFormat base_format) {
 
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
         return GL_UNSIGNED_INT_2_10_10_10_REV;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
+        return GL_UNSIGNED_INT_10F_11F_11F_REV;
 
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
         return GL_FLOAT;
@@ -163,6 +172,7 @@ const GLint *translate_swizzle(SceGxmColorFormat fmt) {
 
     case SCE_GXM_COLOR_BASE_FORMAT_SE5M9M9M9:
     case SCE_GXM_COLOR_BASE_FORMAT_U5U6U5:
+    case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
         return translate_swizzle(static_cast<SceGxmColorSwizzle3Mode>(swizzle));
 
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
