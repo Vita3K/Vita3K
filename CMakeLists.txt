@@ -84,6 +84,10 @@ endmacro(boost_compile)
 option(VITA3K_FORCE_CUSTOM_BOOST "Force Vita3K build process to use the Boost version included with the repository" OFF)
 option(VITA3K_FORCE_SYSTEM_BOOST "Force Vita3K build process to use the Boost version in the system and CMake's default paths and ignore the Boost version included with Vita3K" OFF)
 
+# Boost modules to be found by CMake
+# variant and icl should also be found but CMake cannot find them due to not being included in FindBoost module
+set(BOOST_MODULES_TO_FIND filesystem system program_options)
+
 # If build process isn't set to forcefully use system Boost
 if(NOT VITA3K_FORCE_SYSTEM_BOOST)
     # find_package(Boost ...) setting
@@ -91,7 +95,7 @@ if(NOT VITA3K_FORCE_SYSTEM_BOOST)
 
     # First, try to find Boost without any hints (system Boost)
     if(NOT VITA3K_FORCE_CUSTOM_BOOST)
-        find_package(Boost COMPONENTS filesystem system program_options QUIET)
+        find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} QUIET)
     endif()
 
     # If system Boost hasn't been found, then enable hints to find custom Boost
@@ -106,7 +110,7 @@ if(NOT VITA3K_FORCE_SYSTEM_BOOST)
         set(BOOST_LIBRARYDIR "${BOOST_INSTALLDIR}/lib")                 # find_package(Boost ...) hint
 
         # Find Boost again to check for a existing compilation of the custom distribution
-        find_package(Boost COMPONENTS filesystem system program_options QUIET)
+        find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} QUIET)
 
         # If no build of the custom distribution is found, compile it
         if(NOT Boost_FOUND)
@@ -158,7 +162,7 @@ if(NOT VITA3K_FORCE_SYSTEM_BOOST)
             boost_compile()
 
             # Find Boost again
-            find_package(Boost COMPONENTS filesystem system program_options variant icl QUIET)
+            find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} QUIET)
         else()
             message(STATUS "Custom Boost distribution found in ${BOOST_INSTALLDIR}")
         endif()
@@ -166,7 +170,7 @@ if(NOT VITA3K_FORCE_SYSTEM_BOOST)
 else()
     # Try to find Boost on the system and CMake's default paths
     set(Boost_USE_STATIC_LIBS ON)
-    find_package(Boost COMPONENTS filesystem system program_options QUIET)
+    find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} QUIET)
 endif()
 
 if(WIN32)
