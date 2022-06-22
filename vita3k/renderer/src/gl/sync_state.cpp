@@ -120,12 +120,8 @@ void sync_mask(const GLState &state, GLContext &context, const MemState &mem) {
         // always accept
         initial_byte = 0xFF;
     }
-    std::vector<GLubyte> emptyData(width * height * 4, initial_byte);
-    GLint texId;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &texId);
-    glBindTexture(GL_TEXTURE_2D, context.render_target->masktexture[0]);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, &emptyData[0]);
-    glBindTexture(GL_TEXTURE_2D, texId);
+    GLubyte clear_bytes[4] = { initial_byte, initial_byte, initial_byte, initial_byte };
+    glClearTexImage(context.render_target->masktexture[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, clear_bytes);
 }
 
 void sync_viewport_flat(const GLState &state, GLContext &context) {
