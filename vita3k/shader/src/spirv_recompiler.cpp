@@ -666,15 +666,14 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
         if (features.direct_fragcolor) {
             // The GPU supports gl_LastFragData. It's only OpenGL though
-            // TODO: Make this not emit with OpenGL
-            spv::Id v4_a = b.makeArrayType(v4, b.makeIntConstant(1), 0);
-            spv::Id last_frag_data_arr = b.createVariable(spv::NoPrecision, spv::StorageClassInput, v4_a, "gl_LastFragData");
-            translation_state.interfaces.push_back(last_frag_data_arr);
-            spv::Id last_frag_data = b.createOp(spv::OpAccessChain, v4, { last_frag_data_arr, b.makeIntConstant(0) });
+            // TODO: Make this only emit with OpenGL
+            spv::Id last_frag_data = b.createVariable(spv::NoPrecision, spv::StorageClassInput, v4, "last_frag_data");
+            b.addDecoration(last_frag_data, spv::DecorationInputAttachmentIndex, 0);
+            translation_state.interfaces.push_back(last_frag_data);
 
             // Copy outs into. The output data from last stage should has the same format as our
-            source = last_frag_data;
-            translation_state.last_frag_data_id = last_frag_data_arr;
+            source = b.createLoad(last_frag_data, spv::NoPrecision);
+            translation_state.last_frag_data_id = last_frag_data;
         } else if (features.support_shader_interlock || features.support_texture_barrier) {
             // Create a global sampler, which is our color attachment
             spv::Id color_attachment = create_builtin_sampler(b, features, translation_state, "f_colorAttachment");
@@ -1550,16 +1549,13 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
     glsl.add_header_line("// Shader Name: " + shader_name);
 
     if (features.direct_fragcolor && translation_state.last_frag_data_id != spv::NoResult) {
-        glsl.require_extension("GL_EXT_shader_framebuffer_fetch");
-
-        // Do not generate declaration for gl_LastFragData
-        glsl.set_remapped_variable_state(translation_state.last_frag_data_id, true);
-        glsl.set_name(translation_state.last_frag_data_id, "gl_LastFragData");
+        // The first 0 is the input attachment index, which we specified as 0 for last_frag_data
+        // the second 0 is the color location, we want what is gl_LastFragData[0]
+        glsl.remap_ext_framebuffer_fetch(0, 0, true);
     }
 
     if (translation_state.frag_coord_id != spv::NoResult) {
         glsl.set_remapped_variable_state(translation_state.frag_coord_id, true);
-        glsl.set_name(translation_state.frag_coord_id, "gl_FragCoord");
     }
     if (features.support_shader_interlock) {
         if (translation_state.is_fragment && is_frag_color_used) {
