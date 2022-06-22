@@ -66,8 +66,10 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     draw_data->ScaleClipRects(io.DisplayFramebufferScale);
 
     // Backup GL state
-    GLenum last_active_texture;
-    glGetIntegerv(GL_ACTIVE_TEXTURE, (GLint *)&last_active_texture);
+    GLint last_framebuffer;
+    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &last_framebuffer);
+    GLint last_active_texture;
+    glGetIntegerv(GL_ACTIVE_TEXTURE, &last_active_texture);
     glActiveTexture(GL_TEXTURE0);
     GLint last_program;
     glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
@@ -103,6 +105,8 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     GLboolean last_enable_cull_face = glIsEnabled(GL_CULL_FACE);
     GLboolean last_enable_depth_test = glIsEnabled(GL_DEPTH_TEST);
     GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
+    GLboolean last_color_mask[4];
+    glGetBooleanv(GL_COLOR_WRITEMASK, last_color_mask);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -114,6 +118,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_SCISSOR_TEST);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
     if (state.do_clear_screen)
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -171,6 +176,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
 
     // Restore modified GL state
     glUseProgram(last_program);
+    glBindFramebuffer(GL_FRAMEBUFFER, last_framebuffer);
     glBindTexture(GL_TEXTURE_2D, last_texture);
     glBindSampler(0, last_sampler);
     glActiveTexture(last_active_texture);
@@ -198,6 +204,7 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
     glPolygonMode(GL_FRONT_AND_BACK, (GLenum)last_polygon_mode[0]);
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
     glScissor(last_scissor_box[0], last_scissor_box[1], (GLsizei)last_scissor_box[2], (GLsizei)last_scissor_box[3]);
+    glColorMask(last_color_mask[0], last_color_mask[1], last_color_mask[2], last_color_mask[3]);
 }
 
 static const char *ImGui_ImplSdlGL3_GetClipboardText(void *) {
