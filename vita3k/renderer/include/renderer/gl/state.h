@@ -43,17 +43,18 @@ struct GLState : public renderer::State {
     GLTextureCacheState texture_cache;
     GLSurfaceCache surface_cache;
 
-    std::vector<ShadersHash> shaders_cache_hashs;
-    std::string shader_version;
-
     ScreenRenderer screen_renderer;
 
     bool init(const char *base_path, const bool hashless_texture_cache) override;
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem) override;
+    void swap_window(SDL_Window *window) override;
     void set_fxaa(bool enable_fxaa) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
+
+    void precompile_shader(const ShadersHash &hash) override;
+    void preclose_action() override;
 };
 
 } // namespace renderer::gl

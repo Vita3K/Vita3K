@@ -21,6 +21,8 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 
+#include <renderer/vulkan/types.h>
+
 #include <functional>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -48,13 +50,12 @@ bool is_cmd_ready(MemState &mem, CommandList &command_list) {
         return true;
 
     SceGxmSyncObject *sync = reinterpret_cast<Ptr<SceGxmSyncObject> *>(&command_list.first->data[0])->get(mem);
-    const uint32_t timestamp = *reinterpret_cast<uint32_t *>(&command_list.first->data[4]);
+    const uint32_t timestamp = *reinterpret_cast<uint32_t *>(&command_list.first->data[sizeof(uint32_t) + sizeof(void *)]);
 
     return sync->timestamp_current >= timestamp;
 }
 
-void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list, const char *base_path,
-    const char *title_id, const char *self_name) {
+void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list) {
     using CommandHandlerFunc = std::function<void(renderer::State &, MemState &, Config &,
         CommandHelper &, const FeatureState &, Context *, const char *, const char *, const char *)>;
 
@@ -72,6 +73,7 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
         { CommandOpcode::SignalSyncObject, cmd_handle_signal_sync_object },
         { CommandOpcode::WaitSyncObject, cmd_handle_wait_sync_object },
         { CommandOpcode::SignalNotification, cmd_handle_notification },
+        { CommandOpcode::NewFrame, cmd_new_frame },
         { CommandOpcode::DestroyRenderTarget, cmd_handle_destroy_render_target },
         { CommandOpcode::DestroyContext, cmd_handle_destroy_context }
     };
@@ -89,7 +91,7 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
             LOG_ERROR("Unimplemented command opcode {}", static_cast<int>(cmd->opcode));
         } else {
             CommandHelper helper(cmd);
-            handler->second(state, mem, config, helper, features, command_list.context, base_path, title_id, self_name);
+            handler->second(state, mem, config, helper, features, command_list.context, state.base_path, state.title_id, state.self_name);
         }
 
         Command *last_cmd = cmd;
@@ -103,8 +105,7 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
     } while (true);
 }
 
-void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path,
-    const char *title_id, const char *self_name) {
+void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config) {
     while (!state.should_display.exchange(false)) {
         auto cmd_list = state.command_buffer_queue.top(3);
 
@@ -115,7 +116,7 @@ void process_batches(renderer::State &state, const FeatureState &features, MemSt
         }
 
         state.command_buffer_queue.pop();
-        process_batch(state, features, mem, config, *cmd_list, base_path, title_id, self_name);
+        process_batch(state, features, mem, config, *cmd_list);
     }
 }
 

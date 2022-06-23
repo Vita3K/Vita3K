@@ -31,7 +31,8 @@
 #include <packages/pkg.h>
 #include <packages/sfo.h>
 #include <renderer/functions.h>
-#include <renderer/gl/functions.h>
+#include <renderer/shaders.h>
+#include <renderer/state.h>
 #include <shader/spirv_recompiler.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -200,6 +201,7 @@ int main(int argc, char *argv[]) {
                     gui::draw_begin(gui, emuenv);
                     gui::draw_initial_setup(gui, emuenv);
                     gui::draw_end(gui, emuenv.window.get());
+                    emuenv.renderer->swap_window(emuenv.window.get());
                 } else
                     return QuitRequested;
             }
@@ -285,6 +287,7 @@ int main(int argc, char *argv[]) {
                 gui::draw_ui(gui, emuenv);
 
                 gui::draw_end(gui, emuenv.window.get());
+                emuenv.renderer->swap_window(emuenv.window.get());
                 FrameMark; // Tracy - Frame end mark for UI rendering loop
             } else {
                 return QuitRequested;
@@ -347,20 +350,21 @@ int main(int argc, char *argv[]) {
 
     gui.live_area.information_bar = false;
 
-    // Pre-Compile Shader only for glsl, spriv is broken
-    if (!emuenv.cfg.spirv_shader) {
-        auto &glstate = static_cast<renderer::gl::GLState &>(*emuenv.renderer);
-        if (renderer::gl::get_shaders_cache_hashs(glstate, emuenv.base_path.c_str(), emuenv.io.title_id.c_str(), emuenv.self_name.c_str()) && cfg.shader_cache) {
-            for (const auto &hash : glstate.shaders_cache_hashs) {
-                gui::draw_begin(gui, emuenv);
-                draw_app_background(gui, emuenv);
+    // Pre-Compile Shaders
+    emuenv.renderer->base_path = emuenv.base_path.c_str();
+    emuenv.renderer->title_id = emuenv.io.title_id.c_str();
+    emuenv.renderer->self_name = emuenv.self_name.c_str();
+    if (renderer::get_shaders_cache_hashs(*emuenv.renderer) && cfg.shader_cache) {
+        for (const auto &hash : emuenv.renderer->shaders_cache_hashs) {
+            gui::draw_begin(gui, emuenv);
+            draw_app_background(gui, emuenv);
 
-                renderer::gl::pre_compile_program(glstate, emuenv.base_path.c_str(), emuenv.io.title_id.c_str(), emuenv.self_name.c_str(), hash);
-                gui::draw_pre_compiling_shaders_progress(gui, emuenv, uint32_t(glstate.shaders_cache_hashs.size()));
+            emuenv.renderer->precompile_shader(hash);
+            gui::draw_pre_compiling_shaders_progress(gui, emuenv, uint32_t(emuenv.renderer->shaders_cache_hashs.size()));
 
-                gui::draw_end(gui, emuenv.window.get());
-                SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
-            }
+            gui::draw_end(gui, emuenv.window.get());
+            emuenv.renderer->swap_window(emuenv.window.get());
+            SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
         }
     }
 
@@ -369,8 +373,7 @@ int main(int argc, char *argv[]) {
 
     while (emuenv.frame_count == 0 && !emuenv.load_exec) {
         // Driver acto!
-        renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg, emuenv.base_path.c_str(),
-            emuenv.io.title_id.c_str(), emuenv.self_name.c_str());
+        renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg);
 
         {
             const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
@@ -384,6 +387,7 @@ int main(int argc, char *argv[]) {
         draw_app_background(gui, emuenv);
 
         gui::draw_end(gui, emuenv.window.get());
+        emuenv.renderer->swap_window(emuenv.window.get());
 
         SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
     }
@@ -391,8 +395,7 @@ int main(int argc, char *argv[]) {
     while (handle_events(emuenv, gui) && !emuenv.load_exec) {
         ZoneScopedN("Game rendering"); // Tracy - Track game rendering loop scope
         // Driver acto!
-        renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg, emuenv.base_path.c_str(),
-            emuenv.io.title_id.c_str(), emuenv.self_name.c_str());
+        renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg);
 
         {
             const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
@@ -419,6 +422,7 @@ int main(int argc, char *argv[]) {
         }
 
         gui::draw_end(gui, emuenv.window.get());
+        emuenv.renderer->swap_window(emuenv.window.get());
         FrameMark; // Tracy - Frame end mark for game rendering loop
     }
 
@@ -426,6 +430,7 @@ int main(int argc, char *argv[]) {
     CoUninitialize();
 #endif
 
+    emuenv.renderer->preclose_action();
     app::destroy(emuenv, gui.imgui_state.get());
 
     if (emuenv.load_exec)

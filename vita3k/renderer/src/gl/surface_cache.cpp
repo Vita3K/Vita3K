@@ -29,7 +29,7 @@ static constexpr std::uint64_t CASTED_UNUSED_TEXTURE_PURGE_SECS = 40;
 GLSurfaceCache::GLSurfaceCache() {
 }
 
-void GLSurfaceCache::do_typeless_copy(const GLint dest_texture, const GLint source_texture, const GLenum dest_internal,
+void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint source_texture, const GLenum dest_internal,
     const GLenum dest_upload_format, const GLenum dest_type, const GLenum source_format, const GLenum source_type, const int offset_x,
     const int offset_y, const int width, const int height, const int dest_width, const int dest_height, const std::size_t total_source_size) {
     static constexpr GLsizei I32_SIGNED_MAX = 0x7FFFFFFF;
@@ -58,7 +58,7 @@ void GLSurfaceCache::do_typeless_copy(const GLint dest_texture, const GLint sour
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, GL_NONE);
 }
 
-std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint16_t pixel_stride,
+GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint16_t pixel_stride,
     const SceGxmColorBaseFormat base_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
     std::uint16_t *stored_height, std::uint16_t *stored_width) {
     // Create the key to access the cache struct
@@ -454,7 +454,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const State 
     return texture_handle_return;
 }
 
-std::uint64_t GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) {
+GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) {
     auto ite = color_surface_textures.find(address.address());
     if (ite == color_surface_textures.end()) {
         return 0;
@@ -484,7 +484,7 @@ std::uint64_t GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Pt
     return info.gl_ping_pong_texture[0];
 }
 
-std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state, const MemState &mem, const SceGxmDepthStencilSurface &surface, std::int32_t force_width, std::int32_t force_height, const bool is_reading) {
+GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state, const MemState &mem, const SceGxmDepthStencilSurface &surface, std::int32_t force_width, std::int32_t force_height, const bool is_reading) {
     if (!target) {
         LOG_ERROR("Unable to retrieve Depth Stencil texture with no active render target!");
         return 0;
@@ -493,13 +493,7 @@ std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State 
     force_width *= state.res_multiplier;
     force_height *= state.res_multiplier;
 
-    bool packed_ds = false;
-    if (surface.control) {
-        const SceGxmDepthStencilControl *control = surface.control.get(mem);
-        if (control && (control->format == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24)) {
-            packed_ds = true;
-        }
-    }
+    bool packed_ds = (surface.control.content & SceGxmDepthStencilControl::format_bits) == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
 
     if (force_width < 0) {
         force_width = target->width;
@@ -605,8 +599,8 @@ std::uint64_t GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State 
     return depth_stencil_textures[found_index].gl_texture[0];
 }
 
-std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
-    std::uint64_t *color_texture_handle, std::uint64_t *ds_texture_handle, std::uint16_t *stored_height) {
+GLuint GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
+    GLuint *color_texture_handle, GLuint *ds_texture_handle, std::uint16_t *stored_height) {
     if (!target) {
         LOG_ERROR("Unable to retrieve framebuffer with no active render target!");
         return 0;
@@ -689,7 +683,7 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const State &state, co
     return fb[0];
 }
 
-std::uint64_t GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier, SceFVector2 &texture_size) {
+GLuint GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier, SceFVector2 &texture_size) {
     auto ite = color_surface_textures.lower_bound(address.address());
     if (ite == color_surface_textures.end()) {
         return 0;

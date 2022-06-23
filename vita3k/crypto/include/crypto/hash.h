@@ -28,11 +28,9 @@ typedef std::array<char, 65> Sha256HashText;
 void hex_buf(const std::uint8_t *hash, char *dst, const std::size_t source_size);
 
 template <size_t N>
-constexpr std::array<char, (N * 2) + 1> hex(const std::array<uint8_t, N> &hash) {
-    std::array<char, (N * 2) + 1> dst;
-    hex_buf(hash.data(), &dst[0], N);
+const std::string hex_string(const std::array<uint8_t, N> &hash) {
+    std::string dst(2 * N + 1, 0);
+    hex_buf(hash.data(), dst.data(), N);
 
     return dst;
 }
-
-std::string hex_string(const std::string &hash);

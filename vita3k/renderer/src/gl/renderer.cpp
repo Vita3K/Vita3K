@@ -49,8 +49,8 @@ GLContext::GLContext()
     , fragment_uniform_stream_ring_buffer(GL_SHADER_STORAGE_BUFFER, MiB(256))
     , vertex_info_uniform_buffer(GL_UNIFORM_BUFFER, MiB(8))
     , fragment_info_uniform_buffer(GL_UNIFORM_BUFFER, MiB(8)) {
-    std::memset(&previous_vert_info, 0, sizeof(GXMRenderVertUniformBlock));
-    std::memset(&previous_frag_info, 0, sizeof(GXMRenderFragUniformBlock));
+    std::memset(&previous_vert_info, 0, sizeof(shader::RenderVertUniformBlock));
+    std::memset(&previous_frag_info, 0, sizeof(shader::RenderFragUniformBlock));
 }
 
 namespace texture {
@@ -62,13 +62,11 @@ bool init(GLTextureCacheState &cache, const bool hashless_texture_cache) {
         glBindTexture(get_gl_texture_type(*texture_casted), gl_texture);
     };
 
-    cache.configure_texture_callback = [](const renderer::TextureCacheState &text_cache, const std::size_t index, const void *texture) {
+    cache.configure_texture_callback = [](const renderer::TextureCacheState &text_cache, const void *texture) {
         configure_bound_texture(text_cache, *reinterpret_cast<const SceGxmTexture *>(texture));
     };
 
-    cache.upload_texture_callback = [](const std::size_t index, const void *texture, const MemState &mem) {
-        upload_bound_texture(*reinterpret_cast<const SceGxmTexture *>(texture), mem);
-    };
+    cache.upload_texture_callback = upload_bound_texture;
 
     cache.use_protect = hashless_texture_cache;
 
@@ -280,10 +278,14 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
     }
 
+    // always enabled in the opengl renderer
+    gl_state.features.use_mask_bit = true;
+
     return gl_state.init(base_path, hashless_texture_cache);
 }
 
 bool GLState::init(const char *base_path, const bool hashless_texture_cache) {
+    texture_cache.backend = &current_backend;
     if (!texture::init(texture_cache, hashless_texture_cache)) {
         LOG_ERROR("Failed to initialize texture cache!");
         return false;
@@ -353,33 +355,11 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
     return true;
 }
 
-static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &sizes, UniformBufferSizes &offsets, std::size_t &total_hold) {
-    std::uint32_t last_offset = 0;
-
-    for (std::size_t i = 0; i < sizes.size(); i++) {
-        if (sizes[i] != 0) {
-            // Round to vec4 unit
-            offsets[i] = last_offset;
-            last_offset += ((sizes[i] + 3) / 4 * 4);
-        } else {
-            offsets[i] = static_cast<std::uint32_t>(-1);
-        }
-    }
-
-    total_hold = static_cast<std::size_t>(last_offset);
-}
-
-bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
+bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend) {
     R_PROFILE(__func__);
 
     fp = std::make_unique<GLFragmentProgram>();
     GLFragmentProgram *frag_program_gl = reinterpret_cast<GLFragmentProgram *>(fp.get());
-
-    // Try to hash this shader
-    const Sha256Hash hash_bytes_f = sha256(&program, program.size);
-    fp->hash.assign(hash_bytes_f.begin(), hash_bytes_f.end());
-
-    gxp_ptr_map.emplace(hash_bytes_f, &program);
 
     // Translate blending.
     if (blend != nullptr) {
@@ -395,32 +375,13 @@ bool create(std::unique_ptr<FragmentProgram> &fp, GLState &state, const SceGxmPr
         frag_program_gl->alpha_src = translate_blend_factor(blend->alphaSrc);
         frag_program_gl->alpha_dst = translate_blend_factor(blend->alphaDst);
     }
-    shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);
-    layout_ssbo_offset_from_uniform_buffer_sizes(fp->uniform_buffer_sizes, fp->uniform_buffer_data_offsets, fp->max_total_uniform_buffer_storage);
 
     return true;
 }
 
-bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
+bool create(std::unique_ptr<VertexProgram> &vp, GLState &state, const SceGxmProgram &program) {
     R_PROFILE(__func__);
-
     vp = std::make_unique<GLVertexProgram>();
-    GLVertexProgram *vert_program_gl = reinterpret_cast<GLVertexProgram *>(vp.get());
-
-    // Try to hash this shader
-    const Sha256Hash hash_bytes_v = sha256(&program, program.size);
-    vp->hash.assign(hash_bytes_v.begin(), hash_bytes_v.end());
-    gxp_ptr_map.emplace(hash_bytes_v, &program);
-
-    shader::usse::get_uniform_buffer_sizes(program, vp->uniform_buffer_sizes);
-    shader::usse::get_attribute_informations(program, vert_program_gl->attribute_infos);
-    layout_ssbo_offset_from_uniform_buffer_sizes(vp->uniform_buffer_sizes, vp->uniform_buffer_data_offsets, vp->max_total_uniform_buffer_storage);
-
-    if (vert_program_gl->attribute_infos.empty()) {
-        vert_program_gl->stripped_symbols_checked = false;
-    } else {
-        vert_program_gl->stripped_symbols_checked = true;
-    }
 
     return true;
 }
@@ -448,12 +409,12 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
         ds_surface_fin = nullptr;
     }
 
-    std::uint64_t current_color_attachment_handle = 0;
+    GLuint current_color_attachment_handle = 0;
     std::uint16_t current_framebuffer_height = 0;
 
-    context.current_framebuffer = static_cast<GLuint>(state.surface_cache.retrieve_framebuffer_handle(
-        state, mem, color_surface_fin, ds_surface_fin, &current_color_attachment_handle, nullptr, &current_framebuffer_height));
-    context.current_color_attachment = static_cast<GLuint>(current_color_attachment_handle);
+    context.current_framebuffer = state.surface_cache.retrieve_framebuffer_handle(
+        state, mem, color_surface_fin, ds_surface_fin, &current_color_attachment_handle, nullptr, &current_framebuffer_height);
+    context.current_color_attachment = current_color_attachment_handle;
     context.current_framebuffer_height = current_framebuffer_height;
 
     glBindFramebuffer(GL_FRAMEBUFFER, context.current_framebuffer);
@@ -473,8 +434,8 @@ void set_context(GLState &state, GLContext &context, const MemState &mem, const 
     sync_depth_write_enable(context.record.back_depth_write_mode, false);
 
     sync_stencil_data(context.record, mem);
-    sync_stencil_func(context.record.back_stencil_state, mem, true);
-    sync_stencil_func(context.record.front_stencil_state, mem, false);
+    sync_stencil_func(context.record.back_stencil_state_op, context.record.back_stencil_state_values, mem, true);
+    sync_stencil_func(context.record.front_stencil_state_op, context.record.front_stencil_state_values, mem, false);
 
     if (context.record.region_clip_mode != SCE_GXM_REGION_CLIP_NONE) {
         glEnable(GL_SCISSOR_TEST);
@@ -788,6 +749,10 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
     screen_renderer.render(viewport_pos, viewport_size, need_uv ? uvs : nullptr, static_cast<GLuint>(surface_handle), texture_size);
 }
 
+void GLState::swap_window(SDL_Window *window) {
+    SDL_GL_SwapWindow(window);
+}
+
 void GLState::set_fxaa(bool enable_fxaa) {
     screen_renderer.enable_fxaa = enable_fxaa;
 }
@@ -801,5 +766,11 @@ int GLState::get_max_anisotropic_filtering() {
 void GLState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
 }
+
+void GLState::precompile_shader(const ShadersHash &hash) {
+    pre_compile_program(*this, base_path, title_id, self_name, hash);
+}
+
+void GLState::preclose_action() {}
 
 } // namespace renderer::gl

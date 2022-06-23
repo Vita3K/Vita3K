@@ -19,32 +19,54 @@
 
 #include "state.h"
 
+struct Config;
+
 namespace renderer::vulkan {
-#define VULKAN_CHECK(a) assert(a == vk::Result::eSuccess)
 
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state);
-void close(std::unique_ptr<renderer::State> &state);
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path);
 
-// I think I will drop this approach but this is fine for now.
-enum class CommandType {
-    General,
-    Transfer,
-};
+bool create(VKState &state, std::unique_ptr<Context> &context);
+bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
+void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt);
+bool create(std::unique_ptr<VertexProgram> &vp, VKState &state, const SceGxmProgram &program);
+bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend);
+void create(SceGxmSyncObject *sync);
+void destroy(SceGxmSyncObject *sync);
 
-enum class MemoryType {
-    Mappable,
-    Device,
-};
+void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format,
+    void *indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config);
 
-vk::Queue select_queue(VulkanState &state, CommandType type);
+void new_frame(VKContext &context);
+void update_sync_target(SceGxmSyncObject *sync, VKRenderTarget *target);
+void update_sync_signal(SceGxmSyncObject *sync);
 
-bool resize_swapchain(VulkanState &state, vk::Extent2D size);
+void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, const FeatureState &features);
+void set_uniform_buffer(VKContext &context, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, const uint8_t *data);
 
-vk::CommandBuffer create_command_buffer(VulkanState &state, CommandType type);
-void free_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer);
+void sync_clipping(VKContext &context);
+void sync_stencil_func(VKContext &context, const bool is_back);
+void sync_mask(VKContext &context, const MemState &mem);
+void sync_depth_bias(VKContext &context);
+void sync_depth_data(VKContext &context);
+void sync_stencil_data(VKContext &context, const MemState &mem);
+void sync_point_line_width(VKContext &context, const bool is_front);
+void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config,
+    const std::string &base_path, const std::string &title_id);
+void sync_viewport_flat(VKContext &context);
+void sync_viewport_real(VKContext &context, const float xOffset, const float yOffset, const float zOffset,
+    const float xScale, const float yScale, const float zScale);
 
-vk::Buffer create_buffer(VulkanState &state, const vk::BufferCreateInfo &buffer_info, MemoryType type, VmaAllocation &allocation);
-void destroy_buffer(VulkanState &state, vk::Buffer buffer, VmaAllocation allocation);
-vk::Image create_image(VulkanState &state, const vk::ImageCreateInfo &image_info, MemoryType type, VmaAllocation &allocation);
-void destroy_image(VulkanState &state, vk::Image image, VmaAllocation allocation);
+void refresh_pipeline(VKContext &context);
+
+namespace texture {
+
+bool init(VKTextureCacheState &cache, const bool hashless_texture_cache);
+
+void configure_bound_texture(const renderer::TextureCacheState &state, const SceGxmTexture &gxm_texture);
+vk::Sampler create_sampler(VKState &state, const SceGxmTexture &gxm_texture, const uint16_t mip_count = 1);
+void upload_bound_texture(VKTextureCacheState &cache, SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height,
+    uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride);
+
+} // namespace texture
+
 } // namespace renderer::vulkan

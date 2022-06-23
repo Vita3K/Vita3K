@@ -109,17 +109,12 @@ static GLenum translate_stencil_func(SceGxmStencilFunc stencil_func) {
 }
 
 void sync_mask(const GLState &state, GLContext &context, const MemState &mem) {
-    auto control = context.record.depth_stencil_surface.control.get(mem);
+    auto control = context.record.depth_stencil_surface.control.content;
     // mask is not upscaled
     auto width = context.render_target->width / state.res_multiplier;
     auto height = context.render_target->height / state.res_multiplier;
-    GLubyte initial_byte;
-    if (control) {
-        initial_byte = control->backgroundMask ? 0xFF : 0;
-    } else {
-        // always accept
-        initial_byte = 0xFF;
-    }
+    GLubyte initial_byte = (control & SceGxmDepthStencilControl::mask_bit) ? 0xFF : 0;
+
     GLubyte clear_bytes[4] = { initial_byte, initial_byte, initial_byte, initial_byte };
     glClearTexImage(context.render_target->masktexture[0], 0, GL_RGBA, GL_UNSIGNED_BYTE, clear_bytes);
 }
@@ -127,23 +122,9 @@ void sync_mask(const GLState &state, GLContext &context, const MemState &mem) {
 void sync_viewport_flat(const GLState &state, GLContext &context) {
     const GLsizei display_w = context.record.color_surface.width;
     const GLsizei display_h = context.record.color_surface.height;
-    const float previous_flip_y = context.viewport_flip[1];
-
-    context.viewport_flip[0] = 1.0f;
-    context.viewport_flip[1] = -1.0f;
-    context.viewport_flip[2] = 1.0f;
-    context.viewport_flip[3] = 1.0f;
-
-    context.record.viewport_flat = true;
 
     glViewport(0, (context.current_framebuffer_height - display_h) * state.res_multiplier, display_w * state.res_multiplier, display_h * state.res_multiplier);
     glDepthRange(0, 1);
-
-    if (previous_flip_y != context.viewport_flip[1]) {
-        // We need to sync again state that uses the flip
-        sync_cull(context.record);
-        sync_clipping(state, context);
-    }
 }
 
 void sync_viewport_real(const GLState &state, GLContext &context, const float xOffset, const float yOffset, const float zOffset,
@@ -156,23 +137,8 @@ void sync_viewport_real(const GLState &state, GLContext &context, const float xO
     const GLfloat x = xOffset - std::abs(xScale);
     const GLfloat y = std::min<GLfloat>(ymin, ymax);
 
-    const float previous_flip_y = context.viewport_flip[1];
-
-    context.viewport_flip[0] = 1.0f;
-    context.viewport_flip[1] = (ymin < ymax) ? -1.0f : 1.0f;
-    context.viewport_flip[2] = 1.0f;
-    context.viewport_flip[3] = 1.0f;
-
-    context.record.viewport_flat = false;
-
     glViewportIndexedf(0, x * state.res_multiplier, y * state.res_multiplier, w * state.res_multiplier, h * state.res_multiplier);
-    glDepthRange(zOffset - zScale, zOffset + zScale);
-
-    if (previous_flip_y != context.viewport_flip[1]) {
-        // We need to sync again state that uses the flip
-        sync_cull(context.record);
-        sync_clipping(state, context);
-    }
+    glDepthRange(0, 1);
 }
 
 void sync_clipping(const GLState &state, GLContext &context) {
@@ -180,7 +146,7 @@ void sync_clipping(const GLState &state, GLContext &context) {
     const GLsizei scissor_x = context.record.region_clip_min.x;
     GLsizei scissor_y = 0;
 
-    if (context.viewport_flip[1] == -1.0f)
+    if (context.record.viewport_flip[1] == -1.0f)
         scissor_y = context.record.region_clip_min.y;
     else
         scissor_y = display_h - context.record.region_clip_max.y - 1;
@@ -247,23 +213,23 @@ void sync_depth_data(const renderer::GxmRecordState &state) {
     }
 }
 
-void sync_stencil_func(const GxmStencilState &state, const MemState &mem, const bool is_back_stencil) {
+void sync_stencil_func(const GxmStencilStateOp &state_op, const GxmStencilStateValues &state_vals, const MemState &mem, const bool is_back_stencil) {
     const GLenum face = is_back_stencil ? GL_BACK : GL_FRONT;
 
     glStencilOpSeparate(face,
-        translate_stencil_op(state.stencil_fail),
-        translate_stencil_op(state.depth_fail),
-        translate_stencil_op(state.depth_pass));
-    glStencilFuncSeparate(face, translate_stencil_func(state.func), state.ref, state.compare_mask);
-    glStencilMaskSeparate(face, state.write_mask);
+        translate_stencil_op(state_op.stencil_fail),
+        translate_stencil_op(state_op.depth_fail),
+        translate_stencil_op(state_op.depth_pass));
+    glStencilFuncSeparate(face, translate_stencil_func(state_op.func), state_vals.ref, state_vals.compare_mask);
+    glStencilMaskSeparate(face, state_vals.write_mask);
 }
 
 void sync_stencil_data(const GxmRecordState &state, const MemState &mem) {
     // Stencil test.
     glEnable(GL_STENCIL_TEST);
     glStencilMask(GL_TRUE);
-    if (((state.depth_stencil_surface.zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED) == 0) && state.depth_stencil_surface.control) {
-        glClearStencil(state.depth_stencil_surface.control.get(mem)->backgroundStencil);
+    if ((state.depth_stencil_surface.zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED) == 0) {
+        glClearStencil(state.depth_stencil_surface.control.content & SceGxmDepthStencilControl::stencil_bits);
         glClear(GL_STENCIL_BUFFER_BIT);
     }
 }
@@ -305,22 +271,6 @@ void sync_depth_bias(const int factor, const int unit, const bool is_front) {
     }
 }
 
-static float get_integral_query_format(const SceGxmTextureBaseFormat format) {
-    if ((format == SCE_GXM_TEXTURE_BASE_FORMAT_S8) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8)) {
-        return shader::INTEGRAL_TEX_QUERY_TYPE_8BIT_SIGNED;
-    }
-
-    if ((format == SCE_GXM_TEXTURE_BASE_FORMAT_U16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_U16U16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S16S16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16)) {
-        return shader::INTEGRAL_TEX_QUERY_TYPE_16BIT;
-    }
-
-    if ((format == SCE_GXM_TEXTURE_BASE_FORMAT_U32) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_U32U32) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S32)) {
-        return shader::INTEGRAL_TEX_QUERY_TYPE_32BIT;
-    }
-
-    return shader::INTEGRAL_TEX_QUERY_TYPE_8BIT_UNSIGNED;
-}
-
 void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t index, SceGxmTexture texture,
     const Config &config, const std::string &base_path, const std::string &title_id) {
     Address data_addr = texture.data_addr << 2;
@@ -340,9 +290,9 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
     if (index >= SCE_GXM_MAX_TEXTURE_UNITS) {
         // Vertex textures
-        context.current_vert_render_info.integral_texture_query_format[index - SCE_GXM_MAX_TEXTURE_UNITS] = get_integral_query_format(base_format);
+        context.current_vert_render_info.integral_texture_query_format[index - SCE_GXM_MAX_TEXTURE_UNITS] = renderer::texture::get_integral_query_format(base_format);
     } else {
-        context.current_frag_render_info.integral_texture_query_format[index] = get_integral_query_format(base_format);
+        context.current_frag_render_info.integral_texture_query_format[index] = renderer::texture::get_integral_query_format(base_format);
     }
 
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));
@@ -355,10 +305,9 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         texture_as_surface = context.current_color_attachment;
         swizzle_surface = color::translate_swizzle(context.record.color_surface.colorFormat);
 
-        if (std::find(context.self_sampling_indices.begin(), context.self_sampling_indices.end(),
-                static_cast<GLuint>(index))
+        if (std::find(context.self_sampling_indices.begin(), context.self_sampling_indices.end(), index)
             == context.self_sampling_indices.end()) {
-            context.self_sampling_indices.push_back(static_cast<GLuint>(index));
+            context.self_sampling_indices.push_back(index);
         }
     } else {
         auto res = std::find(context.self_sampling_indices.begin(), context.self_sampling_indices.end(),
@@ -372,7 +321,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
         std::uint16_t width = static_cast<std::uint16_t>(gxm::get_width(&texture));
         std::uint16_t height = static_cast<std::uint16_t>(gxm::get_height(&texture));
 
-        if (color::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
+        if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
             std::uint16_t stride_in_pixels = width;
 
             if (texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
@@ -500,7 +449,7 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
         const SceGxmProgram *vertex_program_body = vertex_program.program.get(mem);
         if (vertex_program_body && (vertex_program_body->primary_reg_count != 0)) {
             for (std::size_t i = 0; i < vertex_program.attributes.size(); i++) {
-                glvert->attribute_infos.emplace(vertex_program.attributes[i].regIndex, shader::usse::AttributeInformation(static_cast<std::uint16_t>(i), SCE_GXM_PARAMETER_TYPE_F32, false));
+                glvert->attribute_infos.emplace(vertex_program.attributes[i].regIndex, shader::usse::AttributeInformation(static_cast<std::uint16_t>(i), SCE_GXM_PARAMETER_TYPE_F32, false, false, false));
             }
         }
 

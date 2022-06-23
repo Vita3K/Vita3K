@@ -179,8 +179,32 @@ void get_attribute_informations(const SceGxmProgram &program, AttributeInformati
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
+            const SceGxmParameterType parameter_type = gxp::parameter_type(parameter);
+            bool is_integer;
+            switch (parameter_type) {
+            case SCE_GXM_PARAMETER_TYPE_C10:
+            case SCE_GXM_PARAMETER_TYPE_F16:
+            case SCE_GXM_PARAMETER_TYPE_F32:
+                is_integer = false;
+                break;
+            default:
+                is_integer = true;
+                break;
+            }
+
+            bool is_signed;
+            switch (parameter_type) {
+            case SCE_GXM_PARAMETER_TYPE_S8:
+            case SCE_GXM_PARAMETER_TYPE_S16:
+            case SCE_GXM_PARAMETER_TYPE_S32:
+                is_signed = true;
+            default:
+                is_signed = false;
+            }
+
             bool regformat = (vertex_varyings_ptr->untyped_pa_regs & ((uint64_t)1 << parameter.resource_index)) != 0;
-            locmap.emplace(parameter.resource_index, AttributeInformation(fcount_allocated / 4, parameter.type, regformat));
+
+            locmap.emplace(parameter.resource_index, AttributeInformation(fcount_allocated / 4, parameter.type, is_integer, is_signed, regformat));
             fcount_allocated += ((parameter.array_size * parameter.component_count + 3) / 4) * 4;
         }
     }

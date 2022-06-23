@@ -1,19 +1,10 @@
-if (USE_VULKAN)
-	set(IMGUI_IMPL_VULKAN_SOURCES
-		include/gui/imgui_impl_sdl_vulkan.h
-
-		src/imgui_impl_sdl_vulkan.cpp
-	)
-else()
-	set(IMGUI_IMPL_VULKAN_SOURCES "")
-endif()
-
 add_library(
 	gui
 	STATIC
 	include/gui/functions.h
 	include/gui/imgui_impl_sdl_gl3.h
 	include/gui/imgui_impl_sdl_state.h
+	include/gui/imgui_impl_sdl_vulkan.h
 	include/gui/imgui_impl_sdl.h
 	include/gui/state.h
 	src/app_context_menu.cpp
@@ -28,7 +19,7 @@ add_library(
 	src/home_screen.cpp
 	src/ime.cpp
 	src/imgui_impl_sdl_gl3.cpp
-	${IMGUI_IMPL_VULKAN_SOURCES}
+	src/imgui_impl_sdl_vulkan.cpp
 	src/imgui_impl_sdl.cpp
 	src/information_bar.cpp
 	src/initial_setup.cpp
@@ -60,5 +51,5 @@ add_library(
 
 target_include_directories(gui PUBLIC include ${CMAKE_SOURCE_DIR}/vita3k)
 target_link_libraries(gui PUBLIC app config dialog emuenv ime imgui glutil lang np)
-target_link_libraries(gui PRIVATE ctrl kernel miniz nativefiledialog psvpfsparser pugixml::pugixml stb renderer packages sdl2)
+target_link_libraries(gui PRIVATE ctrl kernel miniz nativefiledialog psvpfsparser pugixml::pugixml stb renderer packages sdl2 vkutil)
 target_link_libraries(gui PUBLIC tracy)

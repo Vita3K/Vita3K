@@ -45,11 +45,3 @@ void hex_buf(const std::uint8_t *hash, char *dst, const std::size_t source_size)
 
     dst[j] = '\0';
 }
-
-std::string hex_string(const std::string &hash) {
-    std::string dst = "";
-    dst.resize(hash.size() * 2 + 1);
-    hex_buf(reinterpret_cast<const std::uint8_t *>(hash.data()), &dst[0], hash.size());
-
-    return dst;
-}

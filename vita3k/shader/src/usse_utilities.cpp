@@ -331,15 +331,17 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
     spv::Id extracted = pack_func->getParamId(0);
     const int comp_bits = 32 / comp_count;
 
+    const spv::Id comp_type = b.getContainedTypeId(input_type);
+
     auto output = b.makeUintConstant(0);
     for (int i = 0; i < comp_count; ++i) {
-        auto comp = b.createBinOp(spv::OpVectorExtractDynamic, type_ui32, extracted, b.makeIntConstant(i));
-        output = b.createOp(spv::OpBitFieldInsert, type_ui32, { output, comp, b.makeIntConstant(comp_bits * i), b.makeIntConstant(comp_bits - (is_signed ? 1 : 0)) });
+        auto comp = b.createBinOp(spv::OpVectorExtractDynamic, comp_type, extracted, b.makeIntConstant(i));
 
         if (is_signed) {
-            auto sign_bit = b.createBinOp(spv::OpShiftRightLogical, type_ui32, comp, b.makeIntConstant(31));
-            output = b.createOp(spv::OpBitFieldInsert, type_ui32, { output, sign_bit, b.makeIntConstant(comp_bits * i + comp_bits - 1), b.makeIntConstant(1) });
+            comp = b.createUnaryOp(spv::OpBitcast, type_ui32, comp);
         }
+
+        output = b.createOp(spv::OpBitFieldInsert, type_ui32, { output, comp, b.makeIntConstant(comp_bits * i), b.makeIntConstant(comp_bits) });
     }
 
     output = b.createUnaryOp(spv::OpBitcast, type_f32, output);
@@ -998,9 +1000,9 @@ spv::Id shader::usse::utils::load(spv::Builder &b, const SpirvShaderParameters &
         // Second pass: Do unpack
         first_pass = unpack(b, utils, features, first_pass, op.type, op.swizzle, dest_mask, 0);
     } else if (op.type == DataType::INT32) {
-        first_pass = b.createUnaryOp(spv::OpBitcast, b.makeVectorType(b.makeIntType(32), static_cast<int>(dest_comp_count)), first_pass);
+        first_pass = b.createUnaryOp(spv::OpBitcast, make_vector_or_scalar_type(b, b.makeIntType(32), static_cast<int>(dest_comp_count)), first_pass);
     } else if (op.type == DataType::UINT32) {
-        first_pass = b.createUnaryOp(spv::OpBitcast, b.makeVectorType(b.makeUintType(32), static_cast<int>(dest_comp_count)), first_pass);
+        first_pass = b.createUnaryOp(spv::OpBitcast, make_vector_or_scalar_type(b, b.makeUintType(32), static_cast<int>(dest_comp_count)), first_pass);
     }
 
     if (first_pass == spv::NoResult) {
@@ -1169,7 +1171,7 @@ void shader::usse::utils::store(spv::Builder &b, const SpirvShaderParameters &pa
                         // Replace it
                         const int actual_offset_start_to_store = insert_offset + (i + nearest_swizz_on) / num_comp_in_float;
                         elem = b.createOp(spv::OpAccessChain, comp_type, { bank_base, b.makeIntConstant(actual_offset_start_to_store >> 2) });
-                        elem = b.createOp(spv::OpVectorExtractDynamic, vec_comp_type, { b.createLoad(elem, spv::NoPrecision), b.makeIntConstant(actual_offset_start_to_store % 4) });
+                        elem = b.createOp(spv::OpVectorExtractDynamic, b.makeFloatType(32), { b.createLoad(elem, spv::NoPrecision), b.makeIntConstant(actual_offset_start_to_store % 4) });
 
                         // Extract to f16
                         elem = unpack_one(b, utils, features, elem, dest.type);
@@ -1339,10 +1341,11 @@ spv::Id shader::usse::utils::convert_to_float(spv::Builder &b, spv::Id opr, Data
         const auto constant_range = get_int_normalize_range_constants(type);
         const auto normalizer = b.makeFloatConstant(constant_range.second);
         const auto normalizer_vec = create_constant_vector_or_scalar(b, normalizer, comp_count);
-        const auto zero_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(0.0f), comp_count);
-        const auto b_vec_type = b.makeVectorType(b.makeBoolType(), comp_count);
 
         if (is_sint) {
+            const auto zero_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(0.0f), comp_count);
+            const auto b_vec_type = make_vector_or_scalar_type(b, b.makeBoolType(), comp_count);
+
             const auto normalizer_neg = b.makeFloatConstant(constant_range.first);
             const auto normalize_vec_neg = create_constant_vector_or_scalar(b, normalizer_neg, comp_count);
 
@@ -1372,13 +1375,14 @@ spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataTy
         const auto normalizer_vec = create_constant_vector_or_scalar(b, normalizer, comp_count);
         const auto range_begin_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(is_uint ? 0.f : -1.f), comp_count);
         const auto range_end_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(1.f), comp_count);
-        const auto zero_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(0.f), comp_count);
-        const auto b_vec_type = b.makeVectorType(b.makeBoolType(), comp_count);
 
         opr = b.createBuiltinCall(opr_type, b.import("GLSL.std.450"), GLSLstd450FClamp, { opr, range_begin_vec, range_end_vec });
         if (is_uint) {
             opr = b.createBinOp(spv::OpFMul, opr_type, opr, normalizer_vec);
         } else {
+            const auto zero_vec = create_constant_vector_or_scalar(b, b.makeFloatConstant(0.f), comp_count);
+            const auto b_vec_type = make_vector_or_scalar_type(b, b.makeBoolType(), comp_count);
+
             const auto normalizer_neg = b.makeFloatConstant(constant_range.first);
             const auto normalize_vec_neg = create_constant_vector_or_scalar(b, normalizer_neg, comp_count);
 

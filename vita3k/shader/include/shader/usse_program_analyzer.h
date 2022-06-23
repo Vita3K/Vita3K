@@ -198,15 +198,23 @@ public:
 
 struct AttributeInformation {
     std::uint32_t info;
+    // this is needed for Vulkan as it doesn't implicitly convert between integers and floats and between signed and unsigned
+    bool is_integer;
+    // only meaningful is is_integer is true
+    bool is_signed;
     bool regformat;
 
     explicit AttributeInformation()
         : info(0)
+        , is_integer(false)
+        , is_signed(false)
         , regformat(false) {
     }
 
-    explicit AttributeInformation(const std::uint16_t loc, const std::uint16_t gxm_type, const bool regformat)
+    explicit AttributeInformation(const std::uint16_t loc, const std::uint16_t gxm_type, const bool is_integer, const bool is_signed, const bool regformat)
         : info(loc | (static_cast<std::uint32_t>(gxm_type) << 16))
+        , is_integer(is_integer)
+        , is_signed(is_signed)
         , regformat(regformat) {
     }
 

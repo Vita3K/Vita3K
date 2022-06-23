@@ -120,22 +120,24 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     }
     glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 
-    GXMRenderVertUniformBlock &vert_ublock = context.current_vert_render_info;
-    std::memcpy(vert_ublock.viewport_flip, context.viewport_flip, sizeof(context.viewport_flip));
+    shader::RenderVertUniformBlock &vert_ublock = context.current_vert_render_info;
+    vert_ublock.viewport_flip = context.record.viewport_flip;
     vert_ublock.viewport_flag = (context.record.viewport_flat) ? 0.0f : 1.0f;
+    vert_ublock.z_offset = context.record.z_offset;
+    vert_ublock.z_scale = context.record.z_scale;
     vert_ublock.screen_width = static_cast<float>(context.record.color_surface.width);
     vert_ublock.screen_height = static_cast<float>(context.record.color_surface.height);
 
-    if (memcmp(&context.previous_vert_info, &vert_ublock, sizeof(GXMRenderVertUniformBlock)) != 0) {
-        std::pair<std::uint8_t *, std::size_t> allocated_buffer = context.vertex_info_uniform_buffer.allocate(sizeof(GXMRenderVertUniformBlock));
-        std::memcpy(allocated_buffer.first, &vert_ublock, sizeof(GXMRenderVertUniformBlock));
+    if (memcmp(&context.previous_vert_info, &vert_ublock, sizeof(shader::RenderVertUniformBlock)) != 0) {
+        std::pair<std::uint8_t *, std::size_t> allocated_buffer = context.vertex_info_uniform_buffer.allocate(sizeof(shader::RenderVertUniformBlock));
+        std::memcpy(allocated_buffer.first, &vert_ublock, sizeof(shader::RenderVertUniformBlock));
 
         context.previous_vert_info = vert_ublock;
 
-        glBindBufferRange(GL_UNIFORM_BUFFER, 2, context.vertex_info_uniform_buffer.handle(), allocated_buffer.second, sizeof(GXMRenderVertUniformBlock));
+        glBindBufferRange(GL_UNIFORM_BUFFER, 2, context.vertex_info_uniform_buffer.handle(), allocated_buffer.second, sizeof(shader::RenderVertUniformBlock));
     }
 
-    GXMRenderFragUniformBlock &frag_ublock = context.current_frag_render_info;
+    shader::RenderFragUniformBlock &frag_ublock = context.current_frag_render_info;
     const bool both_side_fragment_program_disabled = (context.record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED)
         && ((context.record.back_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) || (context.record.two_sided == SCE_GXM_TWO_SIDED_DISABLED));
     if (both_side_fragment_program_disabled) {
@@ -161,13 +163,13 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     frag_ublock.use_raw_image = static_cast<float>(use_raw_image);
     frag_ublock.res_multiplier = renderer.res_multiplier;
 
-    if (memcmp(&context.previous_frag_info, &frag_ublock, sizeof(GXMRenderFragUniformBlock)) != 0) {
-        std::pair<std::uint8_t *, std::size_t> allocated_buffer = context.fragment_info_uniform_buffer.allocate(sizeof(GXMRenderFragUniformBlock));
-        std::memcpy(allocated_buffer.first, &frag_ublock, sizeof(GXMRenderFragUniformBlock));
+    if (memcmp(&context.previous_frag_info, &frag_ublock, sizeof(shader::RenderFragUniformBlock)) != 0) {
+        std::pair<std::uint8_t *, std::size_t> allocated_buffer = context.fragment_info_uniform_buffer.allocate(sizeof(shader::RenderFragUniformBlock));
+        std::memcpy(allocated_buffer.first, &frag_ublock, sizeof(shader::RenderFragUniformBlock));
 
         context.previous_frag_info = frag_ublock;
 
-        glBindBufferRange(GL_UNIFORM_BUFFER, 3, context.fragment_info_uniform_buffer.handle(), allocated_buffer.second, sizeof(GXMRenderFragUniformBlock));
+        glBindBufferRange(GL_UNIFORM_BUFFER, 3, context.fragment_info_uniform_buffer.handle(), allocated_buffer.second, sizeof(shader::RenderFragUniformBlock));
     }
 
     context.vertex_set_requests.clear();

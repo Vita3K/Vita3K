@@ -198,7 +198,7 @@ bool USSETranslatorVisitor::vmov(
         if (compare_op != spv::OpAny) {
             // Merely do what the instruction does
             // First compare source0 with vector 0
-            spv::Id cond_result = m_b.createOp(compare_op, m_b.makeVectorType(m_b.makeBoolType(), m_b.getNumComponents(source_to_compare_with_0)),
+            spv::Id cond_result = m_b.createOp(compare_op, utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), m_b.getNumComponents(source_to_compare_with_0)),
                 { source_to_compare_with_0, v0 });
 
             // For each component, if the compare result is true, move the equivalent component from source1 to dest,

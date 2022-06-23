@@ -35,6 +35,8 @@ struct VertexProgram;
 
 bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
 bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id);
+void create(SceGxmSyncObject *sync, State &state);
+void destroy(SceGxmSyncObject *sync, State &state);
 void finish(State &state, Context *context);
 
 /**
@@ -53,8 +55,8 @@ int wait_for_status(State &state, int *status, int signal, bool wake_on_equal);
 void reset_command_list(CommandList &command_list);
 void submit_command_list(State &state, renderer::Context *context, CommandList &command_list);
 bool is_cmd_ready(MemState &mem, CommandList &command_list);
-void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list, const char *base_path, const char *title_id);
-void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config, const char *base_path, const char *title_id, const char *self_name);
+void process_batch(State &state, MemState &mem, Config &config, CommandList &command_list);
+void process_batches(State &state, const FeatureState &features, MemState &mem, Config &config);
 bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const char *base_path);
 
 void set_depth_bias(State &state, Context *ctx, bool is_front, int factor, int units);
@@ -177,12 +179,18 @@ void resolve_z_order_compressed_image(std::uint32_t width, std::uint32_t height,
 void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 
+uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uint16_t height, const SceGxmTextureBaseFormat base_format);
+
+void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem);
 void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, MemState &mem);
+float get_integral_query_format(const SceGxmTextureBaseFormat format);
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
 bool is_compressed_format(SceGxmTextureBaseFormat base_format);
+bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt, bool is_vulkan);
 size_t get_compressed_size(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height);
 TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem);
 size_t texture_size(const SceGxmTexture &texture);
+bool convert_base_texture_format_to_base_color_format(SceGxmTextureBaseFormat format, SceGxmColorBaseFormat &color_format);
 
 } // namespace texture
 

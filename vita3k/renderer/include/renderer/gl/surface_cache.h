@@ -84,8 +84,8 @@ private:
     std::array<GLDepthStencilSurfaceCacheInfo, MAX_CACHE_SIZE_PER_CONTAINER> depth_stencil_textures;
     std::unordered_map<std::uint64_t, GLObjectArray<1>> framebuffer_array;
 
-    std::vector<std::uint64_t> last_use_color_surface_index;
-    std::vector<std::size_t> last_use_depth_stencil_surface_index;
+    std::vector<size_t> last_use_color_surface_index;
+    std::vector<size_t> last_use_depth_stencil_surface_index;
 
     GLObjectArray<1> typeless_copy_buffer;
     std::size_t typeless_copy_buffer_size = 0;
@@ -93,29 +93,29 @@ private:
     const GLRenderTarget *target = nullptr;
 
 private:
-    void do_typeless_copy(const GLint dest_texture, const GLint source_texture, const GLenum dest_internal,
+    void do_typeless_copy(const GLuint dest_texture, const GLuint source_texture, const GLenum dest_internal,
         const GLenum dest_upload_format, const GLenum dest_type, const GLenum source_format, const GLenum source_type,
         const int offset_x, const int offset_y, const int width, const int height, const int dest_width, const int dest_height, const std::size_t total_source_size);
 
 public:
     explicit GLSurfaceCache();
 
-    std::uint64_t retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint16_t pixel_stride,
+    GLuint retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint16_t pixel_stride,
         const SceGxmColorBaseFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
-        std::uint16_t *stored_height = nullptr, std::uint16_t *stored_width = nullptr) override;
-    std::uint64_t retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) override;
+        std::uint16_t *stored_height = nullptr, std::uint16_t *stored_width = nullptr);
+    GLuint retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address);
 
     // We really can't sample this around... The only usage of this function is interally load/store from this texture.
-    std::uint64_t retrieve_depth_stencil_texture_handle(const State &state, const MemState &mem, const SceGxmDepthStencilSurface &surface, std::int32_t force_width = -1,
-        std::int32_t force_height = -1, const bool is_reading = false) override;
-    std::uint64_t retrieve_framebuffer_handle(const State &state, const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
-        std::uint64_t *color_texture_handle = nullptr, std::uint64_t *ds_texture_handle = nullptr,
-        std::uint16_t *stored_height = nullptr) override;
+    GLuint retrieve_depth_stencil_texture_handle(const State &state, const MemState &mem, const SceGxmDepthStencilSurface &surface, std::int32_t force_width = -1,
+        std::int32_t force_height = -1, const bool is_reading = false);
+    GLuint retrieve_framebuffer_handle(const State &state, const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
+        GLuint *color_texture_handle = nullptr, GLuint *ds_texture_handle = nullptr,
+        std::uint16_t *stored_height = nullptr);
 
     void set_render_target(const GLRenderTarget *new_target) {
         target = new_target;
     }
 
-    std::uint64_t sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier, SceFVector2 &texture_size) override;
+    GLuint sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier, SceFVector2 &texture_size);
 };
 } // namespace renderer::gl

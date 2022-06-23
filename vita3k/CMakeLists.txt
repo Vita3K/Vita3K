@@ -85,10 +85,6 @@ if (USE_DISCORD_RICH_PRESENCE)
 	add_definitions(-DUSE_DISCORD)
 endif()
 
-if (USE_VULKAN)
-	add_definitions(-DUSE_VULKAN)
-endif()
-
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -129,6 +125,7 @@ add_subdirectory(touch)
 add_subdirectory(util)
 add_subdirectory(gdbstub)
 add_subdirectory(packages)
+add_subdirectory(vkutil)
 
 add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
 

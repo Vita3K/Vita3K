@@ -20,53 +20,62 @@
 #include <renderer/state.h>
 #include <renderer/types.h>
 
+#include <renderer/vulkan/pipeline_cache.h>
+#include <renderer/vulkan/screen_renderer.h>
+#include <renderer/vulkan/surface_cache.h>
 #include <renderer/vulkan/types.h>
 
 typedef void *ImTextureID;
 
 namespace renderer::vulkan {
-struct VulkanState : public renderer::State {
+struct VKState : public renderer::State {
+    // 0 = automatic, > 0 = order in instance.enumeratePhysicalDevices
+    int gpu_idx;
+
+    VKSurfaceCache surface_cache;
+    PipelineCache pipeline_cache;
+    VKTextureCacheState texture_cache;
+
     vk::Instance instance;
     vk::Device device;
+
+    ScreenRenderer screen_renderer;
 
     // Used for memory allocation and general query later.
     vk::PhysicalDevice physical_device;
     vk::PhysicalDeviceProperties physical_device_properties;
     vk::PhysicalDeviceFeatures physical_device_features;
-    vk::SurfaceCapabilitiesKHR physical_device_surface_capabilities;
-    std::vector<vk::SurfaceFormatKHR> physical_device_surface_formats;
     vk::PhysicalDeviceMemoryProperties physical_device_memory;
     std::vector<vk::QueueFamilyProperties> physical_device_queue_families;
 
-    VmaAllocator allocator;
+    vma::Allocator allocator;
 
     uint32_t general_family_index = 0;
     uint32_t transfer_family_index = 0;
     uint32_t general_queue_last = 0;
     uint32_t transfer_queue_last = 0;
-    std::vector<vk::Queue> general_queues;
-    std::vector<vk::Queue> transfer_queues;
+    vk::Queue general_queue;
+    vk::Queue transfer_queue;
 
     // These might be merged into one queue, but for now they are different.
     vk::CommandPool general_command_pool;
     // Transfer pool has transient bit set.
     vk::CommandPool transfer_command_pool;
 
-    vk::CommandBuffer general_command_buffer;
-
-    vk::SurfaceKHR surface;
-    vk::SwapchainKHR swapchain;
-
-    // These would be vectors...
-    uint32_t swapchain_width = 0, swapchain_height = 0;
-    vk::Image swapchain_images[2];
-    vk::ImageView swapchain_views[2];
+    VKState(int gpu_idx);
 
     bool init(const char *base_path, const bool hashless_texture_cache) override;
+    bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path);
+    void cleanup();
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem) override;
+    void swap_window(SDL_Window *window) override;
     void set_fxaa(bool enable_fxaa) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
+    std::vector<std::string> get_gpu_list() override;
+
+    void precompile_shader(const ShadersHash &hash) override;
+    void preclose_action() override;
 };
 } // namespace renderer::vulkan
