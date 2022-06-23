@@ -34,24 +34,5 @@ enum SurfaceTextureRetrievePurpose {
     WRITING,
 };
 
-class SurfaceCache {
-public:
-    virtual std::uint64_t retrieve_color_surface_texture_handle(const State &state, std::uint16_t width, std::uint16_t height, const std::uint16_t pixel_stride,
-        const SceGxmColorBaseFormat color_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, std::uint32_t &swizzle,
-        std::uint16_t *stored_height = nullptr, std::uint16_t *stored_width = nullptr)
-        = 0;
-    virtual std::uint64_t retrieve_ping_pong_color_surface_texture_handle(Ptr<void> address) = 0;
-
-    // We really can't sample this around... The only usage of this function is interally load/store from this texture.
-    virtual std::uint64_t retrieve_depth_stencil_texture_handle(const State &state, const MemState &mem, const SceGxmDepthStencilSurface &surface, std::int32_t force_width = -1,
-        std::int32_t force_height = -1, const bool is_reading = false)
-        = 0;
-    virtual std::uint64_t retrieve_framebuffer_handle(const State &state, const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
-        std::uint64_t *color_texture_handle = nullptr, std::uint64_t *ds_texture_handle = nullptr,
-        std::uint16_t *stored_height = nullptr)
-        = 0;
-
-    virtual std::uint64_t sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, float *uvs, const int res_multiplier, SceFVector2 &texture_size)
-        = 0;
-};
+class SurfaceCache {};
 } // namespace renderer

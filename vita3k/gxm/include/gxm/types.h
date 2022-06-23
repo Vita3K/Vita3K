@@ -158,7 +158,7 @@ enum SceGxmPolygonMode {
     SCE_GXM_POLYGON_MODE_TRIANGLE_POINT = 0x00030000u
 };
 
-enum SceGxmPrimitiveType {
+enum SceGxmPrimitiveType : uint32_t {
     SCE_GXM_PRIMITIVE_TRIANGLES = 0x00000000u,
     SCE_GXM_PRIMITIVE_LINES = 0x04000000u,
     SCE_GXM_PRIMITIVE_POINTS = 0x08000000u,

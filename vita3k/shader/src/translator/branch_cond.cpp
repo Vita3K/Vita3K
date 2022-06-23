@@ -242,7 +242,6 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
     spv::Id rhs = spv::NoResult;
 
     const spv::Id pred_type = utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), mask ? 4 : 1);
-    spv::Id pred_result = utils::make_uniform_vector_from_type(m_b, m_b.makeBoolType(), true);
 
     // Zero test number:
     // 0 - alway pass
@@ -298,7 +297,7 @@ spv::Id USSETranslatorVisitor::vtst_impl(Instruction inst, ExtPredicate pred, in
                 inst.opr.dest.num, disasm::operand_to_str(inst.opr.src1, load_mask), disasm::operand_to_str(inst.opr.src2, load_mask));
         }
 
-        lhs = do_alu_op(inst, load_mask, mask ? mask : 0b1);
+        lhs = do_alu_op(inst, load_mask, mask ? 0b1111 : 0b1);
 
         const spv::Id c0_type = utils::make_vector_or_scalar_type(m_b, m_b.makeFloatType(32), mask ? 4 : 1);
         spv::Id c0 = utils::make_uniform_vector_from_type(m_b, c0_type, 0.0f);
@@ -485,22 +484,24 @@ bool USSETranslatorVisitor::vtstmsk(
 
     spv::Id pred_result = vtst_impl(inst, pred, zero_test, sign_test, 0b1111, true);
 
-    spv::Id float_v4 = utils::make_vector_or_scalar_type(m_b, m_b.makeFloatType(32), 4);
-    spv::Id uint_v4 = utils::make_vector_or_scalar_type(m_b, m_b.makeUintType(32), 4);
-    spv::Id scaler;
+    spv::Id output_type;
+    spv::Id zeros;
+    spv::Id ones;
     switch (store_data_type) {
     case DataType::UINT8:
-        // OpSelect doesn't work UConvert doesn't work in glsl transpiler
-        pred_result = m_b.createUnaryOp(spv::OpFConvert, float_v4, pred_result);
-        pred_result = m_b.createUnaryOp(spv::OpConvertFToU, uint_v4, pred_result);
-        scaler = m_b.makeIntConstant(0xFF);
-        pred_result = m_b.createBinOp(spv::OpIMul, uint_v4, pred_result, scaler);
+        output_type = m_b.makeVectorType(m_b.makeUintType(32), 4);
+        zeros = utils::make_uniform_vector_from_type(m_b, output_type, 0);
+        ones = utils::make_uniform_vector_from_type(m_b, output_type, 0xFF);
         break;
     case DataType::F16:
     case DataType::F32:
-        pred_result = m_b.createUnaryOp(spv::OpFConvert, float_v4, pred_result);
+        output_type = m_b.makeVectorType(m_b.makeFloatType(32), 4);
+        zeros = utils::make_uniform_vector_from_type(m_b, output_type, 0.f);
+        ones = utils::make_uniform_vector_from_type(m_b, output_type, 1.f);
         break;
     }
+
+    pred_result = m_b.createOp(spv::OpSelect, output_type, { pred_result, zeros, ones });
 
     store(inst.opr.dest, pred_result);
 

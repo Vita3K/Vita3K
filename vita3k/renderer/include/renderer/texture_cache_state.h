@@ -28,9 +28,10 @@
 struct MemState;
 
 namespace renderer {
-constexpr size_t TextureCacheSize = KiB(1);
+static constexpr size_t TextureCacheSize = 1024;
 typedef uint64_t TextureCacheTimestamp;
 typedef uint32_t TextureCacheHash;
+enum class Backend : uint32_t;
 
 struct TextureCacheInfo {
     bool use_hash = false;
@@ -49,10 +50,11 @@ struct TextureCacheState;
 
 typedef std::array<TextureCacheInfo, TextureCacheSize> TextureCacheInfoes;
 typedef std::function<void(std::size_t, const void *)> TextureCacheStateSelectCallback;
-typedef std::function<void(TextureCacheState &, std::size_t, const void *)> TextureCacheStateConfigureTextureCallback;
-typedef std::function<void(std::size_t, const void *, const MemState &)> TextureCacheStateUploadTextureCallback;
+typedef std::function<void(TextureCacheState &, const void *)> TextureCacheStateConfigureTextureCallback;
+typedef std::function<void(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride)> TextureCacheStateUploadTextureCallback;
 
 struct TextureCacheState {
+    Backend *backend;
     bool use_protect = false;
     int anisotropic_filtering = 1;
     size_t used = 0;

@@ -105,14 +105,16 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
         }
 
         default:
-            assert(false);
+            LOG_ERROR("Unknown data type for texture query {}", texture_query.store_type);
+            dest_mask = 0b1111;
         }
 
         bool proj = (texture_query.prod_pos >= 0);
         shader::usse::Coord coord_inst = texture_query.coord;
 
         if (texture_query.prod_pos >= 0) {
-            coord_inst.first = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { texture_query.coord.first, texture_query.coord.first, 0, 1, static_cast<spv::Id>(texture_query.prod_pos) });
+            spv::Id texture_coord = m_b.createLoad(texture_query.coord.first, spv::NoPrecision);
+            coord_inst.first = m_b.createOp(spv::OpVectorShuffle, type_f32_v[3], { texture_coord, texture_coord, 0, 1, static_cast<spv::Id>(texture_query.prod_pos) });
             proj = true;
         }
 
@@ -121,7 +123,8 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
 
         if (static_cast<DataType>(texture_query.store_type) == DataType::UNK) {
             // Manual check
-            spv::Id sampler_integral_query_format = m_b.createAccessChain(spv::StorageClassPrivate, translation_state_id, { m_b.makeIntConstant(4), m_b.makeIntConstant(texture_query.sampler_index / 4), m_b.makeIntConstant(texture_query.sampler_index % 4) });
+            spv::Id sampler_integral_query_format = m_b.createAccessChain(spv::StorageClassUniform, translation_state_id, { m_b.makeIntConstant(4), m_b.makeIntConstant(texture_query.sampler_index / 4), m_b.makeIntConstant(texture_query.sampler_index % 4) });
+            sampler_integral_query_format = m_b.createLoad(sampler_integral_query_format, spv::NoPrecision);
             spv::Id bool_type = m_b.makeBoolType();
 
             spv::Builder::If if_builder(m_b.createBinOp(spv::OpFOrdGreaterThanEqual, bool_type, sampler_integral_query_format, m_b.makeFloatConstant(INTEGRAL_TEX_QUERY_TYPE_8BIT_SIGNED)), spv::SelectionControlMaskNone, m_b);
@@ -133,7 +136,7 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
             store(store_op, packed8, dest_mask);
             if_builder.makeBeginElse();
 
-            spv::Builder::If if_builder_2(m_b.createBinOp(spv::OpFOrdGreaterThanEqual, bool_type, sampler_integral_query_format, m_b.makeIntConstant(INTEGRAL_TEX_QUERY_TYPE_8BIT_UNSIGNED)), spv::SelectionControlMaskNone, m_b);
+            spv::Builder::If if_builder_2(m_b.createBinOp(spv::OpFOrdGreaterThanEqual, bool_type, sampler_integral_query_format, m_b.makeFloatConstant(INTEGRAL_TEX_QUERY_TYPE_8BIT_UNSIGNED)), spv::SelectionControlMaskNone, m_b);
 
             packed8 = utils::convert_to_int(m_b, fetch_result, DataType::UINT8, true);
             packed8 = utils::pack_one(m_b, m_util_funcs, m_features, packed8, DataType::UINT8);
@@ -142,7 +145,7 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
             store(store_op, packed8, dest_mask);
 
             if_builder_2.makeBeginElse();
-            spv::Builder::If if_builder_3(m_b.createBinOp(spv::OpFOrdGreaterThanEqual, bool_type, sampler_integral_query_format, m_b.makeIntConstant(INTEGRAL_TEX_QUERY_TYPE_16BIT)), spv::SelectionControlMaskNone, m_b);
+            spv::Builder::If if_builder_3(m_b.createBinOp(spv::OpFOrdGreaterThanEqual, bool_type, sampler_integral_query_format, m_b.makeFloatConstant(INTEGRAL_TEX_QUERY_TYPE_16BIT)), spv::SelectionControlMaskNone, m_b);
 
             spv::Id pack1 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { fetch_result, fetch_result, 0, 1 });
             pack1 = utils::pack_one(m_b, m_util_funcs, m_features, pack1, DataType::F16);
@@ -246,7 +249,7 @@ bool USSETranslatorVisitor::smp(
 
     if (dim == 1) {
         // It should be a line, so Y should be zero. There are only two dimensions texture, so this is a guess (seems concise)
-        coord = m_b.createCompositeConstruct(m_b.makeVectorType(m_b.makeFloatType(32), 2), { coord, m_b.makeIntConstant(0) });
+        coord = m_b.createCompositeConstruct(m_b.makeVectorType(m_b.makeFloatType(32), 2), { coord, m_b.makeFloatConstant(0.0f) });
         dim = 2;
     }
 

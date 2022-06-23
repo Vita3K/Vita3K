@@ -490,7 +490,8 @@ spv::Id USSETranslatorVisitor::do_alu_op(Instruction &inst, const Imm4 source_ma
 
     case Opcode::VDP:
     case Opcode::VF16DP: {
-        result = m_b.createBinOp(spv::OpDot, m_b.makeFloatType(32), vsrc1, vsrc2);
+        const spv::Op op = (m_b.getNumComponents(vsrc1) > 1) ? spv::OpDot : spv::OpFMul;
+        result = m_b.createBinOp(op, m_b.makeFloatType(32), vsrc1, vsrc2);
         result = postprocess_dot_result_for_store(m_b, result, possible_dest_mask);
         break;
     }
@@ -1031,8 +1032,8 @@ bool USSETranslatorVisitor::sop2(
     factored_rgb_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
     factored_rgb_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
 
-    factored_a_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_a_lhs, src1_alpha);
-    factored_a_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_a_rhs, src2_alpha);
+    factored_a_lhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_lhs, src1_alpha);
+    factored_a_rhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_rhs, src2_alpha);
 
     auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
     auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
@@ -1630,7 +1631,8 @@ bool USSETranslatorVisitor::vdual(
         case Opcode::VDP: {
             const spv::Id first = load(ops[0], write_mask_source);
             const spv::Id second = load(ops[1], write_mask_source);
-            result = m_b.createBinOp(spv::OpDot, type_f32, first, second);
+            const spv::Op op = (m_b.getNumComponents(first) > 1) ? spv::OpDot : spv::OpFMul;
+            result = m_b.createBinOp(op, type_f32, first, second);
             break;
         }
         case Opcode::FEXP: {
@@ -1645,7 +1647,8 @@ bool USSETranslatorVisitor::vdual(
         }
         case Opcode::VSSQ: {
             const spv::Id source = load(ops[0], write_mask_source);
-            result = m_b.createBinOp(spv::OpDot, type_f32, source, source);
+            const spv::Op op = (m_b.getNumComponents(source) > 1) ? spv::OpDot : spv::OpFMul;
+            result = m_b.createBinOp(op, type_f32, source, source);
             break;
         }
         case Opcode::FMAD:

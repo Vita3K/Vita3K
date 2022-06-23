@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,95 +21,52 @@
 #include <renderer/vulkan/state.h>
 
 #include <config/version.h>
+#include <display/state.h>
+#include <shader/spirv_recompiler.h>
 #include <util/log.h>
+#include <vkutil/vkutil.h>
 
 #include <SDL_vulkan.h>
 
-// Setting a default value for now.
-// In the future, it might be a good idea to take the host's device memory into account.
-constexpr static size_t private_allocation_size = MiB(1);
+static vk::DebugUtilsMessengerEXT debug_messenger;
 
-// Some random number as value. It will likely be very different. There are probably SCE fields for this, I will look later.
-constexpr static uint32_t max_sets = 192;
-constexpr static uint32_t max_buffers = 64;
-constexpr static uint32_t max_images = 64;
-constexpr static uint32_t max_samplers = 64;
-
-constexpr static vk::Format screen_format = vk::Format::eB8G8R8A8Unorm;
-
-#ifdef __APPLE__
-const char *surface_macos_extension = "VK_MVK_macos_surface";
-const char *metal_surface_extension = "VK_EXT_metal_surface";
-
-const char *get_surface_extension() {
-    const std::vector<vk::ExtensionProperties> extensions = vk::enumerateInstanceExtensionProperties(nullptr);
-
-    if (std::find_if(extensions.begin(), extensions.end(), [](const vk::ExtensionProperties &props) {
-            return strcmp(props.extensionName, metal_surface_extension) == 0;
-        })
-        != extensions.end())
-        return metal_surface_extension;
-
-    if (std::find_if(extensions.begin(), extensions.end(), [](const vk::ExtensionProperties &props) {
-            return strcmp(props.extensionName, surface_macos_extension) == 0;
-        })
-        != extensions.end())
-        return surface_macos_extension;
-
-    return nullptr;
+static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+    VkDebugUtilsMessageTypeFlagsEXT message_type,
+    const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
+    void *pUserData) {
+    if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
+        // for now we are not interested by performance warnings
+        && (message_type & ~VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)) {
+        std::string message = callback_data->pMessage;
+        // ignore this message for now
+        if (message.find("VUID-vkCmdDrawIndexed-None-02721") == std::string::npos)
+            LOG_ERROR("Validation layer: {}", callback_data->pMessage);
+    }
+    return VK_FALSE;
 }
-#endif
 
-const static std::vector<const char *> instance_layers = {
-#ifndef NDEBUG
-    "VK_LAYER_LUNARG_standard_validation",
-#endif
-};
-
-const static std::vector<const char *> instance_extensions = {
-    "VK_KHR_surface",
-#ifdef __APPLE__
-    get_surface_extension(),
-#endif
-#ifdef WIN32
-    "VK_KHR_win32_surface",
-#endif
-};
-
-const static std::vector<const char *> device_layers = {
-    // Nothing yet.
-};
-
-const static std::vector<const char *> device_extensions = {
-    "VK_KHR_swapchain",
-};
-
-const static vk::PhysicalDeviceFeatures required_features({
-    // .vertexPipelineStoresAndAtomics = true
-    // etc.
-});
-
-const static std::vector<vk::DescriptorPoolSize> descriptor_pool_sizes = {
-    vk::DescriptorPoolSize(vk::DescriptorType::eStorageBuffer, max_buffers),
-    vk::DescriptorPoolSize(vk::DescriptorType::eSampledImage, max_images),
-    vk::DescriptorPoolSize(vk::DescriptorType::eSampler, max_samplers),
-};
-
-const static std::vector<vk::Format> acceptable_surface_formats = {
-    vk::Format::eB8G8R8A8Unorm, // Molten VK
+const static std::vector<const char *> required_device_extensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    // needed in order to use storage buffers
+    VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME,
+    // needed in order to use negative viewport height
+    VK_KHR_MAINTENANCE1_EXTENSION_NAME
 };
 
 namespace renderer::vulkan {
-static bool device_is_compatible(
-    vk::PhysicalDeviceProperties &properties,
-    vk::PhysicalDeviceFeatures &features,
-    vk::SurfaceCapabilitiesKHR &capabilities) {
-    // TODO: Do any required checks here. Should check against required_features.
 
-    return true;
+static bool device_is_compatible(const vk::PhysicalDevice &device) {
+    const std::vector<vk::ExtensionProperties> available_extensions = device.enumerateDeviceExtensionProperties();
+
+    std::set<std::string> required_extensions(required_device_extensions.begin(), required_device_extensions.end());
+    for (const auto &extension : available_extensions)
+        required_extensions.erase(extension.extensionName);
+
+    return required_extensions.empty();
 }
 
-static bool select_queues(VulkanState &vulkan_state,
+static bool select_queues(VKState &vk_state,
     std::vector<vk::DeviceQueueCreateInfo> &queue_infos, std::vector<std::vector<float>> &queue_priorities) {
     // TODO: Better queue allocation.
 
@@ -125,33 +82,39 @@ static bool select_queues(VulkanState &vulkan_state,
 
     bool found_graphics = false, found_transfer = false;
 
-    for (size_t a = 0; a < vulkan_state.physical_device_queue_families.size(); a++) {
-        const auto &queue_family = vulkan_state.physical_device_queue_families[a];
+    for (uint32_t i = 0; i < vk_state.physical_device_queue_families.size(); i++) {
+        const auto &queue_family = vk_state.physical_device_queue_families[i];
 
         // MoltenVK does not accept nullptr a pPriorities for some reason.
         std::vector<float> &priorities = queue_priorities.emplace_back(queue_family.queueCount, 1.0f);
 
         // Only one DeviceQueueCreateInfo should be created per family.
-        if (!found_graphics && queue_family.queueFlags & vk::QueueFlagBits::eGraphics
-            && queue_family.queueFlags & vk::QueueFlagBits::eTransfer) {
-            queue_infos.emplace_back(
-                vk::DeviceQueueCreateFlagBits(), // No Flags
-                a, // Queue Family Index
-                queue_family.queueCount, // Queue Count
-                priorities.data() // Priorities
-            );
-            vulkan_state.general_family_index = a;
+        if (!found_graphics && (queue_family.queueFlags & vk::QueueFlagBits::eGraphics)
+            && (queue_family.queueFlags & vk::QueueFlagBits::eTransfer)
+            && vk_state.physical_device.getSurfaceSupportKHR(i, vk_state.screen_renderer.surface)) {
+            vk::DeviceQueueCreateInfo queue_create_info{
+                .queueFamilyIndex = i,
+                .queueCount = queue_family.queueCount,
+                .pQueuePriorities = priorities.data()
+            };
+            queue_infos.emplace_back(std::move(queue_create_info));
+            vk_state.general_family_index = i;
+            vk_state.transfer_family_index = i;
             found_graphics = true;
-        } else if (!found_transfer && queue_family.queueFlags & vk::QueueFlagBits::eTransfer) {
-            queue_infos.emplace_back(
-                vk::DeviceQueueCreateFlagBits(), // No Flags
-                a, // Queue Family Index
-                queue_family.queueCount, // Queue Count
-                priorities.data() // Priorities
-            );
-            vulkan_state.transfer_family_index = a;
             found_transfer = true;
         }
+        // for now use the same queue for graphics and transfer, to be improved on later
+        /* else if (!found_transfer && queue_family.queueFlags & vk::QueueFlagBits::eTransfer) {
+            vk::DeviceQueueCreateInfo queue_create_info{
+                .queueFamilyIndex = i,
+                .queueCount = queue_family.queueCount,
+                .pQueuePriorities = priorities.data()
+            };
+            queue_infos.emplace_back(std::move(queue_create_info));
+            vk_state.transfer_family_index = i;
+            found_transfer = true;
+        }
+        */
 
         if (found_graphics && found_transfer)
             break;
@@ -160,435 +123,375 @@ static bool select_queues(VulkanState &vulkan_state,
     return found_graphics && found_transfer;
 }
 
-static vk::Format select_surface_format(std::vector<vk::SurfaceFormatKHR> &formats) {
-    for (const auto &format : formats) {
-        if (std::find(acceptable_surface_formats.begin(), acceptable_surface_formats.end(), format.format)
-            != acceptable_surface_formats.end())
-            return format.format;
-    }
+// Adapted from https://github.com/SaschaWillems/vulkan.gpuinfo.org/blob/master/includes/functions.php
+std::string get_driver_version(uint32_t vendor_id, uint32_t version_raw) {
+    // NVIDIA
+    if (vendor_id == 4318)
+        return fmt::format("{}.{}.{}.{}", (version_raw >> 22) & 0x3ff, (version_raw >> 14) & 0x0ff, (version_raw >> 6) & 0x0ff, (version_raw)&0x003f);
 
-    assert(false);
+#ifdef WIN32
+    // Intel drivers on Windows
+    if (vendor_id == 0x8086)
+        return fmt::format("{}.{}", version_raw >> 14, (version_raw)&0x3fff);
+#endif
 
-    return vk::Format::eR8G8B8A8Unorm;
+    // Use Vulkan version conventions if vendor mapping is not available
+    return fmt::format("{}.{}.{}", (version_raw >> 22) & 0x3ff, (version_raw >> 12) & 0x3ff, (version_raw)&0xfff);
 }
 
-vk::Queue select_queue(VulkanState &state, CommandType type) {
-    vk::Queue queue;
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path) {
+    auto &vk_state = dynamic_cast<VKState &>(*state);
 
-    switch (type) {
-    case CommandType::General:
-        queue = state.general_queues[state.general_queue_last % state.general_queues.size()];
-        state.general_queue_last++;
-        break;
-    case CommandType::Transfer:
-        queue = state.transfer_queues[state.transfer_queue_last % state.transfer_queues.size()];
-        state.transfer_queue_last++;
-        break;
-    }
-
-    return queue;
+    return vk_state.create(window, state, base_path);
 }
 
-void present(VulkanState &state, uint32_t image_index) { // this needs semaphore, image index etc.
-    // The general queue family is guaranteed (by an assert) to have present support.
-    vk::Queue present_queue = select_queue(state, CommandType::General);
-
-    vk::PresentInfoKHR present_info(
-        0, nullptr, // No Semaphores
-        1, &state.swapchain, &image_index, nullptr // Swapchain
-    );
-
-    present_queue.presentKHR(present_info);
+VKState::VKState(int gpu_idx)
+    : screen_renderer(*this)
+    , surface_cache(*this)
+    , pipeline_cache(*this)
+    , texture_cache(*this)
+    , gpu_idx(gpu_idx) {
 }
 
-bool resize_swapchain(VulkanState &state, vk::Extent2D size) {
-    state.swapchain_width = size.width;
-    state.swapchain_height = size.height;
-
-    if (state.swapchain) {
-        for (vk::ImageView view : state.swapchain_views)
-            state.device.destroy(view);
-        state.device.destroy(state.swapchain);
-    }
-
-    // Create Swapchain
-    {
-        // TODO: Extents should be based on surface capabilities.
-        vk::SwapchainCreateInfoKHR swapchain_info(
-            vk::SwapchainCreateFlagsKHR(), // No Flags
-            state.surface, // Surface
-            2, // Double Buffering
-            screen_format, // Image Format, BGRA is supported by MoltenVK
-            vk::ColorSpaceKHR::eSrgbNonlinear, // Color Space
-            size, // Image Extent
-            1, // Image Array Length
-            vk::ImageUsageFlagBits::eColorAttachment, // Image Usage, consider VK_IMAGE_USAGE_STORAGE_BIT?
-            vk::SharingMode::eExclusive,
-            0, nullptr, // Unused when sharing mode is exclusive
-            vk::SurfaceTransformFlagBitsKHR::eIdentity, // Transform
-            vk::CompositeAlphaFlagBitsKHR::eOpaque, // Alpha
-            vk::PresentModeKHR::eFifo, // Present Mode, FIFO and Immediate are supported on MoltenVK. Would've chosen Mailbox otherwise.
-            true, // Clipping
-            vk::SwapchainKHR() // No old swapchain.
-        );
-
-        state.swapchain = state.device.createSwapchainKHR(swapchain_info);
-        if (!state.swapchain) {
-            LOG_ERROR("Failed to create Vulkan swapchain.");
-            return false;
-        }
-    }
-
-    // Get Swapchain Images
-    uint32_t swapchain_image_count = 2;
-    state.device.getSwapchainImagesKHR(state.swapchain, &swapchain_image_count, state.swapchain_images);
-
-    for (uint32_t a = 0; a < 2 /*vulkan_state.swapchain_images.size()*/; a++) {
-        const auto &image = state.swapchain_images[a];
-        vk::ImageViewCreateInfo view_info(
-            vk::ImageViewCreateFlags(), // No Flags
-            image, // Image
-            vk::ImageViewType::e2D, // Image View Type
-            select_surface_format(state.physical_device_surface_formats), // Format
-            vk::ComponentMapping(), // Default Component Mapping
-            vk::ImageSubresourceRange(
-                vk::ImageAspectFlagBits::eColor,
-                0, // Mipmap Level
-                1, // Level Count
-                0, // Base Array Index
-                1 // Layer Count
-                ));
-
-        vk::ImageView view = state.device.createImageView(view_info);
-        if (!view) {
-            LOG_ERROR("Failed to Vulkan image view for swpachain image id {}.", a);
-            return false;
-        }
-
-        state.swapchain_views[a] = view;
-    }
-
+bool VKState::init(const char *base_path, const bool hashless_texture_cache) {
+    shader_version = fmt::format("v{}", shader::CURRENT_VERSION);
     return true;
 }
 
-vk::CommandBuffer create_command_buffer(VulkanState &state, CommandType type) {
-    vk::CommandBuffer buffer;
-
-    switch (type) {
-    case CommandType::General: {
-        vk::CommandBufferAllocateInfo command_buffer_info(
-            state.general_command_pool, // Command Pool
-            vk::CommandBufferLevel::ePrimary, // Level
-            1 // Count
-        );
-
-        state.device.allocateCommandBuffers(&command_buffer_info, &buffer);
-        break;
-    }
-    case CommandType::Transfer: {
-        vk::CommandBufferAllocateInfo command_buffer_info(
-            state.transfer_command_pool, // Command Pool
-            vk::CommandBufferLevel::ePrimary, // Level
-            1 // Count
-        );
-
-        state.device.allocateCommandBuffers(&command_buffer_info, &buffer);
-        break;
-    }
-    }
-
-    assert(buffer);
-
-    return buffer;
-}
-
-void free_command_buffer(VulkanState &state, CommandType type, vk::CommandBuffer buffer) {
-    vk::CommandPool pool;
-
-    switch (type) {
-    case CommandType::General:
-        pool = state.general_command_pool;
-        break;
-    case CommandType::Transfer:
-        pool = state.transfer_command_pool;
-        break;
-    }
-
-    state.device.freeCommandBuffers(pool, 1, &buffer);
-}
-
-vk::Buffer create_buffer(VulkanState &state, const vk::BufferCreateInfo &buffer_info, MemoryType type, VmaAllocation &allocation) {
-    VmaMemoryUsage memory_usage;
-    switch (type) {
-    case MemoryType::Mappable:
-        memory_usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-        break;
-    case MemoryType::Device:
-        memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
-        break;
-    }
-
-    VmaAllocationCreateInfo allocation_info = {};
-    allocation_info.flags = 0;
-    allocation_info.usage = memory_usage;
-    // Usage is specified via usage field. Others are ignored.
-    allocation_info.requiredFlags = 0;
-    allocation_info.preferredFlags = 0;
-    allocation_info.memoryTypeBits = 0;
-    allocation_info.pool = VK_NULL_HANDLE;
-    allocation_info.pUserData = nullptr;
-
-    VkBuffer buffer;
-    VkResult result = vmaCreateBuffer(state.allocator,
-        reinterpret_cast<const VkBufferCreateInfo *>(&buffer_info),
-        &allocation_info, &buffer, &allocation, nullptr);
-    assert(result == VK_SUCCESS);
-    assert(allocation != VK_NULL_HANDLE);
-    assert(buffer != VK_NULL_HANDLE);
-
-    return buffer;
-}
-
-void destroy_buffer(VulkanState &state, vk::Buffer buffer, VmaAllocation allocation) {
-    vmaDestroyBuffer(state.allocator, buffer, allocation);
-}
-
-vk::Image create_image(VulkanState &state, const vk::ImageCreateInfo &image_info, MemoryType type, VmaAllocation &allocation) {
-    VmaMemoryUsage memory_usage;
-    switch (type) {
-    case MemoryType::Mappable:
-        memory_usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-        break;
-    case MemoryType::Device:
-        memory_usage = VMA_MEMORY_USAGE_GPU_ONLY;
-        break;
-    }
-
-    VmaAllocationCreateInfo allocation_info = {};
-    allocation_info.flags = 0;
-    allocation_info.usage = memory_usage;
-    // Usage is specified via usage field. Others are ignored.
-    allocation_info.requiredFlags = 0;
-    allocation_info.preferredFlags = 0;
-    allocation_info.memoryTypeBits = 0;
-    allocation_info.pool = VK_NULL_HANDLE;
-    allocation_info.pUserData = nullptr;
-
-    VkImage image;
-    VkResult result = vmaCreateImage(state.allocator,
-        reinterpret_cast<const VkImageCreateInfo *>(&image_info),
-        &allocation_info, &image, &allocation, nullptr);
-    assert(result == VK_SUCCESS);
-    assert(allocation != VK_NULL_HANDLE);
-    assert(image != VK_NULL_HANDLE);
-
-    return image;
-}
-
-void destroy_image(VulkanState &state, vk::Image image, VmaAllocation allocation) {
-    vmaDestroyImage(state.allocator, image, allocation);
-}
-
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state) {
-    auto &vulkan_state = dynamic_cast<VulkanState &>(*state);
-
+bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path) {
     // Create Instance
     {
-        vk::ApplicationInfo app_info(
-            app_name, // App Name
-            0, // App Version
-            org_name, // Engine Name, using org instead.
-            0, // Engine Version
-            VK_API_VERSION_1_0);
+        PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-        vk::InstanceCreateInfo instance_info(
-            vk::InstanceCreateFlags(), // No Flags
-            &app_info, // App Info
-            instance_layers.size(), instance_layers.data(), // No Layers
-            instance_extensions.size(), instance_extensions.data() // No Extensions
-        );
+        vk::ApplicationInfo app_info{
+            .pApplicationName = app_name, // App Name
+            .applicationVersion = VK_MAKE_API_VERSION(0, 0, 0, 1), // App Version
+            .pEngineName = org_name, // Engine Name, using org instead.
+            .engineVersion = VK_MAKE_API_VERSION(0, 0, 0, 1), // Engine Version
+            .apiVersion = VK_API_VERSION_1_0
+        };
 
-        vulkan_state.instance = vk::createInstance(instance_info);
-        if (!vulkan_state.instance) {
-            LOG_ERROR("Failed to create Vulkan instance.");
+        unsigned int instance_req_ext_count;
+        if (!SDL_Vulkan_GetInstanceExtensions(window, &instance_req_ext_count, nullptr)) {
+            LOG_ERROR("Could not get required extensions");
             return false;
         }
-    }
 
-    // Create Surface
-    {
-        VkSurfaceKHR surface = VK_NULL_HANDLE;
-        bool surface_error = SDL_Vulkan_CreateSurface(window, vulkan_state.instance, &surface);
-        if (!surface_error) {
-            const char *error = SDL_GetError();
-            LOG_ERROR("Failed to create vulkan surface. SDL Error: {}.", error);
-            return false;
+        std::vector<const char *> instance_extensions;
+        instance_extensions.resize(instance_req_ext_count);
+        SDL_Vulkan_GetInstanceExtensions(window, &instance_req_ext_count, instance_extensions.data());
+
+        // look if we can use the validation layer
+        bool has_debug_extension = false;
+        bool has_validation_layer = false;
+        const std::string debug_extension = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
+        for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties()) {
+            if (std::string(prop.extensionName.data()) == debug_extension) {
+                has_debug_extension = true;
+                break;
+            }
         }
-        vulkan_state.surface = vk::SurfaceKHR(surface);
-        if (!vulkan_state.surface) {
-            LOG_ERROR("Failed to create Vulkan surface.");
-            return false;
-        }
-    }
-
-    // Select Physical Device
-    {
-        std::vector<vk::PhysicalDevice> physical_devices = vulkan_state.instance.enumeratePhysicalDevices();
-
-        for (const auto &device : physical_devices) {
-            vk::PhysicalDeviceProperties properties = device.getProperties();
-            vk::PhysicalDeviceFeatures features = device.getFeatures();
-            vk::SurfaceCapabilitiesKHR capabilities = device.getSurfaceCapabilitiesKHR(vulkan_state.surface);
-            if (device_is_compatible(properties, features, capabilities)) {
-                vulkan_state.physical_device = device;
-                vulkan_state.physical_device_properties = properties;
-                vulkan_state.physical_device_features = features;
-                vulkan_state.physical_device_surface_capabilities = capabilities;
-                vulkan_state.physical_device_surface_formats = device.getSurfaceFormatsKHR(vulkan_state.surface);
-                vulkan_state.physical_device_memory = device.getMemoryProperties();
-                vulkan_state.physical_device_queue_families = device.getQueueFamilyProperties();
+        const std::string validation_layer = "VK_LAYER_KHRONOS_validation";
+        for (const vk::LayerProperties &layer : vk::enumerateInstanceLayerProperties()) {
+            if (std::string(layer.layerName.data()) == validation_layer) {
+                has_validation_layer = true;
                 break;
             }
         }
 
-        if (!vulkan_state.physical_device) {
-            LOG_ERROR("Failed to select Vulkan physical device.");
-            return false;
+        std::vector<const char *> instance_layers;
+        if (has_debug_extension && has_validation_layer) {
+            LOG_INFO("Enabling vulkan validation layers (has a performance impact but allows better error messages)");
+            instance_extensions.push_back(debug_extension.c_str());
+            instance_layers.push_back(validation_layer.c_str());
+        }
+
+        vk::InstanceCreateInfo instance_info{
+            .pApplicationInfo = &app_info
+        };
+        instance_info.setPEnabledLayerNames(instance_layers);
+        instance_info.setPEnabledExtensionNames(instance_extensions);
+
+        instance = vk::createInstance(instance_info);
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
+
+        if (has_debug_extension && has_validation_layer) {
+            vk::DebugUtilsMessengerCreateInfoEXT debug_info{
+                .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
+                    | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
+                .messageType = vk::DebugUtilsMessageTypeFlagBitsEXT::eGeneral
+                    | vk::DebugUtilsMessageTypeFlagBitsEXT::eValidation | vk::DebugUtilsMessageTypeFlagBitsEXT::ePerformance,
+                .pfnUserCallback = debug_callback
+            };
+            debug_messenger = instance.createDebugUtilsMessengerEXT(debug_info);
         }
     }
 
+    // Create Surface
+    if (!screen_renderer.create(window))
+        return false;
+
+    // Select Physical Device
+    {
+        std::vector<vk::PhysicalDevice> physical_devices = instance.enumeratePhysicalDevices();
+
+        if (gpu_idx != 0) {
+            // force choose the gpu
+            physical_device = physical_devices[gpu_idx - 1];
+        } else {
+            // choose a suitable gpu
+            for (const auto &device : physical_devices) {
+                if (device_is_compatible(device)) {
+                    physical_device = device;
+
+                    // if it is an integrated gpu, try to find a discrete one
+                    if (device.getProperties().deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
+                        break;
+                }
+            }
+        }
+
+        physical_device_properties = physical_device.getProperties();
+        physical_device_features = physical_device.getFeatures();
+        physical_device_memory = physical_device.getMemoryProperties();
+        physical_device_queue_families = physical_device.getQueueFamilyProperties();
+
+        if (!physical_device) {
+            LOG_ERROR("Failed to select Vulkan physical device.");
+            return false;
+        }
+
+        LOG_INFO("Vulkan device: {}", physical_device_properties.deviceName);
+        LOG_INFO("Driver version: {}", get_driver_version(physical_device_properties.vendorID, physical_device_properties.driverVersion));
+    }
+
+    bool support_dedicated_allocations = false;
     // Create Device
     {
         std::vector<vk::DeviceQueueCreateInfo> queue_infos;
         std::vector<std::vector<float>> queue_priorities;
-        if (!select_queues(vulkan_state, queue_infos, queue_priorities)) {
+        if (!select_queues(*this, queue_infos, queue_priorities)) {
             LOG_ERROR("Failed to select proper Vulkan queues. This is likely a bug.");
             return false;
         }
 
-        if (!vulkan_state.physical_device.getSurfaceSupportKHR(
-                vulkan_state.general_family_index, vulkan_state.surface)) {
+        if (!physical_device.getSurfaceSupportKHR(
+                general_family_index, screen_renderer.surface)) {
             LOG_ERROR("Failed to select a Vulkan queue that supports presentation. This is likely a bug.");
             return false;
         }
 
-        vk::DeviceCreateInfo device_info(
-            vk::DeviceCreateFlags(), // No Flags
-            queue_infos.size(), queue_infos.data(), // No Queues
-            device_layers.size(), device_layers.data(), // No Layers
-            device_extensions.size(), device_extensions.data(), // No Extensions
-            &required_features);
+        // use these features (because they are used by the vita GPU) if they are available
+        vk::PhysicalDeviceFeatures enabled_features{
+            .fillModeNonSolid = physical_device_features.fillModeNonSolid,
+            .wideLines = physical_device_features.wideLines,
+            .samplerAnisotropy = physical_device_features.samplerAnisotropy,
+        };
 
-        vulkan_state.device = vulkan_state.physical_device.createDevice(device_info);
-        if (!vulkan_state.device) {
-            LOG_ERROR("Failed to create a Vulkan device.");
-            return false;
+        // look for optional extensions
+        std::vector<const char *> device_extensions(required_device_extensions);
+        bool temp_bool;
+        const std::map<std::string, bool *> optional_extensions = {
+            { VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, &temp_bool },
+            // can be used by vma to improve perfomance
+            { VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME, &support_dedicated_allocations },
+        };
+
+        for (const vk::ExtensionProperties &ext : physical_device.enumerateDeviceExtensionProperties()) {
+            const std::string extension_name = std::string(ext.extensionName.data());
+            auto it = optional_extensions.find(extension_name);
+            if (it != optional_extensions.end()) {
+                // this extension is available on the GPU
+                *it->second = true;
+                device_extensions.push_back(it->first.c_str());
+            }
         }
+
+        // We use subpass input to get something similar to direct fragcolor access (there is no difference for the shader)
+        features.direct_fragcolor = true;
+
+        vk::DeviceCreateInfo device_info{
+            .pEnabledFeatures = &enabled_features
+        };
+        device_info.setQueueCreateInfos(queue_infos);
+        device_info.setPEnabledExtensionNames(device_extensions);
+
+        device = physical_device.createDevice(device_info);
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
     }
 
     // Get Queues
-    for (uint32_t a = 0; a < vulkan_state.physical_device_queue_families[vulkan_state.general_family_index].queueCount; a++) {
-        vulkan_state.general_queues.push_back(
-            vulkan_state.device.getQueue(vulkan_state.general_family_index, a));
-    }
-
-    for (uint32_t a = 0; a < vulkan_state.physical_device_queue_families[vulkan_state.transfer_family_index].queueCount; a++) {
-        vulkan_state.transfer_queues.push_back(
-            vulkan_state.device.getQueue(vulkan_state.transfer_family_index, a));
-    }
+    general_queue = device.getQueue(general_family_index, 0);
+    transfer_queue = device.getQueue(transfer_family_index, 0);
 
     // Create Command Pools
     {
-        vk::CommandPoolCreateInfo general_pool_info(
-            vk::CommandPoolCreateFlagBits::eResetCommandBuffer, // Flags
-            vulkan_state.general_family_index // Queue Family Index
-        );
+        vk::CommandPoolCreateInfo general_pool_info{
+            .flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer, // Flags
+            .queueFamilyIndex = general_family_index // Queue Family Index
+        };
 
-        vk::CommandPoolCreateInfo transfer_pool_info(
-            vk::CommandPoolCreateFlagBits::eTransient, // Flags
-            vulkan_state.transfer_family_index // Queue Family Index
-        );
+        vk::CommandPoolCreateInfo transfer_pool_info{
+            .flags = vk::CommandPoolCreateFlagBits::eTransient, // Flags
+            .queueFamilyIndex = transfer_family_index // Queue Family Index
+        };
 
-        vulkan_state.general_command_pool = vulkan_state.device.createCommandPool(general_pool_info);
-        if (!vulkan_state.general_command_pool) {
-            LOG_ERROR("Failed to create general command pool.");
-            return false;
-        }
-        vulkan_state.transfer_command_pool = vulkan_state.device.createCommandPool(transfer_pool_info);
-        if (!vulkan_state.transfer_command_pool) {
-            LOG_ERROR("Failed to create transfer command pool.");
-            return false;
-        }
-
-        vulkan_state.general_command_buffer = create_command_buffer(vulkan_state, CommandType::General);
+        general_command_pool = device.createCommandPool(general_pool_info);
+        transfer_command_pool = device.createCommandPool(transfer_pool_info);
     }
 
     // Allocate Memory for Images and Buffers
     {
-        VmaAllocatorCreateInfo allocator_info = {};
-        allocator_info.flags = 0;
-        allocator_info.physicalDevice = vulkan_state.physical_device;
-        allocator_info.device = vulkan_state.device;
-        allocator_info.preferredLargeHeapBlockSize = 0;
-        allocator_info.pAllocationCallbacks = nullptr;
-        allocator_info.pDeviceMemoryCallbacks = nullptr;
-        allocator_info.frameInUseCount = 0;
-        allocator_info.pHeapSizeLimit = nullptr;
-        allocator_info.pVulkanFunctions = nullptr; // VMA_STATIC_VULKAN_FUNCTIONS 1 is default I think
-        allocator_info.pRecordSettings = nullptr;
+        vma::VulkanFunctions vulkan_functions{
+            .vkGetInstanceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetInstanceProcAddr,
+            .vkGetDeviceProcAddr = VULKAN_HPP_DEFAULT_DISPATCHER.vkGetDeviceProcAddr
+        };
 
-        VkResult result = vmaCreateAllocator(&allocator_info, &vulkan_state.allocator);
-        if (result != VK_SUCCESS) {
-            LOG_ERROR("Failed to create VMA allocator. VMA result: {}.", static_cast<uint32_t>(result));
-            return false;
-        }
-        if (vulkan_state.allocator == VK_NULL_HANDLE) {
-            LOG_ERROR("Failed to create VMA allocator.");
-            return false;
-        }
+        vma::AllocatorCreateInfo allocator_info = {
+            .physicalDevice = physical_device,
+            .device = device,
+            .pVulkanFunctions = &vulkan_functions,
+            .instance = instance,
+            .vulkanApiVersion = VK_API_VERSION_1_0,
+        };
+
+        if (support_dedicated_allocations)
+            allocator_info.flags |= vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation;
+
+        allocator = vma::createAllocator(allocator_info);
     }
 
-    int width, height;
-    SDL_Vulkan_GetDrawableSize(window, &width, &height);
-    resize_swapchain(vulkan_state, vk::Extent2D(width, height));
+    if (!screen_renderer.setup(base_path))
+        return false;
+
+    pipeline_cache.init();
+    texture_cache.backend = &current_backend;
+    texture::init(texture_cache, false);
 
     return true;
 }
 
-void close(std::unique_ptr<renderer::State> &state) {
-    auto &vulkan_state = reinterpret_cast<VulkanState &>(*state);
+void VKState::cleanup() {
+    device.waitIdle();
 
-    vulkan_state.device.waitIdle();
+    screen_renderer.cleanup();
 
-    vmaDestroyAllocator(vulkan_state.allocator);
+    allocator.destroy();
 
-    vulkan_state.device.destroy(vulkan_state.swapchain);
-    vulkan_state.instance.destroy(vulkan_state.surface);
+    device.destroy(general_command_pool);
+    device.destroy(transfer_command_pool);
 
-    free_command_buffer(vulkan_state, CommandType::General, vulkan_state.general_command_buffer);
-
-    vulkan_state.device.destroy(vulkan_state.general_command_pool);
-    vulkan_state.device.destroy(vulkan_state.transfer_command_pool);
-
-    vulkan_state.device.destroy();
-    vulkan_state.instance.destroy();
+    device.destroy();
+    instance.destroy();
 }
 
-bool VulkanState::init(const char *base_path, const bool hashless_texture_cache) {
-    return true;
-}
-
-void VulkanState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
+void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
     const GxmState &gxm, MemState &mem) {
+    if (!display.frame.base)
+        return;
+
+    if (!screen_renderer.acquire_swapchain_image())
+        return;
+
+    // Check if the surface exists
+    std::array<float, 4> uvs = { 0.0f, 0.0f, 1.0f, 1.0f };
+    SceFVector2 texture_size;
+
+    vk::ImageLayout layout = vk::ImageLayout::eGeneral;
+    vk::ImageView surface_handle = surface_cache.sourcing_color_surface_for_presentation(
+        display.frame.base, display.frame.image_size.x, display.frame.image_size.y, display.frame.pitch, uvs, this->res_multiplier, texture_size);
+
+    if (!surface_handle) {
+        vkutil::Image &vita_surface = screen_renderer.vita_surface[screen_renderer.swapchain_image_idx];
+        if (display.frame.image_size.x != vita_surface.width || display.frame.image_size.y != vita_surface.height) {
+            // re-create the image
+            vita_surface.destroy();
+            vita_surface = vkutil::Image(allocator, display.frame.image_size.x, display.frame.image_size.y, vk::Format::eR8G8B8A8Unorm);
+            vita_surface.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+        }
+
+        // copy surface to staging buffer
+        const vk::DeviceSize texture_data_size = display.frame.pitch * display.frame.image_size.y * 4;
+        memcpy(screen_renderer.vita_surface_staging_info.pMappedData, display.frame.base.get(mem), texture_data_size);
+
+        // copy staging buffer to image
+        auto &cmd_buffer = screen_renderer.current_cmd_buffer;
+        vita_surface.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
+        vk::BufferImageCopy region{
+            .bufferOffset = 0,
+            .bufferRowLength = display.frame.pitch,
+            .bufferImageHeight = static_cast<uint32_t>(display.frame.image_size.y),
+            .imageSubresource = vkutil::color_subresource_layer,
+            .imageOffset = { 0, 0, 0 },
+            .imageExtent = { static_cast<uint32_t>(display.frame.image_size.x), static_cast<uint32_t>(display.frame.image_size.y), 1 }
+        };
+        cmd_buffer.copyBufferToImage(screen_renderer.vita_surface_staging, vita_surface.image, vk::ImageLayout::eTransferDstOptimal, region);
+
+        vita_surface.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
+
+        surface_handle = vita_surface.view;
+        texture_size = { static_cast<float>(display.frame.image_size.x), static_cast<float>(display.frame.image_size.y) };
+        layout = vk::ImageLayout::eShaderReadOnlyOptimal;
+    }
+
+    screen_renderer.render(surface_handle, layout, uvs, texture_size);
 }
 
-void VulkanState::set_fxaa(bool enable_fxaa) {
+void VKState::swap_window(SDL_Window *window) {
+    screen_renderer.swap_window();
+
+    // look once a frame if we need to save the pipeline cache
+    const auto time_s = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    if (time_s >= pipeline_cache.next_pipeline_cache_save) {
+        pipeline_cache.save_pipeline_cache();
+
+        pipeline_cache.next_pipeline_cache_save = std::numeric_limits<uint64_t>::max();
+    }
 }
 
-int VulkanState::get_max_anisotropic_filtering() {
-    return 1;
+void VKState::set_fxaa(bool enable_fxaa) {
+    screen_renderer.enable_fxaa = enable_fxaa;
 }
 
-void VulkanState::set_anisotropic_filtering(int anisotropic_filtering) {
+int VKState::get_max_anisotropic_filtering() {
+    return static_cast<int>(physical_device_properties.limits.maxSamplerAnisotropy);
+}
+
+void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
+    texture_cache.anisotropic_filtering = anisotropic_filtering;
+}
+
+std::vector<std::string> VKState::get_gpu_list() {
+    const std::vector<vk::PhysicalDevice> gpus = instance.enumeratePhysicalDevices();
+
+    std::vector<std::string> gpu_list;
+    // First value is always automatic
+    gpu_list.push_back("Automatic");
+    for (const vk::PhysicalDevice gpu : gpus)
+        gpu_list.push_back(std::string(gpu.getProperties().deviceName.data()));
+
+    return gpu_list;
+}
+
+void VKState::precompile_shader(const ShadersHash &hash) {
+    Sha256Hash empty_hash{};
+    if (hash.vert != empty_hash) {
+        pipeline_cache.precompile_shader(hash.vert);
+    }
+    if (hash.frag != empty_hash) {
+        pipeline_cache.precompile_shader(hash.frag);
+    }
+
+    programs_count_pre_compiled++;
+    LOG_INFO("Program Compiled {}/{}", programs_count_pre_compiled, shaders_cache_hashs.size());
+}
+
+void VKState::preclose_action() {
+    // make sure we are in a game
+    if (!title_id[0])
+        return;
+
+    pipeline_cache.save_pipeline_cache();
 }
 } // namespace renderer::vulkan

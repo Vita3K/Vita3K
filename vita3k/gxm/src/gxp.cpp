@@ -21,6 +21,7 @@
 #include <util/log.h>
 
 #include <algorithm>
+#include <set>
 
 namespace gxp {
 
@@ -379,5 +380,43 @@ const char *get_container_name(const std::uint16_t idx) {
     }
 
     return "INVALID ";
+}
+
+uint16_t get_texture_count(const SceGxmProgram &program_gxp) {
+    const auto parameters = gxp::program_parameters(program_gxp);
+
+    int max_texture_index = -1;
+    for (uint32_t i = 0; i < program_gxp.parameter_count; ++i) {
+        const auto parameter = parameters[i];
+        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+            max_texture_index = std::max(max_texture_index, parameter.resource_index);
+        }
+    }
+
+    // symbols may be stripped, look for an anonymous texture
+    auto vertex_varyings_ptr = program_gxp.vertex_varyings();
+    const SceGxmProgramAttributeDescriptor *descriptor = reinterpret_cast<const SceGxmProgramAttributeDescriptor *>(
+        reinterpret_cast<const std::uint8_t *>(&vertex_varyings_ptr->vertex_outputs1) + vertex_varyings_ptr->vertex_outputs1);
+
+    for (uint16_t i = 0; i < vertex_varyings_ptr->varyings_count; i++, descriptor++) {
+        const uint32_t tex_coord_index = (descriptor->attribute_info & 0x40F);
+        if (tex_coord_index == 0xF)
+            continue;
+        max_texture_index = std::max<int>(max_texture_index, descriptor->resource_index);
+    }
+
+    // also look for an anonymous sampler
+    const SceGxmProgramParameterContainer *container = gxp::get_container_by_index(program_gxp, 19);
+    if (container) {
+        const SceGxmDependentSampler *dependent_samplers = reinterpret_cast<const SceGxmDependentSampler *>(reinterpret_cast<const std::uint8_t *>(&program_gxp.dependent_sampler_offset)
+            + program_gxp.dependent_sampler_offset);
+
+        for (uint32_t i = 0; i < program_gxp.dependent_sampler_count; i++) {
+            const uint16_t rsc_index = dependent_samplers[i].resource_index_layout_offset / 4;
+            max_texture_index = std::max<int>(max_texture_index, rsc_index);
+        }
+    }
+
+    return static_cast<uint16_t>(max_texture_index + 1);
 }
 } // namespace gxp

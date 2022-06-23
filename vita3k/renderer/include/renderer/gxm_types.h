@@ -53,10 +53,12 @@ struct SceGxmColorSurface {
 static_assert(sizeof(SceGxmColorSurface) == (32 + sizeof(SceGxmTexture)), "Incorrect size.");
 
 struct SceGxmDepthStencilControl {
-    bool disabled;
-    SceGxmDepthStencilFormat format;
-    bool backgroundMask = true;
-    uint8_t backgroundStencil;
+    uint32_t content;
+
+    static constexpr uint32_t format_bits = ~0xFFF;
+    static constexpr uint32_t stencil_bits = 0xF;
+    static constexpr uint32_t mask_bit = 0x10;
+    static constexpr uint32_t disabled_bit = 0x20;
 };
 
 struct SceGxmDepthStencilSurface {
@@ -64,7 +66,7 @@ struct SceGxmDepthStencilSurface {
     Ptr<void> depthData;
     Ptr<void> stencilData;
     float backgroundDepth = 1.0f;
-    Ptr<SceGxmDepthStencilControl> control;
+    SceGxmDepthStencilControl control;
 };
 
 struct SceGxmContextParams {
@@ -133,6 +135,8 @@ struct SceGxmSyncObject {
 
     std::mutex lock;
     std::condition_variable cond;
+    // some extra space for additional data, on the Vulkan renderer this points to a RenderTarget* a,d a vector of fences
+    void *extra;
 };
 
 struct GxmContextState {
@@ -277,6 +281,7 @@ struct SceGxmVertexProgram {
     std::vector<SceGxmVertexStream> streams;
     std::vector<SceGxmVertexAttribute> attributes;
     std::unique_ptr<renderer::VertexProgram> renderer_data;
+    uint64_t key_hash;
 };
 
 struct SceGxmPrecomputedDraw {

@@ -451,22 +451,10 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
     texture->normalize_mode = 1;
     texture->min_filter = SCE_GXM_TEXTURE_FILTER_POINT;
     texture->mag_filter = SCE_GXM_TEXTURE_FILTER_POINT;
+    texture->lod_min0 = 0;
+    texture->lod_min1 = 0;
 
     return 0;
-}
-
-uint16_t get_gxp_texture_count(const SceGxmProgram &program_gxp) {
-    const auto parameters = gxp::program_parameters(program_gxp);
-
-    uint16_t max_texture_index = 0;
-    for (uint32_t i = 0; i < program_gxp.parameter_count; ++i) {
-        const auto parameter = parameters[i];
-        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-            max_texture_index = std::max(max_texture_index, static_cast<uint16_t>(parameter.resource_index));
-        }
-    }
-
-    return max_texture_index + 1;
 }
 
 EXPORT(int, _sceGxmBeginScene) {
@@ -706,7 +694,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
         // Wait for the display queue to be done.
         // If it's offline render, the sync object already has the display queue subject done, so don't worry.
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::WaitSyncObject,
-            nullptr, fragmentSyncObject, sync->last_display);
+            nullptr, fragmentSyncObject, renderTarget->renderer.get(), sync->last_display);
     }
 
     // TODO This may not be right.
@@ -1026,12 +1014,12 @@ EXPORT(float, sceGxmDepthStencilSurfaceGetBackgroundDepth, const SceGxmDepthSten
 
 EXPORT(bool, sceGxmDepthStencilSurfaceGetBackgroundMask, const SceGxmDepthStencilSurface *surface) {
     assert(surface);
-    return surface->control.get(emuenv.mem)->backgroundMask;
+    return (surface->control.content & SceGxmDepthStencilControl::mask_bit) != 0;
 }
 
 EXPORT(uint8_t, sceGxmDepthStencilSurfaceGetBackgroundStencil, const SceGxmDepthStencilSurface *surface) {
     assert(surface);
-    return surface->control.get(emuenv.mem)->backgroundStencil;
+    return surface->control.content & SceGxmDepthStencilControl::stencil_bits;
 }
 
 EXPORT(SceGxmDepthStencilForceLoadMode, sceGxmDepthStencilSurfaceGetForceLoadMode, const SceGxmDepthStencilSurface *surface) {
@@ -1041,7 +1029,6 @@ EXPORT(SceGxmDepthStencilForceLoadMode, sceGxmDepthStencilSurfaceGetForceLoadMod
 
 EXPORT(SceGxmDepthStencilForceStoreMode, sceGxmDepthStencilSurfaceGetForceStoreMode, const SceGxmDepthStencilSurface *surface) {
     assert(surface);
-    // TODO: Implement on the renderer side
     return static_cast<SceGxmDepthStencilForceStoreMode>(surface->zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
 }
 
@@ -1064,18 +1051,12 @@ EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, S
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    SceGxmDepthStencilSurface tmp_surface;
-    tmp_surface.depthData = depthData;
-    tmp_surface.stencilData = stencilData;
-    tmp_surface.zlsControl = SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_DISABLED | SCE_GXM_DEPTH_STENCIL_FORCE_STORE_DISABLED;
+    *surface = SceGxmDepthStencilSurface();
+    surface->depthData = depthData;
+    surface->stencilData = stencilData;
+    surface->zlsControl = SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_DISABLED | SCE_GXM_DEPTH_STENCIL_FORCE_STORE_DISABLED;
 
-    tmp_surface.control = alloc<SceGxmDepthStencilControl>(emuenv.mem, "gxm depth stencil control");
-    SceGxmDepthStencilControl control;
-    control.disabled = false;
-    control.format = depthStencilFormat;
-    control.backgroundStencil = 0;
-    memcpy(tmp_surface.control.get(emuenv.mem), &control, sizeof(SceGxmDepthStencilControl));
-    memcpy(surface, &tmp_surface, sizeof(SceGxmDepthStencilSurface));
+    surface->control.content = static_cast<uint32_t>(depthStencilFormat) | SceGxmDepthStencilControl::mask_bit;
     return 0;
 }
 
@@ -1084,19 +1065,15 @@ EXPORT(int, sceGxmDepthStencilSurfaceInitDisabled, SceGxmDepthStencilSurface *su
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    SceGxmDepthStencilSurface tmp_surface;
+    *surface = SceGxmDepthStencilSurface();
 
-    tmp_surface.control = alloc<SceGxmDepthStencilControl>(emuenv.mem, "gxm depth stencil control");
-    SceGxmDepthStencilControl control;
-    control.disabled = true;
-    memcpy(tmp_surface.control.get(emuenv.mem), &control, sizeof(SceGxmDepthStencilControl));
-    memcpy(surface, &tmp_surface, sizeof(SceGxmDepthStencilSurface));
+    surface->control.content = SceGxmDepthStencilControl::disabled_bit | SceGxmDepthStencilControl::mask_bit;
     return 0;
 }
 
 EXPORT(bool, sceGxmDepthStencilSurfaceIsEnabled, const SceGxmDepthStencilSurface *surface) {
     assert(surface);
-    return !surface->control.get(emuenv.mem)->disabled;
+    return (surface->control.content & SceGxmDepthStencilControl::disabled_bit) == 0;
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundDepth, SceGxmDepthStencilSurface *surface, float depth) {
@@ -1106,12 +1083,16 @@ EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundDepth, SceGxmDepthStencilSurf
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundMask, SceGxmDepthStencilSurface *surface, bool mask) {
     assert(surface);
-    surface->control.get(emuenv.mem)->backgroundMask = mask;
+    if (mask)
+        surface->control.content |= SceGxmDepthStencilControl::mask_bit;
+    else
+        surface->control.content &= ~SceGxmDepthStencilControl::mask_bit;
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundStencil, SceGxmDepthStencilSurface *surface, uint8_t stencil) {
     assert(surface);
-    surface->control.get(emuenv.mem)->backgroundStencil = stencil;
+    surface->control.content &= ~SceGxmDepthStencilControl::stencil_bits;
+    surface->control.content |= stencil;
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetForceLoadMode, SceGxmDepthStencilSurface *surface, SceGxmDepthStencilForceLoadMode forceLoad) {
@@ -1194,6 +1175,8 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
 
     // function may be blocking here (expected behavior)
     emuenv.gxm.display_queue.push(display_callback);
+
+    renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::NewFrame, false);
 
     return 0;
 }
@@ -1783,7 +1766,7 @@ EXPORT(uint32_t, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProg
     assert(fragmentProgram);
 
     const auto &fragment_program_gxp = *fragmentProgram->program.get(emuenv.mem);
-    const uint16_t texture_count = get_gxp_texture_count(fragment_program_gxp);
+    const uint16_t texture_count = gxp::get_texture_count(fragment_program_gxp);
 
     return texture_count * sizeof(TextureData) + sizeof(UniformBuffers);
 }
@@ -1792,7 +1775,7 @@ EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram 
     assert(vertexProgram);
 
     const auto &vertex_program_gxp = *vertexProgram->program.get(emuenv.mem);
-    const uint16_t texture_count = get_gxp_texture_count(vertex_program_gxp);
+    const uint16_t texture_count = gxp::get_texture_count(vertex_program_gxp);
 
     return texture_count * sizeof(TextureData) + sizeof(UniformBuffers);
 }
@@ -1857,6 +1840,9 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     }
 
     emuenv.gxm.params = *params;
+    // hack, limit the number of frame rendering at the same time to at most 3
+    // this is necessary for vulkan and anyway there is no reason for 4 frames to be rendering at the same time
+    uint32_t max_queue_size = std::min(params->displayQueueMaxPendingCount, 2U);
     emuenv.gxm.display_queue.maxPendingCount_ = params->displayQueueMaxPendingCount;
 
     const ThreadStatePtr main_thread = util::find(thread_id, emuenv.kernel.threads);
@@ -2101,7 +2087,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateInit, SceGxmPrecomputedFragmentState *
     new_state.program = program;
 
     const auto &fragment_program_gxp = *program.get(emuenv.mem)->program.get(emuenv.mem);
-    new_state.texture_count = get_gxp_texture_count(fragment_program_gxp);
+    new_state.texture_count = gxp::get_texture_count(fragment_program_gxp);
 
     new_state.textures = extra_data.cast<TextureData>();
     new_state.uniform_buffers = (extra_data.cast<TextureData>() + new_state.texture_count).cast<UniformBuffers>();
@@ -2208,7 +2194,7 @@ EXPORT(int, sceGxmPrecomputedVertexStateInit, SceGxmPrecomputedVertexState *stat
     new_state.program = program;
 
     const auto &vertex_program_gxp = *program.get(emuenv.mem)->program.get(emuenv.mem);
-    new_state.texture_count = get_gxp_texture_count(vertex_program_gxp);
+    new_state.texture_count = gxp::get_texture_count(vertex_program_gxp);
 
     new_state.textures = extra_data.cast<TextureData>();
     new_state.uniform_buffers = (extra_data.cast<TextureData>() + new_state.texture_count).cast<UniformBuffers>();
@@ -3405,6 +3391,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
 
     SceGxmVertexProgram *const vp = vertexProgram->get(mem);
     vp->program = programId->program;
+    vp->key_hash = key.hash;
 
     if (streams && streamCount > 0) {
         vp->streams.insert(vp->streams.end(), &streams[0], &streams[streamCount]);
@@ -3572,11 +3559,7 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
         return RET_ERROR(SCE_GXM_ERROR_OUT_OF_MEMORY);
     }
 
-    // Set as if the last display was already done
-    SceGxmSyncObject *sync = syncObject->get(emuenv.mem);
-    sync->last_display = 0;
-    sync->timestamp_current = 0;
-    sync->timestamp_ahead = 0;
+    renderer::create(syncObject->get(emuenv.mem), *emuenv.renderer);
 
     return 0;
 }
@@ -3585,6 +3568,7 @@ EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
     if (!syncObject)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
+    renderer::destroy(syncObject.get(emuenv.mem), *emuenv.renderer);
     free(emuenv.mem, syncObject);
 
     return 0;
@@ -3951,7 +3935,7 @@ EXPORT(int, sceGxmTextureSetMipFilter, SceGxmTexture *texture, SceGxmTextureMipF
         return RET_ERROR(SCE_GXM_ERROR_UNSUPPORTED);
     }
 
-    texture->mip_filter = (uint32_t)mipFilter;
+    texture->mip_filter = static_cast<bool>(mipFilter);
     return 0;
 }
 
@@ -3968,7 +3952,7 @@ EXPORT(int, sceGxmTextureSetMipmapCount, SceGxmTexture *texture, uint32_t mipCou
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    texture->mip_count = (uint32_t)mipCount;
+    texture->mip_count = std::min<std::uint32_t>(15, mipCount - 1);
     return 0;
 }
 
@@ -4127,7 +4111,7 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
-            syncObject, sync->last_display);
+            syncObject, nullptr, sync->last_display);
         cmd_timestamp = ++sync->timestamp_ahead;
     }
 
@@ -4177,7 +4161,7 @@ EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> s
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
-            syncObject, sync->last_display);
+            syncObject, nullptr, sync->last_display);
         cmd_timestamp = ++sync->timestamp_ahead;
     }
 
@@ -4221,7 +4205,7 @@ EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFor
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
-            syncObject, sync->last_display);
+            syncObject, nullptr, sync->last_display);
         cmd_timestamp = ++sync->timestamp_ahead;
     }
 

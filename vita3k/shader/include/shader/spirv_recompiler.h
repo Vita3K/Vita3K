@@ -39,7 +39,38 @@ static constexpr float INTEGRAL_TEX_QUERY_TYPE_8BIT_SIGNED = 3.0;
 static constexpr float INTEGRAL_TEX_QUERY_TYPE_8BIT_UNSIGNED = 2.0;
 static constexpr float INTEGRAL_TEX_QUERY_TYPE_16BIT = 1.0;
 static constexpr float INTEGRAL_TEX_QUERY_TYPE_32BIT = 0.0;
-static constexpr std::uint32_t CURRENT_VERSION = 3;
+static constexpr std::uint32_t CURRENT_VERSION = 4;
+
+struct RenderVertUniformBlock {
+    std::array<float, 4> viewport_flip;
+    float viewport_flag;
+    float screen_width;
+    float screen_height;
+    float padding;
+    float integral_texture_query_format[SCE_GXM_MAX_TEXTURE_UNITS];
+    float z_offset;
+    float z_scale;
+};
+
+struct RenderFragUniformBlock {
+    float back_disabled = 0;
+    float front_disabled = 0;
+    float writing_mask = 0;
+    float use_raw_image = 0;
+    float integral_texture_query_format[SCE_GXM_MAX_TEXTURE_UNITS];
+    int32_t res_multiplier = 0;
+};
+
+enum struct Target {
+    GLSLOpenGL,
+    SpirVOpenGL,
+    SpirVVulkan
+};
+
+struct GeneratedShader {
+    std::string glsl;
+    usse::SpirvCode spirv;
+};
 
 // Used if the GPU does not support features.support_unknown_format
 extern SceGxmColorBaseFormat last_color_format;
@@ -47,11 +78,10 @@ extern SceGxmColorBaseFormat last_color_format;
 // Dump generated SPIR-V disassembly up to this point
 void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump = nullptr);
 
-usse::SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes = nullptr, bool maskupdate = false,
+// the returned object will only have its glsl or spirv field non-empty depending on the target
+GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, const Target target, const std::vector<SceGxmVertexAttribute> *hint_attributes = nullptr, bool maskupdate = false,
     bool force_shader_debug = false, std::function<bool(const std::string &ext, const std::string &dump)> dumper = nullptr);
 
-std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features,
-    const std::vector<SceGxmVertexAttribute> *hint_attributes = nullptr, bool maskupdate = false, bool force_shader_debug = false, std::function<bool(const std::string &ext, const std::string &dump)> dumper = nullptr);
 void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath);
 
 } // namespace shader

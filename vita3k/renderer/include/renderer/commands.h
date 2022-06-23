@@ -25,8 +25,8 @@
 #include <dlmalloc.h>
 
 namespace renderer {
-#define REPORT_MISSING(backend) // LOG_ERROR("Unimplemented graphics API handler with backend {}", (int)backend)
-#define REPORT_STUBBED() // LOG_INFO("Stubbed")
+#define REPORT_MISSING(backend) LOG_ERROR("Unimplemented graphics API handler with backend {}", (int)backend)
+#define REPORT_STUBBED() LOG_INFO("Stubbed")
 
 struct Command;
 
@@ -73,6 +73,11 @@ enum class CommandOpcode : std::uint8_t {
     WaitSyncObject,
 
     SignalNotification,
+
+    /**
+     * Start rendering a newframe
+     */
+    NewFrame,
 
     DestroyRenderTarget,
     DestroyContext

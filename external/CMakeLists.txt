@@ -260,15 +260,13 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_
 endif()
 target_include_directories(CLI11 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/cli11")
 
-if (USE_VULKAN)
-	find_package(Vulkan REQUIRED)
-	add_library(vulkan INTERFACE)
-	target_include_directories(vulkan INTERFACE ${Vulkan_INCLUDE_DIRS})
-	target_link_libraries(vulkan INTERFACE ${Vulkan_LIBRARIES})
+add_library(vulkan INTERFACE)
+target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Vulkan-Headers/include")
 
-	add_library(vma INTERFACE)
-	target_include_directories(vma INTERFACE VulkanMemoryAllocator/src)
-endif()
+add_library(vma INTERFACE)
+target_include_directories(vma INTERFACE 
+	"${CMAKE_CURRENT_SOURCE_DIR}/VulkanMemoryAllocator-Hpp/include"
+	"${CMAKE_CURRENT_SOURCE_DIR}/VulkanMemoryAllocator-Hpp/VulkanMemoryAllocator/include")
 
 add_subdirectory(ffmpeg)
 add_subdirectory(psvpfstools)

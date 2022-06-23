@@ -23,6 +23,8 @@
 #include <renderer/types.h>
 
 #include <renderer/gl/functions.h>
+#include <renderer/vulkan/functions.h>
+#include <renderer/vulkan/types.h>
 
 #include <renderer/functions.h>
 #include <util/log.h>
@@ -43,9 +45,17 @@ COMMAND(handle_signal_sync_object) {
 
 COMMAND(handle_wait_sync_object) {
     SceGxmSyncObject *sync = helper.pop<Ptr<SceGxmSyncObject>>().get(mem);
+    RenderTarget *target = helper.pop<RenderTarget *>();
     const uint32_t timestamp = helper.pop<uint32_t>();
 
     renderer::wishlist(sync, timestamp);
+
+    if (renderer.current_backend == Backend::Vulkan) {
+        vulkan::VKContext *context = reinterpret_cast<vulkan::VKContext *>(renderer.context);
+        if (context->is_recording)
+            context->stop_recording();
+        vulkan::update_sync_target(sync, reinterpret_cast<vulkan::VKRenderTarget *>(target));
+    }
 }
 
 COMMAND(handle_notification) {
@@ -59,6 +69,12 @@ COMMAND(handle_notification) {
             *val = notif.value;
     }
     renderer.notification_ready.notify_all();
+}
+
+COMMAND(new_frame) {
+    if (renderer.current_backend == Backend::Vulkan) {
+        vulkan::new_frame(*reinterpret_cast<vulkan::VKContext *>(renderer.context));
+    }
 }
 
 // Client side function

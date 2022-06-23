@@ -25,6 +25,8 @@
 #include <renderer/gl/functions.h>
 #include <renderer/gl/types.h>
 
+#include <renderer/vulkan/functions.h>
+
 #include <config/state.h>
 #include <renderer/functions.h>
 #include <util/log.h>
@@ -38,7 +40,7 @@
 
 namespace renderer {
 COMMAND(handle_set_context) {
-    const RenderTarget *rt = helper.pop<const RenderTarget *>();
+    RenderTarget *rt = helper.pop<RenderTarget *>();
     const SceGxmColorSurface *color_surface = helper.pop<SceGxmColorSurface *>();
     const SceGxmDepthStencilSurface *depth_stencil_surface = helper.pop<SceGxmDepthStencilSurface *>();
 
@@ -48,27 +50,35 @@ COMMAND(handle_set_context) {
 
     if (color_surface && !color_surface->disabled) {
         render_context->record.color_surface = *color_surface;
-        delete color_surface;
     } else {
-        // Disable writing to this surface.
-        // Data is still in render target though.
         render_context->record.color_surface.data = nullptr;
     }
 
-    // Maybe we should disable writing to depth stencil too if it's null
+    if (color_surface)
+        delete color_surface;
+
     if (depth_stencil_surface) {
         render_context->record.depth_stencil_surface = *depth_stencil_surface;
         delete depth_stencil_surface;
     } else {
-        render_context->record.depth_stencil_surface.depthData.reset();
-        render_context->record.depth_stencil_surface.stencilData.reset();
+        static const SceGxmDepthStencilSurface default_ds{
+            .zlsControl = 0,
+            .depthData = Ptr<void>(0),
+            .stencilData = Ptr<void>(0),
+            .backgroundDepth = 1.0f,
+            .control = SceGxmDepthStencilControl::mask_bit
+        };
+        render_context->record.depth_stencil_surface = default_ds;
     }
 
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
-        gl::set_context(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), mem, reinterpret_cast<const gl::GLRenderTarget *>(rt), features);
+    case Backend::OpenGL:
+        gl::set_context(dynamic_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), mem, reinterpret_cast<const gl::GLRenderTarget *>(rt), features);
         break;
-    }
+
+    case Backend::Vulkan:
+        vulkan::set_context(*reinterpret_cast<vulkan::VKContext *>(render_context), mem, reinterpret_cast<vulkan::VKRenderTarget *>(rt), features);
+        break;
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -77,6 +87,13 @@ COMMAND(handle_set_context) {
 }
 
 COMMAND(handle_sync_surface_data) {
+    if (renderer.current_backend == Backend::Vulkan) {
+        // TODO: put this in a function
+        vulkan::VKContext *context = reinterpret_cast<vulkan::VKContext *>(renderer.context);
+        if (context->is_recording)
+            context->stop_recording();
+    }
+
     SceGxmColorSurface *surface = &render_context->record.color_surface;
     if (helper.cmd->status) {
         surface = helper.pop<SceGxmColorSurface *>();
@@ -106,15 +123,17 @@ COMMAND(handle_sync_surface_data) {
     unprotect_inner(mem, data, total_size);
 
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
+    case Backend::OpenGL:
         if (helper.cmd->status) {
             gl::lookup_and_get_surface_data(static_cast<gl::GLState &>(renderer), mem, *surface);
         } else {
             gl::get_surface_data(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), pixels, *surface);
         }
-
         break;
-    }
+
+    case Backend::Vulkan:
+        // not implemented for now
+        break;
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -155,17 +174,19 @@ COMMAND(handle_draw) {
     const std::uint32_t instance_count = helper.pop<const std::uint32_t>();
 
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
-        gl::draw(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context),
+    case Backend::OpenGL:
+        gl::draw(dynamic_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context),
             features, type, format, indicies, count, instance_count, mem, base_path, title_id, self_name, config);
-
         break;
-    }
 
-    default: {
+    case Backend::Vulkan:
+        vulkan::draw(*reinterpret_cast<vulkan::VKContext *>(render_context), type, format, indicies,
+            count, instance_count, mem, config);
+        break;
+
+    default:
         REPORT_MISSING(renderer.current_backend);
         break;
-    }
     }
 }
 

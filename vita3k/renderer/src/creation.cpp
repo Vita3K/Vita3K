@@ -23,17 +23,34 @@
 #include <renderer/types.h>
 
 #include <renderer/gl/functions.h>
-#ifdef USE_VULKAN
-#include <renderer/vulkan/functions.h>
-#endif
 #include <renderer/texture_cache_state.h>
+#include <renderer/vulkan/functions.h>
+#include <renderer/vulkan/state.h>
 
+#include <gxm/functions.h>
 #include <gxm/types.h>
 #include <renderer/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
 namespace renderer {
+
+static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &sizes, UniformBufferSizes &offsets, std::size_t &total_hold) {
+    std::uint32_t last_offset = 0;
+
+    for (std::size_t i = 0; i < sizes.size(); i++) {
+        if (sizes[i] != 0) {
+            // Round to vec4 unit
+            offsets[i] = last_offset;
+            last_offset += ((sizes[i] + 3) / 4 * 4);
+        } else {
+            offsets[i] = static_cast<std::uint32_t>(-1);
+        }
+    }
+
+    total_hold = static_cast<std::size_t>(last_offset);
+}
+
 COMMAND(handle_create_context) {
     std::unique_ptr<Context> *ctx = helper.pop<std::unique_ptr<Context> *>();
     bool result = false;
@@ -44,11 +61,18 @@ COMMAND(handle_create_context) {
         break;
     }
 
+    case Backend::Vulkan: {
+        result = vulkan::create(dynamic_cast<vulkan::VKState &>(renderer), *ctx);
+        break;
+    }
+
     default: {
         REPORT_MISSING(renderer.current_backend);
         break;
     }
     }
+
+    renderer.context = ctx->get();
 
     complete_command(renderer, helper, result);
 }
@@ -67,22 +91,38 @@ COMMAND(handle_create_render_target) {
     bool result = false;
 
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
-        result = gl::create(static_cast<gl::GLState &>(renderer), *render_target, *params, features);
+    case Backend::OpenGL:
+        result = gl::create(dynamic_cast<gl::GLState &>(renderer), *render_target, *params, features);
         break;
-    }
 
-    default: {
+    case Backend::Vulkan:
+        result = vulkan::create(dynamic_cast<vulkan::VKState &>(renderer), *render_target, *params, features);
+        break;
+
+    default:
         REPORT_MISSING(renderer.current_backend);
         break;
     }
-    }
-
     complete_command(renderer, helper, result);
 }
 
 COMMAND(handle_destroy_render_target) {
     std::unique_ptr<RenderTarget> *render_target = helper.pop<std::unique_ptr<RenderTarget> *>();
+
+    switch (renderer.current_backend) {
+    case Backend::OpenGL:
+        // nothing to do
+        break;
+
+    case Backend::Vulkan:
+        vulkan::destroy(dynamic_cast<vulkan::VKState &>(renderer), *render_target);
+        break;
+
+    default:
+        REPORT_MISSING(renderer.current_backend);
+        break;
+    }
+
     render_target->reset();
 
     complete_command(renderer, helper, 0);
@@ -94,32 +134,77 @@ COMMAND(handle_prepare_overall_buffer_storage) {
 // Client
 bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     switch (state.current_backend) {
-    case Backend::OpenGL: {
-        return gl::create(fp, static_cast<gl::GLState &>(state), program, blend, gxp_ptr_map, base_path, title_id);
-    }
-
-    default: {
-        REPORT_MISSING(state.current_backend);
+    case Backend::OpenGL:
+        gl::create(fp, dynamic_cast<gl::GLState &>(state), program, blend);
         break;
-    }
+
+    case Backend::Vulkan:
+        vulkan::create(fp, dynamic_cast<vulkan::VKState &>(state), program, blend);
+        break;
+
+    default:
+        REPORT_MISSING(state.current_backend);
+        return false;
     }
 
-    return false;
+    // Try to hash this shader
+    fp->hash = sha256(&program, program.size);
+    gxp_ptr_map.emplace(fp->hash, &program);
+
+    shader::usse::get_uniform_buffer_sizes(program, fp->uniform_buffer_sizes);
+    layout_ssbo_offset_from_uniform_buffer_sizes(fp->uniform_buffer_sizes, fp->uniform_buffer_data_offsets, fp->max_total_uniform_buffer_storage);
+    fp->texture_count = gxp::get_texture_count(program);
+
+    return true;
 }
 
 bool create(std::unique_ptr<VertexProgram> &vp, State &state, const SceGxmProgram &program, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     switch (state.current_backend) {
-    case Backend::OpenGL: {
-        return gl::create(vp, static_cast<gl::GLState &>(state), program, gxp_ptr_map, base_path, title_id);
-    }
-
-    default: {
-        REPORT_MISSING(state.current_backend);
+    case Backend::OpenGL:
+        gl::create(vp, dynamic_cast<gl::GLState &>(state), program);
         break;
-    }
+
+    case Backend::Vulkan:
+        vulkan::create(vp, dynamic_cast<vulkan::VKState &>(state), program);
+        break;
+
+    default:
+        REPORT_MISSING(state.current_backend);
+        return false;
     }
 
-    return false;
+    // Hash this shader
+    vp->hash = sha256(&program, program.size);
+    gxp_ptr_map.emplace(vp->hash, &program);
+
+    shader::usse::get_uniform_buffer_sizes(program, vp->uniform_buffer_sizes);
+    shader::usse::get_attribute_informations(program, vp->attribute_infos);
+    layout_ssbo_offset_from_uniform_buffer_sizes(vp->uniform_buffer_sizes, vp->uniform_buffer_data_offsets, vp->max_total_uniform_buffer_storage);
+    vp->texture_count = gxp::get_texture_count(program);
+
+    if (vp->attribute_infos.empty()) {
+        vp->stripped_symbols_checked = false;
+    } else {
+        vp->stripped_symbols_checked = true;
+    }
+
+    return true;
+}
+
+void create(SceGxmSyncObject *sync, State &state) {
+    // Set as if the last display was already done
+    sync->last_display = 0;
+    sync->timestamp_current = 0;
+    sync->timestamp_ahead = 0;
+    sync->extra = 0;
+
+    if (state.current_backend == Backend::Vulkan)
+        vulkan::create(sync);
+}
+
+void destroy(SceGxmSyncObject *sync, State &state) {
+    if (state.current_backend == Backend::Vulkan)
+        vulkan::destroy(sync);
 }
 
 bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const char *base_path) {
@@ -129,13 +214,13 @@ bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, co
         if (!gl::create(window, state, base_path, config.hashless_texture_cache))
             return false;
         break;
-#ifdef USE_VULKAN
+
     case Backend::Vulkan:
-        state = std::make_unique<vulkan::VulkanState>();
-        if (!vulkan::create(window, state))
+        state = std::make_unique<vulkan::VKState>(config.gpu_idx);
+        if (!vulkan::create(window, state, base_path))
             return false;
         break;
-#endif
+
     default:
         LOG_ERROR("Cannot create a renderer with unsupported backend {}.", static_cast<int>(backend));
         return false;

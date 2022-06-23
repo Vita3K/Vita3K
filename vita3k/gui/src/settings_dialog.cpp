@@ -470,16 +470,27 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginTabItem("GPU")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-#ifdef USE_VULKAN
+
         static const char *LIST_BACKEND_RENDERER[] = { "OpenGL", "Vulkan" };
         if (ImGui::Combo("Backend Renderer (Reboot to apply)", reinterpret_cast<int *>(&emuenv.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
             emuenv.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(emuenv.backend_renderer)];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred backend renderer.");
         ImGui::Spacing();
+
+        const bool is_vulkan = (emuenv.backend_renderer == renderer::Backend::Vulkan);
+        if (is_vulkan) {
+            const std::vector<std::string> gpu_list_str = emuenv.renderer->get_gpu_list();
+            // must convert to a vector of char*
+            std::vector<const char *> gpu_list;
+            for (const auto &gpu : gpu_list_str)
+                gpu_list.push_back(gpu.c_str());
+            if (ImGui::Combo("GPU (Reboot to apply)", &emuenv.cfg.gpu_idx, gpu_list.data(), gpu_list.size()))
+                ImGui::SetTooltip("Select the GPU Vita3K should run on.");
+        }
         ImGui::Separator();
         ImGui::Spacing();
-#endif
+
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Internal Resolution Upscaling").x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Internal Resolution Upscaling");
         ImGui::Spacing();
@@ -502,25 +513,27 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             config.disable_surface_sync = false;
         }
         ImGui::PopID();
-        if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
+        if (!emuenv.io.title_id.empty() || ((config.resolution_multiplier == 1) && !config.disable_surface_sync))
             ImGui::EndDisabled();
         ImGui::Spacing();
         const auto res_scal = fmt::format("{}x{}", 960 * config.resolution_multiplier, 544 * config.resolution_multiplier);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * emuenv.dpi_scale));
         ImGui::Text("%s", res_scal.c_str());
-        if (!emuenv.io.title_id.empty())
-            ImGui::EndDisabled();
-        ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
-        ImGui::Spacing();
+        if (!is_vulkan) {
+            ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
+            ImGui::Spacing();
+        }
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
-        ImGui::SameLine();
-        ImGui::Checkbox("V-Sync", &config.v_sync);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid tearing.");
+        if (!is_vulkan) {
+            ImGui::SameLine();
+            ImGui::Checkbox("V-Sync", &config.v_sync);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid tearing.");
+        }
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

@@ -23,6 +23,8 @@
 #include <gxm/types.h>
 #include <renderer/commands.h>
 #include <renderer/gxm_types.h>
+#include <shader/spirv_recompiler.h>
+#include <shader/usse_program_analyzer.h>
 
 #include <array>
 #include <map>
@@ -40,23 +42,22 @@ using UniformBufferSizes = std::array<std::uint32_t, 15>;
 
 namespace renderer {
 
-typedef std::map<GLuint, std::string> AttributeLocations;
-typedef std::map<std::string, SharedGLObject> ShaderCache;
-typedef std::tuple<std::string, std::string> ProgramHashes;
-typedef std::map<ProgramHashes, SharedGLObject> ProgramCache;
+typedef std::tuple<Sha256Hash, Sha256Hash> ProgramHashes;
 typedef std::vector<std::string> ExcludedUniforms; // vector instead of unordered_set since it's much faster for few elements
-typedef std::map<GLuint, GLenum> UniformTypes;
 
 // State types
 typedef std::map<Sha256Hash, const SceGxmProgram *> GXPPtrMap;
+
+struct UniformSetRequest {
+    const SceGxmProgramParameter *parameter;
+    const void *data;
+};
 
 struct CommandBuffer;
 
 enum class Backend : uint32_t {
     OpenGL,
-#ifdef USE_VULKAN
-    Vulkan,
-#endif
+    Vulkan
 };
 
 enum class GXMState : std::uint16_t {
@@ -87,25 +88,38 @@ struct GXMStreamInfo {
     std::size_t size = 0;
 };
 
+// We seperate the following two parts of the stencil state because the first is part of the pipeline creation
+// while the second is dynamic
+struct GxmStencilStateOp {
+    SceGxmStencilFunc func = SCE_GXM_STENCIL_FUNC_ALWAYS;
+    SceGxmStencilOp stencil_fail = SCE_GXM_STENCIL_OP_KEEP;
+    SceGxmStencilOp depth_fail = SCE_GXM_STENCIL_OP_KEEP;
+    SceGxmStencilOp depth_pass = SCE_GXM_STENCIL_OP_KEEP;
+};
+
+struct GxmStencilStateValues {
+    uint8_t compare_mask = 0xff; // TODO What's the default value?
+    uint8_t write_mask = 0xff; // TODO What's the default value?
+    uint8_t ref = 0; // TODO What's the default value?
+};
+
+// we hash the first part of this state as a key for the pipeline cache in vulkan
 struct GxmRecordState {
-    // Programs.
-    Ptr<const SceGxmFragmentProgram> fragment_program;
-    Ptr<const SceGxmVertexProgram> vertex_program;
+    Sha256Hash vertex_program_hash;
+    Sha256Hash fragment_program_hash;
 
-    std::array<GXMStreamInfo, SCE_GXM_MAX_VERTEX_STREAMS> vertex_streams;
-
-    SceGxmColorSurface color_surface;
-    SceGxmDepthStencilSurface depth_stencil_surface;
+    SceGxmColorBaseFormat color_base_format;
+    uint16_t width;
+    uint16_t height;
 
     SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
     SceGxmTwoSidedMode two_sided = SCE_GXM_TWO_SIDED_DISABLED;
     SceGxmRegionClipMode region_clip_mode = SCE_GXM_REGION_CLIP_OUTSIDE;
+    SceGxmPolygonMode front_polygon_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
+    SceGxmPolygonMode back_polygon_mode = SCE_GXM_POLYGON_MODE_TRIANGLE_FILL;
 
-    SceIVector2 region_clip_min;
-    SceIVector2 region_clip_max;
-
-    GxmStencilState front_stencil_state;
-    GxmStencilState back_stencil_state;
+    GxmStencilStateOp front_stencil_state_op;
+    GxmStencilStateOp back_stencil_state_op;
 
     SceGxmDepthFunc front_depth_func = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
     SceGxmDepthFunc back_depth_func = SCE_GXM_DEPTH_FUNC_LESS_EQUAL;
@@ -116,9 +130,35 @@ struct GxmRecordState {
     SceGxmFragmentProgramMode front_side_fragment_program_mode = SCE_GXM_FRAGMENT_PROGRAM_ENABLED;
     SceGxmFragmentProgramMode back_side_fragment_program_mode = SCE_GXM_FRAGMENT_PROGRAM_ENABLED;
 
-    float writing_mask = 0.0f;
-    bool viewport_flat = false;
     bool is_maskupdate = false;
+
+    // Do not put any state not used for the Vulkan pipeline creation before vertex_streams
+    std::array<GXMStreamInfo, SCE_GXM_MAX_VERTEX_STREAMS> vertex_streams;
+
+    // Programs.
+    Ptr<const SceGxmFragmentProgram> fragment_program;
+    Ptr<const SceGxmVertexProgram> vertex_program;
+
+    SceGxmColorSurface color_surface;
+    SceGxmDepthStencilSurface depth_stencil_surface;
+
+    bool viewport_flat = false;
+    std::array<float, 4> viewport_flip = { 1.0f, 1.0f, 1.0f, 1.0f };
+    float z_offset = 0.5f;
+    float z_scale = 0.5f;
+
+    GxmStencilStateValues front_stencil_state_values;
+    GxmStencilStateValues back_stencil_state_values;
+
+    uint32_t line_width = 1;
+
+    int depth_bias_unit = 0;
+    int depth_bias_slope = 0;
+
+    SceIVector2 region_clip_min;
+    SceIVector2 region_clip_max;
+
+    float writing_mask = 0.0f;
 };
 
 struct Context {
@@ -132,29 +172,44 @@ struct Context {
     int render_finish_status = 0;
     int notification_finish_status = 0;
 
-    std::string last_draw_fragment_program_hash;
-    std::string last_draw_vertex_program_hash;
+    std::vector<UniformSetRequest> vertex_set_requests;
+    std::vector<UniformSetRequest> fragment_set_requests;
+
+    Sha256Hash last_draw_fragment_program_hash;
+    Sha256Hash last_draw_vertex_program_hash;
+
+    shader::RenderVertUniformBlock previous_vert_info;
+    shader::RenderFragUniformBlock previous_frag_info;
+
+    shader::RenderVertUniformBlock current_vert_render_info;
+    shader::RenderFragUniformBlock current_frag_render_info;
+
+    std::map<int, std::vector<uint8_t>> ubo_data;
 
     virtual ~Context() = default;
 };
 
 struct ShaderProgram {
-    std::string hash;
+    Sha256Hash hash;
     UniformBufferSizes uniform_buffer_sizes; // Size of the buffer in 4-bytes unit
     UniformBufferSizes uniform_buffer_data_offsets; // Offset of the buffer in 4-bytes unit
 
     std::size_t max_total_uniform_buffer_storage;
+    uint16_t texture_count; // max texture index used by the shader + 1
 };
 
 struct FragmentProgram : ShaderProgram {
 };
 
 struct VertexProgram : ShaderProgram {
+    shader::usse::AttributeInformationMap attribute_infos;
+
+    bool stripped_symbols_checked;
 };
 
 struct ShadersHash {
-    std::string frag;
-    std::string vert;
+    Sha256Hash frag;
+    Sha256Hash vert;
 };
 
 struct RenderTarget {

@@ -25,6 +25,10 @@
 #include <renderer/gl/state.h>
 #include <renderer/gl/types.h>
 
+#include <renderer/vulkan/functions.h>
+#include <renderer/vulkan/state.h>
+#include <renderer/vulkan/types.h>
+
 #include <util/align.h>
 #include <util/log.h>
 
@@ -40,14 +44,18 @@ COMMAND_SET_STATE(region_clip) {
 
     render_context->record.region_clip_min.x = static_cast<SceInt>(align_down(xMin, SCE_GXM_TILE_SIZEX));
     render_context->record.region_clip_min.y = static_cast<SceInt>(align_down(yMin, SCE_GXM_TILE_SIZEY));
-    render_context->record.region_clip_max.x = static_cast<SceInt>(align(xMax, SCE_GXM_TILE_SIZEX));
-    render_context->record.region_clip_max.y = static_cast<SceInt>(align(yMax, SCE_GXM_TILE_SIZEY));
+    // borders are inclusive
+    render_context->record.region_clip_max.x = static_cast<SceInt>(align(xMax, SCE_GXM_TILE_SIZEX)) - 1;
+    render_context->record.region_clip_max.y = static_cast<SceInt>(align(yMax, SCE_GXM_TILE_SIZEY)) - 1;
 
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
+    case Backend::OpenGL:
         gl::sync_clipping(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context));
         break;
-    }
+
+    case Backend::Vulkan:
+        vulkan::sync_clipping(*reinterpret_cast<vulkan::VKContext *>(render_context));
+        break;
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -61,14 +69,17 @@ COMMAND_SET_STATE(program) {
 
     if (is_fragment) {
         render_context->record.fragment_program = program.cast<const SceGxmFragmentProgram>();
-        const bool is_maskupdate = render_context->record.fragment_program.get(mem)->is_maskupdate;
-        render_context->record.is_maskupdate = is_maskupdate;
+        const SceGxmFragmentProgram *gxm_program = render_context->record.fragment_program.get(mem);
+        render_context->record.fragment_program_hash = gxm_program->renderer_data->hash;
+        render_context->record.is_maskupdate = gxm_program->is_maskupdate;
 
         switch (renderer.current_backend) {
-        case Backend::OpenGL: {
+        case Backend::OpenGL:
             gl::sync_blending(render_context->record, mem);
             break;
-        }
+
+        case Backend::Vulkan:
+            break;
 
         default:
             REPORT_MISSING(renderer.current_backend);
@@ -76,6 +87,12 @@ COMMAND_SET_STATE(program) {
         }
     } else {
         render_context->record.vertex_program = program.cast<const SceGxmVertexProgram>();
+        const SceGxmVertexProgram *gxm_program = render_context->record.vertex_program.get(mem);
+        render_context->record.vertex_program_hash = gxm_program->renderer_data->hash;
+    }
+
+    if (renderer.current_backend == Backend::Vulkan) {
+        vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
     }
 }
 
@@ -84,41 +101,43 @@ COMMAND_SET_STATE(uniform) {
     const SceGxmProgramParameter *parameter = helper.pop<SceGxmProgramParameter *>();
     const void *data = helper.pop<const void *>();
 
-    switch (renderer.current_backend) {
-    case Backend::OpenGL: {
-        gl::UniformSetRequest request{ parameter, data };
-        gl::GLContext *gl_context = reinterpret_cast<gl::GLContext *>(render_context);
-
-        if (is_vertex) {
-            gl_context->vertex_set_requests.push_back(std::move(request));
-        } else {
-            gl_context->fragment_set_requests.push_back(std::move(request));
-        }
-
-        break;
-    }
-
-    default:
-        REPORT_MISSING(renderer.current_backend);
-        break;
+    UniformSetRequest request{ parameter, data };
+    if (is_vertex) {
+        render_context->vertex_set_requests.push_back(std::move(request));
+    } else {
+        render_context->fragment_set_requests.push_back(std::move(request));
     }
 }
 
 COMMAND_SET_STATE(uniform_buffer) {
-    std::uint8_t *data = helper.pop<std::uint8_t *>();
+    uint8_t *data = helper.pop<std::uint8_t *>();
     const bool is_vertex = helper.pop<bool>();
     const int block_num = helper.pop<int>();
     const std::uint32_t size = helper.pop<std::uint32_t>();
 
+    renderer::ShaderProgram *program = is_vertex ? reinterpret_cast<ShaderProgram *>(render_context->record.vertex_program.get(mem)->renderer_data.get())
+                                                 : reinterpret_cast<ShaderProgram *>(render_context->record.fragment_program.get(mem)->renderer_data.get());
+
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
-        gl::set_uniform_buffer(*reinterpret_cast<gl::GLContext *>(render_context), mem, is_vertex, block_num, size, data, config.log_active_shaders);
+    case Backend::OpenGL:
+        gl::set_uniform_buffer(*reinterpret_cast<gl::GLContext *>(render_context), program, is_vertex, block_num, size, data);
         break;
-    }
+
+    case Backend::Vulkan:
+        vulkan::set_uniform_buffer(*reinterpret_cast<vulkan::VKContext *>(render_context), program, is_vertex, block_num, size, data);
+        break;
 
     default:
         REPORT_MISSING(renderer.current_backend);
-        break;
+        return;
+    }
+
+    const auto offset = program->uniform_buffer_data_offsets.at(block_num);
+    if (offset != static_cast<uint32_t>(-1) && config.log_active_shaders) {
+        const int base_binding_ubo_relative = is_vertex ? 0 : (SCE_GXM_REAL_MAX_UNIFORM_BUFFER + 1);
+
+        std::vector<uint8_t> my_data((uint8_t *)data, (uint8_t *)data + size);
+        render_context->ubo_data[base_binding_ubo_relative + block_num] = my_data;
     }
 
     delete[] data;
@@ -126,7 +145,9 @@ COMMAND_SET_STATE(uniform_buffer) {
 
 COMMAND_SET_STATE(viewport) {
     const bool flat = helper.pop<bool>();
+    render_context->record.viewport_flat = flat;
 
+    const float previous_flip_y = render_context->record.viewport_flip[1];
     if (!flat) {
         const float xOffset = helper.pop<float>();
         const float yOffset = helper.pop<float>();
@@ -135,9 +156,23 @@ COMMAND_SET_STATE(viewport) {
         const float yScale = helper.pop<float>();
         const float zScale = helper.pop<float>();
 
+        const float ymin = yOffset + yScale;
+        const float ymax = yOffset - yScale - 1;
+
+        render_context->record.viewport_flip[0] = 1.0f;
+        render_context->record.viewport_flip[1] = (ymin < ymax) ? -1.0f : 1.0f;
+        render_context->record.viewport_flip[2] = 1.0f;
+        render_context->record.viewport_flip[3] = 1.0f;
+        render_context->record.z_offset = zOffset;
+        render_context->record.z_scale = zScale;
+
         switch (renderer.current_backend) {
         case Backend::OpenGL:
             gl::sync_viewport_real(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), xOffset, yOffset, zOffset, xScale, yScale, zScale);
+            break;
+
+        case Backend::Vulkan:
+            vulkan::sync_viewport_real(*reinterpret_cast<vulkan::VKContext *>(render_context), xOffset, yOffset, zOffset, xScale, yScale, zScale);
             break;
 
         default:
@@ -145,9 +180,39 @@ COMMAND_SET_STATE(viewport) {
             break;
         }
     } else {
+        render_context->record.viewport_flip[0] = 1.0f;
+        render_context->record.viewport_flip[1] = -1.0f;
+        render_context->record.viewport_flip[2] = 1.0f;
+        render_context->record.viewport_flip[3] = 1.0f;
+        render_context->record.z_offset = 0.0f;
+        render_context->record.z_scale = 1.0f;
+
         switch (renderer.current_backend) {
         case Backend::OpenGL:
             gl::sync_viewport_flat(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context));
+            break;
+
+        case Backend::Vulkan:
+            vulkan::sync_viewport_flat(*reinterpret_cast<vulkan::VKContext *>(render_context));
+            break;
+
+        default:
+            REPORT_MISSING(renderer.current_backend);
+            break;
+        }
+    }
+
+    if (previous_flip_y != render_context->record.viewport_flip[1]) {
+        switch (renderer.current_backend) {
+        case Backend::OpenGL:
+            // We need to sync again state that uses the flip
+            gl::sync_cull(render_context->record);
+            gl::sync_clipping(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context));
+            break;
+
+        case Backend::Vulkan:
+            // We need to sync again state that uses the flip
+            vulkan::sync_clipping(*reinterpret_cast<vulkan::VKContext *>(render_context));
             break;
 
         default:
@@ -162,16 +227,19 @@ COMMAND_SET_STATE(depth_bias) {
     const int factor = helper.pop<int>();
     const int unit = helper.pop<int>();
 
-    switch (renderer.current_backend) {
-    case Backend::OpenGL: {
-        if (is_front) {
-            gl::sync_depth_bias(factor, unit, is_front);
-        } else {
-            // LOG_INFO("AAAA");
-        }
+    render_context->record.depth_bias_unit = unit;
+    render_context->record.depth_bias_slope = factor;
 
+    switch (renderer.current_backend) {
+    case Backend::OpenGL:
+        if (is_front)
+            gl::sync_depth_bias(factor, unit, is_front);
         break;
-    }
+
+    case Backend::Vulkan:
+        if (is_front)
+            vulkan::sync_depth_bias(*reinterpret_cast<vulkan::VKContext *>(render_context));
+        break;
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -190,10 +258,13 @@ COMMAND_SET_STATE(depth_func) {
     }
 
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
+    case Backend::OpenGL:
         gl::sync_depth_func(depth_func, is_front);
         break;
-    }
+
+    case Backend::Vulkan:
+        vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
+        break;
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -211,10 +282,13 @@ COMMAND_SET_STATE(depth_write_enable) {
         render_context->record.back_depth_write_mode = mode;
 
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
+    case Backend::OpenGL:
         gl::sync_depth_write_enable(mode, is_front);
         break;
-    }
+
+    case Backend::Vulkan:
+        vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
+        break;
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -225,10 +299,18 @@ COMMAND_SET_STATE(depth_write_enable) {
 COMMAND_SET_STATE(polygon_mode) {
     const bool is_front = helper.pop<bool>();
     const SceGxmPolygonMode mode = helper.pop<SceGxmPolygonMode>();
+    if (is_front)
+        render_context->record.front_polygon_mode = mode;
+    else
+        render_context->record.back_polygon_mode = mode;
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
         gl::sync_polygon_mode(mode, is_front);
+        break;
+
+    case Backend::Vulkan:
+        vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
         break;
 
     default:
@@ -240,12 +322,17 @@ COMMAND_SET_STATE(polygon_mode) {
 COMMAND_SET_STATE(point_line_width) {
     const bool is_front = helper.pop<bool>();
     const std::uint32_t width = helper.pop<std::uint32_t>();
+    if (is_front)
+        render_context->record.line_width = width;
 
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
+    case Backend::OpenGL:
         gl::sync_point_line_width(width, is_front);
         break;
-    }
+
+    case Backend::Vulkan:
+        vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
+        break;
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -256,19 +343,20 @@ COMMAND_SET_STATE(point_line_width) {
 COMMAND_SET_STATE(stencil_func) {
     // Is this the pain that driver guys have to suffer?
     const bool is_front = helper.pop<bool>();
-    GxmStencilState &stencil_state = is_front ? render_context->record.front_stencil_state : render_context->record.back_stencil_state;
+    GxmStencilStateOp &stencil_state_op = is_front ? render_context->record.front_stencil_state_op : render_context->record.back_stencil_state_op;
+    GxmStencilStateValues &stencil_state_vals = is_front ? render_context->record.front_stencil_state_values : render_context->record.back_stencil_state_values;
 
-    stencil_state.func = helper.pop<SceGxmStencilFunc>();
-    stencil_state.stencil_fail = helper.pop<SceGxmStencilOp>();
-    stencil_state.depth_fail = helper.pop<SceGxmStencilOp>();
-    stencil_state.depth_pass = helper.pop<SceGxmStencilOp>();
-    stencil_state.compare_mask = helper.pop<std::uint8_t>();
-    stencil_state.write_mask = helper.pop<std::uint8_t>();
+    stencil_state_op.func = helper.pop<SceGxmStencilFunc>();
+    stencil_state_op.stencil_fail = helper.pop<SceGxmStencilOp>();
+    stencil_state_op.depth_fail = helper.pop<SceGxmStencilOp>();
+    stencil_state_op.depth_pass = helper.pop<SceGxmStencilOp>();
+    stencil_state_vals.compare_mask = helper.pop<std::uint8_t>();
+    stencil_state_vals.write_mask = helper.pop<std::uint8_t>();
 
     if (render_context->record.is_maskupdate) {
-        if (stencil_state.func == SCE_GXM_STENCIL_FUNC_NEVER) {
+        if (stencil_state_op.func == SCE_GXM_STENCIL_FUNC_NEVER) {
             render_context->record.writing_mask = 0.0f;
-        } else if (stencil_state.func == SCE_GXM_STENCIL_FUNC_ALWAYS) {
+        } else if (stencil_state_op.func == SCE_GXM_STENCIL_FUNC_ALWAYS) {
             render_context->record.writing_mask = 1.0f;
         } else {
             assert(false);
@@ -277,10 +365,14 @@ COMMAND_SET_STATE(stencil_func) {
     }
 
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
-        gl::sync_stencil_func(stencil_state, mem, !is_front);
+    case Backend::OpenGL:
+        gl::sync_stencil_func(stencil_state_op, stencil_state_vals, mem, !is_front);
         break;
-    }
+
+    case Backend::Vulkan:
+        vulkan::refresh_pipeline(dynamic_cast<vulkan::VKContext &>(*render_context));
+        vulkan::sync_stencil_func(dynamic_cast<vulkan::VKContext &>(*render_context), !is_front);
+        break;
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -289,20 +381,22 @@ COMMAND_SET_STATE(stencil_func) {
 }
 
 COMMAND_SET_STATE(stencil_ref) {
-    REPORT_STUBBED();
-
     const bool is_front = helper.pop<bool>();
     const uint8_t sref = helper.pop<const unsigned char>();
 
-    GxmStencilState &stencil_state = is_front ? render_context->record.front_stencil_state : render_context->record.back_stencil_state;
+    GxmStencilStateOp &stencil_state_op = is_front ? render_context->record.front_stencil_state_op : render_context->record.back_stencil_state_op;
+    GxmStencilStateValues &stencil_state_vals = is_front ? render_context->record.front_stencil_state_values : render_context->record.back_stencil_state_values;
 
-    stencil_state.ref = sref;
+    stencil_state_vals.ref = sref;
 
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
-        gl::sync_stencil_func(stencil_state, mem, !is_front);
+    case Backend::OpenGL:
+        gl::sync_stencil_func(stencil_state_op, stencil_state_vals, mem, !is_front);
         break;
-    }
+
+    case Backend::Vulkan:
+        vulkan::sync_stencil_func(dynamic_cast<vulkan::VKContext &>(*render_context), !is_front);
+        break;
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -316,7 +410,12 @@ COMMAND_SET_STATE(texture) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
-        gl::sync_texture(static_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), mem, texture_index, texture,
+        gl::sync_texture(dynamic_cast<gl::GLState &>(renderer), *reinterpret_cast<gl::GLContext *>(render_context), mem, texture_index, texture,
+            config, base_path, title_id);
+        break;
+
+    case Backend::Vulkan:
+        vulkan::sync_texture(*reinterpret_cast<vulkan::VKContext *>(render_context), mem, texture_index, texture,
             config, base_path, title_id);
         break;
 
@@ -329,16 +428,36 @@ COMMAND_SET_STATE(texture) {
 COMMAND_SET_STATE(two_sided) {
     const SceGxmTwoSidedMode two_sided = helper.pop<SceGxmTwoSidedMode>();
     render_context->record.two_sided = two_sided;
+
+    switch (renderer.current_backend) {
+    case Backend::OpenGL:
+        // TODO: something should be done here
+        break;
+
+    case Backend::Vulkan:
+        vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
+        vulkan::sync_stencil_func(dynamic_cast<vulkan::VKContext &>(*render_context), false);
+        // this second call is useless if two_sided is disabled
+        vulkan::sync_stencil_func(dynamic_cast<vulkan::VKContext &>(*render_context), true);
+        break;
+
+    default:
+        REPORT_MISSING(renderer.current_backend);
+        break;
+    }
 }
 
 COMMAND_SET_STATE(cull_mode) {
     render_context->record.cull_mode = helper.pop<SceGxmCullMode>();
 
     switch (renderer.current_backend) {
-    case Backend::OpenGL: {
+    case Backend::OpenGL:
         gl::sync_cull(render_context->record);
         break;
-    }
+
+    case Backend::Vulkan:
+        vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
+        break;
 
     default:
         REPORT_MISSING(renderer.current_backend);
@@ -351,22 +470,12 @@ COMMAND_SET_STATE(vertex_stream) {
     const std::size_t stream_index = helper.pop<std::size_t>();
     const std::size_t stream_data_length = helper.pop<std::size_t>();
 
-    switch (renderer.current_backend) {
-    case Backend::OpenGL: {
-        renderer::GXMStreamInfo &info = render_context->record.vertex_streams[stream_index];
-        if (info.data) {
-            delete info.data;
-        }
-        info.data = stream_data;
-        info.size = stream_data_length;
-
-        break;
+    renderer::GXMStreamInfo &info = render_context->record.vertex_streams[stream_index];
+    if (info.data) {
+        delete[] info.data;
     }
-
-    default:
-        REPORT_MISSING(renderer.current_backend);
-        break;
-    }
+    info.data = stream_data;
+    info.size = stream_data_length;
 }
 
 COMMAND_SET_STATE(fragment_program_enable) {
@@ -377,6 +486,10 @@ COMMAND_SET_STATE(fragment_program_enable) {
         render_context->record.front_side_fragment_program_mode = mode;
     else
         render_context->record.back_side_fragment_program_mode = mode;
+
+    if (renderer.current_backend == Backend::Vulkan) {
+        vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
+    }
 }
 
 COMMAND(handle_set_state) {
