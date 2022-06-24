@@ -35,6 +35,8 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
+#include <SDL.h>
+
 #include <algorithm>
 #include <nfd.h>
 #include <pugixml.hpp>
@@ -159,6 +161,7 @@ static bool get_custom_config(GuiState &gui, HostState &host, const std::string 
                 config.resolution_multiplier = gpu_child.attribute("resolution-multiplier").as_int();
                 config.disable_surface_sync = gpu_child.attribute("disable-surface-sync").as_bool();
                 config.enable_fxaa = gpu_child.attribute("enable-fxaa").as_bool();
+                config.v_sync = gpu_child.attribute("v-sync").as_bool();
                 config.anisotropic_filtering = gpu_child.attribute("anisotropic-filtering").as_int();
             }
 
@@ -208,6 +211,7 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
         config.resolution_multiplier = host.cfg.resolution_multiplier;
         config.disable_surface_sync = host.cfg.disable_surface_sync;
         config.enable_fxaa = host.cfg.enable_fxaa;
+        config.v_sync = host.cfg.v_sync;
         config.anisotropic_filtering = host.cfg.anisotropic_filtering;
         config.pstv_mode = host.cfg.pstv_mode;
         config.disable_ngs = host.cfg.disable_ngs;
@@ -263,6 +267,7 @@ static void save_config(GuiState &gui, HostState &host) {
         gpu_child.append_attribute("resolution-multiplier") = config.resolution_multiplier;
         gpu_child.append_attribute("disable-surface-sync") = config.disable_surface_sync;
         gpu_child.append_attribute("enable-fxaa") = config.enable_fxaa;
+        gpu_child.append_attribute("v-sync") = config.v_sync;
         gpu_child.append_attribute("anisotropic-filtering") = config.anisotropic_filtering;
 
         // System
@@ -285,10 +290,23 @@ static void save_config(GuiState &gui, HostState &host) {
         host.cfg.resolution_multiplier = config.resolution_multiplier;
         host.cfg.disable_surface_sync = config.disable_surface_sync;
         host.cfg.enable_fxaa = config.enable_fxaa;
+        host.cfg.v_sync = config.v_sync;
         host.cfg.anisotropic_filtering = config.anisotropic_filtering;
         host.cfg.disable_ngs = config.disable_ngs;
     }
     config::serialize_config(host.cfg, host.cfg.config_path);
+}
+
+static void set_vsync_state(const bool &state) {
+    if (state) {
+        // Try adaptive vsync first, falling back to regular vsync.
+        if (SDL_GL_SetSwapInterval(-1) < 0) {
+            SDL_GL_SetSwapInterval(1);
+        }
+    } else
+        SDL_GL_SetSwapInterval(0);
+
+    LOG_INFO("V-Sync state: {}", state);
 }
 
 /**
@@ -312,6 +330,7 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.resolution_multiplier = config.resolution_multiplier;
         host.cfg.current_config.disable_surface_sync = config.disable_surface_sync;
         host.cfg.current_config.enable_fxaa = config.enable_fxaa;
+        host.cfg.current_config.v_sync = config.v_sync;
         host.cfg.current_config.anisotropic_filtering = config.anisotropic_filtering;
         host.cfg.current_config.disable_ngs = config.disable_ngs;
     } else {
@@ -324,13 +343,17 @@ void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
         host.cfg.current_config.resolution_multiplier = host.cfg.resolution_multiplier;
         host.cfg.current_config.disable_surface_sync = host.cfg.disable_surface_sync;
         host.cfg.current_config.enable_fxaa = host.cfg.enable_fxaa;
+        host.cfg.current_config.v_sync = host.cfg.v_sync;
         host.cfg.current_config.anisotropic_filtering = host.cfg.anisotropic_filtering;
         host.cfg.current_config.disable_ngs = host.cfg.disable_ngs;
     }
+
     // can be changed while ingame
     host.renderer->disable_surface_sync = host.cfg.current_config.disable_surface_sync;
     host.renderer->set_fxaa(host.cfg.current_config.enable_fxaa);
+    set_vsync_state(host.cfg.current_config.v_sync);
     host.renderer->set_anisotropic_filtering(host.cfg.current_config.anisotropic_filtering);
+
     // No change it if app already running
     if (host.io.title_id.empty()) {
         host.kernel.cpu_backend = set_cpu_backend(host.cfg.current_config.cpu_backend);
@@ -489,6 +512,10 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
+        ImGui::SameLine();
+        ImGui::Checkbox("V-Sync", &config.v_sync);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid tearing.");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();

@@ -61,6 +61,7 @@ enum PerfomanceOverleyPosition {
     code(int, "resolution-multiplier", 1, resolution_multiplier)                                        \
     code(bool, "disable-surface-sync", false, disable_surface_sync)                                     \
     code(bool, "enable-fxaa", false, enable_fxaa)                                                       \
+    code(bool, "v-sync", true, v_sync)                                                                  \
     code(int, "anisotropic-filtering", 1, anisotropic_filtering)                                        \
     code(bool, "texture-cache", true, texture_cache)                                                    \
     code(bool, "hashless-texture-cache", false, hashless_texture_cache)                                 \
