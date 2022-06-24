@@ -22,6 +22,7 @@
 #include <../SceIofilemgr/SceIofilemgr.h>
 #include <../SceKernelModulemgr/SceModulemgr.h>
 #include <../SceKernelThreadMgr/SceThreadmgr.h>
+#include <../SceKernelThreadMgr/SceThreadmgrForDriver.h>
 
 #include <cpu/functions.h>
 #include <dlmalloc.h>
@@ -1188,12 +1189,7 @@ EXPORT(SceInt32, sceKernelGetThreadCpuAffinityMask2, SceUID thid) {
 }
 
 EXPORT(SceInt32, sceKernelGetThreadCurrentPriority) {
-    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-
-    if (!thread)
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
-
-    return thread->priority;
+    return CALL_EXPORT(ksceKernelGetThreadCurrentPriority);
 }
 
 EXPORT(int, sceKernelGetThreadEventInfo) {

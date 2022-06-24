@@ -19,6 +19,8 @@
 
 #include <module/module.h>
 
+EXPORT(SceInt32, ksceKernelGetThreadCurrentPriority);
+
 BRIDGE_DECL(ksceKernelCancelCallback)
 BRIDGE_DECL(ksceKernelCancelMsgPipe)
 BRIDGE_DECL(ksceKernelCancelMutex)
