@@ -123,6 +123,8 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     glViewport(static_cast<GLint>(viewport_pos.x), static_cast<GLint>(viewport_pos.y), static_cast<GLsizei>(viewport_size.x),
         static_cast<GLsizei>(viewport_size.y));
 
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClearDepth(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     const auto &shader = enable_fxaa ? m_render_shader_fxaa : m_render_shader_nofilter;
