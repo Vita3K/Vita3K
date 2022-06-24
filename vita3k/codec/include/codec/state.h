@@ -151,6 +151,13 @@ struct Mp3DecoderState : public DecoderState {
     ~Mp3DecoderState() override;
 };
 
+struct ADPCMHistory {
+    int32_t hist1;
+    int32_t hist2;
+    int32_t hist3;
+    int32_t hist4;
+};
+
 struct PCMDecoderState : public DecoderState {
 private:
     std::vector<std::uint8_t> final_result;
@@ -159,7 +166,7 @@ private:
     SwrContext *swr_stereo;
 
 public:
-    std::int32_t adpcm_history[4];
+    ADPCMHistory *adpcm_history;
 
     std::uint32_t source_channels;
 

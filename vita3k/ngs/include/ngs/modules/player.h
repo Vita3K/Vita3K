@@ -57,7 +57,7 @@ struct State {
     std::uint32_t decoded_samples_pending = 0;
     std::uint32_t decoded_samples_passed = 0;
     // needed for he_adpcm because a same decoder can be used for many voices
-    std::int32_t adpcm_history[4] = { 0, 0, 0, 0 };
+    ADPCMHistory *adpcm_history = nullptr;
     // used if the input must be resampled
     SwrContext *swr = nullptr;
 };

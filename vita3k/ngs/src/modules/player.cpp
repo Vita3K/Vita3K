@@ -43,7 +43,11 @@ void Module::on_state_change(ModuleData &data, const VoiceState previous) {
         state->samples_generated_since_key_on = 0;
         state->bytes_consumed_since_key_on = 0;
 
-        std::fill_n(state->adpcm_history, 4, 0);
+        if (state->adpcm_history) {
+            delete[] state->adpcm_history;
+            state->adpcm_history = nullptr;
+        }
+
         if (state->swr)
             swr_free(&state->swr);
     }
@@ -55,8 +59,14 @@ void Module::on_param_change(const MemState &mem, ModuleData &data) {
     const Parameters *new_params = reinterpret_cast<Parameters *>(data.info.data.get(mem));
 
     // if playback scaling changed, reset the resampler
-    if (state->swr && (old_params->playback_frequency != new_params->playback_frequency || old_params->playback_scalar != new_params->playback_scalar)) {
-        swr_free(&state->swr);
+    if (old_params->playback_frequency != new_params->playback_frequency || old_params->playback_scalar != new_params->playback_scalar) {
+        if (state->adpcm_history) {
+            delete[] state->adpcm_history;
+            state->adpcm_history = nullptr;
+        }
+
+        if (state->swr)
+            swr_free(&state->swr);
     }
 }
 
@@ -172,33 +182,42 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                 decoder->source_frequency = params->playback_frequency;
                 // Enable ADPCM mode on the decoder if needed, and restore state
                 decoder->he_adpcm = static_cast<bool>(params->type);
-                if (decoder->he_adpcm)
-                    std::copy_n(state->adpcm_history, 4, decoder->adpcm_history);
+                if (decoder->he_adpcm) {
+                    if (!state->adpcm_history) {
+                        state->adpcm_history = new ADPCMHistory[decoder->source_channels];
+
+                        ADPCMHistory hist = {};
+                        std::fill_n(state->adpcm_history, decoder->source_channels, hist);
+                    }
+
+                    if (state->adpcm_history && decoder->adpcm_history)
+                        std::copy_n(state->adpcm_history, decoder->source_channels, decoder->adpcm_history);
+                }
 
                 // Get audio buffer
                 auto *input = params->buffer_params[state->current_buffer].buffer.cast<uint8_t>().get(mem);
 
                 DecoderSize samples_count;
 
-                // we need to know how many bytes we need to send (just enough for the system granularity)
+                // we need to know how many samples (not bytes!) we need to send (just enough for the system granularity)
                 uint32_t samples_needed = granularity - state->decoded_samples_pending;
-                uint32_t bytes_to_send;
 
+                if (params->playback_scalar != 1.0) {
+                    samples_needed = static_cast<uint32_t>(samples_needed * params->playback_scalar) + 0x10;
+                }
+                if (static_cast<int>(params->playback_frequency) != sample_rate) {
+                    samples_needed = static_cast<uint32_t>((samples_needed * params->playback_frequency) / sample_rate) + 0x10;
+                }
+
+                // Convert samples count to actual bytes count that we need
+                uint32_t bytes_to_send;
                 if (decoder->he_adpcm) {
-                    bytes_to_send = (samples_needed * params->channels * 16 + 27) / 28;
+                    bytes_to_send = (samples_needed + 27) / 28 * params->channels * 16;
                 } else {
                     bytes_to_send = samples_needed * params->channels * sizeof(int16_t);
                 }
 
-                if (params->playback_scalar != 1.0) {
-                    bytes_to_send = static_cast<uint32_t>(bytes_to_send * params->playback_scalar + 0x10);
-                }
-                if (static_cast<int>(params->playback_frequency) != sample_rate) {
-                    bytes_to_send = static_cast<uint32_t>((bytes_to_send * params->playback_frequency) / sample_rate + 0x10);
-                }
-
                 // makes the value 4 bits aligned so we have no issue with decoding, adpcm or not and whether the sound is mono or stereo
-                bytes_to_send = (bytes_to_send + 0xF) & ~0xF;
                 bytes_to_send = std::min<uint32_t>(bytes_to_send, params->buffer_params[state->current_buffer].bytes_count - state->current_byte_position_in_buffer);
 
                 // Send buffered audio data to decoder
@@ -209,7 +228,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                 state->total_bytes_consumed += bytes_to_send;
                 // save he_adpcm state
                 if (decoder->he_adpcm)
-                    std::copy_n(decoder->adpcm_history, 4, state->adpcm_history);
+                    std::copy_n(decoder->adpcm_history, decoder->source_channels, state->adpcm_history);
 
                 // Get the amount of samples about to be received from the decoder and dump the value in samples_count
                 decoder->receive(nullptr, &samples_count);
@@ -229,7 +248,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                     // resample the audio
                     int src_sample_rate = static_cast<int>(params->playback_frequency);
                     if (params->playback_scalar != 1.0)
-                        src_sample_rate *= params->playback_scalar;
+                        src_sample_rate = static_cast<int>(src_sample_rate * params->playback_scalar);
 
                     if (!state->swr) {
                         state->swr = swr_alloc_set_opts(nullptr,
@@ -295,7 +314,11 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         state->samples_generated_since_key_on = 0;
         state->bytes_consumed_since_key_on = 0;
 
-        std::fill_n(state->adpcm_history, 4, 0);
+        if (state->adpcm_history) {
+            delete[] state->adpcm_history;
+            state->adpcm_history = nullptr;
+        }
+
         if (state->swr)
             swr_free(&state->swr);
     }
