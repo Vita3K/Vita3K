@@ -533,7 +533,7 @@ static bool format_need_temp_storage(const GLState &state, SceGxmColorSurface &s
     return false;
 }
 
-static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, std::uint8_t *source, const std::uint32_t width, const std::uint32_t height, const std::uint32_t stride,
+static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, std::uint8_t *source, std::uint32_t width, std::uint32_t height, const std::uint32_t stride,
     SceGxmColorSurface &surface) {
     uint8_t *curr_input = reinterpret_cast<uint8_t *>(source);
     uint8_t *curr_output = reinterpret_cast<uint8_t *>(pixels);
@@ -573,6 +573,9 @@ static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, s
             curr_output += end_stride_bytes;
             curr_input += (multiplier - 1) * width * bytes_per_input_pixel;
         }
+
+        width /= multiplier;
+        height /= multiplier;
     }
 
     if (surface.surfaceType == SCE_GXM_COLOR_SURFACE_TILED) {
