@@ -189,6 +189,13 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
             return false;
         }
 
+        if (!adpcm_history) {
+            adpcm_history = new ADPCMHistory[source_channels];
+
+            ADPCMHistory hist = {};
+            std::fill_n(adpcm_history, source_channels, hist);
+        }
+
         const std::uint32_t src_ch = source_channels;
 
         std::int32_t ch = 0;

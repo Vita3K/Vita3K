@@ -183,13 +183,6 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                 // Enable ADPCM mode on the decoder if needed, and restore state
                 decoder->he_adpcm = static_cast<bool>(params->type);
                 if (decoder->he_adpcm) {
-                    if (!decoder->adpcm_history) {
-                        decoder->adpcm_history = new ADPCMHistory[decoder->source_channels]; 
-
-                        ADPCMHistory hist = {};
-                        std::fill_n(decoder->adpcm_history, decoder->source_channels, hist);
-                    }
-
                     if (!state->adpcm_history) {
                         state->adpcm_history = new ADPCMHistory[decoder->source_channels];
 
@@ -208,16 +201,16 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
                 // we need to know how many samples (not bytes!) we need to send (just enough for the system granularity)
                 uint32_t samples_needed = granularity - state->decoded_samples_pending;
-                uint32_t bytes_to_send;
 
                 if (params->playback_scalar != 1.0) {
-                    samples_needed = static_cast<uint32_t>(samples_needed * params->playback_scalar);
+                    samples_needed = static_cast<uint32_t>(samples_needed * params->playback_scalar) + 0x10;
                 }
                 if (static_cast<int>(params->playback_frequency) != sample_rate) {
-                    samples_needed = static_cast<uint32_t>((samples_needed * params->playback_frequency) / sample_rate);
+                    samples_needed = static_cast<uint32_t>((samples_needed * params->playback_frequency) / sample_rate) + 0x10;
                 }
 
                 // Convert samples count to actual bytes count that we need
+                uint32_t bytes_to_send;
                 if (decoder->he_adpcm) {
                     bytes_to_send = (samples_needed + 27) / 28 * params->channels * 16;
                 } else {
