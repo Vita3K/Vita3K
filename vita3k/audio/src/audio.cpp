@@ -34,9 +34,12 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
     const int bytes_available = SDL_AudioStreamAvailable(port.shared.stream.get());
     assert(bytes_available >= 0);
 
+    if (bytes_available == 0)
+        return;
+
     // Running out of data?
-    // The (len * 2) is just a guess that seems to work.
-    if (bytes_available < (len * 2)) {
+    // The (len * 3) is according to the value in sceAudioOutOutput
+    if (bytes_available < (len * 3)) {
         // Is there a thread waiting for playback to finish?
         if (port.shared.thread >= 0) {
             // Wake the thread up.
@@ -98,6 +101,7 @@ bool init(AudioState &state, ResumeAudioThread resume_thread) {
     desired.callback = &audio_callback;
     desired.userdata = &state;
 
+    // On my computer (Macdu), the obtained specs are AUDIO_F32 with 480 samples (absolutely not what we asked for...)
     if (SDL_OpenAudio(&desired, &state.ro.spec) != 0) {
         LOG_ERROR("SDL audio error: {}", SDL_GetError());
         return false;

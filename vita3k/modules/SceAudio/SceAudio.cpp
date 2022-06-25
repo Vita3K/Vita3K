@@ -123,14 +123,17 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
 
     // If there's lots of audio left to play, stop this thread.
     // The audio callback will wake it up later when it's running out of data.
-    if (available > host.audio.ro.spec.size) {
+    // the 3*host.audio.ro.spec.size is needed for some games with an 480 host audiobuffer
+    // sample size (what SDL audio gives us) to make sure this does not happen
+    // we are supposed to wait for the existing samples to be processed (except the ones just passed)
+    // but this would give a bad audio because the host buffer size is different compared to the guest buffer size
+    // so we need to cache more data to make sure we always have enough
+    if (available >= 3 * host.audio.ro.spec.size) {
         prt->shared.thread = thread_id;
-        lock.unlock();
 
         std::unique_lock<std::mutex> mlock(thread->mutex);
-        if (thread->status != ThreadStatus::run)
-            return 0;
-        thread->status = ThreadStatus::wait;
+        thread->update_status(ThreadStatus::wait);
+        lock.unlock();
         thread->status_cond.wait(mlock, [&]() { return thread->status == ThreadStatus::run; });
     }
 
