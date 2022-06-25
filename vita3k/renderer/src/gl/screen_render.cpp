@@ -126,6 +126,8 @@ void ScreenRenderer::render(const SceFVector2 &viewport_pos, const SceFVector2 &
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClearDepth(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    // should not be needed, but just in case
+    glClearColor(0.968627450f, 0.776470588f, 0.0f, 0.0f);
 
     const auto &shader = enable_fxaa ? m_render_shader_fxaa : m_render_shader_nofilter;
 
