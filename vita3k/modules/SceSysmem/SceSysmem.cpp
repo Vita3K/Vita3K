@@ -73,7 +73,8 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX:
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW:
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE:
-        min_alignment = 0x1000;
+        // should only be 4K, but Freedom War crashes if the alignment is less than 32K...
+        min_alignment = 0x8000;
         break;
     case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW:
         min_alignment = 0x40000;
