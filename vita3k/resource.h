@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,8 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-//{{NO_DEPENDENCIES}}
+#pragma once
+
+#include "gitver.h"
+
 #define IDI_ICON1 101
+
+#define STRINGIZE2(s) #s
+#define STRINGIZE(s) STRINGIZE2(s)
+
+#define FILE_VERSION APP_VER_HI, APP_VER_MID, APP_VER_LO, APP_NUMBER
+#define FILE_VERSION_STR STRINGIZE(APP_VER_HI) "." STRINGIZE(APP_VER_MID) "." STRINGIZE(APP_VER_LO) "." STRINGIZE(APP_NUMBER)
 
 // Next default values for new objects
 //

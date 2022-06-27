@@ -1,6 +1,9 @@
 set(VITA3K_ORG_NAME "Vita3K")
 set(VITA3K_APP_NAME "Vita3K")
-set(VITA3K_APP_VERSION "v0.1.5")
+set(VITA3K_APP_VER_HI 0)
+set(VITA3K_APP_VER_MID 1)
+set(VITA3K_APP_VER_LO 5)
+set(VITA3K_APP_VERSION "v${VITA3K_APP_VER_HI}.${VITA3K_APP_VER_MID}.${VITA3K_APP_VER_LO}")
 
 execute_process(
 	COMMAND git rev-list HEAD --count
@@ -20,12 +23,21 @@ execute_process(
 
 if(GIT_HASH STREQUAL "")
 	set(VITA3K_GIT_REV "Development version")
+	set(GIT_COUNT 0)
 elseif((GIT_BRANCH STREQUAL "master") OR (GIT_BRANCH STREQUAL "HEAD"))
 	set(VITA3K_GIT_REV "${GIT_COUNT}-${GIT_HASH}")
 else()
 	set(VITA3K_GIT_REV "${GIT_COUNT}-${GIT_HASH}-${GIT_BRANCH}")
-
 endif()
+
+file(WRITE ${CMAKE_BINARY_DIR}/vita3k/config/gitver.h
+	"#define APP_VER_HI ${VITA3K_APP_VER_HI}\n"
+	"#define APP_VER_MID ${VITA3K_APP_VER_MID}\n"
+	"#define APP_VER_LO ${VITA3K_APP_VER_LO}\n"
+	"#define APP_NUMBER ${GIT_COUNT}\n"
+)
+
+include_directories(${CMAKE_BINARY_DIR}/vita3k/config)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set(LINUX TRUE)
