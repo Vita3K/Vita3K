@@ -19,4 +19,4 @@ add_library(
 )
 
 target_include_directories(io PUBLIC include)
-target_link_libraries(io PUBLIC better-enums dirent mem rtc util)
+target_link_libraries(io PUBLIC better-enums dirent mem rtc util host)

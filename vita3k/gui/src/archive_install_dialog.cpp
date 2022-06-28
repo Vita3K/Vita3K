@@ -146,7 +146,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
         } else if (state == "installing") {
             title = "Installing";
             ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + (20.f * host.dpi_scale)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_title.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_info.app_title.c_str());
             ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + (20.f * host.dpi_scale)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", indicator["installing"].c_str());
             const float PROGRESS_BAR_WIDTH = 502.f * host.dpi_scale;
@@ -196,7 +196,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
                             if (content.state) {
                                 ImGui::TextWrapped("%s [%s]", content.title.c_str(), content.title_id.c_str());
                                 if (content.category.find("gp") != std::string::npos)
-                                    ImGui::TextColored(GUI_COLOR_TEXT, "Update App to: %s", host.app_version.c_str());
+                                    ImGui::TextColored(GUI_COLOR_TEXT, "Update App to: %s", host.app_info.app_version.c_str());
                             }
                         }
                     }
@@ -232,10 +232,10 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
                 for (const auto &archive : contents_archives) {
                     for (const auto &content : archive.second) {
                         if (content.state) {
-                            host.app_category = content.category;
-                            host.app_title_id = content.title_id;
-                            host.app_content_id = content.content_id;
-                            if (host.app_category != "theme")
+                            host.app_info.app_category = content.category;
+                            host.app_info.app_title_id = content.title_id;
+                            host.app_info.app_content_id = content.content_id;
+                            if (host.app_info.app_category != "theme")
                                 update_notice_info(gui, host, "content");
                             if (content.category == "gd") {
                                 init_user_app(gui, host, content.title_id);

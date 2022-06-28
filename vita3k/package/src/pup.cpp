@@ -15,8 +15,16 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+/**
+ * @file pup.cpp
+ * @brief PlayStation Update Package (`.pup`) handling
+ *
+ * On the PlayStation Vita and just like any other PlayStation console, PUP packages
+ * contain firmware updates
+ */
+
 #include <crypto/aes.h>
-#include <host/sce_types.h>
+#include <package/sce_types.h>
 #include <util/fs.h>
 #include <util/string_utils.h>
 

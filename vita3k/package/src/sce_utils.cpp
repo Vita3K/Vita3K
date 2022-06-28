@@ -15,10 +15,15 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+/**
+ * @file sce_utils.cpp
+ * @brief Utilities to handle SCE binaries
+ */
+
 #include <crypto/aes.h>
 #include <fat16/fat16.h>
-#include <host/sce_types.h>
 #include <miniz.h>
+#include <package/sce_types.h>
 #include <util/string_utils.h>
 
 #include <self.h>

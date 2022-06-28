@@ -175,6 +175,12 @@
  */
 
 /**
+ * @dir vita3k/package
+ *
+ * @brief PS Vita software package handling
+ */
+
+/**
  * @dir vita3k/renderer
  *
  * @brief OpenGL and Vulkan implementations

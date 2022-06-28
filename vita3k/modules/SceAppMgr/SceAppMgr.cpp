@@ -17,8 +17,8 @@
 
 #include "SceAppMgr.h"
 
-#include <host/functions.h>
 #include <kernel/load_self.h>
+#include <package/functions.h>
 
 #include <modules/module_parent.h>
 #include <util/find.h>

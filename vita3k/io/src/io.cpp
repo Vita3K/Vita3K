@@ -688,6 +688,44 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const std::wstr
     return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 }
 
+bool copy_directories(const fs::path &src_path, const fs::path &dst_path) {
+    try {
+        if (!fs::exists(dst_path))
+            fs::create_directories(dst_path);
+
+        for (const auto &src : fs::recursive_directory_iterator(src_path)) {
+            const auto dst_parent_path = dst_path / fs::relative(src, src_path).parent_path();
+            const auto dst_path = dst_parent_path / src.path().filename();
+
+            LOG_INFO("Copy {}", dst_path.string());
+
+            if (fs::is_regular_file(src))
+                fs::copy_file(src, dst_path, fs::copy_option::overwrite_if_exists);
+            else if (!fs::exists(dst_path))
+                fs::create_directory(dst_path);
+        }
+
+        return true;
+    } catch (std::exception &e) {
+        std::cout << e.what();
+        return false;
+    }
+}
+
+bool copy_path(const fs::path src_path, std::wstring pref_path, std::string app_title_id, std::string app_category) {
+    // Check if is path
+    if (app_category.find("gp") != std::string::npos) {
+        const auto app_path{ fs::path(pref_path) / "ux0/app" / app_title_id };
+        const auto result = copy_directories(src_path, app_path);
+
+        fs::remove_all(src_path);
+
+        return result;
+    }
+
+    return true;
+}
+
 int create_dir(IOState &io, const char *dir, int mode, const std::wstring &pref_path, const char *export_name, const bool recursive) {
     auto device = device::get_device(dir);
     const auto translated_path = translate_path(dir, device, io.device_paths);

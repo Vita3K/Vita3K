@@ -19,10 +19,10 @@
 
 #include <dialog/types.h>
 #include <host/app_util.h>
-#include <host/functions.h>
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
+#include <package/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 

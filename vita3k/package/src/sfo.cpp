@@ -15,8 +15,16 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <host/functions.h>
-#include <host/sfo.h>
+/**
+ * @file sfo.cpp
+ * @brief PlayStation setting file (`.sfo`) handling
+ *
+ * PlayStation setting files (`.sfo`) contain metadata information usually describing
+ * the content they are accompanying.
+ */
+
+#include <package/functions.h>
+#include <package/sfo.h>
 
 #include <boost/algorithm/string/trim.hpp>
 
@@ -46,26 +54,26 @@ bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &ke
     return true;
 }
 
-void get_param_info(HostState &host, const vfs::FileBuffer param) {
+void get_param_info(sfo::SfoAppInfo &app_info, const vfs::FileBuffer param, int sys_lang) {
     SfoFile sfo_handle;
     sfo::load(sfo_handle, param);
-    sfo::get_data_by_key(host.app_version, sfo_handle, "APP_VER");
-    if (host.app_version[0] == '0')
-        host.app_version.erase(host.app_version.begin());
-    sfo::get_data_by_key(host.app_category, sfo_handle, "CATEGORY");
-    sfo::get_data_by_key(host.app_content_id, sfo_handle, "CONTENT_ID");
-    if (!sfo::get_data_by_key(host.app_addcont, sfo_handle, "INSTALL_DIR_ADDCONT"))
-        sfo::get_data_by_key(host.app_addcont, sfo_handle, "TITLE_ID");
-    if (!sfo::get_data_by_key(host.app_savedata, sfo_handle, "INSTALL_DIR_SAVEDATA"))
-        sfo::get_data_by_key(host.app_savedata, sfo_handle, "TITLE_ID");
-    sfo::get_data_by_key(host.app_parental_level, sfo_handle, "PARENTAL_LEVEL");
-    if (!sfo::get_data_by_key(host.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", host.cfg.sys_lang)))
-        sfo::get_data_by_key(host.app_short_title, sfo_handle, "STITLE");
-    if (!sfo::get_data_by_key(host.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
-        sfo::get_data_by_key(host.app_title, sfo_handle, "TITLE");
-    std::replace(host.app_title.begin(), host.app_title.end(), '\n', ' ');
-    boost::trim(host.app_title);
-    sfo::get_data_by_key(host.app_title_id, sfo_handle, "TITLE_ID");
+    sfo::get_data_by_key(app_info.app_version, sfo_handle, "APP_VER");
+    if (app_info.app_version[0] == '0')
+        app_info.app_version.erase(app_info.app_version.begin());
+    sfo::get_data_by_key(app_info.app_category, sfo_handle, "CATEGORY");
+    sfo::get_data_by_key(app_info.app_content_id, sfo_handle, "CONTENT_ID");
+    if (!sfo::get_data_by_key(app_info.app_addcont, sfo_handle, "INSTALL_DIR_ADDCONT"))
+        sfo::get_data_by_key(app_info.app_addcont, sfo_handle, "TITLE_ID");
+    if (!sfo::get_data_by_key(app_info.app_savedata, sfo_handle, "INSTALL_DIR_SAVEDATA"))
+        sfo::get_data_by_key(app_info.app_savedata, sfo_handle, "TITLE_ID");
+    sfo::get_data_by_key(app_info.app_parental_level, sfo_handle, "PARENTAL_LEVEL");
+    if (!sfo::get_data_by_key(app_info.app_short_title, sfo_handle, fmt::format("STITLE_{:0>2d}", sys_lang)))
+        sfo::get_data_by_key(app_info.app_short_title, sfo_handle, "STITLE");
+    if (!sfo::get_data_by_key(app_info.app_title, sfo_handle, fmt::format("TITLE_{:0>2d}", sys_lang)))
+        sfo::get_data_by_key(app_info.app_title, sfo_handle, "TITLE");
+    std::replace(app_info.app_title.begin(), app_info.app_title.end(), '\n', ' ');
+    boost::trim(app_info.app_title);
+    sfo::get_data_by_key(app_info.app_title_id, sfo_handle, "TITLE_ID");
 }
 
 bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {

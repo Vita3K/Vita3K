@@ -18,10 +18,10 @@
 #include "SceAppMgrUser.h"
 
 #include <host/app_util.h>
-#include <host/functions.h>
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/io.h>
+#include <package/functions.h>
 
 #include <modules/module_parent.h>
 #include <util/find.h>
