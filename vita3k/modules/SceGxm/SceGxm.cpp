@@ -1178,8 +1178,12 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
 
     // needed the first time the sync object is used as the old front buffer
     if (oldBufferSync->last_display == 0) {
-        oldBufferSync->timestamp_ahead++;
-        oldBufferSync->last_display = oldBufferSync->timestamp_ahead;
+        // resogun draws to the front buffer using the fact that the sync object prevents
+        // it from doing so until it is swapped, the first time it happens must be handled
+        // as a special case
+        renderer::wishlist(oldBufferSync, oldBufferSync->timestamp_ahead);
+
+        oldBufferSync->last_display = ++oldBufferSync->timestamp_ahead;
     }
 
     // function may be blocking here (expected behavior)
