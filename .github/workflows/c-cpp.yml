@@ -103,12 +103,20 @@ jobs:
         id: git_short_sha
         run: echo "::set-output name=value::$(git rev-parse --short HEAD)"
 
+      - name: Set Build Variable
+        id: build_variable
+        run: echo "::set-output name=Build_Variable::$(git rev-list HEAD --count)"
+        if: matrix.os == 'ubuntu-latest'
+
       - uses: actions/upload-artifact@v3
         with:
           name: vita3k-${{ steps.git_short_sha.outputs.value }}-${{ matrix.os }}
           # path is set up to be <binary_dir>/bin/<config_type> since that's how multi-config
           # generators work on CMake
           path: build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
+
+    outputs:
+      BuildTag: ${{ steps.build_variable.outputs.Build_Variable }}
 
   create-release:
     needs: [build]
@@ -119,6 +127,9 @@ jobs:
 
       - name: Download Artifacts
         uses: actions/download-artifact@v3
+
+      - name: Get Build Variable
+        run: echo "Build_Variable=${{ needs.build.outputs.BuildTag }}" >> $GITHUB_ENV
 
       - name: Upload
         shell: bash
@@ -132,7 +143,7 @@ jobs:
           ls -al artifacts/
           wget -c https://github.com/tcnksm/ghr/releases/download/v0.14.0/ghr_v0.14.0_linux_amd64.tar.gz
           tar xfv ghr_v0.14.0_linux_amd64.tar.gz
-          ghr_v0.14.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate -n 'Automatic CI builds' -b "Corresponding commit: ${{ github.sha }}\n Vita3K Build ${Build_Variable}" continuous artifacts/
+          ghr_v0.14.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate -n 'Automatic CI builds' -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" continuous artifacts/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
        
