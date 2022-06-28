@@ -18,9 +18,9 @@
 #include "private.h"
 
 #include <gui/functions.h>
-#include <host/functions.h>
-#include <host/pkg.h>
 #include <misc/cpp/imgui_stdlib.h>
+#include <package/functions.h>
+#include <package/pkg.h>
 #include <rif2zrif.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -133,9 +133,9 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
             state = "installing";
         } else if (state == "success") {
             title = indicator["install_complete"];
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s [%s]", host.app_title.c_str(), host.app_title_id.c_str());
-            if (host.app_category.find("gp") != std::string::npos)
-                ImGui::TextColored(GUI_COLOR_TEXT, "Update App to: %s", host.app_version.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s [%s]", host.app_info.app_title.c_str(), host.app_info.app_title_id.c_str());
+            if (host.app_info.app_category.find("gp") != std::string::npos)
+                ImGui::TextColored(GUI_COLOR_TEXT, "Update App to: %s", host.app_info.app_version.c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -153,8 +153,8 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
                     fs::remove(fs::path(string_utils::utf_to_wide(std::string(work_path))));
                     delete_work_file = false;
                 }
-                if ((host.app_category.find("gd") != std::string::npos) || (host.app_category.find("gp") != std::string::npos)) {
-                    init_user_app(gui, host, host.app_title_id);
+                if ((host.app_info.app_category.find("gd") != std::string::npos) || (host.app_info.app_category.find("gp") != std::string::npos)) {
+                    init_user_app(gui, host, host.app_info.app_title_id);
                     save_apps_cache(gui, host);
                 }
                 update_notice_info(gui, host, "content");
@@ -179,7 +179,7 @@ void draw_pkg_install_dialog(GuiState &gui, HostState &host) {
         } else if (state == "installing") {
             title = "Installing";
             ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + 30.f * host.dpi_scale));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_title.c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_info.app_title.c_str());
             ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + 30.f * host.dpi_scale));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", indicator["installing"].c_str());
             const float PROGRESS_BAR_WIDTH = 502.f * host.dpi_scale;

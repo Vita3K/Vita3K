@@ -25,10 +25,10 @@
 
 #include <cpu/functions.h>
 #include <dlmalloc.h>
-#include <host/functions.h>
 #include <io/functions.h>
 #include <kernel/load_self.h>
 #include <kernel/sync_primitives.h>
+#include <package/functions.h>
 
 #include <kernel/types.h>
 #include <rtc/rtc.h>

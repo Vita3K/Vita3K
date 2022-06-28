@@ -28,7 +28,7 @@ void draw_reinstall_dialog(GenericDialogState *status, HostState &host) {
     ImGui::Begin("Reinstall this content?");
     ImGui::Text("This content is already installed.");
     ImGui::Spacing();
-    ImGui::Text("Title: %s.\nTitle ID: %s.\nVersion: %s.", host.app_title.c_str(), host.app_title_id.c_str(), host.app_version.c_str());
+    ImGui::Text("Title: %s.\nTitle ID: %s.\nVersion: %s.", host.app_info.app_title.c_str(), host.app_info.app_title_id.c_str(), host.app_info.app_version.c_str());
     ImGui::Spacing();
     ImGui::Text("Do you want to reinstall it and overwrite existing data?");
     if (ImGui::Button("Yes")) {

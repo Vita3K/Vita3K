@@ -18,7 +18,7 @@
 #include "private.h"
 
 #include <gui/functions.h>
-#include <host/functions.h>
+#include <package/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 

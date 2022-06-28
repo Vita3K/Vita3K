@@ -15,21 +15,25 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+/**
+ * @file pkg.cpp
+ * @brief PlayStation Vita software package (`.pkg`) handling
+ */
+
 #include <F00DKeyEncryptorFactory.h>
 #include <PsvPfsParserConfig.h>
 #include <Utils.h>
 #include <rif2zrif.h>
 
-#include <app/functions.h>
-#include <boost/algorithm/string/trim.hpp>
 #include <crypto/aes.h>
 #include <io/device.h>
+#include <io/functions.h>
 
-#include <host/functions.h>
-#include <host/pkg.h>
-#include <host/sce_types.h>
-#include <host/sfo.h>
 #include <host/state.h>
+#include <package/functions.h>
+#include <package/pkg.h>
+#include <package/sce_types.h>
+#include <package/sfo.h>
 
 #include <util/bytes.h>
 #include <util/log.h>
@@ -81,7 +85,7 @@ bool decrypt_install_nonpdrm(HostState &host, std::string &drmlicpath, const std
     if ((execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) && (title_path.find("theme") == std::string::npos))
         return false;
 
-    if (host.app_category.find("gp") == std::string::npos)
+    if (host.app_info.app_category.find("gp") == std::string::npos)
         copy_license(host, drmlicpath);
 
     fs::remove_all(fs::path(title_id_src));
@@ -212,12 +216,12 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
     infile.seekg(sfo_offset);
     infile.read((char *)&sfo_buffer[0], sfo_size);
     sfo::load(sfo_file, sfo_buffer);
-    sfo::get_param_info(host, sfo_buffer);
+    sfo::get_param_info(host.app_info, sfo_buffer, host.cfg.sys_lang);
 
     if (type == PkgType::PKG_TYPE_VITA_DLC)
-        host.app_content_id = host.app_content_id.substr(20);
+        host.app_info.app_content_id = host.app_info.app_content_id.substr(20);
 
-    if (type == PkgType::PKG_TYPE_VITA_APP && strcmp(host.app_category.c_str(), "gp") == 0) {
+    if (type == PkgType::PKG_TYPE_VITA_APP && strcmp(host.app_info.app_category.c_str(), "gp") == 0) {
         type = PkgType::PKG_TYPE_VITA_PATCH;
     }
 
@@ -225,23 +229,23 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
 
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
-        path /= fs::path("app") / host.app_title_id;
+        path /= fs::path("app") / host.app_info.app_title_id;
         if (fs::exists(path))
             fs::remove_all(path);
-        host.app_title += " (App)";
+        host.app_info.app_title += " (App)";
         break;
     case PkgType::PKG_TYPE_VITA_DLC:
-        path /= fs::path("addcont") / host.app_title_id / host.app_content_id;
-        host.app_title += " (DLC)";
+        path /= fs::path("addcont") / host.app_info.app_title_id / host.app_info.app_content_id;
+        host.app_info.app_title += " (DLC)";
         break;
     case PkgType::PKG_TYPE_VITA_PATCH:
-        path /= fs::path("patch") / host.app_title_id;
-        host.app_title += " (Update)";
+        path /= fs::path("patch") / host.app_info.app_title_id;
+        host.app_info.app_title += " (Update)";
         break;
     case PkgType::PKG_TYPE_VITA_THEME:
-        path /= fs::path("theme") / host.app_content_id;
-        host.app_category = "theme";
-        host.app_title += " (Theme)";
+        path /= fs::path("theme") / host.app_info.app_content_id;
+        host.app_info.app_category = "theme";
+        host.app_info.app_title += " (Theme)";
         break;
     }
 
@@ -342,7 +346,7 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
         break;
     }
 
-    if (!copy_path(host, title_id_src))
+    if (!copy_path(title_id_src, host.pref_path, host.app_info.app_title_id, host.app_info.app_category))
         return false;
 
     create_license(host, zRIF);

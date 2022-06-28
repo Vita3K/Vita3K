@@ -20,15 +20,16 @@
 #include <ctrl/functions.h>
 #include <display/functions.h>
 #include <gui/functions.h>
-#include <host/functions.h>
-#include <host/pkg.h>
-#include <host/sfo.h>
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/load_self.h>
+#include <package/functions.h>
+#include <package/pkg.h>
+#include <package/sfo.h>
 
 #include <modules/module_parent.h>
+#include <string>
 #include <touch/functions.h>
 #include <touch/touch.h>
 #include <util/find.h>
@@ -62,17 +63,17 @@ static const char *miniz_get_error(const ZipPtr &zip) {
 }
 
 static void set_theme_name(HostState &host, vfs::FileBuffer &buf) {
-    host.app_title = gui::get_theme_title_from_buffer(buf);
-    host.app_title_id = string_utils::remove_special_chars(host.app_title);
-    const auto nospace = std::remove_if(host.app_title_id.begin(), host.app_title_id.end(), isspace);
-    host.app_title_id.erase(nospace, host.app_title_id.end());
-    host.app_category = "theme";
-    host.app_title += " (Theme)";
+    host.app_info.app_title = gui::get_theme_title_from_buffer(buf);
+    host.app_info.app_title_id = string_utils::remove_special_chars(host.app_info.app_title);
+    const auto nospace = std::remove_if(host.app_info.app_title_id.begin(), host.app_info.app_title_id.end(), isspace);
+    host.app_info.app_title_id.erase(nospace, host.app_info.app_title_id.end());
+    host.app_info.app_category = "theme";
+    host.app_info.app_title += " (Theme)";
 }
 
 static bool is_nonpdrm(HostState &host, const fs::path &output_path) {
-    const auto app_license_path{ fs::path(host.pref_path) / "ux0/license" / host.app_title_id / fmt::format("{}.rif", host.app_content_id) };
-    const auto is_patch_found_app_license = (host.app_category == "gp") && fs::exists(app_license_path);
+    const auto app_license_path{ fs::path(host.pref_path) / "ux0/license" / host.app_info.app_title_id / fmt::format("{}.rif", host.app_info.app_content_id) };
+    const auto is_patch_found_app_license = (host.app_info.app_category == "gp") && fs::exists(app_license_path);
     if (fs::exists(output_path / "sce_sys/package/work.bin") || is_patch_found_app_license) {
         std::string licpath = is_patch_found_app_license ? app_license_path.string() : output_path.string() + "/sce_sys/package/work.bin";
         LOG_INFO("Decrypt layer: {}", output_path.string());
@@ -88,27 +89,27 @@ static bool is_nonpdrm(HostState &host, const fs::path &output_path) {
 }
 
 static bool set_content_path(HostState &host, const bool is_theme, fs::path &dest_path) {
-    const auto app_path = dest_path / "app" / host.app_title_id;
+    const auto app_path = dest_path / "app" / host.app_info.app_title_id;
 
-    if (host.app_category == "ac") {
+    if (host.app_info.app_category == "ac") {
         if (is_theme) {
-            dest_path /= fs::path("theme") / host.app_content_id;
-            host.app_title += " (Theme)";
+            dest_path /= fs::path("theme") / host.app_info.app_content_id;
+            host.app_info.app_title += " (Theme)";
         } else {
-            host.app_content_id = host.app_content_id.substr(20);
-            dest_path /= fs::path("addcont") / host.app_title_id / host.app_content_id;
-            host.app_title += " (DLC)";
+            host.app_info.app_content_id = host.app_info.app_content_id.substr(20);
+            dest_path /= fs::path("addcont") / host.app_info.app_title_id / host.app_info.app_content_id;
+            host.app_info.app_title += " (DLC)";
         }
-    } else if (host.app_category.find("gp") != std::string::npos) {
+    } else if (host.app_info.app_category.find("gp") != std::string::npos) {
         if (!fs::exists(app_path) || fs::is_empty(app_path)) {
             LOG_ERROR("Install app before patch");
             return false;
         }
-        dest_path /= fs::path("patch") / host.app_title_id;
-        host.app_title += " (Patch)";
+        dest_path /= fs::path("patch") / host.app_info.app_title_id;
+        host.app_info.app_title += " (Patch)";
     } else {
         dest_path = app_path;
-        host.app_title += " (App)";
+        host.app_info.app_title += " (App)";
     }
 
     return true;
@@ -123,12 +124,12 @@ bool install_archive_content(HostState &host, GuiState *gui, const fs::path &arc
 
     auto output_path{ fs::path(host.pref_path) / "ux0" };
     if (mz_zip_reader_extract_file_to_callback(zip.get(), (fs::path(content_path) / sfo_path).string().c_str(), &write_to_buffer, &buffer, 0)) {
-        sfo::get_param_info(host, buffer);
+        sfo::get_param_info(host.app_info, buffer, host.cfg.sys_lang);
         if (!set_content_path(host, is_theme, output_path))
             return false;
     } else if (is_theme) {
         set_theme_name(host, theme);
-        output_path /= fs::path("theme") / host.app_title_id;
+        output_path /= fs::path("theme") / host.app_info.app_title_id;
     } else {
         LOG_CRITICAL("miniz error: {} extracting file: {}", miniz_get_error(zip), sfo_path);
         return false;
@@ -155,7 +156,7 @@ bool install_archive_content(HostState &host, GuiState *gui, const fs::path &arc
             }
             switch (status) {
             case gui::CANCEL_STATE:
-                LOG_INFO("{} already installed, {}", host.app_title_id, host.app_category.find("gd") != std::string::npos ? "launching application..." : "Open home");
+                LOG_INFO("{} already installed, {}", host.app_info.app_title_id, host.app_info.app_category.find("gd") != std::string::npos ? "launching application..." : "Open home");
                 return true;
             case gui::CONFIRM_STATE:
                 fs::remove_all(output_path);
@@ -201,7 +202,7 @@ bool install_archive_content(HostState &host, GuiState *gui, const fs::path &arc
     }
 
     // Rename directory on correct name when is request, Todo of extract zip, no support unicode
-    if (host.app_category == "theme") {
+    if (host.app_info.app_category == "theme") {
         const auto dest = string_utils::utf_to_wide(output_path.string());
         if (output_path != dest) {
             if (fs::exists(dest))
@@ -218,18 +219,17 @@ bool install_archive_content(HostState &host, GuiState *gui, const fs::path &arc
         else
             return false;
     }
-
-    if (!copy_path(host, output_path))
+    if (!copy_path(output_path, host.pref_path, host.app_info.app_title_id, host.app_info.app_category))
         return false;
 
     update_progress();
 
-    LOG_INFO("{} [{}] installed succesfully!", host.app_title, host.app_title_id);
+    LOG_INFO("{} [{}] installed succesfully!", host.app_info.app_title, host.app_info.app_title_id);
 
-    if (!gui->file_menu.archive_install_dialog && (host.app_category != "theme")) {
+    if (!gui->file_menu.archive_install_dialog && (host.app_info.app_category != "theme")) {
         gui::update_notice_info(*gui, host, "content");
-        if ((host.app_category.find("gd") != std::string::npos) || (host.app_category.find("gp") != std::string::npos)) {
-            gui::init_user_app(*gui, host, host.app_title_id);
+        if ((host.app_info.app_category.find("gd") != std::string::npos) || (host.app_info.app_category.find("gp") != std::string::npos)) {
+            gui::init_user_app(*gui, host, host.app_info.app_title_id);
             gui::save_apps_cache(*gui, host);
         }
     }
@@ -308,49 +308,11 @@ std::vector<ContentInfo> install_archive(HostState &host, GuiState *gui, const f
         current++;
         update_progress();
         const bool state = install_archive_content(host, gui, archive_path, zip, path, progress_callback);
-        content_installed.push_back({ host.app_title, host.app_title_id, host.app_category, host.app_content_id, path, state });
+        content_installed.push_back({ host.app_info.app_title, host.app_info.app_title_id, host.app_info.app_category, host.app_info.app_content_id, path, state });
     }
 
     fclose(vpk_fp);
     return content_installed;
-}
-
-static bool copy_directories(const fs::path &src_path, const fs::path &dst_path) {
-    try {
-        if (!fs::exists(dst_path))
-            fs::create_directories(dst_path);
-
-        for (const auto &src : fs::recursive_directory_iterator(src_path)) {
-            const auto dst_parent_path = dst_path / fs::relative(src, src_path).parent_path();
-            const auto dst_path = dst_parent_path / src.path().filename();
-
-            LOG_INFO("Copy {}", dst_path.string());
-
-            if (fs::is_regular_file(src))
-                fs::copy_file(src, dst_path, fs::copy_option::overwrite_if_exists);
-            else if (!fs::exists(dst_path))
-                fs::create_directory(dst_path);
-        }
-
-        return true;
-    } catch (std::exception &e) {
-        std::cout << e.what();
-        return false;
-    }
-}
-
-bool copy_path(HostState &host, const fs::path src_path) {
-    // Check if is path
-    if (host.app_category.find("gp") != std::string::npos) {
-        const auto app_path{ fs::path(host.pref_path) / "ux0/app" / host.app_title_id };
-        const auto result = copy_directories(src_path, app_path);
-
-        fs::remove_all(src_path);
-
-        return result;
-    }
-
-    return true;
 }
 
 static std::vector<fs::path> get_contents_path(const fs::path &path) {
@@ -388,7 +350,7 @@ static bool install_content(HostState &host, GuiState *gui, const fs::path &cont
     const auto is_theme = fs::exists(content_path / "theme.xml");
     auto dst_path{ fs::path(host.pref_path) / "ux0" };
     if (get_buffer(sfo_path)) {
-        sfo::get_param_info(host, buffer);
+        sfo::get_param_info(host.app_info, buffer, host.cfg.sys_lang);
         if (!set_content_path(host, is_theme, dst_path))
             return false;
 
@@ -397,7 +359,7 @@ static bool install_content(HostState &host, GuiState *gui, const fs::path &cont
 
     } else if (get_buffer(theme_path)) {
         set_theme_name(host, buffer);
-        dst_path /= fs::path("theme") / string_utils::utf_to_wide(host.app_title_id);
+        dst_path /= fs::path("theme") / string_utils::utf_to_wide(host.app_info.app_title_id);
     } else {
         LOG_ERROR("Param.sfo file is missing in path", sfo_path.string());
         return false;
@@ -411,17 +373,17 @@ static bool install_content(HostState &host, GuiState *gui, const fs::path &cont
     if (fs::exists(dst_path / "sce_sys/package/") && !is_nonpdrm(host, dst_path))
         return false;
 
-    if (!copy_path(host, dst_path))
+    if (!copy_path(dst_path, host.pref_path, host.app_info.app_title_id, host.app_info.app_category))
         return false;
 
-    LOG_INFO("{} [{}] installed succesfully!", host.app_title, host.app_title_id);
+    LOG_INFO("{} [{}] installed succesfully!", host.app_info.app_title, host.app_info.app_title_id);
 
-    if ((host.app_category.find("gd") != std::string::npos) || (host.app_category.find("gp") != std::string::npos)) {
-        gui::init_user_app(*gui, host, host.app_title_id);
+    if ((host.app_info.app_category.find("gd") != std::string::npos) || (host.app_info.app_category.find("gp") != std::string::npos)) {
+        gui::init_user_app(*gui, host, host.app_info.app_title_id);
         gui::save_apps_cache(*gui, host);
     }
 
-    if (host.app_category != "theme")
+    if (host.app_info.app_category != "theme")
         gui::update_notice_info(*gui, host, "content");
 
     return true;
@@ -518,8 +480,8 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, HostState &host, con
 
     LOG_INFO("Title: {}", host.current_app_title);
     LOG_INFO("Serial: {}", host.io.title_id);
-    LOG_INFO("Version: {}", host.app_version);
-    LOG_INFO("Category: {}", host.app_category);
+    LOG_INFO("Version: {}", host.app_info.app_version);
+    LOG_INFO("Category: {}", host.app_info.app_category);
 
     init_device_paths(host.io);
     init_savedata_app_path(host.io, host.pref_path);

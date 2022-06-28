@@ -23,7 +23,6 @@
 #include <dialog/state.h>
 #include <display/state.h>
 #include <gxm/state.h>
-#include <host/sfo.h>
 #include <host/window.h>
 #include <ime/state.h>
 #include <io/state.h>
@@ -32,6 +31,7 @@
 #include <ngs/state.h>
 #include <nids/types.h>
 #include <np/state.h>
+#include <package/sfo.h>
 #include <renderer/state.h>
 #include <touch/state.h>
 
@@ -43,15 +43,8 @@
 #include <string>
 
 struct HostState {
-    std::string app_version;
-    std::string app_category;
-    std::string app_content_id;
-    std::string app_addcont;
-    std::string app_savedata;
-    std::string app_parental_level;
-    std::string app_short_title;
-    std::string app_title;
-    std::string app_title_id;
+    // App info contained in its `param.sfo` file
+    sfo::SfoAppInfo app_info;
     std::string app_path;
     int32_t app_sku_flag;
     std::string license_content_id;

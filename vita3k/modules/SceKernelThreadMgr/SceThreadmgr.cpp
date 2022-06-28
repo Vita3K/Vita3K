@@ -18,9 +18,9 @@
 #include "SceThreadmgr.h"
 #include <modules/module_parent.h>
 
-#include <host/functions.h>
 #include <kernel/callback.h>
 #include <kernel/sync_primitives.h>
+#include <package/functions.h>
 
 #include <util/lock_and_find.h>
 

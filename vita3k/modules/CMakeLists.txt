@@ -210,6 +210,6 @@ set(SOURCE_LIST
 
 add_library(modules STATIC ${SOURCE_LIST})
 target_include_directories(modules PUBLIC include)
-target_link_libraries(modules PRIVATE xxHash::xxhash)
+target_link_libraries(modules PRIVATE xxHash::xxhash package)
 target_link_libraries(modules PUBLIC module)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})

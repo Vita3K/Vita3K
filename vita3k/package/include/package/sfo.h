@@ -15,9 +15,18 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+/**
+ * @file sfo.h
+ * @brief PlayStation setting file (`.sfo`) handling
+ *
+ * PlayStation setting files (`.sfo`) contain metadata information usually describing
+ * the content they are accompanying.
+ */
+
 #pragma once
 
 #include <cstdint>
+#include <io/vfs.h>
 #include <string>
 #include <utility> // pair
 #include <vector>
@@ -50,3 +59,35 @@ struct SfoFile {
 
     std::vector<SfoEntry> entries;
 };
+
+namespace sfo {
+
+/**
+ * @brief Information about an app as described in its `param.sfo` file
+ */
+struct SfoAppInfo {
+    std::string app_version;
+    std::string app_category;
+    std::string app_content_id;
+    std::string app_addcont;
+    std::string app_savedata;
+    std::string app_parental_level;
+    std::string app_short_title;
+    std::string app_title;
+    std::string app_title_id;
+};
+
+bool get_data_by_id(std::string &out_data, SfoFile &file, int id);
+bool get_data_by_key(std::string &out_data, SfoFile &file, const std::string &key);
+bool load(SfoFile &sfile, const std::vector<uint8_t> &content);
+
+/**
+ * @brief Get the param info object
+ *
+ * @param app_info App information struct to store the information retrieved from the `.sfo` file
+ specified in `param`
+ * @param param File buffer pointing to the `param.sfo` file to parse
+ * @param sys_lang System language. It is used to get translated strings from `param.sfo`
+ */
+void get_param_info(sfo::SfoAppInfo &app_info, const vfs::FileBuffer param, int sys_lang);
+} // namespace sfo

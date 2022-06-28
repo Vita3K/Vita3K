@@ -108,10 +108,11 @@ add_subdirectory(threads)
 add_subdirectory(touch)
 add_subdirectory(util)
 add_subdirectory(gdbstub)
+add_subdirectory(package)
 
 add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
 
-target_link_libraries(vita3k PRIVATE app gui modules)
+target_link_libraries(vita3k PRIVATE app gui modules package)
 if(USE_DISCORD_RICH_PRESENCE)
 	target_link_libraries(vita3k PRIVATE discord-rpc)
 endif()

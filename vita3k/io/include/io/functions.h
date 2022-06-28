@@ -43,6 +43,29 @@ fs::path find_in_cache(IOState &io, const std::string &system_path);
 std::string expand_path(IOState &io, const char *path, const std::wstring &pref_path);
 std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths);
 
+/**
+ * @brief Copy all directories and files from one location into another
+ *
+ * @param src_path Source path to copy directories and files from
+ * @param dst_path Destination path where the directories and files contained in `src_path` are going to be copied
+ * @return true Success
+ * @return false Error
+ */
+bool copy_directories(const fs::path &src_path, const fs::path &dst_path);
+
+/**
+ * @brief Copy all files from a source path to the corresponding path in the emulated PS Vita filesystem
+ * (Vita3K pref path) and delete the source path
+ *
+ * @param src_path Path from the host filesystem
+ * @param pref_path Vita3K pref path
+ * @param app_title_id App title ID (`PCSXXXXXX`)
+ * @param app_category Content type ID as specified by `param.sfo` file
+ * @return true Success
+ * @return false Error
+ */
+bool copy_path(const fs::path src_path, std::wstring pref_path, std::string app_title_id, std::string app_category);
+
 SceUID open_file(IOState &io, const char *path, const int flags, const std::wstring &pref_path, const char *export_name);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);
 int write_file(SceUID fd, const void *data, SceSize size, const IOState &io, const char *export_name);

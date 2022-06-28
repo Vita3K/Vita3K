@@ -19,7 +19,7 @@
 
 #include <gui/functions.h>
 
-#include <host/functions.h>
+#include <package/functions.h>
 #include <util/safe_time.h>
 
 #include <io/VitaIoDevice.h>
@@ -269,9 +269,9 @@ void update_notice_info(GuiState &gui, HostState &host, const std::string &type)
     NoticeList info;
     const auto user_id = type == "content" ? "global" : host.io.user_id;
     if (type == "content") {
-        info.id = host.app_title_id;
-        info.content_id = host.app_content_id;
-        info.group = host.app_category;
+        info.id = host.app_info.app_title_id;
+        info.content_id = host.app_info.app_content_id;
+        info.group = host.app_info.app_category;
     } else {
         const auto trophy_data = gui.trophy_unlock_display_requests.back();
         info.id = trophy_data.np_com_id;

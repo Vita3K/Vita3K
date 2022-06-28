@@ -22,10 +22,10 @@
 #include <config/version.h>
 #include <gui/functions.h>
 #include <gui/state.h>
-#include <host/functions.h>
-#include <host/pkg.h>
 #include <host/state.h>
 #include <modules/module_parent.h>
+#include <package/functions.h>
+#include <package/pkg.h>
 #include <renderer/functions.h>
 #include <renderer/gl/functions.h>
 #include <shader/spirv_recompiler.h>
@@ -188,13 +188,13 @@ int main(int argc, char *argv[]) {
                 return c.category == "gd";
             });
             if ((content_index != contents_info.end()) && content_index->state) {
-                host.app_title_id = content_index->title_id;
+                host.app_info.app_title_id = content_index->title_id;
                 return true;
             }
 
             return false;
         };
-        if ((is_archive && content_is_app()) || (is_directory && (install_contents(host, gui_ptr, *cfg.content_path) == 1) && (host.app_category == "gd")))
+        if ((is_archive && content_is_app()) || (is_directory && (install_contents(host, gui_ptr, *cfg.content_path) == 1) && (host.app_info.app_category == "gd")))
             run_type = app::AppRunType::Extracted;
         else {
             if (is_rif)
@@ -209,7 +209,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (run_type == app::AppRunType::Extracted) {
-        host.io.app_path = cfg.run_app_path ? *cfg.run_app_path : host.app_title_id;
+        host.io.app_path = cfg.run_app_path ? *cfg.run_app_path : host.app_info.app_title_id;
         gui::init_user_app(gui, host, host.io.app_path);
         if (host.cfg.run_app_path.has_value())
             host.cfg.run_app_path.reset();
@@ -264,18 +264,18 @@ int main(int argc, char *argv[]) {
     gui::set_config(gui, host, host.io.app_path);
 
     const auto APP_INDEX = gui::get_app_index(gui, host.io.app_path);
-    host.app_version = APP_INDEX->app_ver;
-    host.app_category = APP_INDEX->category;
-    host.app_content_id = APP_INDEX->content_id;
+    host.app_info.app_version = APP_INDEX->app_ver;
+    host.app_info.app_category = APP_INDEX->category;
+    host.app_info.app_content_id = APP_INDEX->content_id;
     host.io.addcont = APP_INDEX->addcont;
     host.io.savedata = APP_INDEX->savedata;
     host.current_app_title = APP_INDEX->title;
-    host.app_short_title = APP_INDEX->stitle;
+    host.app_info.app_short_title = APP_INDEX->stitle;
     host.io.title_id = APP_INDEX->title_id;
 
     // Check license for PS App Only
     if (host.io.title_id.find("PCS") != std::string::npos)
-        host.app_sku_flag = get_license_sku_flag(host, host.app_content_id);
+        host.app_sku_flag = get_license_sku_flag(host, host.app_info.app_content_id);
 
     if (cfg.console) {
         auto main_thread = host.kernel.threads.at(host.main_thread_id);
