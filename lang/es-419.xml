@@ -18,7 +18,7 @@
 		</configuration>
 		<controls name="Controles">
 			<keyboard_controls>Teclado</keyboard_controls>
-			<controllers>Mandos</controllers>
+			<controllers>Control</controllers>
 		</controls>
 		<help name="Ayuda">
 			<about>Acerca de</about>
@@ -140,7 +140,7 @@
 			</load>
 			<save name="Guardar">
 				<cancel_saving>¿Quieres cancelar el guardado?</cancel_saving>
-				<could_not_save>No se ha podido guardar el archivo.
+				<could_not_save>No se pudo guardar el archivo.
 No hay suficiente espacio libre en la tarjeta de memoria.</could_not_save>
 				<not_free_space>No hay suficiente espacio libre en la tarjeta de memoria.</not_free_space>
 				<new_saved_data>Nuevos datos guardados</new_saved_data>
@@ -162,16 +162,16 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		<app_added_home>Se ha agregado la aplicación a la pantalla de inicio.</app_added_home>
 		<delete_all>Eliminar todo</delete_all>
 		<notif_deleted>Se eliminarán las notificaciones.</notif_deleted>
-		<install_failed>No se ha podido instalar.</install_failed>
+		<install_failed>No se pudo instalar.</install_failed>
 		<install_complete>Instalación completada.</install_complete>
 		<installing>Instalando...</installing>
 		<no_notif>No hay notificaciones.</no_notif>
-		<trophy_earned>¡Has ganado un trofeo!</trophy_earned>
+		<trophy_earned>¡Ganaste un trofeo!</trophy_earned>
 	</indicator>
 
 	<initial_setup>
 		<back>Atrás</back>
-		<completed_setup>Has terminado la configuración inicial.
+		<completed_setup>Terminaste la configuración inicial.
 ¡Tu sistema Vita3K está listo!</completed_setup>
 		<select_language>Selecciona un idioma.</select_language>
 		<next>Siguiente</next>
