@@ -18,7 +18,7 @@
 		</configuration>
 		<controls name="Controles">
 			<keyboard_controls>Teclado</keyboard_controls>
-			<controllers>Mandos</controllers>
+			<controllers>Controladores</controllers>
 		</controls>
 		<help name="Ayuda">
 			<about>Acerca de</about>
@@ -171,7 +171,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 
 	<initial_setup>
 		<back>Atrás</back>
-		<completed_setup>Has terminado la configuración inicial.
+		<completed_setup>Completaste la configuración inicial.
 ¡Tu sistema Vita3K está listo!</completed_setup>
 		<select_language>Selecciona un idioma.</select_language>
 		<next>Siguiente</next>
@@ -183,7 +183,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 	</live_area>
 
 	<settings name="Ajustes">
-		<theme_background name="Tema y fondo">
+		<theme_background name="Tema y Fondo">
 			<default>Predeterminado</default>
 			<theme name="Tema">
 				<information name="Información">
@@ -245,7 +245,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		<earned>Ganado</earned>
 		<name>Nombre</name>
 		<no_trophies>No hay trofeos.
-Podrás ganar trofeos si usas una aplicación compatible con la función de trofeos.</no_trophies>
+Podrás conseguir trofeos si usas una aplicación compatible con la función de trofeos.</no_trophies>
 		<not_earned>No ganado</not_earned>
 		<original>Original</original>
 		<sort>Ordenar</sort>
@@ -260,12 +260,12 @@ Podrás ganar trofeos si usas una aplicación compatible con la función de trof
 		<create_user>Crear usuario</create_user>
 		<user_created>Se ha creado el siguiente usuario</user_created>
 		<edit_user>Modificar usuario</edit_user>
-		<user_name_used>Este nombre ya se está usando.</user_name_used>
+		<user_name_used>Este nombre ya está en uso.</user_name_used>
 		<delete_user>Eliminar usuario</delete_user>
 		<user_delete>Selecciona el usuario que deseas eliminar.</user_delete>
-		<user_delete_msg>Se eliminará al siguiente usuario.</user_delete_msg>
-		<user_delete_message>Si eliminas a este usuario, se borrarán sus datos guardados y sus trofeos.</user_delete_message>
-		<user_delete_warn>Se va a eliminar al usuario.
+		<user_delete_msg>El siguiente usuario será eliminado.</user_delete_msg>
+		<user_delete_message>Si eliminas este usuario, sus datos guardados y sus trofeos también serán borrados.</user_delete_message>
+		<user_delete_warn>El usuario va a ser eliminado.
 ¿Seguro que quieres continuar?</user_delete_warn>
 		<user_deleted>Usuario eliminado.</user_deleted>
 		<change_avatar>Cambiar avatar</change_avatar>
