@@ -159,7 +159,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 	</game_data>
 
 	<indicator>
-		<app_added_home>Se ha agregado la aplicación a la pantalla de inicio.</app_added_home>
+		<app_added_home>La aplicación se ha agregado a la pantalla de inicio.</app_added_home>
 		<delete_all>Eliminar todo</delete_all>
 		<notif_deleted>Se eliminarán las notificaciones.</notif_deleted>
 		<install_failed>No se pudo instalar.</install_failed>
