@@ -26,25 +26,25 @@
 #include <util/lock_and_find.h>
 #include <util/types.h>
 
-static int display_wait(HostState &host, SceUID thread_id, int vcount, const bool is_since_setbuf, const bool is_cb) {
-    const auto &thread = host.kernel.get_thread(thread_id);
+static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const bool is_since_setbuf, const bool is_cb) {
+    const auto &thread = emuenv.kernel.get_thread(thread_id);
 
     uint64_t target_vcount;
     if (is_since_setbuf) {
-        target_vcount = host.display.last_setframe_vblank_count + vcount;
+        target_vcount = emuenv.display.last_setframe_vblank_count + vcount;
     } else {
         // the wait is considered starting from the last time the thread resumed
         // from a vblank wait (sceDisplayWait...) and not from the time this function was called
         // but we still need to wait at least for one vblank
-        const uint64_t next_vsync = host.display.vblank_count + 1;
+        const uint64_t next_vsync = emuenv.display.vblank_count + 1;
         const uint64_t min_vsync = thread->last_vblank_waited + vcount;
         thread->last_vblank_waited = std::max(next_vsync, min_vsync);
         target_vcount = thread->last_vblank_waited;
     }
 
-    wait_vblank(host.display, host.kernel, thread, target_vcount, is_cb);
+    wait_vblank(emuenv.display, emuenv.kernel, thread, target_vcount, is_cb);
 
-    if (host.display.abort.load())
+    if (emuenv.display.abort.load())
         return SCE_DISPLAY_ERROR_NO_PIXEL_DATA;
 
     return SCE_DISPLAY_ERROR_OK;
@@ -56,14 +56,14 @@ EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDispl
     else if (sync != SCE_DISPLAY_SETBUF_NEXTFRAME && sync != SCE_DISPLAY_SETBUF_IMMEDIATE)
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_UPDATETIMING);
 
-    const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
+    const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
 
     DisplayFrameInfo *info;
     // ignore value of sync in GetFrameBuf
-    if (host.display.has_next_frame) {
-        info = &host.display.next_frame;
+    if (emuenv.display.has_next_frame) {
+        info = &emuenv.display.next_frame;
     } else {
-        info = &host.display.frame;
+        info = &emuenv.display.frame;
     }
 
     pFrameBuf->base = info->base;
@@ -115,20 +115,20 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
     }
 
     {
-        const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
+        const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
 
-        host.display.has_next_frame = true;
-        DisplayFrameInfo &info = host.display.next_frame;
+        emuenv.display.has_next_frame = true;
+        DisplayFrameInfo &info = emuenv.display.next_frame;
 
         info.base = pFrameBuf->base;
         info.pitch = pFrameBuf->pitch;
         info.pixelformat = pFrameBuf->pixelformat;
         info.image_size.x = pFrameBuf->width;
         info.image_size.y = pFrameBuf->height;
-        host.display.last_setframe_vblank_count = host.display.vblank_count.load();
+        emuenv.display.last_setframe_vblank_count = emuenv.display.vblank_count.load();
     }
 
-    host.frame_count++;
+    emuenv.frame_count++;
 
 #ifdef TRACY_ENABLE
     FrameMarkNamed("SCE frame buffer"); // Tracy - Secondary frame end mark for the emulated frame buffer
@@ -155,7 +155,7 @@ EXPORT(SceInt32, sceDisplayGetRefreshRate, float *pFps) {
 }
 
 EXPORT(SceInt32, sceDisplayGetVcount) {
-    return static_cast<SceInt32>(host.display.vblank_count.load()) & 0xFFFF;
+    return static_cast<SceInt32>(emuenv.display.vblank_count.load()) & 0xFFFF;
 }
 
 EXPORT(int, sceDisplayGetVcountInternal) {
@@ -163,54 +163,54 @@ EXPORT(int, sceDisplayGetVcountInternal) {
 }
 
 EXPORT(SceInt32, sceDisplayRegisterVblankStartCallback, SceUID uid) {
-    const auto cb = lock_and_find(uid, host.kernel.callbacks, host.kernel.mutex);
+    const auto cb = lock_and_find(uid, emuenv.kernel.callbacks, emuenv.kernel.mutex);
     if (!cb)
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
 
-    host.display.vblank_callbacks[uid] = cb;
+    emuenv.display.vblank_callbacks[uid] = cb;
 
     return 0;
 }
 
 EXPORT(SceInt32, sceDisplayUnregisterVblankStartCallback, SceUID uid) {
-    if (host.display.vblank_callbacks.find(uid) == host.display.vblank_callbacks.end())
+    if (emuenv.display.vblank_callbacks.find(uid) == emuenv.display.vblank_callbacks.end())
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
 
-    host.display.vblank_callbacks.erase(uid);
+    emuenv.display.vblank_callbacks.erase(uid);
 
     return 0;
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBuf) {
-    return display_wait(host, thread_id, 1, true, false);
+    return display_wait(emuenv, thread_id, 1, true, false);
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBufCB) {
-    return display_wait(host, thread_id, 1, true, true);
+    return display_wait(emuenv, thread_id, 1, true, true);
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBufMulti, SceUInt vcount) {
-    return display_wait(host, thread_id, static_cast<int>(vcount), true, false);
+    return display_wait(emuenv, thread_id, static_cast<int>(vcount), true, false);
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBufMultiCB, SceUInt vcount) {
-    return display_wait(host, thread_id, static_cast<int>(vcount), true, true);
+    return display_wait(emuenv, thread_id, static_cast<int>(vcount), true, true);
 }
 
 EXPORT(SceInt32, sceDisplayWaitVblankStart) {
-    return display_wait(host, thread_id, 1, false, false);
+    return display_wait(emuenv, thread_id, 1, false, false);
 }
 
 EXPORT(SceInt32, sceDisplayWaitVblankStartCB) {
-    return display_wait(host, thread_id, 1, false, true);
+    return display_wait(emuenv, thread_id, 1, false, true);
 }
 
 EXPORT(SceInt32, sceDisplayWaitVblankStartMulti, SceUInt vcount) {
-    return display_wait(host, thread_id, static_cast<int>(vcount), false, false);
+    return display_wait(emuenv, thread_id, static_cast<int>(vcount), false, false);
 }
 
 EXPORT(SceInt32, sceDisplayWaitVblankStartMultiCB, SceUInt vcount) {
-    return display_wait(host, thread_id, static_cast<int>(vcount), false, true);
+    return display_wait(emuenv, thread_id, static_cast<int>(vcount), false, true);
 }
 
 BRIDGE_IMPL(_sceDisplayGetFrameBuf)

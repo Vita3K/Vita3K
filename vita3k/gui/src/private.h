@@ -19,7 +19,7 @@
 
 #include <gui/state.h>
 
-#include <host/state.h>
+#include <emuenv/state.h>
 
 struct ImVec4;
 
@@ -44,38 +44,38 @@ const ImVec4 IME_NUMERIC_BG = RGBA_TO_FLOAT(59, 42, 61, 255);
 
 #undef RGBA_TO_FLOAT
 
-void draw_main_menu_bar(GuiState &gui, HostState &host);
-void draw_firmware_install_dialog(GuiState &gui, HostState &host);
-void draw_pkg_install_dialog(GuiState &gui, HostState &host);
-void draw_archive_install_dialog(GuiState &gui, HostState &host);
-void draw_license_install_dialog(GuiState &gui, HostState &host);
-void draw_threads_dialog(GuiState &gui, HostState &host);
-void draw_thread_details_dialog(GuiState &gui, HostState &host);
-void draw_semaphores_dialog(GuiState &gui, HostState &host);
-void draw_mutexes_dialog(GuiState &gui, HostState &host);
-void draw_lw_mutexes_dialog(GuiState &gui, HostState &host);
-void draw_lw_condvars_dialog(GuiState &gui, HostState &host);
-void draw_condvars_dialog(GuiState &gui, HostState &host);
-void draw_event_flags_dialog(GuiState &gui, HostState &host);
-void draw_allocations_dialog(GuiState &gui, HostState &host);
-void draw_disassembly_dialog(GuiState &gui, HostState &host);
-void draw_settings_dialog(GuiState &gui, HostState &host);
-void draw_controls_dialog(GuiState &gui, HostState &host);
-void draw_controllers_dialog(GuiState &gui, HostState &host);
-void draw_about_dialog(GuiState &gui, HostState &host);
-void draw_welcome_dialog(GuiState &gui, HostState &host);
+void draw_main_menu_bar(GuiState &gui, EmuEnvState &emuenv);
+void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_threads_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_thread_details_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_semaphores_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_mutexes_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_lw_mutexes_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_lw_condvars_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_condvars_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_event_flags_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_disassembly_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv);
 
-void draw_app_close(GuiState &gui, HostState &host);
-void draw_content_manager(GuiState &gui, HostState &host);
-void draw_home_screen(GuiState &gui, HostState &host);
-void draw_information_bar(GuiState &gui, HostState &host);
-void draw_live_area_screen(GuiState &gui, HostState &host);
-void draw_manual(GuiState &gui, HostState &host);
-void draw_settings(GuiState &gui, HostState &host);
-void draw_start_screen(GuiState &gui, HostState &host);
-void draw_trophy_collection(GuiState &gui, HostState &host);
-void draw_user_management(GuiState &gui, HostState &host);
+void draw_app_close(GuiState &gui, EmuEnvState &emuenv);
+void draw_content_manager(GuiState &gui, EmuEnvState &emuenv);
+void draw_home_screen(GuiState &gui, EmuEnvState &emuenv);
+void draw_information_bar(GuiState &gui, EmuEnvState &emuenv);
+void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv);
+void draw_manual(GuiState &gui, EmuEnvState &emuenv);
+void draw_settings(GuiState &gui, EmuEnvState &emuenv);
+void draw_start_screen(GuiState &gui, EmuEnvState &emuenv);
+void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv);
+void draw_user_management(GuiState &gui, EmuEnvState &emuenv);
 
-void reevaluate_code(GuiState &gui, HostState &host);
+void reevaluate_code(GuiState &gui, EmuEnvState &emuenv);
 
 } // namespace gui

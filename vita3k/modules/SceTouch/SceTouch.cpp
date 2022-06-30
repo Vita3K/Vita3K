@@ -114,7 +114,7 @@ EXPORT(int, sceTouchGetSamplingState, SceUInt32 port, SceTouchSamplingState *pSt
     if (pState == nullptr) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-    *pState = host.touch.touch_mode[port];
+    *pState = emuenv.touch.touch_mode[port];
     return 0;
 }
 
@@ -130,7 +130,7 @@ EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
 
-    return touch_get(thread_id, host, port, pData, nBufs, true);
+    return touch_get(thread_id, emuenv, port, pData, nBufs, true);
 }
 
 EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
@@ -141,7 +141,7 @@ EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
 
-    return touch_get(thread_id, host, port, pData, nBufs, true);
+    return touch_get(thread_id, emuenv, port, pData, nBufs, true);
 }
 
 EXPORT(int, sceTouchPeekRegion) {
@@ -159,7 +159,7 @@ EXPORT(int, sceTouchRead, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
     if (pData == nullptr) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-    return touch_get(thread_id, host, port, pData, nBufs, false);
+    return touch_get(thread_id, emuenv, port, pData, nBufs, false);
 }
 
 EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
@@ -170,7 +170,7 @@ EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
 
-    return touch_get(thread_id, host, port, pData, nBufs, false);
+    return touch_get(thread_id, emuenv, port, pData, nBufs, false);
 }
 
 EXPORT(int, sceTouchReadRegion) {
@@ -200,7 +200,7 @@ EXPORT(int, sceTouchSetSamplingState, SceUInt32 port, SceTouchSamplingState stat
     if (state != SCE_TOUCH_SAMPLING_STATE_STOP && state != SCE_TOUCH_SAMPLING_STATE_START) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
-    host.touch.touch_mode[port] = state;
+    emuenv.touch.touch_mode[port] = state;
     return 0;
 }
 

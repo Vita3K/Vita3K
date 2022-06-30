@@ -18,8 +18,8 @@
 #include "private.h"
 
 #include <config/functions.h>
+#include <emuenv/state.h>
 #include <gui/functions.h>
-#include <host/state.h>
 #include <interface.h>
 
 namespace gui {
@@ -42,7 +42,7 @@ static char const *SDL_key_to_string[]{ "[unset]", "[unknown]", "[unknown]", "[u
     "Keypad Mem+", "Keypad Mem-", "Keypad Mem*", "Keypad Mem/", "Keypad +/-", "Keypad Clear", "Keypad ClearEntry", "Keypad Binary", "Keypad Octal",
     "Keypad Dec", "Keypad HexaDec", "[unset]", "[unset]", "LCtrl", "LShift", "LAlt", "Win/Cmd", "RCtrl", "RShift", "RAlt", "RWin/Cmd" };
 
-static void remapper_button(GuiState &gui, HostState &host, int *button, const char *button_name, const ImVec2 &dummy_size) {
+static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, const char *button_name, const ImVec2 &dummy_size) {
     ImGui::Text("%-16s", button_name);
     ImGui::SameLine();
     ImGui::Dummy(dummy_size);
@@ -51,51 +51,51 @@ static void remapper_button(GuiState &gui, HostState &host, int *button, const c
         gui.old_captured_key = *button;
         gui.is_capturing_keys = true;
         while (gui.is_capturing_keys) {
-            handle_events(host, gui);
+            handle_events(emuenv, gui);
             *button = gui.captured_key;
             if (*button < 0 || *button > 231)
                 *button = 0;
         }
-        config::serialize_config(host.cfg, host.cfg.config_path);
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
 }
 
-void draw_controls_dialog(GuiState &gui, HostState &host) {
-    float width = ImGui::GetWindowWidth() / 1.35f * host.dpi_scale;
-    float height = ImGui::GetWindowHeight() / 1.25f * host.dpi_scale;
+void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    float width = ImGui::GetWindowWidth() / 1.35f * emuenv.dpi_scale;
+    float height = ImGui::GetWindowHeight() / 1.25f * emuenv.dpi_scale;
     ImGui::SetNextWindowSize(ImVec2(width, height));
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("Controls", &gui.controls_menu.controls_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s    %-16s", "Button", "Mapped button");
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_up, "Left stick up", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_down, "Left stick down", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_right, "Left stick right", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_leftstick_left, "Left stick left", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_up, "Right stick up", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_down, "Right stick down", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_right, "Right stick right", ImVec2(0.3f, 0.3f));
-    remapper_button(gui, host, &host.cfg.keyboard_rightstick_left, "Right stick left", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_up, "D-pad up", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_down, "D-pad down", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_right, "D-pad right", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_left, "D-pad left", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_square, "Square button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_cross, "Cross button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_circle, "Circle button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_triangle, "Triangle button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_start, "Start button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_select, "Select button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_psbutton, "PS Button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_l1, "L1 button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_r1, "R1 button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_up, "Left stick up", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_down, "Left stick down", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_right, "Left stick right", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_left, "Left stick left", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_up, "Right stick up", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_down, "Right stick down", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_right, "Right stick right", ImVec2(0.3f, 0.3f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_left, "Right stick left", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_up, "D-pad up", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_down, "D-pad down", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_right, "D-pad right", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_left, "D-pad left", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_square, "Square button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_cross, "Cross button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_circle, "Circle button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_triangle, "Triangle button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_start, "Start button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_select, "Select button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_psbutton, "PS Button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l1, "L1 button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r1, "R1 button", ImVec2(7.0f, 7.0f));
     ImGui::Separator();
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Only in PS TV mode.");
     ImGui::Spacing();
-    remapper_button(gui, host, &host.cfg.keyboard_button_l2, "L2 button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_r2, "R2 button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_l3, "L3 button", ImVec2(7.0f, 7.0f));
-    remapper_button(gui, host, &host.cfg.keyboard_button_r3, "R3 button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l2, "L2 button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r2, "R2 button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l3, "L3 button", ImVec2(7.0f, 7.0f));
+    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r3, "R3 button", ImVec2(7.0f, 7.0f));
     ImGui::Separator();
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s", "GUI");

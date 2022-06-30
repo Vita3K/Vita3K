@@ -18,10 +18,10 @@
 #include "ScePerf.h"
 
 VAR_EXPORT(_pLibPerfCaptureFlagPtr) {
-    auto ptr = Ptr<uint32_t>(alloc(host.mem, 4, "_pLibPerfCaptureFlagPtr"));
-    auto flag = Ptr<uint32_t>(alloc(host.mem, 4, "_pLibPerfCaptureFlag"));
-    *ptr.get(host.mem) = flag.address();
-    *flag.get(host.mem) = 0;
+    auto ptr = Ptr<uint32_t>(alloc(emuenv.mem, 4, "_pLibPerfCaptureFlagPtr"));
+    auto flag = Ptr<uint32_t>(alloc(emuenv.mem, 4, "_pLibPerfCaptureFlag"));
+    *ptr.get(emuenv.mem) = flag.address();
+    *flag.get(emuenv.mem) = 0;
     return ptr.address();
 }
 

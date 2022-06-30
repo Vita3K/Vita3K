@@ -260,10 +260,10 @@ static std::map<int, float> key_row_pos = { { FIRST, 11.f }, { SECOND, 69.f }, {
 static bool numeric_pad = false;
 static std::map<std::string, float> scroll_special;
 
-void draw_ime(Ime &ime, HostState &host) {
+void draw_ime(Ime &ime, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto WINDOW_POS = ImVec2(0.f, display_size.y - (248.f * SCALE.y));
     const auto BUTTON_HEIGHT_SIZE = 52.f * SCALE.y;
     const auto PUNCT_BUTTON_SIZE = ImVec2(56.f * SCALE.x, BUTTON_HEIGHT_SIZE);
@@ -285,7 +285,7 @@ void draw_ime(Ime &ime, HostState &host) {
     ImGui::SetNextWindowPos(ImVec2(0.f, display_size.y - (248.f * SCALE.y)), ImGuiCond_Always, ImVec2(0.f, 0.f));
     ImGui::SetNextWindowSize(ImVec2(display_size.x, 248.f * SCALE.y));
     ImGui::Begin("##ime", &ime.state, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * host.dpi_scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * emuenv.dpi_scale);
     ImGui::PushStyleColor(ImGuiCol_Button, GUI_COLOR_TEXT);
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_BLACK);
     ImGui::SetWindowFontScale(RES_SCALE.x);
@@ -410,7 +410,7 @@ void draw_ime(Ime &ime, HostState &host) {
                 if (is_first)
                     set_second_keyboard(ime);
                 else
-                    init_ime_lang(ime, SceImeLanguage(host.cfg.current_ime_lang));
+                    init_ime_lang(ime, SceImeLanguage(emuenv.cfg.current_ime_lang));
                 current_keyboard = is_first ? SECOND : FIRST;
             }
             ImGui::PopStyleColor(2);
@@ -442,9 +442,9 @@ void draw_ime(Ime &ime, HostState &host) {
     ImGui::PopStyleColor();
     ImGui::SameLine(0, 18.f);
     ImGui::PushStyleColor(ImGuiCol_Button, IME_BUTTON_BG);
-    if (ImGui::Button(numeric_pad ? "ABC" : "@123", host.cfg.ime_langs.size() > 1 ? NUM_BUTTON_SIZE : BUTTON_SIZE))
+    if (ImGui::Button(numeric_pad ? "ABC" : "@123", emuenv.cfg.ime_langs.size() > 1 ? NUM_BUTTON_SIZE : BUTTON_SIZE))
         numeric_pad = !numeric_pad;
-    if (!numeric_pad && host.cfg.ime_langs.size() > 1) {
+    if (!numeric_pad && emuenv.cfg.ime_langs.size() > 1) {
         ImGui::SameLine(0, SPACE);
         if (ImGui::Button("S/K", PUNCT_BUTTON_SIZE))
             ImGui::OpenPopup("S/K");
@@ -453,11 +453,11 @@ void draw_ime(Ime &ime, HostState &host) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            for (const auto &lang : host.cfg.ime_langs) {
-                if (ImGui::MenuItem(get_ime_lang_index(ime, SceImeLanguage(lang))->second.c_str(), nullptr, host.cfg.current_ime_lang == lang)) {
+            for (const auto &lang : emuenv.cfg.ime_langs) {
+                if (ImGui::MenuItem(get_ime_lang_index(ime, SceImeLanguage(lang))->second.c_str(), nullptr, emuenv.cfg.current_ime_lang == lang)) {
                     init_ime_lang(ime, SceImeLanguage(lang));
-                    host.cfg.current_ime_lang = lang;
-                    config::serialize_config(host.cfg, host.base_path);
+                    emuenv.cfg.current_ime_lang = lang;
+                    config::serialize_config(emuenv.cfg, emuenv.base_path);
                 }
             }
             ImGui::EndPopup();

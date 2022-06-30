@@ -31,8 +31,8 @@ static int32_t current_page;
 static std::map<std::string, ImVec2> size_page;
 static std::pair<bool, bool> zoom;
 
-void open_manual(GuiState &gui, HostState &host, const std::string app_path) {
-    if (init_manual(gui, host, app_path)) {
+void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+    if (init_manual(gui, emuenv, app_path)) {
         gui.live_area.information_bar = false;
         gui.live_area.live_area_screen = false;
         gui.live_area.manual = true;
@@ -40,7 +40,7 @@ void open_manual(GuiState &gui, HostState &host, const std::string app_path) {
         LOG_ERROR("Error opening Manual");
 }
 
-bool init_manual(GuiState &gui, HostState &host, const std::string app_path) {
+bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
     current_page = 0;
     gui.manuals.clear();
     size_page.clear();
@@ -48,10 +48,10 @@ bool init_manual(GuiState &gui, HostState &host, const std::string app_path) {
 
     const auto APP_INDEX = get_app_index(gui, app_path);
 
-    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
+    const auto APP_PATH{ fs::path(emuenv.pref_path) / "ux0/app" / app_path };
     auto manual_path{ fs::path("sce_sys/manual/") };
 
-    const auto lang = fmt::format("{:0>2d}", host.cfg.sys_lang);
+    const auto lang = fmt::format("{:0>2d}", emuenv.cfg.sys_lang);
     if (fs::exists(APP_PATH / manual_path / lang))
         manual_path /= lang;
 
@@ -62,7 +62,7 @@ bool init_manual(GuiState &gui, HostState &host, const std::string app_path) {
                 const auto page_path = manual_path / manual.path().filename().string();
 
                 vfs::FileBuffer buffer;
-                vfs::read_app_file(buffer, host.pref_path, app_path, page_path);
+                vfs::read_app_file(buffer, emuenv.pref_path, app_path, page_path);
 
                 if (buffer.empty()) {
                     LOG_WARN("Manual not found for title: {} [{}].", app_path, APP_INDEX->title);
@@ -90,10 +90,10 @@ bool init_manual(GuiState &gui, HostState &host, const std::string app_path) {
 
 static auto hidden_button = false;
 
-void draw_manual(GuiState &gui, HostState &host) {
+void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     ImGui::SetNextWindowPos(ImVec2(-5.f, -1.f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x + 10.f, display_size.y + 2.f), ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(0.999f);
@@ -116,7 +116,7 @@ void draw_manual(GuiState &gui, HostState &host) {
     const auto BUTTON_SIZE = ImVec2(65.f * SCALE.x, 30.f * SCALE.y);
 
     ImGui::SetCursorPos(ImVec2(size_child.x - ((!zoom.second ? 70.0f : 85.f) * SCALE.x), 10.0f * SCALE.y));
-    if (!hidden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_psbutton)) {
+    if (!hidden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_psbutton)) {
         gui.live_area.manual = false;
         gui.live_area.information_bar = true;
         if (!gui.live_area.home_screen)
@@ -126,7 +126,7 @@ void draw_manual(GuiState &gui, HostState &host) {
     const auto wheel_counter = ImGui::GetIO().MouseWheel;
     if (current_page > 0) {
         ImGui::SetCursorPos(ImVec2(5.0f * SCALE.x, size_child.y - (40.0f * SCALE.y)));
-        if ((!hidden_button && !zoom.second && ImGui::Button("<", BUTTON_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_left) || ImGui::IsKeyPressed(host.cfg.keyboard_button_left) || (!zoom.second && wheel_counter == 1))
+        if ((!hidden_button && !zoom.second && ImGui::Button("<", BUTTON_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_left) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_left) || (!zoom.second && wheel_counter == 1))
             --current_page;
     }
     if (!hidden_button && !zoom.second) {
@@ -147,7 +147,7 @@ void draw_manual(GuiState &gui, HostState &host) {
     }
     if (current_page < (int)gui.manuals.size() - 1) {
         ImGui::SetCursorPos(ImVec2(size_child.x - (70.f * SCALE.x), display_size.y - (40.0f * SCALE.y)));
-        if ((!hidden_button && !zoom.second && ImGui::Button(">", BUTTON_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right) || ImGui::IsKeyPressed(host.cfg.keyboard_button_right) || (!zoom.second && (wheel_counter == -1)))
+        if ((!hidden_button && !zoom.second && ImGui::Button(">", BUTTON_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_right) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_right) || (!zoom.second && (wheel_counter == -1)))
             ++current_page;
     }
     ImGui::EndChild();

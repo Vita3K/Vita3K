@@ -34,7 +34,7 @@ std::string get_theme_title_from_buffer(const vfs::FileBuffer buffer) {
     return "Internal error";
 }
 
-bool init_user_background(GuiState &gui, HostState &host, const std::string &user_id, const std::string &background_path) {
+bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string &background_path) {
     gui.user_backgrounds[background_path] = {};
     const std::wstring background_path_wstr = string_utils::utf_to_wide(background_path);
 
@@ -91,7 +91,7 @@ static ImU32 convert_hex_color(const std::string src_color) {
 }
 
 static StartParam start_param;
-void init_theme_start_background(GuiState &gui, HostState &host, const std::string content_id) {
+void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::string content_id) {
     std::string theme_start_name;
 
     start_param = {};
@@ -99,7 +99,7 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
 
     const auto content_id_wstr{ fs::path(string_utils::utf_to_wide(content_id)) };
     if (!content_id.empty() && (content_id != "default")) {
-        const auto THEME_PATH_XML{ fs::path(host.pref_path) / "ux0/theme" / content_id_wstr / "theme.xml" };
+        const auto THEME_PATH_XML{ fs::path(emuenv.pref_path) / "ux0/theme" / content_id_wstr / "theme.xml" };
         pugi::xml_document doc;
         if (doc.load_file(THEME_PATH_XML.c_str())) {
             const auto theme = doc.child("theme");
@@ -139,14 +139,14 @@ void init_theme_start_background(GuiState &gui, HostState &host, const std::stri
 
     if (theme_start_name.empty()) {
         const auto DEFAULT_START_PATH{ fs::path("data/internal/keylock/keylock.png") };
-        if (fs::exists(fs::path(host.pref_path) / "vs0" / DEFAULT_START_PATH))
-            vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, DEFAULT_START_PATH);
+        if (fs::exists(fs::path(emuenv.pref_path) / "vs0" / DEFAULT_START_PATH))
+            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, DEFAULT_START_PATH);
         else {
             LOG_WARN("Default start background not found, install firmware for fix this.");
             return;
         }
     } else
-        vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, fs::path("theme") / content_id_wstr / theme_start_name);
+        vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_wstr / theme_start_name);
 
     if (buffer.empty()) {
         LOG_WARN("Background not found: '{}', for content id: {}.", theme_start_name, content_id);
@@ -195,7 +195,7 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
     return gui.start_background;
 }
 
-bool init_theme(GuiState &gui, HostState &host, const std::string content_id) {
+bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string content_id) {
     std::vector<std::string> theme_bg_name;
     std::map<std::string, std::string> theme_icon_name = {
         { "NPXS10003", {} },
@@ -214,7 +214,7 @@ bool init_theme(GuiState &gui, HostState &host, const std::string content_id) {
     const auto content_id_wstr = string_utils::utf_to_wide(content_id);
 
     if (content_id != "default") {
-        const auto THEME_XML_PATH{ fs::path(host.pref_path) / "ux0/theme" / content_id_wstr / "theme.xml" };
+        const auto THEME_XML_PATH{ fs::path(emuenv.pref_path) / "ux0/theme" / content_id_wstr / "theme.xml" };
         pugi::xml_document doc;
 
         if (doc.load_file(THEME_XML_PATH.c_str())) {
@@ -230,8 +230,8 @@ bool init_theme(GuiState &gui, HostState &host, const std::string content_id) {
                     theme_icon_name["NPXS10008"] = home_property.child("m_trophy").child("m_iconFilePath").text().as_string();
                 if (!home_property.child("m_settings").child("m_iconFilePath").text().empty())
                     theme_icon_name["NPXS10015"] = home_property.child("m_settings").child("m_iconFilePath").text().as_string();
-                if (!home_property.child("m_hostCollabo").child("m_iconFilePath").text().empty())
-                    theme_icon_name["NPXS10026"] = home_property.child("m_hostCollabo").child("m_iconFilePath").text().as_string();
+                if (!home_property.child("m_emuenvCollabo").child("m_iconFilePath").text().empty())
+                    theme_icon_name["NPXS10026"] = home_property.child("m_emuenvCollabo").child("m_iconFilePath").text().as_string();
 
                 // Home
                 for (const auto &param : home_property.child("m_bgParam")) {
@@ -274,7 +274,7 @@ bool init_theme(GuiState &gui, HostState &host, const std::string content_id) {
                     const auto type = notice.first;
                     const auto name = notice.second;
 
-                    vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, fs::path("theme") / content_id_wstr / name);
+                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_wstr / name);
 
                     if (buffer.empty()) {
                         LOG_WARN("Notice icon, Name: '{}', Not found for content id: {}.", name, content_id);
@@ -300,7 +300,7 @@ bool init_theme(GuiState &gui, HostState &host, const std::string content_id) {
             "NPXS10098",
         };
         for (const auto &bg : app_id_bg_list) {
-            if (fs::exists(fs::path(host.pref_path) / "vs0/app" / bg / "sce_sys/pic0.png"))
+            if (fs::exists(fs::path(emuenv.pref_path) / "vs0/app" / bg / "sce_sys/pic0.png"))
                 theme_bg_name.push_back(bg);
         }
     }
@@ -313,12 +313,12 @@ bool init_theme(GuiState &gui, HostState &host, const std::string content_id) {
         const auto title_id = icon.first;
         const auto name = icon.second;
         if (name.empty())
-            vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + title_id + "/sce_sys/icon0.png");
+            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + title_id + "/sce_sys/icon0.png");
         else
-            vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, fs::path("theme") / content_id_wstr / name);
+            vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_wstr / name);
 
         if (buffer.empty()) {
-            buffer = init_default_icon(gui, host);
+            buffer = init_default_icon(gui, emuenv);
             if (buffer.empty()) {
                 LOG_WARN("Name: '{}', Not found icon for system App: {}.", name, content_id);
                 continue;
@@ -341,9 +341,9 @@ bool init_theme(GuiState &gui, HostState &host, const std::string content_id) {
         vfs::FileBuffer buffer;
 
         if (content_id == "default")
-            vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + bg + "/sce_sys/pic0.png");
+            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + bg + "/sce_sys/pic0.png");
         else
-            vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, fs::path("theme") / content_id_wstr / bg);
+            vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_wstr / bg);
 
         if (buffer.empty()) {
             LOG_WARN("Background not found: '{}', for content id: {}.", bg, content_id);
@@ -363,10 +363,10 @@ bool init_theme(GuiState &gui, HostState &host, const std::string content_id) {
     return !gui.theme_backgrounds.empty();
 }
 
-void draw_start_screen(GuiState &gui, HostState &host) {
+void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
 
     ImGui::SetNextWindowPos(ImVec2(0.f, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
@@ -381,7 +381,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
 
     ImGui::GetForegroundDrawList()->AddRect(ImVec2(32.f * SCALE.x, 64.f * SCALE.y), ImVec2(display_size.x - (32.f * SCALE.x), display_size.y - (32.f * SCALE.y)), IM_COL32(255.f, 255.f, 255.f, 255.f), 20.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
 
-    const auto is_12_hour_format = host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
+    const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
     const auto now = std::chrono::system_clock::now();
     const auto tt = std::chrono::system_clock::to_time_t(now);
     tm local = {};
@@ -389,12 +389,12 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     SAFE_LOCALTIME(&tt, &local);
 
     ImGui::PushFont(gui.vita_font);
-    const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * host.dpi_scale);
+    const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * emuenv.dpi_scale);
     const auto SCAL_PIX_DATE_FONT = 34.f / 28.f;
-    const auto DATE_FONT_SIZE = (34.f * host.dpi_scale) * DEFAULT_FONT_SCALE;
+    const auto DATE_FONT_SIZE = (34.f * emuenv.dpi_scale) * DEFAULT_FONT_SCALE;
     const auto SCAL_DATE_FONT_SIZE = DATE_FONT_SIZE / ImGui::GetFontSize();
 
-    auto DATE_TIME = get_date_time(gui, host, const_cast<tm &>(local));
+    auto DATE_TIME = get_date_time(gui, emuenv, const_cast<tm &>(local));
     const auto DATE_STR = DATE_TIME[DateTime::DATE_DETAIL];
     const auto CALC_DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str());
     const auto DATE_INIT_SCALE = ImVec2(start_param.date_pos.x * SCALE.x, start_param.date_pos.y * SCALE.y);
@@ -404,9 +404,9 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     ImGui::PopFont();
 
     ImGui::PushFont(gui.large_font);
-    const auto DEFAULT_LARGE_FONT_SCALE = ImGui::GetFontSize() / (116.f * host.dpi_scale);
-    const auto LARGE_FONT_SIZE = (116.f * host.dpi_scale) * DEFAULT_FONT_SCALE;
-    const auto PIX_LARGE_FONT_SCALE = (96.f * host.dpi_scale) / ImGui::GetFontSize();
+    const auto DEFAULT_LARGE_FONT_SCALE = ImGui::GetFontSize() / (116.f * emuenv.dpi_scale);
+    const auto LARGE_FONT_SIZE = (116.f * emuenv.dpi_scale) * DEFAULT_FONT_SCALE;
+    const auto PIX_LARGE_FONT_SCALE = (96.f * emuenv.dpi_scale) / ImGui::GetFontSize();
 
     const auto CLOCK_STR = DATE_TIME[DateTime::CLOCK];
     const auto CALC_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str());
@@ -414,7 +414,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
 
     const auto DAY_MOMENT_STR = DATE_TIME[DateTime::DAY_MOMENT];
     const auto CALC_DAY_MOMENT_SIZE = ImGui::CalcTextSize(DAY_MOMENT_STR.c_str());
-    const auto DAY_MOMENT_LARGE_FONT_SIZE = (56.f * host.dpi_scale) * DEFAULT_LARGE_FONT_SCALE;
+    const auto DAY_MOMENT_LARGE_FONT_SIZE = (56.f * emuenv.dpi_scale) * DEFAULT_LARGE_FONT_SCALE;
     const auto LARGE_FONT_DAY_MOMENT_SCALE = DAY_MOMENT_LARGE_FONT_SIZE / ImGui::GetFontSize();
     const auto DAY_MOMENT_SIZE = is_12_hour_format ? ImVec2(CALC_DAY_MOMENT_SIZE.x * LARGE_FONT_DAY_MOMENT_SCALE, CALC_DAY_MOMENT_SIZE.y * LARGE_FONT_DAY_MOMENT_SCALE * PIX_LARGE_FONT_SCALE) : ImVec2(0.f, 0.f);
 
@@ -431,7 +431,7 @@ void draw_start_screen(GuiState &gui, HostState &host) {
     }
     ImGui::PopFont();
 
-    if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+    if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
         gui.live_area.start_screen = false;
         gui.live_area.home_screen = true;
     }

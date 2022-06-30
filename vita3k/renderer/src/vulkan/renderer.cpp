@@ -29,7 +29,7 @@
 // In the future, it might be a good idea to take the host's device memory into account.
 constexpr static size_t private_allocation_size = MB(1);
 
-// Some random number as value. It will likely be very different. There are probably SCE feilds for this, I will look later.
+// Some random number as value. It will likely be very different. There are probably SCE fields for this, I will look later.
 constexpr static uint32_t max_sets = 192;
 constexpr static uint32_t max_buffers = 64;
 constexpr static uint32_t max_images = 64;

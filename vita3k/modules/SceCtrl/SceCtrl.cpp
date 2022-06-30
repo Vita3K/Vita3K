@@ -50,11 +50,11 @@ EXPORT(int, sceCtrlGetButtonIntercept) {
 }
 
 EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
-    CtrlState &state = host.ctrl;
+    CtrlState &state = emuenv.ctrl;
     refresh_controllers(state);
-    info->port[0] = host.cfg.current_config.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
+    info->port[0] = emuenv.cfg.current_config.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
     for (int i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
-        info->port[i + 1] = (host.cfg.current_config.pstv_mode && !host.ctrl.free_ports[i]) ? get_type_of_controller(i) : SCE_CTRL_TYPE_UNPAIRED;
+        info->port[i + 1] = (emuenv.cfg.current_config.pstv_mode && !emuenv.ctrl.free_ports[i]) ? get_type_of_controller(i) : SCE_CTRL_TYPE_UNPAIRED;
     }
     return 0;
 }
@@ -67,7 +67,7 @@ EXPORT(int, sceCtrlGetSamplingMode, SceCtrlPadInputMode *mode) {
     if (mode == nullptr) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    *mode = host.ctrl.input_mode;
+    *mode = emuenv.ctrl.input_mode;
     return SCE_KERNEL_OK;
 }
 
@@ -75,13 +75,13 @@ EXPORT(int, sceCtrlGetSamplingModeExt, SceCtrlPadInputMode *mode) {
     if (mode == nullptr) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    *mode = host.ctrl.input_mode_ext;
+    *mode = emuenv.ctrl.input_mode_ext;
     return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceCtrlGetWirelessControllerInfo, SceCtrlWirelessControllerInfo *pInfo) {
-    if (host.cfg.current_config.pstv_mode) {
-        CtrlState &state = host.ctrl;
+    if (emuenv.cfg.current_config.pstv_mode) {
+        CtrlState &state = emuenv.ctrl;
         refresh_controllers(state);
         if (state.controllers_num) {
             for (auto i = 0; i < state.controllers_num; i++)
@@ -94,91 +94,91 @@ EXPORT(int, sceCtrlGetWirelessControllerInfo, SceCtrlWirelessControllerInfo *pIn
 }
 
 EXPORT(bool, sceCtrlIsMultiControllerSupported) {
-    return host.cfg.current_config.pstv_mode;
+    return emuenv.cfg.current_config.pstv_mode;
 }
 
 EXPORT(int, sceCtrlPeekBufferNegative, int port, SceCtrlData *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, true, false);
+    return peek_data(emuenv, port, pad_data, count, true, false);
 }
 
 EXPORT(int, sceCtrlPeekBufferNegative2, int port, SceCtrlData2 *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, true, false);
+    return peek_data(emuenv, port, pad_data, count, true, false);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, false, false);
+    return peek_data(emuenv, port, pad_data, count, false, false);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive2, int port, SceCtrlData2 *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, false, false);
+    return peek_data(emuenv, port, pad_data, count, false, false);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositiveExt, int port, SceCtrlData *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, false, true);
+    return peek_data(emuenv, port, pad_data, count, false, true);
 }
 
 EXPORT(int, sceCtrlPeekBufferPositiveExt2, int port, SceCtrlData2 *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, false, true);
+    return peek_data(emuenv, port, pad_data, count, false, true);
 }
 
 EXPORT(int, sceCtrlReadBufferNegative, int port, SceCtrlData *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, true, false);
+    return peek_data(emuenv, port, pad_data, count, true, false);
 }
 
 EXPORT(int, sceCtrlReadBufferNegative2, int port, SceCtrlData2 *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, true, false);
+    return peek_data(emuenv, port, pad_data, count, true, false);
 }
 
 EXPORT(int, sceCtrlReadBufferPositive, int port, SceCtrlData *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, false, false);
+    return peek_data(emuenv, port, pad_data, count, false, false);
 }
 
 EXPORT(int, sceCtrlReadBufferPositive2, int port, SceCtrlData2 *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, false, false);
+    return peek_data(emuenv, port, pad_data, count, false, false);
 }
 
 EXPORT(int, sceCtrlReadBufferPositiveExt, int port, SceCtrlData *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, false, true);
+    return peek_data(emuenv, port, pad_data, count, false, true);
 }
 
 EXPORT(int, sceCtrlReadBufferPositiveExt2, int port, SceCtrlData2 *pad_data, int count) {
-    if (port > 1 && !host.cfg.current_config.pstv_mode) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
-    return peek_data(host, port, pad_data, count, false, true);
+    return peek_data(emuenv, port, pad_data, count, false, true);
 }
 
 EXPORT(int, sceCtrlRegisterBdRMCCallback) {
@@ -190,11 +190,11 @@ EXPORT(int, sceCtrlResetLightBar) {
 }
 
 EXPORT(int, sceCtrlSetActuator, int port, const SceCtrlActuator *pState) {
-    if (!host.cfg.current_config.pstv_mode) {
+    if (!emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NOT_SUPPORTED);
     }
 
-    CtrlState &state = host.ctrl;
+    CtrlState &state = emuenv.ctrl;
     refresh_controllers(state);
 
     for (const auto &controller : state.controllers) {
@@ -233,20 +233,20 @@ EXPORT(int, sceCtrlSetRapidFire) {
 }
 
 EXPORT(int, sceCtrlSetSamplingMode, SceCtrlPadInputMode mode) {
-    SceCtrlPadInputMode old = host.ctrl.input_mode;
+    SceCtrlPadInputMode old = emuenv.ctrl.input_mode;
     if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_ANALOG_WIDE) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    host.ctrl.input_mode = mode;
+    emuenv.ctrl.input_mode = mode;
     return old;
 }
 
 EXPORT(int, sceCtrlSetSamplingModeExt, SceCtrlPadInputMode mode) {
-    SceCtrlPadInputMode old = host.ctrl.input_mode_ext;
+    SceCtrlPadInputMode old = emuenv.ctrl.input_mode_ext;
     if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_ANALOG_WIDE) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
-    host.ctrl.input_mode_ext = mode;
+    emuenv.ctrl.input_mode_ext = mode;
     return old;
 }
 

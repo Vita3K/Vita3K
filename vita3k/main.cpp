@@ -20,9 +20,9 @@
 #include <app/functions.h>
 #include <config/functions.h>
 #include <config/version.h>
+#include <emuenv/state.h>
 #include <gui/functions.h>
 #include <gui/state.h>
-#include <host/state.h>
 #include <modules/module_parent.h>
 #include <package/functions.h>
 #include <package/pkg.h>
@@ -47,20 +47,20 @@
 #include <cstdlib>
 #include <thread>
 
-static void run_execv(char *argv[], HostState &host) {
+static void run_execv(char *argv[], EmuEnvState &emuenv) {
     char *args[10];
     args[0] = argv[0];
     args[1] = (char *)"-a";
     args[2] = (char *)"true";
-    if (!host.load_app_path.empty()) {
+    if (!emuenv.load_app_path.empty()) {
         args[3] = (char *)"-r";
-        args[4] = host.load_app_path.data();
-        if (!host.load_exec_path.empty()) {
+        args[4] = emuenv.load_app_path.data();
+        if (!emuenv.load_exec_path.empty()) {
             args[5] = (char *)"--self";
-            args[6] = host.load_exec_path.data();
-            if (!host.load_exec_argv.empty()) {
+            args[6] = emuenv.load_exec_path.data();
+            if (!emuenv.load_exec_argv.empty()) {
                 args[7] = (char *)"--app-args";
-                args[8] = host.load_exec_argv.data();
+                args[8] = emuenv.load_exec_argv.data();
                 args[9] = NULL;
             } else
                 args[7] = NULL;
@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
         return InitConfigFailed;
 
     Config cfg{};
-    HostState host;
+    EmuEnvState emuenv;
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
         if (err == QuitRequested) {
             if (cfg.recompile_shader_path.has_value()) {
@@ -106,8 +106,8 @@ int main(int argc, char *argv[]) {
             }
             if (cfg.pkg_path.has_value() && cfg.pkg_zrif.has_value()) {
                 LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
-                host.pref_path = string_utils::utf_to_wide(root_paths.get_pref_path_string());
-                install_pkg(*cfg.pkg_path, host, *cfg.pkg_zrif, [](float) {});
+                emuenv.pref_path = string_utils::utf_to_wide(root_paths.get_pref_path_string());
+                install_pkg(*cfg.pkg_path, emuenv, *cfg.pkg_zrif, [](float) {});
                 return Success;
             }
             return Success;
@@ -150,29 +150,29 @@ int main(int argc, char *argv[]) {
     if (cfg.run_app_path)
         run_type = app::AppRunType::Extracted;
 
-    if (!app::init(host, cfg, root_paths)) {
-        app::error_dialog("Host initialization failed.", host.window.get());
+    if (!app::init(emuenv, cfg, root_paths)) {
+        app::error_dialog("Emulated environment initialization failed.", emuenv.window.get());
         return HostInitFailed;
     }
 
-    init_libraries(host);
+    init_libraries(emuenv);
 
     GuiState gui;
     if (!cfg.console) {
-        gui::pre_init(gui, host);
-        if (!host.cfg.initial_setup) {
-            while (!host.cfg.initial_setup) {
-                if (handle_events(host, gui)) {
-                    gui::draw_begin(gui, host);
-                    gui::draw_initial_setup(gui, host);
-                    gui::draw_end(gui, host.window.get());
+        gui::pre_init(gui, emuenv);
+        if (!emuenv.cfg.initial_setup) {
+            while (!emuenv.cfg.initial_setup) {
+                if (handle_events(emuenv, gui)) {
+                    gui::draw_begin(gui, emuenv);
+                    gui::draw_initial_setup(gui, emuenv);
+                    gui::draw_end(gui, emuenv.window.get());
                 } else
                     return QuitRequested;
             }
-            config::serialize_config(host.cfg, host.base_path);
-            run_execv(argv, host);
+            config::serialize_config(emuenv.cfg, emuenv.base_path);
+            run_execv(argv, emuenv);
         }
-        gui::init(gui, host);
+        gui::init(gui, emuenv);
     }
 
     if (cfg.content_path.has_value()) {
@@ -183,43 +183,43 @@ int main(int argc, char *argv[]) {
         const auto is_directory = fs::is_directory(*cfg.content_path);
 
         const auto content_is_app = [&]() {
-            std::vector<ContentInfo> contents_info = install_archive(host, gui_ptr, string_utils::utf_to_wide(cfg.content_path->string()));
+            std::vector<ContentInfo> contents_info = install_archive(emuenv, gui_ptr, string_utils::utf_to_wide(cfg.content_path->string()));
             const auto content_index = std::find_if(contents_info.begin(), contents_info.end(), [&](const ContentInfo &c) {
                 return c.category == "gd";
             });
             if ((content_index != contents_info.end()) && content_index->state) {
-                host.app_info.app_title_id = content_index->title_id;
+                emuenv.app_info.app_title_id = content_index->title_id;
                 return true;
             }
 
             return false;
         };
-        if ((is_archive && content_is_app()) || (is_directory && (install_contents(host, gui_ptr, *cfg.content_path) == 1) && (host.app_info.app_category == "gd")))
+        if ((is_archive && content_is_app()) || (is_directory && (install_contents(emuenv, gui_ptr, *cfg.content_path) == 1) && (emuenv.app_info.app_category == "gd")))
             run_type = app::AppRunType::Extracted;
         else {
             if (is_rif)
-                copy_license(host, *cfg.content_path);
+                copy_license(emuenv, *cfg.content_path);
             else if (!is_archive && !is_directory)
                 LOG_ERROR("File dropped: [{}] is not supported.", cfg.content_path->string());
 
-            host.cfg.content_path.reset();
+            emuenv.cfg.content_path.reset();
             if (!cfg.console)
-                gui::init_home(gui, host);
+                gui::init_home(gui, emuenv);
         }
     }
 
     if (run_type == app::AppRunType::Extracted) {
-        host.io.app_path = cfg.run_app_path ? *cfg.run_app_path : host.app_info.app_title_id;
-        gui::init_user_app(gui, host, host.io.app_path);
-        if (host.cfg.run_app_path.has_value())
-            host.cfg.run_app_path.reset();
-        else if (host.cfg.content_path.has_value())
-            host.cfg.content_path.reset();
+        emuenv.io.app_path = cfg.run_app_path ? *cfg.run_app_path : emuenv.app_info.app_title_id;
+        gui::init_user_app(gui, emuenv, emuenv.io.app_path);
+        if (emuenv.cfg.run_app_path.has_value())
+            emuenv.cfg.run_app_path.reset();
+        else if (emuenv.cfg.content_path.has_value())
+            emuenv.cfg.content_path.reset();
     }
 
     if (!cfg.console) {
 #if USE_DISCORD
-        auto discord_rich_presence_old = host.cfg.discord_rich_presence;
+        auto discord_rich_presence_old = emuenv.cfg.discord_rich_presence;
 #endif
 
         std::chrono::system_clock::time_point present = std::chrono::system_clock::now();
@@ -240,45 +240,45 @@ int main(int argc, char *argv[]) {
             // save the later time
             later = std::chrono::system_clock::now();
 
-            if (handle_events(host, gui)) {
+            if (handle_events(emuenv, gui)) {
                 ZoneScopedN("UI rendering"); // Tracy - Track UI rendering loop scope
-                gui::draw_begin(gui, host);
+                gui::draw_begin(gui, emuenv);
 
 #if USE_DISCORD
-                discordrpc::update_init_status(host.cfg.discord_rich_presence, &discord_rich_presence_old);
+                discordrpc::update_init_status(emuenv.cfg.discord_rich_presence, &discord_rich_presence_old);
 #endif
-                gui::draw_live_area(gui, host);
-                gui::draw_ui(gui, host);
+                gui::draw_live_area(gui, emuenv);
+                gui::draw_ui(gui, emuenv);
 
-                gui::draw_end(gui, host.window.get());
+                gui::draw_end(gui, emuenv.window.get());
                 FrameMark; // Tracy - Frame end mark for UI rendering loop
             } else {
                 return QuitRequested;
             }
 
-            if (!host.io.app_path.empty())
+            if (!emuenv.io.app_path.empty())
                 run_type = app::AppRunType::Extracted;
         }
     }
 
-    gui::set_config(gui, host, host.io.app_path);
+    gui::set_config(gui, emuenv, emuenv.io.app_path);
 
-    const auto APP_INDEX = gui::get_app_index(gui, host.io.app_path);
-    host.app_info.app_version = APP_INDEX->app_ver;
-    host.app_info.app_category = APP_INDEX->category;
-    host.app_info.app_content_id = APP_INDEX->content_id;
-    host.io.addcont = APP_INDEX->addcont;
-    host.io.savedata = APP_INDEX->savedata;
-    host.current_app_title = APP_INDEX->title;
-    host.app_info.app_short_title = APP_INDEX->stitle;
-    host.io.title_id = APP_INDEX->title_id;
+    const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);
+    emuenv.app_info.app_version = APP_INDEX->app_ver;
+    emuenv.app_info.app_category = APP_INDEX->category;
+    emuenv.app_info.app_content_id = APP_INDEX->content_id;
+    emuenv.io.addcont = APP_INDEX->addcont;
+    emuenv.io.savedata = APP_INDEX->savedata;
+    emuenv.current_app_title = APP_INDEX->title;
+    emuenv.app_info.app_short_title = APP_INDEX->stitle;
+    emuenv.io.title_id = APP_INDEX->title_id;
 
     // Check license for PS App Only
-    if (host.io.title_id.find("PCS") != std::string::npos)
-        host.app_sku_flag = get_license_sku_flag(host, host.app_info.app_content_id);
+    if (emuenv.io.title_id.find("PCS") != std::string::npos)
+        emuenv.app_sku_flag = get_license_sku_flag(emuenv, emuenv.app_info.app_content_id);
 
     if (cfg.console) {
-        auto main_thread = host.kernel.threads.at(host.main_thread_id);
+        auto main_thread = emuenv.kernel.threads.at(emuenv.main_thread_id);
         auto lock = std::unique_lock<std::mutex>(main_thread->mutex);
         main_thread->status_cond.wait(lock, [&]() {
             return main_thread->status == ThreadStatus::dormant;
@@ -288,99 +288,99 @@ int main(int argc, char *argv[]) {
         gui.imgui_state->do_clear_screen = false;
     }
 
-    gui::init_app_background(gui, host, host.io.app_path);
-    gui::update_last_time_app_used(gui, host, host.io.app_path);
+    gui::init_app_background(gui, emuenv, emuenv.io.app_path);
+    gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
 
-    const auto draw_app_background = [&](GuiState &gui, HostState &host) {
-        const auto pos_min = ImVec2(host.viewport_pos.x, host.viewport_pos.y);
-        const auto pos_max = ImVec2(pos_min.x + host.viewport_size.x, pos_min.y + host.viewport_size.y);
+    const auto draw_app_background = [&](GuiState &gui, EmuEnvState &emuenv) {
+        const auto pos_min = ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+        const auto pos_max = ImVec2(pos_min.x + emuenv.viewport_size.x, pos_min.y + emuenv.viewport_size.y);
 
-        if (gui.apps_background.find(host.io.app_path) != gui.apps_background.end())
+        if (gui.apps_background.find(emuenv.io.app_path) != gui.apps_background.end())
             // Display application background
-            ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[host.io.app_path], pos_min, pos_max);
+            ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[emuenv.io.app_path], pos_min, pos_max);
         // Application background not found
         else if (!gui.theme_backgrounds.empty())
             // Display theme background if exist
             ImGui::GetBackgroundDrawList()->AddImage(gui.theme_backgrounds[0], pos_min, pos_max);
         else if (!gui.user_backgrounds.empty())
             // Display user background if exist
-            ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[0]], pos_min, pos_max);
+            ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[gui.users[emuenv.io.user_id].backgrounds[0]], pos_min, pos_max);
     };
 
     Ptr<const void> entry_point;
-    if (const auto err = load_app(entry_point, host, string_utils::utf_to_wide(host.io.app_path)) != Success)
+    if (const auto err = load_app(entry_point, emuenv, string_utils::utf_to_wide(emuenv.io.app_path)) != Success)
         return err;
 
     gui.live_area.information_bar = false;
 
     // Pre-Compile Shader only for glsl, spriv is broken
-    if (!host.cfg.spirv_shader) {
-        auto &glstate = static_cast<renderer::gl::GLState &>(*host.renderer);
-        if (renderer::gl::get_shaders_cache_hashs(glstate, host.base_path.c_str(), host.io.title_id.c_str(), host.self_name.c_str()) && cfg.shader_cache) {
+    if (!emuenv.cfg.spirv_shader) {
+        auto &glstate = static_cast<renderer::gl::GLState &>(*emuenv.renderer);
+        if (renderer::gl::get_shaders_cache_hashs(glstate, emuenv.base_path.c_str(), emuenv.io.title_id.c_str(), emuenv.self_name.c_str()) && cfg.shader_cache) {
             for (const auto &hash : glstate.shaders_cache_hashs) {
-                gui::draw_begin(gui, host);
-                draw_app_background(gui, host);
+                gui::draw_begin(gui, emuenv);
+                draw_app_background(gui, emuenv);
 
-                renderer::gl::pre_compile_program(glstate, host.base_path.c_str(), host.io.title_id.c_str(), host.self_name.c_str(), hash);
-                gui::draw_pre_compiling_shaders_progress(gui, host, uint32_t(glstate.shaders_cache_hashs.size()));
+                renderer::gl::pre_compile_program(glstate, emuenv.base_path.c_str(), emuenv.io.title_id.c_str(), emuenv.self_name.c_str(), hash);
+                gui::draw_pre_compiling_shaders_progress(gui, emuenv, uint32_t(glstate.shaders_cache_hashs.size()));
 
-                gui::draw_end(gui, host.window.get());
-                SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, host.current_app_title, host.io.title_id).c_str());
+                gui::draw_end(gui, emuenv.window.get());
+                SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
             }
         }
     }
 
-    if (const auto err = run_app(host, entry_point) != Success)
+    if (const auto err = run_app(emuenv, entry_point) != Success)
         return err;
 
-    while (host.frame_count == 0 && !host.load_exec) {
+    while (emuenv.frame_count == 0 && !emuenv.load_exec) {
         // Driver acto!
-        renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-            host.io.title_id.c_str(), host.self_name.c_str());
+        renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg, emuenv.base_path.c_str(),
+            emuenv.io.title_id.c_str(), emuenv.self_name.c_str());
 
         {
-            const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
-            host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.gxm, host.mem);
+            const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
+            emuenv.renderer->render_frame(emuenv.viewport_pos, emuenv.viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
         }
 
-        gui::draw_begin(gui, host);
-        gui::draw_common_dialog(gui, host);
-        draw_app_background(gui, host);
+        gui::draw_begin(gui, emuenv);
+        gui::draw_common_dialog(gui, emuenv);
+        draw_app_background(gui, emuenv);
 
-        gui::draw_end(gui, host.window.get());
+        gui::draw_end(gui, emuenv.window.get());
 
-        SDL_SetWindowTitle(host.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, host.current_app_title, host.io.title_id).c_str());
+        SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
     }
 
-    while (handle_events(host, gui) && !host.load_exec) {
+    while (handle_events(emuenv, gui) && !emuenv.load_exec) {
         ZoneScopedN("Game rendering"); // Tracy - Track game rendering loop scope
         // Driver acto!
-        renderer::process_batches(*host.renderer.get(), host.renderer->features, host.mem, host.cfg, host.base_path.c_str(),
-            host.io.title_id.c_str(), host.self_name.c_str());
+        renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg, emuenv.base_path.c_str(),
+            emuenv.io.title_id.c_str(), emuenv.self_name.c_str());
 
         {
-            const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
-            host.renderer->render_frame(host.viewport_pos, host.viewport_size, host.display, host.gxm, host.mem);
+            const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
+            emuenv.renderer->render_frame(emuenv.viewport_pos, emuenv.viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
         }
 
         // Calculate FPS
-        app::calculate_fps(host);
+        app::calculate_fps(emuenv);
 
         // Set shaders compiled display
-        gui::set_shaders_compiled_display(gui, host);
+        gui::set_shaders_compiled_display(gui, emuenv);
 
-        gui::draw_begin(gui, host);
-        gui::draw_common_dialog(gui, host);
-        gui::draw_live_area(gui, host);
+        gui::draw_begin(gui, emuenv);
+        gui::draw_common_dialog(gui, emuenv);
+        gui::draw_live_area(gui, emuenv);
 
-        if (host.cfg.performance_overlay && !gui.live_area.home_screen && !gui.live_area.live_area_screen && gui::get_sys_apps_state(gui))
-            gui::draw_perf_overlay(gui, host);
+        if (emuenv.cfg.performance_overlay && !gui.live_area.home_screen && !gui.live_area.live_area_screen && gui::get_sys_apps_state(gui))
+            gui::draw_perf_overlay(gui, emuenv);
 
-        if (host.display.imgui_render) {
-            gui::draw_ui(gui, host);
+        if (emuenv.display.imgui_render) {
+            gui::draw_ui(gui, emuenv);
         }
 
-        gui::draw_end(gui, host.window.get());
+        gui::draw_end(gui, emuenv.window.get());
         FrameMark; // Tracy - Frame end mark for game rendering loop
     }
 
@@ -388,10 +388,10 @@ int main(int argc, char *argv[]) {
     CoUninitialize();
 #endif
 
-    app::destroy(host, gui.imgui_state.get());
+    app::destroy(emuenv, gui.imgui_state.get());
 
-    if (host.load_exec)
-        run_execv(argv, host);
+    if (emuenv.load_exec)
+        run_execv(argv, emuenv);
 
     return Success;
 }

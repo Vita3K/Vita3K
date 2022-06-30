@@ -301,7 +301,7 @@ EXPORT(int, exit) {
 }
 
 EXPORT(void, fclose, SceUID file) {
-    close_file(host.io, file, export_name);
+    close_file(emuenv.io, file, export_name);
 }
 
 EXPORT(int, fdopen) {
@@ -346,7 +346,7 @@ EXPORT(int, fileno) {
 
 EXPORT(int, fopen, const char *filename, const char *mode) {
     LOG_WARN_IF(mode[0] != 'r', "fopen({}, {})", filename, *mode);
-    return open_file(host.io, filename, SCE_O_RDONLY, host.pref_path, export_name);
+    return open_file(emuenv.io, filename, SCE_O_RDONLY, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, fopen_s) {
@@ -382,7 +382,7 @@ EXPORT(int, fread) {
 }
 
 EXPORT(void, free, Address mem) {
-    free(host.mem, mem);
+    free(emuenv.mem, mem);
 }
 
 EXPORT(int, freopen) {
@@ -610,7 +610,7 @@ EXPORT(int, longjmp) {
 }
 
 EXPORT(int, malloc, SceSize size) {
-    return alloc(host.mem, size, __FUNCTION__);
+    return alloc(emuenv.mem, size, __FUNCTION__);
 }
 
 EXPORT(int, malloc_stats) {
@@ -670,7 +670,7 @@ EXPORT(int, mbtowc) {
 }
 
 EXPORT(Ptr<void>, memalign, uint32_t alignment, uint32_t size) {
-    Address address = alloc(host.mem, size, "memalign", alignment);
+    Address address = alloc(emuenv.mem, size, "memalign", alignment);
 
     STUBBED("No actual alignment.");
     LOG_WARN_IF(address % alignment != 0, "Address {} does not fit alignment of {}.", log_hex(address), alignment);
@@ -703,7 +703,7 @@ EXPORT(int, memmove_s) {
 }
 
 EXPORT(void, memset, Ptr<void> str, int c, uint32_t n) {
-    memset(str.get(host.mem), c, n);
+    memset(str.get(emuenv.mem), c, n);
 }
 
 EXPORT(int, mktime) {
@@ -773,13 +773,13 @@ EXPORT(int, perror) {
 EXPORT(int, printf, const char *format, module::vargs args) {
     std::vector<char> buffer(1024);
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
 
     if (!thread) {
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    const int result = utils::snprintf(buffer.data(), buffer.size(), format, *(thread->cpu), host.mem, args);
+    const int result = utils::snprintf(buffer.data(), buffer.size(), format, *(thread->cpu), emuenv.mem, args);
 
     if (!result) {
         return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
@@ -935,7 +935,7 @@ EXPORT(int, strcasecmp) {
 }
 
 EXPORT(Ptr<char>, strcat, Ptr<char> destination, Ptr<char> source) {
-    strcat(destination.get(host.mem), source.get(host.mem));
+    strcat(destination.get(emuenv.mem), source.get(emuenv.mem));
     return destination;
 }
 
@@ -956,7 +956,7 @@ EXPORT(int, strcoll) {
 }
 
 EXPORT(Ptr<char>, strcpy, Ptr<char> destination, Ptr<char> source) {
-    strcpy(destination.get(host.mem), source.get(host.mem));
+    strcpy(destination.get(emuenv.mem), source.get(emuenv.mem));
     return destination;
 }
 
@@ -1009,7 +1009,7 @@ EXPORT(int, strncmp, const char *str1, const char *str2, SceSize num) {
 }
 
 EXPORT(Ptr<char>, strncpy, Ptr<char> destination, Ptr<char> source, SceSize size) {
-    strncpy(destination.get(host.mem), source.get(host.mem), size);
+    strncpy(destination.get(emuenv.mem), source.get(emuenv.mem), size);
     return destination;
 }
 
@@ -1027,7 +1027,7 @@ EXPORT(int, strpbrk) {
 
 EXPORT(Ptr<char>, strrchr, Ptr<char> str, char ch) {
     Ptr<char> res = Ptr<char>();
-    char *_str = str.get(host.mem);
+    char *_str = str.get(emuenv.mem);
     for (int i = static_cast<int>(strlen(_str) - 1); i >= 0; i--) {
         const char ch1 = _str[i];
         if (ch1 == ch) {

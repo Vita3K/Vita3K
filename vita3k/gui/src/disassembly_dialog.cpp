@@ -25,10 +25,10 @@
 
 namespace gui {
 
-static void evaluate_code(GuiState &gui, HostState &host, uint32_t from, uint32_t count, bool thumb) {
+static void evaluate_code(GuiState &gui, EmuEnvState &emuenv, uint32_t from, uint32_t count, bool thumb) {
     gui.disassembly.clear();
 
-    if (host.kernel.threads.empty()) {
+    if (emuenv.kernel.threads.empty()) {
         gui.disassembly.emplace_back("Nothing to disassemble.");
         return;
     }
@@ -41,20 +41,20 @@ static void evaluate_code(GuiState &gui, HostState &host, uint32_t from, uint32_
         size_t addr_page = addr / KB(4);
         size_t end_page = (addr + 4) / KB(4);
 
-        if (addr_page == 0 || !is_valid_addr(host.mem, addr_page * KB(4))) {
+        if (addr_page == 0 || !is_valid_addr(emuenv.mem, addr_page * KB(4))) {
             gui.disassembly.emplace_back(fmt::format("Disassembled {} instructions.", a));
             break;
         }
 
         // Use DisasmState for first thread.
         std::string disasm = fmt::format("{:0>8X}: {}",
-            addr, disassemble(*host.kernel.threads.begin()->second->cpu.get(), addr, thumb, &size));
+            addr, disassemble(*emuenv.kernel.threads.begin()->second->cpu.get(), addr, thumb, &size));
         gui.disassembly.emplace_back(disasm);
         addr += size;
     }
 }
 
-void reevaluate_code(GuiState &gui, HostState &host) {
+void reevaluate_code(GuiState &gui, EmuEnvState &emuenv) {
     std::string address_string = std::string(gui.disassembly_address);
     std::string count_string = std::string(gui.disassembly_count);
 
@@ -65,7 +65,7 @@ void reevaluate_code(GuiState &gui, HostState &host) {
         count = static_cast<uint32_t>(std::stol(count_string));
     bool thumb = gui.disassembly_arch == "THUMB";
 
-    evaluate_code(gui, host, address, count, thumb);
+    evaluate_code(gui, emuenv, address, count, thumb);
 }
 
 std::string archs[] = {
@@ -73,7 +73,7 @@ std::string archs[] = {
     "THUMB",
 };
 
-void draw_disassembly_dialog(GuiState &gui, HostState &host) {
+void draw_disassembly_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Begin("Disassembly", &gui.debug_menu.disassembly_dialog);
     ImGui::BeginChild("disasm", ImVec2(0, -(ImGui::GetTextLineHeightWithSpacing() + 10)));
     for (const std::string &assembly : gui.disassembly) {
@@ -92,7 +92,7 @@ void draw_disassembly_dialog(GuiState &gui, HostState &host) {
     ImGui::PushItemWidth(10 * 8);
     if (ImGui::InputText("##disasm_addr", gui.disassembly_address, 9,
             ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
-        reevaluate_code(gui, host);
+        reevaluate_code(gui, emuenv);
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
@@ -102,7 +102,7 @@ void draw_disassembly_dialog(GuiState &gui, HostState &host) {
     ImGui::PushItemWidth(10 * 4);
     if (ImGui::InputText("##disasm_count", gui.disassembly_count, 5,
             ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_EnterReturnsTrue)) {
-        reevaluate_code(gui, host);
+        reevaluate_code(gui, emuenv);
     }
     ImGui::PopItemWidth();
     ImGui::SameLine();
@@ -114,7 +114,7 @@ void draw_disassembly_dialog(GuiState &gui, HostState &host) {
             bool is_selected = gui.disassembly_arch == arch;
             if (ImGui::Selectable(arch.c_str(), is_selected)) {
                 gui.disassembly_arch = arch;
-                reevaluate_code(gui, host);
+                reevaluate_code(gui, emuenv);
             }
             if (is_selected) {
                 ImGui::SetItemDefaultFocus();

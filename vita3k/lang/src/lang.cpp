@@ -21,17 +21,17 @@
 #include <pugixml.hpp>
 
 namespace lang {
-void init_lang(LangState &lang, HostState &host) {
+void init_lang(LangState &lang, EmuEnvState &emuenv) {
     lang = {};
-    host.common_dialog.lang = {};
-    host.ime.lang = {};
+    emuenv.common_dialog.lang = {};
+    emuenv.ime.lang = {};
 
     const auto set_lang = [&](std::string language) {
         lang.user_lang[GUI] = language;
         lang.user_lang[LIVE_AREA] = language;
     };
 
-    const auto sys_lang = static_cast<SceSystemParamLang>(host.cfg.sys_lang);
+    const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
     switch (sys_lang) {
     case SCE_SYSTEM_PARAM_LANG_JAPANESE: set_lang("ja"); break;
     case SCE_SYSTEM_PARAM_LANG_ENGLISH_US: set_lang("en"); break;
@@ -63,7 +63,7 @@ void init_lang(LangState &lang, HostState &host) {
     }
 
     pugi::xml_document lang_xml;
-    const auto lang_path{ fs::path(host.base_path) / "lang" };
+    const auto lang_path{ fs::path(emuenv.base_path) / "lang" };
     const auto lang_xml_path = (lang_path / (lang.user_lang[GUI] + ".xml")).string();
     if (fs::exists(lang_xml_path)) {
         if (lang_xml.load_file(lang_xml_path.c_str())) {
@@ -110,7 +110,7 @@ void init_lang(LangState &lang, HostState &host) {
                 // Common
                 const auto common = lang_child.child("common");
                 if (!common.empty()) {
-                    set_lang_string(host.common_dialog.lang.common, common);
+                    set_lang_string(emuenv.common_dialog.lang.common, common);
                     set_lang_string(lang.common.main, common);
 
                     const auto set_calendar = [](std::vector<std::string> &dest, const pugi::xml_node child) {
@@ -135,12 +135,12 @@ void init_lang(LangState &lang, HostState &host) {
                 const auto dialog = lang_child.child("dialog");
                 if (!dialog.empty()) {
                     // Trophy
-                    set_lang_string(host.common_dialog.lang.trophy, dialog.child("trophy"));
+                    set_lang_string(emuenv.common_dialog.lang.trophy, dialog.child("trophy"));
 
                     // Save Data
                     const auto save_data = dialog.child("save_data");
                     if (!save_data.empty()) {
-                        auto &lang_save_data = host.common_dialog.lang.save_data;
+                        auto &lang_save_data = emuenv.common_dialog.lang.save_data;
                         // Delete
                         set_lang_string(lang_save_data.deleting, save_data.child("delete"));
 
@@ -162,7 +162,7 @@ void init_lang(LangState &lang, HostState &host) {
                 set_lang_string(lang.indicator, lang_child.child("indicator"));
 
                 // Initial Setup
-                if (!host.cfg.initial_setup)
+                if (!emuenv.cfg.initial_setup)
                     set_lang_string(lang.initial_setup, lang_child.child("initial_setup"));
 
                 // Live Area
@@ -226,7 +226,7 @@ void init_lang(LangState &lang, HostState &host) {
                             const auto keyboards = input_language.child("keyboards");
                             if (!keyboards.empty()) {
                                 set_lang_string(lang_settings.Keyboards, input_language);
-                                auto &lang_ime = host.ime.lang.ime_keyboards;
+                                auto &lang_ime = emuenv.ime.lang.ime_keyboards;
                                 const auto &keyboard_lang_ime = keyboards.child("ime_langagues");
                                 if (!keyboard_lang_ime.empty()) {
                                     lang_ime.clear();

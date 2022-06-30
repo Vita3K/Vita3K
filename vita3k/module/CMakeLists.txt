@@ -16,7 +16,7 @@ add_library(
 )
 
 target_include_directories(module PUBLIC include)
-target_link_libraries(module PUBLIC host dlmalloc printf util)
+target_link_libraries(module PUBLIC emuenv dlmalloc printf util)
 if(TRACY_ENABLE_ON_CORE_COMPONENTS)
 	target_link_libraries(module PUBLIC tracy)
 endif()

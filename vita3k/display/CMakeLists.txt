@@ -7,5 +7,5 @@ add_library(
 )
 
 target_include_directories(display PUBLIC include)
-target_link_libraries(display PUBLIC host)
+target_link_libraries(display PUBLIC emuenv)
 target_link_libraries(display PRIVATE)

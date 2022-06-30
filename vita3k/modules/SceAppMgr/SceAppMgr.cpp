@@ -63,7 +63,7 @@ EXPORT(int, _sceAppMgrAppParamGetInt) {
 
 EXPORT(SceInt32, _sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
     std::string res;
-    if (!sfo::get_data_by_id(res, host.sfo_handle, param))
+    if (!sfo::get_data_by_id(res, emuenv.sfo_handle, param))
         return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
     else {
         res.copy(string, length);
@@ -326,28 +326,28 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
 
     // Load exec executable
     vfs::FileBuffer exec_buffer;
-    if (vfs::read_app_file(exec_buffer, host.pref_path, host.io.app_path, exec_path)) {
-        if (argv && argv->get(host.mem)) {
+    if (vfs::read_app_file(exec_buffer, emuenv.pref_path, emuenv.io.app_path, exec_path)) {
+        if (argv && argv->get(emuenv.mem)) {
             size_t args = 0;
-            host.load_exec_argv = "\"";
+            emuenv.load_exec_argv = "\"";
             for (auto i = 0; argv[i]; i++) {
-                LOG_INFO("sceAppMgrLoadExec run with argument at {}: {}", i, argv[i].get(host.mem));
+                LOG_INFO("sceAppMgrLoadExec run with argument at {}: {}", i, argv[i].get(emuenv.mem));
                 if (i)
-                    host.load_exec_argv += ", ";
-                args += strlen(argv[i].get(host.mem));
-                host.load_exec_argv += argv[i].get(host.mem);
+                    emuenv.load_exec_argv += ", ";
+                args += strlen(argv[i].get(emuenv.mem));
+                emuenv.load_exec_argv += argv[i].get(emuenv.mem);
             }
-            host.load_exec_argv += "\"";
+            emuenv.load_exec_argv += "\"";
 
             if (args > 1024)
                 return RET_ERROR(SCE_APPMGR_ERROR_TOO_LONG_ARGV);
         }
 
-        host.kernel.exit_delete_all_threads();
+        emuenv.kernel.exit_delete_all_threads();
 
-        host.load_app_path = host.io.app_path;
-        host.load_exec_path = exec_path;
-        host.load_exec = true;
+        emuenv.load_app_path = emuenv.io.app_path;
+        emuenv.load_exec_path = exec_path;
+        emuenv.load_exec = true;
 
         return SCE_KERNEL_OK;
     }

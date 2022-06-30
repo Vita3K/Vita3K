@@ -21,10 +21,10 @@
 
 namespace gui {
 
-void draw_controllers_dialog(GuiState &gui, HostState &host) {
+void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("Controllers", &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
-    auto &ctrl = host.ctrl;
+    auto &ctrl = emuenv.ctrl;
     refresh_controllers(ctrl);
     if (ctrl.controllers_num) {
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%d Controllers connected", ctrl.controllers_num);

@@ -34,7 +34,7 @@ struct SceNpAuthRequestParameter {
 };
 
 EXPORT(int, sceNpAuthCreateStartRequest, const SceNpAuthRequestParameter *param) {
-    const ThreadStatePtr thread = host.kernel.get_thread(thread_id);
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
     // todo: this callback function should be called from sceNpCheckCallback
     STUBBED("Immediately call ticket callback");
     thread->request_callback(param->ticketCb.address(), { 1, 1, param->cbArg.address() });
@@ -75,7 +75,7 @@ EXPORT(int, sceNpAuthTerm) {
 
 EXPORT(int, sceNpCmpNpId, np::NpId *npid1, np::NpId *npid2) {
     STUBBED("assume single user");
-    if (std::string(npid1->online_id.name) == host.io.user_name && std::string(npid2->online_id.name) == host.io.user_name) {
+    if (std::string(npid1->online_id.name) == emuenv.io.user_name && std::string(npid2->online_id.name) == emuenv.io.user_name) {
         return 0;
     }
     return 0x80550605; // INVALID NP ID

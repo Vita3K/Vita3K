@@ -44,18 +44,18 @@ EXPORT(int, _sceIoDevctlAsync) {
 }
 
 EXPORT(int, _sceIoDopen, const char *dir) {
-    return open_dir(host.io, dir, host.pref_path, export_name);
+    return open_dir(emuenv.io, dir, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, _sceIoDread, const SceUID fd, SceIoDirent *dir) {
     if (dir == nullptr) {
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_ADDR);
     }
-    return read_dir(host.io, fd, dir, host.pref_path, export_name);
+    return read_dir(emuenv.io, fd, dir, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, _sceIoGetstat, const char *file, SceIoStat *stat) {
-    return stat_file(host.io, file, stat, host.pref_path, export_name);
+    return stat_file(emuenv.io, file, stat, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, _sceIoGetstatAsync) {
@@ -63,7 +63,7 @@ EXPORT(int, _sceIoGetstatAsync) {
 }
 
 EXPORT(int, _sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
-    return stat_file_by_fd(host.io, fd, stat, host.pref_path, export_name);
+    return stat_file_by_fd(emuenv.io, fd, stat, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, _sceIoIoctl) {
@@ -75,8 +75,8 @@ EXPORT(int, _sceIoIoctlAsync) {
 }
 
 EXPORT(SceOff, _sceIoLseek, const SceUID fd, Ptr<_sceIoLseekOpt> opt) {
-    _sceIoLseekOpt kk = *opt.get(host.mem);
-    return seek_file(fd, opt.get(host.mem)->offset, opt.get(host.mem)->whence, host.io, export_name);
+    _sceIoLseekOpt kk = *opt.get(emuenv.mem);
+    return seek_file(fd, opt.get(emuenv.mem)->offset, opt.get(emuenv.mem)->whence, emuenv.io, export_name);
 }
 
 EXPORT(int, _sceIoLseekAsync) {
@@ -84,7 +84,7 @@ EXPORT(int, _sceIoLseekAsync) {
 }
 
 EXPORT(int, _sceIoMkdir, const char *dir, const SceMode mode) {
-    return create_dir(host.io, dir, mode, host.pref_path, export_name);
+    return create_dir(emuenv.io, dir, mode, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, _sceIoMkdirAsync) {
@@ -96,7 +96,7 @@ EXPORT(int, _sceIoOpen, const char *file, const int flags, const SceMode mode) {
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
     }
     LOG_INFO("Opening file: {}", file);
-    return open_file(host.io, file, flags, host.pref_path, export_name);
+    return open_file(emuenv.io, file, flags, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, _sceIoOpenAsync) {
@@ -160,7 +160,7 @@ EXPORT(int, sceIoChstatByFdAsync) {
 }
 
 EXPORT(int, sceIoClose, const SceUID fd) {
-    return close_file(host.io, fd, export_name);
+    return close_file(emuenv.io, fd, export_name);
 }
 
 EXPORT(int, sceIoCloseAsync) {
@@ -172,7 +172,7 @@ EXPORT(int, sceIoComplete) {
 }
 
 EXPORT(int, sceIoDclose, const SceUID fd) {
-    return close_dir(host.io, fd, export_name);
+    return close_dir(emuenv.io, fd, export_name);
 }
 
 EXPORT(int, sceIoDcloseAsync) {
@@ -216,11 +216,11 @@ EXPORT(int, sceIoGetstatByFdAsync) {
 }
 
 EXPORT(int, sceIoLseek32, const SceUID fd, const int32_t offset, const SceIoSeekMode whence) {
-    return static_cast<int>(seek_file(fd, offset, whence, host.io, export_name));
+    return static_cast<int>(seek_file(fd, offset, whence, emuenv.io, export_name));
 }
 
 EXPORT(int, sceIoRead, const SceUID fd, void *data, const SceSize size) {
-    return read_file(data, host.io, fd, size, export_name);
+    return read_file(data, emuenv.io, fd, size, export_name);
 }
 
 EXPORT(int, sceIoReadAsync) {
@@ -256,7 +256,7 @@ EXPORT(int, sceIoSyncByFdAsync) {
 }
 
 EXPORT(int, sceIoWrite, const SceUID fd, const void *data, const SceSize size) {
-    return write_file(fd, data, size, host.io, export_name);
+    return write_file(fd, data, size, emuenv.io, export_name);
 }
 
 EXPORT(int, sceIoWriteAsync) {

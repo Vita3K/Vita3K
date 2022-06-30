@@ -21,16 +21,16 @@
 #include <gui/imgui_impl_sdl.h>
 #include <gui/state.h>
 
-#include <host/state.h>
+#include <emuenv/state.h>
 
 namespace gui {
 
 static constexpr int TROPHY_WINDOW_STATIC_FRAME_COUNT = 250;
 
-static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockCallbackData &callback_data) {
+static void draw_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, NpTrophyUnlockCallbackData &callback_data) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     const auto TROPHY_WINDOW_MARGIN_PADDING = 12.f * SCALE.x;
     const auto TROPHY_WINDOW_ICON_SIZE = 48.f * SCALE.x;
@@ -128,12 +128,12 @@ static void draw_trophy_unlocked(GuiState &gui, HostState &host, NpTrophyUnlockC
     }
 }
 
-void draw_trophies_unlocked(GuiState &gui, HostState &host) {
+void draw_trophies_unlocked(GuiState &gui, EmuEnvState &emuenv) {
     const std::lock_guard<std::mutex> guard(gui.trophy_unlock_display_requests_access_mutex);
 
     if (!gui.trophy_unlock_display_requests.empty()) {
         if (gui.trophy_window_frame_stage == TrophyAnimationStage::END) {
-            update_notice_info(gui, host, "trophy");
+            update_notice_info(gui, emuenv, "trophy");
             gui.trophy_unlock_display_requests.pop_back();
 
             // Destroy the texture
@@ -143,7 +143,7 @@ void draw_trophies_unlocked(GuiState &gui, HostState &host) {
             gui.trophy_window_frame_stage = TrophyAnimationStage::SLIDE_IN;
             gui.trophy_window_frame_count = 0;
         } else {
-            draw_trophy_unlocked(gui, host, gui.trophy_unlock_display_requests.back());
+            draw_trophy_unlocked(gui, emuenv, gui.trophy_unlock_display_requests.back());
         }
     }
 }

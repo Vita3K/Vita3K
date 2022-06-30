@@ -19,8 +19,8 @@
 
 #include <imgui.h>
 
+#include <emuenv/window.h>
 #include <gui/imgui_impl_sdl_state.h>
-#include <host/window.h>
 
 union SDL_Event;
 struct SDL_Window;

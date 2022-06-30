@@ -21,8 +21,8 @@
 
 #include <imgui.h>
 
+#include <emuenv/window.h>
 #include <gui/imgui_impl_sdl_state.h>
-#include <host/window.h>
 #include <renderer/vulkan/state.h>
 
 typedef union SDL_Event SDL_Event;

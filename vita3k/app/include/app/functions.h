@@ -20,7 +20,7 @@
 #include <string>
 
 struct Config;
-struct HostState;
+struct EmuEnvState;
 struct SDL_Window;
 struct ImGui_State;
 struct CPUDepInject;
@@ -38,12 +38,12 @@ enum class AppRunType {
     Extracted,
 };
 
-bool init(HostState &state, Config &cfg, const Root &root_paths);
-void destroy(HostState &host, ImGui_State *imgui);
-void update_viewport(HostState &state);
+bool init(EmuEnvState &state, Config &cfg, const Root &root_paths);
+void destroy(EmuEnvState &emuenv, ImGui_State *imgui);
+void update_viewport(EmuEnvState &state);
 void error_dialog(const std::string &message, SDL_Window *window = nullptr);
 
-void set_window_title(HostState &host);
-void calculate_fps(HostState &host);
+void set_window_title(EmuEnvState &emuenv);
+void calculate_fps(EmuEnvState &emuenv);
 
 } // namespace app

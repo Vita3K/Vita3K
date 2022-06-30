@@ -59,7 +59,7 @@ static std::map<std::string, std::map<std::string, uint64_t>> current_item, last
 static std::map<std::string, std::string> type;
 static std::map<std::string, int32_t> sku_flag;
 
-void init_live_area(GuiState &gui, HostState &host, const std::string app_path) {
+void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
     // Init type
     if (items_pos.empty()) {
         // Content manager
@@ -139,13 +139,13 @@ void init_live_area(GuiState &gui, HostState &host, const std::string app_path) 
     const auto APP_INDEX = get_app_index(gui, app_path);
 
     if (is_ps_app && (sku_flag.find(app_path) == sku_flag.end()))
-        sku_flag[app_path] = get_license_sku_flag(host, APP_INDEX->content_id);
+        sku_flag[app_path] = get_license_sku_flag(emuenv, APP_INDEX->content_id);
 
     if (gui.live_area_contents.find(app_path) == gui.live_area_contents.end()) {
         auto default_contents = false;
-        const auto fw_path{ fs::path(host.pref_path) / "vs0" };
+        const auto fw_path{ fs::path(emuenv.pref_path) / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
-        const auto APP_PATH{ fs::path(host.pref_path) / app_device._to_string() / "app" / app_path };
+        const auto APP_PATH{ fs::path(emuenv.pref_path) / app_device._to_string() / "app" / app_path };
         const auto live_area_path{ fs::path("sce_sys") / ((sku_flag[app_path] == 3) && fs::exists(APP_PATH / "sce_sys/retail/livearea") ? "retail/livearea" : "livearea") };
         auto template_xml{ APP_PATH / live_area_path / "contents/template.xml" };
 
@@ -228,11 +228,11 @@ void init_live_area(GuiState &gui, HostState &host, const std::string app_path) 
                 vfs::FileBuffer buffer;
 
                 if (default_contents)
-                    vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "data/internal/livearea/default/sce_sys/livearea/contents/" + contents.second);
+                    vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "data/internal/livearea/default/sce_sys/livearea/contents/" + contents.second);
                 else if (app_device == VitaIoDevice::vs0)
-                    vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + contents.second);
+                    vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + contents.second);
                 else
-                    vfs::read_app_file(buffer, host.pref_path, app_path, live_area_path.string() + "/contents/" + contents.second);
+                    vfs::read_app_file(buffer, emuenv.pref_path, app_path, live_area_path.string() + "/contents/" + contents.second);
 
                 if (buffer.empty()) {
                     if (is_ps_app || is_sys_app)
@@ -437,9 +437,9 @@ void init_live_area(GuiState &gui, HostState &host, const std::string app_path) 
                             vfs::FileBuffer buffer;
 
                             if (app_device == VitaIoDevice::vs0)
-                                vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + bg_name);
+                                vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + bg_name);
                             else
-                                vfs::read_app_file(buffer, host.pref_path, app_path, live_area_path.string() + "/contents/" + bg_name);
+                                vfs::read_app_file(buffer, emuenv.pref_path, app_path, live_area_path.string() + "/contents/" + bg_name);
 
                             if (buffer.empty()) {
                                 if (is_ps_app || is_sys_app)
@@ -475,9 +475,9 @@ void init_live_area(GuiState &gui, HostState &host, const std::string app_path) 
                             vfs::FileBuffer buffer;
 
                             if (app_device == VitaIoDevice::vs0)
-                                vfs::read_file(VitaIoDevice::vs0, buffer, host.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + img_name);
+                                vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + app_path + "/sce_sys/livearea/contents/" + img_name);
                             else
-                                vfs::read_app_file(buffer, host.pref_path, app_path, live_area_path.string() + "/contents/" + img_name);
+                                vfs::read_app_file(buffer, emuenv.pref_path, app_path, live_area_path.string() + "/contents/" + img_name);
 
                             if (buffer.empty()) {
                                 if (is_ps_app || is_sys_app)
@@ -515,30 +515,30 @@ void open_search(const std::string title) {
     open_path(search_url);
 }
 
-void update_app(GuiState &gui, HostState &host, const std::string app_path) {
+void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
     if (gui.live_area_contents.find(app_path) != gui.live_area_contents.end())
         gui.live_area_contents.erase(app_path);
     if (gui.live_items.find(app_path) != gui.live_items.end())
         gui.live_items.erase(app_path);
 
-    init_user_app(gui, host, app_path);
-    save_apps_cache(gui, host);
+    init_user_app(gui, emuenv, app_path);
+    save_apps_cache(gui, emuenv);
 
     if (get_app_open_list_index(gui, app_path) != gui.apps_list_opened.end())
-        init_live_area(gui, host, app_path);
+        init_live_area(gui, emuenv, app_path);
 }
 
 static const ImU32 ARROW_COLOR = 4294967295; // White
 
-void draw_live_area_screen(GuiState &gui, HostState &host) {
+void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
 
     const auto app_path = gui.apps_list_opened[gui.current_app_selected];
     const VitaIoDevice app_device = app_path.find("NPXS") != std::string::npos ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
-    const auto is_background = (gui.users[host.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
+    const auto is_background = (gui.users[emuenv.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
@@ -547,7 +547,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     ImGui::Begin("##live_area", &gui.live_area.live_area_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage((gui.users[host.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[gui.current_user_bg]],
+        ImGui::GetBackgroundDrawList()->AddImage((gui.users[emuenv.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[gui.users[emuenv.io.user_id].backgrounds[gui.current_user_bg]],
             ImVec2(0.f, 32.f), display_size);
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 180.f), 0.f, ImDrawFlags_RoundCornersAll);
@@ -925,10 +925,10 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     }
 
     ImGui::SetWindowFontScale(RES_SCALE.x);
-    const auto default_font_scale = (25.f * host.dpi_scale) * (ImGui::GetFontSize() / (19.2f * host.dpi_scale));
+    const auto default_font_scale = (25.f * emuenv.dpi_scale) * (ImGui::GetFontSize() / (19.2f * emuenv.dpi_scale));
     const auto font_size_scale = default_font_scale / ImGui::GetFontSize();
 
-    const std::string BUTTON_STR = app_path == host.io.app_path ? gui.lang.live_area[CONTINUE] : gui.lang.live_area[START];
+    const std::string BUTTON_STR = app_path == emuenv.io.app_path ? gui.lang.live_area[CONTINUE] : gui.lang.live_area[START];
     const auto GATE_SIZE = ImVec2(280.0f * SCALE.x, 158.0f * SCALE.y);
     const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[app_path]]["gate"]["pos"].x * SCALE.x), display_size.y - (items_pos[type[app_path]]["gate"]["pos"].y * SCALE.y));
     const auto START_SIZE = ImVec2((ImGui::CalcTextSize(BUTTON_STR.c_str()).x * font_size_scale), (ImGui::CalcTextSize(BUTTON_STR.c_str()).y * font_size_scale));
@@ -966,14 +966,14 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
     ImGui::GetWindowDrawList()->AddText(gui.vita_font, default_font_scale, POS_START, IM_COL32(255, 255, 255, 255), BUTTON_STR.c_str());
     ImGui::SetCursorPos(SELECT_POS);
     ImGui::SetCursorPos(SELECT_POS);
-    if (ImGui::Selectable("##gate", false, ImGuiSelectableFlags_None, SELECT_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross))
-        pre_run_app(gui, host, app_path);
+    if (ImGui::Selectable("##gate", false, ImGuiSelectableFlags_None, SELECT_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross))
+        pre_run_app(gui, emuenv, app_path);
     ImGui::PopID();
     ImGui::GetWindowDrawList()->AddRect(GATE_POS, SIZE_GATE, IM_COL32(192, 192, 192, 255), 10.f * SCALE.x, ImDrawFlags_RoundCornersAll, 12.f * SCALE.x);
 
     if (app_device == VitaIoDevice::ux0) {
         const auto widget_scal_size = ImVec2(80.0f * SCALE.x, 80.f * SCALE.y);
-        const auto manual_path{ fs::path(host.pref_path) / "ux0/app" / app_path / "sce_sys/manual/" };
+        const auto manual_path{ fs::path(emuenv.pref_path) / "ux0/app" / app_path / "sce_sys/manual/" };
         const auto scal_widget_font_size = 23.0f / ImGui::GetFontSize();
 
         const auto manual_exist = fs::exists(manual_path) && !fs::is_empty(manual_path);
@@ -1002,7 +1002,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
             ImGui::SetCursorPos(pos_scal_manual);
             if (ImGui::Selectable("##manual", ImGuiSelectableFlags_None, false, widget_scal_size))
-                open_manual(gui, host, app_path);
+                open_manual(gui, emuenv, app_path);
         }
 
         const auto update_pos = ImVec2((manual_exist ? 408.f : 463.f) * SCALE.x, 505.0f * SCALE.y);
@@ -1016,17 +1016,17 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, UPDATE_STR_POS, IM_COL32(255, 255, 255, 255), UPDATE_STR);
         ImGui::SetCursorPos(pos_scal_update);
         if (ImGui::Selectable("##update", ImGuiSelectableFlags_None, false, widget_scal_size))
-            update_app(gui, host, app_path);
+            update_app(gui, emuenv, app_path);
     }
 
     if (!gui.live_area.content_manager && !gui.live_area.manual) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * SCALE.x);
         ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, 44.0f * SCALE.y));
-        if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
-            if (app_path == host.io.app_path) {
-                update_time_app_used(gui, host, app_path);
-                host.kernel.exit_delete_all_threads();
-                host.load_exec = true;
+        if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
+            if (app_path == emuenv.io.app_path) {
+                update_time_app_used(gui, emuenv, app_path);
+                emuenv.kernel.exit_delete_all_threads();
+                emuenv.load_exec = true;
             } else {
                 gui.apps_list_opened.erase(get_app_open_list_index(gui, app_path));
                 if (gui.current_app_selected == 0) {
@@ -1088,7 +1088,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
         ImVec2(ARROW_LEFT_CENTER.x - (16.f * SCALE.x), ARROW_LEFT_CENTER.y),
         ImVec2(ARROW_LEFT_CENTER.x + (16.f * SCALE.x), ARROW_LEFT_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
     ImGui::SetCursorPos(ImVec2(ARROW_LEFT_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_LEFT_CENTER.y - (SELECTABLE_SIZE.y / 2.f)));
-    if ((ImGui::Selectable("##left", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_l1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_left) || (wheel_counter == 1)) {
+    if ((ImGui::Selectable("##left", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_l1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_left) || (wheel_counter == 1)) {
         if (gui.current_app_selected == 0) {
             gui.live_area.live_area_screen = false;
             gui.live_area.home_screen = true;
@@ -1102,7 +1102,7 @@ void draw_live_area_screen(GuiState &gui, HostState &host) {
             ImVec2(ARROW_RIGHT_CENTER.x + (16.f * SCALE.x), ARROW_RIGHT_CENTER.y),
             ImVec2(ARROW_RIGHT_CENTER.x - (16.f * SCALE.x), ARROW_RIGHT_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
         ImGui::SetCursorPos(ImVec2(ARROW_RIGHT_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_RIGHT_CENTER.y - (SELECTABLE_SIZE.y / 2.f)));
-        if ((ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right) || (wheel_counter == -1))
+        if ((ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_right) || (wheel_counter == -1))
             ++gui.current_app_selected;
     }
     ImGui::SetWindowFontScale(1.f);

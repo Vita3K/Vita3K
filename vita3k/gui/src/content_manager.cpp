@@ -44,8 +44,8 @@ auto get_recursive_directory_size(const T &path) {
 }
 } // namespace
 
-void get_app_info(GuiState &gui, HostState &host, const std::string &app_path) {
-    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
+void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    const auto APP_PATH{ fs::path(emuenv.pref_path) / "ux0/app" / app_path };
     gui.app_selector.app_info = {};
 
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
@@ -57,13 +57,13 @@ void get_app_info(GuiState &gui, HostState &host, const std::string &app_path) {
     }
 }
 
-size_t get_app_size(GuiState &gui, HostState &host, const std::string &app_path) {
-    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_path };
+size_t get_app_size(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    const auto APP_PATH{ fs::path(emuenv.pref_path) / "ux0/app" / app_path };
     boost::uintmax_t app_size = 0;
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
         app_size += get_recursive_directory_size(APP_PATH);
     }
-    const auto ADDCONT_PATH{ fs::path(host.pref_path) / "ux0/addcont" / get_app_index(gui, app_path)->title_id };
+    const auto ADDCONT_PATH{ fs::path(emuenv.pref_path) / "ux0/addcont" / get_app_index(gui, app_path)->title_id };
     if (fs::exists(ADDCONT_PATH) && !fs::is_empty(ADDCONT_PATH)) {
         app_size += get_recursive_directory_size(ADDCONT_PATH);
     }
@@ -93,10 +93,10 @@ struct SaveData {
 
 static std::vector<SaveData> save_data_list;
 
-static void get_save_data_list(GuiState &gui, HostState &host) {
+static void get_save_data_list(GuiState &gui, EmuEnvState &emuenv) {
     save_data_list.clear();
 
-    fs::path SAVE_PATH{ fs::path{ host.pref_path } / "ux0/user" / host.io.user_id / "savedata" };
+    fs::path SAVE_PATH{ fs::path{ emuenv.pref_path } / "ux0/user" / emuenv.io.user_id / "savedata" };
     if (!fs::exists(SAVE_PATH))
         return;
 
@@ -120,16 +120,16 @@ static void get_save_data_list(GuiState &gui, HostState &host) {
 static std::map<std::string, size_t> apps_size;
 static std::map<std::string, std::string> space;
 
-void init_content_manager(GuiState &gui, HostState &host) {
+void init_content_manager(GuiState &gui, EmuEnvState &emuenv) {
     space.clear();
 
-    const auto free_size{ fs::space(host.pref_path).free };
+    const auto free_size{ fs::space(emuenv.pref_path).free };
     space["free"] = get_unit_size(free_size);
 
-    const auto query_app = [&gui, &host] {
+    const auto query_app = [&gui, &emuenv] {
         const auto &directory_list = gui.app_selector.user_apps;
         const auto pred = [&](const auto acc, const auto &app) {
-            apps_size[app.path] = get_app_size(gui, host, app.path);
+            apps_size[app.path] = get_app_size(gui, emuenv, app.path);
             return acc + apps_size[app.path];
         };
         return boost::accumulate(directory_list, boost::uintmax_t{}, pred);
@@ -141,8 +141,8 @@ void init_content_manager(GuiState &gui, HostState &host) {
         return boost::accumulate(directory_list, boost::uintmax_t{}, pred);
     };
 
-    const auto query_themes = [&host] {
-        const auto THEME_PATH{ fs::path(host.pref_path) / "ux0/theme" };
+    const auto query_themes = [&emuenv] {
+        const auto THEME_PATH{ fs::path(emuenv.pref_path) / "ux0/theme" };
         const auto &directory_list = fs::directory_iterator(THEME_PATH);
         const auto pred = [&](const auto acc, const auto &) { return acc + get_recursive_directory_size(THEME_PATH); };
         if (fs::exists(THEME_PATH) && !fs::is_empty(THEME_PATH)) {
@@ -157,7 +157,7 @@ void init_content_manager(GuiState &gui, HostState &host) {
     };
 
     space["app"] = get_list_size_or_dash(query_app);
-    get_save_data_list(gui, host);
+    get_save_data_list(gui, emuenv);
     space["savedata"] = get_list_size_or_dash(query_savedata);
     space["themes"] = get_list_size_or_dash(query_themes);
 }
@@ -165,7 +165,7 @@ void init_content_manager(GuiState &gui, HostState &host) {
 static std::map<std::string, bool> contents_selected;
 static std::string app_selected, size_selected_contents, menu, title;
 
-static bool get_size_selected_contents(GuiState &gui, HostState &host) {
+static bool get_size_selected_contents(GuiState &gui, EmuEnvState &emuenv) {
     size_selected_contents.clear();
     const auto pred = [](const auto acc, const auto &content) {
         if (content.second) {
@@ -193,14 +193,14 @@ struct AddCont {
 
 static std::map<std::string, AddCont> addcont_info;
 
-static void get_content_info(GuiState &gui, HostState &host) {
-    const auto APP_PATH{ fs::path(host.pref_path) / "ux0/app" / app_selected };
+static void get_content_info(GuiState &gui, EmuEnvState &emuenv) {
+    const auto APP_PATH{ fs::path(emuenv.pref_path) / "ux0/app" / app_selected };
     if (fs::exists(APP_PATH) && !fs::is_empty(APP_PATH)) {
         gui.app_selector.app_info.size = get_recursive_directory_size(APP_PATH);
     }
 
     addcont_info.clear();
-    const auto ADDCONT_PATH{ fs::path(host.pref_path) / "ux0/addcont" / app_selected };
+    const auto ADDCONT_PATH{ fs::path(emuenv.pref_path) / "ux0/addcont" / app_selected };
     if (fs::exists(ADDCONT_PATH) && !fs::is_empty(ADDCONT_PATH)) {
         for (const auto &addcont : fs::directory_iterator(ADDCONT_PATH)) {
             const auto content_id = addcont.path().stem().string();
@@ -215,10 +215,10 @@ static void get_content_info(GuiState &gui, HostState &host) {
 
             const auto content_path{ fs::path("addcont") / app_selected / content_id };
             vfs::FileBuffer params;
-            if (vfs::read_file(VitaIoDevice::ux0, params, host.pref_path, content_path.string() + "/sce_sys/param.sfo")) {
+            if (vfs::read_file(VitaIoDevice::ux0, params, emuenv.pref_path, content_path.string() + "/sce_sys/param.sfo")) {
                 SfoFile sfo_handle;
                 sfo::load(sfo_handle, params);
-                if (!sfo::get_data_by_key(addcont_info[content_id].name, sfo_handle, fmt::format("TITLE_{:0>2d}", host.cfg.sys_lang)))
+                if (!sfo::get_data_by_key(addcont_info[content_id].name, sfo_handle, fmt::format("TITLE_{:0>2d}", emuenv.cfg.sys_lang)))
                     sfo::get_data_by_key(addcont_info[content_id].name, sfo_handle, "TITLE");
             }
             boost::trim(addcont_info[content_id].name);
@@ -230,10 +230,10 @@ static bool popup, content_delete, set_scroll_pos;
 static float scroll_pos;
 static ImGuiTextFilter search_bar;
 
-void draw_content_manager(GuiState &gui, HostState &host) {
+void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
 
     const auto SIZE_ICON_LIST = ImVec2(60.f * SCALE.x, 60.f * SCALE.y);
@@ -248,7 +248,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
     const auto is_background = gui.apps_background.find("NPXS10026") != gui.apps_background.end();
-    const auto is_12_hour_format = host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
+    const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -300,7 +300,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
     ImGui::BeginChild("##content_manager_child", menu == "info" ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
-    auto common = host.common_dialog.lang.common;
+    auto common = emuenv.common_dialog.lang.common;
 
     if (menu.empty()) {
         title = "Content Manager";
@@ -326,9 +326,9 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
         if (ImGui::Selectable("Themes", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT))) {
-            host.app_path = "NPXS10026";
+            emuenv.app_path = "NPXS10026";
             gui.live_area.content_manager = false;
-            pre_run_app(gui, host, "NPXS10015");
+            pre_run_app(gui, emuenv, "NPXS10015");
         }
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
@@ -353,16 +353,16 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             for (const auto &content : contents_selected) {
                 if (content.second) {
                     if (menu == "app") {
-                        fs::remove_all(fs::path(host.pref_path) / "ux0/app" / content.first);
-                        fs::remove_all(fs::path(host.pref_path) / "ux0/addcont" / content.first);
+                        fs::remove_all(fs::path(emuenv.pref_path) / "ux0/app" / content.first);
+                        fs::remove_all(fs::path(emuenv.pref_path) / "ux0/addcont" / content.first);
                         gui.app_selector.user_apps.erase(get_app_index(gui, content.first));
                         gui.app_selector.user_apps_icon.erase(content.first);
                     }
-                    const auto SAVE_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "savedata" / content.first };
+                    const auto SAVE_PATH{ fs::path(emuenv.pref_path) / "ux0/user" / emuenv.io.user_id / "savedata" / content.first };
                     fs::remove_all(SAVE_PATH);
                 }
             }
-            init_content_manager(gui, host);
+            init_content_manager(gui, emuenv);
             contents_selected.clear();
             content_delete = false;
         }
@@ -383,11 +383,11 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::SetCursorPos(ImVec2(106.f * SCALE.x, ImGui::GetCursorPosY() + (76.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "Data to be Deleted: %s", size_selected_contents.c_str());
             ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (10.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCALE.y)));
-            if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle)) {
+            if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
                 popup = false;
             }
             ImGui::SameLine(0, 20.f * SCALE.x);
-            if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+            if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
                 content_delete = true;
                 popup = false;
             }
@@ -440,8 +440,8 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                         scroll_pos = ImGui::GetScrollY();
                         ImGui::SetScrollY(0.f);
                         app_selected = app.path;
-                        get_app_info(gui, host, app_selected);
-                        get_content_info(gui, host);
+                        get_app_info(gui, emuenv, app_selected);
+                        get_content_info(gui, emuenv);
                         menu = "info";
                     }
                     ImGui::PopID();
@@ -480,7 +480,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", save.title.c_str());
                     ImGui::SetWindowFontScale(0.8f);
                     ImGui::SetCursorPosY(Title_POS + (46.f * SCALE.y));
-                    auto DATE_TIME = get_date_time(gui, host, save.date);
+                    auto DATE_TIME = get_date_time(gui, emuenv, save.date);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
                     if (is_12_hour_format) {
                         ImGui::SameLine();
@@ -507,7 +507,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
             ImGui::SameLine(280.f * SCALE.x);
-            auto DATE_TIME = get_date_time(gui, host, gui.app_selector.app_info.updated);
+            auto DATE_TIME = get_date_time(gui, emuenv, gui.app_selector.app_info.updated);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
             if (is_12_hour_format) {
                 ImGui::SameLine();
@@ -533,9 +533,9 @@ void draw_content_manager(GuiState &gui, HostState &host) {
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::TextColored(GUI_COLOR_TEXT, "Updated");
                 ImGui::SameLine(280.f * SCALE.x);
-                auto DATE_TIME = get_date_time(gui, host, addcont.second.date);
+                auto DATE_TIME = get_date_time(gui, emuenv, addcont.second.date);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
-                if (host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR) {
+                if (emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR) {
                     ImGui::SameLine();
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s", DATE_TIME[DateTime::DAY_MOMENT].c_str());
                 }
@@ -592,7 +592,7 @@ void draw_content_manager(GuiState &gui, HostState &host) {
         ImGui::SameLine();
         ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
-        if (is_enable ? ImGui::Button(common["delete"].c_str(), ImVec2(202.f * SCALE.x, 44.f * SCALE.y)) && get_size_selected_contents(gui, host) : ImGui::Selectable(common["delete"].c_str(), false, ImGuiSelectableFlags_Disabled, ImVec2(194.f * SCALE.x, 36.f * SCALE.y)))
+        if (is_enable ? ImGui::Button(common["delete"].c_str(), ImVec2(202.f * SCALE.x, 44.f * SCALE.y)) && get_size_selected_contents(gui, emuenv) : ImGui::Selectable(common["delete"].c_str(), false, ImGuiSelectableFlags_Disabled, ImVec2(194.f * SCALE.x, 36.f * SCALE.y)))
             popup = true;
         ImGui::PopStyleVar();
     }

@@ -29,10 +29,10 @@ static std::string state, title, zRIF;
 nfdchar_t *work_path;
 static bool delete_work_file;
 
-void draw_license_install_dialog(GuiState &gui, HostState &host) {
+void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto BUTTON_SIZE = ImVec2(160.f * SCALE.x, 45.f * SCALE.y);
 
     auto indicator = gui.lang.indicator;
@@ -66,7 +66,7 @@ void draw_license_install_dialog(GuiState &gui, HostState &host) {
         nfdresult_t result = NFD_CANCEL;
         result = NFD_OpenDialog("bin,rif", nullptr, &work_path);
         if (result == NFD_OKAY) {
-            if (copy_license(host, work_path))
+            if (copy_license(emuenv, work_path))
                 state = "success";
             else
                 state = "fail";
@@ -89,7 +89,7 @@ void draw_license_install_dialog(GuiState &gui, HostState &host) {
         }
         ImGui::SameLine(0, 20.f);
         if (ImGui::Button("Ok", BUTTON_SIZE) && !zRIF.empty()) {
-            if (create_license(host, zRIF))
+            if (create_license(emuenv, zRIF))
                 state = "success";
             else
                 state = "fail";
@@ -97,7 +97,7 @@ void draw_license_install_dialog(GuiState &gui, HostState &host) {
     } else if (state == "success") {
         title = !indicator["install_complete"].empty() ? indicator["install_complete"] : "Installation complete.";
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Successfully installed license.\nContent ID: %s\nTitle ID: %s", host.license_content_id.c_str(), host.license_title_id.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "Successfully installed license.\nContent ID: %s\nTitle ID: %s", emuenv.license_content_id.c_str(), emuenv.license_title_id.c_str());
         if (work_path)
             ImGui::Checkbox("Delete the work.bin/rif file?", &delete_work_file);
         ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - 20.f));

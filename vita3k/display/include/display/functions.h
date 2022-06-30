@@ -23,7 +23,7 @@
 
 struct DisplayState;
 struct KernelState;
-struct HostState;
+struct EmuEnvState;
 
-void start_sync_thread(HostState &host);
+void start_sync_thread(EmuEnvState &emuenv);
 void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePtr &wait_thread, const uint64_t target_vcount, const bool is_cb);

@@ -87,7 +87,7 @@ EXPORT(int, _sceFiosKernelOverlayResolveSync) {
 
 EXPORT(int, _sceFiosKernelOverlayResolveWithRangeSync, SceUID pid, int resolveFlag, const char *pInPath, sceFiosKernelOverlayResolveWithRangeSync_opt *opt) {
     STUBBED("Using strncpy");
-    strncpy(opt->pOutPath.get(host.mem), pInPath, opt->maxPath);
+    strncpy(opt->pOutPath.get(emuenv.mem), pInPath, opt->maxPath);
 
     return 0;
 }

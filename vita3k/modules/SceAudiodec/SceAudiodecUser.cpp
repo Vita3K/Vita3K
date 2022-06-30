@@ -106,12 +106,12 @@ constexpr uint32_t SCE_AUDIODEC_MP3_V1_MAX_PCM_SIZE = 2304;
 constexpr uint32_t SCE_AUDIODEC_MP3_V2_MAX_PCM_SIZE = 1152;
 
 LIBRARY_INIT_IMPL(SceAudiodec) {
-    host.kernel.obj_store.create<AudiodecState>();
+    emuenv.kernel.obj_store.create<AudiodecState>();
 }
 LIBRARY_INIT_REGISTER(SceAudiodec)
 
 EXPORT(int, sceAudiodecClearContext, SceAudiodecCtrl *ctrl) {
-    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     const DecoderPtr &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
 
     decoder->clear_context();
@@ -119,17 +119,17 @@ EXPORT(int, sceAudiodecClearContext, SceAudiodecCtrl *ctrl) {
     return 0;
 }
 
-static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec) {
-    const auto state = host.kernel.obj_store.get<AudiodecState>();
+static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec) {
+    const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
 
-    SceUID handle = host.kernel.get_next_uid();
+    SceUID handle = emuenv.kernel.get_next_uid();
     ctrl->handle = handle;
     state->codecs[codec].insert(handle);
 
     switch (codec) {
     case SCE_AUDIODEC_TYPE_AT9: {
-        SceAudiodecInfoAt9 &info = ctrl->info.get(host.mem)->at9;
+        SceAudiodecInfoAt9 &info = ctrl->info.get(emuenv.mem)->at9;
         DecoderPtr decoder = std::make_shared<Atrac9DecoderState>(info.config_data);
         state->decoders[handle] = decoder;
 
@@ -144,7 +144,7 @@ static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCod
         return 0;
     }
     case SCE_AUDIODEC_TYPE_AAC: {
-        SceAudiodecInfoAac &info = ctrl->info.get(host.mem)->aac;
+        SceAudiodecInfoAac &info = ctrl->info.get(emuenv.mem)->aac;
         DecoderPtr decoder = std::make_shared<AacDecoderState>(info.sample_rate, info.channels);
         state->decoders[handle] = decoder;
 
@@ -160,7 +160,7 @@ static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCod
         return 0;
     }
     case SCE_AUDIODEC_TYPE_MP3: {
-        SceAudiodecInfoMp3 &info = ctrl->info.get(host.mem)->mp3;
+        SceAudiodecInfoMp3 &info = ctrl->info.get(emuenv.mem)->mp3;
         DecoderPtr decoder = std::make_shared<Mp3DecoderState>(info.channels);
         state->decoders[handle] = decoder;
 
@@ -187,26 +187,26 @@ static int create_decoder(HostState &host, SceAudiodecCtrl *ctrl, SceAudiodecCod
 }
 
 EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec) {
-    return create_decoder(host, ctrl, codec);
+    return create_decoder(emuenv, ctrl, codec);
 }
 
 EXPORT(int, sceAudiodecCreateDecoderExternal, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec, void *context, uint32_t size) {
     // I think context is supposed to be just extra memory where I can allocate my context.
     // I'm just going to allocate like regular sceAudiodecCreateDecoder and see how it goes.
     // Almost sure zang has already tried this so :/ - desgroup
-    return create_decoder(host, ctrl, codec);
+    return create_decoder(emuenv, ctrl, codec);
 }
 
 EXPORT(int, sceAudiodecCreateDecoderResident) {
     return UNIMPLEMENTED();
 }
 
-static int decode_audio_frames(HostState &host, const char *export_name, SceAudiodecCtrl *ctrl, SceUInt32 nb_frames) {
-    const auto state = host.kernel.obj_store.get<AudiodecState>();
+static int decode_audio_frames(EmuEnvState &emuenv, const char *export_name, SceAudiodecCtrl *ctrl, SceUInt32 nb_frames) {
+    const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     const DecoderPtr &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
 
-    uint8_t *es_data = ctrl->es_data.get(host.mem);
-    uint8_t *pcm_data = ctrl->pcm_data.get(host.mem);
+    uint8_t *es_data = ctrl->es_data.get(emuenv.mem);
+    uint8_t *pcm_data = ctrl->pcm_data.get(emuenv.mem);
 
     ctrl->es_size_used = 0;
     ctrl->pcm_size_given = 0;
@@ -233,11 +233,11 @@ static int decode_audio_frames(HostState &host, const char *export_name, SceAudi
 }
 
 EXPORT(int, sceAudiodecDecode, SceAudiodecCtrl *ctrl) {
-    return decode_audio_frames(host, export_name, ctrl, 1);
+    return decode_audio_frames(emuenv, export_name, ctrl, 1);
 }
 
 EXPORT(int, sceAudiodecDecodeNFrames, SceAudiodecCtrl *ctrl, SceUInt32 nFrames) {
-    return decode_audio_frames(host, export_name, ctrl, nFrames);
+    return decode_audio_frames(emuenv, export_name, ctrl, nFrames);
 }
 
 EXPORT(int, sceAudiodecDecodeNStreams) {
@@ -245,7 +245,7 @@ EXPORT(int, sceAudiodecDecodeNStreams) {
 }
 
 EXPORT(int, sceAudiodecDeleteDecoder, SceAudiodecCtrl *ctrl) {
-    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
     state->decoders.erase(ctrl->handle);
 
@@ -276,7 +276,7 @@ EXPORT(int, sceAudiodecGetInternalError) {
 }
 
 EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodecInitParam *pInitParam) {
-    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
 
     state->codecs[codecType] = CodecDecoders();
@@ -285,15 +285,15 @@ EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodec
 
 EXPORT(int, sceAudiodecPartlyDecode, SceAudiodecCtrl *ctrl, SceUInt32 samples_offset, SceUInt32 samples_to_decode) {
     // this function is only called by libatrac
-    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     if (state->codecs[SCE_AUDIODEC_TYPE_AT9].count(ctrl->handle) == 0) {
         STUBBED("Call to sceAudiodecPartlyDecode with a codec other than Atrac9, report it to the devs");
     }
 
     const std::shared_ptr<DecoderState> &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
 
-    uint8_t *es_data = ctrl->es_data.get(host.mem);
-    uint8_t *pcm_data = ctrl->pcm_data.get(host.mem);
+    uint8_t *es_data = ctrl->es_data.get(emuenv.mem);
+    uint8_t *pcm_data = ctrl->pcm_data.get(emuenv.mem);
 
     // TODO: if the offset is too big, do not decode the first superframes (doesn't seem to happen with libatrac)
     const uint32_t bytes_per_sample = decoder->get(DecoderQuery::CHANNELS) * sizeof(int16_t);
@@ -326,7 +326,7 @@ EXPORT(int, sceAudiodecPartlyDecode, SceAudiodecCtrl *ctrl, SceUInt32 samples_of
 }
 
 EXPORT(SceInt32, sceAudiodecTermLibrary, SceAudiodecCodec codecType) {
-    const auto state = host.kernel.obj_store.get<AudiodecState>();
+    const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
 
     // remove decoders associated with codecType

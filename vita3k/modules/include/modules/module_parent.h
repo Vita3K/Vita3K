@@ -22,12 +22,12 @@
 #include <util/types.h>
 
 struct CPUState;
-struct HostState;
+struct EmuEnvState;
 struct KernelState;
 
-void init_libraries(HostState &host);
-void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id);
-bool load_module(HostState &host, SceUID thread_id, SceSysmoduleModuleId module_id);
+void init_libraries(EmuEnvState &emuenv);
+void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id);
+bool load_module(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleModuleId module_id);
 Address resolve_export(KernelState &kernel, uint32_t nid);
 uint32_t resolve_nid(KernelState &kernel, Address addr);
 std::string resolve_nid_name(KernelState &kernel, Address addr);
@@ -48,8 +48,8 @@ constexpr int var_exports_size =
 
 const std::array<VarExport, var_exports_size> &get_var_exports();
 
-using LibraryInitFn = std::function<void(HostState &host)>;
+using LibraryInitFn = std::function<void(EmuEnvState &emuenv)>;
 
-#define LIBRARY_INIT_DECL(name) void export_library_init_##name(HostState &host);
-#define LIBRARY_INIT_IMPL(name) void export_library_init_##name(HostState &host)
+#define LIBRARY_INIT_DECL(name) void export_library_init_##name(EmuEnvState &emuenv);
+#define LIBRARY_INIT_IMPL(name) void export_library_init_##name(EmuEnvState &emuenv)
 #define LIBRARY_INIT_REGISTER(name) extern const LibraryInitFn import_library_init_##name = export_library_init_##name;

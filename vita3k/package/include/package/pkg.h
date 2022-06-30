@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <host/state.h>
+#include <emuenv/state.h>
 #include <string>
 
 // Credits to mmozeiko https://github.com/mmozeiko/pkg2zip
@@ -81,6 +81,6 @@ struct PkgEntry {
     uint32_t padding;
 };
 
-bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, const std::function<void(float)> &progress_callback = nullptr);
+bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback = nullptr);
 
-bool decrypt_install_nonpdrm(HostState &host, std::string &drmlicpath, const std::string &title_path);
+bool decrypt_install_nonpdrm(EmuEnvState &emuenv, std::string &drmlicpath, const std::string &title_path);

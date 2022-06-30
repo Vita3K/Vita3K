@@ -131,10 +131,10 @@ struct SceAvcdecArrayPicture {
 
 EXPORT(int, sceAvcdecCreateDecoder, uint32_t codec_type, SceAvcdecCtrl *decoder, const SceAvcdecQueryDecoderInfo *query) {
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
-    const auto state = host.kernel.obj_store.get<VideodecState>();
+    const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
 
-    SceUID handle = host.kernel.get_next_uid();
+    SceUID handle = emuenv.kernel.get_next_uid();
     decoder->handle = handle;
 
     state->decoders[handle] = std::make_shared<H264DecoderState>(query->horizontal, query->vertical);
@@ -159,7 +159,7 @@ EXPORT(int, sceAvcdecCscInternal) {
 }
 
 EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceAvcdecArrayPicture *picture) {
-    const auto state = host.kernel.obj_store.get<VideodecState>();
+    const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
         return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
@@ -171,12 +171,12 @@ EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceA
     options.dts_lower = au->dts.lower;
 
     // This is quite long...
-    SceAvcdecPicture *pPicture = picture->pPicture.get(host.mem)[0].get(host.mem);
-    uint8_t *output = pPicture->frame.pPicture[0].cast<uint8_t>().get(host.mem);
+    SceAvcdecPicture *pPicture = picture->pPicture.get(emuenv.mem)[0].get(emuenv.mem);
+    uint8_t *output = pPicture->frame.pPicture[0].cast<uint8_t>().get(emuenv.mem);
 
     // TODO: decoding can be done async I think
     decoder_info->configure(&options);
-    const auto send = decoder_info->send(reinterpret_cast<uint8_t *>(au->es.pBuf.get(host.mem)), au->es.size);
+    const auto send = decoder_info->send(reinterpret_cast<uint8_t *>(au->es.pBuf.get(emuenv.mem)), au->es.size);
     if (send && decoder_info->receive(output)) {
         decoder_info->get_res(pPicture->frame.frameWidth, pPicture->frame.frameHeight);
         decoder_info->get_pts(pPicture->info.pts.upper, pPicture->info.pts.lower);
@@ -205,7 +205,7 @@ EXPORT(int, sceAvcdecDecodeAuNongameapp) {
 }
 
 EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
-    const auto state = host.kernel.obj_store.get<VideodecState>();
+    const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
         return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
@@ -215,7 +215,7 @@ EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
 }
 
 EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
-    const auto state = host.kernel.obj_store.get<VideodecState>();
+    const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
         return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
@@ -255,14 +255,14 @@ EXPORT(int, sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp) {
 }
 
 EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *picture) {
-    const auto state = host.kernel.obj_store.get<VideodecState>();
+    const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
         return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
 
     if (!decoder_info->is_stopped) {
-        SceAvcdecPicture *pPicture = picture->pPicture.get(host.mem)[0].get(host.mem);
-        uint8_t *output = pPicture->frame.pPicture[0].cast<uint8_t>().get(host.mem);
+        SceAvcdecPicture *pPicture = picture->pPicture.get(emuenv.mem)[0].get(emuenv.mem);
+        uint8_t *output = pPicture->frame.pPicture[0].cast<uint8_t>().get(emuenv.mem);
 
         // the ps vita expects us to be able to return one frame, however ffmpeg does not allow it,so return a black frame instead
         DecoderSize size;
@@ -291,7 +291,7 @@ EXPORT(int, sceAvcdecDecodeWithWorkPicture) {
 }
 
 EXPORT(int, sceAvcdecDeleteDecoder, SceAvcdecCtrl *decoder) {
-    const auto state = host.kernel.obj_store.get<VideodecState>();
+    const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
     state->decoders.erase(decoder->handle);
 
@@ -416,12 +416,12 @@ EXPORT(int, sceM4vdecQueryDecoderMemSizeInternal) {
 }
 
 EXPORT(int, sceVideodecInitLibrary) {
-    host.kernel.obj_store.create<VideodecState>();
+    emuenv.kernel.obj_store.create<VideodecState>();
     return 0;
 }
 
 EXPORT(int, sceVideodecInitLibraryInternal) {
-    host.kernel.obj_store.create<VideodecState>();
+    emuenv.kernel.obj_store.create<VideodecState>();
     return 0;
 }
 
@@ -430,12 +430,12 @@ EXPORT(int, sceVideodecInitLibraryNongameapp) {
 }
 
 EXPORT(int, sceVideodecInitLibraryWithUnmapMem) {
-    host.kernel.obj_store.create<VideodecState>();
+    emuenv.kernel.obj_store.create<VideodecState>();
     return 0;
 }
 
 EXPORT(int, sceVideodecInitLibraryWithUnmapMemInternal) {
-    host.kernel.obj_store.create<VideodecState>();
+    emuenv.kernel.obj_store.create<VideodecState>();
     return 0;
 }
 
@@ -469,7 +469,7 @@ EXPORT(int, sceVideodecSetConfigInternal) {
 }
 
 EXPORT(int, sceVideodecTermLibrary) {
-    host.kernel.obj_store.erase<VideodecState>();
+    emuenv.kernel.obj_store.erase<VideodecState>();
     return 0;
 }
 

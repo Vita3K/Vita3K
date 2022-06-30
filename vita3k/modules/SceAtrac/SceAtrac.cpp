@@ -91,11 +91,11 @@ EXPORT(SceInt32, sceAtracCreateDecoderGroup, SceUInt32 atracType, Ptr<const SceA
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
 
-    if (pDecoderGroup.get(host.mem)->size != sizeof(SceAtracDecoderGroup)) {
+    if (pDecoderGroup.get(emuenv.mem)->size != sizeof(SceAtracDecoderGroup)) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_SIZE);
     }
 
-    if (pDecoderGroup.get(host.mem)->wordLength != SCE_ATRAC_WORD_LENGTH_16BITS) {
+    if (pDecoderGroup.get(emuenv.mem)->wordLength != SCE_ATRAC_WORD_LENGTH_16BITS) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_WORD_LENGTH);
     }
 
@@ -111,14 +111,14 @@ EXPORT(SceInt32, sceAtracCreateDecoderGroup, SceUInt32 atracType, Ptr<const SceA
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_TYPE);
     }
 
-    if ((pDecoderGroup.get(host.mem)->totalCh == 0) || (pDecoderGroup.get(host.mem)->totalCh > SCE_ATRAC_AT9_MAX_TOTAL_CH)) {
+    if ((pDecoderGroup.get(emuenv.mem)->totalCh == 0) || (pDecoderGroup.get(emuenv.mem)->totalCh > SCE_ATRAC_AT9_MAX_TOTAL_CH)) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_TOTAL_CH);
     }
 
     if (initAudiodecFlag) {
         SceAudiodecInitParam audiodecInitParam = {};
         audiodecInitParam.size = sizeof(audiodecInitParam.at9);
-        audiodecInitParam.at9.totalCh = pDecoderGroup.get(host.mem)->totalCh;
+        audiodecInitParam.at9.totalCh = pDecoderGroup.get(emuenv.mem)->totalCh;
 
         SceInt32 res = CALL_EXPORT(sceAudiodecInitLibrary, SCE_AUDIODEC_TYPE_AT9, &audiodecInitParam);
         if (res < 0) {
@@ -161,7 +161,7 @@ EXPORT(SceInt32, sceAtracGetContentInfo, SceInt32 atracHandle, Ptr<SceAtracConte
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
 
-    if (pContentInfo.get(host.mem)->size != sizeof(SceAtracContentInfo)) {
+    if (pContentInfo.get(emuenv.mem)->size != sizeof(SceAtracContentInfo)) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_SIZE);
     }
 
@@ -173,7 +173,7 @@ EXPORT(SceInt32, sceAtracGetDecoderGroupInfo, SceUInt32 atracType, Ptr<SceAtracD
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
 
-    if (pCreatedDecoder.get(host.mem)->size != sizeof(SceAtracDecoderGroup) || pAvailableDecoder.get(host.mem)->size != sizeof(SceAtracDecoderGroup)) {
+    if (pCreatedDecoder.get(emuenv.mem)->size != sizeof(SceAtracDecoderGroup) || pAvailableDecoder.get(emuenv.mem)->size != sizeof(SceAtracDecoderGroup)) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
 
@@ -245,7 +245,7 @@ EXPORT(SceInt32, sceAtracGetStreamInfo, SceInt32 atracHandle, Ptr<SceAtracStream
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
 
-    if (pStreamInfo.get(host.mem)->size != sizeof(SceAtracStreamInfo)) {
+    if (pStreamInfo.get(emuenv.mem)->size != sizeof(SceAtracStreamInfo)) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_SIZE);
     }
 
@@ -277,11 +277,11 @@ EXPORT(SceInt32, sceAtracQueryDecoderGroupMemSize, SceUInt32 atracType, Ptr<cons
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
 
-    if (pDecoderGroup.get(host.mem)->size != sizeof(SceAtracDecoderGroup)) {
+    if (pDecoderGroup.get(emuenv.mem)->size != sizeof(SceAtracDecoderGroup)) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_SIZE);
     }
 
-    if (pDecoderGroup.get(host.mem)->wordLength != SCE_ATRAC_WORD_LENGTH_16BITS) {
+    if (pDecoderGroup.get(emuenv.mem)->wordLength != SCE_ATRAC_WORD_LENGTH_16BITS) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_WORD_LENGTH);
     }
 
@@ -289,11 +289,11 @@ EXPORT(SceInt32, sceAtracQueryDecoderGroupMemSize, SceUInt32 atracType, Ptr<cons
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_TYPE);
     }
 
-    if ((pDecoderGroup.get(host.mem)->totalCh == 0) || (pDecoderGroup.get(host.mem)->totalCh > SCE_ATRAC_AT9_MAX_TOTAL_CH)) {
+    if ((pDecoderGroup.get(emuenv.mem)->totalCh == 0) || (pDecoderGroup.get(emuenv.mem)->totalCh > SCE_ATRAC_AT9_MAX_TOTAL_CH)) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_TOTAL_CH);
     }
 
-    return pDecoderGroup.get(host.mem)->totalCh << 10;
+    return pDecoderGroup.get(emuenv.mem)->totalCh << 10;
 }
 
 EXPORT(SceInt32, sceAtracReleaseHandle, SceInt32 atracHandle) {

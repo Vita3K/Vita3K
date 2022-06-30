@@ -32,8 +32,8 @@ std::string fw_version;
 bool delete_pup_file;
 nfdchar_t *pup_path;
 
-static void get_firmware_version(HostState &host) {
-    fs::ifstream versionFile(host.pref_path + L"/PUP_DEC/PUP/version.txt");
+static void get_firmware_version(EmuEnvState &emuenv) {
+    fs::ifstream versionFile(emuenv.pref_path + L"/PUP_DEC/PUP/version.txt");
 
     if (versionFile.is_open()) {
         std::getline(versionFile, fw_version);
@@ -41,10 +41,10 @@ static void get_firmware_version(HostState &host) {
     } else
         LOG_WARN("Firmware Version file not found!");
 
-    fs::remove_all(fs::path(host.pref_path) / "PUP_DEC");
+    fs::remove_all(fs::path(emuenv.pref_path) / "PUP_DEC");
 }
 
-void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
+void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     nfdresult_t result = NFD_CANCEL;
 
     static std::mutex install_mutex;
@@ -62,11 +62,11 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
         finished_installing = false;
 
         if (result == NFD_OKAY) {
-            std::thread installation([&host]() {
-                install_pup(host.pref_path, pup_path, progress_callback);
+            std::thread installation([&emuenv]() {
+                install_pup(emuenv.pref_path, pup_path, progress_callback);
                 std::lock_guard<std::mutex> lock(install_mutex);
                 finished_installing = true;
-                get_firmware_version(host);
+                get_firmware_version(emuenv);
             });
             installation.detach();
         } else if (result == NFD_CANCEL) {
@@ -100,7 +100,7 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            const auto fw_font_package{ fs::path(host.pref_path) / "sa0" };
+            const auto fw_font_package{ fs::path(emuenv.pref_path) / "sa0" };
             if (!fs::exists(fw_font_package) || fs::is_empty(fw_font_package)) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "No firmware font package present.\nPlease download and install it.");
                 if (ImGui::Button("Download firmware font package"))
@@ -119,8 +119,8 @@ void draw_firmware_install_dialog(GuiState &gui, HostState &host) {
                     fs::remove(fs::path(string_utils::utf_to_wide(pup_path)));
                     delete_pup_file = false;
                 }
-                if (host.cfg.initial_setup)
-                    init_theme(gui, host, gui.users[host.cfg.user_id].theme_id);
+                if (emuenv.cfg.initial_setup)
+                    init_theme(gui, emuenv, gui.users[emuenv.cfg.user_id].theme_id);
                 fw_version.clear();
                 pup_path = nullptr;
                 gui.file_menu.firmware_install_dialog = false;

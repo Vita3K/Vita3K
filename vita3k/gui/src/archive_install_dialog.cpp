@@ -48,10 +48,10 @@ static std::vector<fs::path> get_path_of_archives(const fs::path &path) {
     return archives_path;
 }
 
-void draw_archive_install_dialog(GuiState &gui, HostState &host) {
+void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto BUTTON_SIZE = ImVec2(160.f * SCALE.x, 45.f * SCALE.y);
     const auto WINDOW_SIZE = ImVec2(616.f * SCALE.x, (state.empty() ? 240.f : 340.f) * SCALE.y);
 
@@ -110,10 +110,10 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
             } else
                 type.clear();
         } else if (state == "install") {
-            std::thread installation([&host, &gui]() {
+            std::thread installation([&emuenv, &gui]() {
                 global_progress = 1.f;
                 const auto install_archive_contents = [&](const fs::path &archive_path) {
-                    const auto result = install_archive(host, &gui, archive_path, progress_callback);
+                    const auto result = install_archive(emuenv, &gui, archive_path, progress_callback);
                     std::lock_guard<std::mutex> lock(install_mutex);
                     if (!result.empty()) {
                         contents_archives[archive_path] = result;
@@ -145,30 +145,30 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
             state = "installing";
         } else if (state == "installing") {
             title = "Installing";
-            ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + (20.f * host.dpi_scale)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.app_info.app_title.c_str());
-            ImGui::SetCursorPos(ImVec2(178.f * host.dpi_scale, ImGui::GetCursorPosY() + (20.f * host.dpi_scale)));
+            ImGui::SetCursorPos(ImVec2(178.f * emuenv.dpi_scale, ImGui::GetCursorPosY() + (20.f * emuenv.dpi_scale)));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.app_info.app_title.c_str());
+            ImGui::SetCursorPos(ImVec2(178.f * emuenv.dpi_scale, ImGui::GetCursorPosY() + (20.f * emuenv.dpi_scale)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", indicator["installing"].c_str());
-            const float PROGRESS_BAR_WIDTH = 502.f * host.dpi_scale;
+            const float PROGRESS_BAR_WIDTH = 502.f * emuenv.dpi_scale;
             const auto PROGRESS_BAR_POS = (ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f);
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
             // Draw Global Progress bar
-            ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * host.dpi_scale)));
-            ImGui::ProgressBar(global_progress / archives_count, ImVec2(PROGRESS_BAR_WIDTH, 15.f * host.dpi_scale), "");
+            ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * emuenv.dpi_scale)));
+            ImGui::ProgressBar(global_progress / archives_count, ImVec2(PROGRESS_BAR_WIDTH, 15.f * emuenv.dpi_scale), "");
             const auto global_progress_str = fmt::format("{}/{}", global_progress, archives_count);
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(global_progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * host.dpi_scale)));
+            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(global_progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * emuenv.dpi_scale)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", global_progress_str.c_str());
             // Draw Progress bar of count contents
-            ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * host.dpi_scale)));
-            ImGui::ProgressBar(current / count, ImVec2(PROGRESS_BAR_WIDTH, 15.f * host.dpi_scale), "");
+            ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * emuenv.dpi_scale)));
+            ImGui::ProgressBar(current / count, ImVec2(PROGRESS_BAR_WIDTH, 15.f * emuenv.dpi_scale), "");
             const auto count_progress_str = fmt::format("{}/{}", current, count);
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(count_progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * host.dpi_scale)));
+            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(count_progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * emuenv.dpi_scale)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", count_progress_str.c_str());
             // Draw Progress bar
-            ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * host.dpi_scale)));
-            ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * host.dpi_scale), "");
+            ImGui::SetCursorPos(ImVec2(PROGRESS_BAR_POS, ImGui::GetCursorPosY() + (14.f * emuenv.dpi_scale)));
+            ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * emuenv.dpi_scale), "");
             const auto progress_str = std::to_string(uint32_t(progress)).append("%");
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * host.dpi_scale)));
+            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + (6.f * emuenv.dpi_scale)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
             ImGui::PopStyleColor();
         } else if (state == "finished") {
@@ -196,7 +196,7 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
                             if (content.state) {
                                 ImGui::TextWrapped("%s [%s]", content.title.c_str(), content.title_id.c_str());
                                 if (content.category.find("gp") != std::string::npos)
-                                    ImGui::TextColored(GUI_COLOR_TEXT, "Update App to: %s", host.app_info.app_version.c_str());
+                                    ImGui::TextColored(GUI_COLOR_TEXT, "Update App to: %s", emuenv.app_info.app_version.c_str());
                             }
                         }
                     }
@@ -232,14 +232,14 @@ void draw_archive_install_dialog(GuiState &gui, HostState &host) {
                 for (const auto &archive : contents_archives) {
                     for (const auto &content : archive.second) {
                         if (content.state) {
-                            host.app_info.app_category = content.category;
-                            host.app_info.app_title_id = content.title_id;
-                            host.app_info.app_content_id = content.content_id;
-                            if (host.app_info.app_category != "theme")
-                                update_notice_info(gui, host, "content");
+                            emuenv.app_info.app_category = content.category;
+                            emuenv.app_info.app_title_id = content.title_id;
+                            emuenv.app_info.app_content_id = content.content_id;
+                            if (emuenv.app_info.app_category != "theme")
+                                update_notice_info(gui, emuenv, "content");
                             if (content.category == "gd") {
-                                init_user_app(gui, host, content.title_id);
-                                save_apps_cache(gui, host);
+                                init_user_app(gui, emuenv, content.title_id);
+                                save_apps_cache(gui, emuenv);
                             }
                         }
                     }

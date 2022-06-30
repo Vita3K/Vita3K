@@ -61,7 +61,7 @@ EXPORT(int, sceJpegDecodeMJpeg) {
 
 EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *jpeg_data, uint32_t jpeg_size,
     uint8_t *output, uint32_t output_size, int mode, void *buffer, uint32_t buffer_size) {
-    const auto state = host.kernel.obj_store.get<MJpegState>();
+    const auto state = emuenv.kernel.obj_store.get<MJpegState>();
 
     DecoderSize size = {};
 
@@ -77,14 +77,14 @@ EXPORT(int, sceJpegDeleteSplitDecoder) {
 }
 
 EXPORT(int, sceJpegFinishMJpeg) {
-    host.kernel.obj_store.erase<MJpegState>();
+    emuenv.kernel.obj_store.erase<MJpegState>();
 
     return 0;
 }
 
 EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
     int32_t format, int32_t mode, SceJpegOutputInfo *output) {
-    const auto state = host.kernel.obj_store.get<MJpegState>();
+    const auto state = emuenv.kernel.obj_store.get<MJpegState>();
 
     DecoderSize size = {};
 
@@ -101,16 +101,16 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
 
 // TODO: Decoder options are ignored for the time being.
 EXPORT(int, sceJpegInitMJpeg, int32_t decoder_count) {
-    host.kernel.obj_store.create<MJpegState>();
-    const auto state = host.kernel.obj_store.get<MJpegState>();
+    emuenv.kernel.obj_store.create<MJpegState>();
+    const auto state = emuenv.kernel.obj_store.get<MJpegState>();
     state->decoder = std::make_shared<MjpegDecoderState>();
 
     return 0;
 }
 
 EXPORT(int, sceJpegInitMJpegWithParam, const SceJpegMJpegInitInfo *info) {
-    host.kernel.obj_store.create<MJpegState>();
-    const auto state = host.kernel.obj_store.get<MJpegState>();
+    emuenv.kernel.obj_store.create<MJpegState>();
+    const auto state = emuenv.kernel.obj_store.get<MJpegState>();
     state->decoder = std::make_shared<MjpegDecoderState>();
 
     return 0;
