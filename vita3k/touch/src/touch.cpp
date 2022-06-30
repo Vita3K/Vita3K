@@ -16,7 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <display/functions.h>
-#include <host/state.h>
+#include <emuenv/state.h>
 #include <touch/functions.h>
 #include <touch/touch.h>
 
@@ -59,7 +59,7 @@ static SceTouchData recover_touch_events() {
     return touch_data;
 }
 
-void touch_vsync_update(const HostState &host) {
+void touch_vsync_update(const EmuEnvState &emuenv) {
     SceIVector2 touch_pos_window = { 0, 0 };
     const uint32_t buttons = SDL_GetMouseState(&touch_pos_window.x, &touch_pos_window.y);
 
@@ -73,7 +73,7 @@ void touch_vsync_update(const HostState &host) {
         data->timeStamp = timestamp;
 
         const uint32_t mask = (port == SCE_TOUCH_PORT_BACK) ? SDL_BUTTON_RMASK : SDL_BUTTON_LMASK;
-        if ((buttons & mask) && host.renderer_focused) {
+        if ((buttons & mask) && emuenv.renderer_focused) {
             if (!is_touched[port]) {
                 curr_touch_id[port]++;
                 // the touch id must be between 0 and 127
@@ -87,8 +87,8 @@ void touch_vsync_update(const HostState &host) {
 
             SceFVector2 scale = { 1, 1 };
             if ((SDL_window_size.x > 0) && (SDL_window_size.y > 0)) {
-                scale.x = static_cast<float>(host.drawable_size.x) / SDL_window_size.x;
-                scale.y = static_cast<float>(host.drawable_size.y) / SDL_window_size.y;
+                scale.x = static_cast<float>(emuenv.drawable_size.x) / SDL_window_size.x;
+                scale.y = static_cast<float>(emuenv.drawable_size.y) / SDL_window_size.y;
             }
 
             const SceFVector2 touch_pos_drawable = {
@@ -97,8 +97,8 @@ void touch_vsync_update(const HostState &host) {
             };
 
             const SceFVector2 touch_pos_viewport = {
-                (touch_pos_drawable.x - host.viewport_pos.x) / host.viewport_size.x,
-                (touch_pos_drawable.y - host.viewport_pos.y) / host.viewport_size.y
+                (touch_pos_drawable.x - emuenv.viewport_pos.x) / emuenv.viewport_size.x,
+                (touch_pos_drawable.y - emuenv.viewport_pos.y) / emuenv.viewport_size.y
             };
 
             if ((touch_pos_viewport.x >= 0) && (touch_pos_viewport.y >= 0) && (touch_pos_viewport.x < 1) && (touch_pos_viewport.y < 1)) {
@@ -112,7 +112,7 @@ void touch_vsync_update(const HostState &host) {
                 ++data->reportNum;
             }
 
-            if (!host.touch.touch_mode[port]) {
+            if (!emuenv.touch.touch_mode[port]) {
                 data->reportNum = 0;
             }
         } else {
@@ -180,27 +180,27 @@ int toggle_touchscreen() {
     return 0;
 }
 
-int touch_get(const SceUID thread_id, HostState &host, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count, bool is_peek) {
+int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port, SceTouchData *pData, SceUInt32 count, bool is_peek) {
     memset(pData, 0, sizeof(SceTouchData) * count);
     const int port_idx = static_cast<int>(port);
 
     int nb_returned_data = 1;
     if (is_peek) {
-        if (host.touch.touch_mode[port])
+        if (emuenv.touch.touch_mode[port])
             nb_returned_data = count;
         else
             nb_returned_data = 0;
     } else {
-        uint64_t vblank_count = host.display.vblank_count;
+        uint64_t vblank_count = emuenv.display.vblank_count;
         if (vblank_count <= last_vcount[port_idx]) {
             // sceTouchRead is blocking, wait for the next vsync for the buffer to be updated
-            auto thread = host.kernel.get_thread(thread_id);
+            auto thread = emuenv.kernel.get_thread(thread_id);
 
-            wait_vblank(host.display, host.kernel, thread, last_vcount[port_idx] + 1, false);
-            vblank_count = host.display.vblank_count;
+            wait_vblank(emuenv.display, emuenv.kernel, thread, last_vcount[port_idx] + 1, false);
+            vblank_count = emuenv.display.vblank_count;
         }
-        nb_returned_data = std::min<int>(count, host.display.vblank_count - last_vcount[port_idx]);
-        last_vcount[port_idx] = host.display.vblank_count;
+        nb_returned_data = std::min<int>(count, emuenv.display.vblank_count - last_vcount[port_idx]);
+        last_vcount[port_idx] = emuenv.display.vblank_count;
     }
 
     if (registered_touch() && port == touchscreen_port) {

@@ -24,7 +24,7 @@
 #include <gui/functions.h>
 #include <gui/state.h>
 
-#include <host/state.h>
+#include <emuenv/state.h>
 
 #include <misc/cpp/imgui_stdlib.h>
 
@@ -47,21 +47,21 @@ namespace gui {
 /**
  * @brief Struct used to abstract the code that manages app-specific config files
  *
- * This struct matches in type to the one found in `host.cfg.current_config` and is
- * used to collect the proper values that must be set in `host.cfg.current_config`
+ * This struct matches in type to the one found in `emuenv.cfg.current_config` and is
+ * used to collect the proper values that must be set in `emuenv.cfg.current_config`
  * depending on whether an app-specific config file is being used or not.
  *
  * If an app-specific config file is loaded, then the values in this struct will be
- * set to those of the app-specific config file before getting used to set up `host.cfg.current_config`
+ * set to those of the app-specific config file before getting used to set up `emuenv.cfg.current_config`
  * with those same values. If an app-specific config isn't loaded, then the values in this struct
- * will be set those of the global emulator settings before getting used to set up `host.cfg.current_config`.
+ * will be set those of the global emulator settings before getting used to set up `emuenv.cfg.current_config`.
  */
 static Config::CurrentConfig config;
 
-static void get_modules_list(GuiState &gui, HostState &host) {
+static void get_modules_list(GuiState &gui, EmuEnvState &emuenv) {
     gui.modules.clear();
 
-    const auto modules_path{ fs::path(host.pref_path) / "vs0/sys/external/" };
+    const auto modules_path{ fs::path(emuenv.pref_path) / "vs0/sys/external/" };
     if (fs::exists(modules_path) && !fs::is_empty(modules_path)) {
         for (const auto &module : fs::directory_iterator(modules_path)) {
             if (module.path().extension() == ".suprx")
@@ -79,38 +79,38 @@ static void get_modules_list(GuiState &gui, HostState &host) {
     }
 }
 
-static void reset_emulator(GuiState &gui, HostState &host) {
+static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     gui.configuration_menu.settings_dialog = false;
     gui.live_area.home_screen = false;
 
     // Clean and save new config value
-    host.cfg.auto_user_login = false;
-    host.cfg.user_id.clear();
-    host.cfg.pref_path = string_utils::wide_to_utf(host.pref_path);
-    host.io.user_id.clear();
-    config::serialize_config(host.cfg, host.cfg.config_path);
+    emuenv.cfg.auto_user_login = false;
+    emuenv.cfg.user_id.clear();
+    emuenv.cfg.pref_path = string_utils::wide_to_utf(emuenv.pref_path);
+    emuenv.io.user_id.clear();
+    config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 
     // Clean User apps list
     gui.app_selector.user_apps.clear();
 
-    get_modules_list(gui, host);
-    get_sys_apps_title(gui, host);
-    get_notice_list(host);
-    get_users_list(gui, host);
-    init_home(gui, host);
+    get_modules_list(gui, emuenv);
+    get_sys_apps_title(gui, emuenv);
+    get_notice_list(emuenv);
+    get_users_list(gui, emuenv);
+    init_home(gui, emuenv);
 }
 
-static void change_emulator_path(GuiState &gui, HostState &host) {
+static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
     nfdchar_t *emulator_path = nullptr;
     nfdresult_t result = NFD_PickFolder(nullptr, &emulator_path);
 
-    if (result == NFD_OKAY && string_utils::utf_to_wide(emulator_path) != host.pref_path) {
+    if (result == NFD_OKAY && string_utils::utf_to_wide(emulator_path) != emuenv.pref_path) {
         // Refresh the working paths
-        host.pref_path = string_utils::utf_to_wide(emulator_path) + L'/';
+        emuenv.pref_path = string_utils::utf_to_wide(emulator_path) + L'/';
 
         // TODO: Move app old to new path
-        reset_emulator(gui, host);
-        LOG_INFO("Successfully moved Vita3K path to: {}", string_utils::wide_to_utf(host.pref_path));
+        reset_emulator(gui, emuenv);
+        LOG_INFO("Successfully moved Vita3K path to: {}", string_utils::wide_to_utf(emuenv.pref_path));
     }
 }
 
@@ -123,15 +123,15 @@ static CPUBackend config_cpu_backend;
  * `config`.
  *
  * @param gui State of the Vita3K GUI
- * @param host State of the emulated PlayStation Vita environment
+ * @param emuenv State of the emulated PlayStation Vita environment
  * @param app_path Path to the app or game to get the custom config for
  * @return true A custom config for the application has been found, and `config` has been set up with
  * the setting values contained in the custom config file.
  * @return false A custom config for the application has not been found or a custom config has been found
  * but it's corrupted or invalid.
  */
-static bool get_custom_config(GuiState &gui, HostState &host, const std::string &app_path) {
-    const auto CUSTOM_CONFIG_PATH{ fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
+static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+    const auto CUSTOM_CONFIG_PATH{ fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
 
     if (fs::exists(CUSTOM_CONFIG_PATH)) {
         pugi::xml_document custom_config_xml;
@@ -197,31 +197,31 @@ static int current_aniso_filter_log, max_aniso_filter_log;
  * @brief Initialize the `config` struct with the values set in the global emulator config.
  *
  * @param gui State of the Vita3K GUI
- * @param host State of the emulated PlayStation Vita environment
+ * @param emuenv State of the emulated PlayStation Vita environment
  * @param app_path Path to the app or game to get the custom config for
  */
-void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
+void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     // If no app-specific config file is being used for the initialized application,
     // set up `config` with the values set in the global emulator configuration
-    if (!get_custom_config(gui, host, app_path)) {
-        config.cpu_backend = host.cfg.cpu_backend;
-        config.cpu_opt = host.cfg.cpu_opt;
-        config.modules_mode = host.cfg.modules_mode;
-        config.lle_modules = host.cfg.lle_modules;
-        config.resolution_multiplier = host.cfg.resolution_multiplier;
-        config.disable_surface_sync = host.cfg.disable_surface_sync;
-        config.enable_fxaa = host.cfg.enable_fxaa;
-        config.v_sync = host.cfg.v_sync;
-        config.anisotropic_filtering = host.cfg.anisotropic_filtering;
-        config.pstv_mode = host.cfg.pstv_mode;
-        config.disable_ngs = host.cfg.disable_ngs;
+    if (!get_custom_config(gui, emuenv, app_path)) {
+        config.cpu_backend = emuenv.cfg.cpu_backend;
+        config.cpu_opt = emuenv.cfg.cpu_opt;
+        config.modules_mode = emuenv.cfg.modules_mode;
+        config.lle_modules = emuenv.cfg.lle_modules;
+        config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
+        config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
+        config.enable_fxaa = emuenv.cfg.enable_fxaa;
+        config.v_sync = emuenv.cfg.v_sync;
+        config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
+        config.pstv_mode = emuenv.cfg.pstv_mode;
+        config.disable_ngs = emuenv.cfg.disable_ngs;
     }
     config_cpu_backend = set_cpu_backend(config.cpu_backend);
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
-    max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(host.renderer->get_max_anisotropic_filtering())));
-    host.app_path = app_path;
-    get_modules_list(gui, host);
-    host.display.imgui_render = true;
+    max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
+    emuenv.app_path = app_path;
+    get_modules_list(gui, emuenv);
+    emuenv.display.imgui_render = true;
 }
 
 /**
@@ -233,12 +233,12 @@ void init_config(GuiState &gui, HostState &host, const std::string &app_path) {
  * from the GUI state.
  *
  * @param gui State of the Vita3K GUI
- * @param host State of the emulated PlayStation Vita environment
+ * @param emuenv State of the emulated PlayStation Vita environment
  */
-static void save_config(GuiState &gui, HostState &host) {
+static void save_config(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.configuration_menu.custom_settings_dialog) {
-        const auto CONFIG_PATH{ fs::path(host.base_path) / "config" };
-        const auto CUSTOM_CONFIG_PATH{ CONFIG_PATH / fmt::format("config_{}.xml", host.app_path) };
+        const auto CONFIG_PATH{ fs::path(emuenv.base_path) / "config" };
+        const auto CUSTOM_CONFIG_PATH{ CONFIG_PATH / fmt::format("config_{}.xml", emuenv.app_path) };
         if (!fs::exists(CONFIG_PATH))
             fs::create_directory(CONFIG_PATH);
 
@@ -280,21 +280,21 @@ static void save_config(GuiState &gui, HostState &host) {
 
         const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
         if (!save_xml)
-            LOG_ERROR("Fail save custom config xml for app path: {}, in path: {}", host.app_path, CONFIG_PATH.string());
+            LOG_ERROR("Fail save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH.string());
     } else {
-        host.cfg.cpu_backend = config.cpu_backend;
-        host.cfg.cpu_opt = config.cpu_opt;
-        host.cfg.modules_mode = config.modules_mode;
-        host.cfg.lle_modules = config.lle_modules;
-        host.cfg.pstv_mode = config.pstv_mode;
-        host.cfg.resolution_multiplier = config.resolution_multiplier;
-        host.cfg.disable_surface_sync = config.disable_surface_sync;
-        host.cfg.enable_fxaa = config.enable_fxaa;
-        host.cfg.v_sync = config.v_sync;
-        host.cfg.anisotropic_filtering = config.anisotropic_filtering;
-        host.cfg.disable_ngs = config.disable_ngs;
+        emuenv.cfg.cpu_backend = config.cpu_backend;
+        emuenv.cfg.cpu_opt = config.cpu_opt;
+        emuenv.cfg.modules_mode = config.modules_mode;
+        emuenv.cfg.lle_modules = config.lle_modules;
+        emuenv.cfg.pstv_mode = config.pstv_mode;
+        emuenv.cfg.resolution_multiplier = config.resolution_multiplier;
+        emuenv.cfg.disable_surface_sync = config.disable_surface_sync;
+        emuenv.cfg.enable_fxaa = config.enable_fxaa;
+        emuenv.cfg.v_sync = config.v_sync;
+        emuenv.cfg.anisotropic_filtering = config.anisotropic_filtering;
+        emuenv.cfg.disable_ngs = config.disable_ngs;
     }
-    config::serialize_config(host.cfg, host.cfg.config_path);
+    config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
 
 static void set_vsync_state(const bool &state) {
@@ -315,54 +315,54 @@ static void set_vsync_state(const bool &state) {
  * depending on whether app-specific config files are being used or not.
  *
  * @param gui State of the Vita3K GUI
- * @param host State of the emulated PlayStation Vita environment
+ * @param emuenv State of the emulated PlayStation Vita environment
  * @param app_path Path to the app or game to get the custom config for
  */
-void set_config(GuiState &gui, HostState &host, const std::string &app_path) {
+void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     // If a config file is in use, call `get_custom_config()` and set the config
     // parameters with the values stored in the app-specific custom config file
-    if (get_custom_config(gui, host, app_path)) {
-        host.cfg.current_config.cpu_backend = config.cpu_backend;
-        host.cfg.current_config.cpu_opt = config.cpu_opt;
-        host.cfg.current_config.modules_mode = config.modules_mode;
-        host.cfg.current_config.lle_modules = config.lle_modules;
-        host.cfg.current_config.pstv_mode = config.pstv_mode;
-        host.cfg.current_config.resolution_multiplier = config.resolution_multiplier;
-        host.cfg.current_config.disable_surface_sync = config.disable_surface_sync;
-        host.cfg.current_config.enable_fxaa = config.enable_fxaa;
-        host.cfg.current_config.v_sync = config.v_sync;
-        host.cfg.current_config.anisotropic_filtering = config.anisotropic_filtering;
-        host.cfg.current_config.disable_ngs = config.disable_ngs;
+    if (get_custom_config(gui, emuenv, app_path)) {
+        emuenv.cfg.current_config.cpu_backend = config.cpu_backend;
+        emuenv.cfg.current_config.cpu_opt = config.cpu_opt;
+        emuenv.cfg.current_config.modules_mode = config.modules_mode;
+        emuenv.cfg.current_config.lle_modules = config.lle_modules;
+        emuenv.cfg.current_config.pstv_mode = config.pstv_mode;
+        emuenv.cfg.current_config.resolution_multiplier = config.resolution_multiplier;
+        emuenv.cfg.current_config.disable_surface_sync = config.disable_surface_sync;
+        emuenv.cfg.current_config.enable_fxaa = config.enable_fxaa;
+        emuenv.cfg.current_config.v_sync = config.v_sync;
+        emuenv.cfg.current_config.anisotropic_filtering = config.anisotropic_filtering;
+        emuenv.cfg.current_config.disable_ngs = config.disable_ngs;
     } else {
         // Else inherit the values from the global emulator config
-        host.cfg.current_config.cpu_backend = host.cfg.cpu_backend;
-        host.cfg.current_config.cpu_opt = host.cfg.cpu_opt;
-        host.cfg.current_config.modules_mode = host.cfg.modules_mode;
-        host.cfg.current_config.lle_modules = host.cfg.lle_modules;
-        host.cfg.current_config.pstv_mode = host.cfg.pstv_mode;
-        host.cfg.current_config.resolution_multiplier = host.cfg.resolution_multiplier;
-        host.cfg.current_config.disable_surface_sync = host.cfg.disable_surface_sync;
-        host.cfg.current_config.enable_fxaa = host.cfg.enable_fxaa;
-        host.cfg.current_config.v_sync = host.cfg.v_sync;
-        host.cfg.current_config.anisotropic_filtering = host.cfg.anisotropic_filtering;
-        host.cfg.current_config.disable_ngs = host.cfg.disable_ngs;
+        emuenv.cfg.current_config.cpu_backend = emuenv.cfg.cpu_backend;
+        emuenv.cfg.current_config.cpu_opt = emuenv.cfg.cpu_opt;
+        emuenv.cfg.current_config.modules_mode = emuenv.cfg.modules_mode;
+        emuenv.cfg.current_config.lle_modules = emuenv.cfg.lle_modules;
+        emuenv.cfg.current_config.pstv_mode = emuenv.cfg.pstv_mode;
+        emuenv.cfg.current_config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
+        emuenv.cfg.current_config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
+        emuenv.cfg.current_config.enable_fxaa = emuenv.cfg.enable_fxaa;
+        emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
+        emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
+        emuenv.cfg.current_config.disable_ngs = emuenv.cfg.disable_ngs;
     }
 
     // can be changed while ingame
-    host.renderer->disable_surface_sync = host.cfg.current_config.disable_surface_sync;
-    host.renderer->set_fxaa(host.cfg.current_config.enable_fxaa);
-    set_vsync_state(host.cfg.current_config.v_sync);
-    host.renderer->set_anisotropic_filtering(host.cfg.current_config.anisotropic_filtering);
+    emuenv.renderer->disable_surface_sync = emuenv.cfg.current_config.disable_surface_sync;
+    emuenv.renderer->set_fxaa(emuenv.cfg.current_config.enable_fxaa);
+    set_vsync_state(emuenv.cfg.current_config.v_sync);
+    emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
 
     // No change it if app already running
-    if (host.io.title_id.empty()) {
-        host.kernel.cpu_backend = set_cpu_backend(host.cfg.current_config.cpu_backend);
-        host.kernel.cpu_opt = host.cfg.current_config.cpu_opt;
-        host.renderer->res_multiplier = host.cfg.current_config.resolution_multiplier;
+    if (emuenv.io.title_id.empty()) {
+        emuenv.kernel.cpu_backend = set_cpu_backend(emuenv.cfg.current_config.cpu_backend);
+        emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
+        emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
     }
 }
 
-void draw_settings_dialog(GuiState &gui, HostState &host) {
+void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.48f));
     const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
@@ -370,7 +370,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::Begin("##settings", &settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushFont(gui.vita_font);
     ImGui::SetWindowFontScale(0.7f);
-    const auto title = is_custom_config ? fmt::format("Settings: {} [{}]", get_app_index(gui, host.app_path)->title, host.app_path) : "Settings";
+    const auto title = is_custom_config ? fmt::format("Settings: {} [{}]", get_app_index(gui, emuenv.app_path)->title, emuenv.app_path) : "Settings";
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
     ImGui::PopFont();
@@ -400,7 +400,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your desired modules.");
             ImGui::Spacing();
-            ImGui::PushItemWidth(240 * host.dpi_scale);
+            ImGui::PushItemWidth(240 * emuenv.dpi_scale);
             if (ImGui::BeginListBox("##modules_list", { 0.0f, ImGui::GetTextLineHeightWithSpacing() * 8.25f + ImGui::GetStyle().FramePadding.y * 2.0f })) {
                 for (auto &m : gui.modules) {
                     const auto module = std::find(config.lle_modules.begin(), config.lle_modules.end(), m.first);
@@ -419,7 +419,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::PopItemWidth();
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT, "Search modules");
-            gui.module_search_bar.Draw("##module_search_bar", 200 * host.dpi_scale);
+            gui.module_search_bar.Draw("##module_search_bar", 200 * emuenv.dpi_scale);
             ImGui::Spacing();
             if (ImGui::Button("Clear List")) {
                 config.lle_modules.clear();
@@ -433,7 +433,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                 open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
         }
         if (ImGui::Button("Refresh List"))
-            get_modules_list(gui, host);
+            get_modules_list(gui, emuenv);
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
@@ -467,8 +467,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
 #ifdef USE_VULKAN
         static const char *LIST_BACKEND_RENDERER[] = { "OpenGL", "Vulkan" };
-        if (ImGui::Combo("Backend Renderer (Reboot to apply)", reinterpret_cast<int *>(&host.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
-            host.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(host.backend_renderer)];
+        if (ImGui::Combo("Backend Renderer (Reboot to apply)", reinterpret_cast<int *>(&emuenv.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
+            emuenv.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(emuenv.backend_renderer)];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred backend renderer.");
         ImGui::Spacing();
@@ -478,9 +478,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Internal Resolution Upscaling").x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Internal Resolution Upscaling");
         ImGui::Spacing();
-        if (!host.io.title_id.empty())
+        if (!emuenv.io.title_id.empty())
             ImGui::BeginDisabled();
-        ImGui::PushItemWidth(-70.f * host.dpi_scale);
+        ImGui::PushItemWidth(-70.f * emuenv.dpi_scale);
         if (ImGui::SliderInt("##res_scal", &config.resolution_multiplier, 1, 8, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
             if (config.resolution_multiplier > 1)
                 config.disable_surface_sync = true;
@@ -492,7 +492,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
             ImGui::BeginDisabled();
         ImGui::PushID("Res scal");
-        if (ImGui::Button("Reset", ImVec2(60.f * host.dpi_scale, 0))) {
+        if (ImGui::Button("Reset", ImVec2(60.f * emuenv.dpi_scale, 0))) {
             config.resolution_multiplier = 1;
             config.disable_surface_sync = false;
         }
@@ -501,9 +501,9 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
             ImGui::EndDisabled();
         ImGui::Spacing();
         const auto res_scal = fmt::format("{}x{}", 960 * config.resolution_multiplier, 544 * config.resolution_multiplier);
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * host.dpi_scale));
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * emuenv.dpi_scale));
         ImGui::Text("%s", res_scal.c_str());
-        if (!host.io.title_id.empty())
+        if (!emuenv.io.title_id.empty())
             ImGui::EndDisabled();
         ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
         if (ImGui::IsItemHovered())
@@ -522,7 +522,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Anisotropic Filtering").x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Anisotropic Filtering");
         ImGui::Spacing();
-        ImGui::PushItemWidth(-70.f * host.dpi_scale);
+        ImGui::PushItemWidth(-70.f * emuenv.dpi_scale);
         if (ImGui::SliderInt("##aniso_filter", &current_aniso_filter_log, 0, max_aniso_filter_log, fmt::format("{}x", config.anisotropic_filtering).c_str()))
             config.anisotropic_filtering = 1 << current_aniso_filter_log;
         ImGui::PopItemWidth();
@@ -532,7 +532,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         if (config.anisotropic_filtering == 1)
             ImGui::BeginDisabled();
         ImGui::PushID("Aniso filter");
-        if (ImGui::Button("Reset", ImVec2(60.f * host.dpi_scale, 0))) {
+        if (ImGui::Button("Reset", ImVec2(60.f * emuenv.dpi_scale, 0))) {
             config.anisotropic_filtering = 1;
             current_aniso_filter_log = 0;
         }
@@ -545,24 +545,24 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Shaders").x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Shaders");
         ImGui::Spacing();
-        ImGui::Checkbox("Use shader cache", &host.cfg.shader_cache);
+        ImGui::Checkbox("Use shader cache", &emuenv.cfg.shader_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable shader cache to pre-compile it at game startup\nUncheck to disable this feature.");
         ImGui::SameLine();
-        if (host.renderer->features.spirv_shader) {
-            ImGui::Checkbox("Use Spir-V shader (deprecated)", &host.cfg.spirv_shader);
+        if (emuenv.renderer->features.spirv_shader) {
+            ImGui::Checkbox("Use Spir-V shader (deprecated)", &emuenv.cfg.spirv_shader);
 
             if (ImGui::IsItemHovered()) {
                 ImGui::SetTooltip("Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled, "
                                   "and not all GPUs are compatible with this.");
             }
         }
-        const auto shaders_cache_path{ fs::path(host.base_path) / "cache/shaders" };
+        const auto shaders_cache_path{ fs::path(emuenv.base_path) / "cache/shaders" };
         if (fs::exists(shaders_cache_path) && !fs::is_empty(shaders_cache_path)) {
             ImGui::Spacing();
             if (ImGui::Button("Clean Shaders Cache and Log")) {
                 fs::remove_all(shaders_cache_path);
-                fs::remove_all(fs::path(host.base_path) / "shaderlog");
+                fs::remove_all(fs::path(emuenv.base_path) / "shaderlog");
             }
         }
         ImGui::EndTabItem();
@@ -577,8 +577,8 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::TextColored(GUI_COLOR_TEXT, "Enter button assignment \nSelect your 'Enter' button.");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and get default confirmation button.");
-        ImGui::RadioButton("Circle", &host.cfg.sys_button, 0);
-        ImGui::RadioButton("Cross", &host.cfg.sys_button, 1);
+        ImGui::RadioButton("Circle", &emuenv.cfg.sys_button, 0);
+        ImGui::RadioButton("Cross", &emuenv.cfg.sys_button, 1);
         ImGui::Spacing();
         ImGui::Checkbox("PS TV Mode", &config.pstv_mode);
         if (ImGui::IsItemHovered())
@@ -592,7 +592,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Emulator")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("Boot apps in full screen", &host.cfg.boot_apps_full_screen);
+        ImGui::Checkbox("Boot apps in full screen", &emuenv.cfg.boot_apps_full_screen);
         ImGui::Spacing();
         ImGui::Checkbox("Disable ngs support", &config.disable_ngs);
         if (ImGui::IsItemHovered())
@@ -600,21 +600,21 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        if (ImGui::Combo("Log Level", &host.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0"))
-            logging::set_level(static_cast<spdlog::level::level_enum>(host.cfg.log_level));
+        if (ImGui::Combo("Log Level", &emuenv.cfg.log_level, "Trace\0Debug\0Info\0Warning\0Error\0Critical\0Off\0"))
+            logging::set_level(static_cast<spdlog::level::level_enum>(emuenv.cfg.log_level));
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred log level.");
         ImGui::Spacing();
-        ImGui::Checkbox("Archive Log", &host.cfg.archive_log);
+        ImGui::Checkbox("Archive Log", &emuenv.cfg.archive_log);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable Archiving Log.");
         ImGui::SameLine();
 #ifdef USE_DISCORD
-        ImGui::Checkbox("Discord Rich Presence", &host.cfg.discord_rich_presence);
+        ImGui::Checkbox("Discord Rich Presence", &emuenv.cfg.discord_rich_presence);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Enables Discord Rich Presence to show what application you're running on Discord.");
 #endif
-        ImGui::Checkbox("Texture Cache", &host.cfg.texture_cache);
+        ImGui::Checkbox("Texture Cache", &emuenv.cfg.texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
         ImGui::Separator();
@@ -622,20 +622,20 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (perfomance_overley_size / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Performance Overlay");
         ImGui::Spacing();
-        ImGui::Checkbox("Performance Overlay", &host.cfg.performance_overlay);
+        ImGui::Checkbox("Performance Overlay", &emuenv.cfg.performance_overlay);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Display performance information on the screen as an overlay.");
-        if (host.cfg.performance_overlay) {
-            ImGui::Combo("Detail", &host.cfg.performance_overlay_detail, "Minimum\0Low\0Medium\0Maximum\0");
+        if (emuenv.cfg.performance_overlay) {
+            ImGui::Combo("Detail", &emuenv.cfg.performance_overlay_detail, "Minimum\0Low\0Medium\0Maximum\0");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred perfomance overley detail.");
-            ImGui::Combo("Position", &host.cfg.performance_overlay_position, "Top Left\0Top Center\0Top Right\0Botttom Left\0Botttom Center\0Botttom Right\0");
+            ImGui::Combo("Position", &emuenv.cfg.performance_overlay_position, "Top Left\0Top Center\0Top Right\0Botttom Left\0Botttom Center\0Botttom Right\0");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred perfomance overley position.");
         }
         ImGui::Spacing();
 #ifndef WIN32
-        ImGui::Checkbox("Check to enable case-insensitive path finding on case sensitive filesystems. \nRESETS ON RESTART", &host.io.case_isens_find_enabled);
+        ImGui::Checkbox("Check to enable case-insensitive path finding on case sensitive filesystems. \nRESETS ON RESTART", &emuenv.io.case_isens_find_enabled);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Allows emulator to attempt searching for files regardless of case on non-Windows platforms");
 #endif
@@ -644,22 +644,22 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Emulated System Storage Folder");
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current emulator folder: %s", host.cfg.pref_path.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current emulator folder: %s", emuenv.cfg.pref_path.c_str());
         ImGui::PopItemWidth();
         ImGui::Spacing();
         if (ImGui::Button("Change Emulator Path"))
-            change_emulator_path(gui, host);
+            change_emulator_path(gui, emuenv);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Change Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually.");
-        if (host.cfg.pref_path != host.default_path) {
+        if (emuenv.cfg.pref_path != emuenv.default_path) {
             ImGui::SameLine();
             if (ImGui::Button("Reset Emulator Path")) {
-                if (string_utils::utf_to_wide(host.default_path) != host.pref_path) {
-                    host.pref_path = string_utils::utf_to_wide(host.default_path);
+                if (string_utils::utf_to_wide(emuenv.default_path) != emuenv.pref_path) {
+                    emuenv.pref_path = string_utils::utf_to_wide(emuenv.default_path);
 
                     // Refresh the working paths
-                    reset_emulator(gui, host);
-                    LOG_INFO("Successfully restored default path for Vita3K files to: {}", string_utils::wide_to_utf(host.pref_path));
+                    reset_emulator(gui, emuenv);
+                    LOG_INFO("Successfully restored default path for Vita3K files to: {}", string_utils::wide_to_utf(emuenv.pref_path));
                 }
             }
             if (ImGui::IsItemHovered())
@@ -674,24 +674,24 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("GUI")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("GUI visible", &host.cfg.show_gui);
+        ImGui::Checkbox("GUI visible", &emuenv.cfg.show_gui);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show GUI after booting an application.");
         ImGui::SameLine();
-        ImGui::Checkbox("Info bar visible", &host.cfg.show_info_bar);
+        ImGui::Checkbox("Info bar visible", &emuenv.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show an info bar inside app selector.");
         ImGui::Spacing();
-        ImGui::Checkbox("Live Area app screen", &host.cfg.show_live_area_screen);
+        ImGui::Checkbox("Live Area app screen", &emuenv.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to open the Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
         ImGui::SameLine();
-        ImGui::Checkbox("Grid Mode", &host.cfg.apps_list_grid);
+        ImGui::Checkbox("Grid Mode", &emuenv.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to set the app list to grid mode.");
-        if (!host.cfg.apps_list_grid) {
+        if (!emuenv.cfg.apps_list_grid) {
             ImGui::Spacing();
-            ImGui::SliderInt("App Icon Size", &host.cfg.icon_size, 64, 128);
+            ImGui::SliderInt("App Icon Size", &emuenv.cfg.icon_size, 64, 128);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred icon size.");
         }
@@ -703,7 +703,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Font support");
         ImGui::Spacing();
         if (gui.fw_font) {
-            ImGui::Checkbox("Asia Region", &host.cfg.asia_font_support);
+            ImGui::Checkbox("Asia Region", &emuenv.cfg.asia_font_support);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Check this box to enable font support for Korean and Traditional Chinese.\nEnabling this will use more memory and will require you to restart the emulator.");
         } else {
@@ -720,62 +720,62 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (title / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Theme & Background");
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current theme content id: %s", gui.users[host.io.user_id].theme_id.c_str());
-        if (gui.users[host.io.user_id].theme_id != "default") {
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current theme content id: %s", gui.users[emuenv.io.user_id].theme_id.c_str());
+        if (gui.users[emuenv.io.user_id].theme_id != "default") {
             ImGui::Spacing();
             if (ImGui::Button("Reset Default Theme")) {
-                gui.users[host.io.user_id].theme_id = "default";
-                gui.users[host.io.user_id].use_theme_bg = false;
-                if (init_theme(gui, host, "default"))
-                    gui.users[host.io.user_id].use_theme_bg = true;
-                gui.users[host.io.user_id].start_path.clear();
-                gui.users[host.io.user_id].start_type = "default";
-                save_user(gui, host, host.io.user_id);
-                init_theme_start_background(gui, host, "default");
-                init_apps_icon(gui, host, gui.app_selector.sys_apps);
+                gui.users[emuenv.io.user_id].theme_id = "default";
+                gui.users[emuenv.io.user_id].use_theme_bg = false;
+                if (init_theme(gui, emuenv, "default"))
+                    gui.users[emuenv.io.user_id].use_theme_bg = true;
+                gui.users[emuenv.io.user_id].start_path.clear();
+                gui.users[emuenv.io.user_id].start_type = "default";
+                save_user(gui, emuenv, emuenv.io.user_id);
+                init_theme_start_background(gui, emuenv, "default");
+                init_apps_icon(gui, emuenv, gui.app_selector.sys_apps);
             }
             ImGui::SameLine();
         }
         if (!gui.theme_backgrounds.empty())
-            if (ImGui::Checkbox("Using theme background", &gui.users[host.io.user_id].use_theme_bg))
-                save_user(gui, host, host.io.user_id);
+            if (ImGui::Checkbox("Using theme background", &gui.users[emuenv.io.user_id].use_theme_bg))
+                save_user(gui, emuenv, emuenv.io.user_id);
 
         if (!gui.user_backgrounds.empty()) {
             ImGui::Spacing();
             if (ImGui::Button("Clean User Backgrounds")) {
-                gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[gui.current_user_bg]] = {};
+                gui.user_backgrounds[gui.users[emuenv.io.user_id].backgrounds[gui.current_user_bg]] = {};
                 gui.user_backgrounds.clear();
                 if (!gui.theme_backgrounds.empty())
-                    gui.users[host.io.user_id].use_theme_bg = true;
-                gui.users[host.io.user_id].backgrounds.clear();
-                save_user(gui, host, host.io.user_id);
+                    gui.users[emuenv.io.user_id].use_theme_bg = true;
+                gui.users[emuenv.io.user_id].backgrounds.clear();
+                save_user(gui, emuenv, emuenv.io.user_id);
             }
         }
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current start background: %s", gui.users[host.io.user_id].start_type.c_str());
-        if (((gui.users[host.io.user_id].theme_id == "default") && (gui.users[host.io.user_id].start_type != "default")) || ((gui.users[host.io.user_id].theme_id != "default") && (gui.users[host.io.user_id].start_type != "theme"))) {
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current start background: %s", gui.users[emuenv.io.user_id].start_type.c_str());
+        if (((gui.users[emuenv.io.user_id].theme_id == "default") && (gui.users[emuenv.io.user_id].start_type != "default")) || ((gui.users[emuenv.io.user_id].theme_id != "default") && (gui.users[emuenv.io.user_id].start_type != "theme"))) {
             ImGui::Spacing();
             if (ImGui::Button("Reset Start Background")) {
-                gui.users[host.io.user_id].start_path.clear();
-                init_theme_start_background(gui, host, gui.users[host.io.user_id].theme_id);
-                gui.users[host.io.user_id].start_type = (gui.users[host.io.user_id].theme_id == "default") ? "default" : "theme";
-                save_user(gui, host, host.io.user_id);
+                gui.users[emuenv.io.user_id].start_path.clear();
+                init_theme_start_background(gui, emuenv, gui.users[emuenv.io.user_id].theme_id);
+                gui.users[emuenv.io.user_id].start_type = (gui.users[emuenv.io.user_id].theme_id == "default") ? "default" : "theme";
+                save_user(gui, emuenv, emuenv.io.user_id);
             }
         }
         if (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty()) {
             ImGui::Spacing();
-            ImGui::SliderFloat("Background Alpha", &host.cfg.background_alpha, 0.999f, 0.000f);
+            ImGui::SliderFloat("Background Alpha", &emuenv.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred transparent background effect.\nThe minimum slider is opaque and the maximum is transparent.");
         }
         if (!gui.theme_backgrounds.empty() || (gui.user_backgrounds.size() > 1)) {
             ImGui::Spacing();
-            ImGui::SliderInt("Delay for backgrounds", &host.cfg.delay_background, 4, 60);
+            ImGui::SliderInt("Delay for backgrounds", &emuenv.cfg.delay_background, 4, 60);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select the delay in seconds before changing backgrounds.");
         }
         ImGui::Spacing();
-        ImGui::SliderInt("Delay for start screen", &host.cfg.delay_start, 10, 60);
+        ImGui::SliderInt("Delay for start screen", &emuenv.cfg.delay_start, 10, 60);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select the delay in seconds before returning to the start screen.");
         ImGui::EndTabItem();
@@ -787,47 +787,47 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     if (ImGui::BeginTabItem("Debug")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Checkbox("Import logging", &host.kernel.debugger.log_imports);
+        ImGui::Checkbox("Import logging", &emuenv.kernel.debugger.log_imports);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module import symbols.");
-        ImGui::Checkbox("Export logging", &host.kernel.debugger.log_exports);
+        ImGui::Checkbox("Export logging", &emuenv.kernel.debugger.log_exports);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log module export symbols.");
         ImGui::Spacing();
-        ImGui::Checkbox("Shader logging", &host.cfg.log_active_shaders);
+        ImGui::Checkbox("Shader logging", &emuenv.cfg.log_active_shaders);
         ImGui::SameLine();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shaders being used on each draw call.");
-        ImGui::Checkbox("Uniform logging", &host.cfg.log_uniforms);
+        ImGui::Checkbox("Uniform logging", &emuenv.cfg.log_uniforms);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Log shader uniform names and values.");
         ImGui::SameLine();
-        ImGui::Checkbox("Save color surfaces", &host.cfg.color_surface_debug);
+        ImGui::Checkbox("Save color surfaces", &emuenv.cfg.color_surface_debug);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Save color surfaces to files.");
         ImGui::Spacing();
-        ImGui::Checkbox("Texture dumping", &host.cfg.dump_textures);
+        ImGui::Checkbox("Texture dumping", &emuenv.cfg.dump_textures);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Dump textures to files");
         ImGui::SameLine();
-        ImGui::Checkbox("ELF dumping", &host.kernel.debugger.dump_elfs);
+        ImGui::Checkbox("ELF dumping", &emuenv.kernel.debugger.dump_elfs);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Dump loaded code as ELFs");
         ImGui::Spacing();
-        if (ImGui::Button(host.kernel.debugger.watch_code ? "Unwatch Code" : "Watch Code")) {
-            host.kernel.debugger.watch_code = !host.kernel.debugger.watch_code;
-            host.kernel.debugger.update_watches();
+        if (ImGui::Button(emuenv.kernel.debugger.watch_code ? "Unwatch Code" : "Watch Code")) {
+            emuenv.kernel.debugger.watch_code = !emuenv.kernel.debugger.watch_code;
+            emuenv.kernel.debugger.update_watches();
         }
         ImGui::SameLine();
-        if (ImGui::Button(host.kernel.debugger.watch_memory ? "Unwatch Memory" : "Watch Memory")) {
-            host.kernel.debugger.watch_memory = !host.kernel.debugger.watch_memory;
-            host.kernel.debugger.update_watches();
+        if (ImGui::Button(emuenv.kernel.debugger.watch_memory ? "Unwatch Memory" : "Watch Memory")) {
+            emuenv.kernel.debugger.watch_memory = !emuenv.kernel.debugger.watch_memory;
+            emuenv.kernel.debugger.update_watches();
         }
         ImGui::Spacing();
-        if (ImGui::Button(host.kernel.debugger.watch_import_calls ? "Unwatch Import Calls" : "Watch Import Calls")) {
-            host.kernel.debugger.watch_import_calls = !host.kernel.debugger.watch_import_calls;
-            host.kernel.debugger.update_watches();
+        if (ImGui::Button(emuenv.kernel.debugger.watch_import_calls ? "Unwatch Import Calls" : "Watch Import Calls")) {
+            emuenv.kernel.debugger.watch_import_calls = !emuenv.kernel.debugger.watch_import_calls;
+            emuenv.kernel.debugger.update_watches();
         }
 
 #ifdef TRACY_ENABLE
@@ -840,7 +840,7 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
                     "and visualize them in a timeline with timings for every frame and audio buffer.");
 
         // Primitive Tracy implementation
-        ImGui::Checkbox("Primitive implementation", &host.cfg.tracy_primitive_impl);
+        ImGui::Checkbox("Primitive implementation", &emuenv.cfg.tracy_primitive_impl);
         if (ImGui::IsItemHovered()) {
             ImGui::SetTooltip("The primitive Tracy implementation for HLE modules allows for\n"
                               "all HLE module calls to be logged without manual instrumentation needed.\n"
@@ -870,21 +870,21 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
         // Tracy modules list
         if (ImGui::BeginListBox(tracy_modules_list_label.c_str(), { 0.0f, ImGui::GetTextLineHeightWithSpacing() * 8.25f + ImGui::GetStyle().FramePadding.y * 2.0f })) {
             // For every HLE module available for advanced profiling using Tracy
-            for (auto &module : host.cfg.tracy_available_advanced_profiling_modules) {
+            for (auto &module : emuenv.cfg.tracy_available_advanced_profiling_modules) {
                 // Get activation state and position in vector of activated modules
                 bool activation_state = false;
                 int index = -1;
-                activation_state = config::is_tracy_advanced_profiling_active_for_module(host.cfg.tracy_advanced_profiling_modules, module, &index);
+                activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, module, &index);
 
                 // Create selectable item using module name and get activation state
                 if (ImGui::Selectable(module.c_str(), activation_state)) {
                     // Change activation state if module is clicked/selected
                     if (activation_state == true) {
                         // Deactivate module by deleting the name of the module from the vector
-                        host.cfg.tracy_advanced_profiling_modules.erase(host.cfg.tracy_advanced_profiling_modules.begin() + index);
+                        emuenv.cfg.tracy_advanced_profiling_modules.erase(emuenv.cfg.tracy_advanced_profiling_modules.begin() + index);
                     } else {
                         // Activate module by appending the name of the module to the vector
-                        host.cfg.tracy_advanced_profiling_modules.push_back(module);
+                        emuenv.cfg.tracy_advanced_profiling_modules.push_back(module);
                     }
                 }
             }
@@ -901,16 +901,16 @@ void draw_settings_dialog(GuiState &gui, HostState &host) {
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    static const auto BUTTON_SIZE = ImVec2(100.f * host.dpi_scale, 0.f);
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * host.dpi_scale));
+    static const auto BUTTON_SIZE = ImVec2(100.f * emuenv.dpi_scale, 0.f);
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * emuenv.dpi_scale));
     if (ImGui::Button("Close", BUTTON_SIZE))
         settings_dialog = false;
-    ImGui::SameLine(0, 20.f * host.dpi_scale);
-    const auto is_apply = !host.io.app_path.empty() && (!is_custom_config || (host.app_path == host.io.app_path));
+    ImGui::SameLine(0, 20.f * emuenv.dpi_scale);
+    const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));
     if (ImGui::Button(is_apply ? "Save & Apply" : "Save", BUTTON_SIZE)) {
-        save_config(gui, host);
+        save_config(gui, emuenv);
         if (is_apply)
-            set_config(gui, host, host.io.app_path);
+            set_config(gui, emuenv, emuenv.io.app_path);
     }
     if (ImGui::IsItemHovered())
         ImGui::SetTooltip("Click on Save to keep your changes.");

@@ -44,7 +44,7 @@ static std::vector<const char *> contributors_list = {
     "xyzz", "yousifd", "Yunotchi"
 };
 
-void draw_about_dialog(GuiState &gui, HostState &host) {
+void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin("About", &gui.help_menu.about_dialog, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -84,7 +84,7 @@ void draw_about_dialog(GuiState &gui, HostState &host) {
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "Vita3K Staff");
     ImGui::Spacing();
 
-    const auto STAFF_LIST_SIZE = ImVec2(360.f * host.dpi_scale, 160.f * host.dpi_scale);
+    const auto STAFF_LIST_SIZE = ImVec2(360.f * emuenv.dpi_scale, 160.f * emuenv.dpi_scale);
     const auto HALF_STAFF_LIST_WIDTH = STAFF_LIST_SIZE.x / 2.f;
 
     ImGui::SetCursorPosX(HALF_WINDOW_WIDTH - HALF_STAFF_LIST_WIDTH);

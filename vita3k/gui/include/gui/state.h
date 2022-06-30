@@ -44,7 +44,7 @@
 #include <vector>
 
 struct GuiState;
-struct HostState;
+struct EmuEnvState;
 
 namespace gui {
 
@@ -105,7 +105,7 @@ struct IconAsyncLoader {
 
     void commit(GuiState &gui);
 
-    IconAsyncLoader(GuiState &gui, HostState &host, const std::vector<gui::App> &app_list);
+    IconAsyncLoader(GuiState &gui, EmuEnvState &emuenv, const std::vector<gui::App> &app_list);
     ~IconAsyncLoader();
 };
 

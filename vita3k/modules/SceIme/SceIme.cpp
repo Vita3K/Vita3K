@@ -23,57 +23,57 @@
 #include <util/lock_and_find.h>
 
 EXPORT(void, SceImeEventHandler, Ptr<void> arg, const SceImeEvent *e) {
-    Ptr<SceImeEvent> e1 = Ptr<SceImeEvent>(alloc(host.mem, sizeof(SceImeEvent), "ime2"));
-    memcpy(e1.get(host.mem), e, sizeof(SceImeEvent));
-    auto thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    thread->request_callback(host.ime.param.handler.address(), { arg.address(), e1.address() }, [&host, e1](int res) {
-        free(host.mem, e1.address());
+    Ptr<SceImeEvent> e1 = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime2"));
+    memcpy(e1.get(emuenv.mem), e, sizeof(SceImeEvent));
+    auto thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    thread->request_callback(emuenv.ime.param.handler.address(), { arg.address(), e1.address() }, [&emuenv, e1](int res) {
+        free(emuenv.mem, e1.address());
     });
 }
 
 EXPORT(SceInt32, sceImeClose) {
-    host.ime.state = false;
+    emuenv.ime.state = false;
 
     return 0;
 }
 
 EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
-    host.ime.caps_level = 0;
-    host.ime.caretIndex = 0;
-    host.ime.edit_text = {};
-    host.ime.enter_label.clear();
-    host.ime.str.clear();
-    host.ime.param = {};
-    host.ime.param = *param;
+    emuenv.ime.caps_level = 0;
+    emuenv.ime.caretIndex = 0;
+    emuenv.ime.edit_text = {};
+    emuenv.ime.enter_label.clear();
+    emuenv.ime.str.clear();
+    emuenv.ime.param = {};
+    emuenv.ime.param = *param;
 
-    switch (host.ime.param.enterLabel) {
+    switch (emuenv.ime.param.enterLabel) {
     case SCE_IME_ENTER_LABEL_DEFAULT:
-        host.ime.enter_label = "Enter";
+        emuenv.ime.enter_label = "Enter";
         break;
     case SCE_IME_ENTER_LABEL_SEND:
-        host.ime.enter_label = "Send";
+        emuenv.ime.enter_label = "Send";
         break;
     case SCE_IME_ENTER_LABEL_SEARCH:
-        host.ime.enter_label = "Search";
+        emuenv.ime.enter_label = "Search";
         break;
     case SCE_IME_ENTER_LABEL_GO:
-        host.ime.enter_label = "Go";
+        emuenv.ime.enter_label = "Go";
         break;
     default: break;
     }
 
-    gui::init_ime_lang(host.ime, SceImeLanguage(host.cfg.current_ime_lang));
+    gui::init_ime_lang(emuenv.ime, SceImeLanguage(emuenv.cfg.current_ime_lang));
 
-    host.ime.edit_text.str = host.ime.param.inputTextBuffer;
-    host.ime.param.inputTextBuffer = Ptr<SceWChar16>(alloc(host.mem, SCE_IME_MAX_PREEDIT_LENGTH + host.ime.param.maxTextLength + 1, "ime_str"));
-    host.ime.str = reinterpret_cast<char16_t *>(host.ime.param.initialText.get(host.mem));
-    if (!host.ime.str.empty())
-        host.ime.caretIndex = host.ime.edit_text.caretIndex = host.ime.edit_text.preeditIndex = SceUInt32(host.ime.str.length());
+    emuenv.ime.edit_text.str = emuenv.ime.param.inputTextBuffer;
+    emuenv.ime.param.inputTextBuffer = Ptr<SceWChar16>(alloc(emuenv.mem, SCE_IME_MAX_PREEDIT_LENGTH + emuenv.ime.param.maxTextLength + 1, "ime_str"));
+    emuenv.ime.str = reinterpret_cast<char16_t *>(emuenv.ime.param.initialText.get(emuenv.mem));
+    if (!emuenv.ime.str.empty())
+        emuenv.ime.caretIndex = emuenv.ime.edit_text.caretIndex = emuenv.ime.edit_text.preeditIndex = SceUInt32(emuenv.ime.str.length());
     else
-        host.ime.caps_level = 1;
+        emuenv.ime.caps_level = 1;
 
-    host.ime.event_id = SCE_IME_EVENT_OPEN;
-    host.ime.state = true;
+    emuenv.ime.event_id = SCE_IME_EVENT_OPEN;
+    emuenv.ime.state = true;
 
     SceImeEvent e{};
     memset(&e, 0, sizeof(e));
@@ -82,21 +82,21 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
 }
 
 EXPORT(SceInt32, sceImeSetCaret, const SceImeCaret *caret) {
-    Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(host.mem, sizeof(SceImeEvent), "ime_event"));
-    SceImeEvent *e = event.get(host.mem);
+    Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
+    SceImeEvent *e = event.get(emuenv.mem);
     e->param.caretIndex = caret->index;
-    CALL_EXPORT(SceImeEventHandler, host.ime.param.arg, e);
+    CALL_EXPORT(SceImeEventHandler, emuenv.ime.param.arg, e);
 
     return 0;
 }
 
 EXPORT(SceInt32, sceImeSetPreeditGeometry, const SceImePreeditGeometry *preedit) {
-    Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(host.mem, sizeof(SceImeEvent), "ime_event"));
-    SceImeEvent *e = event.get(host.mem);
+    Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
+    SceImeEvent *e = event.get(emuenv.mem);
     e->param.rect.height = preedit->height;
     e->param.rect.x = preedit->x;
     e->param.rect.y = preedit->y;
-    CALL_EXPORT(SceImeEventHandler, host.ime.param.arg, e);
+    CALL_EXPORT(SceImeEventHandler, emuenv.ime.param.arg, e);
 
     return 0;
 }
@@ -106,17 +106,17 @@ EXPORT(int, sceImeSetText) {
 }
 
 EXPORT(SceInt32, sceImeUpdate) {
-    if (!host.ime.state)
+    if (!emuenv.ime.state)
         return RET_ERROR(SCE_IME_ERROR_NOT_OPENED);
 
-    Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(host.mem, sizeof(SceImeEvent), "ime_event"));
-    SceImeEvent *e = event.get(host.mem);
-    e->id = host.ime.event_id;
-    memcpy(host.ime.edit_text.str.get(host.mem), host.ime.str.c_str(), host.ime.str.length() * sizeof(SceWChar16) + 1);
-    e->param.text = host.ime.edit_text;
-    e->param.caretIndex = host.ime.caretIndex;
-    CALL_EXPORT(SceImeEventHandler, host.ime.param.arg, e);
-    host.ime.event_id = SCE_IME_EVENT_OPEN;
+    Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
+    SceImeEvent *e = event.get(emuenv.mem);
+    e->id = emuenv.ime.event_id;
+    memcpy(emuenv.ime.edit_text.str.get(emuenv.mem), emuenv.ime.str.c_str(), emuenv.ime.str.length() * sizeof(SceWChar16) + 1);
+    e->param.text = emuenv.ime.edit_text;
+    e->param.caretIndex = emuenv.ime.caretIndex;
+    CALL_EXPORT(SceImeEventHandler, emuenv.ime.param.arg, e);
+    emuenv.ime.event_id = SCE_IME_EVENT_OPEN;
 
     return 0;
 }

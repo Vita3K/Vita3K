@@ -11,4 +11,4 @@ add_library(package STATIC
 )
 target_include_directories(package PUBLIC include)
 
-target_link_libraries(package PUBLIC host miniz crypto FAT16 vita-toolchain psvpfsparser io)
+target_link_libraries(package PUBLIC emuenv miniz crypto FAT16 vita-toolchain psvpfsparser io)

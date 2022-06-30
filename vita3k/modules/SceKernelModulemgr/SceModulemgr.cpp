@@ -28,14 +28,14 @@
  * \param mod_id UID of the loaded module object
  * \param entry_point Entry point (module_start) of the loaded module
  * \param module Module info
- * \param host
+ * \param emuenv PlayStation Vita emulated environment
  * \param export_name
  * \param path File name of module file
  * \param error_val Error value on failure
  * \return True on success, false on failure
  */
-static bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleInfoPtr &module, HostState &host, const char *export_name, const char *path, int &error_val) {
-    const auto &loaded_modules = host.kernel.loaded_modules;
+static bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleInfoPtr &module, EmuEnvState &emuenv, const char *export_name, const char *path, int &error_val) {
+    const auto &loaded_modules = emuenv.kernel.loaded_modules;
 
     auto module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [path](const auto &p) {
         return std::string(p.second->path) == path;
@@ -44,32 +44,32 @@ static bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelM
     if (module_iter == loaded_modules.end()) {
         // module is not loaded, load it here
 
-        const auto file = open_file(host.io, path, SCE_O_RDONLY, host.pref_path, export_name);
+        const auto file = open_file(emuenv.io, path, SCE_O_RDONLY, emuenv.pref_path, export_name);
         if (file < 0) {
             error_val = RET_ERROR(file);
             return false;
         }
-        const auto size = seek_file(file, 0, SCE_SEEK_END, host.io, export_name);
+        const auto size = seek_file(file, 0, SCE_SEEK_END, emuenv.io, export_name);
         if (size < 0) {
             error_val = RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
             return false;
         }
 
-        if (seek_file(file, 0, SCE_SEEK_SET, host.io, export_name) < 0) {
+        if (seek_file(file, 0, SCE_SEEK_SET, emuenv.io, export_name) < 0) {
             error_val = RET_ERROR(static_cast<int>(size));
             return false;
         }
 
         std::vector<char> data(static_cast<int>(size) + 1); // null-terminated char array
-        if (read_file(data.data(), host.io, file, SceSize(size), export_name) < 0) {
+        if (read_file(data.data(), emuenv.io, file, SceSize(size), export_name) < 0) {
             data.clear();
             error_val = RET_ERROR(static_cast<int>(size));
             return false;
         }
 
-        mod_id = load_self(entry_point, host.kernel, host.mem, data.data(), path);
+        mod_id = load_self(entry_point, emuenv.kernel, emuenv.mem, data.data(), path);
 
-        close_file(host.io, file, export_name);
+        close_file(emuenv.io, file, export_name);
         data.clear();
         if (mod_id < 0) {
             error_val = RET_ERROR(mod_id);
@@ -98,16 +98,16 @@ EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *o
     SceKernelModuleInfoPtr module;
 
     int error_val;
-    if (!load_module(mod_id, entry_point, module, host, export_name, path, error_val))
+    if (!load_module(mod_id, entry_point, module, emuenv, export_name, path, error_val))
         return error_val;
 
     return mod_id;
 }
 
-static SceUID start_module(HostState &host, const SceKernelModuleInfoPtr &module, SceSize args, const Ptr<void> argp, int *pRes) {
-    auto module_thread = host.kernel.create_thread(host.mem, module->module_name);
+static SceUID start_module(EmuEnvState &emuenv, const SceKernelModuleInfoPtr &module, SceSize args, const Ptr<void> argp, int *pRes) {
+    auto module_thread = emuenv.kernel.create_thread(emuenv.mem, module->module_name);
     uint32_t result = module_thread->run_guest_function(module->start_entry.address(), { args, argp.address() });
-    host.kernel.exit_delete_thread(module_thread);
+    emuenv.kernel.exit_delete_thread(module_thread);
 
     LOG_INFO("Module {} (at \"{}\") module_start returned {}", module->module_name, module->path, log_hex(result));
 
@@ -129,10 +129,10 @@ EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize ar
     SceKernelModuleInfoPtr module;
 
     int error_val;
-    if (!load_module(mod_id, entry_point, module, host, export_name, moduleFileName, error_val))
+    if (!load_module(mod_id, entry_point, module, emuenv, export_name, moduleFileName, error_val))
         return error_val;
 
-    return start_module(host, module, args, argp, pRes);
+    return start_module(emuenv, module, args, argp, pRes);
 }
 
 EXPORT(int, _sceKernelOpenModule) {
@@ -140,9 +140,9 @@ EXPORT(int, _sceKernelOpenModule) {
 }
 
 EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes) {
-    const SceKernelModuleInfoPtr module = lock_and_find(uid, host.kernel.loaded_modules, host.kernel.mutex);
+    const SceKernelModuleInfoPtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
 
-    return start_module(host, module, args, argp, pRes);
+    return start_module(emuenv, module, args, argp, pRes);
 }
 
 EXPORT(int, _sceKernelStopModule) {
@@ -166,7 +166,7 @@ EXPORT(int, sceKernelGetLibraryInfoByNID) {
 }
 
 EXPORT(int, sceKernelGetModuleIdByAddr, Ptr<void> addr) {
-    KernelState *const state = &host.kernel;
+    KernelState *const state = &emuenv.kernel;
 
     for (const auto &module : state->loaded_modules) {
         for (int n = 0; n < MODULE_INFO_NUM_SEGMENTS; n++) {
@@ -182,7 +182,7 @@ EXPORT(int, sceKernelGetModuleIdByAddr, Ptr<void> addr) {
 }
 
 EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
-    KernelState *const state = &host.kernel;
+    KernelState *const state = &emuenv.kernel;
     const SceKernelModuleInfoPtrs::const_iterator module = state->loaded_modules.find(modid);
     assert(module != state->loaded_modules.end());
 
@@ -192,9 +192,9 @@ EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
 }
 
 EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
     int i = 0;
-    for (SceKernelModuleInfoPtrs::iterator module = host.kernel.loaded_modules.begin(); module != host.kernel.loaded_modules.end(); ++module) {
+    for (SceKernelModuleInfoPtrs::iterator module = emuenv.kernel.loaded_modules.begin(); module != emuenv.kernel.loaded_modules.end(); ++module) {
         modids[i] = module->first;
         i++;
     }

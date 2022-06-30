@@ -123,8 +123,8 @@ static bool load_trophy_progress(IOState &io, const SceUID &progress_input_file,
 
 static std::string np_com_id_sort;
 
-void init_trophy_collection(GuiState &gui, HostState &host) {
-    const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "trophy" };
+void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
+    const auto TROPHY_PATH{ fs::path(emuenv.pref_path) / "ux0/user" / emuenv.io.user_id / "trophy" };
     const auto TROPHY_CONF_PATH = TROPHY_PATH / "conf";
 
     gui.trophy_np_com_id_list_icons.clear(), np_com_id_info.clear(), np_com_id_list.clear();
@@ -149,23 +149,23 @@ void init_trophy_collection(GuiState &gui, HostState &host) {
                 SAFE_LOCALTIME(&updated, &np_com_id_info[np_com_id].updated);
 
                 // Open trophy progress file
-                const auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + host.io.user_id + "/trophy/data/" + np_com_id + "/TROPUSR.DAT");
-                const auto progress_input_file = open_file(host.io, trophy_progress_save_file.c_str(), SCE_O_RDONLY, host.pref_path, "load_trophy_progress_file");
+                const auto trophy_progress_save_file = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + emuenv.io.user_id + "/trophy/data/" + np_com_id + "/TROPUSR.DAT");
+                const auto progress_input_file = open_file(emuenv.io, trophy_progress_save_file.c_str(), SCE_O_RDONLY, emuenv.pref_path, "load_trophy_progress_file");
 
-                if (!load_trophy_progress(host.io, progress_input_file, np_com_id)) {
+                if (!load_trophy_progress(emuenv.io, progress_input_file, np_com_id)) {
                     LOG_ERROR("Fail load trophy progress for Np Com ID: {}, clean trophy file.", np_com_id);
-                    close_file(host.io, progress_input_file, "load_trophy_progress_file");
+                    close_file(emuenv.io, progress_input_file, "load_trophy_progress_file");
                     fs::remove_all(trophy_data_np_com_id_path);
                     fs::remove_all(trophy_conf_np_com_id_path);
                     continue;
                 }
 
-                close_file(host.io, progress_input_file, "load_trophy_progress_file");
+                close_file(emuenv.io, progress_input_file, "load_trophy_progress_file");
 
-                const std::string sfm_name = fs::exists(trophy_conf_np_com_id_path / fmt::format("TROP_{:0>2d}.SFM", host.cfg.sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", host.cfg.sys_lang) : "TROP.SFM";
+                const std::string sfm_name = fs::exists(trophy_conf_np_com_id_path / fmt::format("TROP_{:0>2d}.SFM", emuenv.cfg.sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", emuenv.cfg.sys_lang) : "TROP.SFM";
 
                 std::map<std::string, std::string> np_com_list_name_icons;
-                np_com_list_name_icons["000"] = fs::exists(trophy_conf_np_com_id_path / fmt::format("ICON0_{:0>2d}.PNG", host.cfg.sys_lang)) ? fmt::format("ICON0_{:0>2d}.PNG", host.cfg.sys_lang) : "ICON0.PNG";
+                np_com_list_name_icons["000"] = fs::exists(trophy_conf_np_com_id_path / fmt::format("ICON0_{:0>2d}.PNG", emuenv.cfg.sys_lang)) ? fmt::format("ICON0_{:0>2d}.PNG", emuenv.cfg.sys_lang) : "ICON0.PNG";
 
                 pugi::xml_document doc;
                 if (doc.load_file((trophy_conf_np_com_id_path / sfm_name).c_str())) {
@@ -180,7 +180,7 @@ void init_trophy_collection(GuiState &gui, HostState &host) {
                             np_com_id_info[np_com_id].group_id.push_back(group_id);
                             np_com_id_info[np_com_id].name[group_id] = conf.child("name").text().as_string();
                             np_com_id_info[np_com_id].detail[group_id] = conf.child("detail").text().as_string();
-                            np_com_list_name_icons[group_id] = fs::exists(trophy_conf_np_com_id_path / fmt::format("GR{}_{:0>2d}.PNG", group_id, host.cfg.sys_lang)) ? fmt::format("GR{}_{:0>2d}.PNG", group_id, host.cfg.sys_lang) : fmt::format("GR{}.PNG", group_id);
+                            np_com_list_name_icons[group_id] = fs::exists(trophy_conf_np_com_id_path / fmt::format("GR{}_{:0>2d}.PNG", group_id, emuenv.cfg.sys_lang)) ? fmt::format("GR{}_{:0>2d}.PNG", group_id, emuenv.cfg.sys_lang) : fmt::format("GR{}.PNG", group_id);
                         }
                         if (conf.name() == std::string("trophy")) {
                             const std::string gid = conf.attribute("gid").empty() ? "000" : conf.attribute("gid").as_string();
@@ -235,7 +235,7 @@ void init_trophy_collection(GuiState &gui, HostState &host) {
                     int32_t height = 0;
                     vfs::FileBuffer buffer;
 
-                    vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "user/" + host.io.user_id + "/trophy/conf/" + np_com_id + "/" + group.second);
+                    vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, "user/" + emuenv.io.user_id + "/trophy/conf/" + np_com_id + "/" + group.second);
 
                     if (buffer.empty()) {
                         LOG_WARN("Icon: '{}', Not found for NPComId: {}.", group.second, np_com_id);
@@ -283,8 +283,8 @@ static std::map<std::string, Trophy> trophy_info;
 static std::vector<TrophySort> trophy_list;
 static std::string trophy_sort;
 
-static void get_trophy_list(GuiState &gui, HostState &host, const std::string &np_com_id, const std::string &group_id) {
-    const auto trophy_conf_id_path{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "trophy/conf" / np_com_id };
+static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::string &np_com_id, const std::string &group_id) {
+    const auto trophy_conf_id_path{ fs::path(emuenv.pref_path) / "ux0/user" / emuenv.io.user_id / "trophy/conf" / np_com_id };
     if (fs::is_empty(trophy_conf_id_path)) {
         LOG_WARN("Trophy conf path is empty");
         return;
@@ -292,7 +292,7 @@ static void get_trophy_list(GuiState &gui, HostState &host, const std::string &n
 
     gui.trophy_list.clear(), trophy_info.clear(), trophy_list.clear();
 
-    const std::string sfm_name = fs::exists(trophy_conf_id_path / fmt::format("TROP_{:0>2d}.SFM", host.cfg.sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", host.cfg.sys_lang) : "TROP.SFM";
+    const std::string sfm_name = fs::exists(trophy_conf_id_path / fmt::format("TROP_{:0>2d}.SFM", emuenv.cfg.sys_lang)) ? fmt::format("TROP_{:0>2d}.SFM", emuenv.cfg.sys_lang) : "TROP.SFM";
 
     pugi::xml_document doc;
     if (doc.load_file((trophy_conf_id_path / sfm_name).c_str())) {
@@ -318,7 +318,7 @@ static void get_trophy_list(GuiState &gui, HostState &host, const std::string &n
         const std::string trophy_id = trophy.first;
         const std::string icon_name = fmt::format("TROP{}.PNG", trophy_id);
 
-        vfs::read_file(VitaIoDevice::ux0, buffer, host.pref_path, "user/" + host.io.user_id + "/trophy/conf/" + np_com_id + "/" + icon_name);
+        vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, "user/" + emuenv.io.user_id + "/trophy/conf/" + np_com_id + "/" + icon_name);
         if (buffer.empty()) {
             LOG_WARN("Trophy icon, Name: '{}', Not found for trophy id: {}.", icon_name, trophy.first);
             continue;
@@ -372,7 +372,7 @@ static bool detail_np_com_id, set_scroll_pos;
 static ImGuiTextFilter search_bar;
 static std::map<std::string, float> scroll_pos;
 
-void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_com_id, const std::string &trophy_id) {
+void open_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, const std::string &np_com_id, const std::string &trophy_id) {
     np_com_id_selected = np_com_id;
 
     // Get group id corresponding trophy_id
@@ -384,13 +384,13 @@ void open_trophy_unlocked(GuiState &gui, HostState &host, const std::string &np_
     }
 
     trophy_id_selected = trophy_id;
-    get_trophy_list(gui, host, np_com_id_selected, group_id_selected);
+    get_trophy_list(gui, emuenv, np_com_id_selected, group_id_selected);
 }
 
-void draw_trophy_collection(GuiState &gui, HostState &host) {
+void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
 
     const auto SIZE_ICON_LIST = ImVec2(160.f * SCALE.x, 88.f * SCALE.y);
@@ -403,10 +403,10 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     const auto SIZE_INFO = ImVec2(820.f * SCALE.x, 484.f * SCALE.y);
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
-    const auto TROPHY_PATH{ fs::path(host.pref_path) / "ux0/user" / host.io.user_id / "trophy" };
+    const auto TROPHY_PATH{ fs::path(emuenv.pref_path) / "ux0/user" / emuenv.io.user_id / "trophy" };
 
     const auto is_background = gui.apps_background.find("NPXS10008") != gui.apps_background.end();
-    const auto is_12_hour_format = host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
+    const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
@@ -475,11 +475,11 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["trophy_deleted"].c_str()).x / 2.f), POPUP_SIZE.y / 2.f));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["trophy_deleted"].c_str());
                 ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCALE.y)));
-                const auto cancel_str = !host.common_dialog.lang.common["cancel"].empty() ? host.common_dialog.lang.common["cancel"].c_str() : "Cancel";
-                if (ImGui::Button(cancel_str, BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
+                const auto cancel_str = !emuenv.common_dialog.lang.common["cancel"].empty() ? emuenv.common_dialog.lang.common["cancel"].c_str() : "Cancel";
+                if (ImGui::Button(cancel_str, BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))
                     delete_np_com_id.clear();
                 ImGui::SameLine(0, 20.f * SCALE.x);
-                if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+                if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
                     fs::remove_all(TROPHY_PATH / "conf" / delete_np_com_id);
                     fs::remove_all(TROPHY_PATH / "data" / delete_np_com_id);
                     const auto np_com_id_index = std::find_if(np_com_id_list.begin(), np_com_id_list.end(), [&](const NPComIdSort &np_com) {
@@ -515,7 +515,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                     np_com_id_selected = np_com.id;
                     if (!np_com_id_info[np_com_id_selected].context.group_count) {
                         group_id_selected = "000";
-                        get_trophy_list(gui, host, np_com.id, "000");
+                        get_trophy_list(gui, emuenv, np_com.id, "000");
                     }
                     scroll_pos["np_com"] = ImGui::GetScrollY();
                     ImGui::SetScrollY(0.f);
@@ -575,7 +575,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                     ImGui::PushID(group_id.c_str());
                     if (ImGui::Selectable(np_com_id_info[np_com_id_selected].name[group_id].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0, SIZE_ICON_LIST.y))) {
                         group_id_selected = group_id;
-                        get_trophy_list(gui, host, np_com_id_selected, group_id);
+                        get_trophy_list(gui, emuenv, np_com_id_selected, group_id);
                         scroll_pos["group"] = ImGui::GetScrollY();
                         ImGui::SetScrollY(0.f);
                     }
@@ -624,7 +624,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (45.f * SCALE.y));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["updated"].c_str());
                 ImGui::SameLine(260.f * SCALE.x);
-                auto DATE_TIME = get_date_time(gui, host, np_com_id_info[np_com_id_selected].updated);
+                auto DATE_TIME = get_date_time(gui, emuenv, np_com_id_info[np_com_id_selected].updated);
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
                 if (is_12_hour_format) {
                     ImGui::SameLine();
@@ -706,7 +706,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["earned"].c_str());
                 ImGui::SameLine(250.f * SCALE.x);
                 if (trophy_info[trophy_id_selected].earned) {
-                    auto DATE_TIME = get_date_time(gui, host, trophy_info[trophy_id_selected].unlocked_time);
+                    auto DATE_TIME = get_date_time(gui, emuenv, trophy_info[trophy_id_selected].unlocked_time);
                     ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
                     if (is_12_hour_format) {
                         ImGui::SameLine();
@@ -761,7 +761,7 @@ void draw_trophy_collection(GuiState &gui, HostState &host) {
     }
     if (trophy_id_selected.empty() && !detail_np_com_id && (np_com_id_selected.empty() || !group_id_selected.empty())) {
         ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCALE.x), display_size.y - (84.f * SCALE.y)));
-        if (ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(host.cfg.keyboard_button_triangle))
+        if (ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_triangle))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...", ImGuiWindowFlags_NoMove)) {
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["sort"].c_str());

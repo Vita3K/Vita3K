@@ -54,14 +54,14 @@ struct SysmemState {
 };
 
 LIBRARY_INIT_IMPL(SceSysmem) {
-    host.kernel.obj_store.create<SysmemState>();
+    emuenv.kernel.obj_store.create<SysmemState>();
 }
 LIBRARY_INIT_REGISTER(SceSysmem)
 
 constexpr SceUInt32 SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT = 4;
 
 EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOpt *optp) {
-    MemState &mem = host.mem;
+    MemState &mem = emuenv.mem;
     assert(type != 0);
 
     if (!name || !size) {
@@ -99,7 +99,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
             return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
 
-    const auto state = host.kernel.obj_store.get<SysmemState>();
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
     Ptr<void> address = Ptr<void>(alloc(mem, size, name, alignment));
@@ -121,10 +121,10 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
 }
 
 EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, SceSize size) {
-    const auto state = host.kernel.obj_store.get<SysmemState>();
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
-    MemState &mem = host.mem;
+    MemState &mem = emuenv.mem;
     assert(name != nullptr);
 
     if (size < 0x1000 || (size & 0xFFF) != 0) {
@@ -165,7 +165,7 @@ EXPORT(int, sceKernelCloseVMDomain) {
 }
 
 EXPORT(SceUID, sceKernelFindMemBlockByAddr, Address addr, uint32_t size) {
-    const auto state = host.kernel.obj_store.get<SysmemState>();
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
     for (auto it = state->blocks.begin(); it != state->blocks.end(); ++it) {
@@ -177,7 +177,7 @@ EXPORT(SceUID, sceKernelFindMemBlockByAddr, Address addr, uint32_t size) {
 }
 
 EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
-    const auto state = host.kernel.obj_store.get<SysmemState>();
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
     assert(uid >= 0);
 
@@ -186,21 +186,21 @@ EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
     if (block == state->blocks.end())
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_BLOCK_ID);
 
-    free(host.mem, block->second->mappedBase.address());
+    free(emuenv.mem, block->second->mappedBase.address());
     state->blocks.erase(block);
 
     return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
-    const auto state = host.kernel.obj_store.get<SysmemState>();
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
     assert(uid >= 0);
     const Blocks::const_iterator block = state->vm_blocks.find(uid);
     assert(block != state->vm_blocks.end());
 
-    free(host.mem, block->second->mappedBase.address());
+    free(emuenv.mem, block->second->mappedBase.address());
     state->blocks.erase(block);
     state->vm_blocks.erase(block);
 
@@ -208,7 +208,7 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
 }
 
 EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
-    const auto free_memory = align(mem_available(host.mem) / 3, 0x1000);
+    const auto free_memory = align(mem_available(emuenv.mem) / 3, 0x1000);
     info->size_cdram = free_memory;
     info->size_user = free_memory;
     info->size_phycont = free_memory;
@@ -216,7 +216,7 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
 }
 
 EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
-    const auto state = host.kernel.obj_store.get<SysmemState>();
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
     assert(uid >= 0);
     assert(basep != nullptr);
@@ -233,7 +233,7 @@ EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
 }
 
 EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, SceKernelMemBlockInfo *info) {
-    const auto state = host.kernel.obj_store.get<SysmemState>();
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
     assert(addr >= 0);
     assert(info != nullptr);
@@ -252,11 +252,11 @@ EXPORT(int, sceKernelGetMemBlockInfoByRange) {
 }
 
 EXPORT(int, sceKernelGetModel) {
-    return host.cfg.current_config.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
+    return emuenv.cfg.current_config.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
 }
 
 EXPORT(int, sceKernelGetModelForCDialog) {
-    return host.cfg.current_config.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
+    return emuenv.cfg.current_config.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
 }
 
 EXPORT(int, sceKernelGetSubbudgetInfo) {
@@ -264,7 +264,7 @@ EXPORT(int, sceKernelGetSubbudgetInfo) {
 }
 
 EXPORT(bool, sceKernelIsPSVitaTV) {
-    return host.cfg.current_config.pstv_mode;
+    return emuenv.cfg.current_config.pstv_mode;
 }
 
 EXPORT(int, sceKernelOpenMemBlock) {
@@ -276,7 +276,7 @@ EXPORT(int, sceKernelOpenVMDomain) {
 }
 
 EXPORT(int, sceKernelSyncVMDomain, SceUID block_uid, Address base, uint32_t size) {
-    const auto state = host.kernel.obj_store.get<SysmemState>();
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
     const auto it = state->vm_blocks.find(block_uid);
@@ -290,7 +290,7 @@ EXPORT(int, sceKernelSyncVMDomain, SceUID block_uid, Address base, uint32_t size
     if (block->mappedBase.address() > base_end || base > block_base_end) {
         return RET_ERROR(SCE_KERNEL_ERROR_BLOCK_ERROR);
     }
-    invalidate_jit_cache(*host.kernel.get_thread(thread_id)->cpu, base, size);
+    invalidate_jit_cache(*emuenv.kernel.get_thread(thread_id)->cpu, base, size);
 
     return 0;
 }

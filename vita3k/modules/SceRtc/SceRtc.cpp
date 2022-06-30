@@ -89,7 +89,7 @@ EXPORT(int, _sceRtcGetCurrentClock, SceDateTime *datePtr, int iTimeZone) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    uint64_t tick = rtc_get_ticks(host.kernel.base_tick.tick) + iTimeZone * 60 * 60 * VITA_CLOCKS_PER_SEC;
+    uint64_t tick = rtc_get_ticks(emuenv.kernel.base_tick.tick) + iTimeZone * 60 * 60 * VITA_CLOCKS_PER_SEC;
     __RtcTicksToPspTime(datePtr, tick);
 
     return 0;
@@ -110,7 +110,7 @@ EXPORT(int, _sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
 
     std::time_t local = std::mktime(&local_tm);
     std::time_t gmt = std::mktime(&gmt_tm);
-    uint64_t tick = rtc_get_ticks(host.kernel.base_tick.tick) + (local - gmt) * VITA_CLOCKS_PER_SEC;
+    uint64_t tick = rtc_get_ticks(emuenv.kernel.base_tick.tick) + (local - gmt) * VITA_CLOCKS_PER_SEC;
     __RtcTicksToPspTime(datePtr, tick);
     return 0;
 }
@@ -128,7 +128,7 @@ EXPORT(int, _sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    tick->tick = rtc_get_ticks(host.kernel.base_tick.tick);
+    tick->tick = rtc_get_ticks(emuenv.kernel.base_tick.tick);
 
     return 0;
 }
@@ -142,7 +142,7 @@ EXPORT(int, _sceRtcGetCurrentTick, SceRtcTick *tick) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
 
-    tick->tick = rtc_get_ticks(host.kernel.base_tick.tick);
+    tick->tick = rtc_get_ticks(emuenv.kernel.base_tick.tick);
 
     return 0;
 }

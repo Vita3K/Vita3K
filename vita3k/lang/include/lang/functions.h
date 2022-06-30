@@ -16,7 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #pragma once
-#include <host/state.h>
+#include <emuenv/state.h>
 #include <lang/state.h>
 
 #include <map>
@@ -25,6 +25,6 @@
 
 namespace lang {
 
-void init_lang(LangState &lang, HostState &host);
+void init_lang(LangState &lang, EmuEnvState &emuenv);
 
 } // namespace lang

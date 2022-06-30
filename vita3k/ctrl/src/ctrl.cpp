@@ -123,54 +123,54 @@ static float keys_to_axis(const uint8_t *keys, SDL_Scancode code1, SDL_Scancode 
     return temp;
 }
 
-static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, HostState &host) {
+static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, EmuEnvState &emuenv) {
     const uint8_t *const keys = SDL_GetKeyboardState(nullptr);
     if (ext) {
-        if (keys[host.cfg.keyboard_button_l1])
+        if (keys[emuenv.cfg.keyboard_button_l1])
             *buttons |= SCE_CTRL_L1;
-        if (keys[host.cfg.keyboard_button_r1])
+        if (keys[emuenv.cfg.keyboard_button_r1])
             *buttons |= SCE_CTRL_R1;
-        if (keys[host.cfg.keyboard_button_l2])
+        if (keys[emuenv.cfg.keyboard_button_l2])
             *buttons |= SCE_CTRL_L2;
-        if (keys[host.cfg.keyboard_button_r2])
+        if (keys[emuenv.cfg.keyboard_button_r2])
             *buttons |= SCE_CTRL_R2;
-        if (keys[host.cfg.keyboard_button_l3])
+        if (keys[emuenv.cfg.keyboard_button_l3])
             *buttons |= SCE_CTRL_L3;
-        if (keys[host.cfg.keyboard_button_r3])
+        if (keys[emuenv.cfg.keyboard_button_r3])
             *buttons |= SCE_CTRL_R3;
     } else {
-        if (keys[host.cfg.keyboard_button_l1])
+        if (keys[emuenv.cfg.keyboard_button_l1])
             *buttons |= SCE_CTRL_LTRIGGER;
-        if (keys[host.cfg.keyboard_button_r1])
+        if (keys[emuenv.cfg.keyboard_button_r1])
             *buttons |= SCE_CTRL_RTRIGGER;
     }
-    if (keys[host.cfg.keyboard_button_select])
+    if (keys[emuenv.cfg.keyboard_button_select])
         *buttons |= SCE_CTRL_SELECT;
-    if (keys[host.cfg.keyboard_button_start])
+    if (keys[emuenv.cfg.keyboard_button_start])
         *buttons |= SCE_CTRL_START;
-    if (keys[host.cfg.keyboard_button_up])
+    if (keys[emuenv.cfg.keyboard_button_up])
         *buttons |= SCE_CTRL_UP;
-    if (keys[host.cfg.keyboard_button_right])
+    if (keys[emuenv.cfg.keyboard_button_right])
         *buttons |= SCE_CTRL_RIGHT;
-    if (keys[host.cfg.keyboard_button_down])
+    if (keys[emuenv.cfg.keyboard_button_down])
         *buttons |= SCE_CTRL_DOWN;
-    if (keys[host.cfg.keyboard_button_left])
+    if (keys[emuenv.cfg.keyboard_button_left])
         *buttons |= SCE_CTRL_LEFT;
-    if (keys[host.cfg.keyboard_button_triangle])
+    if (keys[emuenv.cfg.keyboard_button_triangle])
         *buttons |= SCE_CTRL_TRIANGLE;
-    if (keys[host.cfg.keyboard_button_circle])
+    if (keys[emuenv.cfg.keyboard_button_circle])
         *buttons |= SCE_CTRL_CIRCLE;
-    if (keys[host.cfg.keyboard_button_cross])
+    if (keys[emuenv.cfg.keyboard_button_cross])
         *buttons |= SCE_CTRL_CROSS;
-    if (keys[host.cfg.keyboard_button_square])
+    if (keys[emuenv.cfg.keyboard_button_square])
         *buttons |= SCE_CTRL_SQUARE;
-    if (keys[host.cfg.keyboard_button_psbutton])
+    if (keys[emuenv.cfg.keyboard_button_psbutton])
         *buttons |= SCE_CTRL_PSBUTTON;
 
-    axes[0] += keys_to_axis(keys, static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_left), static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_right));
-    axes[1] += keys_to_axis(keys, static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_up), static_cast<SDL_Scancode>(host.cfg.keyboard_leftstick_down));
-    axes[2] += keys_to_axis(keys, static_cast<SDL_Scancode>(host.cfg.keyboard_rightstick_left), static_cast<SDL_Scancode>(host.cfg.keyboard_rightstick_right));
-    axes[3] += keys_to_axis(keys, static_cast<SDL_Scancode>(host.cfg.keyboard_rightstick_up), static_cast<SDL_Scancode>(host.cfg.keyboard_rightstick_down));
+    axes[0] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_left), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_right));
+    axes[1] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_up), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_down));
+    axes[2] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_left), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_right));
+    axes[3] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_up), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_down));
 }
 
 static float axis_to_axis(int16_t axis) {
@@ -224,23 +224,23 @@ static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameControlle
     axes[3] += axis_to_axis(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTY));
 }
 
-static int peek_buffer(HostState &host, int port, bool ext, int count, bool negative, bool from_ext_function, SceUInt64 &timeStamp, SceUInt32 &buttons, SceUInt8 &lx, SceUInt8 &ly, SceUInt8 &rx, SceUInt8 &ry) {
+static int peek_buffer(EmuEnvState &emuenv, int port, bool ext, int count, bool negative, bool from_ext_function, SceUInt64 &timeStamp, SceUInt32 &buttons, SceUInt8 &lx, SceUInt8 &ly, SceUInt8 &rx, SceUInt8 &ry) {
     if (port == 0) {
         port++;
     }
-    CtrlState &state = host.ctrl;
+    CtrlState &state = emuenv.ctrl;
     refresh_controllers(state);
 
     timeStamp = timestamp++; // TODO Use the real time and units.
 
-    if (host.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
+    if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return 0;
     }
 
     std::array<float, 4> axes;
     axes.fill(0);
     if (port == 1) {
-        apply_keyboard(&buttons, axes.data(), ext, host);
+        apply_keyboard(&buttons, axes.data(), ext, emuenv);
     }
     for (const auto &controller : state.controllers) {
         if (controller.second.port == port) {
@@ -268,10 +268,10 @@ static int peek_buffer(HostState &host, int port, bool ext, int count, bool nega
     return count;
 }
 
-int peek_data(HostState &host, int port, SceCtrlData *&pad_data, int count, bool negative, bool from_ext_function) {
+int peek_data(EmuEnvState &emuenv, int port, SceCtrlData *&pad_data, int count, bool negative, bool from_ext_function) {
     memset(pad_data, 0, sizeof(*pad_data));
 
-    count = peek_buffer(host, port, false, count, negative, from_ext_function, pad_data->timeStamp, pad_data->buttons, pad_data->lx, pad_data->ly, pad_data->rx, pad_data->ry);
+    count = peek_buffer(emuenv, port, false, count, negative, from_ext_function, pad_data->timeStamp, pad_data->buttons, pad_data->lx, pad_data->ly, pad_data->rx, pad_data->ry);
 
     for (int i = 1; i < count; i++) {
         memcpy(&pad_data[i], &pad_data[0], sizeof(SceCtrlData));
@@ -280,10 +280,10 @@ int peek_data(HostState &host, int port, SceCtrlData *&pad_data, int count, bool
     return count;
 }
 
-int peek_data(HostState &host, int port, SceCtrlData2 *&pad_data, int count, bool negative, bool from_ext_function) {
+int peek_data(EmuEnvState &emuenv, int port, SceCtrlData2 *&pad_data, int count, bool negative, bool from_ext_function) {
     memset(pad_data, 0, sizeof(*pad_data));
 
-    count = peek_buffer(host, port, true, count, negative, from_ext_function, pad_data->timeStamp, pad_data->buttons, pad_data->lx, pad_data->ly, pad_data->rx, pad_data->ry);
+    count = peek_buffer(emuenv, port, true, count, negative, from_ext_function, pad_data->timeStamp, pad_data->buttons, pad_data->lx, pad_data->ly, pad_data->rx, pad_data->ry);
 
     for (int i = 1; i < count; i++) {
         memcpy(&pad_data[i], &pad_data[0], sizeof(SceCtrlData2));

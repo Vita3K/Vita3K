@@ -18,7 +18,7 @@
 #include <app/functions.h>
 
 #include <config/version.h>
-#include <host/state.h>
+#include <emuenv/state.h>
 #include <util/log.h>
 
 #include <SDL.h>
@@ -32,39 +32,39 @@ void error_dialog(const std::string &message, SDL_Window *window) {
 }
 
 static const uint32_t frames_size = 20;
-void calculate_fps(HostState &host) {
+void calculate_fps(EmuEnvState &emuenv) {
     const uint32_t sdl_ticks_now = SDL_GetTicks();
-    const uint32_t ms = sdl_ticks_now - host.sdl_ticks;
+    const uint32_t ms = sdl_ticks_now - emuenv.sdl_ticks;
 
-    if (ms >= 1000 && host.frame_count > 0) {
+    if (ms >= 1000 && emuenv.frame_count > 0) {
         // Set Current FPS
         // round division to nearest integer instead of truncating
-        const uint32_t frame_count = static_cast<std::uint32_t>(host.frame_count);
-        host.fps = (frame_count * 1000 + ms / 2) / ms;
-        host.ms_per_frame = (ms + frame_count / 2) / frame_count;
-        host.sdl_ticks = sdl_ticks_now;
-        host.frame_count = 0;
-        set_window_title(host);
+        const uint32_t frame_count = static_cast<std::uint32_t>(emuenv.frame_count);
+        emuenv.fps = (frame_count * 1000 + ms / 2) / ms;
+        emuenv.ms_per_frame = (ms + frame_count / 2) / frame_count;
+        emuenv.sdl_ticks = sdl_ticks_now;
+        emuenv.frame_count = 0;
+        set_window_title(emuenv);
 
         // Set FPS Statistics
-        host.fps_values[host.current_fps_offset] = float(host.fps);
-        host.current_fps_offset = (host.current_fps_offset + 1) % frames_size;
+        emuenv.fps_values[emuenv.current_fps_offset] = float(emuenv.fps);
+        emuenv.current_fps_offset = (emuenv.current_fps_offset + 1) % frames_size;
         uint32_t avg_fps = 0;
         for (uint32_t i = 0; i < frames_size; i++)
-            avg_fps += uint32_t(host.fps_values[i]);
-        host.avg_fps = avg_fps / frames_size;
-        host.min_fps = uint32_t(*std::min_element(host.fps_values, std::next(host.fps_values, frames_size)));
-        host.max_fps = uint32_t(*std::max_element(host.fps_values, std::next(host.fps_values, frames_size)));
+            avg_fps += uint32_t(emuenv.fps_values[i]);
+        emuenv.avg_fps = avg_fps / frames_size;
+        emuenv.min_fps = uint32_t(*std::min_element(emuenv.fps_values, std::next(emuenv.fps_values, frames_size)));
+        emuenv.max_fps = uint32_t(*std::max_element(emuenv.fps_values, std::next(emuenv.fps_values, frames_size)));
     }
 }
 
-void set_window_title(HostState &host) {
-    const auto af = host.cfg.current_config.anisotropic_filtering > 1 ? fmt ::format(" | AF {}x", host.cfg.current_config.anisotropic_filtering) : "";
+void set_window_title(EmuEnvState &emuenv) {
+    const auto af = emuenv.cfg.current_config.anisotropic_filtering > 1 ? fmt ::format(" | AF {}x", emuenv.cfg.current_config.anisotropic_filtering) : "";
     const std::string title_to_set = fmt::format("{} | {} ({}) | {} | {} ms/frame ({} frames/sec) | {}x{}{} {}", window_title,
-        host.current_app_title, host.io.title_id, host.cfg.backend_renderer, host.ms_per_frame, host.fps, host.display.frame.image_size.x * host.cfg.current_config.resolution_multiplier,
-        host.display.frame.image_size.y * host.cfg.current_config.resolution_multiplier, af, host.cfg.current_config.enable_fxaa ? "| FXAA" : "");
+        emuenv.current_app_title, emuenv.io.title_id, emuenv.cfg.backend_renderer, emuenv.ms_per_frame, emuenv.fps, emuenv.display.frame.image_size.x * emuenv.cfg.current_config.resolution_multiplier,
+        emuenv.display.frame.image_size.y * emuenv.cfg.current_config.resolution_multiplier, af, emuenv.cfg.current_config.enable_fxaa ? "| FXAA" : "");
 
-    SDL_SetWindowTitle(host.window.get(), title_to_set.c_str());
+    SDL_SetWindowTitle(emuenv.window.get(), title_to_set.c_str());
 }
 
 } // namespace app

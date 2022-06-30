@@ -27,7 +27,7 @@
 #include <miniz.h>
 
 struct GuiState;
-struct HostState;
+struct EmuEnvState;
 
 typedef std::shared_ptr<mz_zip_archive> ZipPtr;
 typedef std::shared_ptr<mz_zip_reader_extract_iter_state> ZipFilePtr;
@@ -52,10 +52,10 @@ struct ContentInfo {
     bool state = false;
 };
 
-bool handle_events(HostState &host, GuiState &gui);
+bool handle_events(EmuEnvState &emuenv, GuiState &gui);
 
-std::vector<ContentInfo> install_archive(HostState &host, GuiState *gui, const fs::path &archive_path, const std::function<void(ArchiveContents)> &progress_callback = nullptr);
-uint32_t install_contents(HostState &host, GuiState *gui, const fs::path &path);
+std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, const fs::path &archive_path, const std::function<void(ArchiveContents)> &progress_callback = nullptr);
+uint32_t install_contents(EmuEnvState &emuenv, GuiState *gui, const fs::path &path);
 
-ExitCode load_app(Ptr<const void> &entry_point, HostState &host, const std::wstring &path);
-ExitCode run_app(HostState &host, Ptr<const void> &entry_point);
+ExitCode load_app(Ptr<const void> &entry_point, EmuEnvState &emuenv, const std::wstring &path);
+ExitCode run_app(EmuEnvState &emuenv, Ptr<const void> &entry_point);

@@ -39,14 +39,14 @@ EXPORT(int, sceNpAuthGetAuthorizationCode) {
 }
 
 EXPORT(int, sceNpCheckCallback) {
-    if (host.np.state == 0)
+    if (emuenv.np.state == 0)
         return 0;
 
-    host.np.state = 0;
+    emuenv.np.state = 0;
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
-    for (auto &callback : host.np.cbs) {
-        thread->request_callback(callback.second.pc, { (uint32_t)host.np.state, 0, callback.second.data });
+    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    for (auto &callback : emuenv.np.cbs) {
+        thread->request_callback(callback.second.pc, { (uint32_t)emuenv.np.state, 0, callback.second.data });
     }
 
     return STUBBED("Stub");
@@ -57,13 +57,13 @@ EXPORT(int, sceNpGetServiceState) {
 }
 
 EXPORT(int, sceNpInit, np::CommunicationConfig *comm_config, void *dontcare) {
-    if (host.np.inited) {
+    if (emuenv.np.inited) {
         return SCE_NP_ERROR_ALREADY_INITIALIZED;
     }
 
-    const np::CommunicationID *comm_id = (comm_config) ? comm_config->comm_id.get(host.mem) : nullptr;
+    const np::CommunicationID *comm_id = (comm_config) ? comm_config->comm_id.get(emuenv.mem) : nullptr;
 
-    if (!init(host.np, comm_id)) {
+    if (!init(emuenv.np, comm_id)) {
         return SCE_NP_ERROR_NOT_INITIALIZED;
     }
 
@@ -87,11 +87,11 @@ EXPORT(int, sceNpManagerGetContentRatingFlag) {
 }
 
 EXPORT(int, sceNpManagerGetNpId, np::NpId *id) {
-    if (host.io.user_name.length() > 16) {
+    if (emuenv.io.user_name.length() > 16) {
         LOG_ERROR("Your online ID has over 16 characters, try again with shorter name");
         return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;
     }
-    strcpy(id->online_id.name, host.io.user_name.c_str());
+    strcpy(id->online_id.name, emuenv.io.user_name.c_str());
     id->online_id.term = '\0';
     std::fill(id->online_id.dummy, id->online_id.dummy + 3, 0);
 
@@ -103,27 +103,27 @@ EXPORT(int, sceNpManagerGetNpId, np::NpId *id) {
 }
 
 EXPORT(int, sceNpRegisterServiceStateCallback, Ptr<void> callback, Ptr<void> data) {
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
-    uint32_t cid = host.kernel.get_next_uid();
+    const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+    uint32_t cid = emuenv.kernel.get_next_uid();
     SceNpServiceStateCallback sceNpServiceStateCallback;
     sceNpServiceStateCallback.pc = callback.address();
     sceNpServiceStateCallback.data = data.address();
-    host.np.cbs.emplace(cid, sceNpServiceStateCallback);
-    host.np.state_cb_id = cid;
+    emuenv.np.cbs.emplace(cid, sceNpServiceStateCallback);
+    emuenv.np.state_cb_id = cid;
     return 0;
 }
 
 EXPORT(void, sceNpTerm) {
-    if (!host.np.inited) {
+    if (!emuenv.np.inited) {
         LOG_WARN("NP library not initialized but termination got called");
         return;
     }
-    deinit(host.np);
+    deinit(emuenv.np);
 }
 
 EXPORT(int, sceNpUnregisterServiceStateCallback) {
-    if (host.np.state_cb_id) {
-        host.np.cbs.erase(host.np.state_cb_id);
+    if (emuenv.np.state_cb_id) {
+        emuenv.np.cbs.erase(emuenv.np.state_cb_id);
     }
     return 0;
 }

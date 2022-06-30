@@ -18,7 +18,7 @@
 #include "SceCommonDialog.h"
 
 #include <dialog/types.h>
-#include <host/app_util.h>
+#include <emuenv/app_util.h>
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
@@ -105,249 +105,249 @@ EXPORT(int, sceCrossControllerDialogTerm) {
 }
 
 EXPORT(int, sceImeDialogAbort) {
-    if (host.common_dialog.type != IME_DIALOG)
+    if (emuenv.common_dialog.type != IME_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
-
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
+    }
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
     return 0;
 }
 
 EXPORT(int, sceImeDialogGetResult, SceImeDialogResult *result) {
-    if (host.common_dialog.type != IME_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+    if (emuenv.common_dialog.type != IME_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
-    result->result = host.common_dialog.result;
-    result->button = host.common_dialog.ime.status;
+    result->result = emuenv.common_dialog.result;
+    result->button = emuenv.common_dialog.ime.status;
     return 0;
 }
 
 EXPORT(int, sceImeDialogGetStatus) {
-    if (host.common_dialog.type != IME_DIALOG)
+    if (emuenv.common_dialog.type != IME_DIALOG)
         return SCE_COMMON_DIALOG_STATUS_NONE;
 
-    return host.common_dialog.status;
+    return emuenv.common_dialog.status;
 }
 
 EXPORT(int, sceImeDialogInit, const Ptr<SceImeDialogParam> param) {
-    if (host.common_dialog.type != NO_DIALOG)
+    if (emuenv.common_dialog.type != NO_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
-    SceImeDialogParam *p = param.get(host.mem);
+    SceImeDialogParam *p = param.get(emuenv.mem);
 
-    std::u16string title = reinterpret_cast<char16_t *>(p->title.get(host.mem));
-    std::u16string text = reinterpret_cast<char16_t *>(p->initialText.get(host.mem));
+    std::u16string title = reinterpret_cast<char16_t *>(p->title.get(emuenv.mem));
+    std::u16string text = reinterpret_cast<char16_t *>(p->initialText.get(emuenv.mem));
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
-    host.common_dialog.type = IME_DIALOG;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    emuenv.common_dialog.type = IME_DIALOG;
 
-    host.common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_NONE;
-    sprintf(host.common_dialog.ime.title, "%s", string_utils::utf16_to_utf8(title).c_str());
-    sprintf(host.common_dialog.ime.text, "%s", string_utils::utf16_to_utf8(text).c_str());
-    host.common_dialog.ime.max_length = p->maxTextLength;
-    host.common_dialog.ime.multiline = (p->option & SCE_IME_OPTION_MULTILINE);
-    host.common_dialog.ime.cancelable = (p->dialogMode == SCE_IME_DIALOG_DIALOG_MODE_WITH_CANCEL);
-    host.common_dialog.ime.result = reinterpret_cast<uint16_t *>(p->inputTextBuffer.get(host.mem));
+    emuenv.common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_NONE;
+    sprintf(emuenv.common_dialog.ime.title, "%s", string_utils::utf16_to_utf8(title).c_str());
+    sprintf(emuenv.common_dialog.ime.text, "%s", string_utils::utf16_to_utf8(text).c_str());
+    emuenv.common_dialog.ime.max_length = p->maxTextLength;
+    emuenv.common_dialog.ime.multiline = (p->option & SCE_IME_OPTION_MULTILINE);
+    emuenv.common_dialog.ime.cancelable = (p->dialogMode == SCE_IME_DIALOG_DIALOG_MODE_WITH_CANCEL);
+    emuenv.common_dialog.ime.result = reinterpret_cast<uint16_t *>(p->inputTextBuffer.get(emuenv.mem));
 
     return 0;
 }
 
 EXPORT(int, sceImeDialogTerm) {
-    if (host.common_dialog.type != IME_DIALOG)
+    if (emuenv.common_dialog.type != IME_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+    if (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
-    host.common_dialog.type = NO_DIALOG;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
+    emuenv.common_dialog.type = NO_DIALOG;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogAbort) {
-    if (host.common_dialog.type != MESSAGE_DIALOG)
+    if (emuenv.common_dialog.type != MESSAGE_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogClose) {
-    if (host.common_dialog.type != MESSAGE_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING)
+    if (emuenv.common_dialog.type != MESSAGE_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogGetResult, SceMsgDialogResult *result) {
-    if (host.common_dialog.type != MESSAGE_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+    if (emuenv.common_dialog.type != MESSAGE_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
-    result->result = host.common_dialog.result;
-    result->mode = host.common_dialog.msg.mode;
-    result->buttonId = host.common_dialog.msg.status;
+    result->result = emuenv.common_dialog.result;
+    result->mode = emuenv.common_dialog.msg.mode;
+    result->buttonId = emuenv.common_dialog.msg.status;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogGetStatus) {
-    if (host.common_dialog.type != MESSAGE_DIALOG)
+    if (emuenv.common_dialog.type != MESSAGE_DIALOG)
         return SCE_COMMON_DIALOG_STATUS_NONE;
 
-    return host.common_dialog.status;
+    return emuenv.common_dialog.status;
 }
 
 EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
-    if (host.common_dialog.type != NO_DIALOG)
+    if (emuenv.common_dialog.type != NO_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
-    SceMsgDialogParam *p = param.get(host.mem);
+    SceMsgDialogParam *p = param.get(emuenv.mem);
     SceMsgDialogUserMessageParam *up;
     SceMsgDialogButtonsParam *bp;
     SceMsgDialogProgressBarParam *pp;
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
-    host.common_dialog.type = MESSAGE_DIALOG;
-    host.common_dialog.msg.has_progress_bar = false;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    emuenv.common_dialog.type = MESSAGE_DIALOG;
+    emuenv.common_dialog.msg.has_progress_bar = false;
 
-    host.common_dialog.msg.mode = p->mode;
-    host.common_dialog.msg.status = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
+    emuenv.common_dialog.msg.mode = p->mode;
+    emuenv.common_dialog.msg.status = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
 
-    auto common = host.common_dialog.lang.common;
+    auto common = emuenv.common_dialog.lang.common;
     const auto CANCEL = common["cancel"];
 
     switch (p->mode) {
     case SCE_MSG_DIALOG_MODE_USER_MSG:
-        up = p->userMsgParam.get(host.mem);
-        host.common_dialog.msg.message = reinterpret_cast<char *>(up->msg.get(host.mem));
+        up = p->userMsgParam.get(emuenv.mem);
+        emuenv.common_dialog.msg.message = reinterpret_cast<char *>(up->msg.get(emuenv.mem));
         switch (up->buttonType) {
         case SCE_MSG_DIALOG_BUTTON_TYPE_OK:
-            host.common_dialog.msg.btn_num = 1;
-            host.common_dialog.msg.btn[0] = "OK";
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
+            emuenv.common_dialog.msg.btn_num = 1;
+            emuenv.common_dialog.msg.btn[0] = "OK";
+            emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_YESNO:
-            host.common_dialog.msg.btn_num = 2;
-            host.common_dialog.msg.btn[0] = common["yes"];
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_YES;
-            host.common_dialog.msg.btn[1] = common["no"];
-            host.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
+            emuenv.common_dialog.msg.btn_num = 2;
+            emuenv.common_dialog.msg.btn[0] = common["yes"];
+            emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_YES;
+            emuenv.common_dialog.msg.btn[1] = common["no"];
+            emuenv.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_NONE:
-            host.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_OK_CANCEL:
-            host.common_dialog.msg.btn_num = 2;
-            host.common_dialog.msg.btn[0] = "OK";
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
-            host.common_dialog.msg.btn[1] = CANCEL;
-            host.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
+            emuenv.common_dialog.msg.btn_num = 2;
+            emuenv.common_dialog.msg.btn[0] = "OK";
+            emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
+            emuenv.common_dialog.msg.btn[1] = CANCEL;
+            emuenv.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_CANCEL:
-            host.common_dialog.msg.btn_num = 1;
-            host.common_dialog.msg.btn[0] = CANCEL;
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
+            emuenv.common_dialog.msg.btn_num = 1;
+            emuenv.common_dialog.msg.btn[0] = CANCEL;
+            emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_3BUTTONS:
-            bp = up->buttonParam.get(host.mem);
-            host.common_dialog.msg.btn_num = 3;
-            host.common_dialog.msg.btn[0] = bp->msg1.get(host.mem);
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_YES;
-            host.common_dialog.msg.btn[1] = bp->msg2.get(host.mem);
-            host.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
-            host.common_dialog.msg.btn[2] = bp->msg3.get(host.mem);
-            host.common_dialog.msg.btn_val[2] = SCE_MSG_DIALOG_BUTTON_ID_RETRY;
+            bp = up->buttonParam.get(emuenv.mem);
+            emuenv.common_dialog.msg.btn_num = 3;
+            emuenv.common_dialog.msg.btn[0] = bp->msg1.get(emuenv.mem);
+            emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_YES;
+            emuenv.common_dialog.msg.btn[1] = bp->msg2.get(emuenv.mem);
+            emuenv.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
+            emuenv.common_dialog.msg.btn[2] = bp->msg3.get(emuenv.mem);
+            emuenv.common_dialog.msg.btn_val[2] = SCE_MSG_DIALOG_BUTTON_ID_RETRY;
             break;
         }
         break;
     case SCE_MSG_DIALOG_MODE_SYSTEM_MSG:
         // TODO: implement the remaining system message types
-        switch (p->sysMsgParam.get(host.mem)->sysMsgType) {
+        switch (p->sysMsgParam.get(emuenv.mem)->sysMsgType) {
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT:
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_SMALL:
-            host.common_dialog.msg.message = "Please wait.";
-            host.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.message = "Please wait.";
+            emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NOSPACE:
-            host.common_dialog.msg.message = "There is not enough free space on the memory card.";
-            host.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.message = "There is not enough free space on the memory card.";
+            emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_MAGNETIC_CALIBRATION:
-            host.common_dialog.msg.message = "Move away from the source of interference, or adjust the compass by moving your PS Vita system as shown below.";
-            host.common_dialog.msg.btn_num = 1;
-            host.common_dialog.msg.btn[0] = CANCEL;
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
+            emuenv.common_dialog.msg.message = "Move away from the source of interference, or adjust the compass by moving your PS Vita system as shown below.";
+            emuenv.common_dialog.msg.btn_num = 1;
+            emuenv.common_dialog.msg.btn[0] = CANCEL;
+            emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_MIC_DISABLED:
-            host.common_dialog.msg.message = "The microphone is disabled";
-            host.common_dialog.msg.btn_num = 1;
-            host.common_dialog.msg.btn[0] = CANCEL;
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
+            emuenv.common_dialog.msg.message = "The microphone is disabled";
+            emuenv.common_dialog.msg.btn_num = 1;
+            emuenv.common_dialog.msg.btn[0] = CANCEL;
+            emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_CANCEL:
-            host.common_dialog.msg.message = "Please wait.";
-            host.common_dialog.msg.btn[0] = CANCEL;
-            host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_NO;
-            host.common_dialog.msg.btn_num = 1;
+            emuenv.common_dialog.msg.message = "Please wait.";
+            emuenv.common_dialog.msg.btn[0] = CANCEL;
+            emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_NO;
+            emuenv.common_dialog.msg.btn_num = 1;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NEED_MC_CONTINUE:
-            host.common_dialog.msg.message = "Cannot continue the application. No memory card is inserted.";
-            host.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.message = "Cannot continue the application. No memory card is inserted.";
+            emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NEED_MC_OPERATION:
-            host.common_dialog.msg.message = "Cannot perform this operation. No memory card is inserted.";
-            host.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.message = "Cannot perform this operation. No memory card is inserted.";
+            emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NOSPACE_CONTINUABLE:
-            host.common_dialog.msg.message = "There is not enough free space on the memory card.";
-            host.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.message = "There is not enough free space on the memory card.";
+            emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_MIC_DISABLED:
-            host.common_dialog.msg.message = "You must enable the microphone.";
-            host.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.message = "You must enable the microphone.";
+            emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_WIFI_REQUIRED_OPERATION:
-            host.common_dialog.msg.message = "You must use Wi-Fi to do this.";
-            host.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.message = "You must use Wi-Fi to do this.";
+            emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_WIFI_REQUIRED_APPLICATION:
-            host.common_dialog.msg.message = "You must use Wi-Fi to use this application.";
-            host.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.message = "You must use Wi-Fi to use this application.";
+            emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_EMPTY_STORE:
-            host.common_dialog.msg.message = "No content is available yet.";
-            host.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.message = "No content is available yet.";
+            emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_INVALID:
         default:
-            LOG_ERROR("Attempt to init message dialog with unknown system message mode: {}", log_hex(p->sysMsgParam.get(host.mem)->sysMsgType));
+            LOG_ERROR("Attempt to init message dialog with unknown system message mode: {}", log_hex(p->sysMsgParam.get(emuenv.mem)->sysMsgType));
         }
         break;
     case SCE_MSG_DIALOG_MODE_ERROR_CODE:
-        host.common_dialog.msg.message = fmt::format("An error occurred. Errorcode: {}", log_hex(p->errorCodeParam.get(host.mem)->errorCode));
-        host.common_dialog.msg.btn_num = 1;
-        host.common_dialog.msg.btn[0] = "OK";
-        host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
+        emuenv.common_dialog.msg.message = fmt::format("An error occurred. Errorcode: {}", log_hex(p->errorCodeParam.get(emuenv.mem)->errorCode));
+        emuenv.common_dialog.msg.btn_num = 1;
+        emuenv.common_dialog.msg.btn[0] = "OK";
+        emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_MSG_DIALOG_MODE_PROGRESS_BAR:
-        pp = p->progBarParam.get(host.mem);
-        host.common_dialog.msg.btn_num = 0;
-        host.common_dialog.msg.has_progress_bar = true;
-        if (pp->msg.get(host.mem) != nullptr) {
-            host.common_dialog.msg.message = reinterpret_cast<char *>(pp->msg.get(host.mem));
+        pp = p->progBarParam.get(emuenv.mem);
+        emuenv.common_dialog.msg.btn_num = 0;
+        emuenv.common_dialog.msg.has_progress_bar = true;
+        if (pp->msg.get(emuenv.mem) != nullptr) {
+            emuenv.common_dialog.msg.message = reinterpret_cast<char *>(pp->msg.get(emuenv.mem));
         } else {
             switch (pp->sysMsgParam.sysMsgType) {
             case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT:
             case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_SMALL:
-                host.common_dialog.msg.message = "Please Wait.";
+                emuenv.common_dialog.msg.message = "Please Wait.";
                 break;
             case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_CANCEL:
-                host.common_dialog.msg.message = "Please Wait";
-                host.common_dialog.msg.btn_num = 1;
-                host.common_dialog.msg.btn[0] = "CANCEL";
-                host.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_NO;
+                emuenv.common_dialog.msg.message = "Please Wait";
+                emuenv.common_dialog.msg.btn_num = 1;
+                emuenv.common_dialog.msg.btn[0] = "CANCEL";
+                emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_NO;
                 break;
             }
         }
@@ -362,53 +362,53 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
 }
 
 EXPORT(int, sceMsgDialogProgressBarInc, SceMsgDialogProgressBarTarget target, SceUInt32 delta) {
-    if (host.common_dialog.type != MESSAGE_DIALOG) {
+    if (emuenv.common_dialog.type != MESSAGE_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
-    if (host.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
+    if (emuenv.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.msg.bar_percent += delta;
+    emuenv.common_dialog.msg.bar_percent += delta;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogProgressBarSetMsg, SceMsgDialogProgressBarTarget target, const SceChar8 *msg) {
-    if (host.common_dialog.type != MESSAGE_DIALOG) {
+    if (emuenv.common_dialog.type != MESSAGE_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
-    if (host.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
+    if (emuenv.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.msg.message = reinterpret_cast<const char *>(msg);
+    emuenv.common_dialog.msg.message = reinterpret_cast<const char *>(msg);
     return 0;
 }
 
 EXPORT(int, sceMsgDialogProgressBarSetValue, SceMsgDialogProgressBarTarget target, SceUInt32 rate) {
-    if (host.common_dialog.type != MESSAGE_DIALOG) {
+    if (emuenv.common_dialog.type != MESSAGE_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
-    if (host.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
+    if (emuenv.common_dialog.msg.mode != SCE_MSG_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
-    host.common_dialog.msg.bar_percent = rate;
-    if (host.common_dialog.msg.bar_percent > 100) {
-        host.common_dialog.msg.bar_percent = 100;
+    emuenv.common_dialog.msg.bar_percent = rate;
+    if (emuenv.common_dialog.msg.bar_percent > 100) {
+        emuenv.common_dialog.msg.bar_percent = 100;
     }
     return 0;
 }
 
 EXPORT(int, sceMsgDialogTerm) {
-    if (host.common_dialog.type != MESSAGE_DIALOG)
+    if (emuenv.common_dialog.type != MESSAGE_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+    if (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
-    host.common_dialog.type = NO_DIALOG;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
+    emuenv.common_dialog.type = NO_DIALOG;
     return 0;
 }
 
@@ -432,22 +432,22 @@ EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
 }
 
 EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
-    if (host.common_dialog.type != NETCHECK_DIALOG)
+    if (emuenv.common_dialog.type != NETCHECK_DIALOG)
         return SCE_COMMON_DIALOG_STATUS_NONE;
 
     STUBBED("SCE_COMMON_DIALOG_STATUS_FINISHED");
-    return host.common_dialog.status;
+    return emuenv.common_dialog.status;
 }
 
 EXPORT(int, sceNetCheckDialogInit) {
-    host.common_dialog.type = NETCHECK_DIALOG;
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    emuenv.common_dialog.type = NETCHECK_DIALOG;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCheckDialogTerm) {
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
-    host.common_dialog.type = NO_DIALOG;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
+    emuenv.common_dialog.type = NO_DIALOG;
     return UNIMPLEMENTED();
 }
 
@@ -556,45 +556,45 @@ EXPORT(int, sceNpSnsFacebookDialogTerm) {
 }
 
 EXPORT(int, sceNpTrophySetupDialogAbort) {
-    if (host.common_dialog.type != TROPHY_SETUP_DIALOG)
+    if (emuenv.common_dialog.type != TROPHY_SETUP_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
     return 0;
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetResult, Ptr<SceNpTrophySetupDialogResult> result) {
-    if (host.common_dialog.type != TROPHY_SETUP_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+    if (emuenv.common_dialog.type != TROPHY_SETUP_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
-    result.get(host.mem)->result = host.common_dialog.result;
+    result.get(emuenv.mem)->result = emuenv.common_dialog.result;
     return 0;
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetStatus) {
-    return host.common_dialog.status;
+    return emuenv.common_dialog.status;
 }
 
 EXPORT(int, sceNpTrophySetupDialogInit, const Ptr<SceNpTrophySetupDialogParam> param) {
-    if (host.common_dialog.type != NO_DIALOG)
+    if (emuenv.common_dialog.type != NO_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
-    host.common_dialog.type = TROPHY_SETUP_DIALOG;
-    host.common_dialog.trophy.tick = SDL_GetTicks() + ((param.get(host.mem)->options & 0x01) ? 3000 : 0);
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    emuenv.common_dialog.type = TROPHY_SETUP_DIALOG;
+    emuenv.common_dialog.trophy.tick = SDL_GetTicks() + ((param.get(emuenv.mem)->options & 0x01) ? 3000 : 0);
     return 0;
 }
 
 EXPORT(int, sceNpTrophySetupDialogTerm) {
-    if (host.common_dialog.type != TROPHY_SETUP_DIALOG)
+    if (emuenv.common_dialog.type != TROPHY_SETUP_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+    if (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
-    host.common_dialog.type = NO_DIALOG;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
+    emuenv.common_dialog.type = NO_DIALOG;
     return 0;
 }
 
@@ -675,94 +675,94 @@ EXPORT(int, sceRemoteOSKDialogTerm) {
 }
 
 EXPORT(int, sceSaveDataDialogAbort) {
-    if (host.common_dialog.type != SAVEDATA_DIALOG) {
+    if (emuenv.common_dialog.type != SAVEDATA_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
     }
 
-    host.common_dialog.savedata.bar_percent = 0;
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    host.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
-    host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
-    host.common_dialog.type = NO_DIALOG;
+    emuenv.common_dialog.savedata.bar_percent = 0;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    emuenv.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+    emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
+    emuenv.common_dialog.type = NO_DIALOG;
     return 0;
 }
 
-static void check_empty_param(HostState &host, const SceAppUtilSaveDataSlotEmptyParam *empty_param, const uint32_t idx) {
+static void check_empty_param(EmuEnvState &emuenv, const SceAppUtilSaveDataSlotEmptyParam *empty_param, const uint32_t idx) {
     vfs::FileBuffer thumbnail_buffer;
-    host.common_dialog.savedata.title[idx] = "";
-    host.common_dialog.savedata.subtitle[idx] = "";
-    host.common_dialog.savedata.icon_buffer[idx].clear();
-    host.common_dialog.savedata.has_date[idx] = false;
+    emuenv.common_dialog.savedata.title[idx] = "";
+    emuenv.common_dialog.savedata.subtitle[idx] = "";
+    emuenv.common_dialog.savedata.icon_buffer[idx].clear();
+    emuenv.common_dialog.savedata.has_date[idx] = false;
     if (empty_param) {
-        host.common_dialog.savedata.title[idx] = empty_param->title.get(host.mem) ? empty_param->title.get(host.mem) : host.common_dialog.lang.save_data.save["new_saved_data"];
-        auto iconPath = empty_param->iconPath.get(host.mem);
-        SceUChar8 *iconBuf = reinterpret_cast<SceUChar8 *>(empty_param->iconBuf.get(host.mem));
+        emuenv.common_dialog.savedata.title[idx] = empty_param->title.get(emuenv.mem) ? empty_param->title.get(emuenv.mem) : emuenv.common_dialog.lang.save_data.save["new_saved_data"];
+        auto iconPath = empty_param->iconPath.get(emuenv.mem);
+        SceUChar8 *iconBuf = reinterpret_cast<SceUChar8 *>(empty_param->iconBuf.get(emuenv.mem));
         auto iconBufSize = empty_param->iconBufSize;
         if (iconPath) {
-            auto device = device::get_device(empty_param->iconPath.get(host.mem));
-            auto thumbnail_path = translate_path(empty_param->iconPath.get(host.mem), device, host.io.device_paths);
-            vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
-            host.common_dialog.savedata.icon_buffer[idx] = thumbnail_buffer;
-            host.common_dialog.savedata.icon_loaded[idx] = true;
+            auto device = device::get_device(empty_param->iconPath.get(emuenv.mem));
+            auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
+            vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
+            emuenv.common_dialog.savedata.icon_buffer[idx] = thumbnail_buffer;
+            emuenv.common_dialog.savedata.icon_loaded[idx] = true;
         } else if (iconBuf && iconBufSize != 0) {
             thumbnail_buffer.insert(thumbnail_buffer.end(), iconBuf, iconBuf + iconBufSize);
-            host.common_dialog.savedata.icon_buffer[idx] = thumbnail_buffer;
-            host.common_dialog.savedata.icon_loaded[idx] = true;
+            emuenv.common_dialog.savedata.icon_buffer[idx] = thumbnail_buffer;
+            emuenv.common_dialog.savedata.icon_loaded[idx] = true;
         } else {
-            host.common_dialog.savedata.icon_loaded[idx] = false;
+            emuenv.common_dialog.savedata.icon_loaded[idx] = false;
         }
     } else {
-        host.common_dialog.savedata.title[idx] = host.common_dialog.lang.save_data.save["new_saved_data"];
-        host.common_dialog.savedata.icon_loaded[idx] = false;
+        emuenv.common_dialog.savedata.title[idx] = emuenv.common_dialog.lang.save_data.save["new_saved_data"];
+        emuenv.common_dialog.savedata.icon_loaded[idx] = false;
     }
 }
 
-static void check_save_file(SceUID fd, std::vector<SceAppUtilSaveDataSlotParam> slot_param, int index, HostState &host, const char *export_name) {
+static void check_save_file(SceUID fd, std::vector<SceAppUtilSaveDataSlotParam> slot_param, int index, EmuEnvState &emuenv, const char *export_name) {
     vfs::FileBuffer thumbnail_buffer;
     if (fd < 0) {
-        auto empty_param = host.common_dialog.savedata.list_empty_param;
-        check_empty_param(host, empty_param, index);
+        auto empty_param = emuenv.common_dialog.savedata.list_empty_param;
+        check_empty_param(emuenv, empty_param, index);
     } else {
-        read_file(&slot_param[index], host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
-        close_file(host.io, fd, export_name);
-        host.common_dialog.savedata.slot_info[index].isExist = 1;
-        host.common_dialog.savedata.title[index] = slot_param[index].title;
-        host.common_dialog.savedata.subtitle[index] = slot_param[index].subTitle;
-        host.common_dialog.savedata.details[index] = slot_param[index].detail;
-        host.common_dialog.savedata.date[index] = slot_param[index].modifiedTime;
-        host.common_dialog.savedata.has_date[index] = true;
+        read_file(&slot_param[index], emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
+        close_file(emuenv.io, fd, export_name);
+        emuenv.common_dialog.savedata.slot_info[index].isExist = 1;
+        emuenv.common_dialog.savedata.title[index] = slot_param[index].title;
+        emuenv.common_dialog.savedata.subtitle[index] = slot_param[index].subTitle;
+        emuenv.common_dialog.savedata.details[index] = slot_param[index].detail;
+        emuenv.common_dialog.savedata.date[index] = slot_param[index].modifiedTime;
+        emuenv.common_dialog.savedata.has_date[index] = true;
         auto device = device::get_device(slot_param[index].iconPath);
-        auto thumbnail_path = translate_path(slot_param[index].iconPath, device, host.io.device_paths);
-        vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
-        host.common_dialog.savedata.icon_buffer[index] = thumbnail_buffer;
-        host.common_dialog.savedata.icon_loaded[index] = true;
+        auto thumbnail_path = translate_path(slot_param[index].iconPath, device, emuenv.io.device_paths);
+        vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
+        emuenv.common_dialog.savedata.icon_buffer[index] = thumbnail_buffer;
+        emuenv.common_dialog.savedata.icon_loaded[index] = true;
     }
 }
 
-static void handle_user_message(SceSaveDataDialogUserMessageParam *user_message, HostState &host) {
-    auto common = host.common_dialog.lang.common;
+static void handle_user_message(SceSaveDataDialogUserMessageParam *user_message, EmuEnvState &emuenv) {
+    auto common = emuenv.common_dialog.lang.common;
     switch (user_message->buttonType) {
     case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_OK:
-        host.common_dialog.savedata.btn_num = 1;
-        host.common_dialog.savedata.btn[0] = "OK";
-        host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
+        emuenv.common_dialog.savedata.btn_num = 1;
+        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_YESNO:
-        host.common_dialog.savedata.btn_num = 2;
-        host.common_dialog.savedata.btn[0] = common["no"];
-        host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        host.common_dialog.savedata.btn[1] = common["yes"];
-        host.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
+        emuenv.common_dialog.savedata.btn_num = 2;
+        emuenv.common_dialog.savedata.btn[0] = common["no"];
+        emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
+        emuenv.common_dialog.savedata.btn[1] = common["yes"];
+        emuenv.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_NONE:
-        host.common_dialog.savedata.btn_num = 0;
-        host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+        emuenv.common_dialog.savedata.btn_num = 0;
+        emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
         break;
     }
 }
 
-static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message, HostState &host) {
-    auto lang = host.common_dialog.lang;
+static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message, EmuEnvState &emuenv) {
+    auto lang = emuenv.common_dialog.lang;
     auto common = lang.common;
     auto save_data = lang.save_data;
     auto deleting = save_data.deleting;
@@ -771,130 +771,130 @@ static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message,
 
     switch (sys_message->sysMsgType) {
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NODATA:
-        host.common_dialog.savedata.msg = load["no_saved_data"];
-        host.common_dialog.savedata.btn_num = 1;
-        host.common_dialog.savedata.btn[0] = "OK";
-        host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
+        emuenv.common_dialog.savedata.msg = load["no_saved_data"];
+        emuenv.common_dialog.savedata.btn_num = 1;
+        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_CONFIRM:
-        switch (host.common_dialog.savedata.display_type) {
+        switch (emuenv.common_dialog.savedata.display_type) {
         case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-            host.common_dialog.savedata.msg = save["save_the_data"];
+            emuenv.common_dialog.savedata.msg = save["save_the_data"];
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-            host.common_dialog.savedata.msg = load["load_saved_data"];
+            emuenv.common_dialog.savedata.msg = load["load_saved_data"];
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-            host.common_dialog.savedata.msg = deleting["delete_saved_data"];
+            emuenv.common_dialog.savedata.msg = deleting["delete_saved_data"];
             break;
         }
-        host.common_dialog.savedata.btn_num = 2;
-        host.common_dialog.savedata.btn[0] = common["no"];
-        host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        host.common_dialog.savedata.btn[1] = common["yes"];
-        host.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
+        emuenv.common_dialog.savedata.btn_num = 2;
+        emuenv.common_dialog.savedata.btn[0] = common["no"];
+        emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
+        emuenv.common_dialog.savedata.btn[1] = common["yes"];
+        emuenv.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_OVERWRITE:
-        host.common_dialog.savedata.msg = save["overwrite_saved_data"];
-        host.common_dialog.savedata.btn_num = 2;
-        host.common_dialog.savedata.btn[0] = common["no"];
-        host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        host.common_dialog.savedata.btn[1] = common["yes"];
-        host.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
+        emuenv.common_dialog.savedata.msg = save["overwrite_saved_data"];
+        emuenv.common_dialog.savedata.btn_num = 2;
+        emuenv.common_dialog.savedata.btn[0] = common["no"];
+        emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
+        emuenv.common_dialog.savedata.btn[1] = common["yes"];
+        emuenv.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NOSPACE:
-        host.common_dialog.savedata.msg = save["not_free_space"];
-        host.common_dialog.savedata.btn_num = 0;
+        emuenv.common_dialog.savedata.msg = save["not_free_space"];
+        emuenv.common_dialog.savedata.btn_num = 0;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_PROGRESS:
-        host.common_dialog.savedata.btn_num = 0;
-        switch (host.common_dialog.savedata.display_type) {
+        emuenv.common_dialog.savedata.btn_num = 0;
+        switch (emuenv.common_dialog.savedata.display_type) {
         case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-            host.common_dialog.savedata.msg = save["warning_saving"];
+            emuenv.common_dialog.savedata.msg = save["warning_saving"];
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-            host.common_dialog.savedata.msg = load["loading"];
+            emuenv.common_dialog.savedata.msg = load["loading"];
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-            host.common_dialog.savedata.msg = common["please_wait"];
+            emuenv.common_dialog.savedata.msg = common["please_wait"];
             break;
         }
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_FINISHED:
-        switch (host.common_dialog.savedata.display_type) {
+        switch (emuenv.common_dialog.savedata.display_type) {
         case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-            host.common_dialog.savedata.msg = save["saving_complete"];
+            emuenv.common_dialog.savedata.msg = save["saving_complete"];
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-            host.common_dialog.savedata.msg = load["load_complete"];
+            emuenv.common_dialog.savedata.msg = load["load_complete"];
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-            host.common_dialog.savedata.msg = deleting["deletion_complete"];
+            emuenv.common_dialog.savedata.msg = deleting["deletion_complete"];
             break;
         }
-        host.common_dialog.savedata.btn_num = 1;
-        host.common_dialog.savedata.btn[0] = "OK";
-        host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
+        emuenv.common_dialog.savedata.btn_num = 1;
+        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_CONFIRM_CANCEL:
-        switch (host.common_dialog.savedata.display_type) {
+        switch (emuenv.common_dialog.savedata.display_type) {
         case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-            host.common_dialog.savedata.msg = load["cancel_loading"];
+            emuenv.common_dialog.savedata.msg = load["cancel_loading"];
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-            host.common_dialog.savedata.msg = save["cancel_saving"];
+            emuenv.common_dialog.savedata.msg = save["cancel_saving"];
             break;
         case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-            host.common_dialog.savedata.msg = deleting["cancel_deleting"];
+            emuenv.common_dialog.savedata.msg = deleting["cancel_deleting"];
             break;
         }
-        host.common_dialog.savedata.btn_num = 2;
-        host.common_dialog.savedata.btn[0] = common["no"];
-        host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
-        host.common_dialog.savedata.btn[1] = common["yes"];
-        host.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
+        emuenv.common_dialog.savedata.btn_num = 2;
+        emuenv.common_dialog.savedata.btn[0] = common["no"];
+        emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_NO;
+        emuenv.common_dialog.savedata.btn[1] = common["yes"];
+        emuenv.common_dialog.savedata.btn_val[1] = SCE_SAVEDATA_DIALOG_BUTTON_ID_YES;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_FILE_CORRUPTED:
-        host.common_dialog.savedata.msg = common["file_corrupted"];
-        host.common_dialog.savedata.btn_num = 1;
-        host.common_dialog.savedata.btn[0] = "OK";
-        host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
+        emuenv.common_dialog.savedata.msg = common["file_corrupted"];
+        emuenv.common_dialog.savedata.btn_num = 1;
+        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NOSPACE_CONTINUABLE:
-        host.common_dialog.savedata.msg = save["could_not_save"];
-        host.common_dialog.savedata.btn_num = 1;
-        host.common_dialog.savedata.btn[0] = "OK";
-        host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_TYPE_OK;
+        emuenv.common_dialog.savedata.msg = save["could_not_save"];
+        emuenv.common_dialog.savedata.btn_num = 1;
+        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_TYPE_OK;
         break;
     case SCE_SAVEDATE_DIALOG_SYSMSG_TYPE_NODATA_IMPORT:
-        host.common_dialog.savedata.msg = "There is no saved data that can be used with this application.\n\
+        emuenv.common_dialog.savedata.msg = "There is no saved data that can be used with this application.\n\
 			If the saved data you want to use is on the memory card, select the \"import saved data\" icon on the LiveArea screen.";
-        host.common_dialog.savedata.btn_num = 1;
-        host.common_dialog.savedata.btn[0] = "OK";
-        host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
+        emuenv.common_dialog.savedata.btn_num = 1;
+        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     default: break;
     }
 }
 
 EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) {
-    if (param.get(host.mem) == nullptr) {
+    if (param.get(emuenv.mem) == nullptr) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
 
-    if (host.common_dialog.type != SAVEDATA_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
+    if (emuenv.common_dialog.type != SAVEDATA_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
-    if (host.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_FINISHED) {
+    if (emuenv.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_FINISHED) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
     }
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
-    host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
-    host.common_dialog.savedata.has_progress_bar = false;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    emuenv.common_dialog.savedata.has_progress_bar = false;
 
-    const SceSaveDataDialogParam *p = param.get(host.mem);
+    const SceSaveDataDialogParam *p = param.get(emuenv.mem);
     SceSaveDataDialogUserMessageParam *user_message;
     SceSaveDataDialogSystemMessageParam *sys_message;
     SceSaveDataDialogProgressBarParam *progress_bar;
@@ -903,101 +903,101 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
     vfs::FileBuffer thumbnail_buffer;
     SceUID fd;
 
-    host.common_dialog.savedata.mode = p->mode;
-    host.common_dialog.savedata.display_type = p->dispType == 0 ? host.common_dialog.savedata.display_type : p->dispType;
-    host.common_dialog.savedata.userdata = p->userdata;
+    emuenv.common_dialog.savedata.mode = p->mode;
+    emuenv.common_dialog.savedata.display_type = p->dispType == 0 ? emuenv.common_dialog.savedata.display_type : p->dispType;
+    emuenv.common_dialog.savedata.userdata = p->userdata;
 
-    switch (host.common_dialog.savedata.mode) {
+    switch (emuenv.common_dialog.savedata.mode) {
     default:
     case SCE_SAVEDATA_DIALOG_MODE_FIXED:
-        host.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
+        emuenv.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
         slot_param.resize(1);
-        host.common_dialog.savedata.icon_loaded.resize(1);
-        fd = open_file(host.io, construct_slotparam_path(host.common_dialog.savedata.slot_id[host.common_dialog.savedata.selected_save]).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+        emuenv.common_dialog.savedata.icon_loaded.resize(1);
+        fd = open_file(emuenv.io, construct_slotparam_path(emuenv.common_dialog.savedata.slot_id[emuenv.common_dialog.savedata.selected_save]).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
         if (fd < 0) {
-            host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].isExist = 0;
+            emuenv.common_dialog.savedata.slot_info[emuenv.common_dialog.savedata.selected_save].isExist = 0;
         } else {
-            host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].isExist = 1;
-            read_file(&slot_param[0], host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
-            close_file(host.io, fd, export_name);
-            host.common_dialog.savedata.title[host.common_dialog.savedata.selected_save] = slot_param[0].title;
-            host.common_dialog.savedata.subtitle[host.common_dialog.savedata.selected_save] = slot_param[0].subTitle;
-            host.common_dialog.savedata.details[host.common_dialog.savedata.selected_save] = slot_param[0].detail;
-            host.common_dialog.savedata.date[host.common_dialog.savedata.selected_save] = slot_param[0].modifiedTime;
-            host.common_dialog.savedata.has_date[host.common_dialog.savedata.selected_save] = true;
+            emuenv.common_dialog.savedata.slot_info[emuenv.common_dialog.savedata.selected_save].isExist = 1;
+            read_file(&slot_param[0], emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
+            close_file(emuenv.io, fd, export_name);
+            emuenv.common_dialog.savedata.title[emuenv.common_dialog.savedata.selected_save] = slot_param[0].title;
+            emuenv.common_dialog.savedata.subtitle[emuenv.common_dialog.savedata.selected_save] = slot_param[0].subTitle;
+            emuenv.common_dialog.savedata.details[emuenv.common_dialog.savedata.selected_save] = slot_param[0].detail;
+            emuenv.common_dialog.savedata.date[emuenv.common_dialog.savedata.selected_save] = slot_param[0].modifiedTime;
+            emuenv.common_dialog.savedata.has_date[emuenv.common_dialog.savedata.selected_save] = true;
             auto device = device::get_device(slot_param[0].iconPath);
-            auto thumbnail_path = translate_path(slot_param[0].iconPath, device, host.io.device_paths);
-            vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
-            host.common_dialog.savedata.icon_buffer[host.common_dialog.savedata.selected_save] = thumbnail_buffer;
-            host.common_dialog.savedata.icon_loaded[0] = true;
+            auto thumbnail_path = translate_path(slot_param[0].iconPath, device, emuenv.io.device_paths);
+            vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
+            emuenv.common_dialog.savedata.icon_buffer[emuenv.common_dialog.savedata.selected_save] = thumbnail_buffer;
+            emuenv.common_dialog.savedata.icon_loaded[0] = true;
         }
         switch (p->mode) {
         case SCE_SAVEDATA_DIALOG_MODE_USER_MSG:
-            user_message = p->userMsgParam.get(host.mem);
-            host.common_dialog.savedata.msg = reinterpret_cast<const char *>(user_message->msg.get(host.mem));
-            host.common_dialog.savedata.slot_id[host.common_dialog.savedata.selected_save] = user_message->targetSlot.id;
-            if (!host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].isExist) {
-                empty_param = user_message->targetSlot.emptyParam.get(host.mem);
-                check_empty_param(host, empty_param, host.common_dialog.savedata.selected_save);
+            user_message = p->userMsgParam.get(emuenv.mem);
+            emuenv.common_dialog.savedata.msg = reinterpret_cast<const char *>(user_message->msg.get(emuenv.mem));
+            emuenv.common_dialog.savedata.slot_id[emuenv.common_dialog.savedata.selected_save] = user_message->targetSlot.id;
+            if (!emuenv.common_dialog.savedata.slot_info[emuenv.common_dialog.savedata.selected_save].isExist) {
+                empty_param = user_message->targetSlot.emptyParam.get(emuenv.mem);
+                check_empty_param(emuenv, empty_param, emuenv.common_dialog.savedata.selected_save);
             }
 
-            handle_user_message(user_message, host);
+            handle_user_message(user_message, emuenv);
             break;
         case SCE_SAVEDATA_DIALOG_MODE_SYSTEM_MSG:
-            sys_message = p->sysMsgParam.get(host.mem);
-            host.common_dialog.savedata.slot_id[host.common_dialog.savedata.selected_save] = sys_message->targetSlot.id;
-            if (!host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].isExist) {
-                empty_param = sys_message->targetSlot.emptyParam.get(host.mem);
-                check_empty_param(host, empty_param, host.common_dialog.savedata.selected_save);
+            sys_message = p->sysMsgParam.get(emuenv.mem);
+            emuenv.common_dialog.savedata.slot_id[emuenv.common_dialog.savedata.selected_save] = sys_message->targetSlot.id;
+            if (!emuenv.common_dialog.savedata.slot_info[emuenv.common_dialog.savedata.selected_save].isExist) {
+                empty_param = sys_message->targetSlot.emptyParam.get(emuenv.mem);
+                check_empty_param(emuenv, empty_param, emuenv.common_dialog.savedata.selected_save);
             }
-            handle_sys_message(sys_message, host);
+            handle_sys_message(sys_message, emuenv);
             break;
         case SCE_SAVEDATA_DIALOG_MODE_ERROR_CODE:
-            host.common_dialog.savedata.slot_id[host.common_dialog.savedata.selected_save] = p->errorCodeParam.get(host.mem)->targetSlot.id;
-            if (!host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].isExist) {
-                empty_param = p->errorCodeParam.get(host.mem)->targetSlot.emptyParam.get(host.mem);
-                check_empty_param(host, empty_param, host.common_dialog.savedata.selected_save);
+            emuenv.common_dialog.savedata.slot_id[emuenv.common_dialog.savedata.selected_save] = p->errorCodeParam.get(emuenv.mem)->targetSlot.id;
+            if (!emuenv.common_dialog.savedata.slot_info[emuenv.common_dialog.savedata.selected_save].isExist) {
+                empty_param = p->errorCodeParam.get(emuenv.mem)->targetSlot.emptyParam.get(emuenv.mem);
+                check_empty_param(emuenv, empty_param, emuenv.common_dialog.savedata.selected_save);
             }
-            host.common_dialog.savedata.btn_num = 1;
-            host.common_dialog.savedata.btn[0] = "OK";
-            host.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
-            switch (host.common_dialog.savedata.display_type) {
+            emuenv.common_dialog.savedata.btn_num = 1;
+            emuenv.common_dialog.savedata.btn[0] = "OK";
+            emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
+            switch (emuenv.common_dialog.savedata.display_type) {
             case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-                host.common_dialog.savedata.msg = fmt::format("An error has occurred while saving.\n({})", log_hex(p->errorCodeParam.get(host.mem)->errorCode));
+                emuenv.common_dialog.savedata.msg = fmt::format("An error has occurred while saving.\n({})", log_hex(p->errorCodeParam.get(emuenv.mem)->errorCode));
                 break;
             case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-                host.common_dialog.savedata.msg = fmt::format("An error has occurred while loading.\n({})", log_hex(p->errorCodeParam.get(host.mem)->errorCode));
+                emuenv.common_dialog.savedata.msg = fmt::format("An error has occurred while loading.\n({})", log_hex(p->errorCodeParam.get(emuenv.mem)->errorCode));
                 break;
             case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-                host.common_dialog.savedata.msg = fmt::format("An error has occurred while deleting.\n({})", log_hex(p->errorCodeParam.get(host.mem)->errorCode));
+                emuenv.common_dialog.savedata.msg = fmt::format("An error has occurred while deleting.\n({})", log_hex(p->errorCodeParam.get(emuenv.mem)->errorCode));
                 break;
             }
             break;
         case SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR:
-            host.common_dialog.savedata.btn_num = 0;
-            progress_bar = p->progressBarParam.get(host.mem);
-            host.common_dialog.savedata.slot_id[host.common_dialog.savedata.selected_save] = progress_bar->targetSlot.id;
-            host.common_dialog.savedata.has_progress_bar = true;
-            if (!host.common_dialog.savedata.slot_info[host.common_dialog.savedata.selected_save].isExist) {
-                empty_param = progress_bar->targetSlot.emptyParam.get(host.mem);
-                check_empty_param(host, empty_param, host.common_dialog.savedata.selected_save);
+            emuenv.common_dialog.savedata.btn_num = 0;
+            progress_bar = p->progressBarParam.get(emuenv.mem);
+            emuenv.common_dialog.savedata.slot_id[emuenv.common_dialog.savedata.selected_save] = progress_bar->targetSlot.id;
+            emuenv.common_dialog.savedata.has_progress_bar = true;
+            if (!emuenv.common_dialog.savedata.slot_info[emuenv.common_dialog.savedata.selected_save].isExist) {
+                empty_param = progress_bar->targetSlot.emptyParam.get(emuenv.mem);
+                check_empty_param(emuenv, empty_param, emuenv.common_dialog.savedata.selected_save);
             }
-            if (progress_bar->msg.get(host.mem) != nullptr) {
-                host.common_dialog.savedata.msg = reinterpret_cast<const char *>(progress_bar->msg.get(host.mem));
+            if (progress_bar->msg.get(emuenv.mem) != nullptr) {
+                emuenv.common_dialog.savedata.msg = reinterpret_cast<const char *>(progress_bar->msg.get(emuenv.mem));
             } else {
-                auto lang = host.common_dialog.lang;
+                auto lang = emuenv.common_dialog.lang;
                 auto save_data = lang.save_data;
                 switch (progress_bar->sysMsgParam.sysMsgType) {
                 case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_PROGRESS:
-                    switch (host.common_dialog.savedata.display_type) {
+                    switch (emuenv.common_dialog.savedata.display_type) {
                     case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-                        host.common_dialog.savedata.msg = save_data.save["saving"];
+                        emuenv.common_dialog.savedata.msg = save_data.save["saving"];
                         break;
                     case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-                        host.common_dialog.savedata.msg = save_data.load["loading"];
+                        emuenv.common_dialog.savedata.msg = save_data.load["loading"];
                         break;
                     case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-                        host.common_dialog.savedata.msg = lang.common["please_wait"];
+                        emuenv.common_dialog.savedata.msg = lang.common["please_wait"];
                         break;
                     }
                     break;
@@ -1013,12 +1013,12 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
         }
         break;
     case SCE_SAVEDATA_DIALOG_MODE_LIST:
-        host.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_LIST;
-        slot_param.resize(host.common_dialog.savedata.slot_list_size);
-        host.common_dialog.savedata.icon_loaded.resize(host.common_dialog.savedata.slot_list_size);
-        for (std::uint32_t i = 0; i < host.common_dialog.savedata.slot_list_size; i++) {
-            fd = open_file(host.io, construct_slotparam_path(host.common_dialog.savedata.slot_id[i]).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
-            check_save_file(fd, slot_param, i, host, export_name);
+        emuenv.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_LIST;
+        slot_param.resize(emuenv.common_dialog.savedata.slot_list_size);
+        emuenv.common_dialog.savedata.icon_loaded.resize(emuenv.common_dialog.savedata.slot_list_size);
+        for (std::uint32_t i = 0; i < emuenv.common_dialog.savedata.slot_list_size; i++) {
+            fd = open_file(emuenv.io, construct_slotparam_path(emuenv.common_dialog.savedata.slot_id[i]).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
+            check_save_file(fd, slot_param, i, emuenv, export_name);
         }
         break;
     }
@@ -1026,49 +1026,49 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
 }
 
 EXPORT(int, sceSaveDataDialogFinish, Ptr<const SceSaveDataDialogFinishParam> finishParam) {
-    if (finishParam.get(host.mem) == nullptr) {
+    if (finishParam.get(emuenv.mem) == nullptr) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
 
-    if (host.common_dialog.type != SAVEDATA_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
+    if (emuenv.common_dialog.type != SAVEDATA_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
-    if (host.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_FINISHED) {
+    if (emuenv.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_FINISHED) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
     }
 
-    host.common_dialog.savedata.bar_percent = 0;
-    host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    emuenv.common_dialog.savedata.bar_percent = 0;
+    emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     return 0;
 }
 
 EXPORT(SceInt32, sceSaveDataDialogGetResult, Ptr<SceSaveDataDialogResult> result) {
-    if (host.common_dialog.type != SAVEDATA_DIALOG)
+    if (emuenv.common_dialog.type != SAVEDATA_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
-    if (!result.get(host.mem)) {
+    if (!result.get(emuenv.mem)) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
 
-    if (strcmp(reinterpret_cast<char *>(result.get(host.mem)->reserved), "\0") != 0) {
+    if (strcmp(reinterpret_cast<char *>(result.get(emuenv.mem)->reserved), "\0") != 0) {
         return RET_ERROR(SCE_SAVEDATA_DIALOG_ERROR_PARAM);
     }
 
-    if (host.common_dialog.status == SCE_COMMON_DIALOG_STATUS_FINISHED || host.common_dialog.substatus == SCE_COMMON_DIALOG_STATUS_FINISHED) {
-        auto save_dialog = host.common_dialog.savedata;
-        auto result_slotinfo = result.get(host.mem)->slotInfo.get(host.mem);
+    if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_FINISHED || emuenv.common_dialog.substatus == SCE_COMMON_DIALOG_STATUS_FINISHED) {
+        auto save_dialog = emuenv.common_dialog.savedata;
+        auto result_slotinfo = result.get(emuenv.mem)->slotInfo.get(emuenv.mem);
 
-        result.get(host.mem)->mode = save_dialog.mode;
-        result.get(host.mem)->result = host.common_dialog.result;
-        result.get(host.mem)->buttonId = save_dialog.button_id;
-        result.get(host.mem)->slotId = save_dialog.slot_id[save_dialog.selected_save];
-        if (result.get(host.mem)->slotInfo) {
+        result.get(emuenv.mem)->mode = save_dialog.mode;
+        result.get(emuenv.mem)->result = emuenv.common_dialog.result;
+        result.get(emuenv.mem)->buttonId = save_dialog.button_id;
+        result.get(emuenv.mem)->slotId = save_dialog.slot_id[save_dialog.selected_save];
+        if (result.get(emuenv.mem)->slotInfo) {
             result_slotinfo->isExist = save_dialog.slot_info[save_dialog.selected_save].isExist;
             result_slotinfo->slotParam = save_dialog.slot_info[save_dialog.selected_save].slotParam;
         }
-        result.get(host.mem)->userdata = save_dialog.userdata;
+        result.get(emuenv.mem)->userdata = save_dialog.userdata;
         return 0;
     } else {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
@@ -1076,41 +1076,41 @@ EXPORT(SceInt32, sceSaveDataDialogGetResult, Ptr<SceSaveDataDialogResult> result
 }
 
 EXPORT(int, sceSaveDataDialogGetStatus) {
-    return host.common_dialog.status;
+    return emuenv.common_dialog.status;
 }
 
 EXPORT(int, sceSaveDataDialogGetSubStatus) {
-    if (host.common_dialog.type != SAVEDATA_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
+    if (emuenv.common_dialog.type != SAVEDATA_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return SCE_COMMON_DIALOG_STATUS_NONE;
     }
-    return host.common_dialog.substatus;
+    return emuenv.common_dialog.substatus;
 }
 
-static void initialize_savedata_vectors(HostState &host, unsigned int size) {
-    host.common_dialog.savedata.icon_loaded.resize(size);
-    host.common_dialog.savedata.slot_info.resize(size);
-    host.common_dialog.savedata.title.resize(size);
-    host.common_dialog.savedata.subtitle.resize(size);
-    host.common_dialog.savedata.details.resize(size);
-    host.common_dialog.savedata.has_date.resize(size);
-    host.common_dialog.savedata.date.resize(size);
-    host.common_dialog.savedata.icon_buffer.resize(size);
-    host.common_dialog.savedata.slot_id.resize(size);
+static void initialize_savedata_vectors(EmuEnvState &emuenv, unsigned int size) {
+    emuenv.common_dialog.savedata.icon_loaded.resize(size);
+    emuenv.common_dialog.savedata.slot_info.resize(size);
+    emuenv.common_dialog.savedata.title.resize(size);
+    emuenv.common_dialog.savedata.subtitle.resize(size);
+    emuenv.common_dialog.savedata.details.resize(size);
+    emuenv.common_dialog.savedata.has_date.resize(size);
+    emuenv.common_dialog.savedata.date.resize(size);
+    emuenv.common_dialog.savedata.icon_buffer.resize(size);
+    emuenv.common_dialog.savedata.slot_id.resize(size);
 }
 
 EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
-    if (param.get(host.mem) == nullptr) {
+    if (param.get(emuenv.mem) == nullptr) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
 
-    if (host.common_dialog.type != NO_DIALOG) {
+    if (emuenv.common_dialog.type != NO_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
     }
 
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
-    host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
+    emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_RUNNING;
 
-    const SceSaveDataDialogParam *p = param.get(host.mem);
+    const SceSaveDataDialogParam *p = param.get(emuenv.mem);
     SceSaveDataDialogFixedParam *fixed_param;
     SceSaveDataDialogListParam *list_param;
     SceSaveDataDialogUserMessageParam *user_message;
@@ -1120,163 +1120,163 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
     std::string thumbnail_path;
     SceUID fd;
 
-    host.common_dialog.savedata.mode = p->mode;
-    host.common_dialog.savedata.mode_to_display = p->mode;
-    host.common_dialog.savedata.display_type = p->dispType;
-    host.common_dialog.savedata.userdata = p->userdata;
+    emuenv.common_dialog.savedata.mode = p->mode;
+    emuenv.common_dialog.savedata.mode_to_display = p->mode;
+    emuenv.common_dialog.savedata.display_type = p->dispType;
+    emuenv.common_dialog.savedata.userdata = p->userdata;
 
     switch (p->mode) {
     case SCE_SAVEDATA_DIALOG_MODE_FIXED:
-        fixed_param = p->fixedParam.get(host.mem);
+        fixed_param = p->fixedParam.get(emuenv.mem);
         slot_param.resize(1);
-        initialize_savedata_vectors(host, 1);
-        host.common_dialog.savedata.slot_id[0] = fixed_param->targetSlot.id;
-        fd = open_file(host.io, construct_slotparam_path(fixed_param->targetSlot.id).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
+        initialize_savedata_vectors(emuenv, 1);
+        emuenv.common_dialog.savedata.slot_id[0] = fixed_param->targetSlot.id;
+        fd = open_file(emuenv.io, construct_slotparam_path(fixed_param->targetSlot.id).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
         if (fd < 0) {
-            host.common_dialog.savedata.slot_info[0].isExist = 0;
-            host.common_dialog.savedata.title[0] = "";
-            host.common_dialog.savedata.subtitle[0] = "";
-            host.common_dialog.savedata.details[0] = "";
-            host.common_dialog.savedata.has_date[0] = false;
+            emuenv.common_dialog.savedata.slot_info[0].isExist = 0;
+            emuenv.common_dialog.savedata.title[0] = "";
+            emuenv.common_dialog.savedata.subtitle[0] = "";
+            emuenv.common_dialog.savedata.details[0] = "";
+            emuenv.common_dialog.savedata.has_date[0] = false;
         } else {
-            host.common_dialog.savedata.slot_info[0].isExist = 1;
-            read_file(&slot_param[0], host.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
-            close_file(host.io, fd, export_name);
-            host.common_dialog.savedata.title[0] = slot_param[0].title;
-            host.common_dialog.savedata.subtitle[0] = slot_param[0].subTitle;
-            host.common_dialog.savedata.details[0] = slot_param[0].detail;
-            host.common_dialog.savedata.date[0] = slot_param[0].modifiedTime;
+            emuenv.common_dialog.savedata.slot_info[0].isExist = 1;
+            read_file(&slot_param[0], emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
+            close_file(emuenv.io, fd, export_name);
+            emuenv.common_dialog.savedata.title[0] = slot_param[0].title;
+            emuenv.common_dialog.savedata.subtitle[0] = slot_param[0].subTitle;
+            emuenv.common_dialog.savedata.details[0] = slot_param[0].detail;
+            emuenv.common_dialog.savedata.date[0] = slot_param[0].modifiedTime;
             vfs::FileBuffer thumbnail_buffer;
             auto device = device::get_device(slot_param[0].iconPath);
-            auto thumbnail_path = translate_path(slot_param[0].iconPath, device, host.io.device_paths);
-            vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, host.pref_path, thumbnail_path);
-            host.common_dialog.savedata.icon_buffer[0] = thumbnail_buffer;
-            host.common_dialog.savedata.icon_loaded[0] = true;
+            auto thumbnail_path = translate_path(slot_param[0].iconPath, device, emuenv.io.device_paths);
+            vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
+            emuenv.common_dialog.savedata.icon_buffer[0] = thumbnail_buffer;
+            emuenv.common_dialog.savedata.icon_loaded[0] = true;
         }
-        host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+        emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
         break;
     case SCE_SAVEDATA_DIALOG_MODE_LIST:
-        list_param = p->listParam.get(host.mem);
-        host.common_dialog.savedata.slot_list_size = list_param->slotListSize;
-        host.common_dialog.savedata.list_style = list_param->itemStyle;
+        list_param = p->listParam.get(emuenv.mem);
+        emuenv.common_dialog.savedata.slot_list_size = list_param->slotListSize;
+        emuenv.common_dialog.savedata.list_style = list_param->itemStyle;
 
         slot_param.resize(list_param->slotListSize);
         slot_list.resize(list_param->slotListSize);
-        initialize_savedata_vectors(host, list_param->slotListSize);
+        initialize_savedata_vectors(emuenv, list_param->slotListSize);
 
-        if (list_param->listTitle.get(host.mem)) {
-            host.common_dialog.savedata.list_title = reinterpret_cast<const char *>(list_param->listTitle.get(host.mem));
+        if (list_param->listTitle.get(emuenv.mem)) {
+            emuenv.common_dialog.savedata.list_title = reinterpret_cast<const char *>(list_param->listTitle.get(emuenv.mem));
         } else {
-            auto lang = host.common_dialog.lang;
+            auto lang = emuenv.common_dialog.lang;
             auto save_data = lang.save_data;
             switch (p->dispType) {
             case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-                host.common_dialog.savedata.list_title = save_data.save["title"];
+                emuenv.common_dialog.savedata.list_title = save_data.save["title"];
                 break;
             case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
-                host.common_dialog.savedata.list_title = save_data.load["title"];
+                emuenv.common_dialog.savedata.list_title = save_data.load["title"];
                 break;
             case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
-                host.common_dialog.savedata.list_title = lang.common["delete"];
+                emuenv.common_dialog.savedata.list_title = lang.common["delete"];
                 break;
             }
         }
 
         for (SceUInt i = 0; i < list_param->slotListSize; i++) {
-            slot_list[i] = list_param->slotList.get(host.mem)[i];
-            host.common_dialog.savedata.slot_id[i] = slot_list[i].id;
-            host.common_dialog.savedata.list_empty_param = slot_list[0].emptyParam.get(host.mem);
-            fd = open_file(host.io, construct_slotparam_path(slot_list[i].id).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
-            check_save_file(fd, slot_param, i, host, export_name);
+            slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
+            emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
+            emuenv.common_dialog.savedata.list_empty_param = slot_list[0].emptyParam.get(emuenv.mem);
+            fd = open_file(emuenv.io, construct_slotparam_path(slot_list[i].id).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
+            check_save_file(fd, slot_param, i, emuenv, export_name);
         }
         break;
     case SCE_SAVEDATA_DIALOG_MODE_USER_MSG:
-        user_message = p->userMsgParam.get(host.mem);
+        user_message = p->userMsgParam.get(emuenv.mem);
         slot_param.resize(1);
-        initialize_savedata_vectors(host, 1);
-        host.common_dialog.savedata.slot_id[0] = user_message->targetSlot.id;
-        host.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
-        host.common_dialog.savedata.msg = reinterpret_cast<const char *>(user_message->msg.get(host.mem));
+        initialize_savedata_vectors(emuenv, 1);
+        emuenv.common_dialog.savedata.slot_id[0] = user_message->targetSlot.id;
+        emuenv.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
+        emuenv.common_dialog.savedata.msg = reinterpret_cast<const char *>(user_message->msg.get(emuenv.mem));
 
-        fd = open_file(host.io, construct_slotparam_path(user_message->targetSlot.id).c_str(), SCE_O_RDONLY, host.pref_path, export_name);
-        check_save_file(fd, slot_param, 0, host, export_name);
+        fd = open_file(emuenv.io, construct_slotparam_path(user_message->targetSlot.id).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
+        check_save_file(fd, slot_param, 0, emuenv, export_name);
 
-        handle_user_message(user_message, host);
+        handle_user_message(user_message, emuenv);
         break;
     case SCE_SAVEDATA_DIALOG_MODE_SYSTEM_MSG:
-        sys_message = p->sysMsgParam.get(host.mem);
-        initialize_savedata_vectors(host, 1);
-        host.common_dialog.savedata.slot_id[0] = sys_message->targetSlot.id;
-        host.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
-        if (!host.common_dialog.savedata.slot_info[0].isExist) {
-            auto empty_param = sys_message->targetSlot.emptyParam.get(host.mem);
-            check_empty_param(host, empty_param, 0);
+        sys_message = p->sysMsgParam.get(emuenv.mem);
+        initialize_savedata_vectors(emuenv, 1);
+        emuenv.common_dialog.savedata.slot_id[0] = sys_message->targetSlot.id;
+        emuenv.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
+        if (!emuenv.common_dialog.savedata.slot_info[0].isExist) {
+            auto empty_param = sys_message->targetSlot.emptyParam.get(emuenv.mem);
+            check_empty_param(emuenv, empty_param, 0);
         }
-        handle_sys_message(sys_message, host);
+        handle_sys_message(sys_message, emuenv);
         break;
     default:
         LOG_ERROR("Attempt to initialize savedata dialog with unknown mode: {}", log_hex(p->mode));
         break;
     }
-    host.common_dialog.type = SAVEDATA_DIALOG;
+    emuenv.common_dialog.type = SAVEDATA_DIALOG;
     return 0;
 }
 
 EXPORT(int, sceSaveDataDialogProgressBarInc, SceSaveDataDialogProgressBarTarget target, SceUInt32 delta) {
-    if (host.common_dialog.savedata.mode != SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR) {
+    if (emuenv.common_dialog.savedata.mode != SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING && host.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_RUNNING) {
+    if (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING && emuenv.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
-    host.common_dialog.savedata.bar_percent += delta;
-    if (host.common_dialog.savedata.bar_percent >= 100) {
-        host.common_dialog.savedata.bar_percent = 100;
+    emuenv.common_dialog.savedata.bar_percent += delta;
+    if (emuenv.common_dialog.savedata.bar_percent >= 100) {
+        emuenv.common_dialog.savedata.bar_percent = 100;
     }
     return 0;
 }
 
 EXPORT(int, sceSaveDataDialogProgressBarSetValue, SceSaveDataDialogProgressBarTarget target, SceUInt32 rate) {
-    if (host.common_dialog.savedata.mode != SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR) {
+    if (emuenv.common_dialog.savedata.mode != SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING && host.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_RUNNING) {
+    if (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING && emuenv.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
-    host.common_dialog.savedata.bar_percent = rate;
-    if (host.common_dialog.savedata.bar_percent >= 100) {
-        host.common_dialog.savedata.bar_percent = 100;
+    emuenv.common_dialog.savedata.bar_percent = rate;
+    if (emuenv.common_dialog.savedata.bar_percent >= 100) {
+        emuenv.common_dialog.savedata.bar_percent = 100;
     }
     return 0;
 }
 
 EXPORT(int, sceSaveDataDialogSubClose) {
-    if (host.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_RUNNING) {
+    if (emuenv.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
-    host.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
-    host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-    host.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+    emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+    emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+    emuenv.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
     return 0;
 }
 
 EXPORT(int, sceSaveDataDialogTerm) {
-    if (host.common_dialog.type != SAVEDATA_DIALOG) {
+    if (emuenv.common_dialog.type != SAVEDATA_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
     }
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED) {
+    if (emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
     }
 
-    host.common_dialog.savedata.bar_percent = 0;
-    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
-    host.common_dialog.type = NO_DIALOG;
+    emuenv.common_dialog.savedata.bar_percent = 0;
+    emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
+    emuenv.common_dialog.type = NO_DIALOG;
     return 0;
 }
 

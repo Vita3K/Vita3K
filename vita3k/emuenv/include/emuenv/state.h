@@ -22,8 +22,8 @@
 #include <ctrl/state.h>
 #include <dialog/state.h>
 #include <display/state.h>
+#include <emuenv/window.h>
 #include <gxm/state.h>
-#include <host/window.h>
 #include <ime/state.h>
 #include <io/state.h>
 #include <kernel/state.h>
@@ -42,7 +42,10 @@
 #include <memory>
 #include <string>
 
-struct HostState {
+/**
+ * @brief State of the emulated PlayStation Vita environment
+ */
+struct EmuEnvState {
     // App info contained in its `param.sfo` file
     sfo::SfoAppInfo app_info;
     std::string app_path;

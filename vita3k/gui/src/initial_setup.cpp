@@ -37,10 +37,10 @@ enum InitialSetup {
 static InitialSetup setup = SELECT_LANGUAGE;
 static std::string title_str;
 
-void draw_initial_setup(GuiState &gui, HostState &host) {
+void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto WINDOW_SIZE = ImVec2(756.f * SCALE.x, 418.f * SCALE.y);
     const auto SELECT_SIZE = 72.f * SCALE.y;
     const auto BUTTON_SIZE = ImVec2(154.f * SCALE.x, 52.f * SCALE.y);
@@ -50,16 +50,16 @@ void draw_initial_setup(GuiState &gui, HostState &host) {
     auto lang = gui.lang.initial_setup;
     const auto completed_setup = lang["completed_setup"].c_str();
 
-    const auto is_default_path = host.cfg.pref_path == host.default_path;
-    const auto FW_PATH{ fs::path(host.pref_path) / "vs0" };
+    const auto is_default_path = emuenv.cfg.pref_path == emuenv.default_path;
+    const auto FW_PATH{ fs::path(emuenv.pref_path) / "vs0" };
     const auto FW_INSTALLED = fs::exists(FW_PATH) && !fs::is_empty(FW_PATH);
-    const auto FW_FONT_PATH{ fs::path(host.pref_path) / "sa0" };
+    const auto FW_FONT_PATH{ fs::path(emuenv.pref_path) / "sa0" };
     const auto FW_FONT_INSTALLED = fs::exists(FW_FONT_PATH) && !fs::is_empty(FW_FONT_PATH);
 
     ImGui::PushFont(gui.vita_font);
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-    ImGui::Begin("##initial_setup", &host.cfg.initial_setup, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##initial_setup", &emuenv.cfg.initial_setup, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0), display_size, IM_COL32(112.f, 124.f, 246.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
     ImGui::SetNextWindowPos(ImVec2(98.f * SCALE.x, 30 * SCALE.y), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 6.f * SCALE.x);
@@ -95,10 +95,10 @@ void draw_initial_setup(GuiState &gui, HostState &host) {
             ImGui::PushID(sys_lang.first);
             // Empty Padding
             ImGui::NextColumn();
-            const auto is_current_lang = host.cfg.sys_lang == sys_lang.first;
+            const auto is_current_lang = emuenv.cfg.sys_lang == sys_lang.first;
             if (ImGui::Selectable(is_current_lang ? "V" : "##lang_list", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(WINDOW_SIZE.x, SELECT_SIZE))) {
-                host.cfg.sys_lang = sys_lang.first;
-                lang::init_lang(gui.lang, host);
+                emuenv.cfg.sys_lang = sys_lang.first;
+                lang::init_lang(gui.lang, emuenv);
             }
             ImGui::NextColumn();
             ImGui::Selectable(sys_lang.second.c_str(), false, ImGuiSelectableFlags_None, ImVec2(WINDOW_SIZE.x, SELECT_SIZE));
@@ -117,24 +117,24 @@ void draw_initial_setup(GuiState &gui, HostState &host) {
         ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize("Current emulator folder").x / 2.f), (WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize()));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Current emulator path");
         ImGui::Spacing();
-        ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(host.cfg.pref_path.c_str()).x / 2.f));
-        ImGui::TextWrapped("%s", host.cfg.pref_path.c_str());
+        ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(emuenv.cfg.pref_path.c_str()).x / 2.f));
+        ImGui::TextWrapped("%s", emuenv.cfg.pref_path.c_str());
         ImGui::SetCursorPos(!is_default_path ? ImVec2((WINDOW_SIZE.x / 2.f) - BIG_BUTTON_SIZE.x - (20.f * SCALE.x), BIG_BUTTON_POS.y) : BIG_BUTTON_POS);
         if (ImGui::Button("Change Emulator Path", BIG_BUTTON_SIZE)) {
             nfdchar_t *emulator_path = nullptr;
             nfdresult_t result = NFD_PickFolder(nullptr, &emulator_path);
 
-            if ((result == NFD_OKAY) && (string_utils::utf_to_wide(emulator_path) != host.pref_path)) {
-                host.pref_path = string_utils::utf_to_wide(emulator_path) + L'/';
-                host.cfg.pref_path = emulator_path;
+            if ((result == NFD_OKAY) && (string_utils::utf_to_wide(emulator_path) != emuenv.pref_path)) {
+                emuenv.pref_path = string_utils::utf_to_wide(emulator_path) + L'/';
+                emuenv.cfg.pref_path = emulator_path;
             }
         }
         if (!is_default_path) {
             ImGui::SameLine(0, 40.f * SCALE.x);
             if (ImGui::Button("Reset Emulator Path", BIG_BUTTON_SIZE)) {
-                if (string_utils::utf_to_wide(host.default_path) != host.pref_path) {
-                    host.pref_path = string_utils::utf_to_wide(host.default_path);
-                    host.cfg.pref_path = host.default_path;
+                if (string_utils::utf_to_wide(emuenv.default_path) != emuenv.pref_path) {
+                    emuenv.pref_path = string_utils::utf_to_wide(emuenv.default_path);
+                    emuenv.cfg.pref_path = emuenv.default_path;
                 }
             }
         }
@@ -158,27 +158,27 @@ void draw_initial_setup(GuiState &gui, HostState &host) {
             gui.file_menu.firmware_install_dialog = true;
         if (gui.file_menu.firmware_install_dialog) {
             ImGui::PushFont(gui.monospaced_font);
-            draw_firmware_install_dialog(gui, host);
+            draw_firmware_install_dialog(gui, emuenv);
             ImGui::PopFont();
         }
         break;
     case SELECT_INTERFACE_SETTINGS:
         title_str = "Select interface settings.";
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
-        ImGui::Checkbox("Info Bar Visible", &host.cfg.show_info_bar);
+        ImGui::Checkbox("Info Bar Visible", &emuenv.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to show info bar inside app selector.\nInfo bar is clock, battery level and notification center");
         ImGui::SameLine();
-        ImGui::Checkbox("Live Area App Screen", &host.cfg.show_live_area_screen);
+        ImGui::Checkbox("Live Area App Screen", &emuenv.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to open Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
         ImGui::Spacing();
-        ImGui::Checkbox("Grid Mode", &host.cfg.apps_list_grid);
+        ImGui::Checkbox("Grid Mode", &emuenv.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to set the app list to grid mode like of PsVita.");
-        if (!host.cfg.apps_list_grid) {
+        if (!emuenv.cfg.apps_list_grid) {
             ImGui::Spacing();
-            ImGui::SliderInt("App Icon Size", &host.cfg.icon_size, 64, 128);
+            ImGui::SliderInt("App Icon Size", &emuenv.cfg.icon_size, 64, 128);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred icon size.");
         }
@@ -189,7 +189,7 @@ void draw_initial_setup(GuiState &gui, HostState &host) {
         ImGui::Text("%s", completed_setup);
         ImGui::SetCursorPos(BIG_BUTTON_POS);
         if (ImGui::Button("OK", BIG_BUTTON_SIZE))
-            host.cfg.initial_setup = true;
+            emuenv.cfg.initial_setup = true;
         break;
     default: break;
     }

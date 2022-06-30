@@ -25,8 +25,8 @@
 
 namespace gui {
 
-void draw_thread_details_dialog(GuiState &gui, HostState &host) {
-    ThreadStatePtr &thread = host.kernel.threads[gui.thread_watch_index];
+void draw_thread_details_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    ThreadStatePtr &thread = emuenv.kernel.threads[gui.thread_watch_index];
     CPUState &cpu = *thread->cpu;
 
     ImGui::Begin("Thread Viewer", &gui.debug_menu.thread_details_dialog);
@@ -53,20 +53,20 @@ void draw_thread_details_dialog(GuiState &gui, HostState &host) {
     ImGui::Text("r12: %08x", registers[12]);
     ImGui::Separator();
     for (int i = 0; i < 15; i++) {
-        ImGui::Text("Stack %d: %08x", i, *Ptr<uint32_t>(sp + i * 4).get(host.mem));
+        ImGui::Text("Stack %d: %08x", i, *Ptr<uint32_t>(sp + i * 4).get(emuenv.mem));
     }
 
     ImGui::End();
 }
 
-void draw_threads_dialog(GuiState &gui, HostState &host) {
+void draw_threads_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Begin("Threads", &gui.debug_menu.threads_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE,
         "%-16s %-32s   %-16s   %-16s", "ID", "Thread Name", "Status", "Stack Pointer");
 
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
 
-    for (const auto &thread : host.kernel.threads) {
+    for (const auto &thread : emuenv.kernel.threads) {
         std::shared_ptr<ThreadState> th_state = thread.second;
         std::string run_state;
         switch (th_state->status) {

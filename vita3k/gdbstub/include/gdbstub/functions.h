@@ -17,9 +17,9 @@
 
 #pragma once
 
-struct HostState;
+struct EmuEnvState;
 
-void server_open(HostState &state);
-void server_close(HostState &state);
-void add_breakpoint(HostState &state, uint32_t address);
-void remove_breakpoint(HostState &state, uint32_t address);
+void server_open(EmuEnvState &state);
+void server_close(EmuEnvState &state);
+void add_breakpoint(EmuEnvState &state, uint32_t address);
+void remove_breakpoint(EmuEnvState &state, uint32_t address);

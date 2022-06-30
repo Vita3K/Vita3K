@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <host/state.h>
+#include <emuenv/state.h>
 
 #include <chrono>
 #include <touch/functions.h>
@@ -26,8 +26,8 @@
 static constexpr int TARGET_FPS = 60;
 static constexpr int64_t TARGET_MICRO_PER_FRAME = 1000000LL / TARGET_FPS;
 
-static void vblank_sync_thread(HostState &host) {
-    DisplayState &display = host.display;
+static void vblank_sync_thread(EmuEnvState &emuenv) {
+    DisplayState &display = emuenv.display;
 
     while (!display.abort.load()) {
         {
@@ -40,12 +40,12 @@ static void vblank_sync_thread(HostState &host) {
                 if (display.has_next_frame) {
                     display.frame = display.next_frame;
                     display.has_next_frame = false;
-                    host.renderer->should_display = true;
+                    emuenv.renderer->should_display = true;
                 }
             }
 
             // maybe we should also use a mutex for this part, but it shouldn't be an issue
-            touch_vsync_update(host);
+            touch_vsync_update(emuenv);
 
             // Notify Vblank callback in each VBLANK start
             for (auto &cb : display.vblank_callbacks)
@@ -63,7 +63,7 @@ static void vblank_sync_thread(HostState &host) {
                             CallbackPtr &cb = callback.second;
                             if (cb->get_owner_thread_id() == target_wait->id) {
                                 std::string name = cb->get_name();
-                                cb->execute(host.kernel, [name]() {
+                                cb->execute(emuenv.kernel, [name]() {
                                 });
                             }
                         }
@@ -81,8 +81,8 @@ static void vblank_sync_thread(HostState &host) {
     }
 }
 
-void start_sync_thread(HostState &host) {
-    host.display.vblank_thread = std::make_unique<std::thread>(vblank_sync_thread, std::ref(host));
+void start_sync_thread(EmuEnvState &emuenv) {
+    emuenv.display.vblank_thread = std::make_unique<std::thread>(vblank_sync_thread, std::ref(emuenv));
 }
 
 void wait_vblank(DisplayState &display, KernelState &kernel, const ThreadStatePtr &wait_thread, const uint64_t target_vcount, const bool is_cb) {

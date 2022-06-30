@@ -23,7 +23,7 @@
 
 namespace gui {
 
-void draw_welcome_dialog(GuiState &gui, HostState &host) {
+void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     ImGui::Begin("Welcome to Vita3K", &gui.help_menu.welcome_dialog, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
@@ -74,8 +74,8 @@ void draw_welcome_dialog(GuiState &gui, HostState &host) {
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    if (ImGui::Checkbox("Show next time", &host.cfg.show_welcome))
-        config::serialize_config(host.cfg, host.cfg.config_path);
+    if (ImGui::Checkbox("Show next time", &emuenv.cfg.show_welcome))
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     ImGui::Spacing();
     if (ImGui::Button("Close"))
         gui.help_menu.welcome_dialog = false;

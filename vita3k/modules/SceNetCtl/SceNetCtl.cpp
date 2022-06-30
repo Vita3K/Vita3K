@@ -132,7 +132,7 @@ struct SceNetCtlIfStat {
 struct SceNetCtlAdhocPeerInfo;
 
 EXPORT(int, sceNetCtlAdhocDisconnect) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -140,7 +140,7 @@ EXPORT(int, sceNetCtlAdhocDisconnect) {
 }
 
 EXPORT(int, sceNetCtlAdhocGetInAddr, SceNetInAddr *inaddr) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -160,7 +160,7 @@ EXPORT(int, sceNetCtlAdhocGetPeerList, SceSize *peerInfoNum, SceNetCtlAdhocPeerI
 }
 
 EXPORT(int, sceNetCtlAdhocGetResult, int eventType, int *errorCode) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -173,7 +173,7 @@ EXPORT(int, sceNetCtlAdhocGetResult, int eventType, int *errorCode) {
 }
 
 EXPORT(int, sceNetCtlAdhocGetState, int *state) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -186,7 +186,7 @@ EXPORT(int, sceNetCtlAdhocGetState, int *state) {
 }
 
 EXPORT(int, sceNetCtlAdhocRegisterCallback, Ptr<void> func, Ptr<void> arg, int *cid) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -194,11 +194,11 @@ EXPORT(int, sceNetCtlAdhocRegisterCallback, Ptr<void> func, Ptr<void> arg, int *
         return RET_ERROR(SCE_NET_CTL_ERROR_INVALID_ADDR);
     }
 
-    const std::lock_guard<std::mutex> lock(host.netctl.mutex);
+    const std::lock_guard<std::mutex> lock(emuenv.netctl.mutex);
 
     // Find the next available slot
     int next_id = 0;
-    for (const auto &callback : host.netctl.adhocCallbacks) {
+    for (const auto &callback : emuenv.netctl.adhocCallbacks) {
         if (callback.pc == NULL) {
             break;
         }
@@ -209,14 +209,14 @@ EXPORT(int, sceNetCtlAdhocRegisterCallback, Ptr<void> func, Ptr<void> arg, int *
         return RET_ERROR(SCE_NET_CTL_ERROR_CALLBACK_MAX);
     }
 
-    host.netctl.adhocCallbacks[next_id].pc = func.address();
-    host.netctl.adhocCallbacks[next_id].arg = arg.address();
+    emuenv.netctl.adhocCallbacks[next_id].pc = func.address();
+    emuenv.netctl.adhocCallbacks[next_id].arg = arg.address();
     *cid = next_id;
     return 0;
 }
 
 EXPORT(int, sceNetCtlAdhocUnregisterCallback, int cid) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -224,35 +224,35 @@ EXPORT(int, sceNetCtlAdhocUnregisterCallback, int cid) {
         return RET_ERROR(SCE_NET_CTL_ERROR_INVALID_ID);
     }
 
-    const std::lock_guard<std::mutex> lock(host.netctl.mutex);
-    host.netctl.adhocCallbacks[cid].pc = NULL;
-    host.netctl.adhocCallbacks[cid].arg = NULL;
+    const std::lock_guard<std::mutex> lock(emuenv.netctl.mutex);
+    emuenv.netctl.adhocCallbacks[cid].pc = NULL;
+    emuenv.netctl.adhocCallbacks[cid].arg = NULL;
     return 0;
 }
 
 EXPORT(int, sceNetCtlCheckCallback) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
-    if (host.net.state == 1) {
+    if (emuenv.net.state == 1) {
         return 0;
     }
 
-    host.net.state = 1;
+    emuenv.net.state = 1;
 
-    const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
 
     // TODO: Limit the number of callbacks called to 5
     // TODO: Check in which order the callbacks are executed
 
-    for (auto &callback : host.netctl.callbacks) {
+    for (auto &callback : emuenv.netctl.callbacks) {
         if (callback.pc != NULL) {
             thread->request_callback(callback.pc, { 1, callback.arg });
         }
     }
 
-    for (auto &callback : host.netctl.adhocCallbacks) {
+    for (auto &callback : emuenv.netctl.adhocCallbacks) {
         if (callback.pc != NULL) {
             thread->request_callback(callback.pc, { 1, callback.arg });
         }
@@ -262,7 +262,7 @@ EXPORT(int, sceNetCtlCheckCallback) {
 }
 
 EXPORT(int, sceNetCtlGetIfStat, int device, SceNetCtlIfStat *ifstat) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -278,7 +278,7 @@ EXPORT(int, sceNetCtlGetIfStat, int device, SceNetCtlIfStat *ifstat) {
 }
 
 EXPORT(int, sceNetCtlGetNatInfo, SceNetCtlNatInfo *natinfo) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -290,7 +290,7 @@ EXPORT(int, sceNetCtlGetNatInfo, SceNetCtlNatInfo *natinfo) {
 }
 
 EXPORT(int, sceNetCtlGetPhoneMaxDownloadableSize, SceInt64 *maxDownloadableSize) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -303,7 +303,7 @@ EXPORT(int, sceNetCtlGetPhoneMaxDownloadableSize, SceInt64 *maxDownloadableSize)
 }
 
 EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -331,7 +331,7 @@ EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
 }
 
 EXPORT(int, sceNetCtlInetGetResult, int eventType, int *errorCode) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -344,7 +344,7 @@ EXPORT(int, sceNetCtlInetGetResult, int eventType, int *errorCode) {
 }
 
 EXPORT(int, sceNetCtlInetGetState, int *state) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -357,7 +357,7 @@ EXPORT(int, sceNetCtlInetGetState, int *state) {
 }
 
 EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> func, Ptr<void> arg, int *cid) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -365,11 +365,11 @@ EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> func, Ptr<void> arg, int *c
         return RET_ERROR(SCE_NET_CTL_ERROR_INVALID_ADDR);
     }
 
-    const std::lock_guard<std::mutex> lock(host.netctl.mutex);
+    const std::lock_guard<std::mutex> lock(emuenv.netctl.mutex);
 
     // Find the next available slot
     int next_id = 0;
-    for (const auto &callback : host.netctl.callbacks) {
+    for (const auto &callback : emuenv.netctl.callbacks) {
         if (callback.pc == NULL) {
             break;
         }
@@ -380,14 +380,14 @@ EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> func, Ptr<void> arg, int *c
         return RET_ERROR(SCE_NET_CTL_ERROR_CALLBACK_MAX);
     }
 
-    host.netctl.callbacks[next_id].pc = func.address();
-    host.netctl.callbacks[next_id].arg = arg.address();
+    emuenv.netctl.callbacks[next_id].pc = func.address();
+    emuenv.netctl.callbacks[next_id].arg = arg.address();
     *cid = next_id;
     return 0;
 }
 
 EXPORT(int, sceNetCtlInetUnregisterCallback, int cid) {
-    if (!host.netctl.inited) {
+    if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
 
@@ -395,28 +395,28 @@ EXPORT(int, sceNetCtlInetUnregisterCallback, int cid) {
         return RET_ERROR(SCE_NET_CTL_ERROR_INVALID_ID);
     }
 
-    const std::lock_guard<std::mutex> lock(host.netctl.mutex);
-    host.netctl.callbacks[cid].pc = NULL;
-    host.netctl.callbacks[cid].arg = NULL;
+    const std::lock_guard<std::mutex> lock(emuenv.netctl.mutex);
+    emuenv.netctl.callbacks[cid].pc = NULL;
+    emuenv.netctl.callbacks[cid].arg = NULL;
     return 0;
 }
 
 EXPORT(int, sceNetCtlInit) {
-    if (host.netctl.inited) {
+    if (emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_TERMINATED);
     }
 
-    const std::lock_guard<std::mutex> lock(host.netctl.mutex);
-    host.netctl.adhocCallbacks.fill({ NULL, NULL });
-    host.netctl.callbacks.fill({ NULL, NULL });
+    const std::lock_guard<std::mutex> lock(emuenv.netctl.mutex);
+    emuenv.netctl.adhocCallbacks.fill({ NULL, NULL });
+    emuenv.netctl.callbacks.fill({ NULL, NULL });
 
-    host.netctl.inited = true;
+    emuenv.netctl.inited = true;
     return STUBBED("Stub");
 }
 
 EXPORT(void, sceNetCtlTerm) {
     STUBBED("Stub");
-    host.netctl.inited = false;
+    emuenv.netctl.inited = false;
 }
 
 BRIDGE_IMPL(sceNetCtlAdhocDisconnect)

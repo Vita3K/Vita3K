@@ -20,8 +20,8 @@
 #include <audio/functions.h>
 #include <config/functions.h>
 #include <config/version.h>
+#include <emuenv/state.h>
 #include <gui/imgui_impl_sdl.h>
-#include <host/state.h>
 #include <io/functions.h>
 
 #include <nids/functions.h>
@@ -47,7 +47,7 @@
 #include <SDL_vulkan.h>
 
 namespace app {
-void update_viewport(HostState &state) {
+void update_viewport(EmuEnvState &state) {
     int w = 0;
     int h = 0;
 
@@ -92,7 +92,7 @@ void update_viewport(HostState &state) {
     }
 }
 
-bool init(HostState &state, Config &cfg, const Root &root_paths) {
+bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     const ResumeAudioThread resume_thread = [&state](SceUID thread_id) {
         const auto thread = lock_and_find(thread_id, state.kernel.threads, state.kernel.mutex);
         const std::lock_guard<std::mutex> lock(thread->mutex);
@@ -205,13 +205,13 @@ bool init(HostState &state, Config &cfg, const Root &root_paths) {
     return true;
 }
 
-void destroy(HostState &host, ImGui_State *imgui) {
+void destroy(EmuEnvState &emuenv, ImGui_State *imgui) {
     ImGui_ImplSdl_Shutdown(imgui);
 #ifdef USE_VULKAN
     // I'm explicitly destroying VulkanState in app::destroy instead of a destructor because I want to ensure an order.
     // Objects in Vulkan should be destroyed in reverse order than they were created.
-    if (host.renderer->current_backend == renderer::Backend::Vulkan) {
-        renderer::vulkan::close(host.renderer);
+    if (emuenv.renderer->current_backend == renderer::Backend::Vulkan) {
+        renderer::vulkan::close(emuenv.renderer);
     }
 #endif
 
@@ -219,12 +219,12 @@ void destroy(HostState &host, ImGui_State *imgui) {
     discordrpc::shutdown();
 #endif
 
-    if (host.cfg.gdbstub)
-        server_close(host);
+    if (emuenv.cfg.gdbstub)
+        server_close(emuenv);
 
     // There may be changes that made in the GUI, so we should save, again
-    if (host.cfg.overwrite_config)
-        config::serialize_config(host.cfg, host.cfg.config_path);
+    if (emuenv.cfg.overwrite_config)
+        config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
 
 } // namespace app

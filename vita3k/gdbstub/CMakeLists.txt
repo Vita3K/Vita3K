@@ -7,4 +7,4 @@ add_library(
 )
 
 target_include_directories(gdbstub PUBLIC include)
-target_link_libraries(gdbstub PUBLIC cpu host)
+target_link_libraries(gdbstub PUBLIC cpu emuenv)

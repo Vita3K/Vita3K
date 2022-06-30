@@ -2006,7 +2006,7 @@ EXPORT(int, _ZdlPvS_) {
 }
 
 EXPORT(int, _Znaj, int test) {
-    return alloc(host.mem, test, __FUNCTION__);
+    return alloc(emuenv.mem, test, __FUNCTION__);
 }
 
 EXPORT(int, _ZnajRKSt9nothrow_t) {
@@ -2014,7 +2014,7 @@ EXPORT(int, _ZnajRKSt9nothrow_t) {
 }
 
 EXPORT(int, _Znwj, int test) {
-    return alloc(host.mem, test, __FUNCTION__);
+    return alloc(emuenv.mem, test, __FUNCTION__);
 }
 
 EXPORT(int, _ZnwjRKSt9nothrow_t) {

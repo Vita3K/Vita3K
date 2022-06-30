@@ -9,7 +9,7 @@ add_library(
 )
 
 target_include_directories(app PUBLIC include)
-target_link_libraries(app PUBLIC host)
+target_link_libraries(app PUBLIC emuenv)
 if(USE_DISCORD_RICH_PRESENCE)
   target_link_libraries(app PUBLIC discord-rpc)
 endif()

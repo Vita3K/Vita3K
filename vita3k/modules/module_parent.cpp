@@ -18,7 +18,7 @@
 #include <modules/module_parent.h>
 
 #include <cpu/functions.h>
-#include <host/state.h>
+#include <emuenv/state.h>
 #include <io/device.h>
 #include <io/vfs.h>
 #include <kernel/load_self.h>
@@ -43,7 +43,7 @@ static constexpr bool LOG_UNK_NIDS_ALWAYS = false;
 #undef NID
 #undef VAR_NID
 
-struct HostState;
+struct EmuEnvState;
 
 static ImportFn resolve_import(uint32_t nid) {
     switch (nid) {
@@ -120,12 +120,12 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
     }
 }
 
-void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id) {
-    Address export_pc = resolve_export(host.kernel, nid);
+void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id) {
+    Address export_pc = resolve_export(emuenv.kernel, nid);
 
     if (!export_pc) {
         // HLE - call our C++ function
-        if (host.kernel.debugger.watch_import_calls) {
+        if (emuenv.kernel.debugger.watch_import_calls) {
             const std::unordered_set<uint32_t> hle_nid_blacklist = {
                 0xB295EB61, // sceKernelGetTLSAddr
                 0x46E7BE7B, // sceKernelLockLwMutex
@@ -136,19 +136,19 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
         }
         const ImportFn fn = resolve_import(nid);
         if (fn) {
-            fn(host, cpu, thread_id);
-        } else if (host.missing_nids.count(nid) == 0 || LOG_UNK_NIDS_ALWAYS) {
-            const ThreadStatePtr thread = lock_and_find(thread_id, host.kernel.threads, host.kernel.mutex);
+            fn(emuenv, cpu, thread_id);
+        } else if (emuenv.missing_nids.count(nid) == 0 || LOG_UNK_NIDS_ALWAYS) {
+            const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
             LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
 
             if (!LOG_UNK_NIDS_ALWAYS)
-                host.missing_nids.insert(nid);
+                emuenv.missing_nids.insert(nid);
         }
     } else {
         auto pc = read_pc(cpu);
 
         assert((pc & 1) == 0);
-        uint32_t *const stub = Ptr<uint32_t>(Address(pc)).get(host.mem);
+        uint32_t *const stub = Ptr<uint32_t>(Address(pc)).get(emuenv.mem);
 
         stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)export_pc, 12);
         stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(export_pc >> 16), 12);
@@ -170,7 +170,7 @@ void call_import(HostState &host, CPUState &cpu, uint32_t nid, SceUID thread_id)
 /**
  * \return False on failure, true on success
  */
-bool load_module(HostState &host, SceUID thread_id, SceSysmoduleModuleId module_id) {
+bool load_module(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleModuleId module_id) {
     LOG_INFO("Loading module ID: {}", log_hex(module_id));
 
     const auto module_paths = sysmodule_paths[module_id];
@@ -181,13 +181,13 @@ bool load_module(HostState &host, SceUID thread_id, SceSysmoduleModuleId module_
         vfs::FileBuffer module_buffer;
         Ptr<const void> lib_entry_point;
 
-        if (vfs::read_file(VitaIoDevice::vs0, module_buffer, host.pref_path, module_path)) {
-            SceUID loaded_module_uid = load_self(lib_entry_point, host.kernel, host.mem, module_buffer.data(), module_path);
+        if (vfs::read_file(VitaIoDevice::vs0, module_buffer, emuenv.pref_path, module_path)) {
+            SceUID loaded_module_uid = load_self(lib_entry_point, emuenv.kernel, emuenv.mem, module_buffer.data(), module_path);
             if (loaded_module_uid < 0) {
                 LOG_ERROR("Error when loading module at \"{}\"", module_path);
                 return false;
             }
-            const auto module = host.kernel.loaded_modules[loaded_module_uid];
+            const auto module = emuenv.kernel.loaded_modules[loaded_module_uid];
             const auto module_name = module->module_name;
             LOG_INFO("Module {} (at \"{}\") loaded", module_name, module_path);
 
@@ -195,7 +195,7 @@ bool load_module(HostState &host, SceUID thread_id, SceSysmoduleModuleId module_
                 LOG_DEBUG("Running module_start of module: {}", module_name);
 
                 Ptr<void> argp = Ptr<void>();
-                const auto ret = host.kernel.run_guest_function(thread_id, lib_entry_point.address(), { 0, argp.address() });
+                const auto ret = emuenv.kernel.run_guest_function(thread_id, lib_entry_point.address(), { 0, argp.address() });
                 LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
             }
 
@@ -205,12 +205,12 @@ bool load_module(HostState &host, SceUID thread_id, SceSysmoduleModuleId module_
         }
     }
 
-    host.kernel.loaded_sysmodules.push_back(module_id);
+    emuenv.kernel.loaded_sysmodules.push_back(module_id);
     return true;
 }
 
-void init_libraries(HostState &host) {
-#define LIBRARY(name) import_library_init_##name(host);
+void init_libraries(EmuEnvState &emuenv) {
+#define LIBRARY(name) import_library_init_##name(emuenv);
 #include <modules/library_init_list.inc>
 #undef LIBRARY
 }

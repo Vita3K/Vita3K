@@ -22,13 +22,13 @@
 
 namespace gui {
 
-void draw_reinstall_dialog(GenericDialogState *status, HostState &host) {
+void draw_reinstall_dialog(GenericDialogState *status, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(0, 0));
     ImGui::Begin("Reinstall this content?");
     ImGui::Text("This content is already installed.");
     ImGui::Spacing();
-    ImGui::Text("Title: %s.\nTitle ID: %s.\nVersion: %s.", host.app_info.app_title.c_str(), host.app_info.app_title_id.c_str(), host.app_info.app_version.c_str());
+    ImGui::Text("Title: %s.\nTitle ID: %s.\nVersion: %s.", emuenv.app_info.app_title.c_str(), emuenv.app_info.app_title_id.c_str(), emuenv.app_info.app_version.c_str());
     ImGui::Spacing();
     ImGui::Text("Do you want to reinstall it and overwrite existing data?");
     if (ImGui::Button("Yes")) {

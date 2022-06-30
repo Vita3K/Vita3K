@@ -31,7 +31,7 @@ using namespace std::string_literals;
 
 namespace gui {
 
-void init_user_apps(GuiState &gui, HostState &host) {
+void init_user_apps(GuiState &gui, EmuEnvState &emuenv) {
     gui.apps_background.clear();
     gui.apps_list_opened.clear();
     gui.app_selector.user_apps_icon.clear();
@@ -41,18 +41,18 @@ void init_user_apps(GuiState &gui, HostState &host) {
     if (gui.app_selector.icon_async_loader)
         gui.app_selector.icon_async_loader->quit = true;
 
-    std::thread init_apps([&gui, &host]() {
+    std::thread init_apps([&gui, &emuenv]() {
         auto app_list_size = gui.app_selector.user_apps.size();
         gui.app_selector.user_apps.clear();
-        get_user_apps_title(gui, host);
+        get_user_apps_title(gui, emuenv);
 
         if (gui.app_selector.user_apps.empty())
             return false;
 
         gui.app_selector.is_app_list_sorted = false;
-        init_last_time_apps(gui, host);
+        init_last_time_apps(gui, emuenv);
 
-        init_apps_icon(gui, host, gui.app_selector.user_apps);
+        init_apps_icon(gui, emuenv, gui.app_selector.user_apps);
 
         if (app_list_size == gui.app_selector.user_apps.size())
             return false;
@@ -71,14 +71,14 @@ void init_user_apps(GuiState &gui, HostState &host) {
     init_apps.detach();
 }
 
-void init_last_time_apps(GuiState &gui, HostState &host) {
+void init_last_time_apps(GuiState &gui, EmuEnvState &emuenv) {
     const auto last_time_apps = [&](std::vector<gui::App> &apps_list) {
         for (auto &app : apps_list) {
-            const auto TIME_APP_INDEX = std::find_if(gui.time_apps[host.io.user_id].begin(), gui.time_apps[host.io.user_id].end(), [&](const TimeApp &t) {
+            const auto TIME_APP_INDEX = std::find_if(gui.time_apps[emuenv.io.user_id].begin(), gui.time_apps[emuenv.io.user_id].end(), [&](const TimeApp &t) {
                 return t.app == app.path;
             });
 
-            app.last_time = (TIME_APP_INDEX != gui.time_apps[host.io.user_id].end()) ? TIME_APP_INDEX->last_time_used : 0;
+            app.last_time = (TIME_APP_INDEX != gui.time_apps[emuenv.io.user_id].end()) ? TIME_APP_INDEX->last_time_used : 0;
         }
     };
 
@@ -91,14 +91,14 @@ std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const 
     return std::find(gui.apps_list_opened.begin(), gui.apps_list_opened.end(), app_path);
 }
 
-void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &app_path) {
+void update_apps_list_opened(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     if ((get_app_open_list_index(gui, app_path) != gui.apps_list_opened.end()) && (gui.apps_list_opened.front() != app_path))
         gui.apps_list_opened.erase(get_app_open_list_index(gui, app_path));
     if ((get_app_open_list_index(gui, app_path) == gui.apps_list_opened.end()))
         gui.apps_list_opened.insert(gui.apps_list_opened.begin(), app_path);
     gui.current_app_selected = 0;
     if (gui.apps_list_opened.size() > 6) {
-        const auto last_app = gui.apps_list_opened.back() == host.io.app_path ? gui.apps_list_opened[gui.apps_list_opened.size() - 2] : gui.apps_list_opened.back();
+        const auto last_app = gui.apps_list_opened.back() == emuenv.io.app_path ? gui.apps_list_opened[gui.apps_list_opened.size() - 2] : gui.apps_list_opened.back();
         gui.live_area_contents.erase(last_app);
         gui.live_items.erase(last_app);
         gui.apps_list_opened.erase(get_app_open_list_index(gui, last_app));
@@ -107,36 +107,36 @@ void update_apps_list_opened(GuiState &gui, HostState &host, const std::string &
 
 static std::map<std::string, uint64_t> last_time;
 
-void open_live_area(GuiState &gui, HostState &host, const std::string app_path) {
-    update_apps_list_opened(gui, host, app_path);
+void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+    update_apps_list_opened(gui, emuenv, app_path);
     last_time["home"] = 0;
-    init_live_area(gui, host, app_path);
+    init_live_area(gui, emuenv, app_path);
     gui.live_area.home_screen = false;
     gui.live_area.information_bar = true;
     gui.live_area.live_area_screen = true;
 }
 
-void pre_load_app(GuiState &gui, HostState &host, bool live_area, const std::string &app_path) {
+void pre_load_app(GuiState &gui, EmuEnvState &emuenv, bool live_area, const std::string &app_path) {
     if (app_path == "NPXS10003") {
-        update_last_time_app_used(gui, host, app_path);
+        update_last_time_app_used(gui, emuenv, app_path);
         open_path("http://Vita3k.org");
     } else {
         if (live_area)
-            open_live_area(gui, host, app_path);
+            open_live_area(gui, emuenv, app_path);
         else
-            pre_run_app(gui, host, app_path);
+            pre_run_app(gui, emuenv, app_path);
     }
 }
 
-void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
+void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     if (app_path.find("NPXS") == std::string::npos) {
-        if (host.io.app_path != app_path) {
-            if (!host.io.app_path.empty())
+        if (emuenv.io.app_path != app_path) {
+            if (!emuenv.io.app_path.empty())
                 gui.live_area.app_close = true;
             else {
                 gui.live_area.home_screen = false;
                 gui.live_area.live_area_screen = false;
-                host.io.app_path = app_path;
+                emuenv.io.app_path = app_path;
             }
         } else {
             gui.live_area.live_area_screen = false;
@@ -145,30 +145,30 @@ void pre_run_app(GuiState &gui, HostState &host, const std::string &app_path) {
     } else {
         gui.live_area.home_screen = false;
         gui.live_area.live_area_screen = false;
-        init_app_background(gui, host, app_path);
-        update_last_time_app_used(gui, host, app_path);
+        init_app_background(gui, emuenv, app_path);
+        update_last_time_app_used(gui, emuenv, app_path);
 
         if (app_path == "NPXS10008") {
-            init_trophy_collection(gui, host);
+            init_trophy_collection(gui, emuenv);
             gui.live_area.trophy_collection = true;
         } else if (app_path == "NPXS10015")
             gui.live_area.settings = true;
         else {
-            init_content_manager(gui, host);
+            init_content_manager(gui, emuenv);
             gui.live_area.content_manager = true;
         }
     }
 }
 
-void draw_app_close(GuiState &gui, HostState &host) {
+void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     const auto WINDOW_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
     const auto BUTTON_SIZE = ImVec2(320.f * SCALE.x, 46.f * SCALE.y);
 
-    auto common = host.common_dialog.lang.common;
+    auto common = emuenv.common_dialog.lang.common;
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
@@ -183,23 +183,23 @@ void draw_app_close(GuiState &gui, HostState &host) {
     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
     ImGui::SetCursorPos(ImVec2(50.f * SCALE.x, 108.f * SCALE.y));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.lang.game_data["app_close"].c_str());
-    if (gui.app_selector.user_apps_icon.find(host.io.app_path) != gui.app_selector.user_apps_icon.end()) {
+    if (gui.app_selector.user_apps_icon.find(emuenv.io.app_path) != gui.app_selector.user_apps_icon.end()) {
         const auto ICON_POS_SCALE = ImVec2(152.f * SCALE.x, (display_size.y / 2.f) - (ICON_SIZE.y / 2.f) - (10.f * SCALE.y));
         const auto ICON_SIZE_SCALE = ImVec2(ICON_POS_SCALE.x + ICON_SIZE.x, ICON_POS_SCALE.y + ICON_SIZE.y);
-        ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, host.io.app_path)->second, ICON_POS_SCALE, ICON_SIZE_SCALE, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 40.f * SCALE.x, ImDrawCornerFlags_All);
+        ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, emuenv.io.app_path)->second, ICON_POS_SCALE, ICON_SIZE_SCALE, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 40.f * SCALE.x, ImDrawCornerFlags_All);
     }
-    ImGui::SetCursorPos(ImVec2(ICON_SIZE.x + (72.f * SCALE.x), (WINDOW_SIZE.y / 2.f) - ImGui::CalcTextSize(host.current_app_title.c_str()).y + (4.f * SCALE.y)));
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", host.current_app_title.c_str());
+    ImGui::SetCursorPos(ImVec2(ICON_SIZE.x + (72.f * SCALE.x), (WINDOW_SIZE.y / 2.f) - ImGui::CalcTextSize(emuenv.current_app_title.c_str()).y + (4.f * SCALE.y)));
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.current_app_title.c_str());
     ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
-    if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_circle))
+    if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))
         gui.live_area.app_close = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
-    if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(host.cfg.keyboard_button_cross)) {
+    if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
         const auto app_path = gui.apps_list_opened[gui.current_app_selected];
-        update_time_app_used(gui, host, host.io.app_path);
-        host.kernel.exit_delete_all_threads();
-        host.load_app_path = app_path;
-        host.load_exec = true;
+        update_time_app_used(gui, emuenv, emuenv.io.app_path);
+        emuenv.kernel.exit_delete_all_threads();
+        emuenv.load_app_path = app_path;
+        emuenv.load_exec = true;
     }
     ImGui::PopStyleVar();
     ImGui::EndChild();
@@ -263,18 +263,18 @@ static bool app_filter(const std::string &app) {
     return false;
 }
 
-static void sort_app_list(GuiState &gui, HostState &host, const SortType &type) {
+static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &type) {
     auto &sorted = gui.app_selector.app_list_sorted[type];
     if (gui.app_selector.is_app_list_sorted) {
         for (auto &state : gui.app_selector.app_list_sorted)
             state.second = (state.first == type) ? static_cast<gui::SortState>(std::max<int>(1, (state.second + 1) % 3)) : NOT_SORTED;
 
-        gui.users[host.io.user_id].sort_apps_type = type;
-        gui.users[host.io.user_id].sort_apps_state = sorted;
+        gui.users[emuenv.io.user_id].sort_apps_type = type;
+        gui.users[emuenv.io.user_id].sort_apps_state = sorted;
 
-        save_user(gui, host, host.io.user_id);
+        save_user(gui, emuenv, emuenv.io.user_id);
     } else {
-        sorted = gui.users[host.io.user_id].sort_apps_state;
+        sorted = gui.users[emuenv.io.user_id].sort_apps_state;
         gui.app_selector.is_app_list_sorted = true;
     }
 
@@ -352,21 +352,21 @@ static std::string get_label_name(GuiState &gui, const SortType &type) {
 static const ImU32 ARROW_COLOR = 4294967295; // White
 static float scroll_type, current_scroll_pos, max_scroll_pos;
 
-void draw_home_screen(GuiState &gui, HostState &host) {
+void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / host.res_width_dpi_scale, display_size.y / host.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * host.dpi_scale, RES_SCALE.y * host.dpi_scale);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
-    const auto MENUBAR_BG_HEIGHT = (!host.cfg.show_info_bar && host.display.imgui_render) || !gui.live_area.information_bar ? 22.f * SCALE.x : INFORMATION_BAR_HEIGHT;
+    const auto MENUBAR_BG_HEIGHT = (!emuenv.cfg.show_info_bar && emuenv.display.imgui_render) || !gui.live_area.information_bar ? 22.f * SCALE.x : INFORMATION_BAR_HEIGHT;
 
-    const auto is_background = (gui.users[host.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
+    const auto is_background = (gui.users[emuenv.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    ImGui::SetNextWindowBgAlpha(is_background ? host.cfg.background_alpha : 0.f);
+    ImGui::SetNextWindowBgAlpha(is_background ? emuenv.cfg.background_alpha : 0.f);
     ImGui::Begin("##home_screen", &gui.live_area.home_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
-    if (!host.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
+    if (!emuenv.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
         gui.live_area.information_bar = true;
 
     const auto config_dialog = gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog || gui.controls_menu.controls_dialog;
@@ -378,8 +378,8 @@ void draw_home_screen(GuiState &gui, HostState &host) {
             if (last_time["start"] == 0)
                 last_time["start"] = current_time();
 
-            while (last_time["start"] + host.cfg.delay_start < current_time()) {
-                last_time["start"] += host.cfg.delay_start;
+            while (last_time["start"] + emuenv.cfg.delay_start < current_time()) {
+                last_time["start"] += emuenv.cfg.delay_start;
                 last_time["home"] = 0;
                 gui.live_area.home_screen = false;
                 gui.live_area.information_bar = true;
@@ -392,10 +392,10 @@ void draw_home_screen(GuiState &gui, HostState &host) {
         if (last_time["home"] == 0)
             last_time["home"] = current_time();
 
-        while (last_time["home"] + host.cfg.delay_background < current_time()) {
-            last_time["home"] += host.cfg.delay_background;
+        while (last_time["home"] + emuenv.cfg.delay_background < current_time()) {
+            last_time["home"] += emuenv.cfg.delay_background;
 
-            if (gui.users[host.io.user_id].use_theme_bg) {
+            if (gui.users[emuenv.io.user_id].use_theme_bg) {
                 if (gui.current_theme_bg < uint64_t(gui.theme_backgrounds.size() - 1))
                     ++gui.current_theme_bg;
                 else
@@ -412,12 +412,12 @@ void draw_home_screen(GuiState &gui, HostState &host) {
     }
 
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage((gui.users[host.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[gui.users[host.io.user_id].backgrounds[gui.current_user_bg]],
+        ImGui::GetBackgroundDrawList()->AddImage((gui.users[emuenv.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[gui.users[emuenv.io.user_id].backgrounds[gui.current_user_bg]],
             ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size);
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawFlags_RoundCornersAll);
 
-    const float icon_size = static_cast<float>(host.cfg.icon_size) * SCALE.x;
+    const float icon_size = static_cast<float>(emuenv.cfg.icon_size) * SCALE.x;
     const float column_icon_size = icon_size + (20.f * SCALE.x);
 
     switch (gui.app_selector.state) {
@@ -426,7 +426,7 @@ void draw_home_screen(GuiState &gui, HostState &host) {
 
         // Sort Apps list when is not sorted
         if (!gui.app_selector.is_app_list_sorted)
-            sort_app_list(gui, host, gui.users[host.io.user_id].sort_apps_type);
+            sort_app_list(gui, emuenv, gui.users[emuenv.io.user_id].sort_apps_type);
 
         const auto title_id_label = get_label_name(gui, TITLE_ID);
         float title_id_size = (ImGui::CalcTextSize("PCSX12345").x + (40.f * SCALE.x));
@@ -439,7 +439,7 @@ void draw_home_screen(GuiState &gui, HostState &host) {
         float last_time_size = (ImGui::CalcTextSize(last_time_label.c_str()).x) + (38.f * SCALE.x);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
         ImGui::SetCursorPosY(4.f * SCALE.y);
-        if (!host.cfg.apps_list_grid) {
+        if (!emuenv.cfg.apps_list_grid) {
             ImGui::Columns(6);
             ImGui::SetColumnWidth(0, column_icon_size);
             if (ImGui::Button("Filter"))
@@ -447,22 +447,22 @@ void draw_home_screen(GuiState &gui, HostState &host) {
             ImGui::NextColumn();
             ImGui::SetColumnWidth(1, title_id_size);
             if (ImGui::Button(title_id_label.c_str()))
-                sort_app_list(gui, host, TITLE_ID);
+                sort_app_list(gui, emuenv, TITLE_ID);
             ImGui::NextColumn();
             ImGui::SetColumnWidth(2, app_ver_size);
             if (ImGui::Button(app_ver_label.c_str()))
-                sort_app_list(gui, host, APP_VER);
+                sort_app_list(gui, emuenv, APP_VER);
             ImGui::NextColumn();
             ImGui::SetColumnWidth(3, category_size);
             if (ImGui::Button(category_label.c_str()))
-                sort_app_list(gui, host, CATEGORY);
+                sort_app_list(gui, emuenv, CATEGORY);
             ImGui::NextColumn();
             ImGui::SetColumnWidth(4, last_time_size);
             if (ImGui::Button(last_time_label.c_str()))
-                sort_app_list(gui, host, LAST_TIME);
+                sort_app_list(gui, emuenv, LAST_TIME);
             ImGui::NextColumn();
             if (ImGui::Button(title_label.c_str()))
-                sort_app_list(gui, host, TITLE);
+                sort_app_list(gui, emuenv, TITLE);
         } else {
             ImGui::Columns(2);
             ImGui::SetColumnWidth(0, 90 * SCALE.x);
@@ -474,15 +474,15 @@ void draw_home_screen(GuiState &gui, HostState &host) {
             if (ImGui::BeginPopup("sort_apps")) {
                 ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
                 if (ImGui::MenuItem(app_ver_label.c_str(), nullptr, gui.app_selector.app_list_sorted[APP_VER] != NOT_SORTED))
-                    sort_app_list(gui, host, APP_VER);
+                    sort_app_list(gui, emuenv, APP_VER);
                 if (ImGui::MenuItem(category_label.c_str(), nullptr, gui.app_selector.app_list_sorted[CATEGORY] != NOT_SORTED))
-                    sort_app_list(gui, host, CATEGORY);
+                    sort_app_list(gui, emuenv, CATEGORY);
                 if (ImGui::MenuItem(last_time_label.c_str(), nullptr, gui.app_selector.app_list_sorted[LAST_TIME] != NOT_SORTED))
-                    sort_app_list(gui, host, LAST_TIME);
+                    sort_app_list(gui, emuenv, LAST_TIME);
                 if (ImGui::MenuItem(title_label.c_str(), nullptr, gui.app_selector.app_list_sorted[TITLE] != NOT_SORTED))
-                    sort_app_list(gui, host, TITLE);
+                    sort_app_list(gui, emuenv, TITLE);
                 if (ImGui::MenuItem(title_id_label.c_str(), nullptr, gui.app_selector.app_list_sorted[TITLE_ID] != NOT_SORTED))
-                    sort_app_list(gui, host, TITLE_ID);
+                    sort_app_list(gui, emuenv, TITLE_ID);
                 ImGui::PopStyleColor();
                 ImGui::EndPopup();
             }
@@ -517,7 +517,7 @@ void draw_home_screen(GuiState &gui, HostState &host) {
         const auto search_bar_size = 120.f * SCALE.x;
         ImGui::SameLine(ImGui::GetColumnWidth() - ImGui::CalcTextSize("Refresh").x - search_bar_size - (78 * SCALE.x));
         if (ImGui::Button("Refresh"))
-            init_user_apps(gui, host);
+            init_user_apps(gui, emuenv);
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
         ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
@@ -527,8 +527,8 @@ void draw_home_screen(GuiState &gui, HostState &host) {
         ImGui::Columns(1);
         ImGui::Separator();
         const auto POS_APP_LIST = ImVec2(60.f * SCALE.x, INFORMATION_BAR_HEIGHT + (36.f * SCALE.y));
-        const auto SIZE_APP_LIST = ImVec2((host.cfg.apps_list_grid ? 840.f : 900.f) * SCALE.x, display_size.y - POS_APP_LIST.y);
-        ImGui::SetNextWindowPos(host.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
+        const auto SIZE_APP_LIST = ImVec2((emuenv.cfg.apps_list_grid ? 840.f : 900.f) * SCALE.x, display_size.y - POS_APP_LIST.y);
+        ImGui::SetNextWindowPos(emuenv.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
         ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
         // Set Scroll Pos
@@ -542,7 +542,7 @@ void draw_home_screen(GuiState &gui, HostState &host) {
 
         const auto GRID_ICON_SIZE = ImVec2(128.f * SCALE.x, 128.f * SCALE.y);
         const auto GRID_COLUMN_SIZE = GRID_ICON_SIZE.x + (80.f * SCALE.x);
-        if (!host.cfg.apps_list_grid) {
+        if (!emuenv.cfg.apps_list_grid) {
             ImGui::Columns(6, nullptr, true);
             ImGui::SetColumnWidth(0, column_icon_size);
             ImGui::SetColumnWidth(1, title_id_size);
@@ -567,34 +567,34 @@ void draw_home_screen(GuiState &gui, HostState &host) {
                     continue;
                 const auto POS_ICON = ImGui::GetCursorPosY();
                 const auto GRID_INIT_POS = ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE / 2.f) - (10.f * SCALE.x);
-                const auto ICON_SIZE = host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size);
+                const auto ICON_SIZE = emuenv.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size);
                 if (apps_icon.find(app.path) != apps_icon.end()) {
-                    if (host.cfg.apps_list_grid)
+                    if (emuenv.cfg.apps_list_grid)
                         ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
                     ImGui::Image(apps_icon[app.path], ICON_SIZE);
                 }
                 ImGui::SetCursorPosY(POS_ICON);
-                if (host.cfg.apps_list_grid)
+                if (emuenv.cfg.apps_list_grid)
                     ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
                 ImGui::PushID(app.path.c_str());
-                ImGui::Selectable("##icon", &selected, host.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, host.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
+                ImGui::Selectable("##icon", &selected, emuenv.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, emuenv.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
                 if (!gui.configuration_menu.custom_settings_dialog && ImGui::IsItemHovered())
-                    host.app_path = app.path;
-                if (host.app_path == app.path)
-                    draw_app_context_menu(gui, host, app.path);
-                const auto IS_CUSTOM_CONFIG = fs::exists(fs::path(host.base_path) / "config" / fmt::format("config_{}.xml", app.path));
+                    emuenv.app_path = app.path;
+                if (emuenv.app_path == app.path)
+                    draw_app_context_menu(gui, emuenv, app.path);
+                const auto IS_CUSTOM_CONFIG = fs::exists(fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", app.path));
                 if (IS_CUSTOM_CONFIG) {
-                    if (host.cfg.apps_list_grid)
+                    if (emuenv.cfg.apps_list_grid)
                         ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
-                    ImGui::SetCursorPosY(POS_ICON + ICON_SIZE.y - ImGui::GetFontSize() - (7.8f * host.dpi_scale));
+                    ImGui::SetCursorPosY(POS_ICON + ICON_SIZE.y - ImGui::GetFontSize() - (7.8f * emuenv.dpi_scale));
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                     ImGui::Button("CC", ImVec2(40.f * SCALE.x, 0.f));
                     ImGui::PopStyleColor();
                 }
-                if (!host.cfg.apps_list_grid) {
+                if (!emuenv.cfg.apps_list_grid) {
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
-                    ImGui::PushStyleColor(ImGuiCol_Text, !gui.theme_backgrounds_font_color.empty() && gui.users[host.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT);
+                    ImGui::PushStyleColor(ImGuiCol_Text, !gui.theme_backgrounds_font_color.empty() && gui.users[emuenv.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT);
                     ImGui::Selectable(app.title_id.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
                     ImGui::NextColumn();
                     ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
@@ -604,11 +604,11 @@ void draw_home_screen(GuiState &gui, HostState &host) {
                     if (app.last_time) {
                         tm date_tm = {};
                         SAFE_LOCALTIME(&app.last_time, &date_tm);
-                        auto LAST_TIME = get_date_time(gui, host, date_tm);
+                        auto LAST_TIME = get_date_time(gui, emuenv, date_tm);
                         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 1.f));
                         ImGui::Selectable(LAST_TIME[DateTime::DATE_MINI].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size / 2.f));
                         ImGui::PopStyleVar();
-                        const auto CLOCK_STR = host.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR ? fmt::format("{} {}", LAST_TIME[DateTime::CLOCK], LAST_TIME[DateTime::DAY_MOMENT]) : LAST_TIME[DateTime::CLOCK];
+                        const auto CLOCK_STR = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR ? fmt::format("{} {}", LAST_TIME[DateTime::CLOCK], LAST_TIME[DateTime::DAY_MOMENT]) : LAST_TIME[DateTime::CLOCK];
                         const auto HALF_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str()).x / 2.f;
                         ImGui::SetCursorPosX(ImGui::GetCursorPosX() - (10.f * SCALE.x) + (ImGui::GetColumnWidth() / 2.f) - HALF_CLOCK_SIZE);
                         ImGui::Text("%s", CLOCK_STR.c_str());
@@ -621,13 +621,13 @@ void draw_home_screen(GuiState &gui, HostState &host) {
                 } else {
                     ImGui::SetCursorPosX(GRID_INIT_POS - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x + (32.f * SCALE.x)).x / 2.f));
                     ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE - (48.f * SCALE.x)));
-                    ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && gui.users[host.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
+                    ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && gui.users[emuenv.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
                     ImGui::PopTextWrapPos();
                 }
                 ImGui::NextColumn();
                 ImGui::PopID();
                 if (selected)
-                    pre_load_app(gui, host, host.cfg.show_live_area_screen, app.path);
+                    pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.path);
             }
         };
         // System Applications
@@ -651,7 +651,7 @@ void draw_home_screen(GuiState &gui, HostState &host) {
             ImVec2(ARROW_UPP_CENTER.x + (20.f * SCALE.x), ARROW_UPP_CENTER.y + (16.f * SCALE.y)), ARROW_COLOR);
         ImGui::SetCursorPos(ImVec2(ARROW_UPP_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_UPP_CENTER.y - SELECTABLE_SIZE.y));
         if ((ImGui::Selectable("##upp", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE))
-            || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_up) || ImGui::IsKeyPressed(host.cfg.keyboard_button_up))
+            || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_up) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_up))
             scroll_type = 1;
     }
     if (!gui.apps_list_opened.empty()) {
@@ -662,7 +662,7 @@ void draw_home_screen(GuiState &gui, HostState &host) {
             ImVec2(ARROW_CENTER.x - (16.f * SCALE.x), ARROW_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
         ImGui::SetCursorPos(ImVec2(ARROW_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_CENTER.y - SELECTABLE_SIZE.y));
         if ((ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE))
-            || ImGui::IsKeyPressed(host.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_right)) {
+            || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_right)) {
             last_time["start"] = 0;
             ++gui.current_app_selected;
             gui.live_area.home_screen = false;
@@ -677,7 +677,7 @@ void draw_home_screen(GuiState &gui, HostState &host) {
             ImVec2(ARROW_DOWN_CENTER.x - (20.f * SCALE.x), ARROW_DOWN_CENTER.y - (16.f * SCALE.y)), ARROW_COLOR);
         ImGui::SetCursorPos(ImVec2(ARROW_DOWN_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_DOWN_CENTER.y - SELECTABLE_SIZE.y));
         if ((ImGui::Selectable("##down", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE))
-            || ImGui::IsKeyPressed(host.cfg.keyboard_leftstick_down) || ImGui::IsKeyPressed(host.cfg.keyboard_button_down))
+            || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_down) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_down))
             scroll_type = -1;
     }
     ImGui::End();

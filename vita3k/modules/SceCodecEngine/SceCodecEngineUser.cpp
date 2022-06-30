@@ -20,20 +20,20 @@
 
 EXPORT(int32_t, sceCodecEngineAllocMemoryFromUnmapMemBlock, SceUID uid, uint32_t size, uint32_t alignment) {
     STUBBED("fake vaddr");
-    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
-    auto it = host.kernel.codec_blocks.find(uid);
-    if (it == host.kernel.codec_blocks.end())
+    auto guard = std::lock_guard<std::mutex>(emuenv.kernel.mutex);
+    auto it = emuenv.kernel.codec_blocks.find(uid);
+    if (it == emuenv.kernel.codec_blocks.end())
         return SCE_CODECENGINE_ERROR_INVALID_VALUE;
     auto &block = it->second;
     return 0xDEADBEAF + block.vaddr++;
 }
 
 EXPORT(int, sceCodecEngineCloseUnmapMemBlock, SceUID uid) {
-    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
-    if (host.kernel.codec_blocks.find(uid) == host.kernel.codec_blocks.end())
+    auto guard = std::lock_guard<std::mutex>(emuenv.kernel.mutex);
+    if (emuenv.kernel.codec_blocks.find(uid) == emuenv.kernel.codec_blocks.end())
         return SCE_CODECENGINE_ERROR_INVALID_VALUE;
 
-    host.kernel.codec_blocks.erase(uid);
+    emuenv.kernel.codec_blocks.erase(uid);
     return 0;
 }
 
@@ -43,11 +43,11 @@ EXPORT(int, sceCodecEngineFreeMemoryFromUnmapMemBlock) {
 }
 
 EXPORT(SceUID, sceCodecEngineOpenUnmapMemBlock, Address memBlock, uint32_t size) {
-    auto uid = host.kernel.get_next_uid();
-    auto guard = std::lock_guard<std::mutex>(host.kernel.mutex);
+    auto uid = emuenv.kernel.get_next_uid();
+    auto guard = std::lock_guard<std::mutex>(emuenv.kernel.mutex);
     CodecEngineBlock block;
     block.size = size;
-    host.kernel.codec_blocks.emplace(uid, block);
+    emuenv.kernel.codec_blocks.emplace(uid, block);
     return uid;
 }
 

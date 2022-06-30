@@ -29,7 +29,7 @@
 #include <io/device.h>
 #include <io/functions.h>
 
-#include <host/state.h>
+#include <emuenv/state.h>
 #include <package/functions.h>
 #include <package/pkg.h>
 #include <package/sce_types.h>
@@ -74,7 +74,7 @@ static void aes128_ctr_xor(aes_context *ctx, const uint8_t *iv, uint64_t block, 
     }
 }
 
-bool decrypt_install_nonpdrm(HostState &host, std::string &drmlicpath, const std::string &title_path) {
+bool decrypt_install_nonpdrm(EmuEnvState &emuenv, std::string &drmlicpath, const std::string &title_path) {
     std::string title_id_src = title_path;
     std::string title_id_dst = title_path + "_dec";
     fs::ifstream binfile(string_utils::utf_to_wide(drmlicpath), std::ios::in | std::ios::binary | std::ios::ate);
@@ -85,8 +85,8 @@ bool decrypt_install_nonpdrm(HostState &host, std::string &drmlicpath, const std
     if ((execute(zRIF, title_id_src, title_id_dst, f00d_enc_type, f00d_arg) < 0) && (title_path.find("theme") == std::string::npos))
         return false;
 
-    if (host.app_info.app_category.find("gp") == std::string::npos)
-        copy_license(host, drmlicpath);
+    if (emuenv.app_info.app_category.find("gp") == std::string::npos)
+        copy_license(emuenv, drmlicpath);
 
     fs::remove_all(fs::path(title_id_src));
     fs::rename(fs::path(title_id_dst), fs::path(title_id_src));
@@ -108,7 +108,7 @@ bool decrypt_install_nonpdrm(HostState &host, std::string &drmlicpath, const std
     return true;
 }
 
-bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, const std::function<void(float)> &progress_callback) {
+bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback) {
     std::wstring pkg_path = string_utils::utf_to_wide(pkg);
     fs::ifstream infile(pkg_path, std::ios::binary);
     PkgHeader pkg_header;
@@ -216,36 +216,36 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
     infile.seekg(sfo_offset);
     infile.read((char *)&sfo_buffer[0], sfo_size);
     sfo::load(sfo_file, sfo_buffer);
-    sfo::get_param_info(host.app_info, sfo_buffer, host.cfg.sys_lang);
+    sfo::get_param_info(emuenv.app_info, sfo_buffer, emuenv.cfg.sys_lang);
 
     if (type == PkgType::PKG_TYPE_VITA_DLC)
-        host.app_info.app_content_id = host.app_info.app_content_id.substr(20);
+        emuenv.app_info.app_content_id = emuenv.app_info.app_content_id.substr(20);
 
-    if (type == PkgType::PKG_TYPE_VITA_APP && strcmp(host.app_info.app_category.c_str(), "gp") == 0) {
+    if (type == PkgType::PKG_TYPE_VITA_APP && strcmp(emuenv.app_info.app_category.c_str(), "gp") == 0) {
         type = PkgType::PKG_TYPE_VITA_PATCH;
     }
 
-    auto path{ fs::path(host.pref_path) / "ux0" };
+    auto path{ fs::path(emuenv.pref_path) / "ux0" };
 
     switch (type) {
     case PkgType::PKG_TYPE_VITA_APP:
-        path /= fs::path("app") / host.app_info.app_title_id;
+        path /= fs::path("app") / emuenv.app_info.app_title_id;
         if (fs::exists(path))
             fs::remove_all(path);
-        host.app_info.app_title += " (App)";
+        emuenv.app_info.app_title += " (App)";
         break;
     case PkgType::PKG_TYPE_VITA_DLC:
-        path /= fs::path("addcont") / host.app_info.app_title_id / host.app_info.app_content_id;
-        host.app_info.app_title += " (DLC)";
+        path /= fs::path("addcont") / emuenv.app_info.app_title_id / emuenv.app_info.app_content_id;
+        emuenv.app_info.app_title += " (DLC)";
         break;
     case PkgType::PKG_TYPE_VITA_PATCH:
-        path /= fs::path("patch") / host.app_info.app_title_id;
-        host.app_info.app_title += " (Update)";
+        path /= fs::path("patch") / emuenv.app_info.app_title_id;
+        emuenv.app_info.app_title += " (Update)";
         break;
     case PkgType::PKG_TYPE_VITA_THEME:
-        path /= fs::path("theme") / host.app_info.app_content_id;
-        host.app_info.app_category = "theme";
-        host.app_info.app_title += " (Theme)";
+        path /= fs::path("theme") / emuenv.app_info.app_content_id;
+        emuenv.app_info.app_category = "theme";
+        emuenv.app_info.app_title += " (Theme)";
         break;
     }
 
@@ -346,10 +346,10 @@ bool install_pkg(const std::string &pkg, HostState &host, std::string &p_zRIF, c
         break;
     }
 
-    if (!copy_path(title_id_src, host.pref_path, host.app_info.app_title_id, host.app_info.app_category))
+    if (!copy_path(title_id_src, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
-    create_license(host, zRIF);
+    create_license(emuenv, zRIF);
     progress_callback(100);
     return true;
 }

@@ -19,13 +19,13 @@
 
 namespace gui {
 
-void draw_condvars_dialog(GuiState &gui, HostState &host) {
+void draw_condvars_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Begin("Condition Variables", &gui.debug_menu.condvars_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s %-16s", "ID", "Name", "Attributes", "Waiting Threads");
 
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
 
-    for (const auto &condvar : host.kernel.condvars) {
+    for (const auto &condvar : emuenv.kernel.condvars) {
         std::shared_ptr<Condvar> sema_state = condvar.second;
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d             %02zu",
             condvar.first,
@@ -36,13 +36,13 @@ void draw_condvars_dialog(GuiState &gui, HostState &host) {
     ImGui::End();
 }
 
-void draw_lw_condvars_dialog(GuiState &gui, HostState &host) {
+void draw_lw_condvars_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Begin("Lightweight Condition Variables", &gui.debug_menu.lwcondvars_dialog);
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-16s %-32s   %-16s %-16s", "ID", "Name", "Attributes", "Waiting Threads");
 
-    const std::lock_guard<std::mutex> lock(host.kernel.mutex);
+    const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
 
-    for (const auto &condvar : host.kernel.lwcondvars) {
+    for (const auto &condvar : emuenv.kernel.lwcondvars) {
         std::shared_ptr<Condvar> sema_state = condvar.second;
         ImGui::TextColored(GUI_COLOR_TEXT, "0x%08X       %-32s   %02d             %02zu",
             condvar.first,

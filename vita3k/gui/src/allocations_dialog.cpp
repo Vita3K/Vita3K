@@ -35,14 +35,14 @@ const char *blacklist[] = {
     "export_sceGxmDisplayQueueAddEntry"
 };
 
-void draw_allocations_dialog(GuiState &gui, HostState &host) {
+void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Begin("Memory Allocations", &gui.debug_menu.allocations_dialog);
 
-    const std::lock_guard<std::mutex> lock(host.mem.generation_mutex);
-    for (const auto &pair : host.mem.page_name_map) {
+    const std::lock_guard<std::mutex> lock(emuenv.mem.generation_mutex);
+    for (const auto &pair : emuenv.mem.page_name_map) {
         const auto generation_num = pair.first;
         const auto generation_name = pair.second;
-        const auto page = host.mem.page_table[generation_num];
+        const auto page = emuenv.mem.page_table[generation_num];
 
         if (std::find(std::begin(blacklist), std::end(blacklist), generation_name) != std::end(blacklist))
             continue;
@@ -57,7 +57,7 @@ void draw_allocations_dialog(GuiState &gui, HostState &host) {
             }
             if (ImGui::Selectable("View Disassembly")) {
                 sprintf(gui.disassembly_address, "%08zx", page.size * KB(4));
-                reevaluate_code(gui, host);
+                reevaluate_code(gui, emuenv);
                 gui.debug_menu.disassembly_dialog = true;
             }
             ImGui::TreePop();
@@ -67,7 +67,7 @@ void draw_allocations_dialog(GuiState &gui, HostState &host) {
     if (gui.debug_menu.memory_editor_dialog) {
         if (gui.memory_editor.Open) {
             gui.memory_editor.DrawWindow("Memory Editor",
-                host.mem.memory.get() + gui.memory_editor_start,
+                emuenv.mem.memory.get() + gui.memory_editor_start,
                 gui.memory_editor_count, gui.memory_editor_start);
         } else {
             gui.debug_menu.memory_editor_dialog = false;

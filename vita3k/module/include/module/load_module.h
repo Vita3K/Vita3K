@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <host/state.h>
+#include <emuenv/state.h>
 
 #include <vector>
 
@@ -114,5 +114,5 @@ inline SysmodulePaths init_sysmodule_paths() {
 
 const SysmodulePaths sysmodule_paths = init_sysmodule_paths();
 
-bool is_lle_module(SceSysmoduleModuleId module_id, HostState &host);
+bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv);
 bool is_module_loaded(KernelState &kernel, SceSysmoduleModuleId module_id);

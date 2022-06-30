@@ -20,7 +20,7 @@
  * @brief Sony `NpDrm` license and `work.bin` handling
  */
 
-#include <host/state.h>
+#include <emuenv/state.h>
 
 #include <util/bytes.h>
 #include <util/log.h>
@@ -54,7 +54,7 @@ struct SceNpDrmLicense {
 
 static SceNpDrmLicense license_buf;
 
-static bool open_license(HostState &host, const fs::path &license_path) {
+static bool open_license(EmuEnvState &emuenv, const fs::path &license_path) {
     memset(&license_buf, 0, sizeof(SceNpDrmLicense));
     fs::ifstream license(license_path, std::ios::in | std::ios::binary);
     if (license.is_open()) {
@@ -66,15 +66,15 @@ static bool open_license(HostState &host, const fs::path &license_path) {
     return false;
 }
 
-bool copy_license(HostState &host, const fs::path &license_path) {
-    if (open_license(host, license_path)) {
-        host.license_content_id = license_buf.content_id;
-        host.license_title_id = host.license_content_id.substr(7, 9);
-        const auto dst_path{ fs::path(host.pref_path) / "ux0/license" / host.license_title_id };
+bool copy_license(EmuEnvState &emuenv, const fs::path &license_path) {
+    if (open_license(emuenv, license_path)) {
+        emuenv.license_content_id = license_buf.content_id;
+        emuenv.license_title_id = emuenv.license_content_id.substr(7, 9);
+        const auto dst_path{ fs::path(emuenv.pref_path) / "ux0/license" / emuenv.license_title_id };
         if (!fs::exists(dst_path))
             fs::create_directories(dst_path);
 
-        const auto license_dst_path{ dst_path / fmt::format("{}.rif", host.license_content_id) };
+        const auto license_dst_path{ dst_path / fmt::format("{}.rif", emuenv.license_content_id) };
         if (license_path != license_dst_path) {
             fs::copy_file(license_path, license_dst_path, fs::copy_option::overwrite_if_exists);
             if (fs::exists(license_dst_path)) {
@@ -90,14 +90,14 @@ bool copy_license(HostState &host, const fs::path &license_path) {
     return false;
 }
 
-int32_t get_license_sku_flag(HostState &host, const std::string &content_id) {
+int32_t get_license_sku_flag(EmuEnvState &emuenv, const std::string &content_id) {
     int32_t sku_flag;
     const auto title_id = content_id.substr(7, 9);
-    const auto license_path{ fs::path(host.pref_path) / "ux0/license" / title_id / fmt::format("{}.rif", content_id) };
-    if (open_license(host, license_path)) {
+    const auto license_path{ fs::path(emuenv.pref_path) / "ux0/license" / title_id / fmt::format("{}.rif", content_id) };
+    if (open_license(emuenv, license_path)) {
         sku_flag = byte_swap(license_buf.sku_flag);
     } else {
-        const auto RETAIL_APP_PATH{ fs::path(host.pref_path) / "ux0/app" / title_id / "sce_sys/retail/livearea" };
+        const auto RETAIL_APP_PATH{ fs::path(emuenv.pref_path) / "ux0/app" / title_id / "sce_sys/retail/livearea" };
         if (fs::exists(RETAIL_APP_PATH))
             sku_flag = 1;
         else
@@ -111,8 +111,8 @@ int32_t get_license_sku_flag(HostState &host, const std::string &content_id) {
     return sku_flag;
 }
 
-bool create_license(HostState &host, const std::string &zRIF) {
-    const auto cache_path = fs::path(host.base_path) / "cache";
+bool create_license(EmuEnvState &emuenv, const std::string &zRIF) {
+    const auto cache_path = fs::path(emuenv.base_path) / "cache";
     if (!fs::exists(cache_path))
         fs::create_directories(cache_path);
 
@@ -121,5 +121,5 @@ bool create_license(HostState &host, const std::string &zRIF) {
     std::ofstream temp_file(temp_license_path.string(), std::ios::out | std::ios::binary);
     zrif2rif(zRIF, temp_file);
 
-    return copy_license(host, temp_license_path);
+    return copy_license(emuenv, temp_license_path);
 }
