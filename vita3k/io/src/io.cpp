@@ -54,6 +54,8 @@ static int io_error_impl(const int retval, const char *export_name, const char *
 #define IO_ERROR_UNK() IO_ERROR(-1)
 
 constexpr bool log_file_op = true;
+constexpr bool log_file_read = false;
+constexpr bool log_file_seek = false;
 
 namespace vfs {
 
@@ -343,7 +345,7 @@ int read_file(void *data, IOState &io, const SceUID fd, const SceSize size, cons
     const auto file = io.std_files.find(fd);
     if (file != io.std_files.end()) {
         const auto read = file->second.read(data, 1, size);
-        LOG_TRACE_IF(log_file_op, "{}: Reading {} bytes of fd {}", export_name, read, log_hex(fd));
+        LOG_TRACE_IF(log_file_op && log_file_read, "{}: Reading {} bytes of fd {}", export_name, read, log_hex(fd));
         return static_cast<int>(read);
     }
 
@@ -351,7 +353,7 @@ int read_file(void *data, IOState &io, const SceUID fd, const SceSize size, cons
     if (tty_file != io.tty_files.end()) {
         if (tty_file->second == TTY_IN) {
             std::cin.read(reinterpret_cast<char *>(data), size);
-            LOG_TRACE_IF(log_file_op, "{}: Reading terminal fd: {}, size: {}", export_name, log_hex(fd), size);
+            LOG_TRACE_IF(log_file_op && log_file_read, "{}: Reading terminal fd: {}, size: {}", export_name, log_hex(fd), size);
             return size;
         }
         return IO_ERROR_UNK();
@@ -440,7 +442,7 @@ SceOff seek_file(const SceUID fd, const SceOff offset, const SceIoSeekMode whenc
         }
     };
 
-    LOG_TRACE_IF(log_file_op, "{}: Seeking fd: {}, offset: {}, whence: {}", export_name, log_hex(fd), log_hex(offset), log_mode(whence));
+    LOG_TRACE_IF(log_file_op && log_file_seek, "{}: Seeking fd: {}, offset: {}, whence: {}", export_name, log_hex(fd), log_hex(offset), log_mode(whence));
     return file->second.tell();
 }
 
