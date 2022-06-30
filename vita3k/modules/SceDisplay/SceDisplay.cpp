@@ -108,25 +108,23 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
     if ((pFrameBuf->width < 480) || (pFrameBuf->height < 272) || (pFrameBuf->pitch < 480))
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_RESOLUTION);
 
+    if (sync == SCE_DISPLAY_SETBUF_IMMEDIATE) {
+        // we are supposed to swap the displayed buffer in the middle of the frame
+        // which we do not support
+        STUBBED("SCE_DISPLAY_SETBUF_IMMEDIATE is not supported");
+    }
+
     {
         const std::lock_guard<std::mutex> guard(host.display.display_info_mutex);
 
-        DisplayFrameInfo *info;
-        if (sync == SCE_DISPLAY_SETBUF_NEXTFRAME) {
-            info = &host.display.next_frame;
-            host.display.has_next_frame = true;
-        } else {
-            // we are supposed to swap the displayed buffer in the middle of the frame
-            // which we do not support
-            STUBBED("SCE_DISPLAY_SETBUF_IMMEDIATE is not supported");
-            info = &host.display.frame;
-        }
+        host.display.has_next_frame = true;
+        DisplayFrameInfo &info = host.display.next_frame;
 
-        info->base = pFrameBuf->base;
-        info->pitch = pFrameBuf->pitch;
-        info->pixelformat = pFrameBuf->pixelformat;
-        info->image_size.x = pFrameBuf->width;
-        info->image_size.y = pFrameBuf->height;
+        info.base = pFrameBuf->base;
+        info.pitch = pFrameBuf->pitch;
+        info.pixelformat = pFrameBuf->pixelformat;
+        info.image_size.x = pFrameBuf->width;
+        info.image_size.y = pFrameBuf->height;
         host.display.last_setframe_vblank_count = host.display.vblank_count.load();
     }
 
