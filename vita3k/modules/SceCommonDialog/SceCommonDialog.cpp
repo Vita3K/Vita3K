@@ -105,28 +105,33 @@ EXPORT(int, sceCrossControllerDialogTerm) {
 }
 
 EXPORT(int, sceImeDialogAbort) {
-    if (host.common_dialog.type != IME_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
-    }
+    if (host.common_dialog.type != IME_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
+
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
     return 0;
 }
 
 EXPORT(int, sceImeDialogGetResult, SceImeDialogResult *result) {
+    if (host.common_dialog.type != IME_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
+
     result->result = host.common_dialog.result;
     result->button = host.common_dialog.ime.status;
     return 0;
 }
 
 EXPORT(int, sceImeDialogGetStatus) {
+    if (host.common_dialog.type != IME_DIALOG)
+        return SCE_COMMON_DIALOG_STATUS_NONE;
+
     return host.common_dialog.status;
 }
 
 EXPORT(int, sceImeDialogInit, const Ptr<SceImeDialogParam> param) {
-    if (host.common_dialog.type != NO_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
-    }
+    if (host.common_dialog.type != NO_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
     SceImeDialogParam *p = param.get(host.mem);
 
@@ -148,33 +153,39 @@ EXPORT(int, sceImeDialogInit, const Ptr<SceImeDialogParam> param) {
 }
 
 EXPORT(int, sceImeDialogTerm) {
-    if (host.common_dialog.type != IME_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
-    }
+    if (host.common_dialog.type != IME_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
+
+    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
+
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     host.common_dialog.type = NO_DIALOG;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogAbort) {
-    if (host.common_dialog.type != MESSAGE_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
-    }
+    if (host.common_dialog.type != MESSAGE_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
+
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogClose) {
-    if (host.common_dialog.type != MESSAGE_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
-    }
+    if (host.common_dialog.type != MESSAGE_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
+
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
     return 0;
 }
 
 EXPORT(int, sceMsgDialogGetResult, SceMsgDialogResult *result) {
+    if (host.common_dialog.type != MESSAGE_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
+
     result->result = host.common_dialog.result;
     result->mode = host.common_dialog.msg.mode;
     result->buttonId = host.common_dialog.msg.status;
@@ -182,13 +193,15 @@ EXPORT(int, sceMsgDialogGetResult, SceMsgDialogResult *result) {
 }
 
 EXPORT(int, sceMsgDialogGetStatus) {
+    if (host.common_dialog.type != MESSAGE_DIALOG)
+        return SCE_COMMON_DIALOG_STATUS_NONE;
+
     return host.common_dialog.status;
 }
 
 EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
-    if (host.common_dialog.type != NO_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
-    }
+    if (host.common_dialog.type != NO_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
     SceMsgDialogParam *p = param.get(host.mem);
     SceMsgDialogUserMessageParam *up;
@@ -388,9 +401,12 @@ EXPORT(int, sceMsgDialogProgressBarSetValue, SceMsgDialogProgressBarTarget targe
 }
 
 EXPORT(int, sceMsgDialogTerm) {
-    if (host.common_dialog.type != MESSAGE_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
-    }
+    if (host.common_dialog.type != MESSAGE_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
+
+    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
+
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     host.common_dialog.type = NO_DIALOG;
     return 0;
@@ -533,15 +549,18 @@ EXPORT(int, sceNpSnsFacebookDialogTerm) {
 }
 
 EXPORT(int, sceNpTrophySetupDialogAbort) {
-    if (host.common_dialog.type != TROPHY_SETUP_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
-    }
+    if (host.common_dialog.type != TROPHY_SETUP_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
+
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     host.common_dialog.result = SCE_COMMON_DIALOG_RESULT_ABORTED;
     return 0;
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetResult, Ptr<SceNpTrophySetupDialogResult> result) {
+    if (host.common_dialog.type != TROPHY_SETUP_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
+
     result.get(host.mem)->result = host.common_dialog.result;
     return 0;
 }
@@ -551,9 +570,8 @@ EXPORT(int, sceNpTrophySetupDialogGetStatus) {
 }
 
 EXPORT(int, sceNpTrophySetupDialogInit, const Ptr<SceNpTrophySetupDialogParam> param) {
-    if (host.common_dialog.type != NO_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
-    }
+    if (host.common_dialog.type != NO_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
     host.common_dialog.type = TROPHY_SETUP_DIALOG;
@@ -562,9 +580,12 @@ EXPORT(int, sceNpTrophySetupDialogInit, const Ptr<SceNpTrophySetupDialogParam> p
 }
 
 EXPORT(int, sceNpTrophySetupDialogTerm) {
-    if (host.common_dialog.type != TROPHY_SETUP_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
-    }
+    if (host.common_dialog.type != TROPHY_SETUP_DIALOG)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
+
+    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
+
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     host.common_dialog.type = NO_DIALOG;
     return 0;
@@ -854,16 +875,12 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
+    if (host.common_dialog.type != SAVEDATA_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
     if (host.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_FINISHED) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
-    }
-
-    if (host.common_dialog.type != SAVEDATA_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
 
     host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_RUNNING;
@@ -1002,15 +1019,11 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
 }
 
 EXPORT(int, sceSaveDataDialogFinish, Ptr<const SceSaveDataDialogFinishParam> finishParam) {
-    if (host.common_dialog.type != SAVEDATA_DIALOG) {
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
-    }
-
     if (finishParam.get(host.mem) == nullptr) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
 
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
+    if (host.common_dialog.type != SAVEDATA_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
 
@@ -1026,7 +1039,7 @@ EXPORT(int, sceSaveDataDialogFinish, Ptr<const SceSaveDataDialogFinishParam> fin
 
 EXPORT(SceInt32, sceSaveDataDialogGetResult, Ptr<SceSaveDataDialogResult> result) {
     if (host.common_dialog.type != SAVEDATA_DIALOG)
-        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
+        return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
     if (!result.get(host.mem)) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
@@ -1060,7 +1073,7 @@ EXPORT(int, sceSaveDataDialogGetStatus) {
 }
 
 EXPORT(int, sceSaveDataDialogGetSubStatus) {
-    if (host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
+    if (host.common_dialog.type != SAVEDATA_DIALOG || host.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return SCE_COMMON_DIALOG_STATUS_NONE;
     }
     return host.common_dialog.substatus;
