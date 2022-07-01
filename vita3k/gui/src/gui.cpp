@@ -450,6 +450,7 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
             init_user_apps(gui, emuenv);
     }
 
+    init_app_background(gui, emuenv, "NPXS10015");
     const auto is_cmd = emuenv.cfg.run_app_path || emuenv.cfg.content_path;
     if (!gui.users.empty() && (gui.users.find(emuenv.cfg.user_id) != gui.users.end()) && (is_cmd || emuenv.cfg.auto_user_login)) {
         init_user(gui, emuenv, emuenv.cfg.user_id);
@@ -761,6 +762,8 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
 
     if (gui.help_menu.about_dialog)
         draw_about_dialog(gui, emuenv);
+    if (gui.help_menu.vita3k_update)
+        draw_vita3k_update(gui, emuenv);
     if (gui.help_menu.welcome_dialog)
         draw_welcome_dialog(gui, emuenv);
 

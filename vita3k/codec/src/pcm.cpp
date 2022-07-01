@@ -222,7 +222,7 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
                 coef_index = 0; /* ? */
 
             // Don't care about it. We don't need that stuff in HEVAG
-            //if (shift_factor > 12)
+            // if (shift_factor > 12)
             //    shift_factor = 9; /* ? */
 
             shift_factor = 20 - shift_factor;

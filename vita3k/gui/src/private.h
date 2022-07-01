@@ -63,6 +63,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv);
+void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv);
 void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv);
 
 void draw_app_close(GuiState &gui, EmuEnvState &emuenv);

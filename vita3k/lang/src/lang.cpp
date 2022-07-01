@@ -248,6 +248,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
 
                 // User Management
                 set_lang_string(lang.user_management, lang_child.child("user_management"));
+
+                // Vita3k Update
+                set_lang_string(lang.vita3k_update, lang_child.child("vita3k_update"));
             }
         } else
             LOG_ERROR("Error open lang file xml: {}", lang_xml_path);

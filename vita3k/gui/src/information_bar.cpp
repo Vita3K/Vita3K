@@ -585,7 +585,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (54.f * SCALE.x) - is_notif_pos, 12.f * SCALE.y), ImVec2(display_size.x - (50.f * SCALE.x) - is_notif_pos, 20 * SCALE.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCALE.x) - is_notif_pos, 5.f * SCALE.y), ImVec2(display_size.x - (12.f * SCALE.x) - is_notif_pos, 27 * SCALE.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f * SCALE.x, ImDrawFlags_RoundCornersAll);
 
-    if (emuenv.display.imgui_render && !gui.live_area.start_screen && !gui.live_area.live_area_screen && get_sys_apps_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
+    if (emuenv.display.imgui_render && !gui.live_area.start_screen && !gui.live_area.live_area_screen && !gui.help_menu.vita3k_update && get_sys_apps_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
         gui.live_area.information_bar = false;
 
     if (is_notif_pos)

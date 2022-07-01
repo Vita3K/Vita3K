@@ -25,9 +25,9 @@ if(GIT_HASH STREQUAL "")
 	set(VITA3K_GIT_REV "Development version")
 	set(GIT_COUNT 0)
 elseif((GIT_BRANCH STREQUAL "master") OR (GIT_BRANCH STREQUAL "HEAD"))
-	set(VITA3K_GIT_REV "${GIT_COUNT}-${GIT_HASH}")
+	set(VITA3K_GIT_REV "${GIT_HASH}")
 else()
-	set(VITA3K_GIT_REV "${GIT_COUNT}-${GIT_HASH}-${GIT_BRANCH}")
+	set(VITA3K_GIT_REV "${GIT_HASH}-${GIT_BRANCH}")
 endif()
 
 file(WRITE ${CMAKE_BINARY_DIR}/vita3k/config/gitver.h

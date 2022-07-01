@@ -169,6 +169,7 @@ struct ControlMenuState {
 
 struct HelpMenuState {
     bool about_dialog = false;
+    bool vita3k_update = false;
     bool welcome_dialog = false;
 };
 

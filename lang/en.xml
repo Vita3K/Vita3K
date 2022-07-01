@@ -313,4 +313,17 @@ Are you sure you want to continue?</user_delete_warn>
 		<no>No</no>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Vita3K Update">
+		<back>Back</back>
+ 		<new_version_available>A new version of the Vita3K is available.</new_version_available>
+		<next>Next</next>
+		<update_vita3k>Do you want to update Vita3K?</update_vita3k>
+		<latest_version_already_installed>The latest version of the Vita3K is already installed.</latest_version_already_installed>
+		<downloading>Downloading...
+After the download is complete, Vita3K will restart automatically and then install the new version.</downloading>
+		<new_features>New Features in Version {}</new_features>
+		<update>Update</update>
+		<version>Version {}</version>
+	</vita3k_update>
 </lang>

@@ -52,8 +52,9 @@ add_library(
 	src/controllers_dialog.cpp
 	src/allocations_dialog.cpp
 	src/disassembly_dialog.cpp
-	src/about_dialog.cpp
 	src/trophy_unlocked.cpp
+	src/about_dialog.cpp
+	src/vita3k_update.cpp
 	src/welcome_dialog.cpp
 )
 
