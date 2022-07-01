@@ -80,6 +80,7 @@ void open_path(const std::string &path);
 void open_search(const std::string title);
 void open_trophy_unlocked(GuiState &gui, EmuEnvState &emuenv, const std::string &np_com_id, const std::string &trophy_id);
 void open_user(GuiState &gui, EmuEnvState &emuenv);
+bool init_vita3k_update(GuiState &gui);
 void pre_init(GuiState &gui, EmuEnvState &emuenv);
 void pre_load_app(GuiState &gui, EmuEnvState &emuenv, bool live_area, const std::string &app_path);
 void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);

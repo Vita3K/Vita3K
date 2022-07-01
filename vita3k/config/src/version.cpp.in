@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,4 +19,5 @@
 
 const char org_name[] = "${VITA3K_ORG_NAME}";
 const char app_name[] = "${VITA3K_APP_NAME}";
-const char window_title[] = "${VITA3K_APP_NAME} ${VITA3K_APP_VERSION} ${VITA3K_GIT_REV}";
+const int app_number = ${GIT_COUNT};
+const char window_title[] = "${VITA3K_APP_NAME} ${VITA3K_APP_VERSION} ${GIT_COUNT}-${VITA3K_GIT_REV}";
