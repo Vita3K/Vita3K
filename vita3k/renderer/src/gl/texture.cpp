@@ -155,7 +155,7 @@ void configure_bound_texture(const renderer::TextureCacheState &state, const Sce
  * \brief Try to decompress texture to 32-bit RGBA.
  *
  * \param fmt    Texture base format.
- * \param dest   Destination texture data. Size must be sufficient enough of align(width, 4) * height * 4 (bytes).
+ * \param dest   Destination texture data. Size must be sufficient enough of align(width, 4) * align(height,4) * 4 (bytes).
  * \param data   Source data to decompress.
  * \param width  Texture width.
  * \param height Texture height.
@@ -369,7 +369,7 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
         case SCE_GXM_TEXTURE_CUBE_ARBITRARY: {
             if (need_decompress_and_unswizzle_on_cpu) {
                 // Must decompress them
-                texture_data_decompressed.resize(width * height * 4);
+                texture_data_decompressed.resize(align(width, 4) * align(height, 4) * 4);
                 source_size = decompress_compressed_swizz_texture(base_format, texture_data_decompressed.data(), pixels, width, height);
                 bytes_per_pixel = 4;
                 bpp = 32;
