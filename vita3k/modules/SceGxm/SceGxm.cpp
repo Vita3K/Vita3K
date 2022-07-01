@@ -2150,7 +2150,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetTexture, SceGxmPrecomputedFragmentS
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (index > (SCE_GXM_MAX_TEXTURE_UNITS - 1)) {
+    if (index >= state->texture_count) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
