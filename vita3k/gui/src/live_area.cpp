@@ -510,7 +510,7 @@ inline uint64_t current_time() {
 }
 
 void open_search(const std::string title) {
-    auto search_url = "http://www.google.com/search?q=" + title;
+    auto search_url = "https://www.google.com/search?q=" + title;
     std::replace(search_url.begin(), search_url.end(), ' ', '+');
     open_path(search_url);
 }

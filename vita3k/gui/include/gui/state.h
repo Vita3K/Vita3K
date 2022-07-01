@@ -296,7 +296,10 @@ struct GuiState {
     size_t memory_editor_count = 0;
 
     std::string disassembly_arch = "THUMB";
-    char disassembly_address[9] = "00000000";
+
+    // Original size of disassembly_address was 9.
+    // Changed to 12 due to critical GitHub CodeQL alert.
+    char disassembly_address[12] = "00000000";
     char disassembly_count[5] = "100";
     std::vector<std::string> disassembly;
 
