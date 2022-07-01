@@ -428,19 +428,26 @@ typedef struct SceNetCheckDialogResult {
 
 EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
     result->result = -1;
-    return UNIMPLEMENTED();
+    return STUBBED("result->result = -1, return 0");
 }
 
 EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
+    if (host.common_dialog.type != NETCHECK_DIALOG)
+        return SCE_COMMON_DIALOG_STATUS_NONE;
+
     STUBBED("SCE_COMMON_DIALOG_STATUS_FINISHED");
-    return SCE_COMMON_DIALOG_STATUS_FINISHED;
+    return host.common_dialog.status;
 }
 
 EXPORT(int, sceNetCheckDialogInit) {
+    host.common_dialog.type = NETCHECK_DIALOG;
+    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCheckDialogTerm) {
+    host.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
+    host.common_dialog.type = NO_DIALOG;
     return UNIMPLEMENTED();
 }
 

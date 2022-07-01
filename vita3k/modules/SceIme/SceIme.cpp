@@ -106,6 +106,9 @@ EXPORT(int, sceImeSetText) {
 }
 
 EXPORT(SceInt32, sceImeUpdate) {
+    if (!host.ime.state)
+        return RET_ERROR(SCE_IME_ERROR_NOT_OPENED);
+
     Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(host.mem, sizeof(SceImeEvent), "ime_event"));
     SceImeEvent *e = event.get(host.mem);
     e->id = host.ime.event_id;
