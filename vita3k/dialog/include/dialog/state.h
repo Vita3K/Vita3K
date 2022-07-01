@@ -28,7 +28,8 @@ enum DialogType {
     IME_DIALOG,
     MESSAGE_DIALOG,
     TROPHY_SETUP_DIALOG,
-    SAVEDATA_DIALOG
+    SAVEDATA_DIALOG,
+    NETCHECK_DIALOG
 };
 
 struct ImeState {
