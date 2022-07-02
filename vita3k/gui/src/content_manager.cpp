@@ -41,7 +41,7 @@ auto get_recursive_directory_size(const T &path) {
             return acc + fs::file_size(app.path());
         return acc;
     };
-    return boost::accumulate(path_list, boost::uintmax_t{}, pred);
+    return std::accumulate(fs::begin(path_list), fs::end(path_list), uintmax_t{}, pred);
 }
 } // namespace
 
@@ -53,7 +53,7 @@ void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pat
         auto lang = gui.lang.app_context;
         gui.app_selector.app_info.trophy = fs::exists(APP_PATH / "sce_sys/trophy") ? lang["eligible"] : lang["ineligible"];
 
-        const auto last_writen = fs::last_write_time(APP_PATH);
+        const auto last_writen = fs_utils::last_write_time(APP_PATH);
         SAFE_LOCALTIME(&last_writen, &gui.app_selector.app_info.updated);
     }
 }
@@ -106,7 +106,7 @@ static void get_save_data_list(GuiState &gui, EmuEnvState &emuenv) {
         if (fs::is_directory(save.path()) && !fs::is_empty(save.path()) && get_app_index(gui, title_id) != gui.app_selector.user_apps.end()) {
             tm updated_tm = {};
 
-            const auto last_writen = fs::last_write_time(save);
+            const auto last_writen = fs_utils::last_write_time(save);
             SAFE_LOCALTIME(&last_writen, &updated_tm);
 
             const auto size = get_recursive_directory_size(save);
@@ -147,9 +147,9 @@ void init_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         const auto &directory_list = fs::directory_iterator(THEME_PATH);
         const auto pred = [&](const auto acc, const auto &) { return acc + get_recursive_directory_size(THEME_PATH); };
         if (fs::exists(THEME_PATH) && !fs::is_empty(THEME_PATH)) {
-            return boost::accumulate(directory_list, boost::uintmax_t{}, pred);
+            return std::accumulate(fs::begin(directory_list), fs::end(directory_list), uintmax_t{}, pred);
         }
-        return boost::uintmax_t{};
+        return uintmax_t{};
     };
 
     const auto get_list_size_or_dash = [](const auto query) {
@@ -208,7 +208,7 @@ static void get_content_info(GuiState &gui, EmuEnvState &emuenv) {
 
             tm updated_tm = {};
 
-            const auto last_writen = fs::last_write_time(addcont);
+            const auto last_writen = fs_utils::last_write_time(addcont);
             SAFE_LOCALTIME(&last_writen, &addcont_info[content_id].date);
 
             const auto addcont_size = get_recursive_directory_size(addcont);

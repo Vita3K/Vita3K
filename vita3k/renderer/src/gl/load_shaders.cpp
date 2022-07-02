@@ -169,7 +169,7 @@ R load_shader_generic(F genfunc, const SceGxmProgram &program, const FeatureStat
                     fs::create_directories(base_path / shaders_cache_path);
 
                 const auto shader_dst_path = fs_utils::construct_file_name(base_path, shaders_cache_path, hash_hex_ver.c_str(), shader_type_str);
-                fs::copy_file(shader_base_path, shader_dst_path, fs::copy_option::overwrite_if_exists);
+                fs_utils::copy_file_overwrite(shader_base_path, shader_dst_path);
                 fs::remove(shader_base_path);
             } catch (std::exception &e) {
                 LOG_ERROR("Failed to moved shaders file: \n{}", e.what());

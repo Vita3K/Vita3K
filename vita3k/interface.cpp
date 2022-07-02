@@ -199,8 +199,8 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const fs::path 
                 if (!fs::exists(file_output.parent_path()))
                     fs::create_directories(file_output.parent_path());
 
-                LOG_INFO("Extracting {}", file_output.generic_path().string());
-                mz_zip_reader_extract_to_file(zip.get(), i, file_output.generic_path().string().c_str(), 0);
+                LOG_INFO("Extracting {}", file_output.generic_string());
+                mz_zip_reader_extract_to_file(zip.get(), i, file_output.generic_string().c_str(), 0);
             }
         }
     }
@@ -273,7 +273,7 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
 
 std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, const fs::path &archive_path, const std::function<void(ArchiveContents)> &progress_callback) {
     if (!fs::exists(archive_path)) {
-        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path().string());
+        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_string());
         return {};
     }
     const ZipPtr zip(new mz_zip_archive, delete_zip);
@@ -282,9 +282,9 @@ std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, con
     FILE *vpk_fp;
 
 #ifdef WIN32
-    _wfopen_s(&vpk_fp, archive_path.generic_path().wstring().c_str(), L"rb");
+    _wfopen_s(&vpk_fp, archive_path.generic_wstring().c_str(), L"rb");
 #else
-    vpk_fp = fopen(archive_path.generic_path().string().c_str(), "rb");
+    vpk_fp = fopen(archive_path.generic_string().c_str(), "rb");
 #endif
 
     if (!mz_zip_reader_init_cfile(zip.get(), vpk_fp, 0, 0)) {

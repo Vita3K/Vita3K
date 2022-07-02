@@ -146,7 +146,7 @@ void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 }
 
                 // Read Updated time
-                const auto updated = fs::last_write_time(trophy_data_np_com_id_path / "TROPUSR.DAT");
+                const auto updated = fs_utils::last_write_time(trophy_data_np_com_id_path / "TROPUSR.DAT");
                 SAFE_LOCALTIME(&updated, &np_com_id_info[np_com_id].updated);
 
                 // Open trophy progress file

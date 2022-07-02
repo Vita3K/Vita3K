@@ -34,7 +34,7 @@ bool delete_pup_file;
 nfdchar_t *pup_path;
 
 static void get_firmware_version(EmuEnvState &emuenv) {
-    fs::ifstream versionFile(emuenv.pref_path + L"/PUP_DEC/PUP/version.txt");
+    fs::ifstream versionFile(fs::path(emuenv.pref_path) / "PUP_DEC/PUP/version.txt");
 
     if (versionFile.is_open()) {
         std::getline(versionFile, fw_version);

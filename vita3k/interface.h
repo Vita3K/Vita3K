@@ -24,6 +24,9 @@
 #include <util/exit_code.h>
 #include <util/fs.h>
 
+// functional must be included after filesystem in visual studio (https://github.com/microsoft/terminal/issues/435)
+#include <functional>
+
 #include <miniz.h>
 
 struct GuiState;

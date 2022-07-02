@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,10 +17,28 @@
 
 #pragma once
 
+#ifdef USE_BOOST_FS
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#else
+#include <filesystem>
+#include <fstream>
+#endif
 
-namespace fs = boost::filesystem;
+#ifdef USE_BOOST_FS
+namespace fs {
+using namespace boost::filesystem;
+using boost::system::error_code;
+} // namespace fs
+#else
+namespace fs {
+using namespace std::filesystem;
+using std::error_code;
+using std::fstream;
+using std::ofstream;
+using std::ifstream;
+} // namespace fs
+#endif
 
 class Root {
     fs::path base_path;
@@ -36,7 +54,7 @@ public:
     }
 
     std::string get_base_path_string() const {
-        return base_path.generic_path().string();
+        return base_path.generic_string();
     }
 
     void set_pref_path(const fs::path &p) {
@@ -48,7 +66,7 @@ public:
     }
 
     std::string get_pref_path_string() const {
-        return pref_path.generic_path().string();
+        return pref_path.generic_string();
     }
 }; // class root
 
@@ -67,7 +85,23 @@ inline fs::path construct_file_name(const fs::path &base_path, const fs::path &f
     if (!extension.empty())
         full_file_path.replace_extension(extension);
 
-    return full_file_path.generic_path();
+    return fs::weakly_canonical(full_file_path);
+}
+
+inline time_t last_write_time(const fs::path &path) {
+#ifdef USE_BOOST_FS
+    return fs::last_write_time(path);
+#else
+    return fs::last_write_time(path).time_since_epoch().count();
+#endif
+}
+
+inline bool copy_file_overwrite(const fs::path &from, const fs::path &to) {
+#ifdef USE_BOOST_FS
+    return fs::copy_file(from, to, fs::copy_option::overwrite_if_exists);
+#else
+    return fs::copy_file(from, to, fs::copy_options::overwrite_existing);
+#endif
 }
 
 } // namespace fs_utils

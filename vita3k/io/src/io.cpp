@@ -61,7 +61,7 @@ constexpr bool log_file_stat = false;
 namespace vfs {
 
 bool read_file(const VitaIoDevice device, FileBuffer &buf, const std::wstring &pref_path, const fs::path &vfs_file_path) {
-    const auto host_file_path = device::construct_emulated_path(device, vfs_file_path, pref_path).generic_path();
+    const auto host_file_path = device::construct_emulated_path(device, vfs_file_path, pref_path);
 
     fs::ifstream f{ host_file_path, fs::ifstream::binary };
     if (!f)
@@ -522,11 +522,11 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::wstrin
 
 #ifdef _WIN32
     struct _stati64 sb;
-    if (_wstati64(file_path.generic_path().wstring().c_str(), &sb) < 0)
+    if (_wstati64(file_path.c_str(), &sb) < 0)
         return IO_ERROR_UNK();
 #else
     struct stat64 sb;
-    if (stat64(file_path.generic_path().string().c_str(), &sb) < 0)
+    if (stat64(file_path.c_str(), &sb) < 0)
         return IO_ERROR_UNK();
 #endif
 
@@ -616,7 +616,7 @@ SceUID open_dir(IOState &io, const char *path, const std::wstring &pref_path, co
     auto device_for_icase = device;
     const auto translated_path = translate_path(path, device, io.device_paths);
 
-    auto dir_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio) / "/";
+    auto dir_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio);
     if (!fs::exists(dir_path)) {
         if (io.case_isens_find_enabled) {
             // Attempt a case-insensitive file search.
@@ -675,9 +675,8 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const std::wstr
 
         const auto d_name_utf8 = get_file_in_dir(d);
         strncpy(dent->d_name, d_name_utf8.c_str(), sizeof(dent->d_name));
-
-        const auto cur_path = dir->second.get_system_location() / d_name_utf8;
-        if (!(cur_path.filename_is_dot() || cur_path.filename_is_dot_dot())) {
+        if (d_name_utf8 != "." && d_name_utf8 != "..") {
+            const auto cur_path = dir->second.get_system_location() / d_name_utf8;
             const auto file_path = std::string(dir->second.get_vita_loc()) + '/' + d_name_utf8;
 
             LOG_TRACE_IF(log_file_op, "{}: Reading entry {} of fd: {}", export_name, file_path, log_hex(fd));
@@ -686,6 +685,7 @@ SceUID read_dir(IOState &io, const SceUID fd, SceIoDirent *dent, const std::wstr
             else
                 return 1; // move to the next file
         }
+
         return read_dir(io, fd, dent, pref_path, export_name);
     }
 
@@ -704,7 +704,7 @@ bool copy_directories(const fs::path &src_path, const fs::path &dst_path) {
             LOG_INFO("Copy {}", dst_path.string());
 
             if (fs::is_regular_file(src))
-                fs::copy_file(src, dst_path, fs::copy_option::overwrite_if_exists);
+                fs_utils::copy_file_overwrite(src, dst_path);
             else if (!fs::exists(dst_path))
                 fs::create_directory(dst_path);
         }
@@ -744,7 +744,7 @@ int create_dir(IOState &io, const char *dir, int mode, const std::wstring &pref_
     if (fs::exists(emulated_path))
         return IO_ERROR(SCE_ERROR_ERRNO_EEXIST);
 
-    const auto parent_path = fs::path(emulated_path).remove_trailing_separator().parent_path();
+    const auto parent_path = fs::weakly_canonical(emulated_path).parent_path();
     if (!fs::exists(parent_path)) // Vita cannot recursively create directories
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
 

@@ -120,9 +120,9 @@ static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
                     return acc;
                 };
                 const auto theme_content_ids = fs::recursive_directory_iterator(theme_path / content_id_wstr);
-                const auto theme_size = std::accumulate(fs::begin(theme_content_ids), fs::end(theme_content_ids), boost::uintmax_t{}, pred);
+                const auto theme_size = std::accumulate(fs::begin(theme_content_ids), fs::end(theme_content_ids), uintmax_t{}, pred);
 
-                const auto updated = fs::last_write_time(theme_path / content_id_wstr);
+                const auto updated = fs_utils::last_write_time(theme_path / content_id_wstr);
                 SAFE_LOCALTIME(&updated, &themes_info[content_id].updated);
 
                 themes_info[content_id].size = theme_size / KiB(1);

@@ -1713,7 +1713,7 @@ std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string 
 
 void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
     const fs::path shader_filepath_str{ shader_filepath };
-    std::ifstream gxp_stream(shader_filepath, std::ifstream::binary);
+    fs::ifstream gxp_stream(shader_filepath, fs::ifstream::binary);
 
     if (!gxp_stream.is_open())
         return;
