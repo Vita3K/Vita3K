@@ -127,6 +127,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     // Months of the year
                     set_calendar(lang.common.ymonth, common.child("ymonth"));
 
+                    // Days of the month
+                    set_calendar(lang.common.mday, common.child("mday"));
+
                     // Small months of the year
                     set_calendar(lang.common.small_ymonth, common.child("small_ymonth"));
                 }

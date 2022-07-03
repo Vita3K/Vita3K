@@ -49,6 +49,39 @@
 			<month>11월</month>
 			<month>12월</month>
 		</ymonth>
+		<mday>
+			<days>31일</days>
+			<days>1일</days>
+			<days>2일</days>
+			<days>3일</days>
+			<days>4일</days>
+			<days>5일</days>
+			<days>6일</days>
+			<days>7일</days>
+			<days>8일</days>
+			<days>9일</days>
+			<days>10일</days>
+			<days>11일</days>
+			<days>12일</days>
+			<days>13일</days>
+			<days>14일</days>
+			<days>15일</days>
+			<days>16일</days>
+			<days>17일</days>
+			<days>18일</days>
+			<days>19일</days>
+			<days>20일</days>
+			<days>21일</days>
+			<days>22일</days>
+			<days>23일</days>
+			<days>24일</days>
+			<days>25일</days>
+			<days>26일</days>
+			<days>27일</days>
+			<days>28일</days>
+			<days>29일</days>
+			<days>30일</days>
+		</mday>
 		<small_ymonth>
 			<month>1월</month>
 			<month>2월</month>
