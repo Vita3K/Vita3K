@@ -170,7 +170,7 @@ int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &arg
     run_queue.push_front(job);
 
     if (kernel.debugger.wait_for_debugger) {
-        to_do = ThreadToDo::suspend;
+        to_do = ThreadToDo::wait;
         status = ThreadStatus::suspend;
         kernel.debugger.wait_for_debugger = false;
     } else {
@@ -384,6 +384,9 @@ std::string ThreadState::log_stack_traceback(KernelState &kernel) const {
     std::stringstream ss;
     const Address sp = read_sp(*cpu);
     for (Address addr = sp - START_OFFSET; addr <= sp + END_OFFSET; addr += 4) {
+        if (!Ptr<uint32_t>(addr).valid(mem))
+            break;
+
         const Address value = *Ptr<uint32_t>(addr).get(mem);
         const auto mod = kernel.find_module_by_addr(value);
         if (mod)
