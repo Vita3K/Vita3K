@@ -78,7 +78,7 @@
 			<month>Dezember</month>
 		</ymonth>
 		<mday>
-			<days>31</days>
+			<days></days>
 			<days>1</days>
 			<days>2</days>
 			<days>3</days>
@@ -109,6 +109,7 @@
 			<days>28</days>
 			<days>29</days>
 			<days>30</days>
+			<days>31</days>
 		</mday>
 		<small_ymonth>
 			<month>januar</month>

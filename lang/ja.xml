@@ -93,7 +93,7 @@
 			<month>12月</month>
 		</ymonth>
 		<mday>
-			<days>31日</days>
+			<days></days>
 			<days>1日</days>
 			<days>2日</days>
 			<days>3日</days>
@@ -124,6 +124,7 @@
 			<days>28日</days>
 			<days>29日</days>
 			<days>30日</days>
+			<days>31日</days>			
 		</mday>
 		<small_ymonth>
 			<month>1月</month>
