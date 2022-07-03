@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,16 +15,19 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include <shader/disasm.h>
+#include <shader/glsl/code_writer.h>
+#include <shader/glsl/translator.h>
+#include <util/log.h>
 
-#include <gxm/functions.h>
-#include <gxm/types.h>
-#include <shader/translator_types.h>
-#include <shader/types.h>
+using namespace shader;
+using namespace usse;
+using namespace glsl;
 
-namespace shader {
+bool USSETranslatorVisitorGLSL::kill(
+    ShortPredicate pred) {
+    LOG_DISASM("{:016x}: KILL {}", m_instr, disasm::s_predicate_str(pred));
+    writer.add_to_current_body("discard;");
 
-usse::GenericType translate_generic_type(const gxp::GenericParameterType &type);
-std::tuple<usse::DataType, std::string> get_parameter_type_store_and_name(const SceGxmParameterType &type);
-usse::ProgramInput get_program_input(const SceGxmProgram &program);
-} // namespace shader
+    return true;
+}

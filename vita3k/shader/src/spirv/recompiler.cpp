@@ -16,18 +16,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <shader/spirv_recompiler.h>
-#include <shader/usse_disasm.h>
-#include <shader/usse_program_analyzer.h>
-#include <shader/usse_utilities.h>
+#include <shader/disasm.h>
+#include <shader/program_analyzer.h>
+#include <shader/recompiler.h>
+#include <shader/spirv/utilities.h>
 
 #include <gxm/functions.h>
 #include <gxm/types.h>
 #include <shader/gxp_parser.h>
 #include <shader/profile.h>
-#include <shader/usse_translator_entry.h>
-#include <shader/usse_translator_types.h>
-#include <shader/usse_utilities.h>
+#include <shader/spirv/translator_entry.h>
+#include <shader/translator_types.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/overloaded.h>
@@ -878,36 +877,52 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         }
     }
 
-    const auto add_var_to_reg = [&](const Input &input, const std::string &name, std::uint16_t semantic, bool pa, std::int32_t location) {
+    const auto add_var_to_reg = [&](const Input &input, const std::string &name, std::uint16_t semantic, bool pa, bool regformat, std::int32_t location) {
         const spv::Id param_type = get_param_type(b, input);
         int type_size = get_data_type_size(input.type);
-        spv::Id var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, param_type, name.c_str());
+        spv::Id var;
+        if (false) {
+            int num_comp = type_size * input.array_size * input.component_count / 4;
+            spv::Id type = utils::make_vector_or_scalar_type(b, b.makeIntType(32), num_comp);
+            var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, type, name.c_str());
 
-        switch (semantic) {
-        case SCE_GXM_PARAMETER_SEMANTIC_INDEX:
-            b.addDecoration(var, spv::DecorationBuiltIn, spv::BuiltInVertexId);
-            break;
+            VarToReg var_to_reg = {};
+            var_to_reg.var = var;
+            var_to_reg.pa = pa;
+            var_to_reg.offset = input.offset;
+            var_to_reg.size = num_comp * 4;
+            var_to_reg.dtype = DataType::INT32;
+            translation_state.var_to_regs.push_back(var_to_reg);
+        } else {
+            var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, param_type, name.c_str());
 
-        case SCE_GXM_PARAMETER_SEMANTIC_INSTANCE:
-            b.addDecoration(var, spv::DecorationBuiltIn, spv::BuiltInInstanceId);
-            break;
+            switch (semantic) {
+            case SCE_GXM_PARAMETER_SEMANTIC_INDEX:
+                b.addDecoration(var, spv::DecorationBuiltIn, spv::BuiltInVertexId);
+                break;
 
-        default:
-            break;
-        }
+            case SCE_GXM_PARAMETER_SEMANTIC_INSTANCE:
+                b.addDecoration(var, spv::DecorationBuiltIn, spv::BuiltInInstanceId);
+                break;
 
-        if (location != -1) {
-            b.addDecoration(var, spv::DecorationLocation, location);
+            default:
+                break;
+            }
+
+            if (location != -1) {
+                b.addDecoration(var, spv::DecorationLocation, location);
+            }
+
+            VarToReg var_to_reg = {};
+            var_to_reg.var = var;
+            var_to_reg.pa = pa;
+            var_to_reg.offset = input.offset;
+            var_to_reg.size = input.array_size * input.component_count * 4;
+            var_to_reg.dtype = input.type;
+            translation_state.var_to_regs.push_back(var_to_reg);
         }
 
         translation_state.interfaces.push_back(var);
-        VarToReg var_to_reg;
-        var_to_reg.var = var;
-        var_to_reg.pa = pa;
-        var_to_reg.offset = input.offset;
-        var_to_reg.size = input.array_size * input.component_count * 4;
-        var_to_reg.dtype = input.type;
-        translation_state.var_to_regs.push_back(var_to_reg);
     };
 
     for (const auto &sampler : program_input.samplers) {
@@ -969,8 +984,11 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            spv_params.samplers.emplace(input.offset, spv_sampler);
                        },
                        [&](const AttributeInputSource &s) {
-                           add_var_to_reg(input, s.name, s.semantic, true, in_fcount_allocated / 4);
+                           add_var_to_reg(input, s.name, s.semantic, true, s.regformat, in_fcount_allocated / 4);
                            in_fcount_allocated += ((input.array_size * input.component_count + 3) / 4 * 4);
+                       },
+                       [&](const NonDependentSamplerSampleSource &s) {
+                           // TODO!
                        } },
             input.source);
     }
@@ -990,7 +1008,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                 inp.component_count = 4;
                 inp.array_size = (hint_attributes->at(i).componentCount + 3) >> 2;
 
-                add_var_to_reg(inp, fmt::format("attribute{}", i), 0, true, static_cast<std::int32_t>(i));
+                add_var_to_reg(inp, fmt::format("attribute{}", i), 0, true, false, static_cast<std::int32_t>(i));
             }
         }
     }
@@ -1398,6 +1416,8 @@ static void generate_update_mask_body(spv::Builder &b, utils::SpirvUtilFunctions
     b.createStore(mask_v, out);
 }
 
+void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump = nullptr);
+
 static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     SpirvCode spirv;
 
@@ -1595,6 +1615,7 @@ usse::SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::st
     return convert_gxp_to_spirv_impl(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
 }
 
+/*
 std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string &shader_name, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
@@ -1618,7 +1639,7 @@ std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string 
     }
 
     return source;
-}
+}*/
 
 void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
     const fs::path shader_filepath_str{ shader_filepath };

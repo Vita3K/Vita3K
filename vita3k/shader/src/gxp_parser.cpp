@@ -17,7 +17,7 @@
 
 #include <gxm/functions.h>
 #include <shader/gxp_parser.h>
-#include <shader/usse_program_analyzer.h>
+#include <shader/program_analyzer.h>
 #include <util/align.h>
 #include <util/log.h>
 
@@ -80,6 +80,7 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
 
     // TODO split these to functions (e.g. get_literals, get_paramters)
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
+    auto vertex_varyings_ptr = program.vertex_varyings();
 
     std::uint32_t investigated_ub = 0;
     bool seems_symbols_stripped = (program.primary_reg_count == 0);
@@ -121,10 +122,11 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
                 item.generic_type = translate_generic_type(param_type);
                 item.bank = RegisterBank::PRIMATTR;
 
-                AttributeInputSource source;
+                AttributeInputSource source = {};
                 source.name = var_name;
                 source.index = parameter.resource_index;
                 source.semantic = parameter.semantic;
+                source.regformat = (vertex_varyings_ptr->untyped_pa_regs & ((uint64_t)1 << parameter.resource_index)) != 0;
 
                 item.source = source;
                 program_input.inputs.push_back(item);
@@ -331,8 +333,6 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
 
     // Parse special semantics
     if (program.is_vertex()) {
-        auto vertex_varyings_ptr = program.vertex_varyings();
-
         Input item;
         item.component_count = 1;
         item.array_size = 1;
@@ -341,9 +341,10 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
         item.type = DataType::UINT32;
 
         if (program.program_flags & SCE_GXM_PROGRAM_FLAG_INDEX_USED) {
-            AttributeInputSource source;
+            AttributeInputSource source = {};
             source.semantic = SCE_GXM_PARAMETER_SEMANTIC_INDEX;
             source.name = "gl_VertexID";
+            source.regformat = false;
 
             item.offset = vertex_varyings_ptr->semantic_index_offset;
             item.source = source;
@@ -352,14 +353,240 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
         }
 
         if (program.program_flags & SCE_GXM_PROGRAM_FLAG_INSTANCE_USED) {
-            AttributeInputSource source;
+            AttributeInputSource source = {};
             source.semantic = SCE_GXM_PARAMETER_SEMANTIC_INSTANCE;
             source.name = "gl_InstanceID";
+            source.regformat = false;
 
             item.offset = vertex_varyings_ptr->semantic_instance_offset;
             item.source = source;
 
             program_input.inputs.push_back(item);
+        }
+    } else {
+        // Parse fragment input
+        const SceGxmProgramAttributeDescriptor *descriptor = reinterpret_cast<const SceGxmProgramAttributeDescriptor *>(
+            reinterpret_cast<const std::uint8_t *>(&vertex_varyings_ptr->vertex_outputs1) + vertex_varyings_ptr->vertex_outputs1);
+
+        static const std::unordered_map<std::uint32_t, std::pair<std::string, std::uint32_t>> name_map = {
+            { 0xD000, { "v_Position", 0 } },
+            { 0xC000, { "v_Fog", 3 } },
+            { 0xA000, { "v_Color0", 1 } },
+            { 0xB000, { "v_Color1", 2 } },
+            { 0x0, { "v_TexCoord0", 4 } },
+            { 0x1000, { "v_TexCoord1", 5 } },
+            { 0x2000, { "v_TexCoord2", 6 } },
+            { 0x3000, { "v_TexCoord3", 7 } },
+            { 0x4000, { "v_TexCoord4", 8 } },
+            { 0x5000, { "v_TexCoord5", 9 } },
+            { 0x6000, { "v_TexCoord6", 10 } },
+            { 0x7000, { "v_TexCoord7", 11 } },
+            { 0x8000, { "v_TexCoord8", 12 } },
+            { 0x9000, { "v_TexCoord9", 13 } },
+        };
+
+        std::uint32_t pa_offset = 0;
+        std::uint32_t coord_added = 0;
+
+        // We first iterate, and gather all possible IN variables first.
+        // After that we do texture queries, since we need coord variable to be added and existed.
+        for (size_t i = 0; i < vertex_varyings_ptr->varyings_count; i++, descriptor++) {
+            // 4 bit flag indicates a PA!
+            if ((descriptor->attribute_info & 0x4000F000) != 0xF000) {
+                std::uint32_t input_id = (descriptor->attribute_info & 0x4000F000);
+
+                std::string pa_name;
+                std::uint32_t pa_loc = 0;
+
+                if (input_id & 0x40000000) {
+                    pa_name = "v_SpriteCoord";
+                } else {
+                    pa_name = name_map.at(input_id).first;
+                    pa_loc = name_map.at(input_id).second;
+                }
+
+                DataType pa_dtype = DataType::UINT8;
+                uint32_t input_type = (descriptor->attribute_info & 0x30100000);
+
+                if (input_type == 0x20000000) {
+                    pa_dtype = DataType::F16;
+                } else if (input_type == 0x10000000) {
+                    pa_dtype = DataType::C10;
+                    // TODO: Supply data type
+                } else if (input_type == 0x100000) {
+                    if (input_id == 0xA000 || input_id == 0xB000) {
+                        pa_dtype = DataType::F32;
+                    }
+                } else if (input_id != 0xA000 && input_id != 0xB000) {
+                    pa_dtype = DataType::F32;
+                }
+
+                // Create PA Iterator SPIR-V variable
+                const auto num_comp = ((descriptor->attribute_info >> 22) & 3) + 1;
+
+                // Force this to 4. TODO: Don't
+                // Reason is for compability between vertex and fragment. This is like an anti-crash when linking.
+                // Fragment will only copy what it needed.
+                Input item;
+                item.component_count = num_comp;
+                item.array_size = 1;
+                item.bank = RegisterBank::PRIMATTR;
+                item.generic_type = GenericType::VECTOR;
+                item.type = pa_dtype;
+                item.offset = pa_offset;
+
+                AttributeInputSource source = {};
+                source.semantic = (input_id == 0xD000) ? SCE_GXM_PARAMETER_SEMANTIC_NORMAL : 0;
+                source.name = pa_name;
+                source.regformat = false;
+                source.opt_location = pa_loc;
+
+                item.source = source;
+
+                if (input_id >= 0 && input_id <= 0x9000) {
+                    input_id /= 0x1000;
+                    coord_added |= (1 << input_id);
+                } else if (input_id == 0xD000) {
+                    // Not sure, comment out for now
+                    // input_id = 10;
+                    // do_coord = true;
+                }
+
+                program_input.inputs.push_back(item);
+                pa_offset += ((descriptor->size >> 4) & 3) + 1;
+            }
+
+            uint32_t tex_coord_index = (descriptor->attribute_info & 0x40F);
+            if (tex_coord_index != 0xF) {
+                pa_offset += ((descriptor->size >> 6) & 3) + 1;
+            }
+        }
+
+        descriptor = reinterpret_cast<const SceGxmProgramAttributeDescriptor *>(
+            reinterpret_cast<const std::uint8_t *>(&vertex_varyings_ptr->vertex_outputs1) + vertex_varyings_ptr->vertex_outputs1);
+        pa_offset = 0;
+
+        for (size_t i = 0; i < vertex_varyings_ptr->varyings_count; i++, descriptor++) {
+            if ((descriptor->attribute_info & 0x4000F000) != 0xF000) {
+                pa_offset += ((descriptor->size >> 4) & 3) + 1;
+            }
+
+            uint32_t tex_coord_index = (descriptor->attribute_info & 0x40F);
+            uint32_t anon_tex_count = 0;
+
+            // Process texture query variable (iterator), stored on a PA (primary attribute) register
+            if (tex_coord_index != 0xF) {
+                if (tex_coord_index == 0x400) {
+                    // Texcoord variable
+                    tex_coord_index = 10;
+                }
+
+                bool anonymous = false;
+                bool is_cube = false;
+
+                const auto sampler = std::find_if(program_input.samplers.begin(), program_input.samplers.end(), [=](auto x) { return x.index == descriptor->resource_index; });
+
+                if (sampler == program_input.samplers.end()) {
+                    LOG_INFO("Sample symbol stripped, using anonymous sampler");
+
+                    Sampler sampler_info;
+                    sampler_info.name = fmt::format("anonymousSampler{}", descriptor->resource_index);
+                    sampler_info.index = descriptor->resource_index;
+                    sampler_info.is_cube = false; // I don't know :(
+
+                    program_input.samplers.push_back(std::move(sampler_info));
+                } else {
+                    is_cube = sampler->is_cube;
+                }
+
+                const auto component_type = (descriptor->component_info >> 4) & 3;
+                const auto swizzle_texcoord = (descriptor->attribute_info & 0x300);
+
+                DataType store_type = DataType::F16;
+                switch (component_type) {
+                // 0 should be integral
+                case 0: {
+                    store_type = DataType::UNK;
+                    break;
+                }
+                case 1: {
+                    // Maybe char?
+                    LOG_WARN("Unsupported texture component: {}", component_type);
+                    break;
+                }
+                case 2: {
+                    store_type = DataType::F16;
+                    break;
+                }
+                case 3: {
+                    store_type = DataType::F32;
+                    break;
+                }
+                default: {
+                    LOG_WARN("Unsupported texture component: {}", component_type);
+                    break;
+                }
+                }
+
+                int tex_coord_comp_count = 2;
+                int prod_pos = -1;
+
+                if (swizzle_texcoord == 0x300) {
+                    tex_coord_comp_count = 3;
+                    prod_pos = 2;
+                } else if (swizzle_texcoord == 0x200) {
+                    // Not really sure
+                    tex_coord_comp_count = 4;
+                    prod_pos = 3;
+                }
+
+                if (is_cube) {
+                    prod_pos = 3;
+                }
+
+                uint32_t num_component = 4;
+
+                if ((descriptor->component_info & 0x40) != 0x40) {
+                    num_component = 4;
+                } /* else number of components = texture pixel component count. Too bad its not yet supported */
+
+                if ((coord_added & (1 << tex_coord_index)) == 0) {
+                    Input item;
+                    item.component_count = 4;
+                    item.array_size = 1;
+                    item.bank = RegisterBank::SPECIAL;
+
+                    AttributeInputSource source = {};
+                    source.name = (tex_coord_index == 10) ? "gl_PointCoord" : fmt::format("v_TexCoord{}", tex_coord_index);
+                    source.index = tex_coord_index;
+                    source.opt_location = tex_coord_index;
+                    source.regformat = false;
+
+                    item.source = source;
+                    coord_added |= (1 << tex_coord_index);
+
+                    program_input.inputs.push_back(std::move(item));
+                }
+
+                Input non_dependent_load_item;
+                non_dependent_load_item.array_size = 1;
+                non_dependent_load_item.offset = pa_offset;
+                non_dependent_load_item.type = store_type;
+                non_dependent_load_item.bank = RegisterBank::PRIMATTR;
+                non_dependent_load_item.component_count = num_component;
+
+                NonDependentSamplerSampleSource source;
+                source.coord_index = tex_coord_index;
+                source.coord_load_comp_count = tex_coord_comp_count;
+                source.sampler_index = descriptor->resource_index;
+                source.proj_pos = prod_pos;
+
+                non_dependent_load_item.source = source;
+                program_input.inputs.push_back(std::move(non_dependent_load_item));
+
+                // Size of this extra pa occupied
+                pa_offset += ((descriptor->size >> 6) & 3) + 1;
+            }
         }
     }
 

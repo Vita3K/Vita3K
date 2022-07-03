@@ -206,7 +206,8 @@ size_t bytes_per_pixel_in_gl_storage(SceGxmColorBaseFormat base_format) {
 }
 
 bool is_write_surface_stored_rawly(SceGxmColorBaseFormat base_format) {
-    return (base_format == SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16);
+    // Some games can use F16 format with blending. Using it raw breaks it
+    return false;//(base_format == SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16);
 }
 
 bool is_write_surface_non_linearity_filtering(SceGxmColorBaseFormat base_format) {

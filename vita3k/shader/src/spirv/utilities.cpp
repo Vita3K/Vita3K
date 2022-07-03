@@ -15,9 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <shader/usse_constant_table.h>
-#include <shader/usse_program_analyzer.h>
-#include <shader/usse_utilities.h>
+#include <shader/constant_table.h>
+#include <shader/program_analyzer.h>
+#include <shader/spirv/utilities.h>
 #include <util/log.h>
 
 #include <SPIRV/GLSL.std.450.h>
@@ -95,13 +95,6 @@ spv::Id shader::usse::utils::finalize(spv::Builder &b, spv::Id first, spv::Id se
     }
 
     return b.createCompositeConstruct(b.makeVectorType(target_type, static_cast<int>(ops.size())), ops);
-}
-
-size_t shader::usse::utils::dest_mask_to_comp_count(shader::usse::Imm4 dest_mask) {
-    std::bitset<4> bs(dest_mask);
-    const auto bit_count = bs.count();
-    assert(bit_count <= 4 && bit_count > 0);
-    return bit_count;
 }
 
 static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::SpirvShaderParameters &params, shader::usse::RegisterBank reg_bank) {

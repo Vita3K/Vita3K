@@ -28,7 +28,7 @@
 #include <package/pkg.h>
 #include <renderer/functions.h>
 #include <renderer/gl/functions.h>
-#include <shader/spirv_recompiler.h>
+#include <shader/recompiler.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 

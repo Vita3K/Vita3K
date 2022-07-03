@@ -32,7 +32,7 @@ namespace usse {
 
 enum class Opcode {
 #define OPCODE(n) n,
-#include "usse_opcodes.inc"
+#include "opcodes.inc"
 #undef OPCODE
 };
 
@@ -298,6 +298,8 @@ inline bool is_float_data_type(const DataType dtype) {
     return (dtype == DataType::C10) || (dtype == DataType::F16) || (dtype == DataType::F32);
 }
 
+size_t dest_mask_to_comp_count(shader::usse::Imm4 dest_mask);
+
 // TODO: Make this a std::set?
 enum InstructionFlags {
 };
@@ -382,6 +384,9 @@ struct AttributeInputSource {
     // resource index
     std::uint32_t index;
     std::uint16_t semantic;
+    std::uint32_t opt_location = 0xFFFFFFFF;
+
+    bool regformat;
 };
 
 struct LiteralInputSource {
@@ -390,7 +395,7 @@ struct LiteralInputSource {
 };
 
 struct UniformBufferInputSource {
-    uint32_t base;
+    int32_t base;
     // resource index
     uint32_t index;
 };
@@ -400,8 +405,16 @@ struct DependentSamplerInputSource {
     uint32_t index; // resource index
 };
 
+struct NonDependentSamplerSampleSource {
+    int sampler_index;
+
+    int coord_index;
+    int coord_load_comp_count;
+    int proj_pos;
+};
+
 // Read source field in Input struct
-using InputSource = std::variant<UniformBufferInputSource, LiteralInputSource, AttributeInputSource, DependentSamplerInputSource>;
+using InputSource = std::variant<UniformBufferInputSource, LiteralInputSource, AttributeInputSource, DependentSamplerInputSource, NonDependentSamplerSampleSource>;
 
 /**
  * Input parameters that are usually copied into PA or SA
@@ -438,6 +451,8 @@ enum class ShaderPhase {
 
     Max,
 };
+
+bool is_sub_opcode(Opcode test_op);
 
 } // namespace usse
 } // namespace shader

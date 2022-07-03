@@ -22,7 +22,7 @@
 
 #include <gxm/types.h>
 #include <renderer/types.h>
-#include <shader/spirv_recompiler.h>
+#include <shader/recompiler.h>
 #include <util/fs.h>
 #include <util/log.h>
 

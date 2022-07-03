@@ -24,7 +24,7 @@
 
 #include <renderer/gl/ring_buffer.h>
 #include <renderer/texture_cache_state.h>
-#include <shader/usse_program_analyzer.h>
+#include <shader/program_analyzer.h>
 
 #include <map>
 #include <memory>

@@ -197,12 +197,16 @@ void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t
     }
 }
 
-bool is_compressed_format(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height, size_t &source_size) {
+bool is_compressed_format(SceGxmTextureBaseFormat base_format) {
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        return true;
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
-        source_size = ((width + 3) / 4) * ((height + 3) / 4) * ((base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1) ? 8 : 16);
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
         return true;
     default:
         break;
@@ -211,260 +215,323 @@ bool is_compressed_format(SceGxmTextureBaseFormat base_format, std::uint32_t wid
     return false;
 }
 
+size_t get_compressed_size(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height) {
+    switch (base_format) {
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        return ((width + 3) / 4) * ((height + 3) / 4) * 8;
+        true;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+        return ((width + 3) / 4) * ((height + 3) / 4) * 16;
+    default:
+        return 0;
+    }
+}
+
 // =========================== COMPRESSION ============================
 // Some texture has block compression, when uncompressed will have swizzled layout. Since on some backend, no
 // option is provided to make the GPU driver not try to translate the layout to linear, we have to do uncompress
 // and unswizzled on the CPU.
 
-// This is a modified version of Benjamin Dobell's DXT decompression for compatible with our codebase and future OS.
+// This BC decompression code is based on code from AMD GPUOpen's Compressonator
 
 /**
- * \brief Helper method that packs RGBA channels into a single 4 byte pixel, but reversed for little endian.
+ * \brief Decompresses one block of a BC1 texture and stores the resulting pixels at the appropriate offset in 'image'.
  *
- * \param r   red channel.
- * \param g   green channel.
- * \param b   blue channel.
- * \param a   alpha channel.
- */
-static std::uint32_t pack_rgba_reversed(std::uint8_t r, std::uint8_t g, std::uint8_t b, std::uint8_t a) {
-    return ((a << 24) | (b << 16) | (g << 8) | r);
-}
-
-/**
- * \brief Decompresses one block of a DXT1 texture and stores the resulting pixels at the appropriate offset in 'image',
- *        with custom alpha table.
- *
- * \param x                 x-coordinate of the first pixel in the block.
- * \param y                 y-coordinate of the first pixel in the block.
- * \param width             width of the texture being decompressed.
- * \param height            height of the texture being decompressed.
- * \param block_storage     pointer to the block to decompress.
- * \param image             pointer to image where the decompressed pixel data should be stored.
- * \param alpha_table       alpha lookup table.
- **/
-static void decompress_block_dxt1_shared(std::uint32_t x, std::uint32_t y, std::uint32_t width, const std::uint8_t *block_storage, std::uint32_t *image,
-    const std::uint8_t *alpha_table, const bool transparent_on_black) {
-    std::uint16_t color0 = *reinterpret_cast<const std::uint16_t *>(block_storage);
-    std::uint16_t color1 = *reinterpret_cast<const std::uint16_t *>(block_storage + 2);
-
-    std::uint32_t temp;
-
-    temp = (color0 >> 11) * 255 + 16;
-    std::uint8_t r0 = (std::uint8_t)((temp / 32 + temp) / 32);
-    temp = ((color0 & 0x07E0) >> 5) * 255 + 32;
-    std::uint8_t g0 = (std::uint8_t)((temp / 64 + temp) / 64);
-    temp = (color0 & 0x001F) * 255 + 16;
-    std::uint8_t b0 = (std::uint8_t)((temp / 32 + temp) / 32);
-
-    temp = (color1 >> 11) * 255 + 16;
-    std::uint8_t r1 = (std::uint8_t)((temp / 32 + temp) / 32);
-    temp = ((color1 & 0x07E0) >> 5) * 255 + 32;
-    std::uint8_t g1 = (std::uint8_t)((temp / 64 + temp) / 64);
-    temp = (color1 & 0x001F) * 255 + 16;
-    std::uint8_t b1 = (std::uint8_t)((temp / 32 + temp) / 32);
-
-    std::uint32_t code = *reinterpret_cast<const std::uint32_t *>(block_storage + 4);
-
-    for (int j = 0; j < 4; j++) {
-        for (int i = 0; i < 4; i++) {
-            std::uint32_t final_color = 0;
-            std::uint8_t positionCode = (code >> 2 * (4 * j + i)) & 0x03;
-            std::uint8_t alpha = alpha_table[j * 4 + i];
-
-            if (color0 > color1) {
-                switch (positionCode) {
-                case 0:
-                    final_color = pack_rgba_reversed(r0, g0, b0, alpha);
-                    break;
-                case 1:
-                    final_color = pack_rgba_reversed(r1, g1, b1, alpha);
-                    break;
-                case 2:
-                    final_color = pack_rgba_reversed((2 * r0 + r1) / 3, (2 * g0 + g1) / 3, (2 * b0 + b1) / 3, alpha);
-                    break;
-                case 3:
-                    final_color = pack_rgba_reversed((r0 + 2 * r1) / 3, (g0 + 2 * g1) / 3, (b0 + 2 * b1) / 3, alpha);
-                    break;
-                default:
-                    final_color = 0xFFFFFFFF;
-                    break;
-                }
-            } else {
-                switch (positionCode) {
-                case 0:
-                    final_color = pack_rgba_reversed(r0, g0, b0, alpha);
-                    break;
-                case 1:
-                    final_color = pack_rgba_reversed(r1, g1, b1, alpha);
-                    break;
-                case 2:
-                    final_color = pack_rgba_reversed((r0 + r1) / 2, (g0 + g1) / 2, (b0 + b1) / 2, alpha);
-                    break;
-                case 3:
-                    final_color = pack_rgba_reversed(0, 0, 0, transparent_on_black ? 0 : alpha);
-                    break;
-                default:
-                    final_color = 0xFFFFFFFF;
-                    break;
-                }
-            }
-
-            image[j * 4 + i] = final_color;
-        }
-    }
-}
-
-static void decompress_block_dxt1(std::uint32_t x, std::uint32_t y, std::uint32_t width, const std::uint8_t *block_storage, std::uint32_t *image) {
-    static constexpr std::uint8_t alpha_table[] = {
-        255, 255, 255, 255,
-        255, 255, 255, 255,
-        255, 255, 255, 255,
-        255, 255, 255, 255
-    };
-
-    decompress_block_dxt1_shared(x, y, width, block_storage, image, alpha_table, true);
-}
-
-/**
- * \brief Decompresses one block of a DXT3 texture and stores the resulting pixels at the appropriate offset in 'image'.
- *
- * \param x                 x-coordinate of the first pixel in the block.
- * \param y                 y-coordinate of the first pixel in the block.
- * \param width             width of the texture being decompressed.
- * \param height            height of the texture being decompressed.
  * \param block_storage     pointer to the block to decompress.
  * \param image             pointer to image where the decompressed pixel data should be stored.
  **/
-static void decompress_block_dxt3(std::uint32_t x, std::uint32_t y, std::uint32_t width, const std::uint8_t *block_storage, std::uint32_t *image) {
-    std::uint8_t alpha_table[16] = { 0 };
+static void decompress_block_bc1(const std::uint8_t *block_storage, std::uint32_t *image) {
+    std::uint16_t n0 = static_cast<std::uint16_t>((block_storage[1] << 8) | block_storage[0]);
+    std::uint16_t n1 = static_cast<std::uint16_t>((block_storage[3] << 8) | block_storage[2]);
 
-    for (int i = 0; i < 4; ++i) {
-        const std::uint16_t *alpha_data = reinterpret_cast<const std::uint16_t *>(block_storage);
+    block_storage += 4;
 
-        alpha_table[i * 4 + 0] = (((*alpha_data) >> 0) & 0xF) * 17;
-        alpha_table[i * 4 + 1] = (((*alpha_data) >> 4) & 0xF) * 17;
-        alpha_table[i * 4 + 2] = (((*alpha_data) >> 8) & 0xF) * 17;
-        alpha_table[i * 4 + 3] = (((*alpha_data) >> 12) & 0xF) * 17;
+    std::uint8_t r0 = (n0 & 0xF800) >> 8;
+    std::uint8_t g0 = (n0 & 0x07E0) >> 3;
+    std::uint8_t b0 = (n0 & 0x001F) << 3;
 
-        block_storage += 2;
-    }
+    std::uint8_t r1 = (n1 & 0xF800) >> 8;
+    std::uint8_t g1 = (n1 & 0x07E0) >> 3;
+    std::uint8_t b1 = (n1 & 0x001F) << 3;
 
-    decompress_block_dxt1_shared(x, y, width, block_storage, image, alpha_table, false);
-}
+    r0 |= r0 >> 5;
+    r1 |= r1 >> 5;
+    g0 |= g0 >> 6;
+    g1 |= g1 >> 6;
+    b0 |= b0 >> 5;
+    b1 |= b1 >> 5;
 
-/**
- * \brief Decompresses one block of a DXT5 texture and stores the resulting pixels at the appropriate offset in 'image'.
- *
- * \param x                 x-coordinate of the first pixel in the block.
- * \param y                 y-coordinate of the first pixel in the block.
- * \param width             width of the texture being decompressed.
- * \param height            height of the texture being decompressed.
- * \param block_storage     pointer to the block to decompress.
- * \param image             pointer to image where the decompressed pixel data should be stored.
- **/
-static void decompress_block_dxt5(std::uint32_t x, std::uint32_t y, std::uint32_t width, const std::uint8_t *block_storage, std::uint32_t *image) {
-    std::uint8_t alpha0 = *reinterpret_cast<const std::uint8_t *>(block_storage);
-    std::uint8_t alpha1 = *reinterpret_cast<const std::uint8_t *>(block_storage + 1);
+    std::uint32_t c0 = 0xFF000000 | (b0 << 16) | (g0 << 8) | r0;
+    std::uint32_t c1 = 0xFF000000 | (b1 << 16) | (g1 << 8) | r1;
 
-    const std::uint8_t *bits = block_storage + 2;
-    std::uint32_t alpha_code_1 = bits[2] | (bits[3] << 8) | (bits[4] << 16) | (bits[5] << 24);
-    std::uint16_t alpha_code_2 = bits[0] | (bits[1] << 8);
+    if (n0 > n1) {
+        std::uint8_t r2 = static_cast<uint8_t>((2 * r0 + r1 + 1) / 3);
+        std::uint8_t r3 = static_cast<uint8_t>((2 * r1 + r0 + 1) / 3);
+        std::uint8_t g2 = static_cast<uint8_t>((2 * g0 + g1 + 1) / 3);
+        std::uint8_t g3 = static_cast<uint8_t>((2 * g1 + g0 + 1) / 3);
+        std::uint8_t b2 = static_cast<uint8_t>((2 * b0 + b1 + 1) / 3);
+        std::uint8_t b3 = static_cast<uint8_t>((2 * b1 + b0 + 1) / 3);
 
-    std::uint16_t color0 = *reinterpret_cast<const std::uint16_t *>(block_storage + 8);
-    std::uint16_t color1 = *reinterpret_cast<const std::uint16_t *>(block_storage + 10);
+        std::uint32_t c2 = 0xFF000000 | (b2 << 16) | (g2 << 8) | r2;
+        std::uint32_t c3 = 0xFF000000 | (b3 << 16) | (g3 << 8) | r3;
 
-    std::uint32_t temp;
-
-    temp = (color0 >> 11) * 255 + 16;
-    std::uint8_t r0 = (std::uint8_t)((temp / 32 + temp) / 32);
-    temp = ((color0 & 0x07E0) >> 5) * 255 + 32;
-    std::uint8_t g0 = (std::uint8_t)((temp / 64 + temp) / 64);
-    temp = (color0 & 0x001F) * 255 + 16;
-    std::uint8_t b0 = (std::uint8_t)((temp / 32 + temp) / 32);
-
-    temp = (color1 >> 11) * 255 + 16;
-    std::uint8_t r1 = (std::uint8_t)((temp / 32 + temp) / 32);
-    temp = ((color1 & 0x07E0) >> 5) * 255 + 32;
-    std::uint8_t g1 = (std::uint8_t)((temp / 64 + temp) / 64);
-    temp = (color1 & 0x001F) * 255 + 16;
-    std::uint8_t b1 = (std::uint8_t)((temp / 32 + temp) / 32);
-
-    std::uint32_t code = *reinterpret_cast<const std::uint32_t *>(block_storage + 12);
-
-    for (int j = 0; j < 4; j++) {
-        for (int i = 0; i < 4; i++) {
-            int alpha_code_index = 3 * (4 * j + i);
-            int alphaCode;
-
-            if (alpha_code_index <= 12) {
-                alphaCode = (alpha_code_2 >> alpha_code_index) & 0x07;
-            } else if (alpha_code_index == 15) {
-                alphaCode = (alpha_code_2 >> 15) | ((alpha_code_1 << 1) & 0x06);
-            } else {
-                alphaCode = (alpha_code_1 >> (alpha_code_index - 16)) & 0x07;
-            }
-
-            std::uint8_t final_alpha;
-            if (alphaCode == 0) {
-                final_alpha = alpha0;
-            } else if (alphaCode == 1) {
-                final_alpha = alpha1;
-            } else {
-                if (alpha0 > alpha1) {
-                    final_alpha = ((8 - alphaCode) * alpha0 + (alphaCode - 1) * alpha1) / 7;
-                } else {
-                    if (alphaCode == 6)
-                        final_alpha = 0;
-                    else if (alphaCode == 7)
-                        final_alpha = 255;
-                    else
-                        final_alpha = ((6 - alphaCode) * alpha0 + (alphaCode - 1) * alpha1) / 5;
-                }
-            }
-
-            std::uint8_t color_code = (code >> 2 * (4 * j + i)) & 0x03;
-
-            std::uint32_t final_color;
-            switch (color_code) {
+        for (int i = 0; i < 16; ++i) {
+            int index = (block_storage[i / 4] >> (i % 4 * 2)) & 0x03;
+            switch (index) {
             case 0:
-                final_color = pack_rgba_reversed(r0, g0, b0, final_alpha);
+                image[i] = c0;
                 break;
             case 1:
-                final_color = pack_rgba_reversed(r1, g1, b1, final_alpha);
+                image[i] = c1;
                 break;
             case 2:
-                final_color = pack_rgba_reversed((2 * r0 + r1) / 3, (2 * g0 + g1) / 3, (2 * b0 + b1) / 3, final_alpha);
+                image[i] = c2;
                 break;
             case 3:
-                final_color = pack_rgba_reversed((r0 + 2 * r1) / 3, (g0 + 2 * g1) / 3, (b0 + 2 * b1) / 3, final_alpha);
+                image[i] = c3;
                 break;
             }
+        }
+    } else {
+        // Transparent decode
+        std::uint8_t r2 = static_cast<uint8_t>((r0 + r1) / 2);
+        std::uint8_t g2 = static_cast<uint8_t>((g0 + g1) / 2);
+        std::uint8_t b2 = static_cast<uint8_t>((b0 + b1) / 2);
 
-            image[j * 4 + i] = final_color;
+        std::uint32_t c2 = 0xFF000000 | (b2 << 16) | (g2 << 8) | r2;
+
+        for (int i = 0; i < 16; ++i) {
+            int index = (block_storage[i / 4] >> (i % 4 * 2)) & 0x03;
+            switch (index) {
+            case 0:
+                image[i] = c0;
+                break;
+            case 1:
+                image[i] = c1;
+                break;
+            case 2:
+                image[i] = c2;
+                break;
+            case 3:
+                image[i] = 0x00000000;
+                break;
+            }
         }
     }
 }
 
 /**
- * \brief Decompresses all the blocks of a DXT compressed texture and stores the resulting pixels in 'image'.
+ * \brief Decompresses one block of a alpha texture and stores the resulting pixels at the appropriate offset in 'image'.
+ *
+ * \param block_storage     pointer to the block to decompress.
+ * \param image             pointer to image where the decompressed pixel data should be stored.
+ * \param offset            offset to where data should be written.
+ * \param stride            stride between bytes to where data should be written.
+ **/
+static void decompress_block_alpha(const std::uint8_t *block_storage, std::uint8_t *image, const std::uint32_t offset, const std::uint32_t stride) {
+    uint8_t alpha[8];
+
+    alpha[0] = block_storage[0];
+    alpha[1] = block_storage[1];
+
+    if (alpha[0] > alpha[1]) {
+        // 8-alpha block:  derive the other six alphas.
+        // Bit code 000 = alpha_0, 001 = alpha_1, others are interpolated.
+        alpha[2] = static_cast<uint8_t>((6 * alpha[0] + 1 * alpha[1] + 3) / 7); // bit code 010
+        alpha[3] = static_cast<uint8_t>((5 * alpha[0] + 2 * alpha[1] + 3) / 7); // bit code 011
+        alpha[4] = static_cast<uint8_t>((4 * alpha[0] + 3 * alpha[1] + 3) / 7); // bit code 100
+        alpha[5] = static_cast<uint8_t>((3 * alpha[0] + 4 * alpha[1] + 3) / 7); // bit code 101
+        alpha[6] = static_cast<uint8_t>((2 * alpha[0] + 5 * alpha[1] + 3) / 7); // bit code 110
+        alpha[7] = static_cast<uint8_t>((1 * alpha[0] + 6 * alpha[1] + 3) / 7); // bit code 111
+    } else {
+        // 6-alpha block.
+        // Bit code 000 = alpha_0, 001 = alpha_1, others are interpolated.
+        alpha[2] = static_cast<uint8_t>((4 * alpha[0] + 1 * alpha[1] + 2) / 5); // Bit code 010
+        alpha[3] = static_cast<uint8_t>((3 * alpha[0] + 2 * alpha[1] + 2) / 5); // Bit code 011
+        alpha[4] = static_cast<uint8_t>((2 * alpha[0] + 3 * alpha[1] + 2) / 5); // Bit code 100
+        alpha[5] = static_cast<uint8_t>((1 * alpha[0] + 4 * alpha[1] + 2) / 5); // Bit code 101
+        alpha[6] = 0; // Bit code 110
+        alpha[7] = 255; // Bit code 111
+    }
+
+    image += offset;
+
+    image[stride *  0] = alpha[  block_storage[2]       & 0x07];
+    image[stride *  1] = alpha[ (block_storage[2] >> 3) & 0x07];
+    image[stride *  2] = alpha[((block_storage[3] << 2) & 0x04) | ((block_storage[2] >> 6) & 0x03)];
+    image[stride *  3] = alpha[ (block_storage[3] >> 1) & 0x07];
+    image[stride *  4] = alpha[ (block_storage[3] >> 4) & 0x07];
+    image[stride *  5] = alpha[((block_storage[4] << 1) & 0x06) | ((block_storage[3] >> 7) & 0x01)];
+    image[stride *  6] = alpha[ (block_storage[4] >> 2) & 0x07];
+    image[stride *  7] = alpha[ (block_storage[4] >> 5) & 0x07];
+    image[stride *  8] = alpha[  block_storage[5]       & 0x07];
+    image[stride *  9] = alpha[ (block_storage[5] >> 3) & 0x07];
+    image[stride * 10] = alpha[((block_storage[6] << 2) & 0x04) | ((block_storage[5] >> 6) & 0x03)];
+    image[stride * 11] = alpha[ (block_storage[6] >> 1) & 0x07];
+    image[stride * 12] = alpha[ (block_storage[6] >> 4) & 0x07];
+    image[stride * 13] = alpha[((block_storage[7] << 1) & 0x06) | ((block_storage[6] >> 7) & 0x01)];
+    image[stride * 14] = alpha[ (block_storage[7] >> 2) & 0x07];
+    image[stride * 15] = alpha[ (block_storage[7] >> 5) & 0x07];
+}
+
+/**
+ * \brief Decompresses one block of a signed alpha texture and stores the resulting pixels at the appropriate offset in 'image'.
+ *
+ * \param block_storage     pointer to the block to decompress.
+ * \param image             pointer to image where the decompressed pixel data should be stored.
+ * \param offset            offset to where data should be written.
+ * \param stride            stride between bytes to where data should be written.
+ **/
+static void decompress_block_alpha_signed(const std::uint8_t *block_storage, std::uint8_t *image, const std::uint32_t offset, const std::uint32_t stride) {
+    int8_t alpha[8];
+
+    alpha[0] = static_cast<int8_t>(block_storage[0]);
+    alpha[1] = static_cast<int8_t>(block_storage[1]);
+
+    if (alpha[0] > alpha[1]) {
+        // 8-alpha block:  derive the other six alphas.
+        // Bit code 000 = alpha_0, 001 = alpha_1, others are interpolated.
+        alpha[2] = static_cast<int8_t>((6 * alpha[0] + 1 * alpha[1] + 3) / 7); // bit code 010
+        alpha[3] = static_cast<int8_t>((5 * alpha[0] + 2 * alpha[1] + 3) / 7); // bit code 011
+        alpha[4] = static_cast<int8_t>((4 * alpha[0] + 3 * alpha[1] + 3) / 7); // bit code 100
+        alpha[5] = static_cast<int8_t>((3 * alpha[0] + 4 * alpha[1] + 3) / 7); // bit code 101
+        alpha[6] = static_cast<int8_t>((2 * alpha[0] + 5 * alpha[1] + 3) / 7); // bit code 110
+        alpha[7] = static_cast<int8_t>((1 * alpha[0] + 6 * alpha[1] + 3) / 7); // bit code 111
+    } else {
+        // 6-alpha block.
+        // Bit code 000 = alpha_0, 001 = alpha_1, others are interpolated.
+        alpha[2] = static_cast<int8_t>((4 * alpha[0] + 1 * alpha[1] + 2) / 5); // Bit code 010
+        alpha[3] = static_cast<int8_t>((3 * alpha[0] + 2 * alpha[1] + 2) / 5); // Bit code 011
+        alpha[4] = static_cast<int8_t>((2 * alpha[0] + 3 * alpha[1] + 2) / 5); // Bit code 100
+        alpha[5] = static_cast<int8_t>((1 * alpha[0] + 4 * alpha[1] + 2) / 5); // Bit code 101
+        alpha[6] = -128; // Bit code 110
+        alpha[7] = 127; // Bit code 111
+    }
+
+    image += offset;
+    
+    image[stride *  0] = static_cast<uint8_t>(alpha[  block_storage[2]       & 0x07]);
+    image[stride *  1] = static_cast<uint8_t>(alpha[ (block_storage[2] >> 3) & 0x07]);
+    image[stride *  2] = static_cast<uint8_t>(alpha[((block_storage[3] << 2) & 0x04) | ((block_storage[2] >> 6) & 0x03)]);
+    image[stride *  3] = static_cast<uint8_t>(alpha[ (block_storage[3] >> 1) & 0x07]);
+    image[stride *  4] = static_cast<uint8_t>(alpha[ (block_storage[3] >> 4) & 0x07]);
+    image[stride *  5] = static_cast<uint8_t>(alpha[((block_storage[4] << 1) & 0x06) | ((block_storage[3] >> 7) & 0x01)]);
+    image[stride *  6] = static_cast<uint8_t>(alpha[ (block_storage[4] >> 2) & 0x07]);
+    image[stride *  7] = static_cast<uint8_t>(alpha[ (block_storage[4] >> 5) & 0x07]);
+    image[stride *  8] = static_cast<uint8_t>(alpha[  block_storage[5]       & 0x07]);
+    image[stride *  9] = static_cast<uint8_t>(alpha[ (block_storage[5] >> 3) & 0x07]);
+    image[stride * 10] = static_cast<uint8_t>(alpha[((block_storage[6] << 2) & 0x04) | ((block_storage[5] >> 6) & 0x03)]);
+    image[stride * 11] = static_cast<uint8_t>(alpha[ (block_storage[6] >> 1) & 0x07]);
+    image[stride * 12] = static_cast<uint8_t>(alpha[ (block_storage[6] >> 4) & 0x07]);
+    image[stride * 13] = static_cast<uint8_t>(alpha[((block_storage[7] << 1) & 0x06) | ((block_storage[6] >> 7) & 0x01)]);
+    image[stride * 14] = static_cast<uint8_t>(alpha[ (block_storage[7] >> 2) & 0x07]);
+    image[stride * 15] = static_cast<uint8_t>(alpha[ (block_storage[7] >> 5) & 0x07]);
+}
+
+/**
+ * \brief Decompresses one block of a BC2 texture and stores the resulting pixels at the appropriate offset in 'image'.
+ *
+ * \param block_storage     pointer to the block to decompress.
+ * \param image             pointer to image where the decompressed pixel data should be stored.
+ **/
+static void decompress_block_bc2(const std::uint8_t *block_storage, std::uint32_t *image) {
+    decompress_block_bc1(block_storage + 8, image);
+
+    for (int i = 0; i < 16; i += 2) {
+        image[i] = (((block_storage[i] & 0x0F) | ((block_storage[i] & 0x0F) << 4)) << 24) | (image[i] & 0x00FFFFFF);
+    }
+
+    for (int i = 1; i < 16; i += 2) {
+        image[i] = (((block_storage[i] & 0xF0) | ((block_storage[i] & 0xF0) >> 4)) << 24) | (image[i] & 0x00FFFFFF);
+    }
+}
+
+/**
+ * \brief Decompresses one block of a BC3 texture and stores the resulting pixels at the appropriate offset in 'image'.
+ *
+ * \param block_storage     pointer to the block to decompress.
+ * \param image             pointer to image where the decompressed pixel data should be stored.
+ **/
+static void decompress_block_bc3(const std::uint8_t *block_storage, std::uint32_t *image) {
+    decompress_block_bc1(block_storage + 8, image);
+    decompress_block_alpha(block_storage, reinterpret_cast<std::uint8_t *>(image), 3, 4);
+}
+
+/**
+ * \brief Decompresses one block of a BC4U texture and stores the resulting pixels at the appropriate offset in 'image'.
+ *
+ * \param block_storage     pointer to the block to decompress.
+ * \param image             pointer to image where the decompressed pixel data should be stored.
+ **/
+static void decompress_block_bc4u(const std::uint8_t *block_storage, std::uint32_t *image) {
+    for (int i = 0; i < 16; i++)
+        image[i] = 0x00000000;
+    decompress_block_alpha(block_storage, reinterpret_cast<std::uint8_t *>(image), 0, 4);
+}
+
+/**
+ * \brief Decompresses one block of a BC4S texture and stores the resulting pixels at the appropriate offset in 'image'.
+ *
+ * \param block_storage     pointer to the block to decompress.
+ * \param image             pointer to image where the decompressed pixel data should be stored.
+ **/
+static void decompress_block_bc4s(const std::uint8_t *block_storage, std::uint32_t *image) {
+    for (int i = 0; i < 16; i++)
+        image[i] = 0x00000000;
+    decompress_block_alpha_signed(block_storage, reinterpret_cast<std::uint8_t *>(image), 0, 4);
+}
+
+/**
+ * \brief Decompresses one block of a BC5U texture and stores the resulting pixels at the appropriate offset in 'image'.
+ *
+ * \param block_storage     pointer to the block to decompress.
+ * \param image             pointer to image where the decompressed pixel data should be stored.
+ **/
+static void decompress_block_bc5u(const std::uint8_t *block_storage, std::uint32_t *image) {
+    for (int i = 0; i < 16; i++)
+        image[i] = 0x00000000;
+    decompress_block_alpha(block_storage, reinterpret_cast<std::uint8_t *>(image), 0, 4);
+    decompress_block_alpha(block_storage + 8, reinterpret_cast<std::uint8_t *>(image), 1, 4);
+}
+
+/**
+ * \brief Decompresses one block of a BC5S texture and stores the resulting pixels at the appropriate offset in 'image'.
+ *
+ * \param block_storage     pointer to the block to decompress.
+ * \param image             pointer to image where the decompressed pixel data should be stored.
+ **/
+static void decompress_block_bc5s(const std::uint8_t *block_storage, std::uint32_t *image) {
+    for (int i = 0; i < 16; i++)
+        image[i] = 0x00000000;
+    decompress_block_alpha_signed(block_storage, reinterpret_cast<std::uint8_t *>(image), 0, 4);
+    decompress_block_alpha_signed(block_storage + 8, reinterpret_cast<std::uint8_t *>(image), 1, 4);
+}
+
+/**
+ * \brief Decompresses all the blocks of a block compressed texture and stores the resulting pixels in 'image'.
  *
  * Output results is in format RGBA, with each channel being 8 bits.
  *
- * \param width            Texture width.
- * \param height           Texture height.
- * \param block_storage    Pointer to compressed DXT1 blocks.
- * \param image            Pointer to the image where the decompressed pixels will be stored.
- * \param bc_type          Block compressed type. BC1 (DXT1), BC2 (DXT2) or BC3 (DXT3).
+ * \param width             Texture width.
+ * \param height            Texture height.
+ * \param block_storage     Pointer to compressed blocks.
+ * \param image             Pointer to the image where the decompressed pixels will be stored.
+ * \param bc_type           Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2) or BC5S (RGTC2).
  */
 void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type) {
     std::uint32_t block_count_x = (width + 3) / 4;
     std::uint32_t block_count_y = (height + 3) / 4;
-    std::uint32_t block_size = (bc_type > 1) ? 16 : 8;
+    std::size_t block_size = (bc_type != 1 && bc_type != 4 && bc_type != 5) ? 16 : 8;
 
     std::uint32_t temp_block_result[16] = {};
 
-    // This looks like swizzle order but it's not.
-    static const int dxt_order[] = {
+    // Z-order curve inverse table
+    static const int z_order_curve_inv[] = {
         0, 2, 8, 10,
         1, 3, 9, 11,
         4, 6, 12, 14,
@@ -475,26 +542,90 @@ void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const 
         for (std::uint32_t i = 0; i < block_count_x; i++) {
             switch (bc_type) {
             case 1:
-                decompress_block_dxt1(i * 4, j * 4, width, block_storage + i * block_size, temp_block_result);
+                decompress_block_bc1(block_storage, temp_block_result);
                 break;
 
             case 2:
-                decompress_block_dxt3(i * 4, j * 4, width, block_storage + i * block_size, temp_block_result);
+                decompress_block_bc2(block_storage, temp_block_result);
                 break;
 
             case 3:
-                decompress_block_dxt5(i * 4, j * 4, width, block_storage + i * block_size, temp_block_result);
+                decompress_block_bc3(block_storage, temp_block_result);
+                break;
+
+            case 4:
+                decompress_block_bc4u(block_storage, temp_block_result);
+                break;
+
+            case 5:
+                decompress_block_bc4s(block_storage, temp_block_result);
+                break;
+
+            case 6:
+                decompress_block_bc5u(block_storage, temp_block_result);
+                break;
+
+            case 7:
+                decompress_block_bc5s(block_storage, temp_block_result);
                 break;
             }
 
             for (int b = 0; b < 16; b++) {
-                image[dxt_order[b]] = temp_block_result[b];
+                image[z_order_curve_inv[b]] = temp_block_result[b];
             }
 
+            block_storage += block_size;
             image += 16;
         }
+    }
+}
 
-        block_storage += block_count_x * block_size;
+/**
+ * \brief Solves Z-order on all the blocks of a block compressed texture and stores the resulting pixels in 'dest'.
+ *
+ * Output results is in format RGBA, with each channel being 8 bits.
+ *
+ * \param width     Texture width.
+ * \param height    Texture height.
+ * \param src       Pointer to compressed blocks.
+ * \param dest      Pointer to the image where the decompressed pixels will be stored.
+ * \param bc_type   Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2 or BC5S (RGTC2).
+ */
+void resolve_z_order_compressed_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *src, std::uint8_t *dest, const std::uint8_t bc_type) {
+    std::uint32_t block_count_x = (width + 3) / 4;
+    std::uint32_t block_count_y = (height + 3) / 4;
+    std::size_t block_size = (bc_type != 1 && bc_type != 4 && bc_type != 5) ? 16 : 8;
+
+    std::uint32_t temp_block_result[16] = {};
+
+    size_t min = block_count_x < block_count_y ? block_count_x : block_count_y;
+    size_t k = static_cast<size_t>(log2(min));
+
+    bool x_first = block_count_y < block_count_x;
+
+    uint32_t block_count = static_cast<uint32_t>(block_count_x * block_count_y);
+    for (uint32_t i = 0; i < block_count; i++) {
+        size_t x, y;
+        if (x_first) {
+            // XXXyxyxyx → XXXxxxyyy
+            size_t j = i >> (2 * k) << (2 * k)
+                | (decode_morton2_y(i) & (min - 1)) << k
+                | (decode_morton2_x(i) & (min - 1)) << 0;
+            x = j / block_count_y;
+            y = j % block_count_y;
+        } else {
+            // YYYyxyxyx → YYYyyyxxx
+            size_t j = i >> (2 * k) << (2 * k)
+                | (decode_morton2_x(i) & (min - 1)) << k
+                | (decode_morton2_y(i) & (min - 1)) << 0;
+            x = j % block_count_x;
+            y = j / block_count_x;
+        }
+
+        if (y >= block_count_y || x >= block_count_x)
+            continue;
+
+        std::memcpy(dest + (y * block_count_x + x) * block_size, src + i * block_size, block_size);
     }
 }
 
