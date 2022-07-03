@@ -50,7 +50,7 @@
 			<month>12월</month>
 		</ymonth>
 		<mday>
-			<days>31일</days>
+			<days></days>
 			<days>1일</days>
 			<days>2일</days>
 			<days>3일</days>
@@ -81,6 +81,7 @@
 			<days>28일</days>
 			<days>29일</days>
 			<days>30일</days>
+			<days>31일</days>
 		</mday>
 		<small_ymonth>
 			<month>1월</month>
