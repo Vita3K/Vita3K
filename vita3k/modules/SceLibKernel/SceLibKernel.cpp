@@ -854,8 +854,8 @@ EXPORT(int, sceKernelCancelEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCancelEventFlag) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelCancelEventFlag, SceUID event_id, SceUInt pattern, SceUInt32 *num_wait_thread) {
+    return CALL_EXPORT(_sceKernelCancelEventFlag, event_id, pattern, num_wait_thread);
 }
 
 EXPORT(int, sceKernelCancelEventWithSetPattern) {

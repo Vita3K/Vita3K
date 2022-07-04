@@ -1116,15 +1116,21 @@ static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, Sc
         data.outBits = outBits;
         data.priority = thread->priority;
 
+        bool was_canceled = false;
+        data.was_canceled = &was_canceled;
+
         const auto data_it = event->waiting_threads->push(data);
         thread_lock.unlock();
 
-        const int err = handle_timeout(thread, thread_lock, event_lock, event->waiting_threads, data, data_it, export_name, timeout);
+        int err = handle_timeout(thread, thread_lock, event_lock, event->waiting_threads, data, data_it, export_name, timeout);
         if (err < 0 && outBits) {
             // set it only if a timeout occurs
             // otherwise set in eventflag_set
             *outBits = event->flags;
         }
+        if (was_canceled)
+            err = SCE_KERNEL_ERROR_WAIT_CANCEL;
+
         return err;
     } else {
         return SCE_KERNEL_ERROR_EVF_COND;
@@ -1194,6 +1200,47 @@ SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thre
     }
 
     return 0;
+}
+
+SceInt32 eventflag_cancel(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 pattern, SceUInt32 *num_wait_threads) {
+    assert(event_id >= 0);
+
+    const EventFlagPtr event = lock_and_find(event_id, kernel.eventflags, kernel.mutex);
+    if (!event) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_flags: {:#b} waiting_threads: {}",
+            export_name, event->uid, thread_id, event->name, event->attr, event->flags, event->waiting_threads->size());
+    }
+
+    SceUInt32 nb_threads = 0;
+
+    const std::lock_guard<std::mutex> event_lock(event->mutex);
+
+    while (!event->waiting_threads->empty()) {
+        const auto &waiting_thread_data = *event->waiting_threads->begin();
+        const auto waiting_thread = waiting_thread_data.thread;
+
+        const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
+
+        *waiting_thread_data.was_canceled = true;
+        if (waiting_thread_data.outBits)
+            *waiting_thread_data.outBits = pattern;
+
+        waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
+
+        event->waiting_threads->erase(event->waiting_threads->begin());
+        nb_threads++;
+    }
+
+    event->flags = pattern;
+
+    if (num_wait_threads)
+        *num_wait_threads = nb_threads;
+
+    return SCE_KERNEL_OK;
 }
 
 int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id) {
