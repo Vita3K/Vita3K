@@ -47,8 +47,8 @@ EXPORT(int, _sceKernelCancelEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelCancelEventFlag) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, _sceKernelCancelEventFlag, SceUID event_id, SceUInt pattern, SceUInt32 *num_wait_thread) {
+    return eventflag_cancel(emuenv.kernel, export_name, thread_id, event_id, pattern, num_wait_thread);
 }
 
 EXPORT(int, _sceKernelCancelEventWithSetPattern) {

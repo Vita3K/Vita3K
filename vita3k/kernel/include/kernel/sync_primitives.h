@@ -27,6 +27,7 @@ struct KernelState;
 struct WaitingThreadData {
     ThreadStatePtr thread;
     int32_t priority;
+    bool *was_canceled;
 
     // additional fields for each primitive
     union {
@@ -243,6 +244,7 @@ SceUID eventflag_create(KernelState &kernel, const char *export_name, SceUID thr
 SceInt32 eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout);
 int eventflag_poll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID eventflagid, unsigned int flags, unsigned int wait, unsigned int *outBits);
 SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID evfId, SceUInt32 bitPattern);
+SceInt32 eventflag_cancel(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 pattern, SceUInt32 *num_wait_threads);
 int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id);
 
 // Message Pipe
