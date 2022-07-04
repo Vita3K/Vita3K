@@ -230,8 +230,8 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string content_id
                     theme_icon_name["NPXS10008"] = home_property.child("m_trophy").child("m_iconFilePath").text().as_string();
                 if (!home_property.child("m_settings").child("m_iconFilePath").text().empty())
                     theme_icon_name["NPXS10015"] = home_property.child("m_settings").child("m_iconFilePath").text().as_string();
-                if (!home_property.child("m_emuenvCollabo").child("m_iconFilePath").text().empty())
-                    theme_icon_name["NPXS10026"] = home_property.child("m_emuenvCollabo").child("m_iconFilePath").text().as_string();
+                if (!home_property.child("m_hostCollabo").child("m_iconFilePath").text().empty())
+                    theme_icon_name["NPXS10026"] = home_property.child("m_hostCollabo").child("m_iconFilePath").text().as_string();
 
                 // Home
                 for (const auto &param : home_property.child("m_bgParam")) {
