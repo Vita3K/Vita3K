@@ -276,6 +276,18 @@ GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
         return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+        return GL_COMPRESSED_RED_RGTC1;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        return GL_COMPRESSED_SIGNED_RED_RGTC1;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+        return GL_COMPRESSED_RG_RGTC2;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+        return GL_COMPRESSED_SIGNED_RG_RGTC2;
     default:
         LOG_ERROR("Missing case texture base format {}, fallback to GL_RGBA", base_format);
         return GL_RGBA;
@@ -352,6 +364,18 @@ GLenum translate_format(SceGxmTextureBaseFormat base_format) {
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
         return GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+        return GL_COMPRESSED_RED_RGTC1;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        return GL_COMPRESSED_SIGNED_RED_RGTC1;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+        return GL_COMPRESSED_RG_RGTC2;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+        return GL_COMPRESSED_SIGNED_RG_RGTC2;
     default:
         LOG_ERROR("Missing case texture base format {}, fallback to GL_RGBA", base_format);
         return GL_RGBA;
@@ -440,8 +464,12 @@ GLenum translate_type(SceGxmTextureBaseFormat base_format) {
         return GL_UNSIGNED_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
         return GL_UNSIGNED_BYTE;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        return GL_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
         return GL_UNSIGNED_BYTE;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+        return GL_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
         return GL_UNSIGNED_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
@@ -523,7 +551,9 @@ const GLint *translate_swizzle(SceGxmTextureFormat fmt) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
     case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
