@@ -573,7 +573,8 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 gui::update_time_app_used(gui, emuenv, emuenv.io.app_path);
             emuenv.kernel.exit_delete_all_threads();
             emuenv.gxm.display_queue.abort();
-            emuenv.display.abort.exchange(true);
+            emuenv.display.abort = true;
+            emuenv.display.vblank_thread->join();
             return false;
 
         case SDL_KEYDOWN:
