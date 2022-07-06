@@ -332,7 +332,6 @@ static void convert_u2f10f10f10_to_f16f16f16f16(void *dest, const void *data, co
     for (uint32_t row = 0; row < height; ++row) {
         for (uint32_t col = 0; col < width; ++col) {
             uint32_t src_value = src[col];
-            uint16_t f1, f2, f3;
             int dst_idx;
             // first get the 2 alpha bits
             if (is_alpha_upper) {
@@ -804,7 +803,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         upload_bound_texture(cache, gxm_texture, mem);
         if (!info->use_hash) {
             info->dirty = false;
-            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MEM_PERM_READONLY, [&cache, info, gxm_texture](Address, bool) {
+            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MEM_PERM_READONLY, [info, gxm_texture](Address, bool) {
                 if (memcmp(&info->texture, &gxm_texture, sizeof(SceGxmTexture)) == 0) {
                     info->dirty = true;
                 }

@@ -94,10 +94,10 @@ struct StructDeclContext {
 // TODO do we need this? This is made to avoid spir-v validation error regarding interface variables
 struct VarToReg {
     spv::Id var;
-    bool pa; // otherwise sa
     uint32_t offset;
     uint32_t size;
     DataType dtype;
+    bool pa; // otherwise sa
 };
 
 struct TranslationState {
@@ -446,10 +446,10 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             translation_state.var_to_regs.push_back(
                 { pa_iter_var,
-                    true,
                     pa_offset,
                     pa_iter_size,
-                    pa_dtype });
+                    pa_dtype,
+                    true });
             translation_state.interfaces.push_back(pa_iter_var);
             LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
 
@@ -1016,7 +1016,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     // Log parameters
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
-        uint16_t curi = parameter.category;
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_UNIFORM || parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
             bool is_uniform = parameter.category == SCE_GXM_PARAMETER_CATEGORY_UNIFORM;
             std::string var_name = gxp::parameter_name(parameter);

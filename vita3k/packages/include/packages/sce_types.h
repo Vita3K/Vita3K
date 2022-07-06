@@ -173,7 +173,7 @@ public:
         auto &key_entries = *self_type;
 
         for (auto item : key_entries.second) {
-            if (sysver < 0 || (sysver >= item.minver && sysver <= item.maxver) && (keyrev < 0 || keyrev == item.keyrev)) {
+            if ((sysver < 0 || (sysver >= item.minver && sysver <= item.maxver)) && (keyrev < 0 || keyrev == item.keyrev)) {
                 return item;
             }
         }

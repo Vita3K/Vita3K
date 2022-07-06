@@ -228,8 +228,6 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
 
                     std::vector<CastedTexture> &casted_vec = info.casted_textures;
 
-                    vk::Format source_format = color::translate_format(info.format);
-
                     CastedTexture *casted = nullptr;
 
                     // Look in cast cache and grab one. The cache really does not store immediate grab on now, but rather to reduce the synchronization in the pipeline (use different texture)
@@ -503,7 +501,7 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
 
     // The whole depth stencil struct is reserved for future use
     for (size_t i = 0; i < depth_stencil_textures.size(); i++) {
-        if ((depth_stencil_textures[i].surface.depthData == surface.depthData) && (packed_ds || (!packed_ds && (depth_stencil_textures[i].surface.stencilData == surface.stencilData)))) {
+        if ((depth_stencil_textures[i].surface.depthData == surface.depthData) && (packed_ds || depth_stencil_textures[i].surface.stencilData == surface.stencilData)) {
             found_index = i;
             break;
         }
@@ -687,7 +685,6 @@ vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(const MemState &mem,
     }
 
     if (depth_stencil && (depth_stencil->depthData || depth_stencil->stencilData)) {
-        SceGxmDepthStencilSurface surface_copy = *depth_stencil;
         ds_handle = retrieve_depth_stencil_texture_handle(mem, *depth_stencil);
     } else {
         ds_handle = &target->depthstencil;

@@ -206,8 +206,6 @@ static void get_content_info(GuiState &gui, EmuEnvState &emuenv) {
         for (const auto &addcont : fs::directory_iterator(ADDCONT_PATH)) {
             const auto content_id = addcont.path().stem().string();
 
-            tm updated_tm = {};
-
             const auto last_writen = fs::last_write_time(addcont);
             SAFE_LOCALTIME(&last_writen, &addcont_info[content_id].date);
 
@@ -502,7 +500,6 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         } else if (menu == "info") {
             // Information
             auto info = gui.lang.app_context;
-            const auto app_index = get_app_index(gui, app_selected);
             ImGui::SetWindowFontScale(1.f);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["trophy_earning"].c_str());
             ImGui::SameLine(310.f * SCALE.x);

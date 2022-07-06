@@ -1235,7 +1235,6 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
     SceSaveDataDialogSystemMessageParam *sys_message;
     std::vector<SceAppUtilSaveDataSlot> slot_list;
     std::vector<SceAppUtilSaveDataSlotParam> slot_param;
-    std::string thumbnail_path;
     SceUID fd;
 
     emuenv.common_dialog.savedata.mode = p->mode;

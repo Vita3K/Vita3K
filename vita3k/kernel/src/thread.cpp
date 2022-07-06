@@ -242,6 +242,8 @@ bool ThreadState::run_loop() {
         case ThreadToDo::wait:
             something_to_do.wait(lock);
             break;
+        case ThreadToDo::suspend:
+            break;
         }
     }
 }

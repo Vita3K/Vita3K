@@ -209,7 +209,7 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
     if (registered_touch() && port == touchscreen_port) {
         // less accurate implementation, but which is able to take a real touchscreen as the input
         pData[0] = recover_touch_events();
-        for (uint32_t i = 0; i < nb_returned_data; i++) {
+        for (int32_t i = 0; i < nb_returned_data; i++) {
             memcpy(&pData[i], &pData[0], sizeof(SceTouchData));
         }
     } else {
@@ -220,7 +220,7 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
             // give the oldest buffer first
             corr_buffer_idx = (touch_buffer_idx - nb_returned_data + 1 + MAX_TOUCH_BUFFER_SAVED) % MAX_TOUCH_BUFFER_SAVED;
         }
-        for (uint32_t i = 0; i < nb_returned_data; i++) {
+        for (int32_t i = 0; i < nb_returned_data; i++) {
             memcpy(&pData[i], &touch_buffers[corr_buffer_idx][port_idx], sizeof(SceTouchData));
             // if peek, repeat the last buffer
             if (!is_peek) {

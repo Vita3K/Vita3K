@@ -504,7 +504,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         std::vector<uint8_t> dump_elf(self_bytes + self_header.header_len, self_bytes + self_header.self_filesize);
         Elf32_Phdr *dump_segments = reinterpret_cast<Elf32_Phdr *>(dump_elf.data() + elf.e_phoff);
         uint16_t last_index = 0;
-        for (const auto [seg_index, segment] : segment_reloc_info) {
+        for (const auto &[seg_index, segment] : segment_reloc_info) {
             uint8_t *seg_bytes = Ptr<uint8_t>(segment.addr).get(mem);
             memcpy(dump_elf.data() + dump_segments[seg_index].p_offset, seg_bytes, dump_segments[seg_index].p_filesz);
             dump_segments[seg_index].p_vaddr = segment.addr;
@@ -526,7 +526,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     const uint8_t *const module_info_segment_bytes = module_info_segment_address.get(mem);
     const sce_module_info_raw *const module_info = reinterpret_cast<const sce_module_info_raw *>(module_info_segment_bytes + module_info_offset);
 
-    for (const auto [seg, infos] : segment_reloc_info) {
+    for (const auto &[seg, infos] : segment_reloc_info) {
         LOG_INFO("Loaded module segment {} @ [0x{:08X} - 0x{:08X} / 0x{:08X}] (size: 0x{:08X}) of module {}", seg, infos.addr, infos.addr + infos.size, infos.p_vaddr, infos.size, self_path);
     }
 

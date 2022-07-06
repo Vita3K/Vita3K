@@ -456,7 +456,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 // resume the worlld
                 {
                     auto lock = std::unique_lock(state.kernel.mutex);
-                    for (const auto pair : state.kernel.threads) {
+                    for (const auto &pair : state.kernel.threads) {
                         auto &thread = pair.second;
                         if (thread->status == ThreadStatus::suspend) {
                             lock.unlock();
@@ -474,7 +474,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
 
                     if (state.gdb.server_die)
                         return "";
-                    for (const auto [id, thread] : state.kernel.threads) {
+                    for (const auto &[id, thread] : state.kernel.threads) {
                         const auto thread_guard = std::lock_guard(thread->mutex);
                         if (thread->status == ThreadStatus::suspend && hit_breakpoint(*thread->cpu)) {
                             state.gdb.inferior_thread = id;
@@ -496,7 +496,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 // stop the world
                 {
                     auto lock = std::unique_lock(state.kernel.mutex);
-                    for (const auto pair : state.kernel.threads) {
+                    for (const auto &pair : state.kernel.threads) {
                         auto thread = pair.second;
                         if (thread->status == ThreadStatus::run) {
                             thread->suspend();

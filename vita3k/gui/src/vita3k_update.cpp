@@ -92,7 +92,7 @@ bool init_vita3k_update(GuiState &gui) {
             }
 
             uint32_t commit_pos = 0;
-            for (const auto page : page_count) {
+            for (const auto &page : page_count) {
                 const auto continuous_link = fmt::format(R"(https://api.github.com/repos/Vita3K/Vita3K/commits?sha=continuous&page={}&per_page={})", page.first, dif_from_current < 100 ? dif_from_current : 100);
 #ifdef WIN32
                 const auto github_commit_sha_cmd = fmt::format(R"(powershell ((Invoke-RestMethod \"{}\").sha ^| Select-Object -first {}))", continuous_link, page.second);
@@ -206,7 +206,6 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     const auto BUTTON_SIZE = ImVec2(150.f * SCALE.x, 46.f * SCALE.y);
-    const auto as_update = app_number < git_version;
     const auto is_background = gui.apps_background.find("NPXS10015") != gui.apps_background.end();
 
     auto common = emuenv.common_dialog.lang.common;
@@ -265,7 +264,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetNextWindowBgAlpha(0.f);
         ImGui::BeginChild("##description_child", ImVec2(860 * SCALE.x, 334.f * SCALE.y), true, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(0.8f);
-        for (const auto desc : git_commit_desc_list) {
+        for (const auto &desc : git_commit_desc_list) {
             const auto pos = ImGui::GetCursorPosY();
             ImGui::Spacing();
             ImGui::TextWrapped("%s", !desc.second.empty() ? desc.second.c_str() : "Loading...");

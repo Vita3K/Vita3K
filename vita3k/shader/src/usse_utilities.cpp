@@ -240,7 +240,6 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
     extracted = b.createUnaryOp(spv::OpBitcast, is_signed ? type_i32 : type_ui32, extracted);
 
     std::vector<spv::Id> comps;
-    std::vector<spv::Id> bias_comps;
 
     const auto comp_bits = 32 / comp_count;
 
@@ -467,7 +466,6 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
 
 static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderParameters &params) {
     spv::Id type_f32 = b.makeFloatType(32);
-    spv::Id type_ui32 = b.makeUintType(32);
     spv::Id type_i32 = b.makeIntType(32);
     spv::Id type_bool = b.makeBoolType();
 
@@ -1026,8 +1024,6 @@ spv::Id shader::usse::utils::unpack(spv::Builder &b, SpirvUtilFunctions &utils, 
 
     unpack_results.resize(target_comp_count);
 
-    spv::Id unpacked_type = spv::NoResult;
-
     for (std::size_t i = 0; i < unpack_results.size(); i++) {
         spv::Id extracted = target;
 
@@ -1042,7 +1038,6 @@ spv::Id shader::usse::utils::unpack(spv::Builder &b, SpirvUtilFunctions &utils, 
         }
 
         unpack_results[i] = unpack_one(b, utils, features, extracted, type);
-        unpacked_type = b.getTypeId(unpack_results[i]);
     }
 
     return finalize(b, unpack_results[0], unpack_results.size() > 1 ? unpack_results[1] : unpack_results[0],
@@ -1309,6 +1304,7 @@ static std::pair<float, float> get_int_normalize_range_constants(DataType type) 
         return { 2147483648.0f, 2147483647.0f };
     default:
         assert(false);
+        return { 0.0f, 0.0f };
     }
 }
 
@@ -1361,8 +1357,7 @@ spv::Id shader::usse::utils::convert_to_float(spv::Builder &b, spv::Id opr, Data
 
 spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataType type, bool normal) {
     const auto opr_type = b.getTypeId(opr);
-    const auto spv_type = unwrap_type(b, b.getTypeId(opr));
-    assert(b.isFloatType(spv_type));
+    assert(b.isFloatType(unwrap_type(b, b.getTypeId(opr))));
 
     const auto comp_count = b.isVector(opr) ? b.getNumComponents(opr) : 1;
     const auto is_uint = is_unsigned_integer_data_type(type);

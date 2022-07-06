@@ -25,7 +25,7 @@ namespace gui {
 
 static std::vector<std::string> points = { ".", "..", "..." };
 static int pos = 2;
-static uint64_t time = std::time(nullptr);
+static auto time = std::time(nullptr);
 void draw_pre_compiling_shaders_progress(GuiState &gui, EmuEnvState &emuenv, const uint32_t &total) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
@@ -89,7 +89,7 @@ void draw_shaders_count_compiled(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (2.f * emuenv.dpi_scale), emuenv.viewport_pos.y + emuenv.viewport_size.y - (42.f * emuenv.dpi_scale)));
     ImGui::SetNextWindowBgAlpha(0.6f);
     ImGui::Begin("##shaders_compiled", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("%lu %s", gui.shaders_compiled_display[Count], gui.lang.compile_shaders["shaders_compiled"].c_str());
+    ImGui::Text("%llu %s", gui.shaders_compiled_display[Count], gui.lang.compile_shaders["shaders_compiled"].c_str());
     ImGui::End();
 }
 

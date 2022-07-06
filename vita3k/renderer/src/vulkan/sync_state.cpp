@@ -32,7 +32,6 @@ void sync_clipping(VKContext &context) {
 
     const int res_multiplier = context.state.res_multiplier;
 
-    const int display_h = context.render_target->height / res_multiplier;
     const int scissor_x = context.record.region_clip_min.x;
     const int scissor_y = context.record.region_clip_min.y;
 
@@ -105,9 +104,6 @@ void sync_mask(VKContext &context, const MemState &mem) {
         return;
 
     auto control = context.record.depth_stencil_surface.control.content;
-    // mask is not upscaled
-    auto width = context.render_target->width / context.state.res_multiplier;
-    auto height = context.render_target->height / context.state.res_multiplier;
     float initial_val = (control & SceGxmDepthStencilControl::mask_bit) ? 1.0f : 0.0f;
 
     std::array<float, 4> clear_bytes = { initial_val, initial_val, initial_val, initial_val };

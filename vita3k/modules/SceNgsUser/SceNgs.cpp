@@ -98,7 +98,7 @@ EXPORT(int, sceNgsAT9GetSectionDetails, std::uint32_t samples_start, const std::
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
     // Check magic!
-    if ((config_data & 0xFF) != 0xFE && info) {
+    if ((config_data & 0xFF) != 0xFE) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
     samples_start &= ~SCE_NGS_SAMPLE_OFFSET_FROM_AT9_HEADER;

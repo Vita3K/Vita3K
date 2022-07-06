@@ -364,7 +364,6 @@ bool USSETranslatorVisitor::smp(
                 // expected to be in this order but reversed...
                 const spv::Id one = m_b.makeFloatConstant(1.0);
                 const spv::Id zero = m_b.makeFloatConstant(0.0);
-                const spv::Id zeros = m_b.makeCompositeConstant(type_f32_v[2], { zero, zero });
                 const spv::Id u = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, uv, m_b.makeIntConstant(0));
                 const spv::Id v = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, uv, m_b.makeIntConstant(1));
 

@@ -105,7 +105,6 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, int &size, 
 
     // We have arrived at le word that still have free position (bit 1)
     std::uint32_t *word_end = &words[words.size() - 1];
-    std::uint32_t soc = start_offset;
 
     int bflmin = 0xFFFFFF;
     int bofmin = -1;
@@ -135,7 +134,6 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, int &size, 
 
                         if (cursor < 0 && (word + 1 <= word_end)) {
                             cursor = 31;
-                            soc = 32;
                             word++;
                             wv = *word;
                         }
@@ -163,7 +161,6 @@ int BitmapAllocator::allocate_from(const std::uint32_t start_offset, int &size, 
             }
         }
 
-        soc = 32;
         word++;
     }
 

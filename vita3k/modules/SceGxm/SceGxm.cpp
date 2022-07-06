@@ -2654,7 +2654,7 @@ EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    std::uint32_t *value = notification->address.get(emuenv.mem);
+    std::uint32_t volatile *value = notification->address.get(emuenv.mem);
     const std::uint32_t target_value = notification->value;
 
     std::unique_lock<std::mutex> lock(emuenv.renderer->notification_mutex);
@@ -5037,10 +5037,8 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
     if (!srcAddress || !destAddress)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    const auto src_type_is_linear = srcType == SCE_GXM_TRANSFER_LINEAR;
     const auto src_type_is_tiled = srcType == SCE_GXM_TRANSFER_TILED;
     const auto src_type_is_swizzled = srcType == SCE_GXM_TRANSFER_SWIZZLED;
-    const auto dest_type_is_linear = destType == SCE_GXM_TRANSFER_LINEAR;
     const auto dest_type_is_tiled = destType == SCE_GXM_TRANSFER_TILED;
     const auto dest_type_is_swizzled = destType == SCE_GXM_TRANSFER_SWIZZLED;
 
@@ -5083,7 +5081,6 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
 
     if (syncObject) {
-        SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,
             syncObject, cmd_timestamp);
     }
@@ -5139,7 +5136,6 @@ EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> s
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
 
     if (syncObject) {
-        SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,
             syncObject, cmd_timestamp);
     }
@@ -5183,7 +5179,6 @@ EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFor
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
 
     if (syncObject) {
-        SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,
             syncObject, cmd_timestamp);
     }

@@ -261,7 +261,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                         fs::remove(archive.first);
                 }
                 if (delete_archive_file && !invalid_archives.empty()) {
-                    for (const auto archive : invalid_archives)
+                    for (const auto &archive : invalid_archives)
                         fs::remove(archive);
                 }
                 archive_path = "";

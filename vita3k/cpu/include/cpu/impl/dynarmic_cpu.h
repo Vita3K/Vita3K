@@ -42,8 +42,6 @@ class DynarmicCPU : public CPUInterface {
     std::shared_ptr<ArmDynarmicCP15> cp15;
     Dynarmic::ExclusiveMonitor *monitor;
 
-    Address tpidruro;
-
     std::size_t core_id = 0;
 
     bool exit_request = false;

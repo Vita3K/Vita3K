@@ -736,7 +736,6 @@ ExitCode run_app(EmuEnvState &emuenv, Ptr<const void> &entry_point) {
             buf.insert(buf.end(), arg.c_str(), arg.c_str() + arg.size() + 1);
         auto arr = Ptr<uint8_t>(alloc(emuenv.mem, buf.size(), "arg"));
         memcpy(arr.get(emuenv.mem), buf.data(), buf.size());
-        auto abc = arr.get(emuenv.mem);
         param.size = SceSize(buf.size());
         param.attr = arr.address();
     }

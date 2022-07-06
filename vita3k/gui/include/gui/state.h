@@ -251,7 +251,7 @@ inline ConfigModuleMode init_modules_mode() {
 
 const ConfigModuleMode config_modules_mode = init_modules_mode();
 
-const std::vector<std::pair<SceSystemParamLang, std::string>> LIST_SYS_LANG = {
+inline const std::vector<std::pair<SceSystemParamLang, std::string>> LIST_SYS_LANG = {
     { SCE_SYSTEM_PARAM_LANG_DANISH, "Dansk" },
     { SCE_SYSTEM_PARAM_LANG_GERMAN, "Deutsch" },
     { SCE_SYSTEM_PARAM_LANG_ENGLISH_GB, "English (United Kingdom)" },

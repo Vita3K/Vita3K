@@ -50,8 +50,6 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     }
 
     vkutil::Image *image = nullptr;
-    vk::ComponentMapping swizzle_surface;
-    bool only_nearest = false;
 
     SceGxmColorBaseFormat format_target_of_texture;
 
@@ -146,10 +144,6 @@ bool init(VKTextureCacheState &cache, const bool hashless_texture_cache) {
     return true;
 }
 
-static uint32_t max_mip(uint32_t pixels) {
-    return std::bit_width(pixels);
-}
-
 static vk::Format linear_to_srgb(const vk::Format format) {
     switch (format) {
     case vk::Format::eR8Unorm:
@@ -177,8 +171,6 @@ void configure_bound_texture(const renderer::TextureCacheState &state, const Sce
     const SceGxmTextureFormat format = gxm::get_format(&gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
 
-    const bool mipmap_enabled = static_cast<bool>(gxm_texture.mip_filter);
-
     const vk::ComponentMapping swizzle = translate_swizzle(format);
 
     const bool is_cube = (gxm_texture.texture_type() == SCE_GXM_TEXTURE_CUBE || gxm_texture.texture_type() == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
@@ -200,10 +192,6 @@ void configure_bound_texture(const renderer::TextureCacheState &state, const Sce
     if (gxm_texture.gamma_mode) {
         vk_format = linear_to_srgb(vk_format);
     }
-
-    const auto texture_type = gxm_texture.texture_type();
-    const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
-    const auto base_fmt = gxm::get_base_format(format);
 
     const VKTextureCacheState &cache = static_cast<const VKTextureCacheState &>(state);
     vkutil::Image &image = *cache.current_texture;
@@ -292,8 +280,8 @@ static void *add_alpha_channel(const void *pixels, const uint32_t width, const u
 
     const uint8_t *src = reinterpret_cast<const uint8_t *>(pixels);
     uint8_t *dst = data.data();
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
+    for (uint32_t y = 0; y < height; y++) {
+        for (uint32_t x = 0; x < width; x++) {
             dst[0] = src[0];
             dst[1] = src[1];
             dst[2] = src[2];
