@@ -299,13 +299,13 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
 }
 
 DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt)
-    : parent(state)
-    , fallback(state)
+    : fallback(state)
+    , parent(state)
     , cb(std::make_unique<ArmDynarmicCallback>(*state, *this))
     , cp15(std::make_shared<ArmDynarmicCP15>())
     , monitor(monitor)
-    , cpu_opt(cpu_opt)
-    , core_id(processor_id) {
+    , core_id(processor_id)
+    , cpu_opt(cpu_opt) {
     jit = make_jit();
 }
 

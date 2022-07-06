@@ -748,8 +748,8 @@ EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize head
     // use while loop to check ptr is not null
     while (ptr != NULL) {
         auto line = std::string(ptr);
-        auto name = line.substr(0, line.find(":"));
-        auto value = line.substr(line.find(" ") + 1);
+        auto name = line.substr(0, line.find(':'));
+        auto value = line.substr(line.find(' ') + 1);
 
         if (strcmp(name.c_str(), fieldStr) == 0) { // found header
 
@@ -791,23 +791,23 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
     auto cleanLine = line.substr(0, line.find("\r\n"));
     // even if there is no \r\n, the result will still be the whole string
 
-    auto httpString = cleanLine.substr(0, cleanLine.find(" "));
-    auto version = httpString.substr(httpString.find("/") + 1);
+    auto httpString = cleanLine.substr(0, cleanLine.find(' '));
+    auto version = httpString.substr(httpString.find('/') + 1);
     auto majorVer = version.substr(0, 1);
     *httpMajorVer = std::stoi(majorVer);
-    if (version.find(".") != std::string::npos) {
-        auto minorVer = version.substr(version.find(".") + 1);
+    if (version.find('.') != std::string::npos) {
+        auto minorVer = version.substr(version.find('.') + 1);
         *httpMinorVer = std::stoi(minorVer);
     } else {
         *httpMinorVer = 0;
     }
 
-    auto statusCodeLine = cleanLine.substr(cleanLine.find(" ") + 1, 3);
+    auto statusCodeLine = cleanLine.substr(cleanLine.find(' ') + 1, 3);
     *responseCode = std::stoi(statusCodeLine);
 
-    auto codeAndPhrase = cleanLine.substr(cleanLine.find(" ") + 1); // 200 OK
+    auto codeAndPhrase = cleanLine.substr(cleanLine.find(' ') + 1); // 200 OK
 
-    auto reason = codeAndPhrase.substr(codeAndPhrase.find(" ") + 1); // OK
+    auto reason = codeAndPhrase.substr(codeAndPhrase.find(' ') + 1); // OK
 
     auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "reasonPhrase"));
     memcpy(h.get(emuenv.mem), reason.data(), reason.length() + 1);

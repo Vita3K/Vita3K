@@ -146,11 +146,11 @@ bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const c
 }
 
 VKState::VKState(int gpu_idx)
-    : screen_renderer(*this)
+    : gpu_idx(gpu_idx)
     , surface_cache(*this)
     , pipeline_cache(*this)
     , texture_cache(*this)
-    , gpu_idx(gpu_idx) {
+    , screen_renderer(*this) {
 }
 
 bool VKState::init(const char *base_path, const bool hashless_texture_cache) {

@@ -478,8 +478,6 @@ EXPORT(int, sceIoDevctl, const char *dev, SceInt cmd, const void *indata, SceSiz
     case 12289: { // Get device capacity info?
         assert(outlen == sizeof(SceIoDevInfo));
 
-        uint64_t max_size, free_size = 0;
-
         auto device = device::get_device(dev);
         if (device == VitaIoDevice::_INVALID) {
             LOG_ERROR("Cannot find device for path: {}", dev);
@@ -1572,7 +1570,7 @@ EXPORT(int, sceKernelPulseEventWithNotifyCallback) {
 EXPORT(SceInt32, sceKernelReceiveMsgPipe, SceUID msgPipeId, void *pRecvBuf, SceSize recvSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelReceiveMsgPipe, msgPipeId, pRecvBuf, recvSize, waitMode, pResult, pTimeout);
     const auto ret = msgpipe_recv(emuenv.kernel, export_name, thread_id, msgPipeId, waitMode, pRecvBuf, recvSize, pTimeout);
-    if (ret < 0) {
+    if (static_cast<int>(ret) < 0) {
         return ret;
     }
     if (pResult) {
@@ -1605,7 +1603,7 @@ EXPORT(int, sceKernelRegisterThreadEventHandler) {
 EXPORT(SceInt32, sceKernelSendMsgPipe, SceUID msgPipeId, const void *pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {
     TRACY_FUNC(sceKernelSendMsgPipe, msgPipeId, pSendBuf, sendSize, waitMode, pResult, pTimeout);
     const auto ret = msgpipe_send(emuenv.kernel, export_name, thread_id, msgPipeId, waitMode, pSendBuf, sendSize, pTimeout);
-    if (ret < 0) {
+    if (static_cast<int>(ret) < 0) {
         return ret;
     }
     if (pResult) {

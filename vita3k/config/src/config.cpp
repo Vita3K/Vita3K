@@ -297,7 +297,7 @@ bool is_tracy_advanced_profiling_active_for_module(std::vector<std::string> &act
     }
 
     // If index is being requested and the module name was found
-    if ((index != nullptr) && (result)) {
+    if (result) {
         // Calculate the distance between the first element in the module and
         *index = std::distance(active_modules.begin(), iterator);
     }

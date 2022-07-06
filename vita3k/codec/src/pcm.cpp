@@ -262,9 +262,6 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
     }
 
     // Try to resample if neccessary
-    const int source_channel_type = (source_channels == 2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
-    const int dest_channel_type = AV_CH_LAYOUT_STEREO;
-
     SwrContext *swr = (source_channels == 2) ? swr_stereo : swr_mono_to_stereo;
 
     const int dest_count = swr_get_out_samples(swr, produced_samples);
@@ -296,9 +293,9 @@ bool PCMDecoderState::receive(uint8_t *data, DecoderSize *size) {
 
 PCMDecoderState::PCMDecoderState(const float dest_frequency)
     : dest_frequency(dest_frequency)
-    , he_adpcm(false)
     , source_channels(2)
-    , source_frequency(48000.0f) {
+    , source_frequency(48000.0f)
+    , he_adpcm(false) {
     // we are not resampling, we don't care about the sample rate
     swr_mono_to_stereo = swr_alloc_set_opts(nullptr,
         AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, 48000,

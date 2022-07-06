@@ -250,7 +250,7 @@ static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::str
         return {};
     }
 
-    return std::move(image);
+    return image;
 }
 
 void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
@@ -534,7 +534,7 @@ void get_user_apps_title(GuiState &gui, EmuEnvState &emuenv) {
 
 void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
     gui.app_selector.sys_apps.clear();
-    const std::vector<std::string> sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026" };
+    const std::array<std::string, 4> sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026" };
     for (const auto &app : sys_apps_list) {
         vfs::FileBuffer params;
         if (vfs::read_file(VitaIoDevice::vs0, params, emuenv.pref_path, "app/" + app + "/sce_sys/param.sfo")) {

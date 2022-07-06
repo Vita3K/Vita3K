@@ -635,8 +635,6 @@ void resolve_z_order_compressed_image(std::uint32_t width, std::uint32_t height,
     std::uint32_t block_count_y = (height + 3) / 4;
     std::size_t block_size = (bc_type != 1 && bc_type != 4 && bc_type != 5) ? 16 : 8;
 
-    std::uint32_t temp_block_result[16] = {};
-
     size_t min = block_count_x < block_count_y ? block_count_x : block_count_y;
     size_t k = static_cast<size_t>(log2(min));
 

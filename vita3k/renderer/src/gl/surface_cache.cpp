@@ -26,8 +26,7 @@
 namespace renderer::gl {
 static constexpr std::uint64_t CASTED_UNUSED_TEXTURE_PURGE_SECS = 40;
 
-GLSurfaceCache::GLSurfaceCache() {
-}
+GLSurfaceCache::GLSurfaceCache() = default;
 
 void GLSurfaceCache::do_typeless_copy(const GLuint dest_texture, const GLuint source_texture, const GLenum dest_internal,
     const GLenum dest_upload_format, const GLenum dest_type, const GLenum source_format, const GLenum source_type, const int offset_x,
@@ -507,7 +506,7 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
 
     // The whole depth stencil struct is reserved for future use
     for (std::size_t i = 0; i < depth_stencil_textures.size(); i++) {
-        if ((depth_stencil_textures[i].surface.depthData == surface.depthData) && (packed_ds || (!packed_ds && (depth_stencil_textures[i].surface.stencilData == surface.stencilData)))) {
+        if ((depth_stencil_textures[i].surface.depthData == surface.depthData) && (packed_ds || depth_stencil_textures[i].surface.stencilData == surface.stencilData)) {
             found_index = i;
             break;
         }
@@ -624,7 +623,6 @@ GLuint GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const Mem
     }
 
     if (depth_stencil) {
-        SceGxmDepthStencilSurface surface_copy = *depth_stencil;
         ds_handle = static_cast<GLuint>(retrieve_depth_stencil_texture_handle(state, mem, *depth_stencil));
     } else {
         ds_handle = target->attachments[1];

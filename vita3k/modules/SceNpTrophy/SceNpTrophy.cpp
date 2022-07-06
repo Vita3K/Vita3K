@@ -243,7 +243,7 @@ EXPORT(int, sceNpTrophyGetTrophyInfo, np::trophy::ContextHandle context_handle, 
         details->hidden = context->is_trophy_hidden(trophy_id);
         int32_t id = 0;
         for (uint32_t gid = 0; gid < context->group_count + 1; gid++) {
-            for (auto count = 0; count < context->trophy_count_by_group[gid]; count++, id++) {
+            for (uint32_t count = 0; count < context->trophy_count_by_group[gid]; count++, id++) {
                 if (trophy_id == id) {
                     details->groupId = gid;
                     break;

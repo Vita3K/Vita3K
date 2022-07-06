@@ -72,7 +72,7 @@ std::tuple<DataType, std::string> get_parameter_type_store_and_name(const SceGxm
     }
 
     default:
-        break;
+        return std::make_tuple(DataType::UNK, "unk");
     }
 }
 
@@ -91,7 +91,6 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
 
         bool is_uniform = false;
-        uint16_t curi = parameter.category;
 
         switch (parameter.category) {
         case SCE_GXM_PARAMETER_CATEGORY_UNIFORM:
@@ -446,6 +445,7 @@ DataType get_texture_component_type(SceGxmTextureFormat format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
         return DataType::UINT8;
     }
+    return DataType::UNK;
 }
 
 uint8_t get_texture_component_count(SceGxmTextureFormat format) {

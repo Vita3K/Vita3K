@@ -116,7 +116,7 @@ void configure_bound_texture(const renderer::TextureCacheState &state, const Sce
         if (block_compressed) {
             size_t compressed_size = renderer::texture::get_compressed_size(base_fmt, width, height);
             glCompressedTexImage2D(upload_type, mip_index, internal_format, width, height, 0, static_cast<GLsizei>(compressed_size), nullptr);
-        } else if (!is_swizzled || (is_swizzled && renderer::texture::can_texture_be_unswizzled_without_decode(base_fmt, false))) {
+        } else if (!is_swizzled || (renderer::texture::can_texture_be_unswizzled_without_decode(base_fmt, false))) {
             glTexImage2D(upload_type, mip_index, internal_format, width, height, 0, format, type, nullptr);
         } else {
             if (is_swizzled) {

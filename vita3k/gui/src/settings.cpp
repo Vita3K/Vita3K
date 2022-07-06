@@ -198,7 +198,6 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     const auto BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
-    const auto ICON_SIZE = ImVec2(100.f * SCALE.x, 100.f * SCALE.y);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
     const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT);
     const auto SIZE_PREVIEW = ImVec2(360.f * SCALE.x, 204.f * SCALE.y);
@@ -675,7 +674,6 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Separator();
         ImGui::PopStyleVar();
         if (!menu.empty()) {
-            const auto WINDOW_TIME_SIZE = ImVec2(WINDOW_SIZE.x - 70.f * emuenv.dpi_scale, WINDOW_SIZE.y);
             const auto TIME_SELECT_SIZE = 336.f * SCALE.x;
             ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x - TIME_SELECT_SIZE, INFORMATION_BAR_HEIGHT), ImGuiCond_Always, ImVec2(0.f, 0.f));
             ImGui::SetNextWindowSize(ImVec2(TIME_SELECT_SIZE, WINDOW_SIZE.y), ImGuiCond_Always);

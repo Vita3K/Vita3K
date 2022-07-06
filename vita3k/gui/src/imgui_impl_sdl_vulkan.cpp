@@ -222,7 +222,6 @@ static void TextureUpdateDescriptorSet(ImGui_VulkanState &state, TextureState *t
 
 static void CreateOrResizeBuffer(ImGui_VulkanState &state, vk::Buffer &buffer, vma::Allocation &buffer_allocation, vk::DeviceSize &p_buffer_size, size_t new_size, vk::BufferUsageFlagBits usage) {
     auto &vk_state = get_renderer(state);
-    VkResult err;
     if (buffer)
         vk_state.allocator.destroyBuffer(buffer, buffer_allocation);
 
@@ -241,8 +240,6 @@ static void CreateOrResizeBuffer(ImGui_VulkanState &state, vk::Buffer &buffer, v
 }
 
 static void ImGui_ImplVulkan_SetupRenderState(ImGui_VulkanState &state, ImDrawData *draw_data, vk::Pipeline pipeline, vk::CommandBuffer command_buffer, ImGui_ImplVulkanH_FrameRenderBuffers *rb, int fb_width, int fb_height) {
-    auto &vk_state = get_renderer(state);
-
     // Bind pipeline:
     command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
 
@@ -280,7 +277,7 @@ static void ImGui_ImplVulkan_SetupRenderState(ImGui_VulkanState &state, ImDrawDa
     }
 }
 
-constexpr vk::IndexType imgui_index_type = sizeof(ImDrawIdx) == 2 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
+// constexpr vk::IndexType imgui_index_type = sizeof(ImDrawIdx) == 2 ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
 
 IMGUI_API ImGui_VulkanState *ImGui_ImplSdlVulkan_Init(renderer::State *renderer, SDL_Window *window, const std::string &base_path) {
     auto *state = new ImGui_VulkanState;
@@ -449,7 +446,7 @@ IMGUI_API void ImGui_ImplSdlVulkan_RenderDrawData(ImGui_VulkanState &state) {
     }
 
     state.CommandBuffer = vk_state.screen_renderer.current_cmd_buffer;
-    uint32_t image_index = vk_state.screen_renderer.swapchain_image_idx;
+    // uint32_t image_index = vk_state.screen_renderer.swapchain_image_idx;
 
     if (vk_state.screen_renderer.need_rebuild) {
         ImGui_ImplSdlVulkan_DeletePipeline(state);

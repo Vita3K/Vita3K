@@ -165,9 +165,9 @@ VKContext::VKContext(VKState &state)
 }
 
 VKRenderTarget::VKRenderTarget(VKState &state, vma::Allocator allocator, uint16_t width, uint16_t height, uint16_t samples_per_frame)
-    : color(allocator, width * state.res_multiplier, height * state.res_multiplier, vk::Format::eR8G8B8A8Unorm)
-    , depthstencil(allocator, width * state.res_multiplier, height * state.res_multiplier, vk::Format::eD32SfloatS8Uint)
-    , mask(allocator, width, height, vk::Format::eR8G8B8A8Unorm) {
+    : mask(allocator, width, height, vk::Format::eR8G8B8A8Unorm)
+    , color(allocator, width * state.res_multiplier, height * state.res_multiplier, vk::Format::eR8G8B8A8Unorm)
+    , depthstencil(allocator, width * state.res_multiplier, height * state.res_multiplier, vk::Format::eD32SfloatS8Uint) {
     this->width = width * state.res_multiplier;
     this->height = height * state.res_multiplier;
 
@@ -209,7 +209,6 @@ VKRenderTarget::VKRenderTarget(VKState &state, vma::Allocator allocator, uint16_
     for (int i = 0; i < fences.size(); i++)
         fences[i] = state.device.createFence(fence_info);
 
-    vk::SemaphoreCreateInfo semaphore_info{};
     for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
         vk::CommandBufferAllocateInfo buffer_info{
             .commandPool = reinterpret_cast<VKContext *>(state.context)->frames[i].command_pool,
