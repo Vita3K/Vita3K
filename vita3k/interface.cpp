@@ -574,7 +574,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             emuenv.kernel.exit_delete_all_threads();
             emuenv.gxm.display_queue.abort();
             emuenv.display.abort = true;
-            emuenv.display.vblank_thread->join();
+            if (emuenv.display.vblank_thread) {
+                emuenv.display.vblank_thread->join();
+            }
             return false;
 
         case SDL_KEYDOWN:
