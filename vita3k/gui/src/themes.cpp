@@ -130,7 +130,7 @@ void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::
         start_param.clock_pos.x = 50.f;
         break;
     default:
-        LOG_WARN("Date layout for this theme is unknown : {}", start_param.date_layout);
+        LOG_WARN("Date layout for this theme is unknown: {}", start_param.date_layout);
         break;
     }
 
@@ -143,7 +143,7 @@ void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::
         if (fs::exists(fs::path(emuenv.pref_path) / "vs0" / DEFAULT_START_PATH))
             vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, DEFAULT_START_PATH);
         else {
-            LOG_WARN("Default start background not found, install firmware for fix this.");
+            LOG_WARN("Default start background not found, install firmware to fix this.");
             return;
         }
     } else
@@ -291,7 +291,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string content_id
                 }
             }
         } else
-            LOG_ERROR("theme.xml not found for Content ID: {}, in path: {}", content_id, THEME_XML_PATH.string());
+            LOG_ERROR("theme.xml not found for Content ID: {}, at path: {}", content_id, THEME_XML_PATH.string());
     } else {
         const std::vector<std::string> app_id_bg_list = {
             "NPXS10002",
@@ -321,7 +321,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string content_id
         if (buffer.empty()) {
             buffer = init_default_icon(gui, emuenv);
             if (buffer.empty()) {
-                LOG_WARN("Name: '{}', Not found icon for system App: {}.", name, content_id);
+                LOG_WARN("Name: '{}', Icon not found for system App: {}.", name, content_id);
                 continue;
             } else
                 LOG_INFO("Default icon found for system App {}.", title_id);

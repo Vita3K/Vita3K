@@ -151,7 +151,7 @@ COMMAND(handle_sync_surface_data) {
         const int result = stbi_write_png(filename.c_str(), width, height, 4, pixels, stride_in_pixels * 4);
 
         if (!result) {
-            LOG_TRACE("Fail to save color surface 0x{:X}", data);
+            LOG_TRACE("Failed to save color surface 0x{:X}", data);
         }
     }
 #endif
@@ -242,7 +242,7 @@ COMMAND(handle_transfer_copy) {
             }
         }
     } else
-        LOG_WARN("No convertion of SceGxmTransferType support yet");
+        LOG_WARN("Conversion of SceGxmTransferType is not supported yet.");
 
     // TODO: handle case where dest is a cached surface
 

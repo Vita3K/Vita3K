@@ -130,7 +130,7 @@ static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
 
                 themes_list.push_back({ content_id, updated });
             } else
-                LOG_ERROR("theme not found for title: {}", content_id);
+                LOG_ERROR("Theme not found for title: {}", content_id);
         }
     }
 
@@ -147,7 +147,7 @@ static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
         themes_info["default"].title = gui.lang.settings.theme_background.main["default"];
         themes_list.push_back({ "default", {} });
     } else
-        LOG_WARN("Default theme not found, install firmware fix this!");
+        LOG_WARN("Default theme not found, install firmware to fix this!");
 
     for (const auto &theme : themes_info) {
         for (const auto &name : theme_preview_name[theme.first]) {
