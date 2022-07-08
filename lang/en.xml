@@ -185,6 +185,21 @@
 		<minutes_ago>{} Minutes Ago</minutes_ago>
 	</common>
 
+	<content_manager name="Content Manager">
+		<search>Search</search>
+		<application name="Application">
+			<delete>The selected applications and all related data, including saved data, will be deleted.</delete>
+			<no_item>There are no content items.</no_item>
+		</application>
+		<saved_data name="Saved Data">
+			<delete>The selected saved data items will be deleted.</delete>
+			<no_saved_data>There is no saved data.</no_saved_data>
+		</saved_data>
+		<theme>Themes</theme>
+		<free_space>Free Space</free_space>
+		<clear_all>Clear all</clear_all>
+	</content_manager>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>Preparing to start the application...</preparing_start_app>
@@ -224,7 +239,28 @@ Do not power off the system or close the application.</warning_saving>
 
 	<game_data>
 		<app_close>The following application will close.</app_close>
+		<data_delete>Data to be Deleted:</data_delete>
 	</game_data>
+
+	<home_screen>
+		<filter>Filter</filter>
+		<sort_app>Sort Apps By</sort_app>
+		<all>All</all>
+		<by_region>By Region</by_region>
+		<usa>USA</usa>
+		<europe>Europe</europe>
+		<japan>Japan</japan>
+		<asia>ASIA</asia>
+		<by_type>By Type</by_type>
+		<commercial>Commercial</commercial>
+		<homebrew>Homebrew</homebrew>
+		<ver>Ver</ver>
+		<cat>Cat</cat>
+		<last_time>Last Time</last_time>
+		<tit>Title</tit>
+		<tit_id>Title ID</tit_id>
+		<refresh>Refresh</refresh>
+	</home_screen>
 
 	<indicator>
 		<app_added_home>The application has been added to the home screen.</app_added_home>
@@ -245,6 +281,27 @@ Your Vita3K system is ready!</completed_setup>
 		<next>Next</next>
 	</initial_setup>
 
+	<install_dialog>
+		<select_key_type>Select key type</select_key_type>
+		<select_work>Select work.bin</select_work>
+		<enter_zrif>Enter zRIF</enter_zrif>
+		<enter_zrif_key>Enter zRIF key</enter_zrif_key>
+		<input_zrif>Please input your zRIF here</input_zrif>
+		<copy_paste_zrif>Ctrl(Cmd) + C for copy, Ctrl(Cmd) + V to paste.</copy_paste_zrif>
+		<delete_pkg>Delete the pkg file?</delete_pkg>
+		<delete_work>Delete the work.bin file?</delete_work>
+		<check_log>Please check log for more details.</check_log>
+		<select_install_type>Select install type</select_install_type>
+		<select_file>Select File</select_file>
+		<select_directory>Select Directory</select_directory>
+		<compatible_content>archive(s) found with compatible contents.</compatible_content>
+		<successed_install>contents of this archive have successed installed:</successed_install>
+		<update_app>Update App to:</update_app>
+		<failed_install>content have failed installed:</failed_install>
+		<not_compatible_content>archive(s) did no found compatible contents:</not_compatible_content>
+		<delete_archive>Delete archive?</delete_archive>
+	</install_dialog>
+
 	<live_area>
 		<start>Start</start>
 		<continue>Continue</continue>
@@ -254,19 +311,25 @@ Your Vita3K system is ready!</completed_setup>
 		<theme_background name="Theme & Background">
 			<default>Default</default>
 			<theme name="Theme">
+				<search>Search</search>
+				<find_in_altervista>Find in Altervista</find_in_altervista>
 				<information name="Information">
 					<name>Name</name>
 					<provider>Provider</provider>
 					<updated>Updated</updated>
 					<size>Size</size>
 					<version>Version</version>
+					<content_id>Content ID</content_id>
 				</information>
 				<delete>This theme will be deleted.</delete>
 			</theme>
 			<start_screen name="Start Screen">
 				<image>Image</image>
 			</start_screen>
-			<home_screen_backgrounds>Home Screen Backgrounds</home_screen_backgrounds>
+			<home_screen_backgrounds name="Home Screen Backgrounds">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Date & Time">
 			<date_format name ="Date Format">
@@ -283,7 +346,7 @@ Your Vita3K system is ready!</completed_setup>
 			<system_language>System Language</system_language>
 			<input_language name="Input Languages">
 				<keyboards name="Keyboards">
-					<ime_langagues>
+					<ime_languages>
 						<lang id="1">Danish</lang>
 						<lang id="2">German</lang>
 						<lang id="262144">English (United Kingdom)</lang>
@@ -300,13 +363,14 @@ Your Vita3K system is ready!</completed_setup>
 						<lang id="2048">Finnish</lang>
 						<lang id="4096">Swedish</lang>
 						<lang id="524288">Turkish</lang>
-					</ime_langagues>
+					</ime_languages>
 				</keyboards>
 			</input_language>
 		</language>
 	</settings>
 
 	<trophy_collection>
+		<search>Search</search>
 		<delete_trophy>Delete Trophy</delete_trophy>
 		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Details</details>
@@ -341,10 +405,6 @@ Are you sure you want to continue?</user_delete_warn>
 		<name>Name</name>
 		<user>User</user>
 		<confirm>Confirm</confirm>
-		<cancel>Cancel</cancel>
-		<delete>Delete</delete>
-		<yes>Yes</yes>
-		<no>No</no>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 

@@ -7,7 +7,7 @@
 			<install_firmware>安装系统固件</install_firmware>
 			<install_pkg>安装pkg</install_pkg>
 			<install_zip>安装zip、vpk</install_zip>
-			<install_license>安装授权</install_license>
+			<install_license>安装许可证</install_license>
 		</file>
 		<emulation name="模拟">
 			<last_apps_used>最近使用的应用程序</last_apps_used>
@@ -17,12 +17,12 @@
 			<user_management>用户管理</user_management>
 		</configuration>
 		<controls name="控制">
-			<keyboard_controls>键盘按键映射</keyboard_controls>
-			<controllers>手柄控制器</controllers>
+			<keyboard_controls>键盘控制</keyboard_controls>
+			<controllers>控制器</controllers>
 		</controls>
 		<help name="帮助">
 			<about>关于</about>
-			<welcome>欢迎界面</welcome>
+			<welcome>欢迎</welcome>
 		</help>
 	</main_menubar>
 
@@ -37,8 +37,8 @@
 		<remove>移除</remove>
 		<open_folder>打开文件夹</open_folder>
 		<application>应用程序</application>
-		<addcont>DLC追加内容</addcont>
-		<license>授权</license>
+		<addcont>追加内容</addcont>
+		<license>许可证</license>
 		<save_data>保存数据</save_data>
 		<shader_cache>着色器缓存</shader_cache>
 		<shader_log>着色器日志</shader_log>
@@ -185,6 +185,21 @@
 		<minutes_ago>{}分钟前</minutes_ago>
 	</common>
 
+	<content_manager name="内容管理">
+		<search>搜索</search>
+		<application name="应用程序">
+			<delete>即将删除选择的应用程序及所有相关数据，包括保存数据。</delete>
+			<no_item>没有内容。</no_item>
+		</application>
+		<saved_data name="保存数据">
+			<delete>所选择的保存数据将被删除。</delete>
+			<no_saved_data>保存数据不存在。</no_saved_data>
+		</saved_data>
+		<theme>主题</theme>
+		<free_space>空余容量</free_space>
+		<clear_all>全部清除</clear_all>
+	</content_manager>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>正在准备启动应用程序…</preparing_start_app>
@@ -224,7 +239,28 @@
 
 	<game_data>
 		<app_close>下列应用程序即将关闭。</app_close>
+		<data_delete>删除的数据：</data_delete>
 	</game_data>
+
+	<home_screen>
+		<filter>筛选</filter>
+		<sort_app>应用程序排序按</sort_app>
+		<all>全部</all>
+		<by_region>按地区</by_region>
+		<usa>美版</usa>
+		<europe>欧版</europe>
+		<japan>日版</japan>
+		<asia>亚版</asia>
+		<by_type>按类型</by_type>
+		<commercial>商业</commercial>
+		<homebrew>自制</homebrew>
+		<ver>版本</ver>
+		<cat>类别</cat>
+		<last_time>最近游玩时间</last_time>
+		<tit>标题</tit>
+		<tit_id>标题ID</tit_id>
+		<refresh>刷新</refresh>
+	</home_screen>
 
 	<indicator>
 		<app_added_home>已将应用程序添加至主画面。</app_added_home>
@@ -245,6 +281,27 @@ Your Vita3K system is ready!</completed_setup>
 		<next>Next</next>
 	</initial_setup>
 
+	<install_dialog>
+		<select_key_type>选择密钥类型</select_key_type>
+		<select_work>选择work.bin</select_work>
+		<enter_zrif>输入zRIF</enter_zrif>
+		<enter_zrif_key>输入zRIF密钥</enter_zrif_key>
+		<input_zrif>请在此处输入您的zRIF</input_zrif>
+		<copy_paste_zrif>使用Ctrl（Cmd）+ C复制，使用Ctrl（Cmd）+ V粘贴。</copy_paste_zrif>
+		<delete_pkg>删除pkg文件？</delete_pkg>
+		<delete_work>删除work.bin文件？</delete_work>
+		<check_log>详情请查看日志。</check_log>
+		<select_install_type>选择安装类型</select_install_type>
+		<select_file>选择文件</select_file>
+		<select_directory>选择目录</select_directory>
+		<compatible_content>个压缩包发现兼容的内容。</compatible_content>
+		<successed_install>个内容的压缩包已成功安装：</successed_install>
+		<update_app>更新应用程序至：</update_app>
+		<failed_install>个内容安装失败：</failed_install>
+		<not_compatible_content>个压缩包未发现兼容的内容。</not_compatible_content>
+		<delete_archive>删除压缩包？</delete_archive>
+	</install_dialog>
+
 	<live_area>
 		<start>开始</start>
 		<continue>继续</continue>
@@ -254,19 +311,25 @@ Your Vita3K system is ready!</completed_setup>
 		<theme_background name="主题&背景">
 			<default>原始</default>
 			<theme name="主题">
+				<search>搜索</search>
+				<find_in_altervista>在Altervista中寻找</find_in_altervista>
 				<information name="信息">
 					<name>名称</name>
 					<provider>提供者</provider>
 					<updated>升级日期</updated>
 					<size>大小</size>
 					<version>版本</version>
+					<content_id>内容ID</content_id>
 				</information>
 				<delete>删除此主题。</delete>
 			</theme>
 			<start_screen name="开始画面">
 				<image>图像</image>
 			</start_screen>
-			<home_screen_backgrounds>主画面的背景</home_screen_backgrounds>
+			<home_screen_backgrounds name="主画面的背景">
+				<delete_background>删除背景</delete_background>
+				<add_background>添加背景</add_background>
+			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="日期&时间">
 			<date_format name ="日期格式">
@@ -283,7 +346,7 @@ Your Vita3K system is ready!</completed_setup>
 			<system_language>系统语言</system_language>
 			<input_language name="输入语言">
 				<keyboards name="键盘">
-					<ime_langagues>
+					<ime_languages>
 						<lang id="1">丹麦语</lang>
 						<lang id="2">德语</lang>
 						<lang id="262144">英语(英国)</lang>
@@ -300,13 +363,14 @@ Your Vita3K system is ready!</completed_setup>
 						<lang id="2048">芬兰语</lang>
 						<lang id="4096">瑞典语</lang>
 						<lang id="524288">土耳其语</lang>
-					</ime_langagues>
+					</ime_languages>
 				</keyboards>
 			</input_language>
 		</language>
 	</settings>
 
 	<trophy_collection>
+		<search>搜索</search>
 		<delete_trophy>删除奖杯</delete_trophy>
 		<trophy_deleted>此用户保存的奖杯信息将被删除。</trophy_deleted>
 		<details>详细信息</details>
@@ -341,10 +405,21 @@ Your Vita3K system is ready!</completed_setup>
 		<name>名称</name>
 		<user>用户</user>
 		<confirm>确认</confirm>
-		<cancel>取消</cancel>
-		<delete>删除</delete>
-		<yes>是</yes>
-		<no>否</no>
 		<automatic_user_login>自动登录用户</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Vita3K更新">
+ 		<new_version_available>检测到新版本的Vita3K。</new_version_available>
+		<back>返回</back>
+		<downloading>下载中…
+下载完毕后，Vita3K将会自动重新启动，并安装新的版本。</downloading>
+		<not_complete_update>无法完成更新。</not_complete_update>
+		<next>继续</next>
+		<update_vita3k>要升级Vita3K吗？</update_vita3k>
+		<later_version_already_installed>已安装更新版本的Vita3K软件。</later_version_already_installed>
+		<latest_version_already_installed>已安装最新版本的Vita3K。</latest_version_already_installed>
+		<new_features>{}版本的追加功能</new_features>
+		<update>更新</update>
+		<version>{}版本</version>
+	</vita3k_update>
 </lang>

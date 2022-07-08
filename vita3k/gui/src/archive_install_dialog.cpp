@@ -69,7 +69,10 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     };
     std::lock_guard<std::mutex> lock(install_mutex);
 
+    auto lang = gui.lang.install_dialog;
     auto indicator = gui.lang.indicator;
+    auto common = emuenv.common_dialog.lang.common;
+
     ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size);
     ImGui::Begin("archive_install", &gui.file_menu.archive_install_dialog, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
@@ -85,18 +88,18 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     if (type.empty()) {
         ImGui::SetCursorPosX(POS_BUTTON);
-        title = "Select install type";
-        if (ImGui::Button("Select File", BUTTON_SIZE))
+        title = lang["select_install_type"];
+        if (ImGui::Button(lang["select_file"].c_str(), BUTTON_SIZE))
             type = "file";
         ImGui::Spacing();
         ImGui::SetCursorPosX(POS_BUTTON);
-        if (ImGui::Button("Select Directory", BUTTON_SIZE))
+        if (ImGui::Button(lang["select_directory"].c_str(), BUTTON_SIZE))
             type = "directory";
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::SetCursorPosX(POS_BUTTON);
-        if (ImGui::Button("Cancel", BUTTON_SIZE))
+        if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE))
             gui.file_menu.archive_install_dialog = false;
     } else {
         if (state.empty()) {
@@ -144,7 +147,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             installation.detach();
             state = "installing";
         } else if (state == "installing") {
-            title = "Installing";
+            title = indicator["installing"];
             ImGui::SetCursorPos(ImVec2(178.f * emuenv.dpi_scale, ImGui::GetCursorPosY() + (20.f * emuenv.dpi_scale)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.app_info.app_title.c_str());
             ImGui::SetCursorPos(ImVec2(178.f * emuenv.dpi_scale, ImGui::GetCursorPosY() + (20.f * emuenv.dpi_scale)));
@@ -183,7 +186,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     });
                 };
                 ImGui::Spacing();
-                ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%lu archive(s) found with compatible contents.", contents_archives.size());
+                ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%lu %s", contents_archives.size(), lang["compatible_content"].c_str());
                 ImGui::Spacing();
                 ImGui::Separator();
                 for (const auto &archive : contents_archives) {
@@ -191,19 +194,19 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::Spacing();
                     const auto count_contents_successed = count_content_state(archive.first, true);
                     if (count_contents_successed) {
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%ld contents of this archive have successed installed:", count_contents_successed);
+                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%ld %s", count_contents_successed, lang["successed_install"].c_str());
                         for (const auto &content : archive.second) {
                             if (content.state) {
                                 ImGui::TextWrapped("%s [%s]", content.title.c_str(), content.title_id.c_str());
                                 if (content.category.find("gp") != std::string::npos)
-                                    ImGui::TextColored(GUI_COLOR_TEXT, "Update App to: %s", emuenv.app_info.app_version.c_str());
+                                    ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", lang["update_app"].c_str(), emuenv.app_info.app_version.c_str());
                             }
                         }
                     }
                     const auto count_contents_failed = count_content_state(archive.first, false);
                     if (count_contents_failed) {
                         ImGui::Spacing();
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%ld content have failed installed:", count_contents_failed);
+                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%ld %s", count_contents_failed, lang["failed_install"].c_str());
                         ImGui::Spacing();
                         for (const auto &content : archive.second) {
                             if (!content.state)
@@ -217,7 +220,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             }
             if (!invalid_archives.empty()) {
                 ImGui::Spacing();
-                ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%lu archive(s) did no found compatible contents:", invalid_archives.size());
+                ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%lu %s", invalid_archives.size(), lang["not_compatible_content"].c_str());
                 ImGui::Spacing();
                 for (const auto &archive : invalid_archives)
                     ImGui::TextWrapped("%s", archive.filename().string().c_str());
@@ -226,7 +229,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PopStyleVar();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::Checkbox("Delete archive?", &delete_archive_file);
+            ImGui::Checkbox(lang["delete_archive"].c_str(), &delete_archive_file);
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (12.f * SCALE.y)));
             if (ImGui::Button("OK", BUTTON_SIZE)) {
                 for (const auto &archive : contents_archives) {

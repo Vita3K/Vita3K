@@ -185,6 +185,20 @@
 		<minutes_ago>{}分前</minutes_ago>
 	</common>
 
+	<content_manager name="コンテンツ管理">
+		<application name="アプリケーション">
+			<delete>選択したアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。。</delete>
+			<no_item>コンテンツがありません。</no_item>
+		</application>
+		<saved_data name="セーブデータ">
+			<delete>選択したセーブデータを削除します。</delete>
+			<no_saved_data>セーブデータがありません。</no_saved_data>
+		</saved_data>
+		<theme>テーマ</theme>
+		<free_space>空き容量</free_space>
+		<clear_all>すべて解除</clear_all>
+	</content_manager>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>アプリケーションを始める準備中です...</preparing_start_app>
@@ -224,6 +238,7 @@
 
 	<game_data>
 		<app_close>以下のアプリケーションを終了します。</app_close>
+		<data_delete>削除するデータ：</data_delete>
 	</game_data>
 
 	<indicator>
@@ -254,6 +269,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<theme_background name="テーマ&背景">
 			<default>オリジナル</default>
 			<theme name="テーマ">
+				<find_in_altervista>Altervistaで探す</find_in_altervista>
 				<information name="情報">
 					<name>名前</name>
 					<provider>提供者</provider>
@@ -266,7 +282,10 @@ Vita3Kをお楽しみください。</completed_setup>
 			<start_screen name="スタート画面">
 				<image>画像</image>
 			</start_screen>
-			<home_screen_backgrounds>ホーム画面の背景</home_screen_backgrounds>
+			<home_screen_backgrounds name="ホーム画面の背景">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="日付&時刻">
 			<date_format name ="日付表示">
@@ -283,7 +302,7 @@ Vita3Kをお楽しみください。</completed_setup>
 			<system_language>システム言語</system_language>
 			<input_language name="入力言語">
 				<keyboards name="キーボード">
-					<ime_langagues>
+					<ime_languages>
 						<lang id="1">デンマーク語</lang>
 						<lang id="2">ドイツ語</lang>
 						<lang id="262144">英語 (イギリス)</lang>
@@ -300,7 +319,7 @@ Vita3Kをお楽しみください。</completed_setup>
 						<lang id="2048">フィンランド語</lang>
 						<lang id="4096">スウェーデン語</lang>
 						<lang id="524288">トルコ語</lang>
-					</ime_langagues>
+					</ime_languages>
 				</keyboards>
 			</input_language>
 		</language>
@@ -340,10 +359,6 @@ Vita3Kをお楽しみください。</completed_setup>
 		<name>名前</name>
 		<user>ユーザー</user>
 		<confirm>確認</confirm>
-		<cancel>取消</cancel>
-		<delete>削除</delete>
-		<yes>はい</yes>
-		<no>いいえ</no>
 　　　　　　　　<automatic_user_login>オートログイン</automatic_user_login>
 	</user_management>
 </lang>

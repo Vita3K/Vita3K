@@ -169,6 +169,20 @@
 		<minutes_ago>{} minuti fa</minutes_ago>
 	</common>
 
+	<content_manager name="Gestione contenuto">
+		<application name="Applicazioni">
+			<delete>Le applicazioni selezionate e tutti i dati correlati, inclusi i dati salvati, saranno eliminati.</delete>
+			<no_item>Nessun elemento di contenuto.</no_item>
+		</application>
+		<saved_data name="Dati salvati">
+			<delete>I dati salvati selezionati saranno eliminati.</delete>
+			<no_saved_data>Non ci sono dati salvati.</no_saved_data>
+		</saved_data>
+		<theme>Tema</theme>
+		<free_space>Spazio libero</free_space>
+		<clear_all>Cancella tutto</clear_all>
+	</content_manager>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>Preparazione per l'avvio dell'applicazione...</preparing_start_app>
@@ -208,6 +222,7 @@ Non spegnere il sistema né chiudere l'applicazione.</warning_saving>
 
 	<game_data>
 		<app_close>La seguente applicazione sarà chiusa.</app_close>
+		<data_delete>Dati da eliminare:</data_delete>
 	</game_data>
 
 	<indicator>
@@ -233,6 +248,66 @@ Il tuo sistema Vita3K è pronto per l'uso!</completed_setup>
 		<start>Avvia</start>
 		<continue>Continua</continue>
 	</live_area>
+
+	<settings name="Impostazioni">
+		<theme_background name="Tema e Sfondo">
+			<default>Predefinita</default>
+			<theme name="Tema">
+				<find_in_altervista>Trova in Altervista</find_in_altervista>
+				<information name="Informazioni">
+					<name>Nome</name>
+					<provider>Fornitore</provider>
+					<updated>Aggiornato</updated>
+					<size>Dimensione</size>
+					<version>Versione</version>
+				</information>
+				<delete>Questo tema sarà eliminato.</delete>
+			</theme>
+			<start_screen name="Schermata iniziale">
+				<image>Immagine</image>
+			</start_screen>
+			<home_screen_backgrounds name="Sfondi schermata principale">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Date e ora">
+			<date_format name ="Formato della data">
+				<yyyy_mm_dd>AAAA/MM/GG</yyyy_mm_dd>
+				<dd_mm_yyyy>GG/MM/AAAA</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/GG/AAAA</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Formato dell'ora">
+				<clock_12_hour>12 ore</clock_12_hour>
+				<clock_24_hour>24 ore</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Lingua">
+			<system_language>Lingua del sistema</system_language>
+			<input_language name="Lingua di immissione dati">
+				<keyboards name="Tastiere">
+					<ime_languages>
+						<lang id="1">Danese</lang>
+						<lang id="2">Tedesco</lang>
+						<lang id="262144">Inglese (Regno Unito)</lang>
+						<lang id="4">Inglese (Stati Uniti)</lang>
+						<lang id="8">Spagnolo</lang>
+						<lang id="16">Francese</lang>
+						<lang id="32">Italiano</lang>
+						<lang id="64">Olandese</lang>
+						<lang id="128">Norvegese</lang>
+						<lang id="256">Polacco</lang>
+						<lang id="131072">Portoghese (Brasile)</lang>
+						<lang id="512">Portoghese (Portogallo)</lang>
+						<lang id="1024">Russo</lang>
+						<lang id="2048">Finlandese</lang>
+						<lang id="4096">Svedese</lang>
+						<lang id="524288">Turco</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
 
 	<trophy_collection>
 		<details>Dettagli</details>

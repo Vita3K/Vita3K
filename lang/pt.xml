@@ -1,11 +1,171 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <lang>
+
+	<app_context>
+		<update_history>Histórico de atualização</update_history>
+		<information>Informações</information>
+		<app_delete>Esta aplicação e todos os dados relacionados, incluindo dados guardados, serão elminados.</app_delete>
+		<save_delete>Pretende elminar estes dados guardados?</save_delete>
+		<eligible>Elegível</eligible>
+		<ineligible>Inelegível</ineligible>
+		<level>Nível</level>
+		<name>Nome</name>
+		<trophy_earning>Ganho de Troféus</trophy_earning>
+		<parental_Controls>Controlo parental</parental_Controls>
+		<updated>Atualizado</updated>
+		<size>Tamanho</size>
+		<version>Versão</version>
+		<last_time_used>Usado pela última vez</last_time_used>
+		<never>Nunca</never>
+		<time_used>Tempo usado</time_used>
+	</app_context>
+
+	<common>
+		<cancel>Cancelar</cancel>
+		<delete>Eliminar</delete>
+		<file_corrupted>O arquivo está corrompido.</file_corrupted>
+		<no>Não</no>
+		<select_all>Selecionar Todos</select_all>
+		<select>Selecionar</select>
+		<please_wait>Por favor aguarde...</please_wait>
+		<yes>Sim</yes>
+		<wday>
+			<day>domingo</day>
+			<day>segunda-feira</day>
+			<day>terça-feira</day>
+			<day>quarta-feira</day>
+			<day>quinta-feira</day>
+			<day>sexta-feira</day>
+			<day>sábado</day>
+		</wday>
+		<ymonth>
+			<month>Janeiro,</month>
+			<month>Fevereiro,</month>
+			<month>Março,</month>
+			<month>Abril,</month>
+			<month>Maio,</month>
+			<month>Junho,</month>
+			<month>Julho,</month>
+			<month>Agosto,</month>
+			<month>Setembro,</month>
+			<month>Outubro,</month>
+			<month>Novembro,</month>
+			<month>Dezembro,</month>
+		</ymonth>
+		<small_ymonth>
+			<month>Janeiro</month>
+			<month>Fevereiro</month>
+			<month>Março</month>
+			<month>Abril</month>
+			<month>Maio</month>
+			<month>Junho</month>
+			<month>Julho</month>
+			<month>Agosto</month>
+			<month>Setembro</month>
+			<month>Outubro</month>
+			<month>Novembro</month>
+			<month>Dezembro</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1 de</days>
+			<days>2 de</days>
+			<days>3 de</days>
+			<days>4 de</days>
+			<days>5 de</days>
+			<days>6 de</days>
+			<days>7 de</days>
+			<days>8 de</days>
+			<days>9 de</days>
+			<days>10 de</days>
+			<days>11 de</days>
+			<days>12 de</days>
+			<days>13 de</days>
+			<days>14 de</days>
+			<days>15 de</days>
+			<days>16 de</days>
+			<days>17 de</days>
+			<days>18 de</days>
+			<days>19 de</days>
+			<days>20 de</days>
+			<days>21 de</days>
+			<days>22 de</days>
+			<days>23 de</days>
+			<days>24 de</days>
+			<days>25 de</days>
+			<days>26 de</days>
+			<days>27 de</days>
+			<days>28 de</days>
+			<days>29 de</days>
+			<days>30 de</days>
+			<days>31 de</days>
+		</small_mday>
+		<hidden_trophy>Troféu oculto</hidden_trophy>
+		<one_hour_ago>Há 1 hora</one_hour_ago>
+		<one_minute_ago>Há 1 minuto</one_minute_ago>
+		<bronze>Bronze</bronze>
+		<gold>Ouro</gold>
+		<platinum>Platina</platinum>
+		<silver>Prata</silver>
+		<hours_ago>Há {} horas</hours_ago>
+		<minutes_ago>Há {} minutos</minutes_ago>
+	</common>
+
+	<content_manager name="Gestor de conteúdo">
+		<application name="Aplicações">
+			<delete>As aplicações selecionadas e todos os dados relacionados, incluindo dados guardados, serão eliminados.</delete>
+			<no_item>Não há itens de conteúdo.</no_item>
+		</application>
+		<saved_data name="Dados guardados">
+			<delete>Os itens de guardados selecionados serão eliminados.</delete>
+			<no_saved_data>Não há dados guardados.</no_saved_data>
+		</saved_data>
+		<theme>Tema</theme>
+		<free_space>Espaço livre</free_space>
+		<clear_all>Limpar todos</clear_all>
+	</content_manager>
+
 	<game_data>
 		<app_close>A seguinte aplicação será fechada.</app_close>
+		<data_delete>Dados a serem eliminados:</data_delete>
 	</game_data>
 
-    <initial_setup>
+	<initial_setup>
 		<back>Retroceder</back>
 		<completed_setup>Concluiu a configuração inicial.
 O seu sistema Vita3K está pronto!</completed_setup>
@@ -17,4 +177,79 @@ O seu sistema Vita3K está pronto!</completed_setup>
 		<start>Iniciar</start>
 		<continue>Continuar</continue>
 	</live_area>
+
+	<settings name="Configurações">
+		<theme_background name="Tema e fundo">
+			<default>Predefinição</default>
+			<theme name="Tema">
+				<find_in_altervista>Localizar na Altervista</find_in_altervista>
+				<information name="Informações">
+					<name>Nome</name>
+					<provider>Fornecedor</provider>
+					<updated>Atualizado</updated>
+					<size>Tamanho</size>
+					<version>Versão</version>
+				</information>
+				<delete>Este tema será eliminado.</delete>
+			</theme>
+			<start_screen name="Ecrã inicial">
+				<image>Imagem</image>
+			</start_screen>
+			<home_screen_backgrounds name="Fundos de ecrã do ecrã de início">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Data e hora">
+			<date_format name="Formato da data">
+				<yyyy_mm_dd>AAAA/MM/DD</yyyy_mm_dd>
+				<dd_mm_yyyy>DD/MM/AAAA</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/DD/AAAA</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Formato da hora">
+				<clock_12_hour>Relógio de 12 horas</clock_12_hour>
+				<clock_24_hour>Relógio de 24 horas</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Idioma">
+			<system_language>Idioma do sistema</system_language>
+			<input_language name="Idiomas de entrada">
+				<keyboards name="Teclados">
+					<ime_languages>
+						<lang id="1">Dinamarquês</lang>
+						<lang id="2">Alemão</lang>
+						<lang id="262144">Inglês (Reino Unido)</lang>
+						<lang id="4">Inglês (Estados Unidos)</lang>
+						<lang id="8">Espanhol</lang>
+						<lang id="16">Francês</lang>
+						<lang id="32">Italiano</lang>
+						<lang id="64">Holandês</lang>
+						<lang id="128">Norueguês</lang>
+						<lang id="256">Polaco</lang>
+						<lang id="131072">Português (Brasil)</lang>
+						<lang id="512">Português (Portugal)</lang>
+						<lang id="1024">Russo</lang>
+						<lang id="2048">Finlandês</lang>
+						<lang id="4096">Sueco</lang>
+						<lang id="524288">Turco</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>Detalhes</details>
+		<earned>Ganho</earned>
+		<name>Nome</name>
+		<no_trophies>Não existem troféus.
+Pode ganhar troféus utilizando uma aplicações que suporte a funcionalidade de troféus.</no_trophies>
+		<not_earned>Sem ganhos</not_earned>
+		<original>Original</original>
+		<sort>Ordenar</sort>
+		<trophies>Troféus</trophies>
+		<grade>Grau</grade>
+		<progress>Progresso</progress>
+		<updated>Atualizado</updated>
+	</trophy_collection>
 </lang>

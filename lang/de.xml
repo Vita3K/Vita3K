@@ -50,9 +50,9 @@
 		<delete>Löschen</delete>
 		<file_corrupted>Die Datei ist beschädigt.</file_corrupted>
 		<no>Nein</no>
-		<select_all>Wähle alle aus</select_all>
-		<select>Wählen</select>
-		<please_wait>Bitte warten...</please_wait>
+		<select_all>Alle auswählen</select_all>
+		<select>Auswählen</select>
+		<please_wait>Warte bitte ...</please_wait>
 		<yes>Ja</yes>
 		<wday>
 			<day>Sonntag</day>
@@ -170,6 +170,20 @@
 		<minutes_ago>Vor {} Minuten</minutes_ago>
 	</common>
 
+	<content_manager name="Inhaltsmanager">
+		<application name="Anwendungen">
+			<delete>Die ausgewählten Anwendungen und alle dazugehörigen Daten, einschließlich gespeicherter Daten, werden gelöscht.</delete>
+			<no_item>Es gibt keine Inhaltsobjekte.</no_item>
+		</application>
+		<saved_data name="Gespeicherte Daten">
+			<delete>The selected saved data items will be deleted.</delete>
+			<no_saved_data>Es gibt keine gespeicherte Daten.</no_saved_data>
+		</saved_data>
+		<theme>Design</theme>
+		<free_space>Freier Speicherplatz</free_space>
+		<clear_all>Alle löschen</clear_all>
+	</content_manager>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>Bereite den Start der Anwendung vor...</preparing_start_app>
@@ -209,6 +223,7 @@ Schalte die Konsole nicht aus und beende nicht die Anwendung.</warning_saving>
 
 	<game_data>
 		<app_close>Folgende Anwendung wird geschlossen.</app_close>
+		<data_delete>Zu löschende Daten:</data_delete>
 	</game_data>
 
 	<indicator>
@@ -239,6 +254,7 @@ Dein Vita3K-System ist bereit!</completed_setup>
 		<theme_background name="Design und Hintergrund">
 			<default>Standard</default>
 			<theme name="Design">
+				<find_in_altervista>In Altervista suchen</find_in_altervista>
 				<information name="Informationen">
 					<name>Name</name>
 					<provider>Anbieter</provider>
@@ -251,7 +267,10 @@ Dein Vita3K-System ist bereit!</completed_setup>
 			<start_screen name="Startbildschirm">
 				<image>Bild</image>
 			</start_screen>
-			<home_screen_backgrounds>Hintergründe für Startbildschirm</home_screen_backgrounds>
+			<home_screen_backgrounds name="Hintergründe für Startbildschirm">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Datum und Uhrzeit">
 			<date_format name ="Datumsdarstellung">
@@ -268,7 +287,7 @@ Dein Vita3K-System ist bereit!</completed_setup>
 			<system_language>Systemsprache</system_language>
 			<input_language name="Eingabesprachen">
 				<keyboards name="Tastaturen">
-					<ime_langagues>
+					<ime_languages>
 						<lang id="1">Dänisch</lang>
 						<lang id="2">Deutsch</lang>
 						<lang id="262144">Englisch (Großbritannien)</lang>
@@ -285,7 +304,7 @@ Dein Vita3K-System ist bereit!</completed_setup>
 						<lang id="2048">Finnisch</lang>
 						<lang id="4096">Schwedisch</lang>
 						<lang id="524288">Türkisch</lang>
-					</ime_langagues>
+					</ime_languages>
 				</keyboards>
 			</input_language>
 		</language>
@@ -324,10 +343,6 @@ Willst du wirklich fortfahren?</user_delete_warn>
 		<name>Name</name>
 		<user>Profil</user>
 		<confirm>Bestätigen</confirm>
-		<cancel>Abbrechen</cancel>
-		<delete>Löschen</delete>
-		<yes>Ja</yes>
-		<no>Nein</no>
 		<automatic_user_login>Automatisches Einloggen</automatic_user_login>
 	</user_management>
 </lang>
