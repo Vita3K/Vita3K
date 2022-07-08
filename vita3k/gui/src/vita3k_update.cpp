@@ -26,6 +26,7 @@
 namespace gui {
 
 enum Vita3kUpdate {
+    NOT_COMPLETE_UPDATE,
     NO_UPDATE,
     HAS_UPDATE,
     DESCRIPTION,
@@ -50,7 +51,13 @@ bool init_vita3k_update(GuiState &gui) {
     // Get Build number of latest release
     const auto latest_link = "https://api.github.com/repos/Vita3K/Vita3K/releases/latest";
 #ifdef WIN32
-    const auto github_version_cmd = fmt::format(R"(powershell ((Invoke-RestMethod {}).body.split([Environment]::NewLine) ^| Select-String -Pattern \"Vita3K Build: \") -replace \"Vita3K Build: \")", latest_link);
+    std::string power_shell_version;
+    std::getline(std::ifstream(_popen("powershell (Get-Host).Version.major", "r")), power_shell_version);
+    if (power_shell_version.empty() || !std::isdigit(power_shell_version[0]) || (std::stoi(power_shell_version) < 3)) {
+        LOG_WARN("You powershell version {} is outdated and incompatible with Vita3K Update, consider to update it", power_shell_version);
+        return false;
+    }
+    const auto github_version_cmd = fmt::format(R"(powershell ((Invoke-RestMethod {} -timeout 4).body.split([Environment]::NewLine) ^| Select-String -Pattern \"Vita3K Build: \") -replace \"Vita3K Build: \")", latest_link);
 #else
     const auto github_version_cmd = fmt::format(R"(curl -sL {} | grep "Corresponding commit:" | cut -d " " -f 8 | grep -o '[[:digit:]]*')", latest_link);
 #endif
@@ -115,22 +122,30 @@ bool init_vita3k_update(GuiState &gui) {
                 std::system(msg_cmd.c_str());
                 std::ifstream msg_list(tmpmsg, std::ios::in | std::ios::binary);
                 const auto push_commit = [&](const std::string commit) {
+                    if (git_commit_desc_list.size() < commit_pos) {
+                        LOG_WARN("Error of get commit description, abort");
+                        return false;
+                    }
+
                     git_commit_desc_list[commit_pos].second = commit;
                     ++commit_pos;
+                    return true;
                 };
                 std::string commit_msg;
                 while (std::getline(msg_list, line)) {
 #ifdef WIN32
-                    if (line.find('\r\n') != std::string::npos) {
+                    if (line.find(static_cast<char>('\r\n')) != std::string::npos) {
                         commit_msg += line;
-                        push_commit(commit_msg);
+                        if (!push_commit(commit_msg))
+                            break;
                         commit_msg.clear();
                     } else
                         commit_msg += line + "\n";
 #else
                     // Contrary to windows, each line is a commit
                     boost::replace_all(line, "\\n", "\n");
-                    push_commit(line);
+                    if (!push_commit(line))
+                        break;
 #endif
                 }
                 msg_list.close();
@@ -161,7 +176,7 @@ static void download_update() {
 #else
             const auto download_command = "curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/ubuntu-latest.zip -o ./vita3k-latest.zip";
 #endif
-            LOG_DEBUG("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
+            LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
             system(download_command);
             if (fs::exists("vita3k-latest.zip")) {
                 SDL_Event event;
@@ -176,6 +191,7 @@ static void download_update() {
 
                 std::system(vita3K_batch);
             } else {
+                state = NOT_COMPLETE_UPDATE;
                 LOG_WARN("Download failed, please try again later.");
             }
         });
@@ -213,9 +229,15 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
     switch (state) {
+    case NOT_COMPLETE_UPDATE:
+        ImGui::SetCursorPos(ImVec2(display_size.x / 2.f - (ImGui::CalcTextSize(lang["not_complete_update"].c_str()).x / 2.f), (display_size.y / 2.f) - ImGui::GetFontSize()));
+        ImGui::Text("%s", lang["not_complete_update"].c_str());
+
+        break;
     case NO_UPDATE: {
-        ImGui::SetCursorPos(ImVec2(display_size.x / 2.f - (ImGui::CalcTextSize(lang["latest_version_already_installed"].c_str()).x / 2.f), display_size.y / 2.f));
-        ImGui::Text("%s", lang["latest_version_already_installed"].c_str());
+        const auto no_update_str = app_number > git_version ? lang["later_version_already_installed"].c_str() : lang["latest_version_already_installed"].c_str();
+        ImGui::SetCursorPos(ImVec2(display_size.x / 2.f - (ImGui::CalcTextSize(no_update_str).x / 2.f), display_size.y / 2.f));
+        ImGui::Text("%s", no_update_str);
 
         break;
     }
@@ -271,6 +293,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushTextWrapPos(868.f * SCALE.x);
         ImGui::Text("%s", lang["downloading"].c_str());
         ImGui::PopTextWrapPos();
+
         break;
     }
     default:

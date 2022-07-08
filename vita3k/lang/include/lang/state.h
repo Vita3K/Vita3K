@@ -270,12 +270,14 @@ struct LangState {
     };
     std::map<std::string, std::string> vita3k_update = {
         { "title", "Vita3K Update" },
-        { "back", "Back" },
         { "new_version_available", "A new version of the Vita3K is available." },
+        { "back", "Back" },
+        { "downloading", "Downloading...\nAfter the download is complete, Vita3K will restart automatically and then install the new Vita3K." },
+        { "not_complete_update", "Could not complete the update." },
         { "next", "Next" },
         { "update_vita3k", "Do you want to update Vita3K" },
+        { "later_version_already_installed", "The later version of the Vita3K software is already installed." },
         { "latest_version_already_installed", "The latest version of the Vita3K is already installed." },
-        { "downloading", "Downloading...\nAfter the download is complete, Vita3K will restart automatically and then install the new version." },
         { "new_features", "New Features in Version {}" },
         { "update", "Update" },
         { "version", "Version {}" }
