@@ -54,28 +54,42 @@
 		<please_wait>Por favor aguarde...</please_wait>
 		<yes>Sim</yes>
 		<wday>
-			<day>Domingo</day>
-			<day>Segunda</day>
-			<day>Terça</day>
-			<day>Quarta</day>
-			<day>Quinta</day>
-			<day>Sexta</day>
-			<day>Sábado</day>
+			<day>domingo</day>
+			<day>segunda</day>
+			<day>terça</day>
+			<day>quarta</day>
+			<day>quinta</day>
+			<day>sexta</day>
+			<day>sábado</day>
 		</wday>
 		<ymonth>
-			<month>Janeiro</month>
-			<month>Fevereiro</month>
-			<month>Março</month>
-			<month>Abril</month>
-			<month>Maio</month>
-			<month>Junho</month>
-			<month>Julho</month>
-			<month>Agosto</month>
-			<month>Setembro</month>
-			<month>Outubro</month>
-			<month>Novembro</month>
-			<month>Dezembro</month>
+			<month>janeiro</month>
+			<month>fevereiro</month>
+			<month>março</month>
+			<month>abril</month>
+			<month>maio</month>
+			<month>junho</month>
+			<month>julho</month>
+			<month>agosto</month>
+			<month>setembro</month>
+			<month>outubro</month>
+			<month>novembro</month>
+			<month>dezembro</month>
 		</ymonth>
+		<small_ymonth>
+			<month>janeiro</month>
+			<month>fevereiro</month>
+			<month>março</month>
+			<month>abril</month>
+			<month>maio</month>
+			<month>junho</month>
+			<month>julho</month>
+			<month>agosto</month>
+			<month>setembro</month>
+			<month>outubro</month>
+			<month>novembro</month>
+			<month>dezembro</month>
+		</small_ymonth>
 		<mday>
 			<days></days>
 			<days>1</days>
@@ -110,20 +124,40 @@
 			<days>30</days>
 			<days>31</days>
 		</mday>
-		<small_ymonth>
-			<month>janeiro</month>
-			<month>fevereiro</month>
-			<month>março</month>
-			<month>abril</month>
-			<month>maio</month>
-			<month>junho</month>
-			<month>julho</month>
-			<month>agosto</month>
-			<month>setembro</month>
-			<month>outubro</month>
-			<month>novembro</month>
-			<month>dezembro</month>
-		</small_ymonth>
+		<small_mday>
+			<days></days>
+			<days>1 de</days>
+			<days>2 de</days>
+			<days>3 de</days>
+			<days>4 de</days>
+			<days>5 de</days>
+			<days>6 de</days>
+			<days>7 de</days>
+			<days>8 de</days>
+			<days>9 de</days>
+			<days>10 de</days>
+			<days>11 de</days>
+			<days>12 de</days>
+			<days>13 de</days>
+			<days>14 de</days>
+			<days>15 de</days>
+			<days>16 de</days>
+			<days>17 de</days>
+			<days>18 de</days>
+			<days>19 de</days>
+			<days>20 de</days>
+			<days>21 de</days>
+			<days>22 de</days>
+			<days>23 de</days>
+			<days>24 de</days>
+			<days>25 de</days>
+			<days>26 de</days>
+			<days>27 de</days>
+			<days>28 de</days>
+			<days>29 de</days>
+			<days>30 de</days>
+			<days>31 de</days>
+		</small_mday>
 		<hidden_trophy>Troféu Escondido</hidden_trophy>
 		<one_hour_ago>1 Hora Atrás</one_hour_ago>
 		<one_minute_ago>1 Minuto Atrás</one_minute_ago>

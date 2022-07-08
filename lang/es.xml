@@ -76,6 +76,20 @@
 			<month>Noviembre</month>
 			<month>Diciembre</month>
 		</ymonth>
+		<small_ymonth>
+			<month>enero</month>
+			<month>febrero</month>
+			<month>marzo</month>
+			<month>abril</month>
+			<month>mayo</month>
+			<month>junio</month>
+			<month>julio</month>
+			<month>agosto</month>
+			<month>septiembre</month>
+			<month>octubre</month>
+			<month>noviembre</month>
+			<month>diciembre</month>
+		</small_ymonth>
 		<mday>
 			<days></days>
 			<days>1</days>
@@ -110,20 +124,40 @@
 			<days>30</days>
 			<days>31</days>
 		</mday>
-		<small_ymonth>
-			<month>enero</month>
-			<month>febrero</month>
-			<month>marzo</month>
-			<month>abril</month>
-			<month>mayo</month>
-			<month>junio</month>
-			<month>julio</month>
-			<month>agosto</month>
-			<month>septiembre</month>
-			<month>octubre</month>
-			<month>noviembre</month>
-			<month>diciembre</month>
-		</small_ymonth>
+		<small_mday>
+			<days></days>
+			<days>1 de</days>
+			<days>2 de</days>
+			<days>3 de</days>
+			<days>4 de</days>
+			<days>5 de</days>
+			<days>6 de</days>
+			<days>7 de</days>
+			<days>8 de</days>
+			<days>9 de</days>
+			<days>10 de</days>
+			<days>11 de</days>
+			<days>12 de</days>
+			<days>13 de</days>
+			<days>14 de</days>
+			<days>15 de</days>
+			<days>16 de</days>
+			<days>17 de</days>
+			<days>18 de</days>
+			<days>19 de</days>
+			<days>20 de</days>
+			<days>21 de</days>
+			<days>22 de</days>
+			<days>23 de</days>
+			<days>24 de</days>
+			<days>25 de</days>
+			<days>26 de</days>
+			<days>27 de</days>
+			<days>28 de</days>
+			<days>29 de</days>
+			<days>30 de</days>
+			<days>31 de</days>
+		</small_mday>
 		<hidden_trophy>Trofeo oculto</hidden_trophy>
 		<one_hour_ago>Hace 1 hora</one_hour_ago>
 		<one_minute_ago>Hace 1 minuto</one_minute_ago>
