@@ -92,6 +92,20 @@
 			<month>11月</month>
 			<month>12月</month>
 		</ymonth>
+		<small_ymonth>
+			<month>1月</month>
+			<month>2月</month>
+			<month>3月</month>
+			<month>4月</month>
+			<month>5月</month>
+			<month>6月</month>
+			<month>7月</month>
+			<month>8月</month>
+			<month>9月</month>
+			<month>10月</month>
+			<month>11月</month>
+			<month>12月</month>
+		</small_ymonth>
 		<mday>
 			<days></days>
 			<days>1日</days>
@@ -126,20 +140,40 @@
 			<days>30日</days>
 			<days>31日</days>
 		</mday>
-		<small_ymonth>
-			<month>1月</month>
-			<month>2月</month>
-			<month>3月</month>
-			<month>4月</month>
-			<month>5月</month>
-			<month>6月</month>
-			<month>7月</month>
-			<month>8月</month>
-			<month>9月</month>
-			<month>10月</month>
-			<month>11月</month>
-			<month>12月</month>
-		</small_ymonth>
+		<small_mday>
+			<days></days>
+			<days>1日</days>
+			<days>2日</days>
+			<days>3日</days>
+			<days>4日</days>
+			<days>5日</days>
+			<days>6日</days>
+			<days>7日</days>
+			<days>8日</days>
+			<days>9日</days>
+			<days>10日</days>
+			<days>11日</days>
+			<days>12日</days>
+			<days>13日</days>
+			<days>14日</days>
+			<days>15日</days>
+			<days>16日</days>
+			<days>17日</days>
+			<days>18日</days>
+			<days>19日</days>
+			<days>20日</days>
+			<days>21日</days>
+			<days>22日</days>
+			<days>23日</days>
+			<days>24日</days>
+			<days>25日</days>
+			<days>26日</days>
+			<days>27日</days>
+			<days>28日</days>
+			<days>29日</days>
+			<days>30日</days>
+			<days>31日</days>
+		</small_mday>
 		<hidden_trophy>隐藏奖杯</hidden_trophy>
 		<one_hour_ago>1小时前</one_hour_ago>
 		<one_minute_ago>1分钟前</one_minute_ago>

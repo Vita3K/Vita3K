@@ -584,7 +584,8 @@ std::map<DateTime, std::string> get_date_time(GuiState &gui, EmuEnvState &emuenv
             break;
         case SCE_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY: {
             const auto small_month_str = gui.lang.common.small_ymonth[date_time.tm_mon];
-            date_time_str[DateTime::DATE_DETAIL] = fmt::format("{} {} ({})", days_str, small_month_str, day_str);
+            const auto small_days_str = gui.lang.common.small_mday[date_time.tm_mon];
+            date_time_str[DateTime::DATE_DETAIL] = fmt::format("{} {} ({})", small_days_str, small_month_str, day_str);
             date_time_str[DateTime::DATE_MINI] = fmt::format("{}/{}/{}", days, month, year);
             break;
         }
