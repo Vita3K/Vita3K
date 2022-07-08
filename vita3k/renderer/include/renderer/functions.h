@@ -149,24 +149,38 @@ void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_
 const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem);
 
 /**
- * \brief Decompresses all the blocks of a DXT compressed texture and stores the resulting pixels in 'image'.
+ * \brief Decompresses all the blocks of a block compressed texture and stores the resulting pixels in 'image'.
  *
  * Output results is in format RGBA, with each channel being 8 bits.
  *
- * \param width            Texture width.
- * \param height           Texture height.
- * \param block_storage    Pointer to compressed DXT1 blocks.
- * \param image            Pointer to the image where the decompressed pixels will be stored.
- * \param bc_type          Block compressed type. BC1 (DXT1), BC2 (DXT2) or BC3 (DXT3).
+ * \param width             Texture width.
+ * \param height            Texture height.
+ * \param block_storage     Pointer to compressed blocks.
+ * \param image             Pointer to the image where the decompressed pixels will be stored.
+ * \param bc_type           Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2) or BC5S (RGTC2).
  */
 void decompress_bc_swizz_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *block_storage, std::uint32_t *image, const std::uint8_t bc_type);
+
+/**
+ * \brief Solves Z-order on all the blocks of a block compressed texture and stores the resulting pixels in 'dest'.
+ *
+ * Output results is in format RGBA, with each channel being 8 bits.
+ *
+ * \param width     Texture width.
+ * \param height    Texture height.
+ * \param src       Pointer to compressed blocks.
+ * \param dest      Pointer to the image where the decompressed pixels will be stored.
+ * \param bc_type   Block compressed type. BC1 (DXT1), BC2 (DXT3), BC3 (DXT5), BC4U (RGTC1), BC4S (RGTC1), BC5U (RGTC2 or BC5S (RGTC2).
+ */
+void resolve_z_order_compressed_image(std::uint32_t width, std::uint32_t height, const std::uint8_t *src, std::uint8_t *dest, const std::uint8_t bc_type);
 
 void swizzled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t width, uint16_t height, uint8_t bits_per_pixel);
 
 void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, MemState &mem);
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);
-bool is_compressed_format(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height, size_t &source_size);
+bool is_compressed_format(SceGxmTextureBaseFormat base_format);
+size_t get_compressed_size(SceGxmTextureBaseFormat base_format, std::uint32_t width, std::uint32_t height);
 TextureCacheHash hash_texture_data(const SceGxmTexture &texture, const MemState &mem);
 size_t texture_size(const SceGxmTexture &texture);
 
