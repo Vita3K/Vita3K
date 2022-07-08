@@ -170,6 +170,20 @@
 		<minutes_ago>Il y a {} minutes</minutes_ago>
 	</common>
 
+	<content_manager name="Gestionnaire de contenu">
+		<application name="Applications">
+			<delete>Les applications sélectionnées et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</delete>
+			<no_item>Aucun élément de contenu.</no_item>
+		</application>
+		<saved_data name="Données sauvegardées">
+			<delete>Les données sauvegardées sélectionnées vont être supprimées.</delete>
+			<no_saved_data>Aucune données sauvegardées.</no_saved_data>
+		</saved_data>
+		<theme>Thème</theme>
+		<free_space>Espace libre</free_space>
+		<clear_all>Décocher tout</clear_all>
+	</content_manager>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>Préparation au lancement de l'application...</preparing_start_app>
@@ -209,6 +223,7 @@ Ne pas éteindre le système, ni fermer l'application.</warning_saving>
 
 	<game_data>
 		<app_close>L'application suivante va être fermée.</app_close>
+		<data_delete>Données à supprimer :</data_delete>
 	</game_data>
 
 	<indicator>
@@ -239,6 +254,7 @@ Votre système Vita3K est prêt !</completed_setup>
 		<theme_background name="Thème et Arrière-plan">
 			<default>Par défaut</default>
 			<theme name="Thème">
+				<find_in_altervista>Trouver dans Altervista</find_in_altervista>
 				<information name="Informations">
 					<name>Nom</name>
 					<provider>Prestataire</provider>
@@ -251,7 +267,10 @@ Votre système Vita3K est prêt !</completed_setup>
 			<start_screen name="Écran de démarrage">
 				<image>Image</image>
 			</start_screen>
-			<home_screen_backgrounds>Arrière-plans d'écran d'accueil</home_screen_backgrounds>
+			<home_screen_backgrounds name="Arrière-plans d'écran d'accueil">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Date et heure">
 			<date_format name ="Affichage de la date">
@@ -268,7 +287,7 @@ Votre système Vita3K est prêt !</completed_setup>
 			<system_language>Langue système</system_language>
 			<input_language name="Langue de saisie">
 				<keyboards name="Claviers">
-					<ime_langagues>
+					<ime_languages>
 						<lang id="1">Danois</lang>
 						<lang id="2">Allemand</lang>
 						<lang id="262144">Anglais (Royaume-Uni)</lang>
@@ -285,7 +304,7 @@ Votre système Vita3K est prêt !</completed_setup>
 						<lang id="2048">Finnois</lang>
 						<lang id="4096">Suédois</lang>
 						<lang id="524288">Turc</lang>
-					</ime_langagues>
+					</ime_languages>
 				</keyboards>
 			</input_language>
 		</language>

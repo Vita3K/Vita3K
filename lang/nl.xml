@@ -76,40 +76,6 @@
 			<month>November</month>
 			<month>December</month>
 		</ymonth>
-		<mday>
-			<days></days>
-			<days>1</days>
-			<days>2</days>
-			<days>3</days>
-			<days>4</days>
-			<days>5</days>
-			<days>6</days>
-			<days>7</days>
-			<days>8</days>
-			<days>9</days>
-			<days>10</days>
-			<days>11</days>
-			<days>12</days>
-			<days>13</days>
-			<days>14</days>
-			<days>15</days>
-			<days>16</days>
-			<days>17</days>
-			<days>18</days>
-			<days>19</days>
-			<days>20</days>
-			<days>21</days>
-			<days>22</days>
-			<days>23</days>
-			<days>24</days>
-			<days>25</days>
-			<days>26</days>
-			<days>27</days>
-			<days>28</days>
-			<days>29</days>
-			<days>30</days>
-			<days>31</days>
-		</mday>
 		<small_ymonth>
 			<month>januari</month>
 			<month>februari</month>
@@ -203,6 +169,20 @@
 		<minutes_ago>{} minuten geleden</minutes_ago>
 	</common>
 
+	<content_manager name="Content manager">
+		<application name="Applicaties">
+			<delete>De geselecteerde applicaties en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</delete>
+			<no_item>Er zijn geen content-items.</no_item>
+		</application>
+		<saved_data name="Opgeslagen data">
+			<delete>De geselecteerde opgeslagen data-items worden verwijderd.</delete>
+			<no_saved_data>Er zijn geen opgeslagen data.</no_saved_data>
+		</saved_data>
+		<theme>Thema</theme>
+		<free_space>Vrije ruimte</free_space>
+		<clear_all>Alles wissen</clear_all>
+	</content_manager>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>Bezig met het voorbereiden voor het starten van de applicatie...</preparing_start_app>
@@ -242,6 +222,7 @@ Schakel het systeem niet uit en sluit de applicatie niet.</warning_saving>
 
 	<game_data>
 		<app_close>De volgende applicatie wordt gesloten.</app_close>
+		<data_delete>Te verwijderen data:</data_delete>
 	</game_data>
 
 	<indicator>
@@ -272,6 +253,7 @@ Je Vita3K-systeem is gereed!</completed_setup>
 		<theme_background name="Thema en achtergrond">
 			<default>Standaard</default>
 			<theme name="Thema">
+				<find_in_altervista>Zoeken in Altervista</find_in_altervista>
 				<information name="Informatie">
 					<name>Naam</name>
 					<provider>Provider</provider>
@@ -284,7 +266,10 @@ Je Vita3K-systeem is gereed!</completed_setup>
 			<start_screen name="Startscherm">
 				<image>Afbeelding</image>
 			</start_screen>
-			<home_screen_backgrounds>Achtergronden voor beginscherm</home_screen_backgrounds>
+			<home_screen_backgrounds name="Achtergronden voor beginscherm">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Datum en tijd">
 			<date_format name ="Datumweergave">
@@ -301,7 +286,7 @@ Je Vita3K-systeem is gereed!</completed_setup>
 			<system_language>Systeemtaal</system_language>
 			<input_language name="Invoertalen">
 				<keyboards name="Toetsenborden">
-					<ime_langagues>
+					<ime_languages>
 						<lang id="1">Deens</lang>
 						<lang id="2">Duits</lang>
 						<lang id="262144">Engels (Verenigd Koninkrijk)</lang>
@@ -318,7 +303,7 @@ Je Vita3K-systeem is gereed!</completed_setup>
 						<lang id="2048">Fins</lang>
 						<lang id="4096">Zweeds</lang>
 						<lang id="524288">Turks</lang>
-					</ime_langagues>
+					</ime_languages>
 				</keyboards>
 			</input_language>
 		</language>

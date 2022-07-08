@@ -170,6 +170,20 @@
 		<minutes_ago>{} мин. назад</minutes_ago>
 	</common>
 
+	<content_manager name="Управление данными">
+		<application name="Приложения">
+			<delete>Выбранные приложения и все связанные с ними данные, в том числе сохраненные данные, будут удалены.</delete>
+			<no_item>Отсутствуют элементы данных.</no_item>
+		</application>
+		<saved_data name="Сохраненные данные">
+			<delete>Выбранные сохраненные данные будут удалены.</delete>
+			<no_saved_data>Отсутствуют сохраненные данные.</no_saved_data>
+		</saved_data>
+		<theme>Тема</theme>
+		<free_space>Cвободное</free_space>
+		<clear_all>Очистить все</clear_all>
+	</content_manager>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>Подготовка к запуску приложения...</preparing_start_app>
@@ -209,6 +223,7 @@
 
 	<game_data>
 		<app_close>Следующее приложение будет закрыто.</app_close>
+		<data_delete>Удаляемые данные:</data_delete>
 	</game_data>
 
 	<indicator>
@@ -239,6 +254,7 @@
 		<theme_background name="Тема и Фон">
 			<default>По умолчанию</default>
 			<theme name="Тема">
+				<find_in_altervista>Поиск в Altervista</find_in_altervista>
 				<information name="Информация">
 					<name>Название</name>
 					<provider>Поставщик</provider>
@@ -251,7 +267,10 @@
 			<start_screen name="Экран запуска">
 				<image>Изображение</image>
 			</start_screen>
-			<home_screen_backgrounds>Фон начального экрана</home_screen_backgrounds>
+			<home_screen_backgrounds name="Фон начального экрана">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Дата и время">
 			<date_format name ="Формат даты">
@@ -268,7 +287,7 @@
 			<system_language>Язык системы</system_language>
 			<input_language name="Языки ввода">
 				<keyboards name="Клавиатуры">
-					<ime_langagues>
+					<ime_languages>
 						<lang id="1">Датский</lang>
 						<lang id="2">Немецкий</lang>
 						<lang id="262144">Английский (Великобритания)</lang>
@@ -285,7 +304,7 @@
 						<lang id="2048">Финский</lang>
 						<lang id="4096">Шведский</lang>
 						<lang id="524288">турецкий</lang>
-					</ime_langagues>
+					</ime_languages>
 				</keyboards>
 			</input_language>
 		</language>
@@ -324,10 +343,6 @@
 		<name>Имя</name>
 		<user>Пользователь</user>
 		<confirm>Подтвердить</confirm>
-		<cancel>Отмена</cancel>
-		<delete>Удалить</delete>
-		<yes>Да</yes>
-		<no>Нет</no>
 		<automatic_user_login>Автоматический вход пользователя</automatic_user_login>
 	</user_management>
 </lang>

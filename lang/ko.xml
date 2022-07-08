@@ -142,6 +142,20 @@
 		<minutes_ago>{} 분 전</minutes_ago>
 	</common>
 
+	<content_manager name="콘텐츠 관리">
+		<application name="애플리케이션">
+			<delete>선택한 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</delete>
+			<no_item>콘텐츠가 없습니다.</no_item>
+		</application>
+		<saved_data name="저장 데이터">
+			<delete>선택한 세이브 데이터를 삭제합니다.</delete>
+			<no_saved_data>저장 데이터가 없습니다.</no_saved_data>
+		</saved_data>
+		<theme>테마</theme>
+		<free_space>빈 용량</free_space>
+		<clear_all>모두 해제</clear_all>
+	</content_manager>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>애플리케이션을 시작하기 위한 준비중입니다...</preparing_start_app>
@@ -181,6 +195,7 @@
 
 	<game_data>
 		<app_close>아래의 애플리케이션을 종료합니다.</app_close>
+		<data_delete>삭제된 데이터:</data_delete>
 	</game_data>
 
 	<indicator>
@@ -211,6 +226,7 @@ Your Vita3K system is ready!</completed_setup>
 		<theme_background name="테마 & 배경">
 			<default>오리지널</default>
 			<theme name="테마">
+				<find_in_altervista>Altervista에서 찾기</find_in_altervista>
 				<information name="정보">
 					<name>이름</name>
 					<provider>제공자</provider>
@@ -223,7 +239,10 @@ Your Vita3K system is ready!</completed_setup>
 			<start_screen name="시작 화면">
 				<image>이미지</image>
 			</start_screen>
-			<home_screen_backgrounds>홈 화면의 배경</home_screen_backgrounds>
+			<home_screen_backgrounds name="홈 화면의 배경">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="날짜 & 시각">
 			<date_format name ="날짜 표시 형식">
@@ -240,7 +259,7 @@ Your Vita3K system is ready!</completed_setup>
 			<system_language>시스템 언어</system_language>
 			<input_language name="입력 언어">
 				<keyboards name="키보드">
-					<ime_langagues>
+					<ime_languages>
 						<lang id="1">덴마크어</lang>
 						<lang id="2">독일어</lang>
 						<lang id="262144">영어 (영국)</lang>
@@ -257,7 +276,7 @@ Your Vita3K system is ready!</completed_setup>
 						<lang id="2048">핀란드어</lang>
 						<lang id="4096">스웨덴어</lang>
 						<lang id="524288">터키어</lang>
-					</ime_langagues>
+					</ime_languages>
 				</keyboards>
 			</input_language>
 		</language>

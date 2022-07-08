@@ -417,10 +417,12 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), display_size, IM_COL32(31.f, 12.f, 0.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
+    auto lang = gui.lang.trophy_collection;
+
     if (group_id_selected.empty()) {
         ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
         if (!np_com_id_list.empty() && np_com_id_selected.empty()) {
-            ImGui::TextColored(GUI_COLOR_TEXT, "Search");
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["search"].c_str());
             ImGui::SameLine();
             search_bar.Draw("##search_bar", 200 * SCALE.x);
         }
@@ -432,8 +434,6 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     }
     ImGui::SetNextWindowPos(ImVec2(90.f * SCALE.x, (!trophy_id_selected.empty() || detail_np_com_id ? 48.0f : 90.f) * SCALE.y), ImGuiCond_Always, ImVec2(0.f, 0.f));
     ImGui::BeginChild("##trophy_collection_child", !trophy_id_selected.empty() || detail_np_com_id ? SIZE_INFO : SIZE_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
-
-    auto lang = gui.lang.trophy_collection;
 
     // Trophy Collection
     if (np_com_id_list.empty()) {
@@ -472,8 +472,10 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + POPUP_SIZE.x - SIZE_ICON_LIST.x - (55.f * SCALE.x));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", np_com_id_info[delete_np_com_id].name["000"].c_str());
                 ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
-                ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["trophy_deleted"].c_str()).x / 2.f), POPUP_SIZE.y / 2.f));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["trophy_deleted"].c_str());
+                const auto delete_str = lang["trophy_deleted"].c_str();
+                const auto CALC_TEXT = ImGui::CalcTextSize(delete_str);
+                ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - (CALC_TEXT.x / 2.f), POPUP_SIZE.y / 2.f));
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", delete_str);
                 ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), POPUP_SIZE.y - BUTTON_SIZE.y - (22.0f * SCALE.y)));
                 const auto cancel_str = !emuenv.common_dialog.lang.common["cancel"].empty() ? emuenv.common_dialog.lang.common["cancel"].c_str() : "Cancel";
                 if (ImGui::Button(cancel_str, BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))

@@ -332,12 +332,13 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
 
 static std::string get_label_name(GuiState &gui, const SortType &type) {
     std::string label;
+    auto lang = gui.lang.home_screen;
     switch (type) {
-    case APP_VER: label = "Ver"; break;
-    case CATEGORY: label = "Cat"; break;
-    case LAST_TIME: label = "Last Time"; break;
-    case TITLE: label = "Title"; break;
-    case TITLE_ID: label = "Title ID"; break;
+    case APP_VER: label = lang["ver"].c_str(); break;
+    case CATEGORY: label = lang["cat"].c_str(); break;
+    case LAST_TIME: label = lang["last_time"].c_str(); break;
+    case TITLE: label = lang["tit"].c_str(); break;
+    case TITLE_ID: label = lang["tit_id"].c_str(); break;
     }
 
     switch (gui.app_selector.app_list_sorted[type]) {
@@ -420,6 +421,8 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const float icon_size = static_cast<float>(emuenv.cfg.icon_size) * SCALE.x;
     const float column_icon_size = icon_size + (20.f * SCALE.x);
 
+    auto lang = gui.lang.home_screen;
+
     switch (gui.app_selector.state) {
     case SELECT_APP:
         ImGui::SetWindowFontScale(0.9f * RES_SCALE.x);
@@ -442,7 +445,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         if (!emuenv.cfg.apps_list_grid) {
             ImGui::Columns(6);
             ImGui::SetColumnWidth(0, column_icon_size);
-            if (ImGui::Button("Filter"))
+            if (ImGui::Button(lang["filter"].c_str()))
                 ImGui::OpenPopup("app_filter");
             ImGui::NextColumn();
             ImGui::SetColumnWidth(1, title_id_size);
@@ -466,10 +469,10 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         } else {
             ImGui::Columns(2);
             ImGui::SetColumnWidth(0, 90 * SCALE.x);
-            if (ImGui::Button("Filter"))
+            if (ImGui::Button(lang["filter"].c_str()))
                 ImGui::OpenPopup("app_filter");
             ImGui::NextColumn();
-            if (ImGui::Button("Sort Apps By"))
+            if (ImGui::Button(lang["sort_app"].c_str()))
                 ImGui::OpenPopup("sort_apps");
             if (ImGui::BeginPopup("sort_apps")) {
                 ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
@@ -489,24 +492,24 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         }
         if (ImGui::BeginPopup("app_filter")) {
             ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-            if (ImGui::MenuItem("All", nullptr, app_region == ALL))
+            if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_region == ALL))
                 app_region = ALL;
-            if (ImGui::BeginMenu("By Region")) {
+            if (ImGui::BeginMenu(lang["by_region"].c_str())) {
                 ImGui::SetWindowFontScale(1.1f * RES_SCALE.x);
-                if (ImGui::MenuItem("USA", nullptr, app_region == USA))
+                if (ImGui::MenuItem(lang["usa"].c_str(), nullptr, app_region == USA))
                     app_region = USA;
-                if (ImGui::MenuItem("Europe", nullptr, app_region == EURO))
+                if (ImGui::MenuItem(lang["europe"].c_str(), nullptr, app_region == EURO))
                     app_region = EURO;
-                if (ImGui::MenuItem("Japan", nullptr, app_region == JAPAN))
+                if (ImGui::MenuItem(lang["japan"].c_str(), nullptr, app_region == JAPAN))
                     app_region = JAPAN;
-                if (ImGui::MenuItem("Asia", nullptr, app_region == ASIA))
+                if (ImGui::MenuItem(lang["asia"].c_str(), nullptr, app_region == ASIA))
                     app_region = ASIA;
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("By Type")) {
-                if (ImGui::MenuItem("Commercial", nullptr, app_region == COMMERCIAL))
+            if (ImGui::BeginMenu(lang["by_type"].c_str())) {
+                if (ImGui::MenuItem(lang["commercial"].c_str(), nullptr, app_region == COMMERCIAL))
                     app_region = COMMERCIAL;
-                if (ImGui::MenuItem("Homebrew", nullptr, app_region == HOMEBREW))
+                if (ImGui::MenuItem(lang["homebrew"].c_str(), nullptr, app_region == HOMEBREW))
                     app_region = HOMEBREW;
                 ImGui::EndMenu();
             }
@@ -515,8 +518,8 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::PopStyleColor();
         const auto search_bar_size = 120.f * SCALE.x;
-        ImGui::SameLine(ImGui::GetColumnWidth() - ImGui::CalcTextSize("Refresh").x - search_bar_size - (78 * SCALE.x));
-        if (ImGui::Button("Refresh"))
+        ImGui::SameLine(ImGui::GetColumnWidth() - ImGui::CalcTextSize(lang["refresh"].c_str()).x - search_bar_size - (78 * SCALE.x));
+        if (ImGui::Button(lang["refresh"].c_str()))
             init_user_apps(gui, emuenv);
         ImGui::SameLine();
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);

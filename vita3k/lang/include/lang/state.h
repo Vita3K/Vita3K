@@ -156,8 +156,54 @@ struct LangState {
         { "never", "Never" },
         { "time_used", "Time used" }
     };
+    struct ContentManager {
+        std::map<std::string, std::string> main = {
+            { "title", "Content Manager" },
+            { "search", "Search" },
+            { "theme", "Themes" },
+            { "free_space", "Free Space" },
+            { "clear_all", "Clear All" }
+        };
+        struct Application {
+            std::map<std::string, std::string> main = {
+                { "title", "Application" },
+                { "delete", "The selected applications and all related data, including saved data, will be deleted." },
+                { "no_item", "There are no content items." }
+            };
+        };
+        Application application;
+        struct SavedData {
+            std::map<std::string, std::string> main = {
+                { "title", "Saved Data" },
+                { "delete", "The selected saved data items will be deleted." },
+                { "no_saved_data", "There is no saved data." }
+            };
+        };
+        SavedData saved_data;
+    };
+    ContentManager content_manager;
     std::map<std::string, std::string> game_data = {
-        { "app_close", "The following application will close." }
+        { "app_close", "The following application will close." },
+        { "data_delete", "Data to be Deleted:" }
+    };
+    std::map<std::string, std::string> home_screen = {
+        { "filter", "Filter" },
+        { "sort_app", "Sort Apps By" },
+        { "all", "All" },
+        { "by_region", "By Region" },
+        { "usa", "USA" },
+        { "europe", "Europe" },
+        { "japan", "Japan" },
+        { "asia", "ASIA" },
+        { "by_type", "By Type" },
+        { "commercial", "Commercial" },
+        { "homebrew", "Homebrew" },
+        { "ver", "Ver" },
+        { "cat", "Cat" },
+        { "last_time", "Last Time" },
+        { "tit", "Title" },
+        { "tit_id", "Title ID" },
+        { "refresh", "Refresh" }
     };
     std::map<std::string, std::string> indicator = {
         { "app_added_home", "The application has been added to the home screen." },
@@ -175,17 +221,38 @@ struct LangState {
         { "select_language", "Select a language" },
         { "next", "Next" }
     };
+    std::map<std::string, std::string> install_dialog = {
+        { "select_key_type", "Select key type" },
+        { "select_work", "Select work.bin" },
+        { "enter_zrif", "Enter zRIF" },
+        { "enter_zrif_key", "Enter zRIF key" },
+        { "input_zrif", "Please input your zRIF here" },
+        { "copy_paste_zrif", "Ctrl(Cmd) + C for copy, Ctrl(Cmd) + V to paste." },
+        { "delete_pkg", "Delete the pkg file?" },
+        { "delete_work", "Delete the work.bin file?" },
+        { "check_log", "Please check log for more details." },
+        { "select_install_type", "Select install type" },
+        { "select_file", "Select File" },
+        { "select_directory", "Select Directory" },
+        { "compatible_content", "archive(s) found with compatible contents." },
+        { "successed_install", "contents of this archive have successed installed:" },
+        { "update_app", "Update App to:" },
+        { "failed_install", "content have failed installed:" },
+        { "not_compatible_content", "archive(s) did no found compatible contents:" },
+        { "delete_archive", "Delete archive?" }
+    };
     struct Settings {
         std::map<std::string, std::string> main = { { "title", "Settings" } };
         struct ThemeBackground {
             std::map<std::string, std::string> main = {
                 { "title", "Theme & Background" },
-                { "default", "Default" },
-                { "home_screen_backgrounds", "Home Screen Backgrounds" }
+                { "default", "Default" }
             };
             struct Theme {
                 std::map<std::string, std::string> main = {
                     { "title", "Theme" },
+                    { "search", "Search" },
+                    { "find_in_altervista", "Find in Altervista" },
                     { "delete", "This theme will be deleted." }
                 };
                 std::map<std::string, std::string> information = {
@@ -194,13 +261,19 @@ struct LangState {
                     { "provider", "Provider" },
                     { "updated", "Updated" },
                     { "size", "Size" },
-                    { "version", "Version" }
+                    { "version", "Version" },
+                    { "content_id", "Content ID" }
                 };
             };
             Theme theme;
             std::map<std::string, std::string> start_screen = {
                 { "title", "Start Screen" },
                 { "image", "Image" }
+            };
+            std::map<std::string, std::string> home_screen_backgrounds = {
+                { "title", "Home Screen Backgrounds" },
+                { "delete_background", "Delete Background" },
+                { "add_background", "Add Background" }
             };
         };
         ThemeBackground theme_background;
@@ -224,13 +297,14 @@ struct LangState {
                 { "title", "Language" },
                 { "system_language", "System Language" }
             };
-            std::map<std::string, std::string> input_langague = { { "title", "Input Languages" } };
-            std::map<std::string, std::string> Keyboards = { { "title", "Keyboards" } };
+            std::map<std::string, std::string> input_language = { { "title", "Input Languages" } };
+            std::map<std::string, std::string> keyboards = { { "title", "Keyboards" } };
         };
         Language language;
     };
     Settings settings;
     std::map<std::string, std::string> trophy_collection = {
+        { "search", "Search" },
         { "delete_trophy", "Delete Trophy" },
         { "trophy_deleted", "This trophy information saved on this user will be deleted." },
         { "details", "Details" },
@@ -262,10 +336,6 @@ struct LangState {
         { "name", "Name" },
         { "user", "User" },
         { "confirm", "Confirm" },
-        { "cancel", "Cancel" },
-        { "delete", "Delete" },
-        { "yes", "Yes" },
-        { "no", "No" },
         { "automatic_user_login", "Automatic User Login" }
     };
     std::map<std::string, std::string> vita3k_update = {

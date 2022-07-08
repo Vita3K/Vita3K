@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -66,7 +66,10 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
 
+    auto lang = gui.lang.install_dialog;
     auto indicator = gui.lang.indicator;
+    auto common = emuenv.common_dialog.lang.common;
+
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(616.f * SCALE.x, 264.f * SCALE.y));
     if (ImGui::BeginPopupModal("install", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDecoration)) {
@@ -79,17 +82,17 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         if (state.empty()) {
             ImGui::SetCursorPosX(POS_BUTTON);
-            title = "Select key type";
-            if (ImGui::Button("Select Work.bin", BUTTON_SIZE))
+            title = lang["select_key_type"];
+            if (ImGui::Button(lang["select_work"].c_str(), BUTTON_SIZE))
                 state = "work";
             ImGui::SetCursorPosX(POS_BUTTON);
-            if (ImGui::Button("Enter zRIF", BUTTON_SIZE))
+            if (ImGui::Button(lang["enter_zrif"].c_str(), BUTTON_SIZE))
                 state = "zrif";
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
             ImGui::SetCursorPosX(POS_BUTTON);
-            if (ImGui::Button("Cancel", BUTTON_SIZE)) {
+            if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE)) {
                 gui.file_menu.pkg_install_dialog = false;
                 draw_file_dialog = true;
             }
@@ -102,17 +105,17 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             } else
                 state.clear();
         } else if (state == "zrif") {
-            title = "Enter zRIF key";
+            title = lang["enter_zrif_key"];
             ImGui::PushItemWidth(640.f * SCALE.x);
-            ImGui::InputTextWithHint("##enter_zrif", "Please input your zRIF here", &zRIF);
+            ImGui::InputTextWithHint("##enter_zrif", lang["input_zrif"].c_str(), &zRIF);
             ImGui::PopItemWidth();
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Ctrl(Cmd) + C for copy, Ctrl(Cmd) + V to paste.");
+                ImGui::SetTooltip("%s", lang["copy_paste_zrif"].c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
             ImGui::SetCursorPos(ImVec2(POS_BUTTON - (BUTTON_SIZE.x / 2) - 10.f * emuenv.dpi_scale, ImGui::GetWindowSize().y / 2));
-            if (ImGui::Button("Cancel", BUTTON_SIZE)) {
+            if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE)) {
                 state.clear();
                 zRIF.clear();
             }
@@ -135,13 +138,13 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             title = indicator["install_complete"];
             ImGui::TextColored(GUI_COLOR_TEXT, "%s [%s]", emuenv.app_info.app_title.c_str(), emuenv.app_info.app_title_id.c_str());
             if (emuenv.app_info.app_category.find("gp") != std::string::npos)
-                ImGui::TextColored(GUI_COLOR_TEXT, "Update App to: %s", emuenv.app_info.app_version.c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", lang["update_app"].c_str(), emuenv.app_info.app_version.c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::Checkbox("Delete the pkg file?", &delete_pkg_file);
+            ImGui::Checkbox(lang["delete_pkg"].c_str(), &delete_pkg_file);
             if (work_path)
-                ImGui::Checkbox("Delete the work.bin file?", &delete_work_file);
+                ImGui::Checkbox(lang["delete_work"].c_str(), &delete_work_file);
             ImGui::Spacing();
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button("OK", BUTTON_SIZE)) {
@@ -166,8 +169,8 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             }
         } else if (state == "fail") {
             title = gui.lang.indicator["install_failed"];
-            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize("Please check log for more details.").x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f * emuenv.dpi_scale));
-            ImGui::TextColored(GUI_COLOR_TEXT, "Please check log for more details.");
+            ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize(indicator["check_log"].c_str()).x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f * emuenv.dpi_scale));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["check_log"].c_str());
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button("OK", BUTTON_SIZE)) {
                 gui.file_menu.pkg_install_dialog = false;
@@ -177,7 +180,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 state.clear();
             }
         } else if (state == "installing") {
-            title = "Installing";
+            title = indicator["installing"];
             ImGui::SetCursorPos(ImVec2(178.f * emuenv.dpi_scale, ImGui::GetCursorPosY() + 30.f * emuenv.dpi_scale));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.app_info.app_title.c_str());
             ImGui::SetCursorPos(ImVec2(178.f * emuenv.dpi_scale, ImGui::GetCursorPosY() + 30.f * emuenv.dpi_scale));

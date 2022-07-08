@@ -411,7 +411,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::BeginChild("##info_update_list", ImVec2(WINDOW_SIZE.x - (30.f * SCALE.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * SCALE.y)), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
             for (const auto &update : update_history_infos) {
                 ImGui::SetWindowFontScale(1.4f);
-                ImGui::TextColored(GUI_COLOR_TEXT, "Version %.2f", update.first);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s %.2f", lang["version"].c_str(), update.first);
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::PushTextWrapPos(WINDOW_SIZE.x - (80.f * SCALE.x));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s\n", update.second.c_str());

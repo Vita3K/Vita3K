@@ -170,6 +170,20 @@
 		<minutes_ago>{} Dakika Önce</minutes_ago>
 	</common>
 
+	<content_manager name="İçerik Yöneticisi">
+		<application name="Uygulamalar">
+			<delete>Seçilen uygulamalar ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</delete>
+			<no_item>İçerik öğesi yok.</no_item>
+		</application>
+		<saved_data name="Kayıtlı Veriler">
+			<delete>Seçilen kayıtlı veri öğeleri silinecek.</delete>
+			<no_saved_data>Kayıtlı Veri yok.</no_saved_data>
+		</saved_data>
+		<theme>Tema</theme>
+		<free_space>Boş Alan</free_space>
+		<clear_all>Tümünü Temizle</clear_all>
+	</content_manager>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>Uygulama başlatma için hazırlanıyor...</preparing_start_app>
@@ -209,6 +223,7 @@ Sistemi veya uygulamayı kapatmayın.</warning_saving>
 
 	<game_data>
 		<app_close>Şu uygulama kapatılacak.</app_close>
+		<data_delete>Silinecek Veriler:</data_delete>
 	</game_data>
 
 	<indicator>
@@ -239,6 +254,7 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 		<theme_background name="Tema & Arkaplan">
 			<default>Varsayılan</default>
 			<theme name="Tema">
+				<find_in_altervista>Altervista'da Bul</find_in_altervista>
 				<information name="Bilgi">
 					<name>Ad</name>
 					<provider>Sağlayıcı</provider>
@@ -251,7 +267,10 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 			<start_screen name="Başlangıç Ekranı">
 				<image>Görüntü</image>
 			</start_screen>
-			<home_screen_backgrounds>Giriş Ekranı Arka Planları</home_screen_backgrounds>
+			<home_screen_backgrounds name="Giriş Ekranı Arka Planları">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Tarih & Saat">
 			<date_format name ="Tarih Formatı">
@@ -268,7 +287,7 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 			<system_language>Sistem Dili</system_language>
 			<input_language name="Giriş Dilleri">
 				<keyboards name="Klavyeler">
-					<ime_langagues>
+					<ime_languages>
 						<lang id="1">Danca</lang>
 						<lang id="2">Almanca</lang>
 						<lang id="262144">İngilizce (Birleşik Krallık)</lang>
@@ -285,7 +304,7 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 						<lang id="2048">Fince</lang>
 						<lang id="4096">İsveççe</lang>
 						<lang id="524288">Türkçe</lang>
-					</ime_langagues>
+					</ime_languages>
 				</keyboards>
 			</input_language>
 		</language>
@@ -324,10 +343,6 @@ Devam etmek istediğine emin misin?</user_delete_warn>
 		<name>Ad</name>
 		<user>Kullanıcı</user>
 		<confirm>İleri</confirm>
-		<cancel>Geri</cancel>
-		<delete>Sil</delete>
-		<yes>Evet</yes>
-		<no>Hayır</no>
 		<automatic_user_login>Otomatik Kullanıcı Girişi</automatic_user_login>
 	</user_management>
 </lang>

@@ -225,13 +225,19 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
     ImGui::PopTextWrapPos();
 
+    auto lang = gui.lang.settings;
+    auto theme_background = lang.theme_background;
+    auto theme = theme_background.theme;
+    auto date_time = lang.date_time;
+    auto language = lang.language;
+
     if (settings_menu == THEME_BACKGROUND) {
         // Search Bar
         if ((menu == "theme") && selected.empty()) {
             ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
-            const auto search_size = ImGui::CalcTextSize("Search");
+            const auto search_size = ImGui::CalcTextSize(theme.main["search"].c_str());
             ImGui::SetCursorPos(ImVec2(display_size.x - (220.f * SCALE.x) - search_size.x, (35.f * SCALE.y) - (search_size.y / 2.f)));
-            ImGui::TextColored(GUI_COLOR_TEXT, "Search");
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", theme.main["search"].c_str());
             ImGui::SameLine();
             search_bar.Draw("##search_bar", 200 * SCALE.x);
             ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
@@ -273,12 +279,6 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto SIZE_SELECT = 80.f * SCALE.y;
     const auto SIZE_PUPUP_SELECT = 70.f * SCALE.y;
-
-    auto lang = gui.lang.settings;
-    auto theme_background = lang.theme_background;
-    auto theme = theme_background.theme;
-    auto date_time = lang.date_time;
-    auto language = lang.language;
 
     // Settings
     switch (settings_menu) {
@@ -324,7 +324,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::Selectable(theme_background.start_screen["title"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCALE.y)))
                 menu = "start";
             ImGui::Separator();
-            if (ImGui::Selectable(theme_background.main["home_screen_backgrounds"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCALE.y)))
+            if (ImGui::Selectable(theme_background.home_screen_backgrounds["title"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCALE.y)))
                 menu = "background";
             ImGui::PopStyleVar();
             ImGui::Separator();
@@ -380,7 +380,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     }
                     if (ImGui::Selectable("##download_theme", true, ImGuiSelectableFlags_None, SIZE_PACKAGE))
                         open_path("https://psv.altervista.org/");
-                    ImGui::TextColored(GUI_COLOR_TEXT, "Find in Altervista");
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", theme.main["find_in_altervista"].c_str());
                     ImGui::NextColumn();
                     ImGui::Columns(1);
                 } else {
@@ -499,7 +499,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[selected].version.c_str());
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
-                        ImGui::TextColored(GUI_COLOR_TEXT, "Content ID");
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["content_id"].c_str());
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
                         ImGui::TextWrapped("%s", selected.c_str());
@@ -605,7 +605,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     }
                 }
             } else if (menu == "background") {
-                title = theme_background.main["home_screen_backgrounds"];
+                title = theme_background.home_screen_backgrounds["title"];
 
                 // Delete user background
                 if (!delete_user_background.empty()) {
@@ -629,13 +629,13 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::SetCursorPosY(IMAGE_POS);
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                     ImGui::PushID(background.c_str());
-                    if (ImGui::Selectable("Delete Background", false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
+                    if (ImGui::Selectable(theme_background.home_screen_backgrounds["delete_background"].c_str(), false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
                         delete_user_background = background;
                     ImGui::PopID();
                     ImGui::PopStyleColor();
                     ImGui::NextColumn();
                 }
-                if (ImGui::Selectable("Add Background", false, ImGuiSelectableFlags_None, SIZE_PACKAGE)) {
+                if (ImGui::Selectable(theme_background.home_screen_backgrounds["add_background"].c_str(), false, ImGuiSelectableFlags_None, SIZE_PACKAGE)) {
                     nfdchar_t *background_path;
                     nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &background_path);
 
@@ -776,7 +776,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Separator();
             ImGui::NextColumn();
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
-            if (ImGui::Selectable(language.input_langague["title"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
+            if (ImGui::Selectable(language.input_language["title"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
                 menu = "select_input_lang";
             ImGui::PopStyleVar();
             ImGui::NextColumn();
@@ -842,9 +842,9 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
             }
         } else {
             // Input Languages
-            const auto keyboards_str = language.Keyboards["title"].c_str();
+            const auto keyboards_str = language.keyboards["title"].c_str();
             if (sub_menu.empty()) {
-                title = keyboards_str;
+                title = language.input_language["title"];
                 ImGui::SetWindowFontScale(1.2f);
                 ImGui::Columns(2, nullptr, false);
                 ImGui::SetColumnWidth(0, 600.f * emuenv.dpi_scale);

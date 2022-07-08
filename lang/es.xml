@@ -169,6 +169,20 @@
 		<minutes_ago>Hace {} minutos</minutes_ago>
 	</common>
 
+	<content_manager name="Gestor de contenido">
+		<application name="Aplicaciones">
+			<delete>Se eliminarán las aplicaciones seleccionadas y todos los datos relacionados, incluidos los datos guardados.</delete>
+			<no_item>No hay elementos de contenido.</no_item>
+		</application>
+		<saved_data name="Datos guardados">
+			<delete>Se eliminarán los elementos de datos guardados seleccionados.</delete>
+			<no_saved_data>No hay datos guardados.</no_saved_data>
+		</saved_data>
+		<theme>Tema</theme>
+		<free_space>Espacio libre</free_space>
+		<clear_all>Borrar todo</clear_all>
+	</content_manager>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>Preparándose para iniciar la aplicación...</preparing_start_app>
@@ -208,6 +222,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 
 	<game_data>
 		<app_close>La siguiente aplicación se cerrará.</app_close>
+		<data_delete>Datos para borrar:</data_delete>
 	</game_data>
 
 	<indicator>
@@ -238,6 +253,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		<theme_background name="Tema y Fondo">
 			<default>Predeterminado</default>
 			<theme name="Tema">
+				<find_in_altervista>Buscar en Altervista</find_in_altervista>
 				<information name="Información">
 					<name>Nombre</name>
 					<provider>Proveedor</provider>
@@ -250,7 +266,10 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 			<start_screen name="Pantalla inicial">
 				<image>Imagen</image>
 			</start_screen>
-			<home_screen_backgrounds>Fondos de la pantalla de inicio</home_screen_backgrounds>
+			<home_screen_backgrounds name="Fondos de la pantalla de inicio">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Fecha y hora">
 			<date_format name ="Formato de la fecha">
@@ -267,7 +286,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 			<system_language>Idioma del sistema</system_language>
 			<input_language name="Idiomas de entrada">
 				<keyboards name="Teclados">
-					<ime_langagues>
+					<ime_languages>
 						<lang id="1">Danés</lang>
 						<lang id="2">Alemán</lang>
 						<lang id="262144">Inglés (Reino Unido)</lang>
@@ -284,7 +303,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 						<lang id="2048">Finlandés</lang>
 						<lang id="4096">Sueco</lang>
 						<lang id="524288">Turco</lang>
-					</ime_langagues>
+					</ime_languages>
 				</keyboards>
 			</input_language>
 		</language>

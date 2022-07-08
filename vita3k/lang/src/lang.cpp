@@ -137,6 +137,25 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     set_calendar(lang.common.small_mday, common.child("small_mday"));
                 }
 
+                // Content Manager
+                const auto content_manager = lang_child.child("content_manager");
+                if (!content_manager.empty()) {
+                    // Main
+                    set_lang_string(lang.content_manager.main, content_manager);
+
+                    // Application
+                    const auto application = content_manager.child("application");
+                    if (!application.empty()) {
+                        set_lang_string(lang.content_manager.application.main, application);
+                    }
+
+                    // Saved Data
+                    const auto saved_data = content_manager.child("saved_data");
+                    if (!saved_data.empty()) {
+                        set_lang_string(lang.content_manager.saved_data.main, saved_data);
+                    }
+                }
+
                 // Dialog
                 const auto dialog = lang_child.child("dialog");
                 if (!dialog.empty()) {
@@ -164,12 +183,18 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 // Game Data
                 set_lang_string(lang.game_data, lang_child.child("game_data"));
 
+                // Home Screen
+                set_lang_string(lang.home_screen, lang_child.child("home_screen"));
+
                 // Indicator
                 set_lang_string(lang.indicator, lang_child.child("indicator"));
 
                 // Initial Setup
                 if (!emuenv.cfg.initial_setup)
                     set_lang_string(lang.initial_setup, lang_child.child("initial_setup"));
+
+                // Install Dialog
+                set_lang_string(lang.install_dialog, lang_child.child("install_dialog"));
 
                 // Live Area
                 const auto live_area = lang_child.child("live_area");
@@ -200,6 +225,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
 
                         // Start Screen
                         set_lang_string(lang.settings.theme_background.start_screen, theme_background.child("start_screen"));
+
+                        // Home Screen Backgrounds
+                        set_lang_string(lang.settings.theme_background.home_screen_backgrounds, theme_background.child("home_screen_backgrounds"));
                     }
 
                     // Date & Time
@@ -226,14 +254,14 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                         const auto input_language = language.child("input_language");
                         if (!input_language.empty()) {
                             // Main
-                            set_lang_string(lang_settings.input_langague, input_language);
+                            set_lang_string(lang_settings.input_language, input_language);
 
                             // Keyboards
                             const auto keyboards = input_language.child("keyboards");
                             if (!keyboards.empty()) {
-                                set_lang_string(lang_settings.Keyboards, input_language);
+                                set_lang_string(lang_settings.keyboards, keyboards);
                                 auto &lang_ime = emuenv.ime.lang.ime_keyboards;
-                                const auto &keyboard_lang_ime = keyboards.child("ime_langagues");
+                                const auto &keyboard_lang_ime = keyboards.child("ime_languages");
                                 if (!keyboard_lang_ime.empty()) {
                                     lang_ime.clear();
                                     const auto op = [](const auto &lang) {

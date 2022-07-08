@@ -248,7 +248,9 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     const auto DELETE_USER_POS = AVATAR_POS.x + (SPACE_AVATAR * (gui.users.size()));
     const auto BUTTON_SIZE = ImVec2(220 * SCALE.x, 36 * SCALE.y);
     const auto BUTTON_POS = ImVec2((SIZE_USER.x / 2.f) - (BUTTON_SIZE.x / 2.f), 314.f * SCALE.y);
+
     auto lang = gui.lang.user_management;
+    auto common = emuenv.common_dialog.lang.common;
 
     if (menu.empty()) {
         // Users list
@@ -440,7 +442,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::TextWrapped("%s", lang["user_delete_message"].c_str());
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::SetCursorPos(BUTTON_POS);
-                if (ImGui::Button(lang["delete"].c_str(), BUTTON_SIZE))
+                if (ImGui::Button(common["delete"].c_str(), BUTTON_SIZE))
                     del_menu = "warn";
             } else if (del_menu == "warn") {
                 const auto calc_text = (SIZE_USER.x / 2.f) - (ImGui::CalcTextSize(lang["user_delete_warn"].c_str()).x / 2.f);
@@ -449,12 +451,12 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SetCursorPos(BUTTON_POS);
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::SetCursorPos(ImVec2((SIZE_USER.x / 2.f) - BUTTON_SIZE.x - 20.f, BUTTON_POS.y));
-                if (ImGui::Button(lang["no"].c_str(), BUTTON_SIZE)) {
+                if (ImGui::Button(common["no"].c_str(), BUTTON_SIZE)) {
                     user_id.clear();
                     del_menu.clear();
                 }
                 ImGui::SameLine(0, 40.f * SCALE.x);
-                if (ImGui::Button(lang["yes"].c_str(), BUTTON_SIZE)) {
+                if (ImGui::Button(common["yes"].c_str(), BUTTON_SIZE)) {
                     fs::remove_all(user_path / user_id);
                     gui.users_avatar.erase(user_id);
                     gui.users.erase(get_users_index(gui, gui.users[user_id].name));
@@ -486,7 +488,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     const auto USER_ALREADY_INIT = !gui.users.empty() && !emuenv.io.user_id.empty() && (emuenv.cfg.user_id == emuenv.io.user_id);
     if ((menu.empty() && USER_ALREADY_INIT) || (!menu.empty() && (menu != "confirm") && del_menu.empty())) {
         ImGui::SetCursorPos(ImVec2(54.f * SCALE.x, ImGui::GetCursorPosY() + (10.f * SCALE.y)));
-        if (ImGui::Button(lang["cancel"].c_str(), ImVec2(80.f * SCALE.x, 40.f * SCALE.y))) {
+        if (ImGui::Button(common["cancel"].c_str(), ImVec2(80.f * SCALE.x, 40.f * SCALE.y))) {
             if (!menu.empty()) {
                 if ((menu == "create") || (menu == "edit"))
                     clear_temp(gui);
