@@ -283,13 +283,15 @@ Pour obtenir des trophées, utilisez une application compatible avec cette fonct
 	</user_management>
 
 	<vita3k_update name="Mise à jour Vita3K">
-		<back>Précédent</back>
  		<new_version_available>Une nouvelle version de Vita3K est disponible.</new_version_available>
+		<back>Précédent</back>
+		<downloading>Téléchargement en cours...
+Une fois le téléchargement terminé, Vita3K redémarrera automatiquement et installera le nouveau Vita3K.</downloading>
+		<not_complete_update>La mise à jour n'a pas pu être terminée.</not_complete_update>
 		<next>Suivant</next>
 		<update_vita3k>Mettre à jour Vita3K ?</update_vita3k>
+		<later_version_already_installed>Une version plus récente de Vita3K est déjà installée.</later_version_already_installed>
 		<latest_version_already_installed>La dernière version de Vita3K est déjà installée.</latest_version_already_installed>
-		<downloading>Téléchargement en cours...
-Une fois le téléchargement terminé, Vita3K redémarrera automatiquement et installera la nouvelle version.</downloading>
 		<new_features>Nouveautés de la version {}</new_features>
 		<update>Mettre à jour</update>
 		<version>Version {}</version>
