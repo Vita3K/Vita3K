@@ -160,7 +160,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const State 
                 remake_and_apply_filters_to_current_binded();
             }
 
-            if (color::is_write_surface_stored_rawly(base_format)) {
+            if (state.enable_raw_surfaces && color::is_write_surface_stored_rawly(base_format)) {
                 surface_internal_format = color::get_raw_store_internal_type(base_format);
                 surface_upload_format = color::get_raw_store_upload_format_type(base_format);
                 surface_data_type = color::get_raw_store_upload_data_type(base_format);
@@ -250,7 +250,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const State 
 
                     GLenum source_format, source_data_type = 0;
 
-                    if (color::is_write_surface_stored_rawly(info.format)) {
+                    if (state.enable_raw_surfaces && color::is_write_surface_stored_rawly(info.format)) {
                         source_format = color::get_raw_store_upload_format_type(info.format);
                         source_data_type = color::get_raw_store_upload_data_type(info.format);
                     } else {
@@ -396,7 +396,7 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const State 
     GLint texture_handle_return = info_added->gl_texture[0];
     bool store_rawly = false;
 
-    if (color::is_write_surface_stored_rawly(base_format)) {
+    if (state.enable_raw_surfaces && color::is_write_surface_stored_rawly(base_format)) {
         surface_internal_format = color::get_raw_store_internal_type(base_format);
         surface_upload_format = color::get_raw_store_upload_format_type(base_format);
         surface_data_type = color::get_raw_store_upload_data_type(base_format);
@@ -660,7 +660,7 @@ std::uint64_t GLSurfaceCache::retrieve_framebuffer_handle(const State &state, co
 
     glBindFramebuffer(GL_FRAMEBUFFER, fb[0]);
 
-    if (color && renderer::gl::color::is_write_surface_stored_rawly(gxm::get_base_format(color->colorFormat))) {
+    if (color && state.enable_raw_surfaces && renderer::gl::color::is_write_surface_stored_rawly(gxm::get_base_format(color->colorFormat))) {
         glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT1, color_handle, 0);
 
         const GLenum buffers[] = { GL_NONE, GL_COLOR_ATTACHMENT1 };
