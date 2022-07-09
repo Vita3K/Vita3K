@@ -315,7 +315,7 @@ Vita3Kをお楽しみください。</completed_setup>
 				<find_in_altervista>Altervistaで探す</find_in_altervista>
 				<information name="情報">
 					<name>名前</name>
-					<provider>作者</provider>
+					<provider>提供者</provider>
 					<updated>更新日</updated>
 					<size>サイズ</size>
 					<version>バージョン</version>
