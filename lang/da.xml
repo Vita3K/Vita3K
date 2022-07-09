@@ -41,7 +41,7 @@
 		</small_ymonth>
 	</common>
 	
-	<content_manager name="Content Manager">
+	<content_manager name="Indholdsadministrator">
 		<application name="Programmer">
 		</application>
 		<saved_data name="Gemte Data">
