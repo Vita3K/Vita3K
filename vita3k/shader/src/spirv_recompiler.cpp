@@ -320,7 +320,6 @@ static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &featu
 
     spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
     spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
-    translation_state.interfaces.push_back(sampler);
 
     return sampler;
 }
@@ -332,7 +331,6 @@ static spv::Id create_builtin_sampler_for_raw(spv::Builder &b, const FeatureStat
 
     spv::Id image_type = b.makeImageType(ui32, spv::Dim2D, false, false, false, sampled, img_format);
     spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
-    translation_state.interfaces.push_back(sampler);
 
     return sampler;
 }
@@ -747,7 +745,7 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
     int start_in_vec4_granularity = start / 4;
 
     utils::make_for_loop(builder, ite, builder.makeIntConstant(0), builder.makeIntConstant(vec4_count), [&]() {
-        spv::Id to_copy = builder.createAccessChain(spv::StorageClassUniform, block, { builder.createLoad(ite, spv::NoPrecision) });
+        spv::Id to_copy = builder.createAccessChain(spv::StorageClassStorageBuffer, block, { builder.createLoad(ite, spv::NoPrecision) });
         spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, builder.getTypeId(builder.createLoad(ite, spv::NoPrecision)), builder.createLoad(ite, spv::NoPrecision), builder.makeIntConstant(start_in_vec4_granularity)) });
         spv::Id dest_friend = spv::NoResult;
 
@@ -854,12 +852,12 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         b.addDecoration(buffer_container_type, spv::DecorationBlock);
         b.addDecoration(buffer_container_type, spv::DecorationGLSLShared);
-        b.addDecoration(buffer_container_type, spv::DecorationRestrict);
-        b.addDecoration(buffer_container_type, spv::DecorationNonWritable);
 
         spv_params.buffer_container = b.createVariable(spv::NoPrecision, spv::StorageClassStorageBuffer, buffer_container_type,
             is_vert ? "vertexData" : "fragmentData");
 
+        b.addDecoration(spv_params.buffer_container, spv::DecorationRestrict);
+        b.addDecoration(spv_params.buffer_container, spv::DecorationNonWritable);
         b.addDecoration(spv_params.buffer_container, spv::DecorationBinding, is_vert ? 0 : 1);
 
         for (auto &[index, buffer] : spv_params.buffers) {
@@ -1216,6 +1214,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
 
     // the mask is not upscaled
     spv::Id res_multiplier = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(5) });
+    res_multiplier = b.createLoad(res_multiplier, spv::NoPrecision);
     res_multiplier = b.createCompositeConstruct(v2i32, { res_multiplier, res_multiplier });
     current_coord = b.createBinOp(spv::OpSDiv, v2i32, current_coord, res_multiplier);
 
@@ -1224,7 +1223,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     spv::Id texel = b.createOp(spv::OpImageRead, v4, { b.createLoad(translate_state.mask_id, spv::NoPrecision), current_coord });
     spv::Id rezero = b.makeFloatConstant(0.5f);
     spv::Id zero = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
-    spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeBoolType(), { texel, zero });
+    spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeVectorType(b.makeBoolType(), 4), { texel, zero });
     spv::Id pred2 = b.createUnaryOp(spv::OpAll, b.makeBoolType(), pred);
     spv::Builder::If cond_builder(pred2, spv::SelectionControlMaskNone, b);
     b.makeDiscard();
@@ -1309,7 +1308,10 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
             const spv::Id out_type = b.makeVectorType(b.makeFloatType(32), 4);
             const spv::Id out_var = b.createVariable(spv::NoPrecision, spv::StorageClassOutput, out_type, properties.name.c_str());
 
-            b.addDecoration(out_var, spv::DecorationLocation, properties.location);
+            if (vo != SCE_GXM_VERTEX_PROGRAM_OUTPUT_POSITION)
+                // A BuiltIn variable cannot have any Location or Component decorations
+                b.addDecoration(out_var, spv::DecorationLocation, properties.location);
+
             translation_state.interfaces.push_back(out_var);
 
             // Do store
@@ -1344,6 +1346,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
                 if (translation_state.render_info_id != spv::NoResult) {
                     spv::Id flip_vec_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(0) });
+                    flip_vec_id = b.createLoad(flip_vec_id, spv::NoPrecision);
                     o_val2 = b.createBinOp(spv::OpFMul, v4, o_val2, flip_vec_id);
                 }
 
@@ -1361,6 +1364,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
                 if (translation_state.render_info_id != spv::NoResult) {
                     spv::Id flip_vec_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(0) });
+                    flip_vec_id = b.createLoad(flip_vec_id, spv::NoPrecision);
                     o_val = b.createBinOp(spv::OpFMul, out_type, o_val, flip_vec_id);
                 }
 
@@ -1397,6 +1401,7 @@ static spv::Function *make_frag_initialize_function(spv::Builder &b, Translation
     spv::Id front_disabled = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(1) });
     spv::Id back_disabled = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(0) });
     b.addDecoration(front_facing, spv::DecorationBuiltIn, spv::BuiltInFrontFacing);
+    translate_state.interfaces.push_back(front_facing);
 
     front_facing = b.createLoad(front_facing, spv::NoPrecision);
 
