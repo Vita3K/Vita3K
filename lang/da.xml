@@ -1,12 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<lang>
-	<game_data>
-		<app_close>Følgende program bliver lukket.</app_close>
-	</game_data>
+<lang>	
+	<common>
+		<wday>
+			<day>Søndag</day>
+			<day>Mandag</day>
+			<day>Tirsdag</day>
+			<day>Onsdag</day>
+			<day>Torsdag</day>
+			<day>Fredag</day>
+			<day>Lørdag</day>
+		</wday>
+		<ymonth>
+			<month>Januar</month>
+			<month>Februar</month>
+			<month>Marts</month>
+			<month>April</month>
+			<month>maj</month>
+			<month>juni</month>
+			<month>Juli</month>
+			<month>August</month>
+			<month>September</month>
+			<month>Oktober</month>
+			<month>November</month>
+			<month>December</month>
+		</ymonth>
+		<small_ymonth>
+			<month>Januar</month>
+			<month>Februar</month>
+			<month>Marts</month>
+			<month>April</month>
+			<month>maj</month>
+			<month>juni</month>
+			<month>Juli</month>
+			<month>August</month>
+			<month>September</month>
+			<month>Oktober</month>
+			<month>November</month>
+			<month>December</month>
+		</small_ymonth>
+	</common>
 	
 	<content_manager name="Content Manager">
-		<search>Search</search>
 		<application name="Programmer">
 		</application>
 		<saved_data name="Gemte Data">
@@ -16,6 +51,10 @@
 		<clear_all>Ryd alle</clear_all>
 	</content_manager>
 
+	<game_data>
+		<app_close>Følgende program bliver lukket.</app_close>
+	</game_data>
+	
 	<initial_setup>
 		<back>Tilbage</back>
 		<completed_setup>Nu har du udført opstartsopsætningen.
@@ -39,12 +78,10 @@ Dit Vita3K-system er klart!</completed_setup>
 					<updated>Opdateret</updated>
 					<size>Størrelse</size>
 					<version>Version</version>
-					<content_id>Content ID</content_id>
 				</information>
 				<delete>Dette tema vil blive slettet.</delete>
 			</theme>
 			<start_screen name="Startskærm">
-				<image>Image</image>
 			</start_screen>
 			<home_screen_backgrounds name="Baggrunde til hjemmeskærmen">
 			</home_screen_backgrounds>
@@ -90,9 +127,6 @@ Dit Vita3K-system er klart!</completed_setup>
 	<trophy_collection>
 		<details>Detaljer</details>
 		<name>Navn</name>
-		<no_trophies>There are no trophies.
-You can earn trophies by using an application that supports the trophy feature.</no_trophies>
-		<not_earned>Not Earned</not_earned>
 		<original>Original</original>
 		<sort>Sortér</sort>
 		<trophies>Trophies</trophies>
