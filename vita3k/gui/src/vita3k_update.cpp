@@ -52,25 +52,36 @@ bool init_vita3k_update(GuiState &gui) {
     // Get Build number of latest release
     const auto latest_link = "https://api.github.com/repos/Vita3K/Vita3K/releases/latest";
 #ifdef WIN32
-    std::string power_shell_version;
-    std::getline(std::ifstream(_popen("powershell (Get-Host).Version.major", "r")), power_shell_version);
-    if (power_shell_version.empty() || !std::isdigit(power_shell_version[0]) || (std::stoi(power_shell_version) < 3)) {
-        LOG_WARN("You powershell version {} is outdated and incompatible with Vita3K Update, consider to update it", power_shell_version);
+    std::string powershell_version;
+    std::getline(std::ifstream(_popen("powershell (Get-Host).Version.major", "r")), powershell_version);
+    if (powershell_version.empty() || !std::isdigit(powershell_version[0]) || (std::stoi(powershell_version) < 3)) {
+        LOG_WARN("You powershell version {} is outdated and incompatible with Vita3K Update, consider to update it", powershell_version);
         return false;
     }
     const auto github_version_cmd = fmt::format(R"(powershell ((Invoke-RestMethod {} -timeout 4).body.split([Environment]::NewLine) ^| Select-String -Pattern \"Vita3K Build: \") -replace \"Vita3K Build: \")", latest_link);
 #else
     const auto github_version_cmd = fmt::format(R"(curl -sL {} | grep "Corresponding commit:" | cut -d " " -f 8 | grep -o '[[:digit:]]*')", latest_link);
 #endif
-    char tmpver[L_tmpnam + 1];
-    std::tmpnam(tmpver);
-    std::string ver_cmd = github_version_cmd + " >> " + tmpver;
-    std::system(ver_cmd.c_str());
-    std::ifstream ver(tmpver, std::ios::in | std::ios::binary);
+
+    const auto get_cmd_result = [](const std::string cmd) {
+        char tmp_res[L_tmpnam + 1];
+#ifdef WIN32
+        tmpnam_s(tmp_res);
+#else
+        tmpnam_r(tmp_res);
+#endif
+        std::string res_cmd = cmd + " >> " + tmp_res;
+        std::system(res_cmd.c_str());
+        std::ifstream res(tmp_res, std::ios::in | std::ios::binary);
+        std::remove(tmp_res);
+
+        return res;
+    };
+
+    auto ver = get_cmd_result(github_version_cmd);
     std::string version;
     std::getline(ver, version);
     ver.close();
-    remove(tmpver);
     if (!version.empty() && std::isdigit(version[0]))
         git_version = std::stoi(version);
     else {
@@ -82,7 +93,7 @@ bool init_vita3k_update(GuiState &gui) {
     const auto dif_from_current = git_version - app_number;
     const auto has_update = dif_from_current > 0;
     if (has_update) {
-        std::thread get_commit_desc([dif_from_current]() {
+        std::thread get_commit_desc([&]() {
             // Calculate Page and Per Page Get
             std::vector<std::pair<uint32_t, uint32_t>> page_count;
             for (int32_t i = 0; i < dif_from_current; i += 100) {
@@ -105,23 +116,14 @@ bool init_vita3k_update(GuiState &gui) {
                 std::string line;
 
                 // Get Commits SHA
-                char tmpsha[L_tmpnam + 1];
-                std::tmpnam(tmpsha);
-                std::string sha_cmd = github_commit_sha_cmd + " >> " + tmpsha;
-                std::system(sha_cmd.c_str());
-                std::ifstream sha_list(tmpsha, std::ios::in | std::ios::binary);
+                auto sha_list = get_cmd_result(github_commit_sha_cmd);
                 while (std::getline(sha_list, line)) {
                     git_commit_desc_list.push_back({ line, {} });
                 }
                 sha_list.close();
-                remove(tmpsha);
 
                 // Get Commits Message
-                char tmpmsg[L_tmpnam + 1];
-                std::tmpnam(tmpmsg);
-                std::string msg_cmd = github_commit_msg_cmd + " >> " + tmpmsg;
-                std::system(msg_cmd.c_str());
-                std::ifstream msg_list(tmpmsg, std::ios::in | std::ios::binary);
+                auto msg_list = get_cmd_result(github_commit_msg_cmd);
                 const auto push_commit = [&](const std::string commit) {
                     if (git_commit_desc_list.size() < commit_pos) {
                         LOG_WARN("Error of get commit description, abort");
@@ -150,7 +152,6 @@ bool init_vita3k_update(GuiState &gui) {
 #endif
                 }
                 msg_list.close();
-                remove(tmpmsg);
             }
         });
         get_commit_desc.detach();
@@ -173,24 +174,25 @@ static void download_update() {
     if (!fs::exists("vita3k-latest.zip")) {
         std::thread download([]() {
 #ifdef WIN32
-            const auto download_command = "powershell Invoke-WebRequest https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-latest.zip -OutFile vita3k-latest.zip";
+            const auto download_command = "powershell Invoke-WebRequest https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-latest.zip -timeout 4 -OutFile vita3k-latest.zip";
 #else
             const auto download_command = "curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/ubuntu-latest.zip -o ./vita3k-latest.zip";
 #endif
             LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
-            system(download_command);
-            if (fs::exists("vita3k-latest.zip")) {
+            if (std::system(download_command) == 0) {
                 SDL_Event event;
                 event.type = SDL_QUIT;
                 SDL_PushEvent(&event);
 
 #ifdef WIN32
-                const auto vita3K_batch = "update-vita3k.bat";
+                fs::copy_file("updater.exe", "updater_old.exe", fs::copy_option::overwrite_if_exists);
+                const auto updater = "updater_old.exe --update --start";
 #else
-                const auto vita3K_batch = "chmod +x ./update-vita3k.sh && ./update-vita3k.sh";
+                fs::copy_file("updater", "updater_old", fs::copy_option::overwrite_if_exists);
+                const auto updater = "chmod +x ./updater_old && ./updater_old --update --start";
 #endif
 
-                std::system(vita3K_batch);
+                std::system(updater);
             } else {
                 state = NOT_COMPLETE_UPDATE;
                 LOG_WARN("Download failed, please try again later.");

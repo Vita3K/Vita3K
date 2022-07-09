@@ -187,5 +187,6 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio" AND (CMAKE_C_COMPILER_ID MATCHES "MSV
 endif()
 
 add_subdirectory(external)
+add_subdirectory(updater)
 add_subdirectory(vita3k)
 add_subdirectory(tools/gen-modules)
