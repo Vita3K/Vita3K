@@ -1,6 +1,55 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <lang>
+	<common>
+		<wday>
+			<day>Niedziela</day>
+			<day>Poniedziałek</day>
+			<day>Wtorek</day>
+			<day>Środa</day>
+			<day>Czwartek</day>
+			<day>Piątek</day>
+			<day>Sobota</day>
+		</wday>
+		<ymonth>
+			<month>styczeń</month>
+			<month>luty</month>
+			<month>Marzec</month>
+			<month>Kwiecień</month>
+			<month>maj</month>
+			<month>czerwiec</month>
+			<month>Lipiec</month>
+			<month>sierpień</month>
+			<month>Wrzesień</month>
+			<month>Październik</month>
+			<month>listopad</month>
+			<month>Grudzień</month>
+		</ymonth>
+		<small_ymonth>
+			<month>styczeń</month>
+			<month>luty</month>
+			<month>Marzec</month>
+			<month>Kwiecień</month>
+			<month>maj</month>
+			<month>czerwiec</month>
+			<month>Lipiec</month>
+			<month>sierpień</month>
+			<month>Wrzesień</month>
+			<month>Październik</month>
+			<month>listopad</month>
+			<month>Grudzień</month>
+		</small_ymonth>
+	</common>
+
+	<content_manager name="Content Manager">
+		<application name="Programmer">
+		</application>
+		<saved_data name="Gemte Data">
+		</saved_data>
+		<theme>Tema</theme>
+		<free_space>Ledig plads</free_space>
+		<clear_all>Ryd alle</clear_all>
+	</content_manager>
 	<game_data>
 		<app_close>Następująca aplikacja zostanie zamknięta.</app_close>
 	</game_data>
