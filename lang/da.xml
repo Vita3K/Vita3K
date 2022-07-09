@@ -4,6 +4,17 @@
 	<game_data>
 		<app_close>Følgende program bliver lukket.</app_close>
 	</game_data>
+	
+	<content_manager name="Content Manager">
+		<search>Search</search>
+		<application name="Programmer">
+		</application>
+		<saved_data name="Gemte Data">
+		</saved_data>
+		<theme>Tema</theme>
+		<free_space>Ledig plads</free_space>
+		<clear_all>Ryd alle</clear_all>
+	</content_manager>
 
 	<initial_setup>
 		<back>Tilbage</back>
@@ -17,4 +28,77 @@ Dit Vita3K-system er klart!</completed_setup>
 		<start>Start</start>
 		<continue>Fortsæt</continue>
 	</live_area>
+	
+	<settings name="Indstillinger">
+		<theme_background name="Tema og baggrund">
+			<default>Standard</default>
+			<theme name="Tema">
+				<information name="Information">
+					<name>Navn</name>
+					<provider>Udbyder</provider>
+					<updated>Opdateret</updated>
+					<size>Størrelse</size>
+					<version>Version</version>
+					<content_id>Content ID</content_id>
+				</information>
+				<delete>Dette tema vil blive slettet.</delete>
+			</theme>
+			<start_screen name="Startskærm">
+				<image>Image</image>
+			</start_screen>
+			<home_screen_backgrounds name="Baggrunde til hjemmeskærmen">
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Dato og tid">
+			<date_format name ="Datoformat">
+				<yyyy_mm_dd>ÅÅÅÅ/MM/DD</yyyy_mm_dd>
+				<dd_mm_yyyy>DD/MM/ÅÅÅÅ</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/DD/ÅÅÅÅ</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Tidsformat">
+				<clock_12_hour>12 timers ur</clock_12_hour>
+				<clock_24_hour>24 timers ur</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Sprog">
+			<system_language>Systemsprog</system_language>
+			<input_language name="Indtast sprog">
+				<keyboards name="Tasaturer">
+					<ime_languages>
+						<lang id="1">Dansk</lang>
+						<lang id="2">Tysk</lang>
+						<lang id="262144">Engelsk (Atorbritannien)</lang>
+						<lang id="4">Engelsk (USA)</lang>
+						<lang id="8">Spansk</lang>
+						<lang id="16">Fransk</lang>
+						<lang id="32">Italiensk</lang>
+						<lang id="64">Hollandsk</lang>
+						<lang id="128">Norsk</lang>
+						<lang id="256">Polsk</lang>
+						<lang id="131072">Portugisisk (Brasilien)</lang>
+						<lang id="512">Portugisisk (Portugal)</lang>
+						<lang id="1024">Russisk</lang>
+						<lang id="2048">Finsk</lang>
+						<lang id="4096">Svensk</lang>
+						<lang id="524288">Tyrkisk</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+	
+	<trophy_collection>
+		<details>Detaljer</details>
+		<name>Navn</name>
+		<no_trophies>There are no trophies.
+You can earn trophies by using an application that supports the trophy feature.</no_trophies>
+		<not_earned>Not Earned</not_earned>
+		<original>Original</original>
+		<sort>Sortér</sort>
+		<trophies>Trophies</trophies>
+		<grade>Grade</grade>
+		<progress>Forløb</progress>
+		<updated>Opdaterest</updated>
+	</trophy_collection>
+
 </lang>
