@@ -4,7 +4,7 @@
 	<main_menubar>
 		<file name="ファイル">
 			<open_pref_path>Vita3Kの保存先を開く</open_pref_path>
-			<install_firmware>ファームウェアのインストール</install_firmware>
+			<install_firmware>ファームウェアをインストール</install_firmware>
 			<install_pkg>pkgをインストール</install_pkg>
 			<install_zip>zip，vpkをインストール</install_zip>
 			<install_license>ライセンスをインストール</install_license>
@@ -28,9 +28,9 @@
 
 	<app_context>
 		<boot>起動</boot> 
-		<check_app_compatibility>アプリ互換性を調べる</check_app_compatibility>
-		<copy_app_info>アプリ情報をコピー</copy_app_info>
-		<id_and_name>IDとタイトル</id_and_name>
+		<check_app_compatibility>アプリの互換性を調べる</check_app_compatibility>
+		<copy_app_info>アプリの情報をコピー</copy_app_info>
+		<id_and_name>IDと名前</id_and_name>
 		<custom_config>カスタム設定</custom_config>
 		<create>作成</create>
 		<edit>編集</edit>
@@ -186,8 +186,9 @@
 	</common>
 
 	<content_manager name="コンテンツ管理">
+		<search>検索</search>
 		<application name="アプリケーション">
-			<delete>選択したアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。。</delete>
+			<delete>選択したアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</delete>
 			<no_item>コンテンツがありません。</no_item>
 		</application>
 		<saved_data name="セーブデータ">
@@ -241,6 +242,26 @@
 		<data_delete>削除するデータ：</data_delete>
 	</game_data>
 
+	<home_screen>
+		<filter>絞り込み</filter>
+		<sort_app>並び替え</sort_app>
+		<all>すべて</all>
+		<by_region>リージョン</by_region>
+		<usa>アメリカ</usa>
+		<europe>ヨーロッパ</europe>
+		<japan>日本</japan>
+		<asia>アジア</asia>
+		<by_type>種類</by_type>
+		<commercial>商用ゲーム</commercial>
+		<homebrew>自作ゲーム</homebrew>
+		<ver>Ver</ver>
+		<cat>カテゴリー</cat>
+		<last_time>最終プレイ日時</last_time>
+		<tit>名前</tit>
+		<tit_id>タイトルID</tit_id>
+		<refresh>更新</refresh>
+	</home_screen>
+	
 	<indicator>
 		<app_added_home>ホーム画面にアプリケーションが追加されました。</app_added_home>
 		<delete_all>すべて削除</delete_all>
@@ -259,6 +280,27 @@ Vita3Kをお楽しみください。</completed_setup>
 		<select_language>言語を選んでください。</select_language>
 		<next>次へ</next>
 	</initial_setup>
+	
+	<install_dialog>
+		<select_key_type>key typeを選択</select_key_type>
+		<select_work>work.bin</select_work>
+		<enter_zrif>zRIF</enter_zrif>
+		<enter_zrif_key>zRIF keyを入力</enter_zrif_key>
+		<input_zrif>zRIFをここに入力してください</input_zrif>
+		<copy_paste_zrif>Ctrl(Cmd) + C でコピー, Ctrl(Cmd) + V でペーストします。</copy_paste_zrif>
+		<delete_pkg>先ほどのpkgを削除しますか?</delete_pkg>
+		<delete_work>先ほどのwork.binを削除しますか?</delete_work>
+		<check_log>ログで詳細をご確認ください。</check_log>
+		<select_install_type>インストール方法を選択</select_install_type>
+		<select_file>ファイルを選択</select_file>
+		<select_directory>ディレクトリを選択</select_directory>
+		<compatible_content>互換性のあるコンテンツを持つアーカイブが見つかりました。</compatible_content>
+		<successed_install>アーカイブのコンテンツのインストールに成功しました。:</successed_install>
+		<update_app>アプリを更新:</update_app>
+		<failed_install>コンテンツのインストールに失敗しました:</failed_install>
+		<not_compatible_content>アーカイブに互換性のあるコンテンツを見つけられませんでした:</not_compatible_content>
+		<delete_archive>アーカイブを削除しますか?</delete_archive>
+	</install_dialog>
 
 	<live_area>
 		<start>はじめる</start>
@@ -266,9 +308,10 @@ Vita3Kをお楽しみください。</completed_setup>
 	</live_area>
 
 	<settings name="設定">
-		<theme_background name="テーマ&背景">
-			<default>オリジナル</default>
+		<theme_background name="テーマと背景">
+			<default>デフォルト</default>
 			<theme name="テーマ">
+				<search>検索</search>
 				<find_in_altervista>Altervistaで探す</find_in_altervista>
 				<information name="情報">
 					<name>名前</name>
@@ -276,6 +319,7 @@ Vita3Kをお楽しみください。</completed_setup>
 					<updated>更新日</updated>
 					<size>サイズ</size>
 					<version>バージョン</version>
+					<content_id>コンテンツID</content_id>
 				</information>
 				<delete>このテーマを削除します。</delete>
 			</theme>
@@ -283,11 +327,11 @@ Vita3Kをお楽しみください。</completed_setup>
 				<image>画像</image>
 			</start_screen>
 			<home_screen_backgrounds name="ホーム画面の背景">
-				<delete_background>Delete Background</delete_background>
-				<add_background>Add Background</add_background>
+				<delete_background>背景を削除</delete_background>
+				<add_background>背景を追加</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
-		<date_time name="日付&時刻">
+		<date_time name="日付と時刻">
 			<date_format name ="日付表示">
 				<yyyy_mm_dd>年/月/日</yyyy_mm_dd>
 				<dd_mm_yyyy>日/月/年</dd_mm_yyyy>
@@ -326,6 +370,9 @@ Vita3Kをお楽しみください。</completed_setup>
 	</settings>
 
 	<trophy_collection>
+		<search>検索</search>
+		<delete_trophy>トロフィーを削除</delete_trophy>
+		<trophy_deleted>このユーザーのトロフィー情報が削除されます。</trophy_deleted>
 		<details>詳細</details>
 		<earned>獲得日</earned>
 		<name>名前</name>
@@ -349,8 +396,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<delete_user>ユーザーを消す</delete_user>
 		<user_delete>削除するユーザーを選択してください。</user_delete>
 		<user_delete_msg>下記のユーザーが削除されます。</user_delete_msg>
-		<user_delete_message>ユーザーが削除されると、そのユーザーのセーブデータ、
-トロフィーは削除されます。</user_delete_message>
+		<user_delete_message>ユーザーが削除されると、そのユーザーのセーブデータ、トロフィーは削除されます。</user_delete_message>
 		<user_delete_warn>ユーザーが削除されます。
 よろしいですか？</user_delete_warn>
 		<user_deleted>ユーザーが削除されました。</user_deleted>
@@ -361,4 +407,19 @@ Vita3Kをお楽しみください。</completed_setup>
 		<confirm>確認</confirm>
 　　　　　　　　<automatic_user_login>オートログイン</automatic_user_login>
 	</user_management>
+	
+	<vita3k_update name="Vita3Kのアップデート">
+ 		<new_version_available>新しいバージョンのVita3Kが利用できます。</new_version_available>
+		<back>戻る</back>
+		<downloading>ダウンロード中...
+ダウンロードが終了すると、自動的にVita3Kが再起動し、更新が完了します。</downloading>
+		<not_complete_update>アップデートできませんでした。</not_complete_update>
+		<next>次へ</next>
+		<update_vita3k>Vita3Kをアップデートしますか?</update_vita3k>
+		<later_version_already_installed>新しいVita3Kがすでにインストールされています。</later_version_already_installed>
+		<latest_version_already_installed>Vita3Kはすでに最新の状態です。</latest_version_already_installed>
+		<new_features>{}　で新たに変更された点</new_features>
+		<update>アップデート</update>
+		<version>バージョン {}</version>
+	</vita3k_update>
 </lang>

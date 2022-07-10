@@ -1,6 +1,146 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <lang>
+	<app_context>
+		<application>Aplikacje</application>
+		<save_data>Zapisane dane</save_data>
+		<update_history>Historia aktualizacji</update_history>
+		<information>Informacje</information>
+		<eligible>Spełnia warunki</eligible>
+		<level>Poziom</level>
+		<name>Nazwa</name>
+		<trophy_earning>Zdobywanie trofeów</trophy_earning>
+		<parental_Controls>kontrola rodzicielska</parental_Controls>
+		<updated>Zaktualizowano</updated>
+		<size>Rozmiar</size>
+		<version>Wersja</version>
+	</app_context>
+
+	<common>
+		<cancel>Anuluj</cancel>
+		<delete>Usuń</delete>
+		<no>Nie</no>
+		<select_all>Zaznacz wszystko</select_all>
+		<select>Zaznacz</select>
+		<please_wait>Czekaj...</please_wait>
+		<yes>Tak</yes>
+		<wday>
+			<day>Niedziela</day>
+			<day>Poniedziałek</day>
+			<day>Wtorek</day>
+			<day>Środa</day>
+			<day>Czwartek</day>
+			<day>Piątek</day>
+			<day>Sobota</day>
+		</wday>
+		<ymonth>
+			<month>styczeń</month>
+			<month>luty</month>
+			<month>Marzec</month>
+			<month>Kwiecień</month>
+			<month>maj</month>
+			<month>czerwiec</month>
+			<month>Lipiec</month>
+			<month>sierpień</month>
+			<month>Wrzesień</month>
+			<month>Październik</month>
+			<month>listopad</month>
+			<month>Grudzień</month>
+		</ymonth>
+		<small_ymonth>
+			<month>styczeń</month>
+			<month>luty</month>
+			<month>Marzec</month>
+			<month>Kwiecień</month>
+			<month>maj</month>
+			<month>czerwiec</month>
+			<month>Lipiec</month>
+			<month>sierpień</month>
+			<month>Wrzesień</month>
+			<month>Październik</month>
+			<month>listopad</month>
+			<month>Grudzień</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</small_mday>
+	</common>
+
+	<content_manager name="Menedźer zawartości">
+		<application name="Aplikacje">
+		</application>
+		<saved_data name="Zapisane dane">
+		</saved_data>
+		<theme>Motyw</theme>
+		<free_space>Wolne miejsce</free_space>
+		<clear_all>wyczyść wszystko</clear_all>
+	</content_manager>
+	
 	<game_data>
 		<app_close>Następująca aplikacja zostanie zamknięta.</app_close>
 	</game_data>
@@ -17,4 +157,73 @@ System Vita3K jest gotowy!</completed_setup>
 		<start>Rozpocznij</start>
 		<continue>Kontynuuj</continue>
 	</live_area>
+	
+	<settings name="ustawienia">
+		<theme_background name="Motyw i tło">
+			<default>Domyślnie</default>
+			<theme name="Motyw">
+				<information name="Informacje">
+					<name>Nazwa</name>
+					<provider>Dostawca</provider>
+					<updated>Zaktualizowano</updated>
+					<size>Rozmiar</size>
+					<version>Wersja</version>
+				</information>
+				<delete>Ten motyw zostanie usunięty.</delete>
+			</theme>
+			<start_screen name="ekran startowy">
+				<image>Obraz</image>
+			</start_screen>
+			<home_screen_backgrounds name="tło ekranu głównego">
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Data i godzina">
+			<date_format name ="Format daty">
+				<yyyy_mm_dd>RRRR/MM/DD</yyyy_mm_dd>
+				<dd_mm_yyyy>DD/MM/RRRR</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/DD/RRRR</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Format godziny">
+				<clock_12_hour>Zegar 12-godz</clock_12_hour>
+				<clock_24_hour>zegar 24-godz</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Język">
+			<system_language>Język systemu</system_language>
+			<input_language name="język wprowadzania">
+				<keyboards name="Klawiatury">
+					<ime_languages>
+						<lang id="1">duński</lang>
+						<lang id="2">Niemiecki</lang>
+						<lang id="262144">Angielski (Wielka Brytania)</lang>
+						<lang id="4">Angielski (Stany Zjednoczone)</lang>
+						<lang id="8">Hiszpański</lang>
+						<lang id="16">Francuski</lang>
+						<lang id="32">Włoski</lang>
+						<lang id="64">Niderlandzki</lang>
+						<lang id="128">Norweski</lang>
+						<lang id="256">Polska</lang>
+						<lang id="131072">Portugalski (Brazylia)</lang>
+						<lang id="512">Portugalski (Portugalia)</lang>
+						<lang id="1024">Rosyjski</lang>
+						<lang id="2048">Fiński</lang>
+						<lang id="4096">Szwedzki</lang>
+						<lang id="524288">Turkish</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>szczegóły</details>
+		<name>Nazwa</name>
+		<original>Oryginał</original>
+		<sort>Sortuj</sort>
+		<trophies>Trofea</trophies>
+		<grade>stopień</grade>
+		<progress>Postęp</progress>
+		<updated>Opdaterest</updated>
+	</trophy_collection>
+	
 </lang>

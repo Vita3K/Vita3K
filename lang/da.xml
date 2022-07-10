@@ -1,6 +1,146 @@
 <?xml version="1.0" encoding="utf-8"?>
 
-<lang>
+<lang>	
+	<app_context>
+		<application>Programmer</application>
+		<save_data>Gemte data</save_data>
+		<update_history>Opdateringshistorik</update_history>
+		<information>Information</information>
+		<eligible>Kvalificeret</eligible>
+		<level>Niveau</level>
+		<name>Navn</name>
+		<trophy_earning>Trophy opnåelse</trophy_earning>
+		<parental_Controls>Forældrekontrol</parental_Controls>
+		<updated>Opdateret</updated>
+		<size>størrelse</size>
+		<version>Version</version>
+	</app_context>
+	
+	<common>
+		<cancel>Afbryd</cancel>
+		<delete>Slet</delete>
+		<no>Nej</no>
+		<select_all>Vælg alle</select_all>
+		<select>Vælg</select>
+		<please_wait>Vent venligst...</please_wait>
+		<yes>Ja</yes>
+		<wday>
+			<day>Søndag</day>
+			<day>Mandag</day>
+			<day>Tirsdag</day>
+			<day>Onsdag</day>
+			<day>Torsdag</day>
+			<day>Fredag</day>
+			<day>Lørdag</day>
+		</wday>
+		<ymonth>
+			<month>Januar</month>
+			<month>Februar</month>
+			<month>Marts</month>
+			<month>April</month>
+			<month>maj</month>
+			<month>juni</month>
+			<month>Juli</month>
+			<month>August</month>
+			<month>September</month>
+			<month>Oktober</month>
+			<month>November</month>
+			<month>December</month>
+		</ymonth>
+		<small_ymonth>
+			<month>Januar</month>
+			<month>Februar</month>
+			<month>Marts</month>
+			<month>April</month>
+			<month>maj</month>
+			<month>juni</month>
+			<month>Juli</month>
+			<month>August</month>
+			<month>September</month>
+			<month>Oktober</month>
+			<month>November</month>
+			<month>December</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</small_mday>
+	</common>
+	
+	<content_manager name="Indholdsadministrator">
+		<application name="Programmer">
+		</application>
+		<saved_data name="Gemte Data">
+		</saved_data>
+		<theme>Tema</theme>
+		<free_space>Ledig plads</free_space>
+		<clear_all>Ryd alle</clear_all>
+	</content_manager>
+
 	<game_data>
 		<app_close>Følgende program bliver lukket.</app_close>
 	</game_data>
@@ -17,4 +157,73 @@ Dit Vita3K-system er klart!</completed_setup>
 		<start>Start</start>
 		<continue>Fortsæt</continue>
 	</live_area>
+	
+	<settings name="Indstillinger">
+		<theme_background name="Tema og baggrund">
+			<default>Standard</default>
+			<theme name="Tema">
+				<information name="Information">
+					<name>Navn</name>
+					<provider>Udbyder</provider>
+					<updated>Opdateret</updated>
+					<size>Størrelse</size>
+					<version>Version</version>
+				</information>
+				<delete>Dette tema vil blive slettet.</delete>
+			</theme>
+			<start_screen name="Startskærm">
+				<image>Billede</image>
+			</start_screen>
+			<home_screen_backgrounds name="Baggrunde til hjemmeskærmen">
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Dato og tid">
+			<date_format name ="Datoformat">
+				<yyyy_mm_dd>ÅÅÅÅ/MM/DD</yyyy_mm_dd>
+				<dd_mm_yyyy>DD/MM/ÅÅÅÅ</dd_mm_yyyy>
+				<mm_dd_yyyy>MM/DD/ÅÅÅÅ</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Tidsformat">
+				<clock_12_hour>12 timers ur</clock_12_hour>
+				<clock_24_hour>24 timers ur</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Sprog">
+			<system_language>Systemsprog</system_language>
+			<input_language name="Indtast sprog">
+				<keyboards name="Tasaturer">
+					<ime_languages>
+						<lang id="1">Dansk</lang>
+						<lang id="2">Tysk</lang>
+						<lang id="262144">Engelsk (Atorbritannien)</lang>
+						<lang id="4">Engelsk (USA)</lang>
+						<lang id="8">Spansk</lang>
+						<lang id="16">Fransk</lang>
+						<lang id="32">Italiensk</lang>
+						<lang id="64">Hollandsk</lang>
+						<lang id="128">Norsk</lang>
+						<lang id="256">Polsk</lang>
+						<lang id="131072">Portugisisk (Brasilien)</lang>
+						<lang id="512">Portugisisk (Portugal)</lang>
+						<lang id="1024">Russisk</lang>
+						<lang id="2048">Finsk</lang>
+						<lang id="4096">Svensk</lang>
+						<lang id="524288">Tyrkisk</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+	
+	<trophy_collection>
+		<details>Detaljer</details>
+		<name>Navn</name>
+		<original>Original</original>
+		<sort>Sortér</sort>
+		<trophies>Trophies</trophies>
+		<grade>Grade</grade>
+		<progress>Forløb</progress>
+		<updated>Opdaterest</updated>
+	</trophy_collection>
+
 </lang>
