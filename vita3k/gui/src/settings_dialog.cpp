@@ -160,7 +160,6 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
                 const auto gpu_child = config_child.child("gpu");
                 config.resolution_multiplier = gpu_child.attribute("resolution-multiplier").as_int();
                 config.disable_surface_sync = gpu_child.attribute("disable-surface-sync").as_bool();
-                config.enable_raw_surfaces = gpu_child.attribute("enable-raw-surfaces").as_bool();
                 config.enable_fxaa = gpu_child.attribute("enable-fxaa").as_bool();
                 config.v_sync = gpu_child.attribute("v-sync").as_bool();
                 config.anisotropic_filtering = gpu_child.attribute("anisotropic-filtering").as_int();
@@ -211,7 +210,6 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.lle_modules = emuenv.cfg.lle_modules;
         config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
         config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
-        config.enable_raw_surfaces = emuenv.cfg.enable_raw_surfaces;
         config.enable_fxaa = emuenv.cfg.enable_fxaa;
         config.v_sync = emuenv.cfg.v_sync;
         config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
@@ -268,7 +266,6 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         auto gpu_child = config_child.append_child("gpu");
         gpu_child.append_attribute("resolution-multiplier") = config.resolution_multiplier;
         gpu_child.append_attribute("disable-surface-sync") = config.disable_surface_sync;
-        gpu_child.append_attribute("enable-raw-surfaces") = config.enable_raw_surfaces;
         gpu_child.append_attribute("enable-fxaa") = config.enable_fxaa;
         gpu_child.append_attribute("v-sync") = config.v_sync;
         gpu_child.append_attribute("anisotropic-filtering") = config.anisotropic_filtering;
@@ -292,7 +289,6 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.pstv_mode = config.pstv_mode;
         emuenv.cfg.resolution_multiplier = config.resolution_multiplier;
         emuenv.cfg.disable_surface_sync = config.disable_surface_sync;
-        emuenv.cfg.enable_raw_surfaces = config.enable_raw_surfaces;
         emuenv.cfg.enable_fxaa = config.enable_fxaa;
         emuenv.cfg.v_sync = config.v_sync;
         emuenv.cfg.anisotropic_filtering = config.anisotropic_filtering;
@@ -333,7 +329,6 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.pstv_mode = config.pstv_mode;
         emuenv.cfg.current_config.resolution_multiplier = config.resolution_multiplier;
         emuenv.cfg.current_config.disable_surface_sync = config.disable_surface_sync;
-        emuenv.cfg.current_config.enable_raw_surfaces = config.enable_raw_surfaces;
         emuenv.cfg.current_config.enable_fxaa = config.enable_fxaa;
         emuenv.cfg.current_config.v_sync = config.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = config.anisotropic_filtering;
@@ -347,7 +342,6 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.pstv_mode = emuenv.cfg.pstv_mode;
         emuenv.cfg.current_config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
         emuenv.cfg.current_config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
-        emuenv.cfg.current_config.enable_raw_surfaces = emuenv.cfg.enable_raw_surfaces;
         emuenv.cfg.current_config.enable_fxaa = emuenv.cfg.enable_fxaa;
         emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
@@ -365,7 +359,6 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.kernel.cpu_backend = set_cpu_backend(emuenv.cfg.current_config.cpu_backend);
         emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
         emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
-        emuenv.renderer->enable_raw_surfaces = emuenv.cfg.enable_raw_surfaces;
     }
 }
 
@@ -516,13 +509,6 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
         ImGui::Spacing();
-        if (!emuenv.io.title_id.empty())
-            ImGui::BeginDisabled();
-        ImGui::Checkbox("Enable raw surfaces", &config.enable_raw_surfaces);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Store 16 bits component surfaces in a raw way.\n Disabling this option can fix blending in a few games but will break others.");
-        if (!emuenv.io.title_id.empty())
-            ImGui::EndDisabled();
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
