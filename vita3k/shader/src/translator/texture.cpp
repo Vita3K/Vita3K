@@ -28,7 +28,7 @@
 using namespace shader;
 using namespace usse;
 
-spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type, const int lod_mode, const spv::Id lod) {
+spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type, const int lod_mode, const spv::Id extra1, const spv::Id extra2) {
     auto coord_id = coord.first;
 
     if (coord.second != static_cast<int>(DataType::F32)) {
@@ -48,7 +48,7 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
     assert(m_b.getTypeClass(m_b.getContainedTypeId(m_b.getTypeId(coord_id))) == spv::OpTypeFloat);
 
     spv::Id image_sample = spv::NoResult;
-    if (lod == spv::NoResult) {
+    if (extra1 == spv::NoResult) {
         if (lod_mode == 4) {
             image_sample = m_b.createOp(spv::OpImageSampleProjImplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id });
         } else {
@@ -56,12 +56,9 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
         }
     } else {
         if (lod_mode == 2) {
-            image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id, spv::ImageOperandsLodMask, lod });
+            image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id, spv::ImageOperandsLodMask, extra1 });
         } else if (lod_mode == 3) {
-            spv::Id ddx = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { lod, lod, 0, 1 });
-            spv::Id ddy = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { lod, lod, 2, 3 });
-
-            image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id, spv::ImageOperandsGradMask, ddx, ddy });
+            image_sample = m_b.createOp(spv::OpImageSampleExplicitLod, type_f32_v[4], { m_b.createLoad(tex, spv::NoPrecision), coord_id, spv::ImageOperandsGradMask, extra1, extra2 });
         }
     }
 
@@ -250,6 +247,7 @@ bool USSETranslatorVisitor::smp(
     if (dim == 1) {
         // It should be a line, so Y should be zero. There are only two dimensions texture, so this is a guess (seems concise)
         coord = m_b.createCompositeConstruct(m_b.makeVectorType(m_b.makeFloatType(32), 2), { coord, m_b.makeIntConstant(0) });
+        dim = 2;
     }
 
     spv::Id sampler = spv::NoResult;
@@ -260,8 +258,10 @@ bool USSETranslatorVisitor::smp(
         return true;
     }
 
-    // Either LOD number or gradient number
-    spv::Id extra = spv::NoResult;
+    // Either LOD number or ddx
+    spv::Id extra1 = spv::NoResult;
+    // ddy
+    spv::Id extra2 = spv::NoResult;
 
     if (lod_mode != 0) {
         inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_ext, true, 8, m_second_program);
@@ -269,11 +269,19 @@ bool USSETranslatorVisitor::smp(
 
         switch (lod_mode) {
         case 2:
-            extra = load(inst.opr.src2, 0b1);
+            extra1 = load(inst.opr.src2, 0b1);
             break;
 
         case 3:
-            extra = load(inst.opr.src2, 0b1111);
+            switch (dim) {
+            case 2:
+                extra1 = load(inst.opr.src2, 0b0011);
+                extra2 = load(inst.opr.src2, 0b1100);
+                break;
+            case 3:
+                extra1 = load(inst.opr.src2, 0b0111);
+                extra2 = load(inst.opr.src2, 0b0111, 1);
+            }
             break;
 
         default:
@@ -281,7 +289,7 @@ bool USSETranslatorVisitor::smp(
         }
     }
 
-    spv::Id result = do_fetch_texture(sampler, { coord, static_cast<int>(DataType::F32) }, DataType::F32, lod_mode, extra);
+    spv::Id result = do_fetch_texture(sampler, { coord, static_cast<int>(DataType::F32) }, DataType::F32, lod_mode, extra1, extra2);
 
     switch (sb_mode) {
     case 0:
