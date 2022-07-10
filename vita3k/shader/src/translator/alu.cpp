@@ -748,10 +748,13 @@ bool USSETranslatorVisitor::vcomp(
         if (num_comp == 1) {
             one_v = one_const;
         } else {
-            std::vector<spv::Id> ones;
-            ones.insert(ones.begin(), num_comp, one_const);
+            std::vector<spv::Id> composite_values(num_comp);
 
-            one_v = m_b.makeCompositeConstant(type_f32_v[num_comp], ones);
+            std::fill_n(composite_values.begin(), num_comp, one_const);
+            one_v = m_b.makeCompositeConstant(type_f32_v[num_comp], composite_values);
+
+            std::fill_n(composite_values.begin(), num_comp, result);
+            result = m_b.createCompositeConstruct(type_f32_v[num_comp], composite_values);
         }
 
         result = m_b.createBinOp(spv::OpFDiv, m_b.getTypeId(result), one_v, result);
