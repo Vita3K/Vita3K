@@ -6,6 +6,8 @@
 		<save_data>Zapisane dane</save_data>
 		<update_history>Historia aktualizacji</update_history>
 		<information>Informacje</information>
+		<eligible>Spełnia warunki</eligible>
+		<level>Poziom</level>
 		<name>Nazwa</name>
 		<trophy_earning>Zdobywanie trofeów</trophy_earning>
 		<parental_Controls>kontrola rodzicielska</parental_Controls>
@@ -15,6 +17,13 @@
 	</app_context>
 
 	<common>
+		<cancel>Anuluj</cancel>
+		<delete>Usuń</delete>
+		<no>Nie</no>
+		<select_all>Zaznacz wszystko</select_all>
+		<select>Zaznacz</select>
+		<please_wait>Czekaj...</please_wait>
+		<yes>Tak</yes>
 		<wday>
 			<day>Niedziela</day>
 			<day>Poniedziałek</day>
@@ -119,6 +128,7 @@
 			<days>29</days>
 			<days>30</days>
 			<days>31</days>
+		</small_mday>
 	</common>
 
 	<content_manager name="Menedźer zawartości">
