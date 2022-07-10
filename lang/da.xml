@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <lang>	
+	<app_context>
+		<boot>Start</boot> 
+		<application>Programmer</application>
+		<save_data>Gemte data</save_data>
+		<update_history>Opdateringshistorik</update_history>
+		<information>Information</information>
+		<name>Navn</name>
+		<trophy_earning>Trophy opnåelse</trophy_earning>
+		<parental_Controls>Forældrekontrol</parental_Controls>
+		<updated>Opdateret</updated>
+		<size>størrelse</size>
+		<version>Version</version>
+	</app_context>
+	
 	<common>
+		<cancel>Afbryd</cancel>
+		<delete>Slet</delete>
+		<select_all>Vælg alle</select_all>
+		<select>Vælg</select>
 		<wday>
 			<day>Søndag</day>
 			<day>Mandag</day>
@@ -82,6 +100,7 @@ Dit Vita3K-system er klart!</completed_setup>
 				<delete>Dette tema vil blive slettet.</delete>
 			</theme>
 			<start_screen name="Startskærm">
+				<image>Billede</image>
 			</start_screen>
 			<home_screen_backgrounds name="Baggrunde til hjemmeskærmen">
 			</home_screen_backgrounds>
