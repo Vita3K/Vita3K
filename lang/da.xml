@@ -2,11 +2,12 @@
 
 <lang>	
 	<app_context>
-		<boot>Start</boot> 
 		<application>Programmer</application>
 		<save_data>Gemte data</save_data>
 		<update_history>Opdateringshistorik</update_history>
 		<information>Information</information>
+		<eligible>Kvalificeret</eligible>
+		<level>Niveau</level>
 		<name>Navn</name>
 		<trophy_earning>Trophy opnåelse</trophy_earning>
 		<parental_Controls>Forældrekontrol</parental_Controls>
@@ -18,8 +19,11 @@
 	<common>
 		<cancel>Afbryd</cancel>
 		<delete>Slet</delete>
+		<no>Nej</no>
 		<select_all>Vælg alle</select_all>
 		<select>Vælg</select>
+		<please_wait>Vent venligst...</please_wait>
+		<yes>Ja</yes>
 		<wday>
 			<day>Søndag</day>
 			<day>Mandag</day>
