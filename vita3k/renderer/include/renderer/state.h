@@ -35,7 +35,6 @@ struct State {
     FeatureState features;
     int res_multiplier;
     bool disable_surface_sync;
-    bool enable_raw_surfaces;
 
     GXPPtrMap gxp_ptr_map;
     Queue<CommandList> command_buffer_queue;

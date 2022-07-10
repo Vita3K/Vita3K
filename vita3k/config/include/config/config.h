@@ -60,7 +60,6 @@ enum PerfomanceOverleyPosition {
     code(bool, "archive-log", false, archive_log)                                                       \
     code(int, "resolution-multiplier", 1, resolution_multiplier)                                        \
     code(bool, "disable-surface-sync", false, disable_surface_sync)                                     \
-    code(bool, "enable-raw-surfaces", true, enable_raw_surfaces)                                        \
     code(bool, "enable-fxaa", false, enable_fxaa)                                                       \
     code(bool, "v-sync", true, v_sync)                                                                  \
     code(int, "anisotropic-filtering", 1, anisotropic_filtering)                                        \

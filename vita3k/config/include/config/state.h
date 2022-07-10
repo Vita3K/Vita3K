@@ -124,7 +124,6 @@ public:
         bool disable_ngs = false;
         int resolution_multiplier = 1;
         bool disable_surface_sync = false;
-        bool enable_raw_surfaces = true;
         bool enable_fxaa = false;
         bool v_sync = true;
         int anisotropic_filtering = 1;
