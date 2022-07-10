@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <lang>
+	<app_context>
+		<application>Aplikacje</application>
+		<save_data>Zapisane dane</save_data>
+		<update_history>Historia aktualizacji</update_history>
+		<information>Informacje</information>
+		<name>Nazwa</name>
+		<trophy_earning>Zdobywanie trofeów</trophy_earning>
+		<parental_Controls>kontrola rodzicielska</parental_Controls>
+		<updated>Zaktualizowano</updated>
+		<size>Rozmiar</size>
+		<version>Wersja</version>
+	</app_context>
+
 	<common>
 		<wday>
 			<day>Niedziela</day>
@@ -39,6 +52,73 @@
 			<month>listopad</month>
 			<month>Grudzień</month>
 		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
 	</common>
 
 	<content_manager name="Menedźer zawartości">
@@ -82,6 +162,7 @@ System Vita3K jest gotowy!</completed_setup>
 				<delete>Ten motyw zostanie usunięty.</delete>
 			</theme>
 			<start_screen name="ekran startowy">
+				<image>Obraz</image>
 			</start_screen>
 			<home_screen_backgrounds name="tło ekranu głównego">
 			</home_screen_backgrounds>
