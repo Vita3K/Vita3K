@@ -641,7 +641,7 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
 
     GLenum gl_format = format_gl->second.first;
     GLenum gl_type = format_gl->second.second;
-    if (color::is_write_surface_stored_rawly(base_format)) {
+    if (renderer.enable_raw_surfaces && color::is_write_surface_stored_rawly(base_format)) {
         gl_format = color::get_raw_store_upload_format_type(base_format);
         gl_type = color::get_raw_store_upload_data_type(base_format);
     }
@@ -697,7 +697,7 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
     }
 
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(format);
-    if (color::is_write_surface_stored_rawly(base_format)) {
+    if (renderer.enable_raw_surfaces && color::is_write_surface_stored_rawly(base_format)) {
         // we can't get the content of raw textures with glReadPixels
         GLint last_texture = 0;
 

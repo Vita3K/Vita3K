@@ -99,7 +99,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
 
     glUseProgram(program_id);
 
-    const bool use_raw_image = color::is_write_surface_stored_rawly(gxm::get_base_format(context.record.color_surface.colorFormat));
+    const bool use_raw_image = renderer.enable_raw_surfaces && color::is_write_surface_stored_rawly(gxm::get_base_format(context.record.color_surface.colorFormat));
 
     if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
         if (use_raw_image) {
