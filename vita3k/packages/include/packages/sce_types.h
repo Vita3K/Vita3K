@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <package/functions.h>
+#include <packages/functions.h>
 #include <util/log.h>
 
 #include <map>

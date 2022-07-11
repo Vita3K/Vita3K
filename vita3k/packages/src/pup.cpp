@@ -24,7 +24,7 @@
  */
 
 #include <crypto/aes.h>
-#include <package/sce_types.h>
+#include <packages/sce_types.h>
 #include <util/fs.h>
 #include <util/string_utils.h>
 

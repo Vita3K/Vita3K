@@ -19,7 +19,7 @@
 
 #include <gui/functions.h>
 
-#include <package/functions.h>
+#include <packages/functions.h>
 #include <util/safe_time.h>
 
 #include <io/VitaIoDevice.h>

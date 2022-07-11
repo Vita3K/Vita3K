@@ -21,7 +21,7 @@
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/io.h>
-#include <package/functions.h>
+#include <packages/functions.h>
 
 #include <modules/module_parent.h>
 #include <util/find.h>

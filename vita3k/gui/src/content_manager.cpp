@@ -23,7 +23,7 @@
 
 #include <gui/functions.h>
 
-#include <package/sfo.h>
+#include <packages/sfo.h>
 
 #include <io/VitaIoDevice.h>
 #include <io/functions.h>

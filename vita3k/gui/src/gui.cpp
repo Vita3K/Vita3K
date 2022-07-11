@@ -27,7 +27,7 @@
 #include <io/VitaIoDevice.h>
 #include <io/vfs.h>
 #include <lang/functions.h>
-#include <package/sfo.h>
+#include <packages/sfo.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>

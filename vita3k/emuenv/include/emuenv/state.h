@@ -31,7 +31,7 @@
 #include <ngs/state.h>
 #include <nids/types.h>
 #include <np/state.h>
-#include <package/sfo.h>
+#include <packages/sfo.h>
 #include <renderer/state.h>
 #include <touch/state.h>
 
