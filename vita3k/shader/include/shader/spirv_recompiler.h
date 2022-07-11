@@ -39,7 +39,7 @@ static constexpr float INTEGRAL_TEX_QUERY_TYPE_8BIT_SIGNED = 3.0;
 static constexpr float INTEGRAL_TEX_QUERY_TYPE_8BIT_UNSIGNED = 2.0;
 static constexpr float INTEGRAL_TEX_QUERY_TYPE_16BIT = 1.0;
 static constexpr float INTEGRAL_TEX_QUERY_TYPE_32BIT = 0.0;
-static constexpr std::uint32_t CURRENT_VERSION = 2;
+static constexpr std::uint32_t CURRENT_VERSION = 3;
 
 // Dump generated SPIR-V disassembly up to this point
 void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump = nullptr);
