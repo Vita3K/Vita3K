@@ -18,7 +18,7 @@
 #include "private.h"
 
 #include <misc/cpp/imgui_stdlib.h>
-#include <package/functions.h>
+#include <packages/functions.h>
 #include <util/string_utils.h>
 
 #include <nfd.h>

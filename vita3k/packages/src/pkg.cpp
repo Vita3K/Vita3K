@@ -30,10 +30,10 @@
 #include <io/functions.h>
 
 #include <emuenv/state.h>
-#include <package/functions.h>
-#include <package/pkg.h>
-#include <package/sce_types.h>
-#include <package/sfo.h>
+#include <packages/functions.h>
+#include <packages/pkg.h>
+#include <packages/sce_types.h>
+#include <packages/sfo.h>
 
 #include <util/bytes.h>
 #include <util/log.h>

@@ -22,7 +22,7 @@
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
-#include <package/functions.h>
+#include <packages/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 

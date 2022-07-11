@@ -175,7 +175,7 @@
  */
 
 /**
- * @dir vita3k/package
+ * @dir vita3k/packages
  *
  * @brief PS Vita software package handling
  */

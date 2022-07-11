@@ -24,8 +24,8 @@
 #include <gui/functions.h>
 #include <gui/state.h>
 #include <modules/module_parent.h>
-#include <package/functions.h>
-#include <package/pkg.h>
+#include <packages/functions.h>
+#include <packages/pkg.h>
 #include <renderer/functions.h>
 #include <renderer/gl/functions.h>
 #include <shader/spirv_recompiler.h>

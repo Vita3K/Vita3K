@@ -28,7 +28,7 @@
 #include <io/functions.h>
 #include <kernel/load_self.h>
 #include <kernel/sync_primitives.h>
-#include <package/functions.h>
+#include <packages/functions.h>
 
 #include <kernel/types.h>
 #include <rtc/rtc.h>

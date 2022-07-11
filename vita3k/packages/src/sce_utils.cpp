@@ -23,7 +23,7 @@
 #include <crypto/aes.h>
 #include <fat16/fat16.h>
 #include <miniz.h>
-#include <package/sce_types.h>
+#include <packages/sce_types.h>
 #include <util/string_utils.h>
 
 #include <self.h>

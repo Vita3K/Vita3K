@@ -23,8 +23,8 @@
  * the content they are accompanying.
  */
 
-#include <package/functions.h>
-#include <package/sfo.h>
+#include <packages/functions.h>
+#include <packages/sfo.h>
 
 #include <boost/algorithm/string/trim.hpp>
 

@@ -24,9 +24,9 @@
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/load_self.h>
-#include <package/functions.h>
-#include <package/pkg.h>
-#include <package/sfo.h>
+#include <packages/functions.h>
+#include <packages/pkg.h>
+#include <packages/sfo.h>
 
 #include <modules/module_parent.h>
 #include <string>
