@@ -254,7 +254,8 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
         { "GL_ARB_texture_barrier", &gl_state.features.support_texture_barrier },
         { "GL_EXT_shader_framebuffer_fetch", &gl_state.features.direct_fragcolor },
         { "GL_ARB_gl_spirv", &gl_state.features.spirv_shader },
-        { "GL_ARB_get_texture_sub_image", &gl_state.features.support_get_texture_sub_image }
+        { "GL_ARB_get_texture_sub_image", &gl_state.features.support_get_texture_sub_image },
+        { "GL_EXT_shader_image_load_formatted", &gl_state.features.support_unknown_format }
     };
 
     for (int i = 0; i < total_extensions; i++) {
@@ -273,7 +274,12 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
         LOG_INFO("Your GPU supports shader interlock, some games that use programmable blending will have better performance.");
     } else if (gl_state.features.support_texture_barrier) {
         LOG_INFO("Your GPU only supports texture barrier, performance may not be good on programmable blending games.");
-        LOG_WARN("Consider updating to GPU that has shader interlock.");
+        LOG_WARN("Consider upgrading to a GPU that has shader interlock.");
+
+        if (!gl_state.features.support_unknown_format) {
+            // Activate raw textures only for this case
+            gl_state.features.preserve_f16_nan_as_u16 = true;
+        }
     } else {
         LOG_INFO("Your GPU doesn't support extensions that make programmable blending possible. Some games may have broken graphics.");
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
@@ -641,7 +647,7 @@ void lookup_and_get_surface_data(GLState &renderer, MemState &mem, SceGxmColorSu
 
     GLenum gl_format = format_gl->second.first;
     GLenum gl_type = format_gl->second.second;
-    if (color::is_write_surface_stored_rawly(base_format)) {
+    if (renderer.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(base_format)) {
         gl_format = color::get_raw_store_upload_format_type(base_format);
         gl_type = color::get_raw_store_upload_data_type(base_format);
     }
@@ -697,7 +703,7 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
     }
 
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(format);
-    if (color::is_write_surface_stored_rawly(base_format)) {
+    if (renderer.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(base_format)) {
         // we can't get the content of raw textures with glReadPixels
         GLint last_texture = 0;
 

@@ -315,8 +315,9 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
 static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &features, TranslationState &translation_state, const std::string &name) {
     spv::Id sampled_type = b.makeFloatType(32);
 
+    // 2 = storage image
     int sampled = 2;
-    spv::ImageFormat img_format = spv::ImageFormatRgba8;
+    spv::ImageFormat img_format = features.support_unknown_format ? spv::ImageFormatUnknown : spv::ImageFormatRgba8;
 
     spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
     spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
@@ -1451,6 +1452,8 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
 
     // Capabilities
     b.addCapability(spv::Capability::CapabilityShader);
+    if (features.support_unknown_format)
+        b.addCapability(spv::Capability::CapabilityStorageImageReadWithoutFormat);
     b.addCapability(spv::Capability::CapabilityFloat16);
 
     NonDependentTextureQueryCallInfos texture_queries;
