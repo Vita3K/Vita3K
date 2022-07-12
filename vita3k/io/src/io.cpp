@@ -176,6 +176,9 @@ bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &tra
     }
     }
 
+    if (!fs::exists(final_path))
+        return false;
+
     for (const auto &file : fs::recursive_directory_iterator(final_path)) {
         io.cachemap.insert(std::make_pair(string_utils::tolower(file.path().string()), file.path().string()));
     }
