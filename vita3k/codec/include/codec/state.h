@@ -166,7 +166,8 @@ private:
     SwrContext *swr_stereo;
 
 public:
-    ADPCMHistory *adpcm_history;
+    // there are at most 2 channels
+    ADPCMHistory adpcm_history[2] = {};
 
     std::uint32_t source_channels;
 

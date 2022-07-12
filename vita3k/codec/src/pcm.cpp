@@ -189,13 +189,6 @@ bool PCMDecoderState::send(const uint8_t *data, uint32_t size) {
             return false;
         }
 
-        if (!adpcm_history) {
-            adpcm_history = new ADPCMHistory[source_channels];
-
-            ADPCMHistory hist = {};
-            std::fill_n(adpcm_history, source_channels, hist);
-        }
-
         const std::uint32_t src_ch = source_channels;
 
         std::int32_t ch = 0;
@@ -305,8 +298,7 @@ PCMDecoderState::PCMDecoderState(const float dest_frequency)
     : dest_frequency(dest_frequency)
     , he_adpcm(false)
     , source_channels(2)
-    , source_frequency(48000.0f)
-    , adpcm_history(nullptr) {
+    , source_frequency(48000.0f) {
     // we are not resampling, we don't care about the sample rate
     swr_mono_to_stereo = swr_alloc_set_opts(nullptr,
         AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, 48000,
@@ -324,10 +316,6 @@ PCMDecoderState::PCMDecoderState(const float dest_frequency)
 }
 
 PCMDecoderState::~PCMDecoderState() {
-    if (adpcm_history) {
-        delete[] adpcm_history;
-        adpcm_history = nullptr;
-    }
     swr_free(&swr_mono_to_stereo);
     swr_free(&swr_stereo);
 }

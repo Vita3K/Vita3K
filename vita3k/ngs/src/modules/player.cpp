@@ -43,13 +43,10 @@ void Module::on_state_change(ModuleData &data, const VoiceState previous) {
         state->samples_generated_since_key_on = 0;
         state->bytes_consumed_since_key_on = 0;
 
-        if (state->adpcm_history) {
-            delete[] state->adpcm_history;
-            state->adpcm_history = nullptr;
-        }
+        ADPCMHistory hist_empty{};
+        std::fill_n(state->adpcm_history, MAX_PCM_CHANNELS, hist_empty);
 
-        if (state->swr)
-            swr_free(&state->swr);
+        state->reset_swr = true;
     }
 }
 
@@ -60,13 +57,10 @@ void Module::on_param_change(const MemState &mem, ModuleData &data) {
 
     // if playback scaling changed, reset the resampler
     if (old_params->playback_frequency != new_params->playback_frequency || old_params->playback_scalar != new_params->playback_scalar) {
-        if (state->adpcm_history) {
-            delete[] state->adpcm_history;
-            state->adpcm_history = nullptr;
-        }
+        ADPCMHistory hist_empty{};
+        std::fill_n(state->adpcm_history, MAX_PCM_CHANNELS, hist_empty);
 
-        if (state->swr)
-            swr_free(&state->swr);
+        state->reset_swr = true;
     }
 }
 
@@ -183,15 +177,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                 // Enable ADPCM mode on the decoder if needed, and restore state
                 decoder->he_adpcm = static_cast<bool>(params->type);
                 if (decoder->he_adpcm) {
-                    if (!state->adpcm_history) {
-                        state->adpcm_history = new ADPCMHistory[decoder->source_channels];
-
-                        ADPCMHistory hist = {};
-                        std::fill_n(state->adpcm_history, decoder->source_channels, hist);
-                    }
-
-                    if (state->adpcm_history && decoder->adpcm_history)
-                        std::copy_n(state->adpcm_history, decoder->source_channels, decoder->adpcm_history);
+                    std::copy_n(state->adpcm_history, decoder->source_channels, decoder->adpcm_history);
                 }
 
                 // Get audio buffer
@@ -250,13 +236,17 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                     if (params->playback_scalar != 1.0)
                         src_sample_rate = static_cast<int>(src_sample_rate * params->playback_scalar);
 
-                    if (!state->swr) {
+                    if (!state->swr || state->reset_swr) {
+                        if (state->swr)
+                            swr_free(&state->swr);
+
                         state->swr = swr_alloc_set_opts(nullptr,
                             AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, sample_rate,
                             AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, src_sample_rate,
                             0, nullptr);
 
                         swr_init(state->swr);
+                        state->reset_swr = false;
                     }
                     int scaled_samples_amount = swr_get_out_samples(state->swr, samples_count.samples);
                     std::vector<std::uint8_t> scaled_data(scaled_samples_amount * sizeof(float) * 2, 0);
@@ -314,13 +304,10 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         state->samples_generated_since_key_on = 0;
         state->bytes_consumed_since_key_on = 0;
 
-        if (state->adpcm_history) {
-            delete[] state->adpcm_history;
-            state->adpcm_history = nullptr;
-        }
+        ADPCMHistory hist_empty{};
+        std::fill_n(state->adpcm_history, MAX_PCM_CHANNELS, hist_empty);
 
-        if (state->swr)
-            swr_free(&state->swr);
+        state->reset_swr = true;
     }
 
     return finished;
