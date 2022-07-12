@@ -70,13 +70,6 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const State 
     width *= state.res_multiplier;
     height *= state.res_multiplier;
 
-    GLenum surface_internal_format = color::translate_internal_format(base_format);
-    GLenum surface_upload_format = color::translate_format(base_format);
-    GLenum surface_data_type = color::translate_type(base_format);
-
-    std::size_t bytes_per_stride = pixel_stride * color::bytes_per_pixel(base_format);
-    std::size_t total_surface_size = bytes_per_stride * original_height;
-
     // Of course, this works under the assumption that range must be unique :D
     auto ite = color_surface_textures.lower_bound(key);
     bool invalidated = false;
@@ -86,6 +79,18 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const State 
         // if the surface found does not overlap the surface we want, it's useless to look at it
         overlap = (ite->first + ite->second->total_bytes) > key;
     }
+
+    if (!overlap && purpose != SurfaceTextureRetrievePurpose::WRITING) {
+        // not part of a surface, let the texture cache handle it
+        return 0;
+    }
+
+    GLenum surface_internal_format = color::translate_internal_format(base_format);
+    GLenum surface_upload_format = color::translate_format(base_format);
+    GLenum surface_data_type = color::translate_type(base_format);
+
+    std::size_t bytes_per_stride = pixel_stride * color::bytes_per_pixel(base_format);
+    std::size_t total_surface_size = bytes_per_stride * original_height;
 
     if (overlap) {
         GLColorSurfaceCacheInfo &info = *ite->second;
@@ -366,11 +371,6 @@ std::uint64_t GLSurfaceCache::retrieve_color_surface_texture_handle(const State 
         } else if (used_iterator != last_use_color_surface_index.end()) {
             last_use_color_surface_index.erase(used_iterator);
         }
-    }
-
-    if (purpose != SurfaceTextureRetrievePurpose::WRITING) {
-        // not part of a surface, let the texture cache handle it
-        return 0;
     }
 
     std::unique_ptr<GLColorSurfaceCacheInfo> info_added = std::make_unique<GLColorSurfaceCacheInfo>();
