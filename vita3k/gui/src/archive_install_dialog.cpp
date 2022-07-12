@@ -194,7 +194,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::Spacing();
                     const auto count_contents_successed = count_content_state(archive.first, true);
                     if (count_contents_successed) {
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%ld %s", count_contents_successed, lang["successed_install"].c_str());
+                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%ld %s", count_contents_successed, lang["successed_install_archive"].c_str());
                         for (const auto &content : archive.second) {
                             if (content.state) {
                                 ImGui::TextWrapped("%s [%s]", content.title.c_str(), content.title_id.c_str());
@@ -206,7 +206,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     const auto count_contents_failed = count_content_state(archive.first, false);
                     if (count_contents_failed) {
                         ImGui::Spacing();
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%ld %s", count_contents_failed, lang["failed_install"].c_str());
+                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%ld %s", count_contents_failed, lang["failed_install_archive"].c_str());
                         ImGui::Spacing();
                         for (const auto &content : archive.second) {
                             if (!content.state)

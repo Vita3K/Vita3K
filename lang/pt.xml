@@ -3,6 +3,7 @@
 <lang>
 	<app_context>
 		<update_history>Histórico de atualização</update_history>
+		<history_version>Versão {}</history_version>
 		<information>Informações</information>
 		<app_delete>Esta aplicação e todos os dados relacionados, incluindo dados guardados, serão elminados.</app_delete>
 		<save_delete>Pretende elminar estes dados guardados?</save_delete>

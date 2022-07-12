@@ -168,7 +168,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 state.clear();
             }
         } else if (state == "fail") {
-            title = gui.lang.indicator["install_failed"];
+            title = indicator["install_failed"];
             ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize(lang["check_log"].c_str()).x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f * emuenv.dpi_scale));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["check_log"].c_str());
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));

@@ -18,7 +18,6 @@
 		</configuration>
 		<controls name="控制">
 			<keyboard_controls>键盘控制</keyboard_controls>
-			<controllers>控制器</controllers>
 		</controls>
 		<help name="帮助">
 			<about>关于</about>
@@ -36,13 +35,12 @@
 		<edit>编辑</edit>
 		<remove>移除</remove>
 		<open_folder>打开文件夹</open_folder>
-		<application>应用程序</application>
 		<addcont>追加内容</addcont>
 		<license>许可证</license>
-		<save_data>保存数据</save_data>
 		<shader_cache>着色器缓存</shader_cache>
 		<shader_log>着色器日志</shader_log>
 		<update_history>更新历史记录</update_history>
+		<history_version>{} 版本</history_version>
 		<information>信息</information>
 		<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
 		<save_delete>要删除此保存数据吗？</save_delete>
@@ -55,7 +53,7 @@
 		<updated>升级日期</updated>
 		<size>大小</size>
 		<version>版本</version>
-		<last_time_used>最近使用的时间</last_time_used>
+		<last_time_used>最近使用时间</last_time_used>
 		<never>从来没有</never>
 		<time_used>使用时间</time_used>
 	</app_context>
@@ -200,6 +198,14 @@
 		<clear_all>全部清除</clear_all>
 	</content_manager>
 
+	<controllers name="控制器">
+		<connected>个控制器已连接</connected>
+		<name>名称</name>
+		<num>编号</num>
+		<not_connected>未连接兼容的控制器。
+连接与SDL2兼容的控制器。</not_connected>
+	</controllers>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>正在准备启动应用程序…</preparing_start_app>
@@ -256,7 +262,7 @@
 		<homebrew>自制</homebrew>
 		<ver>版本</ver>
 		<cat>类别</cat>
-		<last_time>最近游玩时间</last_time>
+		<last_time>最近使用时间</last_time>
 		<tit>标题</tit>
 		<tit_id>标题ID</tit_id>
 		<refresh>刷新</refresh>
@@ -295,9 +301,9 @@ Your Vita3K system is ready!</completed_setup>
 		<select_file>选择文件</select_file>
 		<select_directory>选择目录</select_directory>
 		<compatible_content>个压缩包发现兼容的内容。</compatible_content>
-		<successed_install>个内容的压缩包已成功安装：</successed_install>
+		<successed_install_archive>个内容的压缩包已成功安装：</successed_install_archive>
 		<update_app>更新应用程序至：</update_app>
-		<failed_install>个内容安装失败：</failed_install>
+		<failed_install_archive>个内容安装失败：</failed_install_archive>
 		<not_compatible_content>个压缩包未发现兼容的内容。</not_compatible_content>
 		<delete_archive>删除压缩包？</delete_archive>
 	</install_dialog>

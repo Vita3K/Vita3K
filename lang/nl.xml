@@ -27,6 +27,7 @@
 
 	<app_context>
 		<update_history>Updategeschiedenis</update_history>
+		<history_version>Versie {}</history_version>
 		<information>Informatie</information>
 		<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
 		<save_delete>Wil je deze opgeslagen data verwijderen?</save_delete>

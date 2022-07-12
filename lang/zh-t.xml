@@ -18,7 +18,6 @@
 		</configuration>
 		<controls name="控制">
 			<keyboard_controls>鍵盤控制</keyboard_controls>
-			<controllers>控制器</controllers>
 		</controls>
 		<help name="幫助">
 			<about>關於</about>
@@ -36,13 +35,12 @@
 		<edit>編輯</edit>
 		<remove>移除</remove>
 		<open_folder>打开資料夾</open_folder>
-		<application>應用程式</application>
 		<addcont>追加資料</addcont>
 		<license>許可證</license>
-		<save_data>保存資料</save_data>
 		<shader_cache>着色器緩存</shader_cache>
 		<shader_log>着色器日志</shader_log>
 		<update_history>更新履歷</update_history>
+		<history_version>{} 版本</history_version>
 		<information>資訊</information>
 		<app_delete>刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
 		<save_delete>確定要刪除此保存資料嗎?</save_delete>
@@ -55,7 +53,7 @@
 		<updated>更新日</updated>
 		<size>檔案大小</size>
 		<version>版本</version>
-		<last_time_used>最近使用的時間</last_time_used>
+		<last_time_used>最近使用時間</last_time_used>
 		<never>從來沒有</never>
 		<time_used>使用時間</time_used>
 	</app_context>
@@ -200,6 +198,14 @@
 		<clear_all>全解除</clear_all>
 	</content_manager>
 
+	<controllers name="控制器">
+		<connected>個控制器已連接</connected>
+		<name>名稱</name>
+		<num>編號</num>
+		<not_connected>未連接兼容的控制器。
+連接與SDL2兼容的控制器。</not_connected>
+	</controllers>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>正在準備啟動應用程式……</preparing_start_app>
@@ -256,7 +262,7 @@
 		<homebrew>自製</homebrew>
 		<ver>版本</ver>
 		<cat>類別</cat>
-		<last_time>最近游玩時間</last_time>
+		<last_time>最近使用時間</last_time>
 		<tit>標題</tit>
 		<tit_id>標題ID</tit_id>
 		<refresh>刷新</refresh>
@@ -294,11 +300,11 @@ Your Vita3K system is ready!</completed_setup>
 		<select_install_type>選擇安裝類型</select_install_type>
 		<select_file>選擇文件</select_file>
 		<select_directory>選擇目錄</select_directory>
-		<compatible_content>个檔案包發現兼容的內容。</compatible_content>
-		<successed_install>个內容的檔案包已成功安裝：</successed_install>
+		<compatible_content>個檔案包發現兼容的內容。</compatible_content>
+		<successed_install_archive>個內容的檔案包已成功安裝：</successed_install_archive>
 		<update_app>更新應用程式至：</update_app>
-		<failed_install>个內容安裝失敗：</failed_install>
-		<not_compatible_content>个檔案包未發現兼容的內容。</not_compatible_content>
+		<failed_install_archive>個內容安裝失敗：</failed_install_archive>
+		<not_compatible_content>個檔案包未發現兼容的內容。</not_compatible_content>
 		<delete_archive>刪除檔案包？</delete_archive>
 	</install_dialog>
 

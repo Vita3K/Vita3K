@@ -156,6 +156,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     }
                 }
 
+                // Controllers
+                set_lang_string(lang.controllers, lang_child.child("controllers"));
+
                 // Dialog
                 const auto dialog = lang_child.child("dialog");
                 if (!dialog.empty()) {

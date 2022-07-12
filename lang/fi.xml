@@ -1,8 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <lang>
+	<app_context>
+		<update_history>Päivityshistoria</update_history>
+		<history_version>Versio {}</history_version>
+		<information>Info</information>
+		<app_delete>Tämä sovellus ja kaikki siihen liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</app_delete>
+		<save_delete>Haluatko poistaa nämä tallennentut tiedot?</save_delete>
+		<eligible>Kelpo</eligible>
+		<ineligible>Epäkelpo</ineligible>
+		<level>Taso</level>
+		<name>Nimi</name>
+		<trophy_earning>Trophyjen ansaitseminen</trophy_earning>
+		<parental_Controls>Lapsilukko</parental_Controls>
+		<updated>Päivitetty</updated>
+		<size>Koko</size>
+		<version>Versio</version>
+	</app_context>
+
+	<common>
+		<cancel>Peruuta</cancel>
+		<delete>Poista</delete>
+		<no>Ei</no>
+		<select_all>Valitse kaikki</select_all>
+		<select>Valitse</select>
+		<please_wait>Odota hetki...</please_wait>
+		<yes>Kyllä</yes>
+		<wday>
+			<day>sunnuntai</day>
+			<day>maanantai</day>
+			<day>tiistai</day>
+			<day>keskiviikko</day>
+			<day>torstai</day>
+			<day>perjantai</day>
+			<day>lauantai</day>
+		</wday>
+		<ymonth>
+			<month>Tammikuu</month>
+			<month>Helmikuu</month>
+			<month>Maaliskuu</month>
+			<month>Huhtikuu</month>
+			<month>Saattaa</month>
+			<month>Kesäkuuta</month>
+			<month>Heinäkuu</month>
+			<month>Elokuu</month>
+			<month>Syyskuu</month>
+			<month>Lokakuu</month>
+			<month>Marraskuu</month>
+			<month>Joulukuu</month>
+		</ymonth>
+		<small_ymonth>
+			<month>tammikuu</month>
+			<month>helmikuu</month>
+			<month>maaliskuu</month>
+			<month>huhtikuu</month>
+			<month>saattaa</month>
+			<month>kesäkuuta</month>
+			<month>heinäkuu</month>
+			<month>elokuu</month>
+			<month>syyskuu</month>
+			<month>lokakuu</month>
+			<month>marraskuu</month>
+			<month>joulukuu</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1.</days>
+			<days>2.</days>
+			<days>3.</days>
+			<days>4.</days>
+			<days>5.</days>
+			<days>6.</days>
+			<days>7.</days>
+			<days>8.</days>
+			<days>9.</days>
+			<days>10.</days>
+			<days>11.</days>
+			<days>12.</days>
+			<days>13.</days>
+			<days>14.</days>
+			<days>15.</days>
+			<days>16.</days>
+			<days>17.</days>
+			<days>18.</days>
+			<days>19.</days>
+			<days>20.</days>
+			<days>21.</days>
+			<days>22.</days>
+			<days>23.</days>
+			<days>24.</days>
+			<days>25.</days>
+			<days>26.</days>
+			<days>27.</days>
+			<days>28.</days>
+			<days>29.</days>
+			<days>30.</days>
+			<days>31.</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1.</days>
+			<days>2.</days>
+			<days>3.</days>
+			<days>4.</days>
+			<days>5.</days>
+			<days>6.</days>
+			<days>7.</days>
+			<days>8.</days>
+			<days>9.</days>
+			<days>10.</days>
+			<days>11.</days>
+			<days>12.</days>
+			<days>13.</days>
+			<days>14.</days>
+			<days>15.</days>
+			<days>16.</days>
+			<days>17.</days>
+			<days>18.</days>
+			<days>19.</days>
+			<days>20.</days>
+			<days>21.</days>
+			<days>22.</days>
+			<days>23.</days>
+			<days>24.</days>
+			<days>25.</days>
+			<days>26.</days>
+			<days>27.</days>
+			<days>28.</days>
+			<days>29.</days>
+			<days>30.</days>
+			<days>31.</days>
+		</small_mday>
+		<hidden_trophy>Piilotettu trophy</hidden_trophy>
+		<one_hour_ago>1 tunti sitten</one_hour_ago>
+		<one_minute_ago>1 minuutti sitten</one_minute_ago>
+		<bronze>Pronssi</bronze>
+		<gold>Gold</gold>
+		<platinum>Platina</platinum>
+		<silver>Hopea</silver>
+		<hours_ago>{} tuntia sitten</hours_ago>
+		<minutes_ago>{} minuuttia sitten</minutes_ago>
+	</common>
+
+	<content_manager name="Sisällönhallinta">
+		<application name="Sovellukset">
+			<delete>Valitut sovellukset ja kaikki siihin liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</delete>
+			<no_item>Sisältökohteita ei ole.</no_item>
+		</application>
+		<saved_data name="Tallennetut tiedot">
+			<delete>Valitut tallennettua tietokohteet poistetaan.</delete>
+			<no_saved_data>Tallennettua tietoa ei ole saatavilla.</no_saved_data>
+		</saved_data>
+		<theme>Teema</theme>
+		<free_space>Vapaa tila</free_space>
+		<clear_all>Tyhjennä kaikki</clear_all>
+	</content_manager>
+
 	<game_data>
 		<app_close>Seuraava sovellus suljetaan.</app_close>
+		<data_delete>Poistettavat tiedot:</data_delete>
 	</game_data>
 
 	<initial_setup>
@@ -17,4 +173,79 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		<start>Rozpocznij</start>
 		<continue>Jatka</continue>
 	</live_area>
+
+	<settings name="Asetukset">
+		<theme_background name="Teema ja tausta">
+			<default>Oletus</default>
+			<theme name="Teema">
+				<find_in_altervista>Etsi Altervista kaupasta</find_in_altervista>
+				<information name="Information">
+					<name>Nimi</name>
+					<provider>Prlveluntarjoaja</provider>
+					<updated>Päivitetty</updated>
+					<size>Koko</size>
+					<version>Versio</version>
+				</information>
+				<delete>Tämä teema poistetaan.</delete>
+			</theme>
+			<start_screen name="Käynnistysnäyttö">
+				<image>Kuva</image>
+			</start_screen>
+			<home_screen_backgrounds name="Aloitusnäytön taustat">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="päiväys ja aika">
+			<date_format name ="Päiväyksen muoto">
+				<yyyy_mm_dd>VVVV/KK/PP</yyyy_mm_dd>
+				<dd_mm_yyyy>PP/KK/VVVV</dd_mm_yyyy>
+				<mm_dd_yyyy>KK/PP/VVVV</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Ajan muoto">
+				<clock_12_hour>12 tunnin kello</clock_12_hour>
+				<clock_24_hour>24 tunnin kello</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Kieli">
+			<system_language>Järjestelmän kieli</system_language>
+			<input_language name="Tekstinsyöttökielet">
+				<keyboards name="Näppäimistöt">
+					<ime_languages>
+						<lang id="1">Tanska</lang>
+						<lang id="2">Saksa</lang>
+						<lang id="262144">Englanti (Yhdistynyt kuningaskunta)</lang>
+						<lang id="4">Englanti (Yhdysvallat)</lang>
+						<lang id="8">Espanja</lang>
+						<lang id="16">Ranska</lang>
+						<lang id="32">Italia</lang>
+						<lang id="64">Hollanti</lang>
+						<lang id="128">Norja</lang>
+						<lang id="256">Puola</lang>
+						<lang id="131072">Portugali (Brasilia)</lang>
+						<lang id="512">Portugali (Portugali)</lang>
+						<lang id="1024">Venäjä</lang>
+						<lang id="2048">Suomi</lang>
+						<lang id="4096">Ruotsi</lang>
+						<lang id="524288">Turkki</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<details>Lisätiedot</details>
+		<earned>Ansaittu</earned>
+		<name>Nimi</name>
+		<no_trophies>Ei trophyjä.
+Voit ansaita trophyjä käyttämällä trophy-ominaisuutta tukevaa sovellusta.</no_trophies>
+		<not_earned>Ei ansaittu</not_earned>
+		<original>Original</original>
+		<sort>Lajittele</sort>
+		<trophies>Trophyt</trophies>
+		<grade>Luokka</grade>
+		<progress>Edistyminen</progress>
+		<updated>Päivitetty</updated>
+	</trophy_collection>
 </lang>

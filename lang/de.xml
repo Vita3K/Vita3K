@@ -18,7 +18,6 @@
 		</configuration>
 		<controls name="Steuerung">
 			<keyboard_controls>Tastatur</keyboard_controls>
-			<controllers>Controller</controllers>
 		</controls>
 		<help name="Hilfe">
 			<about>Über</about>
@@ -28,6 +27,7 @@
 
 	<app_context>
 		<update_history>Update-Verlauf</update_history>
+		<history_version>Version {}</history_version>
 		<information>Information</information>
 		<app_delete>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</app_delete>
 		<save_delete>Willst du die Nutzerdaten löschen?</save_delete>
@@ -183,6 +183,14 @@
 		<free_space>Freier Speicherplatz</free_space>
 		<clear_all>Alle löschen</clear_all>
 	</content_manager>
+
+	<controllers name="Controller">
+		<connected>Controllers connected</connected>
+		<name>Name</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
 
 	<dialog>
 		<trophy>
