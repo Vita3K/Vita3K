@@ -2,11 +2,13 @@
 
 <lang>
 	<app_context>
-		<application>Programmer</application>
-		<save_data>Lagrede data</save_data>
-		<update_history>Opphavsrettvarsler</update_history>
+		<update_history>Oppdater historikk</update_history>
+		<history_version>Versjon {}</history_version>
 		<information>Informasjon</information>
+		<app_delete>Dette programmet og all relatert data, inkludert lagreda data, vil bli slettet.</app_delete>
+		<save_delete>Vil du slette disse lagrede dataene?</save_delete>
 		<eligible>Valgbar</eligible>
+		<ineligible>Ikke valgbar</ineligible>
 		<level>Nivå</level>
 		<name>Navn</name>
 		<trophy_earning>Trophy-oppnåing</trophy_earning>
@@ -129,20 +131,34 @@
 			<days>30</days>
 			<days>31</days>
 		</small_mday>
+		<hidden_trophy>Skjult trophy</hidden_trophy>
+		<one_hour_ago>1 time siden</one_hour_ago>
+		<one_minute_ago>1 minutt sidan</one_minute_ago>
+		<bronze>Bronse</bronze>
+		<gold>Gull</gold>
+		<platinum>Platina</platinum>
+		<silver>Sølv</silver>
+		<hours_ago>{} timer siden</hours_ago>
+		<minutes_ago>{} minutter sidan</minutes_ago>
 	</common>
 
-	<content_manager name="Innehållshanterare">
-		<application name="Applikationer">
+	<content_manager name="Innholdsadministrator">
+		<application name="Programmer">
+			<delete>De valgte programmene og alle de tilknyttede dataene, inkludert lagreda data, vil bli slettet.</delete>
+			<no_item>Det er ingen innholdselementer.</no_item>
 		</application>
-		<saved_data name="Sparade data">
+		<saved_data name="Lagret data">
+			<delete>De valgte lagrede dataelementene vil bli slettet.</delete>
+			<no_saved_data>Det er ingen lagret data.</no_saved_data>
 		</saved_data>
 		<theme>Tema</theme>
-		<free_space>Ledigt utrymme</free_space>
-		<clear_all>Återställ alla</clear_all>
+		<free_space>Ledig plass</free_space>
+		<clear_all>Slett alle</clear_all>
 	</content_manager>
 
 	<game_data>
 		<app_close>Følgende program vil lukkes.</app_close>
+		<data_delete>Data som skal slettes：</data_delete>
 	</game_data>
 
     <initial_setup>
@@ -162,6 +178,7 @@ Vita3K-systemet ditt er klart!</completed_setup>
 		<theme_background name="Tema og bakgrunn">
 			<default>Standard</default>
 			<theme name="Tema">
+				<find_in_altervista>Finn i Altervista</find_in_altervista>
 				<information name="Informasjon">
 					<name>Navn</name>
 					<provider>Leverandør</provider>
@@ -189,7 +206,7 @@ Vita3K-systemet ditt er klart!</completed_setup>
 			</time_format>
 		</date_time>
 		<language name="Språk">
-			<system_language>Systemsprog</system_language>
+			<system_language>Systemspråk</system_language>
 			<input_language name="Inndataspråk">
 				<keyboards name="Tastatur">
 					<ime_languages>
@@ -217,7 +234,11 @@ Vita3K-systemet ditt er klart!</completed_setup>
 
 	<trophy_collection>
 		<details>Detaljer</details>
+		<earned>Oppnådd</earned>
 		<name>Navn</name>
+		<no_trophies>Det finnes ingen trophies.
+Du kan Oppnå trophies ved å bruke et program som Støtter trophy-funksjonen.</no_trophies>
+		<not_earned>Ikke oppnådd</not_earned>
 		<original>Oppdatert</original>
 		<sort>Sorter</sort>
 		<trophies>Trophies</trophies>
@@ -225,5 +246,4 @@ Vita3K-systemet ditt er klart!</completed_setup>
 		<progress>Fremdrift</progress>
 		<updated>Opdaterest</updated>
 	</trophy_collection>
-	
 </lang>

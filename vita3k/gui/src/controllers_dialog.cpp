@@ -22,16 +22,17 @@
 namespace gui {
 
 void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    auto lang = gui.lang.controllers;
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-    ImGui::Begin("Controllers", &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin(lang["title"].c_str(), &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     auto &ctrl = emuenv.ctrl;
     refresh_controllers(ctrl);
     if (ctrl.controllers_num) {
-        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%d Controllers connected", ctrl.controllers_num);
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%d %s", ctrl.controllers_num, lang["connected"].c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-8s Name", "Num");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-8s %s", lang["num"].c_str(), lang["name"].c_str());
         ImGui::Spacing();
         for (auto i = 0; i < ctrl.controllers_num; i++) {
             ImGui::Text("%-8d", i);
@@ -41,7 +42,7 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Text("%s", ctrl.controllers_name[i]);
         }
     } else
-        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "No compatible controllers connected.\nConnect a controller that is compatible with SDL2.");
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["not_connected"].c_str());
     ImGui::End();
 }
 

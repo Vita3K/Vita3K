@@ -3,6 +3,7 @@
 <lang>
 	<app_context>
 		<update_history>업데이트 이력</update_history>
+		<history_version>버전 {}</history_version>
 		<information>정보</information>
 		<app_delete>이 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</app_delete>
 		<save_delete>이 저장 데이터를 삭제하시겠습니까?</save_delete>

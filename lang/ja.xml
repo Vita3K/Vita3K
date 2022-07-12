@@ -18,10 +18,9 @@
 		</configuration>
 		<controls name="コントロール">
 			<keyboard_controls>キーボード</keyboard_controls>
-			<controllers>コントローラー</controllers>
 		</controls>
 		<help name="ヘルプ">
-			<about>Vita3kについて</about>
+			<about>Vita3Kについて</about>
 			<welcome>Welcome</welcome>
 		</help>
 	</main_menubar>
@@ -36,13 +35,12 @@
 		<edit>編集</edit>
 		<remove>削除</remove>
 		<open_folder>フォルダを開く</open_folder>
-		<application>アプリ</application>
-		<addcont>DLC</addcont>
+		<addcont>追加データ</addcont>
 		<license>ライセンス</license>
-		<save_data>セーブデータ</save_data>
 		<shader_cache>シェーダーキャッシュ</shader_cache>
 		<shader_log>シェーダーログ</shader_log>
 		<update_history>アップデート履歴</update_history>
+		<history_version>バージョン {}</history_version>
 		<information>情報</information>
 		<app_delete>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</app_delete>
 		<save_delete>このセーブデータを削除しますか？</save_delete>
@@ -200,6 +198,14 @@
 		<clear_all>すべて解除</clear_all>
 	</content_manager>
 
+	<controllers name="コントローラー">
+		<connected>Controllers connected</connected>
+		<name>名前</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>アプリケーションを始める準備中です...</preparing_start_app>
@@ -295,9 +301,9 @@ Vita3Kをお楽しみください。</completed_setup>
 		<select_file>ファイルを選択</select_file>
 		<select_directory>ディレクトリを選択</select_directory>
 		<compatible_content>互換性のあるコンテンツを持つアーカイブが見つかりました。</compatible_content>
-		<successed_install>アーカイブのコンテンツのインストールに成功しました。:</successed_install>
+		<successed_install_archive>アーカイブのコンテンツのインストールに成功しました。:</successed_install_archive>
 		<update_app>アプリを更新:</update_app>
-		<failed_install>コンテンツのインストールに失敗しました:</failed_install>
+		<failed_install_archive>コンテンツのインストールに失敗しました:</failed_install_archive>
 		<not_compatible_content>アーカイブに互換性のあるコンテンツを見つけられませんでした:</not_compatible_content>
 		<delete_archive>アーカイブを削除しますか?</delete_archive>
 	</install_dialog>

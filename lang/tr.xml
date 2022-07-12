@@ -18,7 +18,6 @@
 		</configuration>
 		<controls name="Kontroller">
 			<keyboard_controls>Klavye kontrolleri</keyboard_controls>
-			<Controllers>Kontroller</Controllers>
 		</controls>
 		<help name="Yardım">
 			<about>Hakkında</about>
@@ -28,6 +27,7 @@
 	
 	<app_context>
 		<update_history>Güncelleme Geçmişi</update_history>
+		<history_version>Sürüm {}</history_version>
 		<information>Bilgi</information>
 		<app_delete>Bu uygulama ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</app_delete>
 		<save_delete>Bu kayıtlı verileri silmek istiyor musunuz?</save_delete>
@@ -183,6 +183,14 @@
 		<free_space>Boş Alan</free_space>
 		<clear_all>Tümünü Temizle</clear_all>
 	</content_manager>
+
+	<controllers name="Kontroller">
+		<connected>Controllers connected</connected>
+		<name>Ad</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
 
 	<dialog>
 		<trophy>

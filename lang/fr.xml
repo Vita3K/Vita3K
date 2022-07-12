@@ -18,7 +18,6 @@
 		</configuration>
 		<controls name="Commandes">
 			<keyboard_controls>Commandes du Clavier</keyboard_controls>
-			<controllers>Contrôleurs</controllers>
 		</controls>
 		<help name="Aide">
 			<about>À Propos</about>
@@ -28,6 +27,7 @@
 
 	<app_context>
 		<update_history>Historique de mise à jour</update_history>
+		<history_version>Version {}</history_version>
 		<information>Informations</information>
 		<app_delete>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</app_delete>
 		<save_delete>Supprimer ces données sauvegardées ?</save_delete>
@@ -183,6 +183,14 @@
 		<free_space>Espace libre</free_space>
 		<clear_all>Décocher tout</clear_all>
 	</content_manager>
+
+	<controllers name="Contrôleurs">
+		<connected>Controllers connected</connected>
+		<name>Nom</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
 
 	<dialog>
 		<trophy>

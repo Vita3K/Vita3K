@@ -36,6 +36,8 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto BUTTON_SIZE = ImVec2(160.f * SCALE.x, 45.f * SCALE.y);
 
     auto indicator = gui.lang.indicator;
+    auto common = emuenv.common_dialog.lang.common;
+
     ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size);
     ImGui::Begin("License Install", &gui.file_menu.license_install_dialog, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
@@ -51,7 +53,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (state.empty()) {
         ImGui::SetCursorPosX(POS_BUTTON);
         title = "Select license type";
-        if (ImGui::Button("Select Work.bin/rif", BUTTON_SIZE))
+        if (ImGui::Button("Select work.bin/rif", BUTTON_SIZE))
             state = "work";
         ImGui::SetCursorPosX(POS_BUTTON);
         if (ImGui::Button("Enter zRIF", BUTTON_SIZE))
@@ -60,7 +62,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::SetCursorPosX(POS_BUTTON);
-        if (ImGui::Button("Cancel", BUTTON_SIZE))
+        if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE))
             gui.file_menu.license_install_dialog = false;
     } else if (state == "work") {
         nfdresult_t result = NFD_CANCEL;
@@ -83,12 +85,12 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::SetCursorPos(ImVec2(POS_BUTTON - (BUTTON_SIZE.x / 2) - 10.f, ImGui::GetWindowSize().y / 2));
-        if (ImGui::Button("Cancel", BUTTON_SIZE)) {
+        if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE)) {
             state.clear();
             zRIF.clear();
         }
         ImGui::SameLine(0, 20.f);
-        if (ImGui::Button("Ok", BUTTON_SIZE) && !zRIF.empty()) {
+        if (ImGui::Button("OK", BUTTON_SIZE) && !zRIF.empty()) {
             if (create_license(emuenv, zRIF))
                 state = "success";
             else

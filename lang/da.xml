@@ -2,17 +2,19 @@
 
 <lang>	
 	<app_context>
-		<application>Programmer</application>
-		<save_data>Gemte data</save_data>
 		<update_history>Opdateringshistorik</update_history>
+		<history_version>Version {}</history_version>
 		<information>Information</information>
+		<app_delete>Dette program og alle relaterede data, herunder gemte data, vil blive slettet.</app_delete>
+		<save_delete>Ønsker du at disse gemte data?</save_delete>
 		<eligible>Kvalificeret</eligible>
+		<ineligible>Ikke kvalificeret</ineligible>
 		<level>Niveau</level>
 		<name>Navn</name>
 		<trophy_earning>Trophy opnåelse</trophy_earning>
 		<parental_Controls>Forældrekontrol</parental_Controls>
 		<updated>Opdateret</updated>
-		<size>størrelse</size>
+		<size>Størrelse</size>
 		<version>Version</version>
 	</app_context>
 	
@@ -25,21 +27,21 @@
 		<please_wait>Vent venligst...</please_wait>
 		<yes>Ja</yes>
 		<wday>
-			<day>Søndag</day>
-			<day>Mandag</day>
-			<day>Tirsdag</day>
-			<day>Onsdag</day>
-			<day>Torsdag</day>
-			<day>Fredag</day>
-			<day>Lørdag</day>
+			<day>søndag</day>
+			<day>mandag</day>
+			<day>tirsdag</day>
+			<day>onsdag</day>
+			<day>torsdag</day>
+			<day>fredag</day>
+			<day>lørdag</day>
 		</wday>
 		<ymonth>
 			<month>Januar</month>
 			<month>Februar</month>
 			<month>Marts</month>
 			<month>April</month>
-			<month>maj</month>
-			<month>juni</month>
+			<month>Maj</month>
+			<month>Juni</month>
 			<month>Juli</month>
 			<month>August</month>
 			<month>September</month>
@@ -48,18 +50,18 @@
 			<month>December</month>
 		</ymonth>
 		<small_ymonth>
-			<month>Januar</month>
-			<month>Februar</month>
-			<month>Marts</month>
-			<month>April</month>
+			<month>januar</month>
+			<month>februar</month>
+			<month>marts</month>
+			<month>april</month>
 			<month>maj</month>
 			<month>juni</month>
-			<month>Juli</month>
-			<month>August</month>
-			<month>September</month>
-			<month>Oktober</month>
-			<month>November</month>
-			<month>December</month>
+			<month>juli</month>
+			<month>august</month>
+			<month>september</month>
+			<month>oktober</month>
+			<month>november</month>
+			<month>december</month>
 		</small_ymonth>
 		<mday>
 			<days></days>
@@ -129,12 +131,25 @@
 			<days>30</days>
 			<days>31</days>
 		</small_mday>
+		<hidden_trophy>Skjult Trophy</hidden_trophy>
+		<one_hour_ago>1 time siden</one_hour_ago>
+		<one_minute_ago>1 minut siden</one_minute_ago>
+		<bronze>Bronze</bronze>
+		<gold>Gold</gold>
+		<platinum>Platinum</platinum>
+		<silver>Silver</silver>
+		<hours_ago>{} timer siden</hours_ago>
+		<minutes_ago>{} minutter siden</minutes_ago>
 	</common>
 	
 	<content_manager name="Indholdsadministrator">
 		<application name="Programmer">
+			<delete>De valgte programmer og alle relaterede data, herunder gemte data, vil blive slettet.</delete>
+			<no_item>Der er ingen indholdsenheder.</no_item>
 		</application>
 		<saved_data name="Gemte Data">
+			<delete>De valgte gemte dataelementer vil blive slettede.</delete>
+			<no_saved_data>Der er ingen gemte data.</no_saved_data>
 		</saved_data>
 		<theme>Tema</theme>
 		<free_space>Ledig plads</free_space>
@@ -143,6 +158,7 @@
 
 	<game_data>
 		<app_close>Følgende program bliver lukket.</app_close>
+		<data_delete>Data, som skal slettes:</data_delete>
 	</game_data>
 
 	<initial_setup>
@@ -162,6 +178,7 @@ Dit Vita3K-system er klart!</completed_setup>
 		<theme_background name="Tema og baggrund">
 			<default>Standard</default>
 			<theme name="Tema">
+				<find_in_altervista>Find i Altervista</find_in_altervista>
 				<information name="Information">
 					<name>Navn</name>
 					<provider>Udbyder</provider>
@@ -195,7 +212,7 @@ Dit Vita3K-system er klart!</completed_setup>
 					<ime_languages>
 						<lang id="1">Dansk</lang>
 						<lang id="2">Tysk</lang>
-						<lang id="262144">Engelsk (Atorbritannien)</lang>
+						<lang id="262144">Engelsk (Storbritannien)</lang>
 						<lang id="4">Engelsk (USA)</lang>
 						<lang id="8">Spansk</lang>
 						<lang id="16">Fransk</lang>
@@ -217,7 +234,11 @@ Dit Vita3K-system er klart!</completed_setup>
 	
 	<trophy_collection>
 		<details>Detaljer</details>
+		<earned>Opnået</earned>
 		<name>Navn</name>
+		<no_trophies>Der er ingen trophies.
+Du kan opnå trophies ved at bruge et program, der understøtter trophy-funkitionen.</no_trophies>
+		<not_earned>Ikke opnået</not_earned>
 		<original>Original</original>
 		<sort>Sortér</sort>
 		<trophies>Trophies</trophies>
@@ -225,5 +246,4 @@ Dit Vita3K-system er klart!</completed_setup>
 		<progress>Forløb</progress>
 		<updated>Opdaterest</updated>
 	</trophy_collection>
-
 </lang>

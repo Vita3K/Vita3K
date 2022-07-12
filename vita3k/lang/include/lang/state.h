@@ -113,8 +113,7 @@ struct LangState {
         };
         std::map<std::string, std::string> controls = {
             { "title", "Controls" },
-            { "keyboard_controls", "Keyboard Controls" },
-            { "controllers", "Controllers" }
+            { "keyboard_controls", "Keyboard Controls" }
         };
         std::map<std::string, std::string> help = {
             { "title", "Help" },
@@ -133,13 +132,12 @@ struct LangState {
         { "edit", "Edit" },
         { "remove", "Remove" },
         { "open_folder", "Open Folder" },
-        { "application", "Application" },
         { "addcont", "DLCs" },
         { "license", "License" },
-        { "save_data", "Save Data" },
         { "shader_cache", "Shader Cache" },
         { "shader_log", "Shader Log" },
         { "update_history", "Update History" },
+        { "history_version", "Version {}" },
         { "information", "Information" },
         { "app_delete", "This application and all related data, including saved data, will be deleted." },
         { "save_delete", "Do you want to delete this saved data ?" },
@@ -182,6 +180,13 @@ struct LangState {
         SavedData saved_data;
     };
     ContentManager content_manager;
+    std::map<std::string, std::string> controllers = {
+        { "title", "Controllers" },
+        { "connected", "Controllers connected" },
+        { "name", "Name" },
+        { "num", "Num" },
+        { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." }
+    };
     std::map<std::string, std::string> game_data = {
         { "app_close", "The following application will close." },
         { "data_delete", "Data to be Deleted:" }
@@ -235,9 +240,9 @@ struct LangState {
         { "select_file", "Select File" },
         { "select_directory", "Select Directory" },
         { "compatible_content", "archive(s) found with compatible contents." },
-        { "successed_install", "contents of this archive have successed installed:" },
+        { "successed_install_archive", "contents of this archive have successed installed:" },
         { "update_app", "Update App to:" },
-        { "failed_install", "content have failed installed:" },
+        { "failed_install_archive", "content have failed installed:" },
         { "not_compatible_content", "archive(s) did no found compatible contents:" },
         { "delete_archive", "Delete archive?" }
     };

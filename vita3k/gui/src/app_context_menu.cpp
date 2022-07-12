@@ -286,8 +286,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
 
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
-    auto common = emuenv.common_dialog.lang.common;
+
     auto lang = gui.lang.app_context;
+    auto app_str = gui.lang.content_manager.application.main;
+    auto savedata_str = gui.lang.content_manager.saved_data.main;
+    auto common = emuenv.common_dialog.lang.common;
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
@@ -330,13 +333,13 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu(lang["open_folder"].c_str())) {
-                if (ImGui::MenuItem(lang["application"].c_str()))
+                if (ImGui::MenuItem(app_str["title"].c_str()))
                     open_path(APP_PATH.string());
                 if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang["addcont"].c_str()))
                     open_path(ADDCONT_PATH.string());
                 if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang["license"].c_str()))
                     open_path(LICENSE_PATH.string());
-                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(lang["save_data"].c_str()))
+                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
                     open_path(SAVE_DATA_PATH.string());
                 if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang["shader_cache"].c_str()))
                     open_path(SHADER_CACHE_PATH.string());
@@ -356,13 +359,13 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu(common["delete"].c_str())) {
-                if (ImGui::MenuItem(lang["application"].c_str()))
+                if (ImGui::MenuItem(app_str["title"].c_str()))
                     context_dialog = "app";
                 if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang["addcont"].c_str()))
                     fs::remove_all(ADDCONT_PATH);
                 if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang["license"].c_str()))
                     fs::remove_all(LICENSE_PATH);
-                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(lang["save_data"].c_str()))
+                if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
                     context_dialog = "save";
                 if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang["shader_cache"].c_str()))
                     fs::remove_all(SHADER_CACHE_PATH);
@@ -411,7 +414,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::BeginChild("##info_update_list", ImVec2(WINDOW_SIZE.x - (30.f * SCALE.x), WINDOW_SIZE.y - (BUTTON_SIZE.y * 2.f) - (25.f * SCALE.y)), false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
             for (const auto &update : update_history_infos) {
                 ImGui::SetWindowFontScale(1.4f);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s %.2f", lang["version"].c_str(), update.first);
+                const auto version_str = fmt::format(fmt::runtime(lang["history_version"].c_str()), update.first);
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", version_str.c_str());
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::PushTextWrapPos(WINDOW_SIZE.x - (80.f * SCALE.x));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s\n", update.second.c_str());

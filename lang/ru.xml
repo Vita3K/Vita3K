@@ -18,7 +18,6 @@
 		</configuration>
 		<controls name="Управление">
 			<keyboard_controls>Элементы управления клавиатурой</keyboard_controls>
-			<controllers>Контроллеры</controllers>
 		</controls>
 		<help name="Справка">
 			<about>О программе</about>
@@ -28,6 +27,7 @@
 
 	<app_context>
 		<update_history>Хронология обновлений</update_history>
+		<history_version>Версия {}</history_version>
 		<information>Информация</information>
 		<app_delete>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</app_delete>
 		<save_delete>Удалить эти сохраненные данные?</save_delete>
@@ -183,6 +183,14 @@
 		<free_space>Cвободное</free_space>
 		<clear_all>Очистить все</clear_all>
 	</content_manager>
+
+	<controllers name="Контроллеры">
+		<connected>Controllers connected</connected>
+		<name>Название</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
 
 	<dialog>
 		<trophy>

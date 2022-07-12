@@ -18,7 +18,6 @@
 		</configuration>
 		<controls name="Controls">
 			<keyboard_controls>Keyboard Controls</keyboard_controls>
-			<controllers>Controllers</controllers>
 		</controls>
 		<help name="Help">
 			<about>About</about>
@@ -36,13 +35,12 @@
 		<edit>Edit</edit>
 		<remove>Remove</remove>
 		<open_folder>Open Folder</open_folder>
-		<application>Application</application>
 		<addcont>DLCs</addcont>
 		<license>License</license>
-		<save_data>Save Data</save_data>
 		<shader_cache>Shader Cache</shader_cache>
 		<shader_log>Shader Log</shader_log>
 		<update_history>Update History</update_history>
+		<history_version>Version {}</history_version>
 		<information>Information</information>
 		<app_delete>This application and all related data, including saved data, will be deleted.</app_delete>
 		<save_delete>Do you want to delete this saved data?</save_delete>
@@ -200,6 +198,14 @@
 		<clear_all>Clear all</clear_all>
 	</content_manager>
 
+	<controllers name="Controllers">
+		<connected>Controllers connected</connected>
+		<name>Name</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>Preparing to start the application...</preparing_start_app>
@@ -295,9 +301,9 @@ Your Vita3K system is ready!</completed_setup>
 		<select_file>Select File</select_file>
 		<select_directory>Select Directory</select_directory>
 		<compatible_content>archive(s) found with compatible contents.</compatible_content>
-		<successed_install>contents of this archive have successed installed:</successed_install>
+		<successed_install_archive>contents of this archive have successed installed:</successed_install_archive>
 		<update_app>Update App to:</update_app>
-		<failed_install>content have failed installed:</failed_install>
+		<failed_install_archive>content have failed installed:</failed_install_archive>
 		<not_compatible_content>archive(s) did no found compatible contents:</not_compatible_content>
 		<delete_archive>Delete archive?</delete_archive>
 	</install_dialog>

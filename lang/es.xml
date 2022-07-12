@@ -27,6 +27,7 @@
 
 	<app_context>
 		<update_history>Historial de actualizaciones</update_history>
+		<history_version>Versión {}</history_version>
 		<information>Información</information>
 		<app_delete>Se eliminarán la aplicación y todos los datos relacionados, incluidos los datos guardados.</app_delete>
 		<save_delete>¿Quieres eliminar estos datos guardados?</save_delete>
