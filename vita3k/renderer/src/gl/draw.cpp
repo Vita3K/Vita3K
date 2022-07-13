@@ -68,6 +68,11 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
     const auto &gl_frag_program = reinterpret_cast<gl::GLFragmentProgram *>(gxm_fragment_program.renderer_data.get());
 
+    if (!features.support_unknown_format) {
+        // use the format of this surface as the color format of the shader
+        shader::last_color_format = gxm::get_base_format(context.record.color_surface.colorFormat);
+    }
+
     // Trying to cache: the last time vs this time shader pair. Does it different somehow?
     // If it's different, we need to switch. Else just stick to it.
     if (context.record.vertex_program.get(mem)->renderer_data->hash != context.last_draw_vertex_program_hash || context.record.fragment_program.get(mem)->renderer_data->hash != context.last_draw_fragment_program_hash) {
@@ -101,11 +106,8 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
 
     const bool use_raw_image = renderer.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(gxm::get_base_format(context.record.color_surface.colorFormat));
 
-    GLenum surface_format = GL_RGBA8;
-    if (renderer.features.support_unknown_format) {
-        const SceGxmColorBaseFormat base_format = gxm::get_base_format(context.record.color_surface.colorFormat);
-        surface_format = color::translate_internal_format(base_format);
-    }
+    const SceGxmColorBaseFormat base_format = gxm::get_base_format(context.record.color_surface.colorFormat);
+    const GLenum surface_format = color::translate_internal_format(base_format);
 
     if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
         if (use_raw_image) {
