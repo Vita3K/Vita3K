@@ -53,6 +53,12 @@ using namespace shader::usse;
 
 namespace shader {
 
+// *******************
+// * Static variable *
+// *******************
+
+SceGxmColorBaseFormat last_color_format;
+
 // **************
 // * Constants *
 // **************
@@ -113,6 +119,7 @@ struct TranslationState {
     bool is_maskupdate{};
     bool is_fragment{};
     bool should_gl_spirv_compatible{};
+    spv::ImageFormat image_storage_format = spv::ImageFormat::ImageFormatUnknown;
 };
 
 struct VertexProgramOutputProperties {
@@ -317,9 +324,13 @@ static spv::Id create_builtin_sampler(spv::Builder &b, const FeatureState &featu
 
     // 2 = storage image
     int sampled = 2;
-    spv::ImageFormat img_format = features.support_unknown_format ? spv::ImageFormatUnknown : spv::ImageFormatRgba8;
 
-    spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, img_format);
+    spv::ImageFormat format = translation_state.image_storage_format;
+    if (name == "f_mask")
+        // f_mask is always rgba8
+        format = spv::ImageFormat::ImageFormatRgba8;
+
+    spv::Id image_type = b.makeImageType(sampled_type, spv::Dim2D, false, false, false, sampled, format);
     spv::Id sampler = b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, image_type, name.c_str());
 
     return sampler;
@@ -1625,6 +1636,31 @@ void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_
     LOG_DEBUG("SPIR-V Disassembly:\n{}", spirv_dump ? *spirv_dump : spirv_disasm.str());
 }
 
+static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat format) {
+    switch (format) {
+    case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
+        return spv::ImageFormat::ImageFormatRgba8;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
+        return spv::ImageFormat::ImageFormatRgba8Snorm;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
+        return spv::ImageFormat::ImageFormatRgba16f;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
+        return spv::ImageFormat::ImageFormatRgb10A2;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
+        return spv::ImageFormat::ImageFormatR11fG11fB10f;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
+        return spv::ImageFormat::ImageFormatRg32f;
+
+    default:
+        return spv::ImageFormat::ImageFormatRgba8;
+    }
+}
+
 // ***************************
 // * Functions (exposed API) *
 // ***************************
@@ -1634,6 +1670,11 @@ usse::SpirvCode convert_gxp_to_spirv(const SceGxmProgram &program, const std::st
     translation_state.is_maskupdate = maskupdate;
     translation_state.should_gl_spirv_compatible = true;
 
+    if (!features.support_unknown_format) {
+        // take the color format of the current surface, hoping the shader is not used on two surfaces with different formats (this should be the case)
+        translation_state.image_storage_format = translate_color_format(last_color_format);
+    }
+
     return convert_gxp_to_spirv_impl(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
 }
 
@@ -1642,6 +1683,11 @@ std::string convert_gxp_to_glsl(const SceGxmProgram &program, const std::string 
     translation_state.is_fragment = program.is_fragment();
     translation_state.is_maskupdate = maskupdate;
     translation_state.should_gl_spirv_compatible = false;
+
+    if (!features.support_unknown_format) {
+        // take the color format of the current surface, hoping the shader is not used on two surfaces with different formats (this should be the case)
+        translation_state.image_storage_format = translate_color_format(last_color_format);
+    }
 
     std::vector<uint32_t> spirv_binary = convert_gxp_to_spirv_impl(program, shader_name, features, translation_state, hint_attributes, force_shader_debug, dumper);
 

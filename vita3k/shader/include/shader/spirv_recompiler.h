@@ -41,6 +41,9 @@ static constexpr float INTEGRAL_TEX_QUERY_TYPE_16BIT = 1.0;
 static constexpr float INTEGRAL_TEX_QUERY_TYPE_32BIT = 0.0;
 static constexpr std::uint32_t CURRENT_VERSION = 3;
 
+// Used if the GPU does not support features.support_unknown_format
+extern SceGxmColorBaseFormat last_color_format;
+
 // Dump generated SPIR-V disassembly up to this point
 void spirv_disasm_print(const usse::SpirvCode &spirv_binary, std::string *spirv_dump = nullptr);
 

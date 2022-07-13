@@ -275,11 +275,6 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
     } else if (gl_state.features.support_texture_barrier) {
         LOG_INFO("Your GPU only supports texture barrier, performance may not be good on programmable blending games.");
         LOG_WARN("Consider upgrading to a GPU that has shader interlock.");
-
-        if (!gl_state.features.support_unknown_format) {
-            // Activate raw textures only for this case
-            gl_state.features.preserve_f16_nan_as_u16 = true;
-        }
     } else {
         LOG_INFO("Your GPU doesn't support extensions that make programmable blending possible. Some games may have broken graphics.");
         LOG_WARN("Consider updating your graphics drivers or upgrading your GPU.");
