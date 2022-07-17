@@ -227,6 +227,11 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
                 int32_t height = 0;
                 vfs::FileBuffer buffer;
 
+                if (contents.second.empty()) {
+                    LOG_WARN("Content '{}' is empty for title {} [{}].", contents.first, app_path, APP_INDEX->title);
+                    continue;
+                }
+
                 if (default_contents)
                     vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "data/internal/livearea/default/sce_sys/livearea/contents/" + contents.second);
                 else if (app_device == VitaIoDevice::vs0)
