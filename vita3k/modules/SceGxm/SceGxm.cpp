@@ -1867,7 +1867,9 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     gxm_params.gxm = &emuenv.gxm;
     gxm_params.renderer = emuenv.renderer.get();
 
-    SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params);
+    // Reset the queue in case sceGxmTerminate was called earlier
+    emuenv.gxm.display_queue.reset();
+    emuenv.gxm.sdl_thread = SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params);
     SDL_SemWait(gxm_params.emuenv_may_destroy_params.get());
     emuenv.gxm.notification_region = Ptr<uint32_t>(alloc(emuenv.mem, MB(1), "SceGxmNotificationRegion"));
     memset(emuenv.gxm.notification_region.get(emuenv.mem), 0, MB(1));
@@ -3577,6 +3579,11 @@ EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
 }
 
 EXPORT(int, sceGxmTerminate) {
+    // Make sure everything is done in SDL side before killing Vita thread
+    emuenv.gxm.display_queue.wait_empty();
+    emuenv.gxm.display_queue.abort();
+    SDL_WaitThread(emuenv.gxm.sdl_thread, nullptr);
+    emuenv.gxm.sdl_thread = nullptr;
     const ThreadStatePtr thread = lock_and_find(emuenv.gxm.display_queue_thread, emuenv.kernel.threads, emuenv.kernel.mutex);
     emuenv.kernel.exit_delete_thread(thread);
     return 0;

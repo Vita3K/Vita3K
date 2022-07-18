@@ -81,4 +81,5 @@ struct GxmState {
     std::map<Address, MemoryMapInfo> memory_mapped_regions;
     std::array<SurfaceSyncingInfo, 40> surface_syncing_infoes;
     std::mutex callback_lock;
+    SDL_Thread *sdl_thread;
 };
