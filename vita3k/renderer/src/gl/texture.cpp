@@ -166,10 +166,10 @@ void configure_bound_texture(const renderer::TextureCacheState &state, const Sce
  * \return Void.
  */
 static void remove_compressed_arbitrary_blocks(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const std::uint32_t width, const std::uint32_t height) {
-    std::size_t w = (width + 3) / 4;
-    std::size_t h = (height + 3) / 4;
+    uint32_t w = (width + 3) / 4;
+    uint32_t h = (height + 3) / 4;
 
-    std::size_t a_w = next_power_of_two(width);
+    uint32_t a_w = next_power_of_two(w);
 
     std::size_t block_size;
     switch (fmt) {
@@ -194,10 +194,10 @@ static void remove_compressed_arbitrary_blocks(SceGxmTextureBaseFormat fmt, void
     const std::uint8_t *src = reinterpret_cast<const std::uint8_t *>(data);
     std::uint8_t *dst = reinterpret_cast<std::uint8_t *>(dest);
 
-    for (std::size_t j = height; j; j--) {
-        memcpy(dst, src, width);
+    for (std::size_t j = h; j; j--) {
+        memcpy(dst, src, w);
         src += a_w;
-        dst += width;
+        dst += w;
     }
 }
 
@@ -444,7 +444,9 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
         }
     }
 
-    while ((face_uploaded_count < face_total_count) && width && height) {
+    while ((face_uploaded_count < face_total_count) && org_width && org_height) {
+        width = org_width;
+        height = org_height;
         pixels = texture_data;
 
         // Get pixels per stride
@@ -636,8 +638,8 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
         }
 
         mip_index++;
-        width /= 2;
-        height /= 2;
+        org_width /= 2;
+        org_height /= 2;
 
         texture_data += source_size;
         total_source_so_far += source_size;
@@ -646,8 +648,8 @@ void upload_bound_texture(const SceGxmTexture &gxm_texture, const MemState &mem)
             mip_index = 0;
             face_uploaded_count++;
 
-            width = org_width_const;
-            height = org_height_const;
+            org_width = org_width_const;
+            org_height = org_height_const;
 
             upload_type++;
 
