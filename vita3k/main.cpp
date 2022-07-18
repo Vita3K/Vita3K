@@ -89,6 +89,37 @@ int main(int argc, char *argv[]) {
     if (logging::init(root_paths, true) != Success)
         return InitConfigFailed;
 
+    // Check admin privs before init starts to avoid creating of file as other user by accident
+    bool adminPriv = false;
+#ifdef WIN32
+    // https://stackoverflow.com/questions/8046097/how-to-check-if-a-process-has-the-administrative-rights
+    HANDLE hToken = NULL;
+    if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken)) {
+        TOKEN_ELEVATION Elevation;
+        DWORD cbSize = sizeof(TOKEN_ELEVATION);
+        if (GetTokenInformation(hToken, TokenElevation, &Elevation, sizeof(Elevation), &cbSize)) {
+            adminPriv = Elevation.TokenIsElevated;
+        }
+    }
+    if (hToken) {
+        CloseHandle(hToken);
+    }
+#else
+    auto uid = getuid();
+    auto euid = geteuid();
+
+    // if either effective uid or uid is the one of the root user assume running as root.
+    // else if euid and uid are different then permissions errors can happen if its running
+    // as a completly different user than the uid/euid
+    if (uid == 0 || euid == 0 || uid != euid)
+        adminPriv = true;
+#endif
+
+    if (adminPriv) {
+        LOG_CRITICAL("DO NOT RUN VITA3K AS ADMIN OR WITH ADMIN PRIVILEGES. CLOSING...");
+        return QuitRequested;
+    }
+
     Config cfg{};
     EmuEnvState emuenv;
     if (const auto err = config::init_config(cfg, argc, argv, root_paths) != Success) {
@@ -152,7 +183,7 @@ int main(int argc, char *argv[]) {
 
     if (!app::init(emuenv, cfg, root_paths)) {
         app::error_dialog("Emulated environment initialization failed.", emuenv.window.get());
-        return HostInitFailed;
+        return 1;
     }
 
     init_libraries(emuenv);
