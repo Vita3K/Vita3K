@@ -133,7 +133,7 @@ struct SceGxmContext {
         auto *copy_info = command_list->copy_info;
         while (copy_info) {
             auto *next = copy_info->next;
-            memset(copy_info, 0, sizeof(copy_info));
+            memset(copy_info, 0, sizeof(*copy_info));
             free(copy_info);
             copy_info = next;
         }
