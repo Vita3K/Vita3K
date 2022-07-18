@@ -101,7 +101,8 @@ public:
     }
 
     void reset() {
-        queue_.clear();
+        std::queue<T> empty;
+        std::swap(queue_, empty);
         aborted = false;
     }
 
