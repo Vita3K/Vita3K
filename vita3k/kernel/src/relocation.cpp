@@ -141,6 +141,23 @@ static void write_masked(void *data, uint32_t symbol, uint32_t mask) {
     write(data, symbol & mask);
 }
 
+static void write_abs8(void *data, uint8_t value) {
+    uint8_t *const p = static_cast<uint8_t *>(data);
+    *p = value;
+}
+
+static void write_call(void *data, uint32_t symbol) {
+    struct Instruction {
+        uint32_t imm24 : 24;
+        uint32_t insn : 8;
+    };
+
+    static_assert(sizeof(Instruction) == 4, "Incorrect size.");
+
+    Instruction *const insn = static_cast<Instruction *>(data);
+    insn->imm24 = symbol;
+}
+
 static void write_thumb_call(void *data, uint32_t symbol) {
     // This is cribbed from UVLoader, but I used bitfields to get rid of some shifting and masking.
     struct Upper {
@@ -230,7 +247,7 @@ static bool relocate_entry(void *data, uint32_t code, uint32_t symval, uint32_t 
         return true;
 
     case Abs8:
-        write_masked(data, symval + addend, 0xff);
+        write_abs8(data, symval + addend);
         return true;
 
     case Rel32:
@@ -248,7 +265,7 @@ static bool relocate_entry(void *data, uint32_t code, uint32_t symval, uint32_t 
 
     case Call:
     case Jump24:
-        write_masked(data, (symval + addend - addr) >> 2, 0xffffff);
+        write_call(data, (symval + addend - addr) >> 2);
         return true;
 
     case MovwAbsNc:
