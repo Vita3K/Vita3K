@@ -20,10 +20,20 @@
 			<keyboard_controls>キーボード</keyboard_controls>
 		</controls>
 		<help name="ヘルプ">
-			<about>Vita3Kについて</about>
 			<welcome>Welcome</welcome>
 		</help>
 	</main_menubar>
+
+	<about name="Vita3Kについて">
+		<vita3k>Vita3K: a PS Vita/PSTV Emulator. The world's first functional PS Vita/PSTV emulator.</vita3k>
+		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems.</about_vita3k>
+		<note>Note: The emulator is still in a very early stage of development.</note>
+		<github_website>If you're interested in contributing, check out our Github:</github_website>
+		<vita3k_website>Visit our website for more info:</vita3k_website>
+		<vita3k_staff>Vita3K Staff</vita3k_staff>
+		<developers>Developers</developers>
+		<contributors>Contributors</contributors>
+	</about>
 
 	<app_context>
 		<boot>起動</boot> 
@@ -306,6 +316,11 @@ Vita3Kをお楽しみください。</completed_setup>
 		<failed_install_archive>コンテンツのインストールに失敗しました:</failed_install_archive>
 		<not_compatible_content>アーカイブに互換性のあるコンテンツを見つけられませんでした:</not_compatible_content>
 		<delete_archive>アーカイブを削除しますか?</delete_archive>
+		<select_license_type>ライセンスを選択</select_license_type>
+		<select_bin_rif>work.bin/rif</select_bin_rif>
+		<content_id>コンテンツID：</content_id>
+		<title_id>タイトルID：</title_id>
+		<delete_bin_rif>先ほどのwork.bin/rifを削除しますか?</delete_bin_rif>
 	</install_dialog>
 
 	<live_area>

@@ -45,6 +45,7 @@ static void get_firmware_version(EmuEnvState &emuenv) {
 }
 
 void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    auto lang = gui.lang.install_dialog;
     nfdresult_t result = NFD_CANCEL;
 
     static std::mutex install_mutex;
@@ -82,7 +83,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (!finished_installing) {
         ImGui::OpenPopup("Firmware Installation");
         if (ImGui::BeginPopupModal("Firmware Installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::TextColored(GUI_COLOR_TEXT, "Installation in progress, please wait...");
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["fw_installing"].c_str());
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
             ImGui::SetCursorPosX((ImGui::GetWindowContentRegionWidth() / 2) - (150 / 2) + 10);
             ImGui::ProgressBar(progress / 100.f, ImVec2(150.f, 20.f), nullptr);
@@ -94,24 +95,24 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         ImGui::OpenPopup("Firmware Installation");
         if (ImGui::BeginPopupModal("Firmware Installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::TextColored(GUI_COLOR_TEXT, "Firmware successfully installed.");
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["successed_install_fw"].c_str());
             if (!fw_version.empty())
-                ImGui::TextColored(GUI_COLOR_TEXT, "Firmware version: %s", fw_version.c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", lang["fw_version"].c_str(), fw_version.c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
             const auto fw_font_package{ fs::path(emuenv.pref_path) / "sa0" };
             if (!fs::exists(fw_font_package) || fs::is_empty(fw_font_package)) {
-                ImGui::TextColored(GUI_COLOR_TEXT, "No firmware font package present.\nPlease download and install it.");
-                if (ImGui::Button("Download firmware font package"))
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["no_font_exist"].c_str());
+                if (ImGui::Button(lang["download_firmware_font_package"].c_str()))
                     open_path("https://bit.ly/2P2rb0r");
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("Firmware font package is mandatory for some applications and also for asian region font support in gui.\nIt is also generally recommended for gui");
+                    ImGui::SetTooltip("%s", lang["firmware_font_package_note"].c_str());
                 ImGui::Spacing();
                 ImGui::Separator();
                 ImGui::Spacing();
             }
-            ImGui::Checkbox("Delete the firmware installation file?", &delete_pup_file);
+            ImGui::Checkbox(lang["delete_fw"].c_str(), &delete_pup_file);
             ImGui::Spacing();
             ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
             if (ImGui::Button("OK", BUTTON_SIZE)) {

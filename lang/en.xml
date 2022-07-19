@@ -20,10 +20,20 @@
 			<keyboard_controls>Keyboard Controls</keyboard_controls>
 		</controls>
 		<help name="Help">
-			<about>About</about>
 			<welcome>Welcome</welcome>
 		</help>
 	</main_menubar>
+
+	<about name="About">
+		<vita3k>Vita3K: a PS Vita/PSTV Emulator. The world's first functional PS Vita/PSTV emulator.</vita3k>
+		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems.</about_vita3k>
+		<note>Note: The emulator is still in a very early stage of development.</note>
+		<github_website>If you're interested in contributing, check out our Github:</github_website>
+		<vita3k_website>Visit our website for more info:</vita3k_website>
+		<vita3k_staff>Vita3K Staff</vita3k_staff>
+		<developers>Developers</developers>
+		<contributors>Contributors</contributors>
+	</about>
 
 	<app_context>
 		<boot>Boot</boot> 
@@ -206,6 +216,40 @@
 Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
+	<controls name="Controls">
+		<button>Button</button>
+		<mapped_button>Mapped button</mapped_button>
+		<left_stick_up>Left stick up</left_stick_up>
+		<left_stick_down>Left stick down</left_stick_down>
+		<left_stick_right>Left stick right</left_stick_right>
+		<left_stick_left>Left stick left</left_stick_left>
+		<right_stick_up>Right stick up</right_stick_up>
+		<right_stick_down>Right stick down</right_stick_down>
+		<right_stick_right>Right stick right</right_stick_right>
+		<right_stick_left>Right stick left</right_stick_left>
+		<d_pad_up>D-pad up</d_pad_up>
+		<d_pad_down>D-pad down</d_pad_down>
+		<d_pad_right>D-pad right</d_pad_right>
+		<d_pad_left>D-pad left</d_pad_left>
+		<square_button>Square button</square_button>
+		<cross_button>Cross button</cross_button>
+		<circle_button>Circle button</circle_button>
+		<triangle_button>Triangle button</triangle_button>
+		<start_button>Start button</start_button>
+		<select_button>Select button</select_button>
+		<ps_button>PS button</ps_button>
+		<l1_button>L1 button</l1_button>
+		<r1_button>R1 button</r1_button>
+		<ps_tv_mode>Only in PS TV mode.</ps_tv_mode>
+		<l2_button>L2 button</l2_button>
+		<r2_button>R2 button</r2_button>
+		<l3_button>L3 button</l3_button>
+		<r3_button>R3 button</r3_button>
+		<gui>GUI</gui>
+		<toggle_touch>Toggle Touch</toggle_touch>
+		<toggle_gui_visibility>Toggle GUI Visibility</toggle_gui_visibility>
+	</controls>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>Preparing to start the application...</preparing_start_app>
@@ -284,10 +328,20 @@ Do not power off the system or close the application.</warning_saving>
 		<completed_setup>You have now completed initial setup.
 Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
+		<completed>Completed.</completed>
 		<next>Next</next>
 	</initial_setup>
 
 	<install_dialog>
+		<fw_installing>Installation in progress, please wait...</fw_installing>
+		<successed_install_fw>Firmware successfully installed.</successed_install_fw>
+		<fw_version>Firmware version:</fw_version>
+		<no_font_exist>No firmware font package present.
+Please download and install it.</no_font_exist>
+		<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
+		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian region font support in GUI.
+It is also generally recommended for GUI.</firmware_font_package_note>
+		<delete_fw>Delete the firmware installation file?</delete_fw>
 		<select_key_type>Select key type</select_key_type>
 		<select_work>Select work.bin</select_work>
 		<enter_zrif>Enter zRIF</enter_zrif>
@@ -306,6 +360,12 @@ Your Vita3K system is ready!</completed_setup>
 		<failed_install_archive>content have failed installed:</failed_install_archive>
 		<not_compatible_content>archive(s) did no found compatible contents:</not_compatible_content>
 		<delete_archive>Delete archive?</delete_archive>
+		<select_license_type>Select license type</select_license_type>
+		<select_bin_rif>Select work.bin/rif</select_bin_rif>
+		<successed_install_license>Successfully installed license.</successed_install_license>
+		<content_id>Content ID:</content_id>
+		<title_id>Title ID:</title_id>
+		<delete_bin_rif>Delete the work.bin/rif file?</delete_bin_rif>
 	</install_dialog>
 
 	<live_area>
@@ -428,4 +488,23 @@ After the download is complete, Vita3K will restart automatically and then insta
 		<update>Update</update>
 		<version>Version {}</version>
 	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<line_first>Vita3K PlayStation Vita Emulator</line_first>
+		<line_second>Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows and Linux.</line_second>
+		<line_third>The emulator is still in its early stages so any feedback and testing is greatly appreciated.</line_third>
+		<line_fourth>To get started, please install the PS Vita firmware and font packages.</line_fourth>
+		<download_firmware>Download Firmware</download_firmware>
+		<line_sixth_part_one>A comprehensive guide on how to set-up Vita3K can be found on the</line_sixth_part_one>
+		<quickstart>Quickstart</quickstart>
+		<line_sixth_part_two>page.</line_sixth_part_two>
+		<line_seventh_part_one>Consult the Commercial game</line_seventh_part_one>
+		<compatibility>compatibility</compatibility>
+		<line_seventh_part_two>list and the Homebrew compatibility list to see what runs.</line_seventh_part_two>
+		<line_eighth>Contributions are welcome!</line_eighth>
+		<line_tenth>Additional support can be found in the #help channel of the</line_tenth>
+		<line_eleventh>Vita3K does not condone piracy. You must dump your own games.</line_eleventh>
+		<show_next_time>Show next time</show_next_time>
+		<close>Close</close>
+	</welcome>
 </lang>

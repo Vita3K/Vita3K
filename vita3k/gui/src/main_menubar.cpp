@@ -100,7 +100,7 @@ static void draw_controls_menu(GuiState &gui) {
 static void draw_help_menu(GuiState &gui) {
     auto lang = gui.lang.main_menubar.help;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
-        ImGui::MenuItem(lang["about"].c_str(), nullptr, &gui.help_menu.about_dialog);
+        ImGui::MenuItem(gui.lang.about["title"].c_str(), nullptr, &gui.help_menu.about_dialog);
         if (ImGui::MenuItem(gui.lang.vita3k_update["title"].c_str(), nullptr, &gui.help_menu.vita3k_update))
             init_vita3k_update(gui);
         ImGui::MenuItem(lang["welcome"].c_str(), nullptr, &gui.help_menu.welcome_dialog);
