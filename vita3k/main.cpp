@@ -116,8 +116,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     if (adminPriv) {
-        LOG_CRITICAL("DO NOT RUN VITA3K AS ADMIN OR WITH ADMIN PRIVILEGES. CLOSING...");
-        return QuitRequested;
+        LOG_CRITICAL("PLEASE. DO NOT RUN VITA3K AS ADMIN OR WITH ADMIN PRIVILEGES.");
     }
 
     Config cfg{};
