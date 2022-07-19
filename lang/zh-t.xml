@@ -4,7 +4,7 @@
 	<main_menubar>
 		<file name="文件">
 			<open_pref_path>打開存放路徑</open_pref_path>
-			<install_firmware>安裝系統固件</install_firmware>
+			<install_firmware>安裝固件</install_firmware>
 			<install_pkg>安裝pkg</install_pkg>
 			<install_zip>安裝zip、vpk</install_zip>
 			<install_license>安裝許可證</install_license>
@@ -20,10 +20,20 @@
 			<keyboard_controls>鍵盤控制</keyboard_controls>
 		</controls>
 		<help name="幫助">
-			<about>關於</about>
 			<welcome>歡迎</welcome>
 		</help>
 	</main_menubar>
+
+	<about name="關於">
+		<vita3k>Vita3K：一個PS Vita/PSTV模擬器。 是世界上首個實用的PS Vita/PSTV模擬器。</vita3k>
+		<about_vita3k>Vita3K是一個使用C++編寫的實驗性開源PlayStation Vita/PlayStation TV模擬器，適用於Windows和Linux操作系統。</about_vita3k>
+		<note>注意：目前模擬器仍處於開發的早期階段。</note>
+		<github_website>如果您有興趣參與貢獻，請瀏覽我們的Github：</github_website>
+		<vita3k_website>更多信息請訪問我們的網站：</vita3k_website>
+		<vita3k_staff>Vita3K人員名單</vita3k_staff>
+		<developers>開發人員</developers>
+		<contributors>貢獻者</contributors>
+	</about>
 
 	<app_context>
 		<boot>運行</boot> 
@@ -206,6 +216,40 @@
 連接與SDL2兼容的控制器。</not_connected>
 	</controllers>
 
+	<controls name="控制">
+		<button>按鍵</button>
+		<mapped_button>映射按鍵</mapped_button>
+		<left_stick_up>左操作桿上</left_stick_up>
+		<left_stick_down>左操作桿下</left_stick_down>
+		<left_stick_right>左操作桿右</left_stick_right>
+		<left_stick_left>左操作桿左</left_stick_left>
+		<right_stick_up>右操作桿上</right_stick_up>
+		<right_stick_down>右操作桿下</right_stick_down>
+		<right_stick_right>右操作桿右</right_stick_right>
+		<right_stick_left>右操作桿左</right_stick_left>
+		<d_pad_up>方向键上</d_pad_up>
+		<d_pad_down>方向按鈕下</d_pad_down>
+		<d_pad_right>方向按鈕右</d_pad_right>
+		<d_pad_left>方向按鈕左</d_pad_left>
+		<square_button>方形按鈕</square_button>
+		<cross_button>交叉按鈕</cross_button>
+		<circle_button>圓形按鈕</circle_button>
+		<triangle_button>三角按鈕</triangle_button>
+		<start_button>Start按鈕</start_button>
+		<select_button>Select按鈕</select_button>
+		<ps_button>PS按鈕</ps_button>
+		<l1_button>L1按鈕</l1_button>
+		<r1_button>R1按鈕</r1_button>
+		<ps_tv_mode>僅在PS TV模式下有效。</ps_tv_mode>
+		<l2_button>L2按鈕</l2_button>
+		<r2_button>R2按鈕</r2_button>
+		<l3_button>L3按鈕</l3_button>
+		<r3_button>R3按鈕</r3_button>
+		<gui>圖形用戶界面</gui>
+		<toggle_touch>切換觸碰</toggle_touch>
+		<toggle_gui_visibility>切換圖形用戶界面可見性</toggle_gui_visibility>
+	</controls>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>正在準備啟動應用程式……</preparing_start_app>
@@ -280,14 +324,24 @@
 	</indicator>
 
 	<initial_setup>
-		<back>Back</back>
-		<completed_setup>You have now completed initial setup.
-Your Vita3K system is ready!</completed_setup>
+		<back>返回</back>
+		<completed_setup>已完成初期設定。
+請盡情享受Vita3K。</completed_setup>
 		<select_language>Select a language.</select_language>
+		<completed>已完成。</completed>
 		<next>Next</next>
 	</initial_setup>
 
 	<install_dialog>
+		<fw_installing>Installation in progress, please wait...</fw_installing>
+		<successed_install_fw>固件已成功安裝。</successed_install_fw>
+		<fw_version>固件版本：</fw_version>
+		<no_font_exist>固件字庫包不存在。
+請下載安裝固件字庫包。</no_font_exist>
+		<download_firmware_font_package>下載字庫固件包</download_firmware_font_package>
+		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian region font support in GUI.
+It is also generally recommended for GUI.</firmware_font_package_note>
+		<delete_fw>Delete the firmware installation file?</delete_fw>
 		<select_key_type>選擇密鑰類型</select_key_type>
 		<select_work>選擇work.bin</select_work>
 		<enter_zrif>輸入zRIF</enter_zrif>
@@ -306,6 +360,12 @@ Your Vita3K system is ready!</completed_setup>
 		<failed_install_archive>個內容安裝失敗：</failed_install_archive>
 		<not_compatible_content>個檔案包未發現兼容的內容。</not_compatible_content>
 		<delete_archive>刪除檔案包？</delete_archive>
+		<select_license_type>選擇許可證類型</select_license_type>
+		<select_bin_rif>選擇work.bin/rif</select_bin_rif>
+		<successed_install_license>已成功安裝許可證。</successed_install_license>
+		<content_id>內容ID：</content_id>
+		<title_id>標題ID：</title_id>
+		<delete_bin_rif>刪除work.bin/rif文件？</delete_bin_rif>
 	</install_dialog>
 
 	<live_area>
@@ -424,8 +484,27 @@ Your Vita3K system is ready!</completed_setup>
 		<update_vita3k>確定要更新Vita3K吗？</update_vita3k>
 		<later_version_already_installed>已安裝更新版本的Vita3K軟件。</later_version_already_installed>
 		<latest_version_already_installed>已安裝最新版本的Vita3K。</latest_version_already_installed>
-		<new_features>{}版本的追加機能</new_features>
+		<new_features>{} 版本的追加機能</new_features>
 		<update>更新</update>
 		<version>{} 版本</version>
 	</vita3k_update>
+
+	<welcome name="歡迎來到Vita3K">
+		<line_first>Vita3K PlayStation Vita模擬器</line_first>
+		<line_second>Vita3K是一個使用C++編寫的開源PlayStation Vita/PlayStation TV模擬器，適用於Windows和Linux。</line_second>
+		<line_third>目前模擬器仍處於早期階段，因此非常感謝任何反饋和測試。</line_third>
+		<line_fourth>要開始使用，請安裝PS Vita固件和字庫包。</line_fourth>
+		<download_firmware>下載固件</download_firmware>
+		<line_sixth_part_one>有關如何設置Vita3K的綜合指南可在</line_sixth_part_one>
+		<quickstart>快速入門</quickstart>
+		<line_sixth_part_two>頁面上找到。</line_sixth_part_two>
+		<line_seventh_part_one>參考商業遊戲</line_seventh_part_one>
+		<compatibility>兼容性</compatibility>
+		<line_seventh_part_two>列表和自制程式兼容性列表以查看可運行的內容。</line_seventh_part_two>
+		<line_eighth>歡迎參與貢獻！</line_eighth>
+		<line_tenth>可以在#help頻道中找到更多支持</line_tenth>
+		<line_eleventh>Vita3K不縱容盜版。您必須提取您自己擁有的遊戲。</line_eleventh>
+		<show_next_time>下次顯示</show_next_time>
+		<close>關閉</close>
+	</welcome>
 </lang>

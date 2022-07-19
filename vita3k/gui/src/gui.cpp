@@ -689,6 +689,8 @@ void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
 
     if (gui.file_menu.archive_install_dialog)
         draw_archive_install_dialog(gui, emuenv);
+    if (gui.file_menu.license_install_dialog)
+        draw_license_install_dialog(gui, emuenv);
     if (gui.file_menu.pkg_install_dialog)
         draw_pkg_install_dialog(gui, emuenv);
 
@@ -723,17 +725,24 @@ void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
 void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushFont(gui.vita_font);
     draw_main_menu_bar(gui, emuenv);
+
+    if (gui.file_menu.firmware_install_dialog)
+        draw_firmware_install_dialog(gui, emuenv);
+
+    if (gui.controls_menu.controls_dialog)
+        draw_controls_dialog(gui, emuenv);
     if (gui.controls_menu.controllers_dialog)
         draw_controllers_dialog(gui, emuenv);
+
+    if (gui.help_menu.about_dialog)
+        draw_about_dialog(gui, emuenv);
+    if (gui.help_menu.welcome_dialog)
+        draw_welcome_dialog(gui, emuenv);
 
     ImGui::PopFont();
 
     ImGui::PushFont(gui.monospaced_font);
 
-    if (gui.file_menu.firmware_install_dialog)
-        draw_firmware_install_dialog(gui, emuenv);
-    if (gui.file_menu.license_install_dialog)
-        draw_license_install_dialog(gui, emuenv);
     if (gui.debug_menu.threads_dialog)
         draw_threads_dialog(gui, emuenv);
     if (gui.debug_menu.thread_details_dialog)
@@ -758,15 +767,8 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog)
         draw_settings_dialog(gui, emuenv);
 
-    if (gui.controls_menu.controls_dialog)
-        draw_controls_dialog(gui, emuenv);
-
-    if (gui.help_menu.about_dialog)
-        draw_about_dialog(gui, emuenv);
     if (gui.help_menu.vita3k_update)
         draw_vita3k_update(gui, emuenv);
-    if (gui.help_menu.welcome_dialog)
-        draw_welcome_dialog(gui, emuenv);
 
     ImGui::PopFont();
 }

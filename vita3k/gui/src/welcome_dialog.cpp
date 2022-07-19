@@ -24,60 +24,61 @@
 namespace gui {
 
 void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    auto lang = gui.lang.welcome;
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    ImGui::Begin("Welcome to Vita3K", &gui.help_menu.welcome_dialog, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
+    ImGui::Begin(lang["title"].c_str(), &gui.help_menu.welcome_dialog, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::PopStyleColor();
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "Vita3K PlayStation Vita Emulator");
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_first"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux and MacOS.");
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_second"].c_str());
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "The emulator is still in its early stages so any feedback and testing is greatly appreciated.");
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_third"].c_str());
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "To get started, please install the Vita firmware and font packages.");
-    if (ImGui::Button("Download Firmware"))
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_fourth"].c_str());
+    if (ImGui::Button(lang["download_firmware"].c_str()))
         open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
     ImGui::SameLine();
-    if (ImGui::Button("Download firmware font package"))
+    if (ImGui::Button(gui.lang.install_dialog["download_firmware_font_package"].c_str()))
         open_path("https://bit.ly/2P2rb0r");
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "A comprehensive guide on how to set-up Vita3K can be found on the");
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_sixth_part_one"].c_str());
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
-    if (ImGui::Button("Quickstart"))
+    if (ImGui::Button(lang["quickstart"].c_str()))
         open_path("https://vita3k.org/quickstart.html");
     ImGui::SameLine();
-    ImGui::TextColored(GUI_COLOR_TEXT, "page.");
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_sixth_part_two"].c_str());
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "Consult the Commercial game");
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_seventh_part_one"].c_str());
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
-    if (ImGui::Button("compatibility"))
+    if (ImGui::Button(lang["compatibility"].c_str()))
         open_path("https://vita3k.org/compatibility.html");
     ImGui::SameLine();
-    ImGui::TextColored(GUI_COLOR_TEXT, "list and the Homebrew compatibility list to see what runs.");
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_seventh_part_two"].c_str());
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "Contributions are welcome!");
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_eighth"].c_str());
     if (ImGui::Button("GitHub"))
         open_path("https://github.com/Vita3K/Vita3K");
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "Additional support can be found in the #help channel of the");
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_tenth"].c_str());
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
     if (ImGui::Button("Discord"))
         open_path("https://discord.gg/6aGwQzh");
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "Vita3K does not condone piracy. You must dump your own games.");
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_eleventh"].c_str());
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    if (ImGui::Checkbox("Show next time", &emuenv.cfg.show_welcome))
+    if (ImGui::Checkbox(lang["show_next_time"].c_str(), &emuenv.cfg.show_welcome))
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     ImGui::Spacing();
-    if (ImGui::Button("Close"))
+    if (ImGui::Button(lang["close"].c_str()))
         gui.help_menu.welcome_dialog = false;
     ImGui::End();
 }

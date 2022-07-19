@@ -4,7 +4,7 @@
 	<main_menubar>
 		<file name="文件">
 			<open_pref_path>打开存放路径</open_pref_path>
-			<install_firmware>安装系统固件</install_firmware>
+			<install_firmware>安装固件</install_firmware>
 			<install_pkg>安装pkg</install_pkg>
 			<install_zip>安装zip、vpk</install_zip>
 			<install_license>安装许可证</install_license>
@@ -20,10 +20,20 @@
 			<keyboard_controls>键盘控制</keyboard_controls>
 		</controls>
 		<help name="帮助">
-			<about>关于</about>
 			<welcome>欢迎</welcome>
 		</help>
 	</main_menubar>
+
+	<about name="关于">
+		<vita3k>Vita3K：一个PS Vita/PSTV模拟器。 是世界上首个实用的PS Vita/PSTV模拟器。</vita3k>
+		<about_vita3k>Vita3K是一个使用C++编写的实验性开源PlayStation Vita/PlayStation TV模拟器，适用于Windows和Linux操作系统。</about_vita3k>
+		<note>注意：目前模拟器仍处于开发的早期阶段。</note>
+		<github_website>如果您有兴趣参与贡献，请浏览我们的Github：</github_website>
+		<vita3k_website>更多信息请访问我们的网站：</vita3k_website>
+		<vita3k_staff>Vita3K人员名单</vita3k_staff>
+		<developers>开发人员</developers>
+		<contributors>贡献者</contributors>
+	</about>
 
 	<app_context>
 		<boot>运行</boot> 
@@ -40,7 +50,7 @@
 		<shader_cache>着色器缓存</shader_cache>
 		<shader_log>着色器日志</shader_log>
 		<update_history>更新历史记录</update_history>
-		<history_version>{} 版本</history_version>
+		<history_version>{}版本</history_version>
 		<information>信息</information>
 		<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
 		<save_delete>要删除此保存数据吗？</save_delete>
@@ -206,6 +216,40 @@
 连接与SDL2兼容的控制器。</not_connected>
 	</controllers>
 
+	<controls name="控制">
+		<button>按键</button>
+		<mapped_button>映射按键</mapped_button>
+		<left_stick_up>左摇杆上</left_stick_up>
+		<left_stick_down>左摇杆下</left_stick_down>
+		<left_stick_right>左摇杆右</left_stick_right>
+		<left_stick_left>左摇杆左</left_stick_left>
+		<right_stick_up>右摇杆上</right_stick_up>
+		<right_stick_down>右摇杆下</right_stick_down>
+		<right_stick_right>右摇杆右</right_stick_right>
+		<right_stick_left>右摇杆左</right_stick_left>
+		<d_pad_up>方向键上</d_pad_up>
+		<d_pad_down>方向键下</d_pad_down>
+		<d_pad_right>方向键右</d_pad_right>
+		<d_pad_left>方向键左</d_pad_left>
+		<square_button>方形键</square_button>
+		<cross_button>X键</cross_button>
+		<circle_button>O键</circle_button>
+		<triangle_button>三角键</triangle_button>
+		<start_button>Start键</start_button>
+		<select_button>Select键</select_button>
+		<ps_button>PS键</ps_button>
+		<l1_button>L1键</l1_button>
+		<r1_button>R1键</r1_button>
+		<ps_tv_mode>仅在PS TV模式下有效。</ps_tv_mode>
+		<l2_button>L2键</l2_button>
+		<r2_button>R2键</r2_button>
+		<l3_button>L3键</l3_button>
+		<r3_button>R3键</r3_button>
+		<gui>图形用户界面</gui>
+		<toggle_touch>切换触碰</toggle_touch>
+		<toggle_gui_visibility>切换图形用户界面可见性</toggle_gui_visibility>
+	</controls>
+
 	<dialog>
 		<trophy>
 			<preparing_start_app>正在准备启动应用程序…</preparing_start_app>
@@ -280,14 +324,24 @@
 	</indicator>
 
 	<initial_setup>
-		<back>Back</back>
+		<back>返回</back>
 		<completed_setup>You have now completed initial setup.
 Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
+		<completed>已完成。</completed>
 		<next>Next</next>
 	</initial_setup>
 
 	<install_dialog>
+		<fw_installing>Installation in progress, please wait...</fw_installing>
+		<successed_install_fw>固件已成功安装。</successed_install_fw>
+		<fw_version>固件版本：</fw_version>
+		<no_font_exist>No firmware font package present.
+Please download and install it.</no_font_exist>
+		<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
+		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian region font support in GUI.
+It is also generally recommended for GUI.</firmware_font_package_note>
+		<delete_fw>Delete the firmware installation file?</delete_fw>
 		<select_key_type>选择密钥类型</select_key_type>
 		<select_work>选择work.bin</select_work>
 		<enter_zrif>输入zRIF</enter_zrif>
@@ -306,6 +360,12 @@ Your Vita3K system is ready!</completed_setup>
 		<failed_install_archive>个内容安装失败：</failed_install_archive>
 		<not_compatible_content>个压缩包未发现兼容的内容。</not_compatible_content>
 		<delete_archive>删除压缩包？</delete_archive>
+		<select_license_type>选择许可证类型</select_license_type>
+		<select_bin_rif>选择work.bin/rif</select_bin_rif>
+		<successed_install_license>已成功安装许可证。</successed_install_license>
+		<content_id>内容ID：</content_id>
+		<title_id>标题ID：</title_id>
+		<delete_bin_rif>删除work.bin/rif文件？</delete_bin_rif>
 	</install_dialog>
 
 	<live_area>
@@ -428,4 +488,23 @@ Your Vita3K system is ready!</completed_setup>
 		<update>更新</update>
 		<version>{}版本</version>
 	</vita3k_update>
+
+	<welcome name="欢迎来到Vita3K">
+		<line_first>Vita3K PlayStation Vita模拟器</line_first>
+		<line_second>Vita3K是一个使用C++编写的开源PlayStation Vita/PlayStation TV模拟器，适用于Windows和Linux。</line_second>
+		<line_third>目前模拟器仍处于早期阶段，因此非常感谢任何反馈和测试。</line_third>
+		<line_fourth>要开始使用，请安装PS Vita固件和字体包。</line_fourth>
+		<download_firmware>Download Firmware</download_firmware>
+		<line_sixth_part_one>有关如何设置Vita3K的综合指南可在</line_sixth_part_one>
+		<quickstart>快速入门</quickstart>
+		<line_sixth_part_two>页面上找到。</line_sixth_part_two>
+		<line_seventh_part_one>参考商业游戏</line_seventh_part_one>
+		<compatibility>兼容性</compatibility>
+		<line_seventh_part_two>列表和自制程序兼容性列表以查看可运行的内容。</line_seventh_part_two>
+		<line_eighth>欢迎参与贡献！</line_eighth>
+		<line_tenth>可以在#help频道中找到更多支持</line_tenth>
+		<line_eleventh>Vita3K不纵容盗版。您必须提取您自己拥有的游戏。</line_eleventh>
+		<show_next_time>下次显示</show_next_time>
+		<close>关闭</close>
+	</welcome>
 </lang>

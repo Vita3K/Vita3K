@@ -104,6 +104,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     set_lang_string(lang.main_menubar.help, main_menubar.child("help"));
                 }
 
+                // About
+                set_lang_string(lang.about, lang_child.child("about"));
+
                 // App Context
                 set_lang_string(lang.app_context, lang_child.child("app_context"));
 
@@ -158,6 +161,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
 
                 // Controllers
                 set_lang_string(lang.controllers, lang_child.child("controllers"));
+
+                // Controls
+                set_lang_string(lang.controls, lang_child.child("controls"));
 
                 // Dialog
                 const auto dialog = lang_child.child("dialog");
@@ -285,6 +291,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
 
                 // Vita3k Update
                 set_lang_string(lang.vita3k_update, lang_child.child("vita3k_update"));
+
+                // Welcome
+                set_lang_string(lang.welcome, lang_child.child("welcome"));
             }
         } else
             LOG_ERROR("Error open lang file xml: {}", lang_xml_path);

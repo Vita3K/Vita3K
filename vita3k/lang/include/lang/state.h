@@ -117,11 +117,21 @@ struct LangState {
         };
         std::map<std::string, std::string> help = {
             { "title", "Help" },
-            { "about", "About" },
             { "welcome", "Welcome" }
         };
     };
     MainMenubar main_menubar;
+    std::map<std::string, std::string> about = {
+        { "title", "About" },
+        { "vita3k", "Vita3K: a PS Vita/PSTV Emulator. The world's first functional PS Vita/PSTV emulator." },
+        { "about_vita3k", "Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems." },
+        { "note", "Note: The emulator is still in a very early stage of development." },
+        { "github_website", "If you're interested in contributing, check out our Github:" },
+        { "vita3k_website", "Visit our website for more info:" },
+        { "vita3k_staff", "Vita3K Staff" },
+        { "developers", "Developers" },
+        { "contributors", "Contributors" }
+    };
     std::map<std::string, std::string> app_context = {
         { "boot", "Boot" },
         { "check_app_compatibility", "Check App Compatibility" },
@@ -187,6 +197,40 @@ struct LangState {
         { "num", "Num" },
         { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." }
     };
+    std::map<std::string, std::string> controls = {
+        { "title", "Controls" },
+        { "button", "Button" },
+        { "mapped_button", "Mapped button" },
+        { "left_stick_up", "Left stick up" },
+        { "left_stick_down", "Left stick down" },
+        { "left_stick_right", "Left stick right" },
+        { "left_stick_left", "Left stick left" },
+        { "right_stick_up", "Right stick up" },
+        { "right_stick_down", "Right stick down" },
+        { "right_stick_right", "Right stick right" },
+        { "right_stick_left", "Right stick left" },
+        { "d_pad_up", "D-pad up" },
+        { "d_pad_down", "D-pad down" },
+        { "d_pad_right", "D-pad right" },
+        { "d_pad_left", "D-pad left" },
+        { "square_button", "Square button" },
+        { "cross_button", "Cross button" },
+        { "circle_button", "Circle button" },
+        { "triangle_button", "Triangle button" },
+        { "start_button", "Start button" },
+        { "select_button", "Select button" },
+        { "ps_button", "PS button" },
+        { "l1_button", "L1 button" },
+        { "r1_button", "R1 button" },
+        { "ps_tv_mode", "Only in PS TV mode." },
+        { "l2_button", "L2 button" },
+        { "r2_button", "R2 button" },
+        { "l3_button", "L3 button" },
+        { "r3_button", "R3 button" },
+        { "gui", "GUI" },
+        { "toggle_touch", "Toggle Touch" },
+        { "toggle_gui_visibility", "Toggle GUI Visibility" }
+    };
     std::map<std::string, std::string> game_data = {
         { "app_close", "The following application will close." },
         { "data_delete", "Data to be Deleted:" }
@@ -224,9 +268,17 @@ struct LangState {
         { "back", "Back" },
         { "completed_setup", "You have now completed initial setup.\nYour Vita3K system is ready !" },
         { "select_language", "Select a language" },
+        { "completed", "Completed." },
         { "next", "Next" }
     };
     std::map<std::string, std::string> install_dialog = {
+        { "fw_installing", "Installation in progress, please wait..." },
+        { "successed_install_fw", "Firmware successfully installed." },
+        { "fw_version", "Firmware version:" },
+        { "no_font_exist", "No firmware font package present.\nPlease download and install it." },
+        { "download_firmware_font_package", "Download Firmware Font Package" },
+        { "firmware_font_package_note", "Firmware font package is mandatory for some applications and also for Asian region font support in GUI.\nIt is also generally recommended for GUI." },
+        { "delete_fw", "Delete the firmware installation file?" },
         { "select_key_type", "Select key type" },
         { "select_work", "Select work.bin" },
         { "enter_zrif", "Enter zRIF" },
@@ -244,7 +296,13 @@ struct LangState {
         { "update_app", "Update App to:" },
         { "failed_install_archive", "content have failed installed:" },
         { "not_compatible_content", "archive(s) did no found compatible contents:" },
-        { "delete_archive", "Delete archive?" }
+        { "delete_archive", "Delete archive?" },
+        { "select_license_type", "Select license type" },
+        { "select_bin_rif", "Select work.bin/rif" },
+        { "successed_install_license", "Successfully installed license." },
+        { "content_id", "Content ID:" },
+        { "title_id", "Title ID:" },
+        { "delete_bin_rif", "Delete the work.bin/rif file?" }
     };
     struct Settings {
         std::map<std::string, std::string> main = { { "title", "Settings" } };
@@ -356,6 +414,25 @@ struct LangState {
         { "new_features", "New Features in Version {}" },
         { "update", "Update" },
         { "version", "Version {}" }
+    };
+    std::map<std::string, std::string> welcome = {
+        { "title", "Welcome to Vita3K" },
+        { "line_first", "Vita3K PlayStation Vita Emulator" },
+        { "line_second", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows and Linux." },
+        { "line_third", "The emulator is still in its early stages so any feedback and testing is greatly appreciated." },
+        { "line_fourth", "To get started, please install the PS Vita firmware and font packages." },
+        { "download_firmware", "Download Firmware" },
+        { "line_sixth_part_one", "A comprehensive guide on how to set-up Vita3K can be found on the" },
+        { "quickstart", "Quickstart" },
+        { "line_sixth_part_two", "page." },
+        { "line_seventh_part_one", "Consult the Commercial game" },
+        { "compatibility", "compatibility" },
+        { "line_seventh_part_two", "list and the Homebrew compatibility list to see what runs." },
+        { "line_eighth", "Contributions are welcome!" },
+        { "line_tenth", "Additional support can be found in the #help channel of the" },
+        { "line_eleventh", "Vita3K does not condone piracy. You must dump your own games." },
+        { "show_next_time", "Show next time" },
+        { "close", "Close" }
     };
     struct Common {
         std::vector<std::string> wday = {
