@@ -216,7 +216,7 @@
 SDL2に対応したコントローラーを接続してください。</not_connected>
 	</controllers>
 
-　　　　<controls name="入力">
+	<controls name="入力">
 		<button>ボタン</button>
 		<mapped_button>ボタン割り当て</mapped_button>
 		<left_stick_up>左スティック 上</left_stick_up>
@@ -328,12 +328,12 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<completed_setup>初めの設定が完了しました。
 Vita3Kをお楽しみください。</completed_setup>
 		<select_language>言語を選んでください。</select_language>
-　　　　　　　　<completed>完了しました。</completed>
+		<completed>完了しました。</completed>
 		<next>次へ</next>
 	</initial_setup>
 	
 	<install_dialog>
-　　　　　　　　　<fw_installing>インストール中です、お待ちください...</fw_installing>
+		<fw_installing>インストール中です、お待ちください...</fw_installing>
 		<successed_install_fw>ファームウェアのインストールに成功しました。</successed_install_fw>
 		<fw_version>ファームウェアバージョン:</fw_version>
 		<no_font_exist>ファームウェアフォントパッケージがありません。
@@ -362,7 +362,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<delete_archive>アーカイブを削除しますか?</delete_archive>
 		<select_license_type>ライセンスを選択</select_license_type>
 		<select_bin_rif>work.bin/rifを選択</select_bin_rif>
-　　　　　　　　　<successed_install_license>ライセンスのインストールに成功しました。</successed_install_license>
+		<successed_install_license>ライセンスのインストールに成功しました。</successed_install_license>
 		<content_id>コンテンツID：</content_id>
 		<title_id>タイトルID：</title_id>
 		<delete_bin_rif>先ほどのwork.bin/rifを削除しますか?</delete_bin_rif>
@@ -471,10 +471,10 @@ Vita3Kをお楽しみください。</completed_setup>
 		<name>名前</name>
 		<user>ユーザー</user>
 		<confirm>確認</confirm>
-　　　　　　　　　<automatic_user_login>ユーザー自動ログイン</automatic_user_login>
+		<automatic_user_login>ユーザー自動ログイン</automatic_user_login>
 	</user_management>
 	
-	<vita3k_update name="アップデート">
+	<vita3k_update name="Vita3Kのアップデート">
  		<new_version_available>新しいバージョンのVita3Kが利用できます。</new_version_available>
 		<back>戻る</back>
 		<downloading>ダウンロード中...
@@ -489,7 +489,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<version>バージョン {}</version>
 	</vita3k_update>
 
-　　　　<welcome name="Welcome to Vita3K">
+	<welcome name="Welcome to Vita3K">
 		<line_first>Vita3K PlayStation Vita Emulator</line_first>
 		<line_second>Vita3Kは、WindowsとLinux用にC++で書かれたオープンソースのPlayStation Vitaエミュレータです。</line_second>
 		<line_third>エミュレータは未だ初期段階にあるため、フィードバックやテストは大歓迎です。</line_third>
