@@ -491,8 +491,8 @@ Vita3Kをお楽しみください。</completed_setup>
 
 	<welcome name="Welcome to Vita3K">
 		<line_first>Vita3K PlayStation Vita Emulator</line_first>
-		<line_second>Vita3Kは、WindowsとLinux用にC++で書かれたオープンソースのPlayStation Vitaエミュレータです。</line_second>
-		<line_third>エミュレータは未だ初期段階にあるため、フィードバックやテストは大歓迎です。</line_third>
+		<line_second>Vita3Kは、WindowsとLinux用にC++で書かれたオープンソースのPlayStation Vitaエミュレーターです。</line_second>
+		<line_third>エミュレーターは未だ初期段階にあるため、フィードバックやテストは大歓迎です。</line_third>
 		<line_fourth>まずは、PS Vitaのファームウェアとフォントのパッケージをインストールしてください。</line_fourth>
 		<download_firmware>ファームウェアをダウンロード</download_firmware>
 		<line_sixth_part_one>Vita3Kのセットアップ方法については、以下のページで解説しています。</line_sixth_part_one>
