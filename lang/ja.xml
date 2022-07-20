@@ -333,7 +333,7 @@ Vita3Kをお楽しみください。</completed_setup>
 	</initial_setup>
 	
 	<install_dialog>
-　　　　　　　　<fw_installing>インストール中です、お待ちください...</fw_installing>
+　　　　　　　　　<fw_installing>インストール中です、お待ちください...</fw_installing>
 		<successed_install_fw>ファームウェアのインストールに成功しました。</successed_install_fw>
 		<fw_version>ファームウェアバージョン:</fw_version>
 		<no_font_exist>ファームウェアフォントパッケージがありません。
@@ -362,7 +362,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<delete_archive>アーカイブを削除しますか?</delete_archive>
 		<select_license_type>ライセンスを選択</select_license_type>
 		<select_bin_rif>work.bin/rifを選択</select_bin_rif>
-　　　　　　　　<successed_install_license>ライセンスのインストールに成功しました。</successed_install_license>
+　　　　　　　　　<successed_install_license>ライセンスのインストールに成功しました。</successed_install_license>
 		<content_id>コンテンツID：</content_id>
 		<title_id>タイトルID：</title_id>
 		<delete_bin_rif>先ほどのwork.bin/rifを削除しますか?</delete_bin_rif>
@@ -471,7 +471,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<name>名前</name>
 		<user>ユーザー</user>
 		<confirm>確認</confirm>
-　　　　　　　　<automatic_user_login>ユーザー自動ログイン</automatic_user_login>
+　　　　　　　　　<automatic_user_login>ユーザー自動ログイン</automatic_user_login>
 	</user_management>
 	
 	<vita3k_update name="アップデート">
