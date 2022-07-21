@@ -3,7 +3,7 @@
 <lang>
 	<main_menubar>
 		<file name="ファイル">
-			<open_pref_path>Vita3Kの保存先を開く</open_pref_path>
+			<open_pref_path>保存先を開く</open_pref_path>
 			<install_firmware>ファームウェアをインストール</install_firmware>
 			<install_pkg>pkgをインストール</install_pkg>
 			<install_zip>zip，vpkをインストール</install_zip>
@@ -16,7 +16,7 @@
 			<settings>設定</settings>
 			<user_management>ユーザー管理</user_management>
 		</configuration>
-		<controls name="コントロール">
+		<controls name="入力">
 			<keyboard_controls>キーボード</keyboard_controls>
 		</controls>
 		<help name="ヘルプ">
@@ -24,15 +24,15 @@
 		</help>
 	</main_menubar>
 
-	<about name="Vita3Kについて">
-		<vita3k>Vita3K: a PS Vita/PSTV Emulator. The world's first functional PS Vita/PSTV emulator.</vita3k>
-		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems.</about_vita3k>
-		<note>Note: The emulator is still in a very early stage of development.</note>
-		<github_website>If you're interested in contributing, check out our Github:</github_website>
-		<vita3k_website>Visit our website for more info:</vita3k_website>
-		<vita3k_staff>Vita3K Staff</vita3k_staff>
-		<developers>Developers</developers>
-		<contributors>Contributors</contributors>
+	<about name="概要">
+		<vita3k>Vita3K: PS Vita/Vita TVエミュレーター。 世界初の動作するPS Vita/Vita TVエミュレーターです。</vita3k>
+		<about_vita3k>Vita3Kは試験的なオープンソースのC++で書かれた WindowsとLinux向けのPlayStation Vita/Vita TVエミュレーターです。</about_vita3k>
+		<note>注意: エミュレーターは未だかなりの初期段階にあります。</note>
+		<github_website>プロジェクトへの貢献に興味がある方は、Githubをご覧ください:</github_website>
+		<vita3k_website>詳しくはサイトをご覧ください:</vita3k_website>
+		<vita3k_staff>Vita3K スタッフ</vita3k_staff>
+		<developers>開発者</developers>
+		<contributors>貢献者</contributors>
 	</about>
 
 	<app_context>
@@ -211,10 +211,44 @@
 	<controllers name="コントローラー">
 		<connected>Controllers connected</connected>
 		<name>名前</name>
-		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
+		<num>番号</num>
+		<not_connected>利用可能なコントローラーが接続されていません。
+SDL2に対応したコントローラーを接続してください。</not_connected>
 	</controllers>
+
+	<controls name="入力">
+		<button>ボタン</button>
+		<mapped_button>ボタン割り当て</mapped_button>
+		<left_stick_up>左スティック 上</left_stick_up>
+		<left_stick_down>左スティック 下</left_stick_down>
+		<left_stick_right>左スティック 右</left_stick_right>
+		<left_stick_left>左スティック 左</left_stick_left>
+		<right_stick_up>右スティック 上</right_stick_up>
+		<right_stick_down>右スティック 下</right_stick_down>
+		<right_stick_right>右スティック 右</right_stick_right>
+		<right_stick_left>右スティック 左</right_stick_left>
+		<d_pad_up>方向キー 上</d_pad_up>
+		<d_pad_down>方向キー 下</d_pad_down>
+		<d_pad_right>方向キー 右</d_pad_right>
+		<d_pad_left>方向キー 左</d_pad_left>
+		<square_button>四角 ボタン</square_button>
+		<cross_button>バツ ボタン</cross_button>
+		<circle_button>丸 ボタン</circle_button>
+		<triangle_button>三角 ボタン</triangle_button>
+		<start_button>Start ボタン</start_button>
+		<select_button>Select ボタン</select_button>
+		<ps_button>PS ボタン</ps_button>
+		<l1_button>L1 ボタン</l1_button>
+		<r1_button>R1 ボタン</r1_button>
+		<ps_tv_mode>Vita TV 専用</ps_tv_mode>
+		<l2_button>L2 ボタン</l2_button>
+		<r2_button>R2 ボタン</r2_button>
+		<l3_button>L3 ボタン</l3_button>
+		<r3_button>R3 ボタン</r3_button>
+		<gui>GUI</gui>
+		<toggle_touch>タッチパネル</toggle_touch>
+		<toggle_gui_visibility>タッチパネル可視化</toggle_gui_visibility>
+	</controls>　
 
 	<dialog>
 		<trophy>
@@ -294,13 +328,23 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<completed_setup>初めの設定が完了しました。
 Vita3Kをお楽しみください。</completed_setup>
 		<select_language>言語を選んでください。</select_language>
+		<completed>完了しました。</completed>
 		<next>次へ</next>
 	</initial_setup>
 	
 	<install_dialog>
+		<fw_installing>インストール中です、お待ちください...</fw_installing>
+		<successed_install_fw>ファームウェアのインストールに成功しました。</successed_install_fw>
+		<fw_version>ファームウェアバージョン:</fw_version>
+		<no_font_exist>ファームウェアフォントパッケージがありません。
+ダウンロードしてインストールしてください。</no_font_exist>
+		<download_firmware_font_package>ファームウェアフォントパッケージをダウンロード</download_firmware_font_package>
+		<firmware_font_package_note>ファームウェアフォントパッケージは、一部のアプリケーションや、GUIでのアジア地域のフォントサポートに必須です。
+また、一般的にGUIを正しく表示するために推奨されています。</firmware_font_package_note>
+		<delete_fw>インストールしたファームウェアファイルを削除しますか?</delete_fw>
 		<select_key_type>key typeを選択</select_key_type>
-		<select_work>work.bin</select_work>
-		<enter_zrif>zRIF</enter_zrif>
+		<select_work>work.binを選択</select_work>
+		<enter_zrif>zRIFを入力</enter_zrif>
 		<enter_zrif_key>zRIF keyを入力</enter_zrif_key>
 		<input_zrif>zRIFをここに入力してください</input_zrif>
 		<copy_paste_zrif>Ctrl(Cmd) + C でコピー, Ctrl(Cmd) + V でペーストします。</copy_paste_zrif>
@@ -317,7 +361,8 @@ Vita3Kをお楽しみください。</completed_setup>
 		<not_compatible_content>アーカイブに互換性のあるコンテンツを見つけられませんでした:</not_compatible_content>
 		<delete_archive>アーカイブを削除しますか?</delete_archive>
 		<select_license_type>ライセンスを選択</select_license_type>
-		<select_bin_rif>work.bin/rif</select_bin_rif>
+		<select_bin_rif>work.bin/rifを選択</select_bin_rif>
+		<successed_install_license>ライセンスのインストールに成功しました。</successed_install_license>
 		<content_id>コンテンツID：</content_id>
 		<title_id>タイトルID：</title_id>
 		<delete_bin_rif>先ほどのwork.bin/rifを削除しますか?</delete_bin_rif>
@@ -426,7 +471,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<name>名前</name>
 		<user>ユーザー</user>
 		<confirm>確認</confirm>
-　　　　　　　　<automatic_user_login>オートログイン</automatic_user_login>
+		<automatic_user_login>ユーザー自動ログイン</automatic_user_login>
 	</user_management>
 	
 	<vita3k_update name="Vita3Kのアップデート">
@@ -443,4 +488,24 @@ Vita3Kをお楽しみください。</completed_setup>
 		<update>アップデート</update>
 		<version>バージョン {}</version>
 	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<line_first>Vita3K PlayStation Vita Emulator</line_first>
+		<line_second>Vita3Kは、WindowsとLinux用にC++で書かれたオープンソースのPlayStation Vitaエミュレーターです。</line_second>
+		<line_third>エミュレーターは未だ初期段階にあるため、フィードバックやテストは大歓迎です。</line_third>
+		<line_fourth>まずは、PS Vitaのファームウェアとフォントのパッケージをインストールしてください。</line_fourth>
+		<download_firmware>ファームウェアをダウンロード</download_firmware>
+		<line_sixth_part_one>Vita3Kのセットアップ方法については、以下のページで解説しています。</line_sixth_part_one>
+		<quickstart>クイックスタート</quickstart>
+		<line_sixth_part_two>ページ。</line_sixth_part_two>
+		<line_seventh_part_one>商用ゲーム</line_seventh_part_one>
+		<compatibility>互換性</compatibility>
+		<line_seventh_part_two>リストとHomebrew互換性リストで動作するものを御確認下さい。</line_seventh_part_two>
+		<line_eighth>寄稿者を募集しています！</line_eighth>
+		<line_tenth>その他の相談は、#help チャンネルで行うことができます。</line_tenth>
+		<line_eleventh>Vita3Kは違法行為を認めません。所有ゲームの吸出しを行ってください。</line_eleventh>
+		<show_next_time>次回以降も表示</show_next_time>
+		<close>閉じる</close>
+	</welcome>
 </lang>
+
