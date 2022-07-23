@@ -689,6 +689,8 @@ void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
 
     if (gui.file_menu.archive_install_dialog)
         draw_archive_install_dialog(gui, emuenv);
+    if (gui.file_menu.firmware_install_dialog)
+        draw_firmware_install_dialog(gui, emuenv);
     if (gui.file_menu.license_install_dialog)
         draw_license_install_dialog(gui, emuenv);
     if (gui.file_menu.pkg_install_dialog)
@@ -725,9 +727,6 @@ void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
 void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushFont(gui.vita_font);
     draw_main_menu_bar(gui, emuenv);
-
-    if (gui.file_menu.firmware_install_dialog)
-        draw_firmware_install_dialog(gui, emuenv);
 
     if (gui.controls_menu.controls_dialog)
         draw_controls_dialog(gui, emuenv);

@@ -147,16 +147,10 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     set_lang_string(lang.content_manager.main, content_manager);
 
                     // Application
-                    const auto application = content_manager.child("application");
-                    if (!application.empty()) {
-                        set_lang_string(lang.content_manager.application.main, application);
-                    }
+                    set_lang_string(lang.content_manager.application, content_manager.child("application"));
 
                     // Saved Data
-                    const auto saved_data = content_manager.child("saved_data");
-                    if (!saved_data.empty()) {
-                        set_lang_string(lang.content_manager.saved_data.main, saved_data);
-                    }
+                    set_lang_string(lang.content_manager.saved_data, content_manager.child("saved_data"));
                 }
 
                 // Controllers
