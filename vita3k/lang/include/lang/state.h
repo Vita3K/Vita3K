@@ -172,22 +172,16 @@ struct LangState {
             { "free_space", "Free Space" },
             { "clear_all", "Clear All" }
         };
-        struct Application {
-            std::map<std::string, std::string> main = {
-                { "title", "Application" },
-                { "delete", "The selected applications and all related data, including saved data, will be deleted." },
-                { "no_item", "There are no content items." }
-            };
+        std::map<std::string, std::string> application = {
+            { "title", "Application" },
+            { "delete", "The selected applications and all related data, including saved data, will be deleted." },
+            { "no_item", "There are no content items." }
         };
-        Application application;
-        struct SavedData {
-            std::map<std::string, std::string> main = {
-                { "title", "Saved Data" },
-                { "delete", "The selected saved data items will be deleted." },
-                { "no_saved_data", "There is no saved data." }
-            };
+        std::map<std::string, std::string> saved_data = {
+            { "title", "Saved Data" },
+            { "delete", "The selected saved data items will be deleted." },
+            { "no_saved_data", "There is no saved data." }
         };
-        SavedData saved_data;
     };
     ContentManager content_manager;
     std::map<std::string, std::string> controllers = {

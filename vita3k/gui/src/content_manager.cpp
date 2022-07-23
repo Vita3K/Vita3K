@@ -312,7 +312,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetColumnWidth(0, 630.f * SCALE.x);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
         const auto SIZE_SELECT = 80.f * SCALE.y;
-        if (ImGui::Selectable(application.main["title"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
+        if (ImGui::Selectable(application["title"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
             menu = "app";
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
@@ -320,7 +320,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::NextColumn();
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
-        if (ImGui::Selectable(saved_data.main["title"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
+        if (ImGui::Selectable(saved_data["title"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
             menu = "save";
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
@@ -381,7 +381,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2(52.f * SCALE.x, 80.f * SCALE.y));
             ImGui::PushTextWrapPos(POPUP_SIZE.x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", menu == "app" ? application.main["delete"].c_str() : saved_data.main["delete"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", menu == "app" ? application["delete"].c_str() : saved_data["delete"].c_str());
             ImGui::PopTextWrapPos();
             ImGui::SetCursorPos(ImVec2(106.f * SCALE.x, ImGui::GetCursorPosY() + (76.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", gui.lang.game_data["data_delete"].c_str(), size_selected_contents.c_str());
@@ -401,12 +401,13 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
         // Apps Menu
         if (menu == "app") {
-            title = application.main["title"];
+            title = application["title"];
             if (gui.app_selector.user_apps.empty()) {
                 ImGui::SetWindowFontScale(1.2f);
-                const auto calc_text = ImGui::CalcTextSize(application.main["no_item"].c_str());
+                auto no_item_str = application["no_item"].c_str();
+                const auto calc_text = ImGui::CalcTextSize(no_item_str);
                 ImGui::SetCursorPos(ImVec2((SIZE_LIST.x / 2.f) - (calc_text.x / 2.f), (SIZE_LIST.y / 2.f) - (calc_text.y / 2.f)));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", application.main["no_item"].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", no_item_str);
             } else {
                 // Set Scroll Pos
                 if (set_scroll_pos) {
@@ -456,12 +457,13 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             }
             // Save Data Menu
         } else if (menu == "save") {
-            title = saved_data.main["title"];
+            title = saved_data["title"];
             if (save_data_list.empty()) {
                 ImGui::SetWindowFontScale(1.2f);
-                const auto calc_text = ImGui::CalcTextSize(saved_data.main["no_saved_data"].c_str());
+                auto no_savedata_str = saved_data["no_saved_data"].c_str();
+                const auto calc_text = ImGui::CalcTextSize(no_savedata_str);
                 ImGui::SetCursorPos(ImVec2((SIZE_LIST.x / 2.f) - (calc_text.x / 2.f), (SIZE_LIST.y / 2.f) - (calc_text.y / 2.f)));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", saved_data.main["no_saved_data"].c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", no_savedata_str);
             } else {
                 ImGui::Columns(3, nullptr, false);
                 ImGui::SetColumnWidth(0, 60 * SCALE.x);

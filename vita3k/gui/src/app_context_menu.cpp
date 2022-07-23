@@ -288,8 +288,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
 
     auto lang = gui.lang.app_context;
-    auto app_str = gui.lang.content_manager.application.main;
-    auto savedata_str = gui.lang.content_manager.saved_data.main;
+    auto app_str = gui.lang.content_manager.application;
+    auto savedata_str = gui.lang.content_manager.saved_data;
     auto common = emuenv.common_dialog.lang.common;
 
     // App Context Menu
