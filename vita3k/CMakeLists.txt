@@ -20,18 +20,29 @@ execute_process(
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	OUTPUT_VARIABLE GIT_BRANCH
 	OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(
+	COMMAND git config --get remote.origin.url
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	OUTPUT_VARIABLE GIT_REPO
+	OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+if (NOT GIT_REPO STREQUAL "")
+	string(REPLACE "https://github.com/" "" GIT_REPO ${GIT_REPO})
+	string(REPLACE "/" ";" GIT_REPO ${GIT_REPO})
+	list(POP_BACK GIT_REPO)
+endif()
 
 if(GIT_HASH STREQUAL "")
 	set(VITA3K_GIT_REV "Development version")
 	set(GIT_COUNT 0)
-elseif((GIT_BRANCH STREQUAL "master") OR (GIT_BRANCH STREQUAL "HEAD"))
+elseif((GIT_REPO STREQUAL "Vita3K") AND ((GIT_BRANCH STREQUAL "master") OR (GIT_BRANCH STREQUAL "HEAD")))
 	set(VITA3K_GIT_REV "${GIT_HASH}")
 
 	if(USE_VITA3K_UPDATE)
 		add_definitions(-DUSE_VITA3K_UPDATE)
 	endif()
 else()
-	set(VITA3K_GIT_REV "${GIT_HASH}-${GIT_BRANCH}")
+	set(VITA3K_GIT_REV "${GIT_HASH}-${GIT_REPO}/${GIT_BRANCH}")
 endif()
 
 file(WRITE ${CMAKE_BINARY_DIR}/vita3k/config/gitver.h
