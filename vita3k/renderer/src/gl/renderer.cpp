@@ -43,12 +43,12 @@
 namespace renderer::gl {
 
 GLContext::GLContext()
-    : vertex_stream_ring_buffer(GL_ARRAY_BUFFER, MB(128))
-    , index_stream_ring_buffer(GL_ELEMENT_ARRAY_BUFFER, MB(64))
-    , vertex_uniform_stream_ring_buffer(GL_SHADER_STORAGE_BUFFER, MB(256))
-    , fragment_uniform_stream_ring_buffer(GL_SHADER_STORAGE_BUFFER, MB(256))
-    , vertex_info_uniform_buffer(GL_UNIFORM_BUFFER, MB(8))
-    , fragment_info_uniform_buffer(GL_UNIFORM_BUFFER, MB(8)) {
+    : vertex_stream_ring_buffer(GL_ARRAY_BUFFER, MiB(128))
+    , index_stream_ring_buffer(GL_ELEMENT_ARRAY_BUFFER, MiB(64))
+    , vertex_uniform_stream_ring_buffer(GL_SHADER_STORAGE_BUFFER, MiB(256))
+    , fragment_uniform_stream_ring_buffer(GL_SHADER_STORAGE_BUFFER, MiB(256))
+    , vertex_info_uniform_buffer(GL_UNIFORM_BUFFER, MiB(8))
+    , fragment_info_uniform_buffer(GL_UNIFORM_BUFFER, MiB(8)) {
     std::memset(&previous_vert_info, 0, sizeof(GXMRenderVertUniformBlock));
     std::memset(&previous_frag_info, 0, sizeof(GXMRenderFragUniformBlock));
 }

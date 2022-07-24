@@ -55,7 +55,7 @@ struct SceAppUtilSaveDataSlotParam {
     char detail[512];
     char iconPath[64];
     int userParam;
-    SceSize sizeKB;
+    SceSize sizeKiB;
     SceDateTime modifiedTime;
     uint8_t reserved[48];
 };

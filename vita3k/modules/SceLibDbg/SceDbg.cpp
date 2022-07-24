@@ -27,7 +27,7 @@ EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop
         return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
     }
 
-    std::vector<char> buffer(KB(1));
+    std::vector<char> buffer(KiB(1));
 
     const char *main_message = messages.next<Ptr<const char>>(*(thread->cpu), emuenv.mem).get(emuenv.mem);
     const int result = utils::snprintf(buffer.data(), buffer.size(), main_message, *(thread->cpu), emuenv.mem, messages);
@@ -63,7 +63,7 @@ EXPORT(int, sceDbgLoggingHandler, const char *pFile, int line, int severity, con
         output += fmt::format(", FILE:{}, LINE:{}", pFile, line);
     }
 
-    std::vector<char> buffer(KB(1));
+    std::vector<char> buffer(KiB(1));
 
     const char *main_message = messages.next<Ptr<const char>>(*(thread->cpu), emuenv.mem).get(emuenv.mem);
     const int result = utils::snprintf(buffer.data(), buffer.size(), main_message, *(thread->cpu), emuenv.mem, messages);

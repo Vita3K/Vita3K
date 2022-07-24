@@ -28,7 +28,7 @@
 struct MemState;
 
 namespace renderer {
-constexpr size_t TextureCacheSize = KB(1);
+constexpr size_t TextureCacheSize = KiB(1);
 typedef uint64_t TextureCacheTimestamp;
 typedef uint32_t TextureCacheHash;
 

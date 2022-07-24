@@ -1795,8 +1795,8 @@ EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params
     if (!params) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    *hostMemSize = uint32_t(MB(2));
-    return STUBBED("2MB emuenv mem");
+    *hostMemSize = uint32_t(MiB(2));
+    return STUBBED("2MiB emuenv mem");
 }
 
 struct GxmThreadParams {
@@ -1871,8 +1871,8 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
     emuenv.gxm.display_queue.reset();
     emuenv.gxm.sdl_thread = SDL_CreateThread(&thread_function, "SceGxmDisplayQueue", &gxm_params);
     SDL_SemWait(gxm_params.emuenv_may_destroy_params.get());
-    emuenv.gxm.notification_region = Ptr<uint32_t>(alloc(emuenv.mem, MB(1), "SceGxmNotificationRegion"));
-    memset(emuenv.gxm.notification_region.get(emuenv.mem), 0, MB(1));
+    emuenv.gxm.notification_region = Ptr<uint32_t>(alloc(emuenv.mem, MiB(1), "SceGxmNotificationRegion"));
+    memset(emuenv.gxm.notification_region.get(emuenv.mem), 0, MiB(1));
     return 0;
 }
 

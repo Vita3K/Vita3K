@@ -48,15 +48,15 @@ void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv) {
             continue;
 
         if (ImGui::TreeNode(fmt::format("{}: {}", generation_num, generation_name).c_str())) {
-            ImGui::Text("Range %08lx - %08lx.", generation_num * KB(4), (generation_num + page.size) * KB(4));
-            ImGui::Text("Size: %i KB (%i page[s])", page.size * 4, page.size);
+            ImGui::Text("Range %08lx - %08lx.", generation_num * KiB(4), (generation_num + page.size) * KiB(4));
+            ImGui::Text("Size: %i KiB (%i page[s])", page.size * 4, page.size);
             if (ImGui::Selectable("View/Edit")) {
-                gui.memory_editor_start = generation_num * KB(4);
-                gui.memory_editor_count = page.size * KB(4);
+                gui.memory_editor_start = generation_num * KiB(4);
+                gui.memory_editor_count = page.size * KiB(4);
                 gui.debug_menu.memory_editor_dialog = true;
             }
             if (ImGui::Selectable("View Disassembly")) {
-                sprintf(gui.disassembly_address, "%08zx", page.size * KB(4));
+                sprintf(gui.disassembly_address, "%08zx", page.size * KiB(4));
                 reevaluate_code(gui, emuenv);
                 gui.debug_menu.disassembly_dialog = true;
             }

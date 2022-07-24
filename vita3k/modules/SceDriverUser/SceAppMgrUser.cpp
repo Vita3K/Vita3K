@@ -44,7 +44,7 @@ struct SceAppMgrSaveDataData {
     Ptr<SceAppUtilSaveDataDataSaveItem> files;
     int fileNum;
     SceAppUtilMountPoint *mountPoint;
-    unsigned int *requiredSizeKB;
+    unsigned int *requiredSizeKiB;
 };
 
 EXPORT(SceInt32, _sceAppMgrGetAppState, SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion) {

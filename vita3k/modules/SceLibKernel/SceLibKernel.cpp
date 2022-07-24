@@ -220,7 +220,7 @@ EXPORT(int, sceClibMspaceReallocalign) {
 }
 
 EXPORT(int, sceClibPrintf, const char *fmt, module::vargs args) {
-    std::vector<char> buffer(KB(1));
+    std::vector<char> buffer(KiB(1));
 
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
 
