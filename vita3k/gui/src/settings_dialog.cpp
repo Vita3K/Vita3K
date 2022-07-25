@@ -173,7 +173,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             // Load Emulator Config
             if (!config_child.child("emulator").empty()) {
                 const auto emulator_child = config_child.child("emulator");
-                config.disable_ngs = emulator_child.attribute("disable-ngs").as_bool();
+                config.ngs_enable = emulator_child.attribute("ngs-enable").as_bool();
             }
 
             return true;
@@ -214,7 +214,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.v_sync = emuenv.cfg.v_sync;
         config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         config.pstv_mode = emuenv.cfg.pstv_mode;
-        config.disable_ngs = emuenv.cfg.disable_ngs;
+        config.ngs_enable = emuenv.cfg.ngs_enable;
     }
     config_cpu_backend = set_cpu_backend(config.cpu_backend);
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
@@ -276,7 +276,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         // Emulator
         auto emulator_child = config_child.append_child("emulator");
-        emulator_child.append_attribute("disable-ngs") = config.disable_ngs;
+        emulator_child.append_attribute("disable-ngs") = config.ngs_enable;
 
         const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
         if (!save_xml)
@@ -292,7 +292,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.enable_fxaa = config.enable_fxaa;
         emuenv.cfg.v_sync = config.v_sync;
         emuenv.cfg.anisotropic_filtering = config.anisotropic_filtering;
-        emuenv.cfg.disable_ngs = config.disable_ngs;
+        emuenv.cfg.ngs_enable = config.ngs_enable;
     }
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
@@ -332,7 +332,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.enable_fxaa = config.enable_fxaa;
         emuenv.cfg.current_config.v_sync = config.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = config.anisotropic_filtering;
-        emuenv.cfg.current_config.disable_ngs = config.disable_ngs;
+        emuenv.cfg.current_config.ngs_enable = config.ngs_enable;
     } else {
         // Else inherit the values from the global emulator config
         emuenv.cfg.current_config.cpu_backend = emuenv.cfg.cpu_backend;
@@ -345,7 +345,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.enable_fxaa = emuenv.cfg.enable_fxaa;
         emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
-        emuenv.cfg.current_config.disable_ngs = emuenv.cfg.disable_ngs;
+        emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
     }
 
     // can be changed while ingame
@@ -595,7 +595,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox("Boot apps in full screen", &emuenv.cfg.boot_apps_full_screen);
         ImGui::Spacing();
-        ImGui::Checkbox("Disable ngs support", &config.disable_ngs);
+        ImGui::Checkbox("Enable NGS support", &config.ngs_enable);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Disable support for advanced audio library ngs");
         ImGui::Spacing();

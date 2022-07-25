@@ -460,7 +460,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, EmuEnvState &emuenv,
 
     LOG_INFO("{}: {}", emuenv.cfg[e_cpu_backend], emuenv.cfg.current_config.cpu_backend);
     LOG_INFO_IF(emuenv.kernel.cpu_backend == CPUBackend::Dynarmic, "CPU Optimisation state: {}", emuenv.cfg.current_config.cpu_opt);
-    LOG_INFO("ngs state: {}", !emuenv.cfg.current_config.disable_ngs);
+    LOG_INFO("ngs state: {}", emuenv.cfg.current_config.ngs_enable);
     LOG_INFO("Resolution multiplier: {}", emuenv.cfg.resolution_multiplier);
     refresh_controllers(emuenv.ctrl);
     if (emuenv.ctrl.controllers_num) {
