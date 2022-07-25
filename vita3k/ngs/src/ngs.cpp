@@ -214,7 +214,7 @@ bool Voice::remove_patch(const MemState &mem, const Ptr<Patch> patch) {
     const std::lock_guard<std::mutex> guard(*voice_mutex);
     bool found = false;
 
-    for (std::uint8_t i = 0; i < patches.size(); i++) {
+    for (std::size_t i = 0; i < patches.size(); i++) {
         auto iterator = std::find(patches[i].begin(), patches[i].end(), patch);
 
         if (iterator != patches[i].end()) {

@@ -724,7 +724,7 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
     float uvs[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
     bool need_uv = true;
 
-    const std::size_t texture_data_size = display.frame.pitch * display.frame.image_size.y * 4;
+    const std::size_t texture_data_size = (std::size_t)display.frame.pitch * (std::size_t)display.frame.image_size.y * (std::size_t)4;
 
     std::uint64_t surface_handle = 0;
     bool check_for_cache = true;
