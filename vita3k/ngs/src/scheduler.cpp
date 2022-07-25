@@ -47,7 +47,7 @@ void VoiceScheduler::deque_insert(const MemState &mem, Voice *voice) {
     int32_t lowest_dest_pos = static_cast<std::int32_t>(queue.size());
 
     // Check its dependencies position
-    for (std::uint8_t i = 0; i < voice->patches.size(); i++) {
+    for (std::size_t i = 0; i < voice->patches.size(); i++) {
         for (const auto &patch : voice->patches[i]) {
             if (!patch) {
                 continue;

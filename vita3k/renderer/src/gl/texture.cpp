@@ -261,7 +261,7 @@ static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, v
         const std::uint32_t num_xword = (width + (is_2bpp ? 7 : 3)) / (is_2bpp ? 8 : 4);
         const std::uint32_t num_yword = (height + 3) / 4;
 
-        return num_xword * num_yword * 8;
+        return (std::size_t)num_xword * (std::size_t)num_yword * (size_t)8;
     }
 
     return 0;
