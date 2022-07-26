@@ -597,7 +597,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox("Enable NGS support", &config.ngs_enable);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to enable support for advanced audio library NGS.");
+            ImGui::SetTooltip("Uncheck the box to disable support for advanced audio library NGS.");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
