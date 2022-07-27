@@ -21,15 +21,19 @@
 #include <util/log.h>
 
 #include <gdbstub/functions.h>
+#include <gdbstub/state.h>
 
 #include <cpu/functions.h>
 
+#include <kernel/state.h>
 #include <mem/state.h>
 #include <spdlog/fmt/bundled/printf.h>
 #include <sstream>
 
 // Sockets
-#ifndef _WIN32
+#ifdef _WIN32
+#include <winsock.h>
+#else
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
@@ -692,11 +696,11 @@ constexpr bool cmp_less(T t, U u) noexcept {
         return u < 0 ? false : t < UU(u);
 }
 
-static bool command_begins_with(PacketCommand &command, const std::string &small) {
-    if (!cmp_less(small.size(), command.content_length))
+static bool command_begins_with(PacketCommand &command, const std::string &small_str) {
+    if (!cmp_less(small_str.size(), command.content_length))
         return false;
 
-    return std::memcmp(command.content_start, small.c_str(), small.size()) == 0;
+    return std::memcmp(command.content_start, small_str.c_str(), small_str.size()) == 0;
 }
 
 static int64_t server_next(EmuEnvState &state) {

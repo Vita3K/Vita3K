@@ -19,6 +19,8 @@
 #include "SceAudio_tracy.h"
 #include "Tracy.hpp"
 
+#include <audio/state.h>
+#include <kernel/state.h>
 #include <util/lock_and_find.h>
 
 EXPORT(int, sceAudioOutGetAdopt, SceAudioOutPortType type) {

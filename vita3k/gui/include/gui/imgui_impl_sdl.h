@@ -22,6 +22,8 @@
 #include <emuenv/window.h>
 #include <gui/imgui_impl_sdl_state.h>
 
+#include <string>
+
 union SDL_Event;
 struct SDL_Window;
 struct SDL_Cursor;

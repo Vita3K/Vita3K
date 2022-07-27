@@ -17,6 +17,8 @@
 
 #include "private.h"
 
+#include <kernel/state.h>
+
 namespace gui {
 
 void draw_semaphores_dialog(GuiState &gui, EmuEnvState &emuenv) {

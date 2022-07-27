@@ -17,8 +17,10 @@
 
 #include <module/load_module.h>
 
+#include <config/state.h>
 #include <emuenv/state.h>
 #include <kernel/load_self.h>
+#include <kernel/state.h>
 
 bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv) {
     const auto paths = sysmodule_paths[module_id];

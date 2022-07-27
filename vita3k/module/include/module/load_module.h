@@ -16,7 +16,9 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <emuenv/state.h>
+#include <kernel/types.h>
 
+#include <array>
 #include <vector>
 
 static constexpr auto SYSMODULE_COUNT = 0x56;

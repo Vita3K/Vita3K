@@ -7,5 +7,5 @@ add_library(
 )
 
 target_include_directories(display PUBLIC include)
-target_link_libraries(display PUBLIC emuenv)
-target_link_libraries(display PRIVATE)
+target_link_libraries(display PUBLIC emuenv kernel)
+target_link_libraries(display PRIVATE kernel touch renderer)

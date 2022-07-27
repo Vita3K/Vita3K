@@ -17,6 +17,10 @@
 
 #include "SceNpCommon.h"
 
+#include <io/state.h>
+#include <kernel/state.h>
+#include <np/common.h>
+
 EXPORT(int, sceNpAuthAbortRequest) {
     return UNIMPLEMENTED();
 }

@@ -19,7 +19,9 @@
 #include <modules/module_parent.h>
 
 #include <kernel/callback.h>
+#include <kernel/state.h>
 #include <kernel/sync_primitives.h>
+#include <kernel/types.h>
 #include <packages/functions.h>
 
 #include <util/lock_and_find.h>
@@ -420,7 +422,7 @@ EXPORT(int, _sceKernelGetTimerTime) {
 
 EXPORT(int, _sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
     if (!workarea)
-        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
 
     const auto lwmutexid = workarea.get(emuenv.mem)->uid;
     return mutex_lock(emuenv.kernel, emuenv.mem, export_name, thread_id, lwmutexid, lock_count, ptimeout, SyncWeight::Light);

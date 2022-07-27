@@ -18,6 +18,7 @@
 #include "SceIofilemgr.h"
 
 #include <io/functions.h>
+#include <kernel/types.h>
 
 EXPORT(int, _sceIoChstat) {
     return UNIMPLEMENTED();

@@ -24,6 +24,12 @@
 #include <io/vfs.h>
 #include <util/safe_time.h>
 
+#ifdef WIN32
+#include <winsock.h>
+#else
+#include <unistd.h>
+#endif
+
 #include <cstring>
 
 EXPORT(int, sceAppUtilAddCookieWebBrowser) {

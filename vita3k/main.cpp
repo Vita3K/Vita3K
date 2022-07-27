@@ -20,12 +20,16 @@
 #include <app/functions.h>
 #include <config/functions.h>
 #include <config/version.h>
+#include <display/state.h>
 #include <emuenv/state.h>
 #include <gui/functions.h>
 #include <gui/state.h>
+#include <io/state.h>
+#include <kernel/state.h>
 #include <modules/module_parent.h>
 #include <packages/functions.h>
 #include <packages/pkg.h>
+#include <packages/sfo.h>
 #include <renderer/functions.h>
 #include <renderer/gl/functions.h>
 #include <shader/spirv_recompiler.h>
@@ -370,7 +374,9 @@ int main(int argc, char *argv[]) {
 
         {
             const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
-            emuenv.renderer->render_frame(emuenv.viewport_pos, emuenv.viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
+            const SceFVector2 viewport_pos = { emuenv.viewport_pos.x, emuenv.viewport_pos.y };
+            const SceFVector2 viewport_size = { emuenv.viewport_size.x, emuenv.viewport_size.y };
+            emuenv.renderer->render_frame(viewport_pos, viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
         }
 
         gui::draw_begin(gui, emuenv);
@@ -390,7 +396,9 @@ int main(int argc, char *argv[]) {
 
         {
             const std::lock_guard<std::mutex> guard(emuenv.display.display_info_mutex);
-            emuenv.renderer->render_frame(emuenv.viewport_pos, emuenv.viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
+            const SceFVector2 viewport_pos = { emuenv.viewport_pos.x, emuenv.viewport_pos.y };
+            const SceFVector2 viewport_size = { emuenv.viewport_size.x, emuenv.viewport_size.y };
+            emuenv.renderer->render_frame(viewport_pos, viewport_size, emuenv.display, emuenv.gxm, emuenv.mem);
         }
 
         // Calculate FPS

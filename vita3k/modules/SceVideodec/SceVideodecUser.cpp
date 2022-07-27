@@ -16,7 +16,9 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceVideodecUser.h"
+
 #include <codec/state.h>
+#include <kernel/state.h>
 #include <util/lock_and_find.h>
 
 typedef std::shared_ptr<H264DecoderState> H264DecoderPtr;

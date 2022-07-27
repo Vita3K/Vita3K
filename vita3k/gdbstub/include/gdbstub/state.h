@@ -22,6 +22,10 @@
 #include <thread>
 
 #ifdef _WIN32
+#include <winsock.h>
+#endif
+
+#ifdef _WIN32
 typedef SOCKET socket_t;
 constexpr socket_t BAD_SOCK = (socket_t)~0;
 #else

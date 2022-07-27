@@ -17,7 +17,8 @@
 
 #include "SceFiber.h"
 
-#include "cpu/functions.h"
+#include <cpu/functions.h>
+#include <kernel/state.h>
 
 #include <sstream>
 #include <util/lock_and_find.h>

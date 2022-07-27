@@ -29,6 +29,7 @@
 #include <io/device.h>
 #include <io/functions.h>
 
+#include <config/state.h>
 #include <emuenv/state.h>
 #include <packages/functions.h>
 #include <packages/pkg.h>

@@ -22,6 +22,8 @@
 #include "SceDisplay.h"
 
 #include <display/functions.h>
+#include <display/state.h>
+#include <kernel/state.h>
 #include <packages/functions.h>
 #include <util/lock_and_find.h>
 #include <util/types.h>

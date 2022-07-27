@@ -18,6 +18,7 @@
 #include "SceJpegUser.h"
 
 #include <codec/state.h>
+#include <kernel/state.h>
 
 typedef std::shared_ptr<DecoderState> DecoderPtr;
 

@@ -17,6 +17,8 @@
 
 #include "private.h"
 
+#include <kernel/state.h>
+
 namespace gui {
 
 void draw_condvars_dialog(GuiState &gui, EmuEnvState &emuenv) {

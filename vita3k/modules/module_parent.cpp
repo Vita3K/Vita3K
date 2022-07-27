@@ -22,6 +22,7 @@
 #include <io/device.h>
 #include <io/vfs.h>
 #include <kernel/load_self.h>
+#include <kernel/state.h>
 #include <module/load_module.h>
 #include <nids/functions.h>
 #include <util/arm.h>

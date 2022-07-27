@@ -18,6 +18,7 @@
 #include "SceProcessmgr.h"
 
 #include <io/functions.h>
+#include <kernel/state.h>
 #include <rtc/rtc.h>
 
 #include <util/safe_time.h>

@@ -19,6 +19,7 @@
 
 #include <dialog/types.h>
 #include <emuenv/app_util.h>
+#include <gui/state.h>
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>

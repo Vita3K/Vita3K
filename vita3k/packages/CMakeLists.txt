@@ -10,5 +10,5 @@ add_library(packages STATIC
             include/packages/sfo.h
 )
 target_include_directories(packages PUBLIC include)
-
-target_link_libraries(packages PUBLIC emuenv miniz crypto FAT16 vita-toolchain psvpfsparser io)
+target_link_libraries(packages PUBLIC emuenv util)
+target_link_libraries(packages PRIVATE config crypto emuenv FAT16 io miniz psvpfsparser vita-toolchain)

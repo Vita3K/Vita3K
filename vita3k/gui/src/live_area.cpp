@@ -17,7 +17,10 @@
 
 #include "private.h"
 
+#include <config/state.h>
 #include <gui/functions.h>
+#include <io/state.h>
+#include <kernel/state.h>
 #include <packages/functions.h>
 
 #include <util/safe_time.h>
@@ -718,7 +721,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                 std::vector<ImVec4> str_color;
 
                 if (!str_tag.color.empty()) {
-                    uint color = 0xFFFFFFFF;
+                    unsigned int color = 0xFFFFFFFF;
 
                     if (frame.autoflip)
                         sscanf(str[app_path][frame.id][current_item[app_path][frame.id]].color.c_str(), "#%x", &color);

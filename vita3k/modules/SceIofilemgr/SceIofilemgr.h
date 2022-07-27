@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <io/types.h>
 #include <module/module.h>
 
 typedef struct _sceIoLseekOpt {

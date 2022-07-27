@@ -19,10 +19,15 @@
 
 #include <audio/functions.h>
 #include <config/functions.h>
+#include <config/state.h>
 #include <config/version.h>
+#include <display/state.h>
 #include <emuenv/state.h>
 #include <gui/imgui_impl_sdl.h>
 #include <io/functions.h>
+#include <kernel/state.h>
+#include <ngs/state.h>
+#include <renderer/state.h>
 
 #include <nids/functions.h>
 #include <renderer/functions.h>

@@ -17,7 +17,7 @@
 
 #include "SceThreadmgrCoredumpTime.h"
 
-#include <util/lock_and_find.h>
+#include <kernel/state.h>
 
 EXPORT(int, sceKernelExitThread, int status) {
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);

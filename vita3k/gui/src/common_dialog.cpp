@@ -19,6 +19,7 @@
 
 #include <gui/functions.h>
 
+#include <config/state.h>
 #include <gui/imgui_impl_sdl.h>
 #include <util/string_utils.h>
 

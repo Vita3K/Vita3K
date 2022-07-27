@@ -210,6 +210,6 @@ set(SOURCE_LIST
 
 add_library(modules STATIC ${SOURCE_LIST})
 target_include_directories(modules PUBLIC include)
-target_link_libraries(modules PRIVATE xxHash::xxhash packages)
+target_link_libraries(modules PRIVATE audio codec ctrl dialog display gui gxm kernel mem net ngs np packages renderer rtc sdl2 touch xxHash::xxhash)
 target_link_libraries(modules PUBLIC module)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})

@@ -18,6 +18,7 @@
 #pragma once
 
 #include <mem/ptr.h>
+#include <util/types.h>
 
 #define SCE_IME_MAX_PREEDIT_LENGTH 30
 #define SCE_IME_MAX_TEXT_LENGTH 2048

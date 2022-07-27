@@ -20,6 +20,7 @@
 #include "private.h"
 
 #include <cpu/functions.h>
+#include <kernel/state.h>
 
 #include <spdlog/fmt/fmt.h>
 

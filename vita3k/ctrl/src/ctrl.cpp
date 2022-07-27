@@ -19,7 +19,12 @@
 #include <ctrl/functions.h>
 #include <ctrl/state.h>
 
+#include <config/state.h>
+#include <dialog/state.h>
+
 #include <SDL_keyboard.h>
+
+#include <array>
 
 static uint64_t timestamp;
 

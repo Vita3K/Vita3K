@@ -52,7 +52,7 @@ typedef std::map<Sha256Hash, const SceGxmProgram *> GXPPtrMap;
 
 struct CommandBuffer;
 
-enum class Backend {
+enum class Backend : uint32_t {
     OpenGL,
 #ifdef USE_VULKAN
     Vulkan,

@@ -17,6 +17,9 @@
 
 #include "SceNetCtl.h"
 
+#include <kernel/state.h>
+#include <net/state.h>
+#include <rtc/rtc.h>
 #include <util/lock_and_find.h>
 
 #define SCE_NETCTL_INFO_SSID_LEN_MAX 32

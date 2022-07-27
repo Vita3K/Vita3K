@@ -17,6 +17,7 @@
 
 #include "private.h"
 
+#include <config/state.h>
 #include <gui/functions.h>
 #include <io/device.h>
 #include <util/safe_time.h>

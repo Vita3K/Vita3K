@@ -21,6 +21,7 @@
 #include <misc/cpp/imgui_stdlib.h>
 #include <packages/functions.h>
 #include <packages/pkg.h>
+#include <packages/sfo.h>
 #include <rif2zrif.h>
 #include <util/log.h>
 #include <util/string_utils.h>

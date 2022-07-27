@@ -19,6 +19,7 @@
 
 #include <ime/functions.h>
 #include <ime/types.h>
+#include <kernel/state.h>
 
 #include <util/lock_and_find.h>
 

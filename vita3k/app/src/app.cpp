@@ -17,8 +17,11 @@
 
 #include <app/functions.h>
 
+#include <config/state.h>
 #include <config/version.h>
+#include <display/state.h>
 #include <emuenv/state.h>
+#include <io/state.h>
 #include <util/log.h>
 
 #include <SDL.h>

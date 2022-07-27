@@ -9,3 +9,5 @@ add_library(
 
 target_include_directories(ctrl PUBLIC include)
 target_link_libraries(ctrl PUBLIC emuenv sdl2 util)
+target_link_libraries(ctrl PRIVATE config dialog)
+
