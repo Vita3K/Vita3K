@@ -272,7 +272,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             user_id = fmt::format("{:0>2d}", id);
             auto i = 1;
             const auto user = lang["user"].c_str();
-            for (i; i < gui.users.size(); i++) {
+            for (; i < gui.users.size(); i++) {
                 if (get_users_index(gui, user + std::to_string(i)) == gui.users.end())
                     break;
             }
