@@ -277,7 +277,7 @@ void tracy_sceAudioOutSetVolume(tracy::ScopedZone *___tracy_scoped_zone, bool mo
         tracy_settings.args.vol += std::to_string(*vol);
 
         // Log enumerated args
-        switch (ch) {
+        switch (static_cast<int>(ch)) { // static_cast to avoid warning on third case
         case SCE_AUDIO_VOLUME_FLAG_L_CH:
             tracy_settings.args.ch += "SCE_AUDIO_VOLUME_FLAG_L_CH";
             break;
@@ -287,9 +287,6 @@ void tracy_sceAudioOutSetVolume(tracy::ScopedZone *___tracy_scoped_zone, bool mo
 
         // Third case for special flag SCE_AUDIO_VOLUME_FLAG_L_CH | SCE_AUDIO_VOLUME_FLAG_R_CH
         // passed by games to set the volume of both channels at the same time
-        //
-        // Warning of the kind "case value not in enumerated type 'SceAudioOutChannelFlag'"
-        // is expected to be thrown by compiler
         case (SCE_AUDIO_VOLUME_FLAG_L_CH | SCE_AUDIO_VOLUME_FLAG_R_CH):
             tracy_settings.args.ch += "SCE_AUDIO_VOLUME_FLAG_L_CH | SCE_AUDIO_VOLUME_FLAG_R_CH";
             break;
