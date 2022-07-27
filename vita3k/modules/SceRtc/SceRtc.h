@@ -19,6 +19,9 @@
 
 #include <module/module.h>
 
+struct SceRtcTick;
+struct SceDateTime;
+
 EXPORT(int, _sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTick *pUtc);
 EXPORT(int, _sceRtcConvertUtcToLocalTime, const SceRtcTick *pUtc, SceRtcTick *pLocalTime);
 EXPORT(int, _sceRtcGetCurrentClock, SceDateTime *datePtr, int iTimeZone);

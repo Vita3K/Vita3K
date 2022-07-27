@@ -24,6 +24,8 @@
 #include <map>
 #include <mutex>
 
+struct SDL_Thread;
+
 typedef void SceGxmDisplayQueueCallback(Ptr<const void> callbackData);
 static constexpr std::uint64_t SCENE_TIME_UNDEF = 0xFFFFFFFFFFFFFFFF;
 static constexpr std::uint64_t GPU_SYNCING_DISABLE_SCENE_DELTA = 40;

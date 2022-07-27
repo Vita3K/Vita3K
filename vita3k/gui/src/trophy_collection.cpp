@@ -22,6 +22,7 @@
 #include <util/log.h>
 #include <util/safe_time.h>
 
+#include <config/state.h>
 #include <io/device.h>
 #include <io/functions.h>
 

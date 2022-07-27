@@ -17,6 +17,9 @@
 
 #include "SceNpManager.h"
 
+#include <io/state.h>
+#include <kernel/state.h>
+#include <np/state.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
 

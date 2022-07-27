@@ -18,9 +18,11 @@
 #include "private.h"
 
 #include <config/functions.h>
+#include <config/state.h>
 #include <gui/functions.h>
 #include <ime/functions.h>
 #include <io/device.h>
+#include <io/state.h>
 #include <lang/functions.h>
 #include <numeric>
 #include <util/safe_time.h>

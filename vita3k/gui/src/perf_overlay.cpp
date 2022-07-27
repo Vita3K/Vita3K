@@ -17,6 +17,8 @@
 
 #include "private.h"
 
+#include <config/state.h>
+
 namespace gui {
 static const ImVec2 PERF_OVERLAY_PAD = ImVec2(12.f, 12.f);
 static const ImVec4 PERF_OVERLAY_BG_COLOR = ImVec4(0.282f, 0.239f, 0.545f, 0.8f);

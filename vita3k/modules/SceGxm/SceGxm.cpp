@@ -22,12 +22,18 @@
 #include <xxh3.h>
 
 #include <gxm/functions.h>
+#include <gxm/state.h>
 #include <gxm/types.h>
 #include <immintrin.h>
+#include <kernel/state.h>
+#include <mem/state.h>
 
+#include <SDL.h>
+#include <io/state.h>
 #include <mem/allocator.h>
 #include <mem/mempool.h>
 #include <renderer/functions.h>
+#include <renderer/state.h>
 #include <renderer/types.h>
 #include <util/bytes.h>
 #include <util/lock_and_find.h>

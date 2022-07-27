@@ -17,6 +17,7 @@
 
 #include "SceAudioIn.h"
 
+#include <audio/state.h>
 #include <util/lock_and_find.h>
 
 #define PORT_ID 0

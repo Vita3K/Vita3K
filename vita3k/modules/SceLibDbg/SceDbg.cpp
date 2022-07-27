@@ -17,6 +17,7 @@
 
 #include "SceDbg.h"
 
+#include <kernel/state.h>
 #include <util/lock_and_find.h>
 #include <v3kprintf.h>
 

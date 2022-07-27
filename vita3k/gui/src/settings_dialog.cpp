@@ -20,6 +20,10 @@
 
 #include <config/functions.h>
 #include <config/state.h>
+#include <display/state.h>
+#include <io/state.h>
+#include <kernel/state.h>
+#include <renderer/state.h>
 
 #include <gui/functions.h>
 #include <gui/state.h>

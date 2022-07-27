@@ -19,6 +19,7 @@
 
 #include <ctrl/ctrl.h>
 #include <ctrl/functions.h>
+#include <kernel/types.h>
 
 #include <util/log.h>
 

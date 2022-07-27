@@ -28,6 +28,9 @@
 #include <string>
 #include <vector>
 
+// TODO: remove
+#include <util/fs.h>
+
 struct SfoFile;
 
 void install_pup(const std::wstring &pref_path, const std::string &pup_path, const std::function<void(uint32_t)> &progress_callback = nullptr);

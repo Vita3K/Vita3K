@@ -17,13 +17,17 @@
 
 #include "interface.h"
 
+#include <config/state.h>
 #include <ctrl/functions.h>
 #include <display/functions.h>
+#include <display/state.h>
 #include <gui/functions.h>
+#include <gxm/state.h>
 #include <io/device.h>
 #include <io/functions.h>
 #include <io/vfs.h>
 #include <kernel/load_self.h>
+#include <kernel/state.h>
 #include <packages/functions.h>
 #include <packages/pkg.h>
 #include <packages/sfo.h>

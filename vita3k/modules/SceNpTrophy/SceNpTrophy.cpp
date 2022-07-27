@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <np/functions.h>
+#include <np/state.h>
 #include <np/trophy/context.h>
 #include <util/log.h>
 

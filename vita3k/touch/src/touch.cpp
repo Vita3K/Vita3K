@@ -16,8 +16,11 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <display/functions.h>
+#include <display/state.h>
 #include <emuenv/state.h>
+#include <kernel/state.h>
 #include <touch/functions.h>
+#include <touch/state.h>
 #include <touch/touch.h>
 
 #include <SDL_events.h>

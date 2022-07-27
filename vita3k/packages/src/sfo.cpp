@@ -30,6 +30,7 @@
 
 #include <algorithm>
 #include <cstring>
+#include <fmt/format.h>
 
 namespace sfo {
 

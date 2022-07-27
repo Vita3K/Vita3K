@@ -23,8 +23,11 @@
 #include <gui/state.h>
 
 #include <boost/algorithm/string/trim.hpp>
+#include <config/state.h>
+#include <display/state.h>
 #include <glutil/gl.h>
 #include <io/VitaIoDevice.h>
+#include <io/state.h>
 #include <io/vfs.h>
 #include <lang/functions.h>
 #include <packages/sfo.h>

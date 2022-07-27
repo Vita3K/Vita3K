@@ -27,6 +27,7 @@
 #include "write_return_value.h"
 
 #include <config/functions.h>
+#include <config/state.h>
 #include <emuenv/state.h>
 
 using ImportFn = std::function<void(EmuEnvState &emuenv, CPUState &cpu, SceUID thread_id)>;

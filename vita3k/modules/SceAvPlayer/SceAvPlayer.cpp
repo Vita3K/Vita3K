@@ -19,6 +19,7 @@
 
 #include <codec/state.h>
 #include <io/functions.h>
+#include <kernel/state.h>
 
 #include <util/lock_and_find.h>
 #include <util/log.h>
@@ -353,7 +354,7 @@ EXPORT(bool, sceAvPlayerGetAudioData, SceUID player_handle, SceAvPlayerFrameInfo
     return true;
 }
 
-EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, uint stream_no, SceAvPlayerStreamInfo *stream_info) {
+EXPORT(uint32_t, sceAvPlayerGetStreamInfo, SceUID player_handle, SceUInt32 stream_no, SceAvPlayerStreamInfo *stream_info) {
     if (!stream_info) {
         return SCE_AVPLAYER_ERROR_ILLEGAL_ADDR;
     }

@@ -17,8 +17,11 @@
 
 #include "SceAppMgr.h"
 
+#include <io/state.h>
 #include <kernel/load_self.h>
+#include <kernel/state.h>
 #include <packages/functions.h>
+#include <packages/sfo.h>
 
 #include <modules/module_parent.h>
 #include <util/find.h>

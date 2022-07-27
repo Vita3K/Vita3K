@@ -19,6 +19,8 @@
 
 #include <module/module.h>
 
+#include <kernel/types.h>
+
 EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option);
 EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, const Ptr<void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes);
 EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes);

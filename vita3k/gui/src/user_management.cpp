@@ -18,7 +18,10 @@
 #include "private.h"
 
 #include <config/functions.h>
+#include <config/state.h>
+#include <display/state.h>
 #include <gui/functions.h>
+#include <io/state.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <util/log.h>
 #include <util/string_utils.h>

@@ -19,6 +19,7 @@
 
 #include <gui/functions.h>
 
+#include <config/state.h>
 #include <io/vfs.h>
 
 #include <util/log.h>

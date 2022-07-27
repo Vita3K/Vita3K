@@ -17,6 +17,8 @@
 
 #include "private.h"
 
+#include <kernel/state.h>
+
 namespace gui {
 
 void draw_event_flags_dialog(GuiState &gui, EmuEnvState &emuenv) {

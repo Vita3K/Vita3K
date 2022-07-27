@@ -18,6 +18,7 @@
 #include "SceLibRng.h"
 
 #include <algorithm>
+#include <kernel/types.h>
 #include <random>
 
 #define SCE_RNG_ERROR_INVALID_ARGUMENT 0x810C0000

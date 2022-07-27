@@ -18,6 +18,7 @@
 #include "SceTouch.h"
 
 #include <touch/functions.h>
+#include <touch/state.h>
 #include <touch/touch.h>
 
 EXPORT(int, sceTouchActivateRegion) {

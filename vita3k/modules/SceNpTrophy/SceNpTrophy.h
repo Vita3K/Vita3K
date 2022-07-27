@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <module/module.h>
+#include <rtc/rtc.h>
 
 using SceNpTrophyHandle = std::int32_t;
 using SceNpTrophyID = std::int32_t;

@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <functional>
 #include <memory>
 
 struct SDL_Window;

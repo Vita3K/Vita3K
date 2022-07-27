@@ -17,7 +17,9 @@
 
 #include "SceAudiodecUser.h"
 
+#include <audio/state.h>
 #include <codec/state.h>
+#include <kernel/state.h>
 #include <util/lock_and_find.h>
 
 enum {

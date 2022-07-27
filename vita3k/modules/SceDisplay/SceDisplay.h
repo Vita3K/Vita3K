@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <display/state.h>
 #include <module/module.h>
 
 enum SceDisplaySetBufSync {

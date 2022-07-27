@@ -18,6 +18,8 @@
 #include "SceCodecEngineUser.h"
 #include <../SceSysmem/SceSysmem.h>
 
+#include <kernel/state.h>
+
 EXPORT(int32_t, sceCodecEngineAllocMemoryFromUnmapMemBlock, SceUID uid, uint32_t size, uint32_t alignment) {
     STUBBED("fake vaddr");
     auto guard = std::lock_guard<std::mutex>(emuenv.kernel.mutex);

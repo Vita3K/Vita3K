@@ -27,6 +27,7 @@
 #include <dlmalloc.h>
 #include <io/functions.h>
 #include <kernel/load_self.h>
+#include <kernel/state.h>
 #include <kernel/sync_primitives.h>
 #include <packages/functions.h>
 
