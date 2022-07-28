@@ -349,7 +349,7 @@ EXPORT(int, sceAppUtilSaveDataUmount) {
     return UNIMPLEMENTED();
 }
 
-static SceInt32 SafeMemory(EmuEnvState &emuenv, const void *buf, SceSize bufSize, SceOff offset, const char *export_name, bool save) {
+static SceInt32 SafeMemory(EmuEnvState &emuenv, void *buf, SceSize bufSize, SceOff offset, const char *export_name, bool save) {
     std::vector<char> safe_mem(SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE);
     const auto safe_mem_path = construct_savedata0_path("sce_sys/safemem", "dat");
     SceInt32 res = 0;
@@ -369,7 +369,7 @@ static SceInt32 SafeMemory(EmuEnvState &emuenv, const void *buf, SceSize bufSize
         write_file(fd, safe_mem.data(), SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE, emuenv.io, export_name);
         close_file(emuenv.io, fd, export_name);
     } else
-        memcpy(&buf, &safe_mem[offset], bufSize);
+        memcpy(buf, &safe_mem[offset], bufSize);
 
     return res;
 }
@@ -388,7 +388,7 @@ EXPORT(SceInt32, sceAppUtilSaveSafeMemory, const void *buf, SceSize bufSize, Sce
     if (!buf || (offset + bufSize > SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE))
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
 
-    SafeMemory(emuenv, buf, bufSize, offset, export_name, true);
+    SafeMemory(emuenv, const_cast<void *>(buf), bufSize, offset, export_name, true);
 
     return bufSize;
 }
