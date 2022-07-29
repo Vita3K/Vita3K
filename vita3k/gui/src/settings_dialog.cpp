@@ -553,8 +553,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox("Use shader cache", &emuenv.cfg.shader_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable shader cache to pre-compile it at game startup\nUncheck to disable this feature.");
-        ImGui::SameLine();
         if (emuenv.renderer->features.spirv_shader) {
+            ImGui::SameLine();
             ImGui::Checkbox("Use Spir-V shader (deprecated)", &emuenv.cfg.spirv_shader);
 
             if (ImGui::IsItemHovered()) {
