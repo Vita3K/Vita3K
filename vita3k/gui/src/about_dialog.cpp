@@ -70,6 +70,17 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Separator();
     ImGui::Spacing();
 
+    ImGui::Text("%s",       "This software uses libraries from the FFmpeg project under the LGPLv2.1 license\n"
+                            "and built with the settings described in the Conan dependency configuration\n"
+                            "file found in Vita3K's source code.");
+    if (ImGui::Button("FFmpeg source code"))
+        open_path("https://github.com/FFmpeg/FFmpeg");
+    ImGui::Spacing();
+
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+
     ImGui::Text("%s", lang["github_website"].c_str());
     if (ImGui::Button("GitHub"))
         open_path("https://github.com/vita3k/vita3k");

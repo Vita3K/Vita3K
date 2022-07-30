@@ -28,4 +28,4 @@ add_library(
 )
 
 target_include_directories(util PUBLIC include)
-target_link_libraries(util PUBLIC ${Boost_LIBRARIES} config fmt spdlog http mem)
+target_link_libraries(util PUBLIC Boost::boost Boost::filesystem config fmt spdlog http mem)

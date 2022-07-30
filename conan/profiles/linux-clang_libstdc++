@@ -1,0 +1,13 @@
+[settings]
+    os=Linux
+    arch=x86_64
+    compiler=clang
+    compiler.cppstd=20
+    compiler.version=14
+    # More info: 
+    # https://docs.conan.io/en/latest/howtos/manage_gcc_abi.html
+    # https://gcc.gnu.org/onlinedocs/libstdc++/manual/using_dual_abi.html
+    compiler.libcxx=libstdc++11
+    build_type=Release
+[options]
+[buildenv]

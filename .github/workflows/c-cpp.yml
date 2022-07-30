@@ -25,19 +25,29 @@ jobs:
         config: [Release]
         include:
           - os: ubuntu-latest
-            cache_path: ~/.ccache
+            cache_path: |
+              ~/.ccache
+              /tmp/conan2
             extra_cmake_args:
             cmake_preset: linux-ninja-clang14
+            conan_profile: linux_ci-clang_libstdc++
+            conan_home: /tmp/conan2
           - os: windows-latest
             cache_path: |
-                C:\vcpkg\installed
-                C:\vcpkg\packages
-            extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+              %LOCALAPPDATA%\Mozilla\sccache
+              C:\conan2
+            extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
             cmake_preset: windows-ninja
+            conan_profile: windows-msvc
+            conan_home: C:\conan2
           - os: macos-latest
-            cache_path: ~/Library/Caches/ccache
+            cache_path: |
+              ~/Library/Caches/ccache
+              ~/.conan2
             extra_cmake_args: 
             cmake_preset: macos-ninja
+            conan_profile: macos-clang
+            conan_home: ~/.conan2
 
     steps:
       - uses: actions/checkout@v3
@@ -45,27 +55,6 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - name: Set up build environment (macos-latest)
-        run: |
-          brew install boost ccache ninja molten-vk openssl create-dmg
-          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
-        if: matrix.os == 'macos-latest'
-
-      - name: Set up build environment (ubuntu-latest)
-        run: |
-          sudo apt update
-          sudo apt -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev ninja-build lld-11
-        if: matrix.os == 'ubuntu-latest'
-
-      - uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: amd64
-        if: matrix.os == 'windows-latest'
-      - uses: hendrikmuhs/ccache-action@v1.2
-        with:
-            variant: sccache
-        if: matrix.os == 'windows-latest'
- 
       - uses: actions/cache@v3
         with:
           path: ${{ matrix.cache_path }}
@@ -73,9 +62,39 @@ jobs:
           restore-keys: |
             cache-${{ matrix.os }}-${{ matrix.config }}-
 
+      - name: Set up build environment (macos-latest)
+        run: |
+          brew install ccache ninja molten-vk openssl create-dmg
+          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
+          pip3 install conan
+          export CONAN_HOME=${{ matrix.conan_home }}
+          conan install . -b missing -of .deps -pr:h conan/profiles/${{ matrix.conan_profile }} -pr:b conan/profiles/${{ matrix.conan_profile }}
+        if: matrix.os == 'macos-latest'
+
+      - name: Set up build environment (ubuntu-latest)
+        run: |
+          sudo apt update
+          sudo apt -y install ccache libgtk-3-dev libsdl2-dev ninja-build lld-11
+          pip install conan
+          export CONAN_HOME=${{ matrix.conan_home }}
+          conan install . -b missing -of .deps -pr:h conan/profiles/${{ matrix.conan_profile }} -pr:b conan/profiles/${{ matrix.conan_profile }}
+        if: matrix.os == 'ubuntu-latest'
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+        if: matrix.os == 'windows-latest'
+
+      - uses: hendrikmuhs/ccache-action@v1.2
+        with:
+            variant: sccache
+        if: matrix.os == 'windows-latest'
+
       - name: Set up build environment (windows-latest)
         run: |
-          vcpkg install zlib:x64-windows boost-system:x64-windows boost-filesystem:x64-windows boost-program-options:x64-windows boost-icl:x64-windows boost-variant:x64-windows openssl:x64-windows
+          pip install conan
+          $env:CONAN_HOME="${{ matrix.conan_home }}"
+          conan install . -b missing -of .deps -pr:h conan/profiles/${{ matrix.conan_profile }} -pr:b conan/profiles/${{ matrix.conan_profile }}
         if: matrix.os == 'windows-latest'
 
       - name: Set up SDL 2.24.0 (ubuntu-latest)
