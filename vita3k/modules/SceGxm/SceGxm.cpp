@@ -2154,20 +2154,19 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetDefaultUniformBuffer, SceGxmPrecomp
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetTexture, SceGxmPrecomputedFragmentState *state, uint32_t index, const SceGxmTexture *texture) {
-    if (!state) {
+    if (!state)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    }
 
-    if (index >= state->texture_count) {
+    if (index >= SCE_GXM_MAX_TEXTURE_UNITS)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
-    }
 
-    if (!texture) {
+    if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    }
 
-    const auto state_textures = state->textures.get(emuenv.mem);
-    state_textures[index] = *texture;
+    if (index < state->texture_count) {
+        const auto state_textures = state->textures.get(emuenv.mem);
+        state_textures[index] = *texture;
+    }
 
     return 0;
 }
@@ -2258,12 +2257,19 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetDefaultUniformBuffer, SceGxmPrecomput
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetTexture, SceGxmPrecomputedVertexState *precomputedState, uint32_t textureIndex, const SceGxmTexture *texture) {
-    if (!precomputedState || !texture) {
+    if (!precomputedState)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
-    }
 
-    const auto state_textures = precomputedState->textures.get(emuenv.mem);
-    state_textures[textureIndex] = *texture;
+    if (textureIndex >= SCE_GXM_MAX_TEXTURE_UNITS)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
+
+    if (!texture)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
+    if (textureIndex < precomputedState->texture_count) {
+        const auto state_textures = precomputedState->textures.get(emuenv.mem);
+        state_textures[textureIndex] = *texture;
+    }
 
     return 0;
 }
