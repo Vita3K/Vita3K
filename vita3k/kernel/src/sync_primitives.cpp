@@ -81,26 +81,25 @@ inline int handle_timeout(const ThreadStatePtr &thread, std::unique_lock<std::mu
     std::unique_lock<std::mutex> &primitive_lock, WaitingThreadQueuePtr &queue,
     const WaitingThreadData &data, const ThreadDataQueueInterator<WaitingThreadData> &data_it,
     const char *export_name, SceUInt *const timeout) {
-    if (timeout) {
-        bool status = false;
-
-        if (*timeout > 0) {
-            status = thread->status_cond.wait_for(primitive_lock, std::chrono::microseconds{ *timeout }, [&] { return thread->status == ThreadStatus::run; });
-        }
-
-        if (!status) {
-            *timeout = 0; // Time run out, so remaining time is 0
-
-            thread_lock.lock();
-            thread->update_status(ThreadStatus::run, ThreadStatus::wait);
-            thread_lock.unlock();
-
-            queue->erase(data_it);
-
-            return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
-        }
-    } else {
+    if (!timeout) {
         thread->status_cond.wait(primitive_lock, [&] { return thread->status == ThreadStatus::run; });
+        return SCE_KERNEL_OK;
+    }
+
+    bool status = false;
+    if (*timeout > 0)
+        status = thread->status_cond.wait_for(primitive_lock, std::chrono::microseconds{ *timeout }, [&] { return thread->status == ThreadStatus::run; });
+
+    if (!status) {
+        *timeout = 0; // Time run out, so remaining time is 0
+
+        thread_lock.lock();
+        thread->update_status(ThreadStatus::run, ThreadStatus::wait);
+        thread_lock.unlock();
+
+        queue->erase(data_it);
+
+        return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
     }
 
     return SCE_KERNEL_OK;
