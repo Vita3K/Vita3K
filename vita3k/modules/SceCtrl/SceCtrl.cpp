@@ -20,11 +20,28 @@
 #include <ctrl/ctrl.h>
 #include <ctrl/functions.h>
 #include <kernel/types.h>
-
+#include <modules/tracy.h>
 #include <util/log.h>
 
 #include <algorithm>
 #include <array>
+
+#ifdef TRACY_ENABLE
+const std::string tracy_module_name = "SceCtrl";
+#endif // TRACY_ENABLE
+
+template <>
+std::string to_debug_str<SceCtrlPadInputMode>(const MemState &mem, SceCtrlPadInputMode mode) {
+    switch (mode) {
+    case SCE_CTRL_MODE_DIGITAL:
+        return "SCE_CTRL_MODE_DIGITAL";
+    case SCE_CTRL_MODE_ANALOG:
+        return "SCE_CTRL_MODE_ANALOG";
+    case SCE_CTRL_MODE_ANALOG_WIDE:
+        return "SCE_CTRL_MODE_ANALOG_WIDE";
+    }
+    return std::to_string(mode);
+}
 
 EXPORT(int, sceCtrlClearRapidFire) {
     return UNIMPLEMENTED();
@@ -51,6 +68,7 @@ EXPORT(int, sceCtrlGetButtonIntercept) {
 }
 
 EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
+    TRACY_FUNC(sceCtrlGetControllerPortInfo, info);
     CtrlState &state = emuenv.ctrl;
     refresh_controllers(state);
     info->port[0] = emuenv.cfg.current_config.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
@@ -65,6 +83,7 @@ EXPORT(int, sceCtrlGetProcessStatus) {
 }
 
 EXPORT(int, sceCtrlGetSamplingMode, SceCtrlPadInputMode *mode) {
+    TRACY_FUNC(sceCtrlGetSamplingMode, mode);
     if (mode == nullptr) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
@@ -73,6 +92,7 @@ EXPORT(int, sceCtrlGetSamplingMode, SceCtrlPadInputMode *mode) {
 }
 
 EXPORT(int, sceCtrlGetSamplingModeExt, SceCtrlPadInputMode *mode) {
+    TRACY_FUNC(sceCtrlGetSamplingModeExt, mode);
     if (mode == nullptr) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
     }
@@ -81,6 +101,7 @@ EXPORT(int, sceCtrlGetSamplingModeExt, SceCtrlPadInputMode *mode) {
 }
 
 EXPORT(int, sceCtrlGetWirelessControllerInfo, SceCtrlWirelessControllerInfo *pInfo) {
+    TRACY_FUNC(sceCtrlGetWirelessControllerInfo, pInfo);
     if (emuenv.cfg.current_config.pstv_mode) {
         CtrlState &state = emuenv.ctrl;
         refresh_controllers(state);
@@ -95,10 +116,12 @@ EXPORT(int, sceCtrlGetWirelessControllerInfo, SceCtrlWirelessControllerInfo *pIn
 }
 
 EXPORT(bool, sceCtrlIsMultiControllerSupported) {
+    TRACY_FUNC(sceCtrlIsMultiControllerSupported);
     return emuenv.cfg.current_config.pstv_mode;
 }
 
 EXPORT(int, sceCtrlPeekBufferNegative, int port, SceCtrlData *pad_data, int count) {
+    TRACY_FUNC(sceCtrlPeekBufferNegative, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -106,6 +129,7 @@ EXPORT(int, sceCtrlPeekBufferNegative, int port, SceCtrlData *pad_data, int coun
 }
 
 EXPORT(int, sceCtrlPeekBufferNegative2, int port, SceCtrlData2 *pad_data, int count) {
+    TRACY_FUNC(sceCtrlPeekBufferNegative2, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -113,6 +137,7 @@ EXPORT(int, sceCtrlPeekBufferNegative2, int port, SceCtrlData2 *pad_data, int co
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int count) {
+    TRACY_FUNC(sceCtrlPeekBufferPositive, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -120,6 +145,7 @@ EXPORT(int, sceCtrlPeekBufferPositive, int port, SceCtrlData *pad_data, int coun
 }
 
 EXPORT(int, sceCtrlPeekBufferPositive2, int port, SceCtrlData2 *pad_data, int count) {
+    TRACY_FUNC(sceCtrlPeekBufferPositive2, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -127,6 +153,7 @@ EXPORT(int, sceCtrlPeekBufferPositive2, int port, SceCtrlData2 *pad_data, int co
 }
 
 EXPORT(int, sceCtrlPeekBufferPositiveExt, int port, SceCtrlData *pad_data, int count) {
+    TRACY_FUNC(sceCtrlPeekBufferPositiveExt, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -134,6 +161,7 @@ EXPORT(int, sceCtrlPeekBufferPositiveExt, int port, SceCtrlData *pad_data, int c
 }
 
 EXPORT(int, sceCtrlPeekBufferPositiveExt2, int port, SceCtrlData2 *pad_data, int count) {
+    TRACY_FUNC(sceCtrlPeekBufferPositiveExt2, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -141,6 +169,7 @@ EXPORT(int, sceCtrlPeekBufferPositiveExt2, int port, SceCtrlData2 *pad_data, int
 }
 
 EXPORT(int, sceCtrlReadBufferNegative, int port, SceCtrlData *pad_data, int count) {
+    TRACY_FUNC(sceCtrlReadBufferNegative, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -148,6 +177,7 @@ EXPORT(int, sceCtrlReadBufferNegative, int port, SceCtrlData *pad_data, int coun
 }
 
 EXPORT(int, sceCtrlReadBufferNegative2, int port, SceCtrlData2 *pad_data, int count) {
+    TRACY_FUNC(sceCtrlReadBufferNegative2, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -155,6 +185,7 @@ EXPORT(int, sceCtrlReadBufferNegative2, int port, SceCtrlData2 *pad_data, int co
 }
 
 EXPORT(int, sceCtrlReadBufferPositive, int port, SceCtrlData *pad_data, int count) {
+    TRACY_FUNC(sceCtrlReadBufferPositive, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -162,6 +193,7 @@ EXPORT(int, sceCtrlReadBufferPositive, int port, SceCtrlData *pad_data, int coun
 }
 
 EXPORT(int, sceCtrlReadBufferPositive2, int port, SceCtrlData2 *pad_data, int count) {
+    TRACY_FUNC(sceCtrlReadBufferPositive2, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -169,6 +201,7 @@ EXPORT(int, sceCtrlReadBufferPositive2, int port, SceCtrlData2 *pad_data, int co
 }
 
 EXPORT(int, sceCtrlReadBufferPositiveExt, int port, SceCtrlData *pad_data, int count) {
+    TRACY_FUNC(sceCtrlReadBufferPositiveExt, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -176,6 +209,7 @@ EXPORT(int, sceCtrlReadBufferPositiveExt, int port, SceCtrlData *pad_data, int c
 }
 
 EXPORT(int, sceCtrlReadBufferPositiveExt2, int port, SceCtrlData2 *pad_data, int count) {
+    TRACY_FUNC(sceCtrlReadBufferPositiveExt2, port, pad_data, count);
     if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
@@ -191,6 +225,7 @@ EXPORT(int, sceCtrlResetLightBar) {
 }
 
 EXPORT(int, sceCtrlSetActuator, int port, const SceCtrlActuator *pState) {
+    TRACY_FUNC(sceCtrlSetActuator, port, pState);
     if (!emuenv.cfg.current_config.pstv_mode) {
         return RET_ERROR(SCE_CTRL_ERROR_NOT_SUPPORTED);
     }
@@ -234,6 +269,7 @@ EXPORT(int, sceCtrlSetRapidFire) {
 }
 
 EXPORT(int, sceCtrlSetSamplingMode, SceCtrlPadInputMode mode) {
+    TRACY_FUNC(sceCtrlSetSamplingMode, mode);
     SceCtrlPadInputMode old = emuenv.ctrl.input_mode;
     if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_ANALOG_WIDE) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
@@ -243,6 +279,7 @@ EXPORT(int, sceCtrlSetSamplingMode, SceCtrlPadInputMode mode) {
 }
 
 EXPORT(int, sceCtrlSetSamplingModeExt, SceCtrlPadInputMode mode) {
+    TRACY_FUNC(sceCtrlSetSamplingModeExt, mode);
     SceCtrlPadInputMode old = emuenv.ctrl.input_mode_ext;
     if (mode < SCE_CTRL_MODE_DIGITAL || mode > SCE_CTRL_MODE_ANALOG_WIDE) {
         return RET_ERROR(SCE_CTRL_ERROR_INVALID_ARG);
