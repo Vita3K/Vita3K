@@ -18,6 +18,7 @@
 #include "SceRtc.h"
 
 #include <kernel/state.h>
+#include <modules/tracy.h>
 #include <rtc/rtc.h>
 
 #include <util/safe_time.h>
@@ -25,9 +26,12 @@
 #include <chrono>
 #include <ctime>
 
-#define VITA_CLOCKS_PER_SEC 1000000
+#ifdef TRACY_ENABLE
+const std::string tracy_module_name = "SceRtc";
+#endif // TRACY_ENABLE
 
 EXPORT(int, _sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTick *pUtc) {
+    TRACY_FUNC(_sceRtcConvertLocalTimeToUtc, pLocalTime, pUtc);
     if (pUtc == nullptr || pLocalTime == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -47,6 +51,7 @@ EXPORT(int, _sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTi
 }
 
 EXPORT(int, _sceRtcConvertUtcToLocalTime, const SceRtcTick *pUtc, SceRtcTick *pLocalTime) {
+    TRACY_FUNC(_sceRtcConvertUtcToLocalTime, pUtc, pLocalTime);
     if (pUtc == nullptr || pLocalTime == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -86,6 +91,7 @@ EXPORT(int, _sceRtcGetCurrentAdNetworkTick) {
 }
 
 EXPORT(int, _sceRtcGetCurrentClock, SceDateTime *datePtr, int iTimeZone) {
+    TRACY_FUNC(_sceRtcGetCurrentClock, datePtr, iTimeZone);
     if (datePtr == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -97,6 +103,7 @@ EXPORT(int, _sceRtcGetCurrentClock, SceDateTime *datePtr, int iTimeZone) {
 }
 
 EXPORT(int, _sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
+    TRACY_FUNC(_sceRtcGetCurrentClockLocalTime, datePtr);
     if (datePtr == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -125,6 +132,7 @@ EXPORT(int, _sceRtcGetCurrentGpsTick) {
 }
 
 EXPORT(int, _sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
+    TRACY_FUNC(_sceRtcGetCurrentNetworkTick, tick);
     if (tick == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -139,6 +147,7 @@ EXPORT(int, _sceRtcGetCurrentRetainedNetworkTick) {
 }
 
 EXPORT(int, _sceRtcGetCurrentTick, SceRtcTick *tick) {
+    TRACY_FUNC(_sceRtcGetCurrentTick, tick);
     if (tick == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
