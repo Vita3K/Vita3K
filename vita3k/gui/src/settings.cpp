@@ -494,7 +494,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["size"].c_str());
                         ImGui::SameLine();
                         ImGui::SetCursorPosX(INFO_POS.x);
-                        ImGui::TextColored(GUI_COLOR_TEXT, "%zu KiB", themes_info[selected].size);
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%zu KB", themes_info[selected].size);
                         ImGui::SetCursorPosY(ImGui::GetCursorPosY() + INFO_POS.y);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["version"].c_str());
                         ImGui::SameLine();
