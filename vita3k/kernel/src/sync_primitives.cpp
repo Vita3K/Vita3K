@@ -522,7 +522,7 @@ int mutex_delete(KernelState &kernel, const char *export_name, SceUID thread_id,
     }
 
     if (mutex->waiting_threads->empty()) {
-        const std::lock_guard<std::mutex> mutex_lock(mutex->mutex);
+        const std::lock_guard<std::mutex> kernel_guard(kernel.mutex);
         mutexes->erase(mutexid);
     } else {
         // TODO:
