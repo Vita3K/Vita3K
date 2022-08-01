@@ -155,7 +155,7 @@ UnicornCPU::UnicornCPU(CPUState *state)
 
     // Don't map the null page into unicorn so that unicorn returns access error instead of
     // crashing the whole emulator on invalid access
-    err = uc_mem_map_ptr(uc.get(), state->mem->page_size, GB(4) - state->mem->page_size, UC_PROT_ALL, &state->mem->memory[state->mem->page_size]);
+    err = uc_mem_map_ptr(uc.get(), state->mem->page_size, GiB(4) - state->mem->page_size, UC_PROT_ALL, &state->mem->memory[state->mem->page_size]);
     assert(err == UC_ERR_OK);
 
     enable_vfp_fpu(uc.get());

@@ -22,9 +22,9 @@
 #include <gtest/gtest.h>
 
 TEST(bitmap_allocator, one_bit_allocation) {
-    BitmapAllocator allocator(KB(5));
+    BitmapAllocator allocator(KiB(5));
 
-    for (int i = 0; i < KB(5); ++i) {
+    for (int i = 0; i < KiB(5); ++i) {
         int size = 1;
         int inoffset = 31 - i & 31;
         int bit = (allocator.words[i >> 5] & (1 << inoffset)) >> inoffset;
@@ -37,10 +37,10 @@ TEST(bitmap_allocator, one_bit_allocation) {
 }
 
 TEST(bitmap_allocator, one_bit_free_slot) {
-    BitmapAllocator allocator(KB(5));
+    BitmapAllocator allocator(KiB(5));
 
-    ASSERT_EQ(allocator.free_slot_count(0, KB(5)), KB(5));
-    for (int i = 0; i < KB(5); ++i) {
+    ASSERT_EQ(allocator.free_slot_count(0, KiB(5)), KiB(5));
+    for (int i = 0; i < KiB(5); ++i) {
         int size = 1;
         ASSERT_EQ(allocator.free_slot_count(i, i + 1), 1);
         int ret = allocator.allocate_from(i, size, false);
@@ -48,13 +48,13 @@ TEST(bitmap_allocator, one_bit_free_slot) {
         ASSERT_EQ(size, 1);
         ASSERT_EQ(allocator.free_slot_count(i, i + 1), 0);
     }
-    ASSERT_EQ(allocator.free_slot_count(0, KB(5)), 0);
+    ASSERT_EQ(allocator.free_slot_count(0, KiB(5)), 0);
 }
 
 TEST(bitmap_allocator, free_slot_count_aligned) {
-    BitmapAllocator allocator(KB(5));
+    BitmapAllocator allocator(KiB(5));
 
-    for (int i = 0; i < KB(5); i += 2) {
+    for (int i = 0; i < KiB(5); i += 2) {
         int size = 2;
         ASSERT_EQ(allocator.free_slot_count(i, i + 2), 2);
         int ret = allocator.allocate_from(i, size, false);
@@ -65,9 +65,9 @@ TEST(bitmap_allocator, free_slot_count_aligned) {
 }
 
 TEST(bitmap_allocator, free_slot_count_unaligned) {
-    BitmapAllocator allocator(KB(5));
+    BitmapAllocator allocator(KiB(5));
 
-    for (int i = 0; KB(5) - i >= 3; i += 3) {
+    for (int i = 0; KiB(5) - i >= 3; i += 3) {
         int size = 3;
         ASSERT_EQ(allocator.free_slot_count(i, i + 3), 3);
         int ret = allocator.allocate_from(i, size, false);
@@ -78,10 +78,10 @@ TEST(bitmap_allocator, free_slot_count_unaligned) {
 }
 
 TEST(bitmap_allocator, allocate_at) {
-    BitmapAllocator allocator(KB(5));
+    BitmapAllocator allocator(KiB(5));
 
-    ASSERT_EQ(allocator.free_slot_count(0, KB(5)), KB(5));
-    for (int i = 0; KB(5) - i >= 4; i += 4) {
+    ASSERT_EQ(allocator.free_slot_count(0, KiB(5)), KiB(5));
+    for (int i = 0; KiB(5) - i >= 4; i += 4) {
         int size = 4;
         ASSERT_EQ(allocator.free_slot_count(i, i + 4), 4);
         allocator.allocate_at(i, 4);
@@ -90,12 +90,12 @@ TEST(bitmap_allocator, allocate_at) {
         ASSERT_EQ(size, 4);
         ASSERT_EQ(allocator.free_slot_count(i, i + 4), 4);
     }
-    ASSERT_EQ(allocator.free_slot_count(0, KB(5)), KB(5));
+    ASSERT_EQ(allocator.free_slot_count(0, KiB(5)), KiB(5));
 }
 
 TEST(bitmap_allocator, alloc_32) {
-    BitmapAllocator allocator(KB(5));
-    for (int i = 0; i < KB(5); i += 32) {
+    BitmapAllocator allocator(KiB(5));
+    for (int i = 0; i < KiB(5); i += 32) {
         int size = 32;
         ASSERT_EQ(allocator.free_slot_count(i, i + 32), 32);
         int ret = allocator.allocate_from(i, size, false);
@@ -107,8 +107,8 @@ TEST(bitmap_allocator, alloc_32) {
 
 TEST(bitmap_allocator, battle_test) {
     srand(time(0));
-    constexpr int MEM_SIZE = KB(10);
-    constexpr int TEST_EPOCH = KB(1000);
+    constexpr int MEM_SIZE = KiB(10);
+    constexpr int TEST_EPOCH = KiB(1000);
     constexpr int MAX_MEM_CHUNK_SIZE = 100;
 
     BitmapAllocator allocator(MEM_SIZE);

@@ -36,7 +36,7 @@
 #endif
 
 constexpr size_t STANDARD_PAGE_SIZE = 4096;
-constexpr size_t TOTAL_MEM_SIZE = GB(4);
+constexpr size_t TOTAL_MEM_SIZE = GiB(4);
 constexpr bool LOG_PROTECT = false;
 constexpr bool PAGE_NAME_TRACKING = false;
 

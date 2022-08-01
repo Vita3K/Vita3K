@@ -103,7 +103,7 @@ constexpr uint32_t SCE_AUDIODEC_AAC_MAX_ES_SIZE = 1536;
 constexpr uint32_t SCE_AUDIODEC_CELP_MAX_ES_SIZE = 27;
 
 // this value is multiplied by 2 if sbr is enabled
-constexpr uint32_t SCE_AUDIODEC_AAC_MAX_PCM_SIZE = KB(2);
+constexpr uint32_t SCE_AUDIODEC_AAC_MAX_PCM_SIZE = KiB(2);
 constexpr uint32_t SCE_AUDIODEC_MP3_V1_MAX_PCM_SIZE = 2304;
 constexpr uint32_t SCE_AUDIODEC_MP3_V2_MAX_PCM_SIZE = 1152;
 
