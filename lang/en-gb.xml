@@ -26,9 +26,9 @@
 
 	<about name="About">
 		<vita3k>Vita3K: a PS Vita/PSTV Emulator. The world's first functional PS Vita/PSTV emulator.</vita3k>
-		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems.</about_vita3k>
+		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for the Windows and Linux operating systems.</about_vita3k>
 		<note>Note: The emulator is still in a very early stage of development.</note>
-		<github_website>If you're interested in contributing, check out our Github:</github_website>
+		<github_website>If you're interested in contributing, check out our GitHub:</github_website>
 		<vita3k_website>Visit our website for more info:</vita3k_website>
 		<vita3k_staff>Vita3K Staff</vita3k_staff>
 		<developers>Developers</developers>
@@ -275,7 +275,7 @@ Connect a controller that is compatible with SDL2.</not_connected>
 				<cancel_saving>Do you want to cancel saving?</cancel_saving>
 				<could_not_save>Could not save the file.
 There is not enough free space on the memory card.</could_not_save>
-				<not_free_space>There is not enough free space on the memory card.</not_free_space>
+				<not_free_space>There is not enough free space on the disk.</not_free_space>
 				<new_saved_data>New Saved Data</new_saved_data>
 				<saving_complete>Saving complete.</saving_complete>
 				<save_the_data>Do you want to save the data?</save_the_data>
@@ -339,26 +339,25 @@ Your Vita3K system is ready!</completed_setup>
 		<no_font_exist>No firmware font package present.
 Please download and install it.</no_font_exist>
 		<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
-		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian region font support in GUI.
-It is also generally recommended for GUI.</firmware_font_package_note>
+		<firmware_font_package_note>Firmware font package is mandatory for some applications such as Asia regional font support in GUI.</firmware_font_package_note>
 		<delete_fw>Delete the firmware installation file?</delete_fw>
 		<select_key_type>Select key type</select_key_type>
 		<select_work>Select work.bin</select_work>
 		<enter_zrif>Enter zRIF</enter_zrif>
 		<enter_zrif_key>Enter zRIF key</enter_zrif_key>
 		<input_zrif>Please input your zRIF here</input_zrif>
-		<copy_paste_zrif>Ctrl(Cmd) + C for copy, Ctrl(Cmd) + V to paste.</copy_paste_zrif>
+		<copy_paste_zrif>Ctrl(Cmd) + C to copy, Ctrl(Cmd) + V to paste.</copy_paste_zrif>
 		<delete_pkg>Delete the pkg file?</delete_pkg>
 		<delete_work>Delete the work.bin file?</delete_work>
 		<check_log>Please check log for more details.</check_log>
 		<select_install_type>Select install type</select_install_type>
 		<select_file>Select File</select_file>
 		<select_directory>Select Directory</select_directory>
-		<compatible_content>archive(s) found with compatible contents.</compatible_content>
-		<successed_install_archive>contents of this archive have successed installed:</successed_install_archive>
+		<compatible_content>Archive(s) found with compatible contents.</compatible_content>
+		<successed_install_archive>Successfully installed archive contents:</successed_install_archive>
 		<update_app>Update App to:</update_app>
-		<failed_install_archive>content have failed installed:</failed_install_archive>
-		<not_compatible_content>archive(s) did no found compatible contents:</not_compatible_content>
+		<failed_install_archive>Failed to install content:</failed_install_archive>
+		<not_compatible_content>Unable to locate compatible content in archive(s):</not_compatible_content>
 		<delete_archive>Delete archive?</delete_archive>
 		<select_license_type>Select license type</select_license_type>
 		<select_bin_rif>Select work.bin/rif</select_bin_rif>
