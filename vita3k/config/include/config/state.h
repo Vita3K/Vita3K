@@ -107,7 +107,8 @@ public:
      * Advanced profiling using Tracy allows for function calls to be logged with their arguments
      */
     const std::vector<std::string> tracy_available_advanced_profiling_modules = {
-        "SceAudio"
+        "SceAudio",
+        "SceTouch"
     };
 
     /**

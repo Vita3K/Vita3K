@@ -31,6 +31,9 @@
 #include <kernel/sync_primitives.h>
 #include <packages/functions.h>
 
+#include <io/device.h>
+#include <io/io.h>
+#include <io/types.h>
 #include <kernel/types.h>
 #include <rtc/rtc.h>
 #include <util/lock_and_find.h>
@@ -221,7 +224,7 @@ EXPORT(int, sceClibMspaceReallocalign) {
 }
 
 EXPORT(int, sceClibPrintf, const char *fmt, module::vargs args) {
-    std::vector<char> buffer(KB(1));
+    std::vector<char> buffer(KiB(1));
 
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
 
@@ -400,8 +403,41 @@ EXPORT(int, sceIoCompleteMultiple) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoDevctl) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceIoDevctl, const char *dev, SceInt cmd, const void *indata, SceSize inlen, void *outdata, SceSize outlen) {
+    if (!dev)
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+
+    // TODO: Turn the commands into an enum of commands
+    switch (cmd) {
+    case 12289: { // Get device capacity info?
+        assert(outlen == sizeof(SceIoDevInfo));
+
+        uint64_t max_size, free_size = 0;
+
+        auto device = device::get_device(dev);
+        if (device == VitaIoDevice::_INVALID) {
+            LOG_ERROR("Cannot find device for path: {}", dev);
+            return RET_ERROR(SCE_ERROR_ERRNO_ENOENT);
+        }
+
+        fs::path dev_path = device._to_string();
+        fs::path path = emuenv.pref_path / dev_path;
+        fs::space_info space = fs::space(path);
+
+        ((SceIoDevInfo *)outdata)->max_size = space.capacity;
+        ((SceIoDevInfo *)outdata)->free_size = space.available;
+        STUBBED("cluster size = 4096");
+        ((SceIoDevInfo *)outdata)->cluster_size = 4096;
+        break;
+    }
+    default: {
+        LOG_WARN("Unhandled case for sceIoDevctl cmd={}", cmd);
+        assert(false);
+        return 0;
+    }
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceIoDevctlAsync) {

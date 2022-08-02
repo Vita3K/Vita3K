@@ -125,7 +125,7 @@ static void get_themes_list(GuiState &gui, EmuEnvState &emuenv) {
                 const auto updated = fs::last_write_time(theme_path / content_id_wstr);
                 SAFE_LOCALTIME(&updated, &themes_info[content_id].updated);
 
-                themes_info[content_id].size = theme_size / KB(1);
+                themes_info[content_id].size = theme_size / KiB(1);
                 themes_info[content_id].version = infomation.child("m_contentVer").text().as_string();
 
                 themes_list.push_back({ content_id, updated });

@@ -190,6 +190,7 @@ set(SOURCE_LIST
 	SceTeleportClient/SceTeleportClient.cpp SceTeleportClient/SceTeleportClient.h
 	SceTeleportServer/SceTeleportServer.cpp SceTeleportServer/SceTeleportServer.h
 	SceTouch/SceTouch.cpp SceTouch/SceTouch.h
+	SceTouch/SceTouch_tracy.cpp
 	SceTriggerUtil/SceTriggerUtil.cpp SceTriggerUtil/SceTriggerUtil.h
 	SceUdcd/SceUdcd.cpp SceUdcd/SceUdcd.h
 	SceUlobjMgr/SceUlobjMgr.cpp SceUlobjMgr/SceUlobjMgr.h

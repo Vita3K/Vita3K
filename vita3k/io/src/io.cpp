@@ -56,6 +56,7 @@ static int io_error_impl(const int retval, const char *export_name, const char *
 constexpr bool log_file_op = true;
 constexpr bool log_file_read = false;
 constexpr bool log_file_seek = false;
+constexpr bool log_file_stat = false;
 
 namespace vfs {
 
@@ -503,14 +504,14 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::wstrin
                 return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
             }
         }
-        LOG_TRACE_IF(log_file_op, "{}: Statting file: {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
+        LOG_TRACE_IF(log_file_op && log_file_stat, "{}: Statting file: {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
     } else { // We have previously opened and defined the location
         const auto fd_file = io.std_files.find(fd);
         if (fd_file == io.std_files.end())
             return IO_ERROR(SCE_ERROR_ERRNO_EBADFD);
 
         file_path = fd_file->second.get_system_location();
-        LOG_TRACE_IF(log_file_op, "{}: Statting fd: {}", export_name, log_hex(fd));
+        LOG_TRACE_IF(log_file_op && log_file_stat, "{}: Statting fd: {}", export_name, log_hex(fd));
 
         statp->st_attr = fd_file->second.get_file_mode();
     }

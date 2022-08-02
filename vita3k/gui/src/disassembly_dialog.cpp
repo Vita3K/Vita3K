@@ -39,10 +39,10 @@ static void evaluate_code(GuiState &gui, EmuEnvState &emuenv, uint32_t from, uin
 
     for (std::uint32_t a = 0; a < count && size != 0; a++) {
         // Apparently some THUMB instructions are 4 bytes long, so check all 4 just to be safe.
-        size_t addr_page = addr / KB(4);
-        size_t end_page = (addr + 4) / KB(4);
+        size_t addr_page = addr / KiB(4);
+        size_t end_page = (addr + 4) / KiB(4);
 
-        if (addr_page == 0 || !is_valid_addr(emuenv.mem, addr_page * KB(4))) {
+        if (addr_page == 0 || !is_valid_addr(emuenv.mem, addr_page * KiB(4))) {
             gui.disassembly.emplace_back(fmt::format("Disassembled {} instructions.", a));
             break;
         }

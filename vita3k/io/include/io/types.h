@@ -103,3 +103,9 @@ struct SceIoDirent {
     Ptr<void> d_private;
     int dummy;
 };
+
+struct SceIoDevInfo {
+    SceInt64 max_size;
+    SceInt64 free_size;
+    SceSize cluster_size;
+};

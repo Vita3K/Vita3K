@@ -29,14 +29,28 @@ struct MemState;
 typedef uint32_t Address;
 typedef std::function<bool(Address, bool)> ProtectCallback;
 
+// Powers of 10
 constexpr size_t KB(size_t kb) {
-    return kb * 1024;
+    return kb * 1000;
 }
 
 constexpr size_t MB(size_t mb) {
-    return mb * KB(1024);
+    return mb * KB(1000);
 }
 
 constexpr size_t GB(size_t gb) {
-    return gb * MB(1024);
+    return gb * MB(1000);
+}
+
+// Powers of 2
+constexpr size_t KiB(size_t kib) {
+    return kib * 1024;
+}
+
+constexpr size_t MiB(size_t mib) {
+    return mib * KiB(1024);
+}
+
+constexpr size_t GiB(size_t gib) {
+    return gib * MiB(1024);
 }
