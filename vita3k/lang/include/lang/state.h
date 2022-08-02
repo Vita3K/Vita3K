@@ -123,10 +123,10 @@ struct LangState {
     MainMenubar main_menubar;
     std::map<std::string, std::string> about = {
         { "title", "About" },
-        { "vita3k", "Vita3K: a PS Vita/PSTV Emulator. The world's first functional PS Vita/PSTV emulator." },
+        { "vita3k", "Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator." },
         { "about_vita3k", "Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems." },
         { "note", "Note: The emulator is still in a very early stage of development." },
-        { "github_website", "If you're interested in contributing, check out our Github:" },
+        { "github_website", "If you're interested in contributing, check out our GitHub:" },
         { "vita3k_website", "Visit our website for more info:" },
         { "vita3k_staff", "Vita3K Staff" },
         { "developers", "Developers" },
@@ -222,6 +222,7 @@ struct LangState {
         { "l3_button", "L3 button" },
         { "r3_button", "R3 button" },
         { "gui", "GUI" },
+        { "full_screen", "Full Screen" },
         { "toggle_touch", "Toggle Touch" },
         { "toggle_gui_visibility", "Toggle GUI Visibility" }
     };
@@ -278,7 +279,7 @@ struct LangState {
         { "enter_zrif", "Enter zRIF" },
         { "enter_zrif_key", "Enter zRIF key" },
         { "input_zrif", "Please input your zRIF here" },
-        { "copy_paste_zrif", "Ctrl(Cmd) + C for copy, Ctrl(Cmd) + V to paste." },
+        { "copy_paste_zrif", "Ctrl(Cmd) + C to copy, Ctrl(Cmd) + V to paste." },
         { "delete_pkg", "Delete the pkg file?" },
         { "delete_work", "Delete the work.bin file?" },
         { "check_log", "Please check log for more details." },
