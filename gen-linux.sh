@@ -2,4 +2,4 @@
 set -ex
 
 # Generate project files for Ninja
-cmake --preset linux-ninja-clang -B build-linux
+cmake --preset linux-ninja-clang
