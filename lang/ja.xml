@@ -25,10 +25,10 @@
 	</main_menubar>
 
 	<about name="概要">
-		<vita3k>Vita3K: PS Vita/Vita TVエミュレーター。 世界初の動作するPS Vita/Vita TVエミュレーターです。</vita3k>
-		<about_vita3k>Vita3Kは試験的なオープンソースのC++で書かれた WindowsとLinux向けのPlayStation Vita/Vita TVエミュレーターです。</about_vita3k>
+		<vita3k>Vita3K: PS Vita/PS Vita TVエミュレーター。 世界初の動作するPS Vita/PS Vita TVエミュレーターです。</vita3k>
+		<about_vita3k>Vita3Kは試験的なオープンソースのC++で書かれた WindowsとLinux向けのPlayStation Vita/PlayStation Vita TVエミュレーターです。</about_vita3k>
 		<note>注意: エミュレーターは未だかなりの初期段階にあります。</note>
-		<github_website>プロジェクトへの貢献に興味がある方は、Githubをご覧ください:</github_website>
+		<github_website>プロジェクトへの貢献に興味がある方は、GitHubをご覧ください:</github_website>
 		<vita3k_website>詳しくはサイトをご覧ください:</vita3k_website>
 		<vita3k_staff>Vita3K スタッフ</vita3k_staff>
 		<developers>開発者</developers>
@@ -246,6 +246,7 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<l3_button>L3 ボタン</l3_button>
 		<r3_button>R3 ボタン</r3_button>
 		<gui>GUI</gui>
+		<full_screen>フルスクリーン</full_screen>
 		<toggle_touch>タッチパネル</toggle_touch>
 		<toggle_gui_visibility>タッチパネル可視化</toggle_gui_visibility>
 	</controls>　
@@ -491,7 +492,7 @@ Vita3Kをお楽しみください。</completed_setup>
 
 	<welcome name="Welcome to Vita3K">
 		<line_first>Vita3K PlayStation Vita Emulator</line_first>
-		<line_second>Vita3Kは、WindowsとLinux用にC++で書かれたオープンソースのPlayStation Vitaエミュレーターです。</line_second>
+		<line_second>Vita3Kは、WindowsとLinux用にC++で書かれたオープンソースのPlayStation Vita/PlayStation Vita TVエミュレーターです。</line_second>
 		<line_third>エミュレーターは未だ初期段階にあるため、フィードバックやテストは大歓迎です。</line_third>
 		<line_fourth>まずは、PS Vitaのファームウェアとフォントのパッケージをインストールしてください。</line_fourth>
 		<download_firmware>ファームウェアをダウンロード</download_firmware>
@@ -508,4 +509,3 @@ Vita3Kをお楽しみください。</completed_setup>
 		<close>閉じる</close>
 	</welcome>
 </lang>
-

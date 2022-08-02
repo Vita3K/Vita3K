@@ -101,6 +101,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Separator();
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s", lang["gui"].c_str());
+    ImGui::Text("%-16s    %-16s", lang["full_screen"].c_str(), "F11");
     ImGui::Text("%-16s    %-16s", lang["toggle_touch"].c_str(), "T");
     ImGui::Text("%-16s    %-16s", lang["toggle_gui_visibility"].c_str(), "G");
 

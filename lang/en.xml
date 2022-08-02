@@ -25,10 +25,10 @@
 	</main_menubar>
 
 	<about name="About">
-		<vita3k>Vita3K: a PS Vita/PSTV Emulator. The world's first functional PS Vita/PSTV emulator.</vita3k>
+		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
 		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems.</about_vita3k>
 		<note>Note: The emulator is still in a very early stage of development.</note>
-		<github_website>If you're interested in contributing, check out our Github:</github_website>
+		<github_website>If you're interested in contributing, check out our GitHub:</github_website>
 		<vita3k_website>Visit our website for more info:</vita3k_website>
 		<vita3k_staff>Vita3K Staff</vita3k_staff>
 		<developers>Developers</developers>
@@ -246,6 +246,7 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<l3_button>L3 button</l3_button>
 		<r3_button>R3 button</r3_button>
 		<gui>GUI</gui>
+		<full_screen>Full Screen</full_screen>
 		<toggle_touch>Toggle Touch</toggle_touch>
 		<toggle_gui_visibility>Toggle GUI Visibility</toggle_gui_visibility>
 	</controls>
@@ -347,7 +348,7 @@ It is also generally recommended for GUI.</firmware_font_package_note>
 		<enter_zrif>Enter zRIF</enter_zrif>
 		<enter_zrif_key>Enter zRIF key</enter_zrif_key>
 		<input_zrif>Please input your zRIF here</input_zrif>
-		<copy_paste_zrif>Ctrl(Cmd) + C for copy, Ctrl(Cmd) + V to paste.</copy_paste_zrif>
+		<copy_paste_zrif>Ctrl(Cmd) + C to copy, Ctrl(Cmd) + V to paste.</copy_paste_zrif>
 		<delete_pkg>Delete the pkg file?</delete_pkg>
 		<delete_work>Delete the work.bin file?</delete_work>
 		<check_log>Please check log for more details.</check_log>
