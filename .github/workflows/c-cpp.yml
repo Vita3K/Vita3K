@@ -8,6 +8,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
 
       - name: Format check
         run: .github/format-check.sh
@@ -40,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           submodules: recursive
 
       - name: Set up build environment (macos-latest)
@@ -56,6 +58,8 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
 
       - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
         if: matrix.os == 'windows-latest'
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
@@ -149,6 +153,8 @@ jobs:
     if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
 
       - name: Download Artifacts
         uses: actions/download-artifact@v3
