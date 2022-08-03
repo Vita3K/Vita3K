@@ -27,7 +27,12 @@ execute_process(
 	OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 if (NOT GIT_REPO STREQUAL "")
-	string(REPLACE "https://github.com/" "" GIT_REPO ${GIT_REPO})
+	string(FIND ${GIT_REPO} "git@github.com:" IS_GIT_SSH)
+	if (IS_GIT_SSH EQUAL 0)
+		string(REPLACE "git@github.com:" "" GIT_REPO ${GIT_REPO})
+	else()
+		string(REPLACE "https://github.com/" "" GIT_REPO ${GIT_REPO})
+	endif()
 	string(REPLACE "/" ";" GIT_REPO ${GIT_REPO})
 	list(POP_BACK GIT_REPO)
 endif()
