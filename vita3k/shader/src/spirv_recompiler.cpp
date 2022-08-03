@@ -313,6 +313,9 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
             var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
         }
 
+        if (is_integer_data_type(dest.type) && b.isFloatType(utils::unwrap_type(b, b.getTypeId(var))))
+            var = utils::convert_to_int(b, var, dest.type, true);
+
         utils::store(b, parameters, utils, features, dest, var, dest_mask, 0);
     }
 
