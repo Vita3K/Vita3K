@@ -1,6 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <lang>
+	<main_menubar>
+		<file name="File">
+			<open_pref_path>Open Pref Path</open_pref_path>
+			<install_firmware>Install Firmware</install_firmware>
+			<install_pkg>Install .pkg</install_pkg>
+			<install_zip>Install .zip, .vpk</install_zip>
+			<install_license>Install License</install_license>
+		</file>
+		<emulation name="Emulation">
+			<last_apps_used>Last Apps used</last_apps_used>
+		</emulation>
+		<configuration name="Configuration">
+			<settings>Innstillinger</settings>
+			<user_management>Brukeradminstrasjon</user_management>
+		</configuration>
+		<controls name="Controls">
+			<keyboard_controls>Keyboard Controls</keyboard_controls>
+		</controls>
+		<help name="Help">
+			<welcome>Welcome</welcome>
+		</help>
+	</main_menubar>
+
 	<app_context>
 		<update_history>Oppdater historikk</update_history>
 		<history_version>Versjon {}</history_version>
@@ -249,22 +272,22 @@ Du kan Oppnå trophies ved å bruke et program som Støtter trophy-funksjonen.</
 
 	<user_management>
 		<select_user>Select your user</select_user>
-		<create_user>Create User</create_user>
-		<user_created>The following user has been created.</user_created>
+		<create_user>Opprett bruker</create_user>
+		<user_created>Følgende bruker er opprettet:</user_created>
 		<edit_user>Edit User</edit_user>
-		<user_name_used>This name is already in use.</user_name_used>
-		<delete_user>Delete User</delete_user>
-		<user_delete>Select the user you want to delete.</user_delete>
-		<user_delete_msg>The following user will be deleted.</user_delete_msg>
-		<user_delete_message>If you delete the user, that user's saved data, trophies will be deleted.</user_delete_message>
-		<user_delete_warn>The user will be deleted.
-Are you sure you want to continue?</user_delete_warn>
-		<user_deleted>User deleted.</user_deleted>
-		<change_avatar>Change Avatar</change_avatar>
+		<user_name_used>Navnet er allerede i bruk.</user_name_used>
+		<delete_user>Slett bruker</delete_user>
+		<user_delete>Velg brukeren du vil slette.</user_delete>
+		<user_delete_msg>Følgende bruker vil bli slettet:</user_delete_msg>
+		<user_delete_message>Hvis du sletter brukeren, vil denne brukerens lagrede data, trofeer bli slettet.</user_delete_message>
+		<user_delete_warn>Brukeren vil bli slettet.
+Er du sikker på at du vil fortsette?</user_delete_warn>
+		<user_deleted>Bruker slettet.</user_deleted>
+		<change_avatar>Endre avatar</change_avatar>
 		<reset_avatar>Reset Avatar</reset_avatar>
-		<name>Name</name>
-		<user>User</user>
-		<confirm>Confirm</confirm>
+		<name>Nanv</name>
+		<user>Bruker</user>
+		<confirm>Bekreft</confirm>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 </lang>

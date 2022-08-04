@@ -3,21 +3,21 @@
 <lang>
 	<main_menubar>
 		<file name="Dosya">
-			<open_pref_path>Tercih klasörünü aç</open_pref_path>
-			<install_firmware>Yazılım yükle</install_firmware>
-			<install_pkg>.pkg yükle</install_pkg>
-			<install_zip>.zip, .vpk yükle</install_zip>
-			<install_license>Lisans yükle</install_license>
+			<open_pref_path>Tercih Klasörünü aç</open_pref_path>
+			<install_firmware>Yazılım Yükle</install_firmware>
+			<install_pkg>.pkg Yükle</install_pkg>
+			<install_zip>.zip, .vpk Yükle</install_zip>
+			<install_license>Lisans Yükle</install_license>
 		</file>
 		<emulation name="Öykünme">
-			<last_apps_used>Son kullanma</last_apps_used>
+			<last_apps_used>Son Kullanma</last_apps_used>
 		</emulation>
 		<configuration name="Yapılandırma">
 			<settings>Ayarlar</settings>
-			<user_management>Kullanıcı yönetimi</user_management>
+			<user_management>Kullanıcı Yönetimi</user_management>
 		</configuration>
 		<controls name="Kontroller">
-			<keyboard_controls>Klavye kontrolleri</keyboard_controls>
+			<keyboard_controls>Klavye Kontrolleri</keyboard_controls>
 		</controls>
 		<help name="Yardım">
 			<welcome>Hoşgeldin</welcome>
@@ -344,23 +344,23 @@ Kupa özelliğini destekleyen bir uygulamayı kullanarak kupa kazanabilirsiniz.<
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Kullanıcıyı seç</select_user>
+		<select_user>Kullanıcıyı Seç</select_user>
 		<create_user>Kullanıcı Oluştur</create_user>
-		<user_created>Aşağıdaki Kullanıcı Oluşturuldu</user_created>
-		<edit_user>Düzenle</edit_user>
+		<user_created>Şu kullanıcı oluşturuldu:</user_created>
+		<edit_user>Kullanıcı Düzenle</edit_user>
 		<user_name_used>Bu isim zaten kullanılıyor.</user_name_used>
 		<delete_user>Kullanıcıyı Sil</delete_user>
 		<user_delete>Silmek istediğiniz kullanıcıyı seçin.</user_delete>
-		<user_delete_msg>Aşağıdaki kullanıcı silinecek.</user_delete_msg>
-		<user_delete_message>Kullanıcının kaydettiği veriler ve kupalar silinir.</user_delete_message>
+		<user_delete_msg>Şu kullanıcı silinecek:</user_delete_msg>
+		<user_delete_message>Kullanıcıyı silerseniz, bu kullanıcının kayıtlı verileri, kupalar silinir.</user_delete_message>
 		<user_delete_warn>Kullanıcı silinecek.
-Devam etmek istediğine emin misin?</user_delete_warn>
+Devam etmek istediğinizden emin misiniz?</user_delete_warn>
 		<user_deleted>Kullanıcı Silindi.</user_deleted>
-		<change_avatar>Profil Fotoğrafı değiştir</change_avatar>
-		<reset_avatar>Profil Fotoğrafını Sıfırla</reset_avatar>
+		<change_avatar>Avatar Değiştir</change_avatar>
+		<reset_avatar>Avatar Sıfırla</reset_avatar>
 		<name>Ad</name>
 		<user>Kullanıcı</user>
-		<confirm>İleri</confirm>
+		<confirm>Onayla</confirm>
 		<automatic_user_login>Otomatik Kullanıcı Girişi</automatic_user_login>
 	</user_management>
 </lang>

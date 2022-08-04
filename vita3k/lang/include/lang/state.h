@@ -289,7 +289,7 @@ struct LangState {
         { "compatible_content", "{} archive(s) found with compatible contents." },
         { "successed_install_archive", "{} archive(s) contents successfully installed:" },
         { "update_app", "Update App to:" },
-        { "failed_install_archive", "Failed to install {} archive{s} contents:" },
+        { "failed_install_archive", "Failed to install {} archive(s) contents:" },
         { "not_compatible_content", "No compatible content found in {} archive(s):" },
         { "delete_archive", "Delete archive?" },
         { "select_license_type", "Select license type" },

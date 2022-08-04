@@ -1,6 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <lang>
+	<main_menubar>
+		<file name="File">
+			<open_pref_path>Open Pref Path</open_pref_path>
+			<install_firmware>Install Firmware</install_firmware>
+			<install_pkg>Install .pkg</install_pkg>
+			<install_zip>Install .zip, .vpk</install_zip>
+			<install_license>Install License</install_license>
+		</file>
+		<emulation name="Emulation">
+			<last_apps_used>Last Apps used</last_apps_used>
+		</emulation>
+		<configuration name="Configuration">
+			<settings>Asetukset</settings>
+			<user_management>Käyttäjien hallinta</user_management>
+		</configuration>
+		<controls name="Controls">
+			<keyboard_controls>Keyboard Controls</keyboard_controls>
+		</controls>
+		<help name="Help">
+			<welcome>Welcome</welcome>
+		</help>
+	</main_menubar>
+
 	<app_context>
 		<update_history>Päivityshistoria</update_history>
 		<history_version>Versio {}</history_version>
@@ -251,22 +274,22 @@ Voit ansaita trophyjä käyttämällä trophy-ominaisuutta tukevaa sovellusta.</
 
 	<user_management>
 		<select_user>Select your user</select_user>
-		<create_user>Create User</create_user>
-		<user_created>The following user has been created.</user_created>
+		<create_user>Luo käyttäjä</create_user>
+		<user_created>Seuraava käyttäjä on luotu:</user_created>
 		<edit_user>Edit User</edit_user>
 		<user_name_used>This name is already in use.</user_name_used>
-		<delete_user>Delete User</delete_user>
-		<user_delete>Select the user you want to delete.</user_delete>
-		<user_delete_msg>The following user will be deleted.</user_delete_msg>
-		<user_delete_message>If you delete the user, that user's saved data, trophies will be deleted.</user_delete_message>
-		<user_delete_warn>The user will be deleted.
-Are you sure you want to continue?</user_delete_warn>
-		<user_deleted>User deleted.</user_deleted>
-		<change_avatar>Change Avatar</change_avatar>
+		<delete_user>Poista käyttäjä</delete_user>
+		<user_delete>Valitse käyttäjä, jonka haulat poistaa.</user_delete>
+		<user_delete_msg>Seuraava käyttäjä poistetaan:</user_delete_msg>
+		<user_delete_message>Jos poistat käyttäjän, hämen tallennetut tietonsa, trophyt poistetaan.</user_delete_message>
+		<user_delete_warn>Käyttäjä poistetaan.
+Oletko varma, että haluat jatkaa?</user_delete_warn>
+		<user_deleted>Käyttäjä on poistettu.</user_deleted>
+		<change_avatar>Vaihda avatar</change_avatar>
 		<reset_avatar>Reset Avatar</reset_avatar>
-		<name>Name</name>
-		<user>User</user>
-		<confirm>Confirm</confirm>
+		<name>Nimi</name>
+		<user>Kayttaja</user>
+		<confirm>Vahvista</confirm>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 </lang>
