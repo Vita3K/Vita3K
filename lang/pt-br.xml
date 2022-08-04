@@ -14,7 +14,7 @@
 		</emulation>
 		<configuration name="Configuração">
 			<settings>Configurações</settings>
-			<user_management>Gerenciamento dos usuários</user_management>
+			<user_management>Gerenciamento de usuários</user_management>
 		</configuration>
 		<controls name="Controles">
 			<keyboard_controls>Controles do teclado</keyboard_controls>
@@ -336,12 +336,23 @@ Você pode conquistar troféus usando um aplicativo compatível com o recurso de
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Select your user</select_user>
 		<create_user>Criar usuário</create_user>
+		<user_created>O usuários a seguir foi criado:</user_created>
 		<edit_user>Editar usuário</edit_user>
-		<delete_user>Apagar usuário</delete_user>
-		<change_avatar>Mudar avatar</change_avatar>
+		<user_name_used>O nome já está sendo usado.</user_name_used>
+		<delete_user>Excluir usuário</delete_user>
+		<user_delete>Selecione o usuário que você deseja excluir.</user_delete>
+		<user_delete_msg>O usuário a seguir será excluído:</user_delete_msg>
+		<user_delete_message>Se você excluir o usuário, os dados salvos, troféus desse usuário serão excluídos.</user_delete_message>
+		<user_delete_warn>O usuário será excluído.
+Tem certeza de que deseja continuar?</user_delete_warn>
+		<user_deleted>Usuário excluído.</user_deleted>
+		<change_avatar>Alterar avatar</change_avatar>
+		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Nome</name>
-		<user>Usuário</user>
+		<user>Usuario</user>
 		<confirm>Confirmar</confirm>
+		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 </lang>

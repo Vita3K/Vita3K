@@ -14,7 +14,7 @@
 		</emulation>
 		<configuration name="Configuratie">
 			<settings>Instellingen</settings>
-			<user_management>Gebruiker Beheer</user_management>
+			<user_management>Gebruikerbeheer</user_management>
 		</configuration>
 		<controls name="Besturing">
 			<keyboard_controls>Toetsenbord Besturing</keyboard_controls>
@@ -336,12 +336,23 @@ Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefuncti
 	</trophy_collection>
 
 	<user_management>
-		<create_user>Maak Gebruiker</create_user>
-		<edit_user>Bewerk Gebruiker</edit_user>
-		<delete_user>Verwijder Gebruiker</delete_user>
-		<change_avatar>Verander Avatar</change_avatar>
+		<select_user>Select your user</select_user>
+		<create_user>Gebruiker maken</create_user>
+		<user_created>De volgende gebruiker is gemaakt:</user_created>
+		<edit_user>Gebruiker bewerken</edit_user>
+		<user_name_used>This name is already in use.</user_name_used>
+		<delete_user>Gebruiker verwijderen</delete_user>
+		<user_delete>Selecteer de gebruiker die u wil verwijderen.</user_delete>
+		<user_delete_msg>De volgende gebruiker wordt verwijderd:</user_delete_msg>
+		<user_delete_message>Als je de gebruiker verwijdert, worden de door de gebruiker opgeslagen data, trofeeën verwijderd.</user_delete_message>
+		<user_delete_warn>De gebruiker wordt verwijderd.
+Weet je zeker dat je doorgaan?</user_delete_warn>
+		<user_deleted>Gebruiker verwijderd.</user_deleted>
+		<change_avatar>Avatar wijzigen</change_avatar>
+		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Naam</name>
 		<user>Gebruiker</user>
 		<confirm>Bevestigen</confirm>
+		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 </lang>

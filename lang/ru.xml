@@ -346,19 +346,19 @@ Connect a controller that is compatible with SDL2.</not_connected>
 	<user_management>
 		<select_user>Выберите пользователя</select_user>
 		<create_user>Создать пользователя</create_user>
-		<user_created>Пользователь был создан</user_created>
+		<user_created>Создан следующий пользователь:</user_created>
 		<edit_user>Изменить пользователя</edit_user>
 		<user_name_used>Это имя уже используется.</user_name_used>
 		<delete_user>Удалить пользователя</delete_user>
 		<user_delete>Выберите пользователя, которого хотите удалить.</user_delete>
-		<user_delete_msg>Выбранный пользователь был удалён.</user_delete_msg>
-		<user_delete_message>Если Вы удалите пользователя, сохранённая информация, трофеи будут удалены.</user_delete_message>
-		<user_delete_warn>Пользователь будет удалён.
-Вы хотите продолжить?</user_delete_warn>
-		<user_deleted>Пользователь удалён.</user_deleted>
+		<user_delete_msg>Выбранный пользователь был удален:</user_delete_msg>
+		<user_delete_message>Дри удаления пользователя сохраненные данные, трофеи будут удалены.</user_delete_message>
+		<user_delete_warn>Пользователь будет удален.
+Продолжить?</user_delete_warn>
+		<user_deleted>Пользователь удален.</user_deleted>
 		<change_avatar>Сменить аватар</change_avatar>
 		<reset_avatar>Сбросить аватар</reset_avatar>
-		<name>Имя</name>
+		<name>Название</name>
 		<user>Пользователь</user>
 		<confirm>Подтвердить</confirm>
 		<automatic_user_login>Автоматический вход пользователя</automatic_user_login>

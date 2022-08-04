@@ -355,9 +355,9 @@ Please download and install it.</no_font_exist>
 		<select_file>选择文件</select_file>
 		<select_directory>选择目录</select_directory>
 		<compatible_content>发现兼容内容的{}个压缩包。</compatible_content>
-		<successed_install_archive>已成功安装{}个压缩包内容：</successed_install_archive>
+		<successed_install_archive>已成功安装{}个压缩包中的内容：</successed_install_archive>
 		<update_app>更新应用程序至：</update_app>
-		<failed_install_archive>无法安装{}个压缩包内容：</failed_install_archive>
+		<failed_install_archive>无法安装{}个压缩包中的内容：</failed_install_archive>
 		<not_compatible_content>未发现兼容内容的{}个压缩包。</not_compatible_content>
 		<delete_archive>删除压缩包？</delete_archive>
 		<select_license_type>选择许可证类型</select_license_type>

@@ -336,12 +336,23 @@ Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.</no_
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Select your user</select_user>
 		<create_user>Crea utente</create_user>
+		<user_created>L'utente seguente è stato creato:</user_created>
 		<edit_user>Modifica utente</edit_user>
+		<user_name_used>Il nome utente è già in uso.</user_name_used>
 		<delete_user>Elimina utente</delete_user>
+		<user_delete>Seleziona l'utente che vuoi eliminare.</user_delete>
+		<user_delete_msg>Il seguente utenti verrà eliminato:</user_delete_msg>
+		<user_delete_message>Se elimini l'utente, i dati salvati, le trofei dell'utente saranno eliminati.</user_delete_message>
+		<user_delete_warn>L'utente serà eliminato.
+Vuoi davvero continuare?</user_delete_warn>
+		<user_deleted>Utente eliminato.</user_deleted>
 		<change_avatar>Cambia avatar</change_avatar>
+		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Nome</name>
 		<user>Utente</user>
 		<confirm>Conferma</confirm>
+		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 </lang>

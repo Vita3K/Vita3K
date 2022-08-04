@@ -1,6 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <lang>
+	<main_menubar>
+		<file name="File">
+			<open_pref_path>Open Pref Path</open_pref_path>
+			<install_firmware>Install Firmware</install_firmware>
+			<install_pkg>Install .pkg</install_pkg>
+			<install_zip>Install .zip, .vpk</install_zip>
+			<install_license>Install License</install_license>
+		</file>
+		<emulation name="Emulation">
+			<last_apps_used>Last Apps used</last_apps_used>
+		</emulation>
+		<configuration name="Configuration">
+			<settings>Ustawienia</settings>
+			<user_management>Zarządzanie użytkownikami</user_management>
+		</configuration>
+		<controls name="Controls">
+			<keyboard_controls>Keyboard Controls</keyboard_controls>
+		</controls>
+		<help name="Help">
+			<welcome>Welcome</welcome>
+		</help>
+	</main_menubar>
+
 	<app_context>
 		<update_history>Historia aktualizacji</update_history>
 		<history_version>Wersja {}</history_version>
@@ -249,22 +272,22 @@ Trofea można zdobywać, korzystając z aplikacji obsługującej funkcję trofe�
 
 	<user_management>
 		<select_user>Select your user</select_user>
-		<create_user>Create User</create_user>
-		<user_created>The following user has been created.</user_created>
+		<create_user>Utwórz użytkownika</create_user>
+		<user_created>Został utworzony następujący użytkownik:</user_created>
 		<edit_user>Edit User</edit_user>
-		<user_name_used>This name is already in use.</user_name_used>
-		<delete_user>Delete User</delete_user>
-		<user_delete>Select the user you want to delete.</user_delete>
-		<user_delete_msg>The following user will be deleted.</user_delete_msg>
-		<user_delete_message>If you delete the user, that user's saved data, trophies will be deleted.</user_delete_message>
-		<user_delete_warn>The user will be deleted.
-Are you sure you want to continue?</user_delete_warn>
-		<user_deleted>User deleted.</user_deleted>
-		<change_avatar>Change Avatar</change_avatar>
+		<user_name_used>Ta nazwa jest już używana.</user_name_used>
+		<delete_user>Usuń użytkownika</delete_user>
+		<user_delete>Wybierz użytkownika, którego chcesz usunąć.</user_delete>
+		<user_delete_msg>Następujący użytkownicy zostaną usunięci:</user_delete_msg>
+		<user_delete_message>Jeśli usuniesz użytkownika, usunięte jego zapisane dane, trofea.</user_delete_message>
+		<user_delete_warn>Użytkownik zostanie usunięty.
+Czy na pewno chcesz kontynuować?</user_delete_warn>
+		<user_deleted>Usunięto użytkownika.</user_deleted>
+		<change_avatar>Zmień awatara</change_avatar>
 		<reset_avatar>Reset Avatar</reset_avatar>
-		<name>Name</name>
-		<user>User</user>
-		<confirm>Confirm</confirm>
+		<name>Nazwa</name>
+		<user>Uzytkownik</user>
+		<confirm>Potwierdź</confirm>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 </lang>
