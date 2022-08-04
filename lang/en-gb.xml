@@ -340,8 +340,7 @@ Your Vita3K system is ready!</completed_setup>
 		<no_font_exist>No firmware font package present.
 Please download and install it.</no_font_exist>
 		<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
-		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian region font support in GUI.
-It is also generally recommended for GUI.</firmware_font_package_note>
+		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
 		<delete_fw>Delete the firmware installation file?</delete_fw>
 		<select_key_type>Select key type</select_key_type>
 		<select_work>Select work.bin</select_work>
