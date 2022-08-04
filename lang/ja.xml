@@ -355,11 +355,11 @@ Vita3Kをお楽しみください。</completed_setup>
 		<select_install_type>インストール方法を選択</select_install_type>
 		<select_file>ファイルを選択</select_file>
 		<select_directory>ディレクトリを選択</select_directory>
-		<compatible_content>互換性のあるコンテンツを持つアーカイブが見つかりました。</compatible_content>
-		<successed_install_archive>アーカイブのコンテンツのインストールに成功しました。:</successed_install_archive>
+		<compatible_content>{}互換性のあるコンテンツを持つアーカイブが見つかりました。</compatible_content>
+		<successed_install_archive>{}アーカイブのコンテンツのインストールに成功しました。:</successed_install_archive>
 		<update_app>アプリを更新:</update_app>
-		<failed_install_archive>コンテンツのインストールに失敗しました:</failed_install_archive>
-		<not_compatible_content>アーカイブに互換性のあるコンテンツを見つけられませんでした:</not_compatible_content>
+		<failed_install_archive>{}コンテンツのインストールに失敗しました:</failed_install_archive>
+		<not_compatible_content>{}アーカイブに互換性のあるコンテンツを見つけられませんでした:</not_compatible_content>
 		<delete_archive>アーカイブを削除しますか?</delete_archive>
 		<select_license_type>ライセンスを選択</select_license_type>
 		<select_bin_rif>work.bin/rifを選択</select_bin_rif>
@@ -455,24 +455,24 @@ Vita3Kをお楽しみください。</completed_setup>
 	</trophy_collection>
 	
 	<user_management>
-		<select_user>ユーザーを選ぶ</select_user>
-		<create_user>ユーザー新規作成</create_user>
-		<user_created>ユーザーが作成されました</user_created>
-		<edit_user>ユーザー編集</edit_user>
-		<user_name_used>この名前は使用されています。</user_name_used>
-		<delete_user>ユーザーを消す</delete_user>
-		<user_delete>削除するユーザーを選択してください。</user_delete>
-		<user_delete_msg>下記のユーザーが削除されます。</user_delete_msg>
-		<user_delete_message>ユーザーが削除されると、そのユーザーのセーブデータ、トロフィーは削除されます。</user_delete_message>
-		<user_delete_warn>ユーザーが削除されます。
-よろしいですか？</user_delete_warn>
-		<user_deleted>ユーザーが削除されました。</user_deleted>
-		<change_avatar>アバター変更</change_avatar>
-		<reset_avatar>アバターリセット</reset_avatar>
+		<select_user>ユーザーを選ぶする</select_user>
+		<create_user>ユーザーを作成する</create_user>
+		<user_created>以下のユーザーを作成しました。</user_created>
+		<edit_user>ユーザーを編集する</edit_user>
+		<user_name_used>その名前はすでに使われています。</user_name_used>
+		<delete_user>ユーザーを消除する</delete_user>
+		<user_delete>削除するユーザーを選んでください。</user_delete>
+		<user_delete_msg>以下のユーザーを削除します。</user_delete_msg>
+		<user_delete_message>ユーザーを削除すると、そのユーザーのセーブデータ、トロフィーは削除されます。</user_delete_message>
+		<user_delete_warn>ユーザーを削除します。
+本当によろしいですか？</user_delete_warn>
+		<user_deleted>ユーザーを削除しました。</user_deleted>
+		<change_avatar>アバターを変更する</change_avatar>
+		<reset_avatar>アバターをリセットする</reset_avatar>
 		<name>名前</name>
 		<user>ユーザー</user>
-		<confirm>確認</confirm>
-		<automatic_user_login>ユーザー自動ログイン</automatic_user_login>
+		<confirm>確定</confirm>
+		<automatic_user_login>ユーザー自動ログインする</automatic_user_login>
 	</user_management>
 	
 	<vita3k_update name="Vita3Kのアップデート">

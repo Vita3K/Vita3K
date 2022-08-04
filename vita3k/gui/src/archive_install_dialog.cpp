@@ -187,7 +187,8 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     });
                 };
                 ImGui::Spacing();
-                ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%lu %s", contents_archives.size(), lang["compatible_content"].c_str());
+                const auto compatible_content_str = fmt::format(fmt::runtime(lang["compatible_content"].c_str()), contents_archives.size());
+                ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", compatible_content_str.c_str());
                 ImGui::Spacing();
                 ImGui::Separator();
                 for (const auto &archive : contents_archives) {
@@ -195,7 +196,8 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::Spacing();
                     const auto count_contents_successed = count_content_state(archive.first, true);
                     if (count_contents_successed) {
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%ld %s", count_contents_successed, lang["successed_install_archive"].c_str());
+                        const auto successed_install_archive_str = fmt::format(fmt::runtime(lang["successed_install_archive"].c_str()), count_contents_successed);
+                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", successed_install_archive_str.c_str());
                         for (const auto &content : archive.second) {
                             if (content.state) {
                                 ImGui::TextWrapped("%s [%s]", content.title.c_str(), content.title_id.c_str());
@@ -207,7 +209,8 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     const auto count_contents_failed = count_content_state(archive.first, false);
                     if (count_contents_failed) {
                         ImGui::Spacing();
-                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%ld %s", count_contents_failed, lang["failed_install_archive"].c_str());
+                        const auto failed_install_archive_str = fmt::format(fmt::runtime(lang["failed_install_archive"].c_str()), count_contents_failed);
+                        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", failed_install_archive_str.c_str());
                         ImGui::Spacing();
                         for (const auto &content : archive.second) {
                             if (!content.state)
@@ -221,7 +224,8 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             }
             if (!invalid_archives.empty()) {
                 ImGui::Spacing();
-                ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%lu %s", invalid_archives.size(), lang["not_compatible_content"].c_str());
+                const auto not_compatible_content_str = fmt::format(fmt::runtime(lang["not_compatible_content"].c_str()), invalid_archives.size());
+                ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", not_compatible_content_str.c_str());
                 ImGui::Spacing();
                 for (const auto &archive : invalid_archives)
                     ImGui::TextWrapped("%s", archive.filename().string().c_str());

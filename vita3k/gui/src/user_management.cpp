@@ -376,7 +376,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         const auto check_free_name = (menu == "create" ? free_name : (temp.name == gui.users[user_id].name) || free_name);
         if (!check_free_name) {
             ImGui::SetCursorPos(ImVec2(INPUT_NAME_POS.x + INPUT_NAME_SIZE + 10.f, INPUT_NAME_POS.y));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_name_used"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "! %s", lang["user_name_used"].c_str());
         }
         ImGui::SetCursorPos(BUTTON_POS);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));

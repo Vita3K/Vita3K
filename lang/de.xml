@@ -14,7 +14,7 @@
 		</emulation>
 		<configuration name="Konfiguration">
 			<settings>Einstellungen</settings>
-			<user_management>Profile</user_management>
+			<user_management>Benutzerverwaltung</user_management>
 		</configuration>
 		<controls name="Steuerung">
 			<keyboard_controls>Tastatur</keyboard_controls>
@@ -344,23 +344,23 @@ Du kannst Trophäen in Anwendungen verdienen, die die Trophäen-Funktionen unter
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Wähle dein Profil</select_user>
-		<create_user>Erstelle Profil</create_user>
-		<user_created>Folgendes Profil wurde erstellt</user_created>
-		<edit_user>Verwalten</edit_user>
-		<user_name_used>! Der Name wird schon verwendet.</user_name_used>
-		<delete_user>Lösche Profil</delete_user>
-		<user_delete>Wähle das Profil, das gelöscht werden soll.</user_delete>
-		<user_delete_msg>Folgendes Profil wird gelöscht.</user_delete_msg>
-		<user_delete_message>Wenn du das Profil löscht, werden alle zugehörigen Nutzerdaten und Trophäen gelöscht.</user_delete_message>
-		<user_delete_warn>Das Profil wird gelöscht.
-Willst du wirklich fortfahren?</user_delete_warn>
-		<user_deleted>Profil gelöscht.</user_deleted>
-		<change_avatar>Ändere Avatar</change_avatar>
-		<reset_avatar>Setze Avatar zurück</reset_avatar>
+		<select_user>Benutzer auswählen</select_user>
+		<create_user>Benutzer erstellen</create_user>
+		<user_created>Der folgende Benutzer wurde erstellt.</user_created>
+		<edit_user>Benutzer bearbeiten</edit_user>
+		<user_name_used>Dieser Name wird bereits verwendet.</user_name_used>
+		<delete_user>Benutzer löschen</delete_user>
+		<user_delete>Wähle den Benutzer aus, den löschen möchtest.</user_delete>
+		<user_delete_msg>Der folgende Benutzer wird gelöscht.</user_delete_msg>
+		<user_delete_message>Wenn du den Benutzer löschst, werden die gespeicherten Daten und Trophäen dieses Benutzer gelöscht.</user_delete_message>
+		<user_delete_warn>Der Benutzer wird gelöscht.
+Wirklich fortfahren?</user_delete_warn>
+		<user_deleted>Benutzer gelöscht.</user_deleted>
+		<change_avatar>Avatar ändere</change_avatar>
+		<reset_avatar>Avatar zurücksetzen</reset_avatar>
 		<name>Name</name>
-		<user>Profil</user>
+		<user>Benutzer</user>
 		<confirm>Bestätigen</confirm>
-		<automatic_user_login>Automatisches Einloggen</automatic_user_login>
+		<automatic_user_login>Benutzer automatisch einloggen</automatic_user_login>
 	</user_management>
 </lang>

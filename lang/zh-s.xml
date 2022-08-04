@@ -25,8 +25,8 @@
 	</main_menubar>
 
 	<about name="关于">
-		<vita3k>Vita3K：一个PS Vita/PS Vita TV模拟器。 是世界上首个实用的PS Vita/PS Vita TV模拟器。</vita3k>
-		<about_vita3k>Vita3K是一个使用C++编写的实验性开源PlayStation Vita/PlayStation Vita TV模拟器，适用于Windows和Linux操作系统。</about_vita3k>
+		<vita3k>Vita3K：一个PS Vita/PS Vita TV模拟器。 是全球首款实用的PS Vita/PS Vita TV模拟器。</vita3k>
+		<about_vita3k>Vita3K是一款使用C++编写的实验性开源PlayStation Vita/PlayStation Vita TV模拟器，适用于Windows和Linux操作系统。</about_vita3k>
 		<note>注意：目前模拟器仍处于开发的早期阶段。</note>
 		<github_website>如果您有兴趣参与贡献，请浏览我们的GitHub：</github_website>
 		<vita3k_website>更多信息请访问我们的网站：</vita3k_website>
@@ -340,8 +340,7 @@ Your Vita3K system is ready!</completed_setup>
 		<no_font_exist>No firmware font package present.
 Please download and install it.</no_font_exist>
 		<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
-		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian region font support in GUI.
-It is also generally recommended for GUI.</firmware_font_package_note>
+		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
 		<delete_fw>Delete the firmware installation file?</delete_fw>
 		<select_key_type>选择密钥类型</select_key_type>
 		<select_work>选择work.bin</select_work>
@@ -355,11 +354,11 @@ It is also generally recommended for GUI.</firmware_font_package_note>
 		<select_install_type>选择安装类型</select_install_type>
 		<select_file>选择文件</select_file>
 		<select_directory>选择目录</select_directory>
-		<compatible_content>个压缩包发现兼容的内容。</compatible_content>
-		<successed_install_archive>个内容的压缩包已成功安装：</successed_install_archive>
+		<compatible_content>发现兼容内容的{}个压缩包。</compatible_content>
+		<successed_install_archive>已成功安装{}个压缩包内容：</successed_install_archive>
 		<update_app>更新应用程序至：</update_app>
-		<failed_install_archive>个内容安装失败：</failed_install_archive>
-		<not_compatible_content>个压缩包未发现兼容的内容。</not_compatible_content>
+		<failed_install_archive>无法安装{}个压缩包内容：</failed_install_archive>
+		<not_compatible_content>未发现兼容内容的{}个压缩包。</not_compatible_content>
 		<delete_archive>删除压缩包？</delete_archive>
 		<select_license_type>选择许可证类型</select_license_type>
 		<select_bin_rif>选择work.bin/rif</select_bin_rif>
@@ -456,22 +455,22 @@ It is also generally recommended for GUI.</firmware_font_package_note>
 
 	<user_management>
 		<select_user>选择用户</select_user>
-		<create_user>新建用户</create_user>
-		<user_created>已创建以下用户</user_created>
+		<create_user>创建用户</create_user>
+		<user_created>已创建以下用户。</user_created>
 		<edit_user>编辑用户</edit_user>
-		<user_name_used>！用户名已被使用。</user_name_used>
+		<user_name_used>此名称已被使用。</user_name_used>
 		<delete_user>删除用户</delete_user>
-		<user_delete>请选择您想要删除的用户。</user_delete>
+		<user_delete>请选择要删除的用户。</user_delete>
 		<user_delete_msg>将删除以下用户。</user_delete_msg>
-		<user_delete_message>如果删除此用户，此用户的保存数据、奖杯将被删除。</user_delete_message>
-		<user_delete_warn>将删除此用户。
-您真的想要继续吗？</user_delete_warn>
+		<user_delete_message>若删除用户，该用户的保存数据、奖杯也会一并被删除。</user_delete_message>
+		<user_delete_warn>用户将被删除。
+确定要继续吗？</user_delete_warn>
 		<user_deleted>用户已删除。</user_deleted>
-		<change_avatar>更换头像</change_avatar>
-		<reset_avatar>重置头像</reset_avatar>
+		<change_avatar>变更虚拟形象</change_avatar>
+		<reset_avatar>重设虚拟形象</reset_avatar>
 		<name>名称</name>
 		<user>用户</user>
-		<confirm>确认</confirm>
+		<confirm>确定</confirm>
 		<automatic_user_login>自动登录用户</automatic_user_login>
 	</user_management>
 
@@ -492,7 +491,7 @@ It is also generally recommended for GUI.</firmware_font_package_note>
 
 	<welcome name="欢迎来到Vita3K">
 		<line_first>Vita3K PlayStation Vita模拟器</line_first>
-		<line_second>Vita3K是一个使用C++编写的开源PlayStation Vita/PlayStation Vita TV模拟器，适用于Windows和Linux。</line_second>
+		<line_second>Vita3K是一款使用C++编写的开源PlayStation Vita/PlayStation Vita TV模拟器，适用于Windows和Linux。</line_second>
 		<line_third>目前模拟器仍处于早期阶段，因此非常感谢任何反馈和测试。</line_third>
 		<line_fourth>要开始使用，请安装PS Vita固件和字体包。</line_fourth>
 		<download_firmware>Download Firmware</download_firmware>

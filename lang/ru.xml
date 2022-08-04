@@ -348,7 +348,7 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<create_user>Создать пользователя</create_user>
 		<user_created>Пользователь был создан</user_created>
 		<edit_user>Изменить пользователя</edit_user>
-		<user_name_used>! Это имя уже используется.</user_name_used>
+		<user_name_used>Это имя уже используется.</user_name_used>
 		<delete_user>Удалить пользователя</delete_user>
 		<user_delete>Выберите пользователя, которого хотите удалить.</user_delete>
 		<user_delete_msg>Выбранный пользователь был удалён.</user_delete_msg>

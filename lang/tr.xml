@@ -348,7 +348,7 @@ Kupa özelliğini destekleyen bir uygulamayı kullanarak kupa kazanabilirsiniz.<
 		<create_user>Kullanıcı Oluştur</create_user>
 		<user_created>Aşağıdaki Kullanıcı Oluşturuldu</user_created>
 		<edit_user>Düzenle</edit_user>
-		<user_name_used>! Bu isim zaten kullanılıyor.</user_name_used>
+		<user_name_used>Bu isim zaten kullanılıyor.</user_name_used>
 		<delete_user>Kullanıcıyı Sil</delete_user>
 		<user_delete>Silmek istediğiniz kullanıcıyı seçin.</user_delete>
 		<user_delete_msg>Aşağıdaki kullanıcı silinecek.</user_delete_msg>
