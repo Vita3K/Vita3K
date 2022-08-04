@@ -344,13 +344,24 @@ Pour obtenir des trophées, utilisez une application compatible avec cette fonct
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Select your user</select_user>
 		<create_user>Créer un utilisateur</create_user>
+		<user_created>L'utilisateur suivant a été créés :</user_created>
 		<edit_user>Modifier un utilisateur</edit_user>
+		<user_name_used>! Ce nom est déjà utilisé.</user_name_used>
 		<delete_user>Supprimer un utilisateur</delete_user>
+		<user_delete>Sélectionnez l'utilisateur que vous souhaitez supprimer.</user_delete>
+		<user_delete_msg>L'utilisateur suivant va être supprimé.</user_delete_msg>
+		<user_delete_message>Si vous supprimez cet utilisateur, toutes ses données, trophées seront supprimés.</user_delete_message>
+		<user_delete_warn>L'utilisateur va être supprimé.
+Voulez-vous vraiment continuer?</user_delete_warn>
+		<user_deleted>Utilisateur supprimé.</user_deleted>
 		<change_avatar>Changer d'avatar</change_avatar>
+		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Nom</name>
 		<user>Utilisateur</user>
 		<confirm>Confirmer</confirm>
+		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Mise à jour Vita3K">

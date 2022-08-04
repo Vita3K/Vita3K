@@ -336,13 +336,24 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Select your user</select_user>
 		<create_user>Crear usuario</create_user>
+		<user_created>The following user has been created.</user_created>
+		<user_name_used>This name is already in use.</user_name_used>
 		<edit_user>Modificar usuario</edit_user>
 		<delete_user>Eliminar usuario</delete_user>
+		<user_delete>Select the user you want to delete.</user_delete>
+		<user_delete_msg>The following user will be deleted.</user_delete_msg>
+		<user_delete_message>If you delete the user, that user's saved data, trophies will be deleted.</user_delete_message>
+		<user_delete_warn>The user will be deleted.
+Are you sure you want to continue?</user_delete_warn>
+		<user_deleted>User deleted.</user_deleted>
 		<change_avatar>Cambiar avatar</change_avatar>
+		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Nombre</name>
 		<user>Usuario</user>
 		<confirm>Confirmar</confirm>
+		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Actualizar Vita3K">

@@ -354,11 +354,11 @@ Please download and install it.</no_font_exist>
 		<select_install_type>Select install type</select_install_type>
 		<select_file>Select File</select_file>
 		<select_directory>Select Directory</select_directory>
-		<compatible_content>Archive(s) found with compatible contents.</compatible_content>
-		<successed_install_archive>Archive content successfully installed:</successed_install_archive>
+		<compatible_content>{} archive(s) found with compatible contents.</compatible_content>
+		<successed_install_archive>{} archive(s) contents successfully installed:</successed_install_archive>
 		<update_app>Update App to:</update_app>
-		<failed_install_archive>Failed to install archive content:</failed_install_archive>
-		<not_compatible_content>No compatible content found in archive(s):</not_compatible_content>
+		<failed_install_archive>Failed to install {} archive(s) contents:</failed_install_archive>
+		<not_compatible_content>No compatible content found in {} archive(s):</not_compatible_content>
 		<delete_archive>Delete archive?</delete_archive>
 		<select_license_type>Select license type</select_license_type>
 		<select_bin_rif>Select work.bin/rif</select_bin_rif>
@@ -456,7 +456,7 @@ You can earn trophies by using an application that supports the trophy feature.<
 	<user_management>
 		<select_user>Select your user</select_user>
 		<create_user>Create User</create_user>
-		<user_created>The following user has been created</user_created>
+		<user_created>The following user has been created.</user_created>
 		<edit_user>Edit User</edit_user>
 		<user_name_used>This name is already in use.</user_name_used>
 		<delete_user>Delete User</delete_user>
