@@ -1,5 +1,5 @@
 set(SOURCE_LIST
-	module_parent.cpp include/modules/module_parent.h include/modules/library_init_list.inc
+	module_parent.cpp include/modules/module_parent.h include/modules/library_init_list.inc include/modules/tracy.h
 
 	SceAppMgr/SceAppMgr.cpp SceAppMgr/SceAppMgr.h
 	SceAppMgr/SceSharedFb.cpp SceAppMgr/SceSharedFb.h

@@ -110,7 +110,8 @@ public:
         "SceAudio",
         "SceHttp",
         "SceSsl",
-        "SceTouch"
+        "SceTouch",
+        "SceAudiodecUser"
     };
 
     /**
