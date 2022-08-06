@@ -37,7 +37,10 @@ Vita3K is licensed under the **GPLv2** license. This is largely dictated by exte
 
 ## Downloads
 * [Windows](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
-  * [Visual C++ Redistributables](https://aka.ms/vs/16/release/vc_redist.x64.exe) (Install if not working.) 
+  * Scoop
+    * [vita3k](https://scoop.sh/#/apps?q=vita3k&s=0&d=1&o=true)
+  * Requirements:
+    * [Microsoft Visual C++ 2015-2022 Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) (Install if not working.) 
 * Linux
   * Arch based:
     * [vita3k-bin](https://aur.archlinux.org/packages/vita3k-bin)<sup><small>AUR</small></sup>
