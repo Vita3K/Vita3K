@@ -200,7 +200,7 @@ elseif(LINUX)
 elseif(WIN32)
 	target_sources(vita3k PRIVATE resource.h Vita3K.ico Vita3K.rc WindowsDpiAwareness.manifest)
 	set_property(DIRECTORY ${CMAKE_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT vita3k)
-	set_target_properties(vita3k PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/build-windows/bin/$(Configuration)")
+	set_target_properties(vita3k PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin/$(Configuration)")
 	add_custom_command(
 		TARGET vita3k
 		POST_BUILD
