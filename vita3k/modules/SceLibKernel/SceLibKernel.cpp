@@ -404,7 +404,7 @@ EXPORT(int, sceIoCompleteMultiple) {
 }
 
 EXPORT(int, sceIoDevctl, const char *dev, SceInt cmd, const void *indata, SceSize inlen, void *outdata, SceSize outlen) {
-    if (!dev)
+    if (!dev || !outdata)
         return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
 
     // TODO: Turn the commands into an enum of commands
