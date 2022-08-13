@@ -159,8 +159,12 @@ EXPORT(int, sceKernelLibcGettimeofday, VitaTimeval *timeAddr, VitaTimezone *tzAd
     return 0;
 }
 
-EXPORT(int, sceKernelLibcGmtime_r) {
-    return UNIMPLEMENTED();
+EXPORT(Ptr<struct tm>, sceKernelLibcGmtime_r, const VitaTime *time, Ptr<struct tm> date) {
+    const time_t plat_time = *time;
+
+    SAFE_GMTIME(&plat_time, date.get(emuenv.mem));
+
+    return date;
 }
 
 EXPORT(Ptr<struct tm>, sceKernelLibcLocaltime_r, const VitaTime *time, Ptr<struct tm> date) {
