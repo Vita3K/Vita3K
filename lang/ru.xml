@@ -25,14 +25,14 @@
 	</main_menubar>
 
 	<about name="О программе">
-		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
-		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems.</about_vita3k>
-		<note>Note: The emulator is still in a very early stage of development.</note>
-		<github_website>If you're interested in contributing, check out our GitHub:</github_website>
-		<vita3k_website>Visit our website for more info:</vita3k_website>
-		<vita3k_staff>Vita3K Staff</vita3k_staff>
-		<developers>Developers</developers>
-		<contributors>Contributors</contributors>
+		<vita3k>Vita3K: эмулятор PS Vita/PS TV. Первый в мире функциональный эмулятор PS Vita/PS TV.</vita3k>
+		<about_vita3k>Vita3K — экспериментальный эмулятор PlayStation Vita/PlayStation TV с открытым исходным кодом, написанный на C++ для операционных систем Windows и Linux.</about_vita3k>
+		<note>Примечание. Эмулятор все еще находится на очень ранней стадии разработки.</note>
+		<github_website>Если вы хотите внести свой вклад, посетите наш GitHub:</github_website>
+		<vita3k_website>Посетите наш веб-сайт для получения дополнительной информации:</vita3k_website>
+		<vita3k_staff>Персонал Vita3K</vita3k_staff>
+		<developers>Разработчики</developers>
+		<contributors>Авторы</contributors>
 	</about>
 
 	<app_context>
@@ -363,4 +363,38 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<confirm>Подтвердить</confirm>
 		<automatic_user_login>Автоматический вход пользователя</automatic_user_login>
 	</user_management>
+</lang>
+<vita3k_update name="Vita3K Update">
+ 		<new_version_available>Новая версия Vita3K доступна.</new_version_available>
+		<back>Назад</back>
+		<downloading>Скачивание...
+После завершения загрузки Vita3K автоматически перезапустится, а затем установит новую версию Vita3K.</downloading>
+		<not_complete_update>Не удалось завершить обновление.</not_complete_update>
+		<next>Далее</next>
+		<update_vita3k>Хотите обновить Vita3K?</update_vita3k>
+		<later_version_already_installed>Более поздняя версия Vita3K уже установлена.</later_version_already_installed>
+		<latest_version_already_installed>Последняя версия Vita3K уже установлена.</latest_version_already_installed>
+		<new_features>Новые функции в версии {}</new_features>
+		<update>Обновить</update>
+		<version>Версия {}</version>
+	</vita3k_update>
+
+	<welcome name="Welcome to Vita3K">
+		<line_first>Vita3K Эмулятор PlayStation Vita</line_first>
+		<line_second>Vita3K — эмулятор PlayStation Vita с открытым исходным кодом, написанный на C++ для Windows и Linux.</line_second>
+		<line_third>Эмулятор все еще находится на ранних стадиях, поэтому мы будем очень признательны за любые отзывы и тестирование.</line_third>
+		<line_fourth>Для начала установите прошивку PS Vita и пакеты шрифтов.</line_fourth>
+		<download_firmware>Скачать прошивку</download_firmware>
+		<line_sixth_part_one>Полное руководство по настройке Vita3K можно найти на</line_sixth_part_one>
+		<quickstart>Быстрый старт</quickstart>
+		<line_sixth_part_two>страница.</line_sixth_part_two>
+		<line_seventh_part_one>Проконсультиция с коммерческой игрой</line_seventh_part_one>
+		<compatibility>совместимость</compatibility>
+		<line_seventh_part_two>Список совместимости и список совместимости с Homebrew, чтобы увидеть, совместимость.</line_seventh_part_two>
+		<line_eighth>Взносы приветствуются!</line_eighth>
+		<line_tenth>Дополнительную поддержку можно найти на канале #help</line_tenth>
+		<line_eleventh>Vita3K не потворствует пиратству. Вы должны дампить свои собственные игры.</line_eleventh>
+		<show_next_time>Показать в следующий раз</show_next_time>
+		<close>Закрыть</close>
+	</welcome>
 </lang>
