@@ -195,11 +195,11 @@
 	</content_manager>
 
 	<controllers name="Контроллеры">
-		<connected>Controllers connected</connected>
+		<connected>Подключенные котроллеры</connected>
 		<name>Название</name>
-		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
+		<num>Номер</num>
+		<not_connected>Совместимые контроллеры не подключены.
+Подключите контроллер, который совместим с SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -286,8 +286,8 @@ Connect a controller that is compatible with SDL2.</not_connected>
 				<image>Изображение</image>
 			</start_screen>
 			<home_screen_backgrounds name="Фон начального экрана">
-				<delete_background>Delete Background</delete_background>
-				<add_background>Add Background</add_background>
+				<delete_background>Удалить задний фон</delete_background>
+				<add_background>Добавить задний фон</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Дата и время">
@@ -363,7 +363,6 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<confirm>Подтвердить</confirm>
 		<automatic_user_login>Автоматический вход пользователя</automatic_user_login>
 	</user_management>
-</lang>
 <vita3k_update name="Vita3K Update">
  		<new_version_available>Новая версия Vita3K доступна.</new_version_available>
 		<back>Назад</back>
