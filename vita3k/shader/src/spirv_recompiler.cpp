@@ -488,16 +488,15 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             std::string tex_name = "";
             std::string sampling_type = "2D";
             spv::Dim dim_type = spv::Dim2D;
-            uint32_t sampler_resource_index = 0;
+            const uint32_t sampler_resource_index = descriptor->resource_index;
 
             bool anonymous = false;
 
             for (std::uint32_t p = 0; p < program.parameter_count; p++) {
                 const SceGxmProgramParameter &parameter = gxp_parameters[p];
 
-                if (parameter.resource_index == descriptor->resource_index && parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
+                if (parameter.resource_index == sampler_resource_index && parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
                     tex_name = gxp::parameter_name(parameter);
-                    sampler_resource_index = parameter.resource_index;
 
                     if (parameter.is_sampler_cube()) {
                         dim_type = spv::DimCube;
@@ -509,7 +508,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             }
 
             if (tex_name.empty()) {
-                LOG_INFO("Sample symbol stripped, using anonymous name");
+                if (!anonymous)
+                    // log only once
+                    LOG_INFO("Sample symbol stripped, using anonymous name");
 
                 anonymous = true;
                 tex_name = fmt::format("anonymousTexture{}", anon_tex_count++);
