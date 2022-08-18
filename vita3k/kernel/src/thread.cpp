@@ -223,7 +223,7 @@ bool ThreadState::run_loop() {
                 continue;
 
             if (res < 0) {
-                LOG_ERROR("Thread {} experienced a unicorn error.", name);
+                LOG_ERROR("Thread {} ({}) experienced a unicorn error.", name, cpu->thread_id);
                 if (current_job->notify) {
                     current_job->notify(0xDEADDEAD);
                 }
