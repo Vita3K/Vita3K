@@ -337,7 +337,7 @@ EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
 
         infoCpu->cpsr = context.cpsr;
         memcpy(infoCpu->reg, context.cpu_registers.data(), 16 * 4);
-        infoCpu->sb = 100000; // Todo
+        infoCpu->sb = read_reg(*thread->cpu, 9); // SB is an alias for reg 9
         infoCpu->st = 100000; // Todo
         infoCpu->teehbr = 100000; // Todo
         infoCpu->tpidrurw = read_tpidruro(*thread->cpu);
