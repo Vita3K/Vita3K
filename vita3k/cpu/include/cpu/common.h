@@ -102,6 +102,7 @@ struct CPUContext {
             ss << fmt::format("r{: <2}: 0x{:0>8x}   r{: <2}: 0x{:0>8x}\n", a, cpu_registers[a], a + 6, cpu_registers[a + 6]);
         }
         ss << fmt::format("r12: 0x{:0>8x}\n", cpu_registers[12]);
+        ss << fmt::format("Thumb: {}\n", thumb());
         return ss.str();
     }
 };

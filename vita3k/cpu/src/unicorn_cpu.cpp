@@ -122,21 +122,13 @@ static void enable_vfp_fpu(uc_engine *uc) {
 
 void UnicornCPU::log_error_details(uc_err code) {
     // I don't especially want the time logged for every line, but I also want it to print to the log file...
-    LOG_ERROR("Unicorn error {}. {}", log_hex(code), uc_strerror(code));
+    LOG_ERROR("Unicorn error {}. {}\n{}", log_hex(code), uc_strerror(code), this->save_context().description());
 
-    uint32_t pc = get_pc();
-    uint32_t sp = get_sp();
-    uint32_t lr = get_lr();
-    uint32_t registers[13];
-    for (size_t a = 0; a < 13; a++)
-        registers[a] = get_reg(a);
-
-    LOG_ERROR("PC: 0x{:0>8x},   SP: 0x{:0>8x},   LR: 0x{:0>8x}", pc, sp, lr);
-    for (int a = 0; a < 6; a++) {
-        LOG_ERROR("r{: <2}: 0x{:0>8x}   r{: <2}: 0x{:0>8x}", a, registers[a], a + 6, registers[a + 6]);
-    }
-    LOG_ERROR("r12: 0x{:0>8x}", registers[12]);
-    LOG_ERROR("Executing: {}", disassemble(*this->parent, pc));
+    auto pc = this->get_pc();
+    if (pc < parent->mem->page_size)
+        LOG_CRITICAL("PC is 0x{:x}", pc);
+    else
+        LOG_WARN("Executing: {}", disassemble(*parent, pc, nullptr));
 }
 
 UnicornCPU::UnicornCPU(CPUState *state)
