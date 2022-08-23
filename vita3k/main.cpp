@@ -189,8 +189,10 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    LOG_INFO("Initializing Libs...");
     init_libraries(emuenv);
 
+    LOG_INFO("Initializing Initial Setup...");
     GuiState gui;
     if (!cfg.console) {
         gui::pre_init(gui, emuenv);
@@ -255,7 +257,7 @@ int main(int argc, char *argv[]) {
 #if USE_DISCORD
         auto discord_rich_presence_old = emuenv.cfg.discord_rich_presence;
 #endif
-
+        LOG_INFO("Initializing GUI...");
         std::chrono::system_clock::time_point present = std::chrono::system_clock::now();
         std::chrono::system_clock::time_point later = std::chrono::system_clock::now();
         const double frame_time = 1000.0 / 60.0;
