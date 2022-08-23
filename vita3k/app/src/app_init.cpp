@@ -192,7 +192,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         } else {
             switch (state.backend_renderer) {
             case renderer::Backend::OpenGL:
-                error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.1?", nullptr);
+                error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.4?", nullptr);
                 break;
 #ifdef USE_VULKAN
             case renderer::Backend::Vulkan:
