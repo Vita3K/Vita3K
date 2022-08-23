@@ -1696,6 +1696,7 @@ EXPORT(int, sceSblGcAuthMgrSclkSetData2) {
 BRIDGE_IMPL(__sce_aeabi_idiv0)
 BRIDGE_IMPL(__sce_aeabi_ldiv0)
 BRIDGE_IMPL(__stack_chk_fail)
+BRIDGE_IMPL(__stack_chk_guard)
 BRIDGE_IMPL(_sceKernelCreateLwMutex)
 BRIDGE_IMPL(sceClibAbort)
 BRIDGE_IMPL(sceClibDprintf)
