@@ -76,7 +76,7 @@ bool copy_license(EmuEnvState &emuenv, const fs::path &license_path) {
 
         const auto license_dst_path{ dst_path / fmt::format("{}.rif", emuenv.license_content_id) };
         if (license_path != license_dst_path) {
-            fs::copy_file(license_path, license_dst_path, fs::copy_option::overwrite_if_exists);
+            fs_utils::copy_file_overwrite(license_path, license_dst_path);
             if (fs::exists(license_dst_path)) {
                 LOG_INFO("Success copy license file to: {}", license_dst_path.string());
                 return true;
@@ -118,7 +118,7 @@ bool create_license(EmuEnvState &emuenv, const std::string &zRIF) {
 
     // Create temp license file
     const auto temp_license_path = cache_path / "temp_licence.rif";
-    std::ofstream temp_file(temp_license_path.string(), std::ios::out | std::ios::binary);
+    fs::ofstream temp_file(temp_license_path, std::ios::out | std::ios::binary);
     zrif2rif(zRIF, temp_file);
 
     return copy_license(emuenv, temp_license_path);

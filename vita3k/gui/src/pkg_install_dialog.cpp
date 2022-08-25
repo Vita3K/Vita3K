@@ -100,7 +100,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         } else if (state == "work") {
             result = NFD_OpenDialog("bin", nullptr, &work_path);
             if (result == NFD_OKAY) {
-                fs::ifstream binfile(string_utils::utf_to_wide(std::string(work_path)), std::ios::in | std::ios::binary | std::ios::ate);
+                fs::ifstream binfile(fs::path(string_utils::utf_to_wide(std::string(work_path))), std::ios::in | std::ios::binary | std::ios::ate);
                 zRIF = rif2zrif(binfile);
                 state = "install";
             } else

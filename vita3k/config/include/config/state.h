@@ -246,7 +246,7 @@ public:
 
     // Load a function to the node network, and then update the members
     void load_new_config(const fs::path &path) override {
-        yaml_node = YAML::LoadFile(path.generic_path().string());
+        yaml_node = YAML::LoadFile(path.generic_string());
         update_members();
     }
 

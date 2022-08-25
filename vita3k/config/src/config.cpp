@@ -47,7 +47,7 @@ static std::set<std::string> get_file_set(const fs::path &loc, bool dirs_only = 
             cur_set.insert(it->path().stem().string());
         }
 
-        boost::system::error_code err{};
+        fs::error_code err{};
         it.increment(err);
     }
     return cur_set;

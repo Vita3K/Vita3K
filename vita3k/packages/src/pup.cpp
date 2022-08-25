@@ -107,7 +107,7 @@ static std::string make_filename(unsigned char *hdr, int64_t filetype) {
 static void extract_pup_files(const std::wstring &pup, const std::wstring &output) {
     constexpr int SCEUF_HEADER_SIZE = 0x80;
     constexpr int SCEUF_FILEREC_SIZE = 0x20;
-    fs::ifstream infile(pup, std::ios::binary);
+    fs::ifstream infile(fs::path(pup), std::ios::binary);
     char header[SCEUF_HEADER_SIZE];
     infile.read(header, SCEUF_HEADER_SIZE);
 
@@ -155,7 +155,7 @@ static void extract_pup_files(const std::wstring &pup, const std::wstring &outpu
             filename = make_filename((unsigned char *)hdr, filetype);
         }
 
-        fs::ofstream outfile(fmt::format(L"{}/{}", output, string_utils::utf_to_wide(filename)), std::ios::binary);
+        fs::ofstream outfile(fs::path(output) / string_utils::utf_to_wide(filename), std::ios::binary);
         infile.seekg(offset);
         std::vector<char> buffer(length);
         infile.read(&buffer[0], length);
@@ -176,7 +176,7 @@ static void decrypt_segments(std::ifstream &infile, const std::wstring &outdir, 
 
     const auto scesegs = get_segments(infile, sce_hdr, SCE_KEYS, sysver, selftype);
     for (const auto &sceseg : scesegs) {
-        fs::ofstream outfile(fmt::format(L"{}/{}.seg02", outdir, filename), std::ios::binary);
+        fs::ofstream outfile(fs::path(outdir) / (filename + L".seg02"), std::ios::binary);
         infile.seekg(sceseg.offset);
         std::vector<unsigned char> encrypted_data(sceseg.size);
         infile.read((char *)&encrypted_data[0], sceseg.size);
@@ -207,7 +207,7 @@ static void join_files(const std::wstring &path, const std::string &filename, co
 
     std::sort(files.begin(), files.end());
 
-    fs::ofstream fileout(output, std::ios::binary);
+    fs::ofstream fileout(fs::path(output), std::ios::binary);
     for (const auto &file : files) {
         fs::ifstream filein(file, std::ios::binary);
         std::vector<char> buffer(fs::file_size(file));
@@ -228,7 +228,7 @@ static void decrypt_pup_packages(const std::wstring &src, const std::wstring &de
     }
 
     for (const auto &filename : pkgfiles) {
-        const std::wstring &filepath = fmt::format(L"{}/{}", src, filename);
+        const fs::path &filepath = fs::path(src) / filename;
         fs::ifstream infile(filepath, std::ios::binary);
         decrypt_segments(infile, dest, filename, SCE_KEYS);
         infile.close();

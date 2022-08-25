@@ -522,8 +522,7 @@ void get_user_apps_title(GuiState &gui, EmuEnvState &emuenv) {
 
     gui.app_selector.user_apps.clear();
     for (const auto &app : fs::directory_iterator(app_path)) {
-        if (!app.path().empty() && fs::is_directory(app.path())
-            && !app.path().filename_is_dot() && !app.path().filename_is_dot_dot()) {
+        if (!app.path().empty() && fs::is_directory(app.path())) {
             const auto app_path = app.path().stem().generic_string();
             get_app_param(gui, emuenv, app_path);
         }

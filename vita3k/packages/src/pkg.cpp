@@ -78,7 +78,7 @@ static void aes128_ctr_xor(aes_context *ctx, const uint8_t *iv, uint64_t block, 
 bool decrypt_install_nonpdrm(EmuEnvState &emuenv, std::string &drmlicpath, const std::string &title_path) {
     std::string title_id_src = title_path;
     std::string title_id_dst = title_path + "_dec";
-    fs::ifstream binfile(string_utils::utf_to_wide(drmlicpath), std::ios::in | std::ios::binary | std::ios::ate);
+    fs::ifstream binfile(fs::path(string_utils::utf_to_wide(drmlicpath)), std::ios::in | std::ios::binary | std::ios::ate);
     std::string zRIF = rif2zrif(binfile);
     F00DEncryptorTypes f00d_enc_type = F00DEncryptorTypes::native;
     std::string f00d_arg = std::string();
@@ -111,7 +111,7 @@ bool decrypt_install_nonpdrm(EmuEnvState &emuenv, std::string &drmlicpath, const
 
 bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRIF, const std::function<void(float)> &progress_callback) {
     std::wstring pkg_path = string_utils::utf_to_wide(pkg);
-    fs::ifstream infile(pkg_path, std::ios::binary);
+    fs::ifstream infile(fs::path(pkg_path), std::ios::binary);
     PkgHeader pkg_header;
     PkgExtHeader ext_header;
     infile.read(reinterpret_cast<char *>(&pkg_header), sizeof(PkgHeader));
@@ -272,9 +272,9 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
         LOG_INFO(string_name);
 
         if ((byte_swap(entry.type) & 0xFF) == 4 || (byte_swap(entry.type) & 0xFF) == 18) { // Directory
-            fs::create_directories(path.string() + "/" + string_name);
+            fs::create_directories(path / string_name);
         } else { // File
-            std::ofstream outfile(path.string() + "/" + string_name, std::ios::binary);
+            fs::ofstream outfile(path / string_name, fs::ofstream::binary);
 
             auto offset = byte_swap(entry.data_offset);
             auto data_size = byte_swap(entry.data_size);
