@@ -138,21 +138,8 @@ IMGUI_API void ImGui_ImplSdl_NewFrame(ImGui_State *state) {
     io.MouseDown[2] = state->mouse_pressed[2] || (mouse_buttons & SDL_BUTTON(SDL_BUTTON_MIDDLE)) != 0;
     state->mouse_pressed[0] = state->mouse_pressed[1] = state->mouse_pressed[2] = false;
 
-// We need to use SDL_CaptureMouse() to easily retrieve mouse coordinates outside of the client area. This is only supported from SDL 2.0.4 (released Jan 2016)
-#if (SDL_MAJOR_VERSION >= 2) && (SDL_MINOR_VERSION >= 0) && (SDL_PATCHLEVEL >= 4)
-    if ((SDL_GetWindowFlags(state->window) & (SDL_WINDOW_MOUSE_FOCUS | SDL_WINDOW_MOUSE_CAPTURE)) != 0)
+    if ((SDL_GetWindowFlags(state->window) & SDL_WINDOW_INPUT_FOCUS) != 0)
         io.MousePos = ImVec2((float)mx, (float)my);
-    bool any_mouse_button_down = false;
-    for (int n = 0; n < IM_ARRAYSIZE(io.MouseDown); n++)
-        any_mouse_button_down |= io.MouseDown[n];
-    if (any_mouse_button_down && (SDL_GetWindowFlags(state->window) & SDL_WINDOW_MOUSE_CAPTURE) == 0)
-        SDL_CaptureMouse(SDL_TRUE);
-    if (!any_mouse_button_down && (SDL_GetWindowFlags(state->window) & SDL_WINDOW_MOUSE_CAPTURE) != 0)
-        SDL_CaptureMouse(SDL_FALSE);
-#else
-    if ((SDL_GetWindowFlags(window) & SDL_WINDOW_INPUT_FOCUS) != 0)
-        io.MousePos = ImVec2((float)mx, (float)my);
-#endif
 
     // Update OS/hardware mouse cursor if imgui isn't drawing a software cursor
     if ((io.ConfigFlags & ImGuiConfigFlags_NoMouseCursorChange) == 0) {
