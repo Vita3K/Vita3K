@@ -922,7 +922,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     for (const auto &buffer : program_input.uniform_buffers) {
         if (buffer.reg_block_size > 0) {
-            const uint32_t reg_block_size_in_f32v = (buffer.reg_block_size + 3) / 4;
+            const uint32_t reg_block_size_in_f32v = std::min<uint32_t>(buffer.reg_block_size + 3, REG_SA_COUNT) / 4;
             const auto spv_buffer = b.createAccessChain(spv::StorageClassStorageBuffer, spv_params.buffer_container,
                 { b.makeIntConstant(spv_params.buffers.at(buffer.index).index_in_container) });
             copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset, reg_block_size_in_f32v);
