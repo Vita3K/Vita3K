@@ -316,6 +316,7 @@ EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
 
     switch (code) {
     case SCE_NETCTL_INFO_GET_IP_ADDRESS:
+        strcpy(info->ip_address, "127.0.0.1"); // placeholder in case gethostbyname can't find another ip
         char devname[80];
         gethostname(devname, 80);
         struct hostent *resolved = gethostbyname(devname);
