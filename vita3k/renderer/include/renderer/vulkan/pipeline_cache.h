@@ -18,12 +18,11 @@
 #pragma once
 
 #include <array>
+#include <limits>
 #include <map>
 #include <unordered_map>
 
 #include <vkutil/objects.h>
-// TODO: remove this include
-#include <util/fs.h>
 
 struct SceGxmProgram;
 enum SceGxmPrimitiveType : uint32_t;
