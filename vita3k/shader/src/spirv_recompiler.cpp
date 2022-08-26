@@ -1120,6 +1120,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv::Id texture_format_arr = b.makeArrayType(v4, b.makeIntConstant(4), 16);
     b.addDecoration(texture_format_arr, spv::DecorationArrayStride, 16);
 
+    // we need to static cast to int, as addMemberDecoration has an overload for both int and char*
+    // and some compiler are not sure what to convert size_t to
+#define intoffsetof(s, m) static_cast<int>(offsetof(s, m))
+
     if (program_type == SceGxmProgramType::Vertex) {
         // Create the default reg uniform buffer
         spv::Id render_buf_type = b.makeStructType({ v4, f32, f32, f32, texture_format_arr, f32, f32 }, "GxmRenderVertBufferBlock");
@@ -1127,13 +1131,13 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         if (translation_state.is_target_glsl)
             b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
 
-        b.addMemberDecoration(render_buf_type, 0, spv::DecorationOffset, offsetof(RenderVertUniformBlock, viewport_flip));
-        b.addMemberDecoration(render_buf_type, 1, spv::DecorationOffset, offsetof(RenderVertUniformBlock, viewport_flag));
-        b.addMemberDecoration(render_buf_type, 2, spv::DecorationOffset, offsetof(RenderVertUniformBlock, screen_width));
-        b.addMemberDecoration(render_buf_type, 3, spv::DecorationOffset, offsetof(RenderVertUniformBlock, screen_height));
-        b.addMemberDecoration(render_buf_type, 4, spv::DecorationOffset, offsetof(RenderVertUniformBlock, integral_texture_query_format));
-        b.addMemberDecoration(render_buf_type, 5, spv::DecorationOffset, offsetof(RenderVertUniformBlock, z_offset));
-        b.addMemberDecoration(render_buf_type, 6, spv::DecorationOffset, offsetof(RenderVertUniformBlock, z_scale));
+        b.addMemberDecoration(render_buf_type, 0, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, viewport_flip));
+        b.addMemberDecoration(render_buf_type, 1, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, viewport_flag));
+        b.addMemberDecoration(render_buf_type, 2, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, screen_width));
+        b.addMemberDecoration(render_buf_type, 3, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, screen_height));
+        b.addMemberDecoration(render_buf_type, 4, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, integral_texture_query_format));
+        b.addMemberDecoration(render_buf_type, 5, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, z_offset));
+        b.addMemberDecoration(render_buf_type, 6, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, z_scale));
 
         b.addMemberName(render_buf_type, 0, "viewport_flip");
         b.addMemberName(render_buf_type, 1, "viewport_flag");
@@ -1157,12 +1161,12 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         if (translation_state.is_target_glsl)
             b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
 
-        b.addMemberDecoration(render_buf_type, 0, spv::DecorationOffset, offsetof(RenderFragUniformBlock, back_disabled));
-        b.addMemberDecoration(render_buf_type, 1, spv::DecorationOffset, offsetof(RenderFragUniformBlock, front_disabled));
-        b.addMemberDecoration(render_buf_type, 2, spv::DecorationOffset, offsetof(RenderFragUniformBlock, writing_mask));
-        b.addMemberDecoration(render_buf_type, 3, spv::DecorationOffset, offsetof(RenderFragUniformBlock, use_raw_image));
-        b.addMemberDecoration(render_buf_type, 4, spv::DecorationOffset, offsetof(RenderFragUniformBlock, integral_texture_query_format));
-        b.addMemberDecoration(render_buf_type, 5, spv::DecorationOffset, offsetof(RenderFragUniformBlock, res_multiplier));
+        b.addMemberDecoration(render_buf_type, 0, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, back_disabled));
+        b.addMemberDecoration(render_buf_type, 1, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, front_disabled));
+        b.addMemberDecoration(render_buf_type, 2, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, writing_mask));
+        b.addMemberDecoration(render_buf_type, 3, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, use_raw_image));
+        b.addMemberDecoration(render_buf_type, 4, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, integral_texture_query_format));
+        b.addMemberDecoration(render_buf_type, 5, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, res_multiplier));
 
         // TODO: create enum to refer to these fields
         b.addMemberName(render_buf_type, 0, "back_disabled");
@@ -1180,6 +1184,8 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         create_fragment_inputs(b, spv_params, utils, features, translation_state, texture_queries, samplers, program);
     }
+
+#undef intoffsetof
 
     return spv_params;
 }
