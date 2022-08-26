@@ -20,6 +20,7 @@
 #include <config/functions.h>
 #include <config/state.h>
 #include <gui/functions.h>
+#include <host/dialog/filesystem.hpp>
 #include <ime/functions.h>
 #include <io/device.h>
 #include <io/state.h>
@@ -28,7 +29,6 @@
 #include <util/safe_time.h>
 #include <util/string_utils.h>
 
-#include <nfd.h>
 #include <pugixml.hpp>
 #include <stb_image.h>
 
@@ -581,11 +581,11 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                             sub_menu.clear();
                         }
                     } else if (sub_menu == "image") {
-                        nfdchar_t *image_path;
-                        nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &image_path);
+                        std::filesystem::path image_path = "";
+                        host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(image_path, { { "Image file", { "bmp", "gif", "jpg", "png", "tif" } } });
 
-                        if ((result == NFD_OKAY) && init_user_start_background(gui, image_path)) {
-                            gui.users[emuenv.io.user_id].start_path = image_path;
+                        if ((result == host::dialog::filesystem::Result::SUCCESS) && init_user_start_background(gui, image_path.string())) {
+                            gui.users[emuenv.io.user_id].start_path = image_path.string();
                             gui.users[emuenv.io.user_id].start_type = "image";
                             save_user(gui, emuenv, emuenv.io.user_id);
                         }
@@ -638,12 +638,12 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::NextColumn();
                 }
                 if (ImGui::Selectable(theme_background.home_screen_backgrounds["add_background"].c_str(), false, ImGuiSelectableFlags_None, SIZE_PACKAGE)) {
-                    nfdchar_t *background_path;
-                    nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &background_path);
+                    std::filesystem::path background_path = "";
+                    host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(background_path, { { "Image file", { "bmp", "gif", "jpg", "png", "tif" } } });
 
-                    if ((result == NFD_OKAY) && (gui.user_backgrounds.find(background_path) == gui.user_backgrounds.end())) {
-                        if (init_user_background(gui, emuenv, emuenv.io.user_id, background_path)) {
-                            gui.users[emuenv.io.user_id].backgrounds.push_back(background_path);
+                    if ((result == host::dialog::filesystem::Result::SUCCESS) && (gui.user_backgrounds.find(background_path.string()) == gui.user_backgrounds.end())) {
+                        if (init_user_background(gui, emuenv, emuenv.io.user_id, background_path.string())) {
+                            gui.users[emuenv.io.user_id].backgrounds.push_back(background_path.string());
                             gui.users[emuenv.io.user_id].use_theme_bg = false;
                             save_user(gui, emuenv, emuenv.io.user_id);
                         }

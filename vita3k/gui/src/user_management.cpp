@@ -21,12 +21,12 @@
 #include <config/state.h>
 #include <display/state.h>
 #include <gui/functions.h>
+#include <host/dialog/filesystem.hpp>
 #include <io/state.h>
 #include <misc/cpp/imgui_stdlib.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <nfd.h>
 #include <pugixml.hpp>
 #include <stb_image.h>
 
@@ -357,11 +357,11 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::SetCursorPos(ImVec2(AVATAR_POS.x, AVATAR_POS.y + AVATAR_SIZE.y));
         if (ImGui::Button(lang["change_avatar"].c_str(), ImVec2(AVATAR_SIZE.x, BUTTON_SIZE.y))) {
-            nfdchar_t *avatar_path;
-            nfdresult_t result = NFD_OpenDialog("bmp,gif,jpg,png,tif", nullptr, &avatar_path);
+            std::filesystem::path avatar_path = "";
+            host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(avatar_path, { { "Image file", { "bmp", "gif", "jpg", "png", "tif" } } });
 
-            if ((result == NFD_OKAY) && init_avatar(gui, emuenv, "temp", avatar_path))
-                temp.avatar = avatar_path;
+            if ((result == host::dialog::filesystem::Result::SUCCESS) && init_avatar(gui, emuenv, "temp", avatar_path.string()))
+                temp.avatar = avatar_path.string();
         }
         ImGui::SetWindowFontScale(0.8f);
         const auto INPUT_NAME_SIZE = 330.f * SCALE.x;

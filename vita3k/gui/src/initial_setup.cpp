@@ -19,11 +19,10 @@
 
 #include <config/state.h>
 #include <gui/functions.h>
+#include <host/dialog/filesystem.hpp>
 #include <lang/functions.h>
 
 #include <util/string_utils.h>
-
-#include <nfd.h>
 
 namespace gui {
 
@@ -122,12 +121,12 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextWrapped("%s", emuenv.cfg.pref_path.c_str());
         ImGui::SetCursorPos(!is_default_path ? ImVec2((WINDOW_SIZE.x / 2.f) - BIG_BUTTON_SIZE.x - (20.f * SCALE.x), BIG_BUTTON_POS.y) : BIG_BUTTON_POS);
         if (ImGui::Button("Change Emulator Path", BIG_BUTTON_SIZE)) {
-            nfdchar_t *emulator_path = nullptr;
-            nfdresult_t result = NFD_PickFolder(nullptr, &emulator_path);
+            std::filesystem::path emulator_path = "";
+            host::dialog::filesystem::Result result = host::dialog::filesystem::pick_folder(emulator_path);
 
-            if ((result == NFD_OKAY) && (string_utils::utf_to_wide(emulator_path) != emuenv.pref_path)) {
-                emuenv.pref_path = string_utils::utf_to_wide(emulator_path) + L'/';
-                emuenv.cfg.pref_path = emulator_path;
+            if ((result == host::dialog::filesystem::Result::SUCCESS) && (emulator_path.wstring() != emuenv.pref_path)) {
+                emuenv.pref_path = emulator_path.wstring() + L'/';
+                emuenv.cfg.pref_path = emulator_path.string();
             }
         }
         if (!is_default_path) {

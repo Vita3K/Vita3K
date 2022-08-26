@@ -44,6 +44,8 @@ Vita3K is licensed under the **GPLv2** license. This is largely dictated by exte
   * Arch based:
     * [vita3k-bin](https://aur.archlinux.org/packages/vita3k-bin)<sup><small>AUR</small></sup>
     * [vita3k-git](https://aur.archlinux.org/packages/vita3k-git)<sup><small>AUR</small></sup>
+  * Requirements:
+    * xdg-desktop-portal
 * Others
   * [Download Artifact](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
 

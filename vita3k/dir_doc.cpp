@@ -116,6 +116,12 @@
  */
 
 /**
+ * @dir vita3k/host
+ *
+ * @brief Host operating system abstraction layer
+ */
+
+/**
  * @dir vita3k/io
  *
  * @brief PS Vita file system emulation and `SceIo` implementation

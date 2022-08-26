@@ -17,16 +17,15 @@
 
 #include "private.h"
 
+#include <host/dialog/filesystem.hpp>
 #include <misc/cpp/imgui_stdlib.h>
 #include <packages/functions.h>
 #include <util/string_utils.h>
 
-#include <nfd.h>
-
 namespace gui {
 
 static std::string state, title, zRIF;
-nfdchar_t *work_path;
+std::filesystem::path work_path = "";
 static bool delete_work_file;
 
 void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
@@ -67,10 +66,10 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE))
             gui.file_menu.license_install_dialog = false;
     } else if (state == "work") {
-        nfdresult_t result = NFD_CANCEL;
-        result = NFD_OpenDialog("bin,rif", nullptr, &work_path);
-        if (result == NFD_OKAY) {
-            if (copy_license(emuenv, work_path))
+        host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
+        result = host::dialog::filesystem::open_file(work_path, { { "PlayStation Vita software license file", { "bin", "rif" } } });
+        if (result == host::dialog::filesystem::Result::SUCCESS) {
+            if (copy_license(emuenv, fs::path(work_path.wstring())))
                 state = "success";
             else
                 state = "fail";
@@ -105,12 +104,12 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        if (work_path)
+        if (work_path != "")
             ImGui::Checkbox(lang["delete_bin_rif"].c_str(), &delete_work_file);
         ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
         if (ImGui::Button("OK", BUTTON_SIZE)) {
             if (delete_work_file) {
-                fs::remove(fs::path(string_utils::utf_to_wide(std::string(work_path))));
+                fs::remove(fs::path(work_path.wstring()));
                 delete_work_file = false;
             }
             work_path = nullptr;

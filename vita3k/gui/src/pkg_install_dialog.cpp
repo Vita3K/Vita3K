@@ -18,6 +18,7 @@
 #include "private.h"
 
 #include <gui/functions.h>
+#include <host/dialog/filesystem.hpp>
 #include <misc/cpp/imgui_stdlib.h>
 #include <packages/functions.h>
 #include <packages/pkg.h>
@@ -26,19 +27,18 @@
 #include <util/log.h>
 #include <util/string_utils.h>
 
-#include <nfd.h>
-
 #include <thread>
 
 namespace gui {
 
-static nfdchar_t *pkg_path, *work_path;
+static std::filesystem::path pkg_path = "";
+static std::filesystem::path work_path = "";
 static std::string state, title, zRIF;
 static bool draw_file_dialog = true;
 static bool delete_pkg_file, delete_work_file;
 
 void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    nfdresult_t result = NFD_CANCEL;
+    host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
     static std::atomic<float> progress(0);
     static std::mutex install_mutex;
     static const auto progress_callback = [&](float updated_progress) {
@@ -53,15 +53,15 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto BUTTON_SIZE = ImVec2(160.f * SCALE.x, 45.f * SCALE.y);
 
     if (draw_file_dialog) {
-        result = NFD_OpenDialog("pkg", nullptr, &pkg_path);
+        result = host::dialog::filesystem::open_file(pkg_path, { { "PlayStation Store Downloaded Package", { "pkg" } } });
         draw_file_dialog = false;
-        if (result == NFD_OKAY)
+        if (result == host::dialog::filesystem::Result::SUCCESS)
             ImGui::OpenPopup("install");
-        else if (result == NFD_CANCEL) {
+        else if (result == host::dialog::filesystem::Result::CANCEL) {
             gui.file_menu.pkg_install_dialog = false;
             draw_file_dialog = true;
         } else {
-            LOG_ERROR("Error initializing file dialog: {}", NFD_GetError());
+            LOG_ERROR("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
             gui.file_menu.pkg_install_dialog = false;
             draw_file_dialog = true;
         }
@@ -98,9 +98,9 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 draw_file_dialog = true;
             }
         } else if (state == "work") {
-            result = NFD_OpenDialog("bin", nullptr, &work_path);
-            if (result == NFD_OKAY) {
-                fs::ifstream binfile(string_utils::utf_to_wide(std::string(work_path)), std::ios::in | std::ios::binary | std::ios::ate);
+            result = host::dialog::filesystem::open_file(work_path, { { "PlayStation Vita software license file", { "work.bin" } } });
+            if (result == host::dialog::filesystem::Result::SUCCESS) {
+                fs::ifstream binfile(work_path.wstring(), std::ios::in | std::ios::binary | std::ios::ate);
                 zRIF = rif2zrif(binfile);
                 state = "install";
             } else
@@ -125,7 +125,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 state = "install";
         } else if (state == "install") {
             std::thread installation([&emuenv]() {
-                if (install_pkg(std::string(pkg_path), emuenv, zRIF, progress_callback)) {
+                if (install_pkg(pkg_path.string(), emuenv, zRIF, progress_callback)) {
                     std::lock_guard<std::mutex> lock(install_mutex);
                     state = "success";
                 } else {
@@ -144,17 +144,17 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Separator();
             ImGui::Spacing();
             ImGui::Checkbox(lang["delete_pkg"].c_str(), &delete_pkg_file);
-            if (work_path)
+            if (work_path != "")
                 ImGui::Checkbox(lang["delete_work"].c_str(), &delete_work_file);
             ImGui::Spacing();
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button("OK", BUTTON_SIZE)) {
                 if (delete_pkg_file) {
-                    fs::remove(fs::path(string_utils::utf_to_wide(std::string(pkg_path))));
+                    fs::remove(fs::path(pkg_path.wstring()));
                     delete_pkg_file = false;
                 }
                 if (delete_work_file) {
-                    fs::remove(fs::path(string_utils::utf_to_wide(std::string(work_path))));
+                    fs::remove(fs::path(work_path.wstring()));
                     delete_work_file = false;
                 }
                 if ((emuenv.app_info.app_category.find("gd") != std::string::npos) || (emuenv.app_info.app_category.find("gp") != std::string::npos)) {
@@ -162,8 +162,8 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     save_apps_cache(gui, emuenv);
                 }
                 update_notice_info(gui, emuenv, "content");
-                pkg_path = nullptr;
-                work_path = nullptr;
+                pkg_path = "";
+                work_path = "";
                 gui.file_menu.pkg_install_dialog = false;
                 draw_file_dialog = true;
                 state.clear();
@@ -175,9 +175,9 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button("OK", BUTTON_SIZE)) {
                 gui.file_menu.pkg_install_dialog = false;
-                pkg_path = nullptr;
+                pkg_path = "";
                 draw_file_dialog = true;
-                work_path = nullptr;
+                work_path = "";
                 state.clear();
             }
         } else if (state == "installing") {
