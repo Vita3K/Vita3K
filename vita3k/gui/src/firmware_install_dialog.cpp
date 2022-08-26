@@ -19,11 +19,10 @@
 
 #include <config/state.h>
 #include <gui/functions.h>
+#include <host/dialog/filesystem.hpp>
 #include <packages/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
-
-#include <nfd.h>
 
 #include <thread>
 
@@ -31,7 +30,7 @@ namespace gui {
 
 std::string fw_version;
 bool delete_pup_file;
-nfdchar_t *pup_path;
+std::filesystem::path pup_path = "";
 
 static void get_firmware_version(EmuEnvState &emuenv) {
     fs::ifstream versionFile(emuenv.pref_path + L"/PUP_DEC/PUP/version.txt");
@@ -47,7 +46,7 @@ static void get_firmware_version(EmuEnvState &emuenv) {
 
 void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto lang = gui.lang.install_dialog;
-    nfdresult_t result = NFD_CANCEL;
+    host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
 
     static std::mutex install_mutex;
     static bool draw_file_dialog = true;
@@ -59,23 +58,23 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     std::lock_guard<std::mutex> lock(install_mutex);
 
     if (draw_file_dialog) {
-        result = NFD_OpenDialog("PUP", nullptr, &pup_path);
+        result = host::dialog::filesystem::open_file(pup_path, { { "PlayStation Update Package", { "PUP" } } });
         draw_file_dialog = false;
         finished_installing = false;
 
-        if (result == NFD_OKAY) {
+        if (result == host::dialog::filesystem::Result::SUCCESS) {
             std::thread installation([&emuenv]() {
-                install_pup(emuenv.pref_path, pup_path, progress_callback);
+                install_pup(emuenv.pref_path, pup_path.string(), progress_callback);
                 std::lock_guard<std::mutex> lock(install_mutex);
                 finished_installing = true;
                 get_firmware_version(emuenv);
             });
             installation.detach();
-        } else if (result == NFD_CANCEL) {
+        } else if (result == host::dialog::filesystem::Result::CANCEL) {
             gui.file_menu.firmware_install_dialog = false;
             draw_file_dialog = true;
         } else {
-            LOG_ERROR("Error initializing file dialog: {}", NFD_GetError());
+            LOG_ERROR("Error initializing file dialog: {}", host::dialog::filesystem::get_error());
             gui.file_menu.firmware_install_dialog = false;
             draw_file_dialog = true;
         }
@@ -118,7 +117,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
             if (ImGui::Button("OK", BUTTON_SIZE)) {
                 if (delete_pup_file) {
-                    fs::remove(fs::path(string_utils::utf_to_wide(pup_path)));
+                    fs::remove(fs::path(pup_path.wstring()));
                     delete_pup_file = false;
                 }
                 if (emuenv.cfg.initial_setup)

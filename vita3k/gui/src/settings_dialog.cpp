@@ -21,6 +21,7 @@
 #include <config/functions.h>
 #include <config/state.h>
 #include <display/state.h>
+#include <host/dialog/filesystem.hpp>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <renderer/state.h>
@@ -42,7 +43,6 @@
 #include <SDL.h>
 
 #include <algorithm>
-#include <nfd.h>
 #include <pugixml.hpp>
 #include <sstream>
 
@@ -105,12 +105,12 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
-    nfdchar_t *emulator_path = nullptr;
-    nfdresult_t result = NFD_PickFolder(nullptr, &emulator_path);
+    std::filesystem::path emulator_path = "";
+    host::dialog::filesystem::Result result = host::dialog::filesystem::pick_folder(emulator_path);
 
-    if (result == NFD_OKAY && string_utils::utf_to_wide(emulator_path) != emuenv.pref_path) {
+    if (result == host::dialog::filesystem::Result::SUCCESS && emulator_path.wstring() != emuenv.pref_path) {
         // Refresh the working paths
-        emuenv.pref_path = string_utils::utf_to_wide(emulator_path) + L'/';
+        emuenv.pref_path = emulator_path.wstring() + L'/';
 
         // TODO: Move app old to new path
         reset_emulator(gui, emuenv);

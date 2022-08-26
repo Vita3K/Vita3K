@@ -19,11 +19,10 @@
 #include "private.h"
 
 #include <gui/functions.h>
+#include <host/dialog/filesystem.hpp>
 #include <packages/sfo.h>
 
 #include <util/string_utils.h>
-
-#include <nfd.h>
 
 #include <thread>
 
@@ -33,7 +32,7 @@ static bool delete_archive_file;
 static std::string state, type, title;
 static std::map<fs::path, std::vector<ContentInfo>> contents_archives;
 static std::vector<fs::path> invalid_archives;
-static nfdchar_t *archive_path;
+static std::filesystem::path archive_path = "";
 static float global_progress = 0.f;
 static float archives_count = 0.f;
 
@@ -104,12 +103,19 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             gui.file_menu.archive_install_dialog = false;
     } else {
         if (state.empty()) {
-            nfdresult_t result = NFD_CANCEL;
-            if (type == "file")
-                result = NFD_OpenDialog("zip,vpk", nullptr, &archive_path);
-            else
-                result = NFD_PickFolder(nullptr, &archive_path);
-            if (result == NFD_OKAY) {
+            host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
+            if (type == "file") {
+                // Set file filters for the file picking dialog
+                std::vector<host::dialog::filesystem::FileFilter> file_filters = {
+                    { "PlayStation Vita commercial software package (NoNpDrm/FAGDec)", { "zip" } },
+                    { "PlayStation Vita homebrew software package", { "vpk" } },
+                };
+                // Call file picking dialog from the native file browser
+                result = host::dialog::filesystem::open_file(archive_path, file_filters);
+            } else {
+                result = host::dialog::filesystem::pick_folder(archive_path);
+            }
+            if (result == host::dialog::filesystem::Result::SUCCESS) {
                 state = "install";
             } else
                 type.clear();
@@ -127,7 +133,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     } else
                         invalid_archives.push_back(archive_path);
                 };
-                const auto contents_path = fs::path(string_utils::utf_to_wide(archive_path));
+                const auto contents_path = fs::path(archive_path.wstring());
                 if (type == "directory") {
                     const auto archives_path = get_path_of_archives(contents_path);
                     archives_count = float(archives_path.size());
@@ -258,7 +264,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     for (const auto archive : invalid_archives)
                         fs::remove(archive);
                 }
-                archive_path = nullptr;
+                archive_path = "";
                 gui.file_menu.archive_install_dialog = false;
                 delete_archive_file = false;
                 contents_archives.clear();

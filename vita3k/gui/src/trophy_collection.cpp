@@ -26,7 +26,6 @@
 #include <io/device.h>
 #include <io/functions.h>
 
-#include <nfd.h>
 #include <pugixml.hpp>
 #include <stb_image.h>
 

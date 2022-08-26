@@ -38,9 +38,6 @@
 [submodule "external/libfat16"]
 	path = external/libfat16
 	url = https://github.com/Vita3K/libfat16
-[submodule "external/nativefiledialog-cmake"]
-	path = external/nativefiledialog-cmake
-	url = https://github.com/Vita3K/nativefiledialog-cmake
 [submodule "external/printf"]
 	path = external/printf
 	url = https://github.com/Vita3K/printf
@@ -96,3 +93,6 @@
 [submodule "external/tracy"]
 	path = external/tracy
 	url = https://github.com/wolfpld/tracy.git
+[submodule "external/nativefiledialog-extended"]
+	path = external/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended.git

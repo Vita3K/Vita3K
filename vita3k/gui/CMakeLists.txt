@@ -51,5 +51,5 @@ add_library(
 
 target_include_directories(gui PUBLIC include ${CMAKE_SOURCE_DIR}/vita3k)
 target_link_libraries(gui PUBLIC app config dialog emuenv ime imgui glutil lang np)
-target_link_libraries(gui PRIVATE ctrl kernel miniz nativefiledialog psvpfsparser pugixml::pugixml stb renderer packages sdl2 vkutil)
+target_link_libraries(gui PRIVATE ctrl kernel miniz psvpfsparser pugixml::pugixml stb renderer packages sdl2 vkutil host::dialog)
 target_link_libraries(gui PUBLIC tracy)

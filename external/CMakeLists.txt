@@ -1,5 +1,10 @@
 include(${CMAKE_ROOT}/Modules/ExternalProject.cmake)
 
+# Make option() in all external projects do nothing when a normal variable of the
+# same name exists. The normal variable is not removed. The cache entry is not
+# created or updated and is ignored if it exists.
+set(CMAKE_POLICY_DEFAULT_CMP0077 "NEW")
+
 function(check_submodules_present)
     file(READ "${CMAKE_SOURCE_DIR}/.gitmodules" gitmodules)
     string(REGEX MATCHALL "path *= *[^ \t\r\n]*" gitmodules ${gitmodules})
@@ -74,27 +79,6 @@ target_include_directories(googletest PUBLIC googletest/googletest/include)
 target_include_directories(googletest PRIVATE googletest/googletest)
 target_compile_definitions(googletest PUBLIC GTEST_HAS_PTHREAD=0)
 set_property(TARGET googletest PROPERTY FOLDER externals)
-
-if(WIN32)
-	add_library(nativefiledialog STATIC nativefiledialog-cmake/src/nfd_win.cpp nativefiledialog-cmake/src/nfd_common.c)
-	target_include_directories(nativefiledialog PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog-cmake/src/include")
-elseif(APPLE)
-	add_library(nativefiledialog STATIC nativefiledialog-cmake/src/nfd_cocoa.m nativefiledialog-cmake/src/nfd_common.c)
-	target_include_directories(nativefiledialog PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog-cmake/src/include")
-elseif(UNIX)
-	find_package(PkgConfig REQUIRED)
-	pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-
-	include_directories(${GTK3_INCLUDE_DIRS})
-	link_directories(${GTK3_LIBRARY_DIRS})
-
-	add_definitions(${GTK3_CFLAGS_OTHER})
-
-	add_library(nativefiledialog STATIC nativefiledialog-cmake/src/nfd_gtk.c nativefiledialog-cmake/src/nfd_common.c)
-	target_include_directories(nativefiledialog PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/nativefiledialog-cmake/src/include")
-	target_link_libraries(nativefiledialog ${GTK3_LIBRARIES})
-endif()
-set_property(TARGET nativefiledialog PROPERTY FOLDER externals)
 
 add_subdirectory(libfat16)
 set_property(TARGET FAT16 PROPERTY FOLDER externals)
@@ -336,3 +320,13 @@ target_compile_definitions(tracy PUBLIC $<$<CONFIG:Debug,RelWithDebInfo>:TRACY_E
 # build configuration:
 # 
 # target_compile_definitions(tracy PUBLIC TRACY_ENABLE)
+
+# Use XDG desktop portals on Linux
+set(NFD_PORTAL ON)
+
+# nativefiledialog-extended
+add_subdirectory(nativefiledialog-extended)
+
+# Create alias to prevent the need of multiple changes in case the target name changes
+add_library(NFDe::NFDe ALIAS nfd)
+set_property(TARGET nfd PROPERTY FOLDER externals)
