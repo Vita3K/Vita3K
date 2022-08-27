@@ -68,7 +68,7 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
 
     ImGui::Text("%s", lang["github_website"].c_str());
-    if (ImGui::Button("Github"))
+    if (ImGui::Button("GitHub"))
         open_path("https://github.com/vita3k/vita3k");
     ImGui::Spacing();
 

@@ -53,6 +53,8 @@
 		<history_version>{}版本</history_version>
 		<information>信息</information>
 		<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
+		<app_delete_note>删除应用程序可能需要一段时间。
+取决于它的大小和您的硬件。</app_delete_note>
 		<save_delete>要删除此保存数据吗？</save_delete>
 		<eligible>有权</eligible>
 		<ineligible>无权</ineligible>
@@ -482,7 +484,7 @@ Please download and install it.</no_font_exist>
 		<not_complete_update>无法完成更新。</not_complete_update>
 		<next>继续</next>
 		<update_vita3k>要升级Vita3K吗？</update_vita3k>
-		<later_version_already_installed>已安装更新版本的Vita3K软件。</later_version_already_installed>
+		<later_version_already_installed>已安装更新版本的Vita3K。</later_version_already_installed>
 		<latest_version_already_installed>已安装最新版本的Vita3K。</latest_version_already_installed>
 		<new_features>{}版本的追加功能</new_features>
 		<update>更新</update>

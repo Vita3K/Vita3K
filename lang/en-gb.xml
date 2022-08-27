@@ -53,6 +53,8 @@
 		<history_version>Version {}</history_version>
 		<information>Information</information>
 		<app_delete>This application and all related data, including saved data, will be deleted.</app_delete>
+		<app_delete_note>Deleting a application may take a while
+depending on its size and your hardware.</app_delete_note>
 		<save_delete>Do you want to delete this saved data?</save_delete>
 		<eligible>Eligible</eligible>
 		<ineligible>Ineligible</ineligible>
