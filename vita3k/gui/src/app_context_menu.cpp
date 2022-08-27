@@ -443,7 +443,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", ask_delete);
             ImGui::PopTextWrapPos();
             if ((context_dialog == "app") && ImGui::IsItemHovered())
-                ImGui::SetTooltip("Deleting a application may take a while\ndepending on its size and your hardware.");
+                ImGui::SetTooltip("%s", lang["app_delete_note"].c_str());
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
             if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
