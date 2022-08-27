@@ -66,7 +66,7 @@ COMMAND(handle_set_context) {
             .depthData = Ptr<void>(0),
             .stencilData = Ptr<void>(0),
             .backgroundDepth = 1.0f,
-            .control = SceGxmDepthStencilControl::mask_bit
+            .control = { SceGxmDepthStencilControl::mask_bit }
         };
         render_context->record.depth_stencil_surface = default_ds;
     }

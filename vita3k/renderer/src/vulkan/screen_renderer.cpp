@@ -240,7 +240,12 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
     }
 
     // wait for the previous frame using this image to finish
-    state.device.waitForFences(fences[swapchain_image_idx], VK_TRUE, next_image_timeout);
+    auto result = state.device.waitForFences(fences[swapchain_image_idx], VK_TRUE, next_image_timeout);
+    if (result != vk::Result::eSuccess) {
+        LOG_ERROR("Could not wait for fences.");
+        assert(false);
+        return false;
+    }
     state.device.resetFences(fences[swapchain_image_idx]);
 
     // begin the render command
@@ -263,7 +268,7 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
                 .extent = extent }
         };
         vk::ClearValue clear_color{
-            .color = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f }
+            .color = { std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f } }
         };
         pass_info.setClearValues(clear_color);
         current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
@@ -328,7 +333,7 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, st
                 .extent = extent }
         };
         vk::ClearValue clear_color{
-            .color = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f }
+            .color = { std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f } }
         };
         pass_info.setClearValues(clear_color);
         current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
@@ -374,7 +379,12 @@ void ScreenRenderer::swap_window() {
         .pImageIndices = &swapchain_image_idx,
     };
     try {
-        state.general_queue.presentKHR(present_info);
+        auto result = state.general_queue.presentKHR(present_info);
+        if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+            LOG_ERROR("Could not present KHR.");
+            assert(false);
+            return;
+        }
     } catch (vk::OutOfDateKHRError) {
         state.device.waitIdle();
         int width, height;

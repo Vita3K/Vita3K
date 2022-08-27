@@ -343,7 +343,12 @@ void upload_bound_texture(VKTextureCacheState &cache, SceGxmTextureBaseFormat ba
     vk::SubmitInfo submit_info{};
     submit_info.setCommandBuffers(cmd_buffer);
     cache.state.transfer_queue.submit(submit_info, cache.wait_fence);
-    device.waitForFences(cache.wait_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    auto result = device.waitForFences(cache.wait_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+    if (result != vk::Result::eSuccess) {
+        LOG_ERROR("Could not wait for fences.");
+        assert(false);
+        return;
+    }
     device.resetFences(cache.wait_fence);
     device.freeCommandBuffers(cache.state.transfer_command_pool, cmd_buffer);
 }

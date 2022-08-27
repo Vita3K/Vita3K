@@ -65,7 +65,12 @@ void new_frame(VKContext &context) {
     if (!frame.rendered_fences.empty()) {
         // wait for the fences, then reset them
         constexpr uint64_t max_time = std::numeric_limits<uint64_t>::max();
-        device.waitForFences(frame.rendered_fences, VK_TRUE, max_time);
+        auto result = device.waitForFences(frame.rendered_fences, VK_TRUE, max_time);
+        if (result != vk::Result::eSuccess) {
+            LOG_ERROR("Could not wait for fences.");
+            assert(false);
+            return;
+        }
         device.resetFences(frame.rendered_fences);
         frame.rendered_fences.clear();
     }
