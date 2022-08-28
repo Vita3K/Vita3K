@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         config: [Release]
         include:
           - os: ubuntu-latest
@@ -34,6 +34,10 @@ jobs:
                 C:\vcpkg\packages
             extra_cmake_args: -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
             cmake_preset: windows-ninja
+          - os: macos-latest
+            cache_path: ~/Library/Caches/ccache
+            extra_cmake_args: 
+            cmake_preset: macos-ninja
 
     steps:
       - uses: actions/checkout@v3
@@ -43,7 +47,7 @@ jobs:
 
       - name: Set up build environment (macos-latest)
         run: |
-          brew install boost ccache ninja
+          brew install boost ccache ninja molten-vk openssl
           echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
         if: matrix.os == 'macos-latest'
 

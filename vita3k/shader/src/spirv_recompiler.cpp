@@ -910,7 +910,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         spv_params.buffer_container = b.createVariable(spv::NoPrecision, spv::StorageClassStorageBuffer, buffer_container_type,
             is_vert ? "vertexData" : "fragmentData");
 
+#ifndef __APPLE__
+        // Most Apple GPUs do not support the keyword restrict in MSL
         b.addDecoration(spv_params.buffer_container, spv::DecorationRestrict);
+#endif
         b.addDecoration(spv_params.buffer_container, spv::DecorationNonWritable);
         b.addDecoration(spv_params.buffer_container, spv::DecorationBinding, is_vert ? 0 : 1);
         if (translation_state.is_vulkan)

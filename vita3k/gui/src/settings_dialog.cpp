@@ -486,12 +486,19 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
 
+#ifdef __APPLE__
+        ImGui::BeginDisabled();
+#endif
         static const char *LIST_BACKEND_RENDERER[] = { "OpenGL", "Vulkan" };
         if (ImGui::Combo("Backend Renderer", reinterpret_cast<int *>(&emuenv.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
             emuenv.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(emuenv.backend_renderer)];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred backend renderer.");
+#ifdef __APPLE__
+        ImGui::EndDisabled();
+#else
         ImGui::Spacing();
+#endif
 
         const bool is_vulkan = (emuenv.backend_renderer == renderer::Backend::Vulkan);
         if (is_vulkan) {
