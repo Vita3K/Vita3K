@@ -832,7 +832,7 @@ USSERecompiler::USSERecompiler(spv::Builder &b, const SceGxmProgram &program, co
     : inst(nullptr)
     , count(0)
     , b(b)
-    , visitor(b, *this, program, features, utils, cur_instr, parameters, queries, render_info_id, true)
+    , visitor(b, *this, program, features, utils, cur_instr, parameters, queries, true)
     , end_hook_func(end_hook_func)
     , tree_block_node(nullptr, 0) {
 }

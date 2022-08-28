@@ -74,6 +74,14 @@ COMMAND(handle_create_context) {
 
     renderer.context = ctx->get();
 
+    // fill with default values
+    renderer.context->shader_hints = {
+        .attributes = nullptr,
+        .color_format = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR
+    };
+    std::fill_n(renderer.context->shader_hints.vertex_textures, SCE_GXM_MAX_TEXTURE_UNITS, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR);
+    std::fill_n(renderer.context->shader_hints.fragment_textures, SCE_GXM_MAX_TEXTURE_UNITS, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR);
+
     complete_command(renderer, helper, result);
 }
 

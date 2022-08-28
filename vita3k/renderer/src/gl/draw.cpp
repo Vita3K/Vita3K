@@ -68,16 +68,11 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
     const auto &gl_frag_program = reinterpret_cast<gl::GLFragmentProgram *>(gxm_fragment_program.renderer_data.get());
 
-    if (!features.support_unknown_format) {
-        // use the format of this surface as the color format of the shader
-        shader::last_color_format = gxm::get_base_format(context.record.color_surface.colorFormat);
-    }
-
     // Trying to cache: the last time vs this time shader pair. Does it different somehow?
     // If it's different, we need to switch. Else just stick to it.
     if (context.record.vertex_program.get(mem)->renderer_data->hash != context.last_draw_vertex_program_hash || context.record.fragment_program.get(mem)->renderer_data->hash != context.last_draw_fragment_program_hash) {
         // Need to recompile!
-        SharedGLObject program = gl::compile_program(renderer, context.record, features, mem, config.shader_cache, config.spirv_shader, gxm_fragment_program.is_maskupdate, base_path, title_id, self_name);
+        SharedGLObject program = gl::compile_program(renderer, context, context.record, features, mem, config.shader_cache, config.spirv_shader, gxm_fragment_program.is_maskupdate, base_path, title_id, self_name);
 
         LOG_ERROR_IF(!program, "Fail to get program!");
 

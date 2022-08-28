@@ -290,9 +290,9 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
 
     if (index >= SCE_GXM_MAX_TEXTURE_UNITS) {
         // Vertex textures
-        context.current_vert_render_info.integral_texture_query_format[index - SCE_GXM_MAX_TEXTURE_UNITS] = renderer::texture::get_integral_query_format(base_format);
+        context.shader_hints.vertex_textures[index - SCE_GXM_MAX_TEXTURE_UNITS] = format;
     } else {
-        context.current_frag_render_info.integral_texture_query_format[index] = renderer::texture::get_integral_query_format(base_format);
+        context.shader_hints.fragment_textures[index] = format;
     }
 
     glActiveTexture(static_cast<GLenum>(static_cast<std::size_t>(GL_TEXTURE0) + index));

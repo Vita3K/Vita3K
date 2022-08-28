@@ -230,9 +230,6 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
         return shader_stage_info;
     }
 
-    if (!state.features.support_unknown_format)
-        shader::last_color_format = gxm::get_base_format(current_context->record.color_surface.colorFormat);
-
     const char *base_path = state.base_path;
     const char *title_id = state.title_id;
     const char *self_name = state.self_name;
@@ -241,7 +238,12 @@ vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmPro
 
     LOG_INFO("Generating vulkan spv shader {}", hash_text.data());
     const std::string shader_version = fmt::format("vk{}", shader::CURRENT_VERSION);
-    shader::usse::SpirvCode source = load_spirv_shader(*program, state.features, true, hint_attributes, maskupdate, base_path, title_id, self_name, shader_version, true);
+
+    // update shader hints
+    current_context->shader_hints.color_format = current_context->record.color_surface.colorFormat;
+    current_context->shader_hints.attributes = hint_attributes;
+
+    shader::usse::SpirvCode source = load_spirv_shader(*program, state.features, true, current_context->shader_hints, maskupdate, base_path, title_id, self_name, shader_version, true);
 
     vk::ShaderModuleCreateInfo shader_info{
         .codeSize = sizeof(uint32_t) * source.size(),
