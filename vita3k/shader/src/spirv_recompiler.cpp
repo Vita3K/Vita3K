@@ -1558,6 +1558,8 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
 
     // Capabilities
     b.addCapability(spv::Capability::CapabilityShader);
+    if (translation_state.is_fragment)
+        b.addCapability(spv::Capability::CapabilityImageQuery);
     if (features.support_unknown_format)
         b.addCapability(spv::Capability::CapabilityStorageImageReadWithoutFormat);
 

@@ -63,7 +63,7 @@ public:
     void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries);
     // extra1 is either lod or ddx, extra2 is ddy
     spv::Id do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type, const int lod_mode,
-        const spv::Id extra1 = spv::NoResult, const spv::Id extra2 = spv::NoResult);
+        const spv::Id extra1 = spv::NoResult, const spv::Id extra2 = spv::NoResult, const int gather4_comp = -1);
 
     USSETranslatorVisitor() = delete;
     explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program, const FeatureState &features,
