@@ -36,7 +36,7 @@ struct FeatureState;
 namespace renderer::gl {
 
 // Compile program.
-SharedGLObject compile_program(GLState &renderer, const GxmRecordState &state, const FeatureState &features, const MemState &mem, bool shader_cache, bool spirv, bool maskupdate, const char *base_path, const char *title_id, const char *self_name);
+SharedGLObject compile_program(GLState &renderer, GLContext &context, const GxmRecordState &state, const FeatureState &features, const MemState &mem, bool shader_cache, bool spirv, bool maskupdate, const char *base_path, const char *title_id, const char *self_name);
 void pre_compile_program(GLState &renderer, const char *base_path, const char *title_id, const char *self_name, const ShadersHash &hashs);
 
 // Uniforms.

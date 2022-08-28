@@ -53,12 +53,6 @@ using namespace shader::usse;
 
 namespace shader {
 
-// *******************
-// * Static variable *
-// *******************
-
-SceGxmColorBaseFormat last_color_format;
-
 // **************
 // * Constants *
 // **************
@@ -121,6 +115,7 @@ struct TranslationState {
     bool is_target_glsl = false;
     bool is_vulkan = false;
     spv::ImageFormat image_storage_format = spv::ImageFormat::ImageFormatUnknown;
+    const Hints *hints;
 };
 
 struct VertexProgramOutputProperties {
@@ -601,6 +596,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
             NonDependentTextureQueryCallInfo tex_query_info;
             tex_query_info.store_type = static_cast<int>(store_type);
 
+            const SceGxmTextureFormat texture_format = translation_state.is_fragment ? translation_state.hints->fragment_textures[sampler_resource_index] : translation_state.hints->vertex_textures[sampler_resource_index];
+            tex_query_info.component_type = get_texture_component_type(texture_format);
+
             // Size of this extra pa occupied
             // Force this to be PRIVATE
             const auto size = ((descriptor->size >> 6) & 3) + 1;
@@ -617,9 +615,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 b.addDecoration(tex_query_info.sampler, spv::DecorationBinding, sampler_resource_index);
                 if (translation_state.is_vulkan)
                     b.addDecoration(tex_query_info.sampler, spv::DecorationDescriptorSet, program.is_vertex() ? 2 : 3);
-                samplers[sampler_resource_index] = tex_query_info.sampler;
+                samplers[sampler_resource_index] = { tex_query_info.sampler, tex_query_info.component_type };
             } else {
-                tex_query_info.sampler = samplers[sampler_resource_index];
+                tex_query_info.sampler = samplers[sampler_resource_index].id;
             }
 
             tex_query_infos.push_back(tex_query_info);
@@ -739,7 +737,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 }
                 translation_state.color_attachment_raw_id = color_attachment_raw;
 
-                spv::Id load_normal_cond = b.createBinOp(spv::OpFOrdLessThan, b.makeBoolType(), b.createAccessChain(spv::StorageClassPrivate, translation_state.render_info_id, { b.makeIntConstant(3) }), b.makeFloatConstant(0.5f));
+                spv::Id load_normal_cond = b.createBinOp(spv::OpFOrdLessThan, b.makeBoolType(), b.createAccessChain(spv::StorageClassPrivate, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_use_raw_image) }), b.makeFloatConstant(0.5f));
                 spv::Builder::If cond_builder(load_normal_cond, spv::SelectionControlMaskNone, b);
 
                 source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
@@ -826,8 +824,7 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
 }
 
 static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProgram &program, utils::SpirvUtilFunctions &utils,
-    const FeatureState &features, TranslationState &translation_state, SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries,
-    const std::vector<SceGxmVertexAttribute> *hint_attributes) {
+    const FeatureState &features, TranslationState &translation_state, SceGxmProgramType program_type, NonDependentTextureQueryCallInfos &texture_queries) {
     SpirvShaderParameters spv_params = {};
     const SceGxmProgramParameter *const gxp_parameters = gxp::program_parameters(program);
 
@@ -1042,7 +1039,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            utils::store(b, spv_params, utils, features, reg, b.makeIntConstant(base), 0b1, 0);
                        },
                        [&](const DependentSamplerInputSource &s) {
-                           const auto spv_sampler = samplers.at(s.index);
+                           const auto &spv_sampler = samplers.at(s.index);
                            spv_params.samplers.emplace(input.offset, spv_sampler);
                        },
                        [&](const AttributeInputSource &s) {
@@ -1052,20 +1049,21 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             input.source);
     }
 
-    if ((in_fcount_allocated == 0) && (program.primary_reg_count != 0)) {
+    if (!translation_state.is_fragment && (in_fcount_allocated == 0) && (program.primary_reg_count != 0)) {
         // Using hint to create attribute. Looks like attribute with F32 types are stripped, otherwise
         // whole shader symbols are kept...
-        if (hint_attributes) {
+        if (translation_state.hints->attributes) {
             LOG_INFO("Shader stripped all symbols, trying to use hint attributes");
 
-            for (std::size_t i = 0; i < hint_attributes->size(); i++) {
+            const auto &attributes = translation_state.hints->attributes;
+            for (std::size_t i = 0; i < attributes->size(); i++) {
                 Input inp;
-                inp.offset = hint_attributes->at(i).regIndex;
+                inp.offset = attributes->at(i).regIndex;
                 inp.bank = RegisterBank::PRIMATTR;
                 inp.generic_type = GenericType::VECTOR;
                 inp.type = DataType::F32;
                 inp.component_count = 4;
-                inp.array_size = (hint_attributes->at(i).componentCount + 3) >> 2;
+                inp.array_size = (attributes->at(i).componentCount + 3) >> 2;
 
                 add_var_to_reg(inp, fmt::format("attribute{}", i), 0, true, false, static_cast<std::int32_t>(i));
             }
@@ -1117,35 +1115,26 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     spv::Id f32 = b.makeFloatType(32);
     spv::Id i32 = b.makeIntType(32);
     spv::Id v4 = b.makeVectorType(f32, 4);
-    spv::Id texture_format_arr = b.makeArrayType(v4, b.makeIntConstant(4), 16);
-    b.addDecoration(texture_format_arr, spv::DecorationArrayStride, 16);
-
-    // we need to static cast to int, as addMemberDecoration has an overload for both int and char*
-    // and some compiler are not sure what to convert size_t to
-#define intoffsetof(s, m) static_cast<int>(offsetof(s, m))
 
     if (program_type == SceGxmProgramType::Vertex) {
         // Create the default reg uniform buffer
-        spv::Id render_buf_type = b.makeStructType({ v4, f32, f32, f32, texture_format_arr, f32, f32 }, "GxmRenderVertBufferBlock");
+        spv::Id render_buf_type = b.makeStructType({ v4, f32, f32, f32, f32, f32 }, "GxmRenderVertBufferBlock");
         b.addDecoration(render_buf_type, spv::DecorationBlock);
         if (translation_state.is_target_glsl)
             b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
 
-        b.addMemberDecoration(render_buf_type, 0, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, viewport_flip));
-        b.addMemberDecoration(render_buf_type, 1, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, viewport_flag));
-        b.addMemberDecoration(render_buf_type, 2, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, screen_width));
-        b.addMemberDecoration(render_buf_type, 3, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, screen_height));
-        b.addMemberDecoration(render_buf_type, 4, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, integral_texture_query_format));
-        b.addMemberDecoration(render_buf_type, 5, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, z_offset));
-        b.addMemberDecoration(render_buf_type, 6, spv::DecorationOffset, intoffsetof(RenderVertUniformBlock, z_scale));
+#define ADD_VERT_UNIFORM_MEMBER(name)                                                                                                             \
+    b.addMemberDecoration(render_buf_type, VERT_UNIFORM_##name, spv::DecorationOffset, static_cast<int>(offsetof(RenderVertUniformBlock, name))); \
+    b.addMemberName(render_buf_type, VERT_UNIFORM_##name, #name)
 
-        b.addMemberName(render_buf_type, 0, "viewport_flip");
-        b.addMemberName(render_buf_type, 1, "viewport_flag");
-        b.addMemberName(render_buf_type, 2, "screen_width");
-        b.addMemberName(render_buf_type, 3, "screen_height");
-        b.addMemberName(render_buf_type, 4, "integral_query_formats");
-        b.addMemberName(render_buf_type, 5, "z_offset");
-        b.addMemberName(render_buf_type, 6, "z_scale");
+        ADD_VERT_UNIFORM_MEMBER(viewport_flip);
+        ADD_VERT_UNIFORM_MEMBER(viewport_flag);
+        ADD_VERT_UNIFORM_MEMBER(screen_width);
+        ADD_VERT_UNIFORM_MEMBER(screen_height);
+        ADD_VERT_UNIFORM_MEMBER(z_offset);
+        ADD_VERT_UNIFORM_MEMBER(z_scale);
+
+#undef ADD_VERT_UNIFORM_MEMBER
 
         translation_state.render_info_id = b.createVariable(spv::NoPrecision, spv::StorageClassUniform, render_buf_type, "renderVertInfo");
 
@@ -1155,26 +1144,23 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
-        spv::Id render_buf_type = b.makeStructType({ f32, f32, f32, f32, texture_format_arr, i32 }, "GxmRenderFragBufferBlock");
+        spv::Id render_buf_type = b.makeStructType({ f32, f32, f32, f32, i32 }, "GxmRenderFragBufferBlock");
 
         b.addDecoration(render_buf_type, spv::DecorationBlock);
         if (translation_state.is_target_glsl)
             b.addDecoration(render_buf_type, spv::DecorationGLSLShared);
 
-        b.addMemberDecoration(render_buf_type, 0, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, back_disabled));
-        b.addMemberDecoration(render_buf_type, 1, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, front_disabled));
-        b.addMemberDecoration(render_buf_type, 2, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, writing_mask));
-        b.addMemberDecoration(render_buf_type, 3, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, use_raw_image));
-        b.addMemberDecoration(render_buf_type, 4, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, integral_texture_query_format));
-        b.addMemberDecoration(render_buf_type, 5, spv::DecorationOffset, intoffsetof(RenderFragUniformBlock, res_multiplier));
+#define ADD_FRAG_UNIFORM_MEMBER(name)                                                                                                             \
+    b.addMemberDecoration(render_buf_type, FRAG_UNIFORM_##name, spv::DecorationOffset, static_cast<int>(offsetof(RenderFragUniformBlock, name))); \
+    b.addMemberName(render_buf_type, FRAG_UNIFORM_##name, #name)
 
-        // TODO: create enum to refer to these fields
-        b.addMemberName(render_buf_type, 0, "back_disabled");
-        b.addMemberName(render_buf_type, 1, "front_disabled");
-        b.addMemberName(render_buf_type, 2, "writing_mask");
-        b.addMemberName(render_buf_type, 3, "use_raw_image");
-        b.addMemberName(render_buf_type, 4, "integral_query_formats");
-        b.addMemberName(render_buf_type, 5, "res_multiplier");
+        ADD_FRAG_UNIFORM_MEMBER(back_disabled);
+        ADD_FRAG_UNIFORM_MEMBER(front_disabled);
+        ADD_FRAG_UNIFORM_MEMBER(writing_mask);
+        ADD_FRAG_UNIFORM_MEMBER(use_raw_image);
+        ADD_FRAG_UNIFORM_MEMBER(res_multiplier);
+
+#undef ADD_FRAG_UNIFORM_MEMBER
 
         translation_state.render_info_id = b.createVariable(spv::NoPrecision, spv::StorageClassUniform, render_buf_type, "renderFragInfo");
 
@@ -1275,7 +1261,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         current_coord = b.createOp(spv::OpVectorShuffle, v2i32, { current_coord, current_coord, 0, 1 });
 
         // the mask is not upscaled
-        spv::Id res_multiplier = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(5) });
+        spv::Id res_multiplier = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_res_multiplier) });
         res_multiplier = b.createLoad(res_multiplier, spv::NoPrecision);
         res_multiplier = b.createCompositeConstruct(v2i32, { res_multiplier, res_multiplier });
         current_coord = b.createBinOp(spv::OpSDiv, v2i32, current_coord, res_multiplier);
@@ -1408,13 +1394,13 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                     screen_offset = b.makeCompositeConstant(v4, { neg_one, one, zero, zero });
                 }
 
-                const spv::Id viewport_flag = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(1) });
+                const spv::Id viewport_flag = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_viewport_flag) });
                 const spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeBoolType(), { b.createLoad(viewport_flag, spv::NoPrecision), half });
                 spv::Builder::If cond_builder(pred, spv::SelectionControlMaskNone, b);
 
-                spv::Id screen_width = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(2) });
+                spv::Id screen_width = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_screen_width) });
                 screen_width = b.createLoad(screen_width, spv::NoPrecision);
-                spv::Id screen_height = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(3) });
+                spv::Id screen_height = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_screen_height) });
                 screen_height = b.createLoad(screen_height, spv::NoPrecision);
 
                 // o_val2 = (x,y,z,w) * (2/width, -2/height, 1, 1) + (-1,1,0,0)
@@ -1425,7 +1411,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
                 // on vulkan this is done using the viewport directly
                 if (!translation_state.is_vulkan && translation_state.render_info_id != spv::NoResult) {
-                    spv::Id flip_vec_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(0) });
+                    spv::Id flip_vec_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_viewport_flip) });
                     flip_vec_id = b.createLoad(flip_vec_id, spv::NoPrecision);
                     o_val2 = b.createBinOp(spv::OpFMul, v4, o_val2, flip_vec_id);
                 }
@@ -1443,7 +1429,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
                 // Apply the viewport flip if opengl
                 if (!translation_state.is_vulkan && translation_state.render_info_id != spv::NoResult) {
-                    spv::Id flip_vec_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(0) });
+                    spv::Id flip_vec_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_viewport_flip) });
                     flip_vec_id = b.createLoad(flip_vec_id, spv::NoPrecision);
                     o_val = b.createBinOp(spv::OpFMul, out_type, o_val, flip_vec_id);
                 }
@@ -1456,8 +1442,8 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                     spv::Id z = b.createLoad(z_ref, spv::NoPrecision);
                     const spv::Id w = b.createLoad(w_ref, spv::NoPrecision);
 
-                    spv::Id z_offset = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(5) });
-                    spv::Id z_scale = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(6) });
+                    spv::Id z_offset = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_z_offset) });
+                    spv::Id z_scale = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_z_scale) });
                     z_offset = b.createLoad(z_offset, spv::NoPrecision);
                     z_scale = b.createLoad(z_scale, spv::NoPrecision);
 
@@ -1510,8 +1496,8 @@ static spv::Function *make_frag_initialize_function(spv::Builder &b, Translation
     spv::Id zero = b.makeFloatConstant(0.0f);
 
     spv::Id front_facing = b.createVariable(spv::NoPrecision, spv::StorageClassInput, booltype, "gl_FrontFacing");
-    spv::Id front_disabled = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(1) });
-    spv::Id back_disabled = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(0) });
+    spv::Id front_disabled = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_front_disabled) });
+    spv::Id back_disabled = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_back_disabled) });
     b.addDecoration(front_facing, spv::DecorationBuiltIn, spv::BuiltInFrontFacing);
     translate_state.interfaces.push_back(front_facing);
 
@@ -1536,7 +1522,7 @@ static spv::Function *make_frag_initialize_function(spv::Builder &b, Translation
 }
 
 static void generate_update_mask_body(spv::Builder &b, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translate_state) {
-    const spv::Id writing_mask_var = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(2) });
+    const spv::Id writing_mask_var = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_writing_mask) });
     const spv::Id writing_mask = b.createLoad(writing_mask_var, spv::NoPrecision);
 
     const spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
@@ -1549,13 +1535,13 @@ static void generate_update_mask_body(spv::Builder &b, utils::SpirvUtilFunctions
     b.createStore(mask_v, out);
 }
 
-static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
+static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, TranslationState &translation_state, bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     SpirvCode spirv;
 
     SceGxmProgramType program_type = program.get_type();
 
     // SPV 1.3 is only supported by Vulkan 1.1
-    const unsigned int spv_version = translation_state.is_vulkan ? 0x10000 : 0x10300;
+    const unsigned int spv_version = translation_state.is_vulkan ? spv::Spv_1_0 : spv::Spv_1_3;
 
     spv::SpvBuildLogger spv_logger;
     spv::Builder b(spv_version, 0x1337 << 12, &spv_logger);
@@ -1627,7 +1613,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     }
 
     // Generate parameters
-    SpirvShaderParameters parameters = create_parameters(b, program, utils, features, translation_state, program_type, texture_queries, hint_attributes);
+    SpirvShaderParameters parameters = create_parameters(b, program, utils, features, translation_state, program_type, texture_queries);
 
     if (!translation_state.is_maskupdate) {
         if (program.is_fragment()) {
@@ -1777,21 +1763,22 @@ static spv::ImageFormat translate_color_format(const SceGxmColorBaseFormat forma
 // * Functions (exposed API) *
 // ***************************
 
-GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, const Target target, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate,
+GeneratedShader convert_gxp(const SceGxmProgram &program, const std::string &shader_hash, const FeatureState &features, const Target target, const Hints &hints, bool maskupdate,
     bool force_shader_debug, std::function<bool(const std::string &ext, const std::string &dump)> dumper) {
     TranslationState translation_state;
     translation_state.is_fragment = program.is_fragment();
     translation_state.is_maskupdate = maskupdate;
     translation_state.is_target_glsl = (target == Target::GLSLOpenGL);
     translation_state.is_vulkan = (target == Target::SpirVVulkan);
+    translation_state.hints = &hints;
 
     if (!features.support_unknown_format) {
         // take the color format of the current surface, hoping the shader is not used on two surfaces with different formats (this should be the case)
-        translation_state.image_storage_format = translate_color_format(last_color_format);
+        translation_state.image_storage_format = translate_color_format(gxm::get_base_format(hints.color_format));
     }
 
     GeneratedShader shader{};
-    shader.spirv = convert_gxp_to_spirv_impl(program, shader_hash, features, translation_state, hint_attributes, force_shader_debug, dumper);
+    shader.spirv = convert_gxp_to_spirv_impl(program, shader_hash, features, translation_state, force_shader_debug, dumper);
 
     if (translation_state.is_target_glsl) {
         // also generate the glsl file
@@ -1830,7 +1817,15 @@ void convert_gxp_to_glsl_from_filepath(const std::string &shader_filepath) {
     features.direct_fragcolor = false;
     features.support_shader_interlock = true;
 
-    convert_gxp(*gxp_program, shader_filepath_str.filename().string(), features, shader::Target::GLSLOpenGL, nullptr, false, true);
+    // use some default hints because we don't have them available
+    Hints hints{
+        .attributes = nullptr,
+        .color_format = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR,
+    };
+    std::fill_n(hints.vertex_textures, SCE_GXM_MAX_TEXTURE_UNITS, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR);
+    std::fill_n(hints.fragment_textures, SCE_GXM_MAX_TEXTURE_UNITS, SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ABGR);
+
+    convert_gxp(*gxp_program, shader_filepath_str.filename().string(), features, shader::Target::GLSLOpenGL, hints, false, true);
 
     free(gxp_program);
 }

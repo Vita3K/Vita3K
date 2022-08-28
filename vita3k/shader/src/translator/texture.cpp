@@ -16,10 +16,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <shader/spirv_recompiler.h>
 #include <shader/usse_decoder_helpers.h>
 #include <shader/usse_disasm.h>
 #include <shader/usse_translator.h>
 #include <shader/usse_types.h>
+
+#include <gxm/functions.h>
 #include <util/log.h>
 
 #include <SPIRV/GLSL.std.450.h>
@@ -62,51 +65,22 @@ spv::Id shader::usse::USSETranslatorVisitor::do_fetch_texture(const spv::Id tex,
         }
     }
 
-    if (dest_type == DataType::F16) {
-        // Pack them
-        spv::Id pack1 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { image_sample, image_sample, 0, 1 });
-        pack1 = utils::pack_one(m_b, m_util_funcs, m_features, pack1, DataType::F16);
-
-        spv::Id pack2 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { image_sample, image_sample, 2, 3 });
-        pack2 = utils::pack_one(m_b, m_util_funcs, m_features, pack2, DataType::F16);
-
-        image_sample = m_b.createCompositeConstruct(type_f32_v[2], { pack1, pack2 });
-    }
-
-    if (dest_type == DataType::UINT8) {
-        image_sample = utils::convert_to_int(m_b, image_sample, DataType::UINT8, true);
-        image_sample = utils::pack_one(m_b, m_util_funcs, m_features, image_sample, DataType::UINT8);
-    }
+    if (is_integer_data_type(dest_type))
+        image_sample = utils::convert_to_int(m_b, image_sample, dest_type, true);
 
     return image_sample;
 }
 
-void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries, const spv::Id translation_state_id) {
+void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries) {
     Operand store_op;
     store_op.bank = RegisterBank::PRIMATTR;
     store_op.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
-    store_op.type = DataType::F32;
 
     for (auto &texture_query : texture_queries) {
-        Imm4 dest_mask;
-        switch (texture_query.store_type) {
-        case (int)DataType::F16: {
-            dest_mask = 0b11;
-            break;
-        }
-
-        case (int)DataType::F32: {
-            dest_mask = 0b1111;
-            break;
-        }
-        case (int)DataType::UINT8: {
-            dest_mask = 0b1;
-            break;
-        }
-
-        default:
-            LOG_ERROR("Unknown data type for texture query {}", texture_query.store_type);
-            dest_mask = 0b1111;
+        store_op.type = static_cast<DataType>(texture_query.store_type);
+        if (store_op.type == DataType::UNK) {
+            // get the type from the hint
+            store_op.type = texture_query.component_type;
         }
 
         bool proj = (texture_query.prod_pos >= 0);
@@ -118,55 +92,10 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
             proj = true;
         }
 
-        spv::Id fetch_result = do_fetch_texture(texture_query.sampler, coord_inst, static_cast<DataType>(texture_query.store_type), proj ? 4 : 0, 0);
+        spv::Id fetch_result = do_fetch_texture(texture_query.sampler, coord_inst, store_op.type, proj ? 4 : 0, 0);
         store_op.num = texture_query.dest_offset;
 
-        if (static_cast<DataType>(texture_query.store_type) == DataType::UNK) {
-            // Manual check
-            spv::Id sampler_integral_query_format = m_b.createAccessChain(spv::StorageClassUniform, translation_state_id, { m_b.makeIntConstant(4), m_b.makeIntConstant(texture_query.sampler_index / 4), m_b.makeIntConstant(texture_query.sampler_index % 4) });
-            sampler_integral_query_format = m_b.createLoad(sampler_integral_query_format, spv::NoPrecision);
-            spv::Id bool_type = m_b.makeBoolType();
-
-            spv::Builder::If if_builder(m_b.createBinOp(spv::OpFOrdGreaterThanEqual, bool_type, sampler_integral_query_format, m_b.makeFloatConstant(INTEGRAL_TEX_QUERY_TYPE_8BIT_SIGNED)), spv::SelectionControlMaskNone, m_b);
-
-            spv::Id packed8 = utils::convert_to_int(m_b, fetch_result, DataType::INT8, true);
-            packed8 = utils::pack_one(m_b, m_util_funcs, m_features, packed8, DataType::INT8);
-
-            dest_mask = 0b1;
-            store(store_op, packed8, dest_mask);
-            if_builder.makeBeginElse();
-
-            spv::Builder::If if_builder_2(m_b.createBinOp(spv::OpFOrdGreaterThanEqual, bool_type, sampler_integral_query_format, m_b.makeFloatConstant(INTEGRAL_TEX_QUERY_TYPE_8BIT_UNSIGNED)), spv::SelectionControlMaskNone, m_b);
-
-            packed8 = utils::convert_to_int(m_b, fetch_result, DataType::UINT8, true);
-            packed8 = utils::pack_one(m_b, m_util_funcs, m_features, packed8, DataType::UINT8);
-
-            dest_mask = 0b1;
-            store(store_op, packed8, dest_mask);
-
-            if_builder_2.makeBeginElse();
-            spv::Builder::If if_builder_3(m_b.createBinOp(spv::OpFOrdGreaterThanEqual, bool_type, sampler_integral_query_format, m_b.makeFloatConstant(INTEGRAL_TEX_QUERY_TYPE_16BIT)), spv::SelectionControlMaskNone, m_b);
-
-            spv::Id pack1 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { fetch_result, fetch_result, 0, 1 });
-            pack1 = utils::pack_one(m_b, m_util_funcs, m_features, pack1, DataType::F16);
-
-            spv::Id pack2 = m_b.createOp(spv::OpVectorShuffle, type_f32_v[2], { fetch_result, fetch_result, 2, 3 });
-            pack2 = utils::pack_one(m_b, m_util_funcs, m_features, pack2, DataType::F16);
-
-            spv::Id packedu16 = m_b.createCompositeConstruct(type_f32_v[2], { pack1, pack2 });
-            dest_mask = 0b11;
-            store(store_op, packedu16, dest_mask);
-
-            if_builder_3.makeBeginElse();
-            dest_mask = 0b1111;
-            store(store_op, fetch_result, dest_mask);
-
-            if_builder_3.makeEndIf();
-            if_builder_2.makeEndIf();
-            if_builder.makeEndIf();
-        } else {
-            store(store_op, fetch_result, dest_mask);
-        }
+        store(store_op, fetch_result, 0b1111);
     }
 }
 
@@ -200,20 +129,8 @@ bool USSETranslatorVisitor::smp(
         return true;
     }
 
-    constexpr DataType tb_dest_fmt[] = {
-        DataType::F32,
-        DataType::UNK,
-        DataType::F16,
-        DataType::F32
-    };
-
-    // Decode dest
-    Instruction inst;
-    inst.opr.dest.bank = (dest_use_pa) ? RegisterBank::PRIMATTR : RegisterBank::TEMP;
-    inst.opr.dest.num = dest_n;
-    inst.opr.dest.type = tb_dest_fmt[fconv_type];
-
     // Decode src0
+    Instruction inst;
     inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, src0_ext, true, 8, m_second_program);
     inst.opr.src0.type = (src0_type == 0) ? DataType::F32 : ((src0_type == 1) ? DataType::F16 : DataType::C10);
 
@@ -222,6 +139,28 @@ bool USSETranslatorVisitor::smp(
     inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     inst.opr.src0.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     inst.opr.dest.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
+
+    if (!m_spirv_params.samplers.count(inst.opr.src1.num)) {
+        LOG_ERROR("Can't get the sampler (sampler doesn't exist!)");
+        return true;
+    }
+
+    const SamplerInfo &sampler = m_spirv_params.samplers.at(inst.opr.src1.num);
+
+    constexpr DataType tb_dest_fmt[] = {
+        DataType::F32,
+        DataType::UNK,
+        DataType::F16,
+        DataType::F32
+    };
+
+    // Decode dest
+    inst.opr.dest.bank = (dest_use_pa) ? RegisterBank::PRIMATTR : RegisterBank::TEMP;
+    inst.opr.dest.num = dest_n;
+    inst.opr.dest.type = tb_dest_fmt[fconv_type];
+
+    if (inst.opr.dest.type == DataType::UNK)
+        inst.opr.dest.type = sampler.component_type;
 
     // Base 0, turn it to base 1
     dim += 1;
@@ -251,14 +190,6 @@ bool USSETranslatorVisitor::smp(
         // It should be a line, so Y should be zero. There are only two dimensions texture, so this is a guess (seems concise)
         coord = m_b.createCompositeConstruct(m_b.makeVectorType(m_b.makeFloatType(32), 2), { coord, m_b.makeFloatConstant(0.0f) });
         dim = 2;
-    }
-
-    spv::Id sampler = spv::NoResult;
-    if (m_spirv_params.samplers.count(inst.opr.src1.num)) {
-        sampler = m_spirv_params.samplers.at(inst.opr.src1.num);
-    } else {
-        LOG_ERROR("Can't get the sampler (sampler doesn't exist!)");
-        return true;
     }
 
     // Either LOD number or ddx
@@ -292,7 +223,7 @@ bool USSETranslatorVisitor::smp(
         }
     }
 
-    spv::Id result = do_fetch_texture(sampler, { coord, static_cast<int>(DataType::F32) }, DataType::F32, lod_mode, extra1, extra2);
+    spv::Id result = do_fetch_texture(sampler.id, { coord, static_cast<int>(DataType::F32) }, DataType::F32, lod_mode, extra1, extra2);
 
     switch (sb_mode) {
     case 0:

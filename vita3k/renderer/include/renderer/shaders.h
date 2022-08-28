@@ -20,6 +20,10 @@
 #include <string>
 #include <vector>
 
+namespace shader {
+struct Hints;
+}
+
 struct SceGxmProgram;
 struct FeatureState;
 struct SceGxmVertexAttribute;
@@ -32,8 +36,8 @@ struct State;
 // Shaders.
 bool get_shaders_cache_hashs(State &renderer);
 void save_shaders_cache_hashs(State &renderer, std::vector<ShadersHash> &shaders_cache_hashs);
-std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const char *self_name, const std::string &shader_version, bool shader_cache);
-std::vector<uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, bool is_vulkan, const std::vector<SceGxmVertexAttribute> *hint_attributes, bool maskupdate, const char *base_path, const char *title_id, const char *self_name, const std::string &shader_version, bool shader_cache);
+std::string load_glsl_shader(const SceGxmProgram &program, const FeatureState &features, const shader::Hints &hints, bool maskupdate, const char *base_path, const char *title_id, const char *self_name, const std::string &shader_version, bool shader_cache);
+std::vector<uint32_t> load_spirv_shader(const SceGxmProgram &program, const FeatureState &features, bool is_vulkan, const shader::Hints &hints, bool maskupdate, const char *base_path, const char *title_id, const char *self_name, const std::string &shader_version, bool shader_cache);
 std::string pre_load_shader_glsl(const char *hash_text, const char *shader_type_str, const char *base_path, const char *title_id, const char *self_name);
 std::vector<uint32_t> pre_load_shader_spirv(const char *hash_text, const char *shader_type_str, const char *base_path, const char *title_id, const char *self_name);
 } // namespace renderer

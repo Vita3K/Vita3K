@@ -60,7 +60,7 @@ public:
     int repeat_increase[4][17];
     int repeat_multiplier[4];
 
-    void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries, const spv::Id translation_state_id);
+    void do_texture_queries(const NonDependentTextureQueryCallInfos &texture_queries);
     // extra1 is either lod or ddx, extra2 is ddy
     spv::Id do_fetch_texture(const spv::Id tex, const Coord &coord, const DataType dest_type, const int lod_mode,
         const spv::Id extra1 = spv::NoResult, const spv::Id extra2 = spv::NoResult);
@@ -68,7 +68,7 @@ public:
     USSETranslatorVisitor() = delete;
     explicit USSETranslatorVisitor(spv::Builder &_b, USSERecompiler &_recompiler, const SceGxmProgram &program, const FeatureState &features,
         utils::SpirvUtilFunctions &utils, const uint64_t &_instr, const SpirvShaderParameters &spirv_params, const NonDependentTextureQueryCallInfos &queries,
-        const spv::Id render_info_id, bool is_secondary_program = false)
+        bool is_secondary_program = false)
         : m_util_funcs(utils)
         , m_second_program(is_secondary_program)
         , m_b(_b)
@@ -113,7 +113,7 @@ public:
             }
         }
 
-        do_texture_queries(queries, render_info_id);
+        do_texture_queries(queries);
     }
 
     /*

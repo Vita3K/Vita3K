@@ -23,6 +23,8 @@
 #include <renderer/vulkan/types.h>
 #include <vkutil/vkutil.h>
 
+#include <vulkan/vulkan_format_traits.hpp>
+
 #include <util/log.h>
 
 namespace renderer::vulkan {
@@ -262,7 +264,18 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                         casted->texture.width = width;
                         casted->texture.height = height;
                         casted->texture.format = vk_format;
-                        const vk::ComponentMapping resulting_swizzle = vkutil::color_to_texture_swizzle(info.swizzle, swizzle);
+
+                        // find the swizzle we need to apply
+                        const std::uint8_t components_in_store = vk::componentCount(info.texture.format);
+                        const std::uint8_t components_requested = vk::componentCount(vk_format);
+                        vk::ComponentMapping resulting_swizzle;
+                        // Only take into consideration the current swizzle when it makes sense
+                        // (Not perfect but better than doing this all the time)
+                        if (bytes_per_pixel_requested == bytes_per_pixel_in_store && components_in_store == components_requested)
+                            resulting_swizzle = vkutil::color_to_texture_swizzle(info.swizzle, swizzle);
+                        else
+                            resulting_swizzle = swizzle;
+
                         casted->texture.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst, resulting_swizzle);
                         casted->texture.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
                     } else {

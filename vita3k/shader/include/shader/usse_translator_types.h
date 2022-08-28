@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <spirv_glsl.hpp>
+#include <shader/usse_types.h>
 
 #include <map>
 #include <unordered_map>
@@ -25,7 +25,8 @@
 
 namespace spv {
 class Builder;
-}
+typedef unsigned int Id;
+} // namespace spv
 
 namespace shader::usse {
 
@@ -37,6 +38,12 @@ struct SpirvUniformBufferInfo {
     std::uint32_t size;
     std::uint32_t index_in_container;
 };
+
+struct SamplerInfo {
+    spv::Id id;
+    DataType component_type;
+};
+using SamplerMap = std::unordered_map<std::uint32_t, SamplerInfo>;
 
 struct SpirvShaderParameters {
     // Mapped to 'pa' (primary attribute) USSE registers
@@ -67,7 +74,7 @@ struct SpirvShaderParameters {
     SpirvVarRegBank predicates;
 
     // Sampler map. Since all banks are a flat array, sampler must be in an explicit bank.
-    std::unordered_map<std::uint32_t, spv::Id> samplers;
+    SamplerMap samplers;
 
     // Uniform buffer map contains layout info of a UBO inside the big SSBO.
     std::map<std::uint32_t, SpirvUniformBufferInfo> buffers;
@@ -86,9 +93,10 @@ struct NonDependentTextureQueryCallInfo {
     std::uint32_t dest_offset = 0;
     int store_type = 0; ///< For sampling method later
     int prod_pos = -1;
+
+    DataType component_type;
 };
 
 using NonDependentTextureQueryCallInfos = std::vector<NonDependentTextureQueryCallInfo>;
-using SamplerMap = std::unordered_map<std::uint32_t, spv::Id>;
 
 } // namespace shader::usse

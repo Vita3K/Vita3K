@@ -21,7 +21,9 @@
 #include <util/align.h>
 #include <util/log.h>
 
-using namespace shader::usse;
+namespace shader {
+
+using namespace usse;
 
 GenericType shader::translate_generic_type(const gxp::GenericParameterType &type) {
     switch (type) {
@@ -367,3 +369,77 @@ ProgramInput shader::get_program_input(const SceGxmProgram &program) {
 
     return program_input;
 }
+
+DataType get_texture_component_type(SceGxmTextureFormat format) {
+    SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
+    // TODO: won't be surprised if some of them are wrong
+    switch (base_format) {
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S5S5U6:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_P8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+        return DataType::UINT8;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_X8S8S8U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
+        return DataType::INT8;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16:
+        return DataType::UINT16;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16:
+        return DataType::INT16;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
+        return DataType::F16;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
+    // should these formats be left as F32?
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
+        return DataType::F32;
+
+    // TODO are these stored as U8, F16 or F32?
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
+        return DataType::UINT8;
+    }
+}
+
+} // namespace shader

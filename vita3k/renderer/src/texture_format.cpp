@@ -27,22 +27,6 @@
 
 namespace renderer::texture {
 
-float get_integral_query_format(const SceGxmTextureBaseFormat format) {
-    if ((format == SCE_GXM_TEXTURE_BASE_FORMAT_S8) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8)) {
-        return shader::INTEGRAL_TEX_QUERY_TYPE_8BIT_SIGNED;
-    }
-
-    if ((format == SCE_GXM_TEXTURE_BASE_FORMAT_U16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_U16U16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S16S16) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16)) {
-        return shader::INTEGRAL_TEX_QUERY_TYPE_16BIT;
-    }
-
-    if ((format == SCE_GXM_TEXTURE_BASE_FORMAT_U32) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_U32U32) || (format == SCE_GXM_TEXTURE_BASE_FORMAT_S32)) {
-        return shader::INTEGRAL_TEX_QUERY_TYPE_32BIT;
-    }
-
-    return shader::INTEGRAL_TEX_QUERY_TYPE_8BIT_UNSIGNED;
-}
-
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
     switch (base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
