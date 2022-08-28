@@ -42,6 +42,7 @@ struct SpirvUniformBufferInfo {
 struct SamplerInfo {
     spv::Id id;
     DataType component_type;
+    uint8_t component_count;
 };
 using SamplerMap = std::unordered_map<std::uint32_t, SamplerInfo>;
 
@@ -95,6 +96,7 @@ struct NonDependentTextureQueryCallInfo {
     int prod_pos = -1;
 
     DataType component_type;
+    uint8_t component_count;
 };
 
 using NonDependentTextureQueryCallInfos = std::vector<NonDependentTextureQueryCallInfo>;

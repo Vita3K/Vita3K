@@ -95,7 +95,9 @@ void shader::usse::USSETranslatorVisitor::do_texture_queries(const NonDependentT
         spv::Id fetch_result = do_fetch_texture(texture_query.sampler, coord_inst, store_op.type, proj ? 4 : 0, 0);
         store_op.num = texture_query.dest_offset;
 
-        store(store_op, fetch_result, 0b1111);
+        const Imm4 mask = (1U << texture_query.component_count) - 1;
+
+        store(store_op, fetch_result, mask);
     }
 }
 
@@ -225,15 +227,16 @@ bool USSETranslatorVisitor::smp(
 
     spv::Id result = do_fetch_texture(sampler.id, { coord, static_cast<int>(DataType::F32) }, DataType::F32, lod_mode, extra1, extra2);
 
+    const Imm4 dest_mask = (1U << sampler.component_count) - 1;
     switch (sb_mode) {
     case 0:
     case 1:
-        store(inst.opr.dest, result, 0b1111);
+        store(inst.opr.dest, result, dest_mask);
         break;
     case 3: {
         // TODO: figure out what to fill here
         // store(inst.opr.dest, stub, 0b1111);
-        store(inst.opr.dest, result, 0b1111);
+        store(inst.opr.dest, result, dest_mask);
         break;
     }
     default: {

@@ -598,6 +598,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             const SceGxmTextureFormat texture_format = translation_state.is_fragment ? translation_state.hints->fragment_textures[sampler_resource_index] : translation_state.hints->vertex_textures[sampler_resource_index];
             tex_query_info.component_type = get_texture_component_type(texture_format);
+            tex_query_info.component_count = get_texture_component_count(texture_format);
 
             // Size of this extra pa occupied
             // Force this to be PRIVATE
@@ -615,7 +616,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 b.addDecoration(tex_query_info.sampler, spv::DecorationBinding, sampler_resource_index);
                 if (translation_state.is_vulkan)
                     b.addDecoration(tex_query_info.sampler, spv::DecorationDescriptorSet, program.is_vertex() ? 2 : 3);
-                samplers[sampler_resource_index] = { tex_query_info.sampler, tex_query_info.component_type };
+                samplers[sampler_resource_index] = { tex_query_info.sampler, tex_query_info.component_type, tex_query_info.component_count };
             } else {
                 tex_query_info.sampler = samplers[sampler_resource_index].id;
             }
@@ -981,7 +982,12 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     for (const auto &sampler : program_input.samplers) {
         const auto sampler_spv_var = create_param_sampler(b, (program.is_vertex() ? "vertTex_" : "fragTex_") + sampler.name, (sampler.is_cube ? spv::DimCube : spv::Dim2D));
-        samplers.emplace(sampler.index, sampler_spv_var);
+        const SceGxmTextureFormat texture_format = translation_state.is_fragment ? translation_state.hints->fragment_textures[sampler.index] : translation_state.hints->vertex_textures[sampler.index];
+        samplers[sampler.index] = {
+            sampler_spv_var,
+            get_texture_component_type(texture_format),
+            get_texture_component_count(texture_format)
+        };
 
         if (translation_state.is_vulkan) {
             b.addDecoration(sampler_spv_var, spv::DecorationBinding, sampler.index);

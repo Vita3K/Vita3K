@@ -296,10 +296,6 @@ static const vk::ComponentMapping translate_swizzle2(SceGxmColorSwizzle2Mode mod
         return swizzle_rg01;
     case SCE_GXM_COLOR_SWIZZLE2_RG:
         return swizzle_gr01;
-    case SCE_GXM_COLOR_SWIZZLE2_RA:
-        return swizzle_a00r;
-    case SCE_GXM_COLOR_SWIZZLE2_AR:
-        return swizzle_r00a;
     default:
         LOG_ERROR("Unknown swizzle mode {}", log_hex(mode));
         return swizzle_identity;
@@ -727,11 +723,11 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
         return vk::Format::eR8G8Unorm;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
-        return vk::Format::eR8G8Unorm;
+        return vk::Format::eR8G8Snorm;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
-        return vk::Format::eR8G8Unorm;
+        return vk::Format::eR16G16Unorm;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
-        return vk::Format::eR8G8Unorm;
+        return vk::Format::eR16G16Snorm;
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
         return vk::Format::eR16G16Sfloat;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:

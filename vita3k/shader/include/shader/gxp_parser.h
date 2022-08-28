@@ -27,5 +27,6 @@ usse::GenericType translate_generic_type(const gxp::GenericParameterType &type);
 std::tuple<usse::DataType, std::string> get_parameter_type_store_and_name(const SceGxmParameterType &type);
 usse::ProgramInput get_program_input(const SceGxmProgram &program);
 usse::DataType get_texture_component_type(SceGxmTextureFormat format);
+uint8_t get_texture_component_count(SceGxmTextureFormat format);
 
 } // namespace shader

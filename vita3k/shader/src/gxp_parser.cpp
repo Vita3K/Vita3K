@@ -442,4 +442,39 @@ DataType get_texture_component_type(SceGxmTextureFormat format) {
     }
 }
 
+uint8_t get_texture_component_count(SceGxmTextureFormat format) {
+    const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
+    const uint32_t swizzle = format & SCE_GXM_TEXTURE_SWIZZLE_MASK;
+    switch (base_format) {
+    // 1 Component.
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32M:
+        return (swizzle == SCE_GXM_TEXTURE_SWIZZLE1_R) ? 1U : 4U;
+
+    // 2 components
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U32U32:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_F32F32:
+        return (swizzle == SCE_GXM_TEXTURE_SWIZZLE2_GR) ? 2U : 4U;
+
+    case SCE_GXM_TEXTURE_BASE_FORMAT_X8U24:
+        return 1U;
+
+    // 3 and 4 components, always 4
+    default:
+        return 4U;
+    }
+}
+
 } // namespace shader
