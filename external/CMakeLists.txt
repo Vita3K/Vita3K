@@ -272,6 +272,11 @@ set_property(TARGET psvpfsparser PROPERTY FOLDER externals)
 set_property(TARGET libzRIF PROPERTY FOLDER externals)
 set_property(TARGET libb64 PROPERTY FOLDER externals)
 
+if(APPLE)
+	set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
+	set(OPENSSL_LIBRARIES "/usr/local/opt/openssl/lib")
+	set(OPENSSL_USE_STATIC_LIBS TRUE)
+endif()
 find_package(OpenSSL QUIET)
 
 if(NOT OPENSSL_FOUND)

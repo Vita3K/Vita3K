@@ -181,6 +181,16 @@ if(APPLE)
 	set(MACOSX_BUNDLE_ICON_FILE Vita3K.icns)
 	set(MACOSX_BUNDLE_GUI_IDENTIFIER "com.github.Vita3K.Vita3K")
 	set(MACOSX_BUNDLE_BUNDLE_NAME "Vita3K")
+
+	# taken from https://github.com/dolphin-emu/dolphin/blob/master/Source/Core/DolphinQt/CMakeLists.txt
+	find_file(MOLTENVK_DYLIB NAMES libMoltenVK.dylib PATH_SUFFIXES lib)
+	if(NOT MOLTENVK_DYLIB)
+		message(FATAL_ERROR "Couldn't find libMoltenVK.dylib.")
+	else()
+		message("Found Molten-VK dylib: ${MOLTENVK_DYLIB}")
+	endif()
+	target_sources(vita3k PRIVATE ${MOLTENVK_DYLIB})
+	set_source_files_properties(${MOLTENVK_DYLIB} PROPERTIES MACOSX_PACKAGE_LOCATION Frameworks)
 elseif(LINUX)
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-rpath='$ORIGIN'")
 	add_custom_command(

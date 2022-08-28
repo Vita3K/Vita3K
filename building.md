@@ -71,8 +71,6 @@ If you aren't satisfied with the way the Visual Studio integrates CMake projects
 
 ## macOS (Xcode)
 
-**Note: As of June 2022, running Vita3K in macOS is considered unsupported due to incompatibilities with the OpenGL implementation.**
-
 - Install Xcode at App Store.
 
 - Install [`brew`](https://brew.sh).
@@ -80,7 +78,7 @@ If you aren't satisfied with the way the Visual Studio integrates CMake projects
 - Install dependencies with `brew`.
 
   ```sh
-  brew install git cmake
+  brew install git cmake molten-vk openssl
   ```
 
 - Clone this repo.

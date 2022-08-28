@@ -288,6 +288,48 @@
       "description": "Build with compiler optimizations enabled and no debugging information",
       "configuration": "Release",
       "configurePreset": "linux-ninja-gnu"
+    },
+    {
+      "name": "macos-ninja-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information and no compiler optimizations",
+      "configuration": "Debug",
+      "configurePreset": "macos-ninja"
+    },
+    {
+      "name": "macos-ninja-relwithdebinfo",
+      "displayName": "Release with debugging information",
+      "description": "Build with compiler optimizations enabled and limited debugging information",
+      "configuration": "RelWithDebInfo",
+      "configurePreset": "macos-ninja"
+    },
+    {
+      "name": "macos-ninja-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information",
+      "configuration": "Release",
+      "configurePreset": "macos-ninja"
+    },
+    {
+      "name": "macos-xcode-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information and no compiler optimizations",
+      "configuration": "Debug",
+      "configurePreset": "macos-xcode"
+    },
+    {
+      "name": "macos-xcode-relwithdebinfo",
+      "displayName": "Release with debugging information",
+      "description": "Build with compiler optimizations enabled and limited debugging information",
+      "configuration": "RelWithDebInfo",
+      "configurePreset": "macos-xcode"
+    },
+    {
+      "name": "macos-xcode-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information",
+      "configuration": "Release",
+      "configurePreset": "macos-xcode"
     }
   ]
 }
