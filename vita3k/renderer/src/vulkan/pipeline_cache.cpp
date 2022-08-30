@@ -172,7 +172,12 @@ void PipelineCache::read_pipeline_cache() {
 
 void PipelineCache::save_pipeline_cache() {
     size_t pipeline_size;
-    state.device.getPipelineCacheData(pipeline_cache, &pipeline_size, nullptr);
+    auto result = state.device.getPipelineCacheData(pipeline_cache, &pipeline_size, nullptr);
+    if (result != vk::Result::eSuccess) {
+        LOG_ERROR("Could not get pipeline cache data.");
+        assert(false);
+        return;
+    }
     if (pipeline_size == 0)
         // No pipeline was created
         return;
@@ -187,7 +192,12 @@ void PipelineCache::save_pipeline_cache() {
 
     LOG_INFO("Saving pipeline cache...");
     std::vector<char> pipeline_data(pipeline_size);
-    state.device.getPipelineCacheData(pipeline_cache, &pipeline_size, pipeline_data.data());
+    result = state.device.getPipelineCacheData(pipeline_cache, &pipeline_size, pipeline_data.data());
+    if (result != vk::Result::eSuccess) {
+        LOG_ERROR("Could not get pipeline cache data.");
+        assert(false);
+        return;
+    }
 
     pipeline_cache_file.write(pipeline_data.data(), pipeline_size);
     pipeline_cache_file.close();
