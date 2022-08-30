@@ -410,6 +410,17 @@ Address alloc_at(MemState &state, Address address, size_t size, const char *name
     return address;
 }
 
+Address try_alloc_at(MemState &state, Address address, size_t size, const char *name) {
+    const uint32_t wanted_page = address / state.page_size;
+    size += address % state.page_size;
+    const size_t page_count = align(size, state.page_size) / state.page_size;
+    if (state.allocator.free_slot_count(wanted_page, wanted_page + page_count) != page_count) {
+        return 0;
+    }
+    (void)alloc_inner(state, wanted_page, page_count, name, true);
+    return address;
+}
+
 Block alloc_block(MemState &mem, size_t size, const char *name) {
     const Address address = alloc(mem, size, name);
     return Block(address, [&mem](Address stack) {

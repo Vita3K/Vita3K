@@ -5,6 +5,7 @@ add_library(
 	include/util/align.h
 	include/util/bytes.h
 	include/util/safe_time.h
+	include/util/elf.h
 	include/util/exit_code.h
 	include/util/exec.h
 	include/util/find.h

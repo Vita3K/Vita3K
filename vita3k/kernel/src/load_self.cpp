@@ -26,8 +26,8 @@
 #include <util/fs.h>
 #include <util/log.h>
 
-#include <elfio/elf_types.hpp>
 #include <spdlog/fmt/fmt.h>
+#include <util/elf.h>
 // clang-format off
 #define SCE_ELF_DEFS_TARGET
 #include <sce-elf-defs.h>
@@ -42,16 +42,12 @@
 #include <iomanip>
 #include <iostream>
 
-#define ET_SCE_EXEC 0xFE00
-
 #define NID_MODULE_STOP 0x79F8E492
 #define NID_MODULE_EXIT 0x913482A9
 #define NID_MODULE_START 0x935CD196
 #define NID_MODULE_INFO 0x6C2224BA
 #define NID_SYSLYB 0x936c8a78
 #define NID_PROCESS_PARAM 0x70FBA1E7
-
-using namespace ELFIO;
 
 static constexpr bool LOG_MODULE_LOADING = false;
 
@@ -313,6 +309,7 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
  * \return Negative on failure
  */
 SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &self_path) {
+    //TODO: use raw I/O from path when io becomes less bad
     const uint8_t *const self_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
@@ -342,49 +339,142 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     const uint32_t module_info_offset = elf.e_entry & 0x3fffffff;
     const Elf32_Phdr *const segments = reinterpret_cast<const Elf32_Phdr *>(self_bytes + self_header.phdr_offset);
 
+    //Verify ELF header is correct
+    if (!EHDR_HAS_VALID_MAGIC(elf)) {
+        LOG_CRITICAL("Cannot load file {}: invalid ELF magic.", self_path);
+        return SCE_KERNEL_ERROR_ILLEGAL_ELF_HEADER;
+    }
+
+    if (elf.e_ident[EI_CLASS] != ELFCLASS32) {
+        LOG_CRITICAL("Cannot load ELF {}: unexpected EI_CLASS {}.", self_path, elf.e_ident[EI_CLASS]);
+        return SCE_KERNEL_ERROR_ILLEGAL_ELF_HEADER;
+    }
+
+    if (elf.e_ident[EI_DATA] != ELFDATA2LSB) {
+        LOG_CRITICAL("Cannot load ELF {}: unexpected EI_DATA {}.", self_path, elf.e_ident[EI_DATA]);
+        return SCE_KERNEL_ERROR_ILLEGAL_ELF_HEADER;
+    }
+
+    if (elf.e_ident[EI_VERSION] != EV_CURRENT) {
+        LOG_CRITICAL("Cannot load ELF {}: invalid EI_VERSION {}.", self_path, elf.e_ident[EI_VERSION]);
+        return SCE_KERNEL_ERROR_ILLEGAL_ELF_HEADER;
+    }
+
+    if (elf.e_machine != EM_ARM) {
+        LOG_CRITICAL("Cannot load ELF {}: unexpected e_machine {}.", self_path, elf.e_machine);
+        return SCE_KERNEL_ERROR_ILLEGAL_ELF_HEADER;
+    }
+
+    bool isRelocatable;
+    if (elf.e_type == ET_SCE_EXEC) {
+        isRelocatable = false;
+    } else if (elf.e_type == ET_SCE_RELEXEC) {
+        isRelocatable = true;
+    } else if (elf.e_type == ET_SCE_PSP2RELEXEC) {
+        LOG_CRITICAL("Cannot load ELF {}: ET_SCE_PSP2RELEXEC is not supported.", self_path);
+        return SCE_KERNEL_ERROR_ILLEGAL_ELF_HEADER;
+    } else {
+        LOG_CRITICAL("Cannot load ELF {}: unexpected e_type {}.", self_path, elf.e_type);
+        return SCE_KERNEL_ERROR_ILLEGAL_ELF_HEADER;
+    }
+
+    //TODO: is OSABI always 0?
+    //TODO: is ABI_VERSION always 0?
+
     const segment_info *const seg_infos = reinterpret_cast<const segment_info *>(self_bytes + self_header.section_info_offset);
 
-    LOG_DEBUG_IF(LOG_MODULE_LOADING, "Loading SELF at {}, ELF type: {}, header_type: {}, self_filesize: {}, self_offset: {}, module_info_offset: {}", self_path, log_hex(elf.e_type), log_hex(self_header.header_type), log_hex(self_header.self_filesize), log_hex(self_header.self_offset), log_hex(module_info_offset));
+    LOG_DEBUG_IF(LOG_MODULE_LOADING, "Loading SELF at {}... (ELF type: {}, self_filesize: {}, self_offset: {}, module_info_offset: {})", self_path, log_hex(elf.e_type), log_hex(self_header.self_filesize), log_hex(self_header.self_offset), log_hex(module_info_offset));
+
+    auto get_seg_header_string = [](uint32_t p_type) {
+        if (p_type == PT_NULL) {
+            return "NULL";
+        } else if (p_type == PT_LOAD) {
+            return "LOAD";
+        } else if (p_type == PT_SCE_COMMENT) {
+            return "SCE Comment";
+        } else if (p_type == PT_SCE_VERSION) {
+            return "SCE Version";
+        } else if ((PT_LOOS <= p_type) && (p_type <= PT_HIOS)) {
+            return "OS-specific";
+        } else if ((PT_LOPROC <= p_type) && (p_type <= PT_HIPROC)) {
+            return "Processor-specific";
+        } else {
+            return "Unknown";
+        }
+    };
 
     SegmentInfosForReloc segment_reloc_info;
+
+    auto free_all_segments = [](MemState &mem, SegmentInfosForReloc &segs_info) {
+        for (auto _seg : segs_info) {
+            const SegmentInfoForReloc &segment = _seg.second;
+            free(mem, segment.addr);
+        }
+    };
+
     for (Elf_Half seg_index = 0; seg_index < elf.e_phnum; ++seg_index) {
         const Elf32_Phdr &seg_header = segments[seg_index];
         const uint8_t *const seg_bytes = self_bytes + self_header.header_len + seg_header.p_offset;
 
-        auto get_seg_header_string = [&seg_header]() {
-            return seg_header.p_type == PT_LOAD ? "LOAD" : (seg_header.p_type == PT_LOOS ? "LOOS" : "UNKNOWN");
-        };
+        LOG_DEBUG_IF(LOG_MODULE_LOADING, "    [{}] (p_type: {}): p_offset: {}, p_vaddr: {}, p_paddr: {}, p_filesz: {}, p_memsz: {}, p_flags: {}, p_align: {}", get_seg_header_string(seg_header.p_type), log_hex(seg_header.p_type), log_hex(seg_header.p_offset), log_hex(seg_header.p_vaddr), log_hex(seg_header.p_paddr), log_hex(seg_header.p_filesz), log_hex(seg_header.p_memsz), log_hex(seg_header.p_flags), log_hex(seg_header.p_align));
 
-        LOG_DEBUG_IF(LOG_MODULE_LOADING, "    [{}] (p_type: {}): p_offset: {}, p_vaddr: {}, p_paddr: {}, p_filesz: {}, p_memsz: {}, p_flags: {}, p_align: {}", get_seg_header_string(), log_hex(seg_header.p_type), log_hex(seg_header.p_offset), log_hex(seg_header.p_vaddr), log_hex(seg_header.p_paddr), log_hex(seg_header.p_filesz), log_hex(seg_header.p_memsz), log_hex(seg_header.p_flags), log_hex(seg_header.p_align));
-        assert(seg_infos[seg_index].encryption == 2);
-        if (seg_header.p_type == PT_LOAD) {
+        if (seg_infos[seg_index].encryption != 2) { //0 should also be valid?
+            LOG_ERROR("Cannot load ELF {}: invalid segment encryption status {}.", self_path, seg_infos[seg_index].encryption);
+            free_all_segments(mem, segment_reloc_info);
+            return -1;
+        }
+
+        if (seg_header.p_type == PT_NULL) {
+            //Nothing to do.
+        } else if (seg_header.p_type == PT_LOAD) {
             if (seg_header.p_memsz != 0) {
                 Address segment_address = 0;
-                auto alloc_name = fmt::format("SELF at {}", self_path);
-                if (elf.e_type == ET_SCE_EXEC) {
-                    segment_address = alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
-                } else {
-                    segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
+                auto alloc_name = fmt::format("{}:seg%d", self_path, seg_index);
+
+                //TODO: when the virtual process bringup is fixed, uncomment this
+                //Try allocating at image base for RELEXEC to avoid having to relocate the main module
+                /*
+                segment_address = try_alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
+                
+                if (!segment_address) {
+                    if (isRelocatable) { //Try allocating somewhere else
+                        segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
+                    }
+
+                    if (!isRelocatable || !segment_address) {
+                        LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), log_hex(seg_header.p_vaddr), seg_index);
+                        free_all_segments(mem, segment_reloc_info);
+                        return SCE_KERNEL_ERROR_NO_MEMORY; //TODO is this correct?
+                    }
                 }
-                const Ptr<uint8_t> seg_addr(segment_address);
-                if (!seg_addr) {
-                    LOG_ERROR("Failed to allocate memory for segment.");
-                    return -1;
+                */
+
+                if (isRelocatable) {
+                    segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
+                } else {
+                    segment_address = alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
                 }
 
+                if (!segment_address) {
+                    LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), log_hex(seg_header.p_vaddr), seg_index);
+                    free_all_segments(mem, segment_reloc_info);
+                    return SCE_KERNEL_ERROR_NO_MEMORY; //TODO is this correct?
+                }
+
+                const Ptr<uint8_t> seg_ptr(segment_address);
                 if (seg_infos[seg_index].compression == 2) {
                     unsigned long dest_bytes = seg_header.p_filesz;
                     const uint8_t *const compressed_segment_bytes = self_bytes + seg_infos[seg_index].offset;
 
-                    int res = mz_uncompress(reinterpret_cast<uint8_t *>(seg_addr.get(mem)), &dest_bytes, compressed_segment_bytes, static_cast<mz_ulong>(seg_infos[seg_index].length));
+                    int res = mz_uncompress(reinterpret_cast<uint8_t *>(seg_ptr.get(mem)), &dest_bytes, compressed_segment_bytes, static_cast<mz_ulong>(seg_infos[seg_index].length));
                     assert(res == MZ_OK);
                 } else {
-                    memcpy(seg_addr.get(mem), seg_bytes, seg_header.p_filesz);
+                    memcpy(seg_ptr.get(mem), seg_bytes, seg_header.p_filesz);
                 }
 
                 segment_reloc_info[seg_index] = { segment_address, seg_header.p_vaddr, seg_header.p_memsz };
             }
-        } else if (seg_header.p_type == PT_LOOS) {
+        } else if (seg_header.p_type == PT_SCE_RELA) {
             if (seg_infos[seg_index].compression == 2) {
                 unsigned long dest_bytes = seg_header.p_filesz;
                 const uint8_t *const compressed_segment_bytes = self_bytes + seg_infos[seg_index].offset;
@@ -401,8 +491,11 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
                     return -1;
                 }
             }
+        } else if ((seg_header.p_type == PT_SCE_COMMENT) || (seg_header.p_type == PT_SCE_VERSION)
+            || (seg_header.p_type == PT_ARM_EXIDX) /* TODO: this may be important and require being loaded */) {
+            LOG_INFO("{}: Skipping special segment {}...", self_path, log_hex(seg_header.p_type));
         } else {
-            LOG_CRITICAL("Unknown segment type {}", log_hex(seg_header.p_type));
+            LOG_CRITICAL("{}: Skipping segment with unknown p_type {}!", self_path, log_hex(seg_header.p_type));
         }
     }
 
@@ -490,7 +583,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     sceKernelModuleInfo->state = module_info->type;
 
-    LOG_INFO("Loading symbols for SELF: {}", self_path);
+    LOG_INFO("Linking SELF {}...", self_path);
 
     if (!load_exports(entry_point, *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
