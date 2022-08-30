@@ -495,6 +495,8 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, EmuEnvState &emuenv,
         emuenv.kernel.export_nids.emplace(var.nid, addr);
     }
 
+    //FIXME: The application EBOOT should be the first module ever loaded in the address space!
+
     // Load pre-loaded libraries
     const auto module_app_path{ fs::path(emuenv.pref_path) / "ux0/app" / emuenv.io.app_path / "sce_module" };
     const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);

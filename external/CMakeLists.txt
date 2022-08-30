@@ -49,7 +49,6 @@ endif()
 add_library(printf INTERFACE)
 target_include_directories(printf INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/printf")
 
-add_subdirectory(elfio)
 
 add_subdirectory(fmt)
 add_library(fmt::fmt ALIAS fmt)

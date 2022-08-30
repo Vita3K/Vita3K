@@ -17,9 +17,6 @@
 [submodule "external/dlmalloc"]
 	path = external/dlmalloc
 	url = https://github.com/Vita3K/dlmalloc
-[submodule "external/elfio"]
-	path = external/elfio
-	url = https://github.com/serge1/ELFIO
 [submodule "external/ffmpeg"]
 	path = external/ffmpeg
 	url = https://github.com/Vita3K/ffmpeg-core.git
