@@ -355,7 +355,9 @@ int main(int argc, char *argv[]) {
     emuenv.renderer->title_id = emuenv.io.title_id.c_str();
     emuenv.renderer->self_name = emuenv.self_name.c_str();
     if (renderer::get_shaders_cache_hashs(*emuenv.renderer) && cfg.shader_cache) {
+        SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
         for (const auto &hash : emuenv.renderer->shaders_cache_hashs) {
+            handle_events(emuenv, gui);
             gui::draw_begin(gui, emuenv);
             draw_app_background(gui, emuenv);
 
@@ -364,14 +366,15 @@ int main(int argc, char *argv[]) {
 
             gui::draw_end(gui, emuenv.window.get());
             emuenv.renderer->swap_window(emuenv.window.get());
-            SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
         }
     }
 
     if (const auto err = run_app(emuenv, entry_point) != Success)
         return err;
 
-    while (emuenv.frame_count == 0 && !emuenv.load_exec) {
+    SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
+
+    while (handle_events(emuenv, gui) && (emuenv.frame_count == 0) && !emuenv.load_exec) {
         // Driver acto!
         renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg);
 
@@ -388,8 +391,6 @@ int main(int argc, char *argv[]) {
 
         gui::draw_end(gui, emuenv.window.get());
         emuenv.renderer->swap_window(emuenv.window.get());
-
-        SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
     }
 
     while (handle_events(emuenv, gui) && !emuenv.load_exec) {
