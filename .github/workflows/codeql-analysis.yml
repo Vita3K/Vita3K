@@ -78,7 +78,7 @@ jobs:
 
       - name: Build
         run: |
-         cmake -DCI=ON --preset ${{ matrix.cmake_preset }}
+         cmake --preset ${{ matrix.cmake_preset }}
          cmake --build build/${{ matrix.cmake_preset }} --config ${{ matrix.config }}
 
       - name: Perform CodeQL Analysis
