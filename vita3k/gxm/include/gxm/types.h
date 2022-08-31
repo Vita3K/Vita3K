@@ -19,8 +19,6 @@
 
 #include <util/types.h>
 
-#include <rpcs3/BitField.h>
-
 #define SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX 0xE
 #define SCE_GXM_GPU_CORE_COUNT 4U
 #define SCE_GXM_MAX_VERTEX_STREAMS 16
@@ -1432,12 +1430,15 @@ struct SceGxmProgram {
 
 struct SceGxmProgramParameter {
     int32_t name_offset; // Number of bytes from the start of this structure to the name string.
-    union {
-        bf_t<uint16_t, 0, 4> category; // SceGxmParameterCategory
-        bf_t<uint16_t, 4, 4> type; // SceGxmParameterType - applicable for constants, not applicable for samplers (select type like float, half, fixed ...)
-        bf_t<uint16_t, 8, 4> component_count; // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
-        bf_t<uint16_t, 12, 4> container_index; // applicable for constants, not applicable for samplers (buffer, default, texture)
+
+    struct {
+        // Each member is half a bit wide, so the values are [0-15], [0,F]
+        uint8_t category : 4; // SceGxmParameterCategory
+        uint8_t type : 4; // SceGxmParameterType - applicable for constants, not applicable for samplers (select type like float, half, fixed ...)
+        uint8_t component_count : 4; // applicable for constants, not applicable for samplers (select size like float2, float3, float3 ...)
+        uint8_t container_index : 4; // applicable for constants, not applicable for samplers (buffer, default, texture)
     };
+
     uint8_t semantic; // applicable only for for vertex attributes, for everything else it's 0
     uint8_t semantic_index;
     uint32_t array_size;
