@@ -99,7 +99,7 @@ public:
 
     ~ArmDynarmicCallback() override = default;
 
-    uint32_t MemoryReadCode(Dynarmic::A32::VAddr addr) override {
+    std::optional<std::uint32_t> MemoryReadCode(Dynarmic::A32::VAddr addr) override {
         if (cpu->log_mem)
             LOG_TRACE("Instruction fetch at addr 0x{:X}", addr);
         return MemoryRead32(addr);
@@ -254,13 +254,13 @@ public:
         case Dynarmic::A32::Exception::UndefinedInstruction:
         case Dynarmic::A32::Exception::UnpredictableInstruction:
         case Dynarmic::A32::Exception::DecodeError: {
-            LOG_WARN("Undefined/Unpredictable instruction at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc), disassemble(*parent, pc, nullptr));
+            LOG_WARN("Undefined/Unpredictable instruction at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc).value(), disassemble(*parent, pc, nullptr));
             InterpreterFallback(pc, 1);
             break;
         }
         default:
             LOG_WARN("Unknown exception {} Raised at pc = 0x{:x}", static_cast<size_t>(exception), pc);
-            LOG_TRACE("at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc), disassemble(*parent, pc, nullptr));
+            LOG_TRACE("at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc).value(), disassemble(*parent, pc, nullptr));
         }
     }
 
