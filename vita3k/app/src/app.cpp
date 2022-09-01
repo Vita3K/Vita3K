@@ -34,30 +34,57 @@ void error_dialog(const std::string &message, SDL_Window *window) {
     }
 }
 
-static const uint32_t frames_size = 20;
 void calculate_fps(EmuEnvState &emuenv) {
+    static const uint32_t frames_size = sizeof(emuenv.fps_values) / sizeof(emuenv.fps_values[0]);
+    static uint16_t deltaTimeAcc = 0; // delta time accumulator for the window title
+
+    if (emuenv.frame_count == 0)
+        return;
+
     const uint32_t sdl_ticks_now = SDL_GetTicks();
-    const uint32_t ms = sdl_ticks_now - emuenv.sdl_ticks;
+    const uint32_t deltaTime = sdl_ticks_now - emuenv.sdl_ticks; // Delta time since last frame
+    deltaTimeAcc += deltaTime;
 
-    if (ms >= 1000 && emuenv.frame_count > 0) {
-        // Set Current FPS
-        // round division to nearest integer instead of truncating
-        const uint32_t frame_count = static_cast<std::uint32_t>(emuenv.frame_count);
-        emuenv.fps = (frame_count * 1000 + ms / 2) / ms;
-        emuenv.ms_per_frame = (ms + frame_count / 2) / frame_count;
-        emuenv.sdl_ticks = sdl_ticks_now;
-        emuenv.frame_count = 0;
-        set_window_title(emuenv);
+    // Only process frames that last AT LEAST 1ms, else math breaks
+    // Becuase of this the FPS calculation is maxed out to 1000 FPS (not like any game is gonna hit that)
+    // This only happens on some rare cases when the command list is empty and the gpu has to do nothing
+    if (deltaTime >= 1) {
+        // Set FPS and MS
+        emuenv.ms_per_frame = deltaTime;
+        emuenv.fps = 1000 / deltaTime;
 
-        // Set FPS Statistics
+        emuenv.sdl_ticks = sdl_ticks_now; // Reset deltaTime
+        emuenv.frame_count = 0; // 0 Frames to process its FPS
+
+        // Set FPS other fps stats (Min,Max and Avg)
+        // Avg
         emuenv.fps_values[emuenv.current_fps_offset] = float(emuenv.fps);
         emuenv.current_fps_offset = (emuenv.current_fps_offset + 1) % frames_size;
         uint32_t avg_fps = 0;
         for (uint32_t i = 0; i < frames_size; i++)
             avg_fps += uint32_t(emuenv.fps_values[i]);
         emuenv.avg_fps = avg_fps / frames_size;
+        // Min/Max
         emuenv.min_fps = uint32_t(*std::min_element(emuenv.fps_values, std::next(emuenv.fps_values, frames_size)));
         emuenv.max_fps = uint32_t(*std::max_element(emuenv.fps_values, std::next(emuenv.fps_values, frames_size)));
+    }
+
+    if (deltaTimeAcc >= 1000) {
+        deltaTimeAcc = 0; // Reset accumulator
+        auto old_fps = emuenv.fps; // Save fps value to change it back later
+
+        // Use the average of the last unprocessed frames for the titlebar
+        // This is the method that was used before this comment and RPCS3 also uses it
+        // Why? its common for games to have lag spike or extra small timeframes in some cases
+        // By doing it this way the titlebar won't show them, instead it will show an average
+        // of the last unprocessed frames, its accurate enough
+        emuenv.fps = 0;
+        for (uint32_t i = emuenv.frame_count-1; i >= 0; i--)
+            emuenv.fps += emuenv.fps_values[i];
+        emuenv.fps /= 2;
+
+        set_window_title(emuenv);
+        emuenv.fps = old_fps; // Bring real fps value back
     }
 }
 

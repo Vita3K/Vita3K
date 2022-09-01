@@ -122,7 +122,7 @@ public:
     uint32_t avg_fps = 0;
     uint32_t min_fps = 0;
     uint32_t max_fps = 0;
-    float fps_values[20] = {};
+    float fps_values[60] = {};
     uint32_t current_fps_offset = 0;
     uint32_t ms_per_frame = 0;
     WindowPtr window = WindowPtr(nullptr, nullptr);
