@@ -92,7 +92,7 @@ jobs:
 
       - name: CMake
         run: |
-          cmake -DCI=ON ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
+          cmake ${{ matrix.extra_cmake_args }} --preset ${{ matrix.cmake_preset }}
           cmake --build build/${{ matrix.cmake_preset }} --config ${{ matrix.config }}
 
       - name: CTest
