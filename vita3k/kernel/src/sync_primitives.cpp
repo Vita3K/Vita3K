@@ -1379,7 +1379,7 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
 
         const auto finish = [&] {
             msgpipe_lock.lock(); // Lock message pipe again
-            thread->update_status(ThreadStatus::run, ThreadStatus::wait); // Wake up
+            thread->update_status(ThreadStatus::run); // Wake up
 
             SceSize readSize = (SceSize)copyOut();
             // msgpipe->receivers->erase(wait_data); //we've already been erased by the sender
@@ -1479,7 +1479,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
 
         const auto finish = [&] {
             msgpipe_lock.lock(); // Lock message pipe again
-            thread->update_status(ThreadStatus::run, ThreadStatus::wait); // Wake up
+            thread->update_status(ThreadStatus::run); // Wake up
 
             SceSize insertedSize = (SceSize)msgpipe->data_buffer.Insert(pSendBuf, sendSize);
             // msgpipe->senders->erase(wait_data); //Don't erase ourselves - recv will do it
