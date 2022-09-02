@@ -93,6 +93,19 @@
       }
     },
     {
+      "name": "linux-ninja-clang12",
+      "inherits": "linux-ninja",
+      "displayName": "Linux with Ninja and Clang 12",
+      "description": "Linux native build using Ninja Multi-Config generator and Clang 12 compiler",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-12",
+        "CMAKE_CXX_COMPILER": "clang++-12"
+      },
+      "environment": {
+        "LDFLAGS": "-fuse-ld=lld"
+      }
+    },
+    {
       "name": "linux-ninja-gnu",
       "inherits": "linux-ninja",
       "displayName": "Linux with Ninja and GNU GCC",
@@ -233,6 +246,27 @@
       "description": "Build with compiler optimizations enabled and no debugging information",
       "configuration": "Release",
       "configurePreset": "linux-ninja-clang"
+    },
+    {
+      "name": "linux-ninja-clang12-debug",
+      "displayName": "Debug",
+      "description": "Build with debugging information and no compiler optimizations",
+      "configuration": "Debug",
+      "configurePreset": "linux-ninja-clang12"
+    },
+    {
+      "name": "linux-ninja-clang12-relwithdebinfo",
+      "displayName": "Release with debugging information",
+      "description": "Build with compiler optimizations enabled and limited debugging information",
+      "configuration": "RelWithDebInfo",
+      "configurePreset": "linux-ninja-clang12"
+    },
+    {
+      "name": "linux-ninja-clang12-release",
+      "displayName": "Release",
+      "description": "Build with compiler optimizations enabled and no debugging information",
+      "configuration": "Release",
+      "configurePreset": "linux-ninja-clang12"
     },
     {
       "name": "linux-ninja-gnu-debug",
