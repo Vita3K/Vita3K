@@ -27,7 +27,7 @@ jobs:
           - os: ubuntu-latest
             cache_path: ~/.ccache
             extra_cmake_args:
-            cmake_preset: linux-ninja-clang
+            cmake_preset: linux-ninja-clang12
           - os: windows-latest
             cache_path: |
                 C:\vcpkg\installed
