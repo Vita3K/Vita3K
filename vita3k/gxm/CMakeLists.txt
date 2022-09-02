@@ -13,5 +13,5 @@ add_library(
 )
 
 target_include_directories(gxm PUBLIC include)
-target_link_libraries(gxm PUBLIC rpcs3 util)
+target_link_libraries(gxm PUBLIC util)
 target_link_libraries(gxm PRIVATE)

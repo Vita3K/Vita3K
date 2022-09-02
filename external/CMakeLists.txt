@@ -161,9 +161,6 @@ option(YAML_CPP_INSTALL "Enable generation of install target" OFF)
 add_subdirectory(yaml-cpp EXCLUDE_FROM_ALL)
 set_property(TARGET yaml-cpp PROPERTY FOLDER externals)
 
-add_library(rpcs3 INTERFACE)
-target_include_directories(rpcs3 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/rpcs3/include")
-
 if(USE_DISCORD_RICH_PRESENCE)
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip")
 		message(STATUS "Downloading discord gamesdk...")

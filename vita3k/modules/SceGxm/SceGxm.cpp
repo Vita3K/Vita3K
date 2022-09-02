@@ -3220,7 +3220,7 @@ EXPORT(int, sceGxmSetYuvProfile) {
     return UNIMPLEMENTED();
 }
 
-Address alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShaderPatcherParams &shaderPatcherParams, uint size) {
+Address alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShaderPatcherParams &shaderPatcherParams, unsigned int size) {
     if (!shaderPatcherParams.hostAllocCallback) {
         LOG_ERROR("Empty hostAllocCallback");
     }
