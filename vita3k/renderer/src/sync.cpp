@@ -102,10 +102,19 @@ int wait_for_status(State &state, int *status, int signal, bool wake_on_equal) {
     return *status;
 }
 
-void wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp) {
+bool wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros) {
     std::unique_lock<std::mutex> lock(sync_object->lock);
     if (sync_object->timestamp_current < timestamp) {
-        sync_object->cond.wait(lock, [&]() { return sync_object->timestamp_current >= timestamp; });
+        const auto &pred = [&]() { return sync_object->timestamp_current >= timestamp; };
+
+        if (timeout_micros == -1) {
+            sync_object->cond.wait(lock, pred);
+            return true;
+        } else {
+            return sync_object->cond.wait_for(lock, std::chrono::microseconds(timeout_micros), pred);
+        }
+    } else {
+        return true;
     }
 }
 

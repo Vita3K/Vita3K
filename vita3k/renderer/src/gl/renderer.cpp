@@ -667,6 +667,8 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
 
 void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
     const GxmState &gxm, MemState &mem) {
+    should_display = false;
+
     if (!display.frame.base)
         return;
 

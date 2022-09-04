@@ -41,8 +41,10 @@ void finish(State &state, Context *context);
 
 /**
  * \brief Wait for all subjects to be done with the given sync object.
+ * 
+ * Return true if the wait didn't timeout
  */
-void wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp);
+bool wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros = -1);
 
 /**
  * \brief Set list of subject with sync object to done.

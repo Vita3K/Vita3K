@@ -25,6 +25,7 @@
 #include <display/state.h>
 #include <kernel/state.h>
 #include <packages/functions.h>
+#include <renderer/state.h>
 #include <util/lock_and_find.h>
 #include <util/types.h>
 
@@ -128,6 +129,14 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
         info.image_size.x = pFrameBuf->width;
         info.image_size.y = pFrameBuf->height;
         emuenv.display.last_setframe_vblank_count = emuenv.display.vblank_count.load();
+
+        // hack (kind of)
+        // we can assume the framebuffer is already fully rendered
+        // (always the case when using gxm, and should also be the case when it is not used)
+        // so set this buffer as ready to be displayed
+        // this should decrease the latency
+        emuenv.display.frame = emuenv.display.next_frame;
+        emuenv.renderer->should_display = true;
     }
 
     emuenv.frame_count++;
