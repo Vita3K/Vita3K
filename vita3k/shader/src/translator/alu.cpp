@@ -776,7 +776,13 @@ bool USSETranslatorVisitor::vcomp(
 
     case Opcode::VEXP: {
         // y = e^src0 => return y
-        result = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Exp, { result });
+        // hack (kind of) :
+        // define exp(Nan) as 1.0, this is needed for Freedom Wars to render properly
+        const spv::Id exp_val = m_b.createBuiltinCall(m_b.getTypeId(result), std_builtins, GLSLstd450Exp, { result });
+        const int num_comp = m_b.getNumComponents(result);
+        const spv::Id ones = utils::make_uniform_vector_from_type(m_b, m_b.getTypeId(result), 1.0f);
+        const spv::Id is_nan = m_b.createUnaryOp(spv::OpIsNan, utils::make_vector_or_scalar_type(m_b, m_b.makeBoolType(), num_comp), result);
+        result = m_b.createTriOp(spv::OpSelect, m_b.getTypeId(result), is_nan, ones, exp_val);
         break;
     }
 
