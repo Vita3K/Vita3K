@@ -43,9 +43,10 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
                 display.vblank_count++;
                 // register framebuf change made by _sceDisplaySetFrameBuf
                 if (display.has_next_frame) {
-                    display.frame = display.next_frame;
                     display.has_next_frame = false;
-                    emuenv.renderer->should_display = true;
+                    // do not set it here as it as already been set in _sceDisplaySetFrameBuf
+                    // display.frame = display.next_frame;
+                    // emuenv.renderer->should_display = true;
                 }
             }
 

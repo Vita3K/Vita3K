@@ -20,6 +20,7 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <packages/sfo.h>
+#include <renderer/state.h>
 #include <util/tracy.h>
 
 #ifdef TRACY_ENABLE
@@ -422,6 +423,8 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
         emuenv.load_app_path = emuenv.io.app_path;
         emuenv.load_exec_path = exec_path;
         emuenv.load_exec = true;
+        // make sure we are not stuck waiting for a gpu command
+        emuenv.renderer->should_display = true;
 
         return SCE_KERNEL_OK;
     }
