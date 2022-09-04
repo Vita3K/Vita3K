@@ -1009,7 +1009,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             auto container = gxp::get_container_by_index(program, parameter.container_index);
             std::uint32_t offset = parameter.resource_index;
 
-            if (container) {
+            if (container && is_uniform) {
                 offset = container->base_sa_offset + parameter.resource_index;
             }
 
