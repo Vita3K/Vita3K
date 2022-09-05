@@ -177,7 +177,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             // Load Emulator Config
             if (!config_child.child("emulator").empty()) {
                 const auto emulator_child = config_child.child("emulator");
-                config.ngs_enable = emulator_child.attribute("ngs-enable").as_bool();
+                config.ngs_enable = emulator_child.attribute("enable-ngs").as_bool();
             }
 
             return true;
@@ -280,7 +280,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         // Emulator
         auto emulator_child = config_child.append_child("emulator");
-        emulator_child.append_attribute("disable-ngs") = config.ngs_enable;
+        emulator_child.append_attribute("enable-ngs") = config.ngs_enable;
 
         const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
         if (!save_xml)
@@ -325,19 +325,9 @@ static void set_vsync_state(const bool &state) {
 void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     // If a config file is in use, call `get_custom_config()` and set the config
     // parameters with the values stored in the app-specific custom config file
-    if (get_custom_config(gui, emuenv, app_path)) {
-        emuenv.cfg.current_config.cpu_backend = config.cpu_backend;
-        emuenv.cfg.current_config.cpu_opt = config.cpu_opt;
-        emuenv.cfg.current_config.modules_mode = config.modules_mode;
-        emuenv.cfg.current_config.lle_modules = config.lle_modules;
-        emuenv.cfg.current_config.pstv_mode = config.pstv_mode;
-        emuenv.cfg.current_config.resolution_multiplier = config.resolution_multiplier;
-        emuenv.cfg.current_config.disable_surface_sync = config.disable_surface_sync;
-        emuenv.cfg.current_config.enable_fxaa = config.enable_fxaa;
-        emuenv.cfg.current_config.v_sync = config.v_sync;
-        emuenv.cfg.current_config.anisotropic_filtering = config.anisotropic_filtering;
-        emuenv.cfg.current_config.ngs_enable = config.ngs_enable;
-    } else {
+    if (get_custom_config(gui, emuenv, app_path))
+        emuenv.cfg.current_config = config;
+    else {
         // Else inherit the values from the global emulator config
         emuenv.cfg.current_config.cpu_backend = emuenv.cfg.cpu_backend;
         emuenv.cfg.current_config.cpu_opt = emuenv.cfg.cpu_opt;
@@ -355,7 +345,8 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     // can be changed while ingame
     emuenv.renderer->disable_surface_sync = emuenv.cfg.current_config.disable_surface_sync;
     emuenv.renderer->set_fxaa(emuenv.cfg.current_config.enable_fxaa);
-    set_vsync_state(emuenv.cfg.current_config.v_sync);
+    if (emuenv.backend_renderer == renderer::Backend::OpenGL)
+        set_vsync_state(emuenv.cfg.current_config.v_sync);
     emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
 
     // No change it if app already running
@@ -485,7 +476,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             std::vector<const char *> gpu_list;
             for (const auto &gpu : gpu_list_str)
                 gpu_list.push_back(gpu.c_str());
-            if (ImGui::Combo("GPU (Reboot to apply)", &emuenv.cfg.gpu_idx, gpu_list.data(), gpu_list.size()))
+            if (ImGui::Combo("GPU (Reboot to apply)", &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size())))
                 ImGui::SetTooltip("Select the GPU Vita3K should run on.");
         }
         ImGui::Separator();

@@ -63,7 +63,7 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowSize(MAIN_WINDOW_SIZE);
     ImGui::SetNextWindowPos(WINDOW_POS);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    ImGui::Begin("##performance", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##performance", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, PERF_OVERLAY_BG_COLOR);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.f * emuenv.dpi_scale);
     ImGui::BeginChild("#perf_stats", WINDOW_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
