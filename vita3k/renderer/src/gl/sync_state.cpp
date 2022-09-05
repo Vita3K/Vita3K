@@ -496,6 +496,10 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
         shader::usse::AttributeInformation info = glvert->attribute_infos.at(attribute.regIndex);
         attrib_location = info.location();
 
+        // these 2 values are only used when a matrix is used as a vertex attribute
+        // this is only supported for regformated attribute for now
+        uint32_t array_size = 1;
+        uint32_t array_element_size = 0;
         uint8_t component_count = attribute.componentCount;
 
         if (info.regformat) {
@@ -503,6 +507,13 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
             component_count = (comp_size * component_count + 3) / 4;
             type = GL_INT;
             upload_integral = true;
+
+            if (component_count > 4) {
+                // a matrix is used as an attribute, pack everything into an array of vec4
+                array_size = (component_count + 3) / 4;
+                array_element_size = 4 * sizeof(int32_t);
+                component_count = 4;
+            }
         } else {
             switch (info.gxm_type()) {
             case SCE_GXM_PARAMETER_TYPE_U8:
@@ -520,18 +531,20 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
 
         const std::uint16_t stream_index = attribute.streamIndex;
 
-        if (upload_integral || (attribute_format == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED)) {
-            glVertexAttribIPointer(attrib_location, component_count, type, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset + offset_in_buffer[stream_index]));
-        } else {
-            glVertexAttribPointer(attrib_location, component_count, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(attribute.offset + offset_in_buffer[stream_index]));
-        }
+        for (int i = 0; i < array_size; i++) {
+            if (upload_integral || (attribute_format == SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED)) {
+                glVertexAttribIPointer(attrib_location + i, component_count, type, stream.stride, reinterpret_cast<const GLvoid *>(i * array_element_size + attribute.offset + offset_in_buffer[stream_index]));
+            } else {
+                glVertexAttribPointer(attrib_location + i, component_count, type, normalised, stream.stride, reinterpret_cast<const GLvoid *>(i * array_element_size + attribute.offset + offset_in_buffer[stream_index]));
+            }
 
-        glEnableVertexAttribArray(attrib_location);
+            glEnableVertexAttribArray(attrib_location + i);
 
-        if (gxm::is_stream_instancing(static_cast<SceGxmIndexSource>(stream.indexSource))) {
-            glVertexAttribDivisor(attrib_location, 1);
-        } else {
-            glVertexAttribDivisor(attrib_location, 0);
+            if (gxm::is_stream_instancing(static_cast<SceGxmIndexSource>(stream.indexSource))) {
+                glVertexAttribDivisor(attrib_location + i, 1);
+            } else {
+                glVertexAttribDivisor(attrib_location + i, 0);
+            }
         }
     }
     glBindBuffer(GL_ARRAY_BUFFER, 0);

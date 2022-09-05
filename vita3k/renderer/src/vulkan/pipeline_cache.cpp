@@ -421,13 +421,24 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(Mem
         shader::usse::AttributeInformation info = vkvert->attribute_infos.at(attribute.regIndex);
 
         uint8_t component_count = attribute.componentCount;
+        // these 2 values are only used when a matrix is used as a vertex attribute
+        // this is only supported for regformated attribute for now
+        // TODO: add support for matrix input for non-regformated attributes
+        uint32_t array_size = 1;
+        uint32_t array_element_size = 0;
         vk::Format format;
         if (info.regformat) {
             const int comp_size = gxm::attribute_format_size(attribute_format);
             component_count = (comp_size * component_count + 3) / 4;
 
-            if (!support_rgb_vertex_attribute && component_count == 3)
+            if (component_count > 4) {
+                // a matrix is used as an attribute, pack everything into an array of vec4
+                array_size = (component_count + 3) / 4;
+                array_element_size = 4 * sizeof(int32_t);
                 component_count = 4;
+            } else if (!support_rgb_vertex_attribute && component_count == 3) {
+                component_count = 4;
+            }
 
             // regformat attributes are int32
             format = translate_attribute_format(SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED, component_count, true, true);
@@ -441,11 +452,13 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(Mem
             format = translate_attribute_format(attribute_format, component_count, info.is_integer, info.is_signed);
         }
 
-        attr_descr.push_back(vk::VertexInputAttributeDescription{
-            .location = info.location(),
-            .binding = attribute.streamIndex,
-            .format = format,
-            .offset = attribute.offset });
+        for (uint32_t i = 0; i < array_size; i++) {
+            attr_descr.push_back(vk::VertexInputAttributeDescription{
+                .location = info.location() + i,
+                .binding = attribute.streamIndex,
+                .format = format,
+                .offset = attribute.offset + i * array_element_size });
+        }
     }
 
     for (unsigned int stream_index = 0; stream_index < SCE_GXM_MAX_VERTEX_STREAMS; stream_index++) {

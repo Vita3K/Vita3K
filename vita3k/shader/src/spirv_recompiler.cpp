@@ -297,7 +297,7 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
         get_dest_mask();
 
         for (auto i = 0; i < b.getNumTypeComponents(arr_type); i++) {
-            spv::Id elm = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassPrivate, comp_type),
+            spv::Id elm = b.createOp(spv::OpAccessChain, b.makePointer(spv::StorageClassInput, comp_type),
                 { var, b.makeIntConstant(i) });
             utils::store(b, parameters, utils, features, dest, b.createLoad(elm, spv::NoPrecision), dest_mask, 0 + i * 4);
         }
@@ -929,11 +929,18 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     const auto add_var_to_reg = [&](const Input &input, const std::string &name, std::uint16_t semantic, bool pa, bool regformat, std::int32_t location) {
         const spv::Id param_type = get_param_type(b, input);
-        int type_size = get_data_type_size(input.type);
+        const int type_size = get_data_type_size(input.type);
         spv::Id var;
         if (regformat) {
-            int num_comp = (type_size * input.array_size * input.component_count + 3) / 4;
-            spv::Id type = utils::make_vector_or_scalar_type(b, b.makeIntType(32), num_comp);
+            const int num_comp = (type_size * input.array_size * input.component_count + 3) / 4;
+            spv::Id type;
+            if (num_comp > 4) {
+                // a matrix is being sent, pack everything into an array of vec4
+                const int num_vec4 = (num_comp + 3) / 4;
+                type = b.makeArrayType(b.makeVectorType(i32_type, 4), b.makeUintConstant(num_vec4), 0);
+            } else {
+                type = utils::make_vector_or_scalar_type(b, i32_type, num_comp);
+            }
             var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, type, name.c_str());
 
             VarToReg var_to_reg = {};
@@ -1176,8 +1183,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
         create_fragment_inputs(b, spv_params, utils, features, translation_state, texture_queries, samplers, program);
     }
-
-#undef intoffsetof
 
     return spv_params;
 }
