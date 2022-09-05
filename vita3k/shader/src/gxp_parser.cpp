@@ -25,7 +25,7 @@ namespace shader {
 
 using namespace usse;
 
-GenericType shader::translate_generic_type(const gxp::GenericParameterType &type) {
+GenericType translate_generic_type(const gxp::GenericParameterType &type) {
     switch (type) {
     case gxp::GenericParameterType::Scalar:
         return GenericType::SCALER;
@@ -38,7 +38,7 @@ GenericType shader::translate_generic_type(const gxp::GenericParameterType &type
     }
 }
 
-std::tuple<DataType, std::string> shader::get_parameter_type_store_and_name(const SceGxmParameterType &type) {
+std::tuple<DataType, std::string> get_parameter_type_store_and_name(const SceGxmParameterType &type) {
     switch (type) {
     case SCE_GXM_PARAMETER_TYPE_F32: {
         return std::make_tuple(DataType::F32, "float");
@@ -76,7 +76,7 @@ std::tuple<DataType, std::string> shader::get_parameter_type_store_and_name(cons
     }
 }
 
-ProgramInput shader::get_program_input(const SceGxmProgram &program) {
+ProgramInput get_program_input(const SceGxmProgram &program) {
     ProgramInput program_input;
     std::map<int, UniformBuffer> uniform_buffers;
 
