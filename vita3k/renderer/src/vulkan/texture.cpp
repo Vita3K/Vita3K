@@ -61,8 +61,18 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
         std::uint16_t stride_in_pixels = width;
 
-        if (texture.texture_type() == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
+        switch (texture.texture_type()) {
+        case SCE_GXM_TEXTURE_LINEAR_STRIDED:
             stride_in_pixels = static_cast<std::uint16_t>(gxm::get_stride_in_bytes(&texture)) / ((renderer::texture::bits_per_pixel(base_format) + 7) >> 3);
+            break;
+        case SCE_GXM_TEXTURE_LINEAR:
+            // when the texture is linear, the stride should be aligned to 8 pixels
+            stride_in_pixels = align(stride_in_pixels, 8);
+            break;
+        case SCE_GXM_TEXTURE_TILED:
+            // tiles are 32x32
+            stride_in_pixels = align(stride_in_pixels, 32);
+            break;
         }
 
         vk::ComponentMapping swizzle = texture::translate_swizzle(format);
