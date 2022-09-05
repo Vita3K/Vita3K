@@ -127,7 +127,8 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
         // 2. Same base address, but width and height change to be larger, or format change if write. Remake a new one for both read and write sitatation.
         // 3. Out of cache range. In write case, create a new one, in read case, lul
         // 4. Read situation with smaller width and height, probably need to extract the needed region out.
-        const bool addr_in_range_of_cache = ((key + total_surface_size) <= (ite->first + info.total_bytes));
+        // 5. the surface is a gbuffer and we are currently trying to read the 2nd component, in this case key == ite->first + 4
+        const bool addr_in_range_of_cache = ((key + total_surface_size) <= (ite->first + info.total_bytes + 4));
         const bool cache_probably_freed = ((ite->first != key) && addr_in_range_of_cache && (purpose == SurfaceTextureRetrievePurpose::WRITING));
         const bool surface_extent_changed = (info.width < width) || (info.height < height);
         bool surface_stat_changed = false;
@@ -203,7 +204,6 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                     static bool has_happened = false;
                     LOG_ERROR_IF(!has_happened, "Surface copy with nonzero delta x");
                     has_happened = true;
-                    start_x = 0;
                 }
 
                 const vk::Image color_handle = reinterpret_cast<VKContext *>(state.context)->current_color_attachment->image;
@@ -301,18 +301,14 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                         };
                         cmd_buffer.copyImage(info.texture.image, vk::ImageLayout::eGeneral, casted->texture.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
                     } else {
-                        if (start_x != 0) {
-                            LOG_ERROR("Typeless copy not starting from the beginning of a line");
-                            return nullptr;
-                        }
                         static bool has_happened = false;
                         LOG_INFO_IF(!has_happened, "Game is doing typeless copies");
                         has_happened = true;
                         // We must use a transition buffer
-                        vk::DeviceSize buffer_size = bytes_per_stride * state.res_multiplier * height;
+                        vk::DeviceSize buffer_size = bytes_per_stride * state.res_multiplier * height + start_x * bytes_per_pixel_requested;
                         if (!casted->transition_buffer.buffer || casted->transition_buffer.size < buffer_size) {
                             // create or re-create the buffer
-                            casted->transition_buffer.destroy();
+                            context->frame().destroy_queue.add_buffer(casted->transition_buffer);
                             casted->transition_buffer = vkutil::Buffer(state.allocator, buffer_size);
                             casted->transition_buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eTransferSrc);
                         }
@@ -332,6 +328,7 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
 
                         // then the buffer to the image
                         copy_image_buffer
+                            .setBufferOffset(start_x * bytes_per_pixel_requested)
                             .setBufferRowLength(pixel_stride * state.res_multiplier)
                             .setImageOffset({ 0, 0, 0 })
                             .setImageExtent({ width, height, 1 });
