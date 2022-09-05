@@ -678,6 +678,9 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         target_to_store.bank = RegisterBank::OUTPUT;
         target_to_store.num = 0;
         target_to_store.type = std::get<0>(shader::get_parameter_type_store_and_name(program.get_fragment_output_type()));
+        // if the shader tries to read a INT32 or UINT32, it means the raw content
+        if (target_to_store.type == DataType::INT32 || target_to_store.type == DataType::UINT32)
+            target_to_store.type = DataType::F32;
 
         auto store_source_result = [&](const bool direct_store = false) {
             if (source != spv::NoResult) {
@@ -1207,6 +1210,9 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     color_val_operand.num = 0;
     color_val_operand.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     color_val_operand.type = std::get<0>(shader::get_parameter_type_store_and_name(param_type));
+    // if the shader tries to write a INT32 or UINT32, it means the raw content
+    if (color_val_operand.type == DataType::INT32 || color_val_operand.type == DataType::UINT32)
+        color_val_operand.type = DataType::F32;
 
     int reg_off = 0;
     if (!program.is_native_color() && vertex_varyings_ptr->output_param_type == 1) {
