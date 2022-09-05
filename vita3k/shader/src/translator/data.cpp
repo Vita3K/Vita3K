@@ -96,6 +96,7 @@ bool USSETranslatorVisitor::vmov(
         compare_method = static_cast<CompareMethod>((test_bit_2 << 1) | test_bit_1);
         inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank_sel, end_or_src0_bank_ext, is_double_regs, reg_bits, m_second_program);
         inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank_sel, src2_bank_ext, is_double_regs, reg_bits, m_second_program);
+        inst.opr.src2.type = move_data_type;
 
         if (src0_comp_sel) {
             inst.opr.src0.swizzle = inst.opr.src1.swizzle;
