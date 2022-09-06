@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:installLocation="auto">
+
+    <!-- Vulkan 1.0 -->
+    <uses-feature
+        android:name="android.hardware.vulkan.version"
+        android:version="0x400000"
+        android:required="true" />
+
+    <!-- OpenGL ES 3.2 -->
+    <uses-feature
+        android:glEsVersion="0x00030002"
+        android:required="false" />
+
+    <!-- Touchscreen support -->
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <!-- Game controller support -->
+    <uses-feature
+        android:name="android.hardware.bluetooth"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.gamepad"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.usb.host"
+        android:required="false" />
+
+    <!-- External mouse input events -->
+    <uses-feature
+        android:name="android.hardware.type.pc"
+        android:required="false" />
+
+    <!-- Audio recording support -->
+    <!-- if you want to capture audio, uncomment this. -->
+    <!-- Disable for the time being as it looks like some antiviruses consider Vita3K as a malware because of it -->
+    <uses-feature
+        android:name="android.hardware.microphone"
+        android:required="false" />
+
+    <!-- Allow downloading to the external storage on Android 5.1 and older -->
+    <!-- <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="22" /> -->
+    <!-- For android API <= 29 (Up to Android 10), use Legacy storage, otherwise use the MANAGE_EXTERNAL_STORAGE permission -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        android:minSdkVersion="30" />
+
+    <!-- Allow the app to request installing APKs from unknown sources (introduced in Android 8 / API 26) -->
+    <uses-permission
+    android:name="android.permission.REQUEST_INSTALL_PACKAGES"
+    android:minSdkVersion="26"/>
+
+    <!-- Allow access to Bluetooth devices -->
+    <!-- Currently this is just for Steam Controller support and requires setting SDL_HINT_JOYSTICK_HIDAPI_STEAM -->
+    <!-- <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" /> -->
+    <!-- <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" /> -->
+
+    <!-- Allow access to the vibrator -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <uses-permission android:name = "android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name = "android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name = "android.permission.INTERNET"/>
+
+    <!-- if you want to capture audio, uncomment this. -->
+    <!-- <uses-permission android:name="android.permission.RECORD_AUDIO" /> -->
+
+    <!-- Create a Java class extending SDLActivity and place it in a
+         directory under app/src/main/java matching the package, e.g. app/src/main/java/com/gamemaker/game/MyGame.java
+
+         then replace "SDLActivity" with the name of your class (e.g. "MyGame")
+         in the XML below.
+         An example Java class can be found in README-android.md
+
+         The requestLegacyExternalStorage parameter only has an effect when running on Android <= 10
+    -->
+    <application android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:allowBackup="true"
+        android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+        android:hardwareAccelerated="true"
+        android:appCategory="game"
+        android:isGame="true"
+        android:hasFragileUserData="true"
+        android:requestLegacyExternalStorage="true"
+        tools:targetApi="q">
+
+        <!-- Example of setting SDL hints from AndroidManifest.xml:
+        <meta-data android:name="SDL_ENV.SDL_ACCELEROMETER_AS_JOYSTICK" android:value="0"/>
+         -->
+
+        <activity android:name="Emulator"
+            android:alwaysRetainTaskState="true"
+            android:launchMode="singleInstance"
+            android:configChanges="layoutDirection|locale|orientation|uiMode|screenLayout|screenSize|smallestScreenSize|keyboard|keyboardHidden|navigation"
+            android:preferMinimalPostProcessing="true"
+            android:theme="@style/Theme.Design.NoActionBar"
+            android:exported="true"
+            tools:targetApi="r">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <!-- Let Android know that we can handle some USB devices and should receive this event -->
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <!-- Drop file event -->
+            <!--
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+            -->
+        </activity>
+
+        <provider
+            android:name="org.vita3k.emulator.provider.VitaDocumentsProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
+
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths">
+            </meta-data>
+        </provider>
+
+    </application>
+
+</manifest>

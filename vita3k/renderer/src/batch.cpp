@@ -118,6 +118,9 @@ static void process_batch(renderer::State &state, const FeatureState &features, 
 }
 
 void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config) {
+    // always display a frame every 500ms
+    auto max_time = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() + 500;
+
     while (!state.should_display) {
         // Try to wait for a batch (about 2 or 3ms, game should be fast for this)
         auto cmd_list = state.command_buffer_queue.top(3);
@@ -128,12 +131,18 @@ void process_batches(renderer::State &state, const FeatureState &features, MemSt
                 return;
 
             // keep the old behavior for opengl with vsync as it looks like the new one causes some issues
-            if (state.current_backend == Backend::OpenGL && config.current_config.v_sync)
-                return;
+            // if (state.current_backend == Backend::OpenGL && config.current_config.v_sync)
+            // return;
 
-            if (!cmd_list || !wait_cmd(mem, *cmd_list))
+            if (!cmd_list || !wait_cmd(mem, *cmd_list)) {
+                auto curr_time = duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+                if (curr_time >= max_time)
+                    // display a frame even though the game is not diplaying anything
+                    return;
+
                 // this mean the command is still not ready, check if we can display it again
                 continue;
+            }
         }
 
         state.command_buffer_queue.pop();

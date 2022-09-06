@@ -344,6 +344,10 @@ std::string get_web_response(const std::string &url) {
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
     curl_easy_setopt(curl, CURLOPT_NOPROGRESS, 1L);
 
+#ifdef __ANDROID__
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+#endif
+
     std::string response_string;
     const auto writeFunc = +[](void *ptr, size_t size, size_t nmemb, std::string *data) {
         data->append((char *)ptr, size * nmemb);
@@ -453,6 +457,10 @@ bool download_file(const std::string &url, const std::string &output_file_path, 
     curl_easy_setopt(curl_download, CURLOPT_XFERINFODATA, &callbackData);
     curl_easy_setopt(curl_download, CURLOPT_XFERINFOFUNCTION, curl_callback);
     curl_easy_setopt(curl_download, CURLOPT_FOLLOWLOCATION, true); // Follow redirects
+
+#ifdef __ANDROID__
+    curl_easy_setopt(curl_download, CURLOPT_SSL_VERIFYPEER, 0L);
+#endif
 
     auto fp = fopen(output_file_path.c_str(), "ab");
     if (!fp) {

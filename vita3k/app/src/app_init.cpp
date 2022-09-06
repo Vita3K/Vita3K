@@ -23,10 +23,12 @@
 #include <config/version.h>
 #include <display/state.h>
 #include <emuenv/state.h>
+#include <gui/functions.h>
 #include <gui/imgui_impl_sdl.h>
 #include <gui/state.h>
 #include <io/functions.h>
 #include <kernel/state.h>
+#include <motion/state.h>
 #include <ngs/state.h>
 #include <renderer/state.h>
 
@@ -42,10 +44,16 @@
 #include <gdbstub/functions.h>
 
 #include <SDL3/SDL_filesystem.h>
+#include <SDL3/SDL_log.h>
 #include <SDL3/SDL_video.h>
 
 #ifdef _WIN32
 #include <dwmapi.h>
+#endif
+
+#ifdef __ANDROID__
+#include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_system.h>
 #endif
 
 namespace app {
@@ -134,6 +142,22 @@ void update_viewport(EmuEnvState &state) {
 }
 
 void init_paths(Root &root_paths) {
+#ifdef __ANDROID__
+    fs::path storage_path = fs::path(SDL_GetAndroidExternalStoragePath()) / "";
+    fs::path vita_storage_path = storage_path / "vita/";
+
+    root_paths.set_base_path(storage_path);
+
+    // On Android, static assets are bundled inside the APK and accessed via SDL_IOFromFile.
+    root_paths.set_static_assets_path({});
+
+    root_paths.set_pref_path(vita_storage_path);
+    root_paths.set_log_path(storage_path);
+    root_paths.set_config_path(storage_path);
+    root_paths.set_shared_path(storage_path);
+    root_paths.set_cache_path(storage_path / "cache" / "");
+    root_paths.set_patch_path(storage_path / "patch" / "");
+#else
     auto sdl_base_path = SDL_GetBasePath();
     auto base_path = fs_utils::utf8_to_path(sdl_base_path);
 
@@ -190,7 +214,7 @@ void init_paths(Root &root_paths) {
         root_paths.set_cache_path(base_path / "cache" / "");
         root_paths.set_patch_path(base_path / "patch" / "");
 
-#if defined(__linux__) && !defined(__ANDROID__) && !defined(__APPLE__)
+#if defined(__linux__) && !defined(__APPLE__)
         // XDG Data Dirs.
         auto env_home = getenv("HOME");
         auto XDG_DATA_DIRS = getenv("XDG_DATA_DIRS");
@@ -250,6 +274,7 @@ void init_paths(Root &root_paths) {
         root_paths.set_patch_path(root_paths.get_shared_path() / "patch" / "");
 #endif
     }
+#endif
 
     // Create default preference and cache path for safety
     fs::create_directories(root_paths.get_config_path());
@@ -281,6 +306,10 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         state.pref_path = state.cfg.get_pref_path();
     }
 
+    // Set initall current config for backend renderer and custom driver with run app path if provided
+    gui::set_current_config(state, state.cfg.run_app_path.has_value() ? *state.cfg.run_app_path : "");
+    LOG_INFO("backend-renderer: {}", state.cfg.current_config.backend_renderer);
+
     LOG_INFO("Base path: {}", state.base_path);
 #if defined(__linux__) && !defined(__ANDROID__) && !defined(__APPLE__)
     LOG_INFO("Static assets path: {}", state.static_assets_path);
@@ -299,12 +328,15 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
 
     state.backend_renderer = renderer::Backend::Vulkan;
 
-    if (string_utils::toupper(state.cfg.backend_renderer) == "OPENGL") {
+    if (string_utils::toupper(state.cfg.current_config.backend_renderer) == "OPENGL") {
 #ifndef __APPLE__
         state.backend_renderer = renderer::Backend::OpenGL;
 #else
-        state.cfg.backend_renderer = "Vulkan";
-        config::serialize_config(state.cfg, state.cfg.config_path);
+        state.cfg.backend_renderer = state.cfg.current_config.backend_renderer = "Vulkan";
+        if (state.cfg.backend_renderer == "OpenGL") {
+            state.cfg.backend_renderer = "Vulkan";
+            config::serialize_config(state.cfg, state.cfg.config_path);
+        }
 #endif
     }
 
@@ -323,10 +355,16 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         break;
     }
 
+#ifdef ANDROID
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, "LandscapeLeft LandscapeRight");
+    state.display.fullscreen = true;
+    window_type |= SDL_WINDOW_FULLSCREEN;
+#else
     if (state.cfg.fullscreen) {
         state.display.fullscreen = true;
         window_type |= SDL_WINDOW_FULLSCREEN;
     }
+#endif
 
     state.manual_dpi_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
 
@@ -353,7 +391,11 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         } else {
             switch (state.backend_renderer) {
             case renderer::Backend::OpenGL:
+#ifdef ANDROID
+                error_dialog("Could not create OpenGL ES context!\nDoes your GPU support OpenGL ES 3.2?", nullptr);
+#else
                 error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.4?", nullptr);
+#endif
                 break;
 
             case renderer::Backend::Vulkan:
@@ -373,11 +415,17 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         return false;
     }
 
+#ifdef __ANDROID__
+    state.renderer->current_custom_driver = state.cfg.custom_driver_name;
+#endif
+
 #if USE_DISCORD
     if (discordrpc::init() && state.cfg.discord_rich_presence) {
         discordrpc::update_presence();
     }
 #endif
+
+    state.motion.init();
 
     return true;
 }
@@ -387,7 +435,8 @@ bool late_init(EmuEnvState &state) {
     // the renderer is not using it yet, just storing it for later uses
     state.renderer->late_init(state.cfg, state.app_path, state.mem);
 
-    if (!init(state.mem, state.renderer->need_page_table)) {
+    const bool need_page_table = state.renderer->mapping_method == MappingMethod::PageTable || state.renderer->mapping_method == MappingMethod::NativeBuffer;
+    if (!init(state.mem, need_page_table)) {
         LOG_ERROR("Failed to initialize memory for emulator state!");
         return false;
     }
@@ -427,11 +476,19 @@ void destroy(EmuEnvState &emuenv, ImGui_State *imgui) {
 }
 
 void switch_state(EmuEnvState &emuenv, const bool pause) {
-    if (pause)
+    if (pause) {
+#ifdef __ANDROID__
+        emuenv.display.imgui_render = true;
+        gui::set_controller_overlay_state(0);
+#endif
         emuenv.kernel.pause_threads();
-    else
+    } else {
+#ifdef __ANDROID__
+        emuenv.display.imgui_render = false;
+        gui::set_controller_overlay_state(gui::get_overlay_display_mask(emuenv.cfg));
+#endif
         emuenv.kernel.resume_threads();
-
+    }
     emuenv.audio.switch_state(pause);
 }
 

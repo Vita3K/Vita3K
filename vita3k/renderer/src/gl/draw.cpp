@@ -64,6 +64,13 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
 
+    if (!renderer.features.use_mask_bit && gxm_fragment_program.is_maskupdate) {
+        static bool has_happened = false;
+        LOG_ERROR_IF(!has_happened, "Mask bit is disabled!");
+        has_happened = true;
+        return;
+    }
+
     // Trying to cache: the last time vs this time shader pair. Does it different somehow?
     // If it's different, we need to switch. Else just stick to it.
     if (context.record.vertex_program.get(mem)->renderer_data->hash != context.last_draw_vertex_program_hash || context.record.fragment_program.get(mem)->renderer_data->hash != context.last_draw_fragment_program_hash) {
@@ -109,7 +116,9 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
             glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, context.current_color_attachment, 0, GL_FALSE, 0, GL_READ_WRITE, surface_format);
         }
     }
-    glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
+
+    if (renderer.features.use_mask_bit)
+        glBindImageTexture(shader::MASK_TEXTURE_SLOT_IMAGE, context.render_target->masktexture[0], 0, GL_FALSE, 0, GL_READ_ONLY, GL_RGBA8);
 
     shader::RenderVertUniformBlock &vert_ublock = context.current_vert_render_info;
     vert_ublock.viewport_flip = context.record.viewport_flip;
@@ -196,6 +205,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         if (features.support_texture_barrier) {
             glTextureBarrier();
         } else {
+            glActiveTexture(GL_TEXTURE0 + context.self_sampling_indices[0]);
             std::uint64_t ping_pong = renderer.surface_cache.retrieve_ping_pong_color_surface_texture_handle(context.record.color_surface.data);
             if (ping_pong != 0) {
                 for (std::size_t i = 0; i < context.self_sampling_indices.size(); i++) {

@@ -83,6 +83,17 @@ void VKContext::wait_thread_function(const MemState &mem) {
                            lock.unlock();
                            new_frame_condv.notify_one();
                        },
+                       [&](BufferSyncRequest &request) {
+                           wait_for_fences();
+                           auto mem_it = state.mapped_memories.lower_bound(request.location);
+                           if (mem_it == state.mapped_memories.end() || mem_it->first + mem_it->second.size < request.location + request.size) {
+                               LOG_ERROR("Buffer Sync request for {}-{} is not fully mapped", log_hex(request.location), log_hex(request.location + request.size));
+                               return;
+                           }
+                           uint8_t *src = reinterpret_cast<uint8_t *>(std::get<vkutil::Buffer>(mem_it->second.buffer_impl).mapped_data);
+                           src += request.location - mem_it->first;
+                           memcpy(Ptr<void>(request.location).get(mem), src, request.size);
+                       },
                        [&](PostSurfaceSyncRequest &request) {
                            wait_for_fences();
 
@@ -137,14 +148,16 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     }
 
     SceGxmDepthStencilSurface *ds_surface_fin = &context.record.depth_stencil_surface;
-    if ((ds_surface_fin->depth_data.address() == 0) && (ds_surface_fin->stencil_data.address() == 0)) {
+    // if the depth-stencil buffer is not backed by memory or we don't read nor write it to memory, use the transient attachment instead
+    if ((!ds_surface_fin->depth_data && !ds_surface_fin->stencil_data)
+        || (!ds_surface_fin->force_load && !ds_surface_fin->force_store)) {
         ds_surface_fin = nullptr;
     }
 
     VKState &state = context.state;
     state.surface_cache.set_render_target(rt);
 
-    context.start_recording();
+    context.start_recording(true);
 
     bool force_load = context.record.depth_stencil_surface.force_load;
     bool force_store = context.record.depth_stencil_surface.force_store;
@@ -156,10 +169,10 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     if (context.state.features.support_shader_interlock)
         // we must always store the depth stencil
         force_store = true;
-    context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, force_load, force_store);
+    context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, force_load, force_store, color_surface_fin == nullptr);
     if (context.state.features.support_shader_interlock)
         // also retrieve / create the shader interlock pass
-        context.current_shader_interlock_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, true, true, true);
+        context.current_shader_interlock_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, true, true, color_surface_fin == nullptr, true);
 
     Framebuffer &framebuffer = state.surface_cache.retrieve_framebuffer_handle(mem, color_surface_fin, ds_surface_fin, context.current_render_pass, context.current_shader_interlock_pass, context.current_color_view, context.current_ds_view);
     context.current_framebuffer = framebuffer.standard;
@@ -181,7 +194,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     context.ignore_macroblock = false;
 }
 
-void VKContext::start_recording() {
+void VKContext::start_recording(bool first_in_scene) {
     if (is_recording) {
         LOG_ERROR("Attempt to start recording while already recording");
         return;
@@ -212,9 +225,13 @@ void VKContext::start_recording() {
         cmd_buffer_info.commandPool = state.frame().prerender_pool;
         render_target->pre_cmd_buffers[state.current_frame_idx].push_back(state.device.allocateCommandBuffers(cmd_buffer_info)[0]);
 
+        // we only use one fence per scene anyway
         vk::FenceCreateInfo fence_info{};
-        // make sure the next fence used is the one we created
-        render_target->fences.insert(render_target->fences.begin() + render_target->fence_idx, state.device.createFence(fence_info));
+        // make sure the next fence used is the one we created (but only if this is the first recording of the scene)
+        auto fence_insert_it = render_target->fences.begin() + render_target->fence_idx;
+        if (!first_in_scene)
+            fence_insert_it++;
+        render_target->fences.insert(fence_insert_it, state.device.createFence(fence_info));
     }
 
     if (next_fence == nullptr) {
@@ -385,13 +402,13 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     if (in_renderpass)
         stop_render_pass();
 
+    struct VisibilityRange {
+        uint32_t offset;
+        uint32_t size;
+    };
+    std::vector<VisibilityRange> occlusion_ranges;
     if (visibility_max_used_idx != -1) {
         // get all the entry ranges that were used
-        struct VisibilityRange {
-            uint32_t offset;
-            uint32_t size;
-        };
-        std::vector<VisibilityRange> ranges;
         bool in_range = false;
         uint32_t range_start = 0;
         for (uint32_t entry = 0; entry <= visibility_max_used_idx + 1; entry++) {
@@ -399,7 +416,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
                 continue;
 
             if (in_range) {
-                ranges.push_back({ range_start, entry - range_start });
+                occlusion_ranges.push_back({ range_start, entry - range_start });
                 in_range = false;
             } else {
                 range_start = entry;
@@ -407,7 +424,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
             }
         }
 
-        for (auto &range : ranges) {
+        for (auto &range : occlusion_ranges) {
             // reset before the beginning of the render pass
             prerender_cmd.resetQueryPool(current_visibility_buffer->query_pool, range.offset, range.size);
 
@@ -422,7 +439,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     }
 
     ColorSurfaceCacheInfo *surface_info = nullptr;
-    if (state.features.support_memory_mapping && !state.disable_surface_sync)
+    if (state.features.enable_memory_mapping && !state.disable_surface_sync && submit)
         surface_info = state.surface_cache.perform_surface_sync();
 
     prerender_cmd.end();
@@ -455,19 +472,32 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     cmdbuffers_to_submit.clear();
     state.frame().rendered_fences.push_back(fence);
 
-    if (state.features.support_memory_mapping) {
+    if (state.features.enable_memory_mapping) {
         // send it to the wait queue
         state.request_queue.push(FenceWaitRequest{ fence });
 
-        if (surface_info) {
+        if (state.mapping_method == MappingMethod::DoubleBuffer) {
+            // sync all the visibility buffers
+            for (auto &range : occlusion_ranges) {
+                state.request_queue.push(BufferSyncRequest{ current_visibility_buffer->address + range.offset * 4, range.size * 4 });
+            }
+
+            // we must sync the two buffers
+            if (surface_info && surface_info->need_buffer_sync)
+                state.request_queue.push(BufferSyncRequest{ surface_info->data.address(), static_cast<uint32_t>(surface_info->total_bytes) });
+        }
+
+        if (surface_info && surface_info->need_post_surface_sync) {
             state.request_queue.push(PostSurfaceSyncRequest{ surface_info });
         }
 
-        // the notification must be the last thing sent
-        NotificationRequest request = {
-            .notifications = { notif1, notif2 },
-        };
-        state.request_queue.push(request);
+        if (notif1.address || notif2.address) {
+            // notifications last
+            NotificationRequest request = {
+                .notifications = { notif1, notif2 },
+            };
+            state.request_queue.push(request);
+        }
     }
 }
 
@@ -481,7 +511,7 @@ void VKContext::check_for_macroblock_change(bool is_draw) {
         // TODO: with the feedback loop extension we can do better
         ignore_macroblock = true;
         // in this case we must load and store the depth stencil each time
-        current_render_pass = state.pipeline_cache.retrieve_render_pass(current_color_format, true, true);
+        current_render_pass = state.pipeline_cache.retrieve_render_pass(current_color_format, true, true, !record.color_surface.data);
     }
 
     // use the scissor to know in which macroblock we are
@@ -508,7 +538,7 @@ void VKContext::check_for_macroblock_change(bool is_draw) {
 }
 
 void new_frame(VKContext &context) {
-    if (context.state.features.support_memory_mapping) {
+    if (context.state.features.enable_memory_mapping) {
         FrameDoneRequest request = { context.frame_timestamp };
         context.state.request_queue.push(request);
 
@@ -525,7 +555,7 @@ void new_frame(VKContext &context) {
     if (!frame.rendered_fences.empty()) {
         // wait for the fences, then reset them
 
-        if (context.state.features.support_memory_mapping) {
+        if (context.state.features.enable_memory_mapping) {
             // this will underflow for the first MAX_FRAMES_RENDERING frames
             // but that's not an issue as frame.rendered_fences will be empty
             uint64_t previous_frame_timestamp = context.frame_timestamp - MAX_FRAMES_RENDERING;
@@ -569,7 +599,7 @@ void new_frame(VKContext &context) {
 }
 
 void signal_sync_object(VKState &state, SceGxmSyncObject *sync_object, uint32_t timestamp) {
-    assert(state.features.support_memory_mapping);
+    assert(state.features.enable_memory_mapping);
 
     SyncSignalRequest request{
         .sync = sync_object,

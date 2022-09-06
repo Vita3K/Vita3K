@@ -43,7 +43,7 @@ bool get_shaders_cache_hashs(State &renderer) {
     size_t size;
     shaders_hashs.read((char *)&size, sizeof(size));
 
-    // Check version of cache and device id
+    // Check version of cache
     uint32_t versionInFile;
     shaders_hashs.read((char *)&versionInFile, sizeof(uint32_t));
     uint32_t features_mask;
