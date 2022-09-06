@@ -49,7 +49,7 @@ struct Image {
     Image(const Image &) = delete;
     Image &operator=(Image const &) = delete;
 
-    void init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping = default_comp_mapping);
+    void init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping = default_comp_mapping, const vk::ImageCreateFlags image_create_flags = vk::ImageCreateFlags());
     // called by ~Image
     void destroy();
 

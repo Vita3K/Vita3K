@@ -44,6 +44,10 @@ void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, co
     context.record.height = context.render_target->height;
     vk::Format vk_format = color::translate_format(context.record.color_base_format);
 
+    if (color_surface_fin->gamma && (vk_format == vk::Format::eR8G8B8A8Unorm)) {
+        vk_format = vk::Format::eR8G8B8A8Srgb;
+    }
+
     if (color_surface_fin->data.address() == 0) {
         color_surface_fin = nullptr;
         vk_format = vk::Format::eR8G8B8A8Unorm;

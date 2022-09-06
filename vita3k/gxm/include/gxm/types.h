@@ -932,7 +932,7 @@ enum SceGxmColorSurfaceType {
     SCE_GXM_COLOR_SURFACE_SWIZZLED = 0x08000000u
 };
 
-enum SceGxmColorSurfaceGammaMode {
+enum SceGxmColorSurfaceGammaMode : uint32_t {
     SCE_GXM_COLOR_SURFACE_GAMMA_NONE = 0x00000000u,
     SCE_GXM_COLOR_SURFACE_GAMMA_R = 0x00001000u,
     SCE_GXM_COLOR_SURFACE_GAMMA_GR = 0x00003000u,

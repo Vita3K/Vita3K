@@ -36,9 +36,12 @@ struct VertexProgram;
 
 struct SceGxmColorSurface {
     // opaque start
-    uint32_t disabled : 1;
-    uint32_t downscale : 1;
-    uint32_t pad : 30;
+    struct {
+        uint32_t disabled : 1;
+        uint32_t downscale : 1;
+        uint32_t gamma : 2;
+        uint32_t : 28;
+    };
     uint32_t width;
     uint32_t height;
     uint32_t strideInPixels;

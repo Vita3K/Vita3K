@@ -53,6 +53,8 @@ void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
         destroy_queue.add_image(casted.texture);
     }
 
+    // make sure it is not destroyed twice (if set info.sampled_image.image is the same as info.texture.image)
+    info.sampled_image.image = nullptr;
     destroy_queue.add_image(info.sampled_image);
     destroy_framebuffers(info.texture.view);
     destroy_queue.add_image(info.texture);
@@ -75,7 +77,7 @@ VKSurfaceCache::VKSurfaceCache(VKState &state)
 }
 
 vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t width, uint16_t height, const uint16_t pixel_stride,
-    const SceGxmColorBaseFormat base_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, vk::ComponentMapping &swizzle,
+    const SceGxmColorBaseFormat base_format, const bool is_srgb, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, vk::ComponentMapping &swizzle,
     uint16_t *stored_height, uint16_t *stored_width) {
     // Create the key to access the cache struct
     const std::uint64_t key = address.address();
@@ -104,7 +106,16 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
         // not part of a surface, let the texture cache handle it
         return nullptr;
     }
-    const vk::Format vk_format = color::translate_format(base_format);
+    vk::Format vk_format = color::translate_format(base_format);
+    if (is_srgb) {
+        if (vk_format == vk::Format::eR8G8B8A8Unorm) {
+            vk_format = vk::Format::eR8G8B8A8Srgb;
+        } else {
+            static bool has_happened = false;
+            LOG_WARN_IF(!has_happened, "Trying to use gamma correction with non-compatible format {}", vk::to_string(vk_format));
+            has_happened = true;
+        }
+    }
 
     uint32_t bytes_per_stride = pixel_stride * gxm::bits_per_pixel(base_format) / 8;
     uint32_t total_surface_size = bytes_per_stride * original_height;
@@ -207,6 +218,7 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                 }
 
                 const vk::Image color_handle = reinterpret_cast<VKContext *>(state.context)->current_color_attachment->image;
+                // TODO: we can read an srgb image as linear (or the opposite) without having to do a copy
                 if (info.texture.image == color_handle || (start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format)) {
                     uint64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
                         std::chrono::steady_clock::now().time_since_epoch())
@@ -356,7 +368,7 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                     };
                     cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, vk::DependencyFlags(), {}, {}, barrier);
 
-                    if (swizzle == info.swizzle)
+                    if (swizzle == info.swizzle && vk_format == info.texture.format)
                         // we can use the same texture view
                         return &info.texture;
 
@@ -386,7 +398,27 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                 }
 
                 last_use_color_surface_index.push_back(ite->first);
-                return &info.texture;
+
+                if (vk_format == info.texture.format) {
+                    return &info.texture;
+                } else {
+                    // using both srgb/linear
+                    if (!info.sampled_image.view) {
+                        info.sampled_image.destroy_on_deletion = false;
+                        vk::ImageViewCreateInfo view_info{
+                            .image = info.texture.image,
+                            .viewType = vk::ImageViewType::e2D,
+                            .format = vk_format,
+                            .components = vkutil::default_comp_mapping,
+                            .subresourceRange = vkutil::color_subresource_range
+                        };
+                        info.sampled_image.view = state.device.createImageView(view_info);
+                    }
+                    // needed in order not to sample from this image during rendering
+                    info.sampled_image.image = info.texture.image;
+
+                    return &info.sampled_image;
+                }
             } else {
                 return nullptr;
             }
@@ -421,7 +453,11 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
     image.height = height;
     image.format = vk_format;
     image.layout = vkutil::ImageLayout::Undefined;
-    image.init_image(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment);
+
+    // we might have to create a non-srgb/linear view later if this surface is used for presentation
+    // Todo: add rgba8/rgba8srgb as the possible formats in pNext
+    vk::ImageCreateFlags image_create_flags = (vk_format == vk::Format::eR8G8B8A8Unorm || is_srgb) ? vk::ImageCreateFlagBits::eMutableFormat : vk::ImageCreateFlags();
+    image.init_image(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment, vkutil::default_comp_mapping, image_create_flags);
 
     // do it in the prerender if we read from this texture in the same scene (although this would be useless)
     vk::CommandBuffer cmd_buffer = context->prerender_cmd;
@@ -658,8 +694,8 @@ vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(const MemState &mem,
         const SceGxmColorBaseFormat color_base_format = gxm::get_base_format(color->colorFormat);
         vk::ComponentMapping swizzle = color::translate_swizzle(color->colorFormat);
         color_handle = retrieve_color_surface_texture_handle(color->width,
-            color->height, color->strideInPixels, color_base_format, color->data,
-            renderer::SurfaceTextureRetrievePurpose::WRITING, swizzle, stored_height);
+            color->height, color->strideInPixels, color_base_format, static_cast<bool>(color->gamma),
+            color->data, renderer::SurfaceTextureRetrievePurpose::WRITING, swizzle, stored_height);
     } else {
         color_handle = &target->color;
     }
@@ -750,11 +786,11 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
             texture_size.x = info.width;
             texture_size.y = info.height;
 
-            if (info.swizzle == vkutil::rgba_mapping)
+            if (info.swizzle == vkutil::rgba_mapping && info.texture.format == vk::Format::eR8G8B8A8Unorm)
                 return info.texture.view;
 
             if (!info.sampled_image.view) {
-                // create a view with the right swizzle
+                // create a view with the right swizzle and without gamma correction
                 info.sampled_image.destroy_on_deletion = false;
                 vk::ImageViewCreateInfo view_info{
                     .image = info.texture.image,
