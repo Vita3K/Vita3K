@@ -57,7 +57,8 @@ static std::map<std::string, std::map<AvatarSize, AvatarInfo>> users_avatar_info
 static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string &avatar_path) {
     const auto avatar_path_path = avatar_path == "default" ? emuenv.static_assets_path / "data/image/icon.png" : fs_utils::utf8_to_path(avatar_path);
 
-    if (!fs::exists(avatar_path_path)) {
+    std::vector<uint8_t> avatar_data{};
+    if (!fs_utils::read_data(avatar_path_path, avatar_data)) {
         LOG_WARN("Avatar image doesn't exist: {}.", avatar_path_path);
         return false;
     }
@@ -65,9 +66,7 @@ static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &u
     int32_t width = 0;
     int32_t height = 0;
 
-    FILE *f = FOPEN(avatar_path_path.c_str(), "rb");
-
-    stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
+    stbi_uc *data = stbi_load_from_memory(avatar_data.data(), avatar_data.size(), &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!data) {
         LOG_ERROR("Invalid or corrupted image: {}.", avatar_path_path);
@@ -76,7 +75,6 @@ static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &u
 
     gui.users_avatar[user_id] = ImGui_Texture(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
-    fclose(f);
 
     // Calculate avatar size and position based of aspect ratio
     // Resize for all size of avatar
