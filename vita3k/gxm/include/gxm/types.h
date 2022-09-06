@@ -410,6 +410,20 @@ enum SceGxmTextureBaseFormat : uint32_t {
     SCE_GXM_TEXTURE_BASE_FORMAT_UBC6H = 0xFF000001,
     SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H = 0xFF000002,
     SCE_GXM_TEXTURE_BASE_FORMAT_UBC7 = 0xFF000003,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC4x4 = 0xFF000004,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC5x4 = 0xFF000005,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC5x5 = 0xFF000006,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC6x5 = 0xFF000007,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC6x6 = 0xFF000008,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC8x5 = 0xFF000009,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC8x6 = 0xFF00000A,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC8x8 = 0xFF00000B,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC10x5 = 0xFF00000C,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC10x6 = 0xFF00000D,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC10x8 = 0xFF00000E,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC10x10 = 0xFF00000F,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC12x10 = 0xFF000010,
+    SCE_GXM_TEXTURE_BASE_FORMAT_ASTC12x12 = 0xFF000011,
     SCE_GXM_TEXTURE_BASE_FORMAT_INVALID = 0xFFFFFFFF,
 };
 
@@ -1345,6 +1359,8 @@ enum SceGxmProgramFlags : uint32_t {
     SCE_GXM_PROGRAM_FLAG_FRAGCOLOR_USED = 1 << 7,
     SCE_GXM_PROGRAM_FLAG_NATIVECOLOR_MSAA2X = 1 << 8,
     SCE_GXM_PROGRAM_FLAG_NATIVECOLOR_MSAA4X = 1 << 9,
+    // Note, I'm not sure about this one
+    SCE_GXM_PROGRAM_FLAG_BUFFER_STORE = 1 << 14,
     SCE_GXM_PROGRAM_FLAG_OUTPUT_UNDEFINED = 1 << 16,
     SCE_GXM_PROGRAM_FLAG_INDEX_USED = 1 << 17,
     SCE_GXM_PROGRAM_FLAG_INSTANCE_USED = 1 << 18,
@@ -1490,6 +1506,7 @@ struct SceGxmProgramParameter {
         uint8_t container_index : 4; // applicable for constants, not applicable for samplers (buffer, default, texture)
     };
 
+    // Note, for uniform buffers, it looks like a semantic of 3 means it is being written to
     SceGxmParameterSemantic semantic; // applicable only for for vertex attributes, for everything else it's 0
     uint8_t semantic_index;
     uint32_t array_size;

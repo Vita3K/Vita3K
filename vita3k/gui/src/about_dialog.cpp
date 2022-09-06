@@ -158,6 +158,8 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
         // Supporters list
         for (const auto supporter : supporters_list)
             ImGui::Text("%s", supporter);
+
+        ImGui::ScrollWhenDragging();
         ImGui::EndTable();
     }
     ImGui::Spacing();
@@ -167,6 +169,7 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
         gui.help_menu.about_dialog = false;
 
+    ImGui::ScrollWhenDragging();
     ImGui::End();
     ImGui::PopStyleVar(2);
 }

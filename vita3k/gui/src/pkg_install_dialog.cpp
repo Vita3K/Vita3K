@@ -59,9 +59,10 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         result = host::dialog::filesystem::open_file(pkg_path, { { "PlayStation Store Downloaded Package", { "pkg" } } });
         draw_file_dialog = false;
         if (result == host::dialog::filesystem::Result::SUCCESS) {
-            fs::ifstream infile(pkg_path.native(), std::ios::binary);
+            FILE *infile = host::dialog::filesystem::resolve_host_handle(pkg_path);
             PkgHeader pkg_header{};
-            infile.read(reinterpret_cast<char *>(&pkg_header), sizeof(PkgHeader));
+            fread(&pkg_header, sizeof(PkgHeader), 1, infile);
+            fclose(infile);
             std::string title_id_str(pkg_header.content_id);
             std::string title_id = title_id_str.substr(7, 9);
             const auto work_path{ emuenv.pref_path / fmt::format("ux0/license/{}/{}.rif", title_id, pkg_header.content_id) };
@@ -199,8 +200,8 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     select_app(gui, emuenv.app_info.app_title_id);
                 }
                 update_notice_info(gui, emuenv, "content");
-                pkg_path = "";
-                license_path = "";
+                pkg_path.clear();
+                license_path.clear();
                 gui.file_menu.pkg_install_dialog = false;
                 draw_file_dialog = true;
                 state = State::UNDEFINED;

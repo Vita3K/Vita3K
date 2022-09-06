@@ -145,8 +145,10 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleVar();
         ImGui::PopStyleColor(3);
         ImGui::Columns(1);
+        ImGui::ScrollWhenDragging();
         ImGui::EndChild();
         break;
+
     case SELECT_PREF_PATH:
         title_str = lang["select_pref_path"];
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
@@ -179,6 +181,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             }
         }
         break;
+
     case INSTALL_FIRMWARE:
         title_str = lang["install_firmware"];
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - (ImGui::GetFontSize() * 3.5f));
@@ -206,6 +209,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             draw_firmware_install_dialog(gui, emuenv);
         }
         break;
+
     case SELECT_INTERFACE_SETTINGS:
         title_str = lang["select_interface_settings"];
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
@@ -229,6 +233,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang["select_icon_size"].c_str());
         }
         break;
+
     case FINISHED:
         title_str = lang["completed"];
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());

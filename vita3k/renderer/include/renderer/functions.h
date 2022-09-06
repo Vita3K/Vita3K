@@ -153,6 +153,11 @@ void palette_texture_to_rgba_8(uint32_t *dst, const uint8_t *src, uint32_t width
 void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, uint32_t width, uint32_t height, uint32_t layout_width, uint32_t layout_height, bool is_p3);
 const uint32_t *get_texture_palette(const SceGxmTexture &texture, const MemState &mem);
 
+// Assume fmt is a bcn format
+SceGxmTextureBaseFormat get_matching_decompressed_format(SceGxmTextureBaseFormat fmt);
+
+bool is_astc_format(SceGxmTextureBaseFormat base_format);
+
 /**
  * \brief Try to resolve Z-order of block compressed texture
  *

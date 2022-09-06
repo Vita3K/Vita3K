@@ -50,6 +50,8 @@ struct CompileRequest;
 using PipelineCompileQueue = moodycamel::BlockingConcurrentQueue<CompileRequest *>;
 
 class PipelineCache {
+    friend struct VKState;
+
 private:
     VKState &state;
 
@@ -61,6 +63,12 @@ private:
     // does the GPU support vertex attributes with 3 components (like R16G16B16_UNORM), some (like AMD GPUs) don't
     // this is needed when creating the input state
     std::set<vk::Format> unsupported_rgb_vertex_attribute_formats{};
+    // does the GPU support SCALED vertex attribute formats (like R8G8_USCALED), some Android GPUs don't
+    // we need this information both while creating the pipeline and generating the shader
+    bool support_scaled_vertex_attribute;
+    // does the GPU support rasterized color attachment (i.e coherent texture fetch)
+    // this is needed to properly emulate frag color access in a way similar to opengl framebuffer fetch
+    bool support_coherent_framebuffer_fetch;
 
     // how much time should we wait after the last shader compilation
     // to update the disk-saved shader cache (in seconds)
@@ -68,9 +76,10 @@ private:
 
     vk::PipelineCache pipeline_cache;
 
-    // first index: 1 if depth-stencil is force loaded, 0 otherwise
-    // second index: 1 if depth-stencil is force stored, 0 otherwise
-    std::map<vk::Format, vk::RenderPass> render_passes[2][2];
+    // first index: 0 if color is backed by memory, 1 otherwise
+    // second index: 1 if depth-stencil is force loaded, 0 otherwise
+    // third index: 1 if depth-stencil is force stored, 0 otherwise
+    std::map<vk::Format, vk::RenderPass> render_passes[2][2][2];
     // render passes used along shader interlock
     std::map<vk::Format, vk::RenderPass> shader_interlock_pass;
 
@@ -111,12 +120,12 @@ public:
     vk::PipelineLayout pipeline_layouts[17][17] = {};
 
     PipelineCache(VKState &state);
-    void init();
+    void init(bool support_rasterized_order_access);
 
     void read_pipeline_cache();
     void save_pipeline_cache();
 
-    vk::RenderPass retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool no_color = false);
+    vk::RenderPass retrieve_render_pass(vk::Format format, bool force_load, bool force_store, bool is_color_transient, bool no_color = false);
     vk::Pipeline retrieve_pipeline(VKContext &context, SceGxmPrimitiveType &type, bool consider_for_async, MemState &mem);
 
     vk::ShaderModule precompile_shader(const Sha256Hash &hash, bool search_first = true);

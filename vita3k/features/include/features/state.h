@@ -27,7 +27,8 @@ struct FeatureState {
     bool support_unknown_format = false;
     bool support_rgb_attributes = true; ///< Do the GPU supports RGB (3 components) vertex attribute? If not (AMD GPU), some modifications must be applied to the renderer and the shader recompiler
     bool use_mask_bit = false; ///< Is the mask bit (1 per sample) emulated ? It is only used in homebrews afaik
-    bool support_memory_mapping = false; ///< Is the host GPU memory directly mapped with gxm memory?
+    bool enable_memory_mapping = false; ///< Is the host GPU memory directly mapped with gxm memory?
+    bool support_scaled_attribute_formats = true; // can we pass integer to the shader and read them as floats? This is not supported on some Android GPUs
     bool use_texture_viewport = false; ///< Are we using texture viewports in the shader
 
     bool is_programmable_blending_supported() const {

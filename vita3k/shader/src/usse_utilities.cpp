@@ -180,6 +180,7 @@ static spv::Function *make_fx10_unpack_func(spv::Builder &b, const SpirvUtilFunc
         spv::NoPrecision, type_f32_v3, "unpack3xFX10", spv::LinkageTypeMax, { type_f32 },
         decorations, &fx10_unpack_func_block);
     b.setupFunctionDebugInfo(fx10_unpack_func, "unpack3xFX10", { type_f32 }, { "to_unpack" });
+    fx10_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
     spv::Id extracted = fx10_unpack_func->getParamId(0);
 
@@ -262,6 +263,7 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
         spv::NoPrecision, output_type, func_name.c_str(), spv::LinkageTypeMax, { type_f32 },
         decorations, &unpack_func_block);
     b.setupFunctionDebugInfo(unpack_func, func_name.c_str(), { type_f32 }, { "to_unpack" });
+    unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
     spv::Id extracted = unpack_func->getParamId(0);
 
     const spv::Id result_type = is_signed ? type_i32 : type_ui32;
@@ -340,15 +342,20 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
         decorations, &pack_func_block);
     b.setupFunctionDebugInfo(pack_func, func_name.c_str(), { input_type }, { "to_pack" });
 
+    pack_func->addParamPrecision(0, spv::DecorationRelaxedPrecision);
     spv::Id extracted = pack_func->getParamId(0);
     const int comp_bits = 32 / comp_count;
 
     const spv::Id comp_type = b.getContainedTypeId(input_type);
 
-    auto output = is_signed ? b.makeIntConstant(0) : b.makeUintConstant(0);
+    spv::Id output = b.makeUintConstant(0);
     for (int i = 0; i < comp_count; ++i) {
         spv::Id comp = b.createBinOp(spv::OpVectorExtractDynamic, comp_type, extracted, b.makeIntConstant(i));
-        output = b.createOp(spv::OpBitFieldInsert, comp_type, { output, comp, b.makeIntConstant(comp_bits * i), b.makeIntConstant(comp_bits) });
+
+        if (is_signed)
+            comp = b.createUnaryOp(spv::OpBitcast, type_ui32, comp);
+
+        output = b.createOp(spv::OpBitFieldInsert, type_ui32, { output, comp, b.makeIntConstant(comp_bits * i), b.makeIntConstant(comp_bits) });
     }
 
     output = b.createUnaryOp(spv::OpBitcast, type_f32, output);
@@ -373,6 +380,7 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const SpirvUtilFunct
         spv::NoPrecision, type_f32_v2, "unpack2xF16", spv::LinkageTypeMax, { type_f32 },
         decorations, &f16_unpack_func_block);
     b.setupFunctionDebugInfo(f16_unpack_func, "unpack2xF16", { type_f32 }, { "to_unpack" });
+    f16_unpack_func->setReturnPrecision(spv::DecorationRelaxedPrecision);
 
     spv::Id extracted = f16_unpack_func->getParamId(0);
 
@@ -400,6 +408,7 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const SpirvUtilFunctio
         decorations, &f16_pack_func_block);
     b.setupFunctionDebugInfo(f16_pack_func, "pack2xF16", { type_f32_v2 }, { "to_pack" });
 
+    f16_pack_func->addParamPrecision(0, spv::DecorationRelaxedPrecision);
     spv::Id extracted = f16_pack_func->getParamId(0);
 
     // use packHalf2x16

@@ -1,8 +1,6 @@
 // Vita3K emulator project
 // Code adapted from http://horde3d.org/wiki/index.php?title=Shading_Technique_-_FXAA
 
-#version 410 core
-
 uniform sampler2D fb;
 uniform vec2 inv_frame_size;
 in vec2 uv_frag;
@@ -10,18 +8,18 @@ in vec2 uv_frag;
 out vec3 color_frag;
 
 void main( void ) {
-        //gl_FragColor.xyz = texture2D(buf0,texCoords).xyz;
+        //gl_FragColor.xyz = texture(buf0,texCoords).xyz;
         //return;
 
         float FXAA_SPAN_MAX = 8.0;
         float FXAA_REDUCE_MUL = 1.0/8.0;
         float FXAA_REDUCE_MIN = 1.0/128.0;
 
-        vec3 rgbNW=texture2D(fb,uv_frag+(vec2(-1.0,-1.0)*inv_frame_size)).xyz;
-        vec3 rgbNE=texture2D(fb,uv_frag+(vec2(1.0,-1.0)*inv_frame_size)).xyz;
-        vec3 rgbSW=texture2D(fb,uv_frag+(vec2(-1.0,1.0)*inv_frame_size)).xyz;
-        vec3 rgbSE=texture2D(fb,uv_frag+(vec2(1.0,1.0)*inv_frame_size)).xyz;
-        vec3 rgbM=texture2D(fb,uv_frag).xyz;
+        vec3 rgbNW=texture(fb,uv_frag+(vec2(-1.0,-1.0)*inv_frame_size)).xyz;
+        vec3 rgbNE=texture(fb,uv_frag+(vec2(1.0,-1.0)*inv_frame_size)).xyz;
+        vec3 rgbSW=texture(fb,uv_frag+(vec2(-1.0,1.0)*inv_frame_size)).xyz;
+        vec3 rgbSE=texture(fb,uv_frag+(vec2(1.0,1.0)*inv_frame_size)).xyz;
+        vec3 rgbM=texture(fb,uv_frag).xyz;
         
         vec3 luma=vec3(0.299, 0.587, 0.114);
         float lumaNW = dot(rgbNW, luma);
@@ -48,11 +46,11 @@ void main( void ) {
                   dir * rcpDirMin)) * inv_frame_size;
                 
         vec3 rgbA = (1.0/2.0) * (
-                texture2D(fb, uv_frag.xy + dir * (1.0/3.0 - 0.5)).xyz +
-                texture2D(fb, uv_frag.xy + dir * (2.0/3.0 - 0.5)).xyz);
+                texture(fb, uv_frag.xy + dir * (1.0/3.0 - 0.5)).xyz +
+                texture(fb, uv_frag.xy + dir * (2.0/3.0 - 0.5)).xyz);
         vec3 rgbB = rgbA * (1.0/2.0) + (1.0/4.0) * (
-                texture2D(fb, uv_frag.xy + dir * (0.0/3.0 - 0.5)).xyz +
-                texture2D(fb, uv_frag.xy + dir * (3.0/3.0 - 0.5)).xyz);
+                texture(fb, uv_frag.xy + dir * (0.0/3.0 - 0.5)).xyz +
+                texture(fb, uv_frag.xy + dir * (3.0/3.0 - 0.5)).xyz);
         float lumaB = dot(rgbB, luma);
 
         if((lumaB < lumaMin) || (lumaB > lumaMax)){

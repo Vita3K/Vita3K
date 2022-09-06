@@ -28,6 +28,7 @@ static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
 
     auto &lang = gui.lang.main_menubar.file;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
+#ifndef __ANDROID__
         if (ImGui::MenuItem(lang["open_pref_path"].c_str()))
             open_path(emuenv.pref_path.string());
         if (ImGui::MenuItem(lang["open_textures_path"].c_str())) {
@@ -39,6 +40,7 @@ static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
             open_path(textures_path.string());
         }
         ImGui::Separator();
+#endif
         ImGui::MenuItem(lang["install_firmware"].c_str(), nullptr, &gui.file_menu.firmware_install_dialog);
         ImGui::MenuItem(lang["install_pkg"].c_str(), nullptr, &gui.file_menu.pkg_install_dialog);
         ImGui::MenuItem(lang["install_zip"].c_str(), nullptr, &gui.file_menu.archive_install_dialog);
@@ -132,7 +134,12 @@ static void draw_config_menu(GuiState &gui, EmuEnvState &emuenv) {
 static void draw_controls_menu(GuiState &gui) {
     auto &lang = gui.lang.main_menubar.controls;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
-        ImGui::MenuItem(lang["keyboard_controls"].c_str(), nullptr, &gui.controls_menu.controls_dialog);
+#ifdef __ANDROID__
+        const char *controls_name = "Overlay";
+#else
+        const char *controls_name = lang["keyboard_controls"].c_str();
+#endif
+        ImGui::MenuItem(controls_name, nullptr, &gui.controls_menu.controls_dialog);
         ImGui::MenuItem(gui.lang.controllers["title"].c_str(), nullptr, &gui.controls_menu.controllers_dialog);
         ImGui::EndMenu();
     }
@@ -142,8 +149,10 @@ static void draw_help_menu(GuiState &gui) {
     auto &lang = gui.lang.main_menubar.help;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
         ImGui::MenuItem(gui.lang.about["title"].c_str(), nullptr, &gui.help_menu.about_dialog);
+#ifndef __ANDROID__
         if (ImGui::MenuItem(gui.lang.vita3k_update["title"].c_str(), nullptr, &gui.help_menu.vita3k_update))
             init_vita3k_update(gui);
+#endif
         ImGui::MenuItem(lang["welcome"].c_str(), nullptr, &gui.help_menu.welcome_dialog);
         ImGui::EndMenu();
     }

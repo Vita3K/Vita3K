@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 
+struct Config;
 struct EmuEnvState;
 
 namespace gui {
@@ -112,6 +113,10 @@ void update_live_area_current_open_apps_list(GuiState &gui, EmuEnvState &emuenv,
 void update_notice_info(GuiState &gui, EmuEnvState &emuenv, const std::string &type);
 void update_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app);
 void save_notice_list(EmuEnvState &emuenv);
+void set_controller_overlay_state(int overlay_mask, bool edit = false, bool reset = false);
+void set_controller_overlay_scale(float scale);
+void set_controller_overlay_opacity(int opacity);
+int get_overlay_display_mask(const Config &cfg);
 
 void draw_begin(GuiState &gui, EmuEnvState &emuenv);
 void draw_end(GuiState &gui);
@@ -134,3 +139,9 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv);
 ImTextureID load_image(GuiState &gui, const uint8_t *data, const int size);
 
 } // namespace gui
+
+// Extensions to ImGui
+namespace ImGui {
+
+void ScrollWhenDragging();
+} // namespace ImGui

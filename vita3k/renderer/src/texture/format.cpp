@@ -65,6 +65,28 @@ bool convert_base_texture_format_to_base_color_format(SceGxmTextureBaseFormat fo
     return true;
 }
 
+SceGxmTextureBaseFormat get_matching_decompressed_format(SceGxmTextureBaseFormat fmt) {
+    switch (fmt) {
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+        return SCE_GXM_TEXTURE_BASE_FORMAT_U8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        return SCE_GXM_TEXTURE_BASE_FORMAT_S8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+        return SCE_GXM_TEXTURE_BASE_FORMAT_U8U8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+        return SCE_GXM_TEXTURE_BASE_FORMAT_S8S8;
+    default:
+        // BC1/2/3
+        return SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
+    }
+}
+
+bool is_astc_format(SceGxmTextureBaseFormat base_format) {
+    const uint32_t fmt = static_cast<uint32_t>(base_format);
+    return fmt >= static_cast<uint32_t>(SCE_GXM_TEXTURE_BASE_FORMAT_ASTC4x4)
+        && fmt <= static_cast<uint32_t>(SCE_GXM_TEXTURE_BASE_FORMAT_ASTC12x12);
+}
+
 void resolve_z_order_compressed_texture(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const uint32_t width, const uint32_t height) {
     uint32_t block_size = 0;
 
@@ -383,6 +405,15 @@ uint32_t get_compressed_size(SceGxmTextureBaseFormat base_format, uint32_t width
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC6H:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
         return ((width + 3) / 4) * ((height + 3) / 4) * 16;
+
+        // each ASTC block is always 128 bits (16 bytes)
+#define ASTC_FMT(b_x, b_y)                              \
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ASTC##b_x##x##b_y: \
+        return ((width + b_x - 1) / b_x) * ((height + b_y - 1) / b_y) * 16;
+
+#include "astc_formats.inc"
+#undef ASTC_FMT
+
     default:
         LOG_ERROR("Invalid block compressed texture format: {}", fmt::underlying(base_format));
         return 0;
@@ -674,6 +705,7 @@ void decompress_bc_image(uint32_t width, uint32_t height, const uint8_t *block_s
 
     auto decompress_bcn = [=, &block_storage]<typename T, typename F>(T _, F decompress_func) {
         T temp_block_result[16] = {};
+        T *img = reinterpret_cast<T *>(image);
 
         for (uint32_t j = 0; j < block_count_y; j++) {
             for (uint32_t i = 0; i < block_count_x; i++) {
@@ -681,7 +713,7 @@ void decompress_bc_image(uint32_t width, uint32_t height, const uint8_t *block_s
 
                 const uint32_t offset = j * 4 * line_size + i * 4;
                 for (uint32_t delta = 0; delta < 16; delta++) {
-                    image[offset + (delta % 4) + ((delta / 4) * line_size)] = temp_block_result[delta];
+                    img[offset + (delta % 4) + ((delta / 4) * line_size)] = temp_block_result[delta];
                 }
 
                 block_storage += block_size;

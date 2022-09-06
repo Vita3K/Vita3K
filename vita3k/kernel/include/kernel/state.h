@@ -118,6 +118,8 @@ struct KernelState {
     CallbackPtrs callbacks;
 
     ThreadStatePtrs threads;
+    void *jni_env;
+    void *jni_activity;
 
     SceKernelModuleInfoPtrs loaded_modules;
     LoadedSysmodules loaded_sysmodules;
