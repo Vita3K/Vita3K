@@ -116,6 +116,10 @@ public:
     Queue(const Queue &) = delete; // disable copying
     Queue &operator=(const Queue &) = delete; // disable assignment
 
+    std::mutex &get_mutex() {
+        return mutex_;
+    }
+
 private:
     std::condition_variable cond_;
     std::condition_variable condempty_;

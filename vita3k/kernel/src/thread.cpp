@@ -251,17 +251,19 @@ bool ThreadState::run_loop() {
             }
 
             // Run the cpu
-            if (to_do == ThreadToDo::step) {
-                res = step(*cpu);
-                to_do = ThreadToDo::suspend;
+            do {
+                if (to_do == ThreadToDo::step) {
+                    res = step(*cpu);
+                    to_do = ThreadToDo::suspend;
 
-            } else
-                res = run(*cpu);
+                } else
+                    res = run(*cpu);
 
-            // handle svc call if this was what stopped the cpu
-            if (cpu->svc_called) {
-                cpu->protocol->call_svc(*cpu, cpu->svc_called, read_pc(*cpu), *this);
-            }
+                // handle svc call if this was what stopped the cpu
+                if (cpu->svc_called) {
+                    cpu->protocol->call_svc(*cpu, cpu->svc_called, read_pc(*cpu), *this);
+                }
+            } while (to_do == ThreadToDo::run && res == 0 && call_level == run_level && !hit_breakpoint(*cpu));
 
             lock.lock();
 

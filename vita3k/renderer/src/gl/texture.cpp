@@ -36,7 +36,9 @@ static void apply_sampler_state(const SceGxmTexture &gxm_texture, const GLenum t
 
     glTexParameteri(texture_bind_type, GL_TEXTURE_WRAP_S, translate_wrap_mode(uaddr));
     glTexParameteri(texture_bind_type, GL_TEXTURE_WRAP_T, translate_wrap_mode(vaddr));
+#ifndef __ANDROID__
     glTexParameterf(texture_bind_type, GL_TEXTURE_LOD_BIAS, (static_cast<float>(gxm_texture.lod_bias) - 31.f) / 8.f);
+#endif
     glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_LOD, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2));
     glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_FILTER, min_filter);
     glTexParameteri(texture_bind_type, GL_TEXTURE_MAG_FILTER, mag_filter);
@@ -53,12 +55,44 @@ bool GLTextureCache::init(const bool hashless_texture_cache, const fs::path &tex
     TextureCache::init(hashless_texture_cache, texture_folder, game_id);
     backend = Backend::OpenGL;
 
+    // check for dxt support
+    int total_extensions = 0;
+    glGetIntegerv(GL_NUM_EXTENSIONS, &total_extensions);
+    for (int i = 0; i < total_extensions; i++) {
+        auto ext_name = reinterpret_cast<const char *>(glGetStringi(GL_EXTENSIONS, i));
+        if (strcmp(ext_name, "GL_EXT_texture_compression_s3tc") == 0) {
+            support_dxt = true;
+            break;
+        }
+
+        if (strcmp(ext_name, "GL_KHR_texture_compression_astc_ldr") == 0) {
+            support_astc = true;
+            break;
+        }
+    }
+
     return textures.init(glGenTextures, glDeleteTextures);
 }
 
 void GLTextureCache::select(size_t index, const SceGxmTexture &texture) {
     const GLuint gl_texture = textures[index];
     glBindTexture(get_gl_texture_type(texture), gl_texture);
+}
+
+static GLenum bcn_to_rgba8(const SceGxmTextureBaseFormat format) {
+    switch (format) {
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
+        return GL_R8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
+        return GL_R8_SNORM;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
+        return GL_RG8;
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SBC5:
+        return GL_RG8_SNORM;
+    default:
+        // BC1/2/3
+        return GL_RGBA8;
+    }
 }
 
 void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
@@ -76,7 +110,14 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     // TODO Support mip-mapping.
     if (mip_count)
         glTexParameteri(texture_bind_type, GL_TEXTURE_MAX_LEVEL, mip_count - 1);
+
+#ifdef __ANDROID__
+    for (int i = 0; i < 4; i++) {
+        glTexParameteri(texture_bind_type, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
+    }
+#else
     glTexParameteriv(texture_bind_type, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+#endif
 
     apply_sampler_state(gxm_texture, texture_bind_type, anisotropic_filtering);
 
@@ -90,9 +131,16 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
 
     bool compressed = gxm::is_bcn_format(base_fmt);
 
-    const GLenum internal_format = translate_internal_format(base_format);
-    const GLenum format = translate_format(base_format);
+    GLenum internal_format = translate_internal_format(base_format);
+    GLenum format = translate_format(base_format);
     const GLenum type = compressed ? 0 : translate_type(base_format);
+
+    if (!support_dxt && gxm::is_block_compressed_format(base_format)) {
+        // texture is decompressed on the CPU
+        internal_format = bcn_to_rgba8(base_format);
+        int num_comp = gxm::get_num_components(base_format);
+        format = (num_comp == 4) ? GL_RGBA : (num_comp == 2 ? GL_RG : GL_RED);
+    }
 
     // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
     GLenum upload_type = GL_TEXTURE_2D;
@@ -106,7 +154,7 @@ void GLTextureCache::configure_texture(const SceGxmTexture &gxm_texture) {
     }
 
     while (face_iterated < face_total_count && width && height) {
-        if (compressed) {
+        if (compressed && support_dxt) {
             size_t compressed_size = renderer::texture::get_compressed_size(base_fmt, width, height);
             glCompressedTexImage2D(upload_type, mip_index, internal_format, width, height, 0, static_cast<GLsizei>(compressed_size), nullptr);
         } else {
@@ -137,15 +185,24 @@ void GLTextureCache::upload_texture_impl(SceGxmTextureBaseFormat base_format, ui
         // GXM's cube map index is same as OpenGL: right, left, top, bottom, front, back
         upload_type = GL_TEXTURE_CUBE_MAP_POSITIVE_X + (face - 1);
 
-    if (gxm::is_bcn_format(base_format)) {
+    if (gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format)) {
         glPixelStorei(GL_UNPACK_ROW_LENGTH, static_cast<GLint>(pixels_per_stride));
 
-        const GLint block_size = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC4 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC4)
-            ? 8
-            : 16;
-        glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, block_size);
-        glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 4);
-        glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 4);
+        if (gxm::is_bcn_format(base_format)) {
+            const GLint block_size = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC1 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_UBC4 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_SBC4)
+                ? 8
+                : 16;
+            glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, block_size);
+            glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, 4);
+            glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, 4);
+        } else {
+            // ASTC
+            const auto [block_width, block_height] = gxm::get_block_size(base_format);
+            // all ASTC blocks are always 16 bytes
+            glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_SIZE, 16);
+            glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_WIDTH, block_width);
+            glPixelStorei(GL_UNPACK_COMPRESSED_BLOCK_HEIGHT, block_height);
+        }
 
         const GLenum format = translate_format(base_format);
         size_t compressed_size = renderer::texture::get_compressed_size(base_format, width, height);
@@ -181,10 +238,17 @@ void GLTextureCache::import_configure_impl(SceGxmTextureBaseFormat base_format, 
     const GLenum texture_bind_type = GL_TEXTURE_2D;
 
     glTexParameteri(texture_bind_type, GL_TEXTURE_MAX_LEVEL, mipcount - 1);
+#ifdef __ANDROID__
+    for (int i = 0; i < 4; i++) {
+        glTexParameteri(texture_bind_type, GL_TEXTURE_SWIZZLE_R + i, swizzle[i]);
+    }
+#else
     glTexParameteriv(texture_bind_type, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
+#endif
+
     apply_sampler_state(gxm_texture, texture_bind_type, anisotropic_filtering);
 
-    bool compressed = gxm::is_bcn_format(base_format);
+    bool compressed = gxm::is_bcn_format(base_format) || renderer::texture::is_astc_format(base_format);
     const GLenum internal_format = translate_internal_format(base_format);
     const GLenum format = translate_format(base_format);
     const GLenum type = compressed ? 0 : translate_type(base_format);

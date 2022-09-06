@@ -370,7 +370,6 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
         LOG_INFO_IF(cfg.content_path, "input-content-path: {}", cfg.content_path->string());
         LOG_INFO_IF(cfg.run_app_path, "input-installed-path: {}", *cfg.run_app_path);
-        LOG_INFO("backend-renderer: {}", cfg.backend_renderer);
         LOG_INFO("log-level: {}", LIST_LOG_LEVEL[cfg.log_level]);
         LOG_INFO_IF(cfg.log_active_shaders, "log-active-shaders: enabled");
         LOG_INFO_IF(cfg.log_uniforms, "log-uniforms: enabled");

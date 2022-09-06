@@ -31,6 +31,10 @@
 #include <string>
 #include <vector>
 
+#ifdef ERROR
+#undef ERROR
+#endif
+
 namespace host::dialog::filesystem {
 
 /**
@@ -96,6 +100,11 @@ Result open_file(fs::path &resulting_path, const std::vector<FileFilter> &file_f
  * @return Result code of the operation as specified in `host::dialog::filesystem::Result`
  */
 Result pick_folder(fs::path &resulting_path, const fs::path &default_path = "");
+
+/**
+ * @brief Open a File* handle when given a path that was obtained using open_file
+ */
+FILE *resolve_host_handle(const fs::path &path);
 
 /**
  * @brief Get a string describing the last dialog error

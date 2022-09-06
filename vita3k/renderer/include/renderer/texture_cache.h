@@ -45,6 +45,7 @@ struct TextureCacheInfo {
     int index = 0;
     uint32_t texture_size = 0;
     bool use_hash = false;
+    // no need for it to be atomic
     bool dirty = false;
     // used for texture importation
     bool is_imported = false;
@@ -120,6 +121,13 @@ public:
     // hash of the textures that have already been exported
     unordered_set_fast<uint64_t> exported_textures_hash;
 
+    // smartphone GPUs do not support DXT (BC1/2/3/4/5) textures, they must be decompressed on the GPU
+    bool support_dxt = false;
+    // format for replaced texture, supported mostly by smartphone GPUs
+    bool support_astc = false;
+    // some smartphone GPUs do not support linear filtering on depth surfaces
+    bool support_depth_linear_filtering = true;
+
     bool init(const bool hashless_texture_cache, const fs::path &texture_folder, const std::string_view game_id, const size_t sampler_cache_size = 0);
     void set_replacement_state(bool import_textures, bool export_textures, bool export_as_png);
 
@@ -128,13 +136,13 @@ public:
     virtual void upload_texture_impl(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, uint32_t pixels_per_stride) = 0;
     virtual void upload_done() {}
 
-    virtual void configure_sampler(size_t index, const SceGxmTexture &texture) {}
+    virtual void configure_sampler(size_t index, const SceGxmTexture &texture, bool no_linear) {}
 
     void upload_texture(const SceGxmTexture &gxm_texture, MemState &mem);
     void cache_and_bind_texture(const SceGxmTexture &gxm_texture, MemState &mem);
 
     // is called by cache_and_bind_texture if use_sampler_cache is set to true
-    int cache_and_bind_sampler(const SceGxmTexture &gxm_texture);
+    int cache_and_bind_sampler(const SceGxmTexture &gxm_texture, bool is_depth = false);
 
     // look at the texture folder and update the available imported / exported hashes
     void refresh_available_textures();

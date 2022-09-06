@@ -27,7 +27,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <glad/gl.h>
+#include <glad/glad.h>
 
 struct MemState;
 
@@ -74,6 +74,7 @@ struct GLColorSurfaceCacheInfo : public GLSurfaceCacheInfo {
     std::uint32_t swizzle;
 
     Ptr<void> data;
+    bool is_ping_pong_dirty;
     GLObjectArray<1> gl_texture;
     GLObjectArray<1> gl_ping_pong_texture;
     GLObjectArray<1> gl_expected_read_texture_view;

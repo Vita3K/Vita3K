@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "state.h"
+#include "renderer/vulkan/state.h"
 
 struct Config;
 struct MemState;
@@ -40,7 +40,7 @@ void new_frame(VKContext &context);
 void signal_sync_object(VKState &state, SceGxmSyncObject *sync_object, uint32_t timestamp);
 
 void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const FeatureState &features);
-void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, Ptr<uint8_t> data);
+void set_uniform_buffer(VKContext &context, MemState &mem, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, Ptr<uint8_t> data);
 
 void sync_clipping(VKContext &context);
 void sync_stencil_func(VKContext &context, const bool is_back);

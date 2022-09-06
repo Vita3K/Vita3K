@@ -17,6 +17,10 @@
 
 #include <module/module.h>
 
+#ifdef __ANDROID__
+#include <gui/functions.h>
+#endif
+
 #include <ime/functions.h>
 #include <ime/types.h>
 #include <kernel/state.h>
@@ -38,6 +42,11 @@ EXPORT(void, SceImeEventHandler, Ptr<void> arg, const SceImeEvent *e) {
 EXPORT(SceInt32, sceImeClose) {
     TRACY_FUNC(sceImeClose);
     emuenv.ime.state = false;
+
+#ifdef __ANDROID__
+    if (emuenv.cfg.enable_gamepad_overlay)
+        gui::set_controller_overlay_state(gui::get_overlay_display_mask(emuenv.cfg));
+#endif
 
     return 0;
 }
@@ -79,6 +88,10 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
 
     emuenv.ime.event_id = SCE_IME_EVENT_OPEN;
     emuenv.ime.state = true;
+
+#ifdef __ANDROID__
+    gui::set_controller_overlay_state(0);
+#endif
 
     SceImeEvent e{};
     memset(&e, 0, sizeof(e));

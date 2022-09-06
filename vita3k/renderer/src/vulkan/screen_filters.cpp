@@ -42,10 +42,8 @@ SinglePassScreenFilter::~SinglePassScreenFilter() {
     vk::Device device = screen.state.device;
     // this will only happen when the user changes the option in the GUI, we can afford to waitIdle
     device.waitIdle();
-    vao.destroy();
     device.destroy(pipeline);
     device.destroy(pipeline_layout);
-    device.freeDescriptorSets(descriptor_pool, descriptor_sets);
     device.destroy(descriptor_pool);
     device.destroy(descriptor_set_layout);
     device.destroy(fragment_shader);
@@ -389,7 +387,6 @@ FSRScreenFilter::~FSRScreenFilter() {
     device.destroy(pipeline_rcas);
     device.destroy(pipeline_layout_easu);
     device.destroy(pipeline_layout_rcas);
-    device.freeDescriptorSets(descriptor_pool, descriptor_sets);
     device.destroy(descriptor_pool);
     device.destroy(descriptor_set_layout);
 
