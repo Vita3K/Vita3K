@@ -107,7 +107,7 @@ static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 static void change_emulator_path(GuiState &gui, EmuEnvState &emuenv) {
-    std::filesystem::path emulator_path = "";
+    fs::path emulator_path{};
     host::dialog::filesystem::Result result = host::dialog::filesystem::pick_folder(emulator_path);
 
     if (result == host::dialog::filesystem::Result::SUCCESS && emulator_path.native() != emuenv.pref_path.native()) {
@@ -831,8 +831,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem(lang.emulator["title"].c_str())) {
         ImGui::PopStyleColor();
+#ifndef __ANDROID__
         ImGui::Spacing();
         ImGui::Checkbox(lang.emulator["boot_apps_full_screen"].c_str(), &emuenv.cfg.boot_apps_full_screen);
+#endif
         ImGui::Spacing();
 
         const char *LIST_LOG_LEVEL[] = { lang.emulator["trace"].c_str(), gui.lang.main_menubar.debug["title"].c_str(), lang.emulator["info"].c_str(), lang.emulator["warning"].c_str(), lang.emulator["error"].c_str(), lang.emulator["critical"].c_str(), lang.emulator["off"].c_str() };
@@ -906,6 +908,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             SetTooltipEx(lang.emulator["reset_emu_path_description"].c_str());
         }
         ImGui::Spacing();
+#ifdef __ANDROID__
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", "Using a different path requires additional permissions");
+        ImGui::Spacing();
+#endif
         ImGui::Separator();
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang.emulator["custom_config_settings"].c_str());
         ImGui::Spacing();

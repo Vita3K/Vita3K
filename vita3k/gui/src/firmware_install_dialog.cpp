@@ -31,7 +31,7 @@ namespace gui {
 void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     static std::string fw_version;
     static bool delete_pup_file;
-    static std::filesystem::path pup_path = "";
+    static fs::path pup_path{};
 
     static std::mutex install_mutex;
     static bool draw_file_dialog = true;
@@ -60,7 +60,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         if (result == host::dialog::filesystem::Result::SUCCESS) {
             std::thread installation([&emuenv]() {
-                fw_version = install_pup(emuenv.pref_path, fs::path(pup_path.native()), progress_callback);
+                fw_version = install_pup(emuenv.pref_path, pup_path, progress_callback);
                 std::lock_guard<std::mutex> lock(install_mutex);
                 finished_installing = true;
             });
@@ -118,12 +118,14 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Separator();
                 ImGui::Spacing();
             }
+#ifndef __ANDROID__
             ImGui::Checkbox(lang["delete_firmware"].c_str(), &delete_pup_file);
             ImGui::Spacing();
+#endif
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 if (delete_pup_file) {
-                    fs::remove(fs::path(pup_path.native()));
+                    fs::remove(pup_path);
                     delete_pup_file = false;
                 }
                 get_modules_list(gui, emuenv);

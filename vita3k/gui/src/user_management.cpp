@@ -726,7 +726,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         const ImVec2 CHANGE_AVATAR_BTN_SIZE(LARGE_AVATAR_SIZE.x, 36.f * SCALE.y);
         ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + (LARGE_AVATAR_SIZE.x / 2.f) - (CHANGE_AVATAR_BTN_SIZE.x / 2.f), AVATAR_POS.y + LARGE_AVATAR_SIZE.y + (5.f * SCALE.y)));
         if (ImGui::Button(lang["choose_avatar"].c_str(), CHANGE_AVATAR_BTN_SIZE)) {
-            std::filesystem::path avatar_path = "";
+            fs::path avatar_path{};
             host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(avatar_path, { { "Image file", { "bmp", "gif", "jpg", "png", "tif" } } });
 
             if ((result == host::dialog::filesystem::Result::SUCCESS) && init_avatar(gui, emuenv, "temp", avatar_path.string()))

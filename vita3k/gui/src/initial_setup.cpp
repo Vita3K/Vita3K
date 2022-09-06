@@ -151,10 +151,14 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
         TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["current_emu_path"].c_str());
         ImGui::Spacing();
+#ifdef __ANDROID__
+        TextColoredCentered(ImVec4(0.98f, 0.01f, 0.20f, 1.0f), "Using a different path requires additional permissions");
+        ImGui::Spacing();
+#endif
         TextCentered(emuenv.cfg.pref_path.c_str(), 0);
         ImGui::SetCursorPos(!is_default_path ? ImVec2((WINDOW_SIZE.x / 2.f) - BIG_BUTTON_SIZE.x - (20.f * SCALE.x), BIG_BUTTON_POS.y) : BIG_BUTTON_POS);
         if (ImGui::Button(lang["change_emu_path"].c_str(), BIG_BUTTON_SIZE)) {
-            std::filesystem::path emulator_path = "";
+            fs::path emulator_path{};
             host::dialog::filesystem::Result result = host::dialog::filesystem::pick_folder(emulator_path);
 
             if ((result == host::dialog::filesystem::Result::SUCCESS) && (emulator_path.native() != emuenv.pref_path.native())) {
