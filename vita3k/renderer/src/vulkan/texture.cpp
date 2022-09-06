@@ -78,7 +78,7 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         vk::ComponentMapping swizzle = texture::translate_swizzle(format);
 
         image = context.state.surface_cache.retrieve_color_surface_texture_handle(
-            width, height, stride_in_pixels, format_target_of_texture, Ptr<void>(data_addr),
+            width, height, stride_in_pixels, format_target_of_texture, static_cast<bool>(texture.gamma_mode), Ptr<void>(data_addr),
             renderer::SurfaceTextureRetrievePurpose::READING, swizzle);
     }
 
@@ -150,6 +150,29 @@ static uint32_t max_mip(uint32_t pixels) {
     return std::bit_width(pixels);
 }
 
+static vk::Format linear_to_srgb(const vk::Format format) {
+    switch (format) {
+    case vk::Format::eR8Unorm:
+        return vk::Format::eR8Srgb;
+    case vk::Format::eR8G8Unorm:
+        return vk::Format::eR8G8Srgb;
+    case vk::Format::eR8G8B8A8Unorm:
+        return vk::Format::eR8G8B8A8Srgb;
+    case vk::Format::eBc1RgbaUnormBlock:
+        return vk::Format::eBc1RgbaSrgbBlock;
+    case vk::Format::eBc2UnormBlock:
+        return vk::Format::eBc2SrgbBlock;
+    case vk::Format::eBc3UnormBlock:
+        return vk::Format::eBc3SrgbBlock;
+    default: {
+        static bool has_happened = false;
+        LOG_WARN_IF(!has_happened, "Trying to use gamma correction with non-compatible format {}", vk::to_string(format));
+        has_happened = true;
+        return format;
+    }
+    }
+}
+
 void configure_bound_texture(const renderer::TextureCacheState &state, const SceGxmTexture &gxm_texture) {
     const SceGxmTextureFormat format = gxm::get_format(&gxm_texture);
     const SceGxmTextureBaseFormat base_format = gxm::get_base_format(format);
@@ -173,7 +196,11 @@ void configure_bound_texture(const renderer::TextureCacheState &state, const Sce
         mip_count = 1;
     }
 
-    const vk::Format vk_format = translate_format(base_format);
+    vk::Format vk_format = translate_format(base_format);
+    if (gxm_texture.gamma_mode) {
+        vk_format = linear_to_srgb(vk_format);
+    }
+
     const auto texture_type = gxm_texture.texture_type();
     const bool is_swizzled = (texture_type == SCE_GXM_TEXTURE_SWIZZLED) || (texture_type == SCE_GXM_TEXTURE_CUBE) || (texture_type == SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY) || (texture_type == SCE_GXM_TEXTURE_CUBE_ARBITRARY);
     const auto base_fmt = gxm::get_base_format(format);

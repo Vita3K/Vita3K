@@ -103,7 +103,7 @@ public:
 
     // when writing, the swizzled given to this function is inversed
     vkutil::Image *retrieve_color_surface_texture_handle(uint16_t width, uint16_t height, const uint16_t pixel_stride,
-        const SceGxmColorBaseFormat base_format, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, vk::ComponentMapping &swizzle,
+        const SceGxmColorBaseFormat base_format, const bool is_srgb, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, vk::ComponentMapping &swizzle,
         uint16_t *stored_height = nullptr, uint16_t *stored_width = nullptr);
 
     vkutil::Image *retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, int32_t force_width = -1,
