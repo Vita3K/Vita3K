@@ -830,6 +830,13 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC7:
         return vk::Format::eBc7UnormBlock;
 
+#define ASTC_FMT(b_x, b_y)                              \
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ASTC##b_x##x##b_y: \
+        return vk::Format::eAstc##b_x##x##b_y##UnormBlock;
+
+#include "../texture/astc_formats.inc"
+#undef ASTC_FMT
+
     default:
         LOG_ERROR("Unknown format {}", log_hex(base_format));
         return {};

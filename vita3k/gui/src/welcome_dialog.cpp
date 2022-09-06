@@ -103,6 +103,7 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
         gui.help_menu.welcome_dialog = false;
 
+    ImGui::ScrollWhenDragging();
     ImGui::End();
     ImGui::PopStyleVar(2);
 }

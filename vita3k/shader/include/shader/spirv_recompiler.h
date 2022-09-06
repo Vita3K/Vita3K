@@ -48,6 +48,7 @@ enum struct Target {
 // or the format / number of components of the sampled images, but we can't
 struct Hints {
     // used when symbols are stripped
+    // also used when scaled attribute formats are not supported and conversion must be done in the shader
     const std::vector<SceGxmVertexAttribute> *attributes;
     // color format of the surface, used for the opengl renderer when the GPU does not support features.support_unknown_format
     // I'm asking for the format instead of the base format as the swizzle might be used in future updates for surfaces with only 1 or 2 components

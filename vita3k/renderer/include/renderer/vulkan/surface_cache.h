@@ -104,6 +104,12 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     // pointer to decoder used for surface sync (if necessary)
     SwsContext *sws_context = nullptr;
 
+    // do we need some CPU convert/unswizzling part for surface sync
+    bool need_post_surface_sync = false;
+
+    // only for double buffer, do we need to sync the two views?
+    bool need_buffer_sync = false;
+
     ColorSurfaceCacheInfo() = default;
     ~ColorSurfaceCacheInfo();
 };

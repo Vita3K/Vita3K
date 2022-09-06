@@ -115,7 +115,7 @@ bool init(MemState &state, const bool use_page_table) {
     DWORD old_protect = 0;
     const BOOL ret = VirtualProtect(state.memory.get(), state.page_size, PAGE_NOACCESS, &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", get_error_msg());
-#else
+#elif !defined(__ANDROID__)
     const int ret = mprotect(state.memory.get(), state.page_size, PROT_NONE);
     LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
 #endif
@@ -283,7 +283,7 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     auto it = state.protect_tree.lower_bound(vaddr);
     if (it == state.protect_tree.end()) {
         // HACK: keep going
-        unprotect_inner(state, vaddr, 4);
+        unprotect_inner(state, align_down(vaddr, state.page_size), state.page_size);
         LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
         return true;
     }
@@ -291,44 +291,18 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
     ProtectSegmentInfo &info = it->second;
     if (vaddr < it->first || vaddr >= it->first + info.size) {
         // HACK: keep going
-        unprotect_inner(state, vaddr, 4);
+        unprotect_inner(state, align_down(vaddr, state.page_size), state.page_size);
         LOG_CRITICAL("Unhandled write protected region was valid. Address=0x{:X}", vaddr);
         return true;
     }
 
     Address previous_beg = it->first;
-    for (auto ite = info.blocks.begin(); ite != info.blocks.end();) {
-        if (vaddr >= ite->first && vaddr < ite->first + ite->second.size && ite->second.callback(vaddr, write)) {
-            Address beg_unpr = align_down(ite->first, state.page_size);
-            Address end_unpr = align(ite->first + ite->second.size, state.page_size);
-            unprotect_inner(state, beg_unpr, end_unpr - beg_unpr);
-
-            ite = info.blocks.erase(ite);
-        } else {
-            ++ite;
-        }
+    for (auto &[block_addr, block] : info.blocks) {
+        block.callback(vaddr, write);
     }
 
-    if (info.blocks.empty() && info.ref_count == 0) {
-        unprotect_inner(state, it->first, info.size);
-        state.protect_tree.erase(it);
-    } else {
-        Address beg_region = info.blocks.begin()->first;
-        Address end_region = info.blocks.rbegin()->first + info.blocks.rbegin()->second.size;
-
-        beg_region = align_down(beg_region, state.page_size);
-        end_region = align(end_region, state.page_size);
-
-        if (beg_region != previous_beg) {
-            ProtectSegmentInfo new_info = std::move(info);
-            new_info.size = end_region - beg_region;
-
-            state.protect_tree.erase(it);
-            state.protect_tree.emplace(beg_region, std::move(new_info));
-        } else {
-            info.size = end_region - beg_region;
-        }
-    }
+    unprotect_inner(state, it->first, info.size);
+    state.protect_tree.erase(it);
 
     return true;
 }
@@ -356,7 +330,6 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
         const Address start = std::min(it->first, addr);
         protect.size = std::max(it->first + it->second.size, addr + protect.size) - start;
         addr = start;
-        protect.ref_count += it->second.ref_count; // Transfer access count to new block
         protect.blocks.merge(it->second.blocks); // transfer blocks to the new protect
 
         if (it == state.protect_tree.begin()) {
@@ -368,9 +341,7 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
         state.protect_tree.erase(it--);
     }
 
-    if (protect.ref_count == 0) {
-        protect_inner(state, addr, protect.size, perm);
-    }
+    protect_inner(state, addr, protect.size, perm);
 
     state.protect_tree.emplace(addr, std::move(protect));
     return true;
@@ -390,42 +361,10 @@ bool is_protecting(MemState &state, Address addr, MemPerm *perm) {
     return false;
 }
 
-void open_access_parent_protect_segment(MemState &state, Address addr) {
-    const std::lock_guard<std::mutex> lock(state.protect_mutex);
-    auto ite = state.protect_tree.lower_bound(addr);
-
-    if (ite != state.protect_tree.end() && addr < ite->first + ite->second.size) {
-        ite->second.ref_count++;
-    } else {
-        ProtectSegmentInfo protect(0, MemPerm::ReadWrite);
-        protect.ref_count = 1;
-
-        state.protect_tree.emplace(align_down(addr, state.page_size), std::move(protect));
-    }
-}
-
-void close_access_parent_protect_segment(MemState &state, Address addr) {
-    const std::lock_guard<std::mutex> lock(state.protect_mutex);
-    auto ite = state.protect_tree.lower_bound(addr);
-
-    if (ite != state.protect_tree.end()) {
-        ProtectSegmentInfo &info = ite->second;
-        if (info.ref_count > 0) {
-            info.ref_count--;
-        }
-
-        if (info.ref_count == 0) {
-            if (info.blocks.empty() || info.size == 0) {
-                state.protect_tree.erase(ite);
-            } else {
-                protect_inner(state, ite->first, info.size, info.perm);
-            }
-        }
-    }
-}
-
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *addr_ptr) {
     assert((size & 4095) == 0);
+    if (!mem.use_page_table)
+        return;
 
     uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
     uint8_t *page_table_entry = addr_ptr - addr;
@@ -445,16 +384,19 @@ void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t *a
     mem.external_mapping[addr_value] = { addr, size };
 }
 
-void remove_external_mapping(MemState &mem, uint8_t *addr_ptr) {
+void remove_external_mapping(MemState &mem, uint8_t *addr_ptr, uint32_t size) {
     uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
     MemExternalMapping mapping;
-    {
+    if (mem.use_page_table) {
         const std::unique_lock<std::mutex> lock(mem.protect_mutex);
         auto it = mem.external_mapping.find(addr_value);
         assert(it != mem.external_mapping.end());
 
         mapping = it->second;
         mem.external_mapping.erase(it);
+    } else {
+        mapping.address = static_cast<Address>(addr_ptr - mem.memory.get());
+        mapping.size = size;
     }
 
     // remove all protections on this range
@@ -479,14 +421,16 @@ void remove_external_mapping(MemState &mem, uint8_t *addr_ptr) {
         }
     }
 
-    // unprotect the original memory range
-    mem.page_table[mapping.address / KiB(4)] = mem.memory.get();
-    unprotect_inner(mem, mapping.address, mapping.size);
-    // copy back and reset the page table
-    for (int block = 0; block < mapping.size / KiB(4); block++) {
-        // this is not thread write safe, but hopefully not other thread is busy copying while this happens
-        memcpy(&mem.memory[mapping.address] + block * KiB(4), addr_ptr + block * KiB(4), KiB(4));
-        mem.page_table[mapping.address / KiB(4) + block] = mem.memory.get();
+    if (mem.use_page_table) {
+        // unprotect the original memory range
+        mem.page_table[mapping.address / KiB(4)] = mem.memory.get();
+        unprotect_inner(mem, mapping.address, mapping.size);
+        // copy back and reset the page table
+        for (int block = 0; block < mapping.size / KiB(4); block++) {
+            // this is not thread write safe, but hopefully not other thread is busy copying while this happens
+            memcpy(&mem.memory[mapping.address] + block * KiB(4), addr_ptr + block * KiB(4), KiB(4));
+            mem.page_table[mapping.address / KiB(4) + block] = mem.memory.get();
+        }
     }
 }
 

@@ -397,6 +397,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                 }
 
                 last_use_color_surface_index.push_back(ite->first);
+                info.is_ping_pong_dirty = true;
                 return info.gl_texture[0];
             } else {
                 return 0;
@@ -418,6 +419,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
     info_added->format = base_format;
     info_added->swizzle = swizzle;
     info_added->flags = 0;
+    info_added->is_ping_pong_dirty = true;
 
     if (!info_added->gl_texture.init(glGenTextures, glDeleteTextures)) {
         LOG_ERROR("Failed to initialise color surface texture!");
@@ -493,6 +495,9 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
 
     GLColorSurfaceCacheInfo &info = *ite->second;
 
+    if (!info.is_ping_pong_dirty)
+        return info.gl_ping_pong_texture[0];
+
     GLenum surface_internal_format = color::translate_internal_format(info.format);
     GLenum surface_upload_format = color::translate_format(info.format);
     GLenum surface_data_type = color::translate_type(info.format);
@@ -512,6 +517,8 @@ GLuint GLSurfaceCache::retrieve_ping_pong_color_surface_texture_handle(Ptr<void>
     }
 
     glCopyImageSubData(info.gl_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.gl_ping_pong_texture[0], GL_TEXTURE_2D, 0, 0, 0, 0, info.width, info.height, 1);
+    info.is_ping_pong_dirty = false;
+
     return info.gl_ping_pong_texture[0];
 }
 
@@ -697,7 +704,7 @@ GLuint GLSurfaceCache::retrieve_framebuffer_handle(const State &state, const Mem
         LOG_ERROR("Framebuffer is not completed. Proceed anyway...");
 
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClearDepth(1.0);
+    glClearDepthf(1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
