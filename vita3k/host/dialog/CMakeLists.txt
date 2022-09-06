@@ -1,5 +1,5 @@
 add_library(host_dialog STATIC
-    src/filesystem.cpp
+    src/filesystem_nfd.cpp
 )
 
 # Create alias for more friendly naming and avoid conflicts
@@ -8,4 +8,5 @@ add_library(host::dialog ALIAS host_dialog)
 
 target_include_directories(host_dialog PUBLIC include)
 
+target_link_libraries(host_dialog PUBLIC util)
 target_link_libraries(host_dialog PRIVATE NFDe::NFDe)

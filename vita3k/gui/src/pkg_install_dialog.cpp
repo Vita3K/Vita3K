@@ -37,8 +37,8 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     static const auto progress_callback = [&](float updated_progress) {
         progress = updated_progress;
     };
-    static std::filesystem::path pkg_path = "";
-    static std::filesystem::path license_path = "";
+    static fs::path pkg_path{};
+    static fs::path license_path{};
     static std::string title, zRIF;
     static bool draw_file_dialog = true;
     static bool delete_pkg_file, delete_license_file;
@@ -125,7 +125,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         case State::LICENSE: {
             result = host::dialog::filesystem::open_file(license_path, { { "PlayStation Vita software license file", { "bin", "rif" } } });
             if (result == host::dialog::filesystem::Result::SUCCESS) {
-                fs::ifstream binfile(license_path.native(), std::ios::in | std::ios::binary | std::ios::ate);
+                fs::ifstream binfile(license_path, std::ios::in | std::ios::binary | std::ios::ate);
                 zRIF = rif2zrif(binfile);
                 state = State::INSTALL;
             } else {
@@ -156,7 +156,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         case State::INSTALL: {
             std::thread installation([&emuenv]() {
-                if (install_pkg(pkg_path.native(), emuenv, zRIF, progress_callback)) {
+                if (install_pkg(pkg_path, emuenv, zRIF, progress_callback)) {
                     std::lock_guard<std::mutex> lock(install_mutex);
                     state = State::SUCCESS;
                 } else {
@@ -177,18 +177,20 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
+#ifndef __ANDROID__
             ImGui::Checkbox(lang["delete_pkg"].c_str(), &delete_pkg_file);
             if (license_path != "")
                 ImGui::Checkbox(lang["delete_bin_rif"].c_str(), &delete_license_file);
             ImGui::Spacing();
+#endif
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 if (delete_pkg_file) {
-                    fs::remove(fs::path(pkg_path.native()));
+                    fs::remove(pkg_path);
                     delete_pkg_file = false;
                 }
                 if (delete_license_file) {
-                    fs::remove(fs::path(license_path.native()));
+                    fs::remove(license_path);
                     delete_license_file = false;
                 }
                 if ((emuenv.app_info.app_category.find("gd") != std::string::npos) || (emuenv.app_info.app_category.find("gp") != std::string::npos)) {
