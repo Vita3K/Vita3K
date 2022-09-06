@@ -87,3 +87,6 @@
 [submodule "external/concurrentqueue"]
 	path = external/concurrentqueue
 	url = https://github.com/cameron314/concurrentqueue.git
+[submodule "external/libadrenotools"]
+	path = external/libadrenotools
+	url = https://github.com/bylaws/libadrenotools

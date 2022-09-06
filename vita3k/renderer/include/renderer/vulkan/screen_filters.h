@@ -33,8 +33,9 @@ protected:
 
 public:
     ScreenFilter(ScreenRenderer &screen_renderer);
+    virtual ~ScreenFilter() = default;
     virtual void init() = 0;
-    virtual void on_resize(){};
+    virtual void on_resize() {};
     virtual void render(bool is_pre_renderpass, vk::ImageView src_img, vk::ImageLayout src_layout, const Viewport &viewport) = 0;
     virtual std::string_view get_name() = 0;
     // do we need the render pass not to clear the swapchain content ?

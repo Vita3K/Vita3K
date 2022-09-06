@@ -37,6 +37,12 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
     GLuint vs = glCreateShader(GL_VERTEX_SHADER);
     GLuint fs = glCreateShader(GL_FRAGMENT_SHADER);
 
+#ifdef ANDROID
+    const std::string gl_version = "#version 300 es\nprecision highp float;\n";
+#else
+    const std::string gl_version = "#version 410 core\n";
+#endif
+
     // Read the vertex/fragment shader code from files
     std::vector<char> vs_code;
     auto res = fs_utils::read_data(vertex_file_path, vs_code);
@@ -44,7 +50,6 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
         LOG_ERROR("Couldn't open shader: {}", vertex_file_path);
         return {};
     }
-    vs_code.push_back('\0');
 
     std::vector<char> fs_code;
     res = fs_utils::read_data(fragment_file_path, fs_code);
@@ -52,13 +57,21 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
         LOG_ERROR("Couldn't open shader: {}", fragment_file_path);
         return {};
     }
-    fs_code.push_back('\0');
 
     GLint result = 0;
 
     // Compile vertex shader
-    char const *vs_source_pointer = vs_code.data();
-    glShaderSource(vs, 1, &vs_source_pointer, nullptr);
+    const GLchar *vs_sources[] = {
+        gl_version.c_str(),
+        vs_code.data()
+    };
+
+    GLint vs_lengths[] = {
+        (GLint)gl_version.size(),
+        (GLint)vs_code.size()
+    };
+
+    glShaderSource(vs, 2, vs_sources, vs_lengths);
     glCompileShader(vs);
 
     // Check vertex shader
@@ -73,8 +86,15 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
     }
 
     // Compile fragment shader
-    char const *fs_source_pointer = fs_code.data();
-    glShaderSource(fs, 1, &fs_source_pointer, nullptr);
+    const GLchar *fs_sources[] = {
+        gl_version.c_str(),
+        fs_code.data()
+    };
+    GLint fs_lengths[] = {
+        (GLint)gl_version.size(),
+        (GLint)fs_code.size()
+    };
+    glShaderSource(fs, 2, fs_sources, fs_lengths);
     glCompileShader(fs);
 
     // Check fragment shader
@@ -113,6 +133,7 @@ UniqueGLObject gl::load_shaders(const fs::path &vertex_file_path, const fs::path
 
     UniqueGLObject program_ptr = std::make_unique<GLObject>();
     if (!program_ptr->init(program, glDeleteProgram)) {
+        LOG_ERROR("Failed to create GLObject for shader program");
         return {};
     }
 

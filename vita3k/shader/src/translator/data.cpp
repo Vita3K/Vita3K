@@ -617,7 +617,7 @@ bool USSETranslatorVisitor::vldst(
         }
 
         to_store.num = dest_n;
-        if (m_features.support_memory_mapping)
+        if (m_features.enable_memory_mapping)
             to_store.type = type_to_ldst;
         else
             to_store.type = DataType::F32;
@@ -755,7 +755,7 @@ bool USSETranslatorVisitor::vldst(
 
     spv::Id base = m_b.createBinOp(spv::OpIAdd, i32_type, source_0, source_1);
 
-    if (m_features.support_memory_mapping) {
+    if (m_features.enable_memory_mapping) {
         utils::buffer_address_access(m_b, m_spirv_params, m_util_funcs, m_features, to_store, to_store_offset, base, get_data_type_size(type_to_ldst), current_number_to_fetch, -1, is_store);
     } else {
         if (is_store) {

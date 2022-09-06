@@ -210,9 +210,10 @@ uint32_t bits_per_pixel(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
         return 24;
+    default:
+        // we can't use an integer for astc textures
+        return 1;
     }
-
-    return 0;
 }
 
 std::pair<uint32_t, uint32_t> get_block_size(SceGxmTextureBaseFormat base_format) {
@@ -246,6 +247,13 @@ std::pair<uint32_t, uint32_t> get_block_size(SceGxmTextureBaseFormat base_format
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
         return { 2, 2 };
+#define ASTC_FMT(b_x, b_y)                              \
+    case SCE_GXM_TEXTURE_BASE_FORMAT_ASTC##b_x##x##b_y: \
+        return { b_x, b_y };
+
+        // Note: not the cleanest thing to do, but anyway
+#include "../../renderer/src/texture/astc_formats.inc"
+#undef ASTC_FMT
 
     default:
         return { 1, 1 };

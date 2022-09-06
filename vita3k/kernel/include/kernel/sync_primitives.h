@@ -192,7 +192,9 @@ struct MsgPipe : SyncPrimitive {
     ByteRingBuffer data_buffer;
 
     bool beingDeleted = false;
-    std::atomic<std::size_t> remainingThreads = 0;
+    std::atomic<std::size_t> remainingThreads = { 0 };
+
+    ~MsgPipe() override = default;
 };
 
 typedef std::shared_ptr<MsgPipe> MsgPipePtr;

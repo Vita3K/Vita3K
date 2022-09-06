@@ -212,7 +212,7 @@ Ptr<Patch> Voice::patch(const MemState &mem, const int32_t index, int32_t subind
 }
 
 bool Voice::remove_patch(const MemState &mem, const Ptr<Patch> patch) {
-    if (!patch) {
+    if (!patch || !voice_mutex) {
         return false;
     }
     const std::lock_guard<std::mutex> guard(*voice_mutex);

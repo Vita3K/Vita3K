@@ -557,6 +557,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
 
+    ImGui::ScrollWhenDragging();
     ImGui::EndChild();
 
     ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);

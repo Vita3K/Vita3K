@@ -26,15 +26,21 @@
 namespace gui {
 
 void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
-    const auto RES_SCALE = ImVec2(emuenv.gui_scale.x, emuenv.gui_scale.y);
-    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.manual_dpi_scale, 0.f);
+    const ImVec2 VIEWPORT_SIZE(emuenv.logical_viewport_size.x, emuenv.logical_viewport_size.y);
+    const ImVec2 VIEWPORT_POS(emuenv.logical_viewport_pos.x, emuenv.logical_viewport_pos.y);
+    const ImVec2 RES_SCALE(emuenv.gui_scale.x, emuenv.gui_scale.y);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.manual_dpi_scale, RES_SCALE.y * emuenv.manual_dpi_scale);
+
+    static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
 
     auto &lang = gui.lang.welcome;
     auto &common = emuenv.common_dialog.lang.common;
 
-    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowPos(VIEWPORT_POS, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(VIEWPORT_SIZE, ImGuiCond_Always);
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::Begin("##welcome", &gui.help_menu.welcome_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     ImGui::SetWindowFontScale(RES_SCALE.x);
     TextColoredCentered(GUI_COLOR_TEXT_TITLE, lang["title"].c_str());
@@ -93,11 +99,13 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Checkbox(lang["show_next_time"].c_str(), &emuenv.cfg.show_welcome))
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     ImGui::Spacing();
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+    ImGui::SetCursorPosX((VIEWPORT_SIZE.x / 2.f) - (BUTTON_SIZE.x / 2.f));
     if (ImGui::Button(common["close"].c_str(), BUTTON_SIZE))
         gui.help_menu.welcome_dialog = false;
 
+    ImGui::ScrollWhenDragging();
     ImGui::End();
+    ImGui::PopStyleVar(2);
 }
 
 } // namespace gui

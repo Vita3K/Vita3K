@@ -22,6 +22,11 @@
 #include <fmt/format.h>
 #include <fmt/ostream.h>
 
+#ifdef _WIN32
+#define fseek _fseeki64
+#define ftell _ftelli64
+#endif
+
 namespace fs = boost::filesystem;
 
 #ifdef _WIN32

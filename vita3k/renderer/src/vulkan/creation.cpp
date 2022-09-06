@@ -53,7 +53,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
     vertex_info_uniform_buffer.alignment = uniform_alignment;
     fragment_info_uniform_buffer.alignment = uniform_alignment;
 
-    if (state.features.support_memory_mapping) {
+    if (state.features.enable_memory_mapping) {
         // use the default buffer
         std::fill_n(vertex_stream_buffers, SCE_GXM_MAX_VERTEX_STREAMS, state.default_buffer.buffer);
 
@@ -88,7 +88,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
 
     // allocate descriptor pools
     {
-        const uint32_t nb_descriptor = state.features.support_memory_mapping ? 2U : 4U;
+        const uint32_t nb_descriptor = state.features.enable_memory_mapping ? 2U : 4U;
 
         std::array<vk::DescriptorPoolSize, 2> pool_sizes = {
             vk::DescriptorPoolSize{ vk::DescriptorType::eUniformBufferDynamic, 2 },
@@ -160,9 +160,11 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
     width = static_cast<uint32_t>(params.width * state.res_multiplier);
     height = static_cast<uint32_t>(params.height * state.res_multiplier);
 
-    vk::ImageUsageFlags color_usage = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment;
+    vk::ImageUsageFlags color_usage = vk::ImageUsageFlagBits::eColorAttachment;
     if (state.features.support_shader_interlock)
-        color_usage |= vk::ImageUsageFlagBits::eStorage;
+        color_usage |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage;
+    else
+        color_usage |= vk::ImageUsageFlagBits::eInputAttachment | vk::ImageUsageFlagBits::eTransientAttachment;
     color.init_image(color_usage);
     if (params.multisampleMode == SCE_GXM_MULTISAMPLE_4X) {
         // the depth buffer may need to be 4x bigger if we use a texture without downscale
@@ -170,28 +172,14 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
         depthstencil.height *= 2;
     }
 
-    depthstencil.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
+    depthstencil.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment);
 
     // transition images to their right state
     vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
     // color
-    {
-        color.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
-
-        vk::ClearColorValue clear_color{ std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 0.0f }) };
-        cmd_buffer.clearColorImage(color.image, vk::ImageLayout::eTransferDstOptimal, clear_color, vkutil::color_subresource_range);
-        color.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
-    }
+    color.transition_to_discard(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
     // depth stencil
-    {
-        depthstencil.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst, vkutil::ds_subresource_range);
-        vk::ClearDepthStencilValue clear_value{
-            .depth = 1.0,
-            .stencil = 0
-        };
-        cmd_buffer.clearDepthStencilImage(depthstencil.image, vk::ImageLayout::eTransferDstOptimal, clear_value, vkutil::ds_subresource_range);
-        depthstencil.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
-    }
+    depthstencil.transition_to_discard(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
     vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
 
     constexpr uint16_t SCE_GXM_MAX_SCENES_PER_RENDERTARGET = 8;
@@ -251,6 +239,9 @@ void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
 
 bool create(std::unique_ptr<VertexProgram> &vp, VKState &state, const SceGxmProgram &program) {
     vp = std::make_unique<VertexProgram>();
+
+    if (program.program_flags & SCE_GXM_PROGRAM_FLAG_BUFFER_STORE)
+        state.has_shader_store = true;
 
     return true;
 }

@@ -71,9 +71,11 @@ enum ScreenshotFormat {
     code(bool, "show-live-area-screen", true, show_live_area_screen)                                    \
     code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \
-    code(std::string, "backend-renderer", "OpenGL", backend_renderer)                                   \
+    code(std::string, "backend-renderer", "Vulkan", backend_renderer)                                   \
+    code(std::string, "custom-driver-name", "", custom_driver_name)                                     \
+    code(bool, "turbo-mode", false, turbo_mode)                                                         \
     code(int, "gpu-idx", 0, gpu_idx)                                                                    \
-    code(bool, "high-accuracy", true, high_accuracy)                                                    \
+    code(bool, "high-accuracy", false, high_accuracy)                                                   \
     code(float, "resolution-multiplier", 1.0f, resolution_multiplier)                                   \
     code(bool, "disable-surface-sync", true, disable_surface_sync)                                      \
     code(std::string, "screen-filter", "Bilinear", screen_filter)                                       \
@@ -86,6 +88,7 @@ enum ScreenshotFormat {
     code(bool, "import-textures", false, import_textures)                                               \
     code(bool, "export-textures", false, export_textures)                                               \
     code(bool, "export-as-png", true, export_as_png)                                                    \
+    code(std::string, "memory-mapping", "double-buffer", memory_mapping)                                \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(int, "audio-volume", 100, audio_volume)                                                        \
@@ -109,6 +112,10 @@ enum ScreenshotFormat {
     code(bool, "performance-overlay", false, performance_overlay)                                       \
     code(int, "performance-overlay-detail", static_cast<int>(MINIMUM), performance_overlay_detail)      \
     code(int, "performance-overlay-position", static_cast<int>(TOP_LEFT), performance_overlay_position) \
+    code(bool, "enable-gamepad-overlay", true, enable_gamepad_overlay)                                  \
+    code(bool, "overlay-show-touch-switch", false, overlay_show_touch_switch)                           \
+    code(float, "overlay-scale", 1.0f, overlay_scale)                                                   \
+    code(int, "overlay-opacity", 100, overlay_opacity)                                                  \
     code(int, "screenshot-format", static_cast<int>(JPEG), screenshot_format)                           \
     code(bool, "disable-motion", false, disable_motion)                                                 \
     code(float, "controller-analog-multiplier", 1.0f, controller_analog_multiplier)                     \

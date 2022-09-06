@@ -16,11 +16,13 @@ add_library(
 target_include_directories(mem PUBLIC include)
 target_link_libraries(mem PUBLIC util)
 
-add_executable(
-	mem-tests
-	tests/allocator_tests.cpp
-)
+if(NOT ANDROID)
+	add_executable(
+		mem-tests
+		tests/allocator_tests.cpp
+	)
 
-target_include_directories(mem-tests PRIVATE include)
-target_link_libraries(mem-tests PRIVATE mem googletest util)
-add_test(NAME mem COMMAND mem-tests)
+	target_include_directories(mem-tests PRIVATE include)
+	target_link_libraries(mem-tests PRIVATE mem googletest util)
+	add_test(NAME mem COMMAND mem-tests)
+endif()
