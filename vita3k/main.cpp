@@ -298,6 +298,13 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // When backend render is changed before boot app, reboot emu in new backend render and run app
+    if (emuenv.renderer->current_backend != emuenv.backend_renderer) {
+        emuenv.load_app_path = emuenv.io.app_path;
+        run_execv(argv, emuenv);
+        return Success;
+    }
+
     gui::set_config(gui, emuenv, emuenv.io.app_path);
 
     const auto APP_INDEX = gui::get_app_index(gui, emuenv.io.app_path);

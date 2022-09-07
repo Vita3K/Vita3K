@@ -342,18 +342,29 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
     }
 
+    // If backend render or resolution multiplier is changed when app run, reboot emu and app
+    if (!emuenv.io.title_id.empty() && ((emuenv.renderer->current_backend != emuenv.backend_renderer) || (emuenv.renderer->res_multiplier != emuenv.cfg.current_config.resolution_multiplier))) {
+        emuenv.load_exec = true;
+        emuenv.load_app_path = emuenv.io.app_path;
+        emuenv.load_exec_path = emuenv.self_path;
+        if (!emuenv.cfg.app_args.empty())
+            emuenv.load_exec_argv = "\"" + emuenv.cfg.app_args + "\"";
+        return;
+    }
+
     // can be changed while ingame
     emuenv.renderer->disable_surface_sync = emuenv.cfg.current_config.disable_surface_sync;
     emuenv.renderer->set_fxaa(emuenv.cfg.current_config.enable_fxaa);
-    if (emuenv.backend_renderer == renderer::Backend::OpenGL)
+    if (emuenv.renderer->current_backend == renderer::Backend::OpenGL)
         set_vsync_state(emuenv.cfg.current_config.v_sync);
+
+    emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
     emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
 
     // No change it if app already running
     if (emuenv.io.title_id.empty()) {
         emuenv.kernel.cpu_backend = set_cpu_backend(emuenv.cfg.current_config.cpu_backend);
         emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
-        emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
     }
 }
 
@@ -463,7 +474,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
 
         static const char *LIST_BACKEND_RENDERER[] = { "OpenGL", "Vulkan" };
-        if (ImGui::Combo("Backend Renderer (Reboot to apply)", reinterpret_cast<int *>(&emuenv.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
+        if (ImGui::Combo("Backend Renderer", reinterpret_cast<int *>(&emuenv.backend_renderer), LIST_BACKEND_RENDERER, IM_ARRAYSIZE(LIST_BACKEND_RENDERER)))
             emuenv.cfg.backend_renderer = LIST_BACKEND_RENDERER[int(emuenv.backend_renderer)];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred backend renderer.");
@@ -478,16 +489,37 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 gpu_list.push_back(gpu.c_str());
             if (ImGui::Combo("GPU (Reboot to apply)", &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size())))
                 ImGui::SetTooltip("Select the GPU Vita3K should run on.");
+        } else {
+            ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
+            ImGui::SameLine();
+            ImGui::Checkbox("V-Sync", &config.v_sync);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid tearing.");
         }
+        ImGui::Spacing();
+        ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
+
+        ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
 
+        // Resolution Upscaling
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Internal Resolution Upscaling").x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Internal Resolution Upscaling");
         ImGui::Spacing();
-        if (!emuenv.io.title_id.empty())
+        ImGui::PushID("Res scal");
+        if (config.resolution_multiplier == 1)
             ImGui::BeginDisabled();
-        ImGui::PushItemWidth(-70.f * emuenv.dpi_scale);
+        if (ImGui::Button("<", ImVec2(20.f * emuenv.dpi_scale, 0)))
+            --config.resolution_multiplier;
+        if (config.resolution_multiplier == 1)
+            ImGui::EndDisabled();
+        ImGui::SameLine(0, 5 * emuenv.dpi_scale);
+        ImGui::PushItemWidth(-100.f * emuenv.dpi_scale);
         if (ImGui::SliderInt("##res_scal", &config.resolution_multiplier, 1, 8, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
             if (config.resolution_multiplier > 1)
                 config.disable_surface_sync = true;
@@ -495,62 +527,73 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Enable upscaling for Vita3K.\nExperimental: games are not guaranteed to render properly at more than 1x");
+        ImGui::SameLine(0, 5 * emuenv.dpi_scale);
+        if (config.resolution_multiplier == 8)
+            ImGui::BeginDisabled();
+        if (ImGui::Button(">", ImVec2(20.f * emuenv.dpi_scale, 0)))
+            ++config.resolution_multiplier;
+        if (config.resolution_multiplier == 8)
+            ImGui::EndDisabled();
         ImGui::SameLine();
         if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
             ImGui::BeginDisabled();
-        ImGui::PushID("Res scal");
         if (ImGui::Button("Reset", ImVec2(60.f * emuenv.dpi_scale, 0))) {
             config.resolution_multiplier = 1;
             config.disable_surface_sync = false;
         }
-        ImGui::PopID();
-        if (!emuenv.io.title_id.empty() || ((config.resolution_multiplier == 1) && !config.disable_surface_sync))
+        if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
             ImGui::EndDisabled();
         ImGui::Spacing();
         const auto res_scal = fmt::format("{}x{}", 960 * config.resolution_multiplier, 544 * config.resolution_multiplier);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * emuenv.dpi_scale));
         ImGui::Text("%s", res_scal.c_str());
-        if (!is_vulkan) {
-            ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
-            ImGui::Spacing();
-        }
-        ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
-        if (!is_vulkan) {
-            ImGui::SameLine();
-            ImGui::Checkbox("V-Sync", &config.v_sync);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid tearing.");
-        }
+        ImGui::PopID();
+
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
+
+        // Anisotropic Filtering
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Anisotropic Filtering").x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Anisotropic Filtering");
         ImGui::Spacing();
-        ImGui::PushItemWidth(-70.f * emuenv.dpi_scale);
+        ImGui::PushID("Aniso filter");
+        if (config.anisotropic_filtering == 1)
+            ImGui::BeginDisabled();
+        if (ImGui::Button("<", ImVec2(20.f * emuenv.dpi_scale, 0)))
+            config.anisotropic_filtering = 1 << --current_aniso_filter_log;
+        if (config.anisotropic_filtering == 1)
+            ImGui::EndDisabled();
+        ImGui::SameLine(0, 5 * emuenv.dpi_scale);
+        ImGui::PushItemWidth(-100.f * emuenv.dpi_scale);
         if (ImGui::SliderInt("##aniso_filter", &current_aniso_filter_log, 0, max_aniso_filter_log, fmt::format("{}x", config.anisotropic_filtering).c_str()))
             config.anisotropic_filtering = 1 << current_aniso_filter_log;
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped relative to the viewer.\nIt has no drawback but can impact performance.");
+        ImGui::SameLine(0, 5 * emuenv.dpi_scale);
+        if (current_aniso_filter_log == max_aniso_filter_log)
+            ImGui::BeginDisabled();
+        if (ImGui::Button(">", ImVec2(20.f * emuenv.dpi_scale, 0)))
+            config.anisotropic_filtering = 1 << ++current_aniso_filter_log;
+        if (current_aniso_filter_log == max_aniso_filter_log)
+            ImGui::EndDisabled();
         ImGui::SameLine();
         if (config.anisotropic_filtering == 1)
             ImGui::BeginDisabled();
-        ImGui::PushID("Aniso filter");
         if (ImGui::Button("Reset", ImVec2(60.f * emuenv.dpi_scale, 0))) {
             config.anisotropic_filtering = 1;
             current_aniso_filter_log = 0;
         }
-        ImGui::PopID();
         if (config.anisotropic_filtering == 1)
             ImGui::EndDisabled();
+        ImGui::PopID();
+
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
+
+        // Shaders
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Shaders").x / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Shaders");
         ImGui::Spacing();
@@ -910,13 +953,14 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    static const auto BUTTON_SIZE = ImVec2(100.f * emuenv.dpi_scale, 0.f);
+    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * emuenv.dpi_scale));
     if (ImGui::Button("Close", BUTTON_SIZE))
         settings_dialog = false;
     ImGui::SameLine(0, 20.f * emuenv.dpi_scale);
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));
-    if (ImGui::Button(is_apply ? "Save & Apply" : "Save", BUTTON_SIZE)) {
+    const auto is_reboot = (emuenv.renderer->current_backend != emuenv.backend_renderer) || (config.resolution_multiplier != emuenv.cfg.current_config.resolution_multiplier);
+    if (ImGui::Button(is_apply ? (is_reboot ? "Save & Reboot" : "Save & Apply") : "Save", BUTTON_SIZE)) {
         save_config(gui, emuenv);
         if (is_apply)
             set_config(gui, emuenv, emuenv.io.app_path);
