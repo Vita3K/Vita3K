@@ -162,6 +162,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
             // Load GPU Config
             if (!config_child.child("gpu").empty()) {
                 const auto gpu_child = config_child.child("gpu");
+                config.strict_rendering = gpu_child.attribute("strict-rendering").as_bool();
                 config.resolution_multiplier = gpu_child.attribute("resolution-multiplier").as_int();
                 config.disable_surface_sync = gpu_child.attribute("disable-surface-sync").as_bool();
                 config.enable_fxaa = gpu_child.attribute("enable-fxaa").as_bool();
@@ -212,6 +213,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.cpu_opt = emuenv.cfg.cpu_opt;
         config.modules_mode = emuenv.cfg.modules_mode;
         config.lle_modules = emuenv.cfg.lle_modules;
+        config.strict_rendering = emuenv.cfg.strict_rendering;
         config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
         config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
         config.enable_fxaa = emuenv.cfg.enable_fxaa;
@@ -268,6 +270,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         // GPU
         auto gpu_child = config_child.append_child("gpu");
+        gpu_child.append_attribute("strict-rendering") = config.strict_rendering;
         gpu_child.append_attribute("resolution-multiplier") = config.resolution_multiplier;
         gpu_child.append_attribute("disable-surface-sync") = config.disable_surface_sync;
         gpu_child.append_attribute("enable-fxaa") = config.enable_fxaa;
@@ -291,6 +294,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.modules_mode = config.modules_mode;
         emuenv.cfg.lle_modules = config.lle_modules;
         emuenv.cfg.pstv_mode = config.pstv_mode;
+        emuenv.cfg.strict_rendering = config.strict_rendering;
         emuenv.cfg.resolution_multiplier = config.resolution_multiplier;
         emuenv.cfg.disable_surface_sync = config.disable_surface_sync;
         emuenv.cfg.enable_fxaa = config.enable_fxaa;
@@ -334,12 +338,20 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.modules_mode = emuenv.cfg.modules_mode;
         emuenv.cfg.current_config.lle_modules = emuenv.cfg.lle_modules;
         emuenv.cfg.current_config.pstv_mode = emuenv.cfg.pstv_mode;
+        emuenv.cfg.current_config.strict_rendering = emuenv.cfg.strict_rendering;
         emuenv.cfg.current_config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
         emuenv.cfg.current_config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
         emuenv.cfg.current_config.enable_fxaa = emuenv.cfg.enable_fxaa;
         emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
+    }
+
+    // Using default value in strict rendering mode
+    if (emuenv.cfg.current_config.strict_rendering) {
+        emuenv.cfg.current_config.resolution_multiplier = 1;
+        emuenv.cfg.current_config.enable_fxaa = false;
+        emuenv.cfg.current_config.anisotropic_filtering = 1;
     }
 
     // can be changed while ingame
@@ -354,7 +366,8 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.kernel.cpu_backend = set_cpu_backend(emuenv.cfg.current_config.cpu_backend);
         emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
         emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
-    }
+    } else
+        emuenv.cfg.current_config.resolution_multiplier = emuenv.renderer->res_multiplier;
 }
 
 void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
@@ -479,10 +492,29 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::Combo("GPU (Reboot to apply)", &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size())))
                 ImGui::SetTooltip("Select the GPU Vita3K should run on.");
         }
+
+        ImGui::Spacing();
+        ImGui::Checkbox("Strict Rendering", &config.strict_rendering);
+        if (ImGui::IsItemFocused())
+            ImGui::SetTooltip("Check the box to enable strict rendering mode.");
+        if (!is_vulkan) {
+            ImGui::SameLine();
+            ImGui::Checkbox("V-Sync", &config.v_sync);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid tearing.");
+            ImGui::SameLine();
+            ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
+        }
+
+        ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
 
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Internal Resolution Upscaling").x / 2.f));
+        if (config.strict_rendering)
+            ImGui::BeginDisabled();
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Internal Resolution Upscaling");
         ImGui::Spacing();
         if (!emuenv.io.title_id.empty())
@@ -510,21 +542,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         const auto res_scal = fmt::format("{}x{}", 960 * config.resolution_multiplier, 544 * config.resolution_multiplier);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * emuenv.dpi_scale));
         ImGui::Text("%s", res_scal.c_str());
-        if (!is_vulkan) {
-            ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
-            ImGui::Spacing();
-        }
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
-        if (!is_vulkan) {
-            ImGui::SameLine();
-            ImGui::Checkbox("V-Sync", &config.v_sync);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid tearing.");
-        }
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -547,6 +567,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::PopID();
         if (config.anisotropic_filtering == 1)
+            ImGui::EndDisabled();
+        if (config.strict_rendering)
             ImGui::EndDisabled();
         ImGui::Spacing();
         ImGui::Separator();

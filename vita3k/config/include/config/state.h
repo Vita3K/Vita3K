@@ -123,6 +123,7 @@ public:
         std::vector<std::string> lle_modules = {};
         bool pstv_mode = false;
         bool ngs_enable = true;
+        bool strict_rendering = false;
         int resolution_multiplier = 1;
         bool disable_surface_sync = false;
         bool enable_fxaa = false;
