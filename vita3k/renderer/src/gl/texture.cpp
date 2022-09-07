@@ -64,6 +64,9 @@ void configure_bound_texture(const renderer::TextureCacheState &state, const Sce
 
     const GLenum texture_bind_type = get_gl_texture_type(gxm_texture);
 
+    const GLenum min_filter = translate_minmag_filter((SceGxmTextureFilter)gxm_texture.min_filter);
+    const GLenum mag_filter = translate_minmag_filter((SceGxmTextureFilter)gxm_texture.mag_filter);
+
     // TODO Support mip-mapping.
     if (mip_count)
         glTexParameteri(texture_bind_type, GL_TEXTURE_MAX_LEVEL, mip_count - 1);
@@ -72,14 +75,16 @@ void configure_bound_texture(const renderer::TextureCacheState &state, const Sce
     glTexParameteri(texture_bind_type, GL_TEXTURE_WRAP_T, translate_wrap_mode(vaddr));
     glTexParameterf(texture_bind_type, GL_TEXTURE_LOD_BIAS, (static_cast<float>(gxm_texture.lod_bias) - 31.f) / 8.f);
     glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_LOD, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2));
-    glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_FILTER, translate_minmag_filter((SceGxmTextureFilter)gxm_texture.min_filter));
-    glTexParameteri(texture_bind_type, GL_TEXTURE_MAG_FILTER, translate_minmag_filter((SceGxmTextureFilter)gxm_texture.mag_filter));
+    glTexParameteri(texture_bind_type, GL_TEXTURE_MIN_FILTER, min_filter);
+    glTexParameteri(texture_bind_type, GL_TEXTURE_MAG_FILTER, mag_filter);
     glTexParameteriv(texture_bind_type, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
 
     // anisotropic filtering
-    // we don't need to check for the existence of this extension because it is considered an ubiquitous extension
-    // for now we apply anisotropic filtering to all textures
-    glTexParameterf(texture_bind_type, GL_TEXTURE_MAX_ANISOTROPY_EXT, static_cast<float>(state.anisotropic_filtering));
+    // when using nearest filter, disable anisotropy as the pixels can contain data other than color
+    if (state.anisotropic_filtering > 1 && (min_filter != GL_NEAREST || mag_filter != GL_NEAREST))
+        // we don't need to check for the existence of this extension because it is considered an ubiquitous extension
+        // for now we apply anisotropic filtering to all textures
+        glTexParameterf(texture_bind_type, GL_TEXTURE_MAX_ANISOTROPY_EXT, static_cast<float>(state.anisotropic_filtering));
 
     const GLenum internal_format = translate_internal_format(base_format);
     const GLenum format = translate_format(base_format);

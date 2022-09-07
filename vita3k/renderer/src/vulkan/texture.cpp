@@ -244,7 +244,6 @@ vk::Sampler create_sampler(VKState &state, const SceGxmTexture &gxm_texture, con
         .addressModeV = translate_address_mode(vaddr),
         .addressModeW = vk::SamplerAddressMode::eRepeat,
         .mipLodBias = (static_cast<float>(gxm_texture.lod_bias) - 31.f) / 8.f,
-        .anisotropyEnable = state.texture_cache.anisotropic_filtering > 1,
         .maxAnisotropy = static_cast<float>(state.texture_cache.anisotropic_filtering),
         .compareEnable = VK_FALSE,
         .minLod = mipmap_enabled ? static_cast<float>(std::min<uint16_t>(mip_count, gxm_texture.lod_min0 | (gxm_texture.lod_min1 << 2))) : 0.f,
@@ -253,6 +252,10 @@ vk::Sampler create_sampler(VKState &state, const SceGxmTexture &gxm_texture, con
         .maxLod = mipmap_enabled ? static_cast<float>(mip_count) : 0.25f,
         .unnormalizedCoordinates = VK_FALSE,
     };
+
+    // when using nearest filter, disable anisotropy as the pixels can contain data other than color
+    sampler_info.anisotropyEnable = (state.texture_cache.anisotropic_filtering > 1) && (sampler_info.magFilter != vk::Filter::eNearest || sampler_info.minFilter != vk::Filter::eNearest);
+
     return state.device.createSampler(sampler_info);
 }
 
