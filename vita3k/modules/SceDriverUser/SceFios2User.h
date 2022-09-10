@@ -19,6 +19,17 @@
 
 #include <module/module.h>
 
+enum SceFiosErrorCode {
+    SCE_FIOS_OK = 0
+};
+
+typedef SceUID SceFiosOverlayID;
+
+enum SceFiosOverlayResolveMode {
+    SCE_FIOS_OVERLAY_RESOLVE_FOR_READ = 0,
+    SCE_FIOS_OVERLAY_RESOLVE_FOR_WRITE = 1
+};
+
 BRIDGE_DECL(sceFiosOverlayAddForProcess02)
 BRIDGE_DECL(sceFiosOverlayGetInfoForProcess02)
 BRIDGE_DECL(sceFiosOverlayGetList02)

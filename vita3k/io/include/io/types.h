@@ -109,3 +109,37 @@ struct SceIoDevInfo {
     SceInt64 free_size;
     SceSize cluster_size;
 };
+
+enum SceFiosOverlayType : uint8_t {
+    SCE_FIOS_OVERLAY_TYPE_OPAQUE,
+    SCE_FIOS_OVERLAY_TYPE_TRANSLUCENT,
+    SCE_FIOS_OVERLAY_TYPE_NEWER,
+    SCE_FIOS_OVERLAY_TYPE_WRITABLE
+};
+
+enum SceFiosOverlayLimits {
+    SCE_FIOS_OVERLAY_MAX_OVERLAYS = 64,
+    SCE_FIOS_OVERLAY_POINT_MAX = 292
+};
+
+struct SceFiosProcessOverlay {
+    SceFiosOverlayType type;
+    uint8_t order;
+    int16_t src_size;
+    int16_t dst_size;
+    SceUID process_id;
+    uint32_t reserved;
+    char dst[SCE_FIOS_OVERLAY_POINT_MAX];
+    char src[SCE_FIOS_OVERLAY_POINT_MAX];
+};
+
+static_assert(offsetof(SceFiosProcessOverlay, src) == 308);
+
+struct FiosOverlay {
+    SceUID id;
+    SceFiosOverlayType type;
+    uint8_t order;
+    SceUID process_id;
+    std::string dst;
+    std::string src;
+};

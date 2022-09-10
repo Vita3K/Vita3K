@@ -794,3 +794,50 @@ int remove_dir(IOState &io, const char *dir, const std::wstring &pref_path, cons
 
     return 0;
 }
+
+SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay) {
+    std::lock_guard<std::mutex> lock(io.overlay_mutex);
+
+    FiosOverlay overlay{
+        .id = io.next_overlay_id++,
+        .type = fios_overlay->type,
+        .order = fios_overlay->order,
+        .process_id = fios_overlay->process_id,
+        .dst = std::string(fios_overlay->dst),
+        .src = std::string(fios_overlay->src)
+    };
+
+    // find location where to put it
+    int overlay_index = 0;
+    // lower order first and in case of equality, last one inserted first
+    while (overlay_index < io.overlays.size() && overlay.order < io.overlays[overlay_index].order)
+        overlay_index++;
+
+    io.overlays.insert(io.overlays.begin() + overlay_index, std::move(overlay));
+}
+
+std::string resolve_path(IOState &io, const char *input, const bool is_write, const SceUInt32 min_order, const SceUInt32 max_order) {
+    std::lock_guard<std::mutex> lock(io.overlay_mutex);
+
+    std::string curr_path = std::string(input);
+
+    int overlay_idx = 0;
+    while (overlay_idx < io.overlays.size() && io.overlays[overlay_idx].order < min_order)
+        overlay_idx++;
+
+    while (overlay_idx < io.overlays.size()) {
+        const FiosOverlay &overlay = io.overlays[overlay_idx];
+        overlay_idx++;
+
+        if (overlay.order > max_order)
+            break;
+
+        if (!curr_path.starts_with(overlay.dst))
+            continue;
+
+        // replace dst with src
+        curr_path = overlay.src + curr_path.substr(overlay.dst.size());
+    }
+
+    return curr_path;
+}
