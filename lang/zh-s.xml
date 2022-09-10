@@ -328,22 +328,22 @@
 
 	<initial_setup>
 		<back>返回</back>
-		<completed_setup>你现在已经完成了初始设置.
-你的Vita3K系统已经准备好了!</completed_setup>
-		<select_language>选择一种语言.</select_language>
+		<completed_setup>你现在已经完成了初始设置。
+你的Vita3K系统已经准备好了！</completed_setup>
+		<select_language>选择一种语言。</select_language>
 		<completed>已完成。</completed>
 		<next>下一步</next>
 	</initial_setup>
 
 	<install_dialog>
-		<fw_installing>安装中,请等待...</fw_installing>
+		<fw_installing>安装中，请等待...</fw_installing>
 		<successed_install_fw>固件已成功安装。</successed_install_fw>
 		<fw_version>固件版本：</fw_version>
-		<no_font_exist>没有固件字体包.
-请下载并安装.</no_font_exist>
+		<no_font_exist>没有固件字体包。
+请下载并安装。</no_font_exist>
 		<download_firmware_font_package>下载固件字体包</download_firmware_font_package>
-		<firmware_font_package_note>固件字体包对于某些应用程序来说是强制性的.对于亚洲地区的字体支持也是如此. (一般建议)</firmware_font_package_note>
-		<delete_fw>删除固件安装文件?</delete_fw>
+		<firmware_font_package_note>固件字体包对于某些应用程序来说是强制性的.对于亚洲地区的字体支持也是如此。（一般建议）</firmware_font_package_note>
+		<delete_fw>删除固件安装文件？</delete_fw>
 		<select_key_type>选择密钥类型</select_key_type>
 		<select_work>选择work.bin</select_work>
 		<enter_zrif>输入zRIF</enter_zrif>
