@@ -328,11 +328,11 @@
 
 	<initial_setup>
 		<back>返回</back>
-		<completed_setup>You have now completed initial setup.
-Your Vita3K system is ready!</completed_setup>
-		<select_language>Select a language.</select_language>
+		<completed_setup>你现在已经完成了初始设置.
+你的Vita3K系统已经准备好了!</completed_setup>
+		<select_language>选择一种语言.</select_language>
 		<completed>已完成。</completed>
-		<next>Next</next>
+		<next>下一步</next>
 	</initial_setup>
 
 	<install_dialog>
