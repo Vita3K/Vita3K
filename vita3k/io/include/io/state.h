@@ -18,6 +18,7 @@
 #pragma once
 
 #include <io/filesystem.h>
+#include <io/types.h>
 #include <io/util.h>
 
 #include <map>
@@ -121,4 +122,9 @@ struct IOState {
 
     std::unordered_map<std::string, std::string> cachemap;
     bool case_isens_find_enabled = false;
+
+    std::mutex overlay_mutex;
+    SceUID next_overlay_id = 1;
+    // overlay in the order they should be applied
+    std::vector<FiosOverlay> overlays;
 };

@@ -82,3 +82,7 @@ SceUID read_dir(IOState &io, SceUID fd, SceIoDirent *dent, const std::wstring &p
 int create_dir(IOState &io, const char *dir, int mode, const std::wstring &pref_path, const char *export_name, const bool recursive = false);
 int close_dir(IOState &io, SceUID fd, const char *export_name);
 int remove_dir(IOState &io, const char *dir, const std::wstring &pref_path, const char *export_name);
+
+// SceFios functions
+SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay);
+std::string resolve_path(IOState &io, const char *input, const bool is_write, const SceUInt32 min_order = 0, const SceUInt32 max_order = 0x7F);
