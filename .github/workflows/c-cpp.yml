@@ -69,7 +69,7 @@ jobs:
 
       - name: Set up build environment (windows-latest)
         run: |
-          vcpkg install boost-system:x64-windows boost-filesystem:x64-windows boost-program-options:x64-windows boost-icl:x64-windows boost-variant:x64-windows
+          vcpkg install zlib:x64-windows boost-system:x64-windows boost-filesystem:x64-windows boost-program-options:x64-windows boost-icl:x64-windows boost-variant:x64-windows
         if: matrix.os == 'windows-latest'
 
       - name: Set up SDL 2.24.0 (ubuntu-latest)
