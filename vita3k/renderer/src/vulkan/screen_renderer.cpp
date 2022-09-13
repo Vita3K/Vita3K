@@ -185,14 +185,23 @@ void ScreenRenderer::create_swapchain() {
 }
 
 void ScreenRenderer::destroy_swapchain() {
-    state.device.destroy(pipeline);
+    if (pipeline) {
+        state.device.destroy(pipeline);
+        pipeline = nullptr;
+    }
 
     for (vk::Framebuffer framebuffer : swapchain_framebuffers)
         state.device.destroy(framebuffer);
+    swapchain_framebuffers.clear();
+
     for (vk::ImageView view : swapchain_views)
         state.device.destroy(view);
+    swapchain_views.clear();
 
-    state.device.destroySwapchainKHR(swapchain);
+    if (swapchain) {
+        state.device.destroySwapchainKHR(swapchain);
+        swapchain = nullptr;
+    }
 }
 
 void ScreenRenderer::cleanup() {
@@ -218,15 +227,21 @@ void ScreenRenderer::cleanup() {
 static constexpr uint64_t next_image_timeout = std::numeric_limits<uint64_t>::max();
 
 bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
-    vk::Result acquire_result = state.device.acquireNextImageKHR(swapchain,
-        next_image_timeout, image_acquired_semaphore, vk::Fence(), &swapchain_image_idx);
+    vk::Result acquire_result = vk::Result::eErrorOutOfDateKHR;
+    if (swapchain)
+        acquire_result = state.device.acquireNextImageKHR(swapchain,
+            next_image_timeout, image_acquired_semaphore, vk::Fence(), &swapchain_image_idx);
 
     if (acquire_result != vk::Result::eSuccess) {
         if (acquire_result == vk::Result::eErrorOutOfDateKHR || acquire_result == vk::Result::eSuboptimalKHR) {
             state.device.waitIdle();
+            destroy_swapchain();
             int width, height;
             SDL_Vulkan_GetDrawableSize(window, &width, &height);
-            destroy_swapchain();
+            // don't render anything when the window is minimized
+            if (width == 0 || height == 0)
+                return false;
+
             create_swapchain();
             create_graphics_pipelines();
             need_rebuild = true;
@@ -354,8 +369,10 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, st
 }
 
 void ScreenRenderer::swap_window() {
-    if (!current_cmd_buffer)
+    if (!current_cmd_buffer) {
+        swapchain_image_idx = ~0;
         return;
+    }
 
     // first submit the command buffer
     current_cmd_buffer.endRenderPass();
@@ -387,12 +404,15 @@ void ScreenRenderer::swap_window() {
         }
     } catch (vk::OutOfDateKHRError) {
         state.device.waitIdle();
+        destroy_swapchain();
+
         int width, height;
         SDL_Vulkan_GetDrawableSize(window, &width, &height);
-        destroy_swapchain();
-        create_swapchain();
-        create_graphics_pipelines();
-        need_rebuild = true;
+        if (width > 0 && height > 0) {
+            create_swapchain();
+            create_graphics_pipelines();
+            need_rebuild = true;
+        }
     }
 
     swapchain_image_idx = ~0;
