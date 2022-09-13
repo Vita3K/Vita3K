@@ -289,8 +289,6 @@ SceInt32 simple_event_delete(KernelState &kernel, const char *export_name, SceUI
             export_name, event->uid, thread_id, event->name, event->attr, event->pattern, event->waiting_threads->size());
     }
 
-    const std::lock_guard<std::mutex> event_lock(event->mutex);
-
     if (event->waiting_threads->empty()) {
         const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
         kernel.eventflags.erase(event_id);
@@ -709,8 +707,6 @@ SceInt32 rwlock_delete(KernelState &kernel, MemState &mem, const char *export_na
             rwlock->waiting_threads->size());
     }
 
-    const std::lock_guard<std::mutex> mutex_lock(rwlock->mutex);
-
     if (rwlock->waiting_threads->empty()) {
         const std::lock_guard<std::mutex> kernel_guard(kernel.mutex);
         kernel.rwlocks.erase(lock_id);
@@ -854,7 +850,7 @@ int semaphore_delete(KernelState &kernel, const char *export_name, SceUID thread
     }
 
     if (semaphore->waiting_threads->empty()) {
-        const std::lock_guard<std::mutex> semaphore_lock(semaphore->mutex);
+        const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
         kernel.semaphores.erase(semaid);
     } else {
         // TODO:
@@ -1003,7 +999,7 @@ int condvar_delete(KernelState &kernel, const char *export_name, SceUID thread_i
     }
 
     if (condvar->waiting_threads->empty()) {
-        const std::lock_guard<std::mutex> condvar_lock(condvar->mutex);
+        const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
         condvars->erase(condid);
     } else {
         // TODO:
@@ -1255,8 +1251,6 @@ int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} existing_flags: {:#b} waiting_threads: {}",
             export_name, event->uid, thread_id, event->name, event->attr, event->flags, event->waiting_threads->size());
     }
-
-    const std::lock_guard<std::mutex> event_lock(event->mutex);
 
     if (event->waiting_threads->empty()) {
         const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
@@ -1538,12 +1532,8 @@ SceUID msgpipe_delete(KernelState &kernel, const char *export_name, const char *
             export_name, msgpipe->uid, thread_id, msgpipe->name, msgpipe->attr);
     }
 
-    const std::lock_guard<std::mutex> event_lock(msgpipe->mutex);
-
-    if (msgpipe->receivers->empty() && msgpipe->senders->empty()) {
-        const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
-        kernel.msgpipes.erase(msgpipe->uid);
-    } else {
+    if (!msgpipe->receivers->empty() || !msgpipe->senders->empty()) {
+        const std::lock_guard<std::mutex> event_lock(msgpipe->mutex);
         msgpipe->remainingThreads = (msgpipe->senders->size() + msgpipe->receivers->size());
         msgpipe->beingDeleted = true;
         std::atomic_thread_fence(std::memory_order_release);
@@ -1558,6 +1548,9 @@ SceUID msgpipe_delete(KernelState &kernel, const char *export_name, const char *
         while (std::atomic_load(&msgpipe->remainingThreads) != 0) // FIXME busy loop bad
             ;
     }
+
+    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+    kernel.msgpipes.erase(msgpipe->uid);
 
     return SCE_KERNEL_OK;
 }
