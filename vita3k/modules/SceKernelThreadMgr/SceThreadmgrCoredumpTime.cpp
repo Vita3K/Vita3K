@@ -21,7 +21,7 @@
 
 EXPORT(int, sceKernelExitThread, int status) {
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    emuenv.kernel.exit_thread(thread);
+    thread->exit_delete();
 
     return status;
 }

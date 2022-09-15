@@ -74,7 +74,6 @@ static int SDLCALL thread_function(void *data) {
 
     thread->run_loop();
     const uint32_t r0 = read_reg(*thread->cpu, 0);
-    thread->returned_value = r0;
 
     std::lock_guard<std::mutex> lock(params.kernel->mutex);
     params.kernel->threads.erase(thread->id);
@@ -97,7 +96,6 @@ bool KernelState::init(MemState &mem, CallImportFunc call_import, CPUBackend cpu
     cpu_protocol = std::make_unique<CPUProtocol>(*this, mem, call_import);
     this->cpu_backend = cpu_backend;
     this->cpu_opt = cpu_opt;
-    guest_func_runner = create_thread(mem, "guest function runner");
 
     return true;
 }
@@ -136,9 +134,9 @@ ThreadStatePtr KernelState::get_thread(SceUID thread_id) {
     return lock_and_find(thread_id, threads, mutex);
 }
 
-ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name) {
+ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point) {
     constexpr size_t DEFAULT_STACK_SIZE = 0x1000;
-    return create_thread(mem, name, Ptr<void>(0), SCE_KERNEL_DEFAULT_PRIORITY, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, DEFAULT_STACK_SIZE, nullptr);
+    return create_thread(mem, name, entry_point, SCE_KERNEL_DEFAULT_PRIORITY, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, DEFAULT_STACK_SIZE, nullptr);
 }
 
 ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option) {
@@ -157,16 +155,6 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
     return thread;
 }
 
-void KernelState::exit_thread(ThreadStatePtr thread) {
-    thread->clear_run_queue();
-    stop(*thread->cpu);
-}
-
-void KernelState::exit_delete_thread(ThreadStatePtr thread) {
-    thread->clear_run_queue();
-    thread->stop_loop();
-}
-
 Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id, int key) {
     Ptr<Ptr<void>> address(0);
     // magic numbers taken from decompiled source. There is 0x400 unused bytes of unknown usage
@@ -182,23 +170,8 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
 void KernelState::exit_delete_all_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
     for (auto [_, thread] : threads) {
-        exit_delete_thread(thread);
+        thread->exit_delete();
     }
-}
-
-int KernelState::run_guest_function(SceUID thread_id, Address callback_address, const std::vector<uint32_t> &args) {
-    auto old_thread_id = this->guest_func_runner->id;
-    auto old_tpidruro = read_tpidruro(*this->guest_func_runner->cpu);
-    auto thread = get_thread(thread_id);
-    if (thread) {
-        auto tpidruro = read_tpidruro(*thread->cpu);
-        this->guest_func_runner->id = thread_id;
-        write_tpidruro(*this->guest_func_runner->cpu, tpidruro);
-    }
-    int result = this->guest_func_runner->run_guest_function(callback_address, args);
-    this->guest_func_runner->id = old_thread_id;
-    write_tpidruro(*this->guest_func_runner->cpu, old_tpidruro);
-    return result;
 }
 
 std::shared_ptr<SceKernelModuleInfo> KernelState::find_module_by_addr(Address address) {

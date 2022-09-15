@@ -251,13 +251,13 @@ EXPORT(int, sceNetCtlCheckCallback) {
 
     for (auto &callback : emuenv.netctl.callbacks) {
         if (callback.pc != NULL) {
-            thread->request_callback(callback.pc, { 1, callback.arg });
+            thread->run_callback(callback.pc, { 1, callback.arg });
         }
     }
 
     for (auto &callback : emuenv.netctl.adhocCallbacks) {
         if (callback.pc != NULL) {
-            thread->request_callback(callback.pc, { 1, callback.arg });
+            thread->run_callback(callback.pc, { 1, callback.arg });
         }
     }
 

@@ -33,4 +33,6 @@ struct CPUState {
     Address halt_instruction_pc; // thumb mode pc
 
     CPUInterfacePtr cpu;
+    bool svc_called;
+    uint32_t svc;
 };

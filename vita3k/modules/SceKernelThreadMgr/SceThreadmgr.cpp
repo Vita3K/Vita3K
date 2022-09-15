@@ -909,7 +909,7 @@ EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     if (!thread || thread->status != ThreadStatus::dormant) {
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     }
-    emuenv.kernel.exit_delete_thread(thread);
+    thread->exit_delete();
     return 0;
 }
 
@@ -921,7 +921,7 @@ EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
 
 EXPORT(int, sceKernelExitDeleteThread, int status) {
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
-    emuenv.kernel.exit_delete_thread(thread);
+    thread->exit_delete();
 
     return status;
 }

@@ -95,8 +95,10 @@ void UnicornCPU::intr_hook(uc_engine *uc, uint32_t intno, void *user_data) {
         uint32_t svc_instruction = 0;
         const auto err = uc_mem_read(uc, svc_address, &svc_instruction, sizeof(svc_instruction));
         assert(err == UC_ERR_OK);
-        const uint32_t imm = state.is_thumb_mode() ? (svc_instruction & 0xff0000) >> 16 : svc_instruction & 0xffffff;
-        state.parent->protocol->call_svc(*state.parent, imm, pc, get_thread_id(*state.parent));
+        const uint32_t svc = state.is_thumb_mode() ? (svc_instruction & 0xff0000) >> 16 : svc_instruction & 0xffffff;
+        state.parent->svc_called = true;
+        state.parent->svc = svc;
+        state.stop();
     } else if (intno == INT_BKPT) {
         state.stop();
         state.did_break = true;
@@ -174,6 +176,7 @@ int UnicornCPU::run() {
     uint32_t pc = get_pc();
     bool thumb_mode = is_thumb_mode();
     did_break = false;
+    parent->svc_called = false;
 
     pc = get_pc();
     if (thumb_mode) {
@@ -200,6 +203,7 @@ int UnicornCPU::step() {
     bool thumb_mode = is_thumb_mode();
 
     did_break = false;
+    parent->svc_called = false;
 
     pc = get_pc();
     if (thumb_mode) {

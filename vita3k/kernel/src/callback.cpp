@@ -24,6 +24,10 @@
 
 uint32_t process_callbacks(KernelState &kernel, SceUID thread_id) {
     ThreadStatePtr thread = kernel.get_thread(thread_id);
+    if (thread->is_processing_callbacks)
+        return 0;
+
+    thread->is_processing_callbacks = true;
     uint32_t num_callbacks_processed = 0;
     for (CallbackPtr &cb : thread->callbacks) {
         if (cb->is_executable()) {
@@ -34,6 +38,7 @@ uint32_t process_callbacks(KernelState &kernel, SceUID thread_id) {
             num_callbacks_processed++;
         }
     }
+    thread->is_processing_callbacks = false;
 
     return num_callbacks_processed;
 }
@@ -86,7 +91,7 @@ void Callback::execute(KernelState &kernel, std::function<void()> deleter) {
         return;
 
     std::vector<uint32_t> args = { (uint32_t)(this->notifier_id), this->num_notifications, (uint32_t)this->notification_arg, this->userdata.address() };
-    int ret = kernel.run_guest_function(this->thread_id, this->cb_func.address(), args);
+    int ret = kernel.get_thread(this->thread_id)->run_callback(this->cb_func.address(), args);
     if (ret != 0) {
         deleter();
     }

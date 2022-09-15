@@ -39,24 +39,6 @@ typedef std::unique_ptr<CPUState, std::function<void(CPUState *)>> CPUStatePtr;
 typedef std::function<void(CPUState &, uint32_t, SceUID)> CallImport;
 typedef std::function<std::string(Address)> ResolveNIDName;
 
-// Increase this if you hit max
-constexpr size_t MAX_ARGS_WORDS = 12;
-
-typedef std::function<void(int res)> ThreadJobNotifyCallback;
-typedef std::array<uint32_t, MAX_ARGS_WORDS> ThreadJobArgs;
-
-struct ThreadJob {
-    ThreadJob() = default;
-
-    CPUContext ctx;
-    ThreadJobNotifyCallback notify = nullptr;
-    ThreadJobArgs args{};
-    size_t args_size = 0;
-    bool in_progress = false;
-};
-
-typedef std::list<ThreadJob> RunQueue;
-
 enum class ThreadStatus {
     run, // Running
     dormant, // Waiting for a job
@@ -100,46 +82,58 @@ struct ThreadState {
     SceInt32 affinity_mask;
     uint64_t start_tick;
     uint64_t last_vblank_waited;
+    // set to true if thread is processing kernel callbacks
+    bool is_processing_callbacks = false;
 
     CPUStatePtr cpu;
     ThreadStatus status = ThreadStatus::dormant;
-    RunQueue run_queue;
 
     ThreadSignal signal;
     std::vector<CallbackPtr> callbacks;
     std::condition_variable status_cond;
     std::vector<std::shared_ptr<ThreadState>> waiting_threads;
-    int returned_value = 0;
+    uint32_t returned_value = 0;
 
     ThreadState() = delete;
     explicit ThreadState(SceUID id, MemState &mem);
 
     int init(KernelState &kernel, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
     int start(KernelState &kernel, SceSize arglen, const Ptr<void> &argp);
+    void exit(SceInt32 status);
+    void exit_delete();
 
     void update_status(ThreadStatus status, std::optional<ThreadStatus> expected = std::nullopt);
     Address stack_top() const;
 
     bool run_loop();
-    void clear_run_queue();
     void stop_loop();
-    void flush_callback_requests();
     void raise_waiting_threads();
 
-    int run_guest_function(Address callback_address, const std::vector<uint32_t> &args);
-    void request_callback(Address callback_address, const std::vector<uint32_t> &args, const std::function<void(int res)> notify = nullptr);
+    // this function must be called from the thread itself (inside a svc call)
+    uint32_t run_callback(Address callback_address, const std::vector<uint32_t> &args);
+
+    // this function is called from another thread when this one is dormant
+    // it is only used for module loading and gxm display queue right now
+    // support one argument
+    uint32_t run_guest_function(KernelState &kernel, Address callback_address, uint32_t arg = 0);
 
     void suspend();
     void resume(bool step = false);
     std::string log_stack_traceback(KernelState &kernel) const;
 
 private:
-    void push_arguments(ThreadJob &job);
+    void push_arguments(Address callback_address, const std::vector<uint32_t> &args);
 
     CPUContext init_cpu_ctx;
-    RunQueue callback_requests;
     ThreadToDo to_do = ThreadToDo::wait;
     std::condition_variable something_to_do;
+
+    // if looking at the thread stack, the number of times run_loop appear
+    // if the thread is dormant, call_level is 0
+    // most of the time the thread is running, call_level is 1
+    // if running a callback inside a callback (possible for exemple by allocating
+    // gxm callbacked memory inside a kernel callback), call_level is 2
+    int call_level = 0;
 
     MemState &mem;
 };

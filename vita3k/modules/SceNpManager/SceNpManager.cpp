@@ -49,7 +49,7 @@ EXPORT(int, sceNpCheckCallback) {
 
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
     for (auto &callback : emuenv.np.cbs) {
-        thread->request_callback(callback.second.pc, { (uint32_t)emuenv.np.state, 0, callback.second.data });
+        thread->run_callback(callback.second.pc, { (uint32_t)emuenv.np.state, 0, callback.second.data });
     }
 
     return STUBBED("Stub");

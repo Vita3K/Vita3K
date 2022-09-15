@@ -104,10 +104,9 @@ EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *o
     return mod_id;
 }
 
-static SceUID start_module(EmuEnvState &emuenv, const SceKernelModuleInfoPtr &module, SceSize args, const Ptr<void> argp, int *pRes) {
-    auto module_thread = emuenv.kernel.create_thread(emuenv.mem, module->module_name);
-    uint32_t result = module_thread->run_guest_function(module->start_entry.address(), { args, argp.address() });
-    emuenv.kernel.exit_delete_thread(module_thread);
+static SceUID start_module(KernelState &kernel, SceUID thread_id, const SceKernelModuleInfoPtr &module, SceSize args, const Ptr<void> argp, int *pRes) {
+    const auto thread = kernel.get_thread(thread_id);
+    uint32_t result = thread->run_callback(module->start_entry.address(), { args, argp.address() });
 
     LOG_INFO("Module {} (at \"{}\") module_start returned {}", module->module_name, module->path, log_hex(result));
 
@@ -132,7 +131,7 @@ EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize ar
     if (!load_module(mod_id, entry_point, module, emuenv, export_name, moduleFileName, error_val))
         return error_val;
 
-    return start_module(emuenv, module, args, argp, pRes);
+    return start_module(emuenv.kernel, thread_id, module, args, argp, pRes);
 }
 
 EXPORT(int, _sceKernelOpenModule) {
@@ -142,7 +141,7 @@ EXPORT(int, _sceKernelOpenModule) {
 EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes) {
     const SceKernelModuleInfoPtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
 
-    return start_module(emuenv, module, args, argp, pRes);
+    return start_module(emuenv.kernel, thread_id, module, args, argp, pRes);
 }
 
 EXPORT(int, _sceKernelStopModule) {

@@ -27,9 +27,8 @@ EXPORT(void, SceImeEventHandler, Ptr<void> arg, const SceImeEvent *e) {
     Ptr<SceImeEvent> e1 = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime2"));
     memcpy(e1.get(emuenv.mem), e, sizeof(SceImeEvent));
     auto thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
-    thread->request_callback(emuenv.ime.param.handler.address(), { arg.address(), e1.address() }, [&emuenv, e1](int res) {
-        free(emuenv.mem, e1.address());
-    });
+    thread->run_callback(emuenv.ime.param.handler.address(), { arg.address(), e1.address() });
+    free(emuenv.mem, e1.address());
 }
 
 EXPORT(SceInt32, sceImeClose) {
