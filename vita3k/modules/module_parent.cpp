@@ -196,7 +196,8 @@ bool load_module(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleModuleId mod
                 LOG_DEBUG("Running module_start of module: {}", module_name);
 
                 Ptr<void> argp = Ptr<void>();
-                const auto ret = emuenv.kernel.run_guest_function(thread_id, lib_entry_point.address(), { 0, argp.address() });
+                const auto thread = emuenv.kernel.get_thread(thread_id);
+                const auto ret = thread->run_callback(lib_entry_point.address(), { 0, argp.address() });
                 LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
             }
 

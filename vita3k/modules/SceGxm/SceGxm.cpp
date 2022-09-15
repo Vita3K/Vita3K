@@ -46,7 +46,7 @@ static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemStat
     const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
     const Address final_size_addr = stack_alloc(*thread->cpu, 4);
 
-    Ptr<void> result(static_cast<Address>(kernel.run_guest_function(thread_id, callback.address(),
+    Ptr<void> result(static_cast<Address>(thread->run_callback(callback.address(),
         { userdata.address(), size, final_size_addr })));
 
     return_size = *Ptr<std::uint32_t>(final_size_addr).get(mem);
@@ -1815,7 +1815,7 @@ static int SDLCALL thread_function(void *data) {
 
         // Now run callback
         const ThreadStatePtr display_thread = util::find(params.thid, params.kernel->threads);
-        display_thread->run_guest_function(display_callback->pc, { display_callback->data });
+        display_thread->run_guest_function(*params.kernel, display_callback->pc, display_callback->data);
 
         free(*params.mem, display_callback->data);
 
@@ -3226,7 +3226,8 @@ Address alloc_callbacked(EmuEnvState &emuenv, SceUID thread_id, const SceGxmShad
     if (!shaderPatcherParams.hostAllocCallback) {
         LOG_ERROR("Empty hostAllocCallback");
     }
-    auto result = emuenv.kernel.run_guest_function(thread_id, shaderPatcherParams.hostAllocCallback.address(), { shaderPatcherParams.userData.address(), size });
+    const auto thread = emuenv.kernel.get_thread(thread_id);
+    auto result = thread->run_callback(shaderPatcherParams.hostAllocCallback.address(), { shaderPatcherParams.userData.address(), size });
     return result;
 }
 
@@ -3251,7 +3252,8 @@ void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher 
     if (!shaderPatcher->params.hostFreeCallback) {
         LOG_ERROR("Empty hostFreeCallback");
     }
-    emuenv.kernel.run_guest_function(thread_id, shaderPatcher->params.hostFreeCallback.address(), { shaderPatcher->params.userData.address(), data });
+    const auto thread = emuenv.kernel.get_thread(thread_id);
+    thread->run_callback(shaderPatcher->params.hostFreeCallback.address(), { shaderPatcher->params.userData.address(), data });
 }
 
 template <typename T>
@@ -3582,8 +3584,7 @@ EXPORT(int, sceGxmTerminate) {
     emuenv.gxm.display_queue.abort();
     SDL_WaitThread(emuenv.gxm.sdl_thread, nullptr);
     emuenv.gxm.sdl_thread = nullptr;
-    const ThreadStatePtr thread = lock_and_find(emuenv.gxm.display_queue_thread, emuenv.kernel.threads, emuenv.kernel.mutex);
-    emuenv.kernel.exit_delete_thread(thread);
+    emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread)->exit_delete();
     return 0;
 }
 

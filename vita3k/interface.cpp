@@ -717,8 +717,8 @@ ExitCode run_app(EmuEnvState &emuenv, Ptr<const void> &entry_point) {
 
         // TODO: why does fios need separate thread its stack freed anyways?
         const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name);
-        const auto ret = module_thread->run_guest_function(module_start.address(), { 0, 0 });
-        emuenv.kernel.exit_delete_thread(module_thread);
+        const auto ret = module_thread->run_guest_function(emuenv.kernel, module_start.address());
+        module_thread->exit_delete();
 
         LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
     }

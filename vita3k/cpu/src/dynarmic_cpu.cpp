@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -265,10 +265,9 @@ public:
     }
 
     void CallSVC(uint32_t svc) override {
-        parent->protocol->call_svc(*parent, svc, cpu->get_pc(), get_thread_id(*parent));
-        if (cpu->exit_request) {
-            cpu->jit->HaltExecution();
-        }
+        parent->svc_called = true;
+        parent->svc = svc;
+        cpu->jit->HaltExecution(Dynarmic::HaltReason::UserDefined8);
     }
 
     void AddTicks(uint64_t ticks) override {}
@@ -311,11 +310,13 @@ int DynarmicCPU::run() {
     halted = false;
     break_ = false;
     exit_request = false;
+    parent->svc_called = false;
     jit->Run();
     return halted;
 }
 
 int DynarmicCPU::step() {
+    parent->svc_called = false;
     jit->Step();
     return 0;
 }

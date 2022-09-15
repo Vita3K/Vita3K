@@ -114,25 +114,6 @@ int ThreadState::init(KernelState &kernel, const char *name, Ptr<const void> ent
     return 0;
 }
 
-void ThreadState::flush_callback_requests() {
-    if (!callback_requests.empty()) {
-        const auto current = run_queue.begin();
-        // Add resuming job
-        ThreadJob job;
-        job.ctx = save_context(*cpu);
-        job.notify = current->notify;
-        run_queue.erase(current);
-        run_queue.push_front(job);
-
-        // Add requested callback jobs
-        for (auto it = callback_requests.rbegin(); it != callback_requests.rend(); ++it) {
-            run_queue.push_front(*it);
-        }
-        callback_requests.clear();
-        stop(*cpu);
-    }
-}
-
 void ThreadState::raise_waiting_threads() {
     for (auto t : waiting_threads) {
         const std::unique_lock<std::mutex> lock(t->mutex);
@@ -144,17 +125,15 @@ void ThreadState::raise_waiting_threads() {
 }
 
 int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &argp) {
-    if (status == ThreadStatus::run)
+    if (status == ThreadStatus::run || call_level > 0)
         return SCE_KERNEL_ERROR_RUNNING;
     std::unique_lock<std::mutex> thread_lock(mutex);
 
-    ThreadJob job;
-    CPUContext ctx = init_cpu_ctx;
-    job.args[0] = arglen;
-    job.args[1] = argp.address();
-    job.args_size = 2;
-    ctx.set_pc(entry_point);
-    ctx.set_lr(cpu->halt_instruction_pc);
+    call_level = 1;
+    load_context(*cpu, init_cpu_ctx);
+    write_pc(*cpu, entry_point);
+    write_lr(*cpu, cpu->halt_instruction_pc);
+    write_reg(*cpu, 0, arglen);
 
     // Copy data to stack
     if (argp && arglen > 0) {
@@ -162,12 +141,11 @@ int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &arg
         const int aligned_size = align(arglen, 8);
         const Address data_addr = stack_top - aligned_size;
         memcpy(Ptr<uint8_t>(data_addr).get(mem), argp.get(mem), arglen);
-        job.args[1] = data_addr;
-        ctx.set_sp(data_addr);
+        write_reg(*cpu, 1, data_addr);
+        write_sp(*cpu, data_addr);
+    } else {
+        write_reg(*cpu, 1, 0);
     }
-    job.ctx = ctx;
-
-    run_queue.push_front(job);
 
     if (kernel.debugger.wait_for_debugger) {
         to_do = ThreadToDo::suspend;
@@ -181,31 +159,37 @@ int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &arg
     return SCE_KERNEL_OK;
 }
 
+void ThreadState::exit(SceInt32 status) {
+    std::lock_guard<std::mutex> guard(mutex);
+    call_level = 0;
+    returned_value = static_cast<uint32_t>(status);
+}
+
+void ThreadState::exit_delete() {
+    stop_loop();
+}
+
 bool ThreadState::run_loop() {
     int res = 0;
-    RunQueue::iterator current_job;
+    int run_level = std::max(call_level, 1);
     std::unique_lock<std::mutex> lock(mutex);
     while (true) {
         switch (to_do) {
         case ThreadToDo::exit:
-            raise_waiting_threads();
+            if (run_level == 1)
+                update_status(ThreadStatus::dormant);
+
             return true;
         case ThreadToDo::run:
         case ThreadToDo::step:
-            // Pop a job to do
-            if (run_queue.empty()) {
+
+            if (call_level == 0) {
+                // nothing to do
                 update_status(ThreadStatus::dormant);
                 to_do = ThreadToDo::wait;
                 break;
             }
 
-            current_job = run_queue.begin();
-            if (!current_job->in_progress) {
-                push_arguments(*current_job);
-                set_thread_id(*cpu, id);
-                load_context(*cpu, current_job->ctx);
-                current_job->in_progress = true;
-            }
             update_status(ThreadStatus::run);
 
             // Run the cpu
@@ -216,6 +200,12 @@ bool ThreadState::run_loop() {
 
             } else
                 res = run(*cpu);
+
+            // handle svc call if this was what stopped the cpu
+            if (cpu->svc_called) {
+                cpu->protocol->call_svc(*cpu, cpu->svc_called, read_pc(*cpu), *this);
+            }
+
             lock.lock();
 
             // Handle errors
@@ -223,29 +213,30 @@ bool ThreadState::run_loop() {
                 continue;
 
             if (res < 0) {
-                LOG_ERROR("Thread {} ({}) experienced a unicorn error.", name, cpu->thread_id);
-                if (current_job->notify) {
-                    current_job->notify(0xDEADDEAD);
-                }
-                run_queue.erase(current_job);
+                LOG_ERROR("Thread {} ({}) experienced a cpu error.", name, cpu->thread_id);
+                returned_value = 0xDEADDEAD;
+                call_level--;
+                if (call_level > 0)
+                    // only return if we are inside a callback
+                    return true;
                 break;
             }
 
             if (hit_breakpoint(*cpu) || to_do == ThreadToDo::suspend) {
-                ThreadJob job;
-                job.ctx = save_context(*cpu);
-                job.notify = current_job->notify;
-                run_queue.erase(current_job);
-                run_queue.push_front(job);
                 update_status(ThreadStatus::suspend);
                 to_do = ThreadToDo::wait;
             }
 
+            if (call_level < run_level && run_level > 1)
+                // exit requested, exit this callback now
+                return true;
+
             if (res) {
-                if (current_job->notify) {
-                    current_job->notify(read_reg(*cpu, 0));
-                }
-                run_queue.erase(current_job);
+                returned_value = read_reg(*cpu, 0);
+                call_level--;
+                if (call_level > 0)
+                    // only return if we are inside a callback
+                    return true;
             }
             break;
         case ThreadToDo::wait:
@@ -255,53 +246,68 @@ bool ThreadState::run_loop() {
     }
 }
 
-void ThreadState::push_arguments(ThreadJob &job) {
-    Address sp = job.ctx.get_sp();
-    for (size_t i = 0; i < std::min(job.args_size, static_cast<size_t>(4)); i++) {
-        job.ctx.cpu_registers[i] = job.args[i];
+void ThreadState::push_arguments(Address callback_address, const std::vector<uint32_t> &args) {
+    Address sp = read_sp(*cpu);
+    for (size_t i = 0; i < std::min(args.size(), static_cast<size_t>(4)); i++) {
+        write_reg(*cpu, i, args[i]);
     }
-    if (job.args_size > 4) {
+    if (args.size() > 4) {
         // TODO align to 16 bytes
-        const size_t remain_size = job.args_size - 4;
+        const size_t remain_size = args.size() - 4;
         sp -= 4 * remain_size;
-        memcpy(Ptr<uint32_t>(sp).get(mem), &job.args[4], remain_size * 4);
+        memcpy(Ptr<uint32_t>(sp).get(mem), &args[4], remain_size * 4);
     }
-    job.ctx.set_sp(sp);
+    write_sp(*cpu, sp);
 }
 
-int ThreadState::run_guest_function(Address callback_address, const std::vector<uint32_t> &args) {
+uint32_t ThreadState::run_callback(Address callback_address, const std::vector<uint32_t> &args) {
+    // first save the current context
+    const CPUContext previous_ctx = save_context(*cpu);
+    const uint32_t previous_tpidruro = read_tpidruro(*cpu);
+
     std::unique_lock<std::mutex> thread_lock(mutex);
-    ThreadJob job;
-    CPUContext ctx = init_cpu_ctx;
-    std::copy(args.begin(), args.end(), job.args.begin());
-    job.args_size = args.size();
-    ctx.set_pc(callback_address);
-    ctx.set_lr(cpu->halt_instruction_pc);
-    job.ctx = ctx;
-
-    std::mutex notify_mutex;
-    std::condition_variable notify_cond;
-    bool notify_done = false;
-    int notify_res = 0;
-
-    job.notify = [&](int res) {
-        std::lock_guard<std::mutex> lock(notify_mutex);
-        notify_done = true;
-        notify_res = res;
-        notify_cond.notify_one();
-    };
-
-    // Push a job
-    to_do = ThreadToDo::run;
-    run_queue.push_back(job);
-    something_to_do.notify_one();
-
-    // Wait until job finishes
+    call_level++;
+    // we shouldn't have to clean the context I believe
+    write_pc(*cpu, callback_address);
+    write_lr(*cpu, cpu->halt_instruction_pc);
+    push_arguments(callback_address, args);
     thread_lock.unlock();
-    std::unique_lock<std::mutex> lock(notify_mutex);
-    notify_cond.wait(lock, [&]() { return notify_done; });
 
-    return notify_res;
+    // unlock but then immediatly lock back in the run_loop function
+    // shouldn't cause an issue, but maybe we could use a recursive mutex instead
+    run_loop();
+
+    thread_lock.lock();
+
+    // restore the previous context
+    // actually, in most case I don't think this is necessary as the caller
+    // and the callee should respect the same calling convention
+    // but do it just in case
+    load_context(*cpu, previous_ctx);
+    write_tpidruro(*cpu, previous_tpidruro);
+
+    return returned_value;
+}
+
+uint32_t ThreadState::run_guest_function(KernelState &kernel, Address callback_address, uint32_t arg) {
+    // save the previous entry point, just in case
+    const auto old_entry_point = entry_point;
+    entry_point = callback_address;
+
+    // this puts arg in the first register
+    start(kernel, arg, Ptr<void>(0));
+    {
+        // wait for the function to return
+        std::unique_lock<std::mutex> lock(mutex);
+        if (status != ThreadStatus::dormant || to_do == ThreadToDo::run) {
+            status_cond.wait(lock, [&]() {
+                return status == ThreadStatus::dormant && to_do != ThreadToDo::run;
+            });
+        }
+    }
+
+    entry_point = old_entry_point;
+    return returned_value;
 }
 
 void ThreadState::stop_loop() {
@@ -334,32 +340,6 @@ void ThreadState::update_status(ThreadStatus status, std::optional<ThreadStatus>
 
 Address ThreadState::stack_top() const {
     return stack.get() + stack_size;
-}
-
-void ThreadState::clear_run_queue() {
-    const auto lock = std::lock_guard(mutex);
-    if (!run_queue.empty()) {
-        const auto top = run_queue.begin();
-        if (top->notify) {
-            top->notify(read_reg(*cpu, 0));
-        }
-        run_queue.clear();
-    }
-}
-
-// callback run after HLE call on the same thread
-void ThreadState::request_callback(Address callback_address, const std::vector<uint32_t> &args, const std::function<void(int res)> notify) {
-    const auto thread_lock = std::lock_guard(mutex);
-    ThreadJob job;
-    CPUContext ctx = save_context(*cpu);
-    std::copy(args.begin(), args.end(), job.args.begin());
-    job.args_size = args.size();
-    ctx.set_pc(callback_address);
-    ctx.set_lr(cpu->halt_instruction_pc);
-    job.ctx = ctx;
-    job.notify = notify;
-
-    callback_requests.push_back(job);
 }
 
 void ThreadState::suspend() {

@@ -135,7 +135,6 @@ struct KernelState {
     CallbackPtrs callbacks;
 
     ThreadStatePtrs threads;
-    ThreadStatePtr guest_func_runner;
 
     SceKernelModuleInfoPtrs loaded_modules;
     LoadedSysmodules loaded_sysmodules;
@@ -166,16 +165,12 @@ struct KernelState {
 
     bool init(MemState &mem, CallImportFunc call_import, CPUBackend cpu_backend, bool cpu_opt);
     void load_process_param(MemState &mem, Ptr<uint32_t> ptr);
-    ThreadStatePtr create_thread(MemState &mem, const char *name);
+    ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point = Ptr<const void>(0));
     ThreadStatePtr create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
-    void exit_thread(ThreadStatePtr thread);
-    void exit_delete_thread(ThreadStatePtr thread);
 
     ThreadStatePtr get_thread(SceUID thread_id);
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
     void exit_delete_all_threads();
-
-    int run_guest_function(SceUID thread_id, Address callback_address, const std::vector<uint32_t> &args);
 
     void set_memory_watch(bool enabled);
     void invalidate_jit_cache(Address start, size_t length);

@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ CPUProtocol::CPUProtocol(KernelState &kernel, MemState &mem, const CallImportFun
     , mem(&mem) {
 }
 
-void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID thread_id) {
+void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, ThreadState &thread) {
     // Handle trampoline
     // 1. Handle trampoline jumper
     // to save the space we use interrupt to implement jumper
@@ -50,14 +50,9 @@ void CPUProtocol::call_svc(CPUState &cpu, uint32_t svc, Address pc, SceUID threa
 
     // This is usual service call
     uint32_t nid = *Ptr<uint32_t>(pc + 4).get(*mem);
-    call_import(cpu, nid, thread_id);
-
     // TODO: just supply ThreadStatePtr to call_import
-    // the only benefit of using thread_id instead--namely less locking--is now gone.
-    ThreadStatePtr thread = lock_and_find(thread_id, kernel->threads, kernel->mutex);
-
-    // Add callback jobs requested inside hle implementation
-    thread->flush_callback_requests();
+    // the only benefit of using thread_id instead--namely less locking-- has been gone for long
+    call_import(cpu, nid, thread.id);
 
     // ARM recommends claering exclusive state inside interrupt handler
     clear_exclusive(kernel->exclusive_monitor, get_processor_id(cpu));
