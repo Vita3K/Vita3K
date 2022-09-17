@@ -175,7 +175,7 @@ bool ThreadState::run_loop() {
     std::unique_lock<std::mutex> lock(mutex);
     while (true) {
         switch (to_do) {
-        case ThreadToDo::exit:
+        case ThreadToDo::remove:
             if (run_level == 1)
                 update_status(ThreadStatus::dormant);
 
@@ -209,7 +209,7 @@ bool ThreadState::run_loop() {
             lock.lock();
 
             // Handle errors
-            if (to_do == ThreadToDo::exit)
+            if (to_do == ThreadToDo::remove)
                 continue;
 
             if (res < 0) {
@@ -313,7 +313,7 @@ uint32_t ThreadState::run_guest_function(KernelState &kernel, Address callback_a
 void ThreadState::stop_loop() {
     std::lock_guard<std::mutex> lock(mutex);
     const ThreadToDo last_to_do = to_do;
-    to_do = ThreadToDo::exit;
+    to_do = ThreadToDo::remove;
     if (last_to_do == ThreadToDo::wait) {
         something_to_do.notify_one();
     } else {

@@ -21,9 +21,10 @@
 
 EXPORT(int, sceKernelExitThread, int status) {
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
-    thread->exit_delete();
+    thread->exit(status);
 
-    return status;
+    // the thread exits, the return value is not read anyway
+    return 0;
 }
 
 BRIDGE_IMPL(sceKernelExitThread)
