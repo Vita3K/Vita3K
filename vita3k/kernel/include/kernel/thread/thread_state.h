@@ -61,7 +61,7 @@ private:
 
 // Internal
 enum class ThreadToDo {
-    exit,
+    remove,
     run,
     step,
     suspend,
