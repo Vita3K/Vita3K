@@ -684,7 +684,7 @@ EXPORT(int, _sceKernelWaitThreadEndCB, SceUID thid, int *stat, SceUInt *timeout)
     if (!target) {
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
     }
-    process_callbacks(emuenv.kernel, thid);
+    process_callbacks(emuenv.kernel, thread_id);
     return wait_thread_end(waiter, target, stat);
 }
 
