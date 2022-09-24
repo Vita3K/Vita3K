@@ -25,7 +25,7 @@
 	</main_menubar>
 
 	<about name="关于">
-		<vita3k>Vita3K：一个PS Vita/PS Vita TV模拟器。 是全球首款实用的PS Vita/PS Vita TV模拟器。</vita3k>
+		<vita3k>Vita3K：一个PS Vita/PS Vita TV模拟器。 是全球首个实用的PS Vita/PS Vita TV模拟器。</vita3k>
 		<about_vita3k>Vita3K是一款使用C++编写的实验性开源PlayStation Vita/PlayStation Vita TV模拟器，适用于Windows和Linux操作系统。</about_vita3k>
 		<note>注意：目前模拟器仍处于开发的早期阶段。</note>
 		<github_website>如果您有兴趣参与贡献，请浏览我们的GitHub：</github_website>
@@ -49,6 +49,9 @@
 		<license>许可证</license>
 		<shader_cache>着色器缓存</shader_cache>
 		<shader_log>着色器日志</shader_log>
+		<search>搜索</search>
+		<manual>说明书</manual>
+		<update>更新</update>
 		<update_history>更新历史记录</update_history>
 		<history_version>{}版本</history_version>
 		<information>信息</information>
@@ -360,7 +363,7 @@ Please download and install it.</no_font_exist>
 		<successed_install_archive>已成功安装{}个压缩包中的内容：</successed_install_archive>
 		<update_app>更新应用程序至：</update_app>
 		<failed_install_archive>无法安装{}个压缩包中的内容：</failed_install_archive>
-		<not_compatible_content>未发现兼容内容的{}个压缩包。</not_compatible_content>
+		<not_compatible_content>未发现兼容内容的{}个压缩包：</not_compatible_content>
 		<delete_archive>删除压缩包？</delete_archive>
 		<select_license_type>选择许可证类型</select_license_type>
 		<select_bin_rif>选择work.bin/rif</select_bin_rif>
@@ -437,6 +440,133 @@ Please download and install it.</no_font_exist>
 		</language>
 	</settings>
 
+	<settings_dialog>
+		<core name="核心">
+			<modules_mode>模块模式</modules_mode>
+			<modules_list>模块列表</modules_list>
+			<select_modules>选择您所需的模块。</select_modules>
+			<search_modules>搜索模块</search_modules>
+			<clear_list>清除列表</clear_list>
+			<no_modules>模块不存在。
+请下载安装最新的PS Vita固件。</no_modules>
+			<refresh_list>刷新列表</refresh_list>
+		</core>
+		<cpu>
+			<cpu_backend>处理器后端</cpu_backend>
+			<select_cpu_backend>选择您喜欢的处理器后端</select_cpu_backend>
+			<enable_optimizations>启用优化</enable_optimizations>
+			<enable_cpu_jit>勾选此项启用额外处理器的JIT优化。</enable_cpu_jit>
+		</cpu>
+		<gpu>
+			<reset>重置</reset>
+			<backend_renderer>后端渲染器</backend_renderer>
+			<select_backend_renderer>选择您喜欢的后端渲染器。</select_backend_renderer>
+			<gpu>显卡（重启后应用）</gpu>
+			<select_gpu>选择在Vita3K应运行的显卡。</select_gpu>
+			<internal_resolution_upscaling>内部分辨率提升</internal_resolution_upscaling>
+			<enable_upscaling>为Vita3K启用提升效果。
+实验性：不保证游戏能超过1倍的正确渲染。</enable_upscaling>
+			<disable_surface_sync>禁用表面同步</disable_surface_sync>
+			<surface_sync_note>提升速度，勾选此项禁用处理器与显卡之间的表面同步。
+某些游戏需要表面同步。
+如果禁用（特别是在提升时），则可大幅提升性能。</surface_sync_note>
+			<enable_fxaa>启用FXAA抗锯齿</enable_fxaa>
+			<fxaa_note>抗锯齿是一种平滑锯齿边缘的技术。
+FXAA几乎没有性能成本，但会使游戏看起来略微模糊。</fxaa_note>
+			<v_sync>垂直同步</v_sync>
+			<v_sync_note>禁用垂直同步可以解决某些游戏的速度问题。
+建议保留启用它以避免画面撕裂。</v_sync_note>
+			<anisotropic_filtering>各向异性过滤</anisotropic_filtering>
+			<anisotropic_filtering_note>各向异性过滤是一种提高相对于观察者表面倾斜的图像质量技术。
+它没有缺点，但会影响性能。</anisotropic_filtering_note>
+			<shaders>着色器</shaders>
+			<use_shader_cache>使用着色器缓存</use_shader_cache>
+			<shader_cache_note>勾选此项以启用着色器缓存以在游戏启动时对其进行预编译。
+取消勾选则禁用该功能。</shader_cache_note>
+			<use_spir_v_shader>使用Spir-V着色器（已弃用）</use_spir_v_shader>
+			<spir_v_shader_note>将生成的Spir-V着色器直接传递给驱动程序。
+请注意，一些有益的扩展功能将被禁用，
+并非所有显卡都与此兼容。</spir_v_shader_note>
+			<clean_shaders>清除着色器缓存以及日志</clean_shaders>
+		</gpu>
+		<system name="系统">
+			<select_enter_button>确认按键分配
+请选择您的“确认”按键。</select_enter_button>
+			<enter_button_note>这是在应用程序对话框中用作“确认”的按键。
+某些应用程序不使用此功能并获取默认确认按键。</enter_button_note>
+			<circle>O</circle>
+			<cross>X</cross>
+			<pstv_mode>PS TV模式</pstv_mode>
+			<pstv_mode_note>勾选此项启用PS TV模拟模式</pstv_mode_note>
+		</system>
+		<emulator name="模拟器">
+			<enable_full_screen>启动应用程序全屏</enable_full_screen>
+			<enable_ngs_support>启用NGS支持</enable_ngs_support>
+			<ngs_note>取消勾选此项禁用对高级音频库NGS的支持。</ngs_note>
+			<log_level>日志级别</log_level>
+			<select_log_level>选择您喜欢的日志级别。</select_log_level>
+			<archive_log>档案日志</archive_log>
+			<enable_archive_log>勾选此项启用档案日志。</enable_archive_log>
+			<discord_rich_presence>启用Discord Rich Presence显示您在Discord上运行的应用程序。</discord_rich_presence>
+			<texture_cache>纹理缓存</texture_cache>
+			<disable_texture_cache>取消勾选此项禁用纹理缓存。</disable_texture_cache>
+			<performance_overlay>性能叠加</performance_overlay>
+			<display_information>在屏幕上以叠加的形式显示性能信息。</display_information>
+			<detail>细节</detail>
+			<select_detail>选择您喜欢的性能叠加细节。</select_detail>
+			<position>位置</position>
+			<select_position>选择您喜欢的性能叠加位置。</select_position>
+			<enable_case_insensitive>检查在区分大小写的文件系统上启用不区分大小写的路径查找。
+重启时复位</enable_case_insensitive>
+			<allow_emu_searching>允许模拟器尝试在非Windows平台上搜索无论大小写的文件。</allow_emu_searching>
+			<emu_storage_folder>模拟系统存储文件夹</emu_storage_folder>
+			<current_emu_path>当前模拟器路径：</current_emu_path>
+			<change_emu_path>更改模拟器路径</change_emu_path>
+			<change_emu_path_note>更改Vita3K模拟器文件夹路径。
+您需要手动将旧文件夹移动到新位置。</change_emu_path_note>
+			<reset_emu_path>重置模拟器路径</reset_emu_path>
+			<reset_emu_path_note>重置Vita3K模拟器为默认路径。
+您需要手动将旧文件夹移动到默认位置。</reset_emu_path_note>
+		</emulator>
+		<gui name="图形用户界面">
+			<gui_visible>图形用户界面可见</gui_visible>
+			<gui_visible_note>勾选此项在启动应用程序后显示图形用户界面。</gui_visible_note>
+			<info_bar_visible>信息栏可见</info_bar_visible>
+			<info_bar_visible_note>勾选此项在应用选择页面内显示信息栏。</info_bar_visible_note>
+			<livearea_app_screen>Live Area应用程序屏幕</livearea_app_screen>
+			<livearea_app_screen_note>勾选此项在点击应用程序时默认打开Live Area页面。
+如果禁用，请右键应用程序将其打开。</livearea_app_screen_note>
+			<grid_mode>网格模式</grid_mode>
+			<grid_mode_note>勾选此项将应用程序列表设置为网格模式。</grid_mode_note>
+			<app_icon_size>应用程序图标大小</app_icon_size>
+			<select_icon_size>选择您喜欢的图标大小。</select_icon_size>
+			<font_support>字体支持</font_support>
+			<asia_region>亚洲区域</asia_region>
+			<enable_font_support>勾选此项启用对中文以及韩文的字体支持。
+启用此功能将占用更多内存，并且需要您重启模拟器才能生效。</enable_font_support>
+			<theme_background>主题&背景</theme_background>
+			<current_theme_content_id>当前主题内容ID：</current_theme_content_id>
+			<reset_default_theme>重置原始主题</reset_default_theme>
+			<using_theme_background>使用主题背景</using_theme_background>
+			<clean_user_backgrounds>清除用户背景</clean_user_backgrounds>
+			<current_start_background>当前主画面的背景：</current_start_background>
+			<reset_start_background>重置主画面的背景</reset_start_background>
+			<background_alpha>背景透明度</background_alpha>
+			<transparent_background_effect>选择您喜欢的透明背景效果。
+滑到最小不透明以及最大为透明。</transparent_background_effect>
+			<delay_backgrounds>延迟背景</delay_backgrounds>
+			<changing_backgrounds>选择更改背景前的延迟秒数。</changing_backgrounds>
+			<delay_start_screen>延迟开始画面</delay_start_screen>
+			<returning_start_screen>选择返回开始画面前的延迟秒速。</returning_start_screen>
+		</gui>
+		<button>
+			<save_reboot>保存并重启</save_reboot>
+			<save_apply>保存并应用</save_apply>
+			<save>保存</save>
+			<keep_changes>点击保存保留您的更改。</keep_changes>
+		</button>
+	</settings_dialog>
+
 	<trophy_collection>
 		<search>搜索</search>
 		<delete_trophy>删除奖杯</delete_trophy>
@@ -493,7 +623,7 @@ Please download and install it.</no_font_exist>
 
 	<welcome name="欢迎来到Vita3K">
 		<line_first>Vita3K PlayStation Vita模拟器</line_first>
-		<line_second>Vita3K是一款使用C++编写的开源PlayStation Vita/PlayStation Vita TV模拟器，适用于Windows和Linux。</line_second>
+		<line_second>Vita3K是一个使用C++编写的开源PlayStation Vita/PlayStation Vita TV模拟器，适用于Windows和Linux。</line_second>
 		<line_third>目前模拟器仍处于早期阶段，因此非常感谢任何反馈和测试。</line_third>
 		<line_fourth>要开始使用，请安装PS Vita固件和字体包。</line_fourth>
 		<download_firmware>Download Firmware</download_firmware>

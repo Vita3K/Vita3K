@@ -49,6 +49,9 @@
 		<license>License</license>
 		<shader_cache>Shader Cache</shader_cache>
 		<shader_log>Shader Log</shader_log>
+		<search>Search</search>
+		<manual>Manual</manual>
+		<update>Update</update>
 		<update_history>Update History</update_history>
 		<history_version>Version {}</history_version>
 		<information>Information</information>
@@ -436,6 +439,133 @@ Please download and install it.</no_font_exist>
 			</input_language>
 		</language>
 	</settings>
+
+	<settings_dialog>
+		<core name="Core">
+			<modules_mode>Modules Mode</modules_mode>
+			<modules_list>Modules List</modules_list>
+			<select_modules>Select your desired modules.</select_modules>
+			<search_modules>Search Modules</search_modules>
+			<clear_list>Clear List</clear_list>
+			<no_modules>No modules present.
+Please download and install the last PS Vita firmware.</no_modules>
+			<refresh_list>Refresh List</refresh_list>
+		</core>
+		<cpu>
+			<cpu_backend>CPU Backend</cpu_backend>
+			<select_cpu_backend>Select your preferred CPU backend.</select_cpu_backend>
+			<enable_optimizations>Enable optimizations</enable_optimizations>
+			<enable_cpu_jit>Check the box to enable additional CPU JIT optimizations.</enable_cpu_jit>
+		</cpu>
+		<gpu>
+			<reset>Reset</reset>
+			<backend_renderer>Backend Renderer</backend_renderer>
+			<select_backend_renderer>Select your preferred backend renderer.</select_backend_renderer>
+			<gpu>GPU (Reboot to apply)</gpu>
+			<select_gpu>Select the GPU Vita3K should run on.</select_gpu>
+			<internal_resolution_upscaling>Internal Resolution Upscaling</internal_resolution_upscaling>
+			<enable_upscaling>Enable upscaling for Vita3K.
+Experimental: games are not guaranteed to render properly at more than 1x.</enable_upscaling>
+			<disable_surface_sync>Disable surface sync</disable_surface_sync>
+			<surface_sync_note>Speed hack, check the box to disable surface syncing between CPU and GPU.
+Surface syncing is needed by a few games.
+Give a big performance boost if disabled (in particular when upscaling is on).</surface_sync_note>
+			<enable_fxaa>Enable anti-aliasing (FXAA)</enable_fxaa>
+			<fxaa_note>Anti-aliasing is a technique for smoothing out jagged edges.
+FXAA comes at almost no performance cost but makes games look slightly blurry.</fxaa_note>
+			<v_sync>V-Sync</v_sync>
+			<v_sync_note>Disabling V-Sync can fix the speed issue in some games.
+It is recommended to keep it enabled to avoid tearing.</v_sync_note>
+			<anisotropic_filtering>Anisotropic Filtering</anisotropic_filtering>
+			<anisotropic_filtering_note>Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped relative to the viewer.
+It has no drawback but can impact performance.</anisotropic_filtering_note>
+			<shaders>Shaders</shaders>
+			<use_shader_cache>Use shader cache</use_shader_cache>
+			<shader_cache_note>Check the box to enable shader cache to pre-compile it at game startup.
+Uncheck to disable this feature.</shader_cache_note>
+			<use_spir_v_shader>Use Spir-V shader (deprecated)</use_spir_v_shader>
+			<spir_v_shader_note>Pass generated Spir-V shader directly to driver.
+Note that some beneficial extensions will be disabled,
+and not all GPUs are compatible with this.</spir_v_shader_note>
+			<clean_shaders>Clean Shaders Cache and Log</clean_shaders>
+		</gpu>
+		<system name="System">
+			<select_enter_button>Enter button assignment
+Select your 'Enter' button.</select_enter_button>
+			<enter_button_note>This is the button that is used as 'Confirm' in applications dialogs.
+Some applications don't use this and get default confirmation button.</enter_button_note>
+			<circle>Circle</circle>
+			<cross>Cross</cross>
+			<pstv_mode>PS TV Mode</pstv_mode>
+			<pstv_mode_note>Check the box to enable PS TV Emulated mode.</pstv_mode_note>
+		</system>
+		<emulator name="Emulator">
+			<enable_full_screen>Boot apps in full screen</enable_full_screen>
+			<enable_ngs_support>Enable NGS support</enable_ngs_support>
+			<ngs_note>Uncheck the box to disable support for advanced audio library NGS.</ngs_note>
+			<log_level>Log Level</log_level>
+			<select_log_level>Select your preferred log level.</select_log_level>
+			<archive_log>Archive Log</archive_log>
+			<enable_archive_log>Check the box to enable Archive Log.</enable_archive_log>
+			<discord_rich_presence>Enables Discord Rich Presence to show what application you're running on Discord.</discord_rich_presence>
+			<texture_cache>Texture Cache</texture_cache>
+			<disable_texture_cache>Uncheck the box to disable texture cache.</disable_texture_cache>
+			<performance_overlay>Performance overlay</performance_overlay>
+			<display_information>Display performance information on the screen as an overlay.</display_information>
+			<detail>Detail</detail>
+			<select_detail>Select your preferred perfomance overley detail.</select_detail>
+			<position>Position</position>
+			<select_position>Select your preferred perfomance overley position.</select_position>
+			<enable_case_insensitive>Check to enable case-insensitive path finding on case sensitive filesystems.
+RESETS ON RESTART.</enable_case_insensitive>
+			<allow_emu_searching>Allows emulator to attempt searching for files regardless of case on non-Windows platforms.</allow_emu_searching>
+			<emu_storage_folder>Emulated System Storage Folder</emu_storage_folder>
+			<current_emu_path>Current emulator path:</current_emu_path>
+			<change_emu_path>Change Emulator Path</change_emu_path>
+			<change_emu_path_note>Change Vita3K emulator folder path.
+You will need to move your old folder to the new location manually.</change_emu_path_note>
+			<reset_emu_path>Reset Emulator Path</reset_emu_path>
+			<reset_emu_path_note>Reset Vita3K emulator path to default.
+You will need to move your old folder to the default location manually.</reset_emu_path_note>
+		</emulator>
+		<gui name="GUI">
+			<gui_visible>GUI Visible</gui_visible>
+			<gui_visible_note>Check the box to show GUI after booting an application.</gui_visible_note>
+			<info_bar_visible>Info Bar Visible</info_bar_visible>
+			<info_bar_visible_note>Check the box to show an info bar inside app selector.</info_bar_visible_note>
+			<livearea_app_screen>Live Area App Screen</livearea_app_screen>
+			<livearea_app_screen_note>Check the box to open the Live Area by default when clicking on an application.
+If disabled, right click on an application to open it.</livearea_app_screen_note>
+			<grid_mode>Grid Mode</grid_mode>
+			<grid_mode_note>Check the box to set the app list to grid mode.</grid_mode_note>
+			<app_icon_size>App Icon Size</app_icon_size>
+			<select_icon_size>Select your preferred icon size.</select_icon_size>
+			<font_support>Font support</font_support>
+			<asia_region>Asia Region</asia_region>
+			<enable_font_support>Check this box to enable font support for Chinese and Korean.
+Enabling this will use more memory and will require you to restart the emulator.</enable_font_support>
+			<theme_background>Theme & Background</theme_background>
+			<current_theme_content_id>Current theme content id:</current_theme_content_id>
+			<reset_default_theme>Reset Default Theme</reset_default_theme>
+			<using_theme_background>Using theme background</using_theme_background>
+			<clean_user_backgrounds>Clean User Backgrounds</clean_user_backgrounds>
+			<current_start_background>Current start background:</current_start_background>
+			<reset_start_background>Reset Start Background</reset_start_background>
+			<background_alpha>Background Alpha</background_alpha>
+			<transparent_background_effect>Select your preferred transparent background effect.
+The minimum slider is opaque and the maximum is transparent.</transparent_background_effect>
+			<delay_backgrounds>Delay for backgrounds</delay_backgrounds>
+			<changing_backgrounds>Select the delay in seconds before changing backgrounds.</changing_backgrounds>
+			<delay_start_screen>Delay for start screen</delay_start_screen>
+			<returning_start_screen>Select the delay in seconds before returning to the start screen.</returning_start_screen>
+		</gui>
+		<button>
+			<save_reboot>Save & Reboot</save_reboot>
+			<save_apply>Save & Apply</save_apply>
+			<save>Save</save>
+			<keep_changes>Click on Save to keep your changes.</keep_changes>
+		</button>
+	</settings_dialog>
 
 	<trophy_collection>
 		<search>Search</search>

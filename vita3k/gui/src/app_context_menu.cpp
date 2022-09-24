@@ -352,11 +352,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             if (!emuenv.cfg.show_live_area_screen && ImGui::BeginMenu("Live Area")) {
                 if (ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))
                     open_live_area(gui, emuenv, app_path);
-                if (ImGui::MenuItem("Search", nullptr))
+                if (ImGui::MenuItem(lang["search"].c_str(), nullptr))
                     open_search(APP_INDEX->title);
-                if (fs::exists(MANUAL_PATH) && !fs::is_empty(MANUAL_PATH) && ImGui::MenuItem("Manual", nullptr))
+                if (fs::exists(MANUAL_PATH) && !fs::is_empty(MANUAL_PATH) && ImGui::MenuItem(lang["manual"].c_str(), nullptr))
                     open_manual(gui, emuenv, app_path);
-                if (ImGui::MenuItem("Update"))
+                if (ImGui::MenuItem(lang["update"].c_str()))
                     update_app(gui, emuenv, app_path);
                 ImGui::EndMenu();
             }

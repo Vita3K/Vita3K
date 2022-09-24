@@ -146,6 +146,9 @@ struct LangState {
         { "license", "License" },
         { "shader_cache", "Shader Cache" },
         { "shader_log", "Shader Log" },
+        { "search", "Search" },
+        { "manual", "Manual" },
+        { "update", "Update" },
         { "update_history", "Update History" },
         { "history_version", "Version {}" },
         { "information", "Information" },
@@ -362,6 +365,119 @@ struct LangState {
         Language language;
     };
     Settings settings;
+    struct SettingsDialog {
+        std::map<std::string, std::string> core = {
+            { "title", "Core" },
+            { "modules_mode", "Modules Mode" },
+            { "modules_list", "Modules List" },
+            { "select_modules", "Select your desired modules." },
+            { "search_modules", "Search Modules" },
+            { "clear_list", "Clear List" },
+            { "no_modules", "No modules present.\nPlease download and install the last PS Vita firmware." },
+            { "refresh_list", "Refresh List" }
+        };
+        std::map<std::string, std::string> cpu = {
+            { "cpu_backend", "CPU Backend" },
+            { "select_cpu_backend", "Select your preferred CPU backend." },
+            { "enable_optimizations", "Enable optimizations" },
+            { "enable_cpu_jit", "Check the box to enable additional CPU JIT optimizations." }
+        };
+        std::map<std::string, std::string> gpu = {
+            { "reset", "Reset" },
+            { "backend_renderer", "Backend Renderer" },
+            { "select_backend_renderer", "Select your preferred backend renderer." },
+            { "gpu", "GPU (Reboot to apply)" },
+            { "select_gpu", "Select the GPU Vita3K should run on." },
+            { "internal_resolution_upscaling", "Internal Resolution Upscaling" },
+            { "enable_upscaling", "Enable upscaling for Vita3K.\nExperimental: games are not guaranteed to render properly at more than 1x." },
+            { "disable_surface_sync", "Disable surface sync" },
+            { "surface_sync_note", "Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on)." },
+            { "enable_fxaa", "Enable anti-aliasing (FXAA)" },
+            { "fxaa_note", "Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry." },
+            { "v_sync", "V-Sync" },
+            { "v_sync_note", "Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid tearing." },
+            { "anisotropic_filtering", "Anisotropic Filtering" },
+            { "anisotropic_filtering_note", "Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped relative to the viewer.\nIt has no drawback but can impact performance." },
+            { "shaders", "Shaders" },
+            { "use_shader_cache", "Use shader cache" },
+            { "shader_cache_note", "Check the box to enable shader cache to pre-compile it at game startup.\nUncheck to disable this feature." },
+            { "use_spir_v_shader", "Use Spir-V shader (deprecated)" },
+            { "spir_v_shader_note", "Pass generated Spir-V shader directly to driver.\nNote that some beneficial extensions will be disabled,\nand not all GPUs are compatible with this." },
+            { "clean_shaders", "Clean Shaders Cache and Log" }
+        };
+        std::map<std::string, std::string> system = {
+            { "title", "System" },
+            { "select_enter_button", "Enter button assignment \nSelect your 'Enter' button." },
+            { "enter_button_note", "This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and get default confirmation button." },
+            { "circle", "Circle" },
+            { "cross", "Cross" },
+            { "pstv_mode", "PS TV Mode" },
+            { "pstv_mode_note", "Check the box to enable PS TV Emulated mode." }
+        };
+        std::map<std::string, std::string> emulator = {
+            { "title", "Emulator" },
+            { "enable_full_screen", "Boot apps in full screen" },
+            { "enable_ngs_support", "Enable NGS support" },
+            { "ngs_note", "Uncheck the box to disable support for advanced audio library NGS." },
+            { "log_level", "Log Level" },
+            { "select_log_level", "Select your preferred log level." },
+            { "archive_log", "Archive Log" },
+            { "enable_archive_log", "Check the box to enable Archive Log." },
+            { "discord_rich_presence", "Enables Discord Rich Presence to show what application you're running on Discord." },
+            { "texture_cache", "Texture Cache" },
+            { "disable_texture_cache", "Uncheck the box to disable texture cache." },
+            { "performance_overlay", "Performance overlay" },
+            { "display_information", "Display performance information on the screen as an overlay." },
+            { "detail", "Detail" },
+            { "select_detail", "Select your preferred perfomance overley detail." },
+            { "position", "Position" },
+            { "select_position", "Select your preferred perfomance overley position." },
+            { "enable_case_insensitive", "Check to enable case-insensitive path finding on case sensitive filesystems. \nRESETS ON RESTART." },
+            { "allow_emu_searching", "Allows emulator to attempt searching for files regardless of case on non-Windows platforms." },
+            { "emu_storage_folder", "Emulated System Storage Folder" },
+            { "current_emu_path", "Current emulator path:" },
+            { "change_emu_path", "Change Emulator Path" },
+            { "change_emu_path_note", "Change Vita3K emulator folder path.\nYou will need to move your old folder to the new location manually." },
+            { "reset_emu_path", "Reset Emulator Path" },
+            { "reset_emu_path_note", "Reset Vita3K emulator path to default.\nYou will need to move your old folder to the default location manually." }
+        };
+        std::map<std::string, std::string> gui = {
+            { "title", "GUI" },
+            { "gui_visible", "GUI Visible" },
+            { "gui_visible_note", "Check the box to show GUI after booting an application." },
+            { "info_bar_visible", "Info Bar Visible" },
+            { "info_bar_visible_note", "Check the box to show an info bar inside app selector." },
+            { "livearea_app_screen", "Live Area App Screen" },
+            { "livearea_app_screen_note", "Check the box to open the Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it." },
+            { "grid_mode", "Grid Mode" },
+            { "grid_mode_note", "Check the box to set the app list to grid mode." },
+            { "app_icon_size", "App Icon Size" },
+            { "select_icon_size", "Select your preferred icon size." },
+            { "font_support", "Font support" },
+            { "asia_region", "Asia Region" },
+            { "enable_font_support", "Check this box to enable font support for Korean and Traditional Chinese.\nEnabling this will use more memory and will require you to restart the emulator." },
+            { "theme_background", "Theme & Background" },
+            { "current_theme_content_id", "Current theme content id:" },
+            { "reset_default_theme", "Reset Default Theme" },
+            { "using_theme_background", "Using theme background" },
+            { "clean_user_backgrounds", "Clean User Backgrounds" },
+            { "current_start_background", "Current start background:" },
+            { "reset_start_background", "Reset Start Background" },
+            { "background_alpha", "Background Alpha" },
+            { "transparent_background_effect", "Select your preferred transparent background effect.\nThe minimum slider is opaque and the maximum is transparent." },
+            { "delay_backgrounds", "Delay for backgrounds" },
+            { "changing_backgrounds", "Select the delay in seconds before changing backgrounds." },
+            { "delay_start_screen", "Delay for start screen" },
+            { "returning_start_screen", "Select the delay in seconds before returning to the start screen." }
+        };
+        std::map<std::string, std::string> button = {
+            { "save_reboot", "Save & Reboot" },
+            { "save_apply", "Save & Apply" },
+            { "save", "Save" },
+            { "keep_changes", "Click on Save to keep your changes." }
+        };
+    };
+    SettingsDialog settings_dialog;
     std::map<std::string, std::string> trophy_collection = {
         { "search", "Search" },
         { "delete_trophy", "Delete Trophy" },

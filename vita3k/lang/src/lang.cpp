@@ -282,6 +282,32 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     }
                 }
 
+                // Settings Dialog
+                const auto settings_dialog = lang_child.child("settings_dialog");
+                if (!settings_dialog.empty()) {
+                    // Core
+                    set_lang_string(lang.settings_dialog.core, settings_dialog.child("core"));
+
+                    // CPU
+                    set_lang_string(lang.settings_dialog.cpu, settings_dialog.child("cpu"));
+
+                    // GPU
+                    set_lang_string(lang.settings_dialog.gpu, settings_dialog.child("gpu"));
+
+                    // System
+                    set_lang_string(lang.settings_dialog.system, settings_dialog.child("system"));
+
+                    // Emulator
+                    set_lang_string(lang.settings_dialog.emulator, settings_dialog.child("emulator"));
+
+                    // GUI
+                    set_lang_string(lang.settings_dialog.gui, settings_dialog.child("gui"));
+
+                    // Main
+                    set_lang_string(lang.settings_dialog.button, settings_dialog.child("button"));
+
+                }
+
                 // Trophy Collection
                 set_lang_string(lang.trophy_collection, lang_child.child("trophy_collection"));
 
