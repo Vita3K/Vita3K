@@ -51,6 +51,8 @@ void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, co
     if (color_surface_fin->data.address() == 0) {
         color_surface_fin = nullptr;
         vk_format = vk::Format::eR8G8B8A8Unorm;
+    } else if (features.use_rgba16_for_rgba8 && vk_format == vk::Format::eR8G8B8A8Unorm) {
+        vk_format = vk::Format::eR16G16B16A16Sfloat;
     }
 
     SceGxmDepthStencilSurface *ds_surface_fin = &context.record.depth_stencil_surface;
