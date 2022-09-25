@@ -834,6 +834,34 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     } else
         ImGui::PopStyleColor();
 
+    // Network
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
+    if (ImGui::BeginTabItem("Network")) {
+        ImGui::PopStyleColor();
+        ImGui::Spacing();
+        ImGui::Checkbox("Enable HTTP", &emuenv.cfg.http_enable);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Check this box to enable games to use the HTTP protocol on the internet.");
+        ImGui::Spacing();
+        ImGui::SliderInt("HTTP Timeout Attempts", &emuenv.cfg.http_timeout_attempts, 0, 100);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("How many attempts to do when the server doesn't answer. Could be useful if you have very unstable or EXTREMELLY SLOW internet");
+        ImGui::SliderInt("HTTP Timeout Sleep", &emuenv.cfg.http_timeout_sleep_ms, 50, 3000);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer. Could be useful if you have very unstable or EXTREMELLY SLOW internet");
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::SliderInt("HTTP Read End Attempts", &emuenv.cfg.http_read_end_attempts, 0, 100);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("How many attempts to do when there isn't more data to read, lower can improve performance but can make games unstable if you have bad enough internet.");
+        ImGui::SliderInt("HTTP Read End Sleep", &emuenv.cfg.http_read_end_sleep_ms, 50, 3000);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Attempt sleep time when there isn't more data to read, lower can improve performance but can make games unstable if you have bad enough internet.");
+        ImGui::EndTabItem();
+    } else
+        ImGui::PopStyleColor();
+
     // Debug
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("Debug")) {

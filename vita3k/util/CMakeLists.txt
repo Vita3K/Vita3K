@@ -15,6 +15,7 @@ add_library(
 	include/util/instrset_detect.h
 	include/util/lock_and_find.h
 	include/util/log.h
+	include/util/net_utils.h
 	include/util/preprocessor.h
 	include/util/pool.h
 	include/util/string_utils.h
@@ -26,4 +27,4 @@ add_library(
 )
 
 target_include_directories(util PUBLIC include)
-target_link_libraries(util PUBLIC ${Boost_LIBRARIES} fmt spdlog)
+target_link_libraries(util PUBLIC ${Boost_LIBRARIES} fmt spdlog http mem)

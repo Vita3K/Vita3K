@@ -108,6 +108,8 @@ public:
      */
     const std::vector<std::string> tracy_available_advanced_profiling_modules = {
         "SceAudio",
+        "SceHttp",
+        "SceSsl",
         "SceTouch"
     };
 

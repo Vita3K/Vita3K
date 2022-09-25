@@ -171,8 +171,8 @@ EXPORT(int, sceNetCtlAdhocGetResult, int eventType, int *errorCode) {
         return RET_ERROR(SCE_NET_CTL_ERROR_INVALID_ADDR);
     }
 
-    *errorCode = SCE_NET_CTL_ERROR_FLIGHT_MODE_ENABLED;
-    return STUBBED("errorCode = SCE_NET_CTL_ERROR_FLIGHT_MODE_ENABLED");
+    *errorCode = 0;
+    return 0;
 }
 
 EXPORT(int, sceNetCtlAdhocGetState, int *state) {
@@ -184,8 +184,8 @@ EXPORT(int, sceNetCtlAdhocGetState, int *state) {
         return RET_ERROR(SCE_NET_CTL_ERROR_INVALID_ADDR);
     }
 
-    *state = SCE_NETCTL_STATE_DISCONNECTED;
-    return STUBBED("state = SCE_NETCTL_STATE_DISCONNECTED");
+    *state = SCE_NETCTL_STATE_CONNECTED;
+    return STUBBED("state = SCE_NETCTL_STATE_CONNECTED");
 }
 
 EXPORT(int, sceNetCtlAdhocRegisterCallback, Ptr<void> func, Ptr<void> arg, int *cid) {
@@ -202,7 +202,7 @@ EXPORT(int, sceNetCtlAdhocRegisterCallback, Ptr<void> func, Ptr<void> arg, int *
     // Find the next available slot
     int next_id = 0;
     for (const auto &callback : emuenv.netctl.adhocCallbacks) {
-        if (callback.pc == NULL) {
+        if (callback.pc == 0) {
             break;
         }
         next_id++;
@@ -228,8 +228,8 @@ EXPORT(int, sceNetCtlAdhocUnregisterCallback, int cid) {
     }
 
     const std::lock_guard<std::mutex> lock(emuenv.netctl.mutex);
-    emuenv.netctl.adhocCallbacks[cid].pc = NULL;
-    emuenv.netctl.adhocCallbacks[cid].arg = NULL;
+    emuenv.netctl.adhocCallbacks[cid].pc = 0;
+    emuenv.netctl.adhocCallbacks[cid].arg = 0;
     return 0;
 }
 
@@ -250,13 +250,13 @@ EXPORT(int, sceNetCtlCheckCallback) {
     // TODO: Check in which order the callbacks are executed
 
     for (auto &callback : emuenv.netctl.callbacks) {
-        if (callback.pc != NULL) {
+        if (callback.pc != 0) {
             thread->run_callback(callback.pc, { 1, callback.arg });
         }
     }
 
     for (auto &callback : emuenv.netctl.adhocCallbacks) {
-        if (callback.pc != NULL) {
+        if (callback.pc != 0) {
             thread->run_callback(callback.pc, { 1, callback.arg });
         }
     }
@@ -343,8 +343,8 @@ EXPORT(int, sceNetCtlInetGetResult, int eventType, int *errorCode) {
         return RET_ERROR(SCE_NET_CTL_ERROR_INVALID_ADDR);
     }
 
-    *errorCode = SCE_NET_CTL_ERROR_FLIGHT_MODE_ENABLED;
-    return STUBBED("errorCode = SCE_NET_CTL_ERROR_FLIGHT_MODE_ENABLED");
+    *errorCode = 0;
+    return 0;
 }
 
 EXPORT(int, sceNetCtlInetGetState, int *state) {
@@ -356,8 +356,8 @@ EXPORT(int, sceNetCtlInetGetState, int *state) {
         return RET_ERROR(SCE_NET_CTL_ERROR_INVALID_ADDR);
     }
 
-    *state = SCE_NETCTL_STATE_DISCONNECTED;
-    return STUBBED("state = SCE_NETCTL_STATE_DISCONNECTED");
+    *state = SCE_NETCTL_STATE_CONNECTED;
+    return STUBBED("state = SCE_NETCTL_STATE_CONNECTED");
 }
 
 EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> func, Ptr<void> arg, int *cid) {
@@ -374,7 +374,7 @@ EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> func, Ptr<void> arg, int *c
     // Find the next available slot
     int next_id = 0;
     for (const auto &callback : emuenv.netctl.callbacks) {
-        if (callback.pc == NULL) {
+        if (callback.pc == 0) {
             break;
         }
         next_id++;
@@ -400,8 +400,9 @@ EXPORT(int, sceNetCtlInetUnregisterCallback, int cid) {
     }
 
     const std::lock_guard<std::mutex> lock(emuenv.netctl.mutex);
-    emuenv.netctl.callbacks[cid].pc = NULL;
-    emuenv.netctl.callbacks[cid].arg = NULL;
+    emuenv.netctl.callbacks[cid].pc = 0;
+    emuenv.netctl.callbacks[cid].arg = 0;
+
     return 0;
 }
 
@@ -411,8 +412,8 @@ EXPORT(int, sceNetCtlInit) {
     }
 
     const std::lock_guard<std::mutex> lock(emuenv.netctl.mutex);
-    emuenv.netctl.adhocCallbacks.fill({ NULL, NULL });
-    emuenv.netctl.callbacks.fill({ NULL, NULL });
+    emuenv.netctl.adhocCallbacks.fill({ 0, 0 });
+    emuenv.netctl.callbacks.fill({ 0, 0 });
 
     emuenv.netctl.inited = true;
     return STUBBED("Stub");

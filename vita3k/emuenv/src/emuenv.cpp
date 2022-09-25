@@ -24,6 +24,7 @@
 #include <display/state.h>
 #include <emuenv/window.h>
 #include <gxm/state.h>
+#include <http/state.h>
 #include <ime/state.h>
 #include <io/state.h>
 #include <kernel/state.h>
@@ -75,7 +76,9 @@ EmuEnvState::EmuEnvState()
     , _sfo_handle(new SfoFile)
     , sfo_handle(*_sfo_handle)
     , _gdb(new GDBState)
-    , gdb(*_gdb) {
+    , gdb(*_gdb)
+    , _http(new HTTPState)
+    , http(*_http) {
 }
 
 // this is necessary to forward declare unique_ptrs (so that they can call the appropriate destructor)
