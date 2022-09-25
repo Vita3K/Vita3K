@@ -208,8 +208,10 @@ elseif(WIN32)
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/script/update-windows.bat" "$<TARGET_FILE_DIR:vita3k>/update-vita3k.bat"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin" "$<TARGET_FILE_DIR:vita3k>/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${PROJECT_SOURCE_DIR}/external/sdl/windows/lib/x64/SDL2.dll" "$<TARGET_FILE_DIR:vita3k>"
+		if(NOT OPENSSL_FOUND)
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64/bin/libssl-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64/bin/libcrypto-3-x64.dll" "$<TARGET_FILE_DIR:vita3k>"
+		endif()
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${UNICORN_DLL_DIR}/unicorn.dll" "$<TARGET_FILE_DIR:vita3k>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${UNICORN_DLL_DIR}/libgcc_s_seh-1.dll" "$<TARGET_FILE_DIR:vita3k>"
 		COMMAND ${CMAKE_COMMAND} -E copy_if_different "${UNICORN_DLL_DIR}/libwinpthread-1.dll" "$<TARGET_FILE_DIR:vita3k>")
