@@ -266,18 +266,10 @@ set_property(TARGET psvpfsparser PROPERTY FOLDER externals)
 set_property(TARGET libzRIF PROPERTY FOLDER externals)
 set_property(TARGET libb64 PROPERTY FOLDER externals)
 
-# Only include the openssl submodule on windows as in linux we can use the headers from /usr/include/openssl
-if(WIN32)
-	find_package(OpenSSL)
+find_package(OpenSSL QUIET)
 
-	if(OPENSSL_FOUND)
-		message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
-		message("OpenSSL root dir: ${OPENSSL_ROOT_DIR}")
-		message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
-
-		add_library(ssl INTERFACE)
-		target_link_libraries(ssl INTERFACE OpenSSL::SSL)
-	else()
+if(NOT OPENSSL_FOUND)
+	if(MSVC)
 		message("OpenSSL not found, using prebuilt version")
 
 		if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/openssl.zip")
@@ -292,13 +284,17 @@ if(WIN32)
 				WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
 		endif()
 
-		add_library(ssl INTERFACE)
-		target_include_directories(ssl INTERFACE "${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64/include")
-		target_link_libraries(ssl INTERFACE
-			"${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64/lib/libcrypto.lib"
-			"${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64/lib/libssl.lib")
+		set(OPENSSL_ROOT_DIR "${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64")
 	endif()
+
+	find_package(OpenSSL REQUIRED)
 endif()
+
+message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
+message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
+
+add_library(ssl INTERFACE)
+target_link_libraries(ssl INTERFACE OpenSSL::SSL)
 
 file(GLOB LIBATRAC9_SOURCES
 	LibAtrac9/C/src/*.c
