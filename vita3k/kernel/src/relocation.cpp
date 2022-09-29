@@ -81,7 +81,7 @@ struct EntryFormat1Alt : Entry {
     uint32_t symbol_segment : 4;
     uint32_t code : 8;
     uint32_t patch_segment : 2;
-    uint32_t unknown : 2;
+    uint32_t addend_words : 2;
     uint32_t pad : 4;
 
     uint32_t offset;
@@ -416,7 +416,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
 
                 const Address offset = format1_entry->offset;
                 const Address p = patch_seg_start + offset;
-                const Address a = 0;
+                const Address a = format1_entry->addend_words * sizeof(uint32_t);
 
                 LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1_VAR_IMPORT]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}",
                     format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
