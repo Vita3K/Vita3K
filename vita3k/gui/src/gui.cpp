@@ -534,10 +534,10 @@ void get_user_apps_title(GuiState &gui, EmuEnvState &emuenv) {
 
 void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
     gui.app_selector.sys_apps.clear();
-    const std::vector<std::string> sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026" };
+    constexpr std::array sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026" };
     for (const auto &app : sys_apps_list) {
         vfs::FileBuffer params;
-        if (vfs::read_file(VitaIoDevice::vs0, params, emuenv.pref_path, "app/" + app + "/sce_sys/param.sfo")) {
+        if (vfs::read_file(VitaIoDevice::vs0, params, emuenv.pref_path, std::string("app/") + app + "/sce_sys/param.sfo")) {
             SfoFile sfo_handle;
             sfo::load(sfo_handle, params);
             sfo::get_data_by_key(emuenv.app_info.app_version, sfo_handle, "APP_VER");

@@ -193,7 +193,7 @@ void pre_compile_program(GLState &renderer, const char *base_path, const char *t
         // Compile Fragment Shader
         const auto frag_hash_hex = convert_hash_to_hex(hash.frag);
         const SharedGLObject frag_shader = compile_shader(base_path, title_id, self_name, renderer.shader_version,
-            frag_hash_hex.c_str(), "frag", GL_FRAGMENT_SHADER, renderer.fragment_shader_cache, hash.frag);
+            frag_hash_hex, "frag", GL_FRAGMENT_SHADER, renderer.fragment_shader_cache, hash.frag);
         if (!frag_shader) {
             return;
         }
@@ -201,7 +201,7 @@ void pre_compile_program(GLState &renderer, const char *base_path, const char *t
         // Compile Vertex Shader
         const auto vert_hash_hex = convert_hash_to_hex(hash.vert);
         const SharedGLObject vert_shader = compile_shader(base_path, title_id, self_name, renderer.shader_version,
-            vert_hash_hex.c_str(), "vert", GL_VERTEX_SHADER, renderer.vertex_shader_cache, hash.vert);
+            vert_hash_hex, "vert", GL_VERTEX_SHADER, renderer.vertex_shader_cache, hash.vert);
         if (!vert_shader) {
             return;
         }

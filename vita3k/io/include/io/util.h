@@ -46,7 +46,7 @@ struct FileInfo {
     int access_mode;
 
     FileInfo()
-        : vita_loc("")
+        : vita_loc()
         , open_mode(SCE_O_RDONLY)
         , file_mode(SCE_SO_IFREG | SCE_SO_IROTH)
         , access_mode(SCE_S_IRUSR) {}
@@ -62,7 +62,7 @@ protected:
 
 public:
     VitaStats() {
-        file_info.vita_loc = "";
+        file_info.vita_loc.clear();
     }
 
     VitaStats(const char *vita, const std::string &t, const fs::path &file) {

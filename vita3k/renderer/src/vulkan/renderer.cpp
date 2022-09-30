@@ -469,7 +469,7 @@ std::vector<std::string> VKState::get_gpu_list() {
     // First value is always automatic
     gpu_list.push_back("Automatic");
     for (const vk::PhysicalDevice gpu : gpus)
-        gpu_list.push_back(std::string(gpu.getProperties().deviceName.data()));
+        gpu_list.emplace_back(gpu.getProperties().deviceName.data());
 
     return gpu_list;
 }

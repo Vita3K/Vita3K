@@ -677,6 +677,7 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
             case SCE_GXM_TEXTURE_FORMAT_VYUY422_CSC1:
                 LOG_ERROR("Yuv Texture format not implemented: {}", fmt);
                 assert(false);
+                break;
             default:
                 assert(false);
             }

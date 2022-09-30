@@ -177,7 +177,7 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
     const TextureCacheHash hash = renderer::texture::hash_texture_data(gxm_texture, mem);
 
     if (g_dumped_hashes.find(hash) != g_dumped_hashes.end()) {
-        if (log_parameter && parameter_name != "") {
+        if (log_parameter && !parameter_name.empty()) {
             LOG_TRACE("Setting {} of {} by texture {}", parameter_name, hex_string(program_hash), g_dumped_hashes[hash]);
         }
         return;
