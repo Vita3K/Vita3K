@@ -178,6 +178,12 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
         return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN);
     }
 
+    if (!emuenv.cfg.http_enable) {
+        // Need to push the connection here so the id exists when "sending" the request
+        emuenv.http.connections.emplace(connId, SceConnection{ tmplId, urlStr, enableKeepalive, isSecure, sockfd });
+        return 0;
+    }
+
     const addrinfo hints = {
         AI_PASSIVE, /* For wildcard IP address */
         AF_UNSPEC, /* Allow IPv4 or IPv6 */
