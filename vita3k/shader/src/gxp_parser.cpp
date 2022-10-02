@@ -164,6 +164,12 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
                         buffer.reg_start_offset = std::min(buffer.reg_start_offset, static_cast<uint32_t>(offset));
                     }
                 }
+
+                // hack (kind of) : Uncharted declares a uniform containing only a vec4 g_mSkinTransforms[96]
+                // however it accesses  g_mSkinTransforms[147] (for some default value I guess)
+                // so set the size to unbounded in the shader
+                if (var_name == "g_mSkinTransforms")
+                    uniform_buffers[parameter.container_index].size = SCE_GXM_MAX_UB_IN_FLOAT_UNIT;
             }
             break;
         }
@@ -209,7 +215,7 @@ ProgramInput get_program_input(const SceGxmProgram &program) {
         if ((((investigated_ub & (1 << index)) == 0) && seems_symbols_stripped) || (buffer.size == MAXIMUM_GXP_ARRAY_SIZE)) {
             // Symbols stripped shader with uniform buffer not referencing any uniform parameters, or
             // buffer that has the potential of outsizing 1024 (due to limits on the size variable), will
-            // got their buffer turns to MAX_UB_IN_VEC4_UNIT here. Their upload amount will be controlled!
+            // get their buffer turns to MAX_UB_IN_VEC4_UNIT here. Their upload amount will be controlled!
             buffer.size = SCE_GXM_MAX_UB_IN_FLOAT_UNIT;
         }
 
