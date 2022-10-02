@@ -522,7 +522,8 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     const vk::PipelineShaderStageCreateInfo vertex_shader = retrieve_shader(vertex_program_gxm.program.get(mem), vertex_program.hash, true, fragment_program_gxm.is_maskupdate, mem, &vertex_program_gxm.attributes);
     const vk::PipelineShaderStageCreateInfo fragment_shader = retrieve_shader(fragment_program_gxm.program.get(mem), fragment_program.hash, false, fragment_program_gxm.is_maskupdate, mem, nullptr);
     const vk::PipelineShaderStageCreateInfo shader_stages[] = { vertex_shader, fragment_shader };
-    const uint32_t shader_stage_count = (record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) ? 1U : 2U;
+    const bool is_fragment_disabled = (record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) || fragment_program_gxm.program.get(mem)->is_empty();
+    const uint32_t shader_stage_count = is_fragment_disabled ? 1U : 2U;
 
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly{
         .topology = translate_primitive(type)
@@ -553,7 +554,7 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     };
 
     vk::PipelineColorBlendStateCreateInfo color_blending{};
-    if (record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED) {
+    if (is_fragment_disabled) {
         // The write mask must be empty as the lack of a fragment shader results in undefined values
         static const vk::PipelineColorBlendAttachmentState blending = {
             .blendEnable = VK_FALSE,
