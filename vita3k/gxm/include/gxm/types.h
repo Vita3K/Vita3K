@@ -1428,7 +1428,9 @@ struct SceGxmProgram {
     }
     bool is_empty() const {
         // if the primary program is empty, it will still only contain a PHAS instruction
-        return !is_secondary_program_available() && primary_program_instr_count <= 1;
+        return !is_secondary_program_available()
+            && primary_program_instr_count <= 1
+            && parameter_count == 0;
     }
 };
 
