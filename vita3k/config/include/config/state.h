@@ -129,8 +129,8 @@ public:
         bool disable_surface_sync = false;
         bool enable_fxaa = false;
         bool v_sync = true;
-        int psn_status = 0;
         int anisotropic_filtering = 1;
+        int psn_status = SCE_NP_SERVICE_STATE_UNKNOWN;
     };
 
     /**
