@@ -852,10 +852,24 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginTabItem("Network")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
-        ImGui::Combo("PSN Status", &emuenv.cfg.psn_status, "Unknown\0Signed Out\0Signed In\0Online");
+
+        // PSN
+        const auto psn = ImGui::CalcTextSize("PlayStation Network").x;
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (psn / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "PlayStation Network");
+        ImGui::Spacing();
+        ImGui::Combo("PSN Status", &config.psn_status, "Unknown\0Signed Out\0Signed In\0Online");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select the state of the PS Network.");
 
+        // HTTP
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        const auto http = ImGui::CalcTextSize("HTTP").x;
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (http / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "HTTP");
+        ImGui::Spacing();
         ImGui::Checkbox("Enable HTTP", &emuenv.cfg.http_enable);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check this box to enable games to use the HTTP protocol on the internet.");

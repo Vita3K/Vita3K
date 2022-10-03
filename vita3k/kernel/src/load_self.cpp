@@ -309,7 +309,7 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
  * \return Negative on failure
  */
 SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &self_path) {
-    //TODO: use raw I/O from path when io becomes less bad
+    // TODO: use raw I/O from path when io becomes less bad
     const uint8_t *const self_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
 
@@ -339,7 +339,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     const uint32_t module_info_offset = elf.e_entry & 0x3fffffff;
     const Elf32_Phdr *const segments = reinterpret_cast<const Elf32_Phdr *>(self_bytes + self_header.phdr_offset);
 
-    //Verify ELF header is correct
+    // Verify ELF header is correct
     if (!EHDR_HAS_VALID_MAGIC(elf)) {
         LOG_CRITICAL("Cannot load file {}: invalid ELF magic.", self_path);
         return SCE_KERNEL_ERROR_ILLEGAL_ELF_HEADER;
@@ -378,8 +378,8 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         return SCE_KERNEL_ERROR_ILLEGAL_ELF_HEADER;
     }
 
-    //TODO: is OSABI always 0?
-    //TODO: is ABI_VERSION always 0?
+    // TODO: is OSABI always 0?
+    // TODO: is ABI_VERSION always 0?
 
     const segment_info *const seg_infos = reinterpret_cast<const segment_info *>(self_bytes + self_header.section_info_offset);
 
@@ -418,24 +418,24 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
         LOG_DEBUG_IF(LOG_MODULE_LOADING, "    [{}] (p_type: {}): p_offset: {}, p_vaddr: {}, p_paddr: {}, p_filesz: {}, p_memsz: {}, p_flags: {}, p_align: {}", get_seg_header_string(seg_header.p_type), log_hex(seg_header.p_type), log_hex(seg_header.p_offset), log_hex(seg_header.p_vaddr), log_hex(seg_header.p_paddr), log_hex(seg_header.p_filesz), log_hex(seg_header.p_memsz), log_hex(seg_header.p_flags), log_hex(seg_header.p_align));
 
-        if (seg_infos[seg_index].encryption != 2) { //0 should also be valid?
+        if (seg_infos[seg_index].encryption != 2) { // 0 should also be valid?
             LOG_ERROR("Cannot load ELF {}: invalid segment encryption status {}.", self_path, seg_infos[seg_index].encryption);
             free_all_segments(mem, segment_reloc_info);
             return -1;
         }
 
         if (seg_header.p_type == PT_NULL) {
-            //Nothing to do.
+            // Nothing to do.
         } else if (seg_header.p_type == PT_LOAD) {
             if (seg_header.p_memsz != 0) {
                 Address segment_address = 0;
                 auto alloc_name = fmt::format("{}:seg%d", self_path, seg_index);
 
-                //TODO: when the virtual process bringup is fixed, uncomment this
-                //Try allocating at image base for RELEXEC to avoid having to relocate the main module
+                // TODO: when the virtual process bringup is fixed, uncomment this
+                // Try allocating at image base for RELEXEC to avoid having to relocate the main module
                 /*
                 segment_address = try_alloc_at(mem, seg_header.p_vaddr, seg_header.p_memsz, alloc_name.c_str());
-                
+
                 if (!segment_address) {
                     if (isRelocatable) { //Try allocating somewhere else
                         segment_address = alloc(mem, seg_header.p_memsz, alloc_name.c_str());
@@ -458,7 +458,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
                 if (!segment_address) {
                     LOG_CRITICAL("Loading {} ELF {} failed: Could not allocate {} bytes @ {} for segment {}.", (isRelocatable) ? "relocatable" : "fixed", self_path, log_hex(seg_header.p_memsz), log_hex(seg_header.p_vaddr), seg_index);
                     free_all_segments(mem, segment_reloc_info);
-                    return SCE_KERNEL_ERROR_NO_MEMORY; //TODO is this correct?
+                    return SCE_KERNEL_ERROR_NO_MEMORY; // TODO is this correct?
                 }
 
                 const Ptr<uint8_t> seg_ptr(segment_address);
