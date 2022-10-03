@@ -261,8 +261,6 @@
 		<back>Back</back>
 		<completed_setup>You have now completed initial setup.
 Your Vita3K system is ready!</completed_setup>
-		<select_language>언어를 선택해 주세요.</select_language>
-		<next>다음</next>
 	</initial_setup>
 
 	<live_area>
