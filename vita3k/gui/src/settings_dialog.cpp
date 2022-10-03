@@ -180,6 +180,12 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
                 config.ngs_enable = emulator_child.attribute("enable-ngs").as_bool();
             }
 
+            // Load Network Config
+            if (!config_child.child("network").empty()) {
+                const auto network_child = config_child.child("network");
+                config.psn_status = network_child.attribute("psn-status").as_int();
+            }
+
             return true;
         } else {
             LOG_ERROR("Custom config XML found is corrupted or invalid in path: {}", CUSTOM_CONFIG_PATH.string());
@@ -219,6 +225,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         config.pstv_mode = emuenv.cfg.pstv_mode;
         config.ngs_enable = emuenv.cfg.ngs_enable;
+        config.psn_status = emuenv.cfg.psn_status;
     }
     config_cpu_backend = set_cpu_backend(config.cpu_backend);
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
@@ -282,6 +289,10 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         auto emulator_child = config_child.append_child("emulator");
         emulator_child.append_attribute("enable-ngs") = config.ngs_enable;
 
+        // Network
+        auto network_child = config_child.append_child("network");
+        network_child.append_attribute("psn-status") = config.psn_status;
+
         const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
         if (!save_xml)
             LOG_ERROR("Fail save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH.string());
@@ -297,6 +308,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.v_sync = config.v_sync;
         emuenv.cfg.anisotropic_filtering = config.anisotropic_filtering;
         emuenv.cfg.ngs_enable = config.ngs_enable;
+        emuenv.cfg.psn_status = config.psn_status;
     }
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
@@ -340,6 +352,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
+        emuenv.cfg.current_config.psn_status = emuenv.cfg.psn_status;
     }
 
     // If backend render or resolution multiplier is changed when app run, reboot emu and app
@@ -839,6 +852,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginTabItem("Network")) {
         ImGui::PopStyleColor();
         ImGui::Spacing();
+        ImGui::Combo("PSN Status", &emuenv.cfg.psn_status, "Unknown\0Signed Out\0Signed In\0Online");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select the state of the PS Network.");
+
         ImGui::Checkbox("Enable HTTP", &emuenv.cfg.http_enable);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check this box to enable games to use the HTTP protocol on the internet.");
