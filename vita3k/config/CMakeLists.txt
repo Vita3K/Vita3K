@@ -13,6 +13,6 @@ add_library(
 configure_file(src/version.cpp.in version.cpp)
 
 target_include_directories(config PUBLIC include)
-target_link_libraries(config PUBLIC util yaml-cpp)
+target_link_libraries(config PUBLIC np util yaml-cpp)
 target_link_libraries(config PRIVATE CLI11)
 target_link_libraries(config PRIVATE tracy)

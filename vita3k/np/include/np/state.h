@@ -52,6 +52,13 @@ struct NpTrophyState {
     NpTrophyUnlockCallback trophy_unlock_callback;
 };
 
+enum SceNpServiceState {
+    SCE_NP_SERVICE_STATE_UNKNOWN,
+    SCE_NP_SERVICE_STATE_SIGNED_OUT,
+    SCE_NP_SERVICE_STATE_SIGNED_IN,
+    SCE_NP_SERVICE_STATE_ONLINE
+};
+
 struct NpState {
     bool inited = false;
     np_callbacks cbs;

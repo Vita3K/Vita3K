@@ -2,29 +2,53 @@
 
 <lang>
 	<main_menubar>
-		<file name="File">
-			<open_pref_path>Open Pref Path</open_pref_path>
-			<install_firmware>Install Firmware</install_firmware>
-			<install_pkg>Install .pkg</install_pkg>
-			<install_zip>Install .zip, .vpk</install_zip>
-			<install_license>Install License</install_license>
+		<file name="파일">
+			<open_pref_path>설치 경로 열기</open_pref_path>
+			<install_firmware>펌웨어 설치</install_firmware>
+			<install_pkg>.pkg 설치</install_pkg>
+			<install_zip>.zip, .vpk 설치</install_zip>
+			<install_license>라이센스 설치</install_license>
 		</file>
-		<emulation name="Emulation">
-			<last_apps_used>Last Apps used</last_apps_used>
+		<emulation name="에뮬레이션">
+			<last_apps_used>마지막으로 사용한 앱</last_apps_used>
 		</emulation>
-		<configuration name="Configuration">
-			<settings>Settings</settings>
-			<user_management>User Management</user_management>
+		<configuration name="설정">
+			<settings>설정</settings>
+			<user_management>사용자 관리</user_management>
 		</configuration>
-		<controls name="Controls">
-			<keyboard_controls>Keyboard Controls</keyboard_controls>
+		<controls name="컨트롤">
+			<keyboard_controls>키보드 컨트롤</keyboard_controls>
 		</controls>
-		<help name="Help">
-			<welcome>Welcome</welcome>
+		<help name="도움말">
+			<welcome>시작</welcome>
 		</help>
 	</main_menubar>
 
+	<about name="Vita3K 정보">
+		<vita3k>Vita3K: PS Vita/PS TV 에뮬레이터. 세계 최초의 작동하는 PS Vita/PS TV 에뮬레이터.</vita3k>
+		<about_vita3k>Vita3K는 C++로 작성된 윈도우와 리눅스 OS용 실험적 오픈소스 PlayStation Vita/PlayStation TV 에뮬레이터입니다.</about_vita3k>
+		<note>참고: 에뮬레이터는 아직 개발 초기 단계입니다.</note>
+		<github_website>기여에 관심이 있다면, Github를 확인해 주세요:</github_website>
+		<vita3k_website>더 많은 정보를 확인하시려면 웹사이트를 방문해 주세요:</vita3k_website>
+		<vita3k_staff>Vita3K 스태프</vita3k_staff>
+		<developers>개발자</developers>
+		<contributors>기여자</contributors>
+	</about>
+
 	<app_context>
+		<boot>부트</boot> 
+		<check_app_compatibility>앱 호환성 확인</check_app_compatibility>
+		<copy_app_info>앱 정보 복사</copy_app_info>
+		<id_and_name>ID와 이름</id_and_name>
+		<custom_config>커스텀 설정</custom_config>
+		<create>만들기</create>
+		<edit>편집</edit>
+		<remove>삭제</remove>
+		<open_folder>폴더 열기</open_folder>
+		<addcont>DLC</addcont>
+		<license>라이센스</license>
+		<shader_cache>셰이더 캐시</shader_cache>
+		<shader_log>셰이더 로그</shader_log>
 		<update_history>업데이트 이력</update_history>
 		<history_version>버전 {}</history_version>
 		<information>정보</information>
@@ -322,23 +346,23 @@ Your Vita3K system is ready!</completed_setup>
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Select your user</select_user>
-		<create_user>Create User</create_user>
-		<user_created>The following user has been created.</user_created>
-		<edit_user>Edit User</edit_user>
-		<user_name_used>This name is already in use.</user_name_used>
-		<delete_user>Delete User</delete_user>
-		<user_delete>Select the user you want to delete.</user_delete>
-		<user_delete_msg>The following user will be deleted.</user_delete_msg>
-		<user_delete_message>If you delete the user, that user's saved data, trophies will be deleted.</user_delete_message>
-		<user_delete_warn>The user will be deleted.
-Are you sure you want to continue?</user_delete_warn>
-		<user_deleted>User deleted.</user_deleted>
-		<change_avatar>Change Avatar</change_avatar>
-		<reset_avatar>Reset Avatar</reset_avatar>
-		<name>Name</name>
-		<user>User</user>
-		<confirm>Confirm</confirm>
-		<automatic_user_login>Automatic User Login</automatic_user_login>
+		<select_user>사용자를 선택하세요</select_user>
+		<create_user>사용자 생성</create_user>
+		<user_created>해당 사용자가 생성되었습니다.</user_created>
+		<edit_user>사용자 편집</edit_user>
+		<user_name_used>이미 사용하고 있는 이름입니다.</user_name_used>
+		<delete_user>사용자 삭제</delete_user>
+		<user_delete>지우려고 하는 사용자를 선택하세요.</user_delete>
+		<user_delete_msg>해당 사용자가 삭제됩니다.</user_delete_msg>
+		<user_delete_message>사용자를 삭제하게 되면, 사용자의 저장된 데이터, 트로피가 삭제됩니다.</user_delete_message>
+		<user_delete_warn>사용자가 삭제됩니다.
+계속 하시겠습니까?</user_delete_warn>
+		<user_deleted>사용자가 삭제되었습니다.</user_deleted>
+		<change_avatar>아바타 변경</change_avatar>
+		<reset_avatar>아바타 리셋</reset_avatar>
+		<name>이름</name>
+		<user>사용자</user>
+		<confirm>확인</confirm>
+		<automatic_user_login>자동 로그인</automatic_user_login>
 	</user_management>
 </lang>

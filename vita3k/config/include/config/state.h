@@ -110,7 +110,8 @@ public:
         "SceAudio",
         "SceHttp",
         "SceSsl",
-        "SceTouch"
+        "SceTouch",
+        "SceAudiodecUser"
     };
 
     /**
@@ -130,6 +131,7 @@ public:
         bool enable_fxaa = false;
         bool v_sync = true;
         int anisotropic_filtering = 1;
+        int psn_status = SCE_NP_SERVICE_STATE_UNKNOWN;
     };
 
     /**

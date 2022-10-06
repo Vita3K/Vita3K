@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceNpManager.h"
+#include "util/types.h"
 
 #include <io/state.h>
 #include <kernel/state.h>
@@ -45,7 +46,7 @@ EXPORT(int, sceNpCheckCallback) {
     if (emuenv.np.state == 0)
         return 0;
 
-    emuenv.np.state = 0;
+    emuenv.np.state = emuenv.cfg.current_config.psn_status;
 
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
     for (auto &callback : emuenv.np.cbs) {
@@ -81,12 +82,15 @@ EXPORT(int, sceNpManagerGetCachedParam) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpManagerGetChatRestrictionFlag) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpManagerGetChatRestrictionFlag, SceInt *isRestricted) {
+    *isRestricted = 0; // User is never restricted
+    return 0;
 }
 
-EXPORT(int, sceNpManagerGetContentRatingFlag) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpManagerGetContentRatingFlag, SceInt *isRestricted, SceInt *age) {
+    *isRestricted = 0; // User is never restricted
+    *age = 21; // Assume user is 21 years old
+    return STUBBED("isRestricted = 0; age = 21; return 0;");
 }
 
 EXPORT(int, sceNpManagerGetNpId, np::NpId *id) {

@@ -96,6 +96,7 @@ bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt, bool 
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16
         || (is_vulkan && fmt == SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9);
 }
 
@@ -225,6 +226,8 @@ static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, v
         const std::uint32_t num_yword = (height + 3) / 4;
 
         return (size_t)num_xword * (size_t)num_yword * 8;
+    } else {
+        LOG_ERROR("Trying to decompress and unswizzle unknown format {}", log_hex(fmt));
     }
 
     return 0;
