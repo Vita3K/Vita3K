@@ -643,6 +643,9 @@ EXPORT(SceInt32, sceNgsVoiceGetStateData, SceNgsVoiceHandle voice_handle, const 
     if (!storage)
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
 
+    if (!mem)
+        return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
+
     std::memcpy(mem, storage->voice_state_data.data(), std::min<std::size_t>(mem_size, storage->voice_state_data.size()));
     return SCE_NGS_OK;
 }
