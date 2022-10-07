@@ -112,6 +112,7 @@ public:
         "SceAudiodecUser",
         "SceCtrl",
         "SceHttp",
+        "SceRtc",
         "SceSsl",
         "SceTouch"
     };
