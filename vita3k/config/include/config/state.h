@@ -105,13 +105,15 @@ public:
      * @brief Available HLE modules for advanced profiling using Tracy
      *
      * Advanced profiling using Tracy allows for function calls to be logged with their arguments
+     * Please keep them in order.
      */
     const std::vector<std::string> tracy_available_advanced_profiling_modules = {
         "SceAudio",
+        "SceAudiodecUser",
+        "SceCtrl",
         "SceHttp",
         "SceSsl",
-        "SceTouch",
-        "SceAudiodecUser"
+        "SceTouch"
     };
 
     /**
