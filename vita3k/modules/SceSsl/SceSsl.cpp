@@ -16,12 +16,15 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceSsl.h"
-#include "SceSsl_tracy.h"
-#include "Tracy.hpp"
 
 #include <http/state.h>
+#include <modules/tracy.h>
 #include <openssl/ssl.h>
 #include <util/types.h>
+
+#ifdef TRACY_ENABLE
+const std::string tracy_module_name = "SceSsl";
+#endif // TRACY_ENABLE
 
 enum SceSslErrorCode {
     SCE_SSL_ERROR_BEFORE_INIT = 0x80435001,
@@ -73,13 +76,7 @@ EXPORT(int, sceSslGetSubjectName) {
 }
 
 EXPORT(SceInt32, sceSslInit, SceSize poolSize) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceSslInit", _tracy_activation_state);
-    tracy_sceSslInit(&___tracy_scoped_zone, _tracy_activation_state, poolSize);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceSslInit, poolSize);
     if (emuenv.http.sslInited)
         return RET_ERROR(SCE_SSL_ERROR_ALREADY_INITED);
 
@@ -99,13 +96,7 @@ EXPORT(SceInt32, sceSslInit, SceSize poolSize) {
 }
 
 EXPORT(SceInt32, sceSslTerm) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceSslTerm", _tracy_activation_state);
-    tracy_sceSslTerm(&___tracy_scoped_zone, _tracy_activation_state);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceSslTerm);
     if (!emuenv.http.sslInited)
         return RET_ERROR(SCE_SSL_ERROR_BEFORE_INIT);
 

@@ -17,8 +17,10 @@
 
 #pragma once
 
+#include <mem/ptr.h>
 #include <mem/state.h>
 #include <sstream>
+#include <util/log.h>
 
 // universal to string converters for module specific types (usually enums)
 template <typename T>
@@ -26,6 +28,36 @@ std::string to_debug_str(const MemState &mem, T data) {
     std::stringstream datass;
     datass << data;
     return datass.str();
+}
+
+// Override pointers, we want to print the address in hex
+template <typename U>
+std::string to_debug_str(const MemState &mem, U *data) {
+    std::stringstream datass;
+    datass << log_hex_fast(Ptr<U>(data, mem).address()); // Convert host ptr to guest
+    return datass.str();
+}
+
+// Override for guest pointers, we want to print the guest address
+template <typename U>
+std::string to_debug_str(const MemState &mem, Ptr<U> data) {
+    std::stringstream datass;
+    datass << log_hex_fast(data.address());
+    return datass.str();
+}
+
+// Override for char pointers as the contents are readable
+template <>
+inline std::string to_debug_str(const MemState &mem, char *data) {
+    // Format for correct char* should be "(address in hex (0x12345)) (string)", this is just in the
+    // extreme case that the string is actually "0x0 NULLPTR" and be confusing
+    return std::string(data ? log_hex_fast(Ptr<char *>(data, mem).address()) + " " + data : "0x0 NULLPTR");
+}
+
+// Override for char pointers as the contents are readable
+template <>
+inline std::string to_debug_str(const MemState &mem, const char *data) {
+    return std::string(data ? log_hex_fast(Ptr<const char *>(data, mem).address()) + " " + data : "0x0 NULLPTR");
 }
 
 template <>
