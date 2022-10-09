@@ -17,7 +17,7 @@
 
 #include "SceKernelForMono.h"
 #include "../SceKernelThreadMgr/SceThreadmgr.h"
-
+#include <kernel/state.h>
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceKernelForMono);
 
@@ -49,9 +49,8 @@ EXPORT(int, sceKernelWaitExceptionCBForMono) {
 EXPORT(int, sceKernelWaitExceptionForMono) {
     TRACY_FUNC(sceKernelWaitExceptionForMono);
     STUBBED("Inifinite wait");
-    while (true) {
-    }
-
+    ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    thread->suspend();
     return 0;
 }
 
