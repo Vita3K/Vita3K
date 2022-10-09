@@ -131,15 +131,7 @@ void bind_fundamental(GLContext &context) {
     glBindVertexArray(context.vertex_array[0]);
 }
 
-#if MICROPROFILE_ENABLED
-static void before_callback(const char *name, void *funcptr, int len_args, ...) {
-    const MicroProfileToken token = MicroProfileGetToken("OpenGL", name, MP_CYAN, MicroProfileTokenTypeCpu);
-    MICROPROFILE_ENTER_TOKEN(token);
-}
-#endif // MICROPROFILE_ENABLED
-
 static void after_callback(const char *name, void *funcptr, int len_args, ...) {
-    // MICROPROFILE_LEAVE();
     for (GLenum error = glad_glGetError(); error != GL_NO_ERROR; error = glad_glGetError()) {
         LOG_ERROR("OpenGL: {} set error {}.", name, error);
     }
@@ -225,9 +217,6 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
         return false;
 
     gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress);
-#if MICROPROFILE_ENABLED != 0
-    glad_set_pre_callback(before_callback);
-#endif // MICROPROFILE_ENABLED
     glad_set_post_callback(after_callback);
 
     // Detect GPU and features
