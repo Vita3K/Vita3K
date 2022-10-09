@@ -46,6 +46,11 @@ std::string to_debug_str(const MemState &mem, Ptr<U> data) {
     return datass.str();
 }
 
+template <>
+inline std::string to_debug_str(const MemState &mem, Ptr<char> data) {
+    return std::string(data.address() ? log_hex_fast(data.address()) + " " + data.get(mem) : "0x0 NULLPTR");
+}
+
 // Override for char pointers as the contents are readable
 template <>
 inline std::string to_debug_str(const MemState &mem, char *data) {
