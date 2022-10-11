@@ -247,8 +247,8 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<r3_button>R3 ボタン</r3_button>
 		<gui>GUI</gui>
 		<full_screen>フルスクリーン</full_screen>
-		<toggle_touch>タッチパネル</toggle_touch>
-		<toggle_gui_visibility>タッチパネル可視化</toggle_gui_visibility>
+		<toggle_touch>タッチ操作の切り替え</toggle_touch>
+		<toggle_gui_visibility>GUI表示の切り替え</toggle_gui_visibility>
 	</controls>　
 
 	<dialog>
@@ -375,7 +375,7 @@ Vita3Kをお楽しみください。</completed_setup>
 	</live_area>
 
 	<settings name="設定">
-		<theme_background name="テーマと背景">
+		<theme_background name="テーマ&背景">
 			<default>デフォルト</default>
 			<theme name="テーマ">
 				<search>検索</search>
@@ -398,7 +398,7 @@ Vita3Kをお楽しみください。</completed_setup>
 				<add_background>背景を追加</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
-		<date_time name="日付と時刻">
+		<date_time name="日付&時刻">
 			<date_format name ="日付表示">
 				<yyyy_mm_dd>年/月/日</yyyy_mm_dd>
 				<dd_mm_yyyy>日/月/年</dd_mm_yyyy>
@@ -455,12 +455,12 @@ Vita3Kをお楽しみください。</completed_setup>
 	</trophy_collection>
 	
 	<user_management>
-		<select_user>ユーザーを選ぶする</select_user>
+		<select_user>ユーザーを選ぶ</select_user>
 		<create_user>ユーザーを作成する</create_user>
 		<user_created>以下のユーザーを作成しました。</user_created>
 		<edit_user>ユーザーを編集する</edit_user>
 		<user_name_used>その名前はすでに使われています。</user_name_used>
-		<delete_user>ユーザーを消除する</delete_user>
+		<delete_user>ユーザーを削除する</delete_user>
 		<user_delete>削除するユーザーを選んでください。</user_delete>
 		<user_delete_msg>以下のユーザーを削除します。</user_delete_msg>
 		<user_delete_message>ユーザーを削除すると、そのユーザーのセーブデータ、トロフィーは削除されます。</user_delete_message>
@@ -472,7 +472,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<name>名前</name>
 		<user>ユーザー</user>
 		<confirm>確定</confirm>
-		<automatic_user_login>ユーザー自動ログインする</automatic_user_login>
+		<automatic_user_login>ユーザー自動ログインをする</automatic_user_login>
 	</user_management>
 	
 	<vita3k_update name="Vita3Kのアップデート">
