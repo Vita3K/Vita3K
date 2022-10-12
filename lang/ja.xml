@@ -53,6 +53,8 @@
 		<history_version>バージョン {}</history_version>
 		<information>情報</information>
 		<app_delete>このアプリケーションと、関連するすべてのデータ(セーブデータを含む)を削除します。</app_delete>
+		<app_delete_note>アプリの削除にはアプリのサイズと
+ご利用のハードウェアにより時間がかかる場合があります。</app_delete_note>
 		<save_delete>このセーブデータを削除しますか？</save_delete>
 		<eligible>権利あり</eligible>
 		<ineligible>権利なし</ineligible>
