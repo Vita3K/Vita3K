@@ -57,12 +57,19 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_seventh_part_one"].c_str());
     ImGui::SameLine();
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
-    if (ImGui::Button(lang["compatibility"].c_str()))
+    if (ImGui::Button(lang["compatibility_list"].c_str()))
         open_path("https://vita3k.org/compatibility.html");
     ImGui::SameLine();
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_seventh_part_two"].c_str());
+    ImGui::SameLine();
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
+    if (ImGui::Button(lang["homebrew_compatibility_list"].c_str()))
+        open_path("https://vita3k.org/compatibility-homebrew.html");
+    ImGui::SameLine();
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_seventh_part_three"].c_str());
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_eighth"].c_str());
+    ImGui::SameLine();
     if (ImGui::Button("GitHub"))
         open_path("https://github.com/Vita3K/Vita3K");
     ImGui::Spacing();

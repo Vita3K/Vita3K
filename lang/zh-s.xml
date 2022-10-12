@@ -501,8 +501,10 @@ Please download and install it.</no_font_exist>
 		<quickstart>快速入门</quickstart>
 		<line_sixth_part_two>页面上找到。</line_sixth_part_two>
 		<line_seventh_part_one>参考商业游戏</line_seventh_part_one>
-		<compatibility>兼容性</compatibility>
-		<line_seventh_part_two>列表和自制程序兼容性列表以查看可运行的内容。</line_seventh_part_two>
+		<compatibility_list>兼容性列表</compatibility_list>
+		<line_seventh_part_two>和</line_seventh_part_two>
+		<homebrew_compatibility_list>自制程序兼容性列表</homebrew_compatibility_list>
+		<line_seventh_part_three>以查看可运行的内容。</line_seventh_part_three>
 		<line_eighth>欢迎参与贡献！</line_eighth>
 		<line_tenth>可以在#help频道中找到更多支持</line_tenth>
 		<line_eleventh>Vita3K不纵容盗版。您必须提取您自己拥有的游戏。</line_eleventh>

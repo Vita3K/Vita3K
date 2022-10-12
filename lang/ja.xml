@@ -502,8 +502,10 @@ Vita3Kをお楽しみください。</completed_setup>
 		<quickstart>クイックスタート</quickstart>
 		<line_sixth_part_two>ページ。</line_sixth_part_two>
 		<line_seventh_part_one>商用ゲーム</line_seventh_part_one>
-		<compatibility>互換性</compatibility>
-		<line_seventh_part_two>リストとHomebrew互換性リストで動作するものを御確認下さい。</line_seventh_part_two>
+		<compatibility_list>互換性リスト</compatibility_list>
+		<line_seventh_part_two>と</line_seventh_part_two>
+		<homebrew_compatibility_list>Homebrew互換性リスト</homebrew_compatibility_list>
+		<line_seventh_part_three>で動作するものを御確認下さい。</line_seventh_part_three>
 		<line_eighth>寄稿者を募集しています！</line_eighth>
 		<line_tenth>その他の相談は、#help チャンネルで行うことができます。</line_tenth>
 		<line_eleventh>Vita3Kは違法行為を認めません。所有ゲームの吸出しを行ってください。</line_eleventh>
