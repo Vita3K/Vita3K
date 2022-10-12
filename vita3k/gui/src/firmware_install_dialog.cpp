@@ -123,7 +123,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 if (emuenv.cfg.initial_setup)
                     init_theme(gui, emuenv, gui.users[emuenv.cfg.user_id].theme_id);
                 fw_version.clear();
-                pup_path = nullptr;
+                pup_path = "";
                 gui.file_menu.firmware_install_dialog = false;
                 draw_file_dialog = true;
             }
