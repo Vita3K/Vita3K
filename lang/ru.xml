@@ -25,13 +25,13 @@
 	</main_menubar>
 
 	<about name="О программе">
-		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
-		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems.</about_vita3k>
-		<note>Note: The emulator is still in a very early stage of development.</note>
-		<github_website>If you're interested in contributing, check out our GitHub:</github_website>
-		<vita3k_website>Visit our website for more info:</vita3k_website>
-		<vita3k_staff>Vita3K Staff</vita3k_staff>
-		<developers>Developers</developers>
+		<vita3k>Vita3K: эмулятор PS Vita/PS TV. Первый в мире функциональный эмулятор PS Vita/PS TV.</vita3k>
+		<about_vita3k>Vita3K - это экспериментальный эмулятор PlayStation Vita/PlayStation TV с открытым исходным кодом, написанный на C++ для операционных систем Windows и Linux.</about_vita3k>
+		<note>Note: Эмулятор все еще в ранней стадии разработки.</note>
+		<github_website>Если вы заинтересованы в том, чтобы внести свой вклад, загляните в наш GitHub:</github_website>
+		<vita3k_website>Посетите наш сайт для большей информации:</vita3k_website>
+		<vita3k_staff>Сотрудники Vita3K</vita3k_staff>
+		<developers>Разработчики</developers>
 		<contributors>Contributors</contributors>
 	</about>
 
@@ -172,7 +172,7 @@
 		<hidden_trophy>Скрытый приз</hidden_trophy>
 		<one_hour_ago>1 час назад</one_hour_ago>
 		<one_minute_ago>1 мин. назад</one_minute_ago>
-		<bronze>Бронзаs</bronze>
+		<bronze>Бронза</bronze>
 		<gold>Золото</gold>
 		<platinum>Платина</platinum>
 		<silver>Серебро</silver>
@@ -195,11 +195,11 @@
 	</content_manager>
 
 	<controllers name="Контроллеры">
-		<connected>Controllers connected</connected>
+		<connected>Контроллеры подключены</connected>
 		<name>Название</name>
-		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
+		<num>Количество</num>
+		<not_connected>Не подключены совместимые контроллеры.
+Подключите контроллер, совместимый с SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -286,8 +286,8 @@ Connect a controller that is compatible with SDL2.</not_connected>
 				<image>Изображение</image>
 			</start_screen>
 			<home_screen_backgrounds name="Фон начального экрана">
-				<delete_background>Delete Background</delete_background>
-				<add_background>Add Background</add_background>
+				<delete_background>Удалить Фон</delete_background>
+				<add_background>Добавить Фон</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Дата и время">
@@ -352,7 +352,7 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<delete_user>Удалить пользователя</delete_user>
 		<user_delete>Выберите пользователя, которого хотите удалить.</user_delete>
 		<user_delete_msg>Выбранный пользователь был удален:</user_delete_msg>
-		<user_delete_message>Дри удаления пользователя сохраненные данные, трофеи будут удалены.</user_delete_message>
+		<user_delete_message>При удалении пользователя, его сохраненные данные, призы будут удалены.</user_delete_message>
 		<user_delete_warn>Пользователь будет удален.
 Продолжить?</user_delete_warn>
 		<user_deleted>Пользователь удален.</user_deleted>
