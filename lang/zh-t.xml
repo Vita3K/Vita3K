@@ -501,8 +501,10 @@
 		<quickstart>快速入門</quickstart>
 		<line_sixth_part_two>頁面上找到。</line_sixth_part_two>
 		<line_seventh_part_one>參考商業遊戲</line_seventh_part_one>
-		<compatibility>兼容性</compatibility>
-		<line_seventh_part_two>列表和自制程式兼容性列表以查看可運行的內容。</line_seventh_part_two>
+		<compatibility_list>兼容性列表</compatibility_list>
+		<line_seventh_part_two>和</line_seventh_part_two>
+		<homebrew_compatibility_list>自制程式兼容性列表</homebrew_compatibility_list>
+		<line_seventh_part_three>以查看可運行的內容。</line_seventh_part_three>
 		<line_eighth>歡迎參與貢獻！</line_eighth>
 		<line_tenth>可以在#help頻道中找到更多支持</line_tenth>
 		<line_eleventh>Vita3K不縱容盜版。您必須提取您自己擁有的遊戲。</line_eleventh>
