@@ -25,20 +25,39 @@
 	</main_menubar>
 
 	<app_context>
+		<boot>Boot</boot> 
+		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
+		<copy_app_info>Copy App Info</copy_app_info>
+		<id_and_name>ID and Name</id_and_name>
+		<custom_config>Custom Config</custom_config>
+		<create>Create</create>
+		<edit>Edit</edit>
+		<remove>Remove</remove>
+		<open_folder>Open Folder</open_folder>
+		<addcont>DLCs</addcont>
+		<license>License</license>
+		<shader_cache>Shader Cache</shader_cache>
+		<shader_log>Shader Log</shader_log>
 		<update_history>Päivityshistoria</update_history>
 		<history_version>Versio {}</history_version>
 		<information>Info</information>
 		<app_delete>Tämä sovellus ja kaikki siihen liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</app_delete>
+		<app_delete_note>Deleting a application may take a while
+depending on its size and your hardware.</app_delete_note>
 		<save_delete>Haluatko poistaa nämä tallennentut tiedot?</save_delete>
 		<eligible>Kelpo</eligible>
 		<ineligible>Epäkelpo</ineligible>
 		<level>Taso</level>
 		<name>Nimi</name>
 		<trophy_earning>Trophyjen ansaitseminen</trophy_earning>
-		<parental_Controls>Lapsilukko</parental_Controls>
+		<parental_controls>Lapsilukko</parental_controls>
 		<updated>Päivitetty</updated>
 		<size>Koko</size>
 		<version>Versio</version>
+		<title_id>Title ID</title_id>
+		<last_time_used>Last time used</last_time_used>
+		<never>Never</never>
+		<time_used>Time used</time_used>
 	</app_context>
 
 	<common>
@@ -166,6 +185,7 @@
 	</common>
 
 	<content_manager name="Sisällönhallinta">
+		<search>Search</search>
 		<application name="Sovellukset">
 			<delete>Valitut sovellukset ja kaikki siihin liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</delete>
 			<no_item>Sisältökohteita ei ole.</no_item>
@@ -179,6 +199,14 @@
 		<clear_all>Tyhjennä kaikki</clear_all>
 	</content_manager>
 
+	<controllers name="Controllers">
+		<connected>Controllers connected</connected>
+		<name>Nimi</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
+
 	<game_data>
 		<app_close>Seuraava sovellus suljetaan.</app_close>
 		<data_delete>Poistettavat tiedot:</data_delete>
@@ -189,6 +217,7 @@
 		<completed_setup>Olet nyt saanut valmiiksi alkumäärityksen.
 Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		<select_language>Valitse kieli.</select_language>
+		<completed>Completed.</completed>
 		<next>Seuraava</next>
 	</initial_setup>
 
@@ -201,6 +230,7 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		<theme_background name="Teema ja tausta">
 			<default>Oletus</default>
 			<theme name="Teema">
+				<search>Search</search>
 				<find_in_altervista>Etsi Altervista kaupasta</find_in_altervista>
 				<information name="Information">
 					<name>Nimi</name>
@@ -208,6 +238,7 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 					<updated>Päivitetty</updated>
 					<size>Koko</size>
 					<version>Versio</version>
+					<content_id>Content ID</content_id>
 				</information>
 				<delete>Tämä teema poistetaan.</delete>
 			</theme>
@@ -258,6 +289,9 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 	</settings>
 
 	<trophy_collection>
+		<search>Search</search>
+		<delete_trophy>Delete Trophy</delete_trophy>
+		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Lisätiedot</details>
 		<earned>Ansaittu</earned>
 		<name>Nimi</name>

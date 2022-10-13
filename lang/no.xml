@@ -25,20 +25,39 @@
 	</main_menubar>
 
 	<app_context>
+		<boot>Boot</boot> 
+		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
+		<copy_app_info>Copy App Info</copy_app_info>
+		<id_and_name>ID and Name</id_and_name>
+		<custom_config>Custom Config</custom_config>
+		<create>Create</create>
+		<edit>Edit</edit>
+		<remove>Remove</remove>
+		<open_folder>Open Folder</open_folder>
+		<addcont>DLCs</addcont>
+		<license>License</license>
+		<shader_cache>Shader Cache</shader_cache>
+		<shader_log>Shader Log</shader_log>
 		<update_history>Oppdater historikk</update_history>
 		<history_version>Versjon {}</history_version>
 		<information>Informasjon</information>
 		<app_delete>Dette programmet og all relatert data, inkludert lagreda data, vil bli slettet.</app_delete>
+		<app_delete_note>Deleting a application may take a while
+depending on its size and your hardware.</app_delete_note>
 		<save_delete>Vil du slette disse lagrede dataene?</save_delete>
 		<eligible>Valgbar</eligible>
 		<ineligible>Ikke valgbar</ineligible>
 		<level>Nivå</level>
 		<name>Navn</name>
 		<trophy_earning>Trophy-oppnåing</trophy_earning>
-		<parental_Controls>Foreldrakontroll</parental_Controls>
+		<parental_controls>Foreldrakontroll</parental_controls>
 		<updated>Oppdatert</updated>
 		<size>Størrelse</size>
 		<version>Versjon</version>
+		<title_id>Title ID</title_id>
+		<last_time_used>Last time used</last_time_used>
+		<never>Never</never>
+		<time_used>Time used</time_used>
 	</app_context>
 
 	<common>
@@ -166,6 +185,7 @@
 	</common>
 
 	<content_manager name="Innholdsadministrator">
+		<search>Search</search>
 		<application name="Programmer">
 			<delete>De valgte programmene og alle de tilknyttede dataene, inkludert lagreda data, vil bli slettet.</delete>
 			<no_item>Det er ingen innholdselementer.</no_item>
@@ -179,16 +199,25 @@
 		<clear_all>Slett alle</clear_all>
 	</content_manager>
 
+	<controllers name="Controllers">
+		<connected>Controllers connected</connected>
+		<name>Navn</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
+
 	<game_data>
 		<app_close>Følgende program vil lukkes.</app_close>
 		<data_delete>Data som skal slettes：</data_delete>
 	</game_data>
 
-    <initial_setup>
+	<initial_setup>
 		<back>Tilbake</back>
 		<completed_setup>Du har nå fullført oppstartsinnstillingen.
 Vita3K-systemet ditt er klart!</completed_setup>
 		<select_language>Velg et språk.</select_language>
+		<completed>Completed.</completed>
 		<next>Neste</next>
 	</initial_setup>
 
@@ -201,6 +230,7 @@ Vita3K-systemet ditt er klart!</completed_setup>
 		<theme_background name="Tema og bakgrunn">
 			<default>Standard</default>
 			<theme name="Tema">
+				<search>Search</search>
 				<find_in_altervista>Finn i Altervista</find_in_altervista>
 				<information name="Informasjon">
 					<name>Navn</name>
@@ -208,6 +238,7 @@ Vita3K-systemet ditt er klart!</completed_setup>
 					<updated>Oppdatert</updated>
 					<size>Størrelse</size>
 					<version>Versjon</version>
+					<content_id>Content ID</content_id>
 				</information>
 				<delete>Dette temaet vil bli slettet.</delete>
 			</theme>
@@ -256,6 +287,9 @@ Vita3K-systemet ditt er klart!</completed_setup>
 	</settings>
 
 	<trophy_collection>
+		<search>Search</search>
+		<delete_trophy>Delete Trophy</delete_trophy>
+		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Detaljer</details>
 		<earned>Oppnådd</earned>
 		<name>Navn</name>

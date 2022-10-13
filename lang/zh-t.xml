@@ -25,7 +25,7 @@
 	</main_menubar>
 
 	<about name="關於">
-		<vita3k>Vita3K：一個PS Vita/PS Vita TV模擬器。 是全球首款實用的PS Vita/PS Vita TV模擬器。</vita3k>
+		<vita3k>Vita3K：一個PS Vita/PS Vita TV模擬器。 是全球首個實用的PS Vita/PS Vita TV模擬器。</vita3k>
 		<about_vita3k>Vita3K是一款使用C++編寫的實驗性開源PlayStation Vita/PlayStation Vita TV模擬器，適用於Windows和Linux操作系統。</about_vita3k>
 		<note>注意：目前模擬器仍處於開發的早期階段。</note>
 		<github_website>如果您有興趣參與貢獻，請瀏覽我們的GitHub：</github_website>
@@ -61,10 +61,11 @@
 		<level>等級</level>
 		<name>名稱</name>
 		<trophy_earning>獲得獎盃</trophy_earning>
-		<parental_Controls>家長監控</parental_Controls>
+		<parental_controls>家長監控</parental_controls>
 		<updated>更新日</updated>
 		<size>檔案大小</size>
 		<version>版本</version>
+		<title_id>標題ID</title_id>
 		<last_time_used>最近使用時間</last_time_used>
 		<never>從來沒有</never>
 		<time_used>使用時間</time_used>
@@ -311,7 +312,6 @@
 		<cat>類別</cat>
 		<last_time>最近使用時間</last_time>
 		<tit>標題</tit>
-		<tit_id>標題ID</tit_id>
 		<refresh>刷新</refresh>
 	</home_screen>
 
@@ -357,10 +357,10 @@
 		<select_file>選擇文件</select_file>
 		<select_directory>選擇目錄</select_directory>
 		<compatible_content>發現兼容內容的{}個檔案包。</compatible_content>
-		<successed_install_archive>已成功安裝{}個檔案包內容：</successed_install_archive>
+		<successed_install_archive>已成功安裝{}個檔案包中的內容：</successed_install_archive>
 		<update_app>更新應用程式至：</update_app>
-		<failed_install_archive>無法安裝{}個檔案包內容：</failed_install_archive>
-		<not_compatible_content>未發現兼容內容的{}個檔案包。</not_compatible_content>
+		<failed_install_archive>無法安裝{}個檔案包中的內容：</failed_install_archive>
+		<not_compatible_content>未發現兼容內容的{}個檔案包：</not_compatible_content>
 		<delete_archive>刪除檔案包？</delete_archive>
 		<select_license_type>選擇許可證類型</select_license_type>
 		<select_bin_rif>選擇work.bin/rif</select_bin_rif>
@@ -493,7 +493,7 @@
 
 	<welcome name="歡迎來到Vita3K">
 		<line_first>Vita3K PlayStation Vita模擬器</line_first>
-		<line_second>Vita3K是一款使用C++編寫的開源PlayStation Vita/PlayStation Vita TV模擬器，適用於Windows和Linux。</line_second>
+		<line_second>Vita3K是一個使用C++編寫的開源PlayStation Vita/PlayStation Vita TV模擬器，適用於Windows和Linux。</line_second>
 		<line_third>目前模擬器仍處於早期階段，因此非常感謝任何反饋和測試。</line_third>
 		<line_fourth>要開始使用，請安裝PS Vita固件和字庫包。</line_fourth>
 		<download_firmware>下載固件</download_firmware>
@@ -502,9 +502,9 @@
 		<line_sixth_part_two>頁面上找到。</line_sixth_part_two>
 		<line_seventh_part_one>參考商業遊戲</line_seventh_part_one>
 		<compatibility_list>兼容性列表</compatibility_list>
-		<line_seventh_part_two>和</line_seventh_part_two>
+		<line_seventh_part_two>以及</line_seventh_part_two>
 		<homebrew_compatibility_list>自制程式兼容性列表</homebrew_compatibility_list>
-		<line_seventh_part_three>以查看可運行的內容。</line_seventh_part_three>
+		<line_seventh_part_three>來查看目前可運行的內容。</line_seventh_part_three>
 		<line_eighth>歡迎參與貢獻！</line_eighth>
 		<line_tenth>可以在#help頻道中找到更多支持</line_tenth>
 		<line_eleventh>Vita3K不縱容盜版。您必須提取您自己擁有的遊戲。</line_eleventh>

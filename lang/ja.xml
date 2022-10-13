@@ -27,9 +27,9 @@
 	<about name="概要">
 		<vita3k>Vita3K: PS Vita/PS Vita TVエミュレーター。 世界初の動作するPS Vita/PS Vita TVエミュレーターです。</vita3k>
 		<about_vita3k>Vita3Kは試験的なオープンソースのC++で書かれた WindowsとLinux向けのPlayStation Vita/PlayStation Vita TVエミュレーターです。</about_vita3k>
-		<note>注意: エミュレーターは未だかなりの初期段階にあります。</note>
-		<github_website>プロジェクトへの貢献に興味がある方は、GitHubをご覧ください:</github_website>
-		<vita3k_website>詳しくはサイトをご覧ください:</vita3k_website>
+		<note>注意：エミュレーターは未だかなりの初期段階にあります。</note>
+		<github_website>プロジェクトへの貢献に興味がある方は、GitHubをご覧ください：</github_website>
+		<vita3k_website>詳しくはサイトをご覧ください：</vita3k_website>
 		<vita3k_staff>Vita3K スタッフ</vita3k_staff>
 		<developers>開発者</developers>
 		<contributors>貢献者</contributors>
@@ -61,10 +61,11 @@
 		<level>レベル</level>
 		<name>名前</name>
 		<trophy_earning>トロフィー獲得</trophy_earning>
-		<parental_Controls>ペアレンタルコントロール</parental_Controls>
+		<parental_controls>ペアレンタルコントロール</parental_controls>
 		<updated>更新日</updated>
 		<size>サイズ</size>
 		<version>バージョン</version>
+		<title_id>タイトルID</title_id>
 		<last_time_used>最後に起動した日時</last_time_used>
 		<never>なし</never>
 		<time_used>プレイ時間</time_used>
@@ -311,7 +312,6 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<cat>カテゴリー</cat>
 		<last_time>最終プレイ日時</last_time>
 		<tit>名前</tit>
-		<tit_id>タイトルID</tit_id>
 		<refresh>更新</refresh>
 	</home_screen>
 	
@@ -338,37 +338,37 @@ Vita3Kをお楽しみください。</completed_setup>
 	<install_dialog>
 		<fw_installing>インストール中です、お待ちください...</fw_installing>
 		<successed_install_fw>ファームウェアのインストールに成功しました。</successed_install_fw>
-		<fw_version>ファームウェアバージョン:</fw_version>
+		<fw_version>ファームウェアバージョン：</fw_version>
 		<no_font_exist>ファームウェアフォントパッケージがありません。
 ダウンロードしてインストールしてください。</no_font_exist>
 		<download_firmware_font_package>ファームウェアフォントパッケージをダウンロード</download_firmware_font_package>
 		<firmware_font_package_note>ファームウェアフォントパッケージは、一部のアプリケーションや、GUIでのアジア地域のフォントサポートに必須です。
 また、一般的にGUIを正しく表示するために推奨されています。</firmware_font_package_note>
-		<delete_fw>インストールしたファームウェアファイルを削除しますか?</delete_fw>
+		<delete_fw>インストールしたファームウェアファイルを削除しますか？</delete_fw>
 		<select_key_type>key typeを選択</select_key_type>
 		<select_work>work.binを選択</select_work>
 		<enter_zrif>zRIFを入力</enter_zrif>
 		<enter_zrif_key>zRIF keyを入力</enter_zrif_key>
 		<input_zrif>zRIFをここに入力してください</input_zrif>
-		<copy_paste_zrif>Ctrl(Cmd) + C でコピー, Ctrl(Cmd) + V でペーストします。</copy_paste_zrif>
-		<delete_pkg>先ほどのpkgを削除しますか?</delete_pkg>
-		<delete_work>先ほどのwork.binを削除しますか?</delete_work>
+		<copy_paste_zrif>Ctrl(Cmd) + C でコピー、Ctrl(Cmd) + V でペーストします。</copy_paste_zrif>
+		<delete_pkg>先ほどのpkgを削除しますか？</delete_pkg>
+		<delete_work>先ほどのwork.binを削除しますか？</delete_work>
 		<check_log>ログで詳細をご確認ください。</check_log>
 		<select_install_type>インストール方法を選択</select_install_type>
 		<select_file>ファイルを選択</select_file>
 		<select_directory>ディレクトリを選択</select_directory>
 		<compatible_content>{}互換性のあるコンテンツを持つアーカイブが見つかりました。</compatible_content>
-		<successed_install_archive>{}アーカイブのコンテンツのインストールに成功しました。:</successed_install_archive>
-		<update_app>アプリを更新:</update_app>
-		<failed_install_archive>{}コンテンツのインストールに失敗しました:</failed_install_archive>
-		<not_compatible_content>{}アーカイブに互換性のあるコンテンツを見つけられませんでした:</not_compatible_content>
-		<delete_archive>アーカイブを削除しますか?</delete_archive>
+		<successed_install_archive>{}アーカイブのコンテンツのインストールに成功しました：</successed_install_archive>
+		<update_app>アプリを更新：</update_app>
+		<failed_install_archive>{}コンテンツのインストールに失敗しました：</failed_install_archive>
+		<not_compatible_content>{}アーカイブに互換性のあるコンテンツを見つけられませんでした：</not_compatible_content>
+		<delete_archive>アーカイブを削除しますか？</delete_archive>
 		<select_license_type>ライセンスを選択</select_license_type>
 		<select_bin_rif>work.bin/rifを選択</select_bin_rif>
 		<successed_install_license>ライセンスのインストールに成功しました。</successed_install_license>
 		<content_id>コンテンツID：</content_id>
 		<title_id>タイトルID：</title_id>
-		<delete_bin_rif>先ほどのwork.bin/rifを削除しますか?</delete_bin_rif>
+		<delete_bin_rif>先ほどのwork.bin/rifを削除しますか？</delete_bin_rif>
 	</install_dialog>
 
 	<live_area>
