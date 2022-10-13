@@ -36,20 +36,36 @@
 	</about>
 
 	<app_context>
+		<boot>Boot</boot> 
+		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
+		<copy_app_info>Copy App Info</copy_app_info>
+		<id_and_name>ID and Name</id_and_name>
+		<custom_config>Custom Config</custom_config>
+		<create>Create</create>
+		<edit>Edit</edit>
+		<remove>Remove</remove>
+		<open_folder>Open Folder</open_folder>
+		<addcont>DLCs</addcont>
+		<license>License</license>
+		<shader_cache>Shader Cache</shader_cache>
+		<shader_log>Shader Log</shader_log>
 		<update_history>Updategeschiedenis</update_history>
 		<history_version>Versie {}</history_version>
 		<information>Informatie</information>
 		<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
+		<app_delete_note>Deleting a application may take a while
+depending on its size and your hardware.</app_delete_note>
 		<save_delete>Wil je deze opgeslagen data verwijderen?</save_delete>
 		<eligible>Geschikt</eligible>
 		<ineligible>Niet geschikt</ineligible>
 		<level>Niveau</level>
 		<name>Naam</name>
 		<trophy_earning>Trofeeën verdienen</trophy_earning>
-		<parental_Controls>Ouderlijk toezicht</parental_Controls>
+		<parental_controls>Ouderlijk toezicht</parental_controls>
 		<updated>Geüpdatet</updated>
 		<size>Grootte</size>
 		<version>Versie</version>
+		<title_id>Title ID</title_id>
 		<last_time_used>Laatst gebruikt</last_time_used>
 		<never>Nooit</never>
 		<time_used>Gebruikte tijd</time_used>
@@ -181,6 +197,7 @@
 	</common>
 
 	<content_manager name="Content manager">
+		<search>Search</search>
 		<application name="Applicaties">
 			<delete>De geselecteerde applicaties en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</delete>
 			<no_item>Er zijn geen content-items.</no_item>
@@ -193,6 +210,14 @@
 		<free_space>Vrije ruimte</free_space>
 		<clear_all>Alles wissen</clear_all>
 	</content_manager>
+
+	<controllers name="Controllers">
+		<connected>Controllers connected</connected>
+		<name>Naam</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
 
 	<dialog>
 		<trophy>
@@ -252,6 +277,7 @@ Schakel het systeem niet uit en sluit de applicatie niet.</warning_saving>
 		<completed_setup>Je hebt de initiële setup nu voltooid.
 Je Vita3K-systeem is gereed!</completed_setup>
 		<select_language>Selecteer een taal.</select_language>
+		<completed>Completed.</completed>
 		<next>Volgende</next>
 	</initial_setup>
 
@@ -264,6 +290,7 @@ Je Vita3K-systeem is gereed!</completed_setup>
 		<theme_background name="Thema en achtergrond">
 			<default>Standaard</default>
 			<theme name="Thema">
+				<search>Search</search>
 				<find_in_altervista>Zoeken in Altervista</find_in_altervista>
 				<information name="Informatie">
 					<name>Naam</name>
@@ -271,6 +298,7 @@ Je Vita3K-systeem is gereed!</completed_setup>
 					<updated>Geüpdatet</updated>
 					<size>Grootte</size>
 					<version>Versie</version>
+					<content_id>Content ID</content_id>
 				</information>
 				<delete>Dit thema wordt verwijderd.</delete>
 			</theme>
@@ -321,6 +349,9 @@ Je Vita3K-systeem is gereed!</completed_setup>
 	</settings>
 
 	<trophy_collection>
+		<search>Search</search>
+		<delete_trophy>Delete Trophy</delete_trophy>
+		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Details</details>
 		<earned>Gewonnen</earned>
 		<name>Naam</name>

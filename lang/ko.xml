@@ -53,16 +53,22 @@
 		<history_version>버전 {}</history_version>
 		<information>정보</information>
 		<app_delete>이 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</app_delete>
+		<app_delete_note>Deleting a application may take a while
+depending on its size and your hardware.</app_delete_note>
 		<save_delete>이 저장 데이터를 삭제하시겠습니까?</save_delete>
 		<eligible>권리 있음</eligible>
 		<ineligible>권리 없음</ineligible>
 		<level>레벨</level>		
 		<name>이름</name>
 		<trophy_earning>트로피 획득</trophy_earning>
-		<parental_Controls>자녀보호 기능</parental_Controls>
+		<parental_controls>자녀보호 기능</parental_controls>
 		<updated>갱신일</updated>
 		<size>크기</size>
 		<version>버전</version>
+		<title_id>Title ID</title_id>
+		<last_time_used>Last time used</last_time_used>
+		<never>Never</never>
+		<time_used>Time used</time_used>
 	</app_context>
 
 	<common>
@@ -191,6 +197,7 @@
 	</common>
 
 	<content_manager name="콘텐츠 관리">
+		<search>Search</search>
 		<application name="애플리케이션">
 			<delete>선택한 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</delete>
 			<no_item>콘텐츠가 없습니다.</no_item>
@@ -203,6 +210,14 @@
 		<free_space>빈 용량</free_space>
 		<clear_all>모두 해제</clear_all>
 	</content_manager>
+
+	<controllers name="Controllers">
+		<connected>Controllers connected</connected>
+		<name>이름</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
 
 	<dialog>
 		<trophy>
@@ -262,6 +277,7 @@
 		<completed_setup>You have now completed initial setup.
 Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
+		<completed>Completed.</completed>
 		<next>Next</next>
 	</initial_setup>
 
@@ -274,6 +290,7 @@ Your Vita3K system is ready!</completed_setup>
 		<theme_background name="테마 & 배경">
 			<default>오리지널</default>
 			<theme name="테마">
+				<search>Search</search>
 				<find_in_altervista>Altervista에서 찾기</find_in_altervista>
 				<information name="정보">
 					<name>이름</name>
@@ -281,6 +298,7 @@ Your Vita3K system is ready!</completed_setup>
 					<updated>갱신일</updated>
 					<size>크기</size>
 					<version>버전</version>
+					<content_id>Content ID</content_id>
 				</information>
 				<delete>이 테마를 삭제합니다.</delete>
 			</theme>
@@ -331,6 +349,9 @@ Your Vita3K system is ready!</completed_setup>
 	</settings>
 
 	<trophy_collection>
+		<search>Search</search>
+		<delete_trophy>Delete Trophy</delete_trophy>
+		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>상세</details>
 		<earned>획득일</earned>
 		<name>이름</name>

@@ -36,20 +36,36 @@
 	</about>
 
 	<app_context>
+		<boot>Boot</boot> 
+		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
+		<copy_app_info>Copy App Info</copy_app_info>
+		<id_and_name>ID and Name</id_and_name>
+		<custom_config>Custom Config</custom_config>
+		<create>Create</create>
+		<edit>Edit</edit>
+		<remove>Remove</remove>
+		<open_folder>Open Folder</open_folder>
+		<addcont>DLCs</addcont>
+		<license>License</license>
+		<shader_cache>Shader Cache</shader_cache>
+		<shader_log>Shader Log</shader_log>
 		<update_history>Historial de actualizaciones</update_history>
 		<history_version>Versión {}</history_version>
 		<information>Información</information>
 		<app_delete>Se eliminarán la aplicación y todos los datos relacionados, incluidos los datos guardados.</app_delete>
+		<app_delete_note>Deleting a application may take a while
+depending on its size and your hardware.</app_delete_note>
 		<save_delete>¿Quieres eliminar estos datos guardados?</save_delete>
 		<eligible>Elegible</eligible>
 		<ineligible>No elegible</ineligible>
 		<level>Nivel</level>
 		<name>Nombre</name>
 		<trophy_earning>Ganar trofeos</trophy_earning>
-		<parental_Controls>Control paterno</parental_Controls>
+		<parental_controls>Control paterno</parental_controls>
 		<updated>Actualizado</updated>
 		<size>Tamaño</size>
 		<version>Versión</version>
+		<title_id>Title ID</title_id>
 		<last_time_used>Última vez que se utilizó</last_time_used>
 		<never>Nunca</never>
 		<time_used>Tiempo utilizado</time_used>
@@ -181,6 +197,7 @@
 	</common>
 
 	<content_manager name="Gestor de contenido">
+		<search>Search</search>
 		<application name="Aplicaciones">
 			<delete>Se eliminarán las aplicaciones seleccionadas y todos los datos relacionados, incluidos los datos guardados.</delete>
 			<no_item>No hay elementos de contenido.</no_item>
@@ -193,6 +210,14 @@
 		<free_space>Espacio libre</free_space>
 		<clear_all>Borrar todo</clear_all>
 	</content_manager>
+
+	<controllers name="Controllers">
+		<connected>Controllers connected</connected>
+		<name>Nombre</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
 
 	<dialog>
 		<trophy>
@@ -252,6 +277,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		<completed_setup>Completaste la configuración inicial.
 ¡Tu sistema Vita3K está listo!</completed_setup>
 		<select_language>Selecciona un idioma.</select_language>
+		<completed>Completed.</completed>
 		<next>Siguiente</next>
 	</initial_setup>
 
@@ -264,6 +290,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		<theme_background name="Tema y Fondo">
 			<default>Predeterminado</default>
 			<theme name="Tema">
+				<search>Search</search>
 				<find_in_altervista>Buscar en Altervista</find_in_altervista>
 				<information name="Información">
 					<name>Nombre</name>
@@ -271,6 +298,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 					<updated>Actualizado</updated>
 					<size>Tamaño</size>
 					<version>Versión</version>
+					<content_id>Content ID</content_id>
 				</information>
 				<delete>Este tema se eliminará.</delete>
 			</theme>
@@ -321,6 +349,9 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 	</settings>
 
 	<trophy_collection>
+		<search>Search</search>
+		<delete_trophy>Delete Trophy</delete_trophy>
+		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Detalles</details>
 		<earned>Ganado</earned>
 		<name>Nombre</name>

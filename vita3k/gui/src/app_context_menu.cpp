@@ -491,8 +491,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["trophy_earning"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["trophy_earning"].c_str(), gui.app_selector.app_info.trophy.c_str());
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["parental_Controls"] + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["parental_Controls"].c_str(), lang["level"].c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["parental_controls"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["parental_controls"].c_str(), lang["level"].c_str());
             ImGui::SameLine();
             ImGui::TextColored(GUI_COLOR_TEXT, "%d", *reinterpret_cast<const uint16_t *>(APP_INDEX->parental_level.c_str()));
             ImGui::Spacing();
@@ -509,6 +509,9 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["version"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["version"].c_str(), APP_INDEX->app_ver.c_str());
+            ImGui::Spacing();
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["title_id"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["title_id"].c_str(), APP_INDEX->title_id.c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["last_time_used"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s ", lang["last_time_used"].c_str());

@@ -61,10 +61,11 @@ depending on its size and your hardware.</app_delete_note>
 		<level>Level</level>
 		<name>Name</name>
 		<trophy_earning>Trophy Earning</trophy_earning>
-		<parental_Controls>Parental Controls</parental_Controls>
+		<parental_controls>Parental Controls</parental_controls>
 		<updated>Updated</updated>
 		<size>Size</size>
 		<version>Version</version>
+		<title_id>Title ID</title_id>
 		<last_time_used>Last time used</last_time_used>
 		<never>Never</never>
 		<time_used>Time used</time_used>
@@ -311,7 +312,6 @@ Do not power off the system or close the application.</warning_saving>
 		<cat>Cat</cat>
 		<last_time>Last Time</last_time>
 		<tit>Title</tit>
-		<tit_id>Title ID</tit_id>
 		<refresh>Refresh</refresh>
 	</home_screen>
 
@@ -501,9 +501,9 @@ After the download is complete, Vita3K will restart automatically and then insta
 		<quickstart>Quickstart</quickstart>
 		<line_sixth_part_two>page.</line_sixth_part_two>
 		<line_seventh_part_one>Consult the Commercial game</line_seventh_part_one>
-		<compatibility_list>compatibility list</compatibility_list>
+		<compatibility_list>Compatibility List</compatibility_list>
 		<line_seventh_part_two>and the</line_seventh_part_two>
-		<homebrew_compatibility_list>Homebrew compatibility list</homebrew_compatibility_list>
+		<homebrew_compatibility_list>Homebrew Compatibility List</homebrew_compatibility_list>
 		<line_seventh_part_three>to see what currently runs.</line_seventh_part_three>
 		<line_eighth>Contributions are welcome!</line_eighth>
 		<line_tenth>Additional support can be found in the #help channel of the</line_tenth>

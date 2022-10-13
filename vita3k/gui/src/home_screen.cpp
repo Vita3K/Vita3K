@@ -338,11 +338,11 @@ static std::string get_label_name(GuiState &gui, const SortType &type) {
     std::string label;
     auto lang = gui.lang.home_screen;
     switch (type) {
-    case APP_VER: label = lang["ver"].c_str(); break;
-    case CATEGORY: label = lang["cat"].c_str(); break;
-    case LAST_TIME: label = lang["last_time"].c_str(); break;
-    case TITLE: label = lang["tit"].c_str(); break;
-    case TITLE_ID: label = lang["tit_id"].c_str(); break;
+    case APP_VER: label = lang["ver"]; break;
+    case CATEGORY: label = lang["cat"]; break;
+    case LAST_TIME: label = lang["last_time"]; break;
+    case TITLE: label = lang["tit"]; break;
+    case TITLE_ID: label = gui.lang.app_context["title_id"]; break;
     }
 
     switch (gui.app_selector.app_list_sorted[type]) {
