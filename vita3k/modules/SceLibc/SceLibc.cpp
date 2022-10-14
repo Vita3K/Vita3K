@@ -1108,7 +1108,12 @@ EXPORT(int, setbuf) {
 }
 
 EXPORT(int, setjmp) {
+// setjmp can be defined as _setjmp on some systems
+#pragma push_macro("setjmp")
+#undef setjmp
     TRACY_FUNC(setjmp);
+#pragma pop_macro("setjmp")
+
     return UNIMPLEMENTED();
 }
 
