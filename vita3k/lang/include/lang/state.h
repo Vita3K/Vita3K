@@ -166,6 +166,10 @@ struct LangState {
         { "never", "Never" },
         { "time_used", "Time used" }
     };
+    std::map<std::string, std::string> compile_shaders = {
+        { "compiling_shaders", "Compiling Shaders" },
+        { "shaders_compiled", "shaders compiled" }
+    };
     struct ContentManager {
         std::map<std::string, std::string> main = {
             { "title", "Content Manager" },

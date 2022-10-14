@@ -145,6 +145,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     set_calendar(lang.common.small_mday, common.child("small_mday"));
                 }
 
+                // Compile Shaders
+                set_lang_string(lang.compile_shaders, lang_child.child("compile_shaders"));
+
                 // Content Manager
                 const auto content_manager = lang_child.child("content_manager");
                 if (!content_manager.empty()) {

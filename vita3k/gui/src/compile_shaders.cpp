@@ -55,7 +55,7 @@ void draw_pre_compiling_shaders_progress(GuiState &gui, EmuEnvState &emuenv, con
     ImGui::SetCursorPos(ImVec2((176.f * SCALE.x), (52.f * SCALE.y)));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.current_app_title.c_str());
     ImGui::SetCursorPos(ImVec2((176.f * SCALE.x), ImGui::GetCursorPosY() + (30.f * SCALE.y)));
-    ImGui::TextColored(GUI_COLOR_TEXT, "Compiling Shaders%s", points[pos].c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s%s", gui.lang.compile_shaders["compiling_shaders"].c_str(), points[pos].c_str());
     const float PROGRESS_BAR_WIDTH = 508.f * SCALE.x;
     ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), ImGui::GetCursorPosY() + 30.f * emuenv.dpi_scale));
     ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
@@ -89,7 +89,7 @@ void draw_shaders_count_compiled(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (2.f * emuenv.dpi_scale), emuenv.viewport_pos.y + emuenv.viewport_size.y - (42.f * emuenv.dpi_scale)));
     ImGui::SetNextWindowBgAlpha(0.6f);
     ImGui::Begin("##shaders_compiled", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("%lu shaders compiled", gui.shaders_compiled_display[Count]);
+    ImGui::Text("%lu %s", gui.shaders_compiled_display[Count], gui.lang.compile_shaders["shaders_compiled"].c_str());
     ImGui::End();
 }
 
