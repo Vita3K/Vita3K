@@ -196,6 +196,11 @@ depending on its size and your hardware.</app_delete_note>
 		<minutes_ago>{} Minutes Ago</minutes_ago>
 	</common>
 
+	<compile_shaders>
+		<compiling_shaders>Compiling Shaders</compiling_shaders>
+		<shaders_compiled>shaders compiled</shaders_compiled>
+	</compile_shaders>
+
 	<content_manager name="Content Manager">
 		<search>Search</search>
 		<application name="Application">
