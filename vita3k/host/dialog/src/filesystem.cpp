@@ -126,8 +126,9 @@ Result open_file(std::filesystem::path &resulting_path, std::vector<FileFilter> 
     }
 
     // If the default path isn't empty, specify the pointer to the default path string
+    const std::u8string default_path_u8 = default_path.u8string();
     if (default_path != "") {
-        arguments.defaultPath = default_path.string().c_str();
+        arguments.defaultPath = reinterpret_cast<const nfdu8char_t *>(default_path_u8.c_str());
     }
 
     // Set the amount of filters to be input
@@ -144,7 +145,7 @@ Result open_file(std::filesystem::path &resulting_path, std::vector<FileFilter> 
     case NFD_OKAY:
         // Resolve differences between `char *` (nativefiledialog-extended) and `std::string &` (Vita3K)
         // by turning the C char array into a C++ string
-        resulting_path.assign(arguments.outPath.get());
+        resulting_path.assign(reinterpret_cast<const char8_t *>(arguments.outPath.get()));
 
         return Result::SUCCESS;
     case NFD_CANCEL:
@@ -172,8 +173,9 @@ Result pick_folder(std::filesystem::path &resulting_path, std::filesystem::path 
     } arguments;
 
     // If the default path isn't empty, specify the pointer to the default path string
+    const std::u8string default_path_u8 = default_path.u8string();
     if (default_path != "") {
-        arguments.defaultPath = default_path.string().c_str();
+        arguments.defaultPath = reinterpret_cast<const nfdu8char_t *>(default_path_u8.c_str());
     }
 
     // Call nfd to invoke explorer window and store result code
@@ -186,7 +188,7 @@ Result pick_folder(std::filesystem::path &resulting_path, std::filesystem::path 
     case NFD_OKAY:
         // Resolve differences between `char *` (nativefiledialog) and `std::string &` (Vita3K)
         // by turning the C char array into a C++ string
-        resulting_path.assign(arguments.outPath.get());
+        resulting_path.assign(reinterpret_cast<const char8_t *>(arguments.outPath.get()));
 
         return Result::SUCCESS;
     case NFD_CANCEL:
