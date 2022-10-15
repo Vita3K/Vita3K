@@ -157,7 +157,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const char *error_text = lang["error_duplicate_key"].c_str();
     //code for the popup modal,
     if (ImGui::BeginPopupModal(lang["error"].c_str())) {
-        ImGui::TextWrapped(error_text);
+        ImGui::TextWrapped("%s", error_text);
         ImGui::NewLine();
         static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * emuenv.dpi_scale));
