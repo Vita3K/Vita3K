@@ -198,7 +198,7 @@
 
 	<compile_shaders>
 		<compiling_shaders>编译着色器中</compiling_shaders>
-		<shaders compiled>个着色器已编译</shaders_compiled>
+		<shaders_compiled>个着色器已编译</shaders_compiled>
 	</compile_shaders>
 
 	<content_manager name="内容管理">
@@ -398,6 +398,7 @@ Please download and install it.</no_font_exist>
 			</theme>
 			<start_screen name="开始画面">
 				<image>图像</image>
+				<add_image>添加图像</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="主画面的背景">
 				<delete_background>删除背景</delete_background>

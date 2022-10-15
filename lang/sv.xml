@@ -244,8 +244,11 @@ Ditt Vita3K-system är redo!</completed_setup>
 			</theme>
 			<start_screen name="Startskärm">
 				<image>Bild</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Bakgrunder för hemskärmen">
+				<delete_background>Delete Background</delete_background>
+				<add_background>Add Background</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Datum och tid">

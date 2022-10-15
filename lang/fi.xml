@@ -244,6 +244,7 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 			</theme>
 			<start_screen name="Käynnistysnäyttö">
 				<image>Kuva</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Aloitusnäytön taustat">
 				<delete_background>Delete Background</delete_background>

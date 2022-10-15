@@ -398,6 +398,7 @@ Please download and install it.</no_font_exist>
 			</theme>
 			<start_screen name="Start Screen">
 				<image>Image</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Home Screen Backgrounds">
 				<delete_background>Delete Background</delete_background>
