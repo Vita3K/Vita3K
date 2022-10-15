@@ -155,12 +155,12 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Text("%-16s    %-16s", lang["toggle_gui_visibility"].c_str(), "G");
 
     const char *error_text = lang["error_duplicate_key"].c_str();
-    //code for the popup modal,
-    if (ImGui::BeginPopupModal(lang["error"].c_str())) {
-        ImGui::TextWrapped("%s", error_text);
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopupModal(lang["error"].c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("%s", error_text);
         ImGui::NewLine();
         static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
-        ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * emuenv.dpi_scale));
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
         if (ImGui::Button(gui.lang.welcome["close"].c_str(), BUTTON_SIZE)) {
             ImGui::CloseCurrentPopup();
         }
