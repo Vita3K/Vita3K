@@ -16,8 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceHttp.h"
-#include "SceHttp_tracy.h"
-#include "Tracy.hpp"
 
 #ifdef WIN32 // windows moment
 #include <io.h>
@@ -32,6 +30,7 @@
 
 #include <http/state.h>
 
+#include <modules/tracy.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <util/log.h>
@@ -39,6 +38,80 @@
 
 #include <string>
 #include <thread>
+
+#ifdef TRACY_ENABLE
+const std::string tracy_module_name = "SceHttp";
+#endif // TRACY_ENABLE
+
+template <>
+std::string to_debug_str<SceHttpAddHeaderMode>(const MemState &mem, SceHttpAddHeaderMode type) {
+    switch (type) {
+    case SCE_HTTP_HEADER_OVERWRITE:
+        return "SCE_HTTP_HEADER_OVERWRITE";
+    case SCE_HTTP_HEADER_ADD:
+        return "SCE_HTTP_HEADER_ADD";
+    }
+    return std::to_string(type);
+}
+
+template <>
+std::string to_debug_str<SceHttpVersion>(const MemState &mem, SceHttpVersion type) {
+    switch (type) {
+    case SCE_HTTP_VERSION_1_0:
+        return "SCE_HTTP_VERSION_1_0";
+    case SCE_HTTP_VERSION_1_1:
+        return "SCE_HTTP_VERSION_1_1";
+    }
+    return std::to_string(type);
+}
+
+template <>
+std::string to_debug_str<SceHttpMethods>(const MemState &mem, SceHttpMethods type) {
+    switch (type) {
+    case SCE_HTTP_METHOD_GET:
+        return "SCE_HTTP_METHOD_GET";
+    case SCE_HTTP_METHOD_POST:
+        return "SCE_HTTP_METHOD_POST";
+    case SCE_HTTP_METHOD_HEAD:
+        return "SCE_HTTP_METHOD_HEAD";
+    case SCE_HTTP_METHOD_OPTIONS:
+        return "SCE_HTTP_METHOD_OPTIONS";
+    case SCE_HTTP_METHOD_PUT:
+        return "SCE_HTTP_METHOD_PUT";
+    case SCE_HTTP_METHOD_DELETE:
+        return "SCE_HTTP_METHOD_DELETE";
+    case SCE_HTTP_METHOD_TRACE:
+        return "SCE_HTTP_METHOD_TRACE";
+    case SCE_HTTP_METHOD_CONNECT:
+        return "SCE_HTTP_METHOD_CONNECT";
+    case SCE_HTTP_METHOD_INVALID:
+        break; // Invalid should fallback to raw decimal value
+    }
+    return std::to_string(type);
+}
+
+template <>
+std::string to_debug_str<SceHttpsFlags>(const MemState &mem, SceHttpsFlags type) {
+    std::string out;
+
+    if (type & SCE_HTTPS_FLAG_SERVER_VERIFY)
+        out += "SCE_HTTPS_FLAG_SERVER_VERIFY ";
+    if (type & SCE_HTTPS_FLAG_CLIENT_VERIFY)
+        out += "SCE_HTTPS_FLAG_CLIENT_VERIFY ";
+    if (type & SCE_HTTPS_FLAG_CN_CHECK)
+        out += "SCE_HTTPS_FLAG_CN_CHECK ";
+    if (type & SCE_HTTPS_FLAG_NOT_AFTER_CHECK)
+        out += "SCE_HTTPS_FLAG_NOT_AFTER_CHECK ";
+    if (type & SCE_HTTPS_FLAG_NOT_BEFORE_CHECK)
+        out += "SCE_HTTPS_FLAG_NOT_BEFORE_CHECK ";
+    if (type & SCE_HTTPS_FLAG_KNOWN_CA_CHECK)
+        out += "SCE_HTTPS_FLAG_KNOWN_CA_CHECK";
+
+    if (out.empty())
+        return std::to_string(type);
+
+    return out;
+}
 
 EXPORT(int, sceHttpAbortRequest) {
     return UNIMPLEMENTED();
@@ -57,13 +130,7 @@ EXPORT(int, sceHttpAddCookie) {
 }
 
 EXPORT(SceInt, sceHttpAddRequestHeader, SceInt reqId, const char *name, const char *value, SceHttpAddHeaderMode mode) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpAddRequestHeader", _tracy_activation_state);
-    tracy_sceHttpAddRequestHeader(&___tracy_scoped_zone, _tracy_activation_state, reqId, name, value, mode);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpAddRequestHeader, reqId, name, value, mode);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -115,13 +182,7 @@ EXPORT(int, sceHttpCookieImport) {
 }
 
 EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, SceBool enableKeepalive) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpCreateConnectionWithURL", _tracy_activation_state);
-    tracy_sceHttpCreateConnectionWithURL(&___tracy_scoped_zone, _tracy_activation_state, tmplId, url, enableKeepalive);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpCreateConnectionWithURL, tmplId, url, enableKeepalive);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -233,13 +294,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
 }
 
 EXPORT(SceInt, sceHttpCreateConnection, SceInt tmplId, const char *hostname, const char *scheme, SceUShort16 port, SceBool enableKeepalive) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpCreateConnection", _tracy_activation_state);
-    tracy_sceHttpCreateConnection(&___tracy_scoped_zone, _tracy_activation_state, tmplId, hostname, scheme, port, enableKeepalive);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpCreateConnection, tmplId, hostname, scheme, port, enableKeepalive);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -269,14 +324,8 @@ EXPORT(int, sceHttpCreateEpoll) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceInt method, const char *url, SceULong64 contentLength) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpCreateRequestWithURL", _tracy_activation_state);
-    tracy_sceHttpCreateRequestWithURL(&___tracy_scoped_zone, _tracy_activation_state, connId, method, url, contentLength);
-    // --- Tracy logging --- END
-#endif
+EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceHttpMethods method, const char *url, SceULong64 contentLength) {
+    TRACY_FUNC(sceHttpCreateRequestWithURL, connId, method, url, contentLength);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -382,14 +431,8 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceInt method, const 
     return reqId;
 }
 
-EXPORT(SceInt, sceHttpCreateRequest, SceInt connId, SceInt method, const char *path, SceULong64 contentLength) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpCreateRequest", _tracy_activation_state);
-    tracy_sceHttpCreateRequest(&___tracy_scoped_zone, _tracy_activation_state, connId, method, path, contentLength);
-    // --- Tracy logging --- END
-#endif
+EXPORT(SceInt, sceHttpCreateRequest, SceInt connId, SceHttpMethods method, const char *path, SceULong64 contentLength) {
+    TRACY_FUNC(sceHttpCreateRequest, connId, method, path, contentLength);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -408,13 +451,7 @@ EXPORT(SceInt, sceHttpCreateRequest, SceInt connId, SceInt method, const char *p
 }
 
 EXPORT(SceInt, sceHttpCreateRequest2, SceInt connId, const char *method, const char *path, SceULong64 contentLength) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpCreateRequest2", _tracy_activation_state);
-    tracy_sceHttpCreateRequest2(&___tracy_scoped_zone, _tracy_activation_state, connId, method, path, contentLength);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpCreateRequest2, connId, method, path, contentLength);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -426,20 +463,14 @@ EXPORT(SceInt, sceHttpCreateRequest2, SceInt connId, const char *method, const c
 
     auto conn = emuenv.http.connections.find(connId);
 
-    auto intMethod = net_utils::char_method_to_int(method);
+    auto intMethod = (SceHttpMethods)net_utils::char_method_to_int(method);
     // Even if it returns error (-1), it will get handled in the call
 
     return CALL_EXPORT(sceHttpCreateRequestWithURL, connId, intMethod, conn->second.url.c_str(), contentLength);
 }
 
 EXPORT(SceInt, sceHttpCreateRequestWithURL2, SceInt connId, const char *method, const char *path, SceULong64 contentLength) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpCreateRequestWithURL2", _tracy_activation_state);
-    tracy_sceHttpCreateRequestWithURL2(&___tracy_scoped_zone, _tracy_activation_state, connId, method, path, contentLength);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpCreateRequestWithURL2, connId, method, path, contentLength);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -449,20 +480,14 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL2, SceInt connId, const char *method, 
     if (!path)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
-    auto intMethod = net_utils::char_method_to_int(method);
+    auto intMethod = (SceHttpMethods)net_utils::char_method_to_int(method);
     // Even if it returns error (-1), it will get handled in the call
 
     return CALL_EXPORT(sceHttpCreateRequestWithURL, connId, intMethod, path, contentLength);
 }
 
 EXPORT(SceInt, sceHttpCreateTemplate, const char *userAgent, SceHttpVersion httpVer, SceBool autoProxyConf) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpCreateTemplate", _tracy_activation_state);
-    tracy_sceHttpCreateTemplate(&___tracy_scoped_zone, _tracy_activation_state, userAgent, httpVer, autoProxyConf);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpCreateTemplate, userAgent, httpVer, autoProxyConf);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -491,13 +516,7 @@ EXPORT(SceInt, sceHttpCreateTemplate, const char *userAgent, SceHttpVersion http
 }
 
 EXPORT(SceInt, sceHttpDeleteConnection, SceInt connId) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpDeleteConnection", _tracy_activation_state);
-    tracy_sceHttpDeleteConnection(&___tracy_scoped_zone, _tracy_activation_state, connId);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpDeleteConnection, connId);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -514,13 +533,7 @@ EXPORT(SceInt, sceHttpDeleteConnection, SceInt connId) {
 }
 
 EXPORT(SceInt, sceHttpDeleteRequest, SceInt reqId) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpDeleteRequest", _tracy_activation_state);
-    tracy_sceHttpDeleteRequest(&___tracy_scoped_zone, _tracy_activation_state, reqId);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpDeleteRequest, reqId);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -539,13 +552,7 @@ EXPORT(SceInt, sceHttpDeleteRequest, SceInt reqId) {
 }
 
 EXPORT(SceInt, sceHttpDeleteTemplate, SceInt tmplId) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpDeleteTemplate", _tracy_activation_state);
-    tracy_sceHttpDeleteTemplate(&___tracy_scoped_zone, _tracy_activation_state, tmplId);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpDeleteTemplate, tmplId);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -570,7 +577,7 @@ EXPORT(int, sceHttpGetAcceptEncodingGZIPEnabled) {
 }
 
 EXPORT(SceInt, sceHttpGetAllResponseHeaders, SceInt reqId, Ptr<char> *header, SceSize *headerSize) {
-    // TODO: implement tracy function
+    TRACY_FUNC(sceHttpGetAllResponseHeaders, reqId, header, headerSize);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -625,13 +632,7 @@ EXPORT(int, sceHttpGetIcmOption) {
 }
 
 EXPORT(SceInt, sceHttpGetLastErrno, SceInt reqId, SceInt *errNum) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpGetLastErrno", _tracy_activation_state);
-    tracy_sceHttpGetLastErrno(&___tracy_scoped_zone, _tracy_activation_state, reqId, errNum);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpGetLastErrno, reqId, errNum);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -644,7 +645,7 @@ EXPORT(SceInt, sceHttpGetLastErrno, SceInt reqId, SceInt *errNum) {
 }
 
 EXPORT(SceInt, sceHttpGetMemoryPoolStats, SceHttpMemoryPoolStats *currentStat) {
-    // TODO: implement tracy function
+    TRACY_FUNC(sceHttpGetMemoryPoolStats, currentStat);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -659,13 +660,7 @@ EXPORT(int, sceHttpGetNonblock) {
 }
 
 EXPORT(SceInt, sceHttpGetResponseContentLength, SceInt reqId, SceULong64 *contentLength) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpGetResponseContentLength", _tracy_activation_state);
-    tracy_sceHttpGetResponseContentLength(&___tracy_scoped_zone, _tracy_activation_state, reqId, contentLength);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpGetResponseContentLength, reqId, contentLength);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -687,13 +682,7 @@ EXPORT(SceInt, sceHttpGetResponseContentLength, SceInt reqId, SceULong64 *conten
 }
 
 EXPORT(SceInt, sceHttpGetStatusCode, SceInt reqId, SceInt *statusCode) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpGetStatusCode", _tracy_activation_state);
-    tracy_sceHttpGetStatusCode(&___tracy_scoped_zone, _tracy_activation_state, reqId, statusCode);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpGetStatusCode, reqId, statusCode);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -707,13 +696,7 @@ EXPORT(SceInt, sceHttpGetStatusCode, SceInt reqId, SceInt *statusCode) {
 }
 
 EXPORT(SceInt, sceHttpInit, SceSize poolSize) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpInit", _tracy_activation_state);
-    tracy_sceHttpInit(&___tracy_scoped_zone, _tracy_activation_state, poolSize);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpInit, poolSize);
     if (emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_ALREADY_INITED);
 
@@ -731,7 +714,7 @@ EXPORT(SceInt, sceHttpInit, SceSize poolSize) {
 }
 
 EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize headersLen, const char *fieldStr, Ptr<char> *fieldValue, SceSize *valueLen) {
-    // TODO: implement tracy function
+    TRACY_FUNC(sceHttpParseResponseHeader, headers, headersLen, fieldStr, fieldValue, valueLen);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -773,7 +756,7 @@ EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize head
 }
 
 EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, SceInt *httpMajorVer, SceInt *httpMinorVer, SceInt *responseCode, Ptr<char> *reasonPhrase, SceSize *phraseLen) {
-    // TODO: implement tracy function
+    TRACY_FUNC(sceHttpParseStatusLine, statusLine, lineLen, httpMajorVer, httpMinorVer, responseCode, reasonPhrase, phraseLen);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -818,13 +801,7 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
 }
 
 EXPORT(SceInt, sceHttpReadData, SceInt reqId, void *data, SceSize size) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpReadData", _tracy_activation_state);
-    tracy_sceHttpReadData(&___tracy_scoped_zone, _tracy_activation_state, reqId, data, size);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpReadData, reqId, data, size);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -864,13 +841,7 @@ EXPORT(int, sceHttpRedirectCacheFlush) {
 }
 
 EXPORT(SceInt, sceHttpRemoveRequestHeader, SceInt reqId, const char *name) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpRemoveRequestHeader", _tracy_activation_state);
-    tracy_sceHttpRemoveRequestHeader(&___tracy_scoped_zone, _tracy_activation_state, reqId, name);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpRemoveRequestHeader, reqId, name);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -886,7 +857,7 @@ EXPORT(SceInt, sceHttpRemoveRequestHeader, SceInt reqId, const char *name) {
 }
 
 EXPORT(SceInt, sceHttpRequestGetAllHeaders, SceInt reqId, Ptr<char> *header, SceSize *headerSize) {
-    // TODO: implement tracy function
+    TRACY_FUNC(sceHttpRequestGetAllHeaders, reqId, header, headerSize);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -908,13 +879,7 @@ EXPORT(SceInt, sceHttpRequestGetAllHeaders, SceInt reqId, Ptr<char> *header, Sce
 }
 
 EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize size) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpSendRequest", _tracy_activation_state);
-    tracy_sceHttpSendRequest(&___tracy_scoped_zone, _tracy_activation_state, reqId, postData, size);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpSendRequest, reqId, postData, size);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1343,13 +1308,7 @@ EXPORT(int, sceHttpSetRedirectCallback) {
 }
 
 EXPORT(SceInt, sceHttpSetRequestContentLength, SceInt reqId, SceULong64 contentLength) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpSetRequestContentLength", _tracy_activation_state);
-    tracy_sceHttpSetRequestContentLength(&___tracy_scoped_zone, _tracy_activation_state, reqId, contentLength);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpSetRequestContentLength, reqId, contentLength);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1372,13 +1331,7 @@ EXPORT(int, sceHttpSetResolveTimeOut) {
 }
 
 EXPORT(SceInt, sceHttpSetResponseHeaderMaxSize, SceInt reqId, SceSize headerSize) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpSetResponseHeaderMaxSize", _tracy_activation_state);
-    tracy_sceHttpSetResponseHeaderMaxSize(&___tracy_scoped_zone, _tracy_activation_state, reqId, headerSize);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpSetResponseHeaderMaxSize, reqId, headerSize);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1388,6 +1341,7 @@ EXPORT(SceInt, sceHttpSetResponseHeaderMaxSize, SceInt reqId, SceSize headerSize
     if (headerSize > SCE_HTTP_DEFAULT_RESPONSE_HEADER_MAX)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
+    // TODO: set this per http request
     emuenv.http.defaultResponseHeaderSize = headerSize;
 
     return 0;
@@ -1402,13 +1356,7 @@ EXPORT(int, sceHttpSslIsCtxCreated) {
 }
 
 EXPORT(SceInt, sceHttpTerm) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpTerm", _tracy_activation_state);
-    tracy_sceHttpTerm(&___tracy_scoped_zone, _tracy_activation_state);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpTerm);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1441,13 +1389,7 @@ EXPORT(int, sceHttpUnsetEpoll) {
 }
 
 EXPORT(SceInt, sceHttpUriBuild, char *out, SceSize *require, SceSize prepare, const SceHttpUriElement *srcElement, SceUInt option) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpUriBuild", _tracy_activation_state);
-    tracy_sceHttpUriBuild(&___tracy_scoped_zone, _tracy_activation_state, out, require, prepare, srcElement, option);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpUriBuild, out, require, prepare, srcElement, option);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1460,13 +1402,7 @@ EXPORT(SceInt, sceHttpUriBuild, char *out, SceSize *require, SceSize prepare, co
 }
 
 EXPORT(SceInt, sceHttpUriEscape, char *out, SceSize *require, SceSize prepare, const char *in) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpUriEscape", _tracy_activation_state);
-    tracy_sceHttpUriEscape(&___tracy_scoped_zone, _tracy_activation_state, out, require, prepare, in);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpUriEscape, out, require, prepare, in);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1477,13 +1413,7 @@ EXPORT(SceInt, sceHttpUriEscape, char *out, SceSize *require, SceSize prepare, c
 }
 
 EXPORT(SceInt, sceHttpUriMerge, char *mergedUrl, const char *url, const char *relativeUrl, SceSize *require, SceSize prepare, SceUInt option) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpUriMerge", _tracy_activation_state);
-    tracy_sceHttpUriMerge(&___tracy_scoped_zone, _tracy_activation_state, mergedUrl, url, relativeUrl, require, prepare, option);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpUriMerge, mergedUrl, url, relativeUrl, require, prepare, option);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1499,13 +1429,7 @@ EXPORT(SceInt, sceHttpUriMerge, char *mergedUrl, const char *url, const char *re
 }
 
 EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, void *pool, SceSize *require, SceSize prepare) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpUriParse", _tracy_activation_state);
-    tracy_sceHttpUriParse(&___tracy_scoped_zone, _tracy_activation_state, out, srcUrl, pool, require, prepare);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpUriParse, out, srcUrl, pool, require, prepare);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1552,13 +1476,7 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, void
 }
 
 EXPORT(SceInt, sceHttpUriSweepPath, char *dst, const char *src, SceSize srcSize) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpUriSweepPath", _tracy_activation_state);
-    tracy_sceHttpUriSweepPath(&___tracy_scoped_zone, _tracy_activation_state, dst, src, srcSize);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpUriSweepPath, dst, src, srcSize);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1613,13 +1531,7 @@ EXPORT(SceInt, sceHttpUriSweepPath, char *dst, const char *src, SceSize srcSize)
 }
 
 EXPORT(int, sceHttpUriUnescape, char *out, SceSize *require, SceSize prepare, const char *in) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpUriUnescape", _tracy_activation_state);
-    tracy_sceHttpUriUnescape(&___tracy_scoped_zone, _tracy_activation_state, out, require, prepare, in);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpUriUnescape, out, require, prepare, in);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1638,13 +1550,7 @@ EXPORT(int, sceHttpWaitRequestCB) {
 }
 
 EXPORT(SceInt, sceHttpsDisableOption, SceHttpsFlags sslFlags) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpsDisableOption", _tracy_activation_state);
-    tracy_sceHttpsDisableOption(&___tracy_scoped_zone, _tracy_activation_state, sslFlags);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpsDisableOption, sslFlags);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1656,13 +1562,7 @@ EXPORT(SceInt, sceHttpsDisableOption, SceHttpsFlags sslFlags) {
 }
 
 EXPORT(SceInt, sceHttpsDisableOption2, SceInt tmplId, SceHttpsFlags sslFlags) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpsDisableOption2", _tracy_activation_state);
-    tracy_sceHttpsDisableOption2(&___tracy_scoped_zone, _tracy_activation_state, tmplId, sslFlags);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpsDisableOption2, tmplId, sslFlags);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1685,13 +1585,7 @@ EXPORT(int, sceHttpsDisableOptionPrivate) {
 }
 
 EXPORT(SceInt, sceHttpsEnableOption2, SceInt tmplId, SceHttpsFlags sslFlags) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpsEnableOption2", _tracy_activation_state);
-    tracy_sceHttpsEnableOption2(&___tracy_scoped_zone, _tracy_activation_state, tmplId, sslFlags);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpsEnableOption2, tmplId, sslFlags);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1710,13 +1604,7 @@ EXPORT(SceInt, sceHttpsEnableOption2, SceInt tmplId, SceHttpsFlags sslFlags) {
 }
 
 EXPORT(SceInt, sceHttpsEnableOption, SceHttpsFlags sslFlags) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpsEnableOption", _tracy_activation_state);
-    tracy_sceHttpsEnableOption(&___tracy_scoped_zone, _tracy_activation_state, sslFlags);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpsEnableOption, sslFlags);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1740,13 +1628,7 @@ EXPORT(int, sceHttpsGetCaList) {
 }
 
 EXPORT(SceInt, sceHttpsGetSslError, SceInt tmplId, SceInt *errNum, SceUInt *detail) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpsGetSslError", _tracy_activation_state);
-    tracy_sceHttpsGetSslError(&___tracy_scoped_zone, _tracy_activation_state, tmplId, errNum, detail);
-    // --- Tracy logging --- END
-#endif // 727 wysi
+    TRACY_FUNC(sceHttpsGetSslError, tmplId, errNum, detail);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
@@ -1761,13 +1643,7 @@ EXPORT(int, sceHttpsLoadCert) {
 }
 
 EXPORT(SceInt, sceHttpsSetSslCallback, SceInt tmplId, SceHttpsCallback cbFunction, void *userArg) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceHttpsSetSslCallback", _tracy_activation_state);
-    tracy_sceHttpsSetSslCallback(&___tracy_scoped_zone, _tracy_activation_state, tmplId, cbFunction, userArg);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceHttpsSetSslCallback, tmplId, cbFunction, userArg);
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 

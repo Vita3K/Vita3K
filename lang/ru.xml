@@ -25,31 +25,47 @@
 	</main_menubar>
 
 	<about name="О программе">
-		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
-		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems.</about_vita3k>
-		<note>Note: The emulator is still in a very early stage of development.</note>
-		<github_website>If you're interested in contributing, check out our GitHub:</github_website>
-		<vita3k_website>Visit our website for more info:</vita3k_website>
-		<vita3k_staff>Vita3K Staff</vita3k_staff>
-		<developers>Developers</developers>
+		<vita3k>Vita3K: эмулятор PS Vita/PS TV. Первый в мире функциональный эмулятор PS Vita/PS TV.</vita3k>
+		<about_vita3k>Vita3K - это экспериментальный эмулятор PlayStation Vita/PlayStation TV с открытым исходным кодом, написанный на C++ для операционных систем Windows и Linux.</about_vita3k>
+		<note>Note: Эмулятор все еще в ранней стадии разработки.</note>
+		<github_website>Если вы заинтересованы в том, чтобы внести свой вклад, загляните в наш GitHub:</github_website>
+		<vita3k_website>Посетите наш сайт для большей информации:</vita3k_website>
+		<vita3k_staff>Сотрудники Vita3K</vita3k_staff>
+		<developers>Разработчики</developers>
 		<contributors>Contributors</contributors>
 	</about>
 
 	<app_context>
+		<boot>Boot</boot> 
+		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
+		<copy_app_info>Copy App Info</copy_app_info>
+		<id_and_name>ID and Name</id_and_name>
+		<custom_config>Custom Config</custom_config>
+		<create>Create</create>
+		<edit>Edit</edit>
+		<remove>Remove</remove>
+		<open_folder>Open Folder</open_folder>
+		<addcont>DLCs</addcont>
+		<license>License</license>
+		<shader_cache>Shader Cache</shader_cache>
+		<shader_log>Shader Log</shader_log>
 		<update_history>Хронология обновлений</update_history>
 		<history_version>Версия {}</history_version>
 		<information>Информация</information>
 		<app_delete>Это приложение и все связанные с ним данные, в том числе сохраненные данные, будут удалены.</app_delete>
+		<app_delete_note>Deleting a application may take a while
+depending on its size and your hardware.</app_delete_note>
 		<save_delete>Удалить эти сохраненные данные?</save_delete>
 		<eligible>Допущен</eligible>
 		<ineligible>Не допущен</ineligible>
 		<level>Уровень</level>
 		<name>Название</name>
 		<trophy_earning>Полученные призы</trophy_earning>
-		<parental_Controls>Родительский контроль</parental_Controls>
+		<parental_controls>Родительский контроль</parental_controls>
 		<updated>Обновлен</updated>
 		<size>Размер</size>
 		<version>Версия</version>
+		<title_id>Title ID</title_id>
 		<last_time_used>Время последнего использования</last_time_used>
 		<never>Никогда</never>
 		<time_used>Время использования</time_used>
@@ -172,7 +188,7 @@
 		<hidden_trophy>Скрытый приз</hidden_trophy>
 		<one_hour_ago>1 час назад</one_hour_ago>
 		<one_minute_ago>1 мин. назад</one_minute_ago>
-		<bronze>Бронзаs</bronze>
+		<bronze>Бронза</bronze>
 		<gold>Золото</gold>
 		<platinum>Платина</platinum>
 		<silver>Серебро</silver>
@@ -181,6 +197,7 @@
 	</common>
 
 	<content_manager name="Управление данными">
+		<search>Search</search>
 		<application name="Приложения">
 			<delete>Выбранные приложения и все связанные с ними данные, в том числе сохраненные данные, будут удалены.</delete>
 			<no_item>Отсутствуют элементы данных.</no_item>
@@ -195,11 +212,11 @@
 	</content_manager>
 
 	<controllers name="Контроллеры">
-		<connected>Controllers connected</connected>
+		<connected>Контроллеры подключены</connected>
 		<name>Название</name>
-		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
+		<num>Количество</num>
+		<not_connected>Не подключены совместимые контроллеры.
+Подключите контроллер, совместимый с SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -260,6 +277,7 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<completed_setup>Теперь начальная установка завершена.
 Ваша система Vita3K готова!</completed_setup>
 		<select_language>Выбрать язык.</select_language>
+		<completed>Completed.</completed>
 		<next>Далее</next>
 	</initial_setup>
 
@@ -272,6 +290,7 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<theme_background name="Тема и Фон">
 			<default>По умолчанию</default>
 			<theme name="Тема">
+				<search>Search</search>
 				<find_in_altervista>Поиск в Altervista</find_in_altervista>
 				<information name="Информация">
 					<name>Название</name>
@@ -279,6 +298,7 @@ Connect a controller that is compatible with SDL2.</not_connected>
 					<updated>Обновлен</updated>
 					<size>Размер</size>
 					<version>Версия</version>
+					<content_id>Content ID</content_id>
 				</information>
 				<delete>Эта тема будет удалена.</delete>
 			</theme>
@@ -286,8 +306,8 @@ Connect a controller that is compatible with SDL2.</not_connected>
 				<image>Изображение</image>
 			</start_screen>
 			<home_screen_backgrounds name="Фон начального экрана">
-				<delete_background>Delete Background</delete_background>
-				<add_background>Add Background</add_background>
+				<delete_background>Удалить Фон</delete_background>
+				<add_background>Добавить Фон</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Дата и время">
@@ -329,6 +349,9 @@ Connect a controller that is compatible with SDL2.</not_connected>
 	</settings>
 
 	<trophy_collection>
+		<search>Search</search>
+		<delete_trophy>Delete Trophy</delete_trophy>
+		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Подробности</details>
 		<earned>Получены</earned>
 		<name>Название</name>
@@ -352,7 +375,7 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<delete_user>Удалить пользователя</delete_user>
 		<user_delete>Выберите пользователя, которого хотите удалить.</user_delete>
 		<user_delete_msg>Выбранный пользователь был удален:</user_delete_msg>
-		<user_delete_message>Дри удаления пользователя сохраненные данные, трофеи будут удалены.</user_delete_message>
+		<user_delete_message>При удалении пользователя, его сохраненные данные, призы будут удалены.</user_delete_message>
 		<user_delete_warn>Пользователь будет удален.
 Продолжить?</user_delete_warn>
 		<user_deleted>Пользователь удален.</user_deleted>

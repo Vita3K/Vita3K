@@ -17,6 +17,7 @@
 
 #include "ScePower.h"
 
+#include <modules/tracy.h>
 #include <util/types.h>
 
 #include <SDL_power.h>
@@ -24,6 +25,10 @@
 #include <climits>
 
 #define LOW_BATTERY_PERCENT 10
+
+#ifdef TRACY_ENABLE
+const std::string tracy_module_name = "ScePower";
+#endif // TRACY_ENABLE
 
 enum ScePowerErrorCode {
     SCE_POWER_ERROR_INVALID_VALUE = 0x802B0000,
@@ -35,34 +40,42 @@ enum ScePowerErrorCode {
 };
 
 EXPORT(int, scePowerBatteryUpdateInfo) {
+    TRACY_FUNC(scePowerBatteryUpdateInfo);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerCancelRequest) {
+    TRACY_FUNC(scePowerCancelRequest);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetArmClockFrequency) {
+    TRACY_FUNC(scePowerGetArmClockFrequency);
     return 444;
 }
 
 EXPORT(int, scePowerGetBatteryChargingStatus) {
+    TRACY_FUNC(scePowerGetBatteryChargingStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryCycleCount) {
+    TRACY_FUNC(scePowerGetBatteryCycleCount);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryElec) {
+    TRACY_FUNC(scePowerGetBatteryElec);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryFullCapacity) {
+    TRACY_FUNC(scePowerGetBatteryFullCapacity);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryLifePercent) {
+    TRACY_FUNC(scePowerGetBatteryLifePercent);
     int res;
     SDL_GetPowerInfo(NULL, &res);
     if (res == -1) {
@@ -72,6 +85,7 @@ EXPORT(int, scePowerGetBatteryLifePercent) {
 }
 
 EXPORT(int, scePowerGetBatteryLifeTime) {
+    TRACY_FUNC(scePowerGetBatteryLifeTime);
     int res;
     SDL_GetPowerInfo(&res, NULL);
     if (res == -1) {
@@ -81,60 +95,74 @@ EXPORT(int, scePowerGetBatteryLifeTime) {
 }
 
 EXPORT(int, scePowerGetBatteryRemainCapacity) {
+    TRACY_FUNC(scePowerGetBatteryRemainCapacity);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryRemainLevel) {
+    TRACY_FUNC(scePowerGetBatteryRemainLevel);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryRemainMaxLevel) {
+    TRACY_FUNC(scePowerGetBatteryRemainMaxLevel);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatterySOH) {
+    TRACY_FUNC(scePowerGetBatterySOH);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryTemp) {
+    TRACY_FUNC(scePowerGetBatteryTemp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBatteryVolt) {
+    TRACY_FUNC(scePowerGetBatteryVolt);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetBusClockFrequency) {
+    TRACY_FUNC(scePowerGetBusClockFrequency);
     return 222;
 }
 
 EXPORT(int, scePowerGetCaseTemp) {
+    TRACY_FUNC(scePowerGetCaseTemp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerGetGpuClockFrequency) {
+    TRACY_FUNC(scePowerGetGpuClockFrequency);
     return 222;
 }
 
 EXPORT(int, scePowerGetGpuXbarClockFrequency) {
+    TRACY_FUNC(scePowerGetGpuXbarClockFrequency);
     return 166;
 }
 
 EXPORT(int, scePowerGetUsingWireless) {
+    TRACY_FUNC(scePowerGetUsingWireless);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerIsBatteryCharging) {
+    TRACY_FUNC(scePowerIsBatteryCharging);
     SDL_PowerState info = SDL_GetPowerInfo(NULL, NULL);
     return (info == SDL_POWERSTATE_CHARGING);
 }
 
 EXPORT(int, scePowerIsBatteryExist) {
+    TRACY_FUNC(scePowerIsBatteryExist);
     SDL_PowerState info = SDL_GetPowerInfo(NULL, NULL);
     return (info != SDL_POWERSTATE_NO_BATTERY);
 }
 
 EXPORT(int, scePowerIsLowBattery) {
+    TRACY_FUNC(scePowerIsLowBattery);
     int res;
     SDL_GetPowerInfo(NULL, &res);
     if (res <= LOW_BATTERY_PERCENT) {
@@ -144,51 +172,63 @@ EXPORT(int, scePowerIsLowBattery) {
 }
 
 EXPORT(int, scePowerIsLowBatteryInhibitUpdateDownload) {
+    TRACY_FUNC(scePowerIsLowBatteryInhibitUpdateDownload);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerIsLowBatteryInhibitUpdateReboot) {
+    TRACY_FUNC(scePowerIsLowBatteryInhibitUpdateReboot);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerIsPowerOnline) {
+    TRACY_FUNC(scePowerIsPowerOnline);
     SDL_PowerState info = SDL_GetPowerInfo(NULL, NULL);
     return ((info != SDL_POWERSTATE_UNKNOWN) && (info != SDL_POWERSTATE_ON_BATTERY));
 }
 
 EXPORT(int, scePowerIsRequest) {
+    TRACY_FUNC(scePowerIsRequest);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerIsSuspendRequired) {
+    TRACY_FUNC(scePowerIsSuspendRequired);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerRegisterCallback) {
+    TRACY_FUNC(scePowerRegisterCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerRequestColdReset) {
+    TRACY_FUNC(scePowerRequestColdReset);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerRequestDisplayOff) {
+    TRACY_FUNC(scePowerRequestDisplayOff);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerRequestDisplayOn) {
+    TRACY_FUNC(scePowerRequestDisplayOn);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerRequestStandby) {
+    TRACY_FUNC(scePowerRequestStandby);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerRequestSuspend) {
+    TRACY_FUNC(scePowerRequestSuspend);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerSetArmClockFrequency, int freq) {
+    TRACY_FUNC(scePowerSetArmClockFrequency, freq);
     if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
@@ -196,6 +236,7 @@ EXPORT(int, scePowerSetArmClockFrequency, int freq) {
 }
 
 EXPORT(int, scePowerSetBusClockFrequency, int freq) {
+    TRACY_FUNC(scePowerSetBusClockFrequency, freq);
     if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
@@ -203,6 +244,7 @@ EXPORT(int, scePowerSetBusClockFrequency, int freq) {
 }
 
 EXPORT(int, scePowerSetConfigurationMode, int mode) {
+    TRACY_FUNC(scePowerSetConfigurationMode, mode);
     if (mode != 0x80 && mode != 0x800 && mode != 0x10880) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
@@ -210,6 +252,7 @@ EXPORT(int, scePowerSetConfigurationMode, int mode) {
 }
 
 EXPORT(int, scePowerSetGpuClockFrequency, int freq) {
+    TRACY_FUNC(scePowerSetGpuClockFrequency, freq);
     if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
@@ -217,6 +260,7 @@ EXPORT(int, scePowerSetGpuClockFrequency, int freq) {
 }
 
 EXPORT(int, scePowerSetGpuXbarClockFrequency, int freq) {
+    TRACY_FUNC(scePowerSetGpuXbarClockFrequency, freq);
     if (freq < 0) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
@@ -224,10 +268,12 @@ EXPORT(int, scePowerSetGpuXbarClockFrequency, int freq) {
 }
 
 EXPORT(int, scePowerSetIdleTimerCount) {
+    TRACY_FUNC(scePowerSetIdleTimerCount);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePowerSetUsingWireless, SceBool enabled) {
+    TRACY_FUNC(scePowerSetUsingWireless, enabled);
     if (enabled != SCE_TRUE && enabled != SCE_FALSE) {
         return SCE_POWER_ERROR_INVALID_VALUE;
     }
@@ -235,6 +281,7 @@ EXPORT(int, scePowerSetUsingWireless, SceBool enabled) {
 }
 
 EXPORT(int, scePowerUnregisterCallback) {
+    TRACY_FUNC(scePowerUnregisterCallback);
     return UNIMPLEMENTED();
 }
 

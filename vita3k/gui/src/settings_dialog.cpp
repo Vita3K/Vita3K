@@ -997,6 +997,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                         // Activate module by appending the name of the module to the vector
                         emuenv.cfg.tracy_advanced_profiling_modules.push_back(module);
                     }
+                    // Sort the list everytime it changes, this is so that we can use binary search on sce functions
+                    std::sort(emuenv.cfg.tracy_advanced_profiling_modules.begin(), emuenv.cfg.tracy_advanced_profiling_modules.end());
                 }
             }
             ImGui::EndListBox();

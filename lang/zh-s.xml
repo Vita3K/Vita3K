@@ -25,8 +25,8 @@
 	</main_menubar>
 
 	<about name="关于">
-		<vita3k>Vita3K：一个PS Vita/PS Vita TV模拟器。 是全球首款实用的PS Vita/PS Vita TV模拟器。</vita3k>
-		<about_vita3k>Vita3K是一款使用C++编写的实验性开源PlayStation Vita/PlayStation Vita TV模拟器，适用于Windows和Linux操作系统。</about_vita3k>
+		<vita3k>Vita3K：一个PS Vita/PS Vita TV模拟器。 是全球首个实用的PS Vita/PS Vita TV模拟器。</vita3k>
+		<about_vita3k>Vita3K是一个使用C++编写的实验性开源PlayStation Vita/PlayStation Vita TV模拟器，适用于Windows和Linux操作系统。</about_vita3k>
 		<note>注意：目前模拟器仍处于开发的早期阶段。</note>
 		<github_website>如果您有兴趣参与贡献，请浏览我们的GitHub：</github_website>
 		<vita3k_website>更多信息请访问我们的网站：</vita3k_website>
@@ -61,10 +61,11 @@
 		<level>级别</level>
 		<name>名称</name>
 		<trophy_earning>获得奖杯</trophy_earning>
-		<parental_Controls>视听者限制</parental_Controls>
+		<parental_controls>视听者限制</parental_controls>
 		<updated>升级日期</updated>
 		<size>大小</size>
 		<version>版本</version>
+		<title_id>标题ID</title_id>
 		<last_time_used>最近使用时间</last_time_used>
 		<never>从来没有</never>
 		<time_used>使用时间</time_used>
@@ -195,6 +196,11 @@
 		<minutes_ago>{}分钟前</minutes_ago>
 	</common>
 
+	<compile_shaders>
+		<compiling_shaders>编译着色器中</compiling_shaders>
+		<shaders compiled>个着色器已编译</shaders_compiled>
+	</compile_shaders>
+
 	<content_manager name="内容管理">
 		<search>搜索</search>
 		<application name="应用程序">
@@ -311,7 +317,6 @@
 		<cat>类别</cat>
 		<last_time>最近使用时间</last_time>
 		<tit>标题</tit>
-		<tit_id>标题ID</tit_id>
 		<refresh>刷新</refresh>
 	</home_screen>
 
@@ -360,7 +365,7 @@ Please download and install it.</no_font_exist>
 		<successed_install_archive>已成功安装{}个压缩包中的内容：</successed_install_archive>
 		<update_app>更新应用程序至：</update_app>
 		<failed_install_archive>无法安装{}个压缩包中的内容：</failed_install_archive>
-		<not_compatible_content>未发现兼容内容的{}个压缩包。</not_compatible_content>
+		<not_compatible_content>未发现兼容内容的{}个压缩包：</not_compatible_content>
 		<delete_archive>删除压缩包？</delete_archive>
 		<select_license_type>选择许可证类型</select_license_type>
 		<select_bin_rif>选择work.bin/rif</select_bin_rif>
@@ -493,16 +498,18 @@ Please download and install it.</no_font_exist>
 
 	<welcome name="欢迎来到Vita3K">
 		<line_first>Vita3K PlayStation Vita模拟器</line_first>
-		<line_second>Vita3K是一款使用C++编写的开源PlayStation Vita/PlayStation Vita TV模拟器，适用于Windows和Linux。</line_second>
+		<line_second>Vita3K是一个使用C++编写的开源PlayStation Vita/PlayStation Vita TV模拟器，适用于Windows和Linux。</line_second>
 		<line_third>目前模拟器仍处于早期阶段，因此非常感谢任何反馈和测试。</line_third>
 		<line_fourth>要开始使用，请安装PS Vita固件和字体包。</line_fourth>
 		<download_firmware>Download Firmware</download_firmware>
 		<line_sixth_part_one>有关如何设置Vita3K的综合指南可在</line_sixth_part_one>
 		<quickstart>快速入门</quickstart>
-		<line_sixth_part_two>页面上找到。</line_sixth_part_two>
+		<line_sixth_part_two>页面中找到。</line_sixth_part_two>
 		<line_seventh_part_one>参考商业游戏</line_seventh_part_one>
-		<compatibility>兼容性</compatibility>
-		<line_seventh_part_two>列表和自制程序兼容性列表以查看可运行的内容。</line_seventh_part_two>
+		<compatibility_list>兼容性列表</compatibility_list>
+		<line_seventh_part_two>以及</line_seventh_part_two>
+		<homebrew_compatibility_list>自制程序兼容性列表</homebrew_compatibility_list>
+		<line_seventh_part_three>来查看目前可运行的内容。</line_seventh_part_three>
 		<line_eighth>欢迎参与贡献！</line_eighth>
 		<line_tenth>可以在#help频道中找到更多支持</line_tenth>
 		<line_eleventh>Vita3K不纵容盗版。您必须提取您自己拥有的游戏。</line_eleventh>

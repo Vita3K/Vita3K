@@ -10,10 +10,17 @@ function(check_submodules_present)
 	string(REGEX MATCHALL "path *= *[^ \t\r\n]*" gitmodules ${gitmodules})
 
 	foreach(module ${gitmodules})
+		# Get module name
 		string(REGEX REPLACE "path *= *" "" module ${module})
 
-		if(NOT EXISTS "${CMAKE_SOURCE_DIR}/${module}/.git")
-			message(FATAL_ERROR "Git submodule ${module} not found. "
+		# Stat the folder and get ammount of entries
+		file(GLOB RESULT "${CMAKE_SOURCE_DIR}/${module}/*")
+		list(LENGTH RESULT RES_LEN)
+
+		# If the module has no files, bring fatal error
+		if(RES_LEN EQUAL 0)
+			# directory is empty
+			message(FATAL_ERROR "Submodule ${module} is empty. "
 				"Please run: git submodule update --init --recursive")
 		endif()
 	endforeach()
@@ -52,7 +59,6 @@ endif()
 
 add_library(printf INTERFACE)
 target_include_directories(printf INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/printf")
-
 
 add_subdirectory(fmt)
 add_library(fmt::fmt ALIAS fmt)

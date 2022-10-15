@@ -25,20 +25,39 @@
 	</main_menubar>
 
 	<app_context>
+		<boot>Boot</boot> 
+		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
+		<copy_app_info>Copy App Info</copy_app_info>
+		<id_and_name>ID and Name</id_and_name>
+		<custom_config>Custom Config</custom_config>
+		<create>Create</create>
+		<edit>Edit</edit>
+		<remove>Remove</remove>
+		<open_folder>Open Folder</open_folder>
+		<addcont>DLCs</addcont>
+		<license>License</license>
+		<shader_cache>Shader Cache</shader_cache>
+		<shader_log>Shader Log</shader_log>
 		<update_history>Uppdateringshistorik</update_history>
 		<history_version>Version {}</history_version>
 		<information>Information</information>
 		<app_delete>Den här applikationen och alla tillhörande data, inklusive sparade data, kommer att raderas.</app_delete>
+		<app_delete_note>Deleting a application may take a while
+depending on its size and your hardware.</app_delete_note>
 		<save_delete>Vill du radera dessa sparade data?</save_delete>
 		<eligible>Möjligt</eligible>
 		<ineligible>Inte möjligt</ineligible>
 		<level>Nivå</level>
 		<name>Namn</name>
 		<trophy_earning>Vinna trophy</trophy_earning>
-		<parental_Controls>Föräldrakontroll</parental_Controls>
+		<parental_controls>Föräldrakontroll</parental_controls>
 		<updated>Uppdaterat</updated>
 		<size>Storlek</size>
 		<version>Version</version>
+		<title_id>Title ID</title_id>
+		<last_time_used>Last time used</last_time_used>
+		<never>Never</never>
+		<time_used>Time used</time_used>
 	</app_context>
 	
 	<common>
@@ -166,6 +185,7 @@
 	</common>
 
 	<content_manager name="Innehållshanterare">
+		<search>Search</search>
 		<application name="Applikationer">
 			<delete>De markerade applikationerna och alla tillhörande data, inklusive sparade data, kommer att raderas.</delete>
 			<no_item>Det finns inga innehållsobjekt.</no_item>
@@ -179,16 +199,25 @@
 		<clear_all>Återställ alla</clear_all>
 	</content_manager>
 
+	<controllers name="Controllers">
+		<connected>Controllers connected</connected>
+		<name>Namn</name>
+		<num>Num</num>
+		<not_connected>No compatible controllers connected.
+Connect a controller that is compatible with SDL2.</not_connected>
+	</controllers>
+
 	<game_data>
 		<app_close>Följande applikation stängs.</app_close>
 		<data_delete>Data att radera:</data_delete>
 	</game_data>
 
-    <initial_setup>
+	<initial_setup>
 		<back>Tillbaka</back>
 		<completed_setup>Du har slutfört den första inställningen.
 Ditt Vita3K-system är redo!</completed_setup>
 		<select_language>Välj ett språk.</select_language>
+		<completed>Completed.</completed>
 		<next>Nästa</next>
 	</initial_setup>
 
@@ -201,6 +230,7 @@ Ditt Vita3K-system är redo!</completed_setup>
 		<theme_background name="Tema och bakgrund">
 			<default>Standardinställning</default>
 			<theme name="Tema">
+				<search>Search</search>
 				<find_in_altervista>Sök på Altervista</find_in_altervista>
 				<information name="Information">
 					<name>Namn</name>
@@ -208,6 +238,7 @@ Ditt Vita3K-system är redo!</completed_setup>
 					<updated>Uppdaterat</updated>
 					<size>Storlek</size>
 					<version>Version</version>
+					<content_id>Content ID</content_id>
 				</information>
 				<delete>Det här temat kommer att raderas.</delete>
 			</theme>
@@ -256,6 +287,9 @@ Ditt Vita3K-system är redo!</completed_setup>
 	</settings>
 
 	<trophy_collection>
+		<search>Search</search>
+		<delete_trophy>Delete Trophy</delete_trophy>
+		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Detaljer</details>
 		<earned>Vunna</earned>
 		<name>Namn</name>

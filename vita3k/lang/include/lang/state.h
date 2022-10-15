@@ -157,13 +157,18 @@ struct LangState {
         { "level", "Level" },
         { "name", "Name" },
         { "trophy_earning", "Trophy Earning" },
-        { "parental_Controls", "Parental Controls" },
+        { "parental_controls", "Parental Controls" },
         { "updated", "Updated" },
         { "size", "Size" },
         { "version", "Version" },
+        { "title_id", "Title ID" },
         { "last_time_used", "Last time used" },
         { "never", "Never" },
         { "time_used", "Time used" }
+    };
+    std::map<std::string, std::string> compile_shaders = {
+        { "compiling_shaders", "Compiling Shaders" },
+        { "shaders_compiled", "shaders compiled" }
     };
     struct ContentManager {
         std::map<std::string, std::string> main = {
@@ -249,7 +254,6 @@ struct LangState {
         { "cat", "Cat" },
         { "last_time", "Last Time" },
         { "tit", "Title" },
-        { "tit_id", "Title ID" },
         { "refresh", "Refresh" }
     };
     std::map<std::string, std::string> indicator = {
@@ -424,8 +428,10 @@ struct LangState {
         { "quickstart", "Quickstart" },
         { "line_sixth_part_two", "page." },
         { "line_seventh_part_one", "Consult the Commercial game" },
-        { "compatibility", "compatibility" },
-        { "line_seventh_part_two", "list and the Homebrew compatibility list to see what runs." },
+        { "compatibility_list", "Compatibility List" },
+        { "line_seventh_part_two", "and the" },
+        { "homebrew_compatibility_list", "Homebrew Compatibility List" },
+        { "line_seventh_part_three", "to see what currently runs." },
         { "line_eighth", "Contributions are welcome!" },
         { "line_tenth", "Additional support can be found in the #help channel of the" },
         { "line_eleventh", "Vita3K does not condone piracy. You must dump your own games." },
