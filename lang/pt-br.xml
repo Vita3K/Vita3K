@@ -304,6 +304,7 @@ O seu sistema Vita3K está pronto!</completed_setup>
 			</theme>
 			<start_screen name="Tela inicial">
 				<image>Imagem</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Planos de fundo da tela principal">
 				<delete_background>Delete Background</delete_background>

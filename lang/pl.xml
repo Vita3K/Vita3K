@@ -206,7 +206,6 @@ depending on its size and your hardware.</app_delete_note>
 		<not_connected>No compatible controllers connected.
 Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
-
 	
 	<game_data>
 		<app_close>Następująca aplikacja zostanie zamknięta.</app_close>
@@ -245,6 +244,7 @@ System Vita3K jest gotowy!</completed_setup>
 			</theme>
 			<start_screen name="Ekran startowy">
 				<image>Obraz</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Tło ekranu głównego">
 			</home_screen_backgrounds>

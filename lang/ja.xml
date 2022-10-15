@@ -394,6 +394,7 @@ Vita3Kをお楽しみください。</completed_setup>
 			</theme>
 			<start_screen name="スタート画面">
 				<image>画像</image>
+				<add_image>画像を追加</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="ホーム画面の背景">
 				<delete_background>背景を削除</delete_background>

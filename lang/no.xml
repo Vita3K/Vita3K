@@ -244,6 +244,7 @@ Vita3K-systemet ditt er klart!</completed_setup>
 			</theme>
 			<start_screen name="Startskjerm">
 				<image>Bilde</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Bakgrunner for hjem-skjerm">
 			</home_screen_backgrounds>

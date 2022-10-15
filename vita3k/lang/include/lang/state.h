@@ -331,7 +331,8 @@ struct LangState {
             Theme theme;
             std::map<std::string, std::string> start_screen = {
                 { "title", "Start Screen" },
-                { "image", "Image" }
+                { "image", "Image" },
+                { "add_image", "Add Image" }
             };
             std::map<std::string, std::string> home_screen_backgrounds = {
                 { "title", "Home Screen Backgrounds" },

@@ -304,6 +304,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 			</theme>
 			<start_screen name="Pantalla inicial">
 				<image>Imagen</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Fondos de la pantalla de inicio">
 				<delete_background>Delete Background</delete_background>

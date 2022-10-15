@@ -398,6 +398,7 @@
 			</theme>
 			<start_screen name="開始畫面">
 				<image>圖像</image>
+				<add_image>添加圖像</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="主頁畫面的背景">
 				<delete_background>刪除背景</delete_background>

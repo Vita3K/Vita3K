@@ -304,6 +304,8 @@ depending on its size and your hardware.</app_delete_note>
 			</theme>
 			<start_screen name="Экран запуска">
 				<image>Изображение</image>
+				<add_image>Добавить
+Изображение</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Фон начального экрана">
 				<delete_background>Удалить Фон</delete_background>

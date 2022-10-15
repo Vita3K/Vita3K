@@ -304,6 +304,7 @@ Je Vita3K-systeem is gereed!</completed_setup>
 			</theme>
 			<start_screen name="Startscherm">
 				<image>Afbeelding</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Achtergronden voor beginscherm">
 				<delete_background>Delete Background</delete_background>

@@ -304,6 +304,7 @@ Your Vita3K system is ready!</completed_setup>
 			</theme>
 			<start_screen name="시작 화면">
 				<image>이미지</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="홈 화면의 배경">
 				<delete_background>Delete Background</delete_background>

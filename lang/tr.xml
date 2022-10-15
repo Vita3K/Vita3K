@@ -304,6 +304,7 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 			</theme>
 			<start_screen name="Başlangıç Ekranı">
 				<image>Görüntü</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Giriş Ekranı Arka Planları">
 				<delete_background>Delete Background</delete_background>
