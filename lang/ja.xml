@@ -495,18 +495,17 @@ Vita3Kをお楽しみください。</completed_setup>
 
 	<welcome name="Welcome to Vita3K">
 		<line_first>Vita3K PlayStation Vita Emulator</line_first>
-		<line_second>Vita3Kは、WindowsとLinux用にC++で書かれたオープンソースのPlayStation Vita/PlayStation Vita TVエミュレーターです。</line_second>
+		<line_second>Vita3Kは、WindowsとLinux用にC++で書かれたオープンソースのPlayStation Vita/PlayStation Vita TV
+エミュレーターです。</line_second>
 		<line_third>エミュレーターは未だ初期段階にあるため、フィードバックやテストは大歓迎です。</line_third>
 		<line_fourth>まずは、PS Vitaのファームウェアとフォントのパッケージをインストールしてください。</line_fourth>
 		<download_firmware>ファームウェアをダウンロード</download_firmware>
 		<line_sixth_part_one>Vita3Kのセットアップ方法については、以下のページで解説しています。</line_sixth_part_one>
 		<quickstart>クイックスタート</quickstart>
 		<line_sixth_part_two>ページ。</line_sixth_part_two>
-		<line_seventh_part_one>商用ゲーム</line_seventh_part_one>
-		<compatibility_list>互換性リスト</compatibility_list>
-		<line_seventh_part_two>と</line_seventh_part_two>
+		<line_seventh>商用ゲームとHomebrew互換性リストで動作するものを御確認下さい。</line_seventh>
+		<commercial_compatibility_list>商用ゲーム互換性リスト</commercial_compatibility_list>
 		<homebrew_compatibility_list>Homebrew互換性リスト</homebrew_compatibility_list>
-		<line_seventh_part_three>で動作するものを御確認下さい。</line_seventh_part_three>
 		<line_eighth>寄稿者を募集しています！</line_eighth>
 		<line_tenth>その他の相談は、#help チャンネルで行うことができます。</line_tenth>
 		<line_eleventh>Vita3Kは違法行為を認めません。所有ゲームの吸出しを行ってください。</line_eleventh>
