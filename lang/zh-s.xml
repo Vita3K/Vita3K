@@ -197,7 +197,7 @@
 	</common>
 
 	<compile_shaders>
-		<compiling_shaders>编译着色器中</compiling_shaders>
+		<compiling_shaders>正在编译着色器</compiling_shaders>
 		<shaders_compiled>个着色器已编译</shaders_compiled>
 	</compile_shaders>
 
@@ -506,11 +506,9 @@ Please download and install it.</no_font_exist>
 		<line_sixth_part_one>有关如何设置Vita3K的综合指南可在</line_sixth_part_one>
 		<quickstart>快速入门</quickstart>
 		<line_sixth_part_two>页面中找到。</line_sixth_part_two>
-		<line_seventh_part_one>参考商业游戏</line_seventh_part_one>
-		<compatibility_list>兼容性列表</compatibility_list>
-		<line_seventh_part_two>以及</line_seventh_part_two>
+		<line_seventh>参考商业游戏以及自制程序兼容性列表来查看目前可运行的内容。</line_seventh>
+		<commercial_compatibility_list>商业游戏兼容性列表</commercial_compatibility_list>
 		<homebrew_compatibility_list>自制程序兼容性列表</homebrew_compatibility_list>
-		<line_seventh_part_three>来查看目前可运行的内容。</line_seventh_part_three>
 		<line_eighth>欢迎参与贡献！</line_eighth>
 		<line_tenth>可以在#help频道中找到更多支持</line_tenth>
 		<line_eleventh>Vita3K不纵容盗版。您必须提取您自己拥有的游戏。</line_eleventh>

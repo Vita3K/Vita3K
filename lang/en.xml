@@ -506,11 +506,9 @@ After the download is complete, Vita3K will restart automatically and then insta
 		<line_sixth_part_one>A comprehensive guide on how to set-up Vita3K can be found on the</line_sixth_part_one>
 		<quickstart>Quickstart</quickstart>
 		<line_sixth_part_two>page.</line_sixth_part_two>
-		<line_seventh_part_one>Consult the Commercial game</line_seventh_part_one>
-		<compatibility_list>Compatibility List</compatibility_list>
-		<line_seventh_part_two>and the</line_seventh_part_two>
+		<line_seventh>Consult the Commercial game and the Homebrew compatibility list to see what currently runs.</line_seventh>
+		<commercial_compatibility_list>Commercial Compatibility List</commercial_compatibility_list>
 		<homebrew_compatibility_list>Homebrew Compatibility List</homebrew_compatibility_list>
-		<line_seventh_part_three>to see what currently runs.</line_seventh_part_three>
 		<line_eighth>Contributions are welcome!</line_eighth>
 		<line_tenth>Additional support can be found in the #help channel of the</line_tenth>
 		<line_eleventh>Vita3K does not condone piracy. You must dump your own games.</line_eleventh>

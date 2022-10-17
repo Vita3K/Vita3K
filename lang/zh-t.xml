@@ -506,11 +506,9 @@
 		<line_sixth_part_one>有關如何設置Vita3K的綜合指南可在</line_sixth_part_one>
 		<quickstart>快速入門</quickstart>
 		<line_sixth_part_two>頁面中找到。</line_sixth_part_two>
-		<line_seventh_part_one>參考商業遊戲</line_seventh_part_one>
-		<compatibility_list>兼容性列表</compatibility_list>
-		<line_seventh_part_two>以及</line_seventh_part_two>
+		<line_seventh>參考商業遊戲以及自制程式兼容性列表來查看目前可運行的內容。</line_seventh>
+		<commercial_compatibility_list>商業遊戲兼容性列表</commercial_compatibility_list>
 		<homebrew_compatibility_list>自制程式兼容性列表</homebrew_compatibility_list>
-		<line_seventh_part_three>來查看目前可運行的內容。</line_seventh_part_three>
 		<line_eighth>歡迎參與貢獻！</line_eighth>
 		<line_tenth>可以在#help頻道中找到更多支持</line_tenth>
 		<line_eleventh>Vita3K不縱容盜版。您必須提取您自己擁有的遊戲。</line_eleventh>

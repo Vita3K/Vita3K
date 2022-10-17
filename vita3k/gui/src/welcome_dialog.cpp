@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -54,19 +54,12 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SameLine();
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_sixth_part_two"].c_str());
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_seventh_part_one"].c_str());
-    ImGui::SameLine();
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
-    if (ImGui::Button(lang["compatibility_list"].c_str()))
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_seventh"].c_str());
+    if (ImGui::Button(lang["commercial_compatibility_list"].c_str()))
         open_path("https://vita3k.org/compatibility.html");
     ImGui::SameLine();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_seventh_part_two"].c_str());
-    ImGui::SameLine();
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() - 6.f);
     if (ImGui::Button(lang["homebrew_compatibility_list"].c_str()))
         open_path("https://vita3k.org/compatibility-homebrew.html");
-    ImGui::SameLine();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_seventh_part_three"].c_str());
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_eighth"].c_str());
     ImGui::SameLine();
