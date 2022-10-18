@@ -525,19 +525,25 @@ msvc allow to include any intrinsic independent of architecture flags, other com
 #if (defined(__AVX__) && defined(__F16C__)) || defined(__AVX2__) || (defined(_MSC_VER) && !defined(__clang__))
 #include <immintrin.h>
 void float_to_half_AVX_F16C(const float *src, std::uint16_t *dest, const int total) {
-    float toconvert[8] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-    int i = 0;
+    int left = total;
 
-    while (i < total) {
-        memcpy(toconvert, src, std::min<int>(8, total - i) * sizeof(float));
-
-        __m256 float_vector = _mm256_load_ps(toconvert);
+    while (left >= 8) {
+        __m256 float_vector = _mm256_loadu_ps(src);
         __m128i half_vector = _mm256_cvtps_ph(float_vector, 0);
         _mm_storeu_si128((__m128i *)dest, half_vector);
 
-        i += 8;
+        left -= 8;
         src += 8;
         dest += 8;
+    }
+
+    if (left > 0) {
+        alignas(32) float data[8] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+        std::copy_n(src, left, data);
+        __m256 float_vector = _mm256_load_ps(data);
+        __m128i half_vector = _mm256_cvtps_ph(float_vector, 0);
+        _mm_store_si128(reinterpret_cast<__m128i *>(data), half_vector);
+        std::copy_n(reinterpret_cast<uint16_t *>(data), left, dest);
     }
 }
 #endif
