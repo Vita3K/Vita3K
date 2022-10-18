@@ -109,6 +109,7 @@ public:
      */
     const std::set<std::string> tracy_available_advanced_profiling_modules = {
         "SceAppMgr",
+        "SceAppUtil",
         "SceAudio",
         "SceAudiodecUser",
         "SceCtrl",

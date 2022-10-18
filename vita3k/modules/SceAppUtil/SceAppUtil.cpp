@@ -22,6 +22,7 @@
 #include <io/functions.h>
 #include <io/io.h>
 #include <io/vfs.h>
+#include <modules/tracy.h>
 #include <util/safe_time.h>
 
 #ifdef WIN32
@@ -32,71 +33,115 @@
 
 #include <cstring>
 
+#ifdef TRACY_ENABLE
+const std::string tracy_module_name = "SceAppUtil";
+#endif // TRACY_ENABLE
+
+template <>
+std::string to_debug_str<SceSystemParamId>(const MemState &mem, SceSystemParamId type) {
+    switch (type) {
+    case SCE_SYSTEM_PARAM_ID_LANG:
+        return "SCE_SYSTEM_PARAM_ID_LANG";
+    case SCE_SYSTEM_PARAM_ID_ENTER_BUTTON:
+        return "SCE_SYSTEM_PARAM_ID_ENTER_BUTTON";
+    case SCE_SYSTEM_PARAM_ID_USER_NAME:
+        return "SCE_SYSTEM_PARAM_ID_USER_NAME";
+    case SCE_SYSTEM_PARAM_ID_DATE_FORMAT:
+        return "SCE_SYSTEM_PARAM_ID_DATE_FORMAT";
+    case SCE_SYSTEM_PARAM_ID_TIME_FORMAT:
+        return "SCE_SYSTEM_PARAM_ID_TIME_FORMAT";
+    case SCE_SYSTEM_PARAM_ID_TIME_ZONE:
+        return "SCE_SYSTEM_PARAM_ID_TIME_ZONE";
+    case SCE_SYSTEM_PARAM_ID_SUMMERTIME:
+        return "SCE_SYSTEM_PARAM_ID_SUMMERTIME";
+    case SCE_SYSTEM_PARAM_ID_MAX_VALUE:
+        return "SCE_SYSTEM_PARAM_ID_MAX_VALUE";
+    }
+    return std::to_string(type);
+}
+
 EXPORT(int, sceAppUtilAddCookieWebBrowser) {
+    TRACY_FUNC(sceAppUtilAddCookieWebBrowser);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAddcontMount) {
+    TRACY_FUNC(sceAppUtilAddcontMount);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAddcontUmount) {
+    TRACY_FUNC(sceAppUtilAddcontUmount);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseGameCustomData) {
+    TRACY_FUNC(sceAppUtilAppEventParseGameCustomData);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseIncomingDialog) {
+    TRACY_FUNC(sceAppUtilAppEventParseIncomingDialog);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseLiveArea) {
+    TRACY_FUNC(sceAppUtilAppEventParseLiveArea);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseNearGift) {
+    TRACY_FUNC(sceAppUtilAppEventParseNearGift);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseNpActivity) {
+    TRACY_FUNC(sceAppUtilAppEventParseNpActivity);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseNpAppDataMessage) {
+    TRACY_FUNC(sceAppUtilAppEventParseNpAppDataMessage);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseNpBasicJoinablePresence) {
+    TRACY_FUNC(sceAppUtilAppEventParseNpBasicJoinablePresence);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseNpInviteMessage) {
+    TRACY_FUNC(sceAppUtilAppEventParseNpInviteMessage);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseScreenShotNotification) {
+    TRACY_FUNC(sceAppUtilAppEventParseScreenShotNotification);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseSessionInvitation) {
+    TRACY_FUNC(sceAppUtilAppEventParseSessionInvitation);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseTeleport) {
+    TRACY_FUNC(sceAppUtilAppEventParseTeleport);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseTriggerUtil) {
+    TRACY_FUNC(sceAppUtilAppEventParseTriggerUtil);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilAppEventParseWebBrowser) {
+    TRACY_FUNC(sceAppUtilAppEventParseWebBrowser);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceAppUtilAppParamGetInt, SceAppUtilAppParamId paramId, SceInt32 *value) {
+    TRACY_FUNC(sceAppUtilAppParamGetInt, paramId, value);
     if (paramId != SCE_APPUTIL_APPPARAM_ID_SKU_FLAG)
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
 
@@ -109,6 +154,7 @@ EXPORT(SceInt32, sceAppUtilAppParamGetInt, SceAppUtilAppParamId paramId, SceInt3
 }
 
 EXPORT(int, sceAppUtilBgdlGetStatus) {
+    TRACY_FUNC(sceAppUtilBgdlGetStatus);
     return UNIMPLEMENTED();
 }
 
@@ -118,6 +164,7 @@ static bool is_addcont_exist(EmuEnvState &emuenv, const SceChar8 *path) {
 }
 
 EXPORT(SceInt32, sceAppUtilDrmClose, const SceAppUtilDrmAddcontId *dirName, const SceAppUtilMountPoint *mountPoint) {
+    TRACY_FUNC(sceAppUtilDrmClose, dirName, mountPoint);
     if (!dirName)
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
 
@@ -128,6 +175,7 @@ EXPORT(SceInt32, sceAppUtilDrmClose, const SceAppUtilDrmAddcontId *dirName, cons
 }
 
 EXPORT(SceInt32, sceAppUtilDrmOpen, const SceAppUtilDrmAddcontId *dirName, const SceAppUtilMountPoint *mountPoint) {
+    TRACY_FUNC(sceAppUtilDrmOpen, dirName, mountPoint);
     if (!dirName)
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
 
@@ -138,42 +186,52 @@ EXPORT(SceInt32, sceAppUtilDrmOpen, const SceAppUtilDrmAddcontId *dirName, const
 }
 
 EXPORT(int, sceAppUtilInit) {
+    TRACY_FUNC(sceAppUtilInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilLaunchWebBrowser) {
+    TRACY_FUNC(sceAppUtilLaunchWebBrowser);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilMusicMount) {
+    TRACY_FUNC(sceAppUtilMusicMount);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilMusicUmount) {
+    TRACY_FUNC(sceAppUtilMusicUmount);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilPhotoMount) {
+    TRACY_FUNC(sceAppUtilPhotoMount);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilPhotoUmount) {
+    TRACY_FUNC(sceAppUtilPhotoUmount);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilPspSaveDataGetDirNameList) {
+    TRACY_FUNC(sceAppUtilPspSaveDataGetDirNameList);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilPspSaveDataLoad) {
+    TRACY_FUNC(sceAppUtilPspSaveDataLoad);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilReceiveAppEvent) {
+    TRACY_FUNC(sceAppUtilReceiveAppEvent);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilResetCookieWebBrowser) {
+    TRACY_FUNC(sceAppUtilResetCookieWebBrowser);
     return UNIMPLEMENTED();
 }
 
@@ -186,6 +244,7 @@ std::string construct_slotparam_path(const unsigned int data) {
 }
 
 EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceAppUtilSaveDataRemoveItem *files, unsigned int fileNum, SceAppUtilMountPoint *mountPoint) {
+    TRACY_FUNC(sceAppUtilSaveDataDataRemove, slot, files, fileNum, mountPoint);
     for (unsigned int i = 0; i < fileNum; i++) {
         const auto file = fs::path(construct_savedata0_path(files[i].dataPath.get(emuenv.mem)));
         if (fs::is_regular_file(file)) {
@@ -202,6 +261,7 @@ EXPORT(int, sceAppUtilSaveDataDataRemove, SceAppUtilSaveDataFileSlot *slot, SceA
 }
 
 EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceAppUtilSaveDataDataSaveItem *files, unsigned int fileNum, SceAppUtilMountPoint *mountPoint, SceSize *requiredSizeKiB) {
+    TRACY_FUNC(sceAppUtilSaveDataDataSave, slot, files, fileNum, mountPoint, requiredSizeKiB);
     SceUID fd;
 
     for (unsigned int i = 0; i < fileNum; i++) {
@@ -253,16 +313,19 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
 }
 
 EXPORT(int, sceAppUtilSaveDataGetQuota, SceSize *quotaSizeKiB, SceSize *usedSizeKiB, const SceAppUtilMountPoint *mountPoint) {
+    TRACY_FUNC(sceAppUtilSaveDataGetQuota, quotaSizeKiB, usedSizeKiB, mountPoint);
     *quotaSizeKiB = vfs::get_space_info(VitaIoDevice::ux0, emuenv.io.device_paths.savedata0, emuenv.pref_path).max_capacity / KiB(1);
     *usedSizeKiB = vfs::get_space_info(VitaIoDevice::ux0, emuenv.io.device_paths.savedata0, emuenv.pref_path).used / KiB(1);
     return 0;
 }
 
 EXPORT(int, sceAppUtilSaveDataMount) {
+    TRACY_FUNC(sceAppUtilSaveDataMount);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
+    TRACY_FUNC(sceAppUtilSaveDataSlotCreate, slotId, param, mountPoint);
     const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY | SCE_O_CREAT, emuenv.pref_path, export_name);
     write_file(fd, param, sizeof(SceAppUtilSaveDataSlotParam), emuenv.io, export_name);
     close_file(emuenv.io, fd, export_name);
@@ -270,11 +333,13 @@ EXPORT(int, sceAppUtilSaveDataSlotCreate, unsigned int slotId, SceAppUtilSaveDat
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotDelete, unsigned int slotId, SceAppUtilMountPoint *mountPoint) {
+    TRACY_FUNC(sceAppUtilSaveDataSlotDelete, slotId, mountPoint);
     remove_file(emuenv.io, construct_slotparam_path(slotId).c_str(), emuenv.pref_path, export_name);
     return 0;
 }
 
 EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
+    TRACY_FUNC(sceAppUtilSaveDataSlotGetParam, slotId, param, mountPoint);
     const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
@@ -286,6 +351,7 @@ EXPORT(int, sceAppUtilSaveDataSlotGetParam, unsigned int slotId, SceAppUtilSaveD
 
 EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, const SceAppUtilSaveDataSlotSearchCond *cond,
     SceAppUtilSlotSearchResult *result, const SceAppUtilMountPoint *mountPoint) {
+    TRACY_FUNC(sceAppUtilSaveDataSlotSearch, workBuf, cond, result, mountPoint);
     STUBBED("No sort slot list");
 
     if (!cond || !result)
@@ -337,6 +403,7 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSearch, SceAppUtilWorkBuffer *workBuf, co
 }
 
 EXPORT(SceInt32, sceAppUtilSaveDataSlotSetParam, SceAppUtilSaveDataSlotId slotId, SceAppUtilSaveDataSlotParam *param, SceAppUtilMountPoint *mountPoint) {
+    TRACY_FUNC(sceAppUtilSaveDataSlotSetParam, slotId, param, mountPoint);
     const auto fd = open_file(emuenv.io, construct_slotparam_path(slotId).c_str(), SCE_O_WRONLY, emuenv.pref_path, export_name);
     if (fd < 0)
         return RET_ERROR(SCE_APPUTIL_ERROR_SAVEDATA_SLOT_NOT_FOUND);
@@ -346,6 +413,7 @@ EXPORT(SceInt32, sceAppUtilSaveDataSlotSetParam, SceAppUtilSaveDataSlotId slotId
 }
 
 EXPORT(int, sceAppUtilSaveDataUmount) {
+    TRACY_FUNC(sceAppUtilSaveDataUmount);
     return UNIMPLEMENTED();
 }
 
@@ -375,6 +443,7 @@ static SceInt32 SafeMemory(EmuEnvState &emuenv, void *buf, SceSize bufSize, SceO
 }
 
 EXPORT(SceInt32, sceAppUtilLoadSafeMemory, void *buf, SceSize bufSize, SceOff offset) {
+    TRACY_FUNC(sceAppUtilLoadSafeMemory, buf, bufSize, offset);
     if (!buf || (offset + bufSize > SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE))
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
 
@@ -385,6 +454,7 @@ EXPORT(SceInt32, sceAppUtilLoadSafeMemory, void *buf, SceSize bufSize, SceOff of
 }
 
 EXPORT(SceInt32, sceAppUtilSaveSafeMemory, const void *buf, SceSize bufSize, SceOff offset) {
+    TRACY_FUNC(sceAppUtilSaveSafeMemory, buf, bufSize, offset);
     if (!buf || (offset + bufSize > SCE_APPUTIL_SAFEMEMORY_MEMORY_SIZE))
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
 
@@ -394,14 +464,17 @@ EXPORT(SceInt32, sceAppUtilSaveSafeMemory, const void *buf, SceSize bufSize, Sce
 }
 
 EXPORT(int, sceAppUtilShutdown) {
+    TRACY_FUNC(sceAppUtilShutdown);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAppUtilStoreBrowse) {
+    TRACY_FUNC(sceAppUtilStoreBrowse);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceAppUtilSystemParamGetInt, SceSystemParamId paramId, SceInt32 *value) {
+    TRACY_FUNC(sceAppUtilSystemParamGetInt, paramId, value);
     if (!value)
         return RET_ERROR(SCE_APPUTIL_ERROR_PARAMETER);
 
@@ -429,6 +502,7 @@ EXPORT(SceInt32, sceAppUtilSystemParamGetInt, SceSystemParamId paramId, SceInt32
 }
 
 EXPORT(int, sceAppUtilSystemParamGetString, unsigned int paramId, SceChar8 *buf, SceSize bufSize) {
+    TRACY_FUNC(sceAppUtilSystemParamGetString, paramId, buf, bufSize);
     constexpr auto devname_len = SCE_SYSTEM_PARAM_USERNAME_MAXSIZE;
     char devname[devname_len];
     switch (paramId) {
