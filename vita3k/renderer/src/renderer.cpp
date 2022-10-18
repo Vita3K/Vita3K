@@ -89,9 +89,8 @@ void set_context(State &state, Context *ctx, RenderTarget *target, SceGxmColorSu
     renderer::add_command(ctx, renderer::CommandOpcode::SetContext, nullptr, target, color_surface, depth_stencil_surface);
 }
 
-std::uint8_t **set_vertex_stream(State &state, Context *ctx, const std::size_t index, const std::size_t data_len) {
-    renderer::add_state_set_command(ctx, renderer::GXMState::VertexStream, nullptr, index, data_len);
-    return reinterpret_cast<std::uint8_t **>(ctx->command_list.last->data + 2);
+void set_vertex_stream(State &state, Context *ctx, const std::size_t index, const std::size_t data_len, const Ptr<const void> stream) {
+    renderer::add_state_set_command(ctx, renderer::GXMState::VertexStream, stream, index, data_len);
 }
 
 void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count, const std::uint32_t instance_count) {
@@ -130,16 +129,11 @@ void destroy_render_target(State &state, std::unique_ptr<RenderTarget> &rt) {
     renderer::send_single_command(state, nullptr, renderer::CommandOpcode::DestroyRenderTarget, true, &rt);
 }
 
-void set_uniform(State &state, Context *ctx, const bool is_vertex_uniform, const SceGxmProgramParameter *parameter, const void *data) {
-    renderer::add_state_set_command(ctx, renderer::GXMState::Uniform, is_vertex_uniform, parameter, data);
-}
-
-std::uint8_t **set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform, const int block_number, const std::uint16_t block_size) {
+void set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform, const int block_number, const std::uint16_t block_size, const Ptr<const void> buffer) {
     // Calculate the number of bytes
     std::uint32_t bytes_to_copy_and_pad = (((block_size + 15) / 16)) * 16;
 
-    renderer::add_state_set_command(ctx, renderer::GXMState::UniformBuffer, nullptr, is_vertex_uniform, block_number, bytes_to_copy_and_pad);
-    return reinterpret_cast<std::uint8_t **>(ctx->command_list.last->data + 2);
+    renderer::add_state_set_command(ctx, renderer::GXMState::UniformBuffer, buffer, is_vertex_uniform, block_number, bytes_to_copy_and_pad);
 }
 
 } // namespace renderer

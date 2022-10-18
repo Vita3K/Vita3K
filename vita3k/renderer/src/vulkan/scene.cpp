@@ -238,7 +238,6 @@ static void bind_vertex_streams(VKContext &context, MemState &mem) {
             context.vertex_stream_ring_buffer.allocate(context.prerender_cmd, state.vertex_streams[i].size, state.vertex_streams[i].data);
 
             context.vertex_buffer_offsets[i] = context.vertex_stream_ring_buffer.data_offset;
-            delete[] state.vertex_streams[i].data;
 
             state.vertex_streams[i].data = nullptr;
             state.vertex_streams[i].size = 0;
@@ -330,10 +329,6 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     const size_t index_buffer_size = index_size * count;
 
     context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices);
-
-    // we can now destroy the indices
-    std::uint8_t *indices_u8 = reinterpret_cast<std::uint8_t *>(indices);
-    delete[] indices_u8;
 
     context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
 

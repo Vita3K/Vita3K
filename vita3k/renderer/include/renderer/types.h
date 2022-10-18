@@ -61,31 +61,30 @@ enum class Backend : uint32_t {
 };
 
 enum class GXMState : std::uint16_t {
-    RegionClip = 0,
-    Program = 1,
-    Viewport = 2,
-    DepthBias = 3,
-    DepthFunc = 4,
-    DepthWriteEnable = 5,
-    PolygonMode = 6,
-    PointLineWidth = 7,
-    StencilFunc = 8,
-    Texture = 9,
-    StencilRef = 10,
-    VertexStream = 11,
-    TwoSided = 12,
-    CullMode = 13,
-    Uniform = 14,
-    UniformBuffer = 15,
-    FragmentProgramEnable = 16,
+    RegionClip,
+    Program,
+    Viewport,
+    DepthBias,
+    DepthFunc,
+    DepthWriteEnable,
+    PolygonMode,
+    PointLineWidth,
+    StencilFunc,
+    Texture,
+    StencilRef,
+    VertexStream,
+    TwoSided,
+    CullMode,
+    UniformBuffer,
+    FragmentProgramEnable,
     TotalState
 };
 
 struct RenderTarget;
 
 struct GXMStreamInfo {
-    std::uint8_t *data = nullptr;
-    std::size_t size = 0;
+    const uint8_t *data = nullptr;
+    size_t size = 0;
 };
 
 // We seperate the following two parts of the stencil state because the first is part of the pipeline creation
@@ -171,9 +170,6 @@ struct Context {
 
     int render_finish_status = 0;
     int notification_finish_status = 0;
-
-    std::vector<UniformSetRequest> vertex_set_requests;
-    std::vector<UniformSetRequest> fragment_set_requests;
 
     Sha256Hash last_draw_fragment_program_hash;
     Sha256Hash last_draw_vertex_program_hash;
