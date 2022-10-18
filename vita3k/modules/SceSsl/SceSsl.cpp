@@ -22,9 +22,7 @@
 #include <util/tracy.h>
 #include <util/types.h>
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "SceSsl";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(SceSsl);
 
 enum SceSslErrorCode {
     SCE_SSL_ERROR_BEFORE_INIT = 0x80435001,
@@ -40,38 +38,47 @@ enum SceSslErrorCode {
 };
 
 EXPORT(int, sceSslFreeSslCertName) {
+    TRACY_FUNC(sceSslFreeSslCertName);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetIssuerName) {
+    TRACY_FUNC(sceSslGetIssuerName);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetMemoryPoolStats) {
+    TRACY_FUNC(sceSslGetMemoryPoolStats);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetNameEntryCount) {
+    TRACY_FUNC(sceSslGetNameEntryCount);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetNameEntryInfo) {
+    TRACY_FUNC(sceSslGetNameEntryInfo);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetNotAfter) {
+    TRACY_FUNC(sceSslGetNotAfter);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetNotBefore) {
+    TRACY_FUNC(sceSslGetNotBefore);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetSerialNumber) {
+    TRACY_FUNC(sceSslGetSerialNumber);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSslGetSubjectName) {
+    TRACY_FUNC(sceSslGetSubjectName);
     return UNIMPLEMENTED();
 }
 

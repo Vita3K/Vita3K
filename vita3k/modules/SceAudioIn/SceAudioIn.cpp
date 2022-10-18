@@ -19,8 +19,11 @@
 
 #include <audio/state.h>
 #include <util/lock_and_find.h>
+#include <util/tracy.h>
 
 #define PORT_ID 0
+
+TRACY_MODULE_NAME(SceAudioIn);
 
 enum SceAudioInPortType {
     SCE_AUDIO_IN_PORT_TYPE_VOICE = 0,
@@ -31,6 +34,24 @@ enum SceAudioInParam {
     SCE_AUDIO_IN_PARAM_FORMAT_S16_MONO = 0,
     SCE_AUDIO_IN_GETSTATUS_MUTE = 1
 };
+
+template <>
+std::string to_debug_str<SceAudioInPortType>(const MemState &mem, SceAudioInPortType data) {
+    switch (data) {
+    case SceAudioInPortType::SCE_AUDIO_IN_PORT_TYPE_VOICE: return "SCE_AUDIO_IN_PORT_TYPE_VOICE"; break;
+    case SceAudioInPortType::SCE_AUDIO_IN_PORT_TYPE_RAW: return "SCE_AUDIO_IN_PORT_TYPE_RAW"; break;
+    default: return to_debug_str(mem, static_cast<typename std::underlying_type<SceAudioInPortType>::type>(data));
+    }
+}
+
+template <>
+std::string to_debug_str<SceAudioInParam>(const MemState &mem, SceAudioInParam data) {
+    switch (data) {
+    case SceAudioInParam::SCE_AUDIO_IN_PARAM_FORMAT_S16_MONO: return "SCE_AUDIO_IN_PARAM_FORMAT_S16_MONO"; break;
+    case SceAudioInParam::SCE_AUDIO_IN_GETSTATUS_MUTE: return "SCE_AUDIO_IN_GETSTATUS_MUTE"; break;
+    default: return to_debug_str(mem, static_cast<typename std::underlying_type<SceAudioInParam>::type>(data));
+    }
+}
 
 enum SceAudioInErrorCode {
     //! Undefined error
@@ -60,6 +81,7 @@ enum SceAudioInErrorCode {
 };
 
 EXPORT(int, sceAudioInGetAdopt, SceAudioInPortType portType) {
+    TRACY_FUNC(sceAudioInGetAdopt, portType);
     if (portType != SCE_AUDIO_IN_PORT_TYPE_VOICE && portType != SCE_AUDIO_IN_PORT_TYPE_RAW) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_INVALID_PORT_TYPE);
     }
@@ -67,14 +89,17 @@ EXPORT(int, sceAudioInGetAdopt, SceAudioInPortType portType) {
 }
 
 EXPORT(int, sceAudioInGetInput) {
+    TRACY_FUNC(sceAudioInGetInput);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioInGetMicGain) {
+    TRACY_FUNC(sceAudioInGetMicGain);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioInGetStatus, int select) {
+    TRACY_FUNC(sceAudioInGetStatus, select);
     if (select != SCE_AUDIO_IN_GETSTATUS_MUTE) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_INVALID_PARAMETER);
     }
@@ -82,6 +107,7 @@ EXPORT(int, sceAudioInGetStatus, int select) {
 }
 
 EXPORT(int, sceAudioInInput, int port, void *destPtr) {
+    TRACY_FUNC(sceAudioInInput, port, destPtr);
     if (!emuenv.audio.shared.in_port.running) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_NOT_OPENED);
     }
@@ -95,10 +121,12 @@ EXPORT(int, sceAudioInInput, int port, void *destPtr) {
 }
 
 EXPORT(int, sceAudioInInputWithInputDeviceState) {
+    TRACY_FUNC(sceAudioInInputWithInputDeviceState);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioInOpenPort, SceAudioInPortType portType, int grain, int freq, SceAudioInParam param) {
+    TRACY_FUNC(sceAudioInOpenPort, portType, grain, freq, param);
     if (emuenv.audio.shared.in_port.running) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_PORT_FULL);
     }
@@ -147,10 +175,12 @@ EXPORT(int, sceAudioInOpenPort, SceAudioInPortType portType, int grain, int freq
 }
 
 EXPORT(int, sceAudioInOpenPortForDiag) {
+    TRACY_FUNC(sceAudioInOpenPortForDiag);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioInReleasePort, int port) {
+    TRACY_FUNC(sceAudioInReleasePort, port);
     if (port != PORT_ID) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_INVALID_PORT_PARAM);
     }
@@ -164,14 +194,17 @@ EXPORT(int, sceAudioInReleasePort, int port) {
 }
 
 EXPORT(int, sceAudioInSelectInput) {
+    TRACY_FUNC(sceAudioInSelectInput);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioInSetMicGain) {
+    TRACY_FUNC(sceAudioInSetMicGain);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudioInSetMute) {
+    TRACY_FUNC(sceAudioInSetMute);
     return UNIMPLEMENTED();
 }
 

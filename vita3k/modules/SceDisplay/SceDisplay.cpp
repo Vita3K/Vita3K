@@ -15,10 +15,6 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#ifdef TRACY_ENABLE
-#include "Tracy.hpp"
-#endif
-
 #include "SceDisplay.h"
 
 #include <display/functions.h>
@@ -28,6 +24,9 @@
 #include <renderer/state.h>
 #include <util/lock_and_find.h>
 #include <util/types.h>
+
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceDisplay);
 
 static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const bool is_since_setbuf, const bool is_cb) {
     const auto &thread = emuenv.kernel.get_thread(thread_id);
@@ -54,6 +53,7 @@ static int display_wait(EmuEnvState &emuenv, SceUID thread_id, int vcount, const
 }
 
 EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
+    TRACY_FUNC(_sceDisplayGetFrameBuf, pFrameBuf, sync);
     if (pFrameBuf->size != sizeof(SceDisplayFrameBuf))
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
     else if (sync != SCE_DISPLAY_SETBUF_NEXTFRAME && sync != SCE_DISPLAY_SETBUF_IMMEDIATE)
@@ -79,18 +79,22 @@ EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDispl
 }
 
 EXPORT(int, _sceDisplayGetFrameBufInternal) {
+    TRACY_FUNC(_sceDisplayGetFrameBufInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceDisplayGetMaximumFrameBufResolution) {
+    TRACY_FUNC(_sceDisplayGetMaximumFrameBufResolution);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceDisplayGetResolutionInfoInternal) {
+    TRACY_FUNC(_sceDisplayGetResolutionInfoInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
+    TRACY_FUNC(_sceDisplaySetFrameBuf, pFrameBuf, sync);
     if (!pFrameBuf)
         return SCE_DISPLAY_ERROR_OK;
     if (pFrameBuf->size != sizeof(SceDisplayFrameBuf)) {
@@ -149,31 +153,38 @@ EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, Sc
 }
 
 EXPORT(int, _sceDisplaySetFrameBufForCompat) {
+    TRACY_FUNC(_sceDisplaySetFrameBufForCompat);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceDisplaySetFrameBufInternal) {
+    TRACY_FUNC(_sceDisplaySetFrameBufInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayGetPrimaryHead) {
+    TRACY_FUNC(sceDisplayGetPrimaryHead);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceDisplayGetRefreshRate, float *pFps) {
+    TRACY_FUNC(sceDisplayGetRefreshRate, pFps);
     *pFps = 59.94005f;
     return 0;
 }
 
 EXPORT(SceInt32, sceDisplayGetVcount) {
+    TRACY_FUNC(sceDisplayGetVcount);
     return static_cast<SceInt32>(emuenv.display.vblank_count.load()) & 0xFFFF;
 }
 
 EXPORT(int, sceDisplayGetVcountInternal) {
+    TRACY_FUNC(sceDisplayGetVcountInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceDisplayRegisterVblankStartCallback, SceUID uid) {
+    TRACY_FUNC(sceDisplayRegisterVblankStartCallback, uid);
     const auto cb = lock_and_find(uid, emuenv.kernel.callbacks, emuenv.kernel.mutex);
     if (!cb)
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
@@ -184,6 +195,7 @@ EXPORT(SceInt32, sceDisplayRegisterVblankStartCallback, SceUID uid) {
 }
 
 EXPORT(SceInt32, sceDisplayUnregisterVblankStartCallback, SceUID uid) {
+    TRACY_FUNC(sceDisplayUnregisterVblankStartCallback, uid);
     if (emuenv.display.vblank_callbacks.find(uid) == emuenv.display.vblank_callbacks.end())
         return RET_ERROR(SCE_DISPLAY_ERROR_INVALID_VALUE);
 
@@ -193,34 +205,42 @@ EXPORT(SceInt32, sceDisplayUnregisterVblankStartCallback, SceUID uid) {
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBuf) {
+    TRACY_FUNC(sceDisplayWaitSetFrameBuf);
     return display_wait(emuenv, thread_id, 1, true, false);
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBufCB) {
+    TRACY_FUNC(sceDisplayWaitSetFrameBufCB);
     return display_wait(emuenv, thread_id, 1, true, true);
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBufMulti, SceUInt vcount) {
+    TRACY_FUNC(sceDisplayWaitSetFrameBufMulti, vcount);
     return display_wait(emuenv, thread_id, static_cast<int>(vcount), true, false);
 }
 
 EXPORT(SceInt32, sceDisplayWaitSetFrameBufMultiCB, SceUInt vcount) {
+    TRACY_FUNC(sceDisplayWaitSetFrameBufMultiCB, vcount);
     return display_wait(emuenv, thread_id, static_cast<int>(vcount), true, true);
 }
 
 EXPORT(SceInt32, sceDisplayWaitVblankStart) {
+    TRACY_FUNC(sceDisplayWaitVblankStart);
     return display_wait(emuenv, thread_id, 1, false, false);
 }
 
 EXPORT(SceInt32, sceDisplayWaitVblankStartCB) {
+    TRACY_FUNC(sceDisplayWaitVblankStartCB);
     return display_wait(emuenv, thread_id, 1, false, true);
 }
 
 EXPORT(SceInt32, sceDisplayWaitVblankStartMulti, SceUInt vcount) {
+    TRACY_FUNC(sceDisplayWaitVblankStartMulti, vcount);
     return display_wait(emuenv, thread_id, static_cast<int>(vcount), false, false);
 }
 
 EXPORT(SceInt32, sceDisplayWaitVblankStartMultiCB, SceUInt vcount) {
+    TRACY_FUNC(sceDisplayWaitVblankStartMultiCB, vcount);
     return display_wait(emuenv, thread_id, static_cast<int>(vcount), false, true);
 }
 

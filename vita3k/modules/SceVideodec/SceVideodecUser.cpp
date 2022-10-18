@@ -21,6 +21,9 @@
 #include <kernel/state.h>
 #include <util/lock_and_find.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceVideodecUser);
+
 typedef std::shared_ptr<H264DecoderState> H264DecoderPtr;
 typedef std::map<SceUID, H264DecoderPtr> H264DecoderStates;
 
@@ -132,6 +135,7 @@ struct SceAvcdecArrayPicture {
 };
 
 EXPORT(int, sceAvcdecCreateDecoder, uint32_t codec_type, SceAvcdecCtrl *decoder, const SceAvcdecQueryDecoderInfo *query) {
+    TRACY_FUNC(sceAvcdecCreateDecoder, codec_type, decoder, query);
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
@@ -145,22 +149,27 @@ EXPORT(int, sceAvcdecCreateDecoder, uint32_t codec_type, SceAvcdecCtrl *decoder,
 }
 
 EXPORT(int, sceAvcdecCreateDecoderInternal) {
+    TRACY_FUNC(sceAvcdecCreateDecoderInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecCreateDecoderNongameapp) {
+    TRACY_FUNC(sceAvcdecCreateDecoderNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecCsc) {
+    TRACY_FUNC(sceAvcdecCsc);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecCscInternal) {
+    TRACY_FUNC(sceAvcdecCscInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceAvcdecArrayPicture *picture) {
+    TRACY_FUNC(sceAvcdecDecode, decoder, au, picture);
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
@@ -191,22 +200,27 @@ EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceA
 }
 
 EXPORT(int, sceAvcdecDecodeAuInternal) {
+    TRACY_FUNC(sceAvcdecDecodeAuInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeAuNalAuInternal) {
+    TRACY_FUNC(sceAvcdecDecodeAuNalAuInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeAuNalAuNongameapp) {
+    TRACY_FUNC(sceAvcdecDecodeAuNalAuNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeAuNongameapp) {
+    TRACY_FUNC(sceAvcdecDecodeAuNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
+    TRACY_FUNC(sceAvcdecDecodeAvailableSize, decoder);
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
@@ -217,6 +231,7 @@ EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
 }
 
 EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
+    TRACY_FUNC(sceAvcdecDecodeFlush, decoder);
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
@@ -229,34 +244,42 @@ EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
 }
 
 EXPORT(int, sceAvcdecDecodeGetPictureInternal) {
+    TRACY_FUNC(sceAvcdecDecodeGetPictureInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeGetPictureNongameapp) {
+    TRACY_FUNC(sceAvcdecDecodeGetPictureNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeGetPictureWithWorkPictureInternal) {
+    TRACY_FUNC(sceAvcdecDecodeGetPictureWithWorkPictureInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeNalAu) {
+    TRACY_FUNC(sceAvcdecDecodeNalAu);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeNalAuWithWorkPicture) {
+    TRACY_FUNC(sceAvcdecDecodeNalAuWithWorkPicture);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeSetTrickModeNongameapp) {
+    TRACY_FUNC(sceAvcdecDecodeSetTrickModeNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp) {
+    TRACY_FUNC(sceAvcdecDecodeSetUserDataSei1FieldMemSizeNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *picture) {
+    TRACY_FUNC(sceAvcdecDecodeStop, decoder, picture);
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     const H264DecoderPtr &decoder_info = lock_and_find(decoder->handle, state->decoders, state->mutex);
     if (!decoder_info)
@@ -285,14 +308,17 @@ EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *
 }
 
 EXPORT(int, sceAvcdecDecodeStopWithWorkPicture) {
+    TRACY_FUNC(sceAvcdecDecodeStopWithWorkPicture);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDecodeWithWorkPicture) {
+    TRACY_FUNC(sceAvcdecDecodeWithWorkPicture);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecDeleteDecoder, SceAvcdecCtrl *decoder) {
+    TRACY_FUNC(sceAvcdecDeleteDecoder, decoder);
     const auto state = emuenv.kernel.obj_store.get<VideodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
     state->decoders.erase(decoder->handle);
@@ -301,14 +327,17 @@ EXPORT(int, sceAvcdecDeleteDecoder, SceAvcdecCtrl *decoder) {
 }
 
 EXPORT(int, sceAvcdecGetSeiPictureTimingInternal) {
+    TRACY_FUNC(sceAvcdecGetSeiPictureTimingInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecGetSeiUserDataNongameapp) {
+    TRACY_FUNC(sceAvcdecGetSeiUserDataNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecQueryDecoderMemSize, uint32_t codec_type, const SceAvcdecQueryDecoderInfo *query_info, SceAvcdecDecoderInfo *decoder_info) {
+    TRACY_FUNC(sceAvcdecQueryDecoderMemSize, codec_type, query_info, decoder_info);
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
 
     decoder_info->frameMemSize = H264DecoderState::buffer_size({ query_info->horizontal, query_info->vertical }) * query_info->numOfRefFrames;
@@ -317,160 +346,198 @@ EXPORT(int, sceAvcdecQueryDecoderMemSize, uint32_t codec_type, const SceAvcdecQu
 }
 
 EXPORT(int, sceAvcdecQueryDecoderMemSizeInternal) {
+    TRACY_FUNC(sceAvcdecQueryDecoderMemSizeInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecQueryDecoderMemSizeNongameapp) {
+    TRACY_FUNC(sceAvcdecQueryDecoderMemSizeNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecRegisterCallbackInternal) {
+    TRACY_FUNC(sceAvcdecRegisterCallbackInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecRegisterCallbackNongameapp) {
+    TRACY_FUNC(sceAvcdecRegisterCallbackNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecSetDecodeMode) {
+    TRACY_FUNC(sceAvcdecSetDecodeMode);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecSetDecodeModeInternal) {
+    TRACY_FUNC(sceAvcdecSetDecodeModeInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecSetInterlacedStreamMode) {
+    TRACY_FUNC(sceAvcdecSetInterlacedStreamMode);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecSetLowDelayModeNongameapp) {
+    TRACY_FUNC(sceAvcdecSetLowDelayModeNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecSetRecoveryPointSEIMode) {
+    TRACY_FUNC(sceAvcdecSetRecoveryPointSEIMode);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecUnregisterCallbackInternal) {
+    TRACY_FUNC(sceAvcdecUnregisterCallbackInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecUnregisterCallbackNongameapp) {
+    TRACY_FUNC(sceAvcdecUnregisterCallbackNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecUnregisterCallbackWithCbidInternal) {
+    TRACY_FUNC(sceAvcdecUnregisterCallbackWithCbidInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAvcdecUnregisterCallbackWithCbidNongameapp) {
+    TRACY_FUNC(sceAvcdecUnregisterCallbackWithCbidNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceM4vdecCreateDecoder) {
+    TRACY_FUNC(sceM4vdecCreateDecoder);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceM4vdecCreateDecoderInternal) {
+    TRACY_FUNC(sceM4vdecCreateDecoderInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceM4vdecCsc) {
+    TRACY_FUNC(sceM4vdecCsc);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceM4vdecDecode) {
+    TRACY_FUNC(sceM4vdecDecode);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceM4vdecDecodeAvailableSize) {
+    TRACY_FUNC(sceM4vdecDecodeAvailableSize);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceM4vdecDecodeFlush) {
+    TRACY_FUNC(sceM4vdecDecodeFlush);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceM4vdecDecodeStop) {
+    TRACY_FUNC(sceM4vdecDecodeStop);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceM4vdecDecodeStopWithWorkPicture) {
+    TRACY_FUNC(sceM4vdecDecodeStopWithWorkPicture);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceM4vdecDecodeWithWorkPicture) {
+    TRACY_FUNC(sceM4vdecDecodeWithWorkPicture);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceM4vdecDeleteDecoder) {
+    TRACY_FUNC(sceM4vdecDeleteDecoder);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceM4vdecQueryDecoderMemSize) {
+    TRACY_FUNC(sceM4vdecQueryDecoderMemSize);
     STUBBED("fake size");
     return 53;
 }
 
 EXPORT(int, sceM4vdecQueryDecoderMemSizeInternal) {
+    TRACY_FUNC(sceM4vdecQueryDecoderMemSizeInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideodecInitLibrary) {
+    TRACY_FUNC(sceVideodecInitLibrary);
     emuenv.kernel.obj_store.create<VideodecState>();
     return 0;
 }
 
 EXPORT(int, sceVideodecInitLibraryInternal) {
+    TRACY_FUNC(sceVideodecInitLibraryInternal);
     emuenv.kernel.obj_store.create<VideodecState>();
     return 0;
 }
 
 EXPORT(int, sceVideodecInitLibraryNongameapp) {
+    TRACY_FUNC(sceVideodecInitLibraryNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideodecInitLibraryWithUnmapMem) {
+    TRACY_FUNC(sceVideodecInitLibraryWithUnmapMem);
     emuenv.kernel.obj_store.create<VideodecState>();
     return 0;
 }
 
 EXPORT(int, sceVideodecInitLibraryWithUnmapMemInternal) {
+    TRACY_FUNC(sceVideodecInitLibraryWithUnmapMemInternal);
     emuenv.kernel.obj_store.create<VideodecState>();
     return 0;
 }
 
 EXPORT(int, sceVideodecInitLibraryWithUnmapMemNongameapp) {
+    TRACY_FUNC(sceVideodecInitLibraryWithUnmapMemNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideodecQueryInstanceNongameapp) {
+    TRACY_FUNC(sceVideodecQueryInstanceNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideodecQueryMemSize) {
+    TRACY_FUNC(sceVideodecQueryMemSize);
     STUBBED("fake size");
     return 53;
 }
 
 EXPORT(int, sceVideodecQueryMemSizeInternal) {
+    TRACY_FUNC(sceVideodecQueryMemSizeInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideodecQueryMemSizeNongameapp) {
+    TRACY_FUNC(sceVideodecQueryMemSizeNongameapp);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideodecSetConfig) {
+    TRACY_FUNC(sceVideodecSetConfig);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideodecSetConfigInternal) {
+    TRACY_FUNC(sceVideodecSetConfigInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideodecTermLibrary) {
+    TRACY_FUNC(sceVideodecTermLibrary);
     emuenv.kernel.obj_store.erase<VideodecState>();
     return 0;
 }

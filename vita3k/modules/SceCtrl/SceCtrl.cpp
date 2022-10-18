@@ -26,9 +26,7 @@
 #include <algorithm>
 #include <array>
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "SceCtrl";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(SceCtrl);
 
 template <>
 std::string to_debug_str<SceCtrlPadInputMode>(const MemState &mem, SceCtrlPadInputMode mode) {
@@ -44,26 +42,32 @@ std::string to_debug_str<SceCtrlPadInputMode>(const MemState &mem, SceCtrlPadInp
 }
 
 EXPORT(int, sceCtrlClearRapidFire) {
+    TRACY_FUNC(sceCtrlClearRapidFire);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlDisconnect) {
+    TRACY_FUNC(sceCtrlDisconnect);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlGetAnalogStickCheckMode) {
+    TRACY_FUNC(sceCtrlGetAnalogStickCheckMode);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlGetAnalogStickCheckTarget) {
+    TRACY_FUNC(sceCtrlGetAnalogStickCheckTarget);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlGetBatteryInfo) {
+    TRACY_FUNC(sceCtrlGetBatteryInfo);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlGetButtonIntercept) {
+    TRACY_FUNC(sceCtrlGetButtonIntercept);
     return UNIMPLEMENTED();
 }
 
@@ -79,6 +83,7 @@ EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
 }
 
 EXPORT(int, sceCtrlGetProcessStatus) {
+    TRACY_FUNC(sceCtrlGetProcessStatus);
     return UNIMPLEMENTED();
 }
 
@@ -217,10 +222,12 @@ EXPORT(int, sceCtrlReadBufferPositiveExt2, int port, SceCtrlData2 *pad_data, int
 }
 
 EXPORT(int, sceCtrlRegisterBdRMCCallback) {
+    TRACY_FUNC(sceCtrlRegisterBdRMCCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlResetLightBar) {
+    TRACY_FUNC(sceCtrlResetLightBar);
     return UNIMPLEMENTED();
 }
 
@@ -245,26 +252,32 @@ EXPORT(int, sceCtrlSetActuator, int port, const SceCtrlActuator *pState) {
 }
 
 EXPORT(int, sceCtrlSetAnalogStickCheckMode) {
+    TRACY_FUNC(sceCtrlSetAnalogStickCheckMode);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlSetAnalogStickCheckTarget) {
+    TRACY_FUNC(sceCtrlSetAnalogStickCheckTarget);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlSetButtonIntercept) {
+    TRACY_FUNC(sceCtrlSetButtonIntercept);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlSetButtonRemappingInfo) {
+    TRACY_FUNC(sceCtrlSetButtonRemappingInfo);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlSetLightBar) {
+    TRACY_FUNC(sceCtrlSetLightBar);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlSetRapidFire) {
+    TRACY_FUNC(sceCtrlSetRapidFire);
     return UNIMPLEMENTED();
 }
 
@@ -289,10 +302,12 @@ EXPORT(int, sceCtrlSetSamplingModeExt, SceCtrlPadInputMode mode) {
 }
 
 EXPORT(int, sceCtrlSingleControllerMode) {
+    TRACY_FUNC(sceCtrlSingleControllerMode);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCtrlUnregisterBdRMCCallback) {
+    TRACY_FUNC(sceCtrlUnregisterBdRMCCallback);
     return UNIMPLEMENTED();
 }
 

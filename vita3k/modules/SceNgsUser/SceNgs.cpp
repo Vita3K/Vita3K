@@ -19,10 +19,13 @@
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/log.h>
+#include <util/tracy.h>
 
 #include "SceNgs.h"
 
 #define SCE_NGS_MAX_SYSTEM_CHANNELS 2
+
+TRACY_MODULE_NAME(SceNgs);
 
 using SceNgsSynthSystemHandle = Ptr<ngs::System>;
 using SceNgsRackHandle = Ptr<ngs::Rack>;
@@ -87,6 +90,7 @@ static constexpr SceUInt32 SCE_NGS_VOICE_INIT_ALL = 7;
 static constexpr SceInt32 SCE_NGS_SAMPLE_OFFSET_FROM_AT9_HEADER = 1 << 31;
 
 EXPORT(int, sceNgsAT9GetSectionDetails, std::uint32_t samples_start, const std::uint32_t num_samples, const std::uint32_t config_data, ngs::atrac9::SkipBufferInfo *info) {
+    TRACY_FUNC(sceNgsAT9GetSectionDetails, samples_start, num_samples, config_data, info);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return -1;
     }
@@ -104,14 +108,17 @@ EXPORT(int, sceNgsAT9GetSectionDetails, std::uint32_t samples_start, const std::
 }
 
 EXPORT(int, sceNgsModuleGetNumPresets) {
+    TRACY_FUNC(sceNgsModuleGetNumPresets);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNgsModuleGetPreset) {
+    TRACY_FUNC(sceNgsModuleGetPreset);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNgsPatchCreateRouting, ngs::PatchSetupInfo *patch_info, SceNgsPatchHandle *handle) {
+    TRACY_FUNC(sceNgsPatchCreateRouting, patch_info, handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -138,6 +145,7 @@ EXPORT(int, sceNgsPatchCreateRouting, ngs::PatchSetupInfo *patch_info, SceNgsPat
 }
 
 EXPORT(SceInt32, sceNgsPatchGetInfo, SceNgsPatchHandle patch_handle, SceNgsPatchAudioPropInfo *prop_info, SceNgsPatchDeliveryInfo *deli_info) {
+    TRACY_FUNC(sceNgsPatchGetInfo, patch_handle, prop_info, deli_info);
     // Always stereo
     if (prop_info) {
         prop_info->in_channels = 2;
@@ -171,6 +179,7 @@ EXPORT(SceInt32, sceNgsPatchGetInfo, SceNgsPatchHandle patch_handle, SceNgsPatch
 }
 
 EXPORT(int, sceNgsPatchRemoveRouting, SceNgsPatchHandle patch_handle) {
+    TRACY_FUNC(sceNgsPatchRemoveRouting, patch_handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -189,6 +198,7 @@ EXPORT(int, sceNgsPatchRemoveRouting, SceNgsPatchHandle patch_handle) {
 }
 
 EXPORT(int, sceNgsRackGetRequiredMemorySize, SceNgsSynthSystemHandle sys_handle, ngs::RackDescription *description, uint32_t *size) {
+    TRACY_FUNC(sceNgsRackGetRequiredMemorySize, sys_handle, description, size);
     if (!emuenv.cfg.current_config.ngs_enable) {
         *size = 1;
         return 0;
@@ -199,6 +209,7 @@ EXPORT(int, sceNgsRackGetRequiredMemorySize, SceNgsSynthSystemHandle sys_handle,
 }
 
 EXPORT(SceUInt32, sceNgsRackGetVoiceHandle, SceNgsRackHandle rack_handle, const std::uint32_t index, SceNgsVoiceHandle *voice_handle) {
+    TRACY_FUNC(sceNgsRackGetVoiceHandle, rack_handle, index, voice_handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -217,6 +228,7 @@ EXPORT(SceUInt32, sceNgsRackGetVoiceHandle, SceNgsRackHandle rack_handle, const 
 }
 
 EXPORT(SceUInt32, sceNgsRackInit, SceNgsSynthSystemHandle sys_handle, ngs::BufferParamsInfo *info, const ngs::RackDescription *description, SceNgsRackHandle *handle) {
+    TRACY_FUNC(sceNgsRackInit, sys_handle, info, description, handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -235,6 +247,7 @@ EXPORT(SceUInt32, sceNgsRackInit, SceNgsSynthSystemHandle sys_handle, ngs::Buffe
 }
 
 EXPORT(SceInt32, sceNgsRackRelease, SceNgsRackHandle rack_handle, Ptr<void> callback) {
+    TRACY_FUNC(sceNgsRackRelease, rack_handle, callback);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
 
@@ -271,10 +284,12 @@ EXPORT(SceInt32, sceNgsRackRelease, SceNgsRackHandle rack_handle, Ptr<void> call
 }
 
 EXPORT(int, sceNgsRackSetParamErrorCallback) {
+    TRACY_FUNC(sceNgsRackSetParamErrorCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNgsSystemGetRequiredMemorySize, ngs::SystemInitParameters *params, uint32_t *size) {
+    TRACY_FUNC(sceNgsSystemGetRequiredMemorySize, params, size);
     if (!emuenv.cfg.current_config.ngs_enable) {
         *size = 1;
         return 0;
@@ -286,6 +301,7 @@ EXPORT(int, sceNgsSystemGetRequiredMemorySize, ngs::SystemInitParameters *params
 
 EXPORT(SceUInt32, sceNgsSystemInit, Ptr<void> memspace, const std::uint32_t memspace_size, ngs::SystemInitParameters *params,
     SceNgsSynthSystemHandle *handle) {
+    TRACY_FUNC(sceNgsSystemInit, memspace, memspace_size, params, handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -299,10 +315,12 @@ EXPORT(SceUInt32, sceNgsSystemInit, Ptr<void> memspace, const std::uint32_t mems
 }
 
 EXPORT(int, sceNgsSystemLock) {
+    TRACY_FUNC(sceNgsSystemLock);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceNgsSystemRelease, SceNgsSynthSystemHandle sys_handle) {
+    TRACY_FUNC(sceNgsSystemRelease, sys_handle);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
 
@@ -327,18 +345,22 @@ EXPORT(SceInt32, sceNgsSystemRelease, SceNgsSynthSystemHandle sys_handle) {
 }
 
 EXPORT(int, sceNgsSystemSetFlags) {
+    TRACY_FUNC(sceNgsSystemSetFlags);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNgsSystemSetParamErrorCallback) {
+    TRACY_FUNC(sceNgsSystemSetParamErrorCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNgsSystemUnlock) {
+    TRACY_FUNC(sceNgsSystemUnlock);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceUInt32, sceNgsSystemUpdate, SceNgsSynthSystemHandle handle) {
+    TRACY_FUNC(sceNgsSystemUpdate, handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -350,6 +372,7 @@ EXPORT(SceUInt32, sceNgsSystemUpdate, SceNgsSynthSystemHandle handle) {
 }
 
 EXPORT(SceInt32, sceNgsVoiceBypassModule, SceNgsVoiceHandle voice_handle, const SceUInt32 module, const SceUInt32 bypass_flag) {
+    TRACY_FUNC(sceNgsVoiceBypassModule, voice_handle, module, bypass_flag);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -373,6 +396,7 @@ EXPORT(SceInt32, sceNgsVoiceBypassModule, SceNgsVoiceHandle voice_handle, const 
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetAtrac9Voice) {
+    TRACY_FUNC(sceNgsVoiceDefGetAtrac9Voice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -381,6 +405,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetAtrac9Voice) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetCompressorBuss) {
+    TRACY_FUNC(sceNgsVoiceDefGetCompressorBuss);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -389,6 +414,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetCompressorBuss) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetCompressorSideChainBuss) {
+    TRACY_FUNC(sceNgsVoiceDefGetCompressorSideChainBuss);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -397,6 +423,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetCompressorSideChainBuss) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetDelayBuss) {
+    TRACY_FUNC(sceNgsVoiceDefGetDelayBuss);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -405,6 +432,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetDelayBuss) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetDistortionBuss) {
+    TRACY_FUNC(sceNgsVoiceDefGetDistortionBuss);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -413,6 +441,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetDistortionBuss) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetEnvelopeBuss) {
+    TRACY_FUNC(sceNgsVoiceDefGetEnvelopeBuss);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -421,6 +450,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetEnvelopeBuss) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetEqBuss) {
+    TRACY_FUNC(sceNgsVoiceDefGetEqBuss);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -429,6 +459,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetEqBuss) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetMasterBuss) {
+    TRACY_FUNC(sceNgsVoiceDefGetMasterBuss);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -437,6 +468,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetMasterBuss) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetMixerBuss) {
+    TRACY_FUNC(sceNgsVoiceDefGetMixerBuss);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -445,6 +477,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetMixerBuss) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetPauserBuss) {
+    TRACY_FUNC(sceNgsVoiceDefGetPauserBuss);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -453,6 +486,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetPauserBuss) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetPitchShiftBuss) {
+    TRACY_FUNC(sceNgsVoiceDefGetPitchShiftBuss);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -461,6 +495,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetPitchShiftBuss) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetReverbBuss) {
+    TRACY_FUNC(sceNgsVoiceDefGetReverbBuss);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -469,6 +504,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetReverbBuss) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetSasEmuVoice) {
+    TRACY_FUNC(sceNgsVoiceDefGetSasEmuVoice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -477,6 +513,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetSasEmuVoice) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetScreamAtrac9Voice) {
+    TRACY_FUNC(sceNgsVoiceDefGetScreamAtrac9Voice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -485,6 +522,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetScreamAtrac9Voice) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetScreamVoice) {
+    TRACY_FUNC(sceNgsVoiceDefGetScreamVoice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -493,6 +531,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetScreamVoice) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetSimpleAtrac9Voice) {
+    TRACY_FUNC(sceNgsVoiceDefGetSimpleAtrac9Voice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -501,6 +540,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetSimpleAtrac9Voice) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetSimpleVoice) {
+    TRACY_FUNC(sceNgsVoiceDefGetSimpleVoice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -509,6 +549,7 @@ EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetSimpleVoice) {
 }
 
 EXPORT(Ptr<ngs::VoiceDefinition>, sceNgsVoiceDefGetTemplate1) {
+    TRACY_FUNC(sceNgsVoiceDefGetTemplate1);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return Ptr<ngs::VoiceDefinition>(0);
     }
@@ -553,6 +594,7 @@ static SceUInt32 ngsVoiceStateFromHLEState(const ngs::Voice *voice) {
 }
 
 EXPORT(SceInt32, sceNgsVoiceGetInfo, SceNgsVoiceHandle handle, SceNgsVoiceInfo *info) {
+    TRACY_FUNC(sceNgsVoiceGetInfo, handle, info);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
 
@@ -574,6 +616,7 @@ EXPORT(SceInt32, sceNgsVoiceGetInfo, SceNgsVoiceHandle handle, SceNgsVoiceInfo *
 }
 
 EXPORT(SceInt32, sceNgsVoiceGetModuleBypass, SceNgsVoiceHandle voice_handle, const SceUInt32 module, SceUInt32 *bypass_flag) {
+    TRACY_FUNC(sceNgsVoiceGetModuleBypass, voice_handle, module, bypass_flag);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
 
@@ -595,10 +638,12 @@ EXPORT(SceInt32, sceNgsVoiceGetModuleBypass, SceNgsVoiceHandle voice_handle, con
 }
 
 EXPORT(int, sceNgsVoiceGetModuleType) {
+    TRACY_FUNC(sceNgsVoiceGetModuleType);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceNgsVoiceGetOutputPatch, SceNgsVoiceHandle voice_handle, const SceInt32 output_index, const SceInt32 output_subindex, SceNgsPatchHandle *handle) {
+    TRACY_FUNC(sceNgsVoiceGetOutputPatch, voice_handle, output_index, output_subindex, handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -627,10 +672,12 @@ EXPORT(SceInt32, sceNgsVoiceGetOutputPatch, SceNgsVoiceHandle voice_handle, cons
 }
 
 EXPORT(int, sceNgsVoiceGetParamsOutOfRange) {
+    TRACY_FUNC(sceNgsVoiceGetParamsOutOfRange);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceNgsVoiceGetStateData, SceNgsVoiceHandle voice_handle, const SceUInt32 module, void *mem, const SceUInt32 mem_size) {
+    TRACY_FUNC(sceNgsVoiceGetStateData, voice_handle, module, mem, mem_size);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -651,6 +698,7 @@ EXPORT(SceInt32, sceNgsVoiceGetStateData, SceNgsVoiceHandle voice_handle, const 
 }
 
 EXPORT(SceInt32, sceNgsVoiceInit, SceNgsVoiceHandle voice_handle, const ngs::VoicePreset *preset, const SceUInt32 init_flags) {
+    TRACY_FUNC(sceNgsVoiceInit, voice_handle, preset, init_flags);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -698,6 +746,7 @@ EXPORT(SceInt32, sceNgsVoiceInit, SceNgsVoiceHandle voice_handle, const ngs::Voi
 }
 
 EXPORT(SceInt32, sceNgsVoiceKeyOff, SceNgsVoiceHandle voice_handle) {
+    TRACY_FUNC(sceNgsVoiceKeyOff, voice_handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return SCE_NGS_OK;
     }
@@ -720,6 +769,7 @@ EXPORT(SceInt32, sceNgsVoiceKeyOff, SceNgsVoiceHandle voice_handle) {
 }
 
 EXPORT(int, sceNgsVoiceKill, SceNgsVoiceHandle voice_handle) {
+    TRACY_FUNC(sceNgsVoiceKill, voice_handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -736,6 +786,7 @@ EXPORT(int, sceNgsVoiceKill, SceNgsVoiceHandle voice_handle) {
 }
 
 EXPORT(SceUInt32, sceNgsVoiceLockParams, SceNgsVoiceHandle voice_handle, SceUInt32 module, SceUInt32 unk2, Ptr<ngs::BufferParamsInfo> buf) {
+    TRACY_FUNC(sceNgsVoiceLockParams, voice_handle, module, unk2, buf);
     if (!emuenv.cfg.current_config.ngs_enable) {
         auto *buffer_info = buf.get(emuenv.mem);
 
@@ -764,6 +815,7 @@ EXPORT(SceUInt32, sceNgsVoiceLockParams, SceNgsVoiceHandle voice_handle, SceUInt
 }
 
 EXPORT(SceInt32, sceNgsVoicePatchSetVolume, SceNgsPatchHandle patch_handle, const SceInt32 output_channel, const SceInt32 input_channel, const SceFloat32 vol) {
+    TRACY_FUNC(sceNgsVoicePatchSetVolume, patch_handle, output_channel, input_channel, vol);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
 
@@ -777,6 +829,7 @@ EXPORT(SceInt32, sceNgsVoicePatchSetVolume, SceNgsPatchHandle patch_handle, cons
 }
 
 EXPORT(SceInt32, sceNgsVoicePatchSetVolumes, SceNgsPatchHandle patch_handle, const SceInt32 output_channel, const SceFloat32 *volumes, const SceInt32 vols) {
+    TRACY_FUNC(sceNgsVoicePatchSetVolumes, patch_handle, output_channel, volumes, vols);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
 
@@ -791,6 +844,7 @@ EXPORT(SceInt32, sceNgsVoicePatchSetVolumes, SceNgsPatchHandle patch_handle, con
 }
 
 EXPORT(SceInt32, sceNgsVoicePatchSetVolumesMatrix, SceNgsPatchHandle patch_handle, const SceNgsVolumeMatrix *matrix) {
+    TRACY_FUNC(sceNgsVoicePatchSetVolumesMatrix, patch_handle, matrix);
     if (!emuenv.cfg.current_config.ngs_enable)
         return 0;
 
@@ -807,6 +861,7 @@ EXPORT(SceInt32, sceNgsVoicePatchSetVolumesMatrix, SceNgsPatchHandle patch_handl
 }
 
 EXPORT(int, sceNgsVoicePause, SceNgsVoiceHandle handle) {
+    TRACY_FUNC(sceNgsVoicePause, handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -828,6 +883,7 @@ EXPORT(int, sceNgsVoicePause, SceNgsVoiceHandle handle) {
 }
 
 EXPORT(SceUInt32, sceNgsVoicePlay, SceNgsVoiceHandle handle) {
+    TRACY_FUNC(sceNgsVoicePlay, handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -847,6 +903,7 @@ EXPORT(SceUInt32, sceNgsVoicePlay, SceNgsVoiceHandle handle) {
 }
 
 EXPORT(int, sceNgsVoiceResume, SceNgsVoiceHandle handle) {
+    TRACY_FUNC(sceNgsVoiceResume, handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -867,6 +924,7 @@ EXPORT(int, sceNgsVoiceResume, SceNgsVoiceHandle handle) {
 }
 
 EXPORT(SceInt32, sceNgsVoiceSetFinishedCallback, SceNgsVoiceHandle voice_handle, Ptr<void> callback, Ptr<void> user_data) {
+    TRACY_FUNC(sceNgsVoiceSetFinishedCallback, voice_handle, callback, user_data);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -883,6 +941,7 @@ EXPORT(SceInt32, sceNgsVoiceSetFinishedCallback, SceNgsVoiceHandle voice_handle,
 }
 
 EXPORT(SceInt32, sceNgsVoiceSetModuleCallback, SceNgsVoiceHandle voice_handle, const SceUInt32 module, Ptr<void> callback, Ptr<void> user_data) {
+    TRACY_FUNC(sceNgsVoiceSetModuleCallback, voice_handle, module, callback, user_data);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -905,6 +964,7 @@ EXPORT(SceInt32, sceNgsVoiceSetModuleCallback, SceNgsVoiceHandle voice_handle, c
 
 EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, SceNgsVoiceHandle voice_handle, const ngs::ModuleParameterHeader *header,
     const SceUInt32 size, SceInt32 *num_error) {
+    TRACY_FUNC(sceNgsVoiceSetParamsBlock, voice_handle, header, size, num_error);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
 
@@ -923,6 +983,7 @@ EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, SceNgsVoiceHandle voice_handle, cons
 }
 
 EXPORT(SceInt32, sceNgsVoiceSetPreset, SceNgsVoiceHandle voice_handle, const ngs::VoicePreset *preset) {
+    TRACY_FUNC(sceNgsVoiceSetPreset, voice_handle, preset);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
 
@@ -941,6 +1002,7 @@ EXPORT(SceInt32, sceNgsVoiceSetPreset, SceNgsVoiceHandle voice_handle, const ngs
 }
 
 EXPORT(SceInt32, sceNgsVoiceUnlockParams, SceNgsVoiceHandle handle, const SceUInt32 module_index) {
+    TRACY_FUNC(sceNgsVoiceUnlockParams, handle, module_index);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
     }
@@ -964,38 +1026,47 @@ EXPORT(SceInt32, sceNgsVoiceUnlockParams, SceNgsVoiceHandle handle, const SceUIn
 }
 
 EXPORT(int, sceSulphaNgsGetDefaultConfig) {
+    TRACY_FUNC(sceSulphaNgsGetDefaultConfig);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNgsGetNeededMemory) {
+    TRACY_FUNC(sceSulphaNgsGetNeededMemory);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNgsInit) {
+    TRACY_FUNC(sceSulphaNgsInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNgsSetRackName) {
+    TRACY_FUNC(sceSulphaNgsSetRackName);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNgsSetSampleName) {
+    TRACY_FUNC(sceSulphaNgsSetSampleName);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNgsSetSynthName) {
+    TRACY_FUNC(sceSulphaNgsSetSynthName);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNgsSetVoiceName) {
+    TRACY_FUNC(sceSulphaNgsSetVoiceName);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNgsShutdown) {
+    TRACY_FUNC(sceSulphaNgsShutdown);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSulphaNgsTrace) {
+    TRACY_FUNC(sceSulphaNgsTrace);
     return UNIMPLEMENTED();
 }
 

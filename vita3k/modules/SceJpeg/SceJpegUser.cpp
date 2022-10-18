@@ -20,6 +20,9 @@
 #include <codec/state.h>
 #include <kernel/state.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceJpegUser);
+
 typedef std::shared_ptr<DecoderState> DecoderPtr;
 
 struct MJpegState {
@@ -49,19 +52,23 @@ struct SceJpegOutputInfo {
 };
 
 EXPORT(int, sceJpegCreateSplitDecoder) {
+    TRACY_FUNC(sceJpegCreateSplitDecoder);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegCsc) {
+    TRACY_FUNC(sceJpegCsc);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegDecodeMJpeg) {
+    TRACY_FUNC(sceJpegDecodeMJpeg);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *jpeg_data, uint32_t jpeg_size,
     uint8_t *output, uint32_t output_size, int mode, void *buffer, uint32_t buffer_size) {
+    TRACY_FUNC(sceJpegDecodeMJpegYCbCr, jpeg_data, jpeg_size, output, output_size, mode, buffer, buffer_size);
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
 
     DecoderSize size = {};
@@ -74,10 +81,12 @@ EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *jpeg_data, uint32_t jpeg_siz
 }
 
 EXPORT(int, sceJpegDeleteSplitDecoder) {
+    TRACY_FUNC(sceJpegDeleteSplitDecoder);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceJpegFinishMJpeg) {
+    TRACY_FUNC(sceJpegFinishMJpeg);
     emuenv.kernel.obj_store.erase<MJpegState>();
 
     return 0;
@@ -85,6 +94,7 @@ EXPORT(int, sceJpegFinishMJpeg) {
 
 EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
     int32_t format, int32_t mode, SceJpegOutputInfo *output) {
+    TRACY_FUNC(sceJpegGetOutputInfo, jpeg_data, jpeg_size, format, mode, output);
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
 
     DecoderSize size = {};
@@ -102,6 +112,7 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
 
 // TODO: Decoder options are ignored for the time being.
 EXPORT(int, sceJpegInitMJpeg, int32_t decoder_count) {
+    TRACY_FUNC(sceJpegInitMJpeg, decoder_count);
     emuenv.kernel.obj_store.create<MJpegState>();
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
     state->decoder = std::make_shared<MjpegDecoderState>();
@@ -110,6 +121,7 @@ EXPORT(int, sceJpegInitMJpeg, int32_t decoder_count) {
 }
 
 EXPORT(int, sceJpegInitMJpegWithParam, const SceJpegMJpegInitInfo *info) {
+    TRACY_FUNC(sceJpegInitMJpegWithParam, info);
     emuenv.kernel.obj_store.create<MJpegState>();
     const auto state = emuenv.kernel.obj_store.get<MJpegState>();
     state->decoder = std::make_shared<MjpegDecoderState>();
@@ -119,6 +131,7 @@ EXPORT(int, sceJpegInitMJpegWithParam, const SceJpegMJpegInitInfo *info) {
 
 EXPORT(int, sceJpegMJpegCsc, uint8_t *rgba, const uint8_t *yuv,
     int32_t size, int32_t image_width, int32_t format, int32_t sampling) {
+    TRACY_FUNC(sceJpegMJpegCsc, rgba, yuv, size, image_width, format, sampling);
     uint32_t width = size >> 16u;
     uint32_t height = size & (~0u >> 16u);
 
@@ -128,6 +141,7 @@ EXPORT(int, sceJpegMJpegCsc, uint8_t *rgba, const uint8_t *yuv,
 }
 
 EXPORT(int, sceJpegSplitDecodeMJpeg) {
+    TRACY_FUNC(sceJpegSplitDecodeMJpeg);
     return UNIMPLEMENTED();
 }
 

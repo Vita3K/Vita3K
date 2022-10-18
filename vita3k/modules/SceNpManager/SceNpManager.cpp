@@ -26,23 +26,31 @@
 
 #include <np/functions.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceNpManager);
+
 EXPORT(int, sceNpAuthAbortOAuthRequest) {
+    TRACY_FUNC(sceNpAuthAbortOAuthRequest);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthCreateOAuthRequest) {
+    TRACY_FUNC(sceNpAuthCreateOAuthRequest);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthDeleteOAuthRequest) {
+    TRACY_FUNC(sceNpAuthDeleteOAuthRequest);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetAuthorizationCode) {
+    TRACY_FUNC(sceNpAuthGetAuthorizationCode);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCheckCallback) {
+    TRACY_FUNC(sceNpCheckCallback);
     if (emuenv.np.state == 0)
         return 0;
 
@@ -57,10 +65,12 @@ EXPORT(int, sceNpCheckCallback) {
 }
 
 EXPORT(int, sceNpGetServiceState) {
+    TRACY_FUNC(sceNpGetServiceState);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpInit, np::CommunicationConfig *comm_config, void *dontcare) {
+    TRACY_FUNC(sceNpInit, comm_config, dontcare);
     if (emuenv.np.inited) {
         return SCE_NP_ERROR_ALREADY_INITIALIZED;
     }
@@ -75,25 +85,30 @@ EXPORT(int, sceNpInit, np::CommunicationConfig *comm_config, void *dontcare) {
 }
 
 EXPORT(int, sceNpManagerGetAccountRegion) {
+    TRACY_FUNC(sceNpManagerGetAccountRegion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpManagerGetCachedParam) {
+    TRACY_FUNC(sceNpManagerGetCachedParam);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpManagerGetChatRestrictionFlag, SceInt *isRestricted) {
+    TRACY_FUNC(sceNpManagerGetChatRestrictionFlag, isRestricted);
     *isRestricted = 0; // User is never restricted
     return 0;
 }
 
 EXPORT(int, sceNpManagerGetContentRatingFlag, SceInt *isRestricted, SceInt *age) {
+    TRACY_FUNC(sceNpManagerGetContentRatingFlag, isRestricted, age);
     *isRestricted = 0; // User is never restricted
     *age = 21; // Assume user is 21 years old
     return STUBBED("isRestricted = 0; age = 21; return 0;");
 }
 
 EXPORT(int, sceNpManagerGetNpId, np::NpId *id) {
+    TRACY_FUNC(sceNpManagerGetNpId, id);
     if (emuenv.io.user_name.length() > 16) {
         LOG_ERROR("Your online ID has over 16 characters, try again with shorter name");
         return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;
@@ -110,6 +125,7 @@ EXPORT(int, sceNpManagerGetNpId, np::NpId *id) {
 }
 
 EXPORT(int, sceNpRegisterServiceStateCallback, Ptr<void> callback, Ptr<void> data) {
+    TRACY_FUNC(sceNpRegisterServiceStateCallback, callback, data);
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
     uint32_t cid = emuenv.kernel.get_next_uid();
     SceNpServiceStateCallback sceNpServiceStateCallback;
@@ -121,6 +137,7 @@ EXPORT(int, sceNpRegisterServiceStateCallback, Ptr<void> callback, Ptr<void> dat
 }
 
 EXPORT(void, sceNpTerm) {
+    TRACY_FUNC(sceNpTerm);
     if (!emuenv.np.inited) {
         LOG_WARN("NP library not initialized but termination got called");
         return;
@@ -129,6 +146,7 @@ EXPORT(void, sceNpTerm) {
 }
 
 EXPORT(int, sceNpUnregisterServiceStateCallback) {
+    TRACY_FUNC(sceNpUnregisterServiceStateCallback);
     if (emuenv.np.state_cb_id) {
         emuenv.np.cbs.erase(emuenv.np.state_cb_id);
     }

@@ -23,9 +23,7 @@
 #include <util/lock_and_find.h>
 #include <util/tracy.h>
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "SceAudiodecUser";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(SceAudiodecUser);
 
 enum {
     SCE_AUDIODEC_ERROR_API_FAIL = 0x807F0000,
@@ -200,14 +198,15 @@ EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec co
 }
 
 EXPORT(int, sceAudiodecCreateDecoderExternal, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec, void *context, uint32_t size) {
+    TRACY_FUNC(sceAudiodecCreateDecoderExternal, ctrl, codec, context, size);
     // I think context is supposed to be just extra memory where I can allocate my context.
     // I'm just going to allocate like regular sceAudiodecCreateDecoder and see how it goes.
     // Almost sure zang has already tried this so :/ - desgroup
-    TRACY_FUNC(sceAudiodecCreateDecoderExternal, ctrl, codec, context, size);
     return create_decoder(emuenv, ctrl, codec);
 }
 
 EXPORT(int, sceAudiodecCreateDecoderResident) {
+    TRACY_FUNC(sceAudiodecCreateDecoderResident);
     return UNIMPLEMENTED();
 }
 
@@ -252,8 +251,8 @@ EXPORT(int, sceAudiodecDecodeNFrames, SceAudiodecCtrl *ctrl, SceUInt32 nFrames) 
     return decode_audio_frames(emuenv, export_name, ctrl, nFrames);
 }
 
-EXPORT(int, sceAudiodecDecodeNStreams) {
-    TRACY_FUNC(sceAudiodecDecodeNStreams);
+EXPORT(int, sceAudiodecDecodeNStreams, Ptr<SceAudiodecCtrl> *pCtrls, SceUInt32 nStreams) {
+    TRACY_FUNC(sceAudiodecDecodeNStreams, pCtrls, nStreams);
     return UNIMPLEMENTED();
 }
 
@@ -278,15 +277,18 @@ EXPORT(int, sceAudiodecDeleteDecoderExternal, SceAudiodecCtrl *ctrl, void *conte
 }
 
 EXPORT(int, sceAudiodecDeleteDecoderResident) {
+    TRACY_FUNC(sceAudiodecDeleteDecoderResident);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAudiodecGetContextSize) {
+EXPORT(int, sceAudiodecGetContextSize, SceAudiodecCtrl *pCtrl, SceUInt32 codecType) {
+    TRACY_FUNC(sceAudiodecGetContextSize, pCtrl, codecType);
     STUBBED("fake size");
     return 53;
 }
 
 EXPORT(int, sceAudiodecGetInternalError) {
+    TRACY_FUNC(sceAudiodecGetInternalError);
     return UNIMPLEMENTED();
 }
 

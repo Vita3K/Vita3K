@@ -21,7 +21,11 @@
 #include <util/lock_and_find.h>
 #include <v3kprintf.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceDbg);
+
 EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop, const char *component, module::vargs messages) {
+    TRACY_FUNC(sceDbgAssertionHandler, filename, line, do_stop, component);
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
 
     if (!thread) {
@@ -48,6 +52,7 @@ EXPORT(int, sceDbgAssertionHandler, const char *filename, int line, bool do_stop
 }
 
 EXPORT(int, sceDbgLoggingHandler, const char *pFile, int line, int severity, const char *pComponent, module::vargs messages) {
+    TRACY_FUNC(sceDbgLoggingHandler, pFile, line, severity, pComponent);
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
 
     if (!thread) {
@@ -79,14 +84,17 @@ EXPORT(int, sceDbgLoggingHandler, const char *pFile, int line, int severity, con
 }
 
 EXPORT(int, sceDbgSetBreakOnErrorState) {
+    TRACY_FUNC(sceDbgSetBreakOnErrorState);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDbgSetBreakOnWarningState) {
+    TRACY_FUNC(sceDbgSetBreakOnWarningState);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDbgSetMinimumLogLevel) {
+    TRACY_FUNC(sceDbgSetMinimumLogLevel);
     return UNIMPLEMENTED();
 }
 

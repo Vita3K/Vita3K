@@ -39,9 +39,7 @@
 #include <string>
 #include <thread>
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "SceHttp";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(SceHttp);
 
 template <>
 std::string to_debug_str<SceHttpAddHeaderMode>(const MemState &mem, SceHttpAddHeaderMode type) {
@@ -114,18 +112,22 @@ std::string to_debug_str<SceHttpsFlags>(const MemState &mem, SceHttpsFlags type)
 }
 
 EXPORT(int, sceHttpAbortRequest) {
+    TRACY_FUNC(sceHttpAbortRequest);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpAbortRequestForce) {
+    TRACY_FUNC(sceHttpAbortRequestForce);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpAbortWaitRequest) {
+    TRACY_FUNC(sceHttpAbortWaitRequest);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpAddCookie) {
+    TRACY_FUNC(sceHttpAddCookie);
     return UNIMPLEMENTED();
 }
 
@@ -162,22 +164,27 @@ EXPORT(SceInt, sceHttpAddRequestHeader, SceInt reqId, const char *name, const ch
 }
 
 EXPORT(int, sceHttpAddRequestHeaderRaw) {
+    TRACY_FUNC(sceHttpAddRequestHeaderRaw);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpAuthCacheFlush) {
+    TRACY_FUNC(sceHttpAuthCacheFlush);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpCookieExport) {
+    TRACY_FUNC(sceHttpCookieExport);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpCookieFlush) {
+    TRACY_FUNC(sceHttpCookieFlush);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpCookieImport) {
+    TRACY_FUNC(sceHttpCookieImport);
     return UNIMPLEMENTED();
 }
 
@@ -321,6 +328,7 @@ EXPORT(SceInt, sceHttpCreateConnection, SceInt tmplId, const char *hostname, con
 }
 
 EXPORT(int, sceHttpCreateEpoll) {
+    TRACY_FUNC(sceHttpCreateEpoll);
     return UNIMPLEMENTED();
 }
 
@@ -569,10 +577,12 @@ EXPORT(SceInt, sceHttpDeleteTemplate, SceInt tmplId) {
 }
 
 EXPORT(int, sceHttpDestroyEpoll) {
+    TRACY_FUNC(sceHttpDestroyEpoll);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpGetAcceptEncodingGZIPEnabled) {
+    TRACY_FUNC(sceHttpGetAcceptEncodingGZIPEnabled);
     return UNIMPLEMENTED();
 }
 
@@ -600,34 +610,42 @@ EXPORT(SceInt, sceHttpGetAllResponseHeaders, SceInt reqId, Ptr<char> *header, Sc
 }
 
 EXPORT(int, sceHttpGetAuthEnabled) {
+    TRACY_FUNC(sceHttpGetAuthEnabled);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpGetAutoRedirect) {
+    TRACY_FUNC(sceHttpGetAutoRedirect);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpGetCookie) {
+    TRACY_FUNC(sceHttpGetCookie);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpGetCookieEnabled) {
+    TRACY_FUNC(sceHttpGetCookieEnabled);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpGetCookieStats) {
+    TRACY_FUNC(sceHttpGetCookieStats);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpGetEpoll) {
+    TRACY_FUNC(sceHttpGetEpoll);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpGetEpollId) {
+    TRACY_FUNC(sceHttpGetEpollId);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpGetIcmOption) {
+    TRACY_FUNC(sceHttpGetIcmOption);
     return UNIMPLEMENTED();
 }
 
@@ -656,6 +674,7 @@ EXPORT(SceInt, sceHttpGetMemoryPoolStats, SceHttpMemoryPoolStats *currentStat) {
 }
 
 EXPORT(int, sceHttpGetNonblock) {
+    TRACY_FUNC(sceHttpGetNonblock);
     return UNIMPLEMENTED();
 }
 
@@ -837,6 +856,7 @@ EXPORT(SceInt, sceHttpReadData, SceInt reqId, void *data, SceSize size) {
 }
 
 EXPORT(int, sceHttpRedirectCacheFlush) {
+    TRACY_FUNC(sceHttpRedirectCacheFlush);
     return UNIMPLEMENTED();
 }
 
@@ -1228,82 +1248,102 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 }
 
 EXPORT(int, sceHttpSetAcceptEncodingGZIPEnabled) {
+    TRACY_FUNC(sceHttpSetAcceptEncodingGZIPEnabled);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetAuthEnabled) {
+    TRACY_FUNC(sceHttpSetAuthEnabled);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetAuthInfoCallback) {
+    TRACY_FUNC(sceHttpSetAuthInfoCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetAutoRedirect) {
+    TRACY_FUNC(sceHttpSetAutoRedirect);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetConnectTimeOut) {
+    TRACY_FUNC(sceHttpSetConnectTimeOut);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetCookieEnabled) {
+    TRACY_FUNC(sceHttpSetCookieEnabled);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetCookieMaxNum) {
+    TRACY_FUNC(sceHttpSetCookieMaxNum);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetCookieMaxNumPerDomain) {
+    TRACY_FUNC(sceHttpSetCookieMaxNumPerDomain);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetCookieMaxSize) {
+    TRACY_FUNC(sceHttpSetCookieMaxSize);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetCookieRecvCallback) {
+    TRACY_FUNC(sceHttpSetCookieRecvCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetCookieSendCallback) {
+    TRACY_FUNC(sceHttpSetCookieSendCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetCookieTotalMaxSize) {
+    TRACY_FUNC(sceHttpSetCookieTotalMaxSize);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetDefaultAcceptEncodingGZIPEnabled) {
+    TRACY_FUNC(sceHttpSetDefaultAcceptEncodingGZIPEnabled);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetEpoll) {
+    TRACY_FUNC(sceHttpSetEpoll);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetEpollId) {
+    TRACY_FUNC(sceHttpSetEpollId);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetIcmOption) {
+    TRACY_FUNC(sceHttpSetIcmOption);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetInflateGZIPEnabled) {
+    TRACY_FUNC(sceHttpSetInflateGZIPEnabled);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetNonblock) {
+    TRACY_FUNC(sceHttpSetNonblock);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetRecvTimeOut) {
+    TRACY_FUNC(sceHttpSetRecvTimeOut);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetRedirectCallback) {
+    TRACY_FUNC(sceHttpSetRedirectCallback);
     return UNIMPLEMENTED();
 }
 
@@ -1323,10 +1363,12 @@ EXPORT(SceInt, sceHttpSetRequestContentLength, SceInt reqId, SceULong64 contentL
 }
 
 EXPORT(int, sceHttpSetResolveRetry) {
+    TRACY_FUNC(sceHttpSetResolveRetry);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSetResolveTimeOut) {
+    TRACY_FUNC(sceHttpSetResolveTimeOut);
     return UNIMPLEMENTED();
 }
 
@@ -1348,10 +1390,12 @@ EXPORT(SceInt, sceHttpSetResponseHeaderMaxSize, SceInt reqId, SceSize headerSize
 }
 
 EXPORT(int, sceHttpSetSendTimeOut) {
+    TRACY_FUNC(sceHttpSetSendTimeOut);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpSslIsCtxCreated) {
+    TRACY_FUNC(sceHttpSslIsCtxCreated);
     return UNIMPLEMENTED();
 }
 
@@ -1385,6 +1429,7 @@ EXPORT(SceInt, sceHttpTerm) {
 }
 
 EXPORT(int, sceHttpUnsetEpoll) {
+    TRACY_FUNC(sceHttpUnsetEpoll);
     return UNIMPLEMENTED();
 }
 
@@ -1542,10 +1587,12 @@ EXPORT(int, sceHttpUriUnescape, char *out, SceSize *require, SceSize prepare, co
 }
 
 EXPORT(int, sceHttpWaitRequest) {
+    TRACY_FUNC(sceHttpWaitRequest);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpWaitRequestCB) {
+    TRACY_FUNC(sceHttpWaitRequestCB);
     return UNIMPLEMENTED();
 }
 
@@ -1581,6 +1628,7 @@ EXPORT(SceInt, sceHttpsDisableOption2, SceInt tmplId, SceHttpsFlags sslFlags) {
 }
 
 EXPORT(int, sceHttpsDisableOptionPrivate) {
+    TRACY_FUNC(sceHttpsDisableOptionPrivate);
     return UNIMPLEMENTED();
 }
 
@@ -1616,14 +1664,17 @@ EXPORT(SceInt, sceHttpsEnableOption, SceHttpsFlags sslFlags) {
 }
 
 EXPORT(int, sceHttpsEnableOptionPrivate) {
+    TRACY_FUNC(sceHttpsEnableOptionPrivate);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpsFreeCaList) {
+    TRACY_FUNC(sceHttpsFreeCaList);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceHttpsGetCaList) {
+    TRACY_FUNC(sceHttpsGetCaList);
     return UNIMPLEMENTED();
 }
 
@@ -1639,6 +1690,7 @@ EXPORT(SceInt, sceHttpsGetSslError, SceInt tmplId, SceInt *errNum, SceUInt *deta
 }
 
 EXPORT(int, sceHttpsLoadCert) {
+    TRACY_FUNC(sceHttpsLoadCert);
     return UNIMPLEMENTED();
 }
 
@@ -1657,6 +1709,7 @@ EXPORT(SceInt, sceHttpsSetSslCallback, SceInt tmplId, SceHttpsCallback cbFunctio
 }
 
 EXPORT(int, sceHttpsUnloadCert) {
+    TRACY_FUNC(sceHttpsUnloadCert);
     return UNIMPLEMENTED();
 }
 

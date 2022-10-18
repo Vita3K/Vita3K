@@ -23,9 +23,7 @@
 #include <renderer/state.h>
 #include <util/tracy.h>
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "SceAppMgr";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(SceAppMgr);
 
 EXPORT(SceInt32, __sceAppMgrGetAppState, SceAppMgrAppState *appState, SceUInt32 sizeofSceAppMgrAppState, SceUInt32 buildVersion) {
     TRACY_FUNC(__sceAppMgrGetAppState, appState, sizeofSceAppMgrAppState, buildVersion);

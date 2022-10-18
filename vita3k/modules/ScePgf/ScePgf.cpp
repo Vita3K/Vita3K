@@ -214,8 +214,8 @@ EXPORT(int, sceFontGetNumFontList, SceFontLibHandle libHandle, unsigned int *err
     return UNIMPLEMENTED();
 }
 
-EXPORT(void *, sceFontNewLib, SceFontNewLibParams *fontInitParams, signed int errorCode) {
-    return nullptr;
+EXPORT(int, sceFontNewLib, SceFontNewLibParams *fontInitParams, unsigned int *errorCode) {
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFontOpen, SceFontLibHandle libHandle, int i, int mode, unsigned int *errorCode) {

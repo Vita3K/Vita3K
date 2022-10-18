@@ -22,9 +22,7 @@
 #include <util/lock_and_find.h>
 #include <util/tracy.h>
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "SceAudio";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(SceAudio);
 
 template <>
 std::string to_debug_str<SceAudioOutPortType>(const MemState &mem, SceAudioOutPortType type) {
