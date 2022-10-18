@@ -26,9 +26,7 @@
 #include <dlmalloc.h>
 #include <v3kprintf.h>
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "SceLibc";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(SceLibc);
 
 Ptr<void> g_dso;
 

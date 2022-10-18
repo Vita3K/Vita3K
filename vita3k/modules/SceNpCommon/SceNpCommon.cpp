@@ -21,7 +21,11 @@
 #include <kernel/state.h>
 #include <np/common.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceNpCommon);
+
 EXPORT(int, sceNpAuthAbortRequest) {
+    TRACY_FUNC(sceNpAuthAbortRequest);
     return UNIMPLEMENTED();
 }
 
@@ -38,6 +42,7 @@ struct SceNpAuthRequestParameter {
 };
 
 EXPORT(int, sceNpAuthCreateStartRequest, const SceNpAuthRequestParameter *param) {
+    TRACY_FUNC(sceNpAuthCreateStartRequest, param);
     const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
     // todo: this callback function should be called from sceNpCheckCallback
     STUBBED("Immediately call ticket callback");
@@ -46,38 +51,47 @@ EXPORT(int, sceNpAuthCreateStartRequest, const SceNpAuthRequestParameter *param)
 }
 
 EXPORT(int, sceNpAuthDestroyRequest) {
+    TRACY_FUNC(sceNpAuthDestroyRequest);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetEntitlementById) {
+    TRACY_FUNC(sceNpAuthGetEntitlementById);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetEntitlementByIdPrefix) {
+    TRACY_FUNC(sceNpAuthGetEntitlementByIdPrefix);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetEntitlementIdList) {
+    TRACY_FUNC(sceNpAuthGetEntitlementIdList);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetTicket) {
+    TRACY_FUNC(sceNpAuthGetTicket);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthGetTicketParam) {
+    TRACY_FUNC(sceNpAuthGetTicketParam);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthInit) {
+    TRACY_FUNC(sceNpAuthInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpAuthTerm) {
+    TRACY_FUNC(sceNpAuthTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCmpNpId, np::NpId *npid1, np::NpId *npid2) {
+    TRACY_FUNC(sceNpCmpNpId, npid1, npid2);
     STUBBED("assume single user");
     if (std::string(npid1->online_id.name) == emuenv.io.user_name && std::string(npid2->online_id.name) == emuenv.io.user_name) {
         return 0;
@@ -86,38 +100,47 @@ EXPORT(int, sceNpCmpNpId, np::NpId *npid1, np::NpId *npid2) {
 }
 
 EXPORT(int, sceNpCmpNpIdInOrder) {
+    TRACY_FUNC(sceNpCmpNpIdInOrder);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCmpOnlineId) {
+    TRACY_FUNC(sceNpCmpOnlineId);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommonBase64Encode) {
+    TRACY_FUNC(sceNpCommonBase64Encode);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommonFreeNpServerName) {
+    TRACY_FUNC(sceNpCommonFreeNpServerName);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommonGetNpEnviroment) {
+    TRACY_FUNC(sceNpCommonGetNpEnviroment);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommonGetSystemSwVersion) {
+    TRACY_FUNC(sceNpCommonGetSystemSwVersion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpCommonMallocNpServerName) {
+    TRACY_FUNC(sceNpCommonMallocNpServerName);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpGetPlatformType) {
+    TRACY_FUNC(sceNpGetPlatformType);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSetPlatformType) {
+    TRACY_FUNC(sceNpSetPlatformType);
     return UNIMPLEMENTED();
 }
 

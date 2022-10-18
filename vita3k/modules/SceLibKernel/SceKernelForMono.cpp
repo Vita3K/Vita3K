@@ -18,27 +18,36 @@
 #include "SceKernelForMono.h"
 #include "../SceKernelThreadMgr/SceThreadmgr.h"
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceKernelForMono);
+
 EXPORT(int, sceKernelGetThreadContextForMono, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
+    TRACY_FUNC(sceKernelGetThreadContextForMono, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
     return CALL_EXPORT(_sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
 }
 
 EXPORT(int, sceKernelResumeThreadForMono, SceUID threadId) {
+    TRACY_FUNC(sceKernelResumeThreadForMono, threadId);
     return CALL_EXPORT(sceKernelResumeThreadForVM, threadId);
 }
 
 EXPORT(int, sceKernelSetThreadContextForMono, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
+    TRACY_FUNC(sceKernelSetThreadContextForMono, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
     return CALL_EXPORT(_sceKernelSetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
 }
 
 EXPORT(int, sceKernelSuspendThreadForMono, SceUID threadId) {
+    TRACY_FUNC(sceKernelSuspendThreadForMono, threadId);
     return CALL_EXPORT(sceKernelSuspendThreadForVM, threadId);
 }
 
 EXPORT(int, sceKernelWaitExceptionCBForMono) {
+    TRACY_FUNC(sceKernelWaitExceptionCBForMono);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelWaitExceptionForMono) {
+    TRACY_FUNC(sceKernelWaitExceptionForMono);
     STUBBED("Inifinite wait");
     while (true) {
     }

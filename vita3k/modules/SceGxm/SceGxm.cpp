@@ -39,6 +39,9 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceGxm);
+
 static Ptr<void> gxmRunDeferredMemoryCallback(KernelState &kernel, const MemState &mem, std::mutex &global_lock, std::uint32_t &return_size, Ptr<SceGxmDeferredContextCallback> callback, Ptr<void> userdata,
     const std::uint32_t size, const SceUID thread_id) {
     const std::lock_guard<std::mutex> guard(global_lock);
@@ -417,14 +420,17 @@ static int init_texture_base(const char *export_name, SceGxmTexture *texture, Pt
 }
 
 EXPORT(int, _sceGxmBeginScene) {
+    TRACY_FUNC(_sceGxmBeginScene);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmAddRazorGpuCaptureBuffer) {
+    TRACY_FUNC(sceGxmAddRazorGpuCaptureBuffer);
     return UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetDefaultRegionClipAndViewport, SceGxmContext *context, uint32_t xMax, uint32_t yMax) {
+    TRACY_FUNC(sceGxmSetDefaultRegionClipAndViewport, context, xMax, yMax);
     const std::uint32_t xMin = 0;
     const std::uint32_t yMin = 0;
 
@@ -507,6 +513,7 @@ static void gxmContextStateRestore(renderer::State &state, MemState &mem, SceGxm
 }
 
 EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
+    TRACY_FUNC(sceGxmBeginCommandList, deferredContext);
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -571,6 +578,7 @@ EXPORT(int, sceGxmBeginCommandList, SceGxmContext *deferredContext) {
 }
 
 EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceGxmRenderTarget *renderTarget, const SceGxmValidRegion *validRegion, SceGxmSyncObject *vertexSyncObject, Ptr<SceGxmSyncObject> fragmentSyncObject, const SceGxmColorSurface *colorSurface, const SceGxmDepthStencilSurface *depthStencil) {
+    TRACY_FUNC(sceGxmBeginScene, context, flags, renderTarget, validRegion, vertexSyncObject, fragmentSyncObject, colorSurface, depthStencil);
     if (!context) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -635,6 +643,8 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
 }
 
 EXPORT(int, sceGxmBeginSceneEx, SceGxmContext *immediateContext, uint32_t flags, const SceGxmRenderTarget *renderTarget, const SceGxmValidRegion *validRegion, SceGxmSyncObject *vertexSyncObject, Ptr<SceGxmSyncObject> fragmentSyncObject, const SceGxmColorSurface *colorSurface, const SceGxmDepthStencilSurface *loadDepthStencilSurface, const SceGxmDepthStencilSurface *storeDepthStencilSurface) {
+    TRACY_FUNC(sceGxmBeginSceneEx, immediateContext, flags, renderTarget, validRegion, vertexSyncObject, fragmentSyncObject, colorSurface, loadDepthStencilSurface, storeDepthStencilSurface);
+    // storeDepthStencilSurface
     if (!immediateContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -660,47 +670,56 @@ EXPORT(int, sceGxmBeginSceneEx, SceGxmContext *immediateContext, uint32_t flags,
 }
 
 EXPORT(void, sceGxmColorSurfaceGetClip, const SceGxmColorSurface *surface, uint32_t *xMin, uint32_t *yMin, uint32_t *xMax, uint32_t *yMax) {
+    TRACY_FUNC(sceGxmColorSurfaceGetClip, surface, xMin, yMin, xMax, yMax);
     assert(surface);
     UNIMPLEMENTED();
 }
 
 EXPORT(Ptr<void>, sceGxmColorSurfaceGetData, const SceGxmColorSurface *surface) {
+    TRACY_FUNC(sceGxmColorSurfaceGetData, surface);
     assert(surface);
     return surface->data;
 }
 
 EXPORT(SceGxmColorSurfaceDitherMode, sceGxmColorSurfaceGetDitherMode, const SceGxmColorSurface *surface) {
+    TRACY_FUNC(sceGxmColorSurfaceGetDitherMode, surface);
     assert(surface);
     STUBBED("SCE_GXM_COLOR_SURFACE_DITHER_DISABLED");
     return SceGxmColorSurfaceDitherMode::SCE_GXM_COLOR_SURFACE_DITHER_DISABLED;
 }
 
 EXPORT(SceGxmColorFormat, sceGxmColorSurfaceGetFormat, const SceGxmColorSurface *surface) {
+    TRACY_FUNC(sceGxmColorSurfaceGetFormat, surface);
     assert(surface);
     return surface->colorFormat;
 }
 
 EXPORT(SceGxmColorSurfaceGammaMode, sceGxmColorSurfaceGetGammaMode, const SceGxmColorSurface *surface) {
+    TRACY_FUNC(sceGxmColorSurfaceGetGammaMode, surface);
     assert(surface);
     return static_cast<SceGxmColorSurfaceGammaMode>(surface->gamma << 12);
 }
 
 EXPORT(SceGxmColorSurfaceScaleMode, sceGxmColorSurfaceGetScaleMode, const SceGxmColorSurface *surface) {
+    TRACY_FUNC(sceGxmColorSurfaceGetScaleMode, surface);
     assert(surface);
     return surface->downscale ? SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE : SCE_GXM_COLOR_SURFACE_SCALE_NONE;
 }
 
 EXPORT(uint32_t, sceGxmColorSurfaceGetStrideInPixels, const SceGxmColorSurface *surface) {
+    TRACY_FUNC(sceGxmColorSurfaceGetStrideInPixels, surface);
     assert(surface);
     return surface->strideInPixels;
 }
 
 EXPORT(SceGxmColorSurfaceType, sceGxmColorSurfaceGetType, const SceGxmColorSurface *surface) {
+    TRACY_FUNC(sceGxmColorSurfaceGetType, surface);
     assert(surface);
     return surface->surfaceType;
 }
 
 EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorFormat colorFormat, SceGxmColorSurfaceType surfaceType, SceGxmColorSurfaceScaleMode scaleMode, SceGxmOutputRegisterSize outputRegisterSize, uint32_t width, uint32_t height, uint32_t strideInPixels, Ptr<void> data) {
+    TRACY_FUNC(sceGxmColorSurfaceInit, surface, colorFormat, surfaceType, scaleMode, outputRegisterSize, width, height, strideInPixels, data);
     if (!surface || !data)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -738,6 +757,7 @@ EXPORT(int, sceGxmColorSurfaceInit, SceGxmColorSurface *surface, SceGxmColorForm
 }
 
 EXPORT(int, sceGxmColorSurfaceInitDisabled, SceGxmColorSurface *surface) {
+    TRACY_FUNC(sceGxmColorSurfaceInitDisabled, surface);
     if (!surface)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -746,16 +766,19 @@ EXPORT(int, sceGxmColorSurfaceInitDisabled, SceGxmColorSurface *surface) {
 }
 
 EXPORT(bool, sceGxmColorSurfaceIsEnabled, const SceGxmColorSurface *surface) {
+    TRACY_FUNC(sceGxmColorSurfaceIsEnabled, surface);
     assert(surface);
     return !surface->disabled;
 }
 
 EXPORT(void, sceGxmColorSurfaceSetClip, SceGxmColorSurface *surface, uint32_t xMin, uint32_t yMin, uint32_t xMax, uint32_t yMax) {
+    TRACY_FUNC(sceGxmColorSurfaceSetClip, surface, xMin, yMin, xMax, yMax);
     assert(surface);
     UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmColorSurfaceSetData, SceGxmColorSurface *surface, Ptr<void> data) {
+    TRACY_FUNC(sceGxmColorSurfaceSetData, surface, data);
     if (!surface) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -771,6 +794,7 @@ EXPORT(int, sceGxmColorSurfaceSetData, SceGxmColorSurface *surface, Ptr<void> da
 }
 
 EXPORT(int, sceGxmColorSurfaceSetDitherMode, SceGxmColorSurface *surface, SceGxmColorSurfaceDitherMode ditherMode) {
+    TRACY_FUNC(sceGxmColorSurfaceSetDitherMode, surface, ditherMode);
     if (!surface) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -781,6 +805,7 @@ EXPORT(int, sceGxmColorSurfaceSetDitherMode, SceGxmColorSurface *surface, SceGxm
 EXPORT(int, sceGxmTextureSetFormat, SceGxmTexture *tex, SceGxmTextureFormat format);
 
 EXPORT(int, sceGxmColorSurfaceSetFormat, SceGxmColorSurface *surface, SceGxmColorFormat format) {
+    TRACY_FUNC(sceGxmColorSurfaceSetFormat, surface, format);
     if (!surface) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -796,6 +821,7 @@ EXPORT(int, sceGxmColorSurfaceSetFormat, SceGxmColorSurface *surface, SceGxmColo
 }
 
 EXPORT(int, sceGxmColorSurfaceSetGammaMode, SceGxmColorSurface *surface, SceGxmColorSurfaceGammaMode gammaMode) {
+    TRACY_FUNC(sceGxmColorSurfaceSetGammaMode, surface, gammaMode);
     if (!surface) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -806,11 +832,13 @@ EXPORT(int, sceGxmColorSurfaceSetGammaMode, SceGxmColorSurface *surface, SceGxmC
 }
 
 EXPORT(void, sceGxmColorSurfaceSetScaleMode, SceGxmColorSurface *surface, SceGxmColorSurfaceScaleMode scaleMode) {
+    TRACY_FUNC(sceGxmColorSurfaceSetScaleMode, surface, scaleMode);
     assert(surface);
     UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmContext> *context) {
+    TRACY_FUNC(sceGxmCreateContext, params, context);
     if (!params || !context)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -858,6 +886,7 @@ EXPORT(int, sceGxmCreateContext, const SceGxmContextParams *params, Ptr<SceGxmCo
 }
 
 EXPORT(int, sceGxmCreateDeferredContext, SceGxmDeferredContextParams *params, Ptr<SceGxmContext> *deferredContext) {
+    TRACY_FUNC(sceGxmCreateDeferredContext, params, deferredContext);
     if (!params || !deferredContext)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -883,6 +912,7 @@ EXPORT(int, sceGxmCreateDeferredContext, SceGxmDeferredContextParams *params, Pt
 }
 
 EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Ptr<SceGxmRenderTarget> *renderTarget) {
+    TRACY_FUNC(sceGxmCreateRenderTarget, params, renderTarget);
     if (!params) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -915,41 +945,49 @@ EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Pt
 }
 
 EXPORT(float, sceGxmDepthStencilSurfaceGetBackgroundDepth, const SceGxmDepthStencilSurface *surface) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceGetBackgroundDepth, surface);
     assert(surface);
     return surface->backgroundDepth;
 }
 
 EXPORT(bool, sceGxmDepthStencilSurfaceGetBackgroundMask, const SceGxmDepthStencilSurface *surface) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceGetBackgroundMask, surface);
     assert(surface);
     return (surface->control.content & SceGxmDepthStencilControl::mask_bit) != 0;
 }
 
 EXPORT(uint8_t, sceGxmDepthStencilSurfaceGetBackgroundStencil, const SceGxmDepthStencilSurface *surface) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceGetBackgroundStencil, surface);
     assert(surface);
     return surface->control.content & SceGxmDepthStencilControl::stencil_bits;
 }
 
 EXPORT(SceGxmDepthStencilForceLoadMode, sceGxmDepthStencilSurfaceGetForceLoadMode, const SceGxmDepthStencilSurface *surface) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceGetForceLoadMode, surface);
     assert(surface);
     return static_cast<SceGxmDepthStencilForceLoadMode>(surface->zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED);
 }
 
 EXPORT(SceGxmDepthStencilForceStoreMode, sceGxmDepthStencilSurfaceGetForceStoreMode, const SceGxmDepthStencilSurface *surface) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceGetForceStoreMode, surface);
     assert(surface);
     return static_cast<SceGxmDepthStencilForceStoreMode>(surface->zlsControl & SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceGetFormat, const SceGxmDepthStencilSurface *surface) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceGetFormat, surface);
     assert(surface);
     return UNIMPLEMENTED();
 }
 
 EXPORT(uint32_t, sceGxmDepthStencilSurfaceGetStrideInSamples, const SceGxmDepthStencilSurface *surface) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceGetStrideInSamples, surface);
     assert(surface);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, SceGxmDepthStencilFormat depthStencilFormat, SceGxmDepthStencilSurfaceType surfaceType, uint32_t strideInSamples, Ptr<void> depthData, Ptr<void> stencilData) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceInit, surface, depthStencilFormat, surfaceType, strideInSamples, depthData, stencilData);
     if (!surface) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -968,6 +1006,7 @@ EXPORT(int, sceGxmDepthStencilSurfaceInit, SceGxmDepthStencilSurface *surface, S
 }
 
 EXPORT(int, sceGxmDepthStencilSurfaceInitDisabled, SceGxmDepthStencilSurface *surface) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceInitDisabled, surface);
     if (!surface) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -979,16 +1018,19 @@ EXPORT(int, sceGxmDepthStencilSurfaceInitDisabled, SceGxmDepthStencilSurface *su
 }
 
 EXPORT(bool, sceGxmDepthStencilSurfaceIsEnabled, const SceGxmDepthStencilSurface *surface) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceIsEnabled, surface);
     assert(surface);
     return (surface->control.content & SceGxmDepthStencilControl::disabled_bit) == 0;
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundDepth, SceGxmDepthStencilSurface *surface, float depth) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceSetBackgroundDepth, surface, depth);
     assert(surface);
     surface->backgroundDepth = depth;
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundMask, SceGxmDepthStencilSurface *surface, bool mask) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceSetBackgroundMask, surface, mask);
     assert(surface);
     if (mask)
         surface->control.content |= SceGxmDepthStencilControl::mask_bit;
@@ -997,22 +1039,26 @@ EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundMask, SceGxmDepthStencilSurfa
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetBackgroundStencil, SceGxmDepthStencilSurface *surface, uint8_t stencil) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceSetBackgroundStencil, surface, stencil);
     assert(surface);
     surface->control.content &= ~SceGxmDepthStencilControl::stencil_bits;
     surface->control.content |= stencil;
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetForceLoadMode, SceGxmDepthStencilSurface *surface, SceGxmDepthStencilForceLoadMode forceLoad) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceSetForceLoadMode, surface, forceLoad);
     assert(surface);
     surface->zlsControl = (forceLoad & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED) | (surface->zlsControl & ~SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED);
 }
 
 EXPORT(void, sceGxmDepthStencilSurfaceSetForceStoreMode, SceGxmDepthStencilSurface *surface, SceGxmDepthStencilForceStoreMode forceStore) {
+    TRACY_FUNC(sceGxmDepthStencilSurfaceSetForceStoreMode, surface, forceStore);
     assert(surface);
     surface->zlsControl = (forceStore & SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED) | (surface->zlsControl & ~SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED);
 }
 
 EXPORT(int, sceGxmDestroyContext, Ptr<SceGxmContext> context) {
+    TRACY_FUNC(sceGxmDestroyContext, context);
     if (!context)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -1022,6 +1068,7 @@ EXPORT(int, sceGxmDestroyContext, Ptr<SceGxmContext> context) {
 }
 
 EXPORT(int, sceGxmDestroyDeferredContext, SceGxmContext *deferredContext) {
+    TRACY_FUNC(sceGxmDestroyDeferredContext, deferredContext);
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1029,6 +1076,7 @@ EXPORT(int, sceGxmDestroyDeferredContext, SceGxmContext *deferredContext) {
 }
 
 EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
+    TRACY_FUNC(sceGxmDestroyRenderTarget, renderTarget);
     MemState &mem = emuenv.mem;
 
     if (!renderTarget)
@@ -1042,6 +1090,7 @@ EXPORT(int, sceGxmDestroyRenderTarget, Ptr<SceGxmRenderTarget> renderTarget) {
 }
 
 EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<SceGxmSyncObject> newBuffer, Ptr<const void> callbackData) {
+    TRACY_FUNC(sceGxmDisplayQueueAddEntry, oldBuffer, newBuffer, callbackData);
     if (!oldBuffer || !newBuffer)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -1089,6 +1138,7 @@ EXPORT(int, sceGxmDisplayQueueAddEntry, Ptr<SceGxmSyncObject> oldBuffer, Ptr<Sce
 }
 
 EXPORT(int, sceGxmDisplayQueueFinish) {
+    TRACY_FUNC(sceGxmDisplayQueueFinish);
     emuenv.gxm.display_queue.wait_empty();
 
     return 0;
@@ -1220,10 +1270,12 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
 }
 
 EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount) {
+    TRACY_FUNC(sceGxmDraw, context, primType, indexType, indexData, indexCount);
     return gxmDrawElementGeneral(emuenv, export_name, thread_id, context, primType, indexType, indexData, indexCount, 1);
 }
 
 EXPORT(int, sceGxmDrawInstanced, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount, uint32_t indexWrap) {
+    TRACY_FUNC(sceGxmDrawInstanced, context, primType, indexType, indexData, indexCount, indexWrap);
     if (indexCount % indexWrap != 0) {
         LOG_WARN("Extra vertexes are requested to be drawn (ignored)");
     }
@@ -1232,6 +1284,7 @@ EXPORT(int, sceGxmDrawInstanced, SceGxmContext *context, SceGxmPrimitiveType pri
 }
 
 EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw *draw) {
+    TRACY_FUNC(sceGxmDrawPrecomputed, context, draw);
     if (!context) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1337,6 +1390,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
 }
 
 EXPORT(int, sceGxmEndCommandList, SceGxmContext *deferredContext, SceGxmCommandList *commandList) {
+    TRACY_FUNC(sceGxmEndCommandList, deferredContext, commandList);
     if (deferredContext->state.type != SCE_GXM_CONTEXT_TYPE_DEFERRED) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
@@ -1368,6 +1422,7 @@ EXPORT(int, sceGxmEndCommandList, SceGxmContext *deferredContext, SceGxmCommandL
 }
 
 EXPORT(int, sceGxmEndScene, SceGxmContext *context, SceGxmNotification *vertexNotification, SceGxmNotification *fragmentNotification) {
+    TRACY_FUNC(sceGxmEndScene, context, vertexNotification, fragmentNotification);
     const MemState &mem = emuenv.mem;
 
     if (!context) {
@@ -1411,6 +1466,7 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, SceGxmNotification *vertexNo
 }
 
 EXPORT(int, sceGxmExecuteCommandList, SceGxmContext *context, SceGxmCommandList *commandList) {
+    TRACY_FUNC(sceGxmExecuteCommandList, context, commandList);
     if (!context) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1437,6 +1493,7 @@ EXPORT(int, sceGxmExecuteCommandList, SceGxmContext *context, SceGxmCommandList 
 }
 
 EXPORT(int, sceGxmFinish, SceGxmContext *context) {
+    TRACY_FUNC(sceGxmFinish, context);
     assert(context);
 
     if (!context)
@@ -1449,22 +1506,26 @@ EXPORT(int, sceGxmFinish, SceGxmContext *context) {
 }
 
 EXPORT(SceGxmPassType, sceGxmFragmentProgramGetPassType, const SceGxmFragmentProgram *fragmentProgram) {
+    TRACY_FUNC(sceGxmFragmentProgramGetPassType, fragmentProgram);
     assert(fragmentProgram);
     STUBBED("SCE_GXM_PASS_TYPE_OPAQUE");
     return SceGxmPassType::SCE_GXM_PASS_TYPE_OPAQUE;
 }
 
 EXPORT(Ptr<const SceGxmProgram>, sceGxmFragmentProgramGetProgram, const SceGxmFragmentProgram *fragmentProgram) {
+    TRACY_FUNC(sceGxmFragmentProgramGetProgram, fragmentProgram);
     assert(fragmentProgram);
     return fragmentProgram->program;
 }
 
 EXPORT(bool, sceGxmFragmentProgramIsEnabled, const SceGxmFragmentProgram *fragmentProgram) {
+    TRACY_FUNC(sceGxmFragmentProgramIsEnabled, fragmentProgram);
     assert(fragmentProgram);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmGetContextType, const SceGxmContext *context, SceGxmContextType *type) {
+    TRACY_FUNC(sceGxmGetContextType, context, type);
     if (!context || !type) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1475,6 +1536,7 @@ EXPORT(int, sceGxmGetContextType, const SceGxmContext *context, SceGxmContextTyp
 }
 
 EXPORT(int, sceGxmGetDeferredContextFragmentBuffer, const SceGxmContext *deferredContext, Ptr<void> *mem) {
+    TRACY_FUNC(sceGxmGetDeferredContextFragmentBuffer, deferredContext, mem);
     if (!deferredContext || !mem) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1492,6 +1554,7 @@ EXPORT(int, sceGxmGetDeferredContextFragmentBuffer, const SceGxmContext *deferre
 }
 
 EXPORT(int, sceGxmGetDeferredContextVdmBuffer, const SceGxmContext *deferredContext, Ptr<void> *mem) {
+    TRACY_FUNC(sceGxmGetDeferredContextVdmBuffer, deferredContext, mem);
     if (!deferredContext || !mem) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1509,6 +1572,7 @@ EXPORT(int, sceGxmGetDeferredContextVdmBuffer, const SceGxmContext *deferredCont
 }
 
 EXPORT(int, sceGxmGetDeferredContextVertexBuffer, const SceGxmContext *deferredContext, Ptr<void> *mem) {
+    TRACY_FUNC(sceGxmGetDeferredContextVertexBuffer, deferredContext, mem);
     if (!deferredContext || !mem) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1526,10 +1590,12 @@ EXPORT(int, sceGxmGetDeferredContextVertexBuffer, const SceGxmContext *deferredC
 }
 
 EXPORT(Ptr<uint32_t>, sceGxmGetNotificationRegion) {
+    TRACY_FUNC(sceGxmGetNotificationRegion);
     return emuenv.gxm.notification_region;
 }
 
 EXPORT(int, sceGxmGetParameterBufferThreshold, uint32_t *parameterBufferSize) {
+    TRACY_FUNC(sceGxmGetParameterBufferThreshold, parameterBufferSize);
     if (!parameterBufferSize) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1537,6 +1603,7 @@ EXPORT(int, sceGxmGetParameterBufferThreshold, uint32_t *parameterBufferSize) {
 }
 
 EXPORT(uint32_t, sceGxmGetPrecomputedDrawSize, const SceGxmVertexProgram *vertexProgram) {
+    TRACY_FUNC(sceGxmGetPrecomputedDrawSize, vertexProgram);
     assert(vertexProgram);
 
     uint16_t max_stream_index = 0;
@@ -1548,6 +1615,7 @@ EXPORT(uint32_t, sceGxmGetPrecomputedDrawSize, const SceGxmVertexProgram *vertex
 }
 
 EXPORT(uint32_t, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
+    TRACY_FUNC(sceGxmGetPrecomputedFragmentStateSize, fragmentProgram);
     assert(fragmentProgram);
 
     const uint16_t texture_count = fragmentProgram->renderer_data->texture_count;
@@ -1555,6 +1623,7 @@ EXPORT(uint32_t, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProg
 }
 
 EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
+    TRACY_FUNC(sceGxmGetPrecomputedVertexStateSize, vertexProgram);
     assert(vertexProgram);
 
     const uint16_t texture_count = vertexProgram->renderer_data->texture_count;
@@ -1562,6 +1631,7 @@ EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram 
 }
 
 EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
+    TRACY_FUNC(sceGxmGetRenderTargetMemSize, params, hostMemSize);
     if (!params) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1608,6 +1678,7 @@ static int SDLCALL thread_function(void *data) {
 }
 
 EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
+    TRACY_FUNC(sceGxmInitialize, params);
     if (!params) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1650,10 +1721,12 @@ EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params) {
 }
 
 EXPORT(int, sceGxmIsDebugVersion) {
+    TRACY_FUNC(sceGxmIsDebugVersion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, uint32_t size, uint32_t *offset) {
+    TRACY_FUNC(sceGxmMapFragmentUsseMemory, base, size, offset);
     STUBBED("always return success");
 
     if (!base || !offset) {
@@ -1667,6 +1740,7 @@ EXPORT(int, sceGxmMapFragmentUsseMemory, Ptr<void> base, uint32_t size, uint32_t
 }
 
 EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
+    TRACY_FUNC(sceGxmMapMemory, base, size, attribs);
     if (!base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1685,6 +1759,7 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
 }
 
 EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *offset) {
+    TRACY_FUNC(sceGxmMapVertexUsseMemory, base, size, offset);
     STUBBED("always return success");
 
     if (!base || !offset) {
@@ -1698,6 +1773,7 @@ EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *
 }
 
 EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const SceGxmNotification *vertexNotification) {
+    TRACY_FUNC(sceGxmMidSceneFlush, immediateContext, flags, vertexSyncObject, vertexNotification);
     STUBBED("Surfaces not flushed back to memory");
 
     if (!immediateContext) {
@@ -1724,10 +1800,12 @@ EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags
 }
 
 EXPORT(int, _sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const SceGxmNotification *vertexNotification) {
+    TRACY_FUNC(_sceGxmMidSceneFlush, immediateContext, flags, vertexSyncObject, vertexNotification);
     return CALL_EXPORT(sceGxmMidSceneFlush, immediateContext, flags, vertexSyncObject, vertexNotification);
 }
 
 EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
+    TRACY_FUNC(sceGxmNotificationWait, notification);
     if (!notification) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1744,6 +1822,7 @@ EXPORT(int, sceGxmNotificationWait, const SceGxmNotification *notification) {
 }
 
 EXPORT(int, sceGxmPadHeartbeat, const SceGxmColorSurface *displaySurface, SceGxmSyncObject *displaySyncObject) {
+    TRACY_FUNC(sceGxmPadHeartbeat, displaySurface, displaySyncObject);
     if (!displaySurface || !displaySyncObject)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -1751,14 +1830,17 @@ EXPORT(int, sceGxmPadHeartbeat, const SceGxmColorSurface *displaySurface, SceGxm
 }
 
 EXPORT(int, sceGxmPadTriggerGpuPaTrace) {
+    TRACY_FUNC(sceGxmPadTriggerGpuPaTrace);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmPopUserMarker) {
+    TRACY_FUNC(sceGxmPopUserMarker);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmPrecomputedDrawInit, SceGxmPrecomputedDraw *state, Ptr<const SceGxmVertexProgram> program, Ptr<void> extra_data) {
+    TRACY_FUNC(sceGxmPrecomputedDrawInit, state, program, extra_data);
     if (!state || !program || !extra_data) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1786,6 +1868,7 @@ EXPORT(int, sceGxmPrecomputedDrawInit, SceGxmPrecomputedDraw *state, Ptr<const S
 }
 
 EXPORT(int, sceGxmPrecomputedDrawSetAllVertexStreams, SceGxmPrecomputedDraw *state, const Ptr<const void> *stream_data) {
+    TRACY_FUNC(sceGxmPrecomputedDrawSetAllVertexStreams, state, stream_data);
     if (!state) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1799,6 +1882,7 @@ EXPORT(int, sceGxmPrecomputedDrawSetAllVertexStreams, SceGxmPrecomputedDraw *sta
 }
 
 EXPORT(int, sceGxmPrecomputedDrawSetParams, SceGxmPrecomputedDraw *state, SceGxmPrimitiveType type, SceGxmIndexFormat index_format, Ptr<const void> index_data, uint32_t vertex_count) {
+    TRACY_FUNC(sceGxmPrecomputedDrawSetParams, state, type, index_format, index_data, vertex_count);
     if (!state || !index_data) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1813,6 +1897,7 @@ EXPORT(int, sceGxmPrecomputedDrawSetParams, SceGxmPrecomputedDraw *state, SceGxm
 }
 
 EXPORT(int, sceGxmPrecomputedDrawSetParamsInstanced, SceGxmPrecomputedDraw *precomputedDraw, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, Ptr<const void> indexData, uint32_t indexCount, uint32_t indexWrap) {
+    TRACY_FUNC(sceGxmPrecomputedDrawSetParamsInstanced, precomputedDraw, primType, indexType, indexData, indexCount, indexWrap);
     if (!precomputedDraw || !indexData) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1832,6 +1917,7 @@ EXPORT(int, sceGxmPrecomputedDrawSetParamsInstanced, SceGxmPrecomputedDraw *prec
 }
 
 EXPORT(int, sceGxmPrecomputedDrawSetVertexStream, SceGxmPrecomputedDraw *state, uint32_t streamIndex, Ptr<const void> streamData) {
+    TRACY_FUNC(sceGxmPrecomputedDrawSetVertexStream, state, streamIndex, streamData);
     if (!state) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1851,11 +1937,13 @@ EXPORT(int, sceGxmPrecomputedDrawSetVertexStream, SceGxmPrecomputedDraw *state, 
 }
 
 EXPORT(Ptr<const void>, sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer, const SceGxmPrecomputedFragmentState *state) {
+    TRACY_FUNC(sceGxmPrecomputedFragmentStateGetDefaultUniformBuffer, state);
     UniformBuffers &uniform_buffers = *state->uniform_buffers.get(emuenv.mem);
     return uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX];
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateInit, SceGxmPrecomputedFragmentState *state, Ptr<const SceGxmFragmentProgram> program, Ptr<void> extra_data) {
+    TRACY_FUNC(sceGxmPrecomputedFragmentStateInit, state, program, extra_data);
     if (!state || !program || !extra_data) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1878,10 +1966,12 @@ EXPORT(int, sceGxmPrecomputedFragmentStateInit, SceGxmPrecomputedFragmentState *
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetAllAuxiliarySurfaces) {
+    TRACY_FUNC(sceGxmPrecomputedFragmentStateSetAllAuxiliarySurfaces);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetAllTextures, SceGxmPrecomputedFragmentState *state, Ptr<const SceGxmTexture> textures) {
+    TRACY_FUNC(sceGxmPrecomputedFragmentStateSetAllTextures, state, textures);
     if (!state || !textures) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1895,6 +1985,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetAllTextures, SceGxmPrecomputedFragm
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetAllUniformBuffers, SceGxmPrecomputedFragmentState *precomputedState, Ptr<const void> const *bufferDataArray) {
+    TRACY_FUNC(sceGxmPrecomputedFragmentStateSetAllUniformBuffers, precomputedState, bufferDataArray);
     if (!precomputedState || !precomputedState->uniform_buffers || !bufferDataArray)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -1909,6 +2000,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetAllUniformBuffers, SceGxmPrecompute
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetDefaultUniformBuffer, SceGxmPrecomputedFragmentState *state, Ptr<const void> buffer) {
+    TRACY_FUNC(sceGxmPrecomputedFragmentStateSetDefaultUniformBuffer, state, buffer);
     if (!state || !buffer) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1920,6 +2012,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetDefaultUniformBuffer, SceGxmPrecomp
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetTexture, SceGxmPrecomputedFragmentState *state, uint32_t index, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmPrecomputedFragmentStateSetTexture, state, index, texture);
     if (!state)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -1938,6 +2031,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetTexture, SceGxmPrecomputedFragmentS
 }
 
 EXPORT(int, sceGxmPrecomputedFragmentStateSetUniformBuffer, SceGxmPrecomputedFragmentState *precomputedState, uint32_t bufferIndex, Ptr<const void> bufferData) {
+    TRACY_FUNC(sceGxmPrecomputedFragmentStateSetUniformBuffer, precomputedState, bufferIndex, bufferData);
     if (!precomputedState) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1957,11 +2051,13 @@ EXPORT(int, sceGxmPrecomputedFragmentStateSetUniformBuffer, SceGxmPrecomputedFra
 }
 
 EXPORT(Ptr<const void>, sceGxmPrecomputedVertexStateGetDefaultUniformBuffer, SceGxmPrecomputedVertexState *state) {
+    TRACY_FUNC(sceGxmPrecomputedVertexStateGetDefaultUniformBuffer, state);
     UniformBuffers &uniform_buffers = *state->uniform_buffers.get(emuenv.mem);
     return uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX];
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateInit, SceGxmPrecomputedVertexState *state, Ptr<const SceGxmVertexProgram> program, Ptr<void> extra_data) {
+    TRACY_FUNC(sceGxmPrecomputedVertexStateInit, state, program, extra_data);
     if (!state || !program || !extra_data) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1984,6 +2080,7 @@ EXPORT(int, sceGxmPrecomputedVertexStateInit, SceGxmPrecomputedVertexState *stat
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetAllTextures, SceGxmPrecomputedVertexState *precomputedState, Ptr<const SceGxmTexture> textureArray) {
+    TRACY_FUNC(sceGxmPrecomputedVertexStateSetAllTextures, precomputedState, textureArray);
     if (!precomputedState || !textureArray) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -1997,6 +2094,7 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetAllTextures, SceGxmPrecomputedVertexS
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetAllUniformBuffers, SceGxmPrecomputedVertexState *precomputedState, Ptr<const void> const *bufferDataArray) {
+    TRACY_FUNC(sceGxmPrecomputedVertexStateSetAllUniformBuffers, precomputedState, bufferDataArray);
     if (!precomputedState || !precomputedState->uniform_buffers || !bufferDataArray)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -2011,6 +2109,7 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetAllUniformBuffers, SceGxmPrecomputedV
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetDefaultUniformBuffer, SceGxmPrecomputedVertexState *state, Ptr<const void> buffer) {
+    TRACY_FUNC(sceGxmPrecomputedVertexStateSetDefaultUniformBuffer, state, buffer);
     if (!state || !buffer) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2022,6 +2121,7 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetDefaultUniformBuffer, SceGxmPrecomput
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetTexture, SceGxmPrecomputedVertexState *precomputedState, uint32_t textureIndex, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmPrecomputedVertexStateSetTexture, precomputedState, textureIndex, texture);
     if (!precomputedState)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -2040,6 +2140,7 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetTexture, SceGxmPrecomputedVertexState
 }
 
 EXPORT(int, sceGxmPrecomputedVertexStateSetUniformBuffer, SceGxmPrecomputedVertexState *precomputedState, uint32_t bufferIndex, Ptr<const void> bufferData) {
+    TRACY_FUNC(sceGxmPrecomputedVertexStateSetUniformBuffer, precomputedState, bufferIndex, bufferData);
     if (!precomputedState) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2059,6 +2160,7 @@ EXPORT(int, sceGxmPrecomputedVertexStateSetUniformBuffer, SceGxmPrecomputedVerte
 }
 
 EXPORT(int, sceGxmProgramCheck, const SceGxmProgram *program) {
+    TRACY_FUNC(sceGxmProgramCheck, program);
     if (!program)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (memcmp(&program->magic, "GXP", 4) != 0)
@@ -2068,6 +2170,7 @@ EXPORT(int, sceGxmProgramCheck, const SceGxmProgram *program) {
 }
 
 EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterByName, const SceGxmProgram *program, const char *name) {
+    TRACY_FUNC(sceGxmProgramFindParameterByName, program, name);
     const MemState &mem = emuenv.mem;
     assert(program);
     if (!program || !name)
@@ -2088,6 +2191,7 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterByName, const SceG
 }
 
 EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, const SceGxmProgram *program, SceGxmParameterSemantic semantic, uint32_t index) {
+    TRACY_FUNC(sceGxmProgramFindParameterBySemantic, program, semantic, index);
     const MemState &mem = emuenv.mem;
 
     if (semantic == SCE_GXM_PARAMETER_SEMANTIC_NONE) {
@@ -2112,20 +2216,24 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramFindParameterBySemantic, const 
 }
 
 EXPORT(Ptr<SceGxmProgramParameter>, _sceGxmProgramFindParameterBySemantic, const SceGxmProgram *program, SceGxmParameterSemantic semantic, uint32_t index) {
+    TRACY_FUNC(_sceGxmProgramFindParameterBySemantic, program, semantic, index);
     return export_sceGxmProgramFindParameterBySemantic(emuenv, thread_id, export_name, program, semantic, index);
 }
 
 EXPORT(uint32_t, sceGxmProgramGetDefaultUniformBufferSize, const SceGxmProgram *program) {
+    TRACY_FUNC(sceGxmProgramGetDefaultUniformBufferSize, program);
     return program->default_uniform_buffer_count * sizeof(Ptr<const void>);
 }
 
 EXPORT(uint32_t, sceGxmProgramGetFragmentProgramInputs, Ptr<const SceGxmProgram> program_) {
+    TRACY_FUNC(sceGxmProgramGetFragmentProgramInputs, program_);
     const auto program = program_.get(emuenv.mem);
 
     return static_cast<uint32_t>(gxp::get_fragment_inputs(*program));
 }
 
 EXPORT(int, sceGxmProgramGetOutputRegisterFormat, const SceGxmProgram *program, SceGxmParameterType *type, uint32_t *componentCount) {
+    TRACY_FUNC(sceGxmProgramGetOutputRegisterFormat, program, type, componentCount);
     if (!program || !type || !componentCount)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -2136,6 +2244,7 @@ EXPORT(int, sceGxmProgramGetOutputRegisterFormat, const SceGxmProgram *program, 
 }
 
 EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram *program, uint32_t index) {
+    TRACY_FUNC(sceGxmProgramGetParameter, program, index);
     const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
 
     const SceGxmProgramParameter *const parameter = &parameters[index];
@@ -2146,37 +2255,44 @@ EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgr
 }
 
 EXPORT(uint32_t, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {
+    TRACY_FUNC(sceGxmProgramGetParameterCount, program);
     assert(program);
     return program->parameter_count;
 }
 
 EXPORT(uint32_t, sceGxmProgramGetSize, const SceGxmProgram *program) {
+    TRACY_FUNC(sceGxmProgramGetSize, program);
     assert(program);
     return program->size;
 }
 
 EXPORT(SceGxmProgramType, sceGxmProgramGetType, const SceGxmProgram *program) {
+    TRACY_FUNC(sceGxmProgramGetType, program);
     assert(program);
     return program->get_type();
 }
 
 EXPORT(uint32_t, sceGxmProgramGetVertexProgramOutputs, Ptr<const SceGxmProgram> program_) {
+    TRACY_FUNC(sceGxmProgramGetVertexProgramOutputs, program_);
     const auto program = program_.get(emuenv.mem);
 
     return static_cast<uint32_t>(gxp::get_vertex_outputs(*program));
 }
 
 EXPORT(bool, sceGxmProgramIsDepthReplaceUsed, const SceGxmProgram *program) {
+    TRACY_FUNC(sceGxmProgramIsDepthReplaceUsed, program);
     assert(program);
     return program->is_depth_replace_used();
 }
 
 EXPORT(bool, sceGxmProgramIsDiscardUsed, const SceGxmProgram *program) {
+    TRACY_FUNC(sceGxmProgramIsDiscardUsed, program);
     assert(program);
     return program->is_discard_used();
 }
 
 EXPORT(bool, sceGxmProgramIsEquivalent, const SceGxmProgram *programA, const SceGxmProgram *programB) {
+    TRACY_FUNC(sceGxmProgramIsEquivalent, programA, programB);
     if (!programA || !programB) {
         LOG_ERROR("SCE_GXM_ERROR_INVALID_POINTER");
         return false;
@@ -2186,41 +2302,49 @@ EXPORT(bool, sceGxmProgramIsEquivalent, const SceGxmProgram *programA, const Sce
 }
 
 EXPORT(bool, sceGxmProgramIsFragColorUsed, const SceGxmProgram *program) {
+    TRACY_FUNC(sceGxmProgramIsFragColorUsed, program);
     assert(program);
     return program->is_frag_color_used();
 }
 
 EXPORT(bool, sceGxmProgramIsNativeColorUsed, const SceGxmProgram *program) {
+    TRACY_FUNC(sceGxmProgramIsNativeColorUsed, program);
     assert(program);
     return program->is_native_color();
 }
 
 EXPORT(bool, sceGxmProgramIsSpriteCoordUsed, const SceGxmProgram *program) {
+    TRACY_FUNC(sceGxmProgramIsSpriteCoordUsed, program);
     assert(program);
     return program->is_sprite_coord_used();
 }
 
 EXPORT(uint32_t, sceGxmProgramParameterGetArraySize, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(sceGxmProgramParameterGetArraySize, parameter);
     assert(parameter);
     return parameter->array_size;
 }
 
 EXPORT(int, sceGxmProgramParameterGetCategory, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(sceGxmProgramParameterGetCategory, parameter);
     assert(parameter);
     return parameter->category;
 }
 
 EXPORT(uint32_t, sceGxmProgramParameterGetComponentCount, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(sceGxmProgramParameterGetComponentCount, parameter);
     assert(parameter);
     return parameter->component_count;
 }
 
 EXPORT(uint32_t, sceGxmProgramParameterGetContainerIndex, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(sceGxmProgramParameterGetContainerIndex, parameter);
     assert(parameter);
     return parameter->container_index;
 }
 
 EXPORT(uint32_t, sceGxmProgramParameterGetIndex, const SceGxmProgram *program, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(sceGxmProgramParameterGetIndex, program, parameter);
     uint64_t parameter_offset = program->parameters_offset;
 
     if (parameter_offset > 0)
@@ -2229,17 +2353,20 @@ EXPORT(uint32_t, sceGxmProgramParameterGetIndex, const SceGxmProgram *program, c
 }
 
 EXPORT(Ptr<const char>, sceGxmProgramParameterGetName, Ptr<const SceGxmProgramParameter> parameter) {
+    TRACY_FUNC(sceGxmProgramParameterGetName, parameter);
     if (!parameter)
         return {};
     return Ptr<const char>(parameter.address() + parameter.get(emuenv.mem)->name_offset);
 }
 
 EXPORT(uint32_t, sceGxmProgramParameterGetResourceIndex, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(sceGxmProgramParameterGetResourceIndex, parameter);
     assert(parameter);
     return parameter->resource_index;
 }
 
 EXPORT(int, sceGxmProgramParameterGetSemantic, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(sceGxmProgramParameterGetSemantic, parameter);
     assert(parameter);
 
     if (parameter->category != SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE)
@@ -2249,18 +2376,22 @@ EXPORT(int, sceGxmProgramParameterGetSemantic, const SceGxmProgramParameter *par
 }
 
 EXPORT(int, _sceGxmProgramParameterGetSemantic, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(_sceGxmProgramParameterGetSemantic, parameter);
     return export_sceGxmProgramParameterGetSemantic(emuenv, thread_id, export_name, parameter);
 }
 
 EXPORT(uint32_t, sceGxmProgramParameterGetSemanticIndex, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(sceGxmProgramParameterGetSemanticIndex, parameter);
     return parameter->semantic_index & 0xf;
 }
 
 EXPORT(int, sceGxmProgramParameterGetType, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(sceGxmProgramParameterGetType, parameter);
     return parameter->type;
 }
 
 EXPORT(bool, sceGxmProgramParameterIsRegFormat, const SceGxmProgram *program, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(sceGxmProgramParameterIsRegFormat, program, parameter);
     if (program->is_fragment()) {
         return false;
     }
@@ -2274,18 +2405,22 @@ EXPORT(bool, sceGxmProgramParameterIsRegFormat, const SceGxmProgram *program, co
 }
 
 EXPORT(bool, sceGxmProgramParameterIsSamplerCube, const SceGxmProgramParameter *parameter) {
+    TRACY_FUNC(sceGxmProgramParameterIsSamplerCube, parameter);
     return parameter->is_sampler_cube();
 }
 
 EXPORT(int, sceGxmPushUserMarker) {
+    TRACY_FUNC(sceGxmPushUserMarker);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmRemoveRazorGpuCaptureBuffer) {
+    TRACY_FUNC(sceGxmRemoveRazorGpuCaptureBuffer);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmRenderTargetGetDriverMemBlock, const SceGxmRenderTarget *renderTarget, SceUID *driverMemBlock) {
+    TRACY_FUNC(sceGxmRenderTargetGetDriverMemBlock, renderTarget, driverMemBlock);
     if (!renderTarget || !driverMemBlock) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2296,6 +2431,7 @@ EXPORT(int, sceGxmRenderTargetGetDriverMemBlock, const SceGxmRenderTarget *rende
 }
 
 EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
+    TRACY_FUNC(sceGxmReserveFragmentDefaultUniformBuffer, context, uniformBuffer);
     if (!context || !uniformBuffer)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -2331,10 +2467,12 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
 }
 
 EXPORT(int, sceGxmRenderTargetGetHostMem) {
+    TRACY_FUNC(sceGxmRenderTargetGetHostMem);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<void> *uniformBuffer) {
+    TRACY_FUNC(sceGxmReserveVertexDefaultUniformBuffer, context, uniformBuffer);
     if (!context || !uniformBuffer)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -2372,10 +2510,12 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
 }
 
 EXPORT(int, sceGxmSetAuxiliarySurface) {
+    TRACY_FUNC(sceGxmSetAuxiliarySurface);
     return UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetBackDepthBias, SceGxmContext *context, int32_t factor, int32_t units) {
+    TRACY_FUNC(sceGxmSetBackDepthBias, context, factor, units);
     if ((context->state.back_depth_bias_factor != factor) || (context->state.back_depth_bias_units != units)) {
         context->state.back_depth_bias_factor = factor;
         context->state.back_depth_bias_units = units;
@@ -2387,6 +2527,7 @@ EXPORT(void, sceGxmSetBackDepthBias, SceGxmContext *context, int32_t factor, int
 }
 
 EXPORT(void, sceGxmSetBackDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
+    TRACY_FUNC(sceGxmSetBackDepthFunc, context, depthFunc);
     if (context->state.back_depth_func != depthFunc) {
         context->state.back_depth_func = depthFunc;
 
@@ -2397,6 +2538,7 @@ EXPORT(void, sceGxmSetBackDepthFunc, SceGxmContext *context, SceGxmDepthFunc dep
 }
 
 EXPORT(void, sceGxmSetBackDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
+    TRACY_FUNC(sceGxmSetBackDepthWriteEnable, context, enable);
     if (context->state.back_depth_write_enable != enable) {
         context->state.back_depth_write_enable = enable;
 
@@ -2407,14 +2549,17 @@ EXPORT(void, sceGxmSetBackDepthWriteEnable, SceGxmContext *context, SceGxmDepthW
 }
 
 EXPORT(void, sceGxmSetBackFragmentProgramEnable, SceGxmContext *context, SceGxmFragmentProgramMode enable) {
+    TRACY_FUNC(sceGxmSetBackFragmentProgramEnable, context, enable);
     renderer::set_side_fragment_program_enable(*emuenv.renderer, context->renderer.get(), false, enable);
 }
 
 EXPORT(void, sceGxmSetBackLineFillLastPixelEnable, SceGxmContext *context, SceGxmLineFillLastPixelMode enable) {
+    TRACY_FUNC(sceGxmSetBackLineFillLastPixelEnable, context, enable);
     UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetBackPointLineWidth, SceGxmContext *context, uint32_t width) {
+    TRACY_FUNC(sceGxmSetBackPointLineWidth, context, width);
     if (context->state.back_point_line_width != width) {
         context->state.back_point_line_width = width;
 
@@ -2425,6 +2570,7 @@ EXPORT(void, sceGxmSetBackPointLineWidth, SceGxmContext *context, uint32_t width
 }
 
 EXPORT(void, sceGxmSetBackPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
+    TRACY_FUNC(sceGxmSetBackPolygonMode, context, mode);
     if (context->state.back_polygon_mode != mode) {
         context->state.back_polygon_mode = mode;
 
@@ -2435,6 +2581,7 @@ EXPORT(void, sceGxmSetBackPolygonMode, SceGxmContext *context, SceGxmPolygonMode
 }
 
 EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, int32_t compareMask, uint32_t writeMask) {
+    TRACY_FUNC(sceGxmSetBackStencilFunc, context, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
     // compareMask and depthMask should be uint8_t, however the compiler optimizes the call if this is the case...
     const uint8_t compare_mask = static_cast<uint8_t>(compareMask);
     const uint8_t write_mask = static_cast<uint8_t>(writeMask);
@@ -2458,6 +2605,7 @@ EXPORT(void, sceGxmSetBackStencilFunc, SceGxmContext *context, SceGxmStencilFunc
 }
 
 EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, uint8_t sref) {
+    TRACY_FUNC(sceGxmSetBackStencilRef, context, sref);
     if (context->state.back_stencil.ref != sref) {
         context->state.back_stencil.ref = sref;
 
@@ -2467,18 +2615,22 @@ EXPORT(void, sceGxmSetBackStencilRef, SceGxmContext *context, uint8_t sref) {
 }
 
 EXPORT(void, sceGxmSetBackVisibilityTestEnable, SceGxmContext *context, SceGxmVisibilityTestMode enable) {
+    TRACY_FUNC(sceGxmSetBackVisibilityTestEnable, context, enable);
     UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetBackVisibilityTestIndex, SceGxmContext *context, uint32_t index) {
+    TRACY_FUNC(sceGxmSetBackVisibilityTestIndex, context, index);
     UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetBackVisibilityTestOp, SceGxmContext *context, SceGxmVisibilityTestOp op) {
+    TRACY_FUNC(sceGxmSetBackVisibilityTestOp, context, op);
     UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
+    TRACY_FUNC(sceGxmSetCullMode, context, mode);
     if (context->state.cull_mode != mode) {
         context->state.cull_mode = mode;
 
@@ -2490,6 +2642,7 @@ EXPORT(void, sceGxmSetCullMode, SceGxmContext *context, SceGxmCullMode mode) {
 static constexpr const std::uint32_t SCE_GXM_DEFERRED_CONTEXT_MINIMUM_BUFFER_SIZE = 1024;
 
 EXPORT(int, sceGxmSetDeferredContextFragmentBuffer, SceGxmContext *deferredContext, Ptr<void> mem, uint32_t size) {
+    TRACY_FUNC(sceGxmSetDeferredContextFragmentBuffer, deferredContext, mem, size);
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2518,6 +2671,7 @@ EXPORT(int, sceGxmSetDeferredContextFragmentBuffer, SceGxmContext *deferredConte
 }
 
 EXPORT(int, sceGxmSetDeferredContextVdmBuffer, SceGxmContext *deferredContext, Ptr<void> mem, uint32_t size) {
+    TRACY_FUNC(sceGxmSetDeferredContextVdmBuffer, deferredContext, mem, size);
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2541,6 +2695,7 @@ EXPORT(int, sceGxmSetDeferredContextVdmBuffer, SceGxmContext *deferredContext, P
 }
 
 EXPORT(int, sceGxmSetDeferredContextVertexBuffer, SceGxmContext *deferredContext, Ptr<void> mem, uint32_t size) {
+    TRACY_FUNC(sceGxmSetDeferredContextVertexBuffer, deferredContext, mem, size);
     if (!deferredContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2569,6 +2724,7 @@ EXPORT(int, sceGxmSetDeferredContextVertexBuffer, SceGxmContext *deferredContext
 }
 
 EXPORT(int, sceGxmSetFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<const void> bufferData) {
+    TRACY_FUNC(sceGxmSetFragmentDefaultUniformBuffer, context, bufferData);
     if (!context || !bufferData) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2578,6 +2734,7 @@ EXPORT(int, sceGxmSetFragmentDefaultUniformBuffer, SceGxmContext *context, Ptr<c
 }
 
 EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmFragmentProgram> fragmentProgram) {
+    TRACY_FUNC(sceGxmSetFragmentProgram, context, fragmentProgram);
     if (!context || !fragmentProgram)
         return;
 
@@ -2586,6 +2743,7 @@ EXPORT(void, sceGxmSetFragmentProgram, SceGxmContext *context, Ptr<const SceGxmF
 }
 
 EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, uint32_t textureIndex, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmSetFragmentTexture, context, textureIndex, texture);
     if (!context || !texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -2600,6 +2758,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, uint32_t textureIn
 }
 
 EXPORT(int, sceGxmSetFragmentUniformBuffer, SceGxmContext *context, uint32_t bufferIndex, Ptr<const void> bufferData) {
+    TRACY_FUNC(sceGxmSetFragmentUniformBuffer, context, bufferIndex, bufferData);
     if (!context || !bufferData) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2613,6 +2772,7 @@ EXPORT(int, sceGxmSetFragmentUniformBuffer, SceGxmContext *context, uint32_t buf
 }
 
 EXPORT(void, sceGxmSetFrontDepthBias, SceGxmContext *context, int32_t factor, int32_t units) {
+    TRACY_FUNC(sceGxmSetFrontDepthBias, context, factor, units);
     if ((context->state.front_depth_bias_factor != factor) || (context->state.front_depth_bias_units != units)) {
         context->state.front_depth_bias_factor = factor;
         context->state.front_depth_bias_units = units;
@@ -2623,6 +2783,7 @@ EXPORT(void, sceGxmSetFrontDepthBias, SceGxmContext *context, int32_t factor, in
 }
 
 EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc depthFunc) {
+    TRACY_FUNC(sceGxmSetFrontDepthFunc, context, depthFunc);
     if (context->state.front_depth_func != depthFunc) {
         context->state.front_depth_func = depthFunc;
 
@@ -2633,6 +2794,7 @@ EXPORT(void, sceGxmSetFrontDepthFunc, SceGxmContext *context, SceGxmDepthFunc de
 }
 
 EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepthWriteMode enable) {
+    TRACY_FUNC(sceGxmSetFrontDepthWriteEnable, context, enable);
     if (context->state.front_depth_write_enable != enable) {
         context->state.front_depth_write_enable = enable;
 
@@ -2643,14 +2805,17 @@ EXPORT(void, sceGxmSetFrontDepthWriteEnable, SceGxmContext *context, SceGxmDepth
 }
 
 EXPORT(void, sceGxmSetFrontFragmentProgramEnable, SceGxmContext *context, SceGxmFragmentProgramMode enable) {
+    TRACY_FUNC(sceGxmSetFrontFragmentProgramEnable, context, enable);
     renderer::set_side_fragment_program_enable(*emuenv.renderer, context->renderer.get(), true, enable);
 }
 
 EXPORT(void, sceGxmSetFrontLineFillLastPixelEnable, SceGxmContext *context, SceGxmLineFillLastPixelMode enable) {
+    TRACY_FUNC(sceGxmSetFrontLineFillLastPixelEnable, context, enable);
     UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetFrontPointLineWidth, SceGxmContext *context, uint32_t width) {
+    TRACY_FUNC(sceGxmSetFrontPointLineWidth, context, width);
     if (context->state.front_point_line_width != width) {
         context->state.front_point_line_width = width;
 
@@ -2661,6 +2826,7 @@ EXPORT(void, sceGxmSetFrontPointLineWidth, SceGxmContext *context, uint32_t widt
 }
 
 EXPORT(void, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMode mode) {
+    TRACY_FUNC(sceGxmSetFrontPolygonMode, context, mode);
     if (context->state.front_polygon_mode != mode) {
         context->state.front_polygon_mode = mode;
 
@@ -2671,6 +2837,7 @@ EXPORT(void, sceGxmSetFrontPolygonMode, SceGxmContext *context, SceGxmPolygonMod
 }
 
 EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFunc func, SceGxmStencilOp stencilFail, SceGxmStencilOp depthFail, SceGxmStencilOp depthPass, int32_t compareMask, uint32_t writeMask) {
+    TRACY_FUNC(sceGxmSetFrontStencilFunc, context, func, stencilFail, depthFail, depthPass, compareMask, writeMask);
     // compareMask and depthMask should be uint8_t, however the compiler optimizes the call if this is the case...
     const uint8_t compare_mask = static_cast<uint8_t>(compareMask);
     const uint8_t write_mask = static_cast<uint8_t>(writeMask);
@@ -2693,6 +2860,7 @@ EXPORT(void, sceGxmSetFrontStencilFunc, SceGxmContext *context, SceGxmStencilFun
 }
 
 EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, uint8_t sref) {
+    TRACY_FUNC(sceGxmSetFrontStencilRef, context, sref);
     if (context->state.front_stencil.ref != sref) {
         context->state.front_stencil.ref = sref;
         if (context->alloc_space) {
@@ -2702,18 +2870,22 @@ EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, uint8_t sref) {
 }
 
 EXPORT(void, sceGxmSetFrontVisibilityTestEnable, SceGxmContext *context, SceGxmVisibilityTestMode enable) {
+    TRACY_FUNC(sceGxmSetFrontVisibilityTestEnable, context, enable);
     UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetFrontVisibilityTestIndex, SceGxmContext *context, uint32_t index) {
+    TRACY_FUNC(sceGxmSetFrontVisibilityTestIndex, context, index);
     UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetFrontVisibilityTestOp, SceGxmContext *context, SceGxmVisibilityTestOp op) {
+    TRACY_FUNC(sceGxmSetFrontVisibilityTestOp, context, op);
     UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetPrecomputedFragmentState, SceGxmContext *context, Ptr<SceGxmPrecomputedFragmentState> state) {
+    TRACY_FUNC(sceGxmSetPrecomputedFragmentState, context, state);
     if (!state) {
         context->state.precomputed_fragment_state.reset();
         return;
@@ -2723,6 +2895,7 @@ EXPORT(void, sceGxmSetPrecomputedFragmentState, SceGxmContext *context, Ptr<SceG
 }
 
 EXPORT(void, sceGxmSetPrecomputedVertexState, SceGxmContext *context, Ptr<SceGxmPrecomputedVertexState> state) {
+    TRACY_FUNC(sceGxmSetPrecomputedVertexState, context, state);
     if (!state) {
         context->state.precomputed_vertex_state.reset();
         return;
@@ -2732,6 +2905,7 @@ EXPORT(void, sceGxmSetPrecomputedVertexState, SceGxmContext *context, Ptr<SceGxm
 }
 
 EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode mode, uint32_t xMin, uint32_t yMin, uint32_t xMax, uint32_t yMax) {
+    TRACY_FUNC(sceGxmSetRegionClip, context, mode, xMin, yMin, xMax, yMax);
     bool change_detected = false;
 
     if (context->state.region_clip_mode != mode) {
@@ -2754,6 +2928,7 @@ EXPORT(void, sceGxmSetRegionClip, SceGxmContext *context, SceGxmRegionClipMode m
 }
 
 EXPORT(void, sceGxmSetTwoSidedEnable, SceGxmContext *context, SceGxmTwoSidedMode mode) {
+    TRACY_FUNC(sceGxmSetTwoSidedEnable, context, mode);
     if (context->state.two_sided != mode) {
         context->state.two_sided = mode;
 
@@ -2773,6 +2948,7 @@ static void convert_uniform_data(std::vector<std::uint8_t> &converted_data, cons
 }
 
 EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParameter *parameter, uint32_t componentOffset, uint32_t componentCount, const float *sourceData) {
+    TRACY_FUNC(sceGxmSetUniformDataF, uniformBuffer, parameter, componentOffset, componentCount, sourceData);
     assert(parameter);
 
     if (!uniformBuffer || !parameter || !sourceData)
@@ -2901,14 +3077,17 @@ EXPORT(int, sceGxmSetUniformDataF, void *uniformBuffer, const SceGxmProgramParam
 }
 
 EXPORT(int, sceGxmSetUserMarker) {
+    TRACY_FUNC(sceGxmSetUserMarker);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmSetValidationEnable) {
+    TRACY_FUNC(sceGxmSetValidationEnable);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmSetVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<const void> bufferData) {
+    TRACY_FUNC(sceGxmSetVertexDefaultUniformBuffer, context, bufferData);
     if (!context || !bufferData) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -2918,6 +3097,7 @@ EXPORT(int, sceGxmSetVertexDefaultUniformBuffer, SceGxmContext *context, Ptr<con
 }
 
 EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVertexProgram> vertexProgram) {
+    TRACY_FUNC(sceGxmSetVertexProgram, context, vertexProgram);
     if (!context || !vertexProgram)
         return;
 
@@ -2926,6 +3106,7 @@ EXPORT(void, sceGxmSetVertexProgram, SceGxmContext *context, Ptr<const SceGxmVer
 }
 
 EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, uint32_t streamIndex, Ptr<const void> streamData) {
+    TRACY_FUNC(sceGxmSetVertexStream, context, streamIndex, streamData);
     if (!context || !streamData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -2937,6 +3118,7 @@ EXPORT(int, sceGxmSetVertexStream, SceGxmContext *context, uint32_t streamIndex,
 }
 
 EXPORT(int, sceGxmSetVertexTexture, SceGxmContext *context, uint32_t textureIndex, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmSetVertexTexture, context, textureIndex, texture);
     if (!context || !texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -2951,10 +3133,12 @@ EXPORT(int, sceGxmSetVertexTexture, SceGxmContext *context, uint32_t textureInde
 }
 
 EXPORT(int, _sceGxmSetVertexTexture, SceGxmContext *context, uint32_t textureIndex, const SceGxmTexture *texture) {
+    TRACY_FUNC(_sceGxmSetVertexTexture, context, textureIndex, texture);
     return CALL_EXPORT(sceGxmSetVertexTexture, context, textureIndex, texture);
 }
 
 EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, uint32_t bufferIndex, Ptr<const void> bufferData) {
+    TRACY_FUNC(sceGxmSetVertexUniformBuffer, context, bufferIndex, bufferData);
     if (!context || !bufferData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -2966,6 +3150,7 @@ EXPORT(int, sceGxmSetVertexUniformBuffer, SceGxmContext *context, uint32_t buffe
 }
 
 EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xScale, float yOffset, float yScale, float zOffset, float zScale) {
+    TRACY_FUNC(sceGxmSetViewport, context, xOffset, xScale, yOffset, yScale, zOffset, zScale);
     // Set viewport to enable, enable more offset and scale to set
     if (context->state.viewport.offset.x != xOffset || (context->state.viewport.offset.y != yOffset) || (context->state.viewport.offset.z != zOffset)
         || (context->state.viewport.scale.x != xScale) || (context->state.viewport.scale.y != yScale) || (context->state.viewport.scale.z != zScale)) {
@@ -2989,6 +3174,7 @@ EXPORT(void, sceGxmSetViewport, SceGxmContext *context, float xOffset, float xSc
 }
 
 EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode enable) {
+    TRACY_FUNC(sceGxmSetViewportEnable, context, enable);
     // Set viewport to enable/disable, no additional offset and scale to set.
     if (context->state.viewport.enable != enable) {
         context->state.viewport.enable = enable;
@@ -3006,6 +3192,7 @@ EXPORT(void, sceGxmSetViewportEnable, SceGxmContext *context, SceGxmViewportMode
 }
 
 EXPORT(int, sceGxmSetVisibilityBuffer, SceGxmContext *immediateContext, Ptr<void> bufferBase, uint32_t stridePerCore) {
+    TRACY_FUNC(sceGxmSetVisibilityBuffer, immediateContext, bufferBase, stridePerCore);
     if (!immediateContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3024,22 +3211,27 @@ EXPORT(int, sceGxmSetVisibilityBuffer, SceGxmContext *immediateContext, Ptr<void
 }
 
 EXPORT(void, sceGxmSetWBufferEnable) {
+    TRACY_FUNC(sceGxmSetWBufferEnable);
     UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetWClampEnable) {
+    TRACY_FUNC(sceGxmSetWClampEnable);
     UNIMPLEMENTED();
 }
 
 EXPORT(void, sceGxmSetWClampValue, SceGxmContext *context, float clampValue) {
+    TRACY_FUNC(sceGxmSetWClampValue, context, clampValue);
     UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmSetWarningEnabled) {
+    TRACY_FUNC(sceGxmSetWarningEnabled);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmSetYuvProfile) {
+    TRACY_FUNC(sceGxmSetYuvProfile);
     return UNIMPLEMENTED();
 }
 
@@ -3083,6 +3275,7 @@ void free_callbacked(EmuEnvState &emuenv, SceUID thread_id, SceGxmShaderPatcher 
 }
 
 EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmFragmentProgram *fragmentProgram) {
+    TRACY_FUNC(sceGxmShaderPatcherAddRefFragmentProgram, shaderPatcher, fragmentProgram);
     if (!shaderPatcher || !fragmentProgram)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3092,6 +3285,7 @@ EXPORT(int, sceGxmShaderPatcherAddRefFragmentProgram, SceGxmShaderPatcher *shade
 }
 
 EXPORT(int, sceGxmShaderPatcherAddRefVertexProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmVertexProgram *vertexProgram) {
+    TRACY_FUNC(sceGxmShaderPatcherAddRefVertexProgram, shaderPatcher, vertexProgram);
     if (!shaderPatcher || !vertexProgram)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3101,6 +3295,7 @@ EXPORT(int, sceGxmShaderPatcherAddRefVertexProgram, SceGxmShaderPatcher *shaderP
 }
 
 EXPORT(int, sceGxmShaderPatcherCreate, const SceGxmShaderPatcherParams *params, Ptr<SceGxmShaderPatcher> *shaderPatcher) {
+    TRACY_FUNC(sceGxmShaderPatcherCreate, params, shaderPatcher);
     if (!params || !shaderPatcher)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3114,6 +3309,7 @@ EXPORT(int, sceGxmShaderPatcherCreate, const SceGxmShaderPatcherParams *params, 
 }
 
 EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, SceGxmOutputRegisterFormat outputFormat, SceGxmMultisampleMode multisampleMode, const SceGxmBlendInfo *blendInfo, Ptr<const SceGxmProgram> vertexProgram, Ptr<SceGxmFragmentProgram> *fragmentProgram) {
+    TRACY_FUNC(sceGxmShaderPatcherCreateFragmentProgram, shaderPatcher, programId, outputFormat, multisampleMode, blendInfo, vertexProgram, fragmentProgram);
     MemState &mem = emuenv.mem;
 
     if (!shaderPatcher || !programId || !fragmentProgram)
@@ -3159,6 +3355,7 @@ EXPORT(int, sceGxmShaderPatcherCreateFragmentProgram, SceGxmShaderPatcher *shade
 }
 
 EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatcher *shaderPatcher, Ptr<SceGxmFragmentProgram> *fragmentProgram) {
+    TRACY_FUNC(sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, shaderPatcher, fragmentProgram);
     MemState &mem = emuenv.mem;
 
     if (!shaderPatcher || !fragmentProgram)
@@ -3183,6 +3380,7 @@ EXPORT(int, sceGxmShaderPatcherCreateMaskUpdateFragmentProgram, SceGxmShaderPatc
 }
 
 EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderPatcher, const SceGxmRegisteredProgram *programId, const SceGxmVertexAttribute *attributes, uint32_t attributeCount, const SceGxmVertexStream *streams, uint32_t streamCount, Ptr<SceGxmVertexProgram> *vertexProgram) {
+    TRACY_FUNC(sceGxmShaderPatcherCreateVertexProgram, shaderPatcher, programId, attributes, attributeCount, streams, streamCount, vertexProgram);
     MemState &mem = emuenv.mem;
 
     if (!shaderPatcher || !programId || !vertexProgram)
@@ -3236,6 +3434,7 @@ EXPORT(int, sceGxmShaderPatcherCreateVertexProgram, SceGxmShaderPatcher *shaderP
 }
 
 EXPORT(int, sceGxmShaderPatcherDestroy, Ptr<SceGxmShaderPatcher> shaderPatcher) {
+    TRACY_FUNC(sceGxmShaderPatcherDestroy, shaderPatcher);
     if (!shaderPatcher)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3245,6 +3444,7 @@ EXPORT(int, sceGxmShaderPatcherDestroy, Ptr<SceGxmShaderPatcher> shaderPatcher) 
 }
 
 EXPORT(int, sceGxmShaderPatcherForceUnregisterProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmShaderPatcherId programId) {
+    TRACY_FUNC(sceGxmShaderPatcherForceUnregisterProgram, shaderPatcher, programId);
     if (!shaderPatcher || !programId) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3252,10 +3452,12 @@ EXPORT(int, sceGxmShaderPatcherForceUnregisterProgram, SceGxmShaderPatcher *shad
 }
 
 EXPORT(uint32_t, sceGxmShaderPatcherGetBufferMemAllocated, const SceGxmShaderPatcher *shaderPatcher) {
+    TRACY_FUNC(sceGxmShaderPatcherGetBufferMemAllocated, shaderPatcher);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmShaderPatcherGetFragmentProgramRefCount, const SceGxmShaderPatcher *shaderPatcher, const SceGxmFragmentProgram *fragmentProgram, uint32_t *refCount) {
+    TRACY_FUNC(sceGxmShaderPatcherGetFragmentProgramRefCount, shaderPatcher, fragmentProgram, refCount);
     if (!shaderPatcher || !fragmentProgram || !refCount) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3265,14 +3467,17 @@ EXPORT(int, sceGxmShaderPatcherGetFragmentProgramRefCount, const SceGxmShaderPat
 }
 
 EXPORT(uint32_t, sceGxmShaderPatcherGetFragmentUsseMemAllocated, const SceGxmShaderPatcher *shaderPatcher) {
+    TRACY_FUNC(sceGxmShaderPatcherGetFragmentUsseMemAllocated, shaderPatcher);
     return UNIMPLEMENTED();
 }
 
 EXPORT(uint32_t, sceGxmShaderPatcherGetHostMemAllocated, const SceGxmShaderPatcher *shaderPatcher) {
+    TRACY_FUNC(sceGxmShaderPatcherGetHostMemAllocated, shaderPatcher);
     return UNIMPLEMENTED();
 }
 
 EXPORT(Ptr<const SceGxmProgram>, sceGxmShaderPatcherGetProgramFromId, SceGxmShaderPatcherId programId) {
+    TRACY_FUNC(sceGxmShaderPatcherGetProgramFromId, programId);
     if (!programId) {
         return Ptr<const SceGxmProgram>();
     }
@@ -3281,10 +3486,12 @@ EXPORT(Ptr<const SceGxmProgram>, sceGxmShaderPatcherGetProgramFromId, SceGxmShad
 }
 
 EXPORT(int, sceGxmShaderPatcherGetUserData) {
+    TRACY_FUNC(sceGxmShaderPatcherGetUserData);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmShaderPatcherGetVertexProgramRefCount, const SceGxmShaderPatcher *shaderPatcher, const SceGxmVertexProgram *vertexProgram, uint32_t *refCount) {
+    TRACY_FUNC(sceGxmShaderPatcherGetVertexProgramRefCount, shaderPatcher, vertexProgram, refCount);
     if (!shaderPatcher || !vertexProgram || !refCount) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3294,10 +3501,12 @@ EXPORT(int, sceGxmShaderPatcherGetVertexProgramRefCount, const SceGxmShaderPatch
 }
 
 EXPORT(uint32_t, sceGxmShaderPatcherGetVertexUsseMemAllocated, const SceGxmShaderPatcher *shaderPatcher) {
+    TRACY_FUNC(sceGxmShaderPatcherGetVertexUsseMemAllocated, shaderPatcher);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatcher, Ptr<const SceGxmProgram> programHeader, SceGxmShaderPatcherId *programId) {
+    TRACY_FUNC(sceGxmShaderPatcherRegisterProgram, shaderPatcher, programHeader, programId);
     if (!shaderPatcher || !programHeader || !programId)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3314,6 +3523,7 @@ EXPORT(int, sceGxmShaderPatcherRegisterProgram, SceGxmShaderPatcher *shaderPatch
 }
 
 EXPORT(int, sceGxmShaderPatcherReleaseFragmentProgram, SceGxmShaderPatcher *shaderPatcher, Ptr<SceGxmFragmentProgram> fragmentProgram) {
+    TRACY_FUNC(sceGxmShaderPatcherReleaseFragmentProgram, shaderPatcher, fragmentProgram);
     if (!shaderPatcher || !fragmentProgram)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3333,6 +3543,7 @@ EXPORT(int, sceGxmShaderPatcherReleaseFragmentProgram, SceGxmShaderPatcher *shad
 }
 
 EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shaderPatcher, Ptr<SceGxmVertexProgram> vertexProgram) {
+    TRACY_FUNC(sceGxmShaderPatcherReleaseVertexProgram, shaderPatcher, vertexProgram);
     if (!shaderPatcher || !vertexProgram)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3352,10 +3563,12 @@ EXPORT(int, sceGxmShaderPatcherReleaseVertexProgram, SceGxmShaderPatcher *shader
 }
 
 EXPORT(int, sceGxmShaderPatcherSetAuxiliarySurface) {
+    TRACY_FUNC(sceGxmShaderPatcherSetAuxiliarySurface);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceGxmShaderPatcherSetUserData, SceGxmShaderPatcher *shaderPatcher, Ptr<void> userData) {
+    TRACY_FUNC(sceGxmShaderPatcherSetUserData, shaderPatcher, userData);
     if (!shaderPatcher) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3364,6 +3577,7 @@ EXPORT(int, sceGxmShaderPatcherSetUserData, SceGxmShaderPatcher *shaderPatcher, 
 }
 
 EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPatcher, SceGxmShaderPatcherId programId) {
+    TRACY_FUNC(sceGxmShaderPatcherUnregisterProgram, shaderPatcher, programId);
     if (!shaderPatcher || !programId)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3376,6 +3590,7 @@ EXPORT(int, sceGxmShaderPatcherUnregisterProgram, SceGxmShaderPatcher *shaderPat
 }
 
 EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
+    TRACY_FUNC(sceGxmSyncObjectCreate, syncObject);
     if (!syncObject)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3390,6 +3605,7 @@ EXPORT(int, sceGxmSyncObjectCreate, Ptr<SceGxmSyncObject> *syncObject) {
 }
 
 EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
+    TRACY_FUNC(sceGxmSyncObjectDestroy, syncObject);
     if (!syncObject)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3400,6 +3616,7 @@ EXPORT(int, sceGxmSyncObjectDestroy, Ptr<SceGxmSyncObject> syncObject) {
 }
 
 EXPORT(int, sceGxmTerminate) {
+    TRACY_FUNC(sceGxmTerminate);
     // Make sure everything is done in SDL side before killing Vita thread
     emuenv.gxm.display_queue.wait_empty();
     emuenv.gxm.display_queue.abort();
@@ -3410,26 +3627,31 @@ EXPORT(int, sceGxmTerminate) {
 }
 
 EXPORT(Ptr<void>, sceGxmTextureGetData, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetData, texture);
     assert(texture);
     return Ptr<void>(texture->data_addr << 2);
 }
 
 EXPORT(SceGxmTextureFormat, sceGxmTextureGetFormat, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetFormat, texture);
     assert(texture);
     return gxm::get_format(texture);
 }
 
 EXPORT(int, sceGxmTextureGetGammaMode, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetGammaMode, texture);
     assert(texture);
     return (texture->gamma_mode << 27);
 }
 
 EXPORT(uint32_t, sceGxmTextureGetHeight, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetHeight, texture);
     assert(texture);
     return static_cast<uint32_t>(gxm::get_height(texture));
 }
 
 EXPORT(uint32_t, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetLodBias, texture);
     if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3441,6 +3663,7 @@ EXPORT(uint32_t, sceGxmTextureGetLodBias, const SceGxmTexture *texture) {
 }
 
 EXPORT(uint32_t, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetLodMin, texture);
     if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3452,11 +3675,13 @@ EXPORT(uint32_t, sceGxmTextureGetLodMin, const SceGxmTexture *texture) {
 }
 
 EXPORT(int, sceGxmTextureGetMagFilter, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetMagFilter, texture);
     assert(texture);
     return texture->mag_filter;
 }
 
 EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetMinFilter, texture);
     assert(texture);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return texture->mag_filter;
@@ -3465,6 +3690,7 @@ EXPORT(int, sceGxmTextureGetMinFilter, const SceGxmTexture *texture) {
 }
 
 EXPORT(SceGxmTextureMipFilter, sceGxmTextureGetMipFilter, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetMipFilter, texture);
     assert(texture);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_MIP_FILTER_DISABLED;
@@ -3473,6 +3699,7 @@ EXPORT(SceGxmTextureMipFilter, sceGxmTextureGetMipFilter, const SceGxmTexture *t
 }
 
 EXPORT(uint32_t, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetMipmapCount, texture);
     assert(texture);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return 0;
@@ -3481,22 +3708,26 @@ EXPORT(uint32_t, sceGxmTextureGetMipmapCount, const SceGxmTexture *texture) {
 }
 
 EXPORT(uint32_t, sceGxmTextureGetMipmapCountUnsafe, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetMipmapCountUnsafe, texture);
     assert(texture);
     return (texture->mip_count + 1) & 0xf;
 }
 
 EXPORT(int, sceGxmTextureGetNormalizeMode, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetNormalizeMode, texture);
     assert(texture);
     return texture->normalize_mode << 31;
 }
 
 EXPORT(Ptr<void>, sceGxmTextureGetPalette, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetPalette, texture);
     const auto base_format = gxm::get_base_format(gxm::get_format(texture));
 
     return gxm::is_paletted_format(base_format) ? Ptr<void>(texture->palette_addr << 6) : Ptr<void>();
 }
 
 EXPORT(uint32_t, sceGxmTextureGetStride, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetStride, texture);
     assert(texture);
     if (texture->texture_type() != SCE_GXM_TEXTURE_LINEAR_STRIDED)
         return 0;
@@ -3505,16 +3736,19 @@ EXPORT(uint32_t, sceGxmTextureGetStride, const SceGxmTexture *texture) {
 }
 
 EXPORT(int, sceGxmTextureGetType, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetType, texture);
     assert(texture);
     return (texture->type << 29);
 }
 
 EXPORT(int, sceGxmTextureGetUAddrMode, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetUAddrMode, texture);
     assert(texture);
     return texture->uaddr_mode;
 }
 
 EXPORT(int, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetUAddrModeSafe, texture);
     assert(texture);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
@@ -3523,11 +3757,13 @@ EXPORT(int, sceGxmTextureGetUAddrModeSafe, const SceGxmTexture *texture) {
 }
 
 EXPORT(int, sceGxmTextureGetVAddrMode, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetVAddrMode, texture);
     assert(texture);
     return texture->vaddr_mode;
 }
 
 EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetVAddrModeSafe, texture);
     assert(texture);
     if ((texture->type << 29) == SCE_GXM_TEXTURE_LINEAR_STRIDED) {
         return SCE_GXM_TEXTURE_ADDR_CLAMP;
@@ -3536,11 +3772,13 @@ EXPORT(int, sceGxmTextureGetVAddrModeSafe, const SceGxmTexture *texture) {
 }
 
 EXPORT(uint32_t, sceGxmTextureGetWidth, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureGetWidth, texture);
     assert(texture);
     return static_cast<uint32_t>(gxm::get_width(texture));
 }
 
 EXPORT(int, sceGxmTextureInitCube, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
+    TRACY_FUNC(sceGxmTextureInitCube, texture, data, texFormat, width, height, mipCount);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3551,6 +3789,7 @@ EXPORT(int, sceGxmTextureInitCube, SceGxmTexture *texture, Ptr<const void> data,
 }
 
 EXPORT(int, sceGxmTextureInitCubeArbitrary, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
+    TRACY_FUNC(sceGxmTextureInitCubeArbitrary, texture, data, texFormat, width, height, mipCount);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3561,6 +3800,7 @@ EXPORT(int, sceGxmTextureInitCubeArbitrary, SceGxmTexture *texture, Ptr<const vo
 }
 
 EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
+    TRACY_FUNC(sceGxmTextureInitLinear, texture, data, texFormat, width, height, mipCount);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3571,6 +3811,7 @@ EXPORT(int, sceGxmTextureInitLinear, SceGxmTexture *texture, Ptr<const void> dat
 }
 
 EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t byteStride) {
+    TRACY_FUNC(sceGxmTextureInitLinearStrided, texture, data, texFormat, width, height, byteStride);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3606,6 +3847,7 @@ EXPORT(int, sceGxmTextureInitLinearStrided, SceGxmTexture *texture, Ptr<const vo
 }
 
 EXPORT(int, sceGxmTextureInitSwizzled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
+    TRACY_FUNC(sceGxmTextureInitSwizzled, texture, data, texFormat, width, height, mipCount);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3616,6 +3858,7 @@ EXPORT(int, sceGxmTextureInitSwizzled, SceGxmTexture *texture, Ptr<const void> d
 }
 
 EXPORT(int, sceGxmTextureInitSwizzledArbitrary, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
+    TRACY_FUNC(sceGxmTextureInitSwizzledArbitrary, texture, data, texFormat, width, height, mipCount);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3626,6 +3869,7 @@ EXPORT(int, sceGxmTextureInitSwizzledArbitrary, SceGxmTexture *texture, Ptr<cons
 }
 
 EXPORT(int, sceGxmTextureInitTiled, SceGxmTexture *texture, Ptr<const void> data, SceGxmTextureFormat texFormat, uint32_t width, uint32_t height, uint32_t mipCount) {
+    TRACY_FUNC(sceGxmTextureInitTiled, texture, data, texFormat, width, height, mipCount);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3636,6 +3880,7 @@ EXPORT(int, sceGxmTextureInitTiled, SceGxmTexture *texture, Ptr<const void> data
 }
 
 EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) {
+    TRACY_FUNC(sceGxmTextureSetData, texture, data);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3645,6 +3890,7 @@ EXPORT(int, sceGxmTextureSetData, SceGxmTexture *texture, Ptr<const void> data) 
 }
 
 EXPORT(int, sceGxmTextureSetFormat, SceGxmTexture *texture, SceGxmTextureFormat texFormat) {
+    TRACY_FUNC(sceGxmTextureSetFormat, texture, texFormat);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3657,6 +3903,7 @@ EXPORT(int, sceGxmTextureSetFormat, SceGxmTexture *texture, SceGxmTextureFormat 
 }
 
 EXPORT(int, sceGxmTextureSetGammaMode, SceGxmTexture *texture, SceGxmTextureGammaMode gammaMode) {
+    TRACY_FUNC(sceGxmTextureSetGammaMode, texture, gammaMode);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3665,6 +3912,7 @@ EXPORT(int, sceGxmTextureSetGammaMode, SceGxmTexture *texture, SceGxmTextureGamm
 }
 
 EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, uint32_t height) {
+    TRACY_FUNC(sceGxmTextureSetHeight, texture, height);
     if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (height > 4096)
@@ -3692,10 +3940,12 @@ EXPORT(int, sceGxmTextureSetHeight, SceGxmTexture *texture, uint32_t height) {
 }
 
 EXPORT(int, _sceGxmTextureSetHeight, SceGxmTexture *texture, uint32_t height) {
+    TRACY_FUNC(_sceGxmTextureSetHeight, texture, height);
     return CALL_EXPORT(sceGxmTextureSetHeight, texture, height);
 }
 
 EXPORT(int, sceGxmTextureSetLodBias, SceGxmTexture *texture, uint32_t bias) {
+    TRACY_FUNC(sceGxmTextureSetLodBias, texture, bias);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3714,6 +3964,7 @@ EXPORT(int, sceGxmTextureSetLodBias, SceGxmTexture *texture, uint32_t bias) {
 }
 
 EXPORT(int, sceGxmTextureSetLodMin, SceGxmTexture *texture, uint32_t lodMin) {
+    TRACY_FUNC(sceGxmTextureSetLodMin, texture, lodMin);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3729,6 +3980,7 @@ EXPORT(int, sceGxmTextureSetLodMin, SceGxmTexture *texture, uint32_t lodMin) {
 }
 
 EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilter magFilter) {
+    TRACY_FUNC(sceGxmTextureSetMagFilter, texture, magFilter);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3738,6 +3990,7 @@ EXPORT(int, sceGxmTextureSetMagFilter, SceGxmTexture *texture, SceGxmTextureFilt
 }
 
 EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilter minFilter) {
+    TRACY_FUNC(sceGxmTextureSetMinFilter, texture, minFilter);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3751,6 +4004,7 @@ EXPORT(int, sceGxmTextureSetMinFilter, SceGxmTexture *texture, SceGxmTextureFilt
 }
 
 EXPORT(int, sceGxmTextureSetMipFilter, SceGxmTexture *texture, SceGxmTextureMipFilter mipFilter) {
+    TRACY_FUNC(sceGxmTextureSetMipFilter, texture, mipFilter);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3764,6 +4018,7 @@ EXPORT(int, sceGxmTextureSetMipFilter, SceGxmTexture *texture, SceGxmTextureMipF
 }
 
 EXPORT(int, sceGxmTextureSetMipmapCount, SceGxmTexture *texture, uint32_t mipCount) {
+    TRACY_FUNC(sceGxmTextureSetMipmapCount, texture, mipCount);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3781,6 +4036,7 @@ EXPORT(int, sceGxmTextureSetMipmapCount, SceGxmTexture *texture, uint32_t mipCou
 }
 
 EXPORT(int, sceGxmTextureSetNormalizeMode, SceGxmTexture *texture, SceGxmTextureNormalizeMode normalizeMode) {
+    TRACY_FUNC(sceGxmTextureSetNormalizeMode, texture, normalizeMode);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3790,6 +4046,7 @@ EXPORT(int, sceGxmTextureSetNormalizeMode, SceGxmTexture *texture, SceGxmTexture
 }
 
 EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<const void> paletteData) {
+    TRACY_FUNC(sceGxmTextureSetPalette, texture, paletteData);
     if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if (paletteData.address() & 0x3F)
@@ -3800,6 +4057,7 @@ EXPORT(int, sceGxmTextureSetPalette, SceGxmTexture *texture, Ptr<const void> pal
 }
 
 EXPORT(int, sceGxmTextureSetStride, SceGxmTexture *texture, uint32_t byteStride) {
+    TRACY_FUNC(sceGxmTextureSetStride, texture, byteStride);
     if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     if ((texture->type << 29) != SCE_GXM_TEXTURE_LINEAR_STRIDED)
@@ -3831,6 +4089,7 @@ static bool verify_texture_mode(SceGxmTexture *texture, SceGxmTextureAddrMode mo
 }
 
 EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+    TRACY_FUNC(sceGxmTextureSetUAddrMode, texture, mode);
     if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3842,6 +4101,7 @@ EXPORT(int, sceGxmTextureSetUAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
 }
 
 EXPORT(int, sceGxmTextureSetUAddrModeSafe, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+    TRACY_FUNC(sceGxmTextureSetUAddrModeSafe, texture, mode);
     if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3853,6 +4113,7 @@ EXPORT(int, sceGxmTextureSetUAddrModeSafe, SceGxmTexture *texture, SceGxmTexture
 }
 
 EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+    TRACY_FUNC(sceGxmTextureSetVAddrMode, texture, mode);
     if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3864,6 +4125,7 @@ EXPORT(int, sceGxmTextureSetVAddrMode, SceGxmTexture *texture, SceGxmTextureAddr
 }
 
 EXPORT(int, sceGxmTextureSetVAddrModeSafe, SceGxmTexture *texture, SceGxmTextureAddrMode mode) {
+    TRACY_FUNC(sceGxmTextureSetVAddrModeSafe, texture, mode);
     if (!texture)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3875,6 +4137,7 @@ EXPORT(int, sceGxmTextureSetVAddrModeSafe, SceGxmTexture *texture, SceGxmTexture
 }
 
 EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, uint32_t width) {
+    TRACY_FUNC(sceGxmTextureSetWidth, texture, width);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     } else if (width > 4096) {
@@ -3903,10 +4166,12 @@ EXPORT(int, sceGxmTextureSetWidth, SceGxmTexture *texture, uint32_t width) {
 }
 
 EXPORT(int, _sceGxmTextureSetWidth, SceGxmTexture *texture, uint32_t width) {
+    TRACY_FUNC(_sceGxmTextureSetWidth, texture, width);
     return CALL_EXPORT(sceGxmTextureSetWidth, texture, width);
 }
 
 EXPORT(int, sceGxmTextureValidate, const SceGxmTexture *texture) {
+    TRACY_FUNC(sceGxmTextureValidate, texture);
     if (!texture) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -3917,6 +4182,23 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
     SceGxmTransferFormat srcFormat, SceGxmTransferType srcType, Ptr<void> srcAddress, uint32_t srcX, uint32_t srcY, int32_t srcStride,
     SceGxmTransferFormat destFormat, SceGxmTransferType destType, Ptr<void> destAddress, uint32_t destX, uint32_t destY, int32_t destStride,
     Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const SceGxmNotification *notification) {
+    TRACY_FUNC(sceGxmTransferCopy, width, height, colorKeyValue, colorKeyMask, colorKeyMode, srcFormat, srcType, srcAddress, srcX);
+#ifdef TRACY_ENABLE
+    if (_tracy_activation_state) {
+        __TRACY_LOG_ARG_IF(srcY)
+        __TRACY_LOG_ARG_IF(srcStride)
+        __TRACY_LOG_ARG_IF(destFormat)
+        __TRACY_LOG_ARG_IF(destType)
+        __TRACY_LOG_ARG_IF(destAddress)
+        __TRACY_LOG_ARG_IF(destX)
+        __TRACY_LOG_ARG_IF(destY)
+        __TRACY_LOG_ARG_IF(destStride)
+        __TRACY_LOG_ARG_IF(syncObject)
+        __TRACY_LOG_ARG_IF(syncFlags)
+        __TRACY_LOG_ARG_IF(notification)
+    }
+#endif // TRACY_ENABLE
+
     if (!srcAddress || !destAddress)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -3978,6 +4260,17 @@ EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> s
     uint32_t srcX, uint32_t srcY, uint32_t srcWidth, uint32_t srcHeight, int32_t srcStride,
     SceGxmTransferFormat destFormat, Ptr<void> destAddress, uint32_t destX, uint32_t destY, int32_t destStride,
     Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const SceGxmNotification *notification) {
+    TRACY_FUNC(sceGxmTransferDownscale, srcFormat, srcX, srcY, srcWidth, srcHeight, srcStride, destFormat, destAddress, destX);
+#ifdef TRACY_ENABLE
+    if (_tracy_activation_state) {
+        __TRACY_LOG_ARG_IF(destY)
+        __TRACY_LOG_ARG_IF(destStride)
+        __TRACY_LOG_ARG_IF(syncObject)
+        __TRACY_LOG_ARG_IF(syncFlags)
+        __TRACY_LOG_ARG_IF(notification)
+    }
+#endif // TRACY_ENABLE
+
     if (!srcAddress || !destAddress)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -4022,6 +4315,14 @@ EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> s
 EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFormat, Ptr<void> destAddress,
     uint32_t destX, uint32_t destY, uint32_t destWidth, uint32_t destHeight, int32_t destStride,
     Ptr<SceGxmSyncObject> syncObject, SceGxmTransferFlags syncFlags, const SceGxmNotification *notification) {
+    TRACY_FUNC(sceGxmTransferFill, fillColor, destFormat, destAddress, destX, destY, destWidth, destHeight, destStride, syncObject);
+#ifdef TRACY_ENABLE
+    if (_tracy_activation_state) {
+        __TRACY_LOG_ARG_IF(syncFlags)
+        __TRACY_LOG_ARG_IF(notification)
+    }
+#endif // TRACY_ENABLE
+
     if (!destAddress)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -4056,6 +4357,7 @@ EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFor
 }
 
 EXPORT(int, sceGxmTransferFinish) {
+    TRACY_FUNC(sceGxmTransferFinish);
     // same as sceGxmFinish
     renderer::finish(*emuenv.renderer, nullptr);
 
@@ -4063,6 +4365,7 @@ EXPORT(int, sceGxmTransferFinish) {
 }
 
 EXPORT(int, sceGxmUnmapFragmentUsseMemory, void *base) {
+    TRACY_FUNC(sceGxmUnmapFragmentUsseMemory, base);
     if (!base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -4071,6 +4374,7 @@ EXPORT(int, sceGxmUnmapFragmentUsseMemory, void *base) {
 }
 
 EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
+    TRACY_FUNC(sceGxmUnmapMemory, base);
     if (!base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -4085,6 +4389,7 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
 }
 
 EXPORT(int, sceGxmUnmapVertexUsseMemory, void *base) {
+    TRACY_FUNC(sceGxmUnmapVertexUsseMemory, base);
     if (!base) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
@@ -4093,14 +4398,17 @@ EXPORT(int, sceGxmUnmapVertexUsseMemory, void *base) {
 }
 
 EXPORT(int, sceGxmVertexFence) {
+    TRACY_FUNC(sceGxmVertexFence);
     return UNIMPLEMENTED();
 }
 
 EXPORT(Ptr<const SceGxmProgram>, sceGxmVertexProgramGetProgram, const SceGxmVertexProgram *vertexProgram) {
+    TRACY_FUNC(sceGxmVertexProgramGetProgram, vertexProgram);
     return vertexProgram->program;
 }
 
 EXPORT(int, sceGxmWaitEvent) {
+    TRACY_FUNC(sceGxmWaitEvent);
     return UNIMPLEMENTED();
 }
 

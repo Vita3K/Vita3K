@@ -17,6 +17,9 @@
 
 #include "SceFios2Kernel.h"
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceFios2Kernel);
+
 EXPORT(int, _sceFiosKernelOverlayAdd) {
     return UNIMPLEMENTED();
 }
@@ -86,6 +89,7 @@ EXPORT(int, _sceFiosKernelOverlayResolveSync) {
 }
 
 EXPORT(int, _sceFiosKernelOverlayResolveWithRangeSync, SceUID pid, int resolveFlag, const char *pInPath, sceFiosKernelOverlayResolveWithRangeSync_opt *opt) {
+    TRACY_FUNC(_sceFiosKernelOverlayResolveWithRangeSync, pid, resolveFlag, pInPath, opt);
     STUBBED("Using strncpy");
     strncpy(opt->pOutPath.get(emuenv.mem), pInPath, opt->maxPath);
 

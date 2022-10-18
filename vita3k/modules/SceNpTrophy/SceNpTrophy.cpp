@@ -22,13 +22,18 @@
 
 #include "SceNpTrophy.h"
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceNpTrophy);
+
 EXPORT(int, sceNpTrophyAbortHandle) {
+    TRACY_FUNC(sceNpTrophyAbortHandle);
     STUBBED("Stubbed with SCE_OK");
     return 0;
 }
 
 EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const np::CommunicationID *comm_id,
     void *comm_sign, const std::uint64_t options) {
+    TRACY_FUNC(sceNpTrophyCreateContext, context, comm_id, comm_sign, options);
     if (!emuenv.np.trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }
@@ -63,6 +68,7 @@ EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const 
 }
 
 EXPORT(int, sceNpTrophyCreateHandle, SceNpTrophyHandle *handle) {
+    TRACY_FUNC(sceNpTrophyCreateHandle, handle);
     // We don't handle "handle" for now. It's just a mechanic for async and its abortion.
     // Everything emulated here is sync :)
     STUBBED("Stubbed handle with 1");
@@ -71,6 +77,7 @@ EXPORT(int, sceNpTrophyCreateHandle, SceNpTrophyHandle *handle) {
 }
 
 EXPORT(int, sceNpTrophyDestroyContext, np::trophy::ContextHandle handle) {
+    TRACY_FUNC(sceNpTrophyDestroyContext, handle);
     const bool result = destroy_trophy_context(emuenv.np.trophy_state, handle);
 
     if (!result) {
@@ -81,6 +88,7 @@ EXPORT(int, sceNpTrophyDestroyContext, np::trophy::ContextHandle handle) {
 }
 
 EXPORT(int, sceNpTrophyDestroyHandle, SceNpTrophyHandle handle) {
+    TRACY_FUNC(sceNpTrophyDestroyHandle, handle);
     STUBBED("Stubbed with SCE_OK");
     return 0;
 }
@@ -99,11 +107,13 @@ EXPORT(int, sceNpTrophyDestroyHandle, SceNpTrophyHandle handle) {
 
 EXPORT(int, sceNpTrophyGetGameIcon, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
     void *buffer, SceSize *size) {
+    TRACY_FUNC(sceNpTrophyGetGameIcon, context_handle, api_handle, buffer, size);
     NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)
     return context->copy_file_data_from_trophy_file("ICON0.PNG", buffer, size);
 }
 
 EXPORT(int, sceNpTrophyGetGameInfo, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle, SceNpTrophyGameDetails *details, SceNpTrophyGameData *data) {
+    TRACY_FUNC(sceNpTrophyGetGameInfo, context_handle, api_handle, details, data);
     if (!emuenv.np.trophy_state.inited) {
         return RET_ERROR(SCE_NP_TROPHY_ERROR_NOT_INITIALIZED);
     }
@@ -183,15 +193,18 @@ EXPORT(int, sceNpTrophyGetGameInfo, np::trophy::ContextHandle context_handle, Sc
 }
 
 EXPORT(int, sceNpTrophyGetGroupIcon) {
+    TRACY_FUNC(sceNpTrophyGetGroupIcon);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyGetGroupInfo) {
+    TRACY_FUNC(sceNpTrophyGetGroupInfo);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophyGetTrophyIcon, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
     SceNpTrophyID trophy_id, void *buffer, SceSize *size) {
+    TRACY_FUNC(sceNpTrophyGetTrophyIcon, context_handle, api_handle, trophy_id, buffer, size);
     NP_TROPHY_GET_FUNCTION_STARTUP(context_handle)
 
     // Trophy should only be in this region
@@ -205,6 +218,7 @@ EXPORT(int, sceNpTrophyGetTrophyIcon, np::trophy::ContextHandle context_handle, 
 }
 
 EXPORT(int, sceNpTrophyGetTrophyInfo, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle, SceNpTrophyID trophy_id, SceNpTrophyDetails *details, SceNpTrophyData *data) {
+    TRACY_FUNC(sceNpTrophyGetTrophyInfo, context_handle, api_handle, trophy_id, details, data);
     if (!emuenv.np.trophy_state.inited) {
         return RET_ERROR(SCE_NP_TROPHY_ERROR_NOT_INITIALIZED);
     }
@@ -256,6 +270,7 @@ EXPORT(int, sceNpTrophyGetTrophyInfo, np::trophy::ContextHandle context_handle, 
 
 EXPORT(int, sceNpTrophyGetTrophyUnlockState, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
     np::trophy::TrophyFlagArray *flag_array, std::uint32_t *count) {
+    TRACY_FUNC(sceNpTrophyGetTrophyUnlockState, context_handle, api_handle, flag_array, count);
     if (!emuenv.np.trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }
@@ -277,6 +292,7 @@ EXPORT(int, sceNpTrophyGetTrophyUnlockState, np::trophy::ContextHandle context_h
 }
 
 EXPORT(int, sceNpTrophyInit, void *opt) {
+    TRACY_FUNC(sceNpTrophyInit, opt);
     if (emuenv.np.trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_ALREADY_INITIALIZED;
     }
@@ -289,6 +305,7 @@ EXPORT(int, sceNpTrophyInit, void *opt) {
 }
 
 EXPORT(int, sceNpTrophyTerm) {
+    TRACY_FUNC(sceNpTrophyTerm);
     if (!emuenv.np.trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }
@@ -336,6 +353,7 @@ static int do_trophy_callback(EmuEnvState &emuenv, np::trophy::Context *context,
 
 EXPORT(int, sceNpTrophyUnlockTrophy, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
     SceNpTrophyID trophy_id, SceNpTrophyID *platinum_id) {
+    TRACY_FUNC(sceNpTrophyUnlockTrophy, context_handle, api_handle, trophy_id, platinum_id);
     if (!emuenv.np.trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
     }

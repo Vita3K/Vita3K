@@ -21,9 +21,7 @@
 #include <modules/module_parent.h>
 #include <util/tracy.h>
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "SceSysmodule";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(SceSysmodule);
 
 template <>
 std::string to_debug_str<SceSysmoduleModuleId>(const MemState &mem, SceSysmoduleModuleId mode) {

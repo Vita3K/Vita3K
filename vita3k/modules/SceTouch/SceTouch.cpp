@@ -22,9 +22,7 @@
 #include <touch/touch.h>
 #include <util/tracy.h>
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "SceTouch";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(SceTouch);
 
 template <>
 std::string to_debug_str<SceTouchSamplingState>(const MemState &mem, SceTouchSamplingState state) {
@@ -38,34 +36,42 @@ std::string to_debug_str<SceTouchSamplingState>(const MemState &mem, SceTouchSam
 }
 
 EXPORT(int, sceTouchActivateRegion) {
+    TRACY_FUNC(sceTouchActivateRegion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchClearRegion) {
+    TRACY_FUNC(sceTouchClearRegion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchDisableTouchForce) {
+    TRACY_FUNC(sceTouchDisableTouchForce);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchDisableTouchForceExt) {
+    TRACY_FUNC(sceTouchDisableTouchForceExt);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchEnableIdleTimerCancelSetting) {
+    TRACY_FUNC(sceTouchEnableIdleTimerCancelSetting);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchEnableTouchForce) {
+    TRACY_FUNC(sceTouchEnableTouchForce);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchEnableTouchForceExt) {
+    TRACY_FUNC(sceTouchEnableTouchForceExt);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchGetDeviceInfo) {
+    TRACY_FUNC(sceTouchGetDeviceInfo);
     return UNIMPLEMENTED();
 }
 
@@ -114,14 +120,17 @@ EXPORT(int, sceTouchGetPanelInfo, SceUInt32 port, SceTouchPanelInfo *pPanelInfo)
 }
 
 EXPORT(int, sceTouchGetPixelDensity) {
+    TRACY_FUNC(sceTouchGetPixelDensity);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchGetPixelDensity2) {
+    TRACY_FUNC(sceTouchGetPixelDensity2);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchGetProcessInfo) {
+    TRACY_FUNC(sceTouchGetProcessInfo);
     return UNIMPLEMENTED();
 }
 
@@ -138,6 +147,7 @@ EXPORT(int, sceTouchGetSamplingState, SceUInt32 port, SceTouchSamplingState *pSt
 }
 
 EXPORT(int, sceTouchGetSamplingStateExt) {
+    TRACY_FUNC(sceTouchGetSamplingStateExt);
     return UNIMPLEMENTED();
 }
 
@@ -166,10 +176,12 @@ EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
 }
 
 EXPORT(int, sceTouchPeekRegion) {
+    TRACY_FUNC(sceTouchPeekRegion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchPeekRegionExt) {
+    TRACY_FUNC(sceTouchPeekRegionExt);
     return UNIMPLEMENTED();
 }
 
@@ -197,22 +209,27 @@ EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
 }
 
 EXPORT(int, sceTouchReadRegion) {
+    TRACY_FUNC(sceTouchReadRegion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchReadRegionExt) {
+    TRACY_FUNC(sceTouchReadRegionExt);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchSetProcessPrivilege) {
+    TRACY_FUNC(sceTouchSetProcessPrivilege);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchSetRegion) {
+    TRACY_FUNC(sceTouchSetRegion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchSetRegionAttr) {
+    TRACY_FUNC(sceTouchSetRegionAttr);
     return UNIMPLEMENTED();
 }
 
@@ -229,6 +246,7 @@ EXPORT(int, sceTouchSetSamplingState, SceUInt32 port, SceTouchSamplingState stat
 }
 
 EXPORT(int, sceTouchSetSamplingStateExt) {
+    TRACY_FUNC(sceTouchSetSamplingStateExt);
     return UNIMPLEMENTED();
 }
 

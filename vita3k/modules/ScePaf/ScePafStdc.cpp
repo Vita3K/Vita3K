@@ -17,6 +17,9 @@
 
 #include "ScePafStdc.h"
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(ScePafStdc);
+
 EXPORT(int, sce_paf_aeabi_atexit) {
     return UNIMPLEMENTED();
 }
@@ -222,6 +225,7 @@ EXPORT(int, sce_paf_private_strlcpy) {
 }
 
 EXPORT(int, sce_paf_private_strlen, const char *str) {
+    TRACY_FUNC(sce_paf_private_strlen, str);
     return strlen(str);
 }
 

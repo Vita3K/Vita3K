@@ -21,9 +21,7 @@
 
 #include <util/tracy.h>
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "SceAtrac";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(SceAtrac);
 
 #define SCE_ATRAC_ALIGNMENT_SIZE 0x100U
 #define SCE_ATRAC_TYPE_AT9 0x2003U

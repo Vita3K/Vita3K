@@ -29,83 +29,106 @@
 
 #include <SDL_timer.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceCommonDialog);
+
 EXPORT(int, sceCameraImportDialogAbort) {
+    TRACY_FUNC(sceCameraImportDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCameraImportDialogGetResult) {
+    TRACY_FUNC(sceCameraImportDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCameraImportDialogGetStatus) {
+    TRACY_FUNC(sceCameraImportDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCameraImportDialogInit) {
+    TRACY_FUNC(sceCameraImportDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCameraImportDialogTerm) {
+    TRACY_FUNC(sceCameraImportDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCommonDialogGetWorkerThreadId) {
+    TRACY_FUNC(sceCommonDialogGetWorkerThreadId);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCommonDialogIsRunning) {
+    TRACY_FUNC(sceCommonDialogIsRunning);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCommonDialogSetConfigParam) {
+    TRACY_FUNC(sceCommonDialogSetConfigParam);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCommonDialogUpdate) {
+    TRACY_FUNC(sceCommonDialogUpdate);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCompanionUtilDialogAbort) {
+    TRACY_FUNC(sceCompanionUtilDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCompanionUtilDialogGetResult) {
+    TRACY_FUNC(sceCompanionUtilDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCompanionUtilDialogGetStatus) {
+    TRACY_FUNC(sceCompanionUtilDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCompanionUtilDialogInit) {
+    TRACY_FUNC(sceCompanionUtilDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCompanionUtilDialogTerm) {
+    TRACY_FUNC(sceCompanionUtilDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCrossControllerDialogAbort) {
+    TRACY_FUNC(sceCrossControllerDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCrossControllerDialogGetResult) {
+    TRACY_FUNC(sceCrossControllerDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCrossControllerDialogGetStatus) {
+    TRACY_FUNC(sceCrossControllerDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCrossControllerDialogInit) {
+    TRACY_FUNC(sceCrossControllerDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceCrossControllerDialogTerm) {
+    TRACY_FUNC(sceCrossControllerDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceImeDialogAbort) {
+    TRACY_FUNC(sceImeDialogAbort);
     if (emuenv.common_dialog.type != IME_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
     }
@@ -115,6 +138,7 @@ EXPORT(int, sceImeDialogAbort) {
 }
 
 EXPORT(int, sceImeDialogGetResult, SceImeDialogResult *result) {
+    TRACY_FUNC(sceImeDialogGetResult, result);
     if (emuenv.common_dialog.type != IME_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
@@ -124,6 +148,7 @@ EXPORT(int, sceImeDialogGetResult, SceImeDialogResult *result) {
 }
 
 EXPORT(int, sceImeDialogGetStatus) {
+    TRACY_FUNC(sceImeDialogGetStatus);
     if (emuenv.common_dialog.type != IME_DIALOG)
         return SCE_COMMON_DIALOG_STATUS_NONE;
 
@@ -131,6 +156,7 @@ EXPORT(int, sceImeDialogGetStatus) {
 }
 
 EXPORT(int, sceImeDialogInit, const Ptr<SceImeDialogParam> param) {
+    TRACY_FUNC(sceImeDialogInit, param);
     if (emuenv.common_dialog.type != NO_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
@@ -154,6 +180,7 @@ EXPORT(int, sceImeDialogInit, const Ptr<SceImeDialogParam> param) {
 }
 
 EXPORT(int, sceImeDialogTerm) {
+    TRACY_FUNC(sceImeDialogTerm);
     if (emuenv.common_dialog.type != IME_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
@@ -166,6 +193,7 @@ EXPORT(int, sceImeDialogTerm) {
 }
 
 EXPORT(int, sceMsgDialogAbort) {
+    TRACY_FUNC(sceMsgDialogAbort);
     if (emuenv.common_dialog.type != MESSAGE_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
@@ -175,6 +203,7 @@ EXPORT(int, sceMsgDialogAbort) {
 }
 
 EXPORT(int, sceMsgDialogClose) {
+    TRACY_FUNC(sceMsgDialogClose);
     if (emuenv.common_dialog.type != MESSAGE_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
 
@@ -184,6 +213,7 @@ EXPORT(int, sceMsgDialogClose) {
 }
 
 EXPORT(int, sceMsgDialogGetResult, SceMsgDialogResult *result) {
+    TRACY_FUNC(sceMsgDialogGetResult, result);
     if (emuenv.common_dialog.type != MESSAGE_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
@@ -194,6 +224,7 @@ EXPORT(int, sceMsgDialogGetResult, SceMsgDialogResult *result) {
 }
 
 EXPORT(int, sceMsgDialogGetStatus) {
+    TRACY_FUNC(sceMsgDialogGetStatus);
     if (emuenv.common_dialog.type != MESSAGE_DIALOG)
         return SCE_COMMON_DIALOG_STATUS_NONE;
 
@@ -201,6 +232,7 @@ EXPORT(int, sceMsgDialogGetStatus) {
 }
 
 EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
+    TRACY_FUNC(sceMsgDialogInit, param);
     if (emuenv.common_dialog.type != NO_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
@@ -363,6 +395,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
 }
 
 EXPORT(int, sceMsgDialogProgressBarInc, SceMsgDialogProgressBarTarget target, SceUInt32 delta) {
+    TRACY_FUNC(sceMsgDialogProgressBarInc, target, delta);
     if (emuenv.common_dialog.type != MESSAGE_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
@@ -375,6 +408,7 @@ EXPORT(int, sceMsgDialogProgressBarInc, SceMsgDialogProgressBarTarget target, Sc
 }
 
 EXPORT(int, sceMsgDialogProgressBarSetMsg, SceMsgDialogProgressBarTarget target, const SceChar8 *msg) {
+    TRACY_FUNC(sceMsgDialogProgressBarSetMsg, target, msg);
     if (emuenv.common_dialog.type != MESSAGE_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
@@ -387,6 +421,7 @@ EXPORT(int, sceMsgDialogProgressBarSetMsg, SceMsgDialogProgressBarTarget target,
 }
 
 EXPORT(int, sceMsgDialogProgressBarSetValue, SceMsgDialogProgressBarTarget target, SceUInt32 rate) {
+    TRACY_FUNC(sceMsgDialogProgressBarSetValue, target, rate);
     if (emuenv.common_dialog.type != MESSAGE_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
@@ -402,6 +437,7 @@ EXPORT(int, sceMsgDialogProgressBarSetValue, SceMsgDialogProgressBarTarget targe
 }
 
 EXPORT(int, sceMsgDialogTerm) {
+    TRACY_FUNC(sceMsgDialogTerm);
     if (emuenv.common_dialog.type != MESSAGE_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
@@ -414,10 +450,12 @@ EXPORT(int, sceMsgDialogTerm) {
 }
 
 EXPORT(int, sceNetCheckDialogAbort) {
+    TRACY_FUNC(sceNetCheckDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCheckDialogGetPS3ConnectInfo) {
+    TRACY_FUNC(sceNetCheckDialogGetPS3ConnectInfo);
     return UNIMPLEMENTED();
 }
 
@@ -428,11 +466,13 @@ typedef struct SceNetCheckDialogResult {
 } SceNetCheckDialogResult;
 
 EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
+    TRACY_FUNC(sceNetCheckDialogGetResult, result);
     result->result = -1;
     return STUBBED("result->result = -1, return 0");
 }
 
 EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
+    TRACY_FUNC(sceNetCheckDialogGetStatus);
     if (emuenv.common_dialog.type != NETCHECK_DIALOG)
         return SCE_COMMON_DIALOG_STATUS_NONE;
 
@@ -441,122 +481,151 @@ EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {
 }
 
 EXPORT(int, sceNetCheckDialogInit) {
+    TRACY_FUNC(sceNetCheckDialogInit);
     emuenv.common_dialog.type = NETCHECK_DIALOG;
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNetCheckDialogTerm) {
+    TRACY_FUNC(sceNetCheckDialogTerm);
     emuenv.common_dialog.status = SCE_COMMON_DIALOG_STATUS_NONE;
     emuenv.common_dialog.type = NO_DIALOG;
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendList2DialogAbort) {
+    TRACY_FUNC(sceNpFriendList2DialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendList2DialogGetResult) {
+    TRACY_FUNC(sceNpFriendList2DialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendList2DialogGetStatus) {
+    TRACY_FUNC(sceNpFriendList2DialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendList2DialogInit) {
+    TRACY_FUNC(sceNpFriendList2DialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendList2DialogTerm) {
+    TRACY_FUNC(sceNpFriendList2DialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendListDialogAbort) {
+    TRACY_FUNC(sceNpFriendListDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendListDialogGetResult) {
+    TRACY_FUNC(sceNpFriendListDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendListDialogGetStatus) {
+    TRACY_FUNC(sceNpFriendListDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendListDialogInit) {
+    TRACY_FUNC(sceNpFriendListDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpFriendListDialogTerm) {
+    TRACY_FUNC(sceNpFriendListDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpMessageDialogAbort) {
+    TRACY_FUNC(sceNpMessageDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpMessageDialogGetResult) {
+    TRACY_FUNC(sceNpMessageDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpMessageDialogGetStatus) {
+    TRACY_FUNC(sceNpMessageDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpMessageDialogInit) {
+    TRACY_FUNC(sceNpMessageDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpMessageDialogTerm) {
+    TRACY_FUNC(sceNpMessageDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpProfileDialogAbort) {
+    TRACY_FUNC(sceNpProfileDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpProfileDialogGetResult) {
+    TRACY_FUNC(sceNpProfileDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpProfileDialogGetStatus) {
+    TRACY_FUNC(sceNpProfileDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpProfileDialogInit) {
+    TRACY_FUNC(sceNpProfileDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpProfileDialogTerm) {
+    TRACY_FUNC(sceNpProfileDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogAbort) {
+    TRACY_FUNC(sceNpSnsFacebookDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogGetResult) {
+    TRACY_FUNC(sceNpSnsFacebookDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogGetResultLongToken) {
+    TRACY_FUNC(sceNpSnsFacebookDialogGetResultLongToken);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogGetStatus) {
+    TRACY_FUNC(sceNpSnsFacebookDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogInit) {
+    TRACY_FUNC(sceNpSnsFacebookDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpSnsFacebookDialogTerm) {
+    TRACY_FUNC(sceNpSnsFacebookDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceNpTrophySetupDialogAbort) {
+    TRACY_FUNC(sceNpTrophySetupDialogAbort);
     if (emuenv.common_dialog.type != TROPHY_SETUP_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
@@ -566,6 +635,7 @@ EXPORT(int, sceNpTrophySetupDialogAbort) {
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetResult, Ptr<SceNpTrophySetupDialogResult> result) {
+    TRACY_FUNC(sceNpTrophySetupDialogGetResult, result);
     if (emuenv.common_dialog.type != TROPHY_SETUP_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_FINISHED)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
@@ -574,10 +644,12 @@ EXPORT(int, sceNpTrophySetupDialogGetResult, Ptr<SceNpTrophySetupDialogResult> r
 }
 
 EXPORT(int, sceNpTrophySetupDialogGetStatus) {
+    TRACY_FUNC(sceNpTrophySetupDialogGetStatus);
     return emuenv.common_dialog.status;
 }
 
 EXPORT(int, sceNpTrophySetupDialogInit, const Ptr<SceNpTrophySetupDialogParam> param) {
+    TRACY_FUNC(sceNpTrophySetupDialogInit, param);
     if (emuenv.common_dialog.type != NO_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_BUSY);
 
@@ -588,6 +660,7 @@ EXPORT(int, sceNpTrophySetupDialogInit, const Ptr<SceNpTrophySetupDialogParam> p
 }
 
 EXPORT(int, sceNpTrophySetupDialogTerm) {
+    TRACY_FUNC(sceNpTrophySetupDialogTerm);
     if (emuenv.common_dialog.type != TROPHY_SETUP_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
 
@@ -600,82 +673,102 @@ EXPORT(int, sceNpTrophySetupDialogTerm) {
 }
 
 EXPORT(int, scePhotoImportDialogAbort) {
+    TRACY_FUNC(scePhotoImportDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoImportDialogGetResult) {
+    TRACY_FUNC(scePhotoImportDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoImportDialogGetStatus) {
+    TRACY_FUNC(scePhotoImportDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoImportDialogInit) {
+    TRACY_FUNC(scePhotoImportDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoImportDialogTerm) {
+    TRACY_FUNC(scePhotoImportDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoReviewDialogAbort) {
+    TRACY_FUNC(scePhotoReviewDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoReviewDialogGetResult) {
+    TRACY_FUNC(scePhotoReviewDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoReviewDialogGetStatus) {
+    TRACY_FUNC(scePhotoReviewDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoReviewDialogInit) {
+    TRACY_FUNC(scePhotoReviewDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePhotoReviewDialogTerm) {
+    TRACY_FUNC(scePhotoReviewDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePspSaveDataDialogContinue) {
+    TRACY_FUNC(scePspSaveDataDialogContinue);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePspSaveDataDialogGetResult) {
+    TRACY_FUNC(scePspSaveDataDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePspSaveDataDialogInit) {
+    TRACY_FUNC(scePspSaveDataDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, scePspSaveDataDialogTerm) {
+    TRACY_FUNC(scePspSaveDataDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRemoteOSKDialogAbort) {
+    TRACY_FUNC(sceRemoteOSKDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRemoteOSKDialogGetResult) {
+    TRACY_FUNC(sceRemoteOSKDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRemoteOSKDialogGetStatus) {
+    TRACY_FUNC(sceRemoteOSKDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRemoteOSKDialogInit) {
+    TRACY_FUNC(sceRemoteOSKDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRemoteOSKDialogTerm) {
+    TRACY_FUNC(sceRemoteOSKDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceSaveDataDialogAbort) {
+    TRACY_FUNC(sceSaveDataDialogAbort);
     if (emuenv.common_dialog.type != SAVEDATA_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
     }
@@ -879,6 +972,7 @@ static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message,
 }
 
 EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) {
+    TRACY_FUNC(sceSaveDataDialogContinue, param);
     if (param.get(emuenv.mem) == nullptr) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
@@ -1027,6 +1121,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
 }
 
 EXPORT(int, sceSaveDataDialogFinish, Ptr<const SceSaveDataDialogFinishParam> finishParam) {
+    TRACY_FUNC(sceSaveDataDialogFinish, finishParam);
     if (finishParam.get(emuenv.mem) == nullptr) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
@@ -1046,6 +1141,7 @@ EXPORT(int, sceSaveDataDialogFinish, Ptr<const SceSaveDataDialogFinishParam> fin
 }
 
 EXPORT(SceInt32, sceSaveDataDialogGetResult, Ptr<SceSaveDataDialogResult> result) {
+    TRACY_FUNC(sceSaveDataDialogGetResult, result);
     if (emuenv.common_dialog.type != SAVEDATA_DIALOG)
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_FINISHED);
 
@@ -1077,10 +1173,12 @@ EXPORT(SceInt32, sceSaveDataDialogGetResult, Ptr<SceSaveDataDialogResult> result
 }
 
 EXPORT(int, sceSaveDataDialogGetStatus) {
+    TRACY_FUNC(sceSaveDataDialogGetStatus);
     return emuenv.common_dialog.status;
 }
 
 EXPORT(int, sceSaveDataDialogGetSubStatus) {
+    TRACY_FUNC(sceSaveDataDialogGetSubStatus);
     if (emuenv.common_dialog.type != SAVEDATA_DIALOG || emuenv.common_dialog.status != SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return SCE_COMMON_DIALOG_STATUS_NONE;
     }
@@ -1100,6 +1198,7 @@ static void initialize_savedata_vectors(EmuEnvState &emuenv, unsigned int size) 
 }
 
 EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
+    TRACY_FUNC(sceSaveDataDialogInit, param);
     if (param.get(emuenv.mem) == nullptr) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NULL);
     }
@@ -1224,6 +1323,7 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
 }
 
 EXPORT(int, sceSaveDataDialogProgressBarInc, SceSaveDataDialogProgressBarTarget target, SceUInt32 delta) {
+    TRACY_FUNC(sceSaveDataDialogProgressBarInc, target, delta);
     if (emuenv.common_dialog.savedata.mode != SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
@@ -1240,6 +1340,7 @@ EXPORT(int, sceSaveDataDialogProgressBarInc, SceSaveDataDialogProgressBarTarget 
 }
 
 EXPORT(int, sceSaveDataDialogProgressBarSetValue, SceSaveDataDialogProgressBarTarget target, SceUInt32 rate) {
+    TRACY_FUNC(sceSaveDataDialogProgressBarSetValue, target, rate);
     if (emuenv.common_dialog.savedata.mode != SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_SUPPORTED);
     }
@@ -1256,6 +1357,7 @@ EXPORT(int, sceSaveDataDialogProgressBarSetValue, SceSaveDataDialogProgressBarTa
 }
 
 EXPORT(int, sceSaveDataDialogSubClose) {
+    TRACY_FUNC(sceSaveDataDialogSubClose);
     if (emuenv.common_dialog.substatus != SCE_COMMON_DIALOG_STATUS_RUNNING) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_RUNNING);
     }
@@ -1267,6 +1369,7 @@ EXPORT(int, sceSaveDataDialogSubClose) {
 }
 
 EXPORT(int, sceSaveDataDialogTerm) {
+    TRACY_FUNC(sceSaveDataDialogTerm);
     if (emuenv.common_dialog.type != SAVEDATA_DIALOG) {
         return RET_ERROR(SCE_COMMON_DIALOG_ERROR_NOT_IN_USE);
     }
@@ -1282,78 +1385,97 @@ EXPORT(int, sceSaveDataDialogTerm) {
 }
 
 EXPORT(int, sceStoreCheckoutDialogAbort) {
+    TRACY_FUNC(sceStoreCheckoutDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceStoreCheckoutDialogGetResult) {
+    TRACY_FUNC(sceStoreCheckoutDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceStoreCheckoutDialogGetStatus) {
+    TRACY_FUNC(sceStoreCheckoutDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceStoreCheckoutDialogInit) {
+    TRACY_FUNC(sceStoreCheckoutDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceStoreCheckoutDialogTerm) {
+    TRACY_FUNC(sceStoreCheckoutDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwDialogAbort) {
+    TRACY_FUNC(sceTwDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwDialogGetResult) {
+    TRACY_FUNC(sceTwDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwDialogGetStatus) {
+    TRACY_FUNC(sceTwDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwDialogInit) {
+    TRACY_FUNC(sceTwDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwDialogTerm) {
+    TRACY_FUNC(sceTwDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwLoginDialogAbort) {
+    TRACY_FUNC(sceTwLoginDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwLoginDialogGetResult) {
+    TRACY_FUNC(sceTwLoginDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwLoginDialogGetStatus) {
+    TRACY_FUNC(sceTwLoginDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTwLoginDialogTerm) {
+    TRACY_FUNC(sceTwLoginDialogTerm);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoImportDialogAbort) {
+    TRACY_FUNC(sceVideoImportDialogAbort);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoImportDialogGetResult) {
+    TRACY_FUNC(sceVideoImportDialogGetResult);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoImportDialogGetStatus) {
+    TRACY_FUNC(sceVideoImportDialogGetStatus);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoImportDialogInit) {
+    TRACY_FUNC(sceVideoImportDialogInit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceVideoImportDialogTerm) {
+    TRACY_FUNC(sceVideoImportDialogTerm);
     return UNIMPLEMENTED();
 }
 

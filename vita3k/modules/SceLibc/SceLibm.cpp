@@ -17,6 +17,9 @@
 
 #include "SceLibm.h"
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceLibm);
+
 EXPORT(int, _Cosh) {
     return UNIMPLEMENTED();
 }
@@ -74,6 +77,7 @@ EXPORT(int, _FSinh) {
 }
 
 EXPORT(int, _FSinx, float a, unsigned int tag, int c) {
+    TRACY_FUNC(_FSinx, a, tag, c);
     if (tag == 1)
         return static_cast<int>(cosf(a));
     else

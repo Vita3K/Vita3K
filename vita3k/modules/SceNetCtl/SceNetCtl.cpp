@@ -22,6 +22,9 @@
 #include <rtc/rtc.h>
 #include <util/lock_and_find.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceNetCtl);
+
 #define SCE_NETCTL_INFO_SSID_LEN_MAX 32
 #define SCE_NETCTL_INFO_CONFIG_NAME_LEN_MAX 64
 
@@ -135,6 +138,7 @@ struct SceNetCtlIfStat {
 struct SceNetCtlAdhocPeerInfo;
 
 EXPORT(int, sceNetCtlAdhocDisconnect) {
+    TRACY_FUNC(sceNetCtlAdhocDisconnect);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -143,6 +147,7 @@ EXPORT(int, sceNetCtlAdhocDisconnect) {
 }
 
 EXPORT(int, sceNetCtlAdhocGetInAddr, SceNetInAddr *inaddr) {
+    TRACY_FUNC(sceNetCtlAdhocGetInAddr, inaddr);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -155,6 +160,7 @@ EXPORT(int, sceNetCtlAdhocGetInAddr, SceNetInAddr *inaddr) {
 }
 
 EXPORT(int, sceNetCtlAdhocGetPeerList, SceSize *peerInfoNum, SceNetCtlAdhocPeerInfo *peerInfo) {
+    TRACY_FUNC(sceNetCtlAdhocGetPeerList, peerInfoNum, peerInfo);
     if (!peerInfoNum) {
         return RET_ERROR(SCE_NET_CTL_ERROR_INVALID_ADDR);
     }
@@ -163,6 +169,7 @@ EXPORT(int, sceNetCtlAdhocGetPeerList, SceSize *peerInfoNum, SceNetCtlAdhocPeerI
 }
 
 EXPORT(int, sceNetCtlAdhocGetResult, int eventType, int *errorCode) {
+    TRACY_FUNC(sceNetCtlAdhocGetResult, eventType, errorCode);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -176,6 +183,7 @@ EXPORT(int, sceNetCtlAdhocGetResult, int eventType, int *errorCode) {
 }
 
 EXPORT(int, sceNetCtlAdhocGetState, int *state) {
+    TRACY_FUNC(sceNetCtlAdhocGetState, state);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -189,6 +197,7 @@ EXPORT(int, sceNetCtlAdhocGetState, int *state) {
 }
 
 EXPORT(int, sceNetCtlAdhocRegisterCallback, Ptr<void> func, Ptr<void> arg, int *cid) {
+    TRACY_FUNC(sceNetCtlAdhocRegisterCallback, func, arg, cid);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -219,6 +228,7 @@ EXPORT(int, sceNetCtlAdhocRegisterCallback, Ptr<void> func, Ptr<void> arg, int *
 }
 
 EXPORT(int, sceNetCtlAdhocUnregisterCallback, int cid) {
+    TRACY_FUNC(sceNetCtlAdhocUnregisterCallback, cid);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -234,6 +244,7 @@ EXPORT(int, sceNetCtlAdhocUnregisterCallback, int cid) {
 }
 
 EXPORT(int, sceNetCtlCheckCallback) {
+    TRACY_FUNC(sceNetCtlCheckCallback);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -265,6 +276,7 @@ EXPORT(int, sceNetCtlCheckCallback) {
 }
 
 EXPORT(int, sceNetCtlGetIfStat, int device, SceNetCtlIfStat *ifstat) {
+    TRACY_FUNC(sceNetCtlGetIfStat, device, ifstat);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -281,6 +293,7 @@ EXPORT(int, sceNetCtlGetIfStat, int device, SceNetCtlIfStat *ifstat) {
 }
 
 EXPORT(int, sceNetCtlGetNatInfo, SceNetCtlNatInfo *natinfo) {
+    TRACY_FUNC(sceNetCtlGetNatInfo, natinfo);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -293,6 +306,7 @@ EXPORT(int, sceNetCtlGetNatInfo, SceNetCtlNatInfo *natinfo) {
 }
 
 EXPORT(int, sceNetCtlGetPhoneMaxDownloadableSize, SceInt64 *maxDownloadableSize) {
+    TRACY_FUNC(sceNetCtlGetPhoneMaxDownloadableSize, maxDownloadableSize);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -306,6 +320,7 @@ EXPORT(int, sceNetCtlGetPhoneMaxDownloadableSize, SceInt64 *maxDownloadableSize)
 }
 
 EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
+    TRACY_FUNC(sceNetCtlInetGetInfo, code, info);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -335,6 +350,7 @@ EXPORT(int, sceNetCtlInetGetInfo, int code, SceNetCtlInfo *info) {
 }
 
 EXPORT(int, sceNetCtlInetGetResult, int eventType, int *errorCode) {
+    TRACY_FUNC(sceNetCtlInetGetResult, eventType, errorCode);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -348,6 +364,7 @@ EXPORT(int, sceNetCtlInetGetResult, int eventType, int *errorCode) {
 }
 
 EXPORT(int, sceNetCtlInetGetState, int *state) {
+    TRACY_FUNC(sceNetCtlInetGetState, state);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -361,6 +378,7 @@ EXPORT(int, sceNetCtlInetGetState, int *state) {
 }
 
 EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> func, Ptr<void> arg, int *cid) {
+    TRACY_FUNC(sceNetCtlInetRegisterCallback, func, arg, cid);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -391,6 +409,7 @@ EXPORT(int, sceNetCtlInetRegisterCallback, Ptr<void> func, Ptr<void> arg, int *c
 }
 
 EXPORT(int, sceNetCtlInetUnregisterCallback, int cid) {
+    TRACY_FUNC(sceNetCtlInetUnregisterCallback, cid);
     if (!emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_INITIALIZED);
     }
@@ -407,6 +426,7 @@ EXPORT(int, sceNetCtlInetUnregisterCallback, int cid) {
 }
 
 EXPORT(int, sceNetCtlInit) {
+    TRACY_FUNC(sceNetCtlInit);
     if (emuenv.netctl.inited) {
         return RET_ERROR(SCE_NET_CTL_ERROR_NOT_TERMINATED);
     }
@@ -420,6 +440,7 @@ EXPORT(int, sceNetCtlInit) {
 }
 
 EXPORT(void, sceNetCtlTerm) {
+    TRACY_FUNC(sceNetCtlTerm);
     STUBBED("Stub");
     emuenv.netctl.inited = false;
 }

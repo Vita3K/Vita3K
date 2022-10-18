@@ -26,9 +26,7 @@
 
 #define LOW_BATTERY_PERCENT 10
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "ScePower";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(ScePower);
 
 enum ScePowerErrorCode {
     SCE_POWER_ERROR_INVALID_VALUE = 0x802B0000,

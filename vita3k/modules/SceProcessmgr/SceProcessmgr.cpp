@@ -23,6 +23,9 @@
 
 #include <util/safe_time.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceProcessmgr);
+
 enum SceKernelPowerTickType {
     /** Cancel all timers */
     SCE_KERNEL_POWER_TICK_DEFAULT = 0,
@@ -56,92 +59,114 @@ struct SceLibkernelAddresses {
 };
 
 EXPORT(int, _sceKernelExitProcessForUser) {
+    TRACY_FUNC(_sceKernelExitProcessForUser);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceKernelGetTimer5Reg, Ptr<uint64_t> *timer) {
+    TRACY_FUNC(_sceKernelGetTimer5Reg, timer);
     *timer = alloc<uint64_t>(emuenv.mem, "timer5reg");
     *(*timer).get(emuenv.mem) = rtc_get_ticks(emuenv.kernel.base_tick.tick);
     return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelRegisterLibkernelAddresses, SceLibkernelAddresses *addresses) {
+    TRACY_FUNC(_sceKernelRegisterLibkernelAddresses, addresses);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelCDialogSessionClose) {
+    TRACY_FUNC(sceKernelCDialogSessionClose);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelCDialogSetLeaseLimit) {
+    TRACY_FUNC(sceKernelCDialogSetLeaseLimit);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelCallAbortHandler) {
+    TRACY_FUNC(sceKernelCallAbortHandler);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetCurrentProcess) {
+    TRACY_FUNC(sceKernelGetCurrentProcess);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetExtraTty) {
+    TRACY_FUNC(sceKernelGetExtraTty);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetProcessName) {
+    TRACY_FUNC(sceKernelGetProcessName);
     return UNIMPLEMENTED();
 }
 
 EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void *args) {
+    TRACY_FUNC(sceKernelGetProcessParam, args);
     return emuenv.kernel.process_param;
 }
 
 EXPORT(int, sceKernelGetProcessTimeCore) {
+    TRACY_FUNC(sceKernelGetProcessTimeCore);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetProcessTimeLowCore) {
+    TRACY_FUNC(sceKernelGetProcessTimeLowCore);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetProcessTimeWideCore) {
+    TRACY_FUNC(sceKernelGetProcessTimeWideCore);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetProcessTitleId) {
+    TRACY_FUNC(sceKernelGetProcessTitleId);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetRemoteProcessTime) {
+    TRACY_FUNC(sceKernelGetRemoteProcessTime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetStderr) {
+    TRACY_FUNC(sceKernelGetStderr);
     return open_file(emuenv.io, "tty0:", SCE_O_WRONLY, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, sceKernelGetStdin) {
+    TRACY_FUNC(sceKernelGetStdin);
     return open_file(emuenv.io, "tty0:", SCE_O_RDONLY, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, sceKernelGetStdout) {
+    TRACY_FUNC(sceKernelGetStdout);
     return open_file(emuenv.io, "tty0:", SCE_O_WRONLY, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, sceKernelIsCDialogAvailable) {
+    TRACY_FUNC(sceKernelIsCDialogAvailable);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelIsGameBudget) {
+    TRACY_FUNC(sceKernelIsGameBudget);
     return UNIMPLEMENTED();
 }
 
 EXPORT(VitaTime, sceKernelLibcClock) {
+    TRACY_FUNC(sceKernelLibcClock);
     return static_cast<VitaTime>(rtc_get_ticks(emuenv.kernel.base_tick.tick) - emuenv.kernel.start_tick);
 }
 
 EXPORT(int, sceKernelLibcGettimeofday, VitaTimeval *timeAddr, VitaTimezone *tzAddr) {
+    TRACY_FUNC(sceKernelLibcGettimeofday, timeAddr, tzAddr);
     const auto ticks = rtc_get_ticks(emuenv.kernel.base_tick.tick) - RTC_OFFSET;
     if (timeAddr != nullptr) {
         timeAddr->tv_sec = static_cast<std::uint32_t>(ticks / VITA_CLOCKS_PER_SEC);
@@ -160,6 +185,7 @@ EXPORT(int, sceKernelLibcGettimeofday, VitaTimeval *timeAddr, VitaTimezone *tzAd
 }
 
 EXPORT(Ptr<struct tm>, sceKernelLibcGmtime_r, const VitaTime *time, Ptr<struct tm> date) {
+    TRACY_FUNC(sceKernelLibcGmtime_r, time, date);
     const time_t plat_time = *time;
 
     SAFE_GMTIME(&plat_time, date.get(emuenv.mem));
@@ -168,6 +194,7 @@ EXPORT(Ptr<struct tm>, sceKernelLibcGmtime_r, const VitaTime *time, Ptr<struct t
 }
 
 EXPORT(Ptr<struct tm>, sceKernelLibcLocaltime_r, const VitaTime *time, Ptr<struct tm> date) {
+    TRACY_FUNC(sceKernelLibcLocaltime_r, time, date);
     const time_t plat_time = *time;
 
     SAFE_LOCALTIME(&plat_time, date.get(emuenv.mem));
@@ -176,10 +203,12 @@ EXPORT(Ptr<struct tm>, sceKernelLibcLocaltime_r, const VitaTime *time, Ptr<struc
 }
 
 EXPORT(int, sceKernelLibcMktime) {
+    TRACY_FUNC(sceKernelLibcMktime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(VitaTime, sceKernelLibcTime, VitaTime *time) {
+    TRACY_FUNC(sceKernelLibcTime, time);
     const auto secs = (rtc_get_ticks(emuenv.kernel.base_tick.tick) - RTC_OFFSET) / VITA_CLOCKS_PER_SEC;
 
     if (time) {
@@ -190,26 +219,32 @@ EXPORT(VitaTime, sceKernelLibcTime, VitaTime *time) {
 }
 
 EXPORT(int, sceKernelPowerLock) {
+    TRACY_FUNC(sceKernelPowerLock);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelPowerTick, SceKernelPowerTickType type) {
+    TRACY_FUNC(sceKernelPowerTick, type);
     return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceKernelPowerUnlock) {
+    TRACY_FUNC(sceKernelPowerUnlock);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelRegisterProcessTerminationCallback) {
+    TRACY_FUNC(sceKernelRegisterProcessTerminationCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelUnregisterProcessTerminationCallback) {
+    TRACY_FUNC(sceKernelUnregisterProcessTerminationCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceLibKernel_9F793F84) {
+    TRACY_FUNC(sceLibKernel_9F793F84);
     // Gets a version from the process' SceKernelProcessParam. Used for PSN Auth in SceShell.
     auto p_process_param = CALL_EXPORT(sceKernelGetProcessParam, nullptr);
     auto process_param = p_process_param.get(emuenv.mem);

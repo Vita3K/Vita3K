@@ -26,9 +26,7 @@
 #include <chrono>
 #include <ctime>
 
-#ifdef TRACY_ENABLE
-const std::string tracy_module_name = "SceRtc";
-#endif // TRACY_ENABLE
+TRACY_MODULE_NAME(SceRtc);
 
 EXPORT(int, _sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTick *pUtc) {
     TRACY_FUNC(_sceRtcConvertLocalTimeToUtc, pLocalTime, pUtc);
@@ -71,22 +69,27 @@ EXPORT(int, _sceRtcConvertUtcToLocalTime, const SceRtcTick *pUtc, SceRtcTick *pL
 }
 
 EXPORT(int, _sceRtcFormatRFC2822) {
+    TRACY_FUNC(_sceRtcFormatRFC2822);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcFormatRFC2822LocalTime) {
+    TRACY_FUNC(_sceRtcFormatRFC2822LocalTime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcFormatRFC3339) {
+    TRACY_FUNC(_sceRtcFormatRFC3339);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcFormatRFC3339LocalTime) {
+    TRACY_FUNC(_sceRtcFormatRFC3339LocalTime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcGetCurrentAdNetworkTick) {
+    TRACY_FUNC(_sceRtcGetCurrentAdNetworkTick);
     return UNIMPLEMENTED();
 }
 
@@ -124,10 +127,12 @@ EXPORT(int, _sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
 }
 
 EXPORT(int, _sceRtcGetCurrentDebugNetworkTick) {
+    TRACY_FUNC(_sceRtcGetCurrentDebugNetworkTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcGetCurrentGpsTick) {
+    TRACY_FUNC(_sceRtcGetCurrentGpsTick);
     return UNIMPLEMENTED();
 }
 
@@ -143,6 +148,7 @@ EXPORT(int, _sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
 }
 
 EXPORT(int, _sceRtcGetCurrentRetainedNetworkTick) {
+    TRACY_FUNC(_sceRtcGetCurrentRetainedNetworkTick);
     return UNIMPLEMENTED();
 }
 
@@ -158,14 +164,17 @@ EXPORT(int, _sceRtcGetCurrentTick, SceRtcTick *tick) {
 }
 
 EXPORT(int, _sceRtcGetLastAdjustedTick) {
+    TRACY_FUNC(_sceRtcGetLastAdjustedTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcGetLastReincarnatedTick) {
+    TRACY_FUNC(_sceRtcGetLastReincarnatedTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetAccumulativeTime) {
+    TRACY_FUNC(sceRtcGetAccumulativeTime);
     return UNIMPLEMENTED();
 }
 

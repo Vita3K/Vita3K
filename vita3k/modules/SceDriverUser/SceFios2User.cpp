@@ -19,7 +19,11 @@
 
 #include "io/functions.h"
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceFios2User);
+
 EXPORT(int, sceFiosOverlayAddForProcess02, SceUID processId, SceFiosProcessOverlay *pOverlay, SceFiosOverlayID *pOutID) {
+    TRACY_FUNC(sceFiosOverlayAddForProcess02, processId, pOverlay, pOutID);
     if (pOverlay->type != SCE_FIOS_OVERLAY_TYPE_OPAQUE)
         LOG_WARN("Using unimplemented overlay type {}.", pOverlay->type);
 
@@ -29,10 +33,12 @@ EXPORT(int, sceFiosOverlayAddForProcess02, SceUID processId, SceFiosProcessOverl
 }
 
 EXPORT(int, sceFiosOverlayGetInfoForProcess02) {
+    TRACY_FUNC(sceFiosOverlayGetInfoForProcess02);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayGetList02, SceUID processId, uint32_t minOrder, uint32_t maxOrder, SceFiosOverlayID *pOutIDs, SceUInt32 maxIDs, SceUInt32 *pActualIDs) {
+    TRACY_FUNC(sceFiosOverlayGetList02, processId, minOrder, maxOrder, pOutIDs, maxIDs, pActualIDs);
     const std::lock_guard<std::mutex> guard(emuenv.io.overlay_mutex);
 
     std::vector<SceFiosOverlayID> overlay_ids;
@@ -51,6 +57,7 @@ EXPORT(int, sceFiosOverlayGetList02, SceUID processId, uint32_t minOrder, uint32
 }
 
 EXPORT(int, sceFiosOverlayGetRecommendedScheduler02, int param1, const char *path) {
+    TRACY_FUNC(sceFiosOverlayGetRecommendedScheduler02, param1, path);
     // reversed engineered
     if (param1 <= 1)
         return 0;
@@ -63,18 +70,22 @@ EXPORT(int, sceFiosOverlayGetRecommendedScheduler02, int param1, const char *pat
 }
 
 EXPORT(int, sceFiosOverlayModifyForProcess02) {
+    TRACY_FUNC(sceFiosOverlayModifyForProcess02);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayRemoveForProcess02) {
+    TRACY_FUNC(sceFiosOverlayRemoveForProcess02);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayResolveSync02) {
+    TRACY_FUNC(sceFiosOverlayResolveSync02);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayResolveWithRangeSync02, SceUID processId, SceFiosOverlayResolveMode resolveFlag, const char *pInPath, char *pOutPath, SceUInt32 maxPath, SceUInt32 min_order, SceUInt32 max_order) {
+    TRACY_FUNC(sceFiosOverlayResolveWithRangeSync02, processId, resolveFlag, pInPath, pOutPath, maxPath, min_order, max_order);
     const std::string resolved = resolve_path(emuenv.io, pInPath, resolveFlag == SCE_FIOS_OVERLAY_RESOLVE_FOR_WRITE, min_order, max_order);
     strncpy(pOutPath, resolved.c_str(), maxPath);
 
@@ -82,10 +93,12 @@ EXPORT(int, sceFiosOverlayResolveWithRangeSync02, SceUID processId, SceFiosOverl
 }
 
 EXPORT(int, sceFiosOverlayThreadIsDisabled02) {
+    TRACY_FUNC(sceFiosOverlayThreadIsDisabled02);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceFiosOverlayThreadSetDisabled02) {
+    TRACY_FUNC(sceFiosOverlayThreadSetDisabled02);
     return UNIMPLEMENTED();
 }
 
