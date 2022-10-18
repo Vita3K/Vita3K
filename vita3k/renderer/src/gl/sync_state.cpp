@@ -480,8 +480,6 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
                 offset_in_buffer[i] = result.second;
             }
 
-            delete[] state.vertex_streams[i].data;
-
             state.vertex_streams[i].data = nullptr;
             state.vertex_streams[i].size = 0;
         } else {
