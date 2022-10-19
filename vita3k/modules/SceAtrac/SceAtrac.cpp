@@ -19,6 +19,12 @@
 
 #include "../SceAudiodec/SceAudiodecUser.h"
 
+#include <modules/tracy.h>
+
+#ifdef TRACY_ENABLE
+const std::string tracy_module_name = "SceAtrac";
+#endif // TRACY_ENABLE
+
 #define SCE_ATRAC_ALIGNMENT_SIZE 0x100U
 #define SCE_ATRAC_TYPE_AT9 0x2003U
 #define SCE_ATRAC_AT9_MAX_TOTAL_CH 16
@@ -83,10 +89,12 @@ struct SceAtracStreamInfo {
 };
 
 EXPORT(SceInt32, sceAtracAddStreamData, SceInt32 atracHandle, SceUInt32 addSize) {
+    TRACY_FUNC(sceAtracAddStreamData, atracHandle, addSize);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceAtracCreateDecoderGroup, SceUInt32 atracType, Ptr<const SceAtracDecoderGroup> pDecoderGroup, Ptr<void> pvWorkMem, SceInt32 initAudiodecFlag) {
+    TRACY_FUNC(sceAtracCreateDecoderGroup, atracType, pDecoderGroup, pvWorkMem, initAudiodecFlag);
     if (!pDecoderGroup) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -130,6 +138,7 @@ EXPORT(SceInt32, sceAtracCreateDecoderGroup, SceUInt32 atracType, Ptr<const SceA
 }
 
 EXPORT(SceInt32, sceAtracDecode, SceInt32 atracHandle, Ptr<void> pOutputBuffer, Ptr<SceUInt32> pOutputSamples, Ptr<SceUInt32> pDecoderStatus) {
+    TRACY_FUNC(sceAtracDecode, atracHandle, pOutputBuffer, pOutputSamples, pDecoderStatus);
     if (!pOutputBuffer || !pOutputSamples || !pDecoderStatus) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -142,6 +151,7 @@ EXPORT(SceInt32, sceAtracDecode, SceInt32 atracHandle, Ptr<void> pOutputBuffer, 
 }
 
 EXPORT(SceInt32, sceAtracDeleteDecoderGroup, SceUInt32 atracType, SceInt32 termAudiodecFlag) {
+    TRACY_FUNC(sceAtracDeleteDecoderGroup, atracType, termAudiodecFlag);
     if (atracType != SCE_ATRAC_TYPE_AT9) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_TYPE);
     }
@@ -157,6 +167,7 @@ EXPORT(SceInt32, sceAtracDeleteDecoderGroup, SceUInt32 atracType, SceInt32 termA
 }
 
 EXPORT(SceInt32, sceAtracGetContentInfo, SceInt32 atracHandle, Ptr<SceAtracContentInfo> pContentInfo) {
+    TRACY_FUNC(sceAtracGetContentInfo, atracHandle, pContentInfo);
     if (!pContentInfo) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -169,6 +180,7 @@ EXPORT(SceInt32, sceAtracGetContentInfo, SceInt32 atracHandle, Ptr<SceAtracConte
 }
 
 EXPORT(SceInt32, sceAtracGetDecoderGroupInfo, SceUInt32 atracType, Ptr<SceAtracDecoderGroup> pCreatedDecoder, Ptr<SceAtracDecoderGroup> pAvailableDecoder) {
+    TRACY_FUNC(sceAtracGetDecoderGroupInfo, atracType, pCreatedDecoder, pAvailableDecoder);
     if (!pCreatedDecoder || !pAvailableDecoder) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -185,6 +197,7 @@ EXPORT(SceInt32, sceAtracGetDecoderGroupInfo, SceUInt32 atracType, Ptr<SceAtracD
 }
 
 EXPORT(SceInt32, sceAtracGetDecoderStatus, SceInt32 atracHandle, Ptr<SceUInt32> pDecoderStatus) {
+    TRACY_FUNC(sceAtracGetDecoderStatus, atracHandle, pDecoderStatus);
     if (!pDecoderStatus) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -193,6 +206,7 @@ EXPORT(SceInt32, sceAtracGetDecoderStatus, SceInt32 atracHandle, Ptr<SceUInt32> 
 }
 
 EXPORT(SceInt32, sceAtracGetInternalError, SceInt32 atracHandle, Ptr<SceInt32> pInternalError) {
+    TRACY_FUNC(sceAtracGetInternalError, atracHandle, pInternalError);
     if (!pInternalError) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -201,6 +215,7 @@ EXPORT(SceInt32, sceAtracGetInternalError, SceInt32 atracHandle, Ptr<SceInt32> p
 }
 
 EXPORT(SceInt32, sceAtracGetLoopInfo, SceInt32 atracHandle, Ptr<SceInt32> pLoopNum, Ptr<SceUInt32> pLoopStatus) {
+    TRACY_FUNC(sceAtracGetLoopInfo, atracHandle, pLoopNum, pLoopStatus);
     if (!pLoopNum || !pLoopStatus) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -209,6 +224,7 @@ EXPORT(SceInt32, sceAtracGetLoopInfo, SceInt32 atracHandle, Ptr<SceInt32> pLoopN
 }
 
 EXPORT(SceInt32, sceAtracGetNextOutputPosition, SceInt32 atracHandle, Ptr<SceUInt32> pNextOutputSample) {
+    TRACY_FUNC(sceAtracGetNextOutputPosition, atracHandle, pNextOutputSample);
     if (!pNextOutputSample) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -217,6 +233,7 @@ EXPORT(SceInt32, sceAtracGetNextOutputPosition, SceInt32 atracHandle, Ptr<SceUIn
 }
 
 EXPORT(SceInt32, sceAtracGetOutputSamples, SceInt32 atracHandle, Ptr<SceUInt32> pOutputSamples) {
+    TRACY_FUNC(sceAtracGetOutputSamples, atracHandle, pOutputSamples);
     if (!pOutputSamples) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -225,6 +242,7 @@ EXPORT(SceInt32, sceAtracGetOutputSamples, SceInt32 atracHandle, Ptr<SceUInt32> 
 }
 
 EXPORT(SceInt32, sceAtracGetOutputableSamples, SceInt32 atracHandle, Ptr<SceLong64> pOutputableSamples) {
+    TRACY_FUNC(sceAtracGetOutputableSamples, atracHandle, pOutputableSamples);
     if (!pOutputableSamples) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -233,6 +251,7 @@ EXPORT(SceInt32, sceAtracGetOutputableSamples, SceInt32 atracHandle, Ptr<SceLong
 }
 
 EXPORT(SceInt32, sceAtracGetRemainSamples, SceInt32 atracHandle, Ptr<SceLong64> pRemainSamples) {
+    TRACY_FUNC(sceAtracGetRemainSamples, atracHandle, pRemainSamples);
     if (!pRemainSamples) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -241,6 +260,7 @@ EXPORT(SceInt32, sceAtracGetRemainSamples, SceInt32 atracHandle, Ptr<SceLong64> 
 }
 
 EXPORT(SceInt32, sceAtracGetStreamInfo, SceInt32 atracHandle, Ptr<SceAtracStreamInfo> pStreamInfo) {
+    TRACY_FUNC(sceAtracGetStreamInfo, atracHandle, pStreamInfo);
     if (!pStreamInfo) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -253,6 +273,7 @@ EXPORT(SceInt32, sceAtracGetStreamInfo, SceInt32 atracHandle, Ptr<SceAtracStream
 }
 
 EXPORT(SceInt32, sceAtracGetSubBufferInfo, SceInt32 atracHandle, Ptr<SceUInt32> pReadPosition, Ptr<SceUInt32> pMinSubBufferSize, Ptr<SceUInt32> pDataSize) {
+    TRACY_FUNC(sceAtracGetSubBufferInfo, atracHandle, pReadPosition, pMinSubBufferSize, pDataSize);
     if (!pReadPosition || !pMinSubBufferSize || !pDataSize) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -261,6 +282,7 @@ EXPORT(SceInt32, sceAtracGetSubBufferInfo, SceInt32 atracHandle, Ptr<SceUInt32> 
 }
 
 EXPORT(SceInt32, sceAtracGetVacantSize, SceInt32 atracHandle, Ptr<SceUInt32> pVacantSize) {
+    TRACY_FUNC(sceAtracGetVacantSize, atracHandle, pVacantSize);
     if (!pVacantSize) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -269,10 +291,12 @@ EXPORT(SceInt32, sceAtracGetVacantSize, SceInt32 atracHandle, Ptr<SceUInt32> pVa
 }
 
 EXPORT(SceInt32, sceAtracIsSubBufferNeeded, SceInt32 atracHandle) {
+    TRACY_FUNC(sceAtracIsSubBufferNeeded, atracHandle);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceAtracQueryDecoderGroupMemSize, SceUInt32 atracType, Ptr<const SceAtracDecoderGroup> pDecoderGroup) {
+    TRACY_FUNC(sceAtracQueryDecoderGroupMemSize, atracType, pDecoderGroup);
     if (!pDecoderGroup) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -297,6 +321,7 @@ EXPORT(SceInt32, sceAtracQueryDecoderGroupMemSize, SceUInt32 atracType, Ptr<cons
 }
 
 EXPORT(SceInt32, sceAtracReleaseHandle, SceInt32 atracHandle) {
+    TRACY_FUNC(sceAtracReleaseHandle, atracHandle);
     if ((atracHandle >> 16) != SCE_ATRAC_TYPE_AT9) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_HANDLE);
     }
@@ -305,10 +330,12 @@ EXPORT(SceInt32, sceAtracReleaseHandle, SceInt32 atracHandle) {
 }
 
 EXPORT(SceInt32, sceAtracResetNextOutputPosition, SceInt32 atracHandle, SceUInt32 resetSample) {
+    TRACY_FUNC(sceAtracResetNextOutputPosition, atracHandle, resetSample);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceAtracSetDataAndAcquireHandle, Ptr<SceUChar8> pucBuffer, SceUInt32 uiReadSize, SceUInt32 uiBufferSize) {
+    TRACY_FUNC(sceAtracSetDataAndAcquireHandle, pucBuffer, uiReadSize, uiBufferSize);
     if (!pucBuffer) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_POINTER);
     }
@@ -325,6 +352,7 @@ EXPORT(SceInt32, sceAtracSetDataAndAcquireHandle, Ptr<SceUChar8> pucBuffer, SceU
 }
 
 EXPORT(SceInt32, sceAtracSetLoopNum, SceInt32 atracHandle, SceInt32 loopNum) {
+    TRACY_FUNC(sceAtracSetLoopNum, atracHandle, loopNum);
     if (loopNum < -1) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_LOOP_NUM);
     }
@@ -333,10 +361,12 @@ EXPORT(SceInt32, sceAtracSetLoopNum, SceInt32 atracHandle, SceInt32 loopNum) {
 }
 
 EXPORT(SceInt32, sceAtracSetOutputSamples, SceInt32 atracHandle, SceUInt32 outputSamples) {
+    TRACY_FUNC(sceAtracSetOutputSamples, atracHandle, outputSamples);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceAtracSetSubBuffer, SceInt32 atracHandle, Ptr<SceUChar8> pSubBuffer, SceUInt32 subBufferSize) {
+    TRACY_FUNC(sceAtracSetSubBuffer, atracHandle, pSubBuffer, subBufferSize);
     if (((pSubBuffer.address() & (SCE_ATRAC_ALIGNMENT_SIZE - 1)) != 0) || ((subBufferSize & (SCE_ATRAC_ALIGNMENT_SIZE - 1)) != 0)) {
         return RET_ERROR(SCE_ATRAC_ERROR_INVALID_ALIGNMENT);
     }
