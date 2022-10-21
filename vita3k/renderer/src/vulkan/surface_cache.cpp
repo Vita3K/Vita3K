@@ -366,8 +366,16 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                         .image = info.texture.image,
                         .subresourceRange = vkutil::color_subresource_range
                     };
+                    bool is_offscene = false;
+                    if (!cmd_buffer) {
+                        is_offscene = true;
+                        cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
+                    }
                     cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, vk::DependencyFlags(), {}, {}, barrier);
 
+                    if (is_offscene) {
+                        vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
+                    }
                     if (swizzle == info.swizzle && vk_format == info.texture.format)
                         // we can use the same texture view
                         return &info.texture;
