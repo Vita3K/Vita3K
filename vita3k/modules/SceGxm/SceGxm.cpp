@@ -1619,6 +1619,8 @@ static int SDLCALL thread_function(void *data) {
 
         // Wait for fragment on the new buffer to finish
         renderer::wishlist(newBuffer, display_callback->new_buffer_timestamp);
+        // now we can remove the thread from the display queue
+        params.gxm->display_queue.pop();
 
         // Now run callback
         const ThreadStatePtr display_thread = util::find(params.thid, params.kernel->threads);
@@ -1628,8 +1630,6 @@ static int SDLCALL thread_function(void *data) {
 
         // The only thing old buffer should be waiting for is to stop being displayed
         renderer::subject_done(oldBuffer, std::min(oldBuffer->timestamp_current + 1, oldBuffer->timestamp_ahead.load()));
-
-        params.gxm->display_queue.pop();
     }
 
     return 0;
