@@ -522,9 +522,8 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     const vk::PipelineShaderStageCreateInfo vertex_shader = retrieve_shader(vertex_program_gxm.program.get(mem), vertex_program.hash, true, fragment_program_gxm.is_maskupdate, mem, &vertex_program_gxm.attributes);
     const vk::PipelineShaderStageCreateInfo fragment_shader = retrieve_shader(fragment_program_gxm.program.get(mem), fragment_program.hash, false, fragment_program_gxm.is_maskupdate, mem, nullptr);
     const vk::PipelineShaderStageCreateInfo shader_stages[] = { vertex_shader, fragment_shader };
-    // disable the fragment shader if gxm asks us to or if we are sure it does nothing
-    const bool is_fragment_disabled = (record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED)
-        || (fragment_program_gxm.program.get(mem)->is_empty() && !fragment_program.blending.blendEnable);
+    // disable the fragment shader if gxm asks us to
+    const bool is_fragment_disabled = record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED;
     const uint32_t shader_stage_count = is_fragment_disabled ? 1U : 2U;
 
     const vk::PipelineInputAssemblyStateCreateInfo input_assembly{
