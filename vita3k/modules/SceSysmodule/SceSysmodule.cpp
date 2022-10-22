@@ -19,7 +19,7 @@
 
 #include <module/load_module.h>
 #include <modules/module_parent.h>
-#include <modules/tracy.h>
+#include <util/tracy.h>
 
 #ifdef TRACY_ENABLE
 const std::string tracy_module_name = "SceSysmodule";

@@ -19,8 +19,8 @@
 
 #include <io/state.h>
 #include <kernel/state.h>
-#include <modules/tracy.h>
 #include <packages/sfo.h>
+#include <util/tracy.h>
 
 #ifdef TRACY_ENABLE
 const std::string tracy_module_name = "SceAppMgr";

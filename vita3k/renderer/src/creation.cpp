@@ -32,6 +32,7 @@
 #include <renderer/functions.h>
 #include <util/log.h>
 #include <util/string_utils.h>
+#include <util/tracy.h>
 
 namespace renderer {
 
@@ -52,6 +53,7 @@ static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &siz
 }
 
 COMMAND(handle_create_context) {
+    TRACY_FUNC_COMMANDS(handle_create_context);
     std::unique_ptr<Context> *ctx = helper.pop<std::unique_ptr<Context> *>();
     bool result = false;
 
@@ -86,6 +88,7 @@ COMMAND(handle_create_context) {
 }
 
 COMMAND(handle_destroy_context) {
+    TRACY_FUNC_COMMANDS(handle_destroy_context);
     std::unique_ptr<Context> *ctx = helper.pop<std::unique_ptr<Context> *>();
     ctx->reset();
 
@@ -93,6 +96,7 @@ COMMAND(handle_destroy_context) {
 }
 
 COMMAND(handle_create_render_target) {
+    TRACY_FUNC_COMMANDS(handle_create_render_target);
     std::unique_ptr<RenderTarget> *render_target = helper.pop<std::unique_ptr<RenderTarget> *>();
     SceGxmRenderTargetParams *params = helper.pop<SceGxmRenderTargetParams *>();
 
@@ -115,6 +119,7 @@ COMMAND(handle_create_render_target) {
 }
 
 COMMAND(handle_destroy_render_target) {
+    TRACY_FUNC_COMMANDS(handle_destroy_render_target);
     std::unique_ptr<RenderTarget> *render_target = helper.pop<std::unique_ptr<RenderTarget> *>();
 
     switch (renderer.current_backend) {
@@ -134,9 +139,6 @@ COMMAND(handle_destroy_render_target) {
     render_target->reset();
 
     complete_command(renderer, helper, 0);
-}
-
-COMMAND(handle_prepare_overall_buffer_storage) {
 }
 
 // Client

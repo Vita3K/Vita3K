@@ -22,8 +22,8 @@
 #include <io/functions.h>
 #include <io/io.h>
 #include <io/vfs.h>
-#include <modules/tracy.h>
 #include <util/safe_time.h>
+#include <util/tracy.h>
 
 #ifdef WIN32
 #include <winsock.h>

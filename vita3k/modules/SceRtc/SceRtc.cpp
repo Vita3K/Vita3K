@@ -18,8 +18,8 @@
 #include "SceRtc.h"
 
 #include <kernel/state.h>
-#include <modules/tracy.h>
 #include <rtc/rtc.h>
+#include <util/tracy.h>
 
 #include <util/safe_time.h>
 

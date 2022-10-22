@@ -17,10 +17,10 @@
 
 #include "SceTouch.h"
 
-#include <modules/tracy.h>
 #include <touch/functions.h>
 #include <touch/state.h>
 #include <touch/touch.h>
+#include <util/tracy.h>
 
 #ifdef TRACY_ENABLE
 const std::string tracy_module_name = "SceTouch";

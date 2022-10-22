@@ -19,7 +19,7 @@
 
 #include "../SceAudiodec/SceAudiodecUser.h"
 
-#include <modules/tracy.h>
+#include <util/tracy.h>
 
 #ifdef TRACY_ENABLE
 const std::string tracy_module_name = "SceAtrac";

@@ -20,8 +20,8 @@
 #include <ctrl/ctrl.h>
 #include <ctrl/functions.h>
 #include <kernel/types.h>
-#include <modules/tracy.h>
 #include <util/log.h>
+#include <util/tracy.h>
 
 #include <algorithm>
 #include <array>

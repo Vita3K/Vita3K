@@ -28,15 +28,18 @@
 
 #include <renderer/functions.h>
 #include <util/log.h>
+#include <util/tracy.h>
 
 namespace renderer {
 COMMAND(handle_nop) {
+    TRACY_FUNC_COMMANDS(handle_nop);
     // Signal back to client
     int code_to_finish = helper.pop<int>();
     complete_command(renderer, helper, code_to_finish);
 }
 
 COMMAND(handle_signal_sync_object) {
+    TRACY_FUNC_COMMANDS(handle_signal_sync_object);
     SceGxmSyncObject *sync = helper.pop<Ptr<SceGxmSyncObject>>().get(mem);
     const uint32_t timestamp = helper.pop<uint32_t>();
 
@@ -44,6 +47,7 @@ COMMAND(handle_signal_sync_object) {
 }
 
 COMMAND(handle_wait_sync_object) {
+    TRACY_FUNC_COMMANDS(handle_wait_sync_object);
     SceGxmSyncObject *sync = helper.pop<Ptr<SceGxmSyncObject>>().get(mem);
     RenderTarget *target = helper.pop<RenderTarget *>();
     const uint32_t timestamp = helper.pop<uint32_t>();
@@ -59,6 +63,7 @@ COMMAND(handle_wait_sync_object) {
 }
 
 COMMAND(handle_notification) {
+    TRACY_FUNC_COMMANDS(handle_notification);
     SceGxmNotification notif = helper.pop<SceGxmNotification>();
     //[[maybe_unused]] const bool is_vertex = helper.pop<bool>();
 
@@ -72,6 +77,7 @@ COMMAND(handle_notification) {
 }
 
 COMMAND(new_frame) {
+    TRACY_FUNC_COMMANDS(new_frame);
     if (renderer.current_backend == Backend::Vulkan) {
         vulkan::new_frame(*reinterpret_cast<vulkan::VKContext *>(renderer.context));
     }
