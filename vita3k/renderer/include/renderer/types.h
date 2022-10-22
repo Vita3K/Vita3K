@@ -27,6 +27,7 @@
 #include <shader/usse_program_analyzer.h>
 
 #include <array>
+#include <bitset>
 #include <map>
 #include <string>
 #include <tuple>
@@ -187,6 +188,8 @@ struct Context {
     virtual ~Context() = default;
 };
 
+typedef std::bitset<SCE_GXM_MAX_TEXTURE_UNITS> TextureInfo;
+
 struct ShaderProgram {
     Sha256Hash hash;
     UniformBufferSizes uniform_buffer_sizes; // Size of the buffer in 4-bytes unit
@@ -194,6 +197,7 @@ struct ShaderProgram {
 
     std::size_t max_total_uniform_buffer_storage;
     uint16_t texture_count; // max texture index used by the shader + 1
+    TextureInfo textures_used; // textures_used[i] is true if and only if the i-th texture is used by the shader
 };
 
 struct FragmentProgram : ShaderProgram {

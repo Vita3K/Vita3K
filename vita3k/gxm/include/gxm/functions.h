@@ -20,6 +20,7 @@
 #include <gxm/types.h>
 
 #include <array>
+#include <bitset>
 #include <string>
 
 namespace gxm {
@@ -90,6 +91,7 @@ const char *get_container_name(const std::uint16_t idx);
 
 int get_uniform_buffer_base(const SceGxmProgram &program, const SceGxmProgramParameter &parameter);
 
-uint16_t get_texture_count(const SceGxmProgram &program_gxp);
+typedef std::bitset<SCE_GXM_MAX_TEXTURE_UNITS> TextureInfo;
+TextureInfo get_textures_used(const SceGxmProgram &program_gxp);
 
 } // namespace gxp
