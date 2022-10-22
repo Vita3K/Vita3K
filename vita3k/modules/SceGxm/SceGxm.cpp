@@ -102,6 +102,10 @@ struct SceGxmContext {
     std::set<CommandListRange> command_list_ranges;
     SceGxmCommandList *curr_command_list = nullptr;
 
+    // tell if a call to set_texture must be made
+    gxp::TextureInfo is_vert_texture_dirty;
+    gxp::TextureInfo is_frag_texture_dirty;
+
     explicit SceGxmContext(std::mutex &callback_lock_)
         : callback_lock(callback_lock_) {
     }
@@ -491,42 +495,14 @@ static void gxmContextStateRestore(renderer::State &state, MemState &mem, SceGxm
     if (context->state.vertex_program) {
         renderer::set_program(state, context->renderer.get(), context->state.vertex_program, false);
 
-        const SceGxmVertexProgram &gxm_vertex_program = *context->state.vertex_program.get(mem);
-        const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(mem);
-
-        const auto vert_paramters = gxp::program_parameters(vertex_program_gxp);
-
-        for (uint32_t i = 0; i < vertex_program_gxp.parameter_count; ++i) {
-            const auto parameter = vert_paramters[i];
-            if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-                const auto index = parameter.resource_index + SCE_GXM_MAX_TEXTURE_UNITS;
-
-                if (context->state.textures[index].data_addr != 0) {
-                    renderer::set_texture(state, context->renderer.get(), index, context->state.textures[index]);
-                }
-            }
-        }
+        context->is_vert_texture_dirty.set();
     }
 
     // The uniform buffer, vertex stream will be uploaded later, for now only need to resync de textures
     if (context->state.fragment_program) {
         renderer::set_program(state, context->renderer.get(), context->state.fragment_program, true);
 
-        const SceGxmFragmentProgram &gxm_fragment_program = *context->state.fragment_program.get(mem);
-        const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
-
-        const auto frag_paramters = gxp::program_parameters(fragment_program_gxp);
-
-        for (uint32_t i = 0; i < fragment_program_gxp.parameter_count; ++i) {
-            const auto parameter = frag_paramters[i];
-            if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-                const auto index = parameter.resource_index;
-
-                if (context->state.textures[index].data_addr != 0) {
-                    renderer::set_texture(state, context->renderer.get(), index, context->state.textures[index]);
-                }
-            }
-        }
+        context->is_frag_texture_dirty.set();
     }
 }
 
@@ -629,6 +605,11 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
     // It's legal to set at client.
     context->state.active = true;
     context->last_precomputed = false;
+
+    // set all textures as dirty, in case their content is modified (even though I really don't think it would)
+    // or some texture is the current framebuffer
+    context->is_vert_texture_dirty.set();
+    context->is_frag_texture_dirty.set();
 
     SceGxmColorSurface *color_surface_copy = nullptr;
     SceGxmDepthStencilSurface *depth_stencil_surface_copy = nullptr;
@@ -1175,28 +1156,26 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
         const auto frag_paramters = gxp::program_parameters(fragment_program_gxp);
         const auto vert_paramters = gxp::program_parameters(vertex_program_gxp);
 
-        auto &textures = context->state.textures;
-
-        for (uint32_t i = 0; i < fragment_program_gxp.parameter_count; ++i) {
-            const auto parameter = frag_paramters[i];
-            if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-                const auto index = parameter.resource_index;
-                renderer::set_texture(*emuenv.renderer, context->renderer.get(), index, textures[index]);
-            }
-        }
-
-        for (uint32_t i = 0; i < vertex_program_gxp.parameter_count; ++i) {
-            const auto parameter = vert_paramters[i];
-            if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-                const auto index = parameter.resource_index + SCE_GXM_MAX_TEXTURE_UNITS;
-                renderer::set_texture(*emuenv.renderer, context->renderer.get(), index, textures[index]);
-            }
-        }
-
         renderer::set_program(*emuenv.renderer, context->renderer.get(), context->state.vertex_program, false);
         renderer::set_program(*emuenv.renderer, context->renderer.get(), context->state.fragment_program, true);
 
         context->last_precomputed = false;
+    }
+
+    // set textures that are dirty
+    const gxp::TextureInfo vert_textures_sync = gxm_vertex_program.renderer_data->textures_used & context->is_vert_texture_dirty;
+    context->is_vert_texture_dirty &= ~vert_textures_sync;
+    const gxp::TextureInfo frag_textures_sync = gxm_fragment_program.renderer_data->textures_used & context->is_frag_texture_dirty;
+    context->is_frag_texture_dirty &= ~frag_textures_sync;
+    const auto &textures = context->state.textures;
+    for (uint16_t texture_index = 0; texture_index < SCE_GXM_MAX_TEXTURE_UNITS; texture_index++) {
+        if (vert_textures_sync[texture_index]) {
+            const uint16_t index_position = SCE_GXM_MAX_TEXTURE_UNITS + texture_index;
+            renderer::set_texture(*emuenv.renderer, context->renderer.get(), index_position, textures[index_position]);
+        }
+
+        if (frag_textures_sync[texture_index])
+            renderer::set_texture(*emuenv.renderer, context->renderer.get(), texture_index, textures[texture_index]);
     }
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
@@ -1308,24 +1287,21 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         max_index = *std::max_element(&data[0], &data[draw->vertex_count]);
     }
 
-    const auto frag_paramters = gxp::program_parameters(fragment_program_gxp);
-    SceGxmTexture *frag_textures = fragment_state ? fragment_state->textures.get(emuenv.mem) : context->state.textures.data();
-    for (uint32_t i = 0; i < fragment_program_gxp.parameter_count; ++i) {
-        const auto parameter = frag_paramters[i];
-        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-            const auto index = parameter.resource_index;
-            renderer::set_texture(*emuenv.renderer, context->renderer.get(), index, frag_textures[index]);
-        }
-    }
-
-    const auto vert_paramters = gxp::program_parameters(vertex_program_gxp);
+    // set all textures that are used and mark them as dirty
+    const gxp::TextureInfo vert_textures_sync = vertex_program->renderer_data->textures_used;
+    context->is_vert_texture_dirty |= vert_textures_sync;
+    const gxp::TextureInfo frag_textures_sync = fragment_program->renderer_data->textures_used;
+    context->is_frag_texture_dirty |= frag_textures_sync;
+    const SceGxmTexture *frag_textures = fragment_state ? fragment_state->textures.get(emuenv.mem) : context->state.textures.data();
     SceGxmTexture *vert_textures = vertex_state ? vertex_state->textures.get(emuenv.mem) : (context->state.textures.data() + SCE_GXM_MAX_TEXTURE_UNITS);
-    for (uint32_t i = 0; i < vertex_program_gxp.parameter_count; ++i) {
-        const auto parameter = vert_paramters[i];
-        if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-            const auto index = parameter.resource_index;
-            renderer::set_texture(*emuenv.renderer, context->renderer.get(), index + SCE_GXM_MAX_TEXTURE_UNITS, vert_textures[index]);
+    for (uint16_t texture_index = 0; texture_index < SCE_GXM_MAX_TEXTURE_UNITS; texture_index++) {
+        if (vert_textures_sync[texture_index]) {
+            const uint16_t index_position = SCE_GXM_MAX_TEXTURE_UNITS + texture_index;
+            renderer::set_texture(*emuenv.renderer, context->renderer.get(), index_position, vert_textures[texture_index]);
         }
+
+        if (frag_textures_sync[texture_index])
+            renderer::set_texture(*emuenv.renderer, context->renderer.get(), texture_index, frag_textures[texture_index]);
     }
 
     size_t max_data_length[SCE_GXM_MAX_VERTEX_STREAMS] = {};
@@ -1574,18 +1550,14 @@ EXPORT(uint32_t, sceGxmGetPrecomputedDrawSize, const SceGxmVertexProgram *vertex
 EXPORT(uint32_t, sceGxmGetPrecomputedFragmentStateSize, const SceGxmFragmentProgram *fragmentProgram) {
     assert(fragmentProgram);
 
-    const auto &fragment_program_gxp = *fragmentProgram->program.get(emuenv.mem);
-    const uint16_t texture_count = gxp::get_texture_count(fragment_program_gxp);
-
+    const uint16_t texture_count = fragmentProgram->renderer_data->texture_count;
     return texture_count * sizeof(TextureData) + sizeof(UniformBuffers);
 }
 
 EXPORT(uint32_t, sceGxmGetPrecomputedVertexStateSize, const SceGxmVertexProgram *vertexProgram) {
     assert(vertexProgram);
 
-    const auto &vertex_program_gxp = *vertexProgram->program.get(emuenv.mem);
-    const uint16_t texture_count = gxp::get_texture_count(vertex_program_gxp);
-
+    const uint16_t texture_count = vertexProgram->renderer_data->texture_count;
     return texture_count * sizeof(TextureData) + sizeof(UniformBuffers);
 }
 
@@ -1895,8 +1867,7 @@ EXPORT(int, sceGxmPrecomputedFragmentStateInit, SceGxmPrecomputedFragmentState *
     SceGxmPrecomputedFragmentState new_state;
     new_state.program = program;
 
-    const auto &fragment_program_gxp = *program.get(emuenv.mem)->program.get(emuenv.mem);
-    new_state.texture_count = gxp::get_texture_count(fragment_program_gxp);
+    new_state.texture_count = program.get(emuenv.mem)->renderer_data->texture_count;
 
     new_state.textures = extra_data.cast<TextureData>();
     new_state.uniform_buffers = (extra_data.cast<TextureData>() + new_state.texture_count).cast<UniformBuffers>();
@@ -2002,8 +1973,7 @@ EXPORT(int, sceGxmPrecomputedVertexStateInit, SceGxmPrecomputedVertexState *stat
     SceGxmPrecomputedVertexState new_state;
     new_state.program = program;
 
-    const auto &vertex_program_gxp = *program.get(emuenv.mem)->program.get(emuenv.mem);
-    new_state.texture_count = gxp::get_texture_count(vertex_program_gxp);
+    new_state.texture_count = program.get(emuenv.mem)->renderer_data->texture_count;
 
     new_state.textures = extra_data.cast<TextureData>();
     new_state.uniform_buffers = (extra_data.cast<TextureData>() + new_state.texture_count).cast<UniformBuffers>();
@@ -2623,9 +2593,7 @@ EXPORT(int, sceGxmSetFragmentTexture, SceGxmContext *context, uint32_t textureIn
     }
 
     context->state.textures[textureIndex] = *texture;
-
-    if (context->alloc_space)
-        renderer::set_texture(*emuenv.renderer, context->renderer.get(), textureIndex, *texture);
+    context->is_frag_texture_dirty[textureIndex] = true;
 
     return 0;
 }
@@ -2975,12 +2943,8 @@ EXPORT(int, sceGxmSetVertexTexture, SceGxmContext *context, uint32_t textureInde
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
     }
 
-    // Vertex texture arrays start at MAX UNITS value, so is shader binding.
-    textureIndex += SCE_GXM_MAX_TEXTURE_UNITS;
-    context->state.textures[textureIndex] = *texture;
-
-    if (context->alloc_space)
-        renderer::set_texture(*emuenv.renderer, context->renderer.get(), textureIndex, *texture);
+    context->state.textures[textureIndex + SCE_GXM_MAX_TEXTURE_UNITS] = *texture;
+    context->is_vert_texture_dirty[textureIndex] = true;
 
     return 0;
 }

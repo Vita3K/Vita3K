@@ -382,14 +382,16 @@ const char *get_container_name(const std::uint16_t idx) {
     return "INVALID ";
 }
 
-uint16_t get_texture_count(const SceGxmProgram &program_gxp) {
+TextureInfo get_textures_used(const SceGxmProgram &program_gxp) {
+    TextureInfo textures_used;
+
     const auto parameters = gxp::program_parameters(program_gxp);
 
     int max_texture_index = -1;
     for (uint32_t i = 0; i < program_gxp.parameter_count; ++i) {
         const auto parameter = parameters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {
-            max_texture_index = std::max(max_texture_index, parameter.resource_index);
+            textures_used[parameter.resource_index] = true;
         }
     }
 
@@ -402,7 +404,7 @@ uint16_t get_texture_count(const SceGxmProgram &program_gxp) {
         const uint32_t tex_coord_index = (descriptor->attribute_info & 0x40F);
         if (tex_coord_index == 0xF)
             continue;
-        max_texture_index = std::max<int>(max_texture_index, descriptor->resource_index);
+        textures_used[descriptor->resource_index] = true;
     }
 
     // also look for an anonymous sampler
@@ -413,10 +415,10 @@ uint16_t get_texture_count(const SceGxmProgram &program_gxp) {
 
         for (uint32_t i = 0; i < program_gxp.dependent_sampler_count; i++) {
             const uint16_t rsc_index = dependent_samplers[i].resource_index_layout_offset / 4;
-            max_texture_index = std::max<int>(max_texture_index, rsc_index);
+            textures_used[rsc_index] = true;
         }
     }
 
-    return static_cast<uint16_t>(max_texture_index + 1);
+    return textures_used;
 }
 } // namespace gxp

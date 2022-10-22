@@ -254,11 +254,6 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                     // use prerender cmd as we can't copy an image or use pipeline barriers in a render pass
                     VKContext *context = reinterpret_cast<VKContext *>(state.context);
                     vk::CommandBuffer cmd_buffer = context->prerender_cmd;
-                    bool is_offscene = false;
-                    if (!cmd_buffer) {
-                        is_offscene = true;
-                        cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
-                    }
 
                     if (casted == nullptr) {
                         // Try to crop + cast
@@ -348,9 +343,6 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                     }
                     casted->texture.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
 
-                    if (is_offscene)
-                        vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
-
                     return &casted->texture;
                 } else {
                     // we must insert a barrier before reading from the texture
@@ -366,16 +358,9 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                         .image = info.texture.image,
                         .subresourceRange = vkutil::color_subresource_range
                     };
-                    bool is_offscene = false;
-                    if (!cmd_buffer) {
-                        is_offscene = true;
-                        cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
-                    }
+
                     cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader, vk::DependencyFlags(), {}, {}, barrier);
 
-                    if (is_offscene) {
-                        vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
-                    }
                     if (swizzle == info.swizzle && vk_format == info.texture.format)
                         // we can use the same texture view
                         return &info.texture;
@@ -562,11 +547,7 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
             // use prerender cmd as we can't copy an image or use pipeline barriers in a render pass
             VKContext *context = reinterpret_cast<VKContext *>(state.context);
             vk::CommandBuffer cmd_buffer = context->prerender_cmd;
-            bool is_offscene = false;
-            if (!cmd_buffer) {
-                is_offscene = true;
-                cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
-            }
+
             if (!cached_info.read_only.image) {
                 vk::ImageSubresourceRange range = vkutil::ds_subresource_range;
                 range.aspectMask = vk::ImageAspectFlagBits::eDepth;
@@ -607,9 +588,6 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
             // transition back
             cached_info.texture.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
             cached_info.read_only.transition_to(cmd_buffer, vkutil::ImageLayout::DepthReadOnly, vkutil::ds_subresource_range);
-
-            if (is_offscene)
-                vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
 
             return &cached_info.read_only;
         }
