@@ -291,7 +291,7 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
 
         uint8_t *scaled_dest_data = scaled_data.data();
         const uint8_t *scaled_src_data = decoded_superframe_samples.data() + decoded_start_offset * sizeof(float) * 2;
-        scaled_samples_amount = swr_convert(state->swr, &scaled_dest_data, scaled_samples_amount, &scaled_src_data, samples_per_superframe);
+        scaled_samples_amount = swr_convert(state->swr, &scaled_dest_data, scaled_samples_amount, &scaled_src_data, decoded_size);
         assert(scaled_samples_amount > 0);
 
         // Allocate memory to accommodate the result of the scaling process into the queue for the final audio buffer
