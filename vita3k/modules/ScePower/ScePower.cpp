@@ -17,7 +17,7 @@
 
 #include "ScePower.h"
 
-#include <modules/tracy.h>
+#include <util/tracy.h>
 #include <util/types.h>
 
 #include <SDL_power.h>

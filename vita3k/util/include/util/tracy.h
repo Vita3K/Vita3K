@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <config/functions.h> // for is_tracy_advanced_profiling_active_for_module
 #include <mem/ptr.h>
 #include <mem/state.h>
 #include <sstream>
@@ -102,16 +103,34 @@ inline std::string to_debug_str(const MemState &mem) {
         __TRACY_LOG_ARG_IF(arg8)                                                                                                                        \
     }
 
+// TODO: Support more stuff for commands, like arguments
+#define __TRACY_FUNC_COMMANDS(name)                                                                                                                     \
+    static_assert(std::basic_string_view(__FUNCTION__) == "cmd_" #name);                                                                                \
+    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(config.tracy_advanced_profiling_modules, "Renderer commands"); \
+    ZoneNamedN(___tracy_scoped_zone, #name, _tracy_activation_state);
+
+// TODO: Support more stuff for commands, like arguments
+#define __TRACY_FUNC_COMMANDS_SET_STATE(name)                                                                                                           \
+    static_assert(std::basic_string_view(__FUNCTION__) == "cmd_set_state_" #name);                                                                      \
+    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(config.tracy_advanced_profiling_modules, "Renderer commands"); \
+    ZoneNamedN(___tracy_scoped_zone, #name, _tracy_activation_state);
+
 // workaround for variadic macro in "traditional" MSVC preprocessor.
 // https://docs.microsoft.com/en-us/cpp/preprocessor/preprocessor-experimental-overview?view=msvc-170#macro-arguments-are-unpacked
 #if (defined(_MSC_VER) && !defined(__clang__) && (!defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL))
 #define TRACY_FUNC(name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) __TRACY_FUNC(tracy_module_name, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
 #define TRACY_FUNC_M(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) __TRACY_FUNC(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+#define TRACY_FUNC_COMMANDS(name) __TRACY_FUNC_COMMANDS(name)
+#define TRACY_FUNC_COMMANDS_SET_STATE(name) __TRACY_FUNC_COMMANDS_SET_STATE(name)
 #else
 #define TRACY_FUNC(name, ...) __TRACY_FUNC(tracy_module_name, name, ##__VA_ARGS__, , , , , , , , )
 #define TRACY_FUNC_M(module_name_var, name, ...) __TRACY_FUNC(module_name_var, name, ##__VA_ARGS__, , , , , , , , )
+#define TRACY_FUNC_COMMANDS(name) __TRACY_FUNC_COMMANDS(name)
+#define TRACY_FUNC_COMMANDS_SET_STATE(name) __TRACY_FUNC_COMMANDS_SET_STATE(name)
 #endif // "traditional" MSVC preprocessor
 #else // if not TRACY_ENABLE
 #define TRACY_FUNC(name, ...)
 #define TRACY_FUNC_M(module_name_var, name, ...)
+#define TRACY_FUNC_COMMANDS(name)
+#define TRACY_FUNC_COMMANDS_SET_STATE(name)
 #endif // TRACY_ENABLE

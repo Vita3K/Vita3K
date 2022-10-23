@@ -8,7 +8,7 @@ add_library(
 	src/gl/fence.cpp
 	src/gl/renderer.cpp
 	src/gl/ring_buffer.cpp
-    src/gl/screen_render.cpp
+	src/gl/screen_render.cpp
 	src/gl/surface_cache.cpp
 	src/gl/sync_state.cpp
 	src/gl/texture_formats.cpp

@@ -20,8 +20,8 @@
 #include <audio/state.h>
 #include <codec/state.h>
 #include <kernel/state.h>
-#include <modules/tracy.h>
 #include <util/lock_and_find.h>
+#include <util/tracy.h>
 
 #ifdef TRACY_ENABLE
 const std::string tracy_module_name = "SceAudiodecUser";

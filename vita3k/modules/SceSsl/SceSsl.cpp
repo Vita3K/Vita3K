@@ -18,8 +18,8 @@
 #include "SceSsl.h"
 
 #include <http/state.h>
-#include <modules/tracy.h>
 #include <openssl/ssl.h>
+#include <util/tracy.h>
 #include <util/types.h>
 
 #ifdef TRACY_ENABLE

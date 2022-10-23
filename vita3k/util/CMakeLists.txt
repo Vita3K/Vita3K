@@ -20,6 +20,7 @@ add_library(
 	include/util/pool.h
 	include/util/string_utils.h
 	include/util/system.h
+	include/util/tracy.h
 	include/util/types.h
 	include/util/vector_utils.h
 	src/util.cpp
@@ -27,4 +28,4 @@ add_library(
 )
 
 target_include_directories(util PUBLIC include)
-target_link_libraries(util PUBLIC ${Boost_LIBRARIES} fmt spdlog http mem)
+target_link_libraries(util PUBLIC ${Boost_LIBRARIES} config fmt spdlog http mem)

@@ -31,11 +31,13 @@
 
 #include <util/align.h>
 #include <util/log.h>
+#include <util/tracy.h>
 
 #include <config/state.h>
 
 namespace renderer {
 COMMAND_SET_STATE(region_clip) {
+    TRACY_FUNC_COMMANDS_SET_STATE(region_clip);
     render_context->record.region_clip_mode = helper.pop<SceGxmRegionClipMode>();
     const std::uint32_t xMin = helper.pop<std::uint32_t>();
     const std::uint32_t xMax = helper.pop<std::uint32_t>();
@@ -64,6 +66,7 @@ COMMAND_SET_STATE(region_clip) {
 }
 
 COMMAND_SET_STATE(program) {
+    TRACY_FUNC_COMMANDS_SET_STATE(program);
     const Ptr<const void> program = helper.pop<Ptr<const void>>();
     const bool is_fragment = helper.pop<bool>();
 
@@ -97,6 +100,7 @@ COMMAND_SET_STATE(program) {
 }
 
 COMMAND_SET_STATE(uniform_buffer) {
+    TRACY_FUNC_COMMANDS_SET_STATE(uniform_buffer);
     const uint8_t *data = helper.pop<const Ptr<void>>().cast<uint8_t>().get(mem);
     const bool is_vertex = helper.pop<bool>();
     const int block_num = helper.pop<int>();
@@ -129,6 +133,7 @@ COMMAND_SET_STATE(uniform_buffer) {
 }
 
 COMMAND_SET_STATE(viewport) {
+    TRACY_FUNC_COMMANDS_SET_STATE(viewport);
     const bool flat = helper.pop<bool>();
     render_context->record.viewport_flat = flat;
 
@@ -208,6 +213,7 @@ COMMAND_SET_STATE(viewport) {
 }
 
 COMMAND_SET_STATE(depth_bias) {
+    TRACY_FUNC_COMMANDS_SET_STATE(depth_bias);
     const bool is_front = helper.pop<bool>();
     const int factor = helper.pop<int>();
     const int unit = helper.pop<int>();
@@ -233,6 +239,7 @@ COMMAND_SET_STATE(depth_bias) {
 }
 
 COMMAND_SET_STATE(depth_func) {
+    TRACY_FUNC_COMMANDS_SET_STATE(depth_func);
     const bool is_front = helper.pop<bool>();
     const SceGxmDepthFunc depth_func = helper.pop<SceGxmDepthFunc>();
 
@@ -258,6 +265,7 @@ COMMAND_SET_STATE(depth_func) {
 }
 
 COMMAND_SET_STATE(depth_write_enable) {
+    TRACY_FUNC_COMMANDS_SET_STATE(depth_write_enable);
     const bool is_front = helper.pop<bool>();
     const SceGxmDepthWriteMode mode = helper.pop<SceGxmDepthWriteMode>();
 
@@ -282,6 +290,7 @@ COMMAND_SET_STATE(depth_write_enable) {
 }
 
 COMMAND_SET_STATE(polygon_mode) {
+    TRACY_FUNC_COMMANDS_SET_STATE(polygon_mode);
     const bool is_front = helper.pop<bool>();
     const SceGxmPolygonMode mode = helper.pop<SceGxmPolygonMode>();
     if (is_front)
@@ -305,6 +314,7 @@ COMMAND_SET_STATE(polygon_mode) {
 }
 
 COMMAND_SET_STATE(point_line_width) {
+    TRACY_FUNC_COMMANDS_SET_STATE(point_line_width);
     const bool is_front = helper.pop<bool>();
     const std::uint32_t width = helper.pop<std::uint32_t>();
     if (is_front)
@@ -326,6 +336,7 @@ COMMAND_SET_STATE(point_line_width) {
 }
 
 COMMAND_SET_STATE(stencil_func) {
+    TRACY_FUNC_COMMANDS_SET_STATE(stencil_func);
     // Is this the pain that driver guys have to suffer?
     const bool is_front = helper.pop<bool>();
     GxmStencilStateOp &stencil_state_op = is_front ? render_context->record.front_stencil_state_op : render_context->record.back_stencil_state_op;
@@ -366,6 +377,7 @@ COMMAND_SET_STATE(stencil_func) {
 }
 
 COMMAND_SET_STATE(stencil_ref) {
+    TRACY_FUNC_COMMANDS_SET_STATE(stencil_ref);
     const bool is_front = helper.pop<bool>();
     const uint8_t sref = helper.pop<const unsigned char>();
 
@@ -390,6 +402,7 @@ COMMAND_SET_STATE(stencil_ref) {
 }
 
 COMMAND_SET_STATE(texture) {
+    TRACY_FUNC_COMMANDS_SET_STATE(texture);
     const std::uint32_t texture_index = helper.pop<std::uint32_t>();
     SceGxmTexture texture = helper.pop<SceGxmTexture>();
 
@@ -411,6 +424,7 @@ COMMAND_SET_STATE(texture) {
 }
 
 COMMAND_SET_STATE(two_sided) {
+    TRACY_FUNC_COMMANDS_SET_STATE(two_sided);
     const SceGxmTwoSidedMode two_sided = helper.pop<SceGxmTwoSidedMode>();
     render_context->record.two_sided = two_sided;
 
@@ -433,6 +447,7 @@ COMMAND_SET_STATE(two_sided) {
 }
 
 COMMAND_SET_STATE(cull_mode) {
+    TRACY_FUNC_COMMANDS_SET_STATE(cull_mode);
     render_context->record.cull_mode = helper.pop<SceGxmCullMode>();
 
     switch (renderer.current_backend) {
@@ -451,6 +466,7 @@ COMMAND_SET_STATE(cull_mode) {
 }
 
 COMMAND_SET_STATE(vertex_stream) {
+    TRACY_FUNC_COMMANDS_SET_STATE(vertex_stream);
     const uint8_t *stream_data = helper.pop<Ptr<const void>>().cast<const uint8_t>().get(mem);
     const std::size_t stream_index = helper.pop<std::size_t>();
     const std::size_t stream_data_length = helper.pop<std::size_t>();
@@ -461,6 +477,7 @@ COMMAND_SET_STATE(vertex_stream) {
 }
 
 COMMAND_SET_STATE(fragment_program_enable) {
+    TRACY_FUNC_COMMANDS_SET_STATE(fragment_program_enable);
     const bool is_front = helper.pop<bool>();
     const SceGxmFragmentProgramMode mode = helper.pop<SceGxmFragmentProgramMode>();
 
@@ -475,6 +492,7 @@ COMMAND_SET_STATE(fragment_program_enable) {
 }
 
 COMMAND(handle_set_state) {
+    // TRACY_FUNC_COMMANDS(handle_set_state); All set state commands have tracy so kinda redundant
     renderer::GXMState gxm_state_to_set = helper.pop<renderer::GXMState>();
     using StateChangeHandlerFunc = std::function<void(renderer::State &, MemState &, Config &, CommandHelper &,
         Context *, const char *base_path, const char *title_id)>;

@@ -30,11 +30,11 @@
 
 #include <http/state.h>
 
-#include <modules/tracy.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <util/log.h>
 #include <util/net_utils.h>
+#include <util/tracy.h>
 
 #include <string>
 #include <thread>

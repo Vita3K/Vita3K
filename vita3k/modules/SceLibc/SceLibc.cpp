@@ -19,9 +19,9 @@
 
 #include <io/functions.h>
 #include <kernel/state.h>
-#include <modules/tracy.h>
 #include <util/lock_and_find.h>
 #include <util/log.h>
+#include <util/tracy.h>
 
 #include <dlmalloc.h>
 #include <v3kprintf.h>

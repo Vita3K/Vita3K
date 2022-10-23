@@ -30,6 +30,7 @@
 #include <config/state.h>
 #include <renderer/functions.h>
 #include <util/log.h>
+#include <util/tracy.h>
 
 #define DEBUG_FRAMEBUFFER 1
 
@@ -40,6 +41,7 @@
 
 namespace renderer {
 COMMAND(handle_set_context) {
+    TRACY_FUNC_COMMANDS(handle_set_context);
     RenderTarget *rt = helper.pop<RenderTarget *>();
     const SceGxmColorSurface *color_surface = helper.pop<SceGxmColorSurface *>();
     const SceGxmDepthStencilSurface *depth_stencil_surface = helper.pop<SceGxmDepthStencilSurface *>();
@@ -87,6 +89,7 @@ COMMAND(handle_set_context) {
 }
 
 COMMAND(handle_sync_surface_data) {
+    TRACY_FUNC_COMMANDS(handle_sync_surface_data);
     if (renderer.current_backend == Backend::Vulkan) {
         // TODO: put this in a function
         vulkan::VKContext *context = reinterpret_cast<vulkan::VKContext *>(renderer.context);
@@ -167,6 +170,7 @@ COMMAND(handle_sync_surface_data) {
 }
 
 COMMAND(handle_draw) {
+    TRACY_FUNC_COMMANDS(handle_draw);
     SceGxmPrimitiveType type = helper.pop<SceGxmPrimitiveType>();
     SceGxmIndexFormat format = helper.pop<SceGxmIndexFormat>();
     void *indicies = helper.pop<void *>();
@@ -191,6 +195,7 @@ COMMAND(handle_draw) {
 }
 
 COMMAND(handle_transfer_copy) {
+    TRACY_FUNC_COMMANDS(handle_transfer_copy);
     const uint32_t colorKeyValue = helper.pop<uint32_t>();
     const uint32_t colorKeyMask = helper.pop<uint32_t>();
     const SceGxmTransferColorKeyMode colorKeyMode = helper.pop<SceGxmTransferColorKeyMode>();
@@ -245,6 +250,7 @@ COMMAND(handle_transfer_copy) {
 }
 
 COMMAND(handle_transfer_downscale) {
+    TRACY_FUNC_COMMANDS(handle_transfer_downscale);
     const SceGxmTransferImage *src = helper.pop<SceGxmTransferImage *>();
     const SceGxmTransferImage *dest = helper.pop<SceGxmTransferImage *>();
 
@@ -275,6 +281,7 @@ COMMAND(handle_transfer_downscale) {
 }
 
 COMMAND(handle_transfer_fill) {
+    TRACY_FUNC_COMMANDS(handle_transfer_fill);
     const uint32_t fill_color = helper.pop<uint32_t>();
     const SceGxmTransferImage *dest = helper.pop<SceGxmTransferImage *>();
 
