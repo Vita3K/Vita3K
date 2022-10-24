@@ -23,6 +23,10 @@
 #include <sstream>
 #include <util/log.h>
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4003) // This warning is SUPER annoying, shut the warning up c:
+#endif
+
 // universal to string converters for module specific types (usually enums)
 template <typename T>
 std::string to_debug_str(const MemState &mem, T data) {
@@ -105,13 +109,11 @@ inline std::string to_debug_str(const MemState &mem) {
 
 // TODO: Support more stuff for commands, like arguments
 #define __TRACY_FUNC_COMMANDS(name)                                                                                                                     \
-    static_assert(std::basic_string_view(__FUNCTION__) == "cmd_" #name);                                                                                \
     bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(config.tracy_advanced_profiling_modules, "Renderer commands"); \
     ZoneNamedN(___tracy_scoped_zone, #name, _tracy_activation_state);
 
 // TODO: Support more stuff for commands, like arguments
 #define __TRACY_FUNC_COMMANDS_SET_STATE(name)                                                                                                           \
-    static_assert(std::basic_string_view(__FUNCTION__) == "cmd_set_state_" #name);                                                                      \
     bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(config.tracy_advanced_profiling_modules, "Renderer commands"); \
     ZoneNamedN(___tracy_scoped_zone, #name, _tracy_activation_state);
 
