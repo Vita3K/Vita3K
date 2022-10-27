@@ -41,6 +41,11 @@
 #include <iterator>
 #include <string>
 
+#ifdef __aarch64__
+#define stat64 stat
+#define fstat64 fstat
+#endif
+
 // ****************************
 // * Utility functions *
 // ****************************

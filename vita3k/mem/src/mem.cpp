@@ -496,15 +496,46 @@ static void register_access_violation_handler(AccessViolationHandler handler) {
 static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
 
+#ifdef __aarch64__
+    // ESR(Exception Syndrome Register) Document
+    // https://developer.arm.com/documentation/ddi0595/2021-03/AArch64-Registers/ESR-EL1--Exception-Syndrome-Register--EL1-?lang=en#fieldset_0-31_26
+    enum esr_layout {
+        EC_MASK = ((uint32_t)31) << 27, // EC(Exception Class)[31:26], Ignoring last bit
+        EC_INSTRUCTION_ABORT = ((uint32_t)16) << 27, // Instruction Abort(0b100000, 0b100001)
+        EC_DATA_ABORT = ((uint32_t)18) << 27, // Data Abort(0b100100, 0b100101)
+        WnR = ((uint32_t)1) << 6 // Write not Read
+    };
+#ifdef __APPLE__
+    const uint64_t esr = context->uc_mcontext->__es.__esr;
+#elif __linux__
+    const uint32_t esr_magic = 0x45535201; // https://github.com/torvalds/linux/blob/master/arch/arm64/include/uapi/asm/sigcontext.h#L90
+    struct ctx_header {
+        uint32_t magic;
+        uint32_t size;
+    };
+    
+    struct ctx_header *extra = (struct ctx_header *)context->uc_mcontext.__reserved;
+    while (extra->magic != 0) {
+        if (extra->magic == esr_magic) {
+            break;
+        }
+        extra = (struct ctx_header *) (((uint8_t*)extra) + extra->size);
+    }
+    const uint64_t esr = *(uint64_t*)&extra[1];
+#else
+    // TODO: ARM Windows
+#endif
+    const bool is_executing = (esr & EC_MASK) == EC_INSTRUCTION_ABORT;
+    const bool is_writing = (esr & EC_MASK) == EC_DATA_ABORT && (esr & WnR);
+#else
 #ifdef __APPLE__
     const uint64_t err = context->uc_mcontext->__es.__err;
 #else
     const uint64_t err = context->uc_mcontext.gregs[REG_ERR];
 #endif
-
     const bool is_executing = err & 0x10;
     const bool is_writing = err & 0x2;
-
+#endif
     if (!is_executing) {
         if (access_violation_handler(reinterpret_cast<uint8_t *>(info->si_addr), is_writing)) {
             return;
