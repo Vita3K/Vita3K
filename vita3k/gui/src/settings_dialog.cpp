@@ -709,7 +709,14 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Emulated System Storage Folder");
         ImGui::Spacing();
         ImGui::PushItemWidth(320);
-        ImGui::TextColored(GUI_COLOR_TEXT, "Current emulator folder: %s", emuenv.cfg.pref_path.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "Current emulator folder:");
+        ImGui::PopItemWidth();
+#ifdef _WIN32 // because windows doesn't have the case sensitive setting, the window is a lot smaller
+        ImGui::PushItemWidth(385);
+#else // Make the field bigger for case sensitive systems (dialog is bigger, we can use it), usually paths on these systems are VERY LONG
+        ImGui::PushItemWidth(550);
+#endif
+        ImGui::InputText("##pref_path_input", &emuenv.cfg.pref_path);
         ImGui::PopItemWidth();
         ImGui::Spacing();
         if (ImGui::Button("Change Emulator Path"))
