@@ -2269,7 +2269,8 @@ EXPORT(bool, sceGxmProgramParameterIsRegFormat, const SceGxmProgram *program, co
         return false;
     }
 
-    return UNIMPLEMENTED();
+    const uint64_t regformat_indices = program->vertex_varyings()->untyped_pa_regs;
+    return (regformat_indices & (1ULL << parameter->resource_index)) != 0;
 }
 
 EXPORT(bool, sceGxmProgramParameterIsSamplerCube, const SceGxmProgramParameter *parameter) {
