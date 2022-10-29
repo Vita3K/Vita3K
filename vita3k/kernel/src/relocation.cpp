@@ -45,6 +45,7 @@ enum Code {
 };
 
 // Common type so we can static_cast between unknown/known formats
+// This is based on https://github.com/vitasdk/vita-toolchain/blob/master/src/sce-elf.h
 struct Entry {};
 
 struct EntryFormatUnknown : Entry {
@@ -78,11 +79,9 @@ struct EntryFormat1 : Entry {
 // Used by var import relocations
 struct EntryFormat1Alt : Entry {
     uint32_t format : 4;
-    uint32_t symbol_segment : 4;
+    uint32_t patch_segment : 4;
     uint32_t code : 8;
-    uint32_t patch_segment : 2;
-    uint32_t addend_words : 2;
-    uint32_t pad : 4;
+    uint32_t addend : 16;
 
     uint32_t offset;
 };
@@ -93,6 +92,17 @@ struct EntryFormat2 : Entry {
     uint32_t code : 8;
     uint32_t offset : 16;
 
+    uint32_t addend;
+};
+
+// Used by var import relocations
+struct EntryFormat2Alt : Entry {
+    uint32_t format : 4;
+    uint32_t patch_segment : 4;
+    uint32_t code : 8;
+    uint32_t padding : 16;
+
+    uint32_t offset;
     uint32_t addend;
 };
 
@@ -317,7 +327,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
         generic_entry = static_cast<const EntryFormatUnknown *>(entry);
 
         if (is_var_import)
-            assert(generic_entry->format == 1);
+            assert(generic_entry->format == 1 || generic_entry->format == 2);
 
         switch (generic_entry->format) {
         case 0: {
@@ -392,34 +402,24 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             } else {
                 const EntryFormat1Alt *const format1_entry = static_cast<const EntryFormat1Alt *>(entry);
 
-                const auto symbol_seg = format1_entry->symbol_segment;
-                const auto symbol_seg_start_it = segments.find(symbol_seg);
                 const auto patch_seg = format1_entry->patch_segment;
                 const auto patch_seg_start_it = segments.find(patch_seg);
                 const Address s = explicit_symval;
-
-                Address symbol_seg_start{};
-                if (symbol_seg_start_it != segments.end())
-                    symbol_seg_start = symbol_seg_start_it->second.addr;
-                else {
-                    LOG_WARN("[FORMAT1_VAR_IMPORT] symbol segment {} at {} not found. Skipping relocation.", symbol_seg, log_hex(symbol_seg_start));
-                    goto advance_entry;
-                }
 
                 Address patch_seg_start{};
                 if (patch_seg_start_it != segments.end())
                     patch_seg_start = patch_seg_start_it->second.addr;
                 else {
-                    LOG_WARN("[FORMAT1_VAR_IMPORT] patch segment {} not found. Skipping relocation. symbol_seg {} at {}, s: {} ", patch_seg, symbol_seg, log_hex(symbol_seg_start), log_hex(s));
+                    LOG_WARN("[FORMAT1_VAR_IMPORT] patch segment {} not found. Skipping relocation. s: {} ", patch_seg, log_hex(s));
                     goto advance_entry;
                 }
 
                 const Address offset = format1_entry->offset;
                 const Address p = patch_seg_start + offset;
-                const Address a = format1_entry->addend_words * sizeof(uint32_t);
+                const Address a = format1_entry->addend;
 
-                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1_VAR_IMPORT]: code: {}, sym_seg: {}, sym_start: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}",
-                    format1_entry->code, symbol_seg, log_hex(symbol_seg_start), patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
+                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT1_VAR_IMPORT]: code: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}",
+                    format1_entry->code, patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
 
                 if (!relocate_entry(Ptr<uint32_t>(p).get(mem), format1_entry->code, s, a, p)) {
                     return false;
@@ -437,28 +437,63 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
             break;
         }
         case 2: {
-            const EntryFormat2 *const format2_entry = static_cast<const EntryFormat2 *>(entry);
+            if (!is_var_import) {
+                const EntryFormat2 *const format2_entry = static_cast<const EntryFormat2 *>(entry);
 
-            const auto symbol_seg = format2_entry->symbol_segment;
-            const auto symbol_seg_start = segments.find(symbol_seg)->second.addr;
+                const auto symbol_seg = format2_entry->symbol_segment;
+                const auto symbol_seg_start = segments.find(symbol_seg)->second.addr;
 
-            g_offset += format2_entry->offset;
-            g_saddr = (format2_entry->symbol_segment == 0xf) ? 0 : symbol_seg_start;
-            g_addend = format2_entry->addend;
-            g_type = format2_entry->code;
+                g_offset += format2_entry->offset;
+                g_saddr = (format2_entry->symbol_segment == 0xf) ? 0 : symbol_seg_start;
+                g_addend = format2_entry->addend;
+                g_type = format2_entry->code;
 
-            const auto s = g_saddr;
-            const auto a = g_addend;
-            const auto p = g_addr + g_offset;
+                const auto s = g_saddr;
+                const auto a = g_addend;
+                const auto p = g_addr + g_offset;
 
-            LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT2]: code: {}, sym_seg: {}, sym_start: {}, offset: {}, s: {}, p: {}, a: {}",
-                format2_entry->code, symbol_seg, log_hex(symbol_seg_start), log_hex(format2_entry->offset), log_hex(s), log_hex(p), log_hex(a));
+                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT2]: code: {}, sym_seg: {}, sym_start: {}, offset: {}, s: {}, p: {}, a: {}",
+                    format2_entry->code, symbol_seg, log_hex(symbol_seg_start), log_hex(format2_entry->offset), log_hex(s), log_hex(p), log_hex(a));
 
-            if (!relocate_entry(Ptr<uint32_t>(p).get(mem), g_type, s, a, p)) {
-                return false;
+                if (!relocate_entry(Ptr<uint32_t>(p).get(mem), g_type, s, a, p)) {
+                    return false;
+                }
+
+                g_type2 = 0;
+            } else {
+                const EntryFormat2Alt *const format1_entry = static_cast<const EntryFormat2Alt *>(entry);
+
+                const auto patch_seg = format1_entry->patch_segment;
+                const auto patch_seg_start_it = segments.find(patch_seg);
+                const Address s = explicit_symval;
+
+                Address patch_seg_start{};
+                if (patch_seg_start_it != segments.end())
+                    patch_seg_start = patch_seg_start_it->second.addr;
+                else {
+                    LOG_WARN("[FORMAT2_VAR_IMPORT] patch segment {} not found. Skipping relocation. s: {} ", patch_seg, log_hex(s));
+                    goto advance_entry;
+                }
+
+                const Address offset = format1_entry->offset;
+                const Address p = patch_seg_start + offset;
+                const Address a = format1_entry->addend;
+
+                LOG_DEBUG_IF(LOG_RELOCATIONS, "[FORMAT2_VAR_IMPORT]: code: {}, patch_seg: {}, data_start: {}, s: {}, offset: {}, p: {}, a: {}",
+                    format1_entry->code, patch_seg, log_hex(patch_seg_start), log_hex(s), format1_entry->patch_segment, patch_seg_start, log_hex(offset), log_hex(p), log_hex(a));
+
+                if (!relocate_entry(Ptr<uint32_t>(p).get(mem), format1_entry->code, s, a, p)) {
+                    return false;
+                }
+
+                g_addr = patch_seg_start;
+                g_offset = offset;
+                g_patchseg = format1_entry->patch_segment;
+                g_saddr = s;
+                g_addend = a;
+                g_type = format1_entry->code;
+                g_type2 = 0;
             }
-
-            g_type2 = 0;
 
             break;
         }
