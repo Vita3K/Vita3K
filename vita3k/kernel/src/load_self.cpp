@@ -53,10 +53,11 @@ static constexpr bool LOG_MODULE_LOADING = false;
 
 static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem) {
     struct VarImportsHeader {
-        uint32_t unk : 7; // seems to always be 0x40
-        uint32_t reloc_count : 17;
-        uint32_t pad : 8; // padding maybe, seems to always be 0x0000
+        uint32_t unk : 4; // Must be zero
+        uint32_t reloc_data_size : 24; // Size of Relocation data in bytes, includes this header.
+        uint32_t unk2 : 4; // Must be zero
     };
+    static_assert(sizeof(VarImportsHeader) == sizeof(uint32_t));
 
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
@@ -68,7 +69,6 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         }
 
         VarImportsHeader *const var_reloc_header = reinterpret_cast<VarImportsHeader *>(entry.get(mem));
-        const uint32_t reloc_entries_count = var_reloc_header->reloc_count;
         const auto var_reloc_entries = static_cast<void *>(var_reloc_header + 1);
 
         Address export_address;
@@ -94,9 +94,9 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
             kernel.not_found_vars.emplace(export_address, nid);
         }
 
-        if (reloc_entries_count > 0)
+        if (var_reloc_header->reloc_data_size > sizeof(VarImportsHeader))
             // 8 is sizeof(EntryFormat1Alt)
-            if (!relocate(var_reloc_entries, reloc_entries_count * 8, segments, mem, true, export_address))
+            if (!relocate(var_reloc_entries, var_reloc_header->reloc_data_size - sizeof(VarImportsHeader), segments, mem, true, export_address))
                 return false;
     }
 
