@@ -26,16 +26,16 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceProcessmgr);
 
-enum SceKernelPowerTickType {
-    /** Cancel all timers */
-    SCE_KERNEL_POWER_TICK_DEFAULT = 0,
-    /** Cancel automatic suspension timer */
-    SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND = 1,
-    /** Cancel OLED-off timer */
-    SCE_KERNEL_POWER_TICK_DISABLE_OLED_OFF = 4,
-    /** Cancel OLED dimming timer */
-    SCE_KERNEL_POWER_TICK_DISABLE_OLED_DIMMING = 6
-};
+template <>
+std::string to_debug_str<SceKernelPowerTickType>(const MemState &mem, SceKernelPowerTickType type) {
+    switch (type) {
+    case SCE_KERNEL_POWER_TICK_DEFAULT: return "SCE_KERNEL_POWER_TICK_DEFAULT";
+    case SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND: return "SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND";
+    case SCE_KERNEL_POWER_TICK_DISABLE_OLED_OFF: return "SCE_KERNEL_POWER_TICK_DISABLE_OLED_OFF";
+    case SCE_KERNEL_POWER_TICK_DISABLE_OLED_DIMMING: return "SCE_KERNEL_POWER_TICK_DISABLE_OLED_DIMMING";
+    }
+    return std::to_string(type);
+}
 
 struct VitaTimeval {
     uint32_t tv_sec;

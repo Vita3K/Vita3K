@@ -19,11 +19,23 @@
 
 #include <display/state.h>
 #include <module/module.h>
+#include <util/tracy.h>
 
 enum SceDisplaySetBufSync {
     SCE_DISPLAY_SETBUF_IMMEDIATE = 0,
     SCE_DISPLAY_SETBUF_NEXTFRAME = 1
 };
+
+template <>
+inline std::string to_debug_str<SceDisplaySetBufSync>(const MemState &mem, SceDisplaySetBufSync type) {
+    switch (type) {
+    case SCE_DISPLAY_SETBUF_IMMEDIATE:
+        return "SCE_DISPLAY_SETBUF_IMMEDIATE";
+    case SCE_DISPLAY_SETBUF_NEXTFRAME:
+        return "SCE_DISPLAY_SETBUF_NEXTFRAME";
+    }
+    return std::to_string(type);
+}
 
 enum SceDisplayErrorCode {
     SCE_DISPLAY_ERROR_OK = 0,
