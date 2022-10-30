@@ -27,6 +27,7 @@
 #include <shader/usse_program_analyzer.h>
 
 #include <array>
+#include <bit>
 #include <bitset>
 #include <map>
 #include <string>
