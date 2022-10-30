@@ -32,6 +32,24 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceCommonDialog);
 
+template <>
+std::string to_debug_str<SceMsgDialogProgressBarTarget>(const MemState &mem, SceMsgDialogProgressBarTarget type) {
+    switch (type) {
+    case SCE_MSG_DIALOG_PROGRESSBAR_TARGET_BAR_DEFAULT:
+        return "SCE_MSG_DIALOG_PROGRESSBAR_TARGET_BAR_DEFAULT";
+    }
+    return std::to_string(type);
+}
+
+template <>
+std::string to_debug_str<SceSaveDataDialogProgressBarTarget>(const MemState &mem, SceSaveDataDialogProgressBarTarget type) {
+    switch (type) {
+    case SCE_SAVEDATA_DIALOG_PROGRESSBAR_TARGET_BAR_DEFAULT:
+        return "SCE_SAVEDATA_DIALOG_PROGRESSBAR_TARGET_BAR_DEFAULT";
+    }
+    return std::to_string(type);
+}
+
 EXPORT(int, sceCameraImportDialogAbort) {
     TRACY_FUNC(sceCameraImportDialogAbort);
     return UNIMPLEMENTED();

@@ -22,6 +22,7 @@
 #undef st_mtime
 
 #include <mem/ptr.h>
+#include <util/tracy.h>
 #include <util/types.h>
 
 typedef enum SceIoMode {
@@ -86,6 +87,16 @@ enum SceIoSeekMode {
     SCE_SEEK_CUR, //!< Starts from current position
     SCE_SEEK_END //!< Starts from the end of the file
 };
+
+template <>
+inline std::string to_debug_str<SceIoSeekMode>(const MemState &mem, SceIoSeekMode type) {
+    switch (type) {
+    case SCE_SEEK_SET: return "SCE_SEEK_SET";
+    case SCE_SEEK_CUR: return "SCE_SEEK_CUR";
+    case SCE_SEEK_END: return "SCE_SEEK_END";
+    }
+    return std::to_string(type);
+}
 
 struct SceIoStat {
     SceMode st_mode; //!< One or more ::SceIoAccessMode

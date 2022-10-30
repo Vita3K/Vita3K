@@ -22,6 +22,17 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceFios2User);
 
+template <>
+std::string to_debug_str<SceFiosOverlayResolveMode>(const MemState &mem, SceFiosOverlayResolveMode type) {
+    switch (type) {
+    case SCE_FIOS_OVERLAY_RESOLVE_FOR_READ:
+        return "SCE_FIOS_OVERLAY_RESOLVE_FOR_READ";
+    case SCE_FIOS_OVERLAY_RESOLVE_FOR_WRITE:
+        return "SCE_FIOS_OVERLAY_RESOLVE_FOR_WRITE";
+    }
+    return std::to_string(type);
+}
+
 EXPORT(int, sceFiosOverlayAddForProcess02, SceUID processId, SceFiosProcessOverlay *pOverlay, SceFiosOverlayID *pOutID) {
     TRACY_FUNC(sceFiosOverlayAddForProcess02, processId, pOverlay, pOutID);
     if (pOverlay->type != SCE_FIOS_OVERLAY_TYPE_OPAQUE)
