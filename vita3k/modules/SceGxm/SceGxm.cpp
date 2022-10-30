@@ -2435,29 +2435,25 @@ EXPORT(int, sceGxmReserveFragmentDefaultUniformBuffer, SceGxmContext *context, P
     if (!context || !uniformBuffer)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    *uniformBuffer = context->state.fragment_ring_buffer.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
-
     const auto fragment_program = context->state.fragment_program.get(emuenv.mem);
     const auto program = fragment_program->program.get(emuenv.mem);
 
     const size_t size = (size_t)program->default_uniform_buffer_count * 4;
     const size_t next_used = context->state.fragment_ring_buffer_used + size;
-    assert(next_used <= context->state.fragment_ring_buffer_size);
     if (next_used > context->state.fragment_ring_buffer_size) {
-        if (context->state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
-            // TODO: I think this should cause a force flush
-            context->state.fragment_ring_buffer_used = 0;
-        } else {
+        if (context->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
             context->state.fragment_ring_buffer = gxmRunDeferredMemoryCallback(emuenv.kernel, emuenv.mem, emuenv.gxm.callback_lock, context->state.fragment_ring_buffer_size,
                 context->state.fragment_memory_callback, context->state.memory_callback_userdata, DEFAULT_RING_SIZE, thread_id);
 
             if (!context->state.fragment_ring_buffer) {
                 return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED);
             }
-
-            context->state.fragment_ring_buffer_used = 0;
         }
+
+        *uniformBuffer = context->state.fragment_ring_buffer;
+        context->state.fragment_ring_buffer_used = size;
     } else {
+        *uniformBuffer = context->state.fragment_ring_buffer.cast<uint8_t>() + static_cast<int32_t>(context->state.fragment_ring_buffer_used);
         context->state.fragment_ring_buffer_used = next_used;
     }
 
@@ -2476,33 +2472,28 @@ EXPORT(int, sceGxmReserveVertexDefaultUniformBuffer, SceGxmContext *context, Ptr
     if (!context || !uniformBuffer)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
-    *uniformBuffer = context->state.vertex_ring_buffer.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
-
     const auto vertex_program = context->state.vertex_program.get(emuenv.mem);
     const auto program = vertex_program->program.get(emuenv.mem);
 
     const size_t size = (size_t)program->default_uniform_buffer_count * 4;
     const size_t next_used = context->state.vertex_ring_buffer_used + size;
-    assert(next_used <= context->state.vertex_ring_buffer_size);
+
     if (next_used > context->state.vertex_ring_buffer_size) {
-        if (context->state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
-            // TODO: I think this should cause a force flush
-            context->state.vertex_ring_buffer_used = 0;
-        } else {
+        if (context->state.type != SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
             context->state.vertex_ring_buffer = gxmRunDeferredMemoryCallback(emuenv.kernel, emuenv.mem, emuenv.gxm.callback_lock, context->state.vertex_ring_buffer_size,
                 context->state.vertex_memory_callback, context->state.memory_callback_userdata, DEFAULT_RING_SIZE, thread_id);
 
             if (!context->state.vertex_ring_buffer) {
                 return RET_ERROR(SCE_GXM_ERROR_RESERVE_FAILED);
             }
-
-            context->state.vertex_ring_buffer_used = 0;
         }
+
+        *uniformBuffer = context->state.vertex_ring_buffer;
+        context->state.vertex_ring_buffer_used = size;
     } else {
+        *uniformBuffer = context->state.vertex_ring_buffer.cast<uint8_t>() + static_cast<int32_t>(context->state.vertex_ring_buffer_used);
         context->state.vertex_ring_buffer_used = next_used;
     }
-
-    // context->state.vertex_last_reserve_status = SceGxmLastReserveStatus::Available;
 
     context->state.vertex_uniform_buffers[SCE_GXM_DEFAULT_UNIFORM_BUFFER_CONTAINER_INDEX] = *uniformBuffer;
 
