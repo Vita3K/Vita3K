@@ -47,7 +47,7 @@ jobs:
 
       - name: Set up build environment (macos-latest)
         run: |
-          brew install boost ccache ninja molten-vk openssl
+          brew install boost ccache ninja molten-vk openssl create-dmg
           echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
         if: matrix.os == 'macos-latest'
 
@@ -111,6 +111,21 @@ jobs:
         id: build_variable
         run: echo "::set-output name=Build_Variable::$(git rev-list HEAD --count)"
         if: matrix.os == 'ubuntu-latest'
+        
+      - name: Create DMG (macos-latest)
+        run: |
+          cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
+          create-dmg \
+            --volname "Vita3K Installer" \
+            --volicon Vita3K.app/Contents/Resources/Vita3K.icns \
+            --window-size 500 300 \
+            --icon-size 100 \
+            --icon Vita3K.app 120 115 \
+            --app-drop-link 360 115 \
+            Vita3K-Installer.dmg \
+            Vita3K.app
+          rm -rf Vita3K.app
+        if: matrix.os == 'macos-latest'
 
       - uses: actions/upload-artifact@v3
         with:
