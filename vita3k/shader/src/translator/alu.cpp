@@ -1052,8 +1052,8 @@ bool USSETranslatorVisitor::sop2(
     store(inst.opr.dest, alpha_res, 0b1000, dest_repeat_offset);
 
     // TODO log correctly
-    LOG_DISASM("{:016x}: {}", m_instr, disasm::opcode_str(color_op));
-    LOG_DISASM("{:016x}: {}", m_instr, disasm::opcode_str(alpha_op));
+    LOG_DISASM("{:016x}: SOP2:{}", m_instr, disasm::opcode_str(color_op));
+    LOG_DISASM("{:016x}: SOP2:{}", m_instr, disasm::opcode_str(alpha_op));
 
     END_REPEAT()
 
@@ -1236,14 +1236,14 @@ bool shader::usse::USSETranslatorVisitor::sop2m(Imm2 pred,
     store(inst.opr.dest, result, wmask, 0);
 
     // TODO log correctly
-    LOG_DISASM("{:016x}: {}", m_instr, disasm::opcode_str(color_op));
-    LOG_DISASM("{:016x}: {}", m_instr, disasm::opcode_str(alpha_op));
+    LOG_DISASM("{:016x}: SOP2M:{}", m_instr, disasm::opcode_str(color_op));
+    LOG_DISASM("{:016x}: SOP2M:{}", m_instr, disasm::opcode_str(alpha_op));
 
     return true;
 }
 
 bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
-    Imm1 mod1,
+    Imm1 cmod1,
     Imm1 skipinv,
     Imm1 nosched,
     Imm2 cop,
@@ -1251,11 +1251,13 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
     Imm1 end,
     Imm1 src1bext,
     Imm1 src2bext,
-    Imm1 mod2,
-    Imm4 wrmask,
+    Imm1 cmod2,
+    Imm1 amod1,
+    Imm2 asel1,
+    Imm1 dmod,
     Imm2 aop,
-    Imm3 sel1,
-    Imm3 sel2,
+    Imm3 csel1,
+    Imm3 csel2,
     Imm1 src0bank,
     Imm2 destbank,
     Imm2 src1bank,
@@ -1264,7 +1266,235 @@ bool shader::usse::USSETranslatorVisitor::sop3(Imm2 pred,
     Imm7 src0n,
     Imm7 src1n,
     Imm7 src2n) {
-    LOG_DISASM("Unimplmenet Opcode: sop3");
+    static auto selector_zero = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
+                                    const spv::Id src2_alpha) {
+        return utils::make_uniform_vector_from_type(b, type, 0);
+    };
+
+    static auto selector_src0_color = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
+                                          const spv::Id src2_alpha) {
+        return src0_color;
+    };
+
+    static auto selector_src1_color = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
+                                          const spv::Id src2_alpha) {
+        return src1_color;
+    };
+
+    static auto selector_src2_color = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
+                                          const spv::Id src2_alpha) {
+        return src2_color;
+    };
+
+    static auto selector_src0_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
+                                          const spv::Id src2_alpha) {
+        if (!b.isScalarType(type) || b.getNumTypeComponents(type) > 1) {
+            // We must do a composite construct
+            return b.createCompositeConstruct(type, { src0_alpha, src0_alpha, src0_alpha });
+        }
+
+        return src0_alpha;
+    };
+
+    static auto selector_src1_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
+                                          const spv::Id src2_alpha) {
+        if (!b.isScalarType(type) || b.getNumTypeComponents(type) > 1) {
+            // We must do a composite construct
+            return b.createCompositeConstruct(type, { src1_alpha, src1_alpha, src1_alpha });
+        }
+
+        return src1_alpha;
+    };
+
+    static auto selector_src2_alpha = [](spv::Builder &b, const spv::Id type, const spv::Id src0_color, const spv::Id src1_color, const spv::Id src2_color, const spv::Id src0_alpha, const spv::Id src1_alpha,
+                                          const spv::Id src2_alpha) {
+        if (!b.isScalarType(type) || b.getNumTypeComponents(type) > 1) {
+            // We must do a composite construct
+            return b.createCompositeConstruct(type, { src2_alpha, src2_alpha, src2_alpha });
+        }
+
+        return src2_alpha;
+    };
+
+    // This opcode always operates on C10.
+    static Opcode operations[] = {
+        Opcode::FADD,
+        Opcode::FSUB,
+    };
+
+    using SelectorFunc = std::function<spv::Id(spv::Builder &, const spv::Id, const spv::Id, const spv::Id, const spv::Id, const spv::Id, const spv::Id, const spv::Id)>;
+
+    static SelectorFunc color_selector[] = {
+        selector_zero,
+        nullptr, // alpha sat
+        selector_src1_color,
+        selector_src1_alpha,
+        selector_src0_color,
+        selector_src0_alpha,
+        selector_src2_color,
+        selector_src2_alpha
+    };
+
+    static SelectorFunc alpha_selector_1[] = {
+        selector_zero,
+        selector_src0_alpha,
+        selector_src1_alpha,
+        selector_src2_alpha
+    };
+
+    static SelectorFunc alpha_selector_2[] = {
+        selector_zero,
+        nullptr, // alpha sat
+        selector_src1_alpha,
+        selector_src1_alpha,
+        selector_src0_alpha,
+        selector_src0_alpha,
+        selector_src2_alpha,
+        selector_src2_alpha
+    };
+
+    Instruction inst;
+    inst.opcode = Opcode::SOP3;
+
+    // Never double register num
+    inst.opr.src0 = decode_src0(inst.opr.src0, src0n, src0bank, 0, false, 7, m_second_program);
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1n, src1bank, src1bext, false, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2n, src2bank, src2bext, false, 7, m_second_program);
+    inst.opr.dest = decode_dest(inst.opr.dest, destn, destbank, destbext, false, 7, m_second_program);
+
+    inst.opr.src0.type = DataType::UINT8;
+    inst.opr.src1.type = DataType::UINT8;
+    inst.opr.src2.type = DataType::UINT8;
+    inst.opr.dest.type = DataType::UINT8;
+
+    if (cop >= sizeof(operations) / sizeof(Opcode)) {
+        LOG_ERROR("Invalid color opcode: {}", (int)cop);
+        return true;
+    }
+
+    if (aop >= sizeof(operations) / sizeof(Opcode)) {
+        LOG_ERROR("Invalid alpha opcode: {}", (int)aop);
+        return true;
+    }
+
+    Opcode color_op = operations[cop];
+    Opcode alpha_op = operations[aop];
+
+    if (csel1 >= sizeof(color_selector) / sizeof(SelectorFunc) || csel2 >= sizeof(color_selector) / sizeof(SelectorFunc) || asel1 >= sizeof(alpha_selector_1) / sizeof(SelectorFunc)) {
+        LOG_ERROR("Unknown color/alpha selector (csel1: {}, csel2: {}, asel1: {}", csel1, csel2,
+            asel1);
+        return true;
+    }
+
+    // Lookup color selector
+    SelectorFunc color_selector_1_func = color_selector[csel1];
+    SelectorFunc color_selector_2_func = color_selector[csel2];
+    SelectorFunc alpha_selector_1_func = alpha_selector_1[asel1];
+    // Taking csel2 for alpha 2 looks like the correct behavior
+    SelectorFunc alpha_selector_2_func = alpha_selector_2[csel2];
+
+    if (!color_selector_1_func || !color_selector_2_func || !alpha_selector_1_func) {
+        LOG_ERROR("Unimplemented color/alpha selector (csel1: {}, csel2: {}, asel1: {}", csel1, csel2,
+            asel1);
+        return true;
+    }
+
+    if (dmod != 0) {
+        LOG_ERROR("Unimplemented non-null dmod");
+        return true;
+    }
+
+    auto apply_opcode = [&](Opcode op, spv::Id type, spv::Id lhs, spv::Id rhs) {
+        switch (op) {
+        case Opcode::FADD: {
+            return m_b.createBinOp(spv::OpFAdd, type, lhs, rhs);
+        }
+
+        case Opcode::FSUB: {
+            return m_b.createBinOp(spv::OpFSub, type, lhs, rhs);
+        }
+
+        default: {
+            LOG_ERROR("Unsuppported sop opcode: {}", disasm::opcode_str(op));
+            break;
+        }
+        }
+
+        return spv::NoResult;
+    };
+
+    spv::Id uniform_1_alpha = spv::NoResult;
+    spv::Id uniform_1_color = spv::NoResult;
+
+    auto apply_complement_modifiers = [&](spv::Id &target, Imm1 enable, spv::Id type, const bool is_rgb) {
+        if (enable == 1) {
+            if (is_rgb) {
+                if (!uniform_1_color)
+                    uniform_1_color = utils::make_uniform_vector_from_type(m_b, type, 1);
+
+                target = m_b.createBinOp(spv::OpFSub, type, uniform_1_color, target);
+            } else {
+                if (!uniform_1_alpha)
+                    uniform_1_alpha = m_b.makeFloatConstant(1.0f);
+
+                target = m_b.createBinOp(spv::OpFSub, type, uniform_1_alpha, target);
+            }
+        }
+    };
+
+    spv::Id src0_color = load(inst.opr.src0, 0b0111);
+    spv::Id src1_color = load(inst.opr.src1, 0b0111);
+    spv::Id src2_color = load(inst.opr.src2, 0b0111);
+    spv::Id src0_alpha = load(inst.opr.src0, 0b1000);
+    spv::Id src1_alpha = load(inst.opr.src1, 0b1000);
+    spv::Id src2_alpha = load(inst.opr.src2, 0b1000);
+
+    src0_color = utils::convert_to_float(m_b, src0_color, DataType::UINT8, true);
+    src1_color = utils::convert_to_float(m_b, src1_color, DataType::UINT8, true);
+    src2_color = utils::convert_to_float(m_b, src2_color, DataType::UINT8, true);
+    src0_alpha = utils::convert_to_float(m_b, src0_alpha, DataType::UINT8, true);
+    src1_alpha = utils::convert_to_float(m_b, src1_alpha, DataType::UINT8, true);
+    src2_alpha = utils::convert_to_float(m_b, src2_alpha, DataType::UINT8, true);
+
+    spv::Id src_color_type = m_b.getTypeId(src0_color);
+    spv::Id src_alpha_type = m_b.getTypeId(src0_alpha);
+
+    // Apply color selector
+    spv::Id factored_rgb_lhs = color_selector_1_func(m_b, src_color_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
+    spv::Id factored_rgb_rhs = color_selector_2_func(m_b, src_color_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
+
+    spv::Id factored_a_lhs = alpha_selector_1_func(m_b, src_alpha_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
+    spv::Id factored_a_rhs = alpha_selector_2_func(m_b, src_alpha_type, src0_color, src1_color, src2_color, src0_alpha, src1_alpha, src2_alpha);
+
+    // Apply modifiers
+    // BREAKDOWN BREAKDOWN
+    apply_complement_modifiers(factored_rgb_lhs, cmod1, src_color_type, true);
+    apply_complement_modifiers(factored_rgb_rhs, cmod2, src_color_type, true);
+    apply_complement_modifiers(factored_a_lhs, amod1, src_alpha_type, false);
+    // use cmod2 for this one too
+    apply_complement_modifiers(factored_a_rhs, cmod2, src_alpha_type, false);
+
+    // Factor them with source
+    factored_rgb_lhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_lhs, src1_color);
+    factored_rgb_rhs = m_b.createBinOp(spv::OpFMul, src_color_type, factored_rgb_rhs, src2_color);
+
+    factored_a_lhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_lhs, src1_alpha);
+    factored_a_rhs = m_b.createBinOp(spv::OpFMul, src_alpha_type, factored_a_rhs, src2_alpha);
+
+    auto color_res = apply_opcode(color_op, src_color_type, factored_rgb_lhs, factored_rgb_rhs);
+    auto alpha_res = apply_opcode(alpha_op, src_alpha_type, factored_a_lhs, factored_a_rhs);
+
+    color_res = utils::convert_to_int(m_b, color_res, DataType::UINT8, true);
+    alpha_res = utils::convert_to_int(m_b, alpha_res, DataType::UINT8, true);
+
+    // Final result. Do binary operation and then store
+    store(inst.opr.dest, color_res, 0b0111, 0);
+    store(inst.opr.dest, alpha_res, 0b1000, 0);
+
+    // TODO log correctly
+    LOG_DISASM("{:016x}: SOP3:{}", m_instr, disasm::opcode_str(color_op));
+    LOG_DISASM("{:016x}: SOP3:{}", m_instr, disasm::opcode_str(alpha_op));
+
     return true;
 }
 

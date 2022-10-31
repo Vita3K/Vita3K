@@ -835,7 +835,7 @@ SOP3:
         - pred:
             offset: 57
             size: 2
-        - mod1:
+        - cmod1:
             offset: 56
             size: 1
         - skipinv:
@@ -859,19 +859,25 @@ SOP3:
         - src2bext:
             offset: 48
             size: 1
-        - mod2:
+        - cmod2:
             offset: 47
             size: 1
-        - wrmask:
+        - amod1:
+            offset: 46
+            size: 1
+        - asel1:
+            offset: 44
+            size: 2
+        - dmod:
             offset: 43
-            size: 4
+            size: 1
         - aop:
             offset: 41
             size: 2
-        - sel1:
+        - csel1:
             offset: 38
             size: 3
-        - sel2:
+        - csel2:
             offset: 35
             size: 3
         - src0bank:
