@@ -117,7 +117,7 @@ inline std::string to_debug_str(const MemState &mem) {
 
 #define TRACY_MODULE_NAME(module_name) const std::string tracy_module_name = #module_name;
 
-const std::string tracy_renderer_command_name = "Renderer commands";
+inline const std::string tracy_renderer_command_name = "Renderer commands";
 
 // TODO: Support more stuff for commands, like arguments
 #define __TRACY_FUNC_COMMANDS(name)                                                                                                                             \
@@ -133,8 +133,8 @@ const std::string tracy_renderer_command_name = "Renderer commands";
 // https://docs.microsoft.com/en-us/cpp/preprocessor/preprocessor-experimental-overview?view=msvc-170#macro-arguments-are-unpacked
 #if (defined(_MSC_VER) && !defined(__clang__) && (!defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL))
 #pragma warning(disable : 4003) // This warning is SUPER annoying, shut the warning up c:
-#define TRACY_FUNC(name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) __TRACY_FUNC(tracy_module_name, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
-#define TRACY_FUNC_M(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8) __TRACY_FUNC(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8)
+#define TRACY_FUNC(name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) __TRACY_FUNC(tracy_module_name, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
+#define TRACY_FUNC_M(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9) __TRACY_FUNC(module_name_var, name, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9)
 #define TRACY_FUNC_COMMANDS(name) __TRACY_FUNC_COMMANDS(name)
 #define TRACY_FUNC_COMMANDS_SET_STATE(name) __TRACY_FUNC_COMMANDS_SET_STATE(name)
 #else
