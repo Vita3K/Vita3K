@@ -46,7 +46,7 @@
 #include <process.h>
 #endif
 
-#include "Tracy.hpp"
+#include "public/tracy/Tracy.hpp"
 #include <SDL.h>
 #include <chrono>
 #include <cstdlib>

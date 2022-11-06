@@ -330,7 +330,7 @@ option(TRACY_ENABLE_ON_CORE_COMPONENTS
 	"Enable and require Tracy to compile core components such as the renderer, shader recompiler and
 		HLE modules"
 	ON)
-add_library(tracy STATIC tracy/TracyClient.cpp)
+add_library(tracy STATIC tracy/public/TracyClient.cpp)
 set_property(TARGET tracy PROPERTY FOLDER externals)
 target_include_directories(tracy PUBLIC tracy)
 

@@ -19,7 +19,7 @@
 
 #ifdef TRACY_ENABLE
 
-#include "Tracy.hpp"
+#include "Tracy/tracy/Tracy.hpp"
 #define SHADER_PROFILE(name) ZoneNamedNC(___tracy_scoped_zone, name, 0x000035, false);
 
 #else
