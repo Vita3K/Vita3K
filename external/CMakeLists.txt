@@ -165,6 +165,15 @@ set_property(TARGET Zycore PROPERTY FOLDER externals)
 set_property(TARGET Zydis PROPERTY FOLDER externals)
 set_property(TARGET mcl PROPERTY FOLDER externals)
 
+if(MSVC)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        list(APPEND MCL_CXX_FLAGS
+             -Qunused-arguments
+             -Wno-missing-braces)
+		target_compile_options(mcl PRIVATE ${MCL_CXX_FLAGS})
+    endif()
+endif()
+
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")
 
