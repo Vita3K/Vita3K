@@ -72,6 +72,7 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
+		<submit>Submit</submit> 
 		<cancel>취소</cancel>
 		<delete>삭제</delete>
 		<file_corrupted>파일이 손상되어 있습니다.</file_corrupted>

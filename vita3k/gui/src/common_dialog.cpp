@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ static void draw_ime_dialog(DialogState &common_dialog, float FONT_SCALE) {
             common_dialog.ime.max_length);
     }
     ImGui::SameLine();
-    if (ImGui::Button("Submit")) {
+    if (ImGui::Button(common_dialog.lang.common["submit"].c_str())) {
         common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_ENTER;
         common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
         common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
@@ -54,7 +54,7 @@ static void draw_ime_dialog(DialogState &common_dialog, float FONT_SCALE) {
     }
     if (common_dialog.ime.cancelable) {
         ImGui::SameLine();
-        if (ImGui::Button("Cancel")) {
+        if (ImGui::Button(common_dialog.lang.common["cancel"].c_str())) {
             common_dialog.ime.status = SCE_IME_DIALOG_BUTTON_CLOSE;
             common_dialog.status = SCE_COMMON_DIALOG_STATUS_FINISHED;
             common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;

@@ -61,6 +61,7 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
+		<submit>Submit</submit> 
 		<cancel>Anuluj</cancel>
 		<delete>Usuń</delete>
 		<no>Nie</no>
