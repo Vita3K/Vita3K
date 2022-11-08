@@ -35,6 +35,7 @@ enum TypeLang {
 
 struct DialogLangState {
     std::map<std::string, std::string> common = {
+        { "submit", "Submit" },
         { "cancel", "Cancel" },
         { "delete", "Delete" },
         { "file_corrupted", "The file is corrupt." },
@@ -124,7 +125,7 @@ struct LangState {
     std::map<std::string, std::string> about = {
         { "title", "About" },
         { "vita3k", "Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator." },
-        { "about_vita3k", "Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems." },
+        { "about_vita3k", "Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux and macOS operating systems." },
         { "note", "Note: The emulator is still in a very early stage of development." },
         { "github_website", "If you're interested in contributing, check out our GitHub:" },
         { "vita3k_website", "Visit our website for more info:" },
@@ -419,7 +420,7 @@ struct LangState {
     std::map<std::string, std::string> welcome = {
         { "title", "Welcome to Vita3K" },
         { "line_first", "Vita3K PlayStation Vita Emulator" },
-        { "line_second", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows and Linux." },
+        { "line_second", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux and macOS." },
         { "line_third", "The emulator is still in its early stages so any feedback and testing is greatly appreciated." },
         { "line_fourth", "To get started, please install the PS Vita firmware and font packages." },
         { "download_firmware", "Download Firmware" },

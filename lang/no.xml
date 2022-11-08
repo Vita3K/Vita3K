@@ -61,6 +61,7 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
+		<submit>Submit</submit> 
 		<cancel>Avbryt</cancel>
 		<delete>Slett</delete>
 		<no>Nei</no>
