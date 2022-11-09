@@ -394,7 +394,7 @@ void sync_texture(GLState &state, GLContext &context, MemState &mem, std::size_t
                         glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, default_rgba);
                     }
                 } else {
-                    LOG_TRACE("No surface swizzle found, using default texture swizzle");
+                    LOG_TRACE("No surface swizzle found, use default texture swizzle");
                     glTexParameteriv(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_RGBA, swizzle);
                 }
             }

@@ -254,7 +254,7 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
 
         std::string m_filename = std::string(file_stat.m_filename);
         if (m_filename.find("sce_module/steroid.suprx") != std::string::npos) {
-            LOG_CRITICAL("A Vitamin dump was detected and is not supported. Aborting installation...");
+            LOG_CRITICAL("A Vitamin dump was detected, aborting installation...");
             content_path.clear();
             break;
         }
@@ -273,7 +273,7 @@ static std::vector<std::string> get_archive_contents_path(const ZipPtr &zip) {
 
 std::vector<ContentInfo> install_archive(EmuEnvState &emuenv, GuiState *gui, const fs::path &archive_path, const std::function<void(ArchiveContents)> &progress_callback) {
     if (!fs::exists(archive_path)) {
-        LOG_CRITICAL("Failed to load archive file at path: {}", archive_path.generic_path().string());
+        LOG_CRITICAL("Failed to load archive file in path: {}", archive_path.generic_path().string());
         return {};
     }
     const ZipPtr zip(new mz_zip_archive, delete_zip);
@@ -365,7 +365,7 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
         set_theme_name(emuenv, buffer);
         dst_path /= fs::path("theme") / string_utils::utf_to_wide(emuenv.app_info.app_title_id);
     } else {
-        LOG_ERROR("Param.sfo file is missing at path", sfo_path.string());
+        LOG_ERROR("Param.sfo file is missing in path", sfo_path.string());
         return false;
     }
 
@@ -396,7 +396,7 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
 uint32_t install_contents(EmuEnvState &emuenv, GuiState *gui, const fs::path &path) {
     const auto src_path = get_contents_path(path);
 
-    LOG_WARN_IF(src_path.empty(), "No compatible content found at path: {}", path.string());
+    LOG_WARN_IF(src_path.empty(), "No found any content compatible on this path: {}", path.string());
 
     uint32_t installed = 0;
     for (const auto &src : src_path) {
@@ -644,7 +644,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             else if (drop_file.filename() == "theme.xml")
                 install_content(emuenv, &gui, drop_file.parent_path());
             else
-                LOG_ERROR("File dropped: [{}] is not supported.", drop_file.filename().string());
+                LOG_ERROR("File droped: [{}] is not supported.", drop_file.filename().string());
             SDL_free(event.drop.file);
             break;
         }

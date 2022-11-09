@@ -242,7 +242,7 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
                 std::size_t start_x = (data_delta % bytes_per_stride) / color::bytes_per_pixel(base_format) * state.res_multiplier;
 
                 if (static_cast<std::uint16_t>(start_sourced_line + height) > info.height) {
-                    LOG_ERROR("Trying to present non-existent segment in cached color surface!");
+                    LOG_ERROR("Trying to present non-existen segment in cached color surface!");
                     return 0;
                 }
 
@@ -572,7 +572,7 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
             if (depth_stencil_textures[i].flags & GLSurfaceCacheInfo::FLAG_FREE) {
                 if (depth_stencil_textures[i].gl_texture[0] == 0) {
                     if (!depth_stencil_textures[i].gl_texture.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures))) {
-                        LOG_ERROR("Failed to initialize depth stencil texture!");
+                        LOG_ERROR("Fail to initialize depth stencil texture!");
                         return 0;
                     }
                 }
@@ -706,7 +706,7 @@ GLuint GLSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> a
                     // Just limit the height and display it
                     limited_height = info.height - start_sourced_line;
                 } else {
-                    LOG_ERROR("Trying to present non-existent segment in cached color surface!");
+                    LOG_ERROR("Trying to present non-existen segment in cached color surface!");
                     return 0;
                 }
             }

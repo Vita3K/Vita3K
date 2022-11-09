@@ -157,14 +157,14 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
 
         if (!doc.load_file(template_xml.c_str())) {
             if (is_ps_app || is_sys_app)
-                LOG_WARN("Live Area Content is corrupted or missing for title: {} '{}' at path: {}.", APP_INDEX->title_id, APP_INDEX->title, template_xml.string());
+                LOG_WARN("Live Area Contents is corrupted or missing for title: {} '{}' in path: {}.", APP_INDEX->title_id, APP_INDEX->title, template_xml.string());
             if (doc.load_file(default_fw_contents.c_str())) {
                 template_xml = default_fw_contents;
                 default_contents = true;
-                LOG_INFO("Using default firmware content.");
+                LOG_INFO("Using default firmware contents.");
             } else {
                 type[app_path] = "a1";
-                LOG_WARN("Default firmware content is corrupted or missing, install firmware to fix it.");
+                LOG_WARN("Default firmware contents is corrupted or missing, install firmware for fix it.");
                 return;
             }
         }
@@ -245,12 +245,12 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
 
                 if (buffer.empty()) {
                     if (is_ps_app || is_sys_app)
-                        LOG_WARN("Content {} '{}' Not found for title {} [{}].", contents.first, contents.second, app_path, APP_INDEX->title);
+                        LOG_WARN("Contents {} '{}' Not found for title {} [{}].", contents.first, contents.second, app_path, APP_INDEX->title);
                     continue;
                 }
                 stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                 if (!data) {
-                    LOG_ERROR("Invalid Live Area Content for title {} [{}].", app_path, APP_INDEX->title);
+                    LOG_ERROR("Invalid Live Area Contents for title {} [{}].", app_path, APP_INDEX->title);
                     continue;
                 }
 
@@ -457,7 +457,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
                             }
                             stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                             if (!data) {
-                                LOG_ERROR("Frame: {}, Invalid Live Area Content for title: {} [{}].", item.first, app_path, APP_INDEX->title);
+                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, app_path, APP_INDEX->title);
                                 continue;
                             }
 
@@ -495,7 +495,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
                             }
                             stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                             if (!data) {
-                                LOG_ERROR("Frame: {}, Invalid Live Area Content for title: {} [{}].", item.first, app_path, APP_INDEX->title);
+                                LOG_ERROR("Frame: {}, Invalid Live Area Contents for title: {} [{}].", item.first, app_path, APP_INDEX->title);
                                 continue;
                             }
 

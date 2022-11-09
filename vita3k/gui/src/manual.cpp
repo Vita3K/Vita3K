@@ -71,7 +71,7 @@ bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string app_path)
                 }
                 stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
                 if (!data) {
-                    LOG_ERROR("Invalid manual image for title: {} [{}] at path: {}.", app_path, APP_INDEX->title, page_path.string());
+                    LOG_ERROR("Invalid manual image for title: {} [{}] in path: {}.", app_path, APP_INDEX->title, page_path.string());
                     return false;
                 }
 

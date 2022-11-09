@@ -162,7 +162,7 @@ void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
 
     const auto save_xml = user_xml.save_file((user_path / "user.xml").c_str());
     if (!save_xml)
-        LOG_ERROR("Failed to save xml for user id: {}, name: {}, at path: {}", user.id, user.name, user_path.string());
+        LOG_ERROR("Fail save xml for user id: {}, name: {}, in path: {}", user.id, user.name, user_path.string());
 }
 
 void init_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
