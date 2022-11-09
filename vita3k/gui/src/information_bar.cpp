@@ -68,13 +68,13 @@ static bool init_notice_icon(GuiState &gui, EmuEnvState &emuenv, const fs::path 
 
     if (!vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, content_path)) {
         if (info.type == "trophy") {
-            LOG_WARN("Icon no found for trophy id: {} on NpComId: {}", info.content_id, info.id);
+            LOG_WARN("Icon not found for trophy id: {} on NpComId: {}", info.content_id, info.id);
             return false;
         } else {
             if (!vfs::read_app_file(buffer, emuenv.pref_path, info.id, "sce_sys/icon0.png")) {
                 buffer = init_default_icon(gui, emuenv);
                 if (buffer.empty()) {
-                    LOG_WARN("Not found defaut icon for this notice content: {}", info.content_id);
+                    LOG_WARN("Default icon not found for notice content: {}", info.content_id);
                     return false;
                 }
             }
@@ -82,7 +82,7 @@ static bool init_notice_icon(GuiState &gui, EmuEnvState &emuenv, const fs::path 
     }
     stbi_uc *data = stbi_load_from_memory(&buffer[0], static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
     if (!data) {
-        LOG_ERROR("Invalid icon for notice id: {} in path {}.", info.id, content_path.string());
+        LOG_ERROR("Invalid icon for notice id: {} at path {}.", info.id, content_path.string());
         return false;
     }
     gui.notice_info_icon[info.time].init(gui.imgui_state.get(), data, width, height);
@@ -116,7 +116,7 @@ static bool set_notice_info(GuiState &gui, EmuEnvState &emuenv, const NoticeList
             if (!sfo::get_data_by_key(name, sfo_handle, fmt::format("TITLE_{:0>2d}", emuenv.cfg.sys_lang)))
                 sfo::get_data_by_key(name, sfo_handle, "TITLE");
         } else {
-            LOG_WARN("Content not found for id: {}, in path: {}", info.content_id, content_path.string());
+            LOG_WARN("Content not found for id: {}, at path: {}", info.content_id, content_path.string());
             return false;
         }
         init_notice_icon(gui, emuenv, content_path / "sce_sys/icon0.png", info);
@@ -228,7 +228,7 @@ void get_notice_list(EmuEnvState &emuenv) {
                 }
             }
         } else {
-            LOG_ERROR("Notice XML found is corrupted on path: {}", notice_path.string());
+            LOG_ERROR("Notice XML found is corrupted at path: {}", notice_path.string());
             fs::remove(notice_path);
         }
     }

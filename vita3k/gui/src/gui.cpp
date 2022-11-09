@@ -272,17 +272,17 @@ static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::str
     if (!vfs::read_app_file(buffer, emuenv.pref_path, app_path, "sce_sys/icon0.png")) {
         buffer = init_default_icon(gui, emuenv);
         if (buffer.empty()) {
-            LOG_WARN("Default icon not found for title {}, [{}] in path {}.",
+            LOG_WARN("Default icon not found for title {}, [{}] at path {}.",
                 APP_INDEX->title_id, APP_INDEX->title, app_path);
             return {};
         } else
-            LOG_INFO("Default icon found for App {}, [{}] in path {}.", APP_INDEX->title_id, APP_INDEX->title, app_path);
+            LOG_INFO("Default icon found for App {}, [{}] at path {}.", APP_INDEX->title_id, APP_INDEX->title, app_path);
     }
     image.data.reset(stbi_load_from_memory(
         buffer.data(), static_cast<int>(buffer.size()),
         &image.width, &image.height, nullptr, STBI_rgb_alpha));
     if (!image.data || image.width != 128 || image.height != 128) {
-        LOG_ERROR("Invalid icon for title {}, [{}] in path {}.",
+        LOG_ERROR("Invalid icon for title {}, [{}] at path {}.",
             APP_INDEX->title_id, APP_INDEX->title, app_path);
         return {};
     }
@@ -395,14 +395,14 @@ static bool get_user_apps(GuiState &gui, EmuEnvState &emuenv) {
         uint32_t versionInFile;
         apps_cache.read((char *)&versionInFile, sizeof(uint32_t));
         if (versionInFile != 1) {
-            LOG_WARN("Current version of cache: {}, is outdated, recreate it.", versionInFile);
+            LOG_WARN("Current version of cache, {}, is outdated, recreate it.", versionInFile);
             return false;
         }
 
         // Read language of cache
         apps_cache.read((char *)&gui.app_selector.apps_cache_lang, sizeof(uint32_t));
         if (gui.app_selector.apps_cache_lang != emuenv.cfg.sys_lang) {
-            LOG_WARN("Current lang of cache: {}, is diferent config: {}, recreate it.", get_sys_lang_name(gui.app_selector.apps_cache_lang), get_sys_lang_name(emuenv.cfg.sys_lang));
+            LOG_WARN("Current lang of cache, {}, is differently configured: {}, recreate it.", get_sys_lang_name(gui.app_selector.apps_cache_lang), get_sys_lang_name(emuenv.cfg.sys_lang));
             return false;
         }
 

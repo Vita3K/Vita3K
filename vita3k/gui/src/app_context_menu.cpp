@@ -138,7 +138,7 @@ void get_time_apps(GuiState &gui, EmuEnvState &emuenv) {
                 }
             }
         } else {
-            LOG_ERROR("Time XML found is corrupted on path: {}", time_path.string());
+            LOG_ERROR("Time XML found is corrupted at path: {}", time_path.string());
             fs::remove(time_path);
         }
     }
@@ -172,7 +172,7 @@ static void save_time_apps(GuiState &gui, EmuEnvState &emuenv) {
     const auto time_path{ fs::path(emuenv.pref_path) / "ux0/user/time.xml" };
     const auto save_xml = time_xml.save_file(time_path.c_str());
     if (!save_xml)
-        LOG_ERROR("Fail save xml");
+        LOG_ERROR("Failed to save xml");
 }
 
 void update_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app) {
@@ -453,7 +453,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 if (get_update_history(gui, emuenv, app_path))
                     context_dialog = "history";
                 else
-                    LOG_WARN("Patch note Error for title id: {} in path: {}", title_id, app_path);
+                    LOG_WARN("Patch note Error for title id: {} at path: {}", title_id, app_path);
             }
         }
         if (ImGui::MenuItem(lang["information"].c_str(), nullptr, &gui.vita_area.app_information)) {
