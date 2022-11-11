@@ -40,8 +40,6 @@ void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, co
     SceGxmColorSurface *color_surface_fin = &context.record.color_surface;
     // set these values for the pipeline cache
     context.record.color_base_format = gxm::get_base_format(color_surface_fin->colorFormat);
-    context.record.width = context.render_target->width;
-    context.record.height = context.render_target->height;
     vk::Format vk_format = color::translate_format(context.record.color_base_format);
 
     if (color_surface_fin->gamma && (vk_format == vk::Format::eR8G8B8A8Unorm)) {
@@ -51,6 +49,13 @@ void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, co
     if (color_surface_fin->data.address() == 0) {
         color_surface_fin = nullptr;
         vk_format = vk::Format::eR8G8B8A8Unorm;
+    }
+
+    uint32_t framebuffer_width = rt->width;
+    uint32_t framebuffer_height = rt->height;
+    if (color_surface_fin != nullptr) {
+        framebuffer_width = std::min<uint32_t>(framebuffer_width, color_surface_fin->width);
+        framebuffer_height = std::min<uint32_t>(framebuffer_height, color_surface_fin->height);
     }
 
     SceGxmDepthStencilSurface *ds_surface_fin = &context.record.depth_stencil_surface;
@@ -66,7 +71,8 @@ void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, co
     context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, context.record.depth_stencil_surface.zlsControl);
 
     context.current_framebuffer = state.surface_cache.retrieve_framebuffer_handle(
-        mem, color_surface_fin, ds_surface_fin, context.current_render_pass, &context.current_color_attachment, &context.current_ds_attachment, &context.current_framebuffer_height);
+        mem, color_surface_fin, ds_surface_fin, context.current_render_pass, &context.current_color_attachment, &context.current_ds_attachment,
+        &context.current_framebuffer_height, framebuffer_width, framebuffer_height);
 
     if (state.features.use_mask_bit)
         sync_mask(context, mem);
@@ -141,12 +147,15 @@ void VKContext::start_render_pass() {
     if (!is_recording)
         start_recording();
 
+    const uint32_t framebuffer_width = std::min<uint32_t>(render_target->width, record.color_surface.width);
+    const uint32_t framebuffer_height = std::min<uint32_t>(render_target->height, record.color_surface.height);
+
     vk::RenderPassBeginInfo pass_info{
         .renderPass = current_render_pass,
         .framebuffer = current_framebuffer,
         .renderArea = {
             .offset = { 0, 0 },
-            .extent = { render_target->width, render_target->height } }
+            .extent = { framebuffer_width, framebuffer_height } }
     };
     std::array<vk::ClearValue, 2> clear_values{};
     // only the depth-stencil attachment may be clear if not force loaded

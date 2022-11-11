@@ -64,7 +64,9 @@ void VKSurfaceCache::destroy_surface(DepthStencilSurfaceCacheInfo &info) {
     VKContext *context = reinterpret_cast<VKContext *>(state.context);
     vkutil::DestroyQueue &destroy_queue = context->frame().destroy_queue;
 
-    destroy_queue.add_image(info.read_only);
+    for (auto &read_only : info.read_surfaces)
+        destroy_queue.add_image(read_only.depth_view);
+
     destroy_framebuffers(info.texture.view);
     destroy_queue.add_image(info.texture);
 }
@@ -485,17 +487,9 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
     return &info_added.texture;
 }
 
-vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, int32_t force_width,
-    int32_t force_height, const bool is_reading) {
+vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, int32_t width,
+    int32_t height, const bool is_reading) {
     bool packed_ds = (surface.control.content & SceGxmDepthStencilControl::format_bits) == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
-
-    if (force_width < 0) {
-        force_width = target->width;
-    }
-
-    if (force_height < 0) {
-        force_height = target->height;
-    }
 
     size_t found_index = -1;
 
@@ -516,17 +510,17 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
 
         DepthStencilSurfaceCacheInfo &cached_info = depth_stencil_textures[found_index];
         bool need_remake = false;
-        if (cached_info.width < force_width) {
+        if (cached_info.width < width) {
             if (is_reading)
                 return nullptr;
-            cached_info.width = force_width;
+            cached_info.width = width;
             need_remake = true;
         }
 
-        if (cached_info.height < force_height) {
+        if (cached_info.height < height) {
             if (is_reading)
                 return nullptr;
-            cached_info.height = force_height;
+            cached_info.height = height;
             need_remake = true;
         }
 
@@ -536,40 +530,52 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
 
             const uint64_t scene_timestamp = reinterpret_cast<VKContext *>(state.context)->scene_timestamp;
 
-            // copy the depth stencil only once per scene
-            if (cached_info.scene_timestamp == scene_timestamp)
-                return &cached_info.read_only;
+            int read_surface_idx = -1;
+            for (int i = 0; i < cached_info.read_surfaces.size(); i++) {
+                if (cached_info.read_surfaces[i].depth_view.width == width && cached_info.read_surfaces[i].depth_view.height == height) {
+                    read_surface_idx = i;
+                    break;
+                }
+            }
 
-            cached_info.scene_timestamp = scene_timestamp;
-
-            // use prerender cmd as we can't copy an image or use pipeline barriers in a render pass
-            VKContext *context = reinterpret_cast<VKContext *>(state.context);
-            vk::CommandBuffer cmd_buffer = context->prerender_cmd;
-
-            if (!cached_info.read_only.image) {
+            if (read_surface_idx == -1) {
+                // no compatible read surface found
                 vk::ImageSubresourceRange range = vkutil::ds_subresource_range;
                 range.aspectMask = vk::ImageAspectFlagBits::eDepth;
-                cached_info.read_only.allocator = state.allocator;
-                cached_info.read_only.width = cached_info.width;
-                cached_info.read_only.height = cached_info.height;
-                cached_info.read_only.format = vk::Format::eD32SfloatS8Uint;
-                cached_info.read_only.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+
+                DepthSurfaceView read_only{
+                    .depth_view = vkutil::Image(state.allocator, width, height, vk::Format::eD32SfloatS8Uint),
+                    .scene_timestamp = 0
+                };
+                read_only.depth_view.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
                 // we want a texture view with only the depth aspect bit
                 // TODO: not efficient
-                state.device.destroy(cached_info.read_only.view);
+                state.device.destroy(read_only.depth_view.view);
                 vk::ImageViewCreateInfo view_info{
-                    .image = cached_info.read_only.image,
+                    .image = read_only.depth_view.image,
                     .viewType = vk::ImageViewType::e2D,
                     .format = vk::Format::eD32SfloatS8Uint,
                     .components = {},
                     .subresourceRange = range
                 };
-                cached_info.read_only.view = state.device.createImageView(view_info);
-
-                cached_info.read_only.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst, vkutil::ds_subresource_range);
-            } else {
-                cached_info.read_only.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst, vkutil::ds_subresource_range);
+                read_only.depth_view.view = state.device.createImageView(view_info);
+                read_surface_idx = cached_info.read_surfaces.size();
+                cached_info.read_surfaces.emplace_back(std::move(read_only));
             }
+
+            DepthSurfaceView &read_only = cached_info.read_surfaces[read_surface_idx];
+
+            // copy the depth stencil only once per scene
+            if (read_only.scene_timestamp == scene_timestamp)
+                return &read_only.depth_view;
+
+            read_only.scene_timestamp = scene_timestamp;
+
+            // use prerender cmd as we can't copy an image or use pipeline barriers in a render pass
+            VKContext *context = reinterpret_cast<VKContext *>(state.context);
+            vk::CommandBuffer cmd_buffer = context->prerender_cmd;
+
+            read_only.depth_view.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst, vkutil::ds_subresource_range);
 
             cached_info.texture.transition_to(cmd_buffer, vkutil::ImageLayout::TransferSrc, vkutil::ds_subresource_range);
             vk::ImageSubresourceLayers layers = vkutil::color_subresource_layer;
@@ -579,15 +585,15 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
                 .srcOffset = { 0, 0, 0 },
                 .dstSubresource = layers,
                 .dstOffset = { 0, 0, 0 },
-                .extent = { static_cast<uint32_t>(cached_info.width), static_cast<uint32_t>(cached_info.height), 1U }
+                .extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height), 1U }
             };
-            cmd_buffer.copyImage(cached_info.texture.image, vk::ImageLayout::eTransferSrcOptimal, cached_info.read_only.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
+            cmd_buffer.copyImage(cached_info.texture.image, vk::ImageLayout::eTransferSrcOptimal, read_only.depth_view.image, vk::ImageLayout::eTransferDstOptimal, image_copy);
 
             // transition back
             cached_info.texture.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
-            cached_info.read_only.transition_to(cmd_buffer, vkutil::ImageLayout::DepthReadOnly, vkutil::ds_subresource_range);
+            read_only.depth_view.transition_to(cmd_buffer, vkutil::ImageLayout::DepthReadOnly, vkutil::ds_subresource_range);
 
-            return &cached_info.read_only;
+            return &read_only.depth_view;
         }
     }
 
@@ -630,8 +636,8 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
     last_use_depth_stencil_surface_index.push_back(found_index);
     depth_stencil_textures[found_index].flags = 0;
     depth_stencil_textures[found_index].surface = surface;
-    depth_stencil_textures[found_index].width = force_width;
-    depth_stencil_textures[found_index].height = force_height;
+    depth_stencil_textures[found_index].width = width;
+    depth_stencil_textures[found_index].height = height;
 
     vkutil::Image &image = depth_stencil_textures[found_index].texture;
 
@@ -640,8 +646,8 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
     vk::CommandBuffer cmd_buffer = context->prerender_cmd;
 
     image.allocator = state.allocator;
-    image.width = force_width;
-    image.height = force_height;
+    image.width = width;
+    image.height = height;
     image.format = vk::Format::eD32SfloatS8Uint;
     image.layout = vkutil::ImageLayout::Undefined;
     image.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
@@ -659,7 +665,7 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
 
 vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
     vk::RenderPass render_pass, vkutil::Image **color_texture_handle, vkutil::Image **ds_texture_handle,
-    uint16_t *stored_height) {
+    uint16_t *stored_height, const uint32_t width, const uint32_t height) {
     if (!target) {
         LOG_ERROR("Unable to retrieve framebuffer with no active render target!");
         return {};
@@ -685,7 +691,8 @@ vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(const MemState &mem,
     }
 
     if (depth_stencil && (depth_stencil->depthData || depth_stencil->stencilData)) {
-        ds_handle = retrieve_depth_stencil_texture_handle(mem, *depth_stencil);
+        assert(target->width >= width && target->height >= height);
+        ds_handle = retrieve_depth_stencil_texture_handle(mem, *depth_stencil, target->width, target->height);
     } else {
         ds_handle = &target->depthstencil;
     }
@@ -709,8 +716,8 @@ vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(const MemState &mem,
 
     vk::FramebufferCreateInfo fb_info{
         .renderPass = render_pass,
-        .width = target->width,
-        .height = target->height,
+        .width = width,
+        .height = height,
         .layers = 1
     };
     vk::ImageView attachments[] = { color_handle->view, ds_handle->view };
