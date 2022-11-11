@@ -66,15 +66,19 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
     vkutil::Image sampled_image;
 };
 
+struct DepthSurfaceView {
+    vkutil::Image depth_view;
+    // used so that we copy the depth stencil at most once per scene
+    uint64_t scene_timestamp;
+};
+
 struct DepthStencilSurfaceCacheInfo : public SurfaceCacheInfo {
     SceGxmDepthStencilSurface surface;
     int32_t width;
     int32_t height;
 
     // used when reading from this depth stencil in a shader
-    vkutil::Image read_only;
-    // used so that we copy the depth stencil at most once per scene
-    uint64_t scene_timestamp = 0;
+    std::vector<DepthSurfaceView> read_surfaces;
 };
 
 class VKSurfaceCache : public SurfaceCache {
@@ -106,12 +110,12 @@ public:
         const SceGxmColorBaseFormat base_format, const bool is_srgb, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, vk::ComponentMapping &swizzle,
         uint16_t *stored_height = nullptr, uint16_t *stored_width = nullptr);
 
-    vkutil::Image *retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, int32_t force_width = -1,
-        int32_t force_height = -1, const bool is_reading = false);
+    vkutil::Image *retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, int32_t width,
+        int32_t height, const bool is_reading = false);
 
     vk::Framebuffer retrieve_framebuffer_handle(const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
-        vk::RenderPass render_pass, vkutil::Image **color_texture_handle = nullptr, vkutil::Image **ds_texture_handle = nullptr,
-        uint16_t *stored_height = nullptr);
+        vk::RenderPass render_pass, vkutil::Image **color_texture_handle, vkutil::Image **ds_texture_handle,
+        uint16_t *stored_height, const uint32_t width, const uint32_t height);
 
     // destroy all framebuffers associated with render_target
     // (meaning their color or depth-stencil surface is not backed by memory)
