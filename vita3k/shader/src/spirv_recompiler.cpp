@@ -1223,6 +1223,14 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     if (color_val_operand.type == DataType::INT32 || color_val_operand.type == DataType::UINT32)
         color_val_operand.type = DataType::F32;
 
+    // if the output component count is greater than the surface component count,
+    // it means we must pack multiple components (with lower precision) into one of the surface component
+    // this is used in assassin creed 3
+    if (gxm::get_base_format(translate_state.hints->color_format) == SCE_GXM_COLOR_BASE_FORMAT_F32F32 && vertex_varyings_ptr->output_comp_count > 2) {
+        if (color_val_operand.type == DataType::F16)
+            color_val_operand.type = DataType::F32;
+    }
+
     int reg_off = 0;
     if (!program.is_native_color() && vertex_varyings_ptr->output_param_type == 1) {
         reg_off = vertex_varyings_ptr->fragment_output_start;
