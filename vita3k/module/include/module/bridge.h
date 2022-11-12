@@ -18,7 +18,7 @@
 #pragma once
 
 #ifdef TRACY_ENABLE
-#include "Tracy/tracy/Tracy.hpp"
+#include "public/tracy/Tracy.hpp"
 #endif
 
 #include "lay_out_args.h"
