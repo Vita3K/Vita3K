@@ -77,8 +77,8 @@ inline std::string to_debug_str(const MemState &mem) {
 
 #ifdef TRACY_ENABLE
 
-#include "Tracy/client/TracyScoped.hpp"
-#include "Tracy/tracy/Tracy.hpp"
+#include "public/client/TracyScoped.hpp"
+#include "public/tracy/Tracy.hpp"
 
 #if (defined(_MSC_VER) && !defined(__clang__) && (!defined(_MSVC_TRADITIONAL) || _MSVC_TRADITIONAL))
 #define __ARGS_WITH_COMMA(...) , ##__VA_ARGS__
