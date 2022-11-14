@@ -307,7 +307,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             if (ImGui::BeginMenu(lang["copy_app_info"].c_str())) {
                 if (ImGui::MenuItem(lang["id_and_name"].c_str())) {
                     ImGui::LogToClipboard();
-                    ImGui::LogText("%s [%s]", title_id.c_str(), APP_INDEX->title.c_str());
+                    ImGui::LogText("%s [%s]", APP_INDEX->title.c_str(), title_id.c_str());
                     ImGui::LogFinish();
                 }
                 if (ImGui::MenuItem("ID")) {
@@ -318,6 +318,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 if (ImGui::MenuItem(lang["name"].c_str())) {
                     ImGui::LogToClipboard();
                     ImGui::LogText("%s", APP_INDEX->title.c_str());
+                    ImGui::LogFinish();
+                }
+                if (ImGui::MenuItem("App summary")) {
+                    ImGui::LogToClipboard();
+                    ImGui::LogText("# App summary\n- App name: %s\n- App serial: %s\n- App version: %s", APP_INDEX->title.c_str(), title_id.c_str(), APP_INDEX->app_ver.c_str());
                     ImGui::LogFinish();
                 }
                 ImGui::EndMenu();
