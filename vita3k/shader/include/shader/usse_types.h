@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "util/log.h"
 #include <shader/types_imm.h>
 
 #include <array>
@@ -97,7 +98,7 @@ inline ExtPredicate ext_vec_predicate_to_ext(ExtVecPredicate pred) {
     case ExtVecPredicate::NEGP2:
         // TODO
         assert(false);
-        break;
+        LOG_CRITICAL("ExtVecPredicate::NEGP2 case hit, report this to devs.");
     default:
         return ExtPredicate::NONE;
     }

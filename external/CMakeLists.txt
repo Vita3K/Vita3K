@@ -10,10 +10,17 @@ function(check_submodules_present)
 	string(REGEX MATCHALL "path *= *[^ \t\r\n]*" gitmodules ${gitmodules})
 
 	foreach(module ${gitmodules})
+		# Get module name
 		string(REGEX REPLACE "path *= *" "" module ${module})
 
-		if(NOT EXISTS "${CMAKE_SOURCE_DIR}/${module}/.git")
-			message(FATAL_ERROR "Git submodule ${module} not found. "
+		# Stat the folder and get ammount of entries
+		file(GLOB RESULT "${CMAKE_SOURCE_DIR}/${module}/*")
+		list(LENGTH RESULT RES_LEN)
+
+		# If the module has no files, bring fatal error
+		if(RES_LEN EQUAL 0)
+			# directory is empty
+			message(FATAL_ERROR "Submodule ${module} is empty. "
 				"Please run: git submodule update --init --recursive")
 		endif()
 	endforeach()
@@ -52,7 +59,6 @@ endif()
 
 add_library(printf INTERFACE)
 target_include_directories(printf INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/printf")
-
 
 add_subdirectory(fmt)
 add_library(fmt::fmt ALIAS fmt)
@@ -266,6 +272,11 @@ set_property(TARGET psvpfsparser PROPERTY FOLDER externals)
 set_property(TARGET libzRIF PROPERTY FOLDER externals)
 set_property(TARGET libb64 PROPERTY FOLDER externals)
 
+if(APPLE)
+	set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
+	set(OPENSSL_LIBRARIES "/usr/local/opt/openssl/lib")
+	set(OPENSSL_USE_STATIC_LIBS TRUE)
+endif()
 find_package(OpenSSL QUIET)
 
 if(NOT OPENSSL_FOUND)
@@ -324,7 +335,7 @@ option(TRACY_ENABLE_ON_CORE_COMPONENTS
 	"Enable and require Tracy to compile core components such as the renderer, shader recompiler and
 		HLE modules"
 	ON)
-add_library(tracy STATIC tracy/TracyClient.cpp)
+add_library(tracy STATIC tracy/public/TracyClient.cpp)
 set_property(TARGET tracy PROPERTY FOLDER externals)
 target_include_directories(tracy PUBLIC tracy)
 

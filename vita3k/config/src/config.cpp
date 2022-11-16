@@ -26,6 +26,7 @@
 #include <CLI11.hpp>
 #include <vector>
 
+#include <algorithm>
 #include <exception>
 #include <iostream>
 
@@ -275,7 +276,14 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
 #ifdef TRACY_ENABLE
 bool is_tracy_advanced_profiling_active_for_module(std::vector<std::string> &active_modules, std::string module, int *index) {
+    // If we dont care about the index that means that its getting executed from an export
+    // And because of that we know its sorted so we can use binary search so it
+    // doesn't hurt performance as a standard std::find, also we just care for the result
+    if (!index)
+        return std::binary_search(active_modules.begin(), active_modules.end(), module);
+
     bool result = false;
+
     // Retrieve index for module name in the list of enabled modules
     auto iterator = std::find(active_modules.begin(), active_modules.end(), module);
 

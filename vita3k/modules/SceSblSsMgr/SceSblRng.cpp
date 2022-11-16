@@ -21,9 +21,13 @@
 #include <kernel/types.h>
 #include <random>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceSblRng);
+
 #define SCE_RNG_ERROR_INVALID_ARGUMENT 0x810C0000
 
 EXPORT(int, _sceKernelGetRandomNumber, uint64_t *output, unsigned int size) {
+    TRACY_FUNC(_sceKernelGetRandomNumber, output, size);
     if (size > 64) {
         return RET_ERROR(SCE_RNG_ERROR_INVALID_ARGUMENT);
     }

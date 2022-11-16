@@ -19,15 +19,17 @@
 
 #include <kernel/state.h>
 #include <rtc/rtc.h>
+#include <util/tracy.h>
 
 #include <util/safe_time.h>
 
 #include <chrono>
 #include <ctime>
 
-#define VITA_CLOCKS_PER_SEC 1000000
+TRACY_MODULE_NAME(SceRtc);
 
 EXPORT(int, _sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTick *pUtc) {
+    TRACY_FUNC(_sceRtcConvertLocalTimeToUtc, pLocalTime, pUtc);
     if (pUtc == nullptr || pLocalTime == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -47,6 +49,7 @@ EXPORT(int, _sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTi
 }
 
 EXPORT(int, _sceRtcConvertUtcToLocalTime, const SceRtcTick *pUtc, SceRtcTick *pLocalTime) {
+    TRACY_FUNC(_sceRtcConvertUtcToLocalTime, pUtc, pLocalTime);
     if (pUtc == nullptr || pLocalTime == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -66,26 +69,32 @@ EXPORT(int, _sceRtcConvertUtcToLocalTime, const SceRtcTick *pUtc, SceRtcTick *pL
 }
 
 EXPORT(int, _sceRtcFormatRFC2822) {
+    TRACY_FUNC(_sceRtcFormatRFC2822);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcFormatRFC2822LocalTime) {
+    TRACY_FUNC(_sceRtcFormatRFC2822LocalTime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcFormatRFC3339) {
+    TRACY_FUNC(_sceRtcFormatRFC3339);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcFormatRFC3339LocalTime) {
+    TRACY_FUNC(_sceRtcFormatRFC3339LocalTime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcGetCurrentAdNetworkTick) {
+    TRACY_FUNC(_sceRtcGetCurrentAdNetworkTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcGetCurrentClock, SceDateTime *datePtr, int iTimeZone) {
+    TRACY_FUNC(_sceRtcGetCurrentClock, datePtr, iTimeZone);
     if (datePtr == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -97,6 +106,7 @@ EXPORT(int, _sceRtcGetCurrentClock, SceDateTime *datePtr, int iTimeZone) {
 }
 
 EXPORT(int, _sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
+    TRACY_FUNC(_sceRtcGetCurrentClockLocalTime, datePtr);
     if (datePtr == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -117,14 +127,17 @@ EXPORT(int, _sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
 }
 
 EXPORT(int, _sceRtcGetCurrentDebugNetworkTick) {
+    TRACY_FUNC(_sceRtcGetCurrentDebugNetworkTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcGetCurrentGpsTick) {
+    TRACY_FUNC(_sceRtcGetCurrentGpsTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
+    TRACY_FUNC(_sceRtcGetCurrentNetworkTick, tick);
     if (tick == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -135,10 +148,12 @@ EXPORT(int, _sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
 }
 
 EXPORT(int, _sceRtcGetCurrentRetainedNetworkTick) {
+    TRACY_FUNC(_sceRtcGetCurrentRetainedNetworkTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcGetCurrentTick, SceRtcTick *tick) {
+    TRACY_FUNC(_sceRtcGetCurrentTick, tick);
     if (tick == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -149,14 +164,17 @@ EXPORT(int, _sceRtcGetCurrentTick, SceRtcTick *tick) {
 }
 
 EXPORT(int, _sceRtcGetLastAdjustedTick) {
+    TRACY_FUNC(_sceRtcGetLastAdjustedTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceRtcGetLastReincarnatedTick) {
+    TRACY_FUNC(_sceRtcGetLastReincarnatedTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetAccumulativeTime) {
+    TRACY_FUNC(sceRtcGetAccumulativeTime);
     return UNIMPLEMENTED();
 }
 

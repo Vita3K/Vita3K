@@ -167,9 +167,6 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
         glBindBufferRange(GL_UNIFORM_BUFFER, 3, context.fragment_info_uniform_buffer.handle(), allocated_buffer.second, sizeof(shader::RenderFragUniformBlock));
     }
 
-    context.vertex_set_requests.clear();
-    context.fragment_set_requests.clear();
-
     // Upload vertex stream
     sync_vertex_streams_and_attributes(context, context.record, mem);
 
@@ -185,9 +182,6 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
 
     std::memcpy(index_gpu_ptr.first, indices, index_buffer_size);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, context.index_stream_ring_buffer.handle());
-
-    std::uint8_t *indices_u8 = reinterpret_cast<std::uint8_t *>(indices);
-    delete[] indices_u8;
 
     if (fragment_program_gxp.is_native_color()) {
         if (features.should_use_shader_interlock() && !config.spirv_shader) {

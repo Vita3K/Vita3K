@@ -20,7 +20,11 @@
 
 #include <kernel/state.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceCodecEngineUser);
+
 EXPORT(int32_t, sceCodecEngineAllocMemoryFromUnmapMemBlock, SceUID uid, uint32_t size, uint32_t alignment) {
+    TRACY_FUNC(sceCodecEngineAllocMemoryFromUnmapMemBlock, uid, size, alignment);
     STUBBED("fake vaddr");
     auto guard = std::lock_guard<std::mutex>(emuenv.kernel.mutex);
     auto it = emuenv.kernel.codec_blocks.find(uid);
@@ -31,6 +35,7 @@ EXPORT(int32_t, sceCodecEngineAllocMemoryFromUnmapMemBlock, SceUID uid, uint32_t
 }
 
 EXPORT(int, sceCodecEngineCloseUnmapMemBlock, SceUID uid) {
+    TRACY_FUNC(sceCodecEngineCloseUnmapMemBlock, uid);
     auto guard = std::lock_guard<std::mutex>(emuenv.kernel.mutex);
     if (emuenv.kernel.codec_blocks.find(uid) == emuenv.kernel.codec_blocks.end())
         return SCE_CODECENGINE_ERROR_INVALID_VALUE;
@@ -40,11 +45,13 @@ EXPORT(int, sceCodecEngineCloseUnmapMemBlock, SceUID uid) {
 }
 
 EXPORT(int, sceCodecEngineFreeMemoryFromUnmapMemBlock) {
+    TRACY_FUNC(sceCodecEngineFreeMemoryFromUnmapMemBlock);
     STUBBED("always return success");
     return 0;
 }
 
 EXPORT(SceUID, sceCodecEngineOpenUnmapMemBlock, Address memBlock, uint32_t size) {
+    TRACY_FUNC(sceCodecEngineOpenUnmapMemBlock, memBlock, size);
     auto uid = emuenv.kernel.get_next_uid();
     auto guard = std::lock_guard<std::mutex>(emuenv.kernel.mutex);
     CodecEngineBlock block;

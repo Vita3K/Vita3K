@@ -17,31 +17,42 @@
 
 #include "SceDisplayUser.h"
 
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(SceDisplayUser);
+
 EXPORT(SceInt32, sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
+    TRACY_FUNC(sceDisplayGetFrameBuf, pFrameBuf, sync);
     return CALL_EXPORT(_sceDisplayGetFrameBuf, pFrameBuf, sync);
 }
 
 EXPORT(int, sceDisplayGetFrameBufInternal) {
+    TRACY_FUNC(sceDisplayGetFrameBufInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayGetMaximumFrameBufResolution) {
+    TRACY_FUNC(sceDisplayGetMaximumFrameBufResolution);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplayGetResolutionInfoInternal) {
+    TRACY_FUNC(sceDisplayGetResolutionInfoInternal);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
+    TRACY_FUNC(sceDisplaySetFrameBuf, pFrameBuf, sync);
     return CALL_EXPORT(_sceDisplaySetFrameBuf, pFrameBuf, sync);
 }
 
 EXPORT(int, sceDisplaySetFrameBufForCompat) {
+    TRACY_FUNC(sceDisplaySetFrameBufForCompat);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceDisplaySetFrameBufInternal) {
+    TRACY_FUNC(sceDisplaySetFrameBufInternal);
     return UNIMPLEMENTED();
 }
 

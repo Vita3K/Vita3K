@@ -118,10 +118,16 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         state.pref_path = string_utils::utf_to_wide(state.cfg.pref_path);
     }
 
-    if (string_utils::toupper(state.cfg.backend_renderer) == "VULKAN")
-        state.backend_renderer = renderer::Backend::Vulkan;
-    else
+    state.backend_renderer = renderer::Backend::Vulkan;
+
+    if (string_utils::toupper(state.cfg.backend_renderer) == "OPENGL") {
+#ifndef __APPLE__
         state.backend_renderer = renderer::Backend::OpenGL;
+#else
+        state.cfg.backend_renderer = "Vulkan";
+        config::serialize_config(state.cfg, state.cfg.config_path);
+#endif
+    }
 
     int window_type = 0;
     switch (state.backend_renderer) {

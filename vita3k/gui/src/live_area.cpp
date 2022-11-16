@@ -22,6 +22,7 @@
 #include <io/state.h>
 #include <kernel/state.h>
 #include <packages/functions.h>
+#include <renderer/state.h>
 
 #include <util/safe_time.h>
 
@@ -1035,6 +1036,8 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                 update_time_app_used(gui, emuenv, app_path);
                 emuenv.kernel.exit_delete_all_threads();
                 emuenv.load_exec = true;
+                // make sure we are not stuck waiting for a gpu command
+                emuenv.renderer->should_display = true;
             } else {
                 gui.apps_list_opened.erase(get_app_open_list_index(gui, app_path));
                 if (gui.current_app_selected == 0) {

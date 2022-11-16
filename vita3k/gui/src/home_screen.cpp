@@ -342,7 +342,7 @@ static std::string get_label_name(GuiState &gui, const SortType &type) {
     case CATEGORY: label = lang["cat"]; break;
     case LAST_TIME: label = lang["last_time"]; break;
     case TITLE: label = lang["tit"]; break;
-    case TITLE_ID: label = lang["tit_id"]; break;
+    case TITLE_ID: label = gui.lang.app_context["title_id"]; break;
     }
 
     switch (gui.app_selector.app_list_sorted[type]) {

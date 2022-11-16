@@ -16,53 +16,67 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceTouch.h"
-#include "SceTouch_tracy.h"
-#include "Tracy.hpp"
 
 #include <touch/functions.h>
 #include <touch/state.h>
 #include <touch/touch.h>
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(SceTouch);
+
+template <>
+std::string to_debug_str<SceTouchSamplingState>(const MemState &mem, SceTouchSamplingState state) {
+    switch (state) {
+    case SCE_TOUCH_SAMPLING_STATE_STOP:
+        return "SCE_TOUCH_SAMPLING_STATE_STOP";
+    case SCE_TOUCH_SAMPLING_STATE_START:
+        return "SCE_TOUCH_SAMPLING_STATE_START";
+    }
+    return std::to_string(state);
+}
 
 EXPORT(int, sceTouchActivateRegion) {
+    TRACY_FUNC(sceTouchActivateRegion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchClearRegion) {
+    TRACY_FUNC(sceTouchClearRegion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchDisableTouchForce) {
+    TRACY_FUNC(sceTouchDisableTouchForce);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchDisableTouchForceExt) {
+    TRACY_FUNC(sceTouchDisableTouchForceExt);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchEnableIdleTimerCancelSetting) {
+    TRACY_FUNC(sceTouchEnableIdleTimerCancelSetting);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchEnableTouchForce) {
+    TRACY_FUNC(sceTouchEnableTouchForce);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchEnableTouchForceExt) {
+    TRACY_FUNC(sceTouchEnableTouchForceExt);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchGetDeviceInfo) {
+    TRACY_FUNC(sceTouchGetDeviceInfo);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchGetPanelInfo, SceUInt32 port, SceTouchPanelInfo *pPanelInfo) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceTouchGetPanelInfo", _tracy_activation_state);
-    tracy_sceTouchGetPanelInfo(&___tracy_scoped_zone, _tracy_activation_state, port, pPanelInfo);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceTouchGetPanelInfo, port, pPanelInfo);
     switch (port) {
     case SCE_TOUCH_PORT_FRONT:
         // Active Area
@@ -106,25 +120,22 @@ EXPORT(int, sceTouchGetPanelInfo, SceUInt32 port, SceTouchPanelInfo *pPanelInfo)
 }
 
 EXPORT(int, sceTouchGetPixelDensity) {
+    TRACY_FUNC(sceTouchGetPixelDensity);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchGetPixelDensity2) {
+    TRACY_FUNC(sceTouchGetPixelDensity2);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchGetProcessInfo) {
+    TRACY_FUNC(sceTouchGetProcessInfo);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchGetSamplingState, SceUInt32 port, SceTouchSamplingState *pState) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceTouchGetSamplingState", _tracy_activation_state);
-    tracy_sceTouchGetSamplingState(&___tracy_scoped_zone, _tracy_activation_state, port, pState);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceTouchGetSamplingState, port, pState);
     if (port >= SCE_TOUCH_PORT_MAX_NUM) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
@@ -136,17 +147,12 @@ EXPORT(int, sceTouchGetSamplingState, SceUInt32 port, SceTouchSamplingState *pSt
 }
 
 EXPORT(int, sceTouchGetSamplingStateExt) {
+    TRACY_FUNC(sceTouchGetSamplingStateExt);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceTouchPeek", _tracy_activation_state);
-    tracy_sceTouchPeek(&___tracy_scoped_zone, _tracy_activation_state, port, pData, nBufs);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceTouchPeek, port, pData, nBufs);
     if (port >= SCE_TOUCH_PORT_MAX_NUM) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
@@ -158,13 +164,7 @@ EXPORT(int, sceTouchPeek, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
 }
 
 EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceTouchPeek2", _tracy_activation_state);
-    tracy_sceTouchPeek2(&___tracy_scoped_zone, _tracy_activation_state, port, pData, nBufs);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceTouchPeek2, port, pData, nBufs);
     if (port >= SCE_TOUCH_PORT_MAX_NUM) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
@@ -176,21 +176,17 @@ EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
 }
 
 EXPORT(int, sceTouchPeekRegion) {
+    TRACY_FUNC(sceTouchPeekRegion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchPeekRegionExt) {
+    TRACY_FUNC(sceTouchPeekRegionExt);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchRead, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceTouchRead", _tracy_activation_state);
-    tracy_sceTouchRead(&___tracy_scoped_zone, _tracy_activation_state, port, pData, nBufs);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceTouchRead, port, pData, nBufs);
     if (port >= SCE_TOUCH_PORT_MAX_NUM) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
@@ -201,13 +197,7 @@ EXPORT(int, sceTouchRead, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) 
 }
 
 EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceTouchRead2", _tracy_activation_state);
-    tracy_sceTouchRead2(&___tracy_scoped_zone, _tracy_activation_state, port, pData, nBufs);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceTouchRead2, port, pData, nBufs);
     if (port >= SCE_TOUCH_PORT_MAX_NUM) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
@@ -219,33 +209,32 @@ EXPORT(int, sceTouchRead2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
 }
 
 EXPORT(int, sceTouchReadRegion) {
+    TRACY_FUNC(sceTouchReadRegion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchReadRegionExt) {
+    TRACY_FUNC(sceTouchReadRegionExt);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchSetProcessPrivilege) {
+    TRACY_FUNC(sceTouchSetProcessPrivilege);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchSetRegion) {
+    TRACY_FUNC(sceTouchSetRegion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchSetRegionAttr) {
+    TRACY_FUNC(sceTouchSetRegionAttr);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceTouchSetSamplingState, SceUInt32 port, SceTouchSamplingState state) {
-#ifdef TRACY_ENABLE
-    // --- Tracy logging --- START
-    bool _tracy_activation_state = config::is_tracy_advanced_profiling_active_for_module(emuenv.cfg.tracy_advanced_profiling_modules, tracy_module_name);
-    ZoneNamedN(___tracy_scoped_zone, "sceTouchSetSamplingState", _tracy_activation_state);
-    tracy_sceTouchSetSamplingState(&___tracy_scoped_zone, _tracy_activation_state, port, state);
-    // --- Tracy logging --- END
-#endif
+    TRACY_FUNC(sceTouchSetSamplingState, port, state);
     if (port >= SCE_TOUCH_PORT_MAX_NUM) {
         return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
     }
@@ -257,6 +246,7 @@ EXPORT(int, sceTouchSetSamplingState, SceUInt32 port, SceTouchSamplingState stat
 }
 
 EXPORT(int, sceTouchSetSamplingStateExt) {
+    TRACY_FUNC(sceTouchSetSamplingStateExt);
     return UNIMPLEMENTED();
 }
 

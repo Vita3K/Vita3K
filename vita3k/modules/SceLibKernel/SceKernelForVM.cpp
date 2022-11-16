@@ -18,15 +18,21 @@
 #include "SceKernelForVM.h"
 #include "../SceKernelThreadMgr/SceThreadmgr.h"
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceKernelForVM);
+
 EXPORT(int, __sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo) {
+    TRACY_FUNC(__sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
     return CALL_EXPORT(_sceKernelGetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
 }
 
 EXPORT(int, _sceKernelResumeThreadForVM, SceUID threadId) {
+    TRACY_FUNC(_sceKernelResumeThreadForVM, threadId);
     return CALL_EXPORT(sceKernelResumeThreadForVM, threadId);
 }
 
 EXPORT(int, _sceKernelSuspendThreadForVM, SceUID threadId) {
+    TRACY_FUNC(_sceKernelSuspendThreadForVM, threadId);
     return CALL_EXPORT(sceKernelSuspendThreadForVM, threadId);
 }
 

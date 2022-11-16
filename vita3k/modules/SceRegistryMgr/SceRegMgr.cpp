@@ -17,27 +17,36 @@
 
 #include "SceRegMgr.h"
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceRegMgr);
+
 EXPORT(int, sceRegMgrAddRegistryCallback) {
+    TRACY_FUNC(sceRegMgrAddRegistryCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrDbBackup) {
+    TRACY_FUNC(sceRegMgrDbBackup);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrDbRestore) {
+    TRACY_FUNC(sceRegMgrDbRestore);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrGetInitVals) {
+    TRACY_FUNC(sceRegMgrGetInitVals);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrGetKeyBin) {
+    TRACY_FUNC(sceRegMgrGetKeyBin);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrGetKeyInt, const char *category, const char *name, int *buf) {
+    TRACY_FUNC(sceRegMgrGetKeyInt, category, name, buf);
     if ((std::string(category) == "/CONFIG/PSPEMU") && (std::string(name) == "emu_list_flag")) {
         STUBBED("Stubbed");
         *buf = 1;
@@ -48,66 +57,82 @@ EXPORT(int, sceRegMgrGetKeyInt, const char *category, const char *name, int *buf
 }
 
 EXPORT(int, sceRegMgrGetKeyStr) {
+    TRACY_FUNC(sceRegMgrGetKeyStr);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrGetKeys) {
+    TRACY_FUNC(sceRegMgrGetKeys);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrGetKeysInfo) {
+    TRACY_FUNC(sceRegMgrGetKeysInfo);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrGetRegVersion) {
+    TRACY_FUNC(sceRegMgrGetRegVersion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrIsBlueScreen) {
+    TRACY_FUNC(sceRegMgrIsBlueScreen);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrRegisterCallback) {
+    TRACY_FUNC(sceRegMgrRegisterCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrRegisterDrvErrCallback) {
+    TRACY_FUNC(sceRegMgrRegisterDrvErrCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrResetRegistryLv) {
+    TRACY_FUNC(sceRegMgrResetRegistryLv);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrSetKeyBin) {
+    TRACY_FUNC(sceRegMgrSetKeyBin);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrSetKeyInt, const char *category, const char *name, int buf) {
+    TRACY_FUNC(sceRegMgrSetKeyInt, category, name, buf);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrSetKeyStr) {
+    TRACY_FUNC(sceRegMgrSetKeyStr);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrSetKeys) {
+    TRACY_FUNC(sceRegMgrSetKeys);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrStartCallback) {
+    TRACY_FUNC(sceRegMgrStartCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrStopCallback) {
+    TRACY_FUNC(sceRegMgrStopCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrUnregisterCallback) {
+    TRACY_FUNC(sceRegMgrUnregisterCallback);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRegMgrUnregisterDrvErrCallback) {
+    TRACY_FUNC(sceRegMgrUnregisterDrvErrCallback);
     return UNIMPLEMENTED();
 }
 

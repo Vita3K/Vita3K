@@ -21,6 +21,9 @@
 #include <codec/state.h>
 #include <kernel/state.h>
 #include <util/lock_and_find.h>
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(SceAudiodecUser);
 
 enum {
     SCE_AUDIODEC_ERROR_API_FAIL = 0x807F0000,
@@ -113,6 +116,7 @@ LIBRARY_INIT_IMPL(SceAudiodec) {
 LIBRARY_INIT_REGISTER(SceAudiodec)
 
 EXPORT(int, sceAudiodecClearContext, SceAudiodecCtrl *ctrl) {
+    TRACY_FUNC(sceAudiodecClearContext, ctrl)
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     const DecoderPtr &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
 
@@ -189,10 +193,12 @@ static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiode
 }
 
 EXPORT(int, sceAudiodecCreateDecoder, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec) {
+    TRACY_FUNC(sceAudiodecCreateDecoder, ctrl, codec);
     return create_decoder(emuenv, ctrl, codec);
 }
 
 EXPORT(int, sceAudiodecCreateDecoderExternal, SceAudiodecCtrl *ctrl, SceAudiodecCodec codec, void *context, uint32_t size) {
+    TRACY_FUNC(sceAudiodecCreateDecoderExternal, ctrl, codec, context, size);
     // I think context is supposed to be just extra memory where I can allocate my context.
     // I'm just going to allocate like regular sceAudiodecCreateDecoder and see how it goes.
     // Almost sure zang has already tried this so :/ - desgroup
@@ -200,6 +206,7 @@ EXPORT(int, sceAudiodecCreateDecoderExternal, SceAudiodecCtrl *ctrl, SceAudiodec
 }
 
 EXPORT(int, sceAudiodecCreateDecoderResident) {
+    TRACY_FUNC(sceAudiodecCreateDecoderResident);
     return UNIMPLEMENTED();
 }
 
@@ -235,18 +242,22 @@ static int decode_audio_frames(EmuEnvState &emuenv, const char *export_name, Sce
 }
 
 EXPORT(int, sceAudiodecDecode, SceAudiodecCtrl *ctrl) {
+    TRACY_FUNC(sceAudiodecDecode, ctrl);
     return decode_audio_frames(emuenv, export_name, ctrl, 1);
 }
 
 EXPORT(int, sceAudiodecDecodeNFrames, SceAudiodecCtrl *ctrl, SceUInt32 nFrames) {
+    TRACY_FUNC(sceAudiodecDecodeNFrames, ctrl, nFrames);
     return decode_audio_frames(emuenv, export_name, ctrl, nFrames);
 }
 
-EXPORT(int, sceAudiodecDecodeNStreams) {
+EXPORT(int, sceAudiodecDecodeNStreams, Ptr<SceAudiodecCtrl> *pCtrls, SceUInt32 nStreams) {
+    TRACY_FUNC(sceAudiodecDecodeNStreams, pCtrls, nStreams);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceAudiodecDeleteDecoder, SceAudiodecCtrl *ctrl) {
+    TRACY_FUNC(sceAudiodecDeleteDecoder, ctrl);
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
     state->decoders.erase(ctrl->handle);
@@ -261,23 +272,28 @@ EXPORT(int, sceAudiodecDeleteDecoder, SceAudiodecCtrl *ctrl) {
 }
 
 EXPORT(int, sceAudiodecDeleteDecoderExternal, SceAudiodecCtrl *ctrl, void *context) {
+    TRACY_FUNC(sceAudiodecDeleteDecoderExternal, ctrl, context);
     return CALL_EXPORT(sceAudiodecDeleteDecoder, ctrl);
 }
 
 EXPORT(int, sceAudiodecDeleteDecoderResident) {
+    TRACY_FUNC(sceAudiodecDeleteDecoderResident);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAudiodecGetContextSize) {
+EXPORT(int, sceAudiodecGetContextSize, SceAudiodecCtrl *pCtrl, SceUInt32 codecType) {
+    TRACY_FUNC(sceAudiodecGetContextSize, pCtrl, codecType);
     STUBBED("fake size");
     return 53;
 }
 
 EXPORT(int, sceAudiodecGetInternalError) {
+    TRACY_FUNC(sceAudiodecGetInternalError);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodecInitParam *pInitParam) {
+    TRACY_FUNC(sceAudiodecInitLibrary, codecType, pInitParam);
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
 
@@ -286,6 +302,7 @@ EXPORT(SceInt32, sceAudiodecInitLibrary, SceAudiodecCodec codecType, SceAudiodec
 }
 
 EXPORT(int, sceAudiodecPartlyDecode, SceAudiodecCtrl *ctrl, SceUInt32 samples_offset, SceUInt32 samples_to_decode) {
+    TRACY_FUNC(sceAudiodecPartlyDecode, ctrl, samples_offset, samples_to_decode);
     // this function is only called by libatrac
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     if (state->codecs[SCE_AUDIODEC_TYPE_AT9].count(ctrl->handle) == 0) {
@@ -328,6 +345,7 @@ EXPORT(int, sceAudiodecPartlyDecode, SceAudiodecCtrl *ctrl, SceUInt32 samples_of
 }
 
 EXPORT(SceInt32, sceAudiodecTermLibrary, SceAudiodecCodec codecType) {
+    TRACY_FUNC(sceAudiodecTermLibrary, codecType);
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     std::lock_guard<std::mutex> lock(state->mutex);
 

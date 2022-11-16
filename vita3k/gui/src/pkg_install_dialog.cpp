@@ -98,7 +98,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 draw_file_dialog = true;
             }
         } else if (state == "work") {
-            result = host::dialog::filesystem::open_file(work_path, { { "PlayStation Vita software license file", { "work.bin" } } });
+            result = host::dialog::filesystem::open_file(work_path, { { "PlayStation Vita software license file", { "bin" } } });
             if (result == host::dialog::filesystem::Result::SUCCESS) {
                 fs::ifstream binfile(work_path.wstring(), std::ios::in | std::ios::binary | std::ios::ate);
                 zRIF = rif2zrif(binfile);

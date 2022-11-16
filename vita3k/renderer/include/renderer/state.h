@@ -59,7 +59,7 @@ struct State {
     uint32_t shaders_count_compiled = 0;
     uint32_t programs_count_pre_compiled = 0;
 
-    std::atomic<bool> should_display;
+    bool should_display;
 
     virtual bool init(const char *base_path, const bool hashless_texture_cache) = 0;
     virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,

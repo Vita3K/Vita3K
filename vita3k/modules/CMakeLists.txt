@@ -10,7 +10,6 @@ set(SOURCE_LIST
 	SceAppUtil/SceAppUtilExt.cpp SceAppUtil/SceAppUtilExt.h
 	SceAtrac/SceAtrac.cpp SceAtrac/SceAtrac.h
 	SceAudio/SceAudio.cpp SceAudio/SceAudio.h
-	SceAudio/SceAudio_tracy.cpp
 	SceAudiodec/SceAudiodecUser.cpp SceAudiodec/SceAudiodecUser.h
 	SceAudioenc/SceAudioencUser.cpp SceAudioenc/SceAudioencUser.h
 	SceAudioIn/SceAudioIn.cpp SceAudioIn/SceAudioIn.h
@@ -60,7 +59,6 @@ set(SOURCE_LIST
 	SceHandwriting/SceHandwriting.cpp SceHandwriting/SceHandwriting.h
 	SceHid/SceHid.cpp SceHid/SceHid.h
 	SceHttp/SceHttp.cpp SceHttp/SceHttp.h
-	SceHttp/SceHttp_tracy.cpp
 	SceIme/SceIme.cpp SceIme/SceIme.h
 	SceIncomingDialog/SceIncomingDialog.cpp SceIncomingDialog/SceIncomingDialog.h
 	SceIofilemgr/SceIofilemgr.cpp SceIofilemgr/SceIofilemgr.h
@@ -173,7 +171,6 @@ set(SOURCE_LIST
 	SceSmart/SceSmart.cpp SceSmart/SceSmart.h
 	SceSqlite/SceSqlite.cpp SceSqlite/SceSqlite.h
 	SceSsl/SceSsl.cpp SceSsl/SceSsl.h
-	SceSsl/SceSsl_tracy.cpp
 	SceSsl/SceSslInternal.cpp SceSsl/SceSslInternal.h
 	SceStdio/SceStdio.cpp SceStdio/SceStdio.h
 	SceSulpha/SceSulpha.cpp SceSulpha/SceSulpha.h
@@ -192,7 +189,6 @@ set(SOURCE_LIST
 	SceTeleportClient/SceTeleportClient.cpp SceTeleportClient/SceTeleportClient.h
 	SceTeleportServer/SceTeleportServer.cpp SceTeleportServer/SceTeleportServer.h
 	SceTouch/SceTouch.cpp SceTouch/SceTouch.h
-	SceTouch/SceTouch_tracy.cpp
 	SceTriggerUtil/SceTriggerUtil.cpp SceTriggerUtil/SceTriggerUtil.h
 	SceUdcd/SceUdcd.cpp SceUdcd/SceUdcd.h
 	SceUlobjMgr/SceUlobjMgr.cpp SceUlobjMgr/SceUlobjMgr.h

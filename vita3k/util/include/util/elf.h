@@ -19,14 +19,14 @@
 
 #include <cstdint>
 
-//Base 32-bit ELF types
+// Base 32-bit ELF types
 typedef uint16_t Elf32_Half;
 typedef uint32_t Elf32_Off;
 typedef uint32_t Elf32_Addr;
 typedef uint32_t Elf32_Word;
 typedef int32_t Elf32_Sword;
 
-//Typedef for compatibility
+// Typedef for compatibility
 typedef Elf32_Half Elf_Half;
 typedef Elf32_Off Elf_Off;
 typedef Elf32_Addr Elf_Addr;
@@ -52,49 +52,49 @@ typedef struct {
 } Elf32_Ehdr;
 
 enum Elf_Ident {
-    EI_MAG0, //0x7F
+    EI_MAG0, // 0x7F
     EI_MAG1, //'E'
     EI_MAG2, //'L'
     EI_MAG3, //'F'
-    EI_CLASS, //Size class - 32 or 64-bit
-    EI_DATA, //Byte ordering - little/big endian
-    EI_VERSION, //ELF version
-    EI_OSABI, //OS ABI
-    EI_ABIVERSION, //OS ABI version
-    EI_PAD //Padding
+    EI_CLASS, // Size class - 32 or 64-bit
+    EI_DATA, // Byte ordering - little/big endian
+    EI_VERSION, // ELF version
+    EI_OSABI, // OS ABI
+    EI_ABIVERSION, // OS ABI version
+    EI_PAD // Padding
 };
 
-//Expected values for e_ident[EI_MAGx]
+// Expected values for e_ident[EI_MAGx]
 #define ELFMAG0 (0x7F)
 #define ELFMAG1 ('E')
 #define ELFMAG2 ('L')
 #define ELFMAG3 ('F')
 
-//Possible values for e_ident[EI_CLASS]
+// Possible values for e_ident[EI_CLASS]
 #define ELFCLASSNONE (0)
 #define ELFCLASS32 (1)
 #define ELFCLASS64 (2)
 
-//Possible values for e_ident[EI_DATA]
+// Possible values for e_ident[EI_DATA]
 #define ELFDATANONE (0)
 #define ELFDATA2LSB (1)
 #define ELFDATA2MSB (2)
 
-//Expected value for e_ident[EI_VERSION] and e_version
+// Expected value for e_ident[EI_VERSION] and e_version
 #define EV_CURRENT (1)
 
-//Expected value for e_ident[EI_OSABI]
+// Expected value for e_ident[EI_OSABI]
 #define ELFOSABI_NONE (0)
 
-//Possible values for e_type
-#define ET_SCE_EXEC (0xFE00) //SCE non-relocatable executable
-#define ET_SCE_RELEXEC (0xFE04) //SCE relocatable executable
-#define ET_SCE_PSP2RELEXEC (0xFFA5) //Old SCE relocatable format (unsupported)
+// Possible values for e_type
+#define ET_SCE_EXEC (0xFE00) // SCE non-relocatable executable
+#define ET_SCE_RELEXEC (0xFE04) // SCE relocatable executable
+#define ET_SCE_PSP2RELEXEC (0xFFA5) // Old SCE relocatable format (unsupported)
 
-//Expected value for e_machine
+// Expected value for e_machine
 #define EM_ARM (0x28)
 
-//Evaluates to true if the EI_MAGx fields in a Elf32_Ehdr are valid
+// Evaluates to true if the EI_MAGx fields in a Elf32_Ehdr are valid
 #define EHDR_HAS_VALID_MAGIC(ehdr) ( \
     ((ehdr.e_ident[EI_MAG0]) == ELFMAG0) && ((ehdr.e_ident[EI_MAG1]) == ELFMAG1) && ((ehdr.e_ident[EI_MAG2]) == ELFMAG2) && ((ehdr.e_ident[EI_MAG3]) == ELFMAG3))
 
@@ -109,17 +109,17 @@ typedef struct {
     uint32_t p_align;
 } Elf32_Phdr;
 
-//Possible values for p_type
-#define PT_NULL (0x0U) //Unused entry - skip
-#define PT_LOAD (0x1U) //Loadable segment
-#define PT_SCE_RELA (0x60000000U) //Relocations
-#define PT_SCE_COMMENT (0x6FFFFF00U) //Compiler signature?
-#define PT_SCE_VERSION (0x6FFFFF01U) //SDK signature?
+// Possible values for p_type
+#define PT_NULL (0x0U) // Unused entry - skip
+#define PT_LOAD (0x1U) // Loadable segment
+#define PT_SCE_RELA (0x60000000U) // Relocations
+#define PT_SCE_COMMENT (0x6FFFFF00U) // Compiler signature?
+#define PT_SCE_VERSION (0x6FFFFF01U) // SDK signature?
 #define PT_ARM_EXIDX (0x70000001U)
 
-#define PT_LOOS (0x60000000U) //Lowest OS-specific value
-#define PT_HIOS (0x6FFFFFFFU) //Highest OS-specific value
-#define PT_LOPROC (0x70000000U) //Lowest processor-specific value
-#define PT_HIPROC (0x7FFFFFFFU) //Highest processor-specific value
+#define PT_LOOS (0x60000000U) // Lowest OS-specific value
+#define PT_HIOS (0x6FFFFFFFU) // Highest OS-specific value
+#define PT_LOPROC (0x70000000U) // Lowest processor-specific value
+#define PT_HIPROC (0x7FFFFFFFU) // Highest processor-specific value
 
-//TODO: possible values for p_flags
+// TODO: possible values for p_flags

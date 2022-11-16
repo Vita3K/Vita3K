@@ -1,10 +1,11 @@
 # Vita3K
 
 ![C/C++ CI](https://github.com/Vita3K/Vita3K/workflows/C/C++%20CI/badge.svg)
+[![Vita3K discord server](https://img.shields.io/discord/408916678911459329?color=5865F2&label=Vita3K%20&logo=discord&logoColor=white)](https://discord.gg/6aGwQzh)
 
 ## Introduction
 
-Vita3K is an experimental PlayStation Vita emulator for Windows and Linux.
+Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS.
 
 * [Website](https://vita3k.org/) (information for users)
 * [Wiki](https://github.com/Vita3K/Vita3K/wiki) (information for developers)

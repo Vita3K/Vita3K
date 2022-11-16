@@ -50,9 +50,7 @@ EXPORT(int, sceMp4JumpPTS) {
 }
 
 EXPORT(int, sceMp4OpenFile) {
-    STUBBED("Fake Size");
-
-    return 13;
+    return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceMp4PTSToTime) {

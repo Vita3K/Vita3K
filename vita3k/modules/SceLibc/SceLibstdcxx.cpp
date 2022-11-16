@@ -17,6 +17,9 @@
 
 #include "SceLibstdcxx.h"
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceLibstdcxx);
+
 EXPORT(int, _Atomic_compare_exchange_strong) {
     return UNIMPLEMENTED();
 }
@@ -2006,6 +2009,7 @@ EXPORT(int, _ZdlPvS_) {
 }
 
 EXPORT(int, _Znaj, int test) {
+    TRACY_FUNC(_Znaj, test);
     return alloc(emuenv.mem, test, __FUNCTION__);
 }
 
@@ -2014,6 +2018,7 @@ EXPORT(int, _ZnajRKSt9nothrow_t) {
 }
 
 EXPORT(int, _Znwj, int test) {
+    TRACY_FUNC(_Znwj, test);
     return alloc(emuenv.mem, test, __FUNCTION__);
 }
 

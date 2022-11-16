@@ -261,7 +261,7 @@ const std::vector<std::pair<SceSystemParamLang, std::string>> LIST_SYS_LANG = {
     { SCE_SYSTEM_PARAM_LANG_ITALIAN, "Italiano" },
     { SCE_SYSTEM_PARAM_LANG_DUTCH, "Nederlands" },
     { SCE_SYSTEM_PARAM_LANG_NORWEGIAN, "Norsk" },
-    { SCE_SYSTEM_PARAM_LANG_POLISH, "Polskis" },
+    { SCE_SYSTEM_PARAM_LANG_POLISH, "Polski" },
     { SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR, reinterpret_cast<const char *>(u8"Português (Brasil)") },
     { SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT, reinterpret_cast<const char *>(u8"Português (Portugal)") },
     { SCE_SYSTEM_PARAM_LANG_RUSSIAN, reinterpret_cast<const char *>(u8"Русский") },

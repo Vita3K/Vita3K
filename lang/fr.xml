@@ -26,7 +26,7 @@
 
 	<about name="À Propos">
 		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
-		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems.</about_vita3k>
+		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux and macOS operating systems.</about_vita3k>
 		<note>Note: The emulator is still in a very early stage of development.</note>
 		<github_website>If you're interested in contributing, check out our GitHub:</github_website>
 		<vita3k_website>Visit our website for more info:</vita3k_website>
@@ -36,26 +36,43 @@
 	</about>
 
 	<app_context>
+		<boot>Boot</boot> 
+		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
+		<copy_app_info>Copy App Info</copy_app_info>
+		<id_and_name>ID and Name</id_and_name>
+		<custom_config>Custom Config</custom_config>
+		<create>Create</create>
+		<edit>Edit</edit>
+		<remove>Remove</remove>
+		<open_folder>Open Folder</open_folder>
+		<addcont>DLCs</addcont>
+		<license>License</license>
+		<shader_cache>Shader Cache</shader_cache>
+		<shader_log>Shader Log</shader_log>
 		<update_history>Historique de mise à jour</update_history>
 		<history_version>Version {}</history_version>
 		<information>Informations</information>
 		<app_delete>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</app_delete>
+		<app_delete_note>Deleting a application may take a while
+depending on its size and your hardware.</app_delete_note>
 		<save_delete>Supprimer ces données sauvegardées ?</save_delete>
  		<eligible>Autorisé</eligible>
 		<ineligible>Non autorisé</ineligible>
 		<level>Niveau</level>
 		<name>Nom</name>
 		<trophy_earning>Obtention de trophées</trophy_earning>
-		<parental_Controls>Contrôle parental</parental_Controls>
+		<parental_controls>Contrôle parental</parental_controls>
 		<updated>Mis à jour</updated>
 		<size>Taille</size>
 		<version>Version</version>
+		<title_id>Title ID</title_id>
 		<last_time_used>Dernière fois utilisé</last_time_used>
 		<never>Jamais</never>
 		<time_used>Temps utilisé</time_used>
 	</app_context>
 
 	<common>
+		<submit>Submit</submit> 
 		<cancel>Annuler</cancel>
 		<delete>Supprimer</delete>
 		<file_corrupted>Le fichier est corrompu.</file_corrupted>
@@ -255,11 +272,12 @@ Ne pas éteindre le système, ni fermer l'application.</warning_saving>
 		<trophy_earned>Vous avez obtenu un trophée !</trophy_earned>
 	</indicator>
 
-    <initial_setup>
+	<initial_setup>
 		<back>Précédent</back>
 		<completed_setup>Vous avez terminé l'installation initiale.
 Votre système Vita3K est prêt !</completed_setup>
 		<select_language>Sélectionner une langue.</select_language>
+		<completed>Completed.</completed>
 		<next>Suivant</next>
 	</initial_setup>
 
@@ -272,6 +290,7 @@ Votre système Vita3K est prêt !</completed_setup>
 		<theme_background name="Thème et Arrière-plan">
 			<default>Par défaut</default>
 			<theme name="Thème">
+				<search>Search</search>
 				<find_in_altervista>Trouver dans Altervista</find_in_altervista>
 				<information name="Informations">
 					<name>Nom</name>
@@ -279,11 +298,13 @@ Votre système Vita3K est prêt !</completed_setup>
 					<updated>Mis à jour</updated>
 					<size>Taille</size>
 					<version>Version</version>
+					<content_id>Content ID</content_id>
 				</information>
 				<delete>Ce thème va être supprimé.</delete>
 			</theme>
 			<start_screen name="Écran de démarrage">
 				<image>Image</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Arrière-plans d'écran d'accueil">
 				<delete_background>Delete Background</delete_background>
@@ -329,6 +350,9 @@ Votre système Vita3K est prêt !</completed_setup>
 	</settings>
 
 	<trophy_collection>
+		<search>Search</search>
+		<delete_trophy>Delete Trophy</delete_trophy>
+		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Détails</details>
 		<earned>Obtenu</earned>
 		<name>Nom</name>

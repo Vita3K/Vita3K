@@ -81,3 +81,16 @@ std::string log_hex_full(T val) {
     ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << val;
     return ss.str();
 }
+
+// same as log_hex_full but without the padding.
+// using a stringstream is 2x faster than fmt.
+// mainly here to print pointers addresses into tracy
+// TODO: get rid of log_hex in for this faster one
+template <typename T>
+std::string log_hex_fast(T val) {
+    using unsigned_type = typename std::make_unsigned<T>::type;
+    std::stringstream ss;
+    ss << "0x";
+    ss << std::hex << val;
+    return ss.str();
+}

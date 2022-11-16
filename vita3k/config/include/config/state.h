@@ -105,12 +105,60 @@ public:
      * @brief Available HLE modules for advanced profiling using Tracy
      *
      * Advanced profiling using Tracy allows for function calls to be logged with their arguments
+     * Please keep them in order.
      */
-    const std::vector<std::string> tracy_available_advanced_profiling_modules = {
+    const std::set<std::string> tracy_available_advanced_profiling_modules = {
+        "Renderer commands",
+        "SceAppMgr",
+        "SceAppMgrUser",
+        "SceAppUtil",
+        "SceAtrac",
         "SceAudio",
+        "SceAudiodecUser",
+        "SceAudioIn",
+        "SceCodecEngineUser",
+        "SceCommonDialog",
+        "SceCtrl",
+        "SceDbg",
+        "SceDisplay",
+        "SceDisplayUser",
+        "SceFiber",
+        "SceFios2Kernel",
+        "SceFios2User",
+        "SceGxm",
         "SceHttp",
+        "SceIme",
+        "SceIofilemgr",
+        "SceJpegUser",
+        "SceKernelForMono",
+        "SceKernelForVM",
+        "SceLibc",
+        "SceLibKernel",
+        "SceLibm",
+        "SceLibRng",
+        "SceLibstdcxx",
+        "SceModulemgr",
+        "SceMotion",
+        "SceNet",
+        "SceNetCtl",
+        "SceNgs",
+        "SceNpCommon",
+        "SceNpManager",
+        "SceNpTrophy",
+        "ScePafStdc",
+        "ScePower",
+        "SceProcessmgr",
+        "SceRegMgr",
+        "SceRtc",
+        "SceRtcUser",
+        "SceSblRng",
         "SceSsl",
-        "SceTouch"
+        "SceSysmem",
+        "SceSysmodule",
+        "SceThreadmgr",
+        "SceThreadmgrCoredumpTime",
+        "SceTouch",
+        "SceVideodecUser"
     };
 
     /**
@@ -130,6 +178,7 @@ public:
         bool enable_fxaa = false;
         bool v_sync = true;
         int anisotropic_filtering = 1;
+        int psn_status = SCE_NP_SERVICE_STATE_UNKNOWN;
     };
 
     /**

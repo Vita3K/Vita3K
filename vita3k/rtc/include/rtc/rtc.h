@@ -35,6 +35,17 @@ constexpr auto VITA_CLOCKS_PER_SEC = 1'000'000;
 
 using VitaClocks = std::chrono::duration<std::uint64_t, std::ratio<1, VITA_CLOCKS_PER_SEC>>;
 
+enum SceKernelPowerTickType {
+    /** Cancel all timers */
+    SCE_KERNEL_POWER_TICK_DEFAULT = 0,
+    /** Cancel automatic suspension timer */
+    SCE_KERNEL_POWER_TICK_DISABLE_AUTO_SUSPEND = 1,
+    /** Cancel OLED-off timer */
+    SCE_KERNEL_POWER_TICK_DISABLE_OLED_OFF = 4,
+    /** Cancel OLED dimming timer */
+    SCE_KERNEL_POWER_TICK_DISABLE_OLED_DIMMING = 6
+};
+
 enum SceRtcErrorCode {
     SCE_RTC_ERROR_INVALID_VALUE = 0x80251000,
     SCE_RTC_ERROR_INVALID_POINTER = 0x80251001,

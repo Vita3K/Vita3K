@@ -31,11 +31,13 @@
 
 #include <util/align.h>
 #include <util/log.h>
+#include <util/tracy.h>
 
 #include <config/state.h>
 
 namespace renderer {
 COMMAND_SET_STATE(region_clip) {
+    TRACY_FUNC_COMMANDS_SET_STATE(region_clip);
     render_context->record.region_clip_mode = helper.pop<SceGxmRegionClipMode>();
     const std::uint32_t xMin = helper.pop<std::uint32_t>();
     const std::uint32_t xMax = helper.pop<std::uint32_t>();
@@ -64,6 +66,7 @@ COMMAND_SET_STATE(region_clip) {
 }
 
 COMMAND_SET_STATE(program) {
+    TRACY_FUNC_COMMANDS_SET_STATE(program);
     const Ptr<const void> program = helper.pop<Ptr<const void>>();
     const bool is_fragment = helper.pop<bool>();
 
@@ -96,21 +99,9 @@ COMMAND_SET_STATE(program) {
     }
 }
 
-COMMAND_SET_STATE(uniform) {
-    const bool is_vertex = helper.pop<bool>();
-    const SceGxmProgramParameter *parameter = helper.pop<SceGxmProgramParameter *>();
-    const void *data = helper.pop<const void *>();
-
-    UniformSetRequest request{ parameter, data };
-    if (is_vertex) {
-        render_context->vertex_set_requests.push_back(std::move(request));
-    } else {
-        render_context->fragment_set_requests.push_back(std::move(request));
-    }
-}
-
 COMMAND_SET_STATE(uniform_buffer) {
-    uint8_t *data = helper.pop<std::uint8_t *>();
+    TRACY_FUNC_COMMANDS_SET_STATE(uniform_buffer);
+    const uint8_t *data = helper.pop<const Ptr<void>>().cast<uint8_t>().get(mem);
     const bool is_vertex = helper.pop<bool>();
     const int block_num = helper.pop<int>();
     const std::uint32_t size = helper.pop<std::uint32_t>();
@@ -139,11 +130,10 @@ COMMAND_SET_STATE(uniform_buffer) {
         std::vector<uint8_t> my_data((uint8_t *)data, (uint8_t *)data + size);
         render_context->ubo_data[base_binding_ubo_relative + block_num] = my_data;
     }
-
-    delete[] data;
 }
 
 COMMAND_SET_STATE(viewport) {
+    TRACY_FUNC_COMMANDS_SET_STATE(viewport);
     const bool flat = helper.pop<bool>();
     render_context->record.viewport_flat = flat;
 
@@ -223,6 +213,7 @@ COMMAND_SET_STATE(viewport) {
 }
 
 COMMAND_SET_STATE(depth_bias) {
+    TRACY_FUNC_COMMANDS_SET_STATE(depth_bias);
     const bool is_front = helper.pop<bool>();
     const int factor = helper.pop<int>();
     const int unit = helper.pop<int>();
@@ -248,6 +239,7 @@ COMMAND_SET_STATE(depth_bias) {
 }
 
 COMMAND_SET_STATE(depth_func) {
+    TRACY_FUNC_COMMANDS_SET_STATE(depth_func);
     const bool is_front = helper.pop<bool>();
     const SceGxmDepthFunc depth_func = helper.pop<SceGxmDepthFunc>();
 
@@ -273,6 +265,7 @@ COMMAND_SET_STATE(depth_func) {
 }
 
 COMMAND_SET_STATE(depth_write_enable) {
+    TRACY_FUNC_COMMANDS_SET_STATE(depth_write_enable);
     const bool is_front = helper.pop<bool>();
     const SceGxmDepthWriteMode mode = helper.pop<SceGxmDepthWriteMode>();
 
@@ -297,6 +290,7 @@ COMMAND_SET_STATE(depth_write_enable) {
 }
 
 COMMAND_SET_STATE(polygon_mode) {
+    TRACY_FUNC_COMMANDS_SET_STATE(polygon_mode);
     const bool is_front = helper.pop<bool>();
     const SceGxmPolygonMode mode = helper.pop<SceGxmPolygonMode>();
     if (is_front)
@@ -320,6 +314,7 @@ COMMAND_SET_STATE(polygon_mode) {
 }
 
 COMMAND_SET_STATE(point_line_width) {
+    TRACY_FUNC_COMMANDS_SET_STATE(point_line_width);
     const bool is_front = helper.pop<bool>();
     const std::uint32_t width = helper.pop<std::uint32_t>();
     if (is_front)
@@ -341,6 +336,7 @@ COMMAND_SET_STATE(point_line_width) {
 }
 
 COMMAND_SET_STATE(stencil_func) {
+    TRACY_FUNC_COMMANDS_SET_STATE(stencil_func);
     // Is this the pain that driver guys have to suffer?
     const bool is_front = helper.pop<bool>();
     GxmStencilStateOp &stencil_state_op = is_front ? render_context->record.front_stencil_state_op : render_context->record.back_stencil_state_op;
@@ -381,6 +377,7 @@ COMMAND_SET_STATE(stencil_func) {
 }
 
 COMMAND_SET_STATE(stencil_ref) {
+    TRACY_FUNC_COMMANDS_SET_STATE(stencil_ref);
     const bool is_front = helper.pop<bool>();
     const uint8_t sref = helper.pop<const unsigned char>();
 
@@ -405,6 +402,7 @@ COMMAND_SET_STATE(stencil_ref) {
 }
 
 COMMAND_SET_STATE(texture) {
+    TRACY_FUNC_COMMANDS_SET_STATE(texture);
     const std::uint32_t texture_index = helper.pop<std::uint32_t>();
     SceGxmTexture texture = helper.pop<SceGxmTexture>();
 
@@ -426,6 +424,7 @@ COMMAND_SET_STATE(texture) {
 }
 
 COMMAND_SET_STATE(two_sided) {
+    TRACY_FUNC_COMMANDS_SET_STATE(two_sided);
     const SceGxmTwoSidedMode two_sided = helper.pop<SceGxmTwoSidedMode>();
     render_context->record.two_sided = two_sided;
 
@@ -448,6 +447,7 @@ COMMAND_SET_STATE(two_sided) {
 }
 
 COMMAND_SET_STATE(cull_mode) {
+    TRACY_FUNC_COMMANDS_SET_STATE(cull_mode);
     render_context->record.cull_mode = helper.pop<SceGxmCullMode>();
 
     switch (renderer.current_backend) {
@@ -466,19 +466,18 @@ COMMAND_SET_STATE(cull_mode) {
 }
 
 COMMAND_SET_STATE(vertex_stream) {
-    std::uint8_t *stream_data = helper.pop<std::uint8_t *>();
+    TRACY_FUNC_COMMANDS_SET_STATE(vertex_stream);
+    const uint8_t *stream_data = helper.pop<Ptr<const void>>().cast<const uint8_t>().get(mem);
     const std::size_t stream_index = helper.pop<std::size_t>();
     const std::size_t stream_data_length = helper.pop<std::size_t>();
 
     renderer::GXMStreamInfo &info = render_context->record.vertex_streams[stream_index];
-    if (info.data) {
-        delete[] info.data;
-    }
     info.data = stream_data;
     info.size = stream_data_length;
 }
 
 COMMAND_SET_STATE(fragment_program_enable) {
+    TRACY_FUNC_COMMANDS_SET_STATE(fragment_program_enable);
     const bool is_front = helper.pop<bool>();
     const SceGxmFragmentProgramMode mode = helper.pop<SceGxmFragmentProgramMode>();
 
@@ -493,28 +492,28 @@ COMMAND_SET_STATE(fragment_program_enable) {
 }
 
 COMMAND(handle_set_state) {
+    // TRACY_FUNC_COMMANDS(handle_set_state); All set state commands have tracy so kinda redundant
     renderer::GXMState gxm_state_to_set = helper.pop<renderer::GXMState>();
     using StateChangeHandlerFunc = std::function<void(renderer::State &, MemState &, Config &, CommandHelper &,
         Context *, const char *base_path, const char *title_id)>;
 
     static const std::map<renderer::GXMState, StateChangeHandlerFunc> handlers = {
-        { renderer::GXMState::RegionClip, cmd_set_state_region_clip },
-        { renderer::GXMState::Program, cmd_set_state_program },
-        { renderer::GXMState::Viewport, cmd_set_state_viewport },
-        { renderer::GXMState::DepthBias, cmd_set_state_depth_bias },
-        { renderer::GXMState::DepthFunc, cmd_set_state_depth_func },
-        { renderer::GXMState::DepthWriteEnable, cmd_set_state_depth_write_enable },
-        { renderer::GXMState::PolygonMode, cmd_set_state_polygon_mode },
-        { renderer::GXMState::PointLineWidth, cmd_set_state_point_line_width },
-        { renderer::GXMState::StencilFunc, cmd_set_state_stencil_func },
-        { renderer::GXMState::Texture, cmd_set_state_texture },
-        { renderer::GXMState::StencilRef, cmd_set_state_stencil_ref },
-        { renderer::GXMState::TwoSided, cmd_set_state_two_sided },
-        { renderer::GXMState::CullMode, cmd_set_state_cull_mode },
-        { renderer::GXMState::VertexStream, cmd_set_state_vertex_stream },
-        { renderer::GXMState::Uniform, cmd_set_state_uniform },
-        { renderer::GXMState::UniformBuffer, cmd_set_state_uniform_buffer },
-        { renderer::GXMState::FragmentProgramEnable, cmd_set_state_fragment_program_enable }
+        { GXMState::RegionClip, cmd_set_state_region_clip },
+        { GXMState::Program, cmd_set_state_program },
+        { GXMState::Viewport, cmd_set_state_viewport },
+        { GXMState::DepthBias, cmd_set_state_depth_bias },
+        { GXMState::DepthFunc, cmd_set_state_depth_func },
+        { GXMState::DepthWriteEnable, cmd_set_state_depth_write_enable },
+        { GXMState::PolygonMode, cmd_set_state_polygon_mode },
+        { GXMState::PointLineWidth, cmd_set_state_point_line_width },
+        { GXMState::StencilFunc, cmd_set_state_stencil_func },
+        { GXMState::Texture, cmd_set_state_texture },
+        { GXMState::StencilRef, cmd_set_state_stencil_ref },
+        { GXMState::TwoSided, cmd_set_state_two_sided },
+        { GXMState::CullMode, cmd_set_state_cull_mode },
+        { GXMState::VertexStream, cmd_set_state_vertex_stream },
+        { GXMState::UniformBuffer, cmd_set_state_uniform_buffer },
+        { GXMState::FragmentProgramEnable, cmd_set_state_fragment_program_enable }
     };
 
     auto result = handlers.find(gxm_state_to_set);
@@ -522,6 +521,8 @@ COMMAND(handle_set_state) {
     if (result != handlers.end()) {
         // LOG_TRACE("State set: {}", (int)gxm_state_to_set);
         result->second(renderer, mem, config, helper, render_context, base_path, title_id);
+    } else {
+        LOG_ERROR("Unknown state set command {}", static_cast<uint16_t>(gxm_state_to_set));
     }
 }
 } // namespace renderer

@@ -23,6 +23,9 @@
 #include <modules/module_parent.h>
 #include <util/lock_and_find.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceModulemgr);
+
 /**
  * \brief Loads a dynamic module into memory if it wasn't already loaded. If it was, find it and return it. First 3 arguments are outputs.
  * \param mod_id UID of the loaded module object
@@ -89,10 +92,12 @@ static bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelM
 }
 
 EXPORT(int, _sceKernelCloseModule) {
+    TRACY_FUNC(_sceKernelCloseModule);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option) {
+    TRACY_FUNC(_sceKernelLoadModule, path, flags, option);
     SceUID mod_id;
     Ptr<const void> entry_point;
     SceKernelModuleInfoPtr module;
@@ -117,6 +122,7 @@ static SceUID start_module(KernelState &kernel, SceUID thread_id, const SceKerne
 }
 
 EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize args, const Ptr<void> argp, SceUInt32 flags, const SceKernelLMOption *pOpt, int *pRes) {
+    TRACY_FUNC(_sceKernelLoadStartModule, moduleFileName, args, argp, flags, pOpt, pRes);
     // Is workaround for fix crash on loading "rgpluginsgm_psvita" module, relate issue #1095 on github, delete this after fix it.
     if (std::string(moduleFileName).find("rgpluginsgm_psvita") != std::string::npos) {
         LOG_WARN("Bypass load this module: {}", moduleFileName);
@@ -135,36 +141,44 @@ EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize ar
 }
 
 EXPORT(int, _sceKernelOpenModule) {
+    TRACY_FUNC(_sceKernelOpenModule);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes) {
+    TRACY_FUNC(_sceKernelStartModule, uid, args, argp, flags, pOpt, pRes);
     const SceKernelModuleInfoPtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
 
     return start_module(emuenv.kernel, thread_id, module, args, argp, pRes);
 }
 
 EXPORT(int, _sceKernelStopModule) {
+    TRACY_FUNC(_sceKernelStopModule);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceKernelStopUnloadModule) {
+    TRACY_FUNC(_sceKernelStopUnloadModule);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, _sceKernelUnloadModule) {
+    TRACY_FUNC(_sceKernelUnloadModule);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetAllowedSdkVersionOnSystem) {
+    TRACY_FUNC(sceKernelGetAllowedSdkVersionOnSystem);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetLibraryInfoByNID) {
+    TRACY_FUNC(sceKernelGetLibraryInfoByNID);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetModuleIdByAddr, Ptr<void> addr) {
+    TRACY_FUNC(sceKernelGetModuleIdByAddr, addr);
     KernelState *const state = &emuenv.kernel;
 
     for (const auto &module : state->loaded_modules) {
@@ -181,6 +195,7 @@ EXPORT(int, sceKernelGetModuleIdByAddr, Ptr<void> addr) {
 }
 
 EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
+    TRACY_FUNC(sceKernelGetModuleInfo, modid, info);
     KernelState *const state = &emuenv.kernel;
     const SceKernelModuleInfoPtrs::const_iterator module = state->loaded_modules.find(modid);
     assert(module != state->loaded_modules.end());
@@ -191,6 +206,7 @@ EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
 }
 
 EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
+    TRACY_FUNC(sceKernelGetModuleList, flags, modids, num);
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
     int i = 0;
     for (SceKernelModuleInfoPtrs::iterator module = emuenv.kernel.loaded_modules.begin(); module != emuenv.kernel.loaded_modules.end(); ++module) {
@@ -202,14 +218,17 @@ EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
 }
 
 EXPORT(int, sceKernelGetSystemSwVersion) {
+    TRACY_FUNC(sceKernelGetSystemSwVersion);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelInhibitLoadingModule) {
+    TRACY_FUNC(sceKernelInhibitLoadingModule);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelIsCalledFromSysModule) {
+    TRACY_FUNC(sceKernelIsCalledFromSysModule);
     return UNIMPLEMENTED();
 }
 

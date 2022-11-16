@@ -505,15 +505,15 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             const auto app_index = get_app_index(gui, app_selected);
             ImGui::SetWindowFontScale(1.f);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["trophy_earning"].c_str());
-            ImGui::SameLine(280.f * SCALE.x);
+            ImGui::SameLine(310.f * SCALE.x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.app_selector.app_info.trophy.c_str());
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["parental_Controls"].c_str());
-            ImGui::SameLine(280.f * SCALE.x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["parental_controls"].c_str());
+            ImGui::SameLine(310.f * SCALE.x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s %d", info["level"].c_str(), *reinterpret_cast<const uint16_t *>(get_app_index(gui, app_selected)->parental_level.c_str()));
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["updated"].c_str());
-            ImGui::SameLine(280.f * SCALE.x);
+            ImGui::SameLine(310.f * SCALE.x);
             auto DATE_TIME = get_date_time(gui, emuenv, gui.app_selector.app_info.updated);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", DATE_TIME[DateTime::DATE_MINI].c_str(), DATE_TIME[DateTime::CLOCK].c_str());
             if (is_12_hour_format) {
@@ -522,11 +522,11 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
             }
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["size"].c_str());
-            ImGui::SameLine(280.f * SCALE.x);
+            ImGui::SameLine(310.f * SCALE.x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_unit_size(gui.app_selector.app_info.size).c_str());
             ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (35.f * SCALE.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", info["version"].c_str());
-            ImGui::SameLine(280.f * SCALE.x);
+            ImGui::SameLine(310.f * SCALE.x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", get_app_index(gui, app_selected)->app_ver.c_str());
             for (const auto &addcont : addcont_info) {
                 ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (40.f * SCALE.y));

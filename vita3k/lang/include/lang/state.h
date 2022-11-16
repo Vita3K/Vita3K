@@ -35,6 +35,7 @@ enum TypeLang {
 
 struct DialogLangState {
     std::map<std::string, std::string> common = {
+        { "submit", "Submit" },
         { "cancel", "Cancel" },
         { "delete", "Delete" },
         { "file_corrupted", "The file is corrupt." },
@@ -124,7 +125,7 @@ struct LangState {
     std::map<std::string, std::string> about = {
         { "title", "About" },
         { "vita3k", "Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator." },
-        { "about_vita3k", "Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems." },
+        { "about_vita3k", "Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux and macOS operating systems." },
         { "note", "Note: The emulator is still in a very early stage of development." },
         { "github_website", "If you're interested in contributing, check out our GitHub:" },
         { "vita3k_website", "Visit our website for more info:" },
@@ -157,13 +158,18 @@ struct LangState {
         { "level", "Level" },
         { "name", "Name" },
         { "trophy_earning", "Trophy Earning" },
-        { "parental_Controls", "Parental Controls" },
+        { "parental_controls", "Parental Controls" },
         { "updated", "Updated" },
         { "size", "Size" },
         { "version", "Version" },
+        { "title_id", "Title ID" },
         { "last_time_used", "Last time used" },
         { "never", "Never" },
         { "time_used", "Time used" }
+    };
+    std::map<std::string, std::string> compile_shaders = {
+        { "compiling_shaders", "Compiling Shaders" },
+        { "shaders_compiled", "shaders compiled" }
     };
     struct ContentManager {
         std::map<std::string, std::string> main = {
@@ -247,7 +253,6 @@ struct LangState {
         { "cat", "Cat" },
         { "last_time", "Last Time" },
         { "tit", "Title" },
-        { "tit_id", "Title ID" },
         { "refresh", "Refresh" }
     };
     std::map<std::string, std::string> indicator = {
@@ -327,7 +332,8 @@ struct LangState {
             Theme theme;
             std::map<std::string, std::string> start_screen = {
                 { "title", "Start Screen" },
-                { "image", "Image" }
+                { "image", "Image" },
+                { "add_image", "Add Image" }
             };
             std::map<std::string, std::string> home_screen_backgrounds = {
                 { "title", "Home Screen Backgrounds" },
@@ -414,16 +420,16 @@ struct LangState {
     std::map<std::string, std::string> welcome = {
         { "title", "Welcome to Vita3K" },
         { "line_first", "Vita3K PlayStation Vita Emulator" },
-        { "line_second", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows and Linux." },
+        { "line_second", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux and macOS." },
         { "line_third", "The emulator is still in its early stages so any feedback and testing is greatly appreciated." },
         { "line_fourth", "To get started, please install the PS Vita firmware and font packages." },
         { "download_firmware", "Download Firmware" },
         { "line_sixth_part_one", "A comprehensive guide on how to set-up Vita3K can be found on the" },
         { "quickstart", "Quickstart" },
         { "line_sixth_part_two", "page." },
-        { "line_seventh_part_one", "Consult the Commercial game" },
-        { "compatibility", "compatibility" },
-        { "line_seventh_part_two", "list and the Homebrew compatibility list to see what runs." },
+        { "line_seventh", "Consult the Commercial game and the Homebrew compatibility list to see what currently runs." },
+        { "commercial_compatibility_list", "Commercial Compatibility List" },
+        { "homebrew_compatibility_list", "Homebrew Compatibility List" },
         { "line_eighth", "Contributions are welcome!" },
         { "line_tenth", "Additional support can be found in the #help channel of the" },
         { "line_eleventh", "Vita3K does not condone piracy. You must dump your own games." },

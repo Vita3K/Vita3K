@@ -26,7 +26,7 @@
 
 	<about name="About">
 		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
-		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows and Linux operating systems.</about_vita3k>
+		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux and macOS operating systems.</about_vita3k>
 		<note>Note: The emulator is still in a very early stage of development.</note>
 		<github_website>If you're interested in contributing, check out our GitHub:</github_website>
 		<vita3k_website>Visit our website for more info:</vita3k_website>
@@ -61,16 +61,18 @@ depending on its size and your hardware.</app_delete_note>
 		<level>Level</level>
 		<name>Name</name>
 		<trophy_earning>Trophy Earning</trophy_earning>
-		<parental_Controls>Parental Controls</parental_Controls>
+		<parental_controls>Parental Controls</parental_controls>
 		<updated>Updated</updated>
 		<size>Size</size>
 		<version>Version</version>
+		<title_id>Title ID</title_id>
 		<last_time_used>Last time used</last_time_used>
 		<never>Never</never>
 		<time_used>Time used</time_used>
 	</app_context>
 
 	<common>
+		<submit>Submit</submit> 
 		<cancel>Cancel</cancel>
 		<delete>Delete</delete>
 		<file_corrupted>The file is corrupt.</file_corrupted>
@@ -195,6 +197,11 @@ depending on its size and your hardware.</app_delete_note>
 		<minutes_ago>{} Minutes Ago</minutes_ago>
 	</common>
 
+	<compile_shaders>
+		<compiling_shaders>Compiling Shaders</compiling_shaders>
+		<shaders_compiled>shaders compiled</shaders_compiled>
+	</compile_shaders>
+
 	<content_manager name="Content Manager">
 		<search>Search</search>
 		<application name="Application">
@@ -311,7 +318,6 @@ Do not power off the system or close the application.</warning_saving>
 		<cat>Cat</cat>
 		<last_time>Last Time</last_time>
 		<tit>Title</tit>
-		<tit_id>Title ID</tit_id>
 		<refresh>Refresh</refresh>
 	</home_screen>
 
@@ -393,6 +399,7 @@ Please download and install it.</no_font_exist>
 			</theme>
 			<start_screen name="Start Screen">
 				<image>Image</image>
+				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Home Screen Backgrounds">
 				<delete_background>Delete Background</delete_background>
@@ -493,16 +500,16 @@ After the download is complete, Vita3K will restart automatically and then insta
 
 	<welcome name="Welcome to Vita3K">
 		<line_first>Vita3K PlayStation Vita Emulator</line_first>
-		<line_second>Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows and Linux.</line_second>
+		<line_second>Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux and macOS.</line_second>
 		<line_third>The emulator is still in its early stages so any feedback and testing is greatly appreciated.</line_third>
 		<line_fourth>To get started, please install the PS Vita firmware and font packages.</line_fourth>
 		<download_firmware>Download Firmware</download_firmware>
 		<line_sixth_part_one>A comprehensive guide on how to set-up Vita3K can be found on the</line_sixth_part_one>
 		<quickstart>Quickstart</quickstart>
 		<line_sixth_part_two>page.</line_sixth_part_two>
-		<line_seventh_part_one>Consult the Commercial game</line_seventh_part_one>
-		<compatibility>compatibility</compatibility>
-		<line_seventh_part_two>list and the Homebrew compatibility list to see what runs.</line_seventh_part_two>
+		<line_seventh>Consult the Commercial game and the Homebrew compatibility list to see what currently runs.</line_seventh>
+		<commercial_compatibility_list>Commercial Compatibility List</commercial_compatibility_list>
+		<homebrew_compatibility_list>Homebrew Compatibility List</homebrew_compatibility_list>
 		<line_eighth>Contributions are welcome!</line_eighth>
 		<line_tenth>Additional support can be found in the #help channel of the</line_tenth>
 		<line_eleventh>Vita3K does not condone piracy. You must dump your own games.</line_eleventh>

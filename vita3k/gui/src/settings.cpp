@@ -541,12 +541,12 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     if (gui.users[emuenv.io.user_id].start_type == "image")
                         ImGui::SetWindowFontScale(1.8f);
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-                    if (ImGui::Selectable(gui.users[emuenv.io.user_id].start_type == "image" ? "V" : "Add Image", false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
+                    if (ImGui::Selectable(gui.users[emuenv.io.user_id].start_type == "image" ? "V" : theme_background.start_screen["add_image"].c_str(), false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
                         sub_menu = "image";
                     ImGui::PopStyleColor();
                     ImGui::SetWindowFontScale(0.72f);
                     ImGui::SetCursorPosX(IMAGE_POS.x);
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", theme_background.main["image"].c_str());
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", theme_background.start_screen["image"].c_str());
                     const auto DEFAULT_POS = ImVec2(is_not_default ? (SIZE_LIST.x / 2.f) + (SIZE_PACKAGE.x / 2.f) + (30.f * SCALE.y) : (SIZE_LIST.x / 2.f) - (SIZE_PACKAGE.x / 2.f), PACKAGE_POS_Y);
                     if (gui.themes_preview["default"].find(PACKAGE) != gui.themes_preview["default"].end()) {
                         ImGui::SetCursorPos(DEFAULT_POS);

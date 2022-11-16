@@ -252,9 +252,15 @@ public:
         case Dynarmic::A32::Exception::Yield:
             break;
         case Dynarmic::A32::Exception::UndefinedInstruction:
+            LOG_WARN("Undefined instruction at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc).value(), disassemble(*parent, pc, nullptr));
+            InterpreterFallback(pc, 1);
+            break;
         case Dynarmic::A32::Exception::UnpredictableInstruction:
+            LOG_WARN("Unpredictable instruction at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc).value(), disassemble(*parent, pc, nullptr));
+            InterpreterFallback(pc, 1);
+            break;
         case Dynarmic::A32::Exception::DecodeError: {
-            LOG_WARN("Undefined/Unpredictable instruction at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc).value(), disassemble(*parent, pc, nullptr));
+            LOG_WARN("Decode error at addr 0x{:X}, inst 0x{:X} ({})", pc, MemoryReadCode(pc).value(), disassemble(*parent, pc, nullptr));
             InterpreterFallback(pc, 1);
             break;
         }

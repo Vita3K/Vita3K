@@ -797,20 +797,22 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
     utils::make_for_loop(builder, ite, builder.makeIntConstant(0), builder.makeIntConstant(vec4_count), [&]() {
         spv::Id to_copy = builder.createAccessChain(spv::StorageClassStorageBuffer, block, { builder.createLoad(ite, spv::NoPrecision) });
         to_copy = builder.createLoad(to_copy, spv::NoPrecision);
-        spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, builder.getTypeId(builder.createLoad(ite, spv::NoPrecision)), builder.createLoad(ite, spv::NoPrecision), builder.makeIntConstant(start_in_vec4_granularity)) });
+        const spv::Id ite_loaded = builder.createLoad(ite, spv::NoPrecision);
+        const spv::Id ite_type = builder.getTypeId(ite_loaded);
+        spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, ite_type, ite_loaded, builder.makeIntConstant(start_in_vec4_granularity)) });
         spv::Id dest_friend = spv::NoResult;
 
         if (start % 4 == 0) {
             builder.createStore(to_copy, dest);
         } else {
-            dest_friend = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, builder.getTypeId(builder.createLoad(ite, spv::NoPrecision)), builder.createLoad(ite, spv::NoPrecision), builder.makeIntConstant(start_in_vec4_granularity + 1)) });
+            dest_friend = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, ite_type, ite_loaded, builder.makeIntConstant(start_in_vec4_granularity + 1)) });
 
             std::vector<spv::Id> ops_copy_1 = { builder.createLoad(dest, spv::NoPrecision), to_copy };
             std::vector<spv::Id> ops_copy_2 = { builder.createLoad(dest_friend, spv::NoPrecision), to_copy };
 
             for (int i = 0; i < start % 4; i++) {
                 ops_copy_1.push_back(i);
-                ops_copy_2.push_back(4 + (start % 4) + i);
+                ops_copy_2.push_back(4 + (4 - start % 4) + i);
             }
 
             for (int i = 0; i < (4 - start % 4); i++) {
@@ -908,7 +910,10 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         spv_params.buffer_container = b.createVariable(spv::NoPrecision, spv::StorageClassStorageBuffer, buffer_container_type,
             is_vert ? "vertexData" : "fragmentData");
 
+#ifndef __APPLE__
+        // Most Apple GPUs do not support the keyword restrict in MSL
         b.addDecoration(spv_params.buffer_container, spv::DecorationRestrict);
+#endif
         b.addDecoration(spv_params.buffer_container, spv::DecorationNonWritable);
         b.addDecoration(spv_params.buffer_container, spv::DecorationBinding, is_vert ? 0 : 1);
         if (translation_state.is_vulkan)

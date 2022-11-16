@@ -460,7 +460,7 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
         /*
                                    10001 = opcode1
                                         pp = pred (2 bits)
-                                          m = mod1 (1 bit)
+                                          m = cmod1 (1 bit)
                                            s = skipinv (1 bit)
                                             n = nosched (1 bit)
                                              cc = cop (2 bits)
@@ -468,21 +468,23 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
                                                 e = end (1 bit)
                                                  r = src1bext (1 bit)
                                                   b = src2bext (1 bit)
-                                                   o = mod2 (1 bit)
-                                                    wwww = wrmask (4 bits)
-                                                        aa = aop (2 bits)
-                                                          lll = sel1 (3 bits)
-                                                             fff = sel2 (3 bits)
+                                                   o = cmod2 (1 bit)
+                                                    a = amod1 (1 bit)
+                                                     ll = asel1 (2 bits)
+                                                       f = dmod (1 bit)
+                                                        gg = aop (2 bits)
+                                                          hhh = csel1 (3 bits)
+                                                             iii = csel2 (3 bits)
                                                                 k = src0bank (1 bit)
                                                                  tt = destbank (2 bits)
-                                                                   gg = src1bank (2 bits)
-                                                                     hh = src2bank (2 bits)
-                                                                       iiiiiii = destn (7 bits)
-                                                                              jjjjjjj = src0n (7 bits)
-                                                                                     qqqqqqq = src1n (7 bits)
-                                                                                            uuuuuuu = src2n (7 bits)
+                                                                   jj = src1bank (2 bits)
+                                                                     qq = src2bank (2 bits)
+                                                                       uuuuuuu = destn (7 bits)
+                                                                              vvvvvvv = src0n (7 bits)
+                                                                                     wwwwwww = src1n (7 bits)
+                                                                                            xxxxxxx = src2n (7 bits)
         */
-        INST(&V::sop3, "SOP3 ()", "10001ppmsnccderbowwwwaalllfffkttgghhiiiiiiijjjjjjjqqqqqqquuuuuuu"),
+        INST(&V::sop3, "SOP3 ()", "10001ppmsnccderboallfgghhhiiikttjjqquuuuuuuvvvvvvvwwwwwwwxxxxxxx"),
         // 8-bit integer Multiply and Add
         /*
                                      10011 = opcode1
@@ -871,31 +873,36 @@ spv::Id USSERecompiler::get_condition_value(const std::uint8_t pred, const bool 
 }
 
 void USSERecompiler::compile_code_node(const usse::USSECodeNode &code) {
+    if (code.size == 0)
+        return;
+
     std::unique_ptr<spv::Builder::If> cond_builder;
 
     if (code.condition != 0) {
         // Construct the IF
-        spv::Id pred_v = get_condition_value(code.condition);
-        cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+
+        // resogun puts sop3 instructions in a single node with a condition even though there aren't any
+        // TODO: remove this hack and solve this properly
+        constexpr uint64_t sop3_opcode = 0b10001;
+        if (code.size > 1 || (inst[code.offset] >> 59) != sop3_opcode) {
+            spv::Id pred_v = get_condition_value(code.condition);
+            cond_builder = std::make_unique<spv::Builder::If>(pred_v, spv::SelectionControlMaskNone, b);
+        }
     }
 
-    const auto last_pc = cur_pc;
+    LOG_TRACE("Compiling code_{}, size = {}", code.offset, code.size);
+    const usse::USSEOffset pc_end = code.offset + code.size - 1;
 
-    if (code.size > 0) {
-        LOG_TRACE("Compiling code_{}, size = {}", code.offset, code.size);
-        const usse::USSEOffset pc_end = code.offset + code.size - 1;
+    for (usse::USSEOffset pc = code.offset; pc <= pc_end; pc++) {
+        cur_pc = pc;
+        cur_instr = inst[pc];
 
-        for (usse::USSEOffset pc = code.offset; pc <= pc_end; pc++) {
-            cur_pc = pc;
-            cur_instr = inst[pc];
-
-            // Recompile the instruction, to the current block
-            auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
-            if (decoder.has_value())
-                decoder->call(visitor, cur_instr);
-            else
-                LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
-        }
+        // Recompile the instruction, to the current block
+        auto decoder = usse::DecodeUSSE<usse::USSETranslatorVisitor>(cur_instr);
+        if (decoder.has_value())
+            decoder->call(visitor, cur_instr);
+        else
+            LOG_DISASM("{:016x}: error: instruction unmatched", cur_instr);
     }
 
     if (cond_builder) {

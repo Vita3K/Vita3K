@@ -23,9 +23,13 @@
 
 #include <chrono>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceRtcUser);
+
 #define VITA_CLOCKS_PER_SEC 1000000
 
 EXPORT(int, sceRtcCheckValid, const SceDateTime *pTime) {
+    TRACY_FUNC(sceRtcCheckValid, pTime);
     if (pTime == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -77,22 +81,27 @@ EXPORT(int, sceRtcCheckValid, const SceDateTime *pTime) {
 }
 
 EXPORT(int, sceRtcCompareTick) {
+    TRACY_FUNC(sceRtcCompareTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTick *pUtc) {
+    TRACY_FUNC(sceRtcConvertLocalTimeToUtc, pLocalTime, pUtc);
     return CALL_EXPORT(_sceRtcConvertLocalTimeToUtc, pLocalTime, pUtc);
 }
 
 EXPORT(int, sceRtcConvertUtcToLocalTime, const SceRtcTick *pUtc, SceRtcTick *pLocalTime) {
+    TRACY_FUNC(sceRtcConvertUtcToLocalTime, pUtc, pLocalTime);
     return CALL_EXPORT(_sceRtcConvertUtcToLocalTime, pUtc, pLocalTime);
 }
 
 EXPORT(int, sceRtcFormatRFC2822) {
+    TRACY_FUNC(sceRtcFormatRFC2822);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcFormatRFC2822LocalTime, char *pszDateTime, const SceRtcTick *utc) {
+    TRACY_FUNC(sceRtcFormatRFC2822LocalTime, pszDateTime, utc);
     // The following code is from PPSSPP
     // Copyright (c) 2012- PPSSPP Project.
 
@@ -160,46 +169,57 @@ EXPORT(int, sceRtcFormatRFC2822LocalTime, char *pszDateTime, const SceRtcTick *u
 }
 
 EXPORT(int, sceRtcFormatRFC3339) {
+    TRACY_FUNC(sceRtcFormatRFC3339);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcFormatRFC3339LocalTime) {
+    TRACY_FUNC(sceRtcFormatRFC3339LocalTime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetCurrentClock, SceDateTime *datePtr, int iTimeZone) {
+    TRACY_FUNC(sceRtcGetCurrentClock, datePtr, iTimeZone);
     return CALL_EXPORT(_sceRtcGetCurrentClock, datePtr, iTimeZone);
 }
 
 EXPORT(int, sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
+    TRACY_FUNC(sceRtcGetCurrentClockLocalTime, datePtr);
     return CALL_EXPORT(_sceRtcGetCurrentClockLocalTime, datePtr);
 }
 
 EXPORT(int, sceRtcGetCurrentAdNetworkTick) {
+    TRACY_FUNC(sceRtcGetCurrentAdNetworkTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
+    TRACY_FUNC(sceRtcGetCurrentNetworkTick, tick);
     return CALL_EXPORT(_sceRtcGetCurrentNetworkTick, tick);
 }
 
 EXPORT(int, sceRtcGetCurrentDebugNetworkTick) {
+    TRACY_FUNC(sceRtcGetCurrentDebugNetworkTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {
+    TRACY_FUNC(sceRtcGetCurrentTick, tick);
     return CALL_EXPORT(_sceRtcGetCurrentTick, tick);
 }
 
 EXPORT(int, sceRtcGetCurrentGpsTick) {
+    TRACY_FUNC(sceRtcGetCurrentGpsTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetCurrentRetainedNetworkTick) {
+    TRACY_FUNC(sceRtcGetCurrentRetainedNetworkTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetDayOfWeek, int year, int month, int day) {
+    TRACY_FUNC(sceRtcGetDayOfWeek, year, month, day);
     if (month < 1 || month > 12) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_MONTH);
     }
@@ -242,10 +262,12 @@ EXPORT(int, sceRtcGetDayOfWeek, int year, int month, int day) {
 }
 
 EXPORT(int, sceRtcGetDayOfYear) {
+    TRACY_FUNC(sceRtcGetDayOfYear);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetDaysInMonth, int year, int month) {
+    TRACY_FUNC(sceRtcGetDaysInMonth, year, month);
     if (month < 1 || month > 12) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_MONTH);
     }
@@ -270,18 +292,22 @@ EXPORT(int, sceRtcGetDaysInMonth, int year, int month) {
 }
 
 EXPORT(int, sceRtcGetDosTime) {
+    TRACY_FUNC(sceRtcGetDosTime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetLastAdjustedTick) {
+    TRACY_FUNC(sceRtcGetLastAdjustedTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetLastReincarnatedTick) {
+    TRACY_FUNC(sceRtcGetLastReincarnatedTick);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcGetTick, SceDateTime *datePtr, SceRtcTick *pTick) {
+    TRACY_FUNC(sceRtcGetTick, datePtr, pTick);
     if (datePtr == nullptr || pTick == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -292,10 +318,12 @@ EXPORT(int, sceRtcGetTick, SceDateTime *datePtr, SceRtcTick *pTick) {
 }
 
 EXPORT(unsigned int, sceRtcGetTickResolution) {
+    TRACY_FUNC(sceRtcGetTickResolution);
     return VITA_CLOCKS_PER_SEC;
 }
 
 EXPORT(int, sceRtcGetTime_t, SceDateTime *datePtr, uint32_t *timePtr) {
+    TRACY_FUNC(sceRtcGetTime_t, datePtr, timePtr);
     if (datePtr == nullptr || timePtr == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -305,6 +333,7 @@ EXPORT(int, sceRtcGetTime_t, SceDateTime *datePtr, uint32_t *timePtr) {
 }
 
 EXPORT(int, sceRtcGetTime64_t, SceDateTime *datePtr, uint64_t *timePtr) {
+    TRACY_FUNC(sceRtcGetTime64_t, datePtr, timePtr);
     if (datePtr == nullptr || timePtr == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -314,10 +343,12 @@ EXPORT(int, sceRtcGetTime64_t, SceDateTime *datePtr, uint64_t *timePtr) {
 }
 
 EXPORT(int, sceRtcGetWin32FileTime) {
+    TRACY_FUNC(sceRtcGetWin32FileTime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcIsLeapYear, int year) {
+    TRACY_FUNC(sceRtcIsLeapYear, year);
     if (year < 0) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_YEAR);
     }
@@ -329,18 +360,22 @@ EXPORT(int, sceRtcIsLeapYear, int year) {
 }
 
 EXPORT(int, sceRtcParseDateTime) {
+    TRACY_FUNC(sceRtcParseDateTime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcParseRFC3339) {
+    TRACY_FUNC(sceRtcParseRFC3339);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcSetDosTime) {
+    TRACY_FUNC(sceRtcSetDosTime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcSetTick, SceDateTime *datePtr, const SceRtcTick *pTick) {
+    TRACY_FUNC(sceRtcSetTick, datePtr, pTick);
     if (datePtr == nullptr || pTick == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -350,6 +385,7 @@ EXPORT(int, sceRtcSetTick, SceDateTime *datePtr, const SceRtcTick *pTick) {
 }
 
 EXPORT(int, sceRtcSetTime64_t, SceDateTime *datePtr, uint64_t iTime) {
+    TRACY_FUNC(sceRtcSetTime64_t, datePtr, iTime);
     if (datePtr == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -360,6 +396,7 @@ EXPORT(int, sceRtcSetTime64_t, SceDateTime *datePtr, uint64_t iTime) {
 }
 
 EXPORT(int, sceRtcSetTime_t, SceDateTime *datePtr, uint32_t iTime) {
+    TRACY_FUNC(sceRtcSetTime_t, datePtr, iTime);
     if (datePtr == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -370,10 +407,12 @@ EXPORT(int, sceRtcSetTime_t, SceDateTime *datePtr, uint32_t iTime) {
 }
 
 EXPORT(int, sceRtcSetWin32FileTime) {
+    TRACY_FUNC(sceRtcSetWin32FileTime);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcTickAddDays, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
+    TRACY_FUNC(sceRtcTickAddDays, pTick0, pTick1, lAdd);
     if (pTick0 == nullptr || pTick1 == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -383,6 +422,7 @@ EXPORT(int, sceRtcTickAddDays, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sce
 }
 
 EXPORT(int, sceRtcTickAddHours, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
+    TRACY_FUNC(sceRtcTickAddHours, pTick0, pTick1, lAdd);
     if (pTick0 == nullptr || pTick1 == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -392,6 +432,7 @@ EXPORT(int, sceRtcTickAddHours, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sc
 }
 
 EXPORT(int, sceRtcTickAddMicroseconds, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
+    TRACY_FUNC(sceRtcTickAddMicroseconds, pTick0, pTick1, lAdd);
     if (pTick0 == nullptr || pTick1 == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -401,6 +442,7 @@ EXPORT(int, sceRtcTickAddMicroseconds, SceRtcTick *pTick0, const SceRtcTick *pTi
 }
 
 EXPORT(int, sceRtcTickAddMinutes, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
+    TRACY_FUNC(sceRtcTickAddMinutes, pTick0, pTick1, lAdd);
     if (pTick0 == nullptr || pTick1 == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -410,10 +452,12 @@ EXPORT(int, sceRtcTickAddMinutes, SceRtcTick *pTick0, const SceRtcTick *pTick1, 
 }
 
 EXPORT(int, sceRtcTickAddMonths) {
+    TRACY_FUNC(sceRtcTickAddMonths);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceRtcTickAddSeconds, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
+    TRACY_FUNC(sceRtcTickAddSeconds, pTick0, pTick1, lAdd);
     if (pTick0 == nullptr || pTick1 == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -423,6 +467,7 @@ EXPORT(int, sceRtcTickAddSeconds, SceRtcTick *pTick0, const SceRtcTick *pTick1, 
 }
 
 EXPORT(int, sceRtcTickAddTicks, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
+    TRACY_FUNC(sceRtcTickAddTicks, pTick0, pTick1, lAdd);
     if (pTick0 == nullptr || pTick1 == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -432,6 +477,7 @@ EXPORT(int, sceRtcTickAddTicks, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sc
 }
 
 EXPORT(int, sceRtcTickAddWeeks, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
+    TRACY_FUNC(sceRtcTickAddWeeks, pTick0, pTick1, lAdd);
     if (pTick0 == nullptr || pTick1 == nullptr) {
         return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
     }
@@ -441,6 +487,7 @@ EXPORT(int, sceRtcTickAddWeeks, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sc
 }
 
 EXPORT(int, sceRtcTickAddYears) {
+    TRACY_FUNC(sceRtcTickAddYears);
     return UNIMPLEMENTED();
 }
 

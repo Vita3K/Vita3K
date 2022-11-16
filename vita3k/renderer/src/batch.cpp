@@ -23,6 +23,7 @@
 
 #include <renderer/vulkan/types.h>
 
+#include <config/state.h>
 #include <functional>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -53,6 +54,16 @@ bool is_cmd_ready(MemState &mem, CommandList &command_list) {
     const uint32_t timestamp = *reinterpret_cast<uint32_t *>(&command_list.first->data[sizeof(uint32_t) + sizeof(void *)]);
 
     return sync->timestamp_current >= timestamp;
+}
+
+bool wait_cmd(MemState &mem, CommandList &command_list) {
+    // we assume here that the cmd starts with a WaitSyncObject
+
+    SceGxmSyncObject *sync = reinterpret_cast<Ptr<SceGxmSyncObject> *>(&command_list.first->data[0])->get(mem);
+    const uint32_t timestamp = *reinterpret_cast<uint32_t *>(&command_list.first->data[sizeof(uint32_t) + 2 * sizeof(void *)]);
+
+    // wait 500 micro secibds and then return in case should_display is set to true
+    return renderer::wishlist(sync, timestamp, 500);
 }
 
 void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list) {
@@ -106,13 +117,22 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
 }
 
 void process_batches(renderer::State &state, const FeatureState &features, MemState &mem, Config &config) {
-    while (!state.should_display.exchange(false)) {
+    while (!state.should_display) {
+        // Try to wait for a batch (about 2 or 3ms, game should be fast for this)
         auto cmd_list = state.command_buffer_queue.top(3);
 
         if (!cmd_list || !is_cmd_ready(mem, *cmd_list)) {
-            // Try to wait for a batch (about 2 or 3ms, game should be fast for this)
-            state.should_display = false;
-            return;
+            // beginning of the game or homebrew not using gxm
+            if (state.context == nullptr)
+                return;
+
+            // keep the old behavior for opengl with vsync as it looks like the new one causes some issues
+            if (state.current_backend == Backend::OpenGL && config.current_config.v_sync)
+                return;
+
+            if (!cmd_list || !wait_cmd(mem, *cmd_list))
+                // this mean the command is still not ready, check if we can display it again
+                continue;
         }
 
         state.command_buffer_queue.pop();

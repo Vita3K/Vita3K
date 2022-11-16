@@ -388,6 +388,9 @@ void VKState::cleanup() {
 
 void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
     const GxmState &gxm, MemState &mem) {
+    // we are displaying this frame, wait for a new one
+    should_display = false;
+
     if (!display.frame.base)
         return;
 

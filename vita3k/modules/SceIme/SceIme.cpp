@@ -23,7 +23,11 @@
 
 #include <util/lock_and_find.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceIme);
+
 EXPORT(void, SceImeEventHandler, Ptr<void> arg, const SceImeEvent *e) {
+    TRACY_FUNC(SceImeEventHandler, arg, e);
     Ptr<SceImeEvent> e1 = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime2"));
     memcpy(e1.get(emuenv.mem), e, sizeof(SceImeEvent));
     auto thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
@@ -32,12 +36,14 @@ EXPORT(void, SceImeEventHandler, Ptr<void> arg, const SceImeEvent *e) {
 }
 
 EXPORT(SceInt32, sceImeClose) {
+    TRACY_FUNC(sceImeClose);
     emuenv.ime.state = false;
 
     return 0;
 }
 
 EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
+    TRACY_FUNC(sceImeOpen, param);
     emuenv.ime.caps_level = 0;
     emuenv.ime.caretIndex = 0;
     emuenv.ime.edit_text = {};
@@ -82,6 +88,7 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
 }
 
 EXPORT(SceInt32, sceImeSetCaret, const SceImeCaret *caret) {
+    TRACY_FUNC(sceImeSetCaret, caret);
     Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
     SceImeEvent *e = event.get(emuenv.mem);
     e->param.caretIndex = caret->index;
@@ -91,6 +98,7 @@ EXPORT(SceInt32, sceImeSetCaret, const SceImeCaret *caret) {
 }
 
 EXPORT(SceInt32, sceImeSetPreeditGeometry, const SceImePreeditGeometry *preedit) {
+    TRACY_FUNC(sceImeSetPreeditGeometry, preedit);
     Ptr<SceImeEvent> event = Ptr<SceImeEvent>(alloc(emuenv.mem, sizeof(SceImeEvent), "ime_event"));
     SceImeEvent *e = event.get(emuenv.mem);
     e->param.rect.height = preedit->height;
@@ -101,11 +109,13 @@ EXPORT(SceInt32, sceImeSetPreeditGeometry, const SceImePreeditGeometry *preedit)
     return 0;
 }
 
-EXPORT(int, sceImeSetText) {
+EXPORT(int, sceImeSetText, const SceWChar16 *text, SceUInt32 length) {
+    TRACY_FUNC(sceImeSetText, text, length);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceInt32, sceImeUpdate) {
+    TRACY_FUNC(sceImeUpdate);
     if (!emuenv.ime.state)
         return RET_ERROR(SCE_IME_ERROR_NOT_OPENED);
 

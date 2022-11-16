@@ -23,7 +23,11 @@
 
 #define SCE_RNG_ERROR_INVALID_ARGUMENT 0x810C0000
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceLibRng);
+
 EXPORT(int, sceKernelGetRandomNumber, uint64_t *output, unsigned int size) {
+    TRACY_FUNC(sceKernelGetRandomNumber, output, size);
     if (size > 64) {
         return RET_ERROR(SCE_RNG_ERROR_INVALID_ARGUMENT);
     }

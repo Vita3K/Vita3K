@@ -22,6 +22,22 @@
 
 #include <util/align.h>
 
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceSysmem);
+
+template <>
+std::string to_debug_str<SceKernelMemBlockType>(const MemState &mem, SceKernelMemBlockType type) {
+    switch (type) {
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_RW_UNCACHE";
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RX: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_RX";
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_RW: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_RW";
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_RW";
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_MAIN_PHYCONT_NC_RW";
+    case SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW: return "SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW";
+    }
+    return std::to_string(type);
+}
+
 struct SceKernelAllocMemBlockOpt {
     SceSize size;
     SceUInt32 attr;
@@ -61,6 +77,7 @@ LIBRARY_INIT_REGISTER(SceSysmem)
 constexpr SceUInt32 SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT = 4;
 
 EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOpt *optp) {
+    TRACY_FUNC(sceKernelAllocMemBlock, name, type, size, optp);
     MemState &mem = emuenv.mem;
     assert(type != 0);
 
@@ -121,6 +138,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
 }
 
 EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, SceSize size) {
+    TRACY_FUNC(sceKernelAllocMemBlockForVM, name, size);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
@@ -149,22 +167,27 @@ EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, SceSize size) {
 }
 
 EXPORT(int, sceKernelAllocUnmapMemBlock) {
+    TRACY_FUNC(sceKernelAllocUnmapMemBlock);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelCheckModelCapability) {
+    TRACY_FUNC(sceKernelCheckModelCapability);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelCloseMemBlock) {
+    TRACY_FUNC(sceKernelCloseMemBlock);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelCloseVMDomain) {
+    TRACY_FUNC(sceKernelCloseVMDomain);
     return UNIMPLEMENTED();
 }
 
 EXPORT(SceUID, sceKernelFindMemBlockByAddr, Address addr, uint32_t size) {
+    TRACY_FUNC(sceKernelFindMemBlockByAddr, addr, size);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
@@ -177,6 +200,7 @@ EXPORT(SceUID, sceKernelFindMemBlockByAddr, Address addr, uint32_t size) {
 }
 
 EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
+    TRACY_FUNC(sceKernelFreeMemBlock, uid);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
     assert(uid >= 0);
@@ -193,6 +217,7 @@ EXPORT(int, sceKernelFreeMemBlock, SceUID uid) {
 }
 
 EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
+    TRACY_FUNC(sceKernelFreeMemBlockForVM, uid);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
@@ -208,6 +233,7 @@ EXPORT(int, sceKernelFreeMemBlockForVM, SceUID uid) {
 }
 
 EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
+    TRACY_FUNC(sceKernelGetFreeMemorySize, info);
     const auto free_memory = align(mem_available(emuenv.mem) / 3, 0x1000);
     info->size_cdram = free_memory;
     info->size_user = free_memory;
@@ -216,6 +242,7 @@ EXPORT(int, sceKernelGetFreeMemorySize, SceKernelFreeMemorySizeInfo *info) {
 }
 
 EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
+    TRACY_FUNC(sceKernelGetMemBlockBase, uid, basep);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
     assert(uid >= 0);
@@ -233,6 +260,7 @@ EXPORT(int, sceKernelGetMemBlockBase, SceUID uid, Ptr<void> *basep) {
 }
 
 EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, SceKernelMemBlockInfo *info) {
+    TRACY_FUNC(sceKernelGetMemBlockInfoByAddr, addr, info);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
     assert(addr >= 0);
@@ -248,34 +276,42 @@ EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, SceKernelMemBlockInfo 
 }
 
 EXPORT(int, sceKernelGetMemBlockInfoByRange) {
+    TRACY_FUNC(sceKernelGetMemBlockInfoByRange);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelGetModel) {
+    TRACY_FUNC(sceKernelGetModel);
     return emuenv.cfg.current_config.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
 }
 
 EXPORT(int, sceKernelGetModelForCDialog) {
+    TRACY_FUNC(sceKernelGetModelForCDialog);
     return emuenv.cfg.current_config.pstv_mode ? SCE_KERNEL_MODEL_VITATV : SCE_KERNEL_MODEL_VITA;
 }
 
 EXPORT(int, sceKernelGetSubbudgetInfo) {
+    TRACY_FUNC(sceKernelGetSubbudgetInfo);
     return UNIMPLEMENTED();
 }
 
 EXPORT(bool, sceKernelIsPSVitaTV) {
+    TRACY_FUNC(sceKernelIsPSVitaTV);
     return emuenv.cfg.current_config.pstv_mode;
 }
 
 EXPORT(int, sceKernelOpenMemBlock) {
+    TRACY_FUNC(sceKernelOpenMemBlock);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelOpenVMDomain) {
+    TRACY_FUNC(sceKernelOpenVMDomain);
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelSyncVMDomain, SceUID block_uid, Address base, uint32_t size) {
+    TRACY_FUNC(sceKernelSyncVMDomain, block_uid, base, size);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
