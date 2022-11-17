@@ -36,10 +36,11 @@
 	</about>
 
 	<app_context>
-		<boot>부트</boot> 
+		<boot>부트</boot>
 		<check_app_compatibility>앱 호환성 확인</check_app_compatibility>
 		<copy_app_info>앱 정보 복사</copy_app_info>
-		<id_and_name>ID와 이름</id_and_name>
+		<name_and_id>이름와 Title ID</name_and_id>
+		<app_summary>App Summary</app_summary>
 		<custom_config>커스텀 설정</custom_config>
 		<create>만들기</create>
 		<edit>편집</edit>
@@ -72,7 +73,7 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit> 
+		<submit>Submit</submit>
 		<cancel>취소</cancel>
 		<delete>삭제</delete>
 		<file_corrupted>파일이 손상되어 있습니다.</file_corrupted>

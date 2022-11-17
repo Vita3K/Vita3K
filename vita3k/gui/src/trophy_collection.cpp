@@ -816,6 +816,12 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     trophy_sort = "name";
                 }
             }
+            ImGui::Spacing();
+            ImGui::Separator();
+            ImGui::Spacing();
+
+            if (ImGui::MenuItem(gui.lang.indicator["delete_all"].c_str()))
+                fs::remove_all(TROPHY_PATH);
             ImGui::EndPopup();
         }
     }
