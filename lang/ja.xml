@@ -36,10 +36,11 @@
 	</about>
 
 	<app_context>
-		<boot>起動</boot> 
+		<boot>起動</boot>
 		<check_app_compatibility>アプリの互換性を調べる</check_app_compatibility>
 		<copy_app_info>アプリの情報をコピー</copy_app_info>
-		<id_and_name>IDと名前</id_and_name>
+		<name_and_id>名前とタイトルID</name_and_id>
+		<app_summary>App Summary</app_summary>
 		<custom_config>カスタム設定</custom_config>
 		<create>作成</create>
 		<edit>編集</edit>
@@ -72,7 +73,7 @@
 	</app_context>
 
 	<common>
-		<submit>Submit</submit> 
+		<submit>Submit</submit>
 		<cancel>キャンセル</cancel>
 		<delete>削除</delete>
 		<file_corrupted>ファイルが壊れています。</file_corrupted>

@@ -36,10 +36,11 @@
 	</about>
 
 	<app_context>
-		<boot>运行</boot> 
+		<boot>运行</boot>
 		<check_app_compatibility>查看应用程序兼容性</check_app_compatibility>
 		<copy_app_info>复制应用程序信息</copy_app_info>
-		<id_and_name>ID和名称</id_and_name>
+		<name_and_id>名称和标题ID</name_and_id>
+		<app_summary>应用程序摘要</app_summary>
 		<custom_config>自定义配置</custom_config>
 		<create>创建</create>
 		<edit>编辑</edit>
@@ -72,7 +73,7 @@
 	</app_context>
 
 	<common>
-		<submit>提交</submit> 
+		<submit>提交</submit>
 		<cancel>取消</cancel>
 		<delete>删除</delete>
 		<file_corrupted>文件已损坏。</file_corrupted>
