@@ -300,18 +300,18 @@ void upload_bound_texture(VKTextureCacheState &cache, SceGxmTextureBaseFormat ba
     uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride) {
     vkutil::Image &image = *cache.current_texture;
 
-    const void *text_data = pixels;
-    std::vector<uint8_t> temp_data;
-    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8) {
-        text_data = add_alpha_channel(pixels, width, height, temp_data);
-        base_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
-    }
-
     if (face > 0)
         face--;
 
     if (pixels_per_stride == 0)
         pixels_per_stride = width;
+
+    const void *text_data = pixels;
+    std::vector<uint8_t> temp_data;
+    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8) {
+        text_data = add_alpha_channel(pixels, pixels_per_stride, height, temp_data);
+        base_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
+    }
 
     vk::DeviceSize upload_size;
     if (is_compressed) {
