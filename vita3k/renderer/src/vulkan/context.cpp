@@ -54,8 +54,8 @@ void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, co
     uint32_t framebuffer_width = rt->width;
     uint32_t framebuffer_height = rt->height;
     if (color_surface_fin != nullptr) {
-        framebuffer_width = std::min<uint32_t>(framebuffer_width, color_surface_fin->width);
-        framebuffer_height = std::min<uint32_t>(framebuffer_height, color_surface_fin->height);
+        framebuffer_width = std::min<uint32_t>(framebuffer_width, color_surface_fin->width * context.state.res_multiplier);
+        framebuffer_height = std::min<uint32_t>(framebuffer_height, color_surface_fin->height * context.state.res_multiplier);
     }
 
     SceGxmDepthStencilSurface *ds_surface_fin = &context.record.depth_stencil_surface;
@@ -147,8 +147,8 @@ void VKContext::start_render_pass() {
     if (!is_recording)
         start_recording();
 
-    const uint32_t framebuffer_width = std::min<uint32_t>(render_target->width, record.color_surface.width);
-    const uint32_t framebuffer_height = std::min<uint32_t>(render_target->height, record.color_surface.height);
+    const uint32_t framebuffer_width = std::min<uint32_t>(render_target->width, record.color_surface.width * state.res_multiplier);
+    const uint32_t framebuffer_height = std::min<uint32_t>(render_target->height, record.color_surface.height * state.res_multiplier);
 
     vk::RenderPassBeginInfo pass_info{
         .renderPass = current_render_pass,
