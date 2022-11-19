@@ -491,6 +491,12 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
     int32_t height, const bool is_reading) {
     bool packed_ds = (surface.control.content & SceGxmDepthStencilControl::format_bits) == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
 
+    if (is_reading) {
+        // when writing we use the render target size which is already upscaled
+        width *= state.res_multiplier;
+        height *= state.res_multiplier;
+    }
+
     size_t found_index = -1;
 
     // The whole depth stencil struct is reserved for future use
