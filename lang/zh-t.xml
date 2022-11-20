@@ -448,7 +448,7 @@
 	<trophy_collection>
 		<search>搜索</search>
 		<delete_trophy>刪除獎盃</delete_trophy>
-		<trophy_deleted>此用戶保存的獎杯資訊將被刪除。</trophy_deleted>
+		<trophy_deleted>刪除該使用者已保存的獎杯資訊。</trophy_deleted>
 		<details>詳細內容</details>
 		<earned>獲得日</earned>
 		<name>名稱</name>
