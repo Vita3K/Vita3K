@@ -448,7 +448,7 @@ Please download and install it.</no_font_exist>
 	<trophy_collection>
 		<search>搜索</search>
 		<delete_trophy>删除奖杯</delete_trophy>
-		<trophy_deleted>此用户保存的奖杯信息将被删除。</trophy_deleted>
+		<trophy_deleted>该用户已保存的奖杯信息将被删除。</trophy_deleted>
 		<details>详细信息</details>
 		<earned>获得日期</earned>
 		<name>名称</name>
