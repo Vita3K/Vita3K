@@ -1479,11 +1479,8 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<
     if (!srcUrl)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_URL);
 
-    if (pool && out) {
-        memset(out, 0, sizeof(*out));
-    } else {
-        if (!require)
-            return SCE_HTTP_ERROR_INVALID_VALUE;
+    if ((!pool || !out) && !require) {
+        return SCE_HTTP_ERROR_INVALID_VALUE;
     }
 
     net_utils::parsedUrl parsed;
@@ -1516,6 +1513,7 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<
         return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_MEMORY);
 
     if (pool && out) {
+        memset(out, 0, sizeof(*out));
         auto pool_ptr = pool.address();
         const auto set_str_value = [&](Ptr<char> &field, const std::string value) {
             field = Ptr<char>(pool_ptr);
