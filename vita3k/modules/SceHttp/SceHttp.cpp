@@ -1473,16 +1473,18 @@ EXPORT(SceInt, sceHttpUriMerge, char *mergedUrl, const char *url, const char *re
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, void *pool, SceSize *require, SceSize prepare) {
+EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<void> pool, SceSize *require, SceSize prepare) {
     TRACY_FUNC(sceHttpUriParse, out, srcUrl, pool, require, prepare);
-    if (!emuenv.http.inited)
-        return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
     if (!srcUrl)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_URL);
 
-    if (!out)
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+    if (pool && out) {
+        memset(out, 0, sizeof(*out));
+    } else {
+        if (!require)
+            return SCE_HTTP_ERROR_INVALID_VALUE;
+    }
 
     net_utils::parsedUrl parsed;
     auto parseRet = net_utils::parse_url(srcUrl, parsed);
@@ -1506,16 +1508,31 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, void
     if (parsed.port.empty())
         parsed.port = "0"; // Threat 0 as invalid, even if it isn't
 
-    out->opaque = false;
-    out->scheme = parsed.scheme.data();
-    out->username = parsed.username.data();
-    out->password = parsed.password.data();
-    out->hostname = parsed.hostname.data();
-    out->path = parsed.path.data();
-    out->query = parsed.query.data();
-    out->fragment = parsed.fragment.data();
-    SceUShort16 port = std::stoi(parsed.port);
-    out->port = port;
+    const uint32_t internal_require = parsed.scheme.size() + parsed.username.size() + parsed.password.size() + parsed.hostname.size() + parsed.path.size() + parsed.query.size() + parsed.fragment.size() + 7;
+    if (require) {
+        *require = internal_require;
+    }
+    if (prepare < internal_require)
+        return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_MEMORY);
+
+    if (pool && out) {
+        auto pool_ptr = pool.address();
+        const auto set_str_value = [&](Ptr<char> &field, const std::string value) {
+            field = Ptr<char>(pool_ptr);
+            strcpy(field.get(emuenv.mem), value.c_str());
+            pool_ptr += value.size() + 1;
+        };
+        out->opaque = false;
+        set_str_value(out->scheme, parsed.scheme);
+        set_str_value(out->username, parsed.username);
+        set_str_value(out->password, parsed.password);
+        set_str_value(out->hostname, parsed.hostname);
+        set_str_value(out->path, parsed.path);
+        set_str_value(out->query, parsed.query);
+        set_str_value(out->fragment, parsed.fragment);
+        SceUShort16 port = std::stoi(parsed.port);
+        out->port = port;
+    }
 
     return 0;
 }
