@@ -28,7 +28,7 @@
 #define SCE_HTTP_USERNAME_MAX_SIZE 256
 #define SCE_HTTP_PASSWORD_MAX_SIZE 256
 
-typedef int (*SceHttpsCallback)(unsigned int verifyEsrr, void *const sslCert[], int certNum, void *userArg);
+typedef int (*SceHttpsCallback)(unsigned int verifyEsrr, Ptr<void> const sslCert[], int certNum, Ptr<void> userArg);
 
 enum SceHttpsErrorCode {
     SCE_HTTPS_ERROR_CERT = 0x80435060,
@@ -138,13 +138,13 @@ enum SceHttpsFlags : unsigned int {
 
 struct SceHttpUriElement {
     bool opaque; // always false, http uses //
-    char *scheme; // http/https
-    char *username;
-    char *password;
-    char *hostname;
-    char *path; // /foo.html
-    char *query; // ?a=b
-    char *fragment; // #middle
+    Ptr<char> scheme; // http/https
+    Ptr<char> username;
+    Ptr<char> password;
+    Ptr<char> hostname;
+    Ptr<char> path; // /foo.html
+    Ptr<char> query; // ?a=b
+    Ptr<char> fragment; // #middle
     SceUShort16 port;
     SceUChar8 reserved[10];
 };
