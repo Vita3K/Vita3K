@@ -2,7 +2,7 @@
 
 ![C/C++ CI](https://github.com/Vita3K/Vita3K/workflows/C/C++%20CI/badge.svg)
 [![Vita3K discord server](https://img.shields.io/discord/408916678911459329?color=5865F2&label=Vita3K%20&logo=discord&logoColor=white)](https://discord.gg/6aGwQzh)
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/vita3k)
+![download counter](https://img.shields.io/github/downloads/Vita3K/Vita3K/continuous/total?label=downloads@latest&color=brightgreen)
 
 ## Introduction
 
@@ -14,7 +14,7 @@ Vita3K is an experimental PlayStation Vita emulator for Windows, Linux, macOS an
 
 ## Compatibility
 
-The emulator currently runs most homebrew programs. It is also able to load some commercial games.
+The emulator currently runs most homebrew programs and some commercial games.
 
 - [Homebrew compatibility page](https://vita3k.org/compatibility-homebrew.html)
 - [Commercial compatibility page](https://vita3k.org/compatibility.html)
@@ -58,18 +58,18 @@ Vita3K is licensed under the **GPLv2** license. This is largely dictated by exte
 Please see [`building.md`](./building.md).
 
 ## Running
-Look through the app list and click on the app you would like to run and click the start button.
-
-For more detailed instructions on running/installing apps on Vita3K, please read the **#info-faq** channel on our [Discord Server](https://discord.gg/MaWhJVH).
+Check our [quickstart](https://vita3k.org/quickstart) guide to make sure your computer meets the minimum requirements to run Vita3K.  
+Don't forget to have your graphics driver up to date and to install the [Visual C++ 2015-2022 Redistributable](https://aka.ms/vs/16/release/VC_redist.x64.exe) if you are a Windows user.  
 
 ## Bugs and issues
 The project is in an early stage, so please be mindful when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
 
 ## Thanks
-Thanks go out to the developer team and [everyone who has contributed](https://github.com/Vita3K/Vita3K/graphs/contributors). 
-* These are people like **petmac, frangarcj, VelocityRa, 1whatleytay, EXtremeExploit, HolyMcDiver, HorrorTroll, IllusionMan1212, KorewaWatchful, scribam, sunho, wfscans, Macdu, bookmist, pent0 and Zangetsu38**.
+Thanks go out to people who offered advice or otherwise made this project possible, such as Davee, korruptor, Rinnegatamante, ScHlAuChi, Simon Kilroy, TheFlow, xerpi, xyz, Yifan Lu and many others.
 
-## Supporters
+## Donations
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/vita3k)
+<br>
 Thank you to the supporters and to all those who support us on our [ko-fi](https://ko-fi.com/vita3K).
 * Among them, those who subscribed to the Nibble Tier and upper: **j0hnnybrav0, Mored4u, TacoOblivion, and Undeadbob**
 
