@@ -287,6 +287,10 @@ EXPORT(SceInt32, sceFiberReturnToThread, uint32_t argOnReturnTo, Ptr<uint32_t> a
     const std::lock_guard<std::mutex> lock(state->mutex);
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
     SceFiber *fiber = get_thread_fiber(*state, thread->id);
+    if (!fiber) {
+        return RET_ERROR(SCE_FIBER_ERROR_PERMISSION);
+    }
+
     CPUContext thread_context = get_thread_context(*state, thread->id);
     assert(fiber->status == FiberStatus::RUN);
     if (LOG_FIBER) {
@@ -317,7 +321,14 @@ EXPORT(SceUInt32, sceFiberRun, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<SceUIn
         return RET_ERROR(SCE_FIBER_ERROR_NULL);
     }
 
-    assert(!get_thread_fiber(*state, thread->id));
+    if (fiber->status == FiberStatus::RUN) {
+        return RET_ERROR(SCE_FIBER_ERROR_STATE);
+    }
+
+    if (get_thread_fiber(*state, thread->id)) {
+        return RET_ERROR(SCE_FIBER_ERROR_PERMISSION);
+    }
+
     if (LOG_FIBER) {
         log_fiber(*state, thread, fiber, "Run");
     }
@@ -350,8 +361,15 @@ EXPORT(SceUInt32, sceFiberSwitch, SceFiber *fiber, SceUInt32 argOnRunTo, Ptr<Sce
         return RET_ERROR(SCE_FIBER_ERROR_NULL);
     }
 
+    if (fiber->status == FiberStatus::RUN) {
+        return RET_ERROR(SCE_FIBER_ERROR_STATE);
+    }
+
     SceFiber *thread_fiber = get_thread_fiber(*state, thread->id);
-    assert(thread_fiber);
+    if (!thread_fiber) {
+        return RET_ERROR(SCE_FIBER_ERROR_PERMISSION);
+    }
+
     if (LOG_FIBER) {
         log_fiber(*state, thread, fiber, "Switch");
     }
