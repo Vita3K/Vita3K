@@ -215,6 +215,7 @@ struct ShadersHash {
 
 struct RenderTarget {
     int holder;
+    uint16_t multisample_mode;
     virtual ~RenderTarget() = default;
 };
 

@@ -39,10 +39,14 @@ namespace renderer {
 COMMAND_SET_STATE(region_clip) {
     TRACY_FUNC_COMMANDS_SET_STATE(region_clip);
     render_context->record.region_clip_mode = helper.pop<SceGxmRegionClipMode>();
-    const std::uint32_t xMin = helper.pop<std::uint32_t>();
-    const std::uint32_t xMax = helper.pop<std::uint32_t>();
-    const std::uint32_t yMin = helper.pop<std::uint32_t>();
-    const std::uint32_t yMax = helper.pop<std::uint32_t>();
+
+    // see COMMAND_SET_STATE(viewport) for an explanation
+    const uint32_t divide_factor = (render_context->record.color_surface.downscale && !render_context->current_render_target->multisample_mode) ? 2 : 1;
+
+    const uint32_t xMin = helper.pop<uint32_t>() / divide_factor;
+    const uint32_t xMax = helper.pop<uint32_t>() / divide_factor;
+    const uint32_t yMin = helper.pop<uint32_t>() / divide_factor;
+    const uint32_t yMax = helper.pop<uint32_t>() / divide_factor;
 
     render_context->record.region_clip_min.x = static_cast<SceInt>(align_down(xMin, SCE_GXM_TILE_SIZEX));
     render_context->record.region_clip_min.y = static_cast<SceInt>(align_down(yMin, SCE_GXM_TILE_SIZEY));
@@ -139,12 +143,17 @@ COMMAND_SET_STATE(viewport) {
 
     const float previous_flip_y = render_context->record.viewport_flip[1];
     if (!flat) {
-        const float xOffset = helper.pop<float>();
-        const float yOffset = helper.pop<float>();
-        const float zOffset = helper.pop<float>();
-        const float xScale = helper.pop<float>();
-        const float yScale = helper.pop<float>();
-        const float zScale = helper.pop<float>();
+        // we are supposed to downscale the surface before saving it, both opengl and vulkan
+        // directly work with the downscaled surface instead so we must divide all the values
+        // by 2 to match the dimensions of the downscaled surface
+        const int divide_factor = (render_context->record.color_surface.downscale && !render_context->current_render_target->multisample_mode) ? 2 : 1;
+
+        const float xOffset = helper.pop<float>() / divide_factor;
+        const float yOffset = helper.pop<float>() / divide_factor;
+        const float zOffset = helper.pop<float>() / divide_factor;
+        const float xScale = helper.pop<float>() / divide_factor;
+        const float yScale = helper.pop<float>() / divide_factor;
+        const float zScale = helper.pop<float>() / divide_factor;
 
         const float ymin = yOffset + yScale;
         const float ymax = yOffset - yScale - 1;
