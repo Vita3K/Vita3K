@@ -121,8 +121,6 @@ bool USSETranslatorVisitor::vbw(
     auto const_val = is_const ? m_b.getConstantScalar(src2) : 1; // default value is intentionally non zero
     if ((operation == spv::Op::OpBitwiseOr || operation == spv::Op::OpBitwiseXor) && is_const && const_val == 0
         || operation == spv::Op::OpBitwiseAnd && is_const && const_val == std::numeric_limits<decltype(const_val)>::max()) {
-        inst.opr.src1.type = bitwise_partial ? DataType::F16 : DataType::F32;
-        inst.opr.dest.type = bitwise_partial ? DataType::F16 : DataType::F32;
         result = load(inst.opr.src1, 0b0001, src1_repeat_offset);
         if (result == spv::NoResult) {
             LOG_ERROR("Source not loaded");
