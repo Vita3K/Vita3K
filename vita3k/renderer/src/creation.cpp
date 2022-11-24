@@ -115,6 +115,8 @@ COMMAND(handle_create_render_target) {
         REPORT_MISSING(renderer.current_backend);
         break;
     }
+    (*render_target)->multisample_mode = params->multisampleMode;
+
     complete_command(renderer, helper, result);
 }
 
