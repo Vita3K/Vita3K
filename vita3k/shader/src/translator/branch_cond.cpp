@@ -442,22 +442,6 @@ bool USSETranslatorVisitor::vtstmsk(
         return false;
     }
 
-    DataType store_data_type;
-    switch (tst_mask_type) {
-    case 0:
-        store_data_type = DataType::UINT8;
-        break;
-    case 1:
-        store_data_type = DataType::F16;
-        break;
-    case 2:
-        store_data_type = DataType::F32;
-        break;
-    default:
-        LOG_ERROR("Invalid test mask type: {}", tst_mask_type);
-        return false;
-    }
-
     const bool use_double_reg = alu_sel == 0;
     // TODO: In some op, we don't need to load src2 e.g. rsq
     inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_ext, use_double_reg, 8, m_second_program);
@@ -466,7 +450,7 @@ bool USSETranslatorVisitor::vtstmsk(
 
     inst.opr.src1.type = load_data_type;
     inst.opr.src2.type = load_data_type;
-    inst.opr.dest.type = store_data_type;
+    inst.opr.dest.type = load_data_type;
 
     inst.opr.src1.swizzle = SWIZZLE_CHANNEL_4_DEFAULT;
     inst.opr.src2.swizzle = src2_vscomp ? (Swizzle4 SWIZZLE_CHANNEL_4(X, X, X, X)) : (Swizzle4 SWIZZLE_CHANNEL_4_DEFAULT);
@@ -487,7 +471,7 @@ bool USSETranslatorVisitor::vtstmsk(
     spv::Id output_type;
     spv::Id zeros;
     spv::Id ones;
-    switch (store_data_type) {
+    switch (load_data_type) {
     case DataType::UINT8:
         output_type = m_b.makeVectorType(m_b.makeUintType(32), 4);
         zeros = utils::make_uniform_vector_from_type(m_b, output_type, 0);
@@ -499,6 +483,39 @@ bool USSETranslatorVisitor::vtstmsk(
         zeros = utils::make_uniform_vector_from_type(m_b, output_type, 0.f);
         ones = utils::make_uniform_vector_from_type(m_b, output_type, 1.f);
         break;
+    default: {
+        uint32_t ones_val = 1;
+        bool is_signed = false;
+        switch (load_data_type) {
+        case DataType::INT8:
+            is_signed = true;
+            ones_val = 0x7F;
+            break;
+        case DataType::INT16:
+            is_signed = true;
+            ones_val = 0x7FFF;
+            break;
+        case DataType::INT32:
+            is_signed = true;
+            ones_val = 0x7FFFFFFF;
+            break;
+        case DataType::UINT8:
+            ones_val = 0xFF;
+            break;
+        case DataType::UINT16:
+            ones_val = 0XFFFF;
+            break;
+        case DataType::UINT32:
+            ones_val = 0xFFFFFFFF;
+        default:
+            LOG_ERROR("Unexpected type {}", static_cast<int>(load_data_type));
+            break;
+        }
+        output_type = m_b.makeVectorType(is_signed ? m_b.makeIntType(32) : m_b.makeUintType(32), 4);
+        zeros = utils::make_uniform_vector_from_type(m_b, output_type, 0);
+        ones = utils::make_uniform_vector_from_type(m_b, output_type, ones_val);
+        break;
+    }
     }
 
     pred_result = m_b.createOp(spv::OpSelect, output_type, { pred_result, ones, zeros });
