@@ -135,9 +135,16 @@ void PipelineCache::init() {
 
     {
         // look for rgb vertex attribute support
-        // we only look at one format and assume it is the same for all usual 3-component formats
-        vk::FormatProperties rgb_property = state.physical_device.getFormatProperties(vk::Format::eR16G16B16Unorm);
-        this->support_rgb_vertex_attribute = static_cast<bool>(rgb_property.bufferFeatures & vk::FormatFeatureFlagBits::eVertexBuffer);
+        // we need to look at each format because it is not the same for all usual 3-component formats (checked on AMD Radeon HD 7800)
+        std::array<vk::Format, 7> formats = { vk::Format::eR16G16B16Unorm, vk::Format::eR16G16B16Snorm, vk::Format::eR16G16B16Uscaled, vk::Format::eR16G16B16Sscaled,
+            vk::Format::eR16G16B16Uint, vk::Format::eR16G16B16Sint, vk::Format::eR16G16B16Sfloat };
+        for (auto fmt : formats) {
+            vk::FormatProperties rgb_property = state.physical_device.getFormatProperties(fmt);
+            this->support_rgb_vertex_attribute = static_cast<bool>(rgb_property.bufferFeatures & vk::FormatFeatureFlagBits::eVertexBuffer);
+            if (!this->support_rgb_vertex_attribute) {
+                break;
+            }
+        }
     }
 }
 
