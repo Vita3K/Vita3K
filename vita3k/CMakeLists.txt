@@ -170,6 +170,12 @@ if(APPLE)
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/../lang" "$<TARGET_FILE_DIR:vita3k>/../Resources/lang"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/shaders-builtin/" "$<TARGET_FILE_DIR:vita3k>/../Resources/shaders-builtin"
 		COMMAND ${CMAKE_COMMAND} -E copy_directory "${PROJECT_SOURCE_DIR}/external/sdl/macos/SDL2.framework" "$<TARGET_FILE_DIR:vita3k>/../Frameworks/SDL2.framework")
+	if(USE_VITA3K_UPDATE)
+		add_custom_command(
+			TARGET vita3k
+			POST_BUILD
+			COMMAND ${CMAKE_COMMAND} -E copy_if_different "${CMAKE_CURRENT_SOURCE_DIR}/script/update-macos.sh" "$<TARGET_FILE_DIR:vita3k>/../Resources/update-vita3k.sh")
+	endif()
 	if(USE_DISCORD_RICH_PRESENCE)
 		add_custom_command(
 		TARGET vita3k
