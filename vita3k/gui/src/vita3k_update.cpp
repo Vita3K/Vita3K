@@ -24,6 +24,11 @@
 #include <SDL.h>
 #include <boost/algorithm/string.hpp>
 
+#ifdef __APPLE__
+#include <pwd.h>
+#include <unistd.h>
+#endif
+
 namespace gui {
 
 enum Vita3kUpdate {
@@ -41,8 +46,14 @@ static LiveAreaState live_area_state;
 static int git_version;
 static std::vector<std::pair<std::string, std::string>> git_commit_desc_list;
 bool init_vita3k_update(GuiState &gui) {
-    if (fs::exists("vita3k-latest.zip"))
-        fs::remove("vita3k-latest.zip");
+#ifndef __APPLE__
+    const std::string path = "vita3k-latest.zip";
+#else
+    struct passwd *pwent = getpwuid(getuid());
+    const std::string path = fmt::format("{}/vita3k-latest.dmg", pwent->pw_dir);
+#endif
+    if (fs::exists(path))
+        fs::remove(path);
 
     state = NO_UPDATE;
     git_commit_desc_list.clear();
@@ -170,22 +181,35 @@ bool init_vita3k_update(GuiState &gui) {
 }
 
 static void download_update() {
-    if (!fs::exists("vita3k-latest.zip")) {
-        std::thread download([]() {
+#ifndef __APPLE__
+    const std::string path = "vita3k-latest.zip";
+#else
+    struct passwd *pwent = getpwuid(getuid());
+    const std::string path = fmt::format("{}/vita3k-latest.dmg", pwent->pw_dir);
+#endif
+    if (!fs::exists(path)) {
+        std::thread download([path]() {
 #ifdef WIN32
             const auto download_command = "powershell Invoke-WebRequest https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-latest.zip -OutFile vita3k-latest.zip";
+#elif defined(__APPLE__)
+            const auto download_command = "curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/macos-latest.dmg -o ~/vita3k-latest.dmg";
 #else
             const auto download_command = "curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/ubuntu-latest.zip -o ./vita3k-latest.zip";
 #endif
             LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
             system(download_command);
-            if (fs::exists("vita3k-latest.zip")) {
+            if (fs::exists(path)) {
                 SDL_Event event;
                 event.type = SDL_QUIT;
                 SDL_PushEvent(&event);
 
 #ifdef WIN32
                 const auto vita3K_batch = "update-vita3k.bat";
+#elif defined(__APPLE__)
+                char *base_path = SDL_GetBasePath();
+                std::string batch = fmt::format("sh {}/update-vita3k.sh {}/../../..", base_path, base_path);
+                const auto vita3K_batch = batch.c_str();
+                SDL_free(base_path);
 #else
                 const auto vita3K_batch = "chmod +x ./update-vita3k.sh && ./update-vita3k.sh";
 #endif
