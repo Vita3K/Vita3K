@@ -196,20 +196,41 @@ public:
         MemoryWrite<uint64_t>(addr, value);
     }
 
+    template <typename T>
+    bool MemoryWriteExclusive(Dynarmic::A32::VAddr addr, T value, T expected) {
+        Ptr<T> ptr{ addr };
+        if (!ptr || !ptr.valid(*parent->mem) || ptr.address() < parent->mem->page_size) {
+            LOG_ERROR("Invalid exclusive write of uint{}_t at addr: 0x{:x}, val = 0x{:x}, expected = 0x{:x}\n{}", sizeof(T) * 8, addr, value, expected, this->cpu->save_context().description());
+
+            auto pc = this->cpu->get_pc();
+            if (pc < parent->mem->page_size)
+                LOG_CRITICAL("PC is 0x{:x}", pc);
+            else
+                LOG_ERROR("Executing: {}", disassemble(*parent, pc, nullptr));
+            return false;
+        }
+
+        auto result = Ptr<T>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+        if (cpu->log_mem) {
+            LOG_TRACE("Write uint{}_t at addr: 0x{:x}, val = 0x{:x}, expected = 0x{:x}", sizeof(T) * 8, addr, value, expected);
+        }
+        return result;
+    }
+
     bool MemoryWriteExclusive8(Dynarmic::A32::VAddr addr, uint8_t value, uint8_t expected) override {
-        return Ptr<uint8_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+        return MemoryWriteExclusive(addr, value, expected); // Ptr<uint8_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
     }
 
     bool MemoryWriteExclusive16(Dynarmic::A32::VAddr addr, uint16_t value, uint16_t expected) override {
-        return Ptr<uint16_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+        return MemoryWriteExclusive(addr, value, expected); // Ptr<uint16_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
     }
 
     bool MemoryWriteExclusive32(Dynarmic::A32::VAddr addr, uint32_t value, uint32_t expected) override {
-        return Ptr<uint32_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+        return MemoryWriteExclusive(addr, value, expected); // Ptr<uint32_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
     }
 
     bool MemoryWriteExclusive64(Dynarmic::A32::VAddr addr, uint64_t value, uint64_t expected) override {
-        return Ptr<uint64_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
+        return MemoryWriteExclusive(addr, value, expected); // Ptr<uint64_t>(addr).atomic_compare_and_swap(*parent->mem, value, expected);
     }
 
     void InterpreterFallback(Dynarmic::A32::VAddr addr, size_t num_insts) override {
