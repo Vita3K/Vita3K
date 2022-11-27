@@ -387,7 +387,6 @@ TextureInfo get_textures_used(const SceGxmProgram &program_gxp) {
 
     const auto parameters = gxp::program_parameters(program_gxp);
 
-    int max_texture_index = -1;
     for (uint32_t i = 0; i < program_gxp.parameter_count; ++i) {
         const auto parameter = parameters[i];
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_SAMPLER) {

@@ -27,19 +27,18 @@ namespace module {
 class vargs {
     Address currentVaList;
     LayoutArgsState layoutState;
-    ArgLayout currentLayout;
 
 public:
     vargs() = default;
 
     explicit vargs(LayoutArgsState layoutState)
-        : layoutState(layoutState)
-        , currentVaList(0) {
+        : currentVaList(0)
+        , layoutState(layoutState) {
     }
 
     explicit vargs(Address addr)
-        : layoutState()
-        , currentVaList(addr) {
+        : currentVaList(addr)
+        , layoutState() {
     }
 
     template <typename T>
@@ -48,7 +47,7 @@ public:
             const auto state_tuple = add_arg_to_layout<T>(layoutState);
 
             layoutState = std::move(std::get<1>(state_tuple));
-            currentLayout = std::move(std::get<0>(state_tuple));
+            ArgLayout currentLayout = std::move(std::get<0>(state_tuple));
 
             return read<T>(cpu, currentLayout, mem);
         } else {

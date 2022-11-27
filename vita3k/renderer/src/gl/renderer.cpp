@@ -530,8 +530,8 @@ static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, s
         std::vector<uint8_t> buffer;
 
         buffer.resize(((width + 31) / 32) * ((height + 31) / 32) * 1024 * bytes_per_pixel);
-        for (int j = 0; j < height; j++) {
-            for (int hori_tile = 0; hori_tile < (width >> 5); hori_tile++) {
+        for (uint32_t j = 0; j < height; j++) {
+            for (uint32_t hori_tile = 0; hori_tile < (width >> 5); hori_tile++) {
                 const size_t tile_position = hori_tile + (j >> 5) * ((width + 31) >> 5);
                 const size_t first_pixel_offset_in_tile = (tile_position << 10) + (j & 31) * 32;
                 const size_t first_pixel_offset_in_linear = (j * stride) + hori_tile * 32;

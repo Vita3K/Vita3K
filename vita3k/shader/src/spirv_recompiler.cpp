@@ -94,10 +94,10 @@ struct StructDeclContext {
 // TODO do we need this? This is made to avoid spir-v validation error regarding interface variables
 struct VarToReg {
     spv::Id var;
-    bool pa; // otherwise sa
     uint32_t offset;
     uint32_t size;
     DataType dtype;
+    bool pa; // otherwise sa
 };
 
 struct TranslationState {
@@ -446,10 +446,10 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             translation_state.var_to_regs.push_back(
                 { pa_iter_var,
-                    true,
                     pa_offset,
                     pa_iter_size,
-                    pa_dtype });
+                    pa_dtype,
+                    true });
             translation_state.interfaces.push_back(pa_iter_var);
             LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
 
@@ -1016,7 +1016,6 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     // Log parameters
     for (size_t i = 0; i < program.parameter_count; ++i) {
         const SceGxmProgramParameter &parameter = gxp_parameters[i];
-        uint16_t curi = parameter.category;
         if (parameter.category == SCE_GXM_PARAMETER_CATEGORY_UNIFORM || parameter.category == SCE_GXM_PARAMETER_CATEGORY_ATTRIBUTE) {
             bool is_uniform = parameter.category == SCE_GXM_PARAMETER_CATEGORY_UNIFORM;
             std::string var_name = gxp::parameter_name(parameter);
@@ -1223,6 +1222,14 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     // if the shader tries to write a INT32 or UINT32, it means the raw content
     if (color_val_operand.type == DataType::INT32 || color_val_operand.type == DataType::UINT32)
         color_val_operand.type = DataType::F32;
+
+    // if the output component count is greater than the surface component count,
+    // it means we must pack multiple components (with lower precision) into one of the surface component
+    // this is used in assassin creed 3
+    if (gxm::get_base_format(translate_state.hints->color_format) == SCE_GXM_COLOR_BASE_FORMAT_F32F32 && vertex_varyings_ptr->output_comp_count > 2) {
+        if (color_val_operand.type == DataType::F16)
+            color_val_operand.type = DataType::F32;
+    }
 
     int reg_off = 0;
     if (!program.is_native_color() && vertex_varyings_ptr->output_param_type == 1) {

@@ -24,6 +24,11 @@
 #include <SDL.h>
 #include <boost/algorithm/string.hpp>
 
+#ifdef __APPLE__
+#include <pwd.h>
+#include <unistd.h>
+#endif
+
 namespace gui {
 
 enum Vita3kUpdate {
@@ -41,8 +46,14 @@ static LiveAreaState live_area_state;
 static int git_version;
 static std::vector<std::pair<std::string, std::string>> git_commit_desc_list;
 bool init_vita3k_update(GuiState &gui) {
-    if (fs::exists("vita3k-latest.zip"))
-        fs::remove("vita3k-latest.zip");
+#ifndef __APPLE__
+    const std::string path = "vita3k-latest.zip";
+#else
+    struct passwd *pwent = getpwuid(getuid());
+    const std::string path = fmt::format("{}/vita3k-latest.dmg", pwent->pw_dir);
+#endif
+    if (fs::exists(path))
+        fs::remove(path);
 
     state = NO_UPDATE;
     git_commit_desc_list.clear();
@@ -92,7 +103,7 @@ bool init_vita3k_update(GuiState &gui) {
             }
 
             uint32_t commit_pos = 0;
-            for (const auto page : page_count) {
+            for (const auto &page : page_count) {
                 const auto continuous_link = fmt::format(R"(https://api.github.com/repos/Vita3K/Vita3K/commits?sha=continuous&page={}&per_page={})", page.first, dif_from_current < 100 ? dif_from_current : 100);
 #ifdef WIN32
                 const auto github_commit_sha_cmd = fmt::format(R"(powershell ((Invoke-RestMethod \"{}\").sha ^| Select-Object -first {}))", continuous_link, page.second);
@@ -170,22 +181,35 @@ bool init_vita3k_update(GuiState &gui) {
 }
 
 static void download_update() {
-    if (!fs::exists("vita3k-latest.zip")) {
-        std::thread download([]() {
+#ifndef __APPLE__
+    const std::string path = "vita3k-latest.zip";
+#else
+    struct passwd *pwent = getpwuid(getuid());
+    const std::string path = fmt::format("{}/vita3k-latest.dmg", pwent->pw_dir);
+#endif
+    if (!fs::exists(path)) {
+        std::thread download([path]() {
 #ifdef WIN32
             const auto download_command = "powershell Invoke-WebRequest https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-latest.zip -OutFile vita3k-latest.zip";
+#elif defined(__APPLE__)
+            const auto download_command = "curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/macos-latest.dmg -o ~/vita3k-latest.dmg";
 #else
             const auto download_command = "curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/ubuntu-latest.zip -o ./vita3k-latest.zip";
 #endif
             LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
             system(download_command);
-            if (fs::exists("vita3k-latest.zip")) {
+            if (fs::exists(path)) {
                 SDL_Event event;
                 event.type = SDL_QUIT;
                 SDL_PushEvent(&event);
 
 #ifdef WIN32
                 const auto vita3K_batch = "update-vita3k.bat";
+#elif defined(__APPLE__)
+                char *base_path = SDL_GetBasePath();
+                std::string batch = fmt::format("sh {}/update-vita3k.sh {}/../../..", base_path, base_path);
+                const auto vita3K_batch = batch.c_str();
+                SDL_free(base_path);
 #else
                 const auto vita3K_batch = "chmod +x ./update-vita3k.sh && ./update-vita3k.sh";
 #endif
@@ -206,7 +230,6 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     const auto BUTTON_SIZE = ImVec2(150.f * SCALE.x, 46.f * SCALE.y);
-    const auto as_update = app_number < git_version;
     const auto is_background = gui.apps_background.find("NPXS10015") != gui.apps_background.end();
 
     auto common = emuenv.common_dialog.lang.common;
@@ -265,7 +288,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetNextWindowBgAlpha(0.f);
         ImGui::BeginChild("##description_child", ImVec2(860 * SCALE.x, 334.f * SCALE.y), true, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(0.8f);
-        for (const auto desc : git_commit_desc_list) {
+        for (const auto &desc : git_commit_desc_list) {
             const auto pos = ImGui::GetCursorPosY();
             ImGui::Spacing();
             ImGui::TextWrapped("%s", !desc.second.empty() ? desc.second.c_str() : "Loading...");

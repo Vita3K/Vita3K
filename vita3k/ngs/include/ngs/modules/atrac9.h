@@ -73,11 +73,11 @@ struct State {
     SceInt32 total_bytes_consumed = 0;
 
     // INTERNAL
-    std::int8_t current_loop_count = 0;
     std::uint32_t decoded_samples_pending = 0;
     std::uint32_t decoded_passed = 0;
     // used if the input must be resampled
     SwrContext *swr = nullptr;
+    std::int8_t current_loop_count = 0;
     // set to true if all the input has been read but not all data has been processed
     bool is_finished = false;
 };

@@ -36,10 +36,11 @@
 	</about>
 
 	<app_context>
-		<boot>Boot</boot> 
+		<boot>Boot</boot>
 		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
 		<copy_app_info>Copy App Info</copy_app_info>
-		<id_and_name>ID and Name</id_and_name>
+		<name_and_id>Name and Title ID</name_and_id>
+		<app_summary>App Summary</app_summary>
 		<custom_config>Custom Config</custom_config>
 		<create>Create</create>
 		<edit>Edit</edit>
@@ -72,7 +73,7 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit> 
+		<submit>Submit</submit>
 		<cancel>Abbrechen</cancel>
 		<delete>Löschen</delete>
 		<file_corrupted>Die Datei ist beschädigt.</file_corrupted>

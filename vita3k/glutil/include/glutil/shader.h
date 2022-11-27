@@ -18,6 +18,7 @@
 #pragma once
 
 #include <glutil/object.h>
+#include <string>
 
 namespace gl {
 UniqueGLObject load_shaders(const std::string &vertex_file_path, const std::string &fragment_file_path);

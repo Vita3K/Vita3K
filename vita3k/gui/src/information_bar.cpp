@@ -176,7 +176,7 @@ void init_notice_info(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     if (!notice_list.empty()) {
-        for (const auto user : notice_list) {
+        for (const auto &user : notice_list) {
             if ((user.first == "global") || (user.first == emuenv.io.user_id)) {
                 for (const auto &notice : user.second) {
                     if (!set_notice_info(gui, emuenv, notice)) {

@@ -128,8 +128,9 @@ bool TRPFile::get_entry_data(const std::uint32_t idx, TRPWriteFunc write_func) {
 }
 
 const std::int32_t TRPFile::search_file(const char *name) {
+    auto name_len = strlen(name);
     for (std::size_t i = 0; i < entries.size(); i++) {
-        if (strncmp(entries[i].filename.c_str(), name, strlen(name)) == 0) {
+        if (strncmp(entries[i].filename.c_str(), name, name_len) == 0) {
             return static_cast<std::int32_t>(i);
         }
     }

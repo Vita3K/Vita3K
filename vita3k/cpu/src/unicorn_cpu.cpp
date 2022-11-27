@@ -67,7 +67,6 @@ void UnicornCPU::read_hook(uc_engine *uc, uc_mem_type type, uint64_t address, in
 
 void UnicornCPU::write_hook(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data) {
     UnicornCPU &state = *static_cast<UnicornCPU *>(user_data);
-    MemState &mem = *state.parent->mem;
     auto start = state.parent->protocol->get_watch_memory_addr(address);
     if (start) {
         MemState &mem = *state.parent->mem;

@@ -94,8 +94,8 @@ std::int32_t VoiceInputManager::receive(ngs::Patch *patch, const VoiceProduct &p
 ModuleData::ModuleData()
     : callback(0)
     , user_data(0)
-    , flags(0)
-    , is_bypassed(false) {
+    , is_bypassed(false)
+    , flags(0) {
 }
 
 BufferParamsInfo *ModuleData::lock_params(const MemState &mem) {
@@ -309,7 +309,7 @@ bool Voice::set_preset(const MemState &mem, const VoicePreset *preset) {
     if (preset->bypass_flags_offset) {
         const auto *bypass_flags = reinterpret_cast<const SceUInt32 *>(data_origin + preset->bypass_flags_offset);
         // should we disable bypass on all modules first?
-        for (int i = 0; i < preset->bypass_flags_nb; i++) {
+        for (SceUInt32 i = 0; i < preset->bypass_flags_nb; i++) {
             ModuleData *module_data = module_storage(*bypass_flags);
             if (!module_data)
                 return false;

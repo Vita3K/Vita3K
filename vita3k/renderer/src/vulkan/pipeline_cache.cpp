@@ -416,7 +416,6 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(Mem
 
         used_streams |= (1 << attribute.streamIndex);
 
-        const SceGxmVertexStream &stream = vertex_program.streams[attribute.streamIndex];
         const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
         shader::usse::AttributeInformation info = vkvert->attribute_infos.at(attribute.regIndex);
 

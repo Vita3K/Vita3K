@@ -34,7 +34,7 @@ bool deliver_data(const MemState &mem, Voice *source, const std::uint8_t output_
             continue;
         }
 
-        if (data_to_deliver.data != nullptr) {
+        {
             const std::lock_guard<std::mutex> guard(*patch->dest->voice_mutex);
             patch->dest->inputs.receive(patch, data_to_deliver);
         }

@@ -82,4 +82,4 @@ EmuEnvState::EmuEnvState()
 }
 
 // this is necessary to forward declare unique_ptrs (so that they can call the appropriate destructor)
-EmuEnvState::~EmuEnvState() {}
+EmuEnvState::~EmuEnvState() = default;

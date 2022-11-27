@@ -93,7 +93,6 @@ EXPORT(int, _sceIoIoctlAsync) {
 
 EXPORT(SceOff, _sceIoLseek, const SceUID fd, Ptr<_sceIoLseekOpt> opt) {
     TRACY_FUNC(_sceIoLseek, fd, opt);
-    _sceIoLseekOpt kk = *opt.get(emuenv.mem);
     return seek_file(fd, opt.get(emuenv.mem)->offset, opt.get(emuenv.mem)->whence, emuenv.io, export_name);
 }
 

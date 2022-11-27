@@ -171,7 +171,7 @@ void ScreenRenderer::create_swapchain() {
     }
 
     swapchain_framebuffers.resize(swapchain_size);
-    for (int i = 0; i < swapchain_size; i++) {
+    for (uint32_t i = 0; i < swapchain_size; i++) {
         vk::FramebufferCreateInfo fb_info{
             .renderPass = render_pass,
             .width = extent.width,

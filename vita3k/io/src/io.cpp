@@ -603,8 +603,12 @@ int remove_file(IOState &io, const char *file, const std::wstring &pref_path, co
 
     LOG_TRACE_IF(log_file_op, "{}: Removing file {} ({})", export_name, file, device::construct_normalized_path(device, translated_path));
 
-    if (!fs::remove(emulated_path)) {
+    boost::system::error_code error_code{};
+    auto res = fs::detail::remove(emulated_path, &error_code);
+
+    if (!(res && !(error_code.value()))) {
         LOG_ERROR("Cannot remove file: {} ({})", file, device::construct_normalized_path(device, translated_path));
+        LOG_ERROR("Error code: {} ({})", error_code.value(), error_code.message());
         return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
     }
 

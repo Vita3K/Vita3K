@@ -34,9 +34,6 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
     const int bytes_available = SDL_AudioStreamAvailable(port.shared.stream.get());
     assert(bytes_available >= 0);
 
-    if (bytes_available == 0)
-        return;
-
     // Running out of data?
     // The (len * 3) is according to the value in sceAudioOutOutput
     if (bytes_available < (len * 3)) {
@@ -47,6 +44,9 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
             port.shared.thread = -1;
         }
     }
+
+    if (bytes_available == 0)
+        return;
 
     // Mix as much as we need.
     const int bytes_to_get = std::min(len, bytes_available);

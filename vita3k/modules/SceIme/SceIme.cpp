@@ -49,7 +49,6 @@ EXPORT(SceInt32, sceImeOpen, SceImeParam *param) {
     emuenv.ime.edit_text = {};
     emuenv.ime.enter_label.clear();
     emuenv.ime.str.clear();
-    emuenv.ime.param = {};
     emuenv.ime.param = *param;
 
     switch (emuenv.ime.param.enterLabel) {

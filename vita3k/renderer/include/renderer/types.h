@@ -110,8 +110,6 @@ struct GxmRecordState {
     Sha256Hash fragment_program_hash;
 
     SceGxmColorBaseFormat color_base_format;
-    uint16_t width;
-    uint16_t height;
 
     SceGxmCullMode cull_mode = SCE_GXM_CULL_NONE;
     SceGxmTwoSidedMode two_sided = SCE_GXM_TWO_SIDED_DISABLED;
@@ -217,6 +215,7 @@ struct ShadersHash {
 
 struct RenderTarget {
     int holder;
+    uint16_t multisample_mode;
     virtual ~RenderTarget() = default;
 };
 

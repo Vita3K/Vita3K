@@ -42,7 +42,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     float *source_data = reinterpret_cast<float *>(data.parent->inputs.inputs[0].data());
 
     // Convert FLTP to S16
-    for (std::uint32_t i = 0; i < data.parent->rack->system->granularity * 2; i++) {
+    for (int32_t i = 0; i < data.parent->rack->system->granularity * 2; i++) {
         dest_data[i] = static_cast<std::int16_t>(std::clamp(source_data[i] * 32768.0f, -32768.0f, 32767.0f));
     }
 

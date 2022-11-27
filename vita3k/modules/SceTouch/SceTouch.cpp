@@ -119,14 +119,42 @@ EXPORT(int, sceTouchGetPanelInfo, SceUInt32 port, SceTouchPanelInfo *pPanelInfo)
     }
 }
 
-EXPORT(int, sceTouchGetPixelDensity) {
-    TRACY_FUNC(sceTouchGetPixelDensity);
-    return UNIMPLEMENTED();
+EXPORT(int, sceTouchGetPixelDensity, float *p1, float *p2) {
+    TRACY_FUNC(sceTouchGetPixelDensity, p1, p2);
+    if (!p1 || !p2)
+        return SCE_TOUCH_ERROR_INVALID_ARG;
+    STUBBED("Return constant values (22.0)");
+    /* In disasmed source this function can return one of two set of values depends of hardware info.
+     * I dont know how to get this info, so I just return one of them.
+     */
+    *p1 = 22.0;
+    *p2 = 22.0;
+    /*
+     *p1 = 17.54;
+     *p2 = 17.54;
+     */
+    return 0;
 }
 
-EXPORT(int, sceTouchGetPixelDensity2) {
-    TRACY_FUNC(sceTouchGetPixelDensity2);
-    return UNIMPLEMENTED();
+EXPORT(int, sceTouchGetPixelDensity2, float *p1, float *p2, float *p3, float *p4) {
+    TRACY_FUNC(sceTouchGetPixelDensity2, p1, p2, p3, p4);
+    if (!p1 || !p2 || !p3 || !p4)
+        return SCE_TOUCH_ERROR_INVALID_ARG;
+    STUBBED("Return constant values (22.0)");
+    /* In disasmed source this function can return one of two set of values depends of hardware info.
+     * I dont know how to get this info, so I just return one of them.
+     */
+    *p1 = 22.0;
+    *p2 = 22.0;
+    *p3 = 22.0;
+    *p4 = 22.0;
+    /*
+     *p1 = 17.54;
+     *p2 = 17.54;
+     *p3 = 17.54;
+     *p4 = 17.54; or 24.23;
+     */
+    return 0;
 }
 
 EXPORT(int, sceTouchGetProcessInfo) {

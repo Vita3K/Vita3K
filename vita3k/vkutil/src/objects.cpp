@@ -22,7 +22,7 @@
 #include <util/log.h>
 
 namespace vkutil {
-Image::Image() {}
+Image::Image() = default;
 
 Image::Image(Image &&other) noexcept {
     memcpy(this, &other, sizeof(Image));
@@ -111,7 +111,7 @@ void Image::transition_to_discard(vk::CommandBuffer buffer, ImageLayout new_layo
     layout = new_layout;
 }
 
-Buffer::Buffer() {}
+Buffer::Buffer() = default;
 
 Buffer::Buffer(Buffer &&other) noexcept {
     memcpy(this, &other, sizeof(Buffer));

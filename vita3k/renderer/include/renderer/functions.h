@@ -41,7 +41,7 @@ void finish(State &state, Context *context);
 
 /**
  * \brief Wait for all subjects to be done with the given sync object.
- * 
+ *
  * Return true if the wait didn't timeout
  */
 bool wishlist(SceGxmSyncObject *sync_object, const uint32_t timestamp, const int32_t timeout_micros = -1);
@@ -96,8 +96,10 @@ void generic_command_free(Command *cmd);
 
 template <typename... Args>
 bool add_command(Context *ctx, const CommandOpcode opcode, int *status, Args... arguments) {
-    auto cmd_maked = make_command(ctx ? ctx->alloc_func : generic_command_allocate, ctx ? ctx->free_func : generic_command_free,
-        opcode, status, arguments...);
+    if (!ctx) {
+        return false;
+    }
+    auto cmd_maked = make_command(ctx->alloc_func, ctx->free_func, opcode, status, arguments...);
 
     if (!cmd_maked) {
         return false;

@@ -86,7 +86,7 @@ static ImU32 convert_hex_color(const std::string src_color) {
     std::string result = src_color.substr(src_color.length() - 6, 6);
     result.insert(0, "ff");
 
-    int color;
+    unsigned int color;
     sscanf(result.c_str(), "%x", &color);
     return (color & 0xFF00FF00u) | ((color & 0x00FF0000u) >> 16u) | ((color & 0x000000FFu) << 16u);
 }
@@ -242,7 +242,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string content_id
 
                     // Font Color
                     if (!param.child("m_fontColor").text().empty()) {
-                        int color;
+                        unsigned int color;
                         sscanf(param.child("m_fontColor").text().as_string(), "%x", &color);
                         gui.theme_backgrounds_font_color.push_back(ImVec4((float((color >> 16) & 0xFF)) / 255.f, (float((color >> 8) & 0xFF)) / 255.f, (float((color >> 0) & 0xFF)) / 255.f, 1.f));
                     }
@@ -336,7 +336,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string content_id
         stbi_image_free(data);
     }
 
-    for (const auto bg : theme_bg_name) {
+    for (const auto &bg : theme_bg_name) {
         int32_t width = 0;
         int32_t height = 0;
         vfs::FileBuffer buffer;

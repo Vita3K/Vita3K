@@ -651,7 +651,7 @@ bool relocate(const void *entries, uint32_t size, const SegmentInfosForReloc &se
                 const uint32_t orgval = *Ptr<uint32_t>(patch_seg_start + g_offset).get(mem);
 
                 uint32_t segbase = 0;
-                for (const auto seg_ : segments) {
+                for (const auto &seg_ : segments) {
                     const auto seg = seg_.second;
                     if (orgval >= seg.p_vaddr && orgval < seg.p_vaddr + seg.size) {
                         segbase = seg.p_vaddr;

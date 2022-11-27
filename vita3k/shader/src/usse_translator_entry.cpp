@@ -1073,7 +1073,6 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     // Call end hook. If it's discard, this is not even called, so no worry
     b.createFunctionCall(end_hook_func, {});
 
-    std::vector<spv::Id> empty_args;
     if (features.should_use_shader_interlock() && program.is_fragment() && program.is_frag_color_used())
         b.createNoResultOp(spv::OpEndInvocationInterlockEXT);
 }

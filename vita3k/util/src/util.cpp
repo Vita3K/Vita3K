@@ -445,8 +445,8 @@ void parseResponse(std::string res, SceRequestResponse &reqres) {
     // use while loop to check ptr is not null
     while (ptr != NULL) {
         auto line = std::string(ptr);
-        auto name = line.substr(0, line.find(":"));
-        auto value = line.substr(line.find(" ") + 1);
+        auto name = line.substr(0, line.find(':'));
+        auto value = line.substr(line.find(' ') + 1);
 
         reqres.headers.insert({ name, value });
         ptr = strtok(NULL, "\r\n");

@@ -77,7 +77,7 @@ enum SceGxmBlendFactor : uint8_t {
     SCE_GXM_BLEND_FACTOR_DST_ALPHA_SATURATE
 };
 
-enum SceGxmStencilFunc {
+enum SceGxmStencilFunc : uint32_t {
     SCE_GXM_STENCIL_FUNC_NEVER = 0x00000000u,
     SCE_GXM_STENCIL_FUNC_LESS = 0x02000000u,
     SCE_GXM_STENCIL_FUNC_EQUAL = 0x04000000u,
@@ -88,7 +88,7 @@ enum SceGxmStencilFunc {
     SCE_GXM_STENCIL_FUNC_ALWAYS = 0x0E000000u
 };
 
-enum SceGxmStencilOp {
+enum SceGxmStencilOp : uint32_t {
     SCE_GXM_STENCIL_OP_KEEP = 0x00000000u,
     SCE_GXM_STENCIL_OP_ZERO = 0x00000001u,
     SCE_GXM_STENCIL_OP_REPLACE = 0x00000002u,
@@ -99,18 +99,18 @@ enum SceGxmStencilOp {
     SCE_GXM_STENCIL_OP_DECR_WRAP = 0x00000007u
 };
 
-enum SceGxmViewportMode {
+enum SceGxmViewportMode : uint32_t {
     SCE_GXM_VIEWPORT_DISABLED = 0x00010000u,
     SCE_GXM_VIEWPORT_ENABLED = 0x00000000u
 };
 
-enum SceGxmCullMode {
+enum SceGxmCullMode : uint32_t {
     SCE_GXM_CULL_NONE = 0x00000000u,
     SCE_GXM_CULL_CW = 0x00000001u,
     SCE_GXM_CULL_CCW = 0x00000002u
 };
 
-enum SceGxmPassType {
+enum SceGxmPassType : uint32_t {
     SCE_GXM_PASS_TYPE_OPAQUE = 0x00000000u,
     SCE_GXM_PASS_TYPE_TRANSLUCENT = 0x02000000u,
     SCE_GXM_PASS_TYPE_DISCARD = 0x04000000u,
@@ -118,19 +118,19 @@ enum SceGxmPassType {
     SCE_GXM_PASS_TYPE_DEPTH_REPLACE = 0x0A000000u
 };
 
-enum SceGxmRegionClipMode {
+enum SceGxmRegionClipMode : uint32_t {
     SCE_GXM_REGION_CLIP_NONE = 0x00000000u,
     SCE_GXM_REGION_CLIP_ALL = 0x40000000u,
     SCE_GXM_REGION_CLIP_OUTSIDE = 0x80000000u,
     SCE_GXM_REGION_CLIP_INSIDE = 0xC0000000u
 };
 
-enum SceGxmTwoSidedMode {
+enum SceGxmTwoSidedMode : uint32_t {
     SCE_GXM_TWO_SIDED_DISABLED = 0x00000000u,
     SCE_GXM_TWO_SIDED_ENABLED = 0x00000800u
 };
 
-enum SceGxmDepthFunc {
+enum SceGxmDepthFunc : uint32_t {
     SCE_GXM_DEPTH_FUNC_NEVER = 0x00000000u,
     SCE_GXM_DEPTH_FUNC_LESS = 0x00400000u,
     SCE_GXM_DEPTH_FUNC_EQUAL = 0x00800000u,
@@ -141,12 +141,12 @@ enum SceGxmDepthFunc {
     SCE_GXM_DEPTH_FUNC_ALWAYS = 0x01C00000u
 };
 
-enum SceGxmDepthWriteMode {
+enum SceGxmDepthWriteMode : uint32_t {
     SCE_GXM_DEPTH_WRITE_DISABLED = 0x00100000u,
     SCE_GXM_DEPTH_WRITE_ENABLED = 0x00000000u
 };
 
-enum SceGxmPolygonMode {
+enum SceGxmPolygonMode : uint32_t {
     SCE_GXM_POLYGON_MODE_TRIANGLE_FILL = 0x00000000u,
     SCE_GXM_POLYGON_MODE_LINE = 0x00008000u,
     SCE_GXM_POLYGON_MODE_POINT_10UV = 0x00010000u,
@@ -165,7 +165,7 @@ enum SceGxmPrimitiveType : uint32_t {
     SCE_GXM_PRIMITIVE_TRIANGLE_EDGES = 0x14000000u
 };
 
-enum SceGxmDepthStencilFormat {
+enum SceGxmDepthStencilFormat : uint32_t {
     SCE_GXM_DEPTH_STENCIL_FORMAT_DF32 = 0x00044000u,
     SCE_GXM_DEPTH_STENCIL_FORMAT_S8 = 0x00022000u,
     SCE_GXM_DEPTH_STENCIL_FORMAT_DF32_S8 = 0x00066000u,
@@ -175,17 +175,17 @@ enum SceGxmDepthStencilFormat {
     SCE_GXM_DEPTH_STENCIL_FORMAT_D16 = 0x02444000u
 };
 
-enum SceGxmIndexFormat {
+enum SceGxmIndexFormat : uint32_t {
     SCE_GXM_INDEX_FORMAT_U16 = 0x00000000u,
     SCE_GXM_INDEX_FORMAT_U32 = 0x01000000u
 };
 
-enum SceGxmFragmentProgramMode {
+enum SceGxmFragmentProgramMode : uint32_t {
     SCE_GXM_FRAGMENT_PROGRAM_DISABLED = 0x00200000u,
     SCE_GXM_FRAGMENT_PROGRAM_ENABLED = 0x00000000u
 };
 
-enum SceGxmLineFillLastPixelMode {
+enum SceGxmLineFillLastPixelMode : uint32_t {
     SCE_GXM_LINE_FILL_LAST_PIXEL_DISABLED = 0x00000000u,
     SCE_GXM_LINE_FILL_LAST_PIXEL_ENABLED = 0x00080000u
 };
@@ -231,7 +231,7 @@ enum SceGxmParameterSemantic {
     SCE_GXM_PARAMETER_SEMANTIC_INSTANCE
 };
 
-enum SceGxmTextureType : unsigned int {
+enum SceGxmTextureType : uint32_t {
     SCE_GXM_TEXTURE_SWIZZLED = 0x00000000u,
     SCE_GXM_TEXTURE_CUBE = 0x40000000u,
     SCE_GXM_TEXTURE_LINEAR = 0x60000000u,
@@ -241,7 +241,7 @@ enum SceGxmTextureType : unsigned int {
     SCE_GXM_TEXTURE_CUBE_ARBITRARY = 0xE0000000U
 };
 
-enum SceGxmTextureSwizzle4Mode {
+enum SceGxmTextureSwizzle4Mode : uint32_t {
     SCE_GXM_TEXTURE_SWIZZLE4_ABGR = 0x00000000u,
     SCE_GXM_TEXTURE_SWIZZLE4_ARGB = 0x00001000u,
     SCE_GXM_TEXTURE_SWIZZLE4_RGBA = 0x00002000u,
@@ -252,12 +252,12 @@ enum SceGxmTextureSwizzle4Mode {
     SCE_GXM_TEXTURE_SWIZZLE4_BGR1 = 0x00007000u
 };
 
-enum SceGxmTextureSwizzle3Mode {
+enum SceGxmTextureSwizzle3Mode : uint32_t {
     SCE_GXM_TEXTURE_SWIZZLE3_BGR = 0x00000000u,
     SCE_GXM_TEXTURE_SWIZZLE3_RGB = 0x00001000u
 };
 
-enum SceGxmTextureSwizzle2Mode {
+enum SceGxmTextureSwizzle2Mode : uint32_t {
     SCE_GXM_TEXTURE_SWIZZLE2_GR = 0x00000000u,
     SCE_GXM_TEXTURE_SWIZZLE2_00GR = 0x00001000u,
     SCE_GXM_TEXTURE_SWIZZLE2_GRRR = 0x00002000u,
@@ -266,12 +266,12 @@ enum SceGxmTextureSwizzle2Mode {
     SCE_GXM_TEXTURE_SWIZZLE2_00RG = 0x00005000u
 };
 
-enum SceGxmTextureSwizzle2ModeAlt {
+enum SceGxmTextureSwizzle2ModeAlt : uint32_t {
     SCE_GXM_TEXTURE_SWIZZLE2_SD = 0x00000000u,
     SCE_GXM_TEXTURE_SWIZZLE2_DS = 0x00001000u
 };
 
-enum SceGxmTextureSwizzle1Mode {
+enum SceGxmTextureSwizzle1Mode : uint32_t {
     SCE_GXM_TEXTURE_SWIZZLE1_R = 0x00000000u,
     SCE_GXM_TEXTURE_SWIZZLE1_000R = 0x00001000u,
     SCE_GXM_TEXTURE_SWIZZLE1_111R = 0x00002000u,
@@ -282,7 +282,7 @@ enum SceGxmTextureSwizzle1Mode {
     SCE_GXM_TEXTURE_SWIZZLE1_R111 = 0x00007000u
 };
 
-enum SceGxmTextureSwizzleYUV422Mode {
+enum SceGxmTextureSwizzleYUV422Mode : uint32_t {
     SCE_GXM_TEXTURE_SWIZZLE_YUYV_CSC0 = 0x00000000u,
     SCE_GXM_TEXTURE_SWIZZLE_YVYU_CSC0 = 0x00001000u,
     SCE_GXM_TEXTURE_SWIZZLE_UYVY_CSC0 = 0x00002000u,
@@ -293,26 +293,26 @@ enum SceGxmTextureSwizzleYUV422Mode {
     SCE_GXM_TEXTURE_SWIZZLE_VYUY_CSC1 = 0x00007000u
 };
 
-enum SceGxmTextureSwizzleYUV420Mode {
+enum SceGxmTextureSwizzleYUV420Mode : uint32_t {
     SCE_GXM_TEXTURE_SWIZZLE_YUV_CSC0 = 0x00000000u,
     SCE_GXM_TEXTURE_SWIZZLE_YVU_CSC0 = 0x00001000u,
     SCE_GXM_TEXTURE_SWIZZLE_YUV_CSC1 = 0x00002000u,
     SCE_GXM_TEXTURE_SWIZZLE_YVU_CSC1 = 0x00003000u
 };
 
-enum SceGxmTextureFilter {
+enum SceGxmTextureFilter : uint32_t {
     SCE_GXM_TEXTURE_FILTER_POINT = 0x00000000u,
     SCE_GXM_TEXTURE_FILTER_LINEAR = 0x00000001u,
     SCE_GXM_TEXTURE_FILTER_MIPMAP_LINEAR = 0x00000002u,
     SCE_GXM_TEXTURE_FILTER_MIPMAP_POINT = 0x00000003u
 };
 
-enum SceGxmTextureMipFilter {
+enum SceGxmTextureMipFilter : uint32_t {
     SCE_GXM_TEXTURE_MIP_FILTER_DISABLED = 0x00000000u,
     SCE_GXM_TEXTURE_MIP_FILTER_ENABLED = 0x00000200u
 };
 
-enum SceGxmTextureAddrMode {
+enum SceGxmTextureAddrMode : uint32_t {
     SCE_GXM_TEXTURE_ADDR_REPEAT = 0x00000000u,
     SCE_GXM_TEXTURE_ADDR_MIRROR = 0x00000001u,
     SCE_GXM_TEXTURE_ADDR_CLAMP = 0x00000002u,
@@ -333,7 +333,7 @@ struct SceGxmRenderTargetParams {
     SceUID driverMemBlock;
 };
 
-enum SceGxmTextureBaseFormat {
+enum SceGxmTextureBaseFormat : uint32_t {
     SCE_GXM_TEXTURE_BASE_FORMAT_U8 = 0x00000000,
     SCE_GXM_TEXTURE_BASE_FORMAT_S8 = 0x01000000,
     SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4 = 0x02000000,
@@ -391,7 +391,7 @@ constexpr static inline uint32_t operator|(const SceGxmTextureBaseFormat a, cons
     return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
 };
 
-enum SceGxmTextureFormat {
+enum SceGxmTextureFormat : uint32_t {
     // Supported formats
 
     SCE_GXM_TEXTURE_FORMAT_U8_000R = SCE_GXM_TEXTURE_BASE_FORMAT_U8 | SCE_GXM_TEXTURE_SWIZZLE1_000R,
@@ -759,32 +759,32 @@ enum SceGxmTextureFormat {
     SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP = SCE_GXM_TEXTURE_FORMAT_PVRTII4BPP_ABGR
 };
 
-enum SceGxmColorSwizzle4Mode {
+enum SceGxmColorSwizzle4Mode : uint32_t {
     SCE_GXM_COLOR_SWIZZLE4_ABGR = 0x00000000u,
     SCE_GXM_COLOR_SWIZZLE4_ARGB = 0x00100000u,
     SCE_GXM_COLOR_SWIZZLE4_RGBA = 0x00200000u,
     SCE_GXM_COLOR_SWIZZLE4_BGRA = 0x00300000u
 };
 
-enum SceGxmColorSwizzle3Mode {
+enum SceGxmColorSwizzle3Mode : uint32_t {
     SCE_GXM_COLOR_SWIZZLE3_BGR = 0x00000000u,
     SCE_GXM_COLOR_SWIZZLE3_RGB = 0x00100000u
 };
 
-enum SceGxmColorSwizzle2Mode {
+enum SceGxmColorSwizzle2Mode : uint32_t {
     SCE_GXM_COLOR_SWIZZLE2_GR = 0x00000000u,
     SCE_GXM_COLOR_SWIZZLE2_RG = 0x00100000u,
     SCE_GXM_COLOR_SWIZZLE2_RA = 0x00200000u,
     SCE_GXM_COLOR_SWIZZLE2_AR = 0x00300000u
 };
 
-enum SceGxmColorSwizzle1Mode {
+enum SceGxmColorSwizzle1Mode : uint32_t {
     SCE_GXM_COLOR_SWIZZLE1_R = 0x00000000u,
     SCE_GXM_COLOR_SWIZZLE1_G = 0x00100000u,
     SCE_GXM_COLOR_SWIZZLE1_A = 0x00100000u
 };
 
-enum SceGxmColorBaseFormat {
+enum SceGxmColorBaseFormat : uint32_t {
     SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8 = 0x00000000,
     SCE_GXM_COLOR_BASE_FORMAT_U8U8U8 = 0x10000000,
     SCE_GXM_COLOR_BASE_FORMAT_U5U6U5 = 0x30000000,
@@ -818,7 +818,7 @@ constexpr static inline uint32_t operator|(const SceGxmColorBaseFormat a, const 
     return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
 };
 
-enum SceGxmColorFormat {
+enum SceGxmColorFormat : uint32_t {
 
     SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR = SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8 | SCE_GXM_COLOR_SWIZZLE4_ABGR,
     SCE_GXM_COLOR_FORMAT_U8U8U8U8_ARGB = SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8 | SCE_GXM_COLOR_SWIZZLE4_ARGB,
@@ -926,7 +926,7 @@ enum SceGxmColorFormat {
     SCE_GXM_COLOR_FORMAT_A8 = SCE_GXM_COLOR_FORMAT_U8_A
 };
 
-enum SceGxmColorSurfaceType {
+enum SceGxmColorSurfaceType : uint32_t {
     SCE_GXM_COLOR_SURFACE_LINEAR = 0x00000000u,
     SCE_GXM_COLOR_SURFACE_TILED = 0x04000000u,
     SCE_GXM_COLOR_SURFACE_SWIZZLED = 0x08000000u
@@ -939,26 +939,26 @@ enum SceGxmColorSurfaceGammaMode : uint32_t {
     SCE_GXM_COLOR_SURFACE_GAMMA_BGR = 0x00001000u
 };
 
-enum SceGxmColorSurfaceScaleMode {
+enum SceGxmColorSurfaceScaleMode : uint32_t {
     SCE_GXM_COLOR_SURFACE_SCALE_NONE = 0x00000000u,
     SCE_GXM_COLOR_SURFACE_SCALE_MSAA_DOWNSCALE = 0x00000001u
 };
 
-enum SceGxmMidSceneFlags {
+enum SceGxmMidSceneFlags : uint32_t {
     SCE_GXM_MIDSCENE_PRESERVE_DEFAULT_UNIFORM_BUFFERS = 0x00000001U
 };
 
-enum SceGxmOutputRegisterSize {
+enum SceGxmOutputRegisterSize : uint32_t {
     SCE_GXM_OUTPUT_REGISTER_SIZE_32BIT = 0x00000000u,
     SCE_GXM_OUTPUT_REGISTER_SIZE_64BIT = 0x00000001u
 };
 
-enum SceGxmVisibilityTestMode {
+enum SceGxmVisibilityTestMode : uint32_t {
     SCE_GXM_VISIBILITY_TEST_DISABLED = 0x00000000u,
     SCE_GXM_VISIBILITY_TEST_ENABLED = 0x00004000u
 };
 
-enum SceGxmVisibilityTestOp {
+enum SceGxmVisibilityTestOp : uint32_t {
     SCE_GXM_VISIBILITY_TEST_OP_INCREMENT = 0x00000000u,
     SCE_GXM_VISIBILITY_TEST_OP_SET = 0x00040000u
 };
@@ -975,14 +975,14 @@ enum SceGxmOutputRegisterFormat {
     SCE_GXM_OUTPUT_REGISTER_FORMAT_FLOAT
 };
 
-enum SceGxmTextureGammaMode {
+enum SceGxmTextureGammaMode : uint32_t {
     SCE_GXM_TEXTURE_GAMMA_NONE = 0x00000000u,
     SCE_GXM_TEXTURE_GAMMA_R = 0x08000000u,
     SCE_GXM_TEXTURE_GAMMA_GR = 0x18000000u,
     SCE_GXM_TEXTURE_GAMMA_BGR = 0x08000000u
 };
 
-enum SceGxmTextureNormalizeMode {
+enum SceGxmTextureNormalizeMode : uint32_t {
     SCE_GXM_TEXTURE_NORMALIZE_DISABLED = 0x00000000u,
     SCE_GXM_TEXTURE_NORMALIZE_ENABLED = 0x80000000u
 };
@@ -993,12 +993,12 @@ enum SceGxmTransferColorKeyMode {
     SCE_GXM_TRANSFER_COLORKEY_REJECT
 };
 
-enum SceGxmTransferFlags {
+enum SceGxmTransferFlags : uint32_t {
     SCE_GXM_TRANSFER_FRAGMENT_SYNC = 0x00000001U,
     SCE_GXM_TRANSFER_VERTEX_SYNC = 0x00000002U
 };
 
-enum SceGxmTransferFormat {
+enum SceGxmTransferFormat : uint32_t {
     SCE_GXM_TRANSFER_FORMAT_U8_R = 0x00000000U,
     SCE_GXM_TRANSFER_FORMAT_U4U4U4U4_ABGR = 0x00010000U,
     SCE_GXM_TRANSFER_FORMAT_U1U5U5U5_ABGR = 0x00020000U,
@@ -1017,13 +1017,13 @@ enum SceGxmTransferFormat {
     SCE_GXM_TRANSFER_FORMAT_RAW128 = 0x00130000U
 };
 
-enum SceGxmTransferType {
+enum SceGxmTransferType : uint32_t {
     SCE_GXM_TRANSFER_LINEAR = 0x00000000U,
     SCE_GXM_TRANSFER_TILED = 0x00400000U,
     SCE_GXM_TRANSFER_SWIZZLED = 0x00800000U
 };
 
-enum SceGxmDepthStencilForceLoadMode {
+enum SceGxmDepthStencilForceLoadMode : uint32_t {
     SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_DISABLED = 0x00000000u,
     SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED = 0x00000002u
 };
@@ -1033,7 +1033,7 @@ constexpr static inline uint32_t operator|(const SceGxmDepthStencilForceLoadMode
     return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
 };
 
-enum SceGxmDepthStencilForceStoreMode {
+enum SceGxmDepthStencilForceStoreMode : uint32_t {
     SCE_GXM_DEPTH_STENCIL_FORCE_STORE_DISABLED = 0x00000000u,
     SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED = 0x00000004u
 };
@@ -1043,12 +1043,12 @@ constexpr static inline uint32_t operator|(const SceGxmDepthStencilForceStoreMod
     return static_cast<uint32_t>(a) | static_cast<uint32_t>(b);
 };
 
-enum SceGxmColorSurfaceDitherMode {
+enum SceGxmColorSurfaceDitherMode : uint32_t {
     SCE_GXM_COLOR_SURFACE_DITHER_DISABLED = 0x00000000u,
     SCE_GXM_COLOR_SURFACE_DITHER_ENABLED = 0x00000008u
 };
 
-enum SceGxmDepthStencilSurfaceType {
+enum SceGxmDepthStencilSurfaceType : uint32_t {
     SCE_GXM_DEPTH_STENCIL_SURFACE_LINEAR = 0x00000000u,
     SCE_GXM_DEPTH_STENCIL_SURFACE_TILED = 0x00011000u
 };
@@ -1079,7 +1079,7 @@ enum SceGxmAttributeFormat {
     SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED
 };
 
-enum SceGxmErrorCode {
+enum SceGxmErrorCode : uint32_t {
     SCE_GXM_ERROR_UNINITIALIZED = 0x805B0000,
     SCE_GXM_ERROR_ALREADY_INITIALIZED = 0x805B0001,
     SCE_GXM_ERROR_OUT_OF_MEMORY = 0x805B0002,
@@ -1257,9 +1257,9 @@ struct SceGxmProgramVertexVaryings {
         };
     };
 
-    std::uint32_t vertex_outputs1; // includes everything except texcoord outputs
-    std::uint32_t vertex_outputs2; // includes texcoord outputs
-    std::uint32_t texcoord_pack_format; // 1 bit per texcoord. (0 - float, 1 - half)
+    uint32_t vertex_outputs1; // includes everything except texcoord outputs
+    uint32_t vertex_outputs2; // includes texcoord outputs
+    uint32_t texcoord_pack_format; // 1 bit per texcoord. (0 - float, 1 - half)
     std::uint16_t semantic_index_offset;
     std::uint16_t semantic_instance_offset;
 };
@@ -1268,10 +1268,10 @@ struct SceGxmProgramVertexVaryings {
 static_assert(sizeof(SceGxmProgramVertexVaryings) == 32);
 
 struct SceGxmProgramAttributeDescriptor {
-    std::uint32_t attribute_info;
-    std::uint32_t resource_index;
-    std::uint32_t size;
-    std::uint32_t component_info; ///< Total components and type
+    uint32_t attribute_info;
+    uint32_t resource_index;
+    uint32_t size;
+    uint32_t component_info; ///< Total components and type
 };
 
 struct SceGxmDependentSampler {
@@ -1301,7 +1301,7 @@ enum SceGxmFragmentProgramInputs : int {
     _SCE_GXM_FRAGMENT_PROGRAM_INPUT_LAST = 1 << 15
 };
 
-enum SceGxmProgramFlags : std::uint32_t {
+enum SceGxmProgramFlags : uint32_t {
     SCE_GXM_PROGRAM_FLAG_PER_INSTANCE_MODE = 1 << 1,
     SCE_GXM_PROGRAM_FLAG_DISCARD_USED = 1 << 3,
     SCE_GXM_PROGRAM_FLAG_DEPTH_USED = 1 << 4,
@@ -1322,64 +1322,64 @@ struct SceGxmUniformBufferInfo {
 };
 
 struct SceGxmProgram {
-    std::uint32_t magic; // should be "GXP\0"
+    uint32_t magic; // should be "GXP\0"
 
     std::uint8_t major_version; // min 1
     std::uint8_t minor_version; // min 4
     std::uint16_t sdk_version; // 0x350 - 3.50
 
-    std::uint32_t size; // size of file - ignoring padding bytes at the end after SceGxmProgramParameter table
+    uint32_t size; // size of file - ignoring padding bytes at the end after SceGxmProgramParameter table
 
-    std::uint32_t binary_guid;
-    std::uint32_t source_guid;
+    uint32_t binary_guid;
+    uint32_t source_guid;
 
-    std::uint32_t program_flags;
+    uint32_t program_flags;
 
-    std::uint32_t buffer_flags; // Buffer flags. 2 bits per buffer. 0x1 - loaded into registers. 0x2 - read from memory
+    uint32_t buffer_flags; // Buffer flags. 2 bits per buffer. 0x1 - loaded into registers. 0x2 - read from memory
 
-    std::uint32_t texunit_flags[2]; // Tex unit flags. 4 bits per tex unit. 0x1 is non dependent read, 0x2 is dependent.
+    uint32_t texunit_flags[2]; // Tex unit flags. 4 bits per tex unit. 0x1 is non dependent read, 0x2 is dependent.
 
-    std::uint32_t parameter_count;
-    std::uint32_t parameters_offset; // Number of bytes from the start of this field to the first parameter.
-    std::uint32_t varyings_offset; // offset to vertex outputs / fragment inputs, relative to this field
+    uint32_t parameter_count;
+    uint32_t parameters_offset; // Number of bytes from the start of this field to the first parameter.
+    uint32_t varyings_offset; // offset to vertex outputs / fragment inputs, relative to this field
 
     std::uint16_t primary_reg_count; // (PAs)
     std::uint16_t secondary_reg_count; // (SAs)
-    std::uint32_t temp_reg_count1;
+    uint32_t temp_reg_count1;
     std::uint16_t temp_reg_count2; // Temp reg count in selective rate(programmable blending) phase
 
     std::uint16_t primary_program_phase_count;
-    std::uint32_t primary_program_instr_count;
-    std::uint32_t primary_program_offset;
+    uint32_t primary_program_instr_count;
+    uint32_t primary_program_offset;
 
-    std::uint32_t secondary_program_instr_count;
-    std::uint32_t secondary_program_offset; // relative to the beginning of this field
-    std::uint32_t secondary_program_offset_end; // relative to the beginning of this field
+    uint32_t secondary_program_instr_count;
+    uint32_t secondary_program_offset; // relative to the beginning of this field
+    uint32_t secondary_program_offset_end; // relative to the beginning of this field
 
-    std::uint32_t scratch_buffer_count;
-    std::uint32_t thread_buffer_count;
-    std::uint32_t literal_buffer_count;
+    uint32_t scratch_buffer_count;
+    uint32_t thread_buffer_count;
+    uint32_t literal_buffer_count;
 
-    std::uint32_t data_buffer_count;
-    std::uint32_t texture_buffer_count;
-    std::uint32_t default_uniform_buffer_count;
+    uint32_t data_buffer_count;
+    uint32_t texture_buffer_count;
+    uint32_t default_uniform_buffer_count;
 
-    std::uint32_t literal_buffer_data_offset;
+    uint32_t literal_buffer_data_offset;
 
-    std::uint32_t compiler_version; // The version is shifted 4 bits to the left.
+    uint32_t compiler_version; // The version is shifted 4 bits to the left.
 
-    std::uint32_t literals_count;
-    std::uint32_t literals_offset;
-    std::uint32_t uniform_buffer_count;
-    std::uint32_t uniform_buffer_offset;
+    uint32_t literals_count;
+    uint32_t literals_offset;
+    uint32_t uniform_buffer_count;
+    uint32_t uniform_buffer_offset;
 
-    std::uint32_t dependent_sampler_count;
-    std::uint32_t dependent_sampler_offset;
-    std::uint32_t texture_buffer_dependent_sampler_count;
-    std::uint32_t texture_buffer_dependent_sampler_offset;
-    std::uint32_t container_count;
-    std::uint32_t container_offset;
-    std::uint32_t sampler_query_info_offset; // Offset to array of uint16_t
+    uint32_t dependent_sampler_count;
+    uint32_t dependent_sampler_offset;
+    uint32_t texture_buffer_dependent_sampler_count;
+    uint32_t texture_buffer_dependent_sampler_offset;
+    uint32_t container_count;
+    uint32_t container_offset;
+    uint32_t sampler_query_info_offset; // Offset to array of uint16_t
 
     SceGxmProgramType get_type() const {
         return static_cast<SceGxmProgramType>(program_flags & SceGxmProgramType::Fragment);

@@ -36,10 +36,11 @@
 	</about>
 
 	<app_context>
-		<boot>運行</boot> 
+		<boot>運行</boot>
 		<check_app_compatibility>查看應用程式兼容性</check_app_compatibility>
 		<copy_app_info>複製應用程式信息</copy_app_info>
-		<id_and_name>ID和名稱</id_and_name>
+		<name_and_id>名稱和標題ID</name_and_id>
+		<app_summary>應用程式摘要</app_summary>
 		<custom_config>自定義配置</custom_config>
 		<create>創建</create>
 		<edit>編輯</edit>
@@ -72,7 +73,7 @@
 	</app_context>
 
 	<common>
-		<submit>提交</submit> 
+		<submit>提交</submit>
 		<cancel>取消</cancel>
 		<delete>刪除</delete>
 		<file_corrupted>檔案已毀損。</file_corrupted>
@@ -447,7 +448,7 @@
 	<trophy_collection>
 		<search>搜索</search>
 		<delete_trophy>刪除獎盃</delete_trophy>
-		<trophy_deleted>此用戶保存的獎杯資訊將被刪除。</trophy_deleted>
+		<trophy_deleted>刪除該使用者已保存的獎杯資訊。</trophy_deleted>
 		<details>詳細內容</details>
 		<earned>獲得日</earned>
 		<name>名稱</name>

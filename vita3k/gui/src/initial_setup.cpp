@@ -91,7 +91,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushStyleColor(ImGuiCol_Header, SELECT_COLOR);
         ImGui::PushStyleColor(ImGuiCol_HeaderHovered, SELECT_COLOR_HOVERED);
         ImGui::PushStyleColor(ImGuiCol_HeaderActive, SELECT_COLOR_ACTIVE);
-        for (const auto sys_lang : LIST_SYS_LANG) {
+        for (const auto &sys_lang : LIST_SYS_LANG) {
             ImGui::PushID(sys_lang.first);
             // Empty Padding
             ImGui::NextColumn();

@@ -76,7 +76,7 @@ std::string to_debug_str<SceAudioOutAlcMode>(const MemState &mem, SceAudioOutAlc
 
 template <>
 std::string to_debug_str<SceAudioOutChannelFlag>(const MemState &mem, SceAudioOutChannelFlag type) {
-    switch (type) {
+    switch (static_cast<uint32_t>(type)) {
     case SCE_AUDIO_VOLUME_FLAG_L_CH:
         return "SCE_AUDIO_VOLUME_FLAG_L_CH";
     case SCE_AUDIO_VOLUME_FLAG_R_CH:

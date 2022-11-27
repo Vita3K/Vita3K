@@ -61,11 +61,11 @@ EXPORT(int, sceDbgLoggingHandler, const char *pFile, int line, int severity, con
 
     std::string output = fmt::format("SCE libdbg LOG, LEVEL: {}", severity);
 
-    if (pComponent && (strlen(pComponent) > 0)) {
+    if (pComponent && (pComponent[0] != '\0')) {
         output += fmt::format(", COMPONENT: {}", pComponent);
     }
 
-    if (pFile && (strlen(pFile) > 0)) {
+    if (pFile && (pFile[0] != '\0')) {
         output += fmt::format(", FILE:{}, LINE:{}", pFile, line);
     }
 

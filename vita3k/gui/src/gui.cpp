@@ -250,7 +250,7 @@ static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::str
         return {};
     }
 
-    return std::move(image);
+    return image;
 }
 
 void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {

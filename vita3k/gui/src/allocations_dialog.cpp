@@ -48,7 +48,7 @@ void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv) {
             continue;
 
         if (ImGui::TreeNode(fmt::format("{}: {}", generation_num, generation_name).c_str())) {
-            ImGui::Text("Range %08lx - %08lx.", generation_num * KiB(4), (generation_num + page.size) * KiB(4));
+            ImGui::Text("Range %08llx - %08llx.", generation_num * KiB(4), (generation_num + page.size) * KiB(4));
             ImGui::Text("Size: %i KiB (%i page[s])", page.size * 4, page.size);
             if (ImGui::Selectable("View/Edit")) {
                 gui.memory_editor_start = generation_num * KiB(4);

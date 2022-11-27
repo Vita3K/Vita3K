@@ -221,7 +221,7 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
     uint32_t decoded_superframe_pos = 0;
     bool got_decode_error = false;
     // decode a whole superframe at a time
-    for (int frame = 0; frame < decoder->get(DecoderQuery::AT9_FRAMES_IN_SUPERFRAME); frame++) {
+    for (uint32_t frame = 0; frame < decoder->get(DecoderQuery::AT9_FRAMES_IN_SUPERFRAME); frame++) {
         if (!decoder->send(input, 0)) {
             got_decode_error = true;
             break;
@@ -229,7 +229,6 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
 
         // convert from int16 to float
         uint32_t const channel_count = decoder->get(DecoderQuery::CHANNELS);
-        uint32_t const sample_rate = decoder->get(DecoderQuery::SAMPLE_RATE);
         std::vector<uint8_t> temporary_bytes(samples_per_frame * sizeof(int16_t) * channel_count);
         DecoderSize decoder_size;
         decoder->receive(temporary_bytes.data(), &decoder_size);
@@ -341,7 +340,6 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         return true;
     }
 
-    bool finished = false;
     // making this maybe too early...
     if (!decoder || (params->config_data != last_config)) {
         decoder = std::make_unique<Atrac9DecoderState>(params->config_data);
