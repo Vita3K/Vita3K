@@ -801,8 +801,8 @@ EXPORT(int, sceSaveDataDialogAbort) {
 
 static void check_empty_param(EmuEnvState &emuenv, const SceAppUtilSaveDataSlotEmptyParam *empty_param, const uint32_t idx) {
     vfs::FileBuffer thumbnail_buffer;
-    emuenv.common_dialog.savedata.title[idx] = "";
-    emuenv.common_dialog.savedata.subtitle[idx] = "";
+    emuenv.common_dialog.savedata.title[idx].clear();
+    emuenv.common_dialog.savedata.subtitle[idx].clear();
     emuenv.common_dialog.savedata.icon_buffer[idx].clear();
     emuenv.common_dialog.savedata.has_date[idx] = false;
     if (empty_param) {
@@ -1251,9 +1251,9 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
         fd = open_file(emuenv.io, construct_slotparam_path(fixed_param->targetSlot.id).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
         if (fd < 0) {
             emuenv.common_dialog.savedata.slot_info[0].isExist = 0;
-            emuenv.common_dialog.savedata.title[0] = "";
-            emuenv.common_dialog.savedata.subtitle[0] = "";
-            emuenv.common_dialog.savedata.details[0] = "";
+            emuenv.common_dialog.savedata.title[0].clear();
+            emuenv.common_dialog.savedata.subtitle[0].clear();
+            emuenv.common_dialog.savedata.details[0].clear();
             emuenv.common_dialog.savedata.has_date[0] = false;
         } else {
             emuenv.common_dialog.savedata.slot_info[0].isExist = 1;
