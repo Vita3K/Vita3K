@@ -1283,28 +1283,34 @@ EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
 
 EXPORT(int, sceKernelStartTimer, SceUID timer_handle) {
     TRACY_FUNC(sceKernelStartTimer, timer_handle);
+    if (!emuenv.kernel.timers.contains(timer_handle))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+
     const TimerPtr &timer_info = emuenv.kernel.timers[timer_handle];
 
     if (timer_info->is_started)
-        return false;
+        return RET_ERROR(SCE_KERNEL_ERROR_TIMER_COUNTING);
 
     timer_info->is_started = true;
     timer_info->time = get_current_time();
 
-    return true;
+    return 0;
 }
 
 EXPORT(int, sceKernelStopTimer, SceUID timer_handle) {
     TRACY_FUNC(sceKernelStopTimer, timer_handle);
+    if (!emuenv.kernel.timers.contains(timer_handle))
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+
     const TimerPtr timer_info = lock_and_find(timer_handle, emuenv.kernel.timers, emuenv.kernel.mutex);
 
     if (!timer_info->is_started)
-        return false;
+        return RET_ERROR(SCE_KERNEL_ERROR_TIMER_STOPPED);
 
     timer_info->is_started = false;
     timer_info->time = get_current_time();
 
-    return true;
+    return 0;
 }
 
 EXPORT(int, sceKernelSuspendThreadForVM, SceUID threadId) {
