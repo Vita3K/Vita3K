@@ -120,6 +120,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                     fs::remove(fs::path(pup_path.wstring()));
                     delete_pup_file = false;
                 }
+                get_modules_list(gui, emuenv);
                 if (emuenv.cfg.initial_setup)
                     init_theme(gui, emuenv, gui.users[emuenv.cfg.user_id].theme_id);
                 fw_version.clear();

@@ -62,7 +62,7 @@ namespace gui {
  */
 static Config::CurrentConfig config;
 
-static void get_modules_list(GuiState &gui, EmuEnvState &emuenv) {
+void get_modules_list(GuiState &gui, EmuEnvState &emuenv) {
     gui.modules.clear();
 
     const auto modules_path{ fs::path(emuenv.pref_path) / "vs0/sys/external/" };
@@ -231,7 +231,6 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
     max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
     emuenv.app_path = app_path;
-    get_modules_list(gui, emuenv);
     emuenv.display.imgui_render = true;
 }
 
