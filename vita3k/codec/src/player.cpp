@@ -72,7 +72,7 @@ void PlayerState::free_video() {
         audio_packets.pop();
     }
 
-    video_playing = "";
+    video_playing.clear();
 }
 
 void PlayerState::switch_video(const std::string &path) {
@@ -162,7 +162,7 @@ std::vector<int16_t> PlayerState::receive_audio() {
         if (error != 0) {
             if (videos_queue.empty()) {
                 // Stop playing videos or
-                video_playing = "";
+                video_playing.clear();
                 break;
             } else {
                 // Play the next video (if there is any).
@@ -216,7 +216,7 @@ std::vector<uint8_t> PlayerState::receive_video() {
         if (error != 0) {
             if (videos_queue.empty()) {
                 // Stop playing videos or
-                video_playing = "";
+                video_playing.clear();
                 break;
             } else {
                 // Play the next video (if there is any).
@@ -254,6 +254,6 @@ void PlayerState::queue(const std::string &path) {
 PlayerState::~PlayerState() {
     free_video();
 
-    video_playing = "";
+    video_playing.clear();
     videos_queue = {};
 }

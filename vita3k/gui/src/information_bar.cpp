@@ -99,7 +99,7 @@ static bool set_notice_info(GuiState &gui, EmuEnvState &emuenv, const NoticeList
     if (info.type == "content") {
         if (info.group.find("gd") != std::string::npos) {
             content_path = fs::path("app") / info.id;
-            msg = lang["app_added_home"].c_str();
+            msg = lang["app_added_home"];
         } else {
             if (info.group == "ac")
                 content_path = fs::path("addcont") / info.id / info.content_id;
@@ -107,7 +107,7 @@ static bool set_notice_info(GuiState &gui, EmuEnvState &emuenv, const NoticeList
                 content_path = fs::path("app") / info.id;
             else if (info.group == "theme")
                 content_path = fs::path("theme") / info.content_id;
-            msg = lang["install_complete"].c_str();
+            msg = lang["install_complete"];
         }
         vfs::FileBuffer params;
         if (vfs::read_file(VitaIoDevice::ux0, params, emuenv.pref_path, content_path / "sce_sys/param.sfo")) {

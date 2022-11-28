@@ -101,7 +101,7 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
 
         // Quick hack to remove garbage null terminator caused by reading directly
         // to buffer
-        sfile.entries[i].data.first = sfile.entries[i].data.first.c_str();
+        sfile.entries[i].data.first = sfile.entries[i].data.first;
     }
 
     for (uint32_t i = 0; i < sfile.header.tables_entries; i++) {
@@ -114,7 +114,7 @@ bool load(SfoFile &sfile, const std::vector<uint8_t> &content) {
 
         // Quick hack to remove garbage null terminator caused by reading directly
         // to buffer
-        sfile.entries[i].data.second = sfile.entries[i].data.second.c_str();
+        sfile.entries[i].data.second = sfile.entries[i].data.second;
     }
 
     return true;

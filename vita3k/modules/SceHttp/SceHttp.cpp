@@ -320,9 +320,9 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceInt method, const 
     if (parsed.path.empty())
         parsed.path = slash;
     if (parsed.query.empty())
-        parsed.query = "";
+        parsed.query.clear();
     if (parsed.fragment.empty())
-        parsed.fragment = "";
+        parsed.fragment.clear();
     std::string resourcePath = parsed.path + parsed.query + parsed.fragment;
 
     SceRequest req;
