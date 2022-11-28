@@ -45,6 +45,7 @@ std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const 
 std::map<DateTime, std::string> get_date_time(GuiState &gui, EmuEnvState &emuenv, const tm &date_time);
 std::string get_unit_size(const size_t &size);
 void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string app_path);
+void get_modules_list(GuiState &gui, EmuEnvState &emuenv);
 void get_notice_list(EmuEnvState &emuenv);
 std::string get_theme_title_from_buffer(const vfs::FileBuffer buffer);
 std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, EmuEnvState &emuenv, const std::string app);

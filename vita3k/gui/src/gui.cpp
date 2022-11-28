@@ -639,6 +639,7 @@ void pre_init(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void init(GuiState &gui, EmuEnvState &emuenv) {
+    get_modules_list(gui, emuenv);
     get_notice_list(emuenv);
     get_users_list(gui, emuenv);
     get_time_apps(gui, emuenv);
