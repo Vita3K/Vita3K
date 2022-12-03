@@ -220,7 +220,7 @@ void dump(const SceGxmTexture &gxm_texture, const MemState &mem, const std::stri
         gl_format = GL_RGBA;
         gl_type = GL_UNSIGNED_BYTE;
     }
-    glGetTexImage(GL_TEXTURE_2D, 0, gl_format, gl_type, (void *)g_pixels.data());
+    glGetnTexImage(GL_TEXTURE_2D, 0, gl_format, gl_type, size, (void *)g_pixels.data());
 
     // TODO: Create the texturelog path elsewhere on init once and pass it here whole
     // TODO: Same for shaderlog path
