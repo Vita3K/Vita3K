@@ -1,0 +1,520 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="文件">
+			<open_pref_path>打开存放路径</open_pref_path>
+			<install_firmware>安装固件</install_firmware>
+			<install_pkg>安装pkg</install_pkg>
+			<install_zip>安装zip、vpk</install_zip>
+			<install_license>安装许可证</install_license>
+		</file>
+		<emulation name="模拟">
+			<last_apps_used>最近使用的应用程序</last_apps_used>
+		</emulation>
+		<configuration name="配置">
+			<settings>设置</settings>
+			<user_management>用户管理</user_management>
+		</configuration>
+		<controls name="控制">
+			<keyboard_controls>键盘控制</keyboard_controls>
+		</controls>
+		<help name="帮助">
+			<welcome>欢迎</welcome>
+		</help>
+	</main_menubar>
+
+	<about name="关于">
+		<vita3k>Vita3K：PS Vita/PS TV模拟器。 是全球首个实用的PS Vita/PS TV模拟器。</vita3k>
+		<about_vita3k>Vita3K是使用C++编写的实验性开源PlayStation Vita/PlayStation TV模拟器，适用于Windows、Linux和macOS操作系统。</about_vita3k>
+		<note>注意：目前模拟器仍处于开发的早期阶段。</note>
+		<github_website>如果您有兴趣参与贡献，请浏览我们的GitHub：</github_website>
+		<vita3k_website>更多信息请访问我们的网站：</vita3k_website>
+		<vita3k_staff>Vita3K人员名单</vita3k_staff>
+		<developers>开发人员</developers>
+		<contributors>贡献者</contributors>
+	</about>
+
+	<app_context>
+		<boot>运行</boot>
+		<check_app_compatibility>查看应用程序兼容性</check_app_compatibility>
+		<copy_app_info>复制应用程序信息</copy_app_info>
+		<name_and_id>名称和标题ID</name_and_id>
+		<app_summary>应用程序摘要</app_summary>
+		<custom_config>自定义配置</custom_config>
+		<create>创建</create>
+		<edit>编辑</edit>
+		<remove>移除</remove>
+		<open_folder>打开文件夹</open_folder>
+		<addcont>追加内容</addcont>
+		<license>许可证</license>
+		<shader_cache>着色器缓存</shader_cache>
+		<shader_log>着色器日志</shader_log>
+		<update_history>更新历史记录</update_history>
+		<history_version>{}版本</history_version>
+		<information>信息</information>
+		<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
+		<app_delete_note>删除应用程序可能需要一段时间。
+取决于它的大小和您的硬件。</app_delete_note>
+		<save_delete>要删除此保存数据吗？</save_delete>
+		<eligible>有权</eligible>
+		<ineligible>无权</ineligible>
+		<level>级别</level>
+		<name>名称</name>
+		<trophy_earning>获得奖杯</trophy_earning>
+		<parental_controls>视听者限制</parental_controls>
+		<updated>升级日期</updated>
+		<size>大小</size>
+		<version>版本</version>
+		<title_id>标题ID</title_id>
+		<last_time_used>最近使用时间</last_time_used>
+		<never>从来没有</never>
+		<time_used>使用时间</time_used>
+	</app_context>
+
+	<common>
+		<submit>提交</submit>
+		<cancel>取消</cancel>
+		<delete>删除</delete>
+		<file_corrupted>文件已损坏。</file_corrupted>
+		<no>否</no>
+		<select_all>全部选择</select_all>
+		<select>选择</select>
+		<please_wait>请稍等…</please_wait>
+		<yes>是</yes>
+		<wday>
+			<day>星期日</day>
+			<day>星期一</day>
+			<day>星期二</day>
+			<day>星期三</day>
+			<day>星期四</day>
+			<day>星期五</day>
+			<day>星期六</day>
+		</wday>
+		<ymonth>
+			<month>1月</month>
+			<month>2月</month>
+			<month>3月</month>
+			<month>4月</month>
+			<month>5月</month>
+			<month>6月</month>
+			<month>7月</month>
+			<month>8月</month>
+			<month>9月</month>
+			<month>10月</month>
+			<month>11月</month>
+			<month>12月</month>
+		</ymonth>
+		<small_ymonth>
+			<month>1月</month>
+			<month>2月</month>
+			<month>3月</month>
+			<month>4月</month>
+			<month>5月</month>
+			<month>6月</month>
+			<month>7月</month>
+			<month>8月</month>
+			<month>9月</month>
+			<month>10月</month>
+			<month>11月</month>
+			<month>12月</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1日</days>
+			<days>2日</days>
+			<days>3日</days>
+			<days>4日</days>
+			<days>5日</days>
+			<days>6日</days>
+			<days>7日</days>
+			<days>8日</days>
+			<days>9日</days>
+			<days>10日</days>
+			<days>11日</days>
+			<days>12日</days>
+			<days>13日</days>
+			<days>14日</days>
+			<days>15日</days>
+			<days>16日</days>
+			<days>17日</days>
+			<days>18日</days>
+			<days>19日</days>
+			<days>20日</days>
+			<days>21日</days>
+			<days>22日</days>
+			<days>23日</days>
+			<days>24日</days>
+			<days>25日</days>
+			<days>26日</days>
+			<days>27日</days>
+			<days>28日</days>
+			<days>29日</days>
+			<days>30日</days>
+			<days>31日</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1日</days>
+			<days>2日</days>
+			<days>3日</days>
+			<days>4日</days>
+			<days>5日</days>
+			<days>6日</days>
+			<days>7日</days>
+			<days>8日</days>
+			<days>9日</days>
+			<days>10日</days>
+			<days>11日</days>
+			<days>12日</days>
+			<days>13日</days>
+			<days>14日</days>
+			<days>15日</days>
+			<days>16日</days>
+			<days>17日</days>
+			<days>18日</days>
+			<days>19日</days>
+			<days>20日</days>
+			<days>21日</days>
+			<days>22日</days>
+			<days>23日</days>
+			<days>24日</days>
+			<days>25日</days>
+			<days>26日</days>
+			<days>27日</days>
+			<days>28日</days>
+			<days>29日</days>
+			<days>30日</days>
+			<days>31日</days>
+		</small_mday>
+		<hidden_trophy>隐藏奖杯</hidden_trophy>
+		<one_hour_ago>1小时前</one_hour_ago>
+		<one_minute_ago>1分钟前</one_minute_ago>
+		<bronze>Bronze（铜）</bronze>
+		<gold>Gold（金）</gold>
+		<platinum>Platinum（白金）</platinum>
+		<silver>Silver（银）</silver>
+		<hours_ago>{}小时前</hours_ago>
+		<minutes_ago>{}分钟前</minutes_ago>
+	</common>
+
+	<compile_shaders>
+		<compiling_shaders>正在编译着色器</compiling_shaders>
+		<shaders_compiled>个着色器已编译</shaders_compiled>
+	</compile_shaders>
+
+	<content_manager name="内容管理">
+		<search>搜索</search>
+		<application name="应用程序">
+			<delete>即将删除选择的应用程序及所有相关数据，包括保存数据。</delete>
+			<no_item>没有内容。</no_item>
+		</application>
+		<saved_data name="保存数据">
+			<delete>所选择的保存数据将被删除。</delete>
+			<no_saved_data>保存数据不存在。</no_saved_data>
+		</saved_data>
+		<theme>主题</theme>
+		<free_space>空余容量</free_space>
+		<clear_all>全部清除</clear_all>
+	</content_manager>
+
+	<controllers name="控制器">
+		<connected>个控制器已连接</connected>
+		<name>名称</name>
+		<num>编号</num>
+		<not_connected>未连接兼容的控制器。
+连接与SDL2兼容的控制器。</not_connected>
+	</controllers>
+
+	<controls name="控制">
+		<button>按键</button>
+		<mapped_button>映射按键</mapped_button>
+		<left_stick_up>左摇杆上</left_stick_up>
+		<left_stick_down>左摇杆下</left_stick_down>
+		<left_stick_right>左摇杆右</left_stick_right>
+		<left_stick_left>左摇杆左</left_stick_left>
+		<right_stick_up>右摇杆上</right_stick_up>
+		<right_stick_down>右摇杆下</right_stick_down>
+		<right_stick_right>右摇杆右</right_stick_right>
+		<right_stick_left>右摇杆左</right_stick_left>
+		<d_pad_up>方向键上</d_pad_up>
+		<d_pad_down>方向键下</d_pad_down>
+		<d_pad_right>方向键右</d_pad_right>
+		<d_pad_left>方向键左</d_pad_left>
+		<square_button>方形键</square_button>
+		<cross_button>X键</cross_button>
+		<circle_button>O键</circle_button>
+		<triangle_button>三角键</triangle_button>
+		<start_button>Start键</start_button>
+		<select_button>Select键</select_button>
+		<ps_button>PS键</ps_button>
+		<l1_button>L1键</l1_button>
+		<r1_button>R1键</r1_button>
+		<ps_tv_mode>仅在PS TV模式下有效。</ps_tv_mode>
+		<l2_button>L2键</l2_button>
+		<r2_button>R2键</r2_button>
+		<l3_button>L3键</l3_button>
+		<r3_button>R3键</r3_button>
+		<gui>图形用户界面</gui>
+		<full_screen>全屏</full_screen>
+		<toggle_touch>切换触碰</toggle_touch>
+		<toggle_gui_visibility>切换图形用户界面可见性</toggle_gui_visibility>
+	</controls>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>正在准备启动应用程序…</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>要取消删除吗？</cancel_deleting>
+				<deletion_complete>删除完毕。</deletion_complete>
+				<delete_saved_data>要删除此保存数据吗？</delete_saved_data>
+			</delete>
+			<info>
+				<details>详细信息</details>
+				<updated>升级日期</updated>
+			</info>
+			<load name="读取">
+				<cancel_loading>要取消读取吗？</cancel_loading>
+				<no_saved_data>保存数据不存在。</no_saved_data>
+				<load_complete>读取完毕。</load_complete>
+				<loading>正在读取…</loading>
+				<load_saved_data>要读取此保存数据吗？</load_saved_data>
+			</load>
+			<save name="保存">
+				<cancel_saving>要取消保存吗？</cancel_saving>
+				<could_not_save>无法保存文件。
+存储卡没有足够的空余容量。</could_not_save>
+				<not_free_space>存储卡没有足够的空余容量。</not_free_space>
+				<new_saved_data>新建保存数据</new_saved_data>
+				<saving_complete>保存完毕。</saving_complete>
+				<save_the_data>要保存数据吗？</save_the_data>
+				<saving>正在保存…</saving>
+				<warning_saving>正在保存…
+请勿关闭电源或关闭应用程序。</warning_saving>
+				<overwrite_saved_data>要覆盖此保存数据吗？</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>下列应用程序即将关闭。</app_close>
+		<data_delete>删除的数据：</data_delete>
+	</game_data>
+
+	<home_screen>
+		<filter>筛选</filter>
+		<sort_app>应用程序排序按</sort_app>
+		<all>全部</all>
+		<by_region>按地区</by_region>
+		<usa>美版</usa>
+		<europe>欧版</europe>
+		<japan>日版</japan>
+		<asia>亚版</asia>
+		<by_type>按类型</by_type>
+		<commercial>商业</commercial>
+		<homebrew>自制</homebrew>
+		<ver>版本</ver>
+		<cat>类别</cat>
+		<last_time>最近使用时间</last_time>
+		<tit>标题</tit>
+		<refresh>刷新</refresh>
+	</home_screen>
+
+	<indicator>
+		<app_added_home>已将应用程序添加至主画面。</app_added_home>
+		<delete_all>全部删除</delete_all>
+		<notif_deleted>最新资讯将被删除。</notif_deleted>
+		<install_failed>无法安装。</install_failed>
+		<install_complete>安装完毕。</install_complete>
+		<installing>正在安装…</installing>
+		<no_notif>没有最新资讯。</no_notif>
+		<trophy_earned>已获得奖杯！</trophy_earned>
+	</indicator>
+
+	<initial_setup>
+		<back>返回</back>
+		<completed_setup>You have now completed initial setup.
+Your Vita3K system is ready!</completed_setup>
+		<select_language>Select a language.</select_language>
+		<completed>已完成。</completed>
+		<next>Next</next>
+	</initial_setup>
+
+	<install_dialog>
+		<fw_installing>Installation in progress, please wait...</fw_installing>
+		<successed_install_fw>固件已成功安装。</successed_install_fw>
+		<fw_version>固件版本：</fw_version>
+		<no_font_exist>No firmware font package present.
+Please download and install it.</no_font_exist>
+		<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
+		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
+		<delete_fw>Delete the firmware installation file?</delete_fw>
+		<select_key_type>选择密钥类型</select_key_type>
+		<select_work>选择work.bin</select_work>
+		<enter_zrif>输入zRIF</enter_zrif>
+		<enter_zrif_key>输入zRIF密钥</enter_zrif_key>
+		<input_zrif>请在此处输入您的zRIF</input_zrif>
+		<copy_paste_zrif>使用Ctrl（Cmd）+ C复制，使用Ctrl（Cmd）+ V粘贴。</copy_paste_zrif>
+		<delete_pkg>删除pkg文件？</delete_pkg>
+		<delete_work>删除work.bin文件？</delete_work>
+		<check_log>详情请查看日志。</check_log>
+		<select_install_type>选择安装类型</select_install_type>
+		<select_file>选择文件</select_file>
+		<select_directory>选择目录</select_directory>
+		<compatible_content>发现兼容内容的{}个压缩包。</compatible_content>
+		<successed_install_archive>已成功安装{}个压缩包中的内容：</successed_install_archive>
+		<update_app>更新应用程序至：</update_app>
+		<failed_install_archive>无法安装{}个压缩包中的内容：</failed_install_archive>
+		<not_compatible_content>未发现兼容内容的{}个压缩包：</not_compatible_content>
+		<delete_archive>删除压缩包？</delete_archive>
+		<select_license_type>选择许可证类型</select_license_type>
+		<select_bin_rif>选择work.bin/rif</select_bin_rif>
+		<successed_install_license>已成功安装许可证。</successed_install_license>
+		<content_id>内容ID：</content_id>
+		<title_id>标题ID：</title_id>
+		<delete_bin_rif>删除work.bin/rif文件？</delete_bin_rif>
+	</install_dialog>
+
+	<live_area>
+		<start>开始</start>
+		<continue>继续</continue>
+	</live_area>
+
+	<settings name="设定">
+		<theme_background name="主题&背景">
+			<default>原始</default>
+			<theme name="主题">
+				<search>搜索</search>
+				<find_in_altervista>在Altervista中寻找</find_in_altervista>
+				<information name="信息">
+					<name>名称</name>
+					<provider>提供者</provider>
+					<updated>升级日期</updated>
+					<size>大小</size>
+					<version>版本</version>
+					<content_id>内容ID</content_id>
+				</information>
+				<delete>删除此主题。</delete>
+			</theme>
+			<start_screen name="开始画面">
+				<image>图像</image>
+				<add_image>添加图像</add_image>
+			</start_screen>
+			<home_screen_backgrounds name="主画面的背景">
+				<delete_background>删除背景</delete_background>
+				<add_background>添加背景</add_background>
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="日期&时间">
+			<date_format name ="日期格式">
+				<yyyy_mm_dd>年/月/日</yyyy_mm_dd>
+				<dd_mm_yyyy>日/月/年</dd_mm_yyyy>
+				<mm_dd_yyyy>月/日/年</mm_dd_yyyy>
+			</date_format>
+			<time_format name="时间格式">
+				<clock_12_hour>12小时制</clock_12_hour>
+				<clock_24_hour>24小时制</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="语言">
+			<system_language>系统语言</system_language>
+			<input_language name="输入语言">
+				<keyboards name="键盘">
+					<ime_languages>
+						<lang id="1">丹麦语</lang>
+						<lang id="2">德语</lang>
+						<lang id="262144">英语(英国)</lang>
+						<lang id="4">英语(美国)</lang>
+						<lang id="8">西班牙语</lang>
+						<lang id="16">法语</lang>
+						<lang id="32">意大利语</lang>
+						<lang id="64">荷兰语</lang>
+						<lang id="128">挪威语</lang>
+						<lang id="256">波兰语</lang>
+						<lang id="131072">葡萄牙语（巴西）</lang>
+						<lang id="512">葡萄牙语（葡萄牙）</lang>
+						<lang id="1024">俄语</lang>
+						<lang id="2048">芬兰语</lang>
+						<lang id="4096">瑞典语</lang>
+						<lang id="524288">土耳其语</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<search>搜索</search>
+		<delete_trophy>删除奖杯</delete_trophy>
+		<trophy_deleted>该用户已保存的奖杯信息将被删除。</trophy_deleted>
+		<details>详细信息</details>
+		<earned>获得日期</earned>
+		<name>名称</name>
+		<no_trophies>找不到奖杯。
+您可通过游玩支持奖杯功能的应用程序获得奖杯。</no_trophies>
+		<not_earned>未获得</not_earned>
+		<original>原始</original>
+		<sort>排列</sort>
+		<trophies>奖杯数</trophies>
+		<grade>Grade（等级）</grade>
+		<progress>达成率</progress>
+		<updated>升级日期</updated>
+	</trophy_collection>
+
+	<user_management>
+		<select_user>选择用户</select_user>
+		<create_user>创建用户</create_user>
+		<user_created>已创建以下用户。</user_created>
+		<edit_user>编辑用户</edit_user>
+		<user_name_used>此名称已被使用。</user_name_used>
+		<delete_user>删除用户</delete_user>
+		<user_delete>请选择要删除的用户。</user_delete>
+		<user_delete_msg>将删除以下用户。</user_delete_msg>
+		<user_delete_message>若删除用户，该用户的保存数据、奖杯也会一并被删除。</user_delete_message>
+		<user_delete_warn>用户将被删除。
+确定要继续吗？</user_delete_warn>
+		<user_deleted>用户已删除。</user_deleted>
+		<change_avatar>变更虚拟形象</change_avatar>
+		<reset_avatar>重设虚拟形象</reset_avatar>
+		<name>名称</name>
+		<user>用户</user>
+		<confirm>确定</confirm>
+		<automatic_user_login>自动登录用户</automatic_user_login>
+	</user_management>
+
+	<vita3k_update name="Vita3K更新">
+ 		<new_version_available>检测到新版本的Vita3K。</new_version_available>
+		<back>返回</back>
+		<downloading>下载中…
+下载完毕后，Vita3K将会自动重新启动，并安装新的版本。</downloading>
+		<not_complete_update>无法完成更新。</not_complete_update>
+		<next>继续</next>
+		<update_vita3k>要升级Vita3K吗？</update_vita3k>
+		<later_version_already_installed>已安装更新版本的Vita3K。</later_version_already_installed>
+		<latest_version_already_installed>已安装最新版本的Vita3K。</latest_version_already_installed>
+		<new_features>{}版本的追加功能</new_features>
+		<update>更新</update>
+		<version>{}版本</version>
+	</vita3k_update>
+
+	<welcome name="欢迎来到Vita3K">
+		<line_first>Vita3K PlayStation Vita模拟器</line_first>
+		<line_second>Vita3K是使用C++编写的开源PlayStation Vita模拟器，适用于Windows、Linux和macOS。</line_second>
+		<line_third>目前模拟器仍处于早期阶段，因此非常感谢任何反馈和测试。</line_third>
+		<line_fourth>要开始使用，请安装PS Vita固件和字体包。</line_fourth>
+		<download_firmware>Download Firmware</download_firmware>
+		<line_sixth_part_one>有关如何设置Vita3K的综合指南可在</line_sixth_part_one>
+		<quickstart>快速入门</quickstart>
+		<line_sixth_part_two>页面中找到。</line_sixth_part_two>
+		<line_seventh>参考商业游戏以及自制程序兼容性列表来查看目前可运行的内容。</line_seventh>
+		<commercial_compatibility_list>商业游戏兼容性列表</commercial_compatibility_list>
+		<homebrew_compatibility_list>自制程序兼容性列表</homebrew_compatibility_list>
+		<line_eighth>欢迎参与贡献！</line_eighth>
+		<line_tenth>可以在#help频道中找到更多支持</line_tenth>
+		<line_eleventh>Vita3K不纵容盗版。您必须提取您自己拥有的游戏。</line_eleventh>
+		<show_next_time>下次显示</show_next_time>
+		<close>关闭</close>
+	</welcome>
+</lang>
