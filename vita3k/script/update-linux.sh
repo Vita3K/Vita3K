@@ -2,6 +2,8 @@
 echo ============================================================
 echo ====================== Vita3K Updater ======================
 echo ============================================================
+# cd to the correct path so the update doesn't happen outside the vita3k dir
+cd $(dirname $(readlink -f "$0"))
 
 boot=0
 if [ ! -e vita3k-latest.zip ]; then
