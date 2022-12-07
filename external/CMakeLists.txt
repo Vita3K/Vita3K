@@ -117,6 +117,30 @@ add_library(sdl2 INTERFACE)
 target_include_directories(sdl2 INTERFACE "${SDL2_INCLUDE_DIR}")
 target_link_libraries(sdl2 INTERFACE "${SDL2_LIBRARY}")
 
+# Cubeb setup, from https://github.com/RPCS3/rpcs3/blob/master/3rdparty/cubeb/CMakeLists.txt
+set(BUILD_SHARED_LIBS FALSE CACHE BOOL "Don't build shared libs")
+set(BUILD_TESTS FALSE CACHE BOOL "Don't build tests")
+set(BUILD_RUST_LIBS FALSE CACHE BOOL "Don't build rust libs")
+set(BUILD_TOOLS FALSE CACHE BOOL "Don't build tools")
+set(BUNDLE_SPEEX TRUE CACHE BOOL "Bundle the speex library")
+set(LAZY_LOAD_LIBS TRUE CACHE BOOL "Lazily load shared libraries")
+set(USE_SANITIZERS FALSE CACHE BOOL "Dont't use sanitizers")
+
+add_subdirectory(cubeb EXCLUDE_FROM_ALL)
+set_property(TARGET cubeb PROPERTY FOLDER externals)
+set_property(TARGET speex PROPERTY FOLDER externals)
+
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm|ARM|aarch64|AArch64|Aarch64)")
+	target_compile_definitions(speex PUBLIC
+		#_USE_NEON
+	)
+elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86|X86|amd64|AMD64|em64t|EM64T)")
+	target_compile_definitions(speex PUBLIC
+		_USE_SSE
+		_USE_SSE2
+	)
+endif ()
+
 if(WIN32)
 	add_library(winsock INTERFACE)
 	find_library(WSOCK32 wsock32)

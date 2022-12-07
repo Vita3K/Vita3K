@@ -122,25 +122,21 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
     }
 
     const int channels = (mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
-    const AudioStreamPtr stream(SDL_NewAudioStream(AUDIO_S16LSB, channels, freq, emuenv.audio.ro.spec.format, emuenv.audio.ro.spec.channels, emuenv.audio.ro.spec.freq), SDL_FreeAudioStream);
-    if (!stream) {
+
+    AudioOutPortPtr port = emuenv.audio.open_port(channels, freq, len);
+    if (!port)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_NOT_OPENED);
-    }
 
-    const AudioOutPortPtr port = std::make_shared<AudioOutPort>();
-    port->ro.len_bytes = len * channels * sizeof(int16_t);
-    port->shared.stream = stream;
-
-    const std::lock_guard<std::mutex> lock(emuenv.audio.shared.mutex);
-    const int port_id = emuenv.audio.shared.next_port_id++;
-    emuenv.audio.shared.out_ports.emplace(port_id, port);
+    const std::lock_guard<std::mutex> lock(emuenv.audio.mutex);
+    const int port_id = emuenv.audio.next_port_id++;
+    emuenv.audio.out_ports.emplace(port_id, port);
 
     return port_id;
 }
 
 EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
     TRACY_FUNC(sceAudioOutOutput, port, buf);
-    const AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.shared.out_ports, emuenv.audio.shared.mutex);
+    const AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);
     if (!prt) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
@@ -150,42 +146,22 @@ EXPORT(int, sceAudioOutOutput, int port, const void *buf) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
-    // Put audio to the port's stream and see how much is left to play.
-    std::unique_lock<std::mutex> lock(prt->shared.mutex);
-    SDL_AudioStreamPut(prt->shared.stream.get(), buf, prt->ro.len_bytes);
-    const int available = SDL_AudioStreamAvailable(prt->shared.stream.get());
-
-    // If there's lots of audio left to play, stop this thread.
-    // The audio callback will wake it up later when it's running out of data.
-    // the 3*emuenv.audio.ro.spec.size is needed for some games with an 480 host audiobuffer
-    // sample size (what SDL audio gives us) to make sure this does not happen
-    // we are supposed to wait for the existing samples to be processed (except the ones just passed)
-    // but this would give a bad audio because the host buffer size is different compared to the guest buffer size
-    // so we need to cache more data to make sure we always have enough
-    if (available >= 3 * emuenv.audio.ro.spec.size) {
-        prt->shared.thread = thread_id;
-
-        std::unique_lock<std::mutex> mlock(thread->mutex);
-        thread->update_status(ThreadStatus::wait);
-        lock.unlock();
-        thread->status_cond.wait(mlock, [&]() { return thread->status == ThreadStatus::run; });
-    }
+    emuenv.audio.audio_output(*thread, *prt, buf);
 
     return 0;
 }
 
 EXPORT(int, sceAudioOutGetRestSample, int port) {
     TRACY_FUNC(sceAudioOutGetRestSample, port);
-    const AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.shared.out_ports, emuenv.audio.shared.mutex);
+    const AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);
     if (!prt) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
-    const int bytes_available = SDL_AudioStreamAvailable(prt->shared.stream.get());
-    assert(emuenv.audio.ro.spec.format == AUDIO_S16LSB);
+    const int bytes_available = SDL_AudioStreamAvailable(prt->stream.get());
 
     // we have the number of bytes left, we can convert it back to the number of samples left
-    return bytes_available / (emuenv.audio.ro.spec.channels * sizeof(int16_t));
+    return bytes_available / (2 * sizeof(int16_t));
 }
 
 EXPORT(int, sceAudioOutOpenExtPort) {
@@ -195,8 +171,8 @@ EXPORT(int, sceAudioOutOpenExtPort) {
 
 EXPORT(int, sceAudioOutReleasePort, int port) {
     TRACY_FUNC(sceAudioOutReleasePort, port);
-    const std::lock_guard<std::mutex> guard(emuenv.audio.shared.mutex);
-    if (!emuenv.audio.shared.out_ports.erase(port)) {
+    const std::lock_guard<std::mutex> guard(emuenv.audio.mutex);
+    if (!emuenv.audio.out_ports.erase(port)) {
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
     }
 
@@ -243,21 +219,19 @@ EXPORT(int, sceAudioOutSetVolume, int port, SceAudioOutChannelFlag ch, int *vol)
     if (!ch) // no channel selected, no changes
         return 0;
 
-    const AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.shared.out_ports, emuenv.audio.shared.mutex);
+    const AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);
 
     if (!prt)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
 
-    // Unsure of what happens if only one channel is selected, this will break if program passes a size 1 int array
     const int left = (ch & SCE_AUDIO_VOLUME_FLAG_L_CH) ? vol[0] : prt->left_channel_volume;
     const int right = (ch & SCE_AUDIO_VOLUME_FLAG_R_CH) ? vol[1] : prt->right_channel_volume;
     const float volume_level = (static_cast<float>(left + right) / static_cast<float>(SCE_AUDIO_VOLUME_0DB * 2));
-    const int volume = static_cast<int>(SDL_MIX_MAXVOLUME * volume_level);
 
-    prt->volume = volume;
     // then update channel volumes in case there was a change
     prt->left_channel_volume = left;
     prt->right_channel_volume = right;
+    emuenv.audio.set_volume(*prt, volume_level);
 
     return 0;
 }

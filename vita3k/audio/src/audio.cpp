@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,10 +15,14 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <audio/state.h>
+
 #include "public/tracy/Tracy.hpp"
 
-#include <audio/functions.h>
-#include <audio/state.h>
+#include <audio/impl/cubeb_audio.h>
+#include <audio/impl/sdl_audio.h>
+
+#include <kernel/thread/thread_state.h>
 
 #include <util/log.h>
 
@@ -30,18 +34,18 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
     ZoneScopedC(0xF6C2FF); // Tracy - Track function scope with color thistle
 
     // How much data is available?
-    std::unique_lock<std::mutex> lock(port.shared.mutex);
-    const int bytes_available = SDL_AudioStreamAvailable(port.shared.stream.get());
+    std::unique_lock<std::mutex> lock(port.mutex);
+    const int bytes_available = SDL_AudioStreamAvailable(port.stream.get());
     assert(bytes_available >= 0);
 
     // Running out of data?
     // The (len * 3) is according to the value in sceAudioOutOutput
-    if (bytes_available < (len * 3)) {
+    if (bytes_available < len * 3) {
         // Is there a thread waiting for playback to finish?
-        if (port.shared.thread >= 0) {
+        if (port.thread >= 0) {
             // Wake the thread up.
-            resume_thread(port.shared.thread);
-            port.shared.thread = -1;
+            resume_thread(port.thread);
+            port.thread = -1;
         }
     }
 
@@ -50,67 +54,120 @@ static void mix_out_port(uint8_t *stream, uint8_t *temp_buffer, int len, AudioOu
 
     // Mix as much as we need.
     const int bytes_to_get = std::min(len, bytes_available);
-    const int bytes_got = SDL_AudioStreamGet(port.shared.stream.get(), temp_buffer, bytes_to_get);
+    const int bytes_got = SDL_AudioStreamGet(port.stream.get(), temp_buffer, bytes_to_get);
     lock.unlock();
     if (bytes_got > 0) {
-        SDL_MixAudio(stream, temp_buffer, bytes_got, port.volume);
+        SDL_MixAudioFormat(stream, temp_buffer, AUDIO_S16LSB, bytes_got, static_cast<int>(port.volume * SDL_MIX_MAXVOLUME));
     }
 }
 
-static void SDLCALL audio_callback(void *userdata, Uint8 *stream, int len) {
+void AudioAdapter::audio_callback(uint8_t *stream, int len_bytes) {
     tracy::SetThreadName("Host audio thread"); // Tracy - Declare belonging of this function to the audio thread
     ZoneScopedC(0xF6C2FF); // Tracy - Track function scope with color thistle
-
-    assert(userdata != nullptr);
-    assert(stream != nullptr);
-    AudioState &state = *static_cast<AudioState *>(userdata);
-    assert(len == state.ro.spec.size);
-    assert(len == state.callback.temp_buffer.size());
 
     std::vector<AudioOutPortPtr> ports;
     {
         // Read from shared state.
-        const std::lock_guard<std::mutex> lock(state.shared.mutex);
-        ports.reserve(state.shared.out_ports.size());
-        for (const AudioOutPortPtrs::value_type &port : state.shared.out_ports) {
+        const std::lock_guard<std::mutex> lock(state.mutex);
+        ports.reserve(state.out_ports.size());
+        for (const AudioOutPortPtrs::value_type &port : state.out_ports) {
             ports.push_back(port.second);
         }
     }
-
-    std::memset(stream, state.ro.spec.silence, len);
+    std::memset(stream, state.spec.silence, len_bytes);
 
     for (const AudioOutPortPtr &port : ports) {
-        mix_out_port(stream, state.callback.temp_buffer.data(), len, *port, state.ro.resume_thread);
+        mix_out_port(stream, temp_buffer.data(), len_bytes, *port.get(), state.resume_thread);
     }
 
     FrameMarkNamed("Audio"); // Tracy - End discontinuous frame for audio rendering
 }
 
-static void close_audio(void *) {
-    SDL_CloseAudio();
-}
+bool AudioState::init(const ResumeAudioThread &resume_thread, const std::string &adapter_name) {
+    this->resume_thread = resume_thread;
 
-bool init(AudioState &state, ResumeAudioThread resume_thread) {
-    state.ro.resume_thread = resume_thread;
-
-    SDL_AudioSpec desired = {};
-    desired.freq = 48000;
-    desired.format = AUDIO_S16LSB;
-    desired.channels = 2;
-    desired.samples = 1024;
-    desired.callback = &audio_callback;
-    desired.userdata = &state;
-
-    // On my computer (Macdu), the obtained specs are AUDIO_F32 with 480 samples (absolutely not what we asked for...)
-    if (SDL_OpenAudio(&desired, &state.ro.spec) != 0) {
-        LOG_ERROR("SDL audio error: {}", SDL_GetError());
+    set_backend(adapter_name);
+    if (!adapter)
         return false;
-    }
-
-    state.device = AudioDevicePtr(nullptr, close_audio);
-    state.callback.temp_buffer.resize(state.ro.spec.size);
-
-    SDL_PauseAudio(0);
 
     return true;
+}
+
+void AudioState::set_backend(const std::string &adapter_name) {
+    if (adapter_name == this->audio_backend)
+        return;
+
+    // first delete all ports then delete the backend
+    out_ports.clear();
+    adapter.reset();
+    if (adapter_name == "SDL") {
+        adapter = std::make_unique<SDLAudioAdapter>(*this);
+    } else if (adapter_name == "Cubeb") {
+        adapter = std::make_unique<CubebAudioAdapter>(*this);
+    } else {
+        LOG_ERROR("Unkown audio adapter {}", adapter_name);
+        return;
+    }
+    this->audio_backend = adapter_name;
+
+    // lock the mutex to make sure nothing happens until the initialisation is done
+    const std::lock_guard<std::mutex> lock(mutex);
+    if (!adapter->init()) {
+        adapter.reset();
+        return;
+    }
+
+    adapter->temp_buffer.resize(spec.nb_samples * 2 * sizeof(uint16_t));
+}
+
+AudioOutPortPtr AudioState::open_port(int nb_channels, int freq, int nb_sample) {
+    if (adapter->single_stream) {
+        // handle everything here
+        const AudioStreamPtr stream(SDL_NewAudioStream(AUDIO_S16LSB, nb_channels, freq, AUDIO_S16LSB, 2, spec.freq), SDL_FreeAudioStream);
+        if (!stream)
+            return nullptr;
+
+        const AudioOutPortPtr port = std::make_shared<AudioOutPort>();
+        port->len_bytes = nb_sample * nb_channels * sizeof(int16_t);
+        port->stream = stream;
+
+        return port;
+    } else {
+        // let the adapter open the port
+        AudioOutPortPtr port = adapter->open_port(nb_channels, freq, nb_sample);
+        return port;
+    }
+}
+
+void AudioState::audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) {
+    if (adapter->single_stream) {
+        // Put audio to the port's stream and see how much is left to play.
+        std::unique_lock<std::mutex> lock(out_port.mutex);
+        SDL_AudioStreamPut(out_port.stream.get(), buffer, out_port.len_bytes);
+        const int available = SDL_AudioStreamAvailable(out_port.stream.get());
+        lock.unlock();
+
+        // If there's lots of audio left to play, stop this thread.
+        // The audio callback will wake it up later when it's running out of data.
+        // the 3*(nb of samples for each callback) is needed for some games with an 480 host audiobuffer
+        // sample size (what SDL audio gives us) to make sure this does not happen
+        // we are supposed to wait for the existing samples to be processed (except the ones just passed)
+        // but this would give a bad audio because the host buffer size is different compared to the guest buffer size
+        // so we need to cache more data to make sure we always have enough
+        if (available >= 3 * spec.nb_samples * 2 * sizeof(uint16_t)) {
+            out_port.thread = thread.id;
+
+            std::unique_lock<std::mutex> mlock(thread.mutex);
+            thread.update_status(ThreadStatus::wait);
+            thread.status_cond.wait(mlock, [&]() { return thread.status == ThreadStatus::run; });
+        }
+    } else {
+        adapter->audio_output(thread, out_port, buffer);
+    }
+}
+
+void AudioState::set_volume(AudioOutPort &out_port, float volume) {
+    out_port.volume = volume;
+
+    adapter->set_volume(out_port, volume);
 }
