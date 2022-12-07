@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2022 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -17,12 +17,15 @@
 
 #pragma once
 
-#include <util/types.h>
+#include "../state.h"
 
-#include <functional>
+class SDLAudioAdapter : public AudioAdapter {
+    SDL_AudioDeviceID device_id = 0;
+    SDL_AudioSpec spec{};
 
-struct AudioState;
+public:
+    SDLAudioAdapter(AudioState &audio_state);
+    ~SDLAudioAdapter();
 
-typedef std::function<void(SceUID)> ResumeAudioThread;
-
-bool init(AudioState &state, ResumeAudioThread resume_thread);
+    bool init() override;
+};

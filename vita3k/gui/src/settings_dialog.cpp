@@ -18,6 +18,7 @@
 #include "imgui.h"
 #include "private.h"
 
+#include <audio/state.h>
 #include <config/functions.h>
 #include <config/state.h>
 #include <display/state.h>
@@ -201,7 +202,7 @@ static CPUBackend set_cpu_backend(std::string &cpu_backend) {
     return cpu_backend == "Dynarmic" ? CPUBackend::Dynarmic : CPUBackend::Unicorn;
 }
 
-static int current_aniso_filter_log, max_aniso_filter_log;
+static int current_aniso_filter_log, max_aniso_filter_log, audio_backend_idx;
 
 /**
  * @brief Initialize the `config` struct with the values set in the global emulator config.
@@ -230,6 +231,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     config_cpu_backend = set_cpu_backend(config.cpu_backend);
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
     max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
+    audio_backend_idx = (emuenv.audio.audio_backend == "SDL") ? 0 : 1;
     emuenv.app_path = app_path;
     emuenv.display.imgui_render = true;
 }
@@ -377,6 +379,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     if (emuenv.io.title_id.empty()) {
         emuenv.kernel.cpu_backend = set_cpu_backend(emuenv.cfg.current_config.cpu_backend);
         emuenv.kernel.cpu_opt = emuenv.cfg.current_config.cpu_opt;
+        emuenv.audio.set_backend(emuenv.cfg.audio_backend);
     }
 }
 
@@ -665,6 +668,19 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox("Boot apps in full screen", &emuenv.cfg.boot_apps_full_screen);
         ImGui::Spacing();
+
+        if (!emuenv.io.app_path.empty())
+            ImGui::BeginDisabled();
+
+        static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
+        if (ImGui::Combo("Backend Renderer", reinterpret_cast<int *>(&audio_backend_idx), LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
+            emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Select your preferred audio backend.");
+
+        if (!emuenv.io.app_path.empty())
+            ImGui::EndDisabled();
+
         ImGui::Checkbox("Enable NGS support", &config.ngs_enable);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable support for advanced audio library NGS.");

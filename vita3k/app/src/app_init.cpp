@@ -17,7 +17,7 @@
 
 #include <app/functions.h>
 
-#include <audio/functions.h>
+#include <audio/state.h>
 #include <config/functions.h>
 #include <config/state.h>
 #include <config/version.h>
@@ -167,7 +167,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         return false;
     }
 
-    if (!init(state.audio, resume_thread)) {
+    if (!state.audio.init(resume_thread, cfg.audio_backend)) {
         LOG_WARN("Failed to init audio! Audio will not work.");
     }
 

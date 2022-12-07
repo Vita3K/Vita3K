@@ -93,3 +93,6 @@
 [submodule "external/nativefiledialog-extended"]
 	path = external/nativefiledialog-extended
 	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "external/cubeb"]
+	path = external/cubeb
+	url = https://github.com/mozilla/cubeb.git

@@ -70,6 +70,7 @@ enum PerfomanceOverleyPosition {
     code(bool, "texture-cache", true, texture_cache)                                                    \
     code(bool, "hashless-texture-cache", false, hashless_texture_cache)                                 \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
+    code(std::string, "audio-backend", "SDL", audio_backend)                                            \
     code(bool, "ngs-enable", true, ngs_enable)                                                          \
     code(int, "sys-button", static_cast<int>(SCE_SYSTEM_PARAM_ENTER_BUTTON_CROSS), sys_button)          \
     code(int, "sys-lang", static_cast<int>(SCE_SYSTEM_PARAM_LANG_ENGLISH_US), sys_lang)                 \

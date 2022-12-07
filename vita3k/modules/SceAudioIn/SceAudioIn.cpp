@@ -103,19 +103,19 @@ EXPORT(int, sceAudioInGetStatus, int select) {
     if (select != SCE_AUDIO_IN_GETSTATUS_MUTE) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_INVALID_PARAMETER);
     }
-    return emuenv.audio.shared.in_port.running ? 0 : 1;
+    return emuenv.audio.in_port.running ? 0 : 1;
 }
 
 EXPORT(int, sceAudioInInput, int port, void *destPtr) {
     TRACY_FUNC(sceAudioInInput, port, destPtr);
-    if (!emuenv.audio.shared.in_port.running) {
+    if (!emuenv.audio.in_port.running) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_NOT_OPENED);
     }
     if (port != PORT_ID) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_INVALID_PORT_PARAM);
     }
 
-    while (SDL_DequeueAudio(emuenv.audio.shared.in_port.id, destPtr, emuenv.audio.shared.in_port.len_bytes) > 0) {
+    while (SDL_DequeueAudio(emuenv.audio.in_port.id, destPtr, emuenv.audio.in_port.len_bytes) > 0) {
     }
     return 0;
 }
@@ -127,7 +127,7 @@ EXPORT(int, sceAudioInInputWithInputDeviceState) {
 
 EXPORT(int, sceAudioInOpenPort, SceAudioInPortType portType, int grain, int freq, SceAudioInParam param) {
     TRACY_FUNC(sceAudioInOpenPort, portType, grain, freq, param);
-    if (emuenv.audio.shared.in_port.running) {
+    if (emuenv.audio.in_port.running) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_PORT_FULL);
     }
     if (param != SCE_AUDIO_IN_PARAM_FORMAT_S16_MONO) {
@@ -162,15 +162,15 @@ EXPORT(int, sceAudioInOpenPort, SceAudioInPortType portType, int grain, int freq
     desired.callback = nullptr;
     desired.userdata = nullptr;
 
-    emuenv.audio.shared.in_port.id = SDL_OpenAudioDevice(nullptr, 1, &desired, &received, 0);
-    if (emuenv.audio.shared.in_port.id == 0) {
+    emuenv.audio.in_port.id = SDL_OpenAudioDevice(nullptr, true, &desired, &received, 0);
+    if (emuenv.audio.in_port.id == 0) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_FATAL);
     }
 
-    SDL_PauseAudioDevice(emuenv.audio.shared.in_port.id, 0);
+    SDL_PauseAudioDevice(emuenv.audio.in_port.id, 0);
 
-    emuenv.audio.shared.in_port.len_bytes = grain * 2;
-    emuenv.audio.shared.in_port.running = true;
+    emuenv.audio.in_port.len_bytes = grain * 2;
+    emuenv.audio.in_port.running = true;
     return PORT_ID;
 }
 
@@ -184,12 +184,12 @@ EXPORT(int, sceAudioInReleasePort, int port) {
     if (port != PORT_ID) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_INVALID_PORT_PARAM);
     }
-    if (!emuenv.audio.shared.in_port.running) {
+    if (!emuenv.audio.in_port.running) {
         return RET_ERROR(SCE_AUDIO_IN_ERROR_NOT_OPENED);
     }
-    emuenv.audio.shared.in_port.running = false;
-    SDL_PauseAudioDevice(emuenv.audio.shared.in_port.id, 1);
-    SDL_CloseAudioDevice(emuenv.audio.shared.in_port.id);
+    emuenv.audio.in_port.running = false;
+    SDL_PauseAudioDevice(emuenv.audio.in_port.id, 1);
+    SDL_CloseAudioDevice(emuenv.audio.in_port.id);
     return 0;
 }
 
