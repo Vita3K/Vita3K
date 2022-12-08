@@ -1095,9 +1095,9 @@ EXPORT(int, sceKernelCancelRWLock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCancelSema) {
-    TRACY_FUNC(sceKernelCancelSema);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCancelSema, SceUID semaId, SceInt32 setCount, SceUInt32 *pNumWaitThreads) {
+    TRACY_FUNC(sceKernelCancelSema, semaId, setCount, pNumWaitThreads);
+    return CALL_EXPORT(_sceKernelCancelSema, semaId, setCount, pNumWaitThreads);
 }
 
 EXPORT(int, sceKernelCancelTimer) {

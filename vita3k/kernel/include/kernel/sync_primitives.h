@@ -107,7 +107,7 @@ struct Semaphore : SyncPrimitive {
     WaitingThreadQueuePtr waiting_threads;
     int max;
     int val;
-
+    int init_val;
     ~Semaphore() override = default;
 };
 
@@ -231,6 +231,7 @@ SceUID semaphore_create(KernelState &kernel, const char *export_name, const char
 SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout);
 int semaphore_signal(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, int signal);
 int semaphore_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid);
+int semaphore_cancel(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, SceInt32 setCount, SceUInt32 *pNumWaitThreads);
 
 // Condition Variable
 SceUID condvar_create(SceUID *uid_out, KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, SceUID assoc_mutexid, SyncWeight weight);
