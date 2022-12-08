@@ -140,7 +140,6 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
     uint32_t sfo_offset = 0;
     uint32_t sfo_size = 0;
     uint32_t items_offset = 0;
-    uint32_t items_size = 0;
 
     for (uint32_t i = 0; i < byte_swap(pkg_header.info_count); i++) {
         uint32_t block[4];
@@ -156,7 +155,6 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
             break;
         case 13:
             items_offset = byte_swap(block[2]);
-            items_size = byte_swap(block[3]);
             break;
         case 14:
             sfo_offset = byte_swap(block[2]);
@@ -317,11 +315,8 @@ bool install_pkg(const std::string &pkg, EmuEnvState &emuenv, std::string &p_zRI
         fs::rename(fs::path(title_id_dst), fs::path(title_id_src));
 
         for (const auto &file : fs::recursive_directory_iterator(title_id_src)) {
-            if (file.path().extension() == ".suprx" || file.path().extension() == ".self" || file.path().filename() == "eboot.bin") {
-                self2elf(file.path().string(), file.path().string() + "elf", SCE_KEYS, temp_klicensee.data());
-                fs::rename(file.path().string() + "elf", file.path().string());
-                make_fself(file.path().string(), file.path().string() + "fself");
-                fs::rename(file.path().string() + "fself", file.path().string());
+            if (is_self(file.path())) {
+                decrypt_fself(file.path(), SCE_KEYS, temp_klicensee.data());
                 LOG_INFO("Decrypted {} with klicensee {}", file.path().string(), byte_array_to_string(temp_klicensee.data(), 16));
             }
         }

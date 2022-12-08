@@ -624,16 +624,13 @@ void get_surface_data(GLState &renderer, GLContext &context, uint32_t *pixels, S
     SceGxmColorFormat format = surface.colorFormat;
     uint32_t width = surface.width;
     uint32_t height = surface.height;
-    size_t buffer_size;
 
     if (renderer.res_multiplier == 1) {
         glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(surface.strideInPixels));
-        buffer_size = gxm::get_stride_in_bytes(surface.colorFormat, surface.strideInPixels) * height;
     } else {
         width *= renderer.res_multiplier;
         height *= renderer.res_multiplier;
         glPixelStorei(GL_PACK_ROW_LENGTH, static_cast<GLint>(width));
-        buffer_size = gxm::get_stride_in_bytes(surface.colorFormat, width) * height;
     }
 
     auto format_gl = GXM_COLOR_FORMAT_TO_GL_FORMAT.find(format);
@@ -680,25 +677,10 @@ void GLState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
 
     const std::size_t texture_data_size = (std::size_t)display.frame.pitch * (std::size_t)display.frame.image_size.y * (std::size_t)4;
 
-    std::uint64_t surface_handle = 0;
-    bool check_for_cache = true;
-
-    for (std::size_t i = 0; i < gxm.surface_syncing_infoes.size(); i++) {
-        if (gxm.surface_syncing_infoes[i].addr == 0) {
-            continue;
-        }
-        if ((gxm.surface_syncing_infoes[i].addr <= display.frame.base.address()) && (gxm.surface_syncing_infoes[i].addr + texture_data_size > display.frame.base.address())) {
-            if (!gxm.surface_syncing_infoes[i].syncing_disabled()) {
-                check_for_cache = false;
-            }
-        }
-    }
-
     SceFVector2 texture_size;
 
-    if (check_for_cache)
-        surface_handle = surface_cache.sourcing_color_surface_for_presentation(
-            display.frame.base, display.frame.image_size.x, display.frame.image_size.y, display.frame.pitch, uvs, this->res_multiplier, texture_size);
+    uint64_t surface_handle = surface_cache.sourcing_color_surface_for_presentation(
+        display.frame.base, display.frame.image_size.x, display.frame.image_size.y, display.frame.pitch, uvs, this->res_multiplier, texture_size);
 
     GLint last_texture = 0;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);

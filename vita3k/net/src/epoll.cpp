@@ -47,7 +47,6 @@ int Epoll::wait(SceNetEpollEvent *events, int maxevents, int timeout_microsecond
     int maxFd = 0;
 
     for (auto &pair : eventEntries) {
-        auto &epollSocket = pair.second;
         if (pair.second.events & SCE_NET_EPOLLIN) {
             add_event_fd_set(&readFds, &maxFd, pair.second.sock);
         }
@@ -70,9 +69,6 @@ int Epoll::wait(SceNetEpollEvent *events, int maxevents, int timeout_microsecond
 
     int eventCount = 0;
     for (auto &pair : eventEntries) {
-        auto id = pair.first;
-        auto &epollSocket = pair.second;
-
         unsigned int eventTypes = 0;
         if (FD_ISSET(pair.second.sock, &readFds)) {
             eventTypes |= SCE_NET_EPOLLIN;

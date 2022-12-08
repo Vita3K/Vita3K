@@ -214,11 +214,6 @@ void PipelineCache::save_pipeline_cache() {
     LOG_INFO("Pipeline cache saved");
 }
 
-static const Sha256Hash get_shader_hash(const SceGxmProgram &program) {
-    const Sha256Hash hash_bytes = sha256(&program, program.size);
-    return hash_bytes;
-}
-
 vk::PipelineShaderStageCreateInfo PipelineCache::retrieve_shader(const SceGxmProgram *program, const Sha256Hash &hash, bool is_vertex, bool maskupdate, MemState &mem, const std::vector<SceGxmVertexAttribute> *hint_attributes) {
     if (maskupdate)
         LOG_CRITICAL("Mask not implemented in the vulkan renderer!");

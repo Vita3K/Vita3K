@@ -225,8 +225,6 @@ COMMAND(handle_transfer_copy) {
     const SceGxmTransferType dst_type = helper.pop<SceGxmTransferType>();
 
     const auto src_is_linear = src_type == SCE_GXM_TRANSFER_LINEAR;
-    const auto dest_is_linear = dst_type == SCE_GXM_TRANSFER_LINEAR;
-    const auto src_is_swizzled = src_type == SCE_GXM_TRANSFER_SWIZZLED;
     const auto dest_is_swizzled = dst_type == SCE_GXM_TRANSFER_SWIZZLED;
 
     // Get bits per pixel of source and destination
@@ -240,8 +238,6 @@ COMMAND(handle_transfer_copy) {
     // Set width and height of source and destination
     const uint32_t src_width = src->width;
     const uint32_t src_height = src->height;
-    const uint32_t dest_width = dest->width;
-    const uint32_t dest_height = dest->height;
 
     const auto copy_pixel = [&](const uint32_t src_offset, const uint32_t dest_offset) {
         // Set pointer of source and destination

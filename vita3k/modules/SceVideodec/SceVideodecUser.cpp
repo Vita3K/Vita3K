@@ -228,7 +228,7 @@ EXPORT(int, sceAvcdecDecodeAvailableSize, SceAvcdecCtrl *decoder) {
         return RET_ERROR(SCE_AVCDEC_ERROR_INVALID_PARAM);
 
     return H264DecoderState::buffer_size(
-        { decoder_info->get(DecoderQuery::WIDTH), decoder_info->get(DecoderQuery::HEIGHT) });
+        { { decoder_info->get(DecoderQuery::WIDTH), decoder_info->get(DecoderQuery::HEIGHT) } });
 }
 
 EXPORT(int, sceAvcdecDecodeFlush, SceAvcdecCtrl *decoder) {
@@ -342,7 +342,7 @@ EXPORT(int, sceAvcdecQueryDecoderMemSize, uint32_t codec_type, const SceAvcdecQu
     TRACY_FUNC(sceAvcdecQueryDecoderMemSize, codec_type, query_info, decoder_info);
     assert(codec_type == SCE_VIDEODEC_TYPE_HW_AVCDEC);
 
-    decoder_info->frameMemSize = H264DecoderState::buffer_size({ query_info->horizontal, query_info->vertical }) * query_info->numOfRefFrames;
+    decoder_info->frameMemSize = H264DecoderState::buffer_size({ { query_info->horizontal, query_info->vertical } }) * query_info->numOfRefFrames;
 
     return 0;
 }

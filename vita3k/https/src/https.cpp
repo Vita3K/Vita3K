@@ -53,11 +53,11 @@ static void close_ssl(SSL *ssl) {
 static uint64_t header_size = 0;
 
 struct Https {
-    SSL *ssl;
+    SSL *ssl = nullptr;
     abs_socket sockfd = 0;
 };
 
-static Https init(const std::string url, const std::string method = "GET", const uint64_t downloaded_file_size = 0) {
+static Https init(const std::string &url, const std::string &method = "GET", const uint64_t downloaded_file_size = 0) {
 #ifdef WIN32
     // Initialize Winsock
     WORD versionWanted = MAKEWORD(2, 2);
@@ -199,7 +199,7 @@ static Https init(const std::string url, const std::string method = "GET", const
     return https;
 }
 
-std::string get_web_response(const std::string url, const std::string method) {
+std::string get_web_response(const std::string &url, const std::string &method) {
     // Initialize SSL and socket connection
     auto https = init(url, method);
     if (!https.ssl)
@@ -235,7 +235,7 @@ std::string get_web_response(const std::string url, const std::string method) {
     return response;
 }
 
-std::string get_web_regex_result(const std::string url, const std::regex regex) {
+std::string get_web_regex_result(const std::string &url, const std::regex &regex) {
     std::string result;
 
     // Get the response of the web
@@ -257,7 +257,7 @@ std::string get_web_regex_result(const std::string url, const std::regex regex) 
     return result;
 }
 
-static uint64_t get_file_size(const std::string header) {
+static uint64_t get_file_size(const std::string &header) {
     uint64_t file_size = 0;
 
     std::smatch match;
@@ -274,7 +274,7 @@ static uint64_t get_file_size(const std::string header) {
     return file_size;
 }
 
-bool download_file(std::string url, const std::string output_file_path, ProgressCallback progress_callback) {
+bool download_file(std::string url, const std::string &output_file_path, ProgressCallback progress_callback) {
     header_size = 0;
 
     // Get the HEAD of response

@@ -579,7 +579,6 @@ void shader::usse::utils::buffer_address_load(spv::Builder &b, const SpirvShader
     buffer_address = add_uvec2_uint(b, buffer_address, addr);
 
     if (component_size == sizeof(uint32_t)) {
-        int components_left = nb_components;
         int buffer_idx_vec4 = 0;
         if (nb_components >= 4) {
             // first copy them 4 by 4 (using the fact that we can do 4-byte aligned reads)
@@ -609,9 +608,6 @@ void shader::usse::utils::buffer_address_load(spv::Builder &b, const SpirvShader
             store(b, params, utils, features, dest, loaded, (1 << nb_components) - 1, 0);
         }
     } else {
-        spv::Id f32 = b.makeFloatType(32);
-        spv::Id u32 = b.makeUintType(32);
-
         // less optimized
         // TODO: if the gpu supports it, load it as a u16vec4 / u8vec4
         const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, 1, 4);

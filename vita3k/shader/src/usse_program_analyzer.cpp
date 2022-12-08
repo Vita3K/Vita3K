@@ -166,7 +166,7 @@ int match_uniform_buffer_with_buffer_size(const SceGxmProgram &program, const Sc
 
 void get_uniform_buffer_sizes(const SceGxmProgram &program, UniformBufferSizes &sizes) {
     const auto program_input = shader::get_program_input(program);
-    for (const auto buffer : program_input.uniform_buffers) {
+    for (const auto &buffer : program_input.uniform_buffers) {
         sizes[buffer.index] = buffer.size;
     }
 }

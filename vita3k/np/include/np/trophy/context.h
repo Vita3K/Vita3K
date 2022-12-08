@@ -78,7 +78,7 @@ struct Context {
     bool load_trophy_progress_file(const SceUID &progress_input_file);
 
     int copy_file_data_from_trophy_file(const char *filename, void *buffer, SceSize *size);
-    int install_trophy_conf(IOState *io, const std::wstring &pref_path, const std::string np_com_id);
+    int install_trophy_conf(IOState *io, const std::wstring &pref_path, const std::string &np_com_id);
     bool init_info_from_trp();
     bool unlock_trophy(std::int32_t id, np::NpTrophyError *err, const bool force_unlock = false);
 

@@ -28,8 +28,8 @@ struct ProgressState {
 
 typedef const std::function<ProgressState(float, uint64_t)> &ProgressCallback;
 
-bool download_file(std::string url, const std::string output_file_path, ProgressCallback progress_callback = nullptr);
-std::string get_web_response(const std::string url, const std::string method = "GET");
-std::string get_web_regex_result(const std::string url, const std::regex regex);
+bool download_file(std::string url, const std::string &output_file_path, ProgressCallback progress_callback = nullptr);
+std::string get_web_response(const std::string &url, const std::string &method = "GET");
+std::string get_web_regex_result(const std::string &url, const std::regex &regex);
 
 } // namespace https

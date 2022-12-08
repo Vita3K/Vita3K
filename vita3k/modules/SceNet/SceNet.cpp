@@ -275,7 +275,7 @@ EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
     if (GetAdaptersInfo(AdapterInfo, &dwBufLen) != ERROR_SUCCESS) {
         return RET_ERROR(SCE_NET_EINVAL);
     } else {
-        memcpy(addr->data, AdapterInfo->Address, 6);
+        memcpy(addr->data, AdapterInfo[0].Address, 6);
     }
 #else
     // TODO: Implement the function for non Windows OS

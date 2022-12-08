@@ -28,7 +28,7 @@
 
 namespace gui {
 
-void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     if (init_manual(gui, emuenv, app_path)) {
         gui.vita_area.information_bar = false;
         gui.vita_area.live_area_screen = false;
@@ -40,7 +40,7 @@ void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string app_path)
 static int32_t current_page;
 static std::vector<uint32_t> height_manual_pages;
 
-bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
     const auto APP_PATH{ fs::path(emuenv.pref_path) / "ux0/app" / app_path };
     auto manual_path{ fs::path("sce_sys/manual/") };
@@ -139,7 +139,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
 
     // Draw esc button
     ImGui::SetCursorPos(ImVec2(5.0f * SCALE.x, 10.0f * SCALE.y));
-    if (!hidden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_psbutton)) {
+    if ((!hidden_button && ImGui::Button("Esc", BUTTON_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_psbutton)) {
         gui.vita_area.manual = false;
         gui.vita_area.information_bar = true;
         if (!gui.vita_area.home_screen)

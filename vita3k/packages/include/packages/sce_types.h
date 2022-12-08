@@ -147,7 +147,7 @@ private:
     keystore store;
 
 public:
-    void register_keys(KeyType keytype, SceType scetype, int keyrev, std::string key, std::string iv, uint64_t minver = 0, uint64_t maxver = 0xffffffffffffffff, SelfType selftype = SelfType::NONE) {
+    void register_keys(KeyType keytype, SceType scetype, int keyrev, const std::string &key, const std::string &iv, uint64_t minver = 0, uint64_t maxver = 0xffffffffffffffff, SelfType selftype = SelfType::NONE) {
         store[keytype][scetype][selftype].push_back({ minver, maxver, keyrev, key, iv });
     }
 
@@ -658,7 +658,9 @@ public:
 void register_keys(KeyStore &SCE_KEYS, int type);
 void extract_fat(const std::wstring &partition_path, const std::string &partition, const std::wstring &pref_path);
 std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, const uint64_t &size);
-void self2elf(const std::string &infile, const std::string &outfile, KeyStore &SCE_KEYS, unsigned char *klictxt);
-void make_fself(const std::string &input_file, const std::string &output_file);
+void self2elf(const fs::path &infile, const fs::path &outfile, KeyStore &SCE_KEYS, unsigned char *klictxt);
+void make_fself(const fs::path &input_file, const fs::path &output_file);
 std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader &sce_hdr);
 std::vector<SceSegment> get_segments(std::ifstream &file, const SceHeader &sce_hdr, KeyStore &SCE_KEYS, uint64_t sysver = -1, SelfType self_type = static_cast<SelfType>(0), int keytype = 0, unsigned char *klictxt = 0);
+void decrypt_fself(const fs::path &file_path, KeyStore &SCE_KEYS, unsigned char *klictxt);
+bool is_self(const fs::path &file_path);

@@ -268,14 +268,8 @@ void install_pup(const std::wstring &pref_path, const std::string &pup_path, con
         extract_fat(pup_dec, "os0.img", pref_path);
         for (const auto &file : fs::recursive_directory_iterator(pref_path + L"/os0")) {
             if (fs::is_regular_file(file.path())) {
-                const auto filePathString = file.path().string();
-                const auto extension = file.path().filename().extension();
-                const auto is_self = ((extension == ".suprx") || (extension == ".skprx") || (extension == ".self"));
-                if (is_self) {
-                    self2elf(filePathString, filePathString + "elf", SCE_KEYS, 0);
-                    fs::rename(filePathString + "elf", filePathString);
-                    make_fself(filePathString, filePathString + "fself");
-                    fs::rename(filePathString + "fself", filePathString);
+                if (is_self(file.path())) {
+                    decrypt_fself(file.path(), SCE_KEYS, 0);
                 }
             }
         }
@@ -286,14 +280,8 @@ void install_pup(const std::wstring &pref_path, const std::string &pup_path, con
         extract_fat(pup_dec, "vs0.img", pref_path);
         for (const auto &file : fs::recursive_directory_iterator(pref_path + L"/vs0")) {
             if (fs::is_regular_file(file.path())) {
-                const auto filePathString = file.path().string();
-                const auto extension = file.path().filename().extension();
-                const auto is_self = ((extension == ".suprx") || (extension == ".skprx") || (extension == ".self"));
-                if ((file.path().filename() == "eboot.bin") || is_self) {
-                    self2elf(filePathString, filePathString + "elf", SCE_KEYS, 0);
-                    fs::rename(filePathString + "elf", filePathString);
-                    make_fself(filePathString, filePathString + "fself");
-                    fs::rename(filePathString + "fself", filePathString);
+                if (is_self(file.path())) {
+                    decrypt_fself(file.path(), SCE_KEYS, 0);
                 }
             }
         }

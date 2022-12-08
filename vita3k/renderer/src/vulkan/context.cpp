@@ -108,6 +108,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     } else {
         // TODO: make context.current_render_target non-const instead of doing this
         context.render_target = const_cast<VKRenderTarget *>(reinterpret_cast<const VKRenderTarget *>(context.current_render_target));
+        rt = context.render_target;
     }
 
     context.scene_timestamp++;

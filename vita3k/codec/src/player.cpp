@@ -35,7 +35,7 @@ uint64_t PlayerState::get_framerate_microseconds() {
 
 DecoderSize PlayerState::get_size() {
     if (video_context)
-        return { static_cast<uint32_t>(video_context->width), static_cast<uint32_t>(video_context->height) };
+        return { { static_cast<uint32_t>(video_context->width), static_cast<uint32_t>(video_context->height) } };
 
     return {};
 }
@@ -157,7 +157,7 @@ std::vector<int16_t> PlayerState::receive_audio() {
         if (error != 0) {
             if (videos_queue.empty()) {
                 // Stop playing videos or
-                video_playing = "";
+                video_playing.clear();
                 break;
             } else {
                 // Play the next video (if there is any).
@@ -211,7 +211,7 @@ std::vector<uint8_t> PlayerState::receive_video() {
         if (error != 0) {
             if (videos_queue.empty()) {
                 // Stop playing videos or
-                video_playing = "";
+                video_playing.clear();
                 break;
             } else {
                 // Play the next video (if there is any).
@@ -224,7 +224,7 @@ std::vector<uint8_t> PlayerState::receive_video() {
         last_timestamp = frame->best_effort_timestamp;
 
         data.resize(H264DecoderState::buffer_size(
-            { static_cast<uint32_t>(video_context->width), static_cast<uint32_t>(video_context->height) }));
+            { { static_cast<uint32_t>(video_context->width), static_cast<uint32_t>(video_context->height) } }));
         copy_yuv_data_from_frame(frame, data.data());
 
         break;

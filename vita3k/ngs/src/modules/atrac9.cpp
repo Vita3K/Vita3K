@@ -212,7 +212,6 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
         const uint32_t samples_left_after = (frame_bytes_gotten / superframe_size - 1) * samples_per_superframe;
         if (bufparam.samples_discard_end_off > samples_left_after) {
             // last chunk
-            const uint32_t skipped_samples = std::min(samples_per_superframe, bufparam.samples_discard_end_off - samples_left_after);
             decoded_size -= bufparam.samples_discard_end_off;
         }
     }

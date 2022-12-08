@@ -356,7 +356,7 @@ bool Context::get_trophy_set(std::string &name, std::string &detail) {
     return !name.empty() && !detail.empty();
 }
 
-int Context::install_trophy_conf(IOState *io, const std::wstring &pref_path, const std::string np_com_id) {
+int Context::install_trophy_conf(IOState *io, const std::wstring &pref_path, const std::string &np_com_id) {
     auto trophy_conf_path = device::construct_normalized_path(VitaIoDevice::ux0, "user/" + io->user_id + "/trophy/conf/" + np_com_id);
 
     create_dir(*io, trophy_conf_path.c_str(), 0, pref_path, "create_trophy_context", true);

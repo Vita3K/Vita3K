@@ -452,7 +452,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         try {
             device = physical_device.createDevice(device_info.get());
-        } catch (vk::NotPermittedKHRError) {
+        } catch (vk::NotPermittedKHRError &) {
             // according to the vk spec, when using a priority higher than medium
             // we can get this error (although I think it will only possibly happen
             // for realtime priority)
@@ -798,9 +798,9 @@ std::vector<std::string> VKState::get_gpu_list() {
 
     std::vector<std::string> gpu_list;
     // First value is always automatic
-    gpu_list.push_back("Automatic");
+    gpu_list.emplace_back("Automatic");
     for (const vk::PhysicalDevice gpu : gpus)
-        gpu_list.push_back(std::string(gpu.getProperties().deviceName.data()));
+        gpu_list.emplace_back(gpu.getProperties().deviceName.data());
 
     return gpu_list;
 }

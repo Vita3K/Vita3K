@@ -69,7 +69,7 @@ struct GLContext : public renderer::Context {
     RingBuffer vertex_info_uniform_buffer;
     RingBuffer fragment_info_uniform_buffer;
 
-    const GLRenderTarget *render_target;
+    const GLRenderTarget *render_target{};
 
     GLObjectArray<SCE_GXM_MAX_VERTEX_STREAMS> stream_vertex_buffers;
     GLuint last_draw_program{ 0 };
@@ -83,8 +83,8 @@ struct GLContext : public renderer::Context {
     shader::RenderVertUniformBlock previous_vert_info;
     shader::RenderFragUniformBlock previous_frag_info;
 
-    shader::RenderVertUniformBlock current_vert_render_info;
-    shader::RenderFragUniformBlock current_frag_render_info;
+    shader::RenderVertUniformBlock current_vert_render_info{};
+    shader::RenderFragUniformBlock current_frag_render_info{};
 
     std::vector<size_t> self_sampling_indices;
 

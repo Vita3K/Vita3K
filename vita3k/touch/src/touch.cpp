@@ -35,7 +35,7 @@ int touch_buffer_idx = 0;
 static uint64_t timestamp;
 static SDL_TouchFingerEvent finger_buffer[8];
 static uint8_t finger_count = 0;
-static long int finger_id_ref;
+static SDL_FingerID finger_id_ref;
 static auto touchscreen_port = SCE_TOUCH_PORT_FRONT;
 static bool is_touched[2] = { false, false };
 static int curr_touch_id[2] = { 0, 0 };
@@ -213,7 +213,7 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
         for (int32_t i = 0; i < nb_returned_data; i++) {
             memcpy(&pData[i], &pData[0], sizeof(SceTouchData));
             if (forceTouchEnabled[port_idx]) {
-                for (int32_t j = 0; j < pData[i].reportNum; j++) {
+                for (uint32_t j = 0; j < pData[i].reportNum; j++) {
                     pData[i].report[j].force = 128;
                 }
             }
@@ -229,7 +229,7 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
         for (int32_t i = 0; i < nb_returned_data; i++) {
             memcpy(&pData[i], &touch_buffers[corr_buffer_idx][port_idx], sizeof(SceTouchData));
             if (forceTouchEnabled[port_idx]) {
-                for (int32_t j = 0; j < pData[i].reportNum; j++) {
+                for (uint32_t j = 0; j < pData[i].reportNum; j++) {
                     pData[i].report[j].force = 128;
                 }
             }

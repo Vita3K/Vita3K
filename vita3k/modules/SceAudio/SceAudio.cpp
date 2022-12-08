@@ -215,8 +215,8 @@ EXPORT(int, sceAudioOutSetPortVolume_forUser) {
 }
 
 EXPORT(int, sceAudioOutSetVolume, int port, SceAudioOutChannelFlag ch, int *vol) {
-    TRACY_FUNC(sceAudioOutSetVolume, port, ch, vol);
-    if (!ch) // no channel selected, no changes
+    TRACY_FUNC(sceAudioOutSetVolume, port, ch, vol[0], vol[1]);
+    if (ch == 0) // no channel selected, no changes
         return 0;
 
     const AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);

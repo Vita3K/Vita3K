@@ -296,7 +296,6 @@ static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::strin
 
     pugi::xml_document doc;
     if (doc.load_file((trophy_conf_id_path / sfm_name).c_str())) {
-        std::string type;
         for (const auto &conf : doc.child("trophyconf")) {
             if (conf.name() == std::string("trophy")) {
                 const std::string gid = conf.attribute("gid").empty() ? "000" : conf.attribute("gid").as_string();

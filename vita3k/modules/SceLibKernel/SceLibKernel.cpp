@@ -1213,12 +1213,12 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, SceKernelThreadEntry ent
     TRACY_FUNC(sceKernelCreateThread, name, entry, init_priority, stack_size, attr, cpu_affinity_mask, option);
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
 
-    Ptr<SceKernelCreateThread_opt> options = Ptr<SceKernelCreateThread_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateThread_opt)));
-    options.get(emuenv.mem)->stack_size = stack_size;
-    options.get(emuenv.mem)->attr = attr;
-    options.get(emuenv.mem)->cpu_affinity_mask = cpu_affinity_mask;
-    options.get(emuenv.mem)->option = option;
-    SceUID res = CALL_EXPORT(sceKernelCreateThreadForUser, name, entry, init_priority, options.get(emuenv.mem));
+    auto options = Ptr<SceKernelCreateThread_opt>(stack_alloc(*thread->cpu, sizeof(SceKernelCreateThread_opt))).get(emuenv.mem);
+    options->stack_size = stack_size;
+    options->attr = attr;
+    options->cpu_affinity_mask = cpu_affinity_mask;
+    options->option = option;
+    SceUID res = CALL_EXPORT(sceKernelCreateThreadForUser, name, entry, init_priority, options);
     stack_free(*thread->cpu, sizeof(SceKernelCreateThread_opt));
     return res;
 }

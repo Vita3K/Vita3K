@@ -574,18 +574,15 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 projecting = "proj";
             }
 
-            int tex_coord_comp_count = 2;
             int prod_pos = -1;
 
             if (swizzle_texcoord == 0x300) {
                 swizzle_str = ".xyz";
-                tex_coord_comp_count = 3;
                 prod_pos = 2;
             } else if (swizzle_texcoord == 0x200) {
                 swizzle_str = ".xyw";
 
                 // Not really sure
-                tex_coord_comp_count = 4;
                 prod_pos = 3;
             }
 
@@ -787,27 +784,6 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
         store_source_result();
     }
-}
-
-/**
- * \brief Calculate variable size, in float granularity.
- */
-static size_t calculate_variable_size(const SceGxmProgramParameter &parameter, const DataType store_type) {
-    size_t element_size = shader::usse::get_data_type_size(store_type) * parameter.component_count;
-
-    if (parameter.array_size == 1) {
-        return (element_size + 3) / 4;
-    }
-
-    // Need to do alignment
-    if (parameter.component_count == 1) {
-        // Each element is a scalar. Apply 32-bit alignment.
-        // Assuming no scalar has larger size than 4.
-        return parameter.array_size;
-    }
-
-    // Apply 64-bit alignment
-    return parameter.array_size * (((element_size + 8 - (element_size & 7)) + 3) / 4);
 }
 
 // For uniform buffer resigned in registers
@@ -1295,8 +1271,6 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         }
     }
 
-    spv::Id vec4_type = b.makeVectorType(b.makeFloatType(32), 4);
-    spv::Id one_f = b.makeFloatConstant(1.0f);
     spv::Id color = spv::NoResult;
 
     color = utils::load(b, parameters, utils, features, color_val_operand, 0xF, reg_off);
@@ -1307,7 +1281,6 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     if (program.is_frag_color_used() && features.should_use_shader_interlock() && translate_state.is_target_glsl) {
         spv::Id signed_i32 = b.makeIntType(32);
         spv::Id coord_id = b.createLoad(translate_state.frag_coord_id, spv::NoPrecision);
-        spv::Id depth = b.createOp(spv::OpAccessChain, b.makeFloatType(32), { coord_id, b.makeIntConstant(2) });
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), coord_id);
         translated_id = b.createOp(spv::OpVectorShuffle, b.makeVectorType(signed_i32, 2), { translated_id, translated_id, 0, 1 });
         b.createNoResultOp(spv::OpImageWrite, { b.createLoad(translate_state.color_attachment_id, spv::NoPrecision), translated_id, color });
@@ -1734,7 +1707,6 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
             spv::Id rezero = b.makeFloatConstant(0.0f);
             spv::Id rezero_v = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
             utils::make_for_loop(b, ite, b.makeIntConstant(0), b.makeIntConstant(REG_O_COUNT / 4), [&]() {
-                Operand target_to_store;
                 spv::Id dest = utils::create_access_chain(b, spv::StorageClassPrivate, parameters.outs, { b.createLoad(ite, spv::NoPrecision) });
                 b.createStore(rezero_v, dest);
             });

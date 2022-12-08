@@ -254,7 +254,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImVec2(ARROW_UPP_CENTER.x + (20.f * SCALE.x), ARROW_UPP_CENTER.y + (16.f * SCALE.y)), ARROW_COLOR);
                 ImGui::SetCursorPos(ImVec2(ARROW_UPP_CENTER.x - (ARROW_SIZE.x / 2.f), ARROW_UPP_CENTER.y - ARROW_SIZE.y));
                 if ((ImGui::Selectable("##upp", false, ImGuiSelectableFlags_None, ARROW_SIZE))
-                    || !ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_up) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_up))
+                    || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_up)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_up))
                     set_scroll_pos = current_scroll_pos - (340 * SCALE.y);
             }
             if (current_scroll_pos < max_scroll_pos) {
@@ -265,7 +265,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImVec2(ARROW_DOWN_CENTER.x - (20.f * SCALE.x), ARROW_DOWN_CENTER.y - (16.f * SCALE.y)), ARROW_COLOR);
                 ImGui::SetCursorPos(ImVec2(ARROW_DOWN_CENTER.x - (ARROW_SIZE.x / 2.f), ARROW_DOWN_CENTER.y - ARROW_SIZE.y));
                 if ((ImGui::Selectable("##down", false, ImGuiSelectableFlags_None, ARROW_SIZE))
-                    || !ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_down) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_down))
+                    || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_down)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_down))
                     set_scroll_pos = current_scroll_pos + (340 * SCALE.y);
             }
         }
@@ -971,7 +971,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
 
     if ((settings_menu == THEME_BACKGROUND) && !selected.empty() && (selected != "default")) {
         ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCALE.x), display_size.y - (84.f * SCALE.y)));
-        if ((popup != "information") && ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_triangle))
+        if (((popup != "information") && ImGui::Button("...", ImVec2(64.f * SCALE.x, 40.f * SCALE.y))) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_triangle))
             ImGui::OpenPopup("...");
         if (ImGui::BeginPopup("...")) {
             if (ImGui::MenuItem(theme.information["title"].c_str()))

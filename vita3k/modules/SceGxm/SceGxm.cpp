@@ -988,9 +988,9 @@ struct SceGxmContext {
         RangeIterator it = command_list_ranges.upper_bound(new_range);
         if (it != command_list_ranges.begin()) {
             // get the first element before
-            it--;
+            --it;
             if (it->end <= new_range.start) {
-                it++;
+                ++it;
             }
         }
 
@@ -999,7 +999,7 @@ struct SceGxmContext {
             RangeIterator to_delete = it;
             // we must keep it not invalidated
             while (it != command_list_ranges.end() && it->command_list == to_delete->command_list)
-                it++;
+                ++it;
 
             free_command_list(to_delete->command_list);
         }
@@ -1450,7 +1450,7 @@ EXPORT(int, sceGxmBeginScene, SceGxmContext *context, uint32_t flags, const SceG
         // Wait for the display queue to be done.
         // If it's offline render, the sync object already has the display queue subject done, so don't worry.
         renderer::add_command(context->renderer.get(), renderer::CommandOpcode::WaitSyncObject,
-            nullptr, fragmentSyncObject, renderTarget->renderer.get(), sync->last_display);
+            nullptr, fragmentSyncObject, sync->last_display);
     }
 
     // It's legal to set at client.
@@ -2050,8 +2050,6 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
 
     if (context->last_precomputed) {
         // Need to re-set the data
-        const auto frag_paramters = gxp::program_parameters(fragment_program_gxp);
-        const auto vert_paramters = gxp::program_parameters(vertex_program_gxp);
 
         renderer::set_program(*emuenv.renderer, context->renderer.get(), context->state.vertex_program, false);
         renderer::set_program(*emuenv.renderer, context->renderer.get(), context->state.fragment_program, true);
@@ -2656,8 +2654,7 @@ EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags
     }
 
     if (vertexNotification)
-        renderer::add_command(immediateContext->renderer.get(), renderer::CommandOpcode::SignalNotification,
-            nullptr, *vertexNotification, true);
+        renderer::add_command(immediateContext->renderer.get(), renderer::CommandOpcode::SignalNotification, nullptr, *vertexNotification);
 
     // send the commands recorded up to now
     renderer::submit_command_list(*emuenv.renderer, immediateContext->renderer.get(), immediateContext->renderer->command_list);
@@ -5079,7 +5076,7 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
-            syncObject, nullptr, sync->last_display);
+            syncObject, sync->last_display);
         cmd_timestamp = ++sync->timestamp_ahead;
     }
 
@@ -5107,7 +5104,7 @@ EXPORT(int, sceGxmTransferCopy, uint32_t width, uint32_t height, uint32_t colorK
     renderer::transfer_copy(*emuenv.renderer, colorKeyValue, colorKeyMask, colorKeyMode, images, srcType, destType);
 
     if (notification)
-        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
+        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification);
 
     if (syncObject) {
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,
@@ -5139,7 +5136,7 @@ EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> s
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
-            syncObject, nullptr, sync->last_display);
+            syncObject, sync->last_display);
         cmd_timestamp = ++sync->timestamp_ahead;
     }
 
@@ -5162,7 +5159,7 @@ EXPORT(int, sceGxmTransferDownscale, SceGxmTransferFormat srcFormat, Ptr<void> s
     renderer::transfer_downscale(*emuenv.renderer, src, dest);
 
     if (notification)
-        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
+        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification);
 
     if (syncObject) {
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,
@@ -5190,7 +5187,7 @@ EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFor
     if (syncObject) {
         SceGxmSyncObject *sync = syncObject.get(emuenv.mem);
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::WaitSyncObject, false,
-            syncObject, nullptr, sync->last_display);
+            syncObject, sync->last_display);
         cmd_timestamp = ++sync->timestamp_ahead;
     }
 
@@ -5205,7 +5202,7 @@ EXPORT(int, sceGxmTransferFill, uint32_t fillColor, SceGxmTransferFormat destFor
     renderer::transfer_fill(*emuenv.renderer, fillColor, dest);
 
     if (notification)
-        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification, true);
+        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalNotification, false, *notification);
 
     if (syncObject) {
         renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::SignalSyncObject, false,

@@ -49,7 +49,6 @@ COMMAND(handle_signal_sync_object) {
 COMMAND(handle_wait_sync_object) {
     TRACY_FUNC_COMMANDS(handle_wait_sync_object);
     SceGxmSyncObject *sync = helper.pop<Ptr<SceGxmSyncObject>>().get(mem);
-    RenderTarget *target = helper.pop<RenderTarget *>();
     const uint32_t timestamp = helper.pop<uint32_t>();
 
     renderer::wishlist(sync, timestamp);
@@ -58,7 +57,6 @@ COMMAND(handle_wait_sync_object) {
 COMMAND(handle_notification) {
     TRACY_FUNC_COMMANDS(handle_notification);
     SceGxmNotification notif = helper.pop<SceGxmNotification>();
-    //[[maybe_unused]] const bool is_vertex = helper.pop<bool>();
 
     {
         std::unique_lock<std::mutex> lock(renderer.notification_mutex);

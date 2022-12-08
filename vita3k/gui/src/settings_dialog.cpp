@@ -314,7 +314,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
 
-std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     if (!get_custom_config(gui, emuenv, app_path))
         return emuenv.cfg.cpu_backend;
 

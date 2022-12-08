@@ -23,7 +23,7 @@
 #include <kernel/state.h>
 
 bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv) {
-    const auto paths = sysmodule_paths[module_id];
+    const auto &paths = sysmodule_paths[module_id];
 
     // Do we know the module and its dependencies' paths?
     const bool have_paths = !paths.empty();

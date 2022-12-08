@@ -407,9 +407,8 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceHttpMethods method
     if (parsed.invalid)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_URL);
 
-    std::string slash = "/";
     if (parsed.path.empty())
-        parsed.path = slash;
+        parsed.path = "/";
     std::string resourcePath = parsed.path + parsed.query + parsed.fragment;
 
     SceRequest req;
@@ -862,7 +861,6 @@ EXPORT(SceInt, sceHttpReadData, SceInt reqId, void *data, SceSize size) {
         return 0;
 
     auto conn = emuenv.http.connections.find(req->second.connId);
-    auto tmpl = emuenv.http.templates.find(conn->second.tmplId);
 
     // If the game wants to read more than whats available, change the read ammount to what is available
     if (size > (req->second.res.contentLength - req->second.res.responseRead)) {
@@ -1552,7 +1550,7 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<
     if (pool && out) {
         memset(out, 0, sizeof(*out));
         auto pool_ptr = pool.address();
-        const auto set_str_value = [&](Ptr<char> &field, const std::string value) {
+        const auto set_str_value = [&](Ptr<char> &field, const std::string &value) {
             field = Ptr<char>(pool_ptr);
             strcpy(field.get(emuenv.mem), value.c_str());
             pool_ptr += value.size() + 1;
