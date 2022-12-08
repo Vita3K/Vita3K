@@ -51,13 +51,6 @@ void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, co
         vk_format = vk::Format::eR8G8B8A8Unorm;
     }
 
-    uint32_t framebuffer_width = rt->width;
-    uint32_t framebuffer_height = rt->height;
-    if (color_surface_fin != nullptr) {
-        framebuffer_width = std::min<uint32_t>(framebuffer_width, color_surface_fin->width * context.state.res_multiplier);
-        framebuffer_height = std::min<uint32_t>(framebuffer_height, color_surface_fin->height * context.state.res_multiplier);
-    }
-
     SceGxmDepthStencilSurface *ds_surface_fin = &context.record.depth_stencil_surface;
     if ((ds_surface_fin->depthData.address() == 0) && (ds_surface_fin->stencilData.address() == 0)) {
         ds_surface_fin = nullptr;
@@ -72,7 +65,7 @@ void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, co
 
     context.current_framebuffer = state.surface_cache.retrieve_framebuffer_handle(
         mem, color_surface_fin, ds_surface_fin, context.current_render_pass, &context.current_color_attachment, &context.current_ds_attachment,
-        &context.current_framebuffer_height, framebuffer_width, framebuffer_height);
+        &context.current_framebuffer_height, rt->width, rt->height);
 
     if (state.features.use_mask_bit)
         sync_mask(context, mem);
@@ -147,15 +140,12 @@ void VKContext::start_render_pass() {
     if (!is_recording)
         start_recording();
 
-    const uint32_t framebuffer_width = std::min<uint32_t>(render_target->width, record.color_surface.width * state.res_multiplier);
-    const uint32_t framebuffer_height = std::min<uint32_t>(render_target->height, record.color_surface.height * state.res_multiplier);
-
     vk::RenderPassBeginInfo pass_info{
         .renderPass = current_render_pass,
         .framebuffer = current_framebuffer,
         .renderArea = {
             .offset = { 0, 0 },
-            .extent = { framebuffer_width, framebuffer_height } }
+            .extent = { render_target->width, render_target->height } }
     };
     std::array<vk::ClearValue, 2> clear_values{};
     // only the depth-stencil attachment may be clear if not force loaded
