@@ -41,7 +41,11 @@ COMMAND_SET_STATE(region_clip) {
     render_context->record.region_clip_mode = helper.pop<SceGxmRegionClipMode>();
 
     // see COMMAND_SET_STATE(viewport) for an explanation
-    const uint32_t divide_factor = (render_context->record.color_surface.downscale && !render_context->current_render_target->multisample_mode) ? 2 : 1;
+    const uint32_t divide_factor = (render_context->record.color_surface.downscale
+                                       && render_context->current_render_target
+                                       && !render_context->current_render_target->multisample_mode)
+        ? 2
+        : 1;
 
     const uint32_t xMin = helper.pop<uint32_t>() / divide_factor;
     const uint32_t xMax = helper.pop<uint32_t>() / divide_factor;
@@ -146,7 +150,11 @@ COMMAND_SET_STATE(viewport) {
         // we are supposed to downscale the surface before saving it, both opengl and vulkan
         // directly work with the downscaled surface instead so we must divide all the values
         // by 2 to match the dimensions of the downscaled surface
-        const int divide_factor = (render_context->record.color_surface.downscale && !render_context->current_render_target->multisample_mode) ? 2 : 1;
+        const int divide_factor = (render_context->record.color_surface.downscale
+                                      && render_context->current_render_target
+                                      && !render_context->current_render_target->multisample_mode)
+            ? 2
+            : 1;
 
         const float xOffset = helper.pop<float>() / divide_factor;
         const float yOffset = helper.pop<float>() / divide_factor;
