@@ -39,7 +39,7 @@ bool get_data_by_id(std::string &out_data, SfoFile &file, int id) {
         return false;
     }
 
-    out_data = file.entries.at(id).data.second;
+    out_data = file.entries[id].data.second;
     return true;
 }
 

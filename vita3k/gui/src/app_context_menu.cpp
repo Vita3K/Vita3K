@@ -82,7 +82,7 @@ static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::st
     return !update_history_infos.empty();
 }
 
-std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, EmuEnvState &emuenv, const std::string app) {
+std::vector<TimeApp>::iterator get_time_app_index(GuiState &gui, EmuEnvState &emuenv, const std::string &app) {
     const auto time_app_index = std::find_if(gui.time_apps[emuenv.io.user_id].begin(), gui.time_apps[emuenv.io.user_id].end(), [&](const TimeApp &t) {
         return t.app == app;
     });

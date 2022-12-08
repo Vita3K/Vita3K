@@ -174,7 +174,7 @@ std::string reg_to_str(RegisterBank bank, uint32_t reg_num) {
     return opstr;
 }
 
-std::string operand_to_str(Operand op, Imm4 write_mask, int32_t shift) {
+std::string operand_to_str(const Operand &op, Imm4 write_mask, int32_t shift) {
     std::string opstr = reg_to_str(op.bank, op.num + shift);
 
     if (op.bank == RegisterBank::IMMEDIATE) {

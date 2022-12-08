@@ -150,7 +150,7 @@ static const auto progress_callback = [](float updated_progress, uint64_t update
     return progress_state;
 };
 
-static void download_update(const std::string base_path) {
+static void download_update(const std::string &base_path) {
     progress_state.download = true;
     progress_state.pause = false;
     std::thread download([base_path]() {

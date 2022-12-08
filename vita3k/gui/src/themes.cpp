@@ -28,7 +28,7 @@
 
 namespace gui {
 
-std::string get_theme_title_from_buffer(const vfs::FileBuffer buffer) {
+std::string get_theme_title_from_buffer(const vfs::FileBuffer &buffer) {
     pugi::xml_document doc;
     if (doc.load_buffer(buffer.data(), buffer.size()))
         return doc.child("theme").child("InfomationProperty").child("m_title").child("m_default").text().as_string();
@@ -92,7 +92,7 @@ static ImU32 convert_hex_color(const std::string src_color) {
 }
 
 static StartParam start_param;
-void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::string content_id) {
+void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::string &content_id) {
     std::string theme_start_name;
 
     start_param = {};
@@ -196,7 +196,7 @@ bool init_user_start_background(GuiState &gui, const std::string &image_path) {
     return gui.start_background;
 }
 
-bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string content_id) {
+bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_id) {
     std::vector<std::string> theme_bg_name;
     std::map<std::string, std::string> theme_icon_name = {
         { "NPXS10003", {} },
@@ -244,7 +244,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string content_id
                     if (!param.child("m_fontColor").text().empty()) {
                         unsigned int color;
                         sscanf(param.child("m_fontColor").text().as_string(), "%x", &color);
-                        gui.theme_backgrounds_font_color.push_back(ImVec4((float((color >> 16) & 0xFF)) / 255.f, (float((color >> 8) & 0xFF)) / 255.f, (float((color >> 0) & 0xFF)) / 255.f, 1.f));
+                        gui.theme_backgrounds_font_color.emplace_back((float((color >> 16) & 0xFF)) / 255.f, (float((color >> 8) & 0xFF)) / 255.f, (float((color >> 0) & 0xFF)) / 255.f, 1.f);
                     }
                 }
             }

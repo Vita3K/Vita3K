@@ -49,7 +49,7 @@ struct ProtectSegmentInfo {
     int32_t ref_count = 0; // When reference count is active, we don't interfere protection.
     MemPerm perm = MemPerm::None;
 
-    explicit ProtectSegmentInfo() {}
+    explicit ProtectSegmentInfo() = default;
     explicit ProtectSegmentInfo(uint32_t size, MemPerm perm)
         : size(size)
         , perm(perm) {
@@ -75,7 +75,7 @@ struct MemState {
 
     PageNameMap page_name_map;
 
-    bool use_page_table;
+    bool use_page_table = false;
     PageTable page_table;
     std::map<uint64_t, MemExternalMapping, std::greater<uint64_t>> external_mapping;
 };

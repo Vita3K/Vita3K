@@ -402,7 +402,7 @@ void ScreenRenderer::swap_window() {
             assert(false);
             return;
         }
-    } catch (vk::OutOfDateKHRError) {
+    } catch (vk::OutOfDateKHRError &) {
         state.device.waitIdle();
         destroy_swapchain();
 

@@ -363,7 +363,6 @@ bool USSETranslatorVisitor::smp(
                 // however, looking at the generated shader code in some games, it looks like the coefficients are
                 // expected to be in this order but reversed...
                 const spv::Id one = m_b.makeFloatConstant(1.0);
-                const spv::Id zero = m_b.makeFloatConstant(0.0);
                 const spv::Id u = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, uv, m_b.makeIntConstant(0));
                 const spv::Id v = m_b.createBinOp(spv::OpVectorExtractDynamic, type_f32, uv, m_b.makeIntConstant(1));
 

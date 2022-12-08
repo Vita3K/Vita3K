@@ -111,9 +111,6 @@ static GLenum translate_stencil_func(SceGxmStencilFunc stencil_func) {
 
 void sync_mask(const GLState &state, GLContext &context, const MemState &mem) {
     auto control = context.record.depth_stencil_surface.control.content;
-    // mask is not upscaled
-    auto width = context.render_target->width / state.res_multiplier;
-    auto height = context.render_target->height / state.res_multiplier;
     GLubyte initial_byte = (control & SceGxmDepthStencilControl::mask_bit) ? 0xFF : 0;
 
     GLubyte clear_bytes[4] = { initial_byte, initial_byte, initial_byte, initial_byte };

@@ -339,7 +339,7 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
     const auto theme_path{ content_path / "theme.xml" };
     vfs::FileBuffer buffer;
 
-    const auto get_buffer = [&](const fs::path path) {
+    const auto get_buffer = [&](const fs::path &path) {
         fs::ifstream f{ path, fs::ifstream::binary };
         if (!f)
             return false;
@@ -550,7 +550,7 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, EmuEnvState &emuenv,
     return Success;
 }
 
-static void handle_window_event(EmuEnvState &state, const SDL_WindowEvent event) {
+static void handle_window_event(EmuEnvState &state, const SDL_WindowEvent &event) {
     switch (static_cast<SDL_WindowEventID>(event.event)) {
     case SDL_WINDOWEVENT_SIZE_CHANGED:
         app::update_viewport(state);

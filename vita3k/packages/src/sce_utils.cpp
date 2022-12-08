@@ -633,7 +633,7 @@ static void extract_file(Fat16::Image &img, Fat16::Entry &entry, const std::wstr
     fclose(f);
 }
 
-static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, std::wstring dir_path) {
+static void traverse_directory(Fat16::Image &img, Fat16::Entry mee, const std::wstring &dir_path) {
     fs::create_directories(dir_path);
 
     while (img.get_next_entry(mee)) {
@@ -722,16 +722,16 @@ std::string decompress_segments(const std::vector<uint8_t> &decrypted_data, cons
     return decompressed_data;
 }
 
-void self2elf(const std::string &infile, const std::string &outfile, KeyStore &SCE_KEYS, unsigned char *klictxt) {
-    std::ifstream filein(infile, std::ios::binary);
-    std::ofstream fileout(outfile, std::ios::binary);
+void self2elf(const fs::path &infile, const fs::path &outfile, KeyStore &SCE_KEYS, unsigned char *klictxt) {
+    std::ifstream filein(infile.native().c_str(), std::ios::binary);
+    std::ofstream fileout(outfile.native().c_str(), std::ios::binary);
 
     int npdrmtype = 0;
 
     char sceheaderbuffer[SceHeader::Size];
     char selfheaderbuffer[SelfHeader::Size];
     char appinfobuffer[AppInfoHeader::Size];
-    char verinfobuffer[SceVersionInfo::Size];
+    // char verinfobuffer[SceVersionInfo::Size];
     char controlinfobuffer[SceControlInfo::Size];
 
     filein.read(sceheaderbuffer, SceHeader::Size);
@@ -745,10 +745,10 @@ void self2elf(const std::string &infile, const std::string &outfile, KeyStore &S
 
     const AppInfoHeader appinfo_hdr = AppInfoHeader(appinfobuffer);
 
-    filein.seekg(self_hdr.sceversion_offset);
-    filein.read(verinfobuffer, SceVersionInfo::Size);
+    // filein.seekg(self_hdr.sceversion_offset);
+    // filein.read(verinfobuffer, SceVersionInfo::Size);
 
-    const SceVersionInfo verinfo_hdr = SceVersionInfo(verinfobuffer);
+    // const SceVersionInfo verinfo_hdr = SceVersionInfo(verinfobuffer);
 
     filein.seekg(self_hdr.controlinfo_offset);
     filein.read(controlinfobuffer, SceControlInfo::Size);
@@ -757,11 +757,11 @@ void self2elf(const std::string &infile, const std::string &outfile, KeyStore &S
     auto ci_off = SceControlInfo::Size;
 
     if (controlinfo_hdr.type == ControlType::DIGEST_SHA256) {
-        filein.seekg(self_hdr.controlinfo_offset + ci_off);
+        // filein.seekg(self_hdr.controlinfo_offset + ci_off);
         ci_off += SceControlInfoDigest256::Size;
-        char controldigest256buffer[SceControlInfoDigest256::Size];
-        filein.read(controldigest256buffer, SceControlInfoDigest256::Size);
-        const SceControlInfoDigest256 controldigest256 = SceControlInfoDigest256(controldigest256buffer);
+        // char controldigest256buffer[SceControlInfoDigest256::Size];
+        // filein.read(controldigest256buffer, SceControlInfoDigest256::Size);
+        // const SceControlInfoDigest256 controldigest256 = SceControlInfoDigest256(controldigest256buffer);
     }
     filein.seekg(self_hdr.controlinfo_offset + ci_off);
     filein.read(controlinfobuffer, SceControlInfo::Size);
@@ -865,9 +865,9 @@ void self2elf(const std::string &infile, const std::string &outfile, KeyStore &S
 
 // Credits to the vitasdk team/contributors for vita-make-fself https://github.com/vitasdk/vita-toolchain/blob/master/src/vita-make-fself.c
 
-void make_fself(const std::string &input_file, const std::string &output_file) {
-    std::ifstream filein(input_file, std::ios::binary);
-    std::ofstream fileout(output_file, std::ios::binary);
+void make_fself(const fs::path &input_file, const fs::path &output_file) {
+    std::ifstream filein(input_file.native().c_str(), std::ios::binary);
+    std::ofstream fileout(output_file.native().c_str(), std::ios::binary);
 
     uint64_t file_size = fs::file_size(input_file);
 
@@ -911,16 +911,16 @@ void make_fself(const std::string &input_file, const std::string &output_file) {
     ver.unk3 = 16;
     ver.unk4 = 0;
 
-    SCE_controlinfo_5 control_5 = { 0 };
+    SCE_controlinfo_5 control_5 = { { 0 } };
     control_5.common.type = 5;
     control_5.common.size = sizeof(control_5);
     control_5.common.unk = 1;
-    SCE_controlinfo_6 control_6 = { 0 };
+    SCE_controlinfo_6 control_6 = { { 0 } };
     control_6.common.type = 6;
     control_6.common.size = sizeof(control_6);
     control_6.common.unk = 1;
     control_6.is_used = 1;
-    SCE_controlinfo_7 control_7 = { 0 };
+    SCE_controlinfo_7 control_7 = { { 0 } };
     control_7.common.type = 7;
     control_7.common.size = sizeof(control_7);
 
@@ -1086,4 +1086,21 @@ std::tuple<uint64_t, SelfType> get_key_type(std::ifstream &file, const SceHeader
         LOG_ERROR("Unknown system version for type {}", static_cast<int>(sce_hdr.sce_type));
         return {};
     }
+}
+
+void decrypt_fself(const fs::path &file_path, KeyStore &SCE_KEYS, unsigned char *klictxt) {
+    auto np = file_path;
+    np.replace_extension(np.extension().string() + ".elf");
+    self2elf(file_path, np, SCE_KEYS, klictxt);
+    fs::rename(np, file_path);
+    np = file_path;
+    np.replace_extension(np.extension().string() + ".fself");
+    make_fself(file_path, np);
+    fs::rename(np, file_path);
+}
+
+bool is_self(const fs::path &file_path) {
+    const auto extension = file_path.filename().extension();
+    const auto is_self = ((extension == ".suprx") || (extension == ".skprx") || (extension == ".self"));
+    return ((file_path.filename() == "eboot.bin") || is_self);
 }

@@ -63,7 +63,7 @@ static std::map<std::string, std::map<std::string, uint64_t>> current_item, last
 static std::map<std::string, std::string> type;
 static std::map<std::string, int32_t> sku_flag;
 
-void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     // Init type
     if (items_pos.empty()) {
         // Content manager
@@ -493,13 +493,13 @@ inline uint64_t current_time() {
         .count();
 }
 
-void open_search(const std::string title) {
+void open_search(const std::string &title) {
     auto search_url = "https://www.google.com/search?q=" + title;
     std::replace(search_url.begin(), search_url.end(), ' ', '+');
     open_path(search_url);
 }
 
-void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     if (gui.live_area_contents.contains(app_path))
         gui.live_area_contents.erase(app_path);
     if (gui.live_items.contains(app_path))
@@ -704,9 +704,9 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                     else
                         sscanf(str_tag.color.c_str(), "#%x", &color);
 
-                    str_color.push_back(ImVec4(((color >> 16) & 0xFF) / 255.f, ((color >> 8) & 0xFF) / 255.f, ((color >> 0) & 0xFF) / 255.f, 1.f));
+                    str_color.emplace_back(((color >> 16) & 0xFF) / 255.f, ((color >> 8) & 0xFF) / 255.f, ((color >> 0) & 0xFF) / 255.f, 1.f);
                 } else
-                    str_color.push_back(ImVec4(1.f, 1.f, 1.f, 1.f));
+                    str_color.emplace_back(1.f, 1.f, 1.f, 1.f);
 
                 auto str_size = scal_size_frame, text_pos = pos_frame;
 

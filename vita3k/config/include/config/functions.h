@@ -55,7 +55,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
  * @return false Advanced profiling using Tracy is not enabled for the module or module isn't available
  * for advanced profiling.
  */
-bool is_tracy_advanced_profiling_active_for_module(std::vector<std::string> &active_modules, std::string module, int *index = nullptr);
+bool is_tracy_advanced_profiling_active_for_module(std::vector<std::string> &active_modules, const std::string &module, int *index = nullptr);
 #endif // TRACY_ENABLE
 
 } // namespace config

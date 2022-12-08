@@ -47,8 +47,10 @@ public:
     }
 
     ThreadDataQueueInterator<T> &operator=(const ThreadDataQueueInterator<T> &o) {
-        delete _base;
-        _base = o._base->clone();
+        if (this != std::addressof(o)) {
+            delete _base;
+            _base = o._base->clone();
+        }
         return *this;
     }
 
@@ -109,7 +111,7 @@ public:
     ~FIFOThreadDataQueueInteratorBase() override = default;
 
     bool operator==(const ThreadDataQueueInteratorBase<T> &rhs) const override {
-        auto casted = static_cast<const FIFOThreadDataQueueInteratorBase<T> &>(rhs);
+        auto &casted = static_cast<const FIFOThreadDataQueueInteratorBase<T> &>(rhs);
         return it == casted.it;
     }
 
@@ -193,7 +195,7 @@ public:
     ~PriorityThreadDataQueueInteratorBase() override = default;
 
     bool operator==(const ThreadDataQueueInteratorBase<T> &rhs) const override {
-        auto casted = static_cast<const PriorityThreadDataQueueInteratorBase<T> &>(rhs);
+        auto &casted = static_cast<const PriorityThreadDataQueueInteratorBase<T> &>(rhs);
         return it == casted.it;
     }
 

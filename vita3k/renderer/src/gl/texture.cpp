@@ -96,7 +96,6 @@ void configure_bound_texture(const renderer::TextureCacheState &state, const Sce
     std::uint32_t org_width = width;
     std::uint32_t org_height = height;
 
-    size_t compressed_size = 0;
     uint32_t mip_index = 0;
 
     bool block_compressed = renderer::texture::is_compressed_format(base_fmt);

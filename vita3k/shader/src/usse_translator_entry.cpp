@@ -35,7 +35,7 @@ using USSEMatcher = shader::decoder::Matcher<Visitor, uint64_t>;
 
 template <typename V>
 static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
-    static const std::vector<USSEMatcher<V>> table = {
+    static const std::array<USSEMatcher<V>, 34> table = {
 #define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
         // clang-format off
         // Vector multiply-add (Normal version)
@@ -1077,9 +1077,6 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
     // Decode and recompile
     // TODO: Reuse this
     usse::USSERecompiler recomp(b, program, features, parameters, utils, end_hook_func, queries, render_info_id);
-
-    // Set the program
-    recomp.program = &program;
 
     for (auto phase = 0; phase < (uint32_t)ShaderPhase::Max; ++phase) {
         const auto cur_phase_code = shader_code[(ShaderPhase)phase];

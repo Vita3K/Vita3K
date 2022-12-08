@@ -129,17 +129,20 @@ def dump(fp):
         print('', file=fp)
 
 def update_matcher():
-    entry_pat = r'(static const std::vector<USSEMatcher<V>> table = {)[^\}]+(})'
+    entry_pat = r'(static const std::array<USSEMatcher<V>,) \d+(> table = {)[^\}]+(})'
     out = ""
+    num = 0
     for matcher in matchers:
         out += matcher
         out += '\n'
+        num += 1
     out = '\n'.join(['        ' + x for x in out.splitlines()])
     out = """
 #define INST(fn, name, bitstring) shader::decoder::detail::detail<USSEMatcher<V>>::GetMatcher(fn, name, bitstring)
         // clang-format off
 """ + out + "\n        // clang-format on\n"
-    replace_file('../../vita3k/shader/src/usse_translator_entry.cpp', entry_pat, r'\1'+out+r'    \2')
+    num_str = ' '+str(num)
+    replace_file('../../vita3k/shader/src/usse_translator_entry.cpp', entry_pat, r'\1'+num_str+r'\2'+out+r'    \3')
 
 def update_visitor():
     # update headers

@@ -119,8 +119,8 @@ bool USSETranslatorVisitor::vbw(
     // optimisation. (any OR 0 || any XOR 0 || any AND 0xFFFFFFFF) -> assign
     bool is_const = m_b.getOpCode(src2) == spv::Op::OpConstant;
     auto const_val = is_const ? m_b.getConstantScalar(src2) : 1; // default value is intentionally non zero
-    if ((operation == spv::Op::OpBitwiseOr || operation == spv::Op::OpBitwiseXor) && is_const && const_val == 0
-        || operation == spv::Op::OpBitwiseAnd && is_const && const_val == std::numeric_limits<decltype(const_val)>::max()) {
+    if (((operation == spv::Op::OpBitwiseOr || operation == spv::Op::OpBitwiseXor) && is_const && const_val == 0)
+        || (operation == spv::Op::OpBitwiseAnd && is_const && const_val == std::numeric_limits<decltype(const_val)>::max())) {
         result = load(inst.opr.src1, 0b0001, src1_repeat_offset);
         if (result == spv::NoResult) {
             LOG_ERROR("Source not loaded");

@@ -132,7 +132,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
     sceKernelMemBlockInfo->mappedBase = address;
     sceKernelMemBlockInfo->mappedSize = size;
     sceKernelMemBlockInfo->size = sizeof(SceKernelMemBlockInfo);
-    state->blocks.insert(Blocks::value_type(uid, sceKernelMemBlockInfo));
+    state->blocks.emplace(uid, sceKernelMemBlockInfo);
 
     return uid;
 }
@@ -160,8 +160,8 @@ EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, SceSize size) {
     sceKernelMemBlockInfo->mappedBase = address;
     sceKernelMemBlockInfo->mappedSize = size;
     sceKernelMemBlockInfo->size = sizeof(SceKernelMemBlockInfo);
-    state->blocks.insert(Blocks::value_type(uid, sceKernelMemBlockInfo));
-    state->vm_blocks.insert(Blocks::value_type(uid, sceKernelMemBlockInfo));
+    state->blocks.emplace(uid, sceKernelMemBlockInfo);
+    state->vm_blocks.emplace(uid, sceKernelMemBlockInfo);
 
     return uid;
 }
@@ -266,8 +266,9 @@ EXPORT(int, sceKernelGetMemBlockInfoByAddr, Address addr, SceKernelMemBlockInfo 
     assert(addr >= 0);
     assert(info != nullptr);
     for (Blocks::const_iterator it = state->blocks.begin(); it != state->blocks.end(); ++it) {
-        if (it->second->mappedBase.address() <= addr && (it->second->mappedBase.address() + it->second->mappedSize > addr)) {
-            memcpy(info, it->second.get(), sizeof(SceKernelMemBlockInfo));
+        auto block_info = it->second;
+        if (block_info->mappedBase.address() <= addr && (block_info->mappedBase.address() + block_info->mappedSize > addr)) {
+            memcpy(info, block_info.get(), sizeof(SceKernelMemBlockInfo));
             return SCE_KERNEL_OK;
         }
     }

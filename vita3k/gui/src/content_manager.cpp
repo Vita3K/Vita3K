@@ -71,7 +71,7 @@ size_t get_app_size(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
     return app_size;
 }
 
-std::string get_unit_size(const size_t &size) {
+std::string get_unit_size(const size_t size) {
     std::string size_str;
     if (size >= GiB(10))
         size_str = std::to_string(size / GiB(1)) + " GB";

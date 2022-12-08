@@ -311,7 +311,7 @@ static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::str
     return image;
 }
 
-void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     IconData data = load_app_icon(gui, emuenv, app_path);
     if (data.data) {
         gui.app_selector.user_apps_icon[app_path].init(gui.imgui_state.get(), data.data.get(), data.width, data.height);
@@ -531,7 +531,7 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
-void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
     if (APP_INDEX != gui.app_selector.user_apps.end()) {
         gui.app_selector.user_apps.erase(APP_INDEX);
@@ -558,7 +558,7 @@ std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui,
     return app_icon;
 }
 
-std::vector<App>::iterator get_app_index(GuiState &gui, const std::string app_path) {
+std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &app_path) {
     auto &app_type = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
     const auto app_index = std::find_if(app_type.begin(), app_type.end(), [&](const App &a) {
         return a.path == app_path;
@@ -567,7 +567,7 @@ std::vector<App>::iterator get_app_index(GuiState &gui, const std::string app_pa
     return app_index;
 }
 
-void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     emuenv.app_path = app_path;
     vfs::FileBuffer param;
     if (vfs::read_app_file(param, emuenv.pref_path, app_path, "sce_sys/param.sfo")) {
@@ -843,16 +843,3 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 } // namespace gui
-
-namespace ImGui {
-
-bool vector_getter(void *vec, int idx, const char **out_text) {
-    auto &vector = *static_cast<std::vector<std::string> *>(vec);
-    if (idx < 0 || idx >= static_cast<int>(vector.size())) {
-        return false;
-    }
-    *out_text = vector.at(idx).c_str();
-    return true;
-}
-
-} // namespace ImGui

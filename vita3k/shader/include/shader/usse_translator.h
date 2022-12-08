@@ -853,7 +853,6 @@ struct USSERecompiler final {
     std::uint64_t cur_instr;
     usse::USSEOffset cur_pc;
 
-    const SceGxmProgram *program;
     spv::Function *end_hook_func;
 
     USSEBlockNode tree_block_node;

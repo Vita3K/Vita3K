@@ -104,7 +104,7 @@ void load_and_update_compat_user_apps(GuiState &gui, EmuEnvState &emuenv) {
     load_and_update_compat_user_apps_thread.detach();
 }
 
-std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string app_path) {
+std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &app_path) {
     return std::find(gui.apps_list_opened.begin(), gui.apps_list_opened.end(), app_path);
 }
 
@@ -124,7 +124,7 @@ void update_apps_list_opened(GuiState &gui, EmuEnvState &emuenv, const std::stri
 
 static std::map<std::string, uint64_t> last_time;
 
-void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
     update_apps_list_opened(gui, emuenv, app_path);
     last_time["home"] = 0;
     init_live_area(gui, emuenv, app_path);
@@ -204,7 +204,6 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.lang.game_data["app_close"].c_str());
     if (gui.app_selector.user_apps_icon.contains(emuenv.io.app_path)) {
         const auto ICON_POS_SCALE = ImVec2(50.f * SCALE.x, (WINDOW_SIZE.y / 2.f) - (ICON_SIZE.y / 2.f) - (10.f * SCALE.y));
-        const auto ICON_SIZE_SCALE = ImVec2(ICON_POS_SCALE.x + ICON_SIZE.x, ICON_POS_SCALE.y + ICON_SIZE.y);
         ImGui::SetCursorPos(ICON_POS_SCALE);
         const auto POS_MIN = ImGui::GetCursorScreenPos();
         ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, emuenv.io.app_path)->second, POS_MIN, ImVec2(POS_MIN.x + ICON_SIZE.x, POS_MIN.y + ICON_SIZE.y), ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, ICON_SIZE.x, ImDrawCornerFlags_All);
@@ -765,7 +764,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImVec2(ARROW_UPP_CENTER.x + (20.f * SCALE.x), ARROW_UPP_CENTER.y + (16.f * SCALE.y)), ARROW_COLOR);
         ImGui::SetCursorPos(ImVec2(ARROW_UPP_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_UPP_CENTER.y - SELECTABLE_SIZE.y));
         if ((ImGui::Selectable("##upp", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE))
-            || !ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_up) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_up))
+            || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_up)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_up))
             scroll_type = 1;
     }
     if (!gui.apps_list_opened.empty()) {
@@ -775,8 +774,11 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImVec2(ARROW_CENTER.x + (16.f * SCALE.x), ARROW_CENTER.y),
             ImVec2(ARROW_CENTER.x - (16.f * SCALE.x), ARROW_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
         ImGui::SetCursorPos(ImVec2(ARROW_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_CENTER.y - SELECTABLE_SIZE.y));
-        if ((ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE))
-            || !ImGui::GetIO().WantTextInput && (ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_right) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_right))) {
+        if (ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)
+            || (!ImGui::GetIO().WantTextInput
+                && (ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_r1)
+                    || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_right)
+                    || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_right)))) {
             last_time["start"] = 0;
             ++gui.current_app_selected;
             gui.vita_area.home_screen = false;
@@ -791,7 +793,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImVec2(ARROW_DOWN_CENTER.x - (20.f * SCALE.x), ARROW_DOWN_CENTER.y - (16.f * SCALE.y)), ARROW_COLOR);
         ImGui::SetCursorPos(ImVec2(ARROW_DOWN_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_DOWN_CENTER.y - SELECTABLE_SIZE.y));
         if ((ImGui::Selectable("##down", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE))
-            || !ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_down) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_down))
+            || (!ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_down)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_down))
             scroll_type = -1;
     }
     ImGui::End();

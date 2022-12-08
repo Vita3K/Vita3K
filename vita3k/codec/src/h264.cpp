@@ -59,6 +59,10 @@ bool H264DecoderState::send(const uint8_t *data, uint32_t size) {
     memcpy(au_frame.data(), data, size);
 
     AVPacket *packet = av_packet_alloc();
+    if (!packet) {
+        LOG_ERROR("Error allocating H264 packet.");
+        return false;
+    }
     error = av_parser_parse2(
         parser, // AVCodecParserContext *s,
         context, // AVCodecContext *avctx,
@@ -104,7 +108,7 @@ bool H264DecoderState::receive(uint8_t *data, DecoderSize *size) {
     }
 
     if (size) {
-        *size = { static_cast<uint32_t>(context->width), static_cast<uint32_t>(context->height) };
+        *size = { { static_cast<uint32_t>(context->width), static_cast<uint32_t>(context->height) } };
     }
 
     width_out = frame->width;
