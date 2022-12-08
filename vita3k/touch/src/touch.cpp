@@ -40,6 +40,7 @@ static auto touchscreen_port = SCE_TOUCH_PORT_FRONT;
 static bool is_touched[2] = { false, false };
 static int curr_touch_id[2] = { 0, 0 };
 static uint64_t last_vcount[2] = { 0, 0 };
+static bool forceTouchEnabled[2] = { false, false };
 
 static SceTouchData recover_touch_events() {
     SceTouchData touch_data;
@@ -211,6 +212,11 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
         pData[0] = recover_touch_events();
         for (int32_t i = 0; i < nb_returned_data; i++) {
             memcpy(&pData[i], &pData[0], sizeof(SceTouchData));
+            if (forceTouchEnabled[port_idx]) {
+                for (int32_t j = 0; j < pData[i].reportNum; j++) {
+                    pData[i].report[j].force = 128;
+                }
+            }
         }
     } else {
         int corr_buffer_idx;
@@ -222,6 +228,11 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
         }
         for (int32_t i = 0; i < nb_returned_data; i++) {
             memcpy(&pData[i], &touch_buffers[corr_buffer_idx][port_idx], sizeof(SceTouchData));
+            if (forceTouchEnabled[port_idx]) {
+                for (int32_t j = 0; j < pData[i].reportNum; j++) {
+                    pData[i].report[j].force = 128;
+                }
+            }
             // if peek, repeat the last buffer
             if (!is_peek) {
                 corr_buffer_idx++;
@@ -231,4 +242,8 @@ int touch_get(const SceUID thread_id, EmuEnvState &emuenv, const SceUInt32 &port
     }
 
     return nb_returned_data;
+}
+
+void touch_set_force_mode(int port, bool mode) {
+    forceTouchEnabled[port] = mode;
 }

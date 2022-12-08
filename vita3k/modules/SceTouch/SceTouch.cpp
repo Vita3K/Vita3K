@@ -45,9 +45,13 @@ EXPORT(int, sceTouchClearRegion) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceTouchDisableTouchForce) {
-    TRACY_FUNC(sceTouchDisableTouchForce);
-    return UNIMPLEMENTED();
+EXPORT(int, sceTouchDisableTouchForce, SceUInt32 port) {
+    TRACY_FUNC(sceTouchDisableTouchForce, port);
+    if (port >= SCE_TOUCH_PORT_MAX_NUM) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+    touch_set_force_mode(port, false);
+    return 0;
 }
 
 EXPORT(int, sceTouchDisableTouchForceExt) {
@@ -60,9 +64,13 @@ EXPORT(int, sceTouchEnableIdleTimerCancelSetting) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceTouchEnableTouchForce) {
-    TRACY_FUNC(sceTouchEnableTouchForce);
-    return UNIMPLEMENTED();
+EXPORT(int, sceTouchEnableTouchForce, SceUInt32 port) {
+    TRACY_FUNC(sceTouchEnableTouchForce, port);
+    if (port >= SCE_TOUCH_PORT_MAX_NUM) {
+        return RET_ERROR(SCE_TOUCH_ERROR_INVALID_ARG);
+    }
+    touch_set_force_mode(port, true);
+    return 0;
 }
 
 EXPORT(int, sceTouchEnableTouchForceExt) {
