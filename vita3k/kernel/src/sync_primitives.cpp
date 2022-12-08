@@ -738,6 +738,7 @@ SceUID semaphore_create(KernelState &kernel, const char *export_name, const char
     const SemaphorePtr semaphore = std::make_shared<Semaphore>();
     const SceUID uid = kernel.get_next_uid();
     semaphore->uid = uid;
+    semaphore->init_val = init_val;
     semaphore->val = init_val;
     semaphore->max = max_val;
     semaphore->attr = attr;
@@ -788,10 +789,16 @@ SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thr
         data.priority = thread->priority;
         data.signal = needCount;
 
+        bool was_canceled = false;
+        data.was_canceled = &was_canceled;
+
         const auto data_it = semaphore->waiting_threads->push(data);
         thread_lock.unlock();
 
-        return handle_timeout(thread, thread_lock, semaphore_lock, semaphore->waiting_threads, data, data_it, export_name, pTimeout);
+        auto res = handle_timeout(thread, thread_lock, semaphore_lock, semaphore->waiting_threads, data, data_it, export_name, pTimeout);
+        if (was_canceled)
+            res = SCE_KERNEL_ERROR_WAIT_CANCEL;
+        return res;
     } else {
         semaphore->val -= needCount;
     }
@@ -817,7 +824,7 @@ int semaphore_signal(KernelState &kernel, const char *export_name, SceUID thread
     const std::lock_guard<std::mutex> semaphore_lock(semaphore->mutex);
 
     if (semaphore->val + signal > semaphore->max) {
-        return RET_ERROR(SCE_KERNEL_ERROR_LW_MUTEX_UNLOCK_UDF);
+        return RET_ERROR(SCE_KERNEL_ERROR_SEMA_OVF);
     }
     semaphore->val += signal;
 
@@ -865,6 +872,53 @@ int semaphore_delete(KernelState &kernel, const char *export_name, SceUID thread
         LOG_WARN("Can't delete sync object, it has waiting threads.");
     }
 
+    return SCE_KERNEL_OK;
+}
+
+int semaphore_cancel(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, SceInt32 setCount, SceUInt32 *pNumWaitThreads) {
+    assert(semaid >= 0);
+
+    // TODO: Don't lock twice
+    const SemaphorePtr semaphore = lock_and_find(semaid, kernel.semaphores, kernel.mutex);
+    if (!semaphore) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} val: {} waiting_threads: {}",
+            export_name, semaphore->uid, thread_id, semaphore->name, semaphore->attr, semaphore->val,
+            semaphore->waiting_threads->size());
+    }
+
+    SceUInt32 nb_threads = 0;
+    const std::lock_guard<std::mutex> semaphore_lock(semaphore->mutex);
+    LOG_TRACE("sema_cancel. waiting threads:{}", semaphore->waiting_threads->size());
+    while (!semaphore->waiting_threads->empty()) {
+        const auto &waiting_thread_data = *semaphore->waiting_threads->begin();
+        const auto waiting_thread = waiting_thread_data.thread;
+
+        const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
+
+        if (waiting_thread_data.was_canceled) {
+            *waiting_thread_data.was_canceled = true;
+        }
+
+        waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
+
+        semaphore->waiting_threads->erase(semaphore->waiting_threads->begin());
+        nb_threads++;
+    }
+
+    if (semaphore->val < setCount) {
+        return SCE_KERNEL_ERROR_ILLEGAL_COUNT;
+    }
+    if (setCount < 0) {
+        semaphore->val = semaphore->init_val;
+    } else {
+        semaphore->val = setCount;
+    }
+    if (pNumWaitThreads)
+        *pNumWaitThreads = nb_threads;
     return SCE_KERNEL_OK;
 }
 
