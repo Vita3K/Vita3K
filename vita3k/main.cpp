@@ -382,6 +382,7 @@ int main(int argc, char *argv[]) {
     SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
 
     while (handle_events(emuenv, gui) && (emuenv.frame_count == 0) && !emuenv.load_exec) {
+        ZoneScopedN("Game loading"); // Tracy - Track game loading loop scope
         // Driver acto!
         renderer::process_batches(*emuenv.renderer.get(), emuenv.renderer->features, emuenv.mem, emuenv.cfg);
 
@@ -398,6 +399,7 @@ int main(int argc, char *argv[]) {
 
         gui::draw_end(gui, emuenv.window.get());
         emuenv.renderer->swap_window(emuenv.window.get());
+        FrameMark; // Tracy - Frame end mark for game loading loop
     }
 
     while (handle_events(emuenv, gui) && !emuenv.load_exec) {
