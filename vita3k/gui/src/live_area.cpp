@@ -937,7 +937,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto default_font_scale = (25.f * emuenv.dpi_scale) * (ImGui::GetFontSize() / (19.2f * emuenv.dpi_scale));
     const auto font_size_scale = default_font_scale / ImGui::GetFontSize();
 
-    const std::string BUTTON_STR = app_path == emuenv.io.app_path ? gui.lang.live_area[CONTINUE] : gui.lang.live_area[START];
+    const std::string BUTTON_STR = app_path == emuenv.io.app_path ? gui.lang.live_area.main["coutinue"] : gui.lang.live_area.main["start"];
     const auto GATE_SIZE = ImVec2(280.0f * SCALE.x, 158.0f * SCALE.y);
     const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[app_path]]["gate"]["pos"].x * SCALE.x), display_size.y - (items_pos[type[app_path]]["gate"]["pos"].y * SCALE.y));
     const auto START_SIZE = ImVec2((ImGui::CalcTextSize(BUTTON_STR.c_str()).x * font_size_scale), (ImGui::CalcTextSize(BUTTON_STR.c_str()).y * font_size_scale));
@@ -1028,6 +1028,8 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             update_app(gui, emuenv, app_path);
     }
 
+    auto lang = gui.lang.live_area.help;
+
     if (!gui.live_area.content_manager && !gui.live_area.manual) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * SCALE.x);
         ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, 44.0f * SCALE.y));
@@ -1052,40 +1054,44 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::OpenPopup("Live Area Help");
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         if (ImGui::BeginPopupModal("Live Area Help", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
-            ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize("Help").x / 2.f));
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Help");
+            auto help_str = gui.lang.main_menubar.help["title"].c_str();
+            ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(help_str).x / 2.f));
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", help_str);
             ImGui::Spacing();
-            ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize("Using configuration set for keyboard in control setting").x / 2.f));
-            ImGui::TextColored(GUI_COLOR_TEXT, "Using configuration set for keyboard in control setting");
+            auto control_setting_str = lang["control_setting"].c_str();
+            ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(control_setting_str).x / 2.f));
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", control_setting_str);
             if (gui.modules.empty()) {
                 ImGui::Spacing();
-                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize("Firmware not detected. Installation is highly recommended").x / 2.f));
-                ImGui::TextColored(GUI_COLOR_TEXT, "Firmware not detected. Installation is highly recommended");
+                auto fw_str = lang["fw_not_detected"].c_str();
+                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(fw_str).x / 2.f));
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", fw_str);
             }
             if (!gui.fw_font) {
                 ImGui::Spacing();
-                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize("Firmware Font Package not detected. Installing it is recommended for font text in Live Area").x / 2.f));
-                ImGui::TextColored(GUI_COLOR_TEXT, "Firmware Font Package not detected. Installing it is recommended for font text in Live Area");
+                auto fw_font_str = lang["fw_font_not_detected"].c_str();
+                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(fw_font_str).x / 2.f));
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s", fw_font_str);
             }
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Live Area Help");
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["live_area_help"].c_str());
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Browse in app list", "D-pad, Left Stick, Wheel in Up/Down or using Slider");
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Start App", "Click on Start or Press on Cross");
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Show/Hide Live Area during app run", "Press on PS");
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Exit Live Area", "Click on Esc or Press on Circle");
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["browse_app"].c_str(), lang["browse_app_control"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["start_app"].c_str(), lang["start_app_control"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["show_hide"].c_str(), lang["show_hide_control"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["exit_livearea"].c_str(), lang["exit_livearea_control"].c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Manual Help");
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["manual_help"].c_str());
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Browse page", "D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on </>");
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Hide/Show button", "Right Click");
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Zoom if available", "Double left click");
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Scroll in zoom", "Wheel Up/Down");
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", "Exit Manual", "Click on X or Press on PS");
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s </>", lang["browse_page"].c_str(), lang["browse_page_control"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["hide_show"].c_str(), lang["hide_show_control"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["zoom_available"].c_str(), lang["zoom_available_control"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["scroll_zoom"].c_str(), lang["scroll_zoom_control"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["exit_manual"].c_str(), lang["exit_manual_control"].c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (BUTTON_SIZE.x / 2.f));
             if (ImGui::Button("OK", BUTTON_SIZE))
