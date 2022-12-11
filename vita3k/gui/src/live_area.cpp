@@ -937,7 +937,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto default_font_scale = (25.f * emuenv.dpi_scale) * (ImGui::GetFontSize() / (19.2f * emuenv.dpi_scale));
     const auto font_size_scale = default_font_scale / ImGui::GetFontSize();
 
-    const std::string BUTTON_STR = app_path == emuenv.io.app_path ? gui.lang.live_area.main["coutinue"] : gui.lang.live_area.main["start"];
+    const std::string BUTTON_STR = app_path == emuenv.io.app_path ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
     const auto GATE_SIZE = ImVec2(280.0f * SCALE.x, 158.0f * SCALE.y);
     const auto GATE_POS = ImVec2(display_size.x - (items_pos[type[app_path]]["gate"]["pos"].x * SCALE.x), display_size.y - (items_pos[type[app_path]]["gate"]["pos"].y * SCALE.y));
     const auto START_SIZE = ImVec2((ImGui::CalcTextSize(BUTTON_STR.c_str()).x * font_size_scale), (ImGui::CalcTextSize(BUTTON_STR.c_str()).y * font_size_scale));
