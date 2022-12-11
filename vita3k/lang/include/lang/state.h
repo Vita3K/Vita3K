@@ -23,11 +23,6 @@
 #include <string>
 #include <vector>
 
-enum LiveArea {
-    START,
-    CONTINUE,
-};
-
 enum TypeLang {
     GUI,
     LIVE_AREA,
@@ -306,6 +301,38 @@ struct LangState {
         { "title_id", "Title ID:" },
         { "delete_bin_rif", "Delete the work.bin/rif file?" }
     };
+    struct LiveArea {
+        std::map<std::string, std::string> main = {
+            { "start", "Start" },
+            { "continue", "Continue" }
+        };
+        std::map<std::string, std::string> help = {
+            { "control_setting", "Using configuration set for keyboard in control setting" },
+            { "fw_not_detected", "Firmware not detected. Installation is highly recommended" },
+            { "fw_font_not_detected", "Firmware font not detected. Installing it is recommended for font text in Live Area" },
+            { "live_area_help", "Live Area Help" },
+            { "browse_app", "Browse in app list" },
+            { "browse_app_control", "D-pad, Left Stick, Wheel in Up/Down or using Slider" },
+            { "start_app", "Start App" },
+            { "start_app_control", "Wheel in Up/Down or using Slider" },
+            { "show_hide", "Show/Hide Live Area during app run" },
+            { "show_hide_control", "Press on PS" },
+            { "exit_livearea", "Exit Live Area" },
+            { "exit_livearea_control", "Click on Esc or Press on Circle" },
+            { "manual_help", "Manual Help" },
+            { "browse_page", "Browse page" },
+            { "browse_page_control", "D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on" },
+            { "hide_show", "Hide/Show button" },
+            { "hide_show_control", "Right Click" },
+            { "zoom_available", "Zoom if available" },
+            { "zoom_available_control", "Double Left Click" },
+            { "scroll_zoom", "Scroll in zoom" },
+            { "scroll_zoom_control", "Wheel Up/Down" },
+            { "exit_manual", "Exit Manual Help" },
+            { "exit_manual_control", "Click on Esc or Press on PS" }
+        };
+    };
+    LiveArea live_area;
     struct Settings {
         std::map<std::string, std::string> main = { { "title", "Settings" } };
         struct ThemeBackground {
@@ -479,9 +506,5 @@ struct LangState {
         };
     };
     Common common;
-    std::map<LiveArea, std::string> live_area = {
-        { START, "Start" },
-        { CONTINUE, "Continue" }
-    };
     std::map<TypeLang, std::string> user_lang;
 };

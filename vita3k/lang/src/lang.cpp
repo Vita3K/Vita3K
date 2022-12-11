@@ -210,8 +210,11 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                 // Live Area
                 const auto live_area = lang_child.child("live_area");
                 if (!live_area.empty()) {
-                    lang.live_area[START] = live_area.child("start").text().as_string();
-                    lang.live_area[CONTINUE] = live_area.child("continue").text().as_string();
+                    // Main
+                    set_lang_string(lang.live_area.main, live_area);
+
+                    // Help
+                    set_lang_string(lang.live_area.help, live_area.child("help"));
                 }
 
                 // Settings
