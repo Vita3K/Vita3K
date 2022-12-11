@@ -144,10 +144,8 @@ void init_content_manager(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto query_themes = [&emuenv] {
         const auto THEME_PATH{ fs::path(emuenv.pref_path) / "ux0/theme" };
-        const auto &directory_list = fs::directory_iterator(THEME_PATH);
-        const auto pred = [&](const auto acc, const auto &) { return acc + get_recursive_directory_size(THEME_PATH); };
         if (fs::exists(THEME_PATH) && !fs::is_empty(THEME_PATH)) {
-            return boost::accumulate(directory_list, boost::uintmax_t{}, pred);
+            return get_recursive_directory_size(THEME_PATH);
         }
         return boost::uintmax_t{};
     };
