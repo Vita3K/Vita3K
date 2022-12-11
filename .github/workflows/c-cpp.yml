@@ -111,6 +111,14 @@ jobs:
         id: build_variable
         run: echo "::set-output name=Build_Variable::$(git rev-list HEAD --count)"
         if: matrix.os == 'ubuntu-latest'
+
+      - name: Bundle OpenSSL shared objects
+        id: bundle_openssl
+        run: |
+            cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
+            cp /usr/lib/x86_64-linux-gnu/libssl.so.3 ./libssl.so.3
+            cp /usr/lib/x86_64-linux-gnu/libcrypto.so.3 ./libcrypto.so.3
+        if: matrix.os == 'ubuntu-latest'
         
       - name: Create DMG (macos-latest)
         run: |
