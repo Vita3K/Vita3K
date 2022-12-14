@@ -186,8 +186,10 @@ if(CMAKE_GENERATOR MATCHES "Visual Studio" AND (CMAKE_C_COMPILER_ID MATCHES "MSV
 endif()
 
 #Hide warnings in external libraries
-#double msvc check is intentional
-if (MSVC AND (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") AND (MSVC_VERSION GREATER_EQUAL 1913))
+#double msvc check is intentional (to filter out msvc-clang)
+#CMAKE_CXX_COMPILER_LAUNCHER check is check if sccache is used
+#sccache does not support /external flags and does not cache this compiler calls
+if (MSVC AND (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") AND (MSVC_VERSION GREATER_EQUAL 1913) AND ((NOT DEFINED CMAKE_CXX_COMPILER_LAUNCHER OR CMAKE_CXX_COMPILER_LAUNCHER STREQUAL "")))
 	if (MSVC_VERSION LESS 1929)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /experimental:external")
 	endif()
