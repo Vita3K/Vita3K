@@ -144,7 +144,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         break;
     }
 
-    if (cfg.fullscreen) {
+    if (state.cfg.fullscreen) {
         state.display.fullscreen = true;
         window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
@@ -167,11 +167,11 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         return false;
     }
 
-    if (!state.audio.init(resume_thread, cfg.audio_backend)) {
+    if (!state.audio.init(resume_thread, state.cfg.audio_backend)) {
         LOG_WARN("Failed to init audio! Audio will not work.");
     }
 
-    if (!init(state.io, state.base_path, state.pref_path, cfg.console)) {
+    if (!init(state.io, state.base_path, state.pref_path, state.cfg.console)) {
         LOG_ERROR("Failed to initialize file system for the emulator!");
         return false;
     }
@@ -182,12 +182,12 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     }
 
 #if USE_DISCORD
-    if (discordrpc::init() && cfg.discord_rich_presence) {
+    if (discordrpc::init() && state.cfg.discord_rich_presence) {
         discordrpc::update_presence();
     }
 #endif
 
-    if (!cfg.console) {
+    if (!state.cfg.console) {
         if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, state.base_path.data())) {
             update_viewport(state);
             return true;
