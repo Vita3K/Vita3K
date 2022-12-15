@@ -27,7 +27,7 @@ namespace gui {
 
 static char const *SDL_key_to_string[]{ "[unset]", "[unknown]", "[unknown]", "[unknown]", "A", "B", "C", "D", "E", "F", "G",
     "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0",
-    "Return", "Escape", "Backspace", "Tab", "Space", "-", "=", "[", "]", "\\", "NonUS #", ";", "'", "Grave", ",", ".", "/", "CapsLock", "F1",
+    "Return/Enter", "Escape", "Backspace", "Tab", "Space", "-", "=", "[", "]", "\\", "NonUS #", ";", "'", "Grave", ",", ".", "/", "CapsLock", "F1",
     "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "PrtScrn", "ScrlLock", "Pause", "Insert", "Home", "PgUp", "Delete",
     "End", "PgDown", "Ar Right", "Ar Left", "Ar Down", "Ar Up", "NumLock/Clear", "Keypad /", "Keypad *", "Keypad -", "Keypad +",
     "Keypad Enter", "Keypad 1", "Keypad 2", "Keypad 3", "Keypad 4", "Keypad 5", "Keypad 6", "Keypad 7", "Keypad 8", "Keypad 9", "Keypad 0",
@@ -152,7 +152,11 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s", lang["gui"].c_str());
     ImGui::Text("%-16s    %-16s", lang["full_screen"].c_str(), "F11");
     ImGui::Text("%-16s    %-16s", lang["toggle_touch"].c_str(), "T");
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Toggles between back touch and screen touch.");
     ImGui::Text("%-16s    %-16s", lang["toggle_gui_visibility"].c_str(), "G");
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Toggles between showing and hiding the GUI at the top of the screen while the app is running.");
 
     const char *error_text = lang["error_duplicate_key"].c_str();
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));

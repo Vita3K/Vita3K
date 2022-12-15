@@ -600,10 +600,10 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             }
             if (!emuenv.io.title_id.empty() && !gui.live_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog) {
                 // toggle gui state
-                if (event.key.keysym.sym == SDLK_g)
+                if (event.key.keysym.sym == SDLK_g && !ImGui::GetIO().WantTextInput)
                     emuenv.display.imgui_render = !emuenv.display.imgui_render;
                 // Show/Hide Live Area during app run, TODO pause app running
-                else if (gui::get_sys_apps_state(gui) && (event.key.keysym.scancode == emuenv.cfg.keyboard_button_psbutton)) {
+                else if (gui::get_sys_apps_state(gui) && (event.key.keysym.scancode == emuenv.cfg.keyboard_button_psbutton && !ImGui::GetIO().WantTextInput)) {
                     if (gui::get_app_open_list_index(gui, emuenv.io.app_path) == gui.apps_list_opened.end())
                         gui::open_live_area(gui, emuenv, emuenv.io.app_path);
                     else {
@@ -612,7 +612,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     }
                 }
             }
-            if (event.key.keysym.sym == SDLK_t && !gui.is_key_capture_dropped)
+            if (event.key.keysym.sym == SDLK_t && !gui.is_key_capture_dropped && !ImGui::GetIO().WantTextInput)
                 toggle_touchscreen();
             if (event.key.keysym.sym == SDLK_F11 && !gui.is_key_capture_dropped)
                 switch_full_screen(emuenv);
