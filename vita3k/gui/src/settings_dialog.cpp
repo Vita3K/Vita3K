@@ -673,7 +673,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::BeginDisabled();
 
         static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
-        if (ImGui::Combo("Backend Renderer", reinterpret_cast<int *>(&audio_backend_idx), LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
+        if (ImGui::Combo("Audio Backend", reinterpret_cast<int *>(&audio_backend_idx), LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
             emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select your preferred audio backend.");
