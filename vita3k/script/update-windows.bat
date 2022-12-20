@@ -44,6 +44,9 @@ if not exist vita3k-latest.zip (
 )
 
 if exist vita3k-latest.zip (
+    if exist Vita3K.exe && %boot% EQU 1 (
+        taskkill /F /IM Vita3K.exe
+    )
     echo Download completed, extraction in progress...
     powershell "Expand-Archive -Force -Path vita3k-latest.zip -DestinationPath '.'"
     del vita3k-latest.zip
