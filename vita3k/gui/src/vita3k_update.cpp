@@ -204,7 +204,8 @@ static void download_update() {
                 SDL_PushEvent(&event);
 
 #ifdef WIN32
-                const auto vita3K_batch = "update-vita3k.bat";
+                std::string batch = fmt::format("start \" \" \"{}\\update-vita3k.bat\"", fs::current_path().string());
+                const auto vita3K_batch = batch.c_str();
 #elif defined(__APPLE__)
                 char *base_path = SDL_GetBasePath();
                 std::string batch = fmt::format("sh {}/update-vita3k.sh {}/../../..", base_path, base_path);
