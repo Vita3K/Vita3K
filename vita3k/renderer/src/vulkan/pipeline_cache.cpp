@@ -140,9 +140,8 @@ void PipelineCache::init() {
             vk::Format::eR16G16B16Uint, vk::Format::eR16G16B16Sint, vk::Format::eR16G16B16Sfloat };
         for (auto fmt : formats) {
             vk::FormatProperties rgb_property = state.physical_device.getFormatProperties(fmt);
-            this->support_rgb_vertex_attribute = static_cast<bool>(rgb_property.bufferFeatures & vk::FormatFeatureFlagBits::eVertexBuffer);
-            if (!this->support_rgb_vertex_attribute) {
-                break;
+            if (!(rgb_property.bufferFeatures & vk::FormatFeatureFlagBits::eVertexBuffer)) {
+                unsupported_rgb_vertex_attribute_formats.emplace(fmt);
             }
         }
     }
@@ -442,20 +441,23 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(Mem
                 array_size = (component_count + 3) / 4;
                 array_element_size = 4 * sizeof(int32_t);
                 component_count = 4;
-            } else if (!support_rgb_vertex_attribute && component_count == 3) {
-                component_count = 4;
             }
 
             // regformat attributes are int32
             format = translate_attribute_format(SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED, component_count, true, true);
+            if (component_count == 3 && unsupported_rgb_vertex_attribute_formats.contains(format)) {
+                component_count = 4;
+                format = translate_attribute_format(SCE_GXM_ATTRIBUTE_FORMAT_UNTYPED, component_count, true, true);
+            }
         } else {
             // some AMD GPUs do not support rgb vertex attributes, so just put it as rgba
             // the 4th component will contain garbage but this is not an issue because the input
             // in the shader will be vec3 (or ivec3) and the 4th component will be discarded
-            if (!support_rgb_vertex_attribute && component_count == 3)
-                component_count = 4;
-
             format = translate_attribute_format(attribute_format, component_count, info.is_integer, info.is_signed);
+            if (component_count == 3 && unsupported_rgb_vertex_attribute_formats.contains(format)) {
+                component_count = 4;
+                format = translate_attribute_format(attribute_format, component_count, info.is_integer, info.is_signed);
+            }
         }
 
         for (uint32_t i = 0; i < array_size; i++) {
