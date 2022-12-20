@@ -20,6 +20,7 @@
 #include <array>
 #include <limits>
 #include <map>
+#include <set>
 #include <unordered_map>
 
 #include <vkutil/objects.h>
@@ -42,7 +43,7 @@ private:
 
     // does the GPU support vertex attributes with 3 components (like R16G16B16_UNORM), some (like AMD GPUs) don't
     // this is needed when creating the input state
-    bool support_rgb_vertex_attribute;
+    std::set<vk::Format> unsupported_rgb_vertex_attribute_formats{};
 
     // how much time should we wait after the last shader compilation
     // to update the disk-saved shader cache (in seconds)
