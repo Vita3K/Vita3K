@@ -36,7 +36,7 @@ jobs:
             cmake_preset: windows-ninja
           - os: macos-latest
             cache_path: ~/Library/Caches/ccache
-            extra_cmake_args: 
+            extra_cmake_args: -DCMAKE_C_COMPILER_LAUNCHER=sccache -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
             cmake_preset: macos-ninja
 
     steps:
@@ -46,9 +46,7 @@ jobs:
           submodules: recursive
 
       - name: Set up build environment (macos-latest)
-        run: |
-          brew install boost ccache ninja molten-vk openssl create-dmg
-          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
+        run: brew install boost sccache ninja molten-vk openssl create-dmg
         if: matrix.os == 'macos-latest'
 
       - name: Set up build environment (ubuntu-latest)
@@ -59,10 +57,11 @@ jobs:
 
       - uses: ilammy/msvc-dev-cmd@v1
         if: matrix.os == 'windows-latest'
+        
       - uses: hendrikmuhs/ccache-action@v1.2
         with:
             variant: sccache
-        if: matrix.os == 'windows-latest'
+        if: matrix.os != 'ubuntu-latest'
  
       - uses: actions/cache@v3
         with:
