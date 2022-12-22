@@ -190,7 +190,7 @@ static void download_update() {
     if (!fs::exists(path)) {
         std::thread download([path]() {
 #ifdef WIN32
-            const auto download_command = "powershell Invoke-WebRequest https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-latest.zip -OutFile vita3k-latest.zip";
+            const auto download_command = "Set-Variable ProgressPreference SilentlyContinue; powershell Invoke-WebRequest https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-latest.zip -OutFile vita3k-latest.zip";
 #elif defined(__APPLE__)
             const auto download_command = "curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/macos-latest.dmg -o ~/vita3k-latest.dmg";
 #else

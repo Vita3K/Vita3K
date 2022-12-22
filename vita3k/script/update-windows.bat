@@ -34,19 +34,17 @@ if not exist vita3k-latest.zip (
             )
         )
         echo Attempting to download and extract the latest Vita3K version %git_version% in progress...
-        powershell "Invoke-WebRequest https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-latest.zip -OutFile vita3k-latest.zip"
+        powershell "Set-Variable ProgressPreference SilentlyContinue; Invoke-WebRequest https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-latest.zip -OutFile vita3k-latest.zip"
         if exist Vita3K.exe (
            taskkill /F /IM Vita3K.exe
         )
     )
 ) else (
     set boot=1
+    taskkill /F /IM Vita3K.exe >nul 2>&1
 )
 
 if exist vita3k-latest.zip (
-    if exist Vita3K.exe && %boot% EQU 1 (
-        taskkill /F /IM Vita3K.exe
-    )
     echo Download completed, extraction in progress...
     powershell "Expand-Archive -Force -Path vita3k-latest.zip -DestinationPath '.'"
     del vita3k-latest.zip
