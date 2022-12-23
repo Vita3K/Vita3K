@@ -311,7 +311,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 
     const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
-    if (fragment_program_gxp.is_native_color()) {
+    if (fragment_program_gxp.is_frag_color_used()) {
         // the fragment shader is using programmable blending
         vk::ImageMemoryBarrier barrier{
             .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
