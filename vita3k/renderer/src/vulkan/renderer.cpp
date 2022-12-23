@@ -38,9 +38,10 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
     if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
         // for now we are not interested by performance warnings
         && (message_type & ~VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)) {
-        std::string message = callback_data->pMessage;
+        std::string_view message = callback_data->pMessage;
         // ignore this message for now
-        if (message.find("VUID-vkCmdDrawIndexed-None-02721") == std::string::npos)
+        if (message.find("VUID-vkCmdDrawIndexed-None-02721") == std::string_view::npos
+            && message.find("VUID-VkDeviceQueueCreateInfo-pNext-pNext") == std::string_view::npos)
             LOG_ERROR("Validation layer: {}", callback_data->pMessage);
     }
     return VK_FALSE;
@@ -292,10 +293,13 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         // look for optional extensions
         std::vector<const char *> device_extensions(required_device_extensions);
         bool temp_bool;
+        bool support_global_priority = false;
         const std::map<std::string, bool *> optional_extensions = {
             { VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, &temp_bool },
-            // can be used by vma to improve perfomance
+            // can be used by vma to improve performance
             { VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME, &support_dedicated_allocations },
+            // used to tell the driver this application is high priority
+            { VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME, &support_global_priority },
             // can be used to specify which format will be used by mutable images
             { VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME, &surface_cache.support_image_format_specifier },
         };
@@ -310,6 +314,17 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
+        // this is an emulator, tell the system it should have a high priority
+        const vk::DeviceQueueGlobalPriorityCreateInfoEXT queue_priority{
+            .globalPriority = vk::QueueGlobalPriorityEXT::eHigh
+        };
+        if (support_global_priority) {
+            // add queue_priority to each queue creation info
+            for (auto &queue_info : queue_infos) {
+                queue_info.pNext = &queue_priority;
+            }
+        }
+
         // We use subpass input to get something similar to direct fragcolor access (there is no difference for the shader)
         features.direct_fragcolor = true;
 
@@ -319,7 +334,17 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         device_info.setQueueCreateInfos(queue_infos);
         device_info.setPEnabledExtensionNames(device_extensions);
 
-        device = physical_device.createDevice(device_info);
+        try {
+            device = physical_device.createDevice(device_info);
+        } catch (vk::NotPermittedKHRError) {
+            // according to the vk spec, when using a priority higher than medium
+            // we can get this error (although I think it will only possibly happen
+            // for realtime priority)
+            for (auto &queue_info : queue_infos) {
+                queue_info.pNext = nullptr;
+            }
+            device = physical_device.createDevice(device_info);
+        }
         VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
     }
 
