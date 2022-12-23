@@ -24,6 +24,7 @@
 #include <util/log.h>
 #include <util/safe_time.h>
 
+#include <SDL_misc.h>
 #include <pugixml.hpp>
 
 namespace gui {
@@ -256,17 +257,21 @@ void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
 }
 
 void open_path(const std::string &path) {
+    if (path.starts_with("http")) {
+        SDL_OpenURL(path.c_str());
+    } else {
 #ifdef _WIN32
-    static const char OS_PREFIX[] = "start \"Vita3K\" ";
+        static const char OS_PREFIX[] = "start \"Vita3K\" ";
 #elif __APPLE__
-    static const char OS_PREFIX[] = "open ";
+        static const char OS_PREFIX[] = "open ";
 #else
-    static const char OS_PREFIX[] = "xdg-open ";
-    system((OS_PREFIX + ("\"" + path + "\" & disown")).c_str());
-    return;
+        static const char OS_PREFIX[] = "xdg-open ";
+        system((OS_PREFIX + ("\"" + path + "\" & disown")).c_str());
+        return;
 #endif
 
-    system((OS_PREFIX + ("\"" + path + "\"")).c_str());
+        system((OS_PREFIX + ("\"" + path + "\"")).c_str());
+    }
 }
 
 static std::string context_dialog;
