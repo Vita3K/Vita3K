@@ -85,8 +85,8 @@ EXPORT(int, sceKernelCDialogSetLeaseLimit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCallAbortHandler) {
-    TRACY_FUNC(sceKernelCallAbortHandler);
+EXPORT(int, sceKernelCallAbortHandler, uint32_t param1, uint32_t param2) {
+    TRACY_FUNC(sceKernelCallAbortHandler, param1, param2);
     return UNIMPLEMENTED();
 }
 
@@ -105,7 +105,7 @@ EXPORT(int, sceKernelGetProcessName) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void *args) {
+EXPORT(Ptr<SceProcessParam>, sceKernelGetProcessParam, void *args) {
     TRACY_FUNC(sceKernelGetProcessParam, args);
     return emuenv.kernel.process_param;
 }
@@ -245,7 +245,7 @@ EXPORT(int, sceKernelUnregisterProcessTerminationCallback) {
 
 EXPORT(int, sceKernelGetMainModuleSdkVersion) {
     TRACY_FUNC(sceKernelGetMainModuleSdkVersion);
-    SceProcessParam *process_param = emuenv.kernel.process_param.cast<SceProcessParam>().get(emuenv.mem);
+    SceProcessParam *process_param = emuenv.kernel.process_param.get(emuenv.mem);
     if (process_param && (process_param->magic == '2PSP') && (process_param->version != 0)) {
         return process_param->fw_version;
     } else {
