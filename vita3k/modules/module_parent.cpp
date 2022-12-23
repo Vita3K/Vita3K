@@ -61,7 +61,7 @@ static ImportFn resolve_import(uint32_t nid) {
 }
 
 const std::array<VarExport, var_exports_size> &get_var_exports() {
-    static std::array<VarExport, var_exports_size> var_exports = {
+    static std::array<VarExport, var_exports_size> var_exports = { {
 #define NID(name, nid)
 #define VAR_NID(name, nid) \
     {                      \
@@ -72,7 +72,7 @@ const std::array<VarExport, var_exports_size> &get_var_exports() {
 #include <nids/nids.inc>
 #undef VAR_NID
 #undef NID
-    };
+    } };
     return var_exports;
 }
 

@@ -153,7 +153,7 @@ struct KernelState {
     uint64_t start_tick;
     SceRtcTick base_tick;
     TimerStates timers;
-    Ptr<uint32_t> process_param;
+    Ptr<SceProcessParam> process_param;
 
     NotFoundVars not_found_vars;
 

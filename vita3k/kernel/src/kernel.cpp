@@ -107,7 +107,7 @@ void KernelState::load_process_param(MemState &mem, Ptr<uint32_t> ptr) {
         process_param = nullptr;
         return;
     }
-    process_param = ptr;
+    process_param = ptr.cast<SceProcessParam>();
 }
 
 void KernelState::set_memory_watch(bool enabled) {
