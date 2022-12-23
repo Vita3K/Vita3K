@@ -104,7 +104,7 @@ void draw(GLState &renderer, GLContext &context, const FeatureState &features, S
     const SceGxmColorBaseFormat base_format = gxm::get_base_format(context.record.color_surface.colorFormat);
     const GLenum surface_format = color::translate_internal_format(base_format);
 
-    if (fragment_program_gxp.is_native_color() && features.is_programmable_blending_need_to_bind_color_attachment()) {
+    if (fragment_program_gxp.is_frag_color_used() && features.is_programmable_blending_need_to_bind_color_attachment()) {
         if (use_raw_image) {
             glBindImageTexture(shader::COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE, context.current_color_attachment, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA16UI);
             glBindImageTexture(shader::COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE, 0, 0, GL_FALSE, 0, GL_READ_WRITE, surface_format);
