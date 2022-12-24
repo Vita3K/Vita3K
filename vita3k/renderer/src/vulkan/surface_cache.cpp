@@ -448,9 +448,18 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
     image.layout = vkutil::ImageLayout::Undefined;
 
     // we might have to create a non-srgb/linear view later if this surface is used for presentation
-    // Todo: add rgba8/rgba8srgb as the possible formats in pNext
-    vk::ImageCreateFlags image_create_flags = (vk_format == vk::Format::eR8G8B8A8Unorm || is_srgb) ? vk::ImageCreateFlagBits::eMutableFormat : vk::ImageCreateFlags();
-    image.init_image(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment, vkutil::default_comp_mapping, image_create_flags);
+    const bool need_mutable = (vk_format == vk::Format::eR8G8B8A8Unorm || vk_format == vk::Format::eR8G8B8A8Srgb);
+    const vk::ImageCreateFlags image_create_flags = need_mutable ? vk::ImageCreateFlagBits::eMutableFormat : vk::ImageCreateFlags();
+    const void *image_info_pNext = nullptr;
+    if (support_image_format_specifier && need_mutable) {
+        static const vk::Format view_formats[] = { vk::Format::eR8G8B8A8Unorm, vk::Format::eR8G8B8A8Srgb };
+        static const vk::ImageFormatListCreateInfoKHR image_info_formats{
+            .viewFormatCount = 2,
+            .pViewFormats = view_formats
+        };
+        image_info_pNext = &image_info_formats;
+    }
+    image.init_image(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment, vkutil::default_comp_mapping, image_create_flags, image_info_pNext);
 
     // do it in the prerender if we read from this texture in the same scene (although this would be useless)
     vk::CommandBuffer cmd_buffer = context->prerender_cmd;
