@@ -296,6 +296,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             { VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, &temp_bool },
             // can be used by vma to improve perfomance
             { VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME, &support_dedicated_allocations },
+            // can be used to specify which format will be used by mutable images
+            { VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME, &surface_cache.support_image_format_specifier },
         };
 
         for (const vk::ExtensionProperties &ext : physical_device.enumerateDeviceExtensionProperties()) {

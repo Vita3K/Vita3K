@@ -70,8 +70,9 @@ Image::~Image() {
     destroy();
 }
 
-void Image::init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping, const vk::ImageCreateFlags image_create_flags) {
+void Image::init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping, const vk::ImageCreateFlags image_create_flags, const void *pNext) {
     vk::ImageCreateInfo image_info{
+        .pNext = pNext,
         .flags = image_create_flags,
         .imageType = vk::ImageType::e2D,
         .format = format,

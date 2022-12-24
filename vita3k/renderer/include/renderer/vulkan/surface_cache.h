@@ -103,6 +103,10 @@ private:
     void destroy_surface(DepthStencilSurfaceCacheInfo &info);
 
 public:
+    // when creating a mutable image, can we pass as an argument
+    // the possible format used for an image view to improve performance ?
+    bool support_image_format_specifier = false;
+
     explicit VKSurfaceCache(VKState &state);
 
     // when writing, the swizzled given to this function is inversed
