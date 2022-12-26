@@ -259,7 +259,7 @@ static spv::Id create_param_sampler(spv::Builder &b, const std::string &name, co
     return b.createVariable(spv::NoPrecision, spv::StorageClassUniformConstant, sampled_image_type, name.c_str());
 }
 
-static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
+static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils, const FeatureState &features, const TranslationState &translation_state, const char *name, const RegisterBank bank, const std::uint32_t offset, spv::Id type, const std::uint32_t size, spv::Id force_id = spv::NoResult, DataType dtype = DataType::F32) {
     std::uint32_t total_var_comp = size / 4;
     spv::Id var = !force_id ? (b.createVariable(spv::NoPrecision, reg_type_to_spv_storage_class(bank), type, name)) : force_id;
     Operand dest;
@@ -288,6 +288,8 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
         }
     };
 
+    bool is_4th_component_1 = false;
+
     if (total_var_comp != 1 && b.isArrayType(b.getContainedTypeId(b.getTypeId(var)))) {
         spv::Id arr_type = b.getContainedTypeId(b.getTypeId(var));
         spv::Id comp_type = b.getContainedTypeId(arr_type);
@@ -307,10 +309,28 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
         if (!b.isConstant(var)) {
             var = b.createLoad(var, spv::NoPrecision);
             var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
+
+            if (!features.support_rgb_attributes && !translation_state.is_fragment && dest_mask == 0b1111) {
+                // if the vertex input was rgb, the alpha component must be set to 1,
+                // however it will be set to whatever is in memory after the blue component
+                for (const auto &attribute : *translation_state.hints->attributes) {
+                    if (attribute.regIndex == offset) {
+                        is_4th_component_1 = (attribute.componentCount == 3);
+                        break;
+                    }
+                }
+            }
         }
 
         if (is_integer_data_type(dest.type) && b.isFloatType(utils::unwrap_type(b, b.getTypeId(var))))
             var = utils::convert_to_int(b, var, dest.type, true);
+
+        if (is_4th_component_1) {
+            // set the 4th component to 1, because it's what the shader is expecting it to be
+            const spv::Id comp_type = utils::unwrap_type(b, b.getTypeId(var));
+            const spv::Id one = utils::make_uniform_vector_from_type(b, comp_type, 1);
+            var = b.createVectorInsertDynamic(var, b.getTypeId(var), one, b.makeUintConstant(3));
+        }
 
         utils::store(b, parameters, utils, features, dest, var, dest_mask, 0);
     }
@@ -1104,7 +1124,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
             } else {
                 composite_var = constituents[0];
             }
-            create_input_variable(b, spv_params, utils, features, nullptr, RegisterBank::SECATTR, composite_base, spv::NoResult,
+            create_input_variable(b, spv_params, utils, features, translation_state, nullptr, RegisterBank::SECATTR, composite_base, spv::NoResult,
                 static_cast<int>(constituents.size() * 4), composite_var);
         };
 
@@ -1654,7 +1674,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         }
 
         for (auto &var_to_reg : translation_state.var_to_regs) {
-            create_input_variable(b, parameters, utils, features, "", var_to_reg.pa ? RegisterBank::PRIMATTR : RegisterBank::SECATTR,
+            create_input_variable(b, parameters, utils, features, translation_state, "", var_to_reg.pa ? RegisterBank::PRIMATTR : RegisterBank::SECATTR,
                 var_to_reg.offset, spv::NoResult, var_to_reg.size, var_to_reg.var, var_to_reg.dtype);
         }
 

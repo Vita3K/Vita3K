@@ -144,6 +144,7 @@ void PipelineCache::init() {
                 unsupported_rgb_vertex_attribute_formats.emplace(fmt);
             }
         }
+        state.features.support_rgb_attributes = unsupported_rgb_vertex_attribute_formats.empty();
     }
 }
 
