@@ -19,6 +19,8 @@
 
 #include <module/module.h>
 
+EXPORT(SceInt32, sceKernelGetThreadCurrentPriority);
+
 BRIDGE_DECL(__sce_aeabi_idiv0)
 BRIDGE_DECL(__sce_aeabi_ldiv0)
 BRIDGE_DECL(__stack_chk_fail)
