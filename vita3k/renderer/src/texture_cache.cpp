@@ -811,6 +811,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
                 return true;
             });
         }
+        cache.upload_done_callback();
     }
 
     info->timestamp = cache.timestamp++;

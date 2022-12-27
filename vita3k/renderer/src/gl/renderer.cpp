@@ -68,6 +68,8 @@ bool init(GLTextureCacheState &cache, const bool hashless_texture_cache) {
 
     cache.upload_texture_callback = upload_bound_texture;
 
+    cache.upload_done_callback = []() {};
+
     cache.use_protect = hashless_texture_cache;
 
     return cache.textures.init(reinterpret_cast<renderer::Generator *>(glGenTextures), reinterpret_cast<renderer::Deleter *>(glDeleteTextures));

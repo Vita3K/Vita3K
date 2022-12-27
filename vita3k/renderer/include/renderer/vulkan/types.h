@@ -28,24 +28,47 @@ struct VKState;
 struct VKRenderTarget;
 
 constexpr int MAX_FRAMES_RENDERING = 3;
+constexpr int NB_TEXTURE_STAGING_BUFFERS = 16;
+
+struct TextureStagingBuffer {
+    vkutil::Buffer buffer;
+    uint32_t used_so_far;
+    uint64_t scene_timestamp = ~0;
+    uint64_t frame_timestamp = ~0;
+    vk::Fence waiting_fence;
+};
+
+struct TextureCacheEntry {
+    vkutil::Image texture;
+    bool is_cube;
+    uint16_t mip_count;
+    uint32_t memory_needed;
+};
 
 struct VKTextureCacheState : public renderer::TextureCacheState {
     VKState &state;
 
-    vma::Allocation alloc;
-    vma::AllocationInfo alloc_info{};
-    vk::Buffer staging_buffer{};
-    vk::Fence wait_fence;
+    TextureStagingBuffer staging_buffers[NB_TEXTURE_STAGING_BUFFERS];
+    uint32_t staging_idx = 0;
+    uint64_t last_waited_scene = 0;
 
-    std::array<vkutil::Image, TextureCacheSize> textures;
+    std::array<TextureCacheEntry, TextureCacheSize> textures;
 
-    vkutil::Image *current_texture = nullptr;
+    TextureCacheEntry *current_texture = nullptr;
+    const SceGxmTexture *gxm_texture = nullptr;
+    vk::CommandBuffer cmd_buffer = nullptr;
+    bool is_texture_transfer_ready = false;
 
     VKTextureCacheState(VKState &state);
+    // get an available staging buffer, wait for one if all are busy
+    void prepare_staging_buffer(bool is_configure = false);
 };
 
 struct FrameObject {
-    vk::CommandPool command_pool;
+    vk::CommandPool render_pool;
+    // we need to have a specif prerender pool because prerender command buffer
+    // can be reset if we use too many new textures at once
+    vk::CommandPool prerender_pool;
     vk::DescriptorPool descriptor_pool;
 
     std::vector<vk::Fence> rendered_fences;
@@ -145,6 +168,8 @@ struct VKRenderTarget : public renderer::RenderTarget {
     int fence_idx = 0;
 
     std::array<std::vector<vk::CommandBuffer>, MAX_FRAMES_RENDERING> cmd_buffers;
+    // command buffers used for the pre-render, can be reset
+    std::array<std::vector<vk::CommandBuffer>, MAX_FRAMES_RENDERING> pre_cmd_buffers;
     // the command buffer index we're at in a frame
     int cmd_buffer_idx = 0;
 
