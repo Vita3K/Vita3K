@@ -305,8 +305,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         };
 
         for (const vk::ExtensionProperties &ext : physical_device.enumerateDeviceExtensionProperties()) {
-            const std::string extension_name = std::string(ext.extensionName.data());
-            auto it = optional_extensions.find(extension_name);
+            auto it = optional_extensions.find(ext.extensionName.data());
             if (it != optional_extensions.end()) {
                 // this extension is available on the GPU
                 *it->second = true;
@@ -314,6 +313,11 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
+        if (physical_device_properties.vendorID == 4318) {
+            // Nvidia does not allow us to set the device priority higher than normal
+            // no need to remove the priority extension
+            support_global_priority = false;
+        }
         // this is an emulator, tell the system it should have a high priority
         const vk::DeviceQueueGlobalPriorityCreateInfoEXT queue_priority{
             .globalPriority = vk::QueueGlobalPriorityEXT::eHigh
