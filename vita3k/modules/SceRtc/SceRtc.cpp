@@ -173,9 +173,10 @@ EXPORT(int, _sceRtcGetLastReincarnatedTick) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceRtcGetAccumulativeTime) {
+EXPORT(SceULong64, sceRtcGetAccumulativeTime) {
     TRACY_FUNC(sceRtcGetAccumulativeTime);
-    return UNIMPLEMENTED();
+    STUBBED("sceRtcGetAccumulativeTime");
+    return rtc_get_ticks(emuenv.kernel.base_tick.tick);
 }
 
 BRIDGE_IMPL(_sceRtcConvertLocalTimeToUtc)
