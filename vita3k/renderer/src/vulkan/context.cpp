@@ -98,19 +98,22 @@ void VKContext::start_recording() {
 
         // add additional cmd buffers, fences and semaphores
         vk::CommandBufferAllocateInfo cmd_buffer_info{
-            .commandPool = frame().command_pool,
-            .commandBufferCount = 2
+            .commandPool = frame().render_pool,
+            .commandBufferCount = 1
         };
-        for (vk::CommandBuffer cmd_buffer : state.device.allocateCommandBuffers(cmd_buffer_info))
-            render_target->cmd_buffers[current_frame_idx].push_back(cmd_buffer);
+        render_target->cmd_buffers[current_frame_idx].push_back(state.device.allocateCommandBuffers(cmd_buffer_info)[0]);
+
+        cmd_buffer_info.commandPool = frame().prerender_pool;
+        render_target->pre_cmd_buffers[current_frame_idx].push_back(state.device.allocateCommandBuffers(cmd_buffer_info)[0]);
 
         vk::FenceCreateInfo fence_info{};
         // make sure the next fence used is the one we created
         render_target->fences.insert(render_target->fences.begin() + render_target->fence_idx, state.device.createFence(fence_info));
     }
 
-    render_cmd = render_target->cmd_buffers[current_frame_idx][render_target->cmd_buffer_idx++];
-    prerender_cmd = render_target->cmd_buffers[current_frame_idx][render_target->cmd_buffer_idx++];
+    render_cmd = render_target->cmd_buffers[current_frame_idx][render_target->cmd_buffer_idx];
+    prerender_cmd = render_target->pre_cmd_buffers[current_frame_idx][render_target->cmd_buffer_idx];
+    render_target->cmd_buffer_idx++;
 
     vk::CommandBufferBeginInfo begin_info{
         .flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit

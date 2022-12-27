@@ -77,7 +77,8 @@ void new_frame(VKContext &context) {
         frame.rendered_fences.clear();
     }
 
-    device.resetCommandPool(frame.command_pool);
+    device.resetCommandPool(frame.prerender_pool);
+    device.resetCommandPool(frame.render_pool);
     device.resetDescriptorPool(frame.descriptor_pool);
 
     // deferred destruction of the objects

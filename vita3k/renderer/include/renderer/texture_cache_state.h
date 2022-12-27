@@ -52,6 +52,7 @@ typedef std::array<TextureCacheInfo, TextureCacheSize> TextureCacheInfoes;
 typedef std::function<void(std::size_t, const void *)> TextureCacheStateSelectCallback;
 typedef std::function<void(TextureCacheState &, const void *)> TextureCacheStateConfigureTextureCallback;
 typedef std::function<void(SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height, uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride)> TextureCacheStateUploadTextureCallback;
+typedef std::function<void()> TextureCacheStateUploadDoneCallback;
 
 struct TextureCacheState {
     Backend *backend;
@@ -63,5 +64,6 @@ struct TextureCacheState {
     TextureCacheStateSelectCallback select_callback;
     TextureCacheStateConfigureTextureCallback configure_texture_callback;
     TextureCacheStateUploadTextureCallback upload_texture_callback;
+    TextureCacheStateUploadDoneCallback upload_done_callback;
 };
 } // namespace renderer

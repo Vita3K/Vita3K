@@ -118,7 +118,9 @@ VKContext::VKContext(VKState &state)
             .queueFamilyIndex = state.general_family_index
         };
 
-        frame.command_pool = state.device.createCommandPool(pool_info);
+        frame.render_pool = state.device.createCommandPool(pool_info);
+        pool_info.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+        frame.prerender_pool = state.device.createCommandPool(pool_info);
 
         std::array<vk::DescriptorPoolSize, 3> pool_sizes = {
             vk::DescriptorPoolSize{ vk::DescriptorType::eStorageImage, 256 },
@@ -211,11 +213,13 @@ VKRenderTarget::VKRenderTarget(VKState &state, vma::Allocator allocator, uint16_
 
     for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
         vk::CommandBufferAllocateInfo buffer_info{
-            .commandPool = reinterpret_cast<VKContext *>(state.context)->frames[i].command_pool,
-            // need to account for both the render cmd and the prerender cmd
-            .commandBufferCount = static_cast<uint32_t>(samples_per_frame * 2)
+            .commandPool = reinterpret_cast<VKContext *>(state.context)->frames[i].render_pool,
+            .commandBufferCount = static_cast<uint32_t>(samples_per_frame)
         };
         cmd_buffers[i] = state.device.allocateCommandBuffers(buffer_info);
+
+        buffer_info.commandPool = reinterpret_cast<VKContext *>(state.context)->frames[i].prerender_pool;
+        pre_cmd_buffers[i] = state.device.allocateCommandBuffers(buffer_info);
     }
 }
 
@@ -257,7 +261,10 @@ void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt) {
         frame.destroy_queue.add(fence);
     for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
         for (auto cmd_buffer : render_target.cmd_buffers[i])
-            frame.destroy_queue.add_cmd_buffer(cmd_buffer, context.frames[i].command_pool);
+            frame.destroy_queue.add_cmd_buffer(cmd_buffer, context.frames[i].render_pool);
+
+        for (auto cmd_buffer : render_target.pre_cmd_buffers[i])
+            frame.destroy_queue.add_cmd_buffer(cmd_buffer, context.frames[i].prerender_pool);
     }
 }
 

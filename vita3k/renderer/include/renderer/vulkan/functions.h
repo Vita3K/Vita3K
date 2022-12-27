@@ -62,10 +62,11 @@ namespace texture {
 
 bool init(VKTextureCacheState &cache, const bool hashless_texture_cache);
 
-void configure_bound_texture(const renderer::TextureCacheState &state, const SceGxmTexture &gxm_texture);
+void configure_bound_texture(VKTextureCacheState &cache, const SceGxmTexture &gxm_texture);
 vk::Sampler create_sampler(VKState &state, const SceGxmTexture &gxm_texture, const uint16_t mip_count = 1);
 void upload_bound_texture(VKTextureCacheState &cache, SceGxmTextureBaseFormat base_format, uint32_t width, uint32_t height,
     uint32_t mip_index, const void *pixels, int face, bool is_compressed, size_t pixels_per_stride);
+void upload_done(VKTextureCacheState &cache);
 
 } // namespace texture
 
