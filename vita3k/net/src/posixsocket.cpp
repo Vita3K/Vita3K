@@ -155,7 +155,7 @@ int PosixSocket::bind(const SceNetSockaddr *addr, unsigned int addrlen) {
 }
 
 int PosixSocket::listen(int backlog) {
-    return translate_return_value(::listen(sock, backlog) < 0);
+    return translate_return_value(::listen(sock, backlog));
 }
 
 int PosixSocket::get_socket_address(SceNetSockaddr *name, unsigned int *namelen) {
