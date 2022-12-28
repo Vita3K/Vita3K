@@ -29,8 +29,8 @@
         return SCE_NET_ERROR_##errname;
 #endif
 
-static int translate_errorcode(int error) {
-    if (error < 0) {
+static int translate_return_value(int retval) {
+    if (retval < 0) {
 #ifdef WIN32
         switch (WSAGetLastError()) {
 #else
@@ -115,7 +115,9 @@ static int translate_errorcode(int error) {
         }
         return SCE_NET_ERROR_EINTERNAL;
     }
-    return 0;
+
+    // zero and positive values do not need to be translated, as they indicate success or bytes sent/received
+    return retval;
 }
 
 static void convertSceSockaddrToPosix(const struct SceNetSockaddr *src, struct sockaddr *dst) {
@@ -143,17 +145,17 @@ static void convertPosixSockaddrToSce(struct sockaddr *src, struct SceNetSockadd
 int PosixSocket::connect(const SceNetSockaddr *addr, unsigned int namelen) {
     struct sockaddr addr2;
     convertSceSockaddrToPosix(addr, &addr2);
-    return translate_errorcode(::connect(sock, &addr2, sizeof(struct sockaddr_in)));
+    return translate_return_value(::connect(sock, &addr2, sizeof(struct sockaddr_in)));
 }
 
 int PosixSocket::bind(const SceNetSockaddr *addr, unsigned int addrlen) {
     struct sockaddr addr2;
     convertSceSockaddrToPosix(addr, &addr2);
-    return translate_errorcode(::bind(sock, &addr2, sizeof(struct sockaddr_in)));
+    return translate_return_value(::bind(sock, &addr2, sizeof(struct sockaddr_in)));
 }
 
 int PosixSocket::listen(int backlog) {
-    return translate_errorcode(::listen(sock, backlog) < 0);
+    return translate_return_value(::listen(sock, backlog));
 }
 
 int PosixSocket::get_socket_address(SceNetSockaddr *name, unsigned int *namelen) {
@@ -176,7 +178,7 @@ int PosixSocket::close() {
 #else
     auto out = ::close(sock);
 #endif
-    return translate_errorcode(out);
+    return translate_return_value(out);
 }
 
 SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen) {
@@ -195,14 +197,14 @@ int PosixSocket::set_socket_options(int level, int optname, const void *optval, 
 #ifdef WIN32
         u_long mode;
         memcpy(&mode, optval, optlen);
-        return translate_errorcode(ioctlsocket(sock, FIONBIO, &mode));
+        return translate_return_value(ioctlsocket(sock, FIONBIO, &mode));
 #else
         int mode;
         memcpy(&mode, optval, optlen);
-        return translate_errorcode(ioctl(sock, FIONBIO, &mode));
+        return translate_return_value(ioctl(sock, FIONBIO, &mode));
 #endif
     }
-    return translate_errorcode(setsockopt(sock, level, optname, (const char *)optval, optlen));
+    return translate_return_value(setsockopt(sock, level, optname, (const char *)optval, optlen));
 }
 
 int PosixSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
@@ -212,9 +214,9 @@ int PosixSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSocka
         convertPosixSockaddrToSce(&addr, from);
         *fromlen = sizeof(SceNetSockaddrIn);
 
-        return translate_errorcode(res);
+        return translate_return_value(res);
     } else {
-        return translate_errorcode(recv(sock, (char *)buf, len, flags));
+        return translate_return_value(recv(sock, (char *)buf, len, flags));
     }
 }
 
@@ -222,8 +224,8 @@ int PosixSocket::send_packet(const void *msg, unsigned int len, int flags, const
     if (to != nullptr) {
         struct sockaddr addr;
         convertSceSockaddrToPosix((SceNetSockaddr *)to, &addr);
-        return translate_errorcode(sendto(sock, (const char *)msg, len, flags, &addr, sizeof(struct sockaddr_in)));
+        return translate_return_value(sendto(sock, (const char *)msg, len, flags, &addr, sizeof(struct sockaddr_in)));
     } else {
-        return translate_errorcode(send(sock, (const char *)msg, len, flags));
+        return translate_return_value(send(sock, (const char *)msg, len, flags));
     }
 }
