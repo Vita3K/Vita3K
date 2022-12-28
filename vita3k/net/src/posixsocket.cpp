@@ -201,7 +201,7 @@ int PosixSocket::set_socket_options(int level, int optname, const void *optval, 
 #else
         int mode;
         memcpy(&mode, optval, optlen);
-        return translate_errorcode(ioctl(sock, FIONBIO, &mode));
+        return translate_return_value(ioctl(sock, FIONBIO, &mode));
 #endif
     }
     return translate_return_value(setsockopt(sock, level, optname, (const char *)optval, optlen));
