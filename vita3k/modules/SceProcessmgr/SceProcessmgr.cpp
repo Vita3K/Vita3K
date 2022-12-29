@@ -243,13 +243,11 @@ EXPORT(int, sceKernelUnregisterProcessTerminationCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceLibKernel_9F793F84) {
-    TRACY_FUNC(sceLibKernel_9F793F84);
-    // Gets a version from the process' SceKernelProcessParam. Used for PSN Auth in SceShell.
-    auto p_process_param = CALL_EXPORT(sceKernelGetProcessParam, nullptr);
-    auto process_param = p_process_param.get(emuenv.mem);
-    if (process_param && (process_param[1] == '2PSP') && (process_param[2] != 0)) {
-        return process_param[3];
+EXPORT(int, sceKernelGetMainModuleSdkVersion) {
+    TRACY_FUNC(sceKernelGetMainModuleSdkVersion);
+    SceProcessParam *process_param = emuenv.kernel.process_param.cast<SceProcessParam>().get(emuenv.mem);
+    if (process_param && (process_param->magic == '2PSP') && (process_param->version != 0)) {
+        return process_param->fw_version;
     } else {
         return 0;
     }
@@ -263,6 +261,7 @@ BRIDGE_IMPL(sceKernelCDialogSetLeaseLimit)
 BRIDGE_IMPL(sceKernelCallAbortHandler)
 BRIDGE_IMPL(sceKernelGetCurrentProcess)
 BRIDGE_IMPL(sceKernelGetExtraTty)
+BRIDGE_IMPL(sceKernelGetMainModuleSdkVersion)
 BRIDGE_IMPL(sceKernelGetProcessName)
 BRIDGE_IMPL(sceKernelGetProcessParam)
 BRIDGE_IMPL(sceKernelGetProcessTimeCore)
@@ -286,4 +285,3 @@ BRIDGE_IMPL(sceKernelPowerTick)
 BRIDGE_IMPL(sceKernelPowerUnlock)
 BRIDGE_IMPL(sceKernelRegisterProcessTerminationCallback)
 BRIDGE_IMPL(sceKernelUnregisterProcessTerminationCallback)
-BRIDGE_IMPL(sceLibKernel_9F793F84)

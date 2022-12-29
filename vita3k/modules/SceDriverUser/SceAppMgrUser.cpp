@@ -140,9 +140,11 @@ EXPORT(int, sceAppMgrContentInstallPeriodStop) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrConvertVs0UserDrivePath) {
-    TRACY_FUNC(sceAppMgrConvertVs0UserDrivePath);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrConvertVs0UserDrivePath, char *source_path, char *dest_path, int dest_len) {
+    TRACY_FUNC(sceAppMgrConvertVs0UserDrivePath, source_path, dest_path, dest_len);
+    STUBBED("Using strncpy");
+    strncpy(dest_path, source_path, dest_len);
+    return 0;
 }
 
 EXPORT(int, sceAppMgrDeclareShellProcess2) {

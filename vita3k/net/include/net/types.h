@@ -19,7 +19,7 @@
 
 #include <mem/ptr.h>
 
-enum SceNetProtocol {
+enum SceNetProtocol : uint32_t {
     SCE_NET_IPPROTO_IP = 0,
     SCE_NET_IPPROTO_ICMP = 1,
     SCE_NET_IPPROTO_IGMP = 2,
@@ -28,7 +28,7 @@ enum SceNetProtocol {
     SCE_NET_SOL_SOCKET = 0xFFFF
 };
 
-enum SceNetSocketType {
+enum SceNetSocketType : uint32_t {
     SCE_NET_SOCK_STREAM = 1,
     SCE_NET_SOCK_DGRAM = 2,
     SCE_NET_SOCK_RAW = 3,
@@ -36,7 +36,7 @@ enum SceNetSocketType {
     SCE_NET_SOCK_STREAM_P2P = 10
 };
 
-enum SceNetSocketOption {
+enum SceNetSocketOption : uint32_t {
     /* IP */
     SCE_NET_IP_HDRINCL = 2,
     SCE_NET_IP_TOS = 3,
