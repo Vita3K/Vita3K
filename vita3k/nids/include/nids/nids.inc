@@ -4117,6 +4117,7 @@ NID(sceKernelGetLwCondInfo, 0xE4DF36A0)
 NID(sceKernelGetLwCondInfoById, 0x971F1DE8)
 NID(sceKernelGetLwMutexInfo, 0xF7D8F1FC)
 NID(sceKernelGetLwMutexInfoById, 0x4846613D)
+NID(sceKernelGetMainModuleSdkVersion, 0x9F793F84)
 NID(sceKernelGetModuleInfoByAddr, 0xD11A5103)
 NID(sceKernelGetMsgPipeInfo, 0x4046D16B)
 NID(sceKernelGetMutexInfo, 0x9A6C43CA)
@@ -4240,7 +4241,6 @@ NID(sceSblGcAuthMgrPsmactCreateC1, 0x622A81E6)
 NID(sceSblGcAuthMgrPsmactVerifyR1, 0xEB6DA895)
 NID(sceSblGcAuthMgrSclkGetData1, 0x93A6570E)
 NID(sceSblGcAuthMgrSclkSetData2, 0xE088B0D0)
-NID(sceLibKernel_9F793F84, 0x9F793F84)
 // Library "SceLibRng"
 NID(sceKernelGetRandomNumber, 0xB2700165)
 // Library "SceLibSsp"
@@ -5047,6 +5047,9 @@ NID(sceNetSocket, 0xF084FCE3)
 NID(sceNetSocketAbort, 0x891C1B9B)
 NID(sceNetSocketClose, 0x29822B4D)
 NID(sceNetTerm, 0xEA3CC286)
+// Library "SceNetInternal"
+NID(sceNetInternalIcmConnect, 0x93F2FF08)
+NID(sceNetInternalInetPton, 0x916EA798)
 // Module "SceNetAdhocMatching"
 // Library "SceNetAdhocMatching"
 NID(sceNetAdhocMatchingAbortSendData, 0xFE77831E)

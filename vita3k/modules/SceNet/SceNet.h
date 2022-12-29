@@ -19,6 +19,8 @@
 
 #include <module/module.h>
 
+EXPORT(int, sceNetInetPton, int af, const char *src, void *dst);
+
 BRIDGE_DECL(sceNetAccept)
 BRIDGE_DECL(sceNetBind)
 BRIDGE_DECL(sceNetClearDnsCache)

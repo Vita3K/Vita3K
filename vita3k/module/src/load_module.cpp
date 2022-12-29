@@ -38,6 +38,9 @@ bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv) {
         SCE_SYSMODULE_ATRAC,
         SCE_SYSMODULE_AVPLAYER,
         SCE_SYSMODULE_JSON,
+        SCE_SYSMODULE_HTTP,
+        SCE_SYSMODULE_SSL,
+        SCE_SYSMODULE_HTTPS,
     };
 
     if (have_paths) {
