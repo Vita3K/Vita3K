@@ -37,6 +37,10 @@ int P2PSocket::set_socket_options(int level, int optname, const void *optval, un
     return 0;
 }
 
+int P2PSocket::get_socket_options(int level, int optname, void *optval, unsigned int *optlen) {
+    return 0;
+}
+
 int P2PSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
     return SCE_NET_ERROR_EAGAIN;
 }

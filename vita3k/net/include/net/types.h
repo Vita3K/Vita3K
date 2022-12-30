@@ -294,6 +294,18 @@ enum SceNetErrorCode {
     SCE_NET_ERROR_RESOLVER_EALIGNMENT = 0x804101EA
 };
 
+enum SceNetEpollControlFlag : int32_t {
+    SCE_NET_EPOLL_CTL_ADD = 1,
+    SCE_NET_EPOLL_CTL_MOD,
+    SCE_NET_EPOLL_CTL_DEL
+};
+
+enum SceNetEpollEventType {
+    SCE_NET_EPOLLIN = 1,
+    SCE_NET_EPOLLOUT = 2,
+    SCE_NET_EPOLLERR = 8
+};
+
 struct SceNetEtherAddr {
     unsigned char data[6];
 };
@@ -326,4 +338,15 @@ struct SceNetInitParam {
     Ptr<void> memory;
     int32_t size;
     int32_t flags;
+};
+
+union SceNetEpollData {
+    char data[8];
+};
+
+struct SceNetEpollEvent {
+    unsigned int events;
+    unsigned int reserved;
+    unsigned int system[4];
+    SceNetEpollData data;
 };

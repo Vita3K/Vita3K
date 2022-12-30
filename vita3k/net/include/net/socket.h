@@ -35,6 +35,7 @@ typedef int socklen_t;
 #include <cerrno>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -55,6 +56,7 @@ struct Socket {
     virtual int send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) = 0;
     virtual int recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) = 0;
     virtual int set_socket_options(int level, int optname, const void *optval, unsigned int optlen) = 0;
+    virtual int get_socket_options(int level, int optname, void *optval, unsigned int *optlen) = 0;
     virtual int connect(const SceNetSockaddr *addr, unsigned int namelen) = 0;
     virtual SocketPtr accept(SceNetSockaddr *addr, unsigned int *addrlen) = 0;
     virtual int listen(int backlog) = 0;
@@ -64,6 +66,16 @@ struct Socket {
 // udp, tcp
 struct PosixSocket : public Socket {
     abs_socket sock;
+
+    int sockopt_so_reuseport = 0;
+    int sockopt_so_onesbcast = 0;
+    int sockopt_so_usecrypto = 0;
+    int sockopt_so_usesignature = 0;
+    int sockopt_so_tppolicy = 0;
+    int sockopt_so_nbio = 0;
+    int sockopt_ip_ttlchk = 0;
+    int sockopt_ip_maxttl = 0;
+    int sockopt_tcp_mss_to_advertise = 0;
 
     explicit PosixSocket(int domain, int type, int protocol)
         : Socket(domain, type, protocol)
@@ -78,6 +90,7 @@ struct PosixSocket : public Socket {
     int send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) override;
     int recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) override;
     int set_socket_options(int level, int optname, const void *optval, unsigned int optlen) override;
+    int get_socket_options(int level, int optname, void *optval, unsigned int *optlen) override;
     int connect(const SceNetSockaddr *addr, unsigned int namelen) override;
     SocketPtr accept(SceNetSockaddr *addr, unsigned int *addrlen) override;
     int listen(int backlog) override;
@@ -93,6 +106,7 @@ struct P2PSocket : public Socket {
     int send_packet(const void *msg, unsigned int len, int flags, const SceNetSockaddr *to, unsigned int tolen) override;
     int recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) override;
     int set_socket_options(int level, int optname, const void *optval, unsigned int optlen) override;
+    int get_socket_options(int level, int optname, void *optval, unsigned int *optlen) override;
     int connect(const SceNetSockaddr *addr, unsigned int namelen) override;
     SocketPtr accept(SceNetSockaddr *addr, unsigned int *addrlen) override;
     int listen(int backlog) override;

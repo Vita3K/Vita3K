@@ -29,6 +29,19 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceNet);
 
+template <>
+std::string to_debug_str<SceNetEpollControlFlag>(const MemState &mem, SceNetEpollControlFlag type) {
+    switch (type) {
+    case SCE_NET_EPOLL_CTL_ADD:
+        return "SCE_NET_EPOLL_CTL_ADD";
+    case SCE_NET_EPOLL_CTL_MOD:
+        return "SCE_NET_EPOLL_CTL_MOD";
+    case SCE_NET_EPOLL_CTL_DEL:
+        return "SCE_NET_EPOLL_CTL_DEL";
+    }
+    return std::to_string(type);
+}
+
 EXPORT(int, sceNetAccept, int sid, SceNetSockaddr *addr, unsigned int *addrlen) {
     TRACY_FUNC(sceNetAccept, sid, addr, addrlen);
     auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
@@ -102,28 +115,63 @@ EXPORT(int, sceNetEpollAbort) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNetEpollControl) {
-    TRACY_FUNC(sceNetEpollControl);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetEpollControl, int eid, SceNetEpollControlFlag op, int id, SceNetEpollEvent *ev) {
+    TRACY_FUNC(sceNetEpollControl, eid, op, id, ev);
+
+    auto epoll = lock_and_find(eid, emuenv.net.epolls, emuenv.kernel.mutex);
+    if (!epoll) {
+        return RET_ERROR(SCE_NET_ERROR_EBADF);
+    }
+
+    auto sock = lock_and_find(id, emuenv.net.socks, emuenv.kernel.mutex);
+    if (!sock) {
+        return RET_ERROR(SCE_NET_ERROR_EBADF);
+    }
+
+    auto posixSocket = std::dynamic_pointer_cast<PosixSocket>(sock);
+    if (!posixSocket) {
+        return RET_ERROR(SCE_NET_ERROR_EBADF);
+    }
+
+    switch (op) {
+    case SCE_NET_EPOLL_CTL_ADD:
+        return epoll->add(id, posixSocket->sock, ev);
+    case SCE_NET_EPOLL_CTL_DEL:
+        return epoll->del(id, posixSocket->sock, ev);
+    case SCE_NET_EPOLL_CTL_MOD:
+        return epoll->mod(id, posixSocket->sock, ev);
+    default:
+        return RET_ERROR(SCE_NET_ERROR_EINVAL);
+    }
 }
 
-EXPORT(int, sceNetEpollCreate, const char *name) {
-    TRACY_FUNC(sceNetEpollCreate, name);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetEpollCreate, const char *name, int flags) {
+    TRACY_FUNC(sceNetEpollCreate, name, flags);
+    auto id = ++emuenv.net.next_epoll_id;
+    auto epoll = std::make_shared<Epoll>();
+    emuenv.net.epolls.emplace(id, epoll);
+    return id;
 }
 
-EXPORT(int, sceNetEpollDestroy) {
-    TRACY_FUNC(sceNetEpollDestroy);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetEpollDestroy, int eid) {
+    TRACY_FUNC(sceNetEpollDestroy, eid);
+
+    const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+    if (emuenv.net.epolls.erase(eid) == 0) {
+        return -1;
+    }
+
+    return 0;
 }
 
-struct SceNetEpollEvent {}; // TODO fill this
+EXPORT(int, sceNetEpollWait, int eid, SceNetEpollEvent *events, int maxevents, int timeout) {
+    TRACY_FUNC(sceNetEpollWait, eid, events, maxevents, timeout);
+    auto epoll = lock_and_find(eid, emuenv.net.epolls, emuenv.kernel.mutex);
+    if (!epoll) {
+        return -1;
+    }
 
-EXPORT(int, sceNetEpollWait, int sid, SceNetEpollEvent *events, int maxevents, int timeout) {
-    TRACY_FUNC(sceNetEpollWait, sid, events, maxevents, timeout);
-    auto x = std::chrono::microseconds(timeout);
-    std::this_thread::sleep_for(x);
-    return STUBBED("only timeout");
+    return epoll->wait(events, maxevents, timeout);
 }
 
 EXPORT(int, sceNetEpollWaitCB) {
@@ -195,9 +243,14 @@ EXPORT(int, sceNetGetsockname, int sid, SceNetSockaddr *name, unsigned int *name
     return sock->get_socket_address(name, namelen);
 }
 
-EXPORT(int, sceNetGetsockopt) {
-    TRACY_FUNC(sceNetGetsockopt);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetGetsockopt, int sid, int level, int optname, void *optval, unsigned int *optlen) {
+    TRACY_FUNC(sceNetGetsockopt, sid, level, optname, optval, optlen);
+
+    auto sock = lock_and_find(sid, emuenv.net.socks, emuenv.kernel.mutex);
+    if (!sock) {
+        return -1;
+    }
+    return sock->get_socket_options(level, optname, optval, optlen);
 }
 
 EXPORT(unsigned int, sceNetHtonl, unsigned int n) {

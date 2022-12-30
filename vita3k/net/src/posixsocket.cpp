@@ -192,19 +192,151 @@ SocketPtr PosixSocket::accept(SceNetSockaddr *addr, unsigned int *addrlen) {
     return nullptr;
 }
 
-int PosixSocket::set_socket_options(int level, int optname, const void *optval, unsigned int optlen) {
-    if (optname == SCE_NET_SO_NBIO) {
-#ifdef WIN32
-        u_long mode;
-        memcpy(&mode, optval, optlen);
-        return translate_return_value(ioctlsocket(sock, FIONBIO, &mode));
-#else
-        int mode;
-        memcpy(&mode, optval, optlen);
-        return translate_return_value(ioctl(sock, FIONBIO, &mode));
-#endif
+static int translate_sockopt_level(int level) {
+    switch (level) {
+    case SCE_NET_SOL_SOCKET: return SOL_SOCKET;
+    case SCE_NET_IPPROTO_IP: return IPPROTO_IP;
+    case SCE_NET_IPPROTO_TCP: return IPPROTO_TCP;
     }
-    return translate_return_value(setsockopt(sock, level, optname, (const char *)optval, optlen));
+    return -1;
+}
+
+#define CASE_SETSOCKOPT(opt) \
+    case SCE_NET_##opt:      \
+        return translate_return_value(setsockopt(sock, level, opt, (const char *)optval, optlen));
+
+#define CASE_SETSOCKOPT_VALUE(opt, value) \
+    case opt:                             \
+        if (optlen != sizeof(*value)) {   \
+            return SCE_NET_ERROR_EFAULT;  \
+        }                                 \
+        memcpy(value, optval, optlen);    \
+        return 0;
+
+int PosixSocket::set_socket_options(int level, int optname, const void *optval, unsigned int optlen) {
+    level = translate_sockopt_level(level);
+    if (level == SOL_SOCKET) {
+        switch (optname) {
+            CASE_SETSOCKOPT(SO_REUSEADDR);
+            CASE_SETSOCKOPT(SO_KEEPALIVE);
+            CASE_SETSOCKOPT(SO_BROADCAST);
+            CASE_SETSOCKOPT(SO_LINGER);
+            CASE_SETSOCKOPT(SO_OOBINLINE);
+            CASE_SETSOCKOPT(SO_SNDBUF);
+            CASE_SETSOCKOPT(SO_RCVBUF);
+            CASE_SETSOCKOPT(SO_SNDLOWAT);
+            CASE_SETSOCKOPT(SO_RCVLOWAT);
+            CASE_SETSOCKOPT(SO_SNDTIMEO);
+            CASE_SETSOCKOPT(SO_RCVTIMEO);
+            CASE_SETSOCKOPT(SO_ERROR);
+            CASE_SETSOCKOPT(SO_TYPE);
+            CASE_SETSOCKOPT_VALUE(SCE_NET_SO_REUSEPORT, &sockopt_so_reuseport);
+            CASE_SETSOCKOPT_VALUE(SCE_NET_SO_ONESBCAST, &sockopt_so_onesbcast);
+            CASE_SETSOCKOPT_VALUE(SCE_NET_SO_USECRYPTO, &sockopt_so_usecrypto);
+            CASE_SETSOCKOPT_VALUE(SCE_NET_SO_USESIGNATURE, &sockopt_so_usesignature);
+            CASE_SETSOCKOPT_VALUE(SCE_NET_SO_TPPOLICY, &sockopt_so_tppolicy);
+        case SCE_NET_SO_NAME:
+            return SCE_NET_ERROR_EINVAL; // don't support set for name
+        case SCE_NET_SO_NBIO: {
+            if (optlen != sizeof(sockopt_so_nbio)) {
+                return SCE_NET_ERROR_EFAULT;
+            }
+            memcpy(&sockopt_so_nbio, optval, optlen);
+#ifdef WIN32
+            static_assert(sizeof(u_long) == sizeof(sockopt_so_nbio), "type used for ioctlsocket value does not have the expected size");
+            return translate_return_value(ioctlsocket(sock, FIONBIO, (u_long *)&sockopt_so_nbio));
+#else
+            return translate_return_value(ioctl(sock, FIONBIO, &sockopt_so_nbio));
+#endif
+        }
+        }
+    } else if (level == IPPROTO_IP) {
+        switch (optname) {
+            CASE_SETSOCKOPT(IP_HDRINCL);
+            CASE_SETSOCKOPT(IP_TOS);
+            CASE_SETSOCKOPT(IP_TTL);
+            CASE_SETSOCKOPT(IP_MULTICAST_IF);
+            CASE_SETSOCKOPT(IP_MULTICAST_TTL);
+            CASE_SETSOCKOPT(IP_MULTICAST_LOOP);
+            CASE_SETSOCKOPT(IP_ADD_MEMBERSHIP);
+            CASE_SETSOCKOPT(IP_DROP_MEMBERSHIP);
+            CASE_SETSOCKOPT_VALUE(SCE_NET_IP_TTLCHK, &sockopt_ip_ttlchk);
+            CASE_SETSOCKOPT_VALUE(SCE_NET_IP_MAXTTL, &sockopt_ip_maxttl);
+        }
+    } else if (level == IPPROTO_TCP) {
+        switch (optname) {
+            CASE_SETSOCKOPT(TCP_NODELAY);
+            CASE_SETSOCKOPT(TCP_MAXSEG);
+            CASE_SETSOCKOPT_VALUE(SCE_NET_TCP_MSS_TO_ADVERTISE, &sockopt_tcp_mss_to_advertise);
+        }
+    }
+
+    return SCE_NET_ERROR_EINVAL;
+}
+
+#define CASE_GETSOCKOPT(opt)                                                                              \
+    case SCE_NET_##opt: {                                                                                 \
+        socklen_t optlen_temp = *optlen;                                                                  \
+        auto retval = translate_return_value(getsockopt(sock, level, opt, (char *)optval, &optlen_temp)); \
+        *optlen = optlen_temp;                                                                            \
+        return retval;                                                                                    \
+    }
+#define CASE_GETSOCKOPT_VALUE(opt, value)   \
+    case opt:                               \
+        if (*optlen < sizeof(value)) {      \
+            *optlen = sizeof(value);        \
+            return SCE_NET_ERROR_EFAULT;    \
+        }                                   \
+        *optlen = sizeof(value);            \
+        *(decltype(value) *)optval = value; \
+        return 0;
+
+int PosixSocket::get_socket_options(int level, int optname, void *optval, unsigned int *optlen) {
+    level = translate_sockopt_level(level);
+    if (level == SOL_SOCKET) {
+        switch (optname) {
+            CASE_GETSOCKOPT(SO_REUSEADDR);
+            CASE_GETSOCKOPT(SO_KEEPALIVE);
+            CASE_GETSOCKOPT(SO_BROADCAST);
+            CASE_GETSOCKOPT(SO_LINGER);
+            CASE_GETSOCKOPT(SO_OOBINLINE);
+            CASE_GETSOCKOPT(SO_SNDBUF);
+            CASE_GETSOCKOPT(SO_RCVBUF);
+            CASE_GETSOCKOPT(SO_SNDLOWAT);
+            CASE_GETSOCKOPT(SO_RCVLOWAT);
+            CASE_GETSOCKOPT(SO_SNDTIMEO);
+            CASE_GETSOCKOPT(SO_RCVTIMEO);
+            CASE_GETSOCKOPT(SO_ERROR);
+            CASE_GETSOCKOPT(SO_TYPE);
+            CASE_GETSOCKOPT_VALUE(SCE_NET_SO_NBIO, sockopt_so_nbio);
+            CASE_GETSOCKOPT_VALUE(SCE_NET_SO_REUSEPORT, sockopt_so_reuseport);
+            CASE_GETSOCKOPT_VALUE(SCE_NET_SO_ONESBCAST, sockopt_so_onesbcast);
+            CASE_GETSOCKOPT_VALUE(SCE_NET_SO_USECRYPTO, sockopt_so_usecrypto);
+            CASE_GETSOCKOPT_VALUE(SCE_NET_SO_USESIGNATURE, sockopt_so_usesignature);
+            CASE_GETSOCKOPT_VALUE(SCE_NET_SO_TPPOLICY, sockopt_so_tppolicy);
+            CASE_GETSOCKOPT_VALUE(SCE_NET_SO_NAME, (char)0); // writes an empty string to the output buffer
+        }
+    } else if (level == IPPROTO_IP) {
+        switch (optname) {
+            CASE_GETSOCKOPT(IP_HDRINCL);
+            CASE_GETSOCKOPT(IP_TOS);
+            CASE_GETSOCKOPT(IP_TTL);
+            CASE_GETSOCKOPT(IP_MULTICAST_IF);
+            CASE_GETSOCKOPT(IP_MULTICAST_TTL);
+            CASE_GETSOCKOPT(IP_MULTICAST_LOOP);
+            CASE_GETSOCKOPT(IP_ADD_MEMBERSHIP);
+            CASE_GETSOCKOPT(IP_DROP_MEMBERSHIP);
+            CASE_GETSOCKOPT_VALUE(SCE_NET_IP_TTLCHK, sockopt_ip_ttlchk);
+            CASE_GETSOCKOPT_VALUE(SCE_NET_IP_MAXTTL, sockopt_ip_maxttl);
+        }
+    } else if (level == IPPROTO_TCP) {
+        switch (optname) {
+            CASE_GETSOCKOPT(TCP_NODELAY);
+            CASE_GETSOCKOPT(TCP_MAXSEG);
+            CASE_GETSOCKOPT_VALUE(SCE_NET_TCP_MSS_TO_ADVERTISE, sockopt_tcp_mss_to_advertise);
+        }
+    }
+    return SCE_NET_ERROR_EINVAL;
 }
 
 int PosixSocket::recv_packet(void *buf, unsigned int len, int flags, SceNetSockaddr *from, unsigned int *fromlen) {
