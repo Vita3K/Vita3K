@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <net/epoll.h>
 #include <net/socket.h>
 #include <net/types.h>
 
@@ -25,11 +26,14 @@
 struct Socket;
 
 typedef std::map<int, SocketPtr> NetSockets;
+typedef std::map<int, EpollPtr> NetEpolls;
 
 struct NetState {
     bool inited = false;
     int next_id = 0;
     NetSockets socks;
+    int next_epoll_id = 0;
+    NetEpolls epolls;
     int state = -1;
 };
 

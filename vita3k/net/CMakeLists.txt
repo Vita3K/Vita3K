@@ -1,10 +1,12 @@
 add_library(
     net
     STATIC
+    include/net/epoll.h
     include/net/functions.h
     include/net/state.h
     include/net/types.h
     include/net/socket.h
+    src/epoll.cpp
     src/net.cpp
     src/posixsocket.cpp
     src/p2psocket.cpp
