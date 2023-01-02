@@ -149,6 +149,9 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
         auto pc = read_pc(cpu);
 
         assert((pc & 1) == 0);
+
+        pc -= 4; // Move back to SVC (SuperVisor Call) instruction
+
         uint32_t *const stub = Ptr<uint32_t>(Address(pc)).get(emuenv.mem);
 
         stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)export_pc, 12);
@@ -165,6 +168,7 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
         const std::unordered_set<uint32_t> lle_nid_blacklist = {};
         log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
         write_pc(cpu, export_pc);
+        emuenv.kernel.invalidate_jit_cache(pc, 4 * 3);
     }
 }
 
