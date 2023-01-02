@@ -1,5 +1,5 @@
 // Vita3K emulator project
-// Copyright (C) 2021 Vita3K team
+// Copyright (C) 2023 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -183,8 +183,8 @@ EXPORT(SceInt32, sceAppUtilDrmOpen, const SceAppUtilDrmAddcontId *dirName, const
     return 0;
 }
 
-EXPORT(int, sceAppUtilInit) {
-    TRACY_FUNC(sceAppUtilInit);
+EXPORT(int, sceAppUtilInit, void *initParam, void *bootParam) {
+    TRACY_FUNC(sceAppUtilInit, initParam, bootParam);
     return UNIMPLEMENTED();
 }
 
