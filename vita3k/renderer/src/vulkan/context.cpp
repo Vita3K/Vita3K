@@ -140,6 +140,15 @@ void VKContext::start_render_pass() {
     if (!is_recording)
         start_recording();
 
+    // make sure we are not keeping any texture from the previous pass
+    // (textures can be still bound even though they are not used)
+    last_vert_texture_count = ~0;
+    last_frag_texture_count = ~0;
+    for (int i = 0; i < 16; i++) {
+        vertex_textures[i].sampler = nullptr;
+        fragment_textures[i].sampler = nullptr;
+    }
+
     vk::RenderPassBeginInfo pass_info{
         .renderPass = current_render_pass,
         .framebuffer = current_framebuffer,
