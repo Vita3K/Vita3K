@@ -53,13 +53,6 @@ COMMAND(handle_wait_sync_object) {
     const uint32_t timestamp = helper.pop<uint32_t>();
 
     renderer::wishlist(sync, timestamp);
-
-    if (renderer.current_backend == Backend::Vulkan) {
-        vulkan::VKContext *context = reinterpret_cast<vulkan::VKContext *>(renderer.context);
-        if (context->is_recording)
-            context->stop_recording();
-        vulkan::update_sync_target(sync, reinterpret_cast<vulkan::VKRenderTarget *>(target));
-    }
 }
 
 COMMAND(handle_notification) {

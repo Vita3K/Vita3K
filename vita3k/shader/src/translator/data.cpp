@@ -558,11 +558,11 @@ bool USSETranslatorVisitor::vldst(
         break;
 
     case 1:
-        type_to_ldst = DataType::F16;
+        type_to_ldst = DataType::INT16;
         break;
 
     case 2:
-        type_to_ldst = DataType::C10;
+        type_to_ldst = DataType::INT8;
         break;
 
     default:
@@ -585,7 +585,10 @@ bool USSETranslatorVisitor::vldst(
     }
 
     to_store.num = dest_n;
-    to_store.type = DataType::F32;
+    if (m_features.support_memory_mapping)
+        to_store.type = type_to_ldst;
+    else
+        to_store.type = DataType::F32;
 
     inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, false, 7, m_second_program);
     inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, false, 7, m_second_program);
@@ -629,11 +632,15 @@ bool USSETranslatorVisitor::vldst(
         base = m_b.createBinOp(spv::OpIAdd, i32_type, base, m_b.makeIntConstant(4));
     }
 
-    for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
-        spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
-        spv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset);
-        store(to_store, src, 0b1);
-        to_store.num += 1;
+    if (m_features.support_memory_mapping) {
+        utils::buffer_address_load(m_b, m_spirv_params, m_util_funcs, m_features, to_store, base, get_data_type_size(type_to_ldst), total_number_to_fetch, m_program.is_fragment());
+    } else {
+        for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
+            spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
+            spv::Id src = utils::fetch_memory(m_b, m_spirv_params, m_util_funcs, offset);
+            store(to_store, src, 0b1);
+            to_store.num += 1;
+        }
     }
 
     return true;

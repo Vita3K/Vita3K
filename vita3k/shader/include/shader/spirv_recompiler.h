@@ -36,7 +36,7 @@ namespace shader {
 static constexpr int COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0;
 static constexpr int MASK_TEXTURE_SLOT_IMAGE = 1;
 static constexpr int COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE = 3;
-static constexpr uint32_t CURRENT_VERSION = 7;
+static constexpr uint32_t CURRENT_VERSION = 8;
 
 struct RenderVertUniformBlock {
     std::array<float, 4> viewport_flip;
@@ -47,6 +47,10 @@ struct RenderVertUniformBlock {
     float z_scale;
 };
 
+struct RenderVertUniformBlockWithMapping : public RenderVertUniformBlock {
+    uint64_t buffer_addresses[SCE_GXM_REAL_MAX_UNIFORM_BUFFER] = {};
+};
+
 // used internally to identify the field by the shader recompiler
 // it is put next to the RenderVertUniformBlock so we don't forget to update both fields every time
 enum VertUniformFieldId : uint32_t {
@@ -55,7 +59,8 @@ enum VertUniformFieldId : uint32_t {
     VERT_UNIFORM_screen_width,
     VERT_UNIFORM_screen_height,
     VERT_UNIFORM_z_offset,
-    VERT_UNIFORM_z_scale
+    VERT_UNIFORM_z_scale,
+    VERT_UNIFORM_buffer_addresses
 };
 
 struct RenderFragUniformBlock {
@@ -66,12 +71,17 @@ struct RenderFragUniformBlock {
     int32_t res_multiplier = 0;
 };
 
+struct RenderFragUniformBlockWithMapping : public RenderFragUniformBlock {
+    uint64_t buffer_addresses[SCE_GXM_REAL_MAX_UNIFORM_BUFFER] = {};
+};
+
 enum FragUniformFieldId : uint32_t {
     FRAG_UNIFORM_back_disabled,
     FRAG_UNIFORM_front_disabled,
     FRAG_UNIFORM_writing_mask,
     FRAG_UNIFORM_use_raw_image,
-    FRAG_UNIFORM_res_multiplier
+    FRAG_UNIFORM_res_multiplier,
+    FRAG_UNIFORM_buffer_addresses
 };
 
 enum struct Target {

@@ -28,7 +28,8 @@
 template <typename T>
 class Queue {
 public:
-    unsigned int maxPendingCount_;
+    // default value: unlimited
+    unsigned int maxPendingCount_ = -1;
 
     std::unique_ptr<T> top(const int ms = 0) {
         T item{ T() };
@@ -108,8 +109,7 @@ public:
 
     void wait_empty() {
         std::unique_lock<std::mutex> mlock(mutex_);
-        if (!aborted && !queue_.empty())
-            cond_.wait(mlock, [&]() { return aborted || queue_.empty(); });
+        cond_.wait(mlock, [&]() { return aborted || queue_.empty(); });
     }
 
     Queue() = default;
