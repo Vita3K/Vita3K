@@ -27,8 +27,9 @@
 #include <gxm/types.h>
 #include <renderer/shaders.h>
 #include <shader/spirv_recompiler.h>
-#include <util/fs.h>
 
+#include <util/align.h>
+#include <util/fs.h>
 #include <util/log.h>
 
 namespace renderer::vulkan {
@@ -478,9 +479,14 @@ vk::PipelineVertexInputStateCreateInfo PipelineCache::get_vertex_input_state(Mem
 
         const bool is_instanced = gxm::is_stream_instancing(static_cast<SceGxmIndexSource>(stream.indexSource));
 
+#ifdef __APPLE__
+        const uint32_t stride = align(stream.stride, 4);
+#else
+        const uint32_t stride = stream.stride;
+#endif
         binding_descr.push_back(vk::VertexInputBindingDescription{
             .binding = stream_index,
-            .stride = stream.stride,
+            .stride = stride,
             .inputRate = is_instanced ? vk::VertexInputRate::eInstance : vk::VertexInputRate::eVertex });
     }
 
