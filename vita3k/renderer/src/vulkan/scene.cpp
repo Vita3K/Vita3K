@@ -22,6 +22,8 @@
 
 #include <config/state.h>
 #include <spdlog/fmt/bin_to_hex.h>
+
+#include <util/align.h>
 #include <util/log.h>
 
 namespace renderer::vulkan {
@@ -98,6 +100,23 @@ void update_sync_signal(SceGxmSyncObject *sync) {
         extra->fences.push_back(extra->render_target->fences[extra->render_target->fence_idx]);
     }
 }
+
+#ifdef __APPLE__
+// restride vertex attribute binding strides to multiple of 4
+// needed for metal because it only allows multiples of 4.
+void restride_stream(GXMStreamInfo &stream, uint32_t old_stride) {
+    const uint32_t new_stride = align(old_stride, 4);
+    const uint32_t nb_vertex_input = ((stream.size + old_stride - 1) / old_stride);
+
+    uint8_t *new_data = new uint8_t[nb_vertex_input * new_stride];
+    for (uint32_t i = 0; i < nb_vertex_input; i++) {
+        memcpy(new_data + new_stride * i, stream.data + old_stride * i, old_stride);
+    }
+
+    stream.size = nb_vertex_input * new_stride;
+    stream.data = new_data;
+}
+#endif
 
 static void draw_bind_descriptors(VKContext &context, MemState &mem) {
     VKState &state = context.state;
@@ -235,10 +254,22 @@ static void bind_vertex_streams(VKContext &context, MemState &mem) {
 
     for (std::size_t i = 0; i < max_stream_idx; i++) {
         if (state.vertex_streams[i].data) {
+#ifdef __APPLE__
+            // Vulkan allows any stride, but Metal only allows multiples of 4.
+            const bool restride = vertex_program.streams[i].stride % 4 != 0;
+            if (restride) {
+                restride_stream(state.vertex_streams[i], vertex_program.streams[i].stride);
+            }
+#endif
             context.vertex_stream_ring_buffer.allocate(context.prerender_cmd, state.vertex_streams[i].size, state.vertex_streams[i].data);
 
             context.vertex_buffer_offsets[i] = context.vertex_stream_ring_buffer.data_offset;
 
+#ifdef __APPLE__
+            if (restride) {
+                delete[] state.vertex_streams[i].data;
+            }
+#endif
             state.vertex_streams[i].data = nullptr;
             state.vertex_streams[i].size = 0;
         }
