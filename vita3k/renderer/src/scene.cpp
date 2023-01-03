@@ -90,11 +90,30 @@ COMMAND(handle_set_context) {
 
 COMMAND(handle_sync_surface_data) {
     TRACY_FUNC_COMMANDS(handle_sync_surface_data);
+
+    const SceGxmNotification vertex_notification = helper.pop<SceGxmNotification>();
+    const SceGxmNotification fragment_notification = helper.pop<SceGxmNotification>();
+
+    if ((vertex_notification.address || fragment_notification.address)
+        && !renderer.features.support_memory_mapping) {
+        // signal the notification now
+        std::unique_lock<std::mutex> lock(renderer.notification_mutex);
+
+        if (vertex_notification.address)
+            *vertex_notification.address.get(mem) = vertex_notification.value;
+        if (fragment_notification.address)
+            *fragment_notification.address.get(mem) = fragment_notification.value;
+
+        // unlocking before a notify should be faster
+        lock.unlock();
+        renderer.notification_ready.notify_all();
+    }
+
     if (renderer.current_backend == Backend::Vulkan) {
         // TODO: put this in a function
         vulkan::VKContext *context = reinterpret_cast<vulkan::VKContext *>(renderer.context);
         if (context->is_recording)
-            context->stop_recording();
+            context->stop_recording(vertex_notification, fragment_notification);
     }
 
     SceGxmColorSurface *surface = &render_context->record.color_surface;

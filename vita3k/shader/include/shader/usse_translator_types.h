@@ -78,9 +78,13 @@ struct SpirvShaderParameters {
     SamplerMap samplers;
 
     // Uniform buffer map contains layout info of a UBO inside the big SSBO.
+    // only used if memory mapping is not enabled
     std::map<std::uint32_t, SpirvUniformBufferInfo> buffers;
 
+    // when not using buffer device address, contains the storage buffer type
     spv::Id buffer_container;
+
+    spv::Id render_info_id;
 };
 
 using Coord = std::pair<spv::Id, int>;

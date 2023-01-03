@@ -62,6 +62,12 @@ struct VKState : public renderer::State {
     // Transfer pool has transient bit set.
     vk::CommandPool transfer_command_pool;
 
+    // only used when memory mapping is enabled
+    std::map<uint64_t, MappedMemory, std::greater<uint64_t>> mapped_memories;
+
+    vkutil::Image default_image;
+    vkutil::Buffer default_buffer;
+
     VKState(int gpu_idx);
 
     bool init(const char *base_path, const bool hashless_texture_cache) override;
@@ -73,6 +79,12 @@ struct VKState : public renderer::State {
     void set_fxaa(bool enable_fxaa) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
+    bool map_memory(void *address, uint32_t size) override;
+    void unmap_memory(void *address) override;
+    // return the matching buffer and offset for the memory location
+    std::tuple<vk::Buffer, uint32_t> get_matching_mapping(const void *address);
+    // return the GPU buffer device address matching this one
+    uint64_t get_matching_device_address(const void *address);
     std::vector<std::string> get_gpu_list() override;
 
     void precompile_shader(const ShadersHash &hash) override;

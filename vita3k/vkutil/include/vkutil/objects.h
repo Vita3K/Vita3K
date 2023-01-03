@@ -96,12 +96,11 @@ protected:
     uint32_t cursor = ~0;
     uint32_t capacity;
 
-    virtual void create() = 0;
-
 public:
     uint32_t data_offset = 0;
 
     explicit RingBuffer(vma::Allocator allocator, vk::BufferUsageFlags usage, const size_t capacity);
+    virtual void create() = 0;
 
     // Allocate new data from ring buffer
     void allocate(const uint32_t data_size);
@@ -124,14 +123,11 @@ public:
 // updates are done with updateBuffer, so each data chunk should be small
 // this is used for our uniform buffers
 class LocalRingBuffer : public RingBuffer {
-protected:
-    void create() override;
-
 public:
     explicit LocalRingBuffer(vma::Allocator allocator, vk::BufferUsageFlags usage, const size_t capacity)
         : RingBuffer(allocator, usage, capacity) {
-        create();
     }
+    void create() override;
 
     void copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset = 0) override;
 };
@@ -142,13 +138,12 @@ public:
 class HostRingBuffer : public RingBuffer {
 protected:
     bool is_coherent;
-    void create() override;
 
 public:
     explicit HostRingBuffer(vma::Allocator allocator, vk::BufferUsageFlags usage, const size_t capacity)
         : RingBuffer(allocator, usage, capacity) {
-        create();
     }
+    void create() override;
 
     void copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset = 0) override;
 };

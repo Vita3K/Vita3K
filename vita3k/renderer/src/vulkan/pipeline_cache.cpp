@@ -44,37 +44,39 @@ void PipelineCache::init() {
     // the layout for uniforms buffer can be made here as it will always be the same
     {
         std::array<vk::DescriptorSetLayoutBinding, 4> layout_bindings;
-        // GXM vertex uniform
+        // Our vertex uniform (GXMRenderVertUniformBlock)
         layout_bindings[0] = vk::DescriptorSetLayoutBinding{
             .binding = 0,
-            .descriptorType = vk::DescriptorType::eStorageBufferDynamic,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eVertex,
-        };
-        // GXM Fragment uniform
-        layout_bindings[1] = vk::DescriptorSetLayoutBinding{
-            .binding = 1,
-            .descriptorType = vk::DescriptorType::eStorageBufferDynamic,
-            .descriptorCount = 1,
-            .stageFlags = vk::ShaderStageFlagBits::eFragment,
-        };
-        // Our vertex uniform (GXMRenderVertUniformBlock)
-        layout_bindings[2] = vk::DescriptorSetLayoutBinding{
-            .binding = 2,
             .descriptorType = vk::DescriptorType::eUniformBufferDynamic,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eVertex,
         };
         // Our fragment uniform (GXMRenderFragUniformBlock)
-        layout_bindings[3] = vk::DescriptorSetLayoutBinding{
-            .binding = 3,
+        layout_bindings[1] = vk::DescriptorSetLayoutBinding{
+            .binding = 1,
             .descriptorType = vk::DescriptorType::eUniformBufferDynamic,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eFragment,
         };
+        // GXM vertex uniform (if no memory mapping)
+        layout_bindings[2] = vk::DescriptorSetLayoutBinding{
+            .binding = 2,
+            .descriptorType = vk::DescriptorType::eStorageBufferDynamic,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eVertex,
+        };
+        // GXM Fragment uniform (if no memory mapping)
+        layout_bindings[3] = vk::DescriptorSetLayoutBinding{
+            .binding = 3,
+            .descriptorType = vk::DescriptorType::eStorageBufferDynamic,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eFragment,
+        };
 
-        vk::DescriptorSetLayoutCreateInfo descriptor_info{};
-        descriptor_info.setBindings(layout_bindings);
+        vk::DescriptorSetLayoutCreateInfo descriptor_info{
+            .bindingCount = state.features.support_memory_mapping ? 2U : 4U,
+            .pBindings = layout_bindings.data()
+        };
         uniforms_layout = state.device.createDescriptorSetLayout(descriptor_info);
     }
 
