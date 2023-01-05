@@ -64,9 +64,11 @@ EXPORT(int, sceNpCheckCallback) {
     return STUBBED("Stub");
 }
 
-EXPORT(int, sceNpGetServiceState) {
-    TRACY_FUNC(sceNpGetServiceState);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpGetServiceState, SceNpServiceState *state) {
+    TRACY_FUNC(sceNpGetServiceState, state);
+    *state = static_cast<SceNpServiceState>(emuenv.cfg.current_config.psn_status);
+
+    return STUBBED("Stub");
 }
 
 EXPORT(int, sceNpInit, np::CommunicationConfig *comm_config, void *dontcare) {
