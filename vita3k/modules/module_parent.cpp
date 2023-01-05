@@ -168,7 +168,8 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
         const std::unordered_set<uint32_t> lle_nid_blacklist = {};
         log_import_call('L', nid, thread_id, lle_nid_blacklist, pc);
         write_pc(cpu, export_pc);
-        emuenv.kernel.invalidate_jit_cache(pc, 4 * 3);
+        // TODO: invalidate cache for all threads. Now invalidate_jit_cache is not thread safe.
+        invalidate_jit_cache(cpu, pc, 4 * 3);
     }
 }
 
