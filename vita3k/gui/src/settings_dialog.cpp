@@ -398,7 +398,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PopFont();
     ImGui::Spacing();
     ImGui::Separator();
-    ImGui::SetWindowFontScale(1.f);
+    ImGui::SetWindowFontScale(0.7f);
     ImGui::BeginTabBar("SettingsTabBar", ImGuiTabBarFlags_None);
 
     // Core
@@ -523,7 +523,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
+            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\nFXAA comes at almost no performance cost but makes games look slightly blurry.");
 
         ImGui::Spacing();
         ImGui::Separator();
@@ -592,7 +592,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             config.anisotropic_filtering = 1 << current_aniso_filter_log;
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped relative to the viewer.\nIt has no drawback but can impact performance.");
+            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped \nrelative to the viewer.\nIt has no drawback but can impact performance.");
         ImGui::SameLine(0, 5 * emuenv.dpi_scale);
         if (current_aniso_filter_log == max_aniso_filter_log)
             ImGui::BeginDisabled();
@@ -898,19 +898,19 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::SliderInt("HTTP Timeout Attempts", &emuenv.cfg.http_timeout_attempts, 0, 100);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("How many attempts to do when the server doesn't answer. Could be useful if you have very unstable or EXTREMELLY SLOW internet");
+            ImGui::SetTooltip("How many attempts to do when the server doesn't answer.\nCould be useful if you have very unstable or EXTREMELLY SLOW internet.");
         ImGui::SliderInt("HTTP Timeout Sleep", &emuenv.cfg.http_timeout_sleep_ms, 50, 3000);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer. Could be useful if you have very unstable or EXTREMELLY SLOW internet");
+            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer.\nCould be useful if you have very unstable or EXTREMELLY SLOW internet.");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
         ImGui::SliderInt("HTTP Read End Attempts", &emuenv.cfg.http_read_end_attempts, 0, 100);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("How many attempts to do when there isn't more data to read, lower can improve performance but can make games unstable if you have bad enough internet.");
+            ImGui::SetTooltip("How many attempts to do when there isn't more data to read,\nlower can improve performance but can make games unstable if you have bad enough internet.");
         ImGui::SliderInt("HTTP Read End Sleep", &emuenv.cfg.http_read_end_sleep_ms, 50, 3000);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Attempt sleep time when there isn't more data to read, lower can improve performance but can make games unstable if you have bad enough internet.");
+            ImGui::SetTooltip("Attempt sleep time when there isn't more data to read,\nlower can improve performance but can make games unstable if you have bad enough internet.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();

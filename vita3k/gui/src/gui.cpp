@@ -676,6 +676,9 @@ void draw_end(GuiState &gui, SDL_Window *window) {
 void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushFont(gui.vita_font);
 
+    if (gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog)
+        draw_settings_dialog(gui, emuenv);
+
     if (gui.live_area.app_close)
         draw_app_close(gui, emuenv);
 
@@ -765,9 +768,6 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
         draw_allocations_dialog(gui, emuenv);
     if (gui.debug_menu.disassembly_dialog)
         draw_disassembly_dialog(gui, emuenv);
-
-    if (gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog)
-        draw_settings_dialog(gui, emuenv);
 
     if (gui.help_menu.vita3k_update)
         draw_vita3k_update(gui, emuenv);
