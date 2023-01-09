@@ -715,16 +715,16 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (emuenv.cfg.performance_overlay) {
             ImGui::Combo("Detail", &emuenv.cfg.performance_overlay_detail, "Minimum\0Low\0Medium\0Maximum\0");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred perfomance overley detail.");
+                ImGui::SetTooltip("Select your preferred performance overlay detail.");
             ImGui::Combo("Position", &emuenv.cfg.performance_overlay_position, "Top Left\0Top Center\0Top Right\0Botttom Left\0Botttom Center\0Botttom Right\0");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred perfomance overley position.");
+                ImGui::SetTooltip("Select your preferred performance overlay position.");
         }
         ImGui::Spacing();
 #ifndef WIN32
         ImGui::Checkbox("Check to enable case-insensitive path finding on case sensitive filesystems. \nRESETS ON RESTART", &emuenv.io.case_isens_find_enabled);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Allows emulator to attempt searching for files regardless of case on non-Windows platforms");
+            ImGui::SetTooltip("Allows emulator to attempt to search for files regardless of case on non-Windows platforms");
 #endif
         ImGui::Separator();
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Emulated System Storage Folder").x / 2.f));
@@ -750,7 +750,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 }
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Reset Vita3K emulator path to default.\nYou will need to move your old folder to the default location manually.");
+                ImGui::SetTooltip("Reset Vita3K emulator path to default.\nYou will need to move your old folder to the new location manually.");
         }
         ImGui::EndTabItem();
     } else
@@ -898,10 +898,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::SliderInt("HTTP Timeout Attempts", &emuenv.cfg.http_timeout_attempts, 0, 100);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("How many attempts to do when the server doesn't answer. Could be useful if you have very unstable or EXTREMELLY SLOW internet");
+            ImGui::SetTooltip("How many attempts to do when the server doesn't answer. Could be useful if you have very unstable or VERY SLOW internet");
         ImGui::SliderInt("HTTP Timeout Sleep", &emuenv.cfg.http_timeout_sleep_ms, 50, 3000);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer. Could be useful if you have very unstable or EXTREMELLY SLOW internet");
+            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer. Could be useful if you have very unstable or VERY SLOW internet");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -1049,7 +1049,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             set_config(gui, emuenv, emuenv.io.app_path);
     }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Click on Save to keep your changes.");
+        ImGui::SetTooltip("Click on Save to save your changes.");
 
     ImGui::End();
 }
