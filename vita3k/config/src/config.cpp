@@ -158,9 +158,9 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
        ->default_val(true)->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
         ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
-    auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path of app in .pkg format to install")
+    auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path of app (in .pkg format) to install")
         ->default_str({})->group("Input");
-    auto input_zrif = input->add_option("--zrif", command_line.pkg_zrif, "zrif for the app in .pkg format")
+    auto input_zrif = input->add_option("--zrif", command_line.pkg_zrif, "zrif for the app (in .pkg format)")
         ->default_str({})->group("Input");
     input_pkg->needs(input_zrif);
     input_zrif->needs(input_pkg);
