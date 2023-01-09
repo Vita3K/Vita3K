@@ -853,7 +853,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::SliderFloat("Background Alpha", &emuenv.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred transparenu of the background.\nThe minimum slider is opaque and the maximum is transparent.");
+                ImGui::SetTooltip("Select your preferred transparency of the background.\nThe minimum slider is opaque and the maximum is transparent.");
         }
         if (!gui.theme_backgrounds.empty() || (gui.user_backgrounds.size() > 1)) {
             ImGui::Spacing();
