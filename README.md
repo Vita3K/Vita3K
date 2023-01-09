@@ -17,8 +17,8 @@ Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS
 
 The emulator currently runs some homebrew programs. It is also able to load some decrypted commercial games.
 
-- [Homebrew compatibility database](https://github.com/Vita3K/homebrew-compatibility/issues)
-- [Commercial compatibility database](https://github.com/Vita3K/compatibility/issues)
+- [Homebrew compatibility database](https://vita3k.org/compatibility-homebrew.html)
+- [Commercial compatibility database](https://vita3k.org/compatibility.html?lang=en)
 
 |               **Persona 4 Golden** by Atlus                   |                     **A Rose in the Twilight** by Nippon Ichi Software                         |
 | :-----------------------------------------------------------: | :--------------------------------------------------------------------------------------------: |
