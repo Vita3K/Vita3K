@@ -65,7 +65,7 @@ The project is in an early stage, so please be sensitive to that when opening ne
 Thanks go out to people who offered advice or otherwise made this project possible, such as Davee, korruptor, Rinnegatamante, ScHlAuChi, Simon Kilroy, TheFlow, xerpi, xyz, Yifan Lu and many others.
 
 ## Donations
-If you would like to show your appreciation or even help fund development, the project has a [Patreon](https://www.patreon.com/Vita3K) page.
+If you would like to show your appreciation or help fund development, the project has a [Patreon](https://www.patreon.com/Vita3K) page.
 
 ## Supporters
 Thank you to the following supporters:
