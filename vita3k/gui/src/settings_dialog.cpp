@@ -296,7 +296,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
         if (!save_xml)
-            LOG_ERROR("Fail save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH.string());
+            LOG_ERROR("Failed to save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH.string());
     } else {
         emuenv.cfg.cpu_backend = config.cpu_backend;
         emuenv.cfg.cpu_opt = config.cpu_opt;
@@ -853,7 +853,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::SliderFloat("Background Alpha", &emuenv.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred transparency of the background.\nThe minimum slider is opaque and the maximum is transparent.");
+                ImGui::SetTooltip("Select your preferred background transparency.\nThe minimum is opaque and the maximum is transparent.");
         }
         if (!gui.theme_backgrounds.empty() || (gui.user_backgrounds.size() > 1)) {
             ImGui::Spacing();
@@ -1049,7 +1049,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             set_config(gui, emuenv, emuenv.io.app_path);
     }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Click on Save to save your changes.");
+        ImGui::SetTooltip("Click on Save to keep your changes.");
 
     ImGui::End();
 }
