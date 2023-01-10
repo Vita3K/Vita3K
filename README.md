@@ -75,6 +75,6 @@ Thank you to the following supporters:
 If you support us on Patreon and would like your name added, please get in touch or open a Pull Request.
 
 ## Note
-The purpose of the emulator is not to enable illegal activity. You can dump games by using [MaiDump](https://github.com/LioMajor/MaiDumpToolEN/releases)/[FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). You can find homebrew programs at [VitaDB](https://vitadb.rinnegatamante.it/).
+The purpose of this emulator is not to enable illegal activity. You can dump games by using [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm)/[FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). You can get homebrew programs from [VitaDB](https://vitadb.rinnegatamante.it/).
 
-PlayStation and PS Vita are trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
+PlayStation, PlayStation Vita and PS Vita are trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
