@@ -123,7 +123,7 @@ void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
 void pre_load_app(GuiState &gui, EmuEnvState &emuenv, bool live_area, const std::string &app_path) {
     if (app_path == "NPXS10003") {
         update_last_time_app_used(gui, emuenv, app_path);
-        open_path("https://Vita3k.org");
+        open_path("https://vita3k.org");
     } else {
         if (live_area)
             open_live_area(gui, emuenv, app_path);
