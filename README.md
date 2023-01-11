@@ -15,7 +15,7 @@ Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS
 
 ## Compatibility
 
-The emulator currently runs some homebrew programs. It is also able to load some decrypted commercial games.
+The emulator currently runs some homebrew programs and some decrypted commercial games.
 
 - [Homebrew compatibility page](https://vita3k.org/compatibility-homebrew.html)
 - [Commercial compatibility page](https://vita3k.org/compatibility.html)
@@ -32,7 +32,7 @@ The emulator currently runs some homebrew programs. It is also able to load some
 | :----------------------------------------------------------------: | :------------------------------------------------------------------------: |
 | ![Fruit Ninja Screenshot](./_readme/screenshots/Fruit%20Ninja.png) | ![Jetpack Joyride Screenshot](./_readme/screenshots/Jetpack%20Joyride.png) |
 
-## Licence
+## License
 
 Vita3K is licensed under the **GPLv2** license. This is largely dictated by external dependencies, most notably Unicorn.
 
@@ -59,10 +59,10 @@ Specify the path to a .vpk file as the first command line argument, or run `Vita
 For more detailed instructions on running/installing games on all platforms, please read the **#info-faq** channel on our [Discord Server](https://discord.gg/MaWhJVH).
 
 ## Bugs and issues
-The project is in an early stage, so please be sensitive to that when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
+The project is in an early stage, so please be mindful when opening new issues. Most games will have some problems, whether that be crashes, glitches, low compatibility or poor performance.
 
 ## Thanks
-Thanks go out to people who offered advice or otherwise made this project possible, such as Davee, korruptor, Rinnegatamante, ScHlAuChi, Simon Kilroy, TheFlow, xerpi, xyz, Yifan Lu and many others.
+Thanks to those who offered advice or otherwise made this project possible, such as Davee, korruptor, Rinnegatamante, ScHlAuChi, Simon Kilroy, TheFlow, xerpi, xyz, Yifan Lu and many others.
 
 ## Donations
 If you would like to show your appreciation or help fund development, the project has a [Patreon](https://www.patreon.com/Vita3K) page.
@@ -75,6 +75,6 @@ Thank you to the following supporters:
 If you support us on Patreon and would like your name added, please get in touch or open a Pull Request.
 
 ## Note
-The purpose of this emulator is not to enable illegal activity. You can dump games by using [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm)/[FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). You can get homebrew programs from [VitaDB](https://vitadb.rinnegatamante.it/).
+The purpose of this emulator is **not** to enable illegal activity. You can dump games by using [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm)/[FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). Homebrew programs can be found at [VitaDB](https://vitadb.rinnegatamante.it/).
 
 PlayStation, PlayStation Vita and PS Vita are trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
