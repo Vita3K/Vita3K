@@ -296,7 +296,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
 
         const auto save_xml = custom_config_xml.save_file(CUSTOM_CONFIG_PATH.c_str());
         if (!save_xml)
-            LOG_ERROR("Fail save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH.string());
+            LOG_ERROR("Failed to save custom config xml for app path: {}, in path: {}", emuenv.app_path, CONFIG_PATH.string());
     } else {
         emuenv.cfg.cpu_backend = config.cpu_backend;
         emuenv.cfg.cpu_opt = config.cpu_opt;
@@ -514,11 +514,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         } else {
             ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGive a big performance boost if disabled (in particular when upscaling is on).");
+                ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on).");
             ImGui::SameLine();
             ImGui::Checkbox("V-Sync", &config.v_sync);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid tearing.");
+                ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid visual tearing.");
         }
         ImGui::Spacing();
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
@@ -715,16 +715,16 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (emuenv.cfg.performance_overlay) {
             ImGui::Combo("Detail", &emuenv.cfg.performance_overlay_detail, "Minimum\0Low\0Medium\0Maximum\0");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred perfomance overley detail.");
+                ImGui::SetTooltip("Select your preferred performance overlay detail.");
             ImGui::Combo("Position", &emuenv.cfg.performance_overlay_position, "Top Left\0Top Center\0Top Right\0Botttom Left\0Botttom Center\0Botttom Right\0");
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred perfomance overley position.");
+                ImGui::SetTooltip("Select your preferred performance overlay position.");
         }
         ImGui::Spacing();
 #ifndef WIN32
         ImGui::Checkbox("Check to enable case-insensitive path finding on case sensitive filesystems. \nRESETS ON RESTART", &emuenv.io.case_isens_find_enabled);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Allows emulator to attempt searching for files regardless of case on non-Windows platforms");
+            ImGui::SetTooltip("Allows emulator to attempt to search for files regardless of case on non-Windows platforms");
 #endif
         ImGui::Separator();
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Emulated System Storage Folder").x / 2.f));
@@ -750,7 +750,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 }
             }
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Reset Vita3K emulator path to default.\nYou will need to move your old folder to the default location manually.");
+                ImGui::SetTooltip("Reset Vita3K emulator path to the default.\nYou will need to move your old folder to the new location manually.");
         }
         ImGui::EndTabItem();
     } else
@@ -767,7 +767,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SameLine();
         ImGui::Checkbox("Info bar visible", &emuenv.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to show an info bar inside app selector.");
+            ImGui::SetTooltip("Check the box to show an info bar inside the app selector.");
         ImGui::Spacing();
         ImGui::Checkbox("Live Area app screen", &emuenv.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
@@ -853,18 +853,18 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::SliderFloat("Background Alpha", &emuenv.cfg.background_alpha, 0.999f, 0.000f);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred transparent background effect.\nThe minimum slider is opaque and the maximum is transparent.");
+                ImGui::SetTooltip("Select your preferred background transparency.\nThe minimum is opaque and the maximum is transparent.");
         }
         if (!gui.theme_backgrounds.empty() || (gui.user_backgrounds.size() > 1)) {
             ImGui::Spacing();
             ImGui::SliderInt("Delay for backgrounds", &emuenv.cfg.delay_background, 4, 60);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select the delay in seconds before changing backgrounds.");
+                ImGui::SetTooltip("Select the delay (in seconds) before changing backgrounds.");
         }
         ImGui::Spacing();
         ImGui::SliderInt("Delay for start screen", &emuenv.cfg.delay_start, 10, 60);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select the delay in seconds before returning to the start screen.");
+            ImGui::SetTooltip("Select the delay (in seconds) before returning to the start screen.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
@@ -898,10 +898,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::SliderInt("HTTP Timeout Attempts", &emuenv.cfg.http_timeout_attempts, 0, 100);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("How many attempts to do when the server doesn't answer. Could be useful if you have very unstable or EXTREMELLY SLOW internet");
+            ImGui::SetTooltip("How many attempts to do when the server doesn't respond. Could be useful if you have very unstable or VERY SLOW internet");
         ImGui::SliderInt("HTTP Timeout Sleep", &emuenv.cfg.http_timeout_sleep_ms, 50, 3000);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer. Could be useful if you have very unstable or EXTREMELLY SLOW internet");
+            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer. Could be useful if you have very unstable or VERY SLOW internet");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
