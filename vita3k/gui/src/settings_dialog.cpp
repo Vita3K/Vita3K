@@ -450,7 +450,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             }
             ImGui::SameLine();
         } else {
-            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the last PS Vita firmware.");
+            ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the latest PS Vita firmware.");
             if (ImGui::Button("Download Firmware"))
                 open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
         }
@@ -523,7 +523,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
+            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but may make games look slightly blurry.");
 
         ImGui::Spacing();
         ImGui::Separator();
@@ -592,7 +592,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             config.anisotropic_filtering = 1 << current_aniso_filter_log;
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped relative to the viewer.\nIt has no drawback but can impact performance.");
+            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped relative to the viewer.\nIt may impact performance.");
         ImGui::SameLine(0, 5 * emuenv.dpi_scale);
         if (current_aniso_filter_log == max_aniso_filter_log)
             ImGui::BeginDisabled();
@@ -650,7 +650,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::TextColored(GUI_COLOR_TEXT, "Enter button assignment \nSelect your 'Enter' button.");
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and get default confirmation button.");
+            ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications' dialogs. \nSome applications don't use this and use the default confirmation button.");
         ImGui::RadioButton("Circle", &emuenv.cfg.sys_button, 0);
         ImGui::RadioButton("Cross", &emuenv.cfg.sys_button, 1);
         ImGui::Spacing();
@@ -771,7 +771,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox("Live Area app screen", &emuenv.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to open the Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
+            ImGui::SetTooltip("Check the box to open the Live Area when clicking on an application.\nIf disabled, right click on an application to open it.");
         ImGui::SameLine();
         ImGui::Checkbox("Grid Mode", &emuenv.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
@@ -780,7 +780,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::SliderInt("App Icon Size", &emuenv.cfg.icon_size, 64, 128);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Select your preferred icon size.");
+                ImGui::SetTooltip("Select your preferred icon size for apps.");
         }
         ImGui::Spacing();
         ImGui::Separator();
@@ -829,7 +829,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         if (!gui.user_backgrounds.empty()) {
             ImGui::Spacing();
-            if (ImGui::Button("Clean User Backgrounds")) {
+            if (ImGui::Button("Clear User Backgrounds")) {
                 gui.user_backgrounds[gui.users[emuenv.io.user_id].backgrounds[gui.current_user_bg]] = {};
                 gui.user_backgrounds.clear();
                 if (!gui.theme_backgrounds.empty())
@@ -857,7 +857,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
         if (!gui.theme_backgrounds.empty() || (gui.user_backgrounds.size() > 1)) {
             ImGui::Spacing();
-            ImGui::SliderInt("Delay for backgrounds", &emuenv.cfg.delay_background, 4, 60);
+            ImGui::SliderInt("Delay for background changing", &emuenv.cfg.delay_background, 4, 60);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select the delay (in seconds) before changing backgrounds.");
         }
@@ -1043,7 +1043,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SameLine(0, 20.f * emuenv.dpi_scale);
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));
     const auto is_reboot = (emuenv.renderer->current_backend != emuenv.backend_renderer) || (config.resolution_multiplier != emuenv.cfg.current_config.resolution_multiplier);
-    if (ImGui::Button(is_apply ? (is_reboot ? "Save & Reboot" : "Save & Apply") : "Save", BUTTON_SIZE)) {
+    if (ImGui::Button(is_apply ? (is_reboot ? "Save & Restart" : "Save & Apply") : "Save", BUTTON_SIZE)) {
         save_config(gui, emuenv);
         if (is_apply)
             set_config(gui, emuenv, emuenv.io.app_path);
