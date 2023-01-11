@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     if (adminPriv) {
-        LOG_CRITICAL("PLEASE. DO NOT RUN VITA3K AS ADMIN OR WITH ADMIN PRIVILEGES.");
+        LOG_CRITICAL("PLEASE DO NOT RUN VITA3K AS ADMIN OR WITH ADMIN PRIVILEGES.");
     }
 
     Config cfg{};
