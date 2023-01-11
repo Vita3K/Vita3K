@@ -137,7 +137,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->group("Options");
 
     // Positional options
-    app.add_option("content-path", command_line.content_path, "Path of app in .vpk/.zip or folder of content to install & run")
+    app.add_option("content-path", command_line.content_path, "Path of app in .vpk/.zip format, or folder of content to install & run")
         ->default_str({});
 
     // Grouped options
@@ -182,7 +182,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->group("YML");
 
     std::vector<std::string> lle_modules{};
-    config->add_option("--" + cfg[e_lle_modules] + ",-m", lle_modules, "Load given (decrypted) OS modules from disk.\nSeparate by commas to specify multiple modules. Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
+    config->add_option("--" + cfg[e_lle_modules] + ",-m", lle_modules, "Load given (decrypted) OS modules from disk.\nUse commas to specify and seperate multiple modules. Full path and extension should not be included, the following are assumed: vs0:sys/external/<name>.suprx\nExample: --lle-modules libscemp4,libngs")
         ->group("Modules");
     config->add_option("--" + cfg[e_log_level] + ",-l", command_line.log_level, "Logging level:\nTRACE = 0\nDEBUG = 1\nINFO = 2\nWARN = 3\nERROR = 4\nCRITICAL = 5\nOFF = 6")
         ->check(CLI::Range( 0, 6 ))->group("Logging");
@@ -234,7 +234,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     }
 
     if (cfg.console && (cfg.run_app_path || !cfg.content_path)) {
-        LOG_ERROR("Console mode only supports vpk for now");
+        LOG_ERROR("Console mode only supports .vpk for now, use the graphical version for .pkg");
         return InitConfigFailed;
     }
 
@@ -298,7 +298,7 @@ bool is_tracy_advanced_profiling_active_for_module(std::vector<std::string> &act
 
     // If index is being requested and the module name was found
     if (result) {
-        // Calculate the distance between the first element in the module and
+        // Calculate the distance between the first element in the module
         *index = std::distance(active_modules.begin(), iterator);
     }
 
