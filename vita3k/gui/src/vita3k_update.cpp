@@ -66,7 +66,7 @@ bool init_vita3k_update(GuiState &gui) {
     std::string power_shell_version;
     std::getline(std::ifstream(_popen("powershell (Get-Host).Version.major", "r")), power_shell_version);
     if (power_shell_version.empty() || !std::isdigit(power_shell_version[0]) || (std::stoi(power_shell_version) < 3)) {
-        LOG_WARN("You powershell version {} is outdated and incompatible with Vita3K Update, consider to update it", power_shell_version);
+        LOG_WARN("Your powershell version {} is outdated and incompatible with Vita3K Update, consider updating it", power_shell_version);
         return false;
     }
     const auto github_version_cmd = fmt::format(R"(powershell ((Invoke-RestMethod {} -timeout 4).body.split([Environment]::NewLine) ^| Select-String -Pattern \"Vita3K Build: \") -replace \"Vita3K Build: \")", latest_link);
