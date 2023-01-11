@@ -150,6 +150,8 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         0x2150, 0x218F, // Numeral forms
         0x2600, 0x26FF, // Miscellaneous symbols
         0x4E00, 0x9FFF, // Unified ideograms CJC
+        0x2460, 0x24FF, // Enclosed Alphanumerics
+        0x25A0, 0x25FF, // Miscellaneous Symbols
         0,
     };
 

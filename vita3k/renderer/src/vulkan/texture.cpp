@@ -148,7 +148,7 @@ void VKTextureCacheState::prepare_staging_buffer(bool is_configure) {
 
     if (need_wait) {
         if (staging_buffer->scene_timestamp == context->scene_timestamp) {
-            assert(current_fence == staging_buffer.waiting_fence);
+            assert(current_fence == staging_buffer->waiting_fence);
             // special case, all the staging buffer are occupied by the current scene
             // submit the command buffer and wait for it
             context->prerender_cmd.end();
