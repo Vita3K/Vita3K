@@ -86,6 +86,8 @@ The project is in an early stage, so please be mindful when opening new issues. 
 ## Thanks
 Thanks to those who offered advice or otherwise made this project possible, such as Davee, korruptor, Rinnegatamante, ScHlAuChi, Simon Kilroy, TheFlow, xerpi, xyz, Yifan Lu and many others.
 
+Those who have [contributed to the project](https://github.com/Vita3K/Vita3K/graphs/contributors) with code have also helped immensely.
+
 ## Donations
 If you would like to show your appreciation or help fund development, the project has a [Patreon](https://www.patreon.com/Vita3K) page.
 
