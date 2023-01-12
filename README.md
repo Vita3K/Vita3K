@@ -54,7 +54,9 @@ Recommended:
 
 Your device **must** have a 64 bit operating system for Vita3K to run.
 
-If you get a "VCRUNTME140_1.dll was not found" error, download and install the [Visual C++ 2015-2019 Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
+(Windows) If you get a "VCRUNTME140_1.dll was not found" error, download and install the [Visual C++ 2015-2019 Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
+
+(Linux) You will need to have xdg-desktop-portal installed for the emulator to work correctly.
 
 ## Downloads
 * Windows
