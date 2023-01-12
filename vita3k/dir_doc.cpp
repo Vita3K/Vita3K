@@ -45,7 +45,8 @@
  *
  * The PlayStation Vita has an ARMv7 CPU, making game binaries impossible to run on a x86 system unless recompiled.
  * Vita3K uses the Unicorn JIT recompiler to turn the Vita's ARM code into x86 code in order to enable execution of games in PCs.
- */
+ * ! Unicorn is depracted, using Dynarmic instead.
+*/
 
 /**
  * @dir vita3k/crypto
@@ -89,12 +90,6 @@
  * @dir vita3k/gdbstub
  *
  * @brief GDB integration
- */
-
-/**
- * @dir vita3k/glutil
- *
- * @brief OpenGL shading language implementation
  */
 
 /**
@@ -190,12 +185,6 @@
  * @dir vita3k/renderer
  *
  * @brief OpenGL and Vulkan implementations
- */
-
-/**
- * @dir vita3k/rtc
- *
- * @brief Time and clock implementation
  */
 
 /**
