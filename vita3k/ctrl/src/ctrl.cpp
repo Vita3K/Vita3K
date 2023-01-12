@@ -22,6 +22,8 @@
 #include <config/state.h>
 #include <dialog/state.h>
 
+#include <util/log.h>
+
 #include <SDL_keyboard.h>
 
 #include <array>
@@ -70,6 +72,7 @@ static int reserve_port(CtrlState &state) {
         }
     }
 
+    LOG_INFO("No free controller port found.\n");
     // No free port found.
     return 0;
 }
@@ -114,6 +117,7 @@ void refresh_controllers(CtrlState &state) {
             }
         }
     }
+    LOG_INFO("Added all available controllers\n");
 }
 
 static float keys_to_axis(const uint8_t *keys, SDL_Scancode code1, SDL_Scancode code2) {
@@ -176,6 +180,7 @@ static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, EmuEnvSta
     axes[1] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_up), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_leftstick_down));
     axes[2] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_left), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_right));
     axes[3] += keys_to_axis(keys, static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_up), static_cast<SDL_Scancode>(emuenv.cfg.keyboard_rightstick_down));
+    LOG_INFO("Using keyboard instead of controller\n");
 }
 
 static float axis_to_axis(int16_t axis) {
