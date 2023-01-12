@@ -59,6 +59,6 @@ if exist vita3k-latest.zip (
         echo You can start Vita3K by running Vita3K.exe
     )
 ) else if %boot% EQU 0 (
-    echo Download failed, please try again by running the script as administrator.
+    echo Download failed, please run this script wit admin privileges.
 )
 pause
