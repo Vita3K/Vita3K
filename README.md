@@ -12,6 +12,7 @@ Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS
 * [**Discord**](https://discord.gg/MaWhJVH) (recommended)
 * IRC `#vita3k` on **freenode** ([Web-based IRC client](https://webchat.freenode.net/?channels=%23vita3k))
 * [Patreon](https://www.patreon.com/Vita3K) (support the project)
+* [Blog](https://vita3k.org/blog.html)
 
 ## Compatibility
 
@@ -35,6 +36,25 @@ The emulator currently runs some homebrew programs and some decrypted commercial
 ## License
 
 Vita3K is licensed under the **GPLv2** license. This is largely dictated by external dependencies, most notably Unicorn.
+
+## Requirements
+
+Minimum:
+
+* GPU that supports OpenGL 4.4
+* CPU with AVX instruction set
+* 4GB of RAM
+
+Recommended:
+
+* GPU that supports OpenGL 4.4 and above
+* GPU that supports shader interlock
+* CPU with the AVX instruction set
+* 8GB of RAM or greater
+
+Your device **must** have a 64 bit operating system for Vita3K to run.
+
+If you get a "VCRUNTME140_1.dll was not found" error, download and install the [Visual C++ 2015-2019 Redistributable](https://aka.ms/vs/16/release/vc_redist.x64.exe).
 
 ## Downloads
 * Windows
