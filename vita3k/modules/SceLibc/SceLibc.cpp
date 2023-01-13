@@ -252,9 +252,11 @@ EXPORT(int, _sceLdTlsUnregisterModuleInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceLibcErrnoLoc) {
+EXPORT(Ptr<int>, _sceLibcErrnoLoc) {
     TRACY_FUNC(_sceLibcErrnoLoc);
-    return UNIMPLEMENTED();
+    // tls key from disasmed source
+    auto res = emuenv.kernel.get_thread_tls_addr(emuenv.mem, thread_id, 0x88);
+    return res.cast<int>();
 }
 
 EXPORT(int, abort) {
