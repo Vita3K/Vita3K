@@ -45,9 +45,17 @@ struct SceVideodecTimeStamp {
     uint32_t lower;
 };
 
+enum SceCscCoefficient : uint8_t {
+    SCE_AVCDEC_CSC_COEFFICIENT_DEFAULT = 0,
+    SCE_AVCDEC_CSC_COEFFICIENT_ITU601 = 1,
+    SCE_AVCDEC_CSC_COEFFICIENT_ITU709 = 2,
+    SCE_AVCDEC_CSC_COEFFICIENT_ITU601_FULL = 3,
+    SCE_AVCDEC_CSC_COEFFICIENT_ITU709_FULL = 4,
+};
+
 struct SceAvcdecFrameOptionRGBA {
     uint8_t alpha;
-    uint8_t cscCoefficient;
+    SceCscCoefficient cscCoefficient;
     uint8_t reserved[14];
 };
 
@@ -103,8 +111,15 @@ struct SceAvcdecAu {
     SceAvcdecBuf es;
 };
 
+enum ScePixelType : uint32_t {
+    SCE_AVCDEC_PIXEL_RGBA8888 = 0x0U, // A:B:G:R=8:8:8:8    32bit   U8U8U8U8_ABGR
+    SCE_AVCDEC_PIXEL_BGRA8888 = 0x8U, // A:R:G:B=8:8:8:8    32bit   U8U8U8U8_ARGB
+    SCE_AVCDEC_PIXEL_YUV420_RASTER = 0x10U, // YUV420P3
+    SCE_AVCDEC_PIXEL_YUV420_PACKED_RASTER = 0x20U, // YVU420P2
+};
+
 struct SceAvcdecFrame {
-    uint32_t pixelType;
+    ScePixelType pixelType;
     uint32_t framePitch;
     uint32_t frameWidth;
     uint32_t frameHeight;
