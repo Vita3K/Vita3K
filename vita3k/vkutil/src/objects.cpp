@@ -187,12 +187,18 @@ void RingBuffer::allocate(const uint32_t data_size) {
 
 void HostRingBuffer::create() {
     buffer.init_buffer(usage, vma_mapped_alloc);
+
+    vk::MemoryPropertyFlags memory_properties = buffer.allocator.getAllocationMemoryProperties(buffer.allocation);
+    is_coherent = static_cast<bool>(memory_properties & vk::MemoryPropertyFlagBits::eHostCoherent);
+
     cursor = 0;
 }
 
 void HostRingBuffer::copy(vk::CommandBuffer cmd_buffer, const uint32_t size, const void *data, const uint32_t offset) {
-    // TODO: call flush if the memory is not coherent
     memcpy(reinterpret_cast<uint8_t *>(buffer.mapped_data) + data_offset + offset, data, size);
+
+    if (!is_coherent)
+        buffer.allocator.flushAllocation(buffer.allocation, data_offset + offset, size);
 }
 
 void LocalRingBuffer::create() {
