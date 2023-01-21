@@ -8,8 +8,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
       - name: Format check
         run: .github/format-check.sh
@@ -53,8 +51,8 @@ jobs:
 
       - name: Set up build environment (ubuntu-latest)
         run: |
-          sudo apt-get update
-          sudo apt-get -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev ninja-build lld-11
+          sudo apt update
+          sudo apt -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev ninja-build lld-11
         if: matrix.os == 'ubuntu-latest'
 
       - uses: ilammy/msvc-dev-cmd@v1
@@ -104,12 +102,12 @@ jobs:
         run: ctest --build-config ${{ matrix.config }} --output-on-failure
 
       - name: Compute git short sha
-        id: git_short_sha
-        run: echo "::set-output name=value::$(git rev-parse --short HEAD)"
+        shell: bash
+        run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
 
       - name: Set Build Variable
-        id: build_variable
-        run: echo "::set-output name=Build_Variable::$(git rev-list HEAD --count)"
+        shell: bash
+        run: echo "build_variable=$(git rev-list HEAD --count)" >> $GITHUB_ENV
         if: matrix.os == 'ubuntu-latest'
 
       - name: Bundle OpenSSL shared objects
@@ -130,20 +128,20 @@ jobs:
             --icon-size 100 \
             --icon Vita3K.app 120 115 \
             --app-drop-link 360 115 \
-            vita3k-${{ steps.git_short_sha.outputs.value }}-${{ matrix.os }}.dmg \
+            vita3k-${{ env.git_short_sha }}-${{ matrix.os }}.dmg \
             Vita3K.app
           rm -rf Vita3K.app
         if: matrix.os == 'macos-latest'
 
       - uses: actions/upload-artifact@v3
         with:
-          name: vita3k-${{ steps.git_short_sha.outputs.value }}-${{ matrix.os }}
+          name: vita3k-${{ env.git_short_sha }}-${{ matrix.os }}
           # path is set up to be <binary_dir>/bin/<config_type> since that's how multi-config
           # generators work on CMake
           path: build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
 
     outputs:
-      BuildTag: ${{ steps.build_variable.outputs.Build_Variable }}
+      BuildTag: ${{ env.build_variable }}
 
   create-release:
     needs: [build]
@@ -178,4 +176,4 @@ jobs:
           ghr_v0.14.0_linux_amd64/ghr -u Vita3K -r Vita3K -recreate -n 'Automatic CI builds' -b "$(printf "Corresponding commit: ${{ github.sha }}\nVita3K Build: ${{ env.Build_Variable }}")" continuous artifacts/
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-       
+
