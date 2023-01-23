@@ -85,7 +85,7 @@ bool init_vita3k_update(GuiState &gui) {
     if (!version.empty() && std::isdigit(version[0]))
         git_version = std::stoi(version);
     else {
-        LOG_WARN("Failed to get current git version, try again later\n{}", version);
+        LOG_WARN("Failed to get the current git version, try again later\n{}", version);
         gui.help_menu.vita3k_update = false;
         return false;
     }
@@ -135,7 +135,7 @@ bool init_vita3k_update(GuiState &gui) {
                 std::ifstream msg_list(tmpmsg, std::ios::in | std::ios::binary);
                 const auto push_commit = [&](const std::string commit) {
                     if (git_commit_desc_list.size() < commit_pos) {
-                        LOG_WARN("Error of get commit description, abort");
+                        LOG_WARN("Error when getting commit description, aborted.");
                         return false;
                     }
 
