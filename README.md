@@ -42,12 +42,12 @@ Vita3K is licensed under the **GPLv2** license. This is largely dictated by exte
 Minimum:
 
 * GPU that supports OpenGL 4.4
-* CPU with AVX instruction set
+* CPU with the AVX instruction set
 * 4GB of RAM
 
 Recommended:
 
-* GPU that supports OpenGL 4.4 and above
+* GPU that supports OpenGL 4.4
 * GPU that supports shader interlock
 * CPU with the AVX instruction set
 * 8GB of RAM or greater
