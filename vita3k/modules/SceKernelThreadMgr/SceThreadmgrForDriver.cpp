@@ -16,6 +16,7 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceThreadmgrForDriver.h"
+#include "../SceLibKernel/SceLibKernel.h"
 
 EXPORT(int, ksceKernelCancelCallback) {
     return UNIMPLEMENTED();
@@ -150,7 +151,7 @@ EXPORT(int, ksceKernelGetThreadCpuRegisters) {
 }
 
 EXPORT(int, ksceKernelGetThreadCurrentPriority) {
-    return UNIMPLEMENTED();
+    return CALL_EXPORT(sceKernelGetThreadCurrentPriority);
 }
 
 EXPORT(int, ksceKernelGetThreadId) {

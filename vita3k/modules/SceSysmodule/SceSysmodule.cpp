@@ -111,6 +111,52 @@ std::string to_debug_str<SceSysmoduleModuleId>(const MemState &mem, SceSysmodule
     return std::to_string(mode);
 }
 
+template <>
+std::string to_debug_str<SceSysmoduleInternalModuleId>(const MemState &mem, SceSysmoduleInternalModuleId mode) {
+    switch (mode) {
+    case SCE_SYSMODULE_INTERNAL_JPEG_ENC_ARM: return "SCE_SYSMODULE_INTERNAL_JPEG_ENC_ARM";
+    case SCE_SYSMODULE_INTERNAL_AUDIOCODEC: return "SCE_SYSMODULE_INTERNAL_AUDIOCODEC";
+    case SCE_SYSMODULE_INTERNAL_JPEG_ARM: return "SCE_SYSMODULE_INTERNAL_JPEG_ARM";
+    case SCE_SYSMODULE_INTERNAL_G729: return "SCE_SYSMODULE_INTERNAL_G729";
+    case SCE_SYSMODULE_INTERNAL_BXCE: return "SCE_SYSMODULE_INTERNAL_BXCE";
+    case SCE_SYSMODULE_INTERNAL_INI_FILE_PROCESSOR: return "SCE_SYSMODULE_INTERNAL_INI_FILE_PROCESSOR";
+    case SCE_SYSMODULE_INTERNAL_NP_ACTIVITY_NET: return "SCE_SYSMODULE_INTERNAL_NP_ACTIVITY_NET";
+    case SCE_SYSMODULE_INTERNAL_PAF: return "SCE_SYSMODULE_INTERNAL_PAF";
+    case SCE_SYSMODULE_INTERNAL_SQLITE_VSH: return "SCE_SYSMODULE_INTERNAL_SQLITE_VSH";
+    case SCE_SYSMODULE_INTERNAL_DBUTIL: return "SCE_SYSMODULE_INTERNAL_DBUTIL";
+    case SCE_SYSMODULE_INTERNAL_ACTIVITY_DB: return "SCE_SYSMODULE_INTERNAL_ACTIVITY_DB";
+    case SCE_SYSMODULE_INTERNAL_COMMON_GUI_DIALOG: return "SCE_SYSMODULE_INTERNAL_COMMON_GUI_DIALOG";
+    case SCE_SYSMODULE_INTERNAL_STORE_CHECKOUT: return "SCE_SYSMODULE_INTERNAL_STORE_CHECKOUT";
+    case SCE_SYSMODULE_INTERNAL_IME_DIALOG: return "SCE_SYSMODULE_INTERNAL_IME_DIALOG";
+    case SCE_SYSMODULE_INTERNAL_PHOTO_IMPORT_DIALOG: return "SCE_SYSMODULE_INTERNAL_PHOTO_IMPORT_DIALOG";
+    case SCE_SYSMODULE_INTERNAL_PHOTO_REVIEW_DIALOG: return "SCE_SYSMODULE_INTERNAL_PHOTO_REVIEW_DIALOG";
+    case SCE_SYSMODULE_INTERNAL_CHECKOUT_DIALOG: return "SCE_SYSMODULE_INTERNAL_CHECKOUT_DIALOG";
+    case SCE_SYSMODULE_INTERNAL_COMMON_DIALOG_MAIN: return "SCE_SYSMODULE_INTERNAL_COMMON_DIALOG_MAIN";
+    case SCE_SYSMODULE_INTERNAL_MSG_DIALOG: return "SCE_SYSMODULE_INTERNAL_MSG_DIALOG";
+    case SCE_SYSMODULE_INTERNAL_NET_CHECK_DIALOG: return "SCE_SYSMODULE_INTERNAL_NET_CHECK_DIALOG";
+    case SCE_SYSMODULE_INTERNAL_SAVEDATA_DIALOG: return "SCE_SYSMODULE_INTERNAL_SAVEDATA_DIALOG";
+    case SCE_SYSMODULE_INTERNAL_NP_MESSAGE_DIALOG: return "SCE_SYSMODULE_INTERNAL_NP_MESSAGE_DIALOG";
+    case SCE_SYSMODULE_INTERNAL_TROPHY_SETUP_DIALOG: return "SCE_SYSMODULE_INTERNAL_TROPHY_SETUP_DIALOG";
+    case SCE_SYSMODULE_INTERNAL_FRIEND_LIST_DIALOG: return "SCE_SYSMODULE_INTERNAL_FRIEND_LIST_DIALOG";
+    case SCE_SYSMODULE_INTERNAL_NEAR_PROFILE: return "SCE_SYSMODULE_INTERNAL_NEAR_PROFILE";
+    case SCE_SYSMODULE_INTERNAL_NP_FRIEND_PRIVACY_LEVEL: return "SCE_SYSMODULE_INTERNAL_NP_FRIEND_PRIVACY_LEVEL";
+    case SCE_SYSMODULE_INTERNAL_NP_COMMERCE2: return "SCE_SYSMODULE_INTERNAL_NP_COMMERCE2";
+    case SCE_SYSMODULE_INTERNAL_NP_KDC: return "SCE_SYSMODULE_INTERNAL_NP_KDC";
+    case SCE_SYSMODULE_INTERNAL_MUSIC_EXPORT: return "SCE_SYSMODULE_INTERNAL_MUSIC_EXPORT";
+    case SCE_SYSMODULE_INTERNAL_VIDEO_EXPORT: return "SCE_SYSMODULE_INTERNAL_VIDEO_EXPORT";
+    case SCE_SYSMODULE_INTERNAL_NP_MESSAGE_DIALOG_IMPL: return "SCE_SYSMODULE_INTERNAL_NP_MESSAGE_DIALOG_IMPL";
+    case SCE_SYSMODULE_INTERNAL_NP_MESSAGE_CONTACTS: return "SCE_SYSMODULE_INTERNAL_NP_MESSAGE_CONTACTS";
+    case SCE_SYSMODULE_INTERNAL_DB_RECOVERY_UTILITY: return "SCE_SYSMODULE_INTERNAL_DB_RECOVERY_UTILITY";
+    case SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL: return "SCE_SYSMODULE_INTERNAL_PROMOTER_UTIL";
+    case SCE_SYSMODULE_INTERNAL_PARTY_MEMBER_LIST: return "SCE_SYSMODULE_INTERNAL_PARTY_MEMBER_LIST";
+    case SCE_SYSMODULE_INTERNAL_ULT: return "SCE_SYSMODULE_INTERNAL_ULT";
+    case SCE_SYSMODULE_INTERNAL_DRM_PSM_KDC: return "SCE_SYSMODULE_INTERNAL_DRM_PSM_KDC";
+    case SCE_SYSMODULE_INTERNAL_LOCATION_INTERNAL: return "SCE_SYSMODULE_INTERNAL_LOCATION_INTERNAL";
+    case SCE_SYSMODULE_INTERNAL_LOCATION_FACTORY: return "SCE_SYSMODULE_INTERNAL_LOCATION_FACTORY";
+    }
+    return std::to_string(mode);
+}
+
 static bool is_modules_enable(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
     if (emuenv.cfg.current_config.modules_mode == ModulesMode::MANUAL)
         return !emuenv.cfg.current_config.lle_modules.empty() && is_lle_module(module_id, emuenv);
@@ -132,8 +178,8 @@ EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId module_id) {
         return SCE_SYSMODULE_LOADED;
 }
 
-EXPORT(int, sceSysmoduleIsLoadedInternal) {
-    TRACY_FUNC(sceSysmoduleIsLoadedInternal);
+EXPORT(int, sceSysmoduleIsLoadedInternal, SceSysmoduleInternalModuleId module_id) {
+    TRACY_FUNC(sceSysmoduleIsLoadedInternal, module_id);
     return UNIMPLEMENTED();
 }
 
@@ -151,28 +197,31 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
         return SCE_SYSMODULE_LOADED;
 }
 
-EXPORT(int, sceSysmoduleLoadModuleInternal) {
-    TRACY_FUNC(sceSysmoduleLoadModuleInternal);
+EXPORT(int, sceSysmoduleLoadModuleInternal, SceSysmoduleInternalModuleId module_id) {
+    TRACY_FUNC(sceSysmoduleLoadModuleInternal, module_id);
+    LOG_TRACE("sceSysmoduleLoadModuleInternal(module_id:{})", to_debug_str(emuenv.mem, module_id));
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSysmoduleLoadModuleInternalWithArg) {
-    TRACY_FUNC(sceSysmoduleLoadModuleInternalWithArg);
+EXPORT(int, sceSysmoduleLoadModuleInternalWithArg, SceSysmoduleInternalModuleId module_id, SceSize args, void *argp, const SceSysmoduleOpt *option) {
+    TRACY_FUNC(sceSysmoduleLoadModuleInternalWithArg, module_id, args, argp, option);
+    LOG_TRACE("sceSysmoduleLoadModuleInternalWithArg(module_id:{}, args:{}, argp:{},option:{})", to_debug_str(emuenv.mem, module_id),
+        to_debug_str(emuenv.mem, args), to_debug_str(emuenv.mem, argp), to_debug_str(emuenv.mem, option));
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSysmoduleUnloadModule) {
-    TRACY_FUNC(sceSysmoduleUnloadModule);
+EXPORT(int, sceSysmoduleUnloadModule, SceSysmoduleModuleId module_id) {
+    TRACY_FUNC(sceSysmoduleUnloadModule, module_id);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSysmoduleUnloadModuleInternal) {
-    TRACY_FUNC(sceSysmoduleUnloadModuleInternal);
+EXPORT(int, sceSysmoduleUnloadModuleInternal, SceSysmoduleInternalModuleId module_id) {
+    TRACY_FUNC(sceSysmoduleUnloadModuleInternal, module_id);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSysmoduleUnloadModuleInternalWithArg) {
-    TRACY_FUNC(sceSysmoduleUnloadModuleInternalWithArg);
+EXPORT(int, sceSysmoduleUnloadModuleInternalWithArg, SceSysmoduleInternalModuleId module_id, SceSize args, void *argp, const SceSysmoduleOpt *option) {
+    TRACY_FUNC(sceSysmoduleUnloadModuleInternalWithArg, module_id, args, argp, option);
     return UNIMPLEMENTED();
 }
 

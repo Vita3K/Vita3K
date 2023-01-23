@@ -141,6 +141,7 @@ public:
 // transferring to the GPU memory
 class HostRingBuffer : public RingBuffer {
 protected:
+    bool is_coherent;
     void create() override;
 
 public:

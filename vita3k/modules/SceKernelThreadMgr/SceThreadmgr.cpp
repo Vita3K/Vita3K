@@ -26,8 +26,6 @@
 
 #include <util/lock_and_find.h>
 
-#include <SDL_timer.h>
-
 #include <chrono>
 #include <thread>
 
@@ -79,9 +77,9 @@ EXPORT(int, _sceKernelCancelRWLock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelCancelSema) {
-    TRACY_FUNC(_sceKernelCancelSema);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelCancelSema, SceUID semaId, SceInt32 setCount, SceUInt32 *pNumWaitThreads) {
+    TRACY_FUNC(_sceKernelCancelSema, semaId, setCount, pNumWaitThreads);
+    return semaphore_cancel(emuenv.kernel, export_name, thread_id, semaId, setCount, pNumWaitThreads);
 }
 
 EXPORT(int, _sceKernelCancelTimer) {
@@ -878,8 +876,8 @@ EXPORT(int, sceKernelCloseCond) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCloseEventFlag) {
-    TRACY_FUNC(sceKernelCloseEventFlag);
+EXPORT(int, sceKernelCloseEventFlag, SceUID evfId) {
+    TRACY_FUNC(sceKernelCloseEventFlag, evfId);
     return UNIMPLEMENTED();
 }
 
@@ -1138,8 +1136,8 @@ EXPORT(int, sceKernelOpenCond) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelOpenEventFlag) {
-    TRACY_FUNC(sceKernelOpenEventFlag);
+EXPORT(int, sceKernelOpenEventFlag, const char *pName) {
+    TRACY_FUNC(sceKernelOpenEventFlag, pName);
     return UNIMPLEMENTED();
 }
 
@@ -1190,7 +1188,7 @@ EXPORT(SceUID, sceKernelOpenTimer, const char *name) {
     }
     emuenv.kernel.mutex.unlock();
 
-    assert(timer_info->openable);
+    assert(timer_info && timer_info->openable);
 
     return timer_handle;
 }

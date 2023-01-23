@@ -62,23 +62,33 @@ inline uint64_t get_current_time() {
         .count();
 }
 
+VAR_EXPORT(__sce_libcparam) {
+    // This variable almost newer used. So I return something that looks good, but not exacly correct.
+    return (emuenv.kernel.process_param ? emuenv.kernel.process_param.get(emuenv.mem)->sce_libc_param.address() : 0);
+}
+
+VAR_EXPORT(__stack_chk_guard) {
+    auto ptr = Ptr<uint32_t>(alloc(emuenv.mem, 4, "__stack_chk_guard"));
+    // Can be any random value
+    *ptr.get(emuenv.mem) = 0x0DEADBEE;
+    return ptr.address();
+}
+
 EXPORT(int, __sce_aeabi_idiv0) {
     TRACY_FUNC(__sce_aeabi_idiv0);
+    LOG_ERROR("Division by zero");
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, __sce_aeabi_ldiv0) {
     TRACY_FUNC(__sce_aeabi_ldiv0);
+    LOG_ERROR("Division by zero");
     return UNIMPLEMENTED();
 }
 
 EXPORT(int, __stack_chk_fail) {
     TRACY_FUNC(__stack_chk_fail);
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, __stack_chk_guard) {
-    TRACY_FUNC(__stack_chk_guard);
+    LOG_ERROR("Stack corruption");
     return UNIMPLEMENTED();
 }
 
@@ -1085,9 +1095,9 @@ EXPORT(int, sceKernelCancelRWLock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCancelSema) {
-    TRACY_FUNC(sceKernelCancelSema);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelCancelSema, SceUID semaId, SceInt32 setCount, SceUInt32 *pNumWaitThreads) {
+    TRACY_FUNC(sceKernelCancelSema, semaId, setCount, pNumWaitThreads);
+    return CALL_EXPORT(_sceKernelCancelSema, semaId, setCount, pNumWaitThreads);
 }
 
 EXPORT(int, sceKernelCancelTimer) {
@@ -2021,10 +2031,11 @@ EXPORT(int, sceSblGcAuthMgrSclkSetData2) {
     return UNIMPLEMENTED();
 }
 
+VAR_BRIDGE_IMPL(__stack_chk_guard)
+VAR_BRIDGE_IMPL(__sce_libcparam)
 BRIDGE_IMPL(__sce_aeabi_idiv0)
 BRIDGE_IMPL(__sce_aeabi_ldiv0)
 BRIDGE_IMPL(__stack_chk_fail)
-BRIDGE_IMPL(__stack_chk_guard)
 BRIDGE_IMPL(_sceKernelCreateLwMutex)
 BRIDGE_IMPL(sceClibAbort)
 BRIDGE_IMPL(sceClibDprintf)

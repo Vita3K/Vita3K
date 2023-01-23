@@ -85,8 +85,8 @@ EXPORT(int, sceKernelCDialogSetLeaseLimit) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCallAbortHandler) {
-    TRACY_FUNC(sceKernelCallAbortHandler);
+EXPORT(int, sceKernelCallAbortHandler, uint32_t param1, uint32_t param2) {
+    TRACY_FUNC(sceKernelCallAbortHandler, param1, param2);
     return UNIMPLEMENTED();
 }
 
@@ -100,12 +100,15 @@ EXPORT(int, sceKernelGetExtraTty) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetProcessName) {
-    TRACY_FUNC(sceKernelGetProcessName);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetProcessName, char *process_name, uint32_t len) {
+    TRACY_FUNC(sceKernelGetProcessName, process_name, len);
+    if (!process_name || len > 32 || len == 0)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    strncpy(process_name, emuenv.kernel.process_param.get(emuenv.mem)->process_name.get(emuenv.mem), len);
+    return 0;
 }
 
-EXPORT(Ptr<uint32_t>, sceKernelGetProcessParam, void *args) {
+EXPORT(Ptr<SceProcessParam>, sceKernelGetProcessParam, void *args) {
     TRACY_FUNC(sceKernelGetProcessParam, args);
     return emuenv.kernel.process_param;
 }
@@ -125,9 +128,12 @@ EXPORT(int, sceKernelGetProcessTimeWideCore) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetProcessTitleId) {
-    TRACY_FUNC(sceKernelGetProcessTitleId);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetProcessTitleId, char *title_id, uint32_t len) {
+    TRACY_FUNC(sceKernelGetProcessTitleId, title_id, len);
+    if (!title_id || len > 32 || len == 0)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    strncpy(title_id, emuenv.io.title_id.c_str(), len);
+    return 0;
 }
 
 EXPORT(int, sceKernelGetRemoteProcessTime) {
@@ -202,9 +208,26 @@ EXPORT(Ptr<struct tm>, sceKernelLibcLocaltime_r, const VitaTime *time, Ptr<struc
     return date;
 }
 
-EXPORT(int, sceKernelLibcMktime) {
-    TRACY_FUNC(sceKernelLibcMktime);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelLibcMktime, struct tm *date, VitaTime *time, uint64_t *param_3) {
+    TRACY_FUNC(sceKernelLibcMktime, date, time, param_3);
+    // param_3 - result, 8 bytes, unused
+    if (!date) {
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    }
+    bool year_1900 = false;
+    if (date->tm_year >= 1900) {
+        date->tm_year -= 1900;
+        year_1900 = true;
+    }
+    auto time_local = mktime(date);
+    if (year_1900) {
+        date->tm_year += 1900;
+    }
+    if (time)
+        *time = static_cast<VitaTime>(time_local);
+    if (param_3)
+        *param_3 = time_local;
+    return 0;
 }
 
 EXPORT(VitaTime, sceKernelLibcTime, VitaTime *time) {
@@ -245,7 +268,7 @@ EXPORT(int, sceKernelUnregisterProcessTerminationCallback) {
 
 EXPORT(int, sceKernelGetMainModuleSdkVersion) {
     TRACY_FUNC(sceKernelGetMainModuleSdkVersion);
-    SceProcessParam *process_param = emuenv.kernel.process_param.cast<SceProcessParam>().get(emuenv.mem);
+    SceProcessParam *process_param = emuenv.kernel.process_param.get(emuenv.mem);
     if (process_param && (process_param->magic == '2PSP') && (process_param->version != 0)) {
         return process_param->fw_version;
     } else {
