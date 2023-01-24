@@ -57,11 +57,12 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
 
     uint16_t width = static_cast<std::uint16_t>(gxm::get_width(&texture));
     uint16_t height = static_cast<std::uint16_t>(gxm::get_height(&texture));
+    uint32_t texture_type = texture.texture_type();
 
     if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
         std::uint16_t stride_in_pixels = width;
 
-        switch (texture.texture_type()) {
+        switch (texture_type) {
         case SCE_GXM_TEXTURE_LINEAR_STRIDED:
             stride_in_pixels = static_cast<std::uint16_t>(gxm::get_stride_in_bytes(&texture)) / ((renderer::texture::bits_per_pixel(base_format) + 7) >> 3);
             break;
@@ -83,9 +84,10 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     }
 
     vk::ImageLayout layout = vk::ImageLayout::eShaderReadOnlyOptimal;
-    if (image) {
-        layout = vk::ImageLayout::eGeneral;
-    } else {
+    // This needs improvement
+    if (image && texture_type != 0) {
+         layout = vk::ImageLayout::eGeneral;
+     } else {
         // Try to retrieve S24D8 texture
         SceGxmDepthStencilSurface lookup_temp;
         lookup_temp.depthData = data_addr;
