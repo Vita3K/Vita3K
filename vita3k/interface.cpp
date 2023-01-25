@@ -587,10 +587,12 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
 
         case SDL_KEYDOWN:
             if (gui.is_capturing_keys && event.key.keysym.scancode) {
+                gui.is_key_capture_dropped = false;
                 if ((event.key.keysym.scancode == SDL_SCANCODE_G) || (event.key.keysym.scancode == SDL_SCANCODE_F11) || (event.key.keysym.scancode == SDL_SCANCODE_T) || (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE)) {
                     LOG_ERROR("Key is reserved!");
                     gui.captured_key = gui.old_captured_key;
                     gui.is_capturing_keys = false;
+                    gui.is_key_capture_dropped = true;
                 } else {
                     gui.captured_key = static_cast<int>(event.key.keysym.scancode);
                     gui.is_capturing_keys = false;
@@ -610,9 +612,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     }
                 }
             }
-            if (event.key.keysym.sym == SDLK_t)
+            if (event.key.keysym.sym == SDLK_t && !gui.is_key_capture_dropped)
                 toggle_touchscreen();
-            if (event.key.keysym.sym == SDLK_F11)
+            if (event.key.keysym.sym == SDLK_F11 && !gui.is_key_capture_dropped)
                 switch_full_screen(emuenv);
 
             break;

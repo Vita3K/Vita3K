@@ -43,19 +43,68 @@ static char const *SDL_key_to_string[]{ "[unset]", "[unknown]", "[unknown]", "[u
     "Keypad Mem+", "Keypad Mem-", "Keypad Mem*", "Keypad Mem/", "Keypad +/-", "Keypad Clear", "Keypad ClearEntry", "Keypad Binary", "Keypad Octal",
     "Keypad Dec", "Keypad HexaDec", "[unset]", "[unset]", "LCtrl", "LShift", "LAlt", "Win/Cmd", "RCtrl", "RShift", "RAlt", "RWin/Cmd" };
 
+static const short total_key_entries = 25;
+
+static bool exists_in_array(int *ptr, int val, size_t size) {
+    if (!ptr || !size) {
+        return false;
+    }
+    int *end = ptr + size;
+    return std::find(ptr, end, val) != end;
+}
+
+static void prepare_map_array(EmuEnvState &emuenv, std::array<int, total_key_entries> &map) {
+    map[0] = emuenv.cfg.keyboard_leftstick_up;
+    map[1] = emuenv.cfg.keyboard_leftstick_down;
+    map[2] = emuenv.cfg.keyboard_leftstick_right;
+    map[3] = emuenv.cfg.keyboard_leftstick_left;
+    map[4] = emuenv.cfg.keyboard_rightstick_up;
+    map[5] = emuenv.cfg.keyboard_rightstick_down;
+    map[6] = emuenv.cfg.keyboard_rightstick_right;
+    map[7] = emuenv.cfg.keyboard_rightstick_left;
+    map[8] = emuenv.cfg.keyboard_button_up;
+    map[9] = emuenv.cfg.keyboard_button_down;
+    map[10] = emuenv.cfg.keyboard_button_right;
+    map[11] = emuenv.cfg.keyboard_button_left;
+    map[12] = emuenv.cfg.keyboard_button_square;
+    map[13] = emuenv.cfg.keyboard_button_cross;
+    map[14] = emuenv.cfg.keyboard_button_circle;
+    map[15] = emuenv.cfg.keyboard_button_triangle;
+    map[16] = emuenv.cfg.keyboard_button_start;
+    map[17] = emuenv.cfg.keyboard_button_select;
+    map[18] = emuenv.cfg.keyboard_button_psbutton;
+    map[19] = emuenv.cfg.keyboard_button_l1;
+    map[20] = emuenv.cfg.keyboard_button_r1;
+    map[21] = emuenv.cfg.keyboard_button_l2;
+    map[22] = emuenv.cfg.keyboard_button_r2;
+    map[23] = emuenv.cfg.keyboard_button_l3;
+    map[24] = emuenv.cfg.keyboard_button_r3;
+}
+
 static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, const char *button_name, const ImVec2 &dummy_size) {
     ImGui::Text("%-16s", button_name);
     ImGui::SameLine();
     ImGui::Dummy(dummy_size);
     ImGui::SameLine();
-    if (ImGui::Button(SDL_key_to_string[*button])) {
-        gui.old_captured_key = *button;
+    //the association of the key
+    int key_association = *button;
+    if (ImGui::Button(SDL_key_to_string[key_association])) {
+        gui.old_captured_key = key_association;
         gui.is_capturing_keys = true;
+        //capture the original state
+        std::array<int, total_key_entries> original_state;
+        prepare_map_array(emuenv, original_state);
         while (gui.is_capturing_keys) {
             handle_events(emuenv, gui);
             *button = gui.captured_key;
             if (*button < 0 || *button > 231)
                 *button = 0;
+            else if (gui.is_key_capture_dropped || !gui.is_capturing_keys && *button != key_association && exists_in_array(original_state.data(), *button, total_key_entries)) {
+                //undo the changes
+                *button = key_association;
+                ImGui::OpenPopup(gui.lang.controls["error"].c_str());
+                gui.is_key_capture_dropped = false;
+            }
         }
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
@@ -104,6 +153,19 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Text("%-16s    %-16s", lang["full_screen"].c_str(), "F11");
     ImGui::Text("%-16s    %-16s", lang["toggle_touch"].c_str(), "T");
     ImGui::Text("%-16s    %-16s", lang["toggle_gui_visibility"].c_str(), "G");
+
+    const char *error_text = lang["error_duplicate_key"].c_str();
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    if (ImGui::BeginPopupModal(lang["error"].c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("%s", error_text);
+        ImGui::NewLine();
+        static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
+        ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
+        if (ImGui::Button(gui.lang.welcome["close"].c_str(), BUTTON_SIZE)) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 
     ImGui::End();
 }

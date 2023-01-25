@@ -227,7 +227,9 @@ struct LangState {
         { "gui", "GUI" },
         { "full_screen", "Full Screen" },
         { "toggle_touch", "Toggle Touch" },
-        { "toggle_gui_visibility", "Toggle GUI Visibility" }
+        { "toggle_gui_visibility", "Toggle GUI Visibility" }, 
+        { "error", "Error" },
+        { "error_duplicate_key", "The key is used for other bindings or it is reserved" }
     };
     std::map<std::string, std::string> game_data = {
         { "app_close", "The following application will close." },
