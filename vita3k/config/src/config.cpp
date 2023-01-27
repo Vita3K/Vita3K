@@ -67,7 +67,7 @@ static fs::path check_path(const fs::path &output_path) {
 static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &root_pref_path) {
     const auto loaded_path = check_path(load_path);
     if (loaded_path.empty() || !fs::exists(loaded_path)) {
-        LOG_ERROR("Config file input path invalid (did you make sure to name the extension \".yml\"?)");
+        LOG_ERROR("Config file input path is invalid (did you make sure to name the extension \".yml\"?)");
         return FileNotFound;
     }
 
@@ -234,7 +234,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     }
 
     if (cfg.console && (cfg.run_app_path || !cfg.content_path)) {
-        LOG_ERROR("Console mode only supports .vpk for now, use the graphical version for .pkg");
+        LOG_ERROR("Console mode only supports .vpk for now, use the graphical version for .pkg support.");
         return InitConfigFailed;
     }
 
@@ -276,9 +276,10 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
 
 #ifdef TRACY_ENABLE
 bool is_tracy_advanced_profiling_active_for_module(std::vector<std::string> &active_modules, std::string module, int *index) {
-    // If we dont care about the index that means that its getting executed from an export
+    // If we don't care about the index that means that its getting executed from an export
     // And because of that we know its sorted so we can use binary search so it
-    // doesn't hurt performance as a standard std::find, also we just care for the result
+    // doesn't hurt performance as a standard std::find, also we just care about the result
+    
     if (!index)
         return std::binary_search(active_modules.begin(), active_modules.end(), module);
 
