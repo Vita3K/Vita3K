@@ -650,7 +650,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::TextColored(GUI_COLOR_TEXT, "Enter button assignment \nSelect your 'Enter' button.");
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications' dialogs. \nSome applications don't use this and use the default confirmation button.");
+            ImGui::SetTooltip("This is the button that is used as 'Confirm' in applications dialogs. \nSome applications don't use this and use the default confirmation button.");
         ImGui::RadioButton("Circle", &emuenv.cfg.sys_button, 0);
         ImGui::RadioButton("Cross", &emuenv.cfg.sys_button, 1);
         ImGui::Spacing();
