@@ -305,6 +305,7 @@ struct GuiState {
     std::vector<std::string> disassembly;
 
     bool is_capturing_keys = false;
+    bool is_key_capture_dropped = false;
     int old_captured_key = 0;
     int captured_key = 0;
 
