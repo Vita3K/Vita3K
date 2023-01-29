@@ -7,5 +7,5 @@ add_library(
 )
 
 target_include_directories(lang PUBLIC include)
-target_link_libraries(lang PUBLIC emuenv ime)
-target_link_libraries(lang PRIVATE config gui ime pugixml::pugixml util)
+target_link_libraries(lang PUBLIC emuenv compat ime)
+target_link_libraries(lang PRIVATE config gui pugixml::pugixml util)

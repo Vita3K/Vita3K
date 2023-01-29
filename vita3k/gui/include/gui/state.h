@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <compat/state.h>
 #include <config/config.h>
 #include <dialog/state.h>
 #include <ime/state.h>
@@ -286,6 +287,7 @@ struct GuiState {
     gui::LiveAreaState live_area;
     gui::AppsSelector app_selector;
 
+    CompatState compat;
     LangState lang;
 
     std::map<std::string, User> users;

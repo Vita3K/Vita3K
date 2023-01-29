@@ -15,9 +15,16 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-template <class... Ts>
-struct overloaded : Ts... {
-    using Ts::operator()...;
-};
-template <class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
+#pragma once
+
+#include <emuenv/state.h>
+#include <gui/state.h>
+
+#include <compat/state.h>
+
+namespace compat {
+
+bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv);
+bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv);
+
+} // namespace compat

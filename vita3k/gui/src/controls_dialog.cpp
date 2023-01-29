@@ -86,12 +86,12 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
     ImGui::SameLine();
     ImGui::Dummy(dummy_size);
     ImGui::SameLine();
-    //the association of the key
+    // the association of the key
     int key_association = *button;
     if (ImGui::Button(SDL_key_to_string[key_association])) {
         gui.old_captured_key = key_association;
         gui.is_capturing_keys = true;
-        //capture the original state
+        // capture the original state
         std::array<int, total_key_entries> original_state;
         prepare_map_array(emuenv, original_state);
         while (gui.is_capturing_keys) {
@@ -100,7 +100,7 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
             if (*button < 0 || *button > 231)
                 *button = 0;
             else if (gui.is_key_capture_dropped || !gui.is_capturing_keys && *button != key_association && exists_in_array(original_state.data(), *button, total_key_entries)) {
-                //undo the changes
+                // undo the changes
                 *button = key_association;
                 ImGui::OpenPopup(gui.lang.controls["error"].c_str());
                 gui.is_key_capture_dropped = false;

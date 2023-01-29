@@ -17,6 +17,7 @@
 
 #include "private.h"
 
+#include <compat/functions.h>
 #include <config/state.h>
 #include <gui/functions.h>
 #include <io/state.h>
@@ -288,6 +289,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto SAVE_DATA_PATH{ fs::path(emuenv.pref_path) / "ux0/user" / emuenv.io.user_id / "savedata" / APP_INDEX->savedata };
     const auto SHADER_CACHE_PATH{ fs::path(emuenv.base_path) / "cache/shaders" / title_id };
     const auto SHADER_LOG_PATH{ fs::path(emuenv.base_path) / "shaderlog" / title_id };
+    const auto ISSUES_URL = "https://github.com/Vita3K/compatibility/issues";
 
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
@@ -298,6 +300,12 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto app_str = gui.lang.content_manager.application;
     auto savedata_str = gui.lang.content_manager.saved_data;
     auto common = emuenv.common_dialog.lang.common;
+    auto compat_str = gui.lang.compatibility;
+
+    const auto has_issue = gui.compat.app_compat_db.find(title_id) != gui.compat.app_compat_db.end();
+    const auto compat_state = has_issue ? gui.compat.app_compat_db[title_id].state : Unknown;
+    const auto compat_state_color = gui.compat.compat_color[compat_state];
+    const auto compat_state_str = has_issue ? compat_str[compat_state] : compat_str[Unknown];
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
@@ -305,9 +313,38 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         if (ImGui::MenuItem(lang["boot"].c_str()))
             pre_load_app(gui, emuenv, false, app_path);
         if (title_id.find("NPXS") == std::string::npos) {
-            if (ImGui::MenuItem(lang["check_app_compatibility"].c_str())) {
-                const std::string compat_url = title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + APP_INDEX->title;
-                open_path(compat_url);
+            if (ImGui::BeginMenu(lang["compatibility"].c_str())) {
+                ImGui::Spacing();
+                ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(compat_state_str.c_str()).x / 2));
+                ImGui::TextColored(compat_state_color, "%s", compat_state_str.c_str());
+                ImGui::Spacing();
+                if (has_issue) {
+                    tm updated_at_tm = {};
+                    SAFE_LOCALTIME(&gui.compat.app_compat_db[title_id].updated_at, &updated_at_tm);
+                    auto UPDATED_AT = get_date_time(gui, emuenv, updated_at_tm);
+                    ImGui::Spacing();
+                    const auto updated_at_str = fmt::format("{} {} {} {}", lang["updated"].c_str(), UPDATED_AT[DateTime::DATE_MINI], UPDATED_AT[DateTime::CLOCK], is_12_hour_format ? UPDATED_AT[DateTime::DAY_MOMENT] : "");
+                    ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(updated_at_str.c_str()).x / 2));
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", updated_at_str.c_str());
+                }
+                ImGui::Spacing();
+                ImGui::Separator();
+                ImGui::Spacing();
+                if (ImGui::MenuItem(lang["check_app_compatibility"].c_str())) {
+                    const std::string compat_url = title_id.find("PCS") != std::string::npos ? "https://vita3k.org/compatibility?g=" + title_id : "https://github.com/Vita3K/homebrew-compatibility/issues?q=" + APP_INDEX->title;
+                    open_path(compat_url);
+                }
+                if (has_issue) {
+                    if (ImGui::MenuItem("Open Issue"))
+                        open_path(fmt::format("{}/{}", ISSUES_URL, gui.compat.app_compat_db[title_id].issue_id));
+                } else {
+                    if (ImGui::MenuItem("Create Issue"))
+                        open_path(fmt::format("{}/new?title={} [{}]", ISSUES_URL, APP_INDEX->title, title_id));
+                }
+                if (ImGui::MenuItem("Update Database"))
+                    compat::update_compat_app_db(gui, emuenv);
+
+                ImGui::EndMenu();
             }
             if (ImGui::BeginMenu(lang["copy_app_info"].c_str())) {
                 if (ImGui::MenuItem(lang["name_and_id"].c_str())) {
@@ -522,6 +559,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["title_id"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["title_id"].c_str(), APP_INDEX->title_id.c_str());
+            ImGui::Spacing();
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["compatibility"] + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["compatibility"].c_str());
+            ImGui::SameLine();
+            ImGui::TextColored(compat_state_color, " %s", compat_state_str.c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["last_time_used"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s ", lang["last_time_used"].c_str());
