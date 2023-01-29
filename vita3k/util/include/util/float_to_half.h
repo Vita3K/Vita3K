@@ -43,9 +43,13 @@ namespace util {
 template <typename T>
 struct native_float_bits;
 template <>
-struct native_float_bits<float> { using type = std::uint32_t; };
+struct native_float_bits<float> {
+    using type = std::uint32_t;
+};
 template <>
-struct native_float_bits<double> { using type = std::uint64_t; };
+struct native_float_bits<double> {
+    using type = std::uint64_t;
+};
 template <typename T>
 using native_float_bits_t = typename native_float_bits<T>::type;
 

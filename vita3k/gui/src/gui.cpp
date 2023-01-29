@@ -23,6 +23,7 @@
 #include <gui/state.h>
 
 #include <boost/algorithm/string/trim.hpp>
+#include <compat/functions.h>
 #include <config/state.h>
 #include <display/state.h>
 #include <glutil/gl.h>
@@ -641,6 +642,9 @@ void pre_init(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void init(GuiState &gui, EmuEnvState &emuenv) {
+    compat::load_compat_app_db(gui, emuenv);
+    compat::update_compat_app_db(gui, emuenv);
+
     get_modules_list(gui, emuenv);
     get_notice_list(emuenv);
     get_users_list(gui, emuenv);

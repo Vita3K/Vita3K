@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <compat/state.h>
 #include <ime/types.h>
 
 #include <map>
@@ -131,6 +132,7 @@ struct LangState {
     std::map<std::string, std::string> app_context = {
         { "boot", "Boot" },
         { "check_app_compatibility", "Check App Compatibility" },
+        { "compatibility", "Compatibility" },
         { "copy_app_info", "Copy App Info" },
         { "name_and_id", "Name and Title ID" },
         { "app_summary", "App Summary" },
@@ -162,6 +164,16 @@ struct LangState {
         { "last_time_used", "Last time used" },
         { "never", "Never" },
         { "time_used", "Time used" }
+    };
+    std::map<CompatibilityState, std::string> compatibility = {
+        { Unknown, "Unknown" },
+        { Nothing, "Nothing" },
+        { Bootable, "Bootable" },
+        { Intro, "Intro" },
+        { Menu, "Menu" },
+        { Ingame_Less, "Ingame -" },
+        { Ingame_More, "Ingame +" },
+        { Playable, "Playable" }
     };
     std::map<std::string, std::string> compile_shaders = {
         { "compiling_shaders", "Compiling Shaders" },
@@ -227,7 +239,7 @@ struct LangState {
         { "gui", "GUI" },
         { "full_screen", "Full Screen" },
         { "toggle_touch", "Toggle Touch" },
-        { "toggle_gui_visibility", "Toggle GUI Visibility" }, 
+        { "toggle_gui_visibility", "Toggle GUI Visibility" },
         { "error", "Error" },
         { "error_duplicate_key", "The key is used for other bindings or it is reserved" }
     };

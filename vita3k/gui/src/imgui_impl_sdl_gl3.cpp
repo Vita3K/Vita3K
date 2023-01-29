@@ -167,10 +167,10 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
             } else {
                 glBindTexture(GL_TEXTURE_2D, (GLuint)(intptr_t)pcmd->TextureId);
                 glScissor((int)pcmd->ClipRect.x, (int)(fb_height - pcmd->ClipRect.w), (int)(pcmd->ClipRect.z - pcmd->ClipRect.x), (int)(pcmd->ClipRect.w - pcmd->ClipRect.y));
-                //fix the offset issues as per instructed in release notes of imgui v1.86
-                glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset+pcmd->IdxOffset);
+                // fix the offset issues as per instructed in release notes of imgui v1.86
+                glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset + pcmd->IdxOffset);
             }
-            //idx_buffer_offset += pcmd->ElemCount;
+            // idx_buffer_offset += pcmd->ElemCount;
         }
     }
     glDeleteVertexArrays(1, &vao_handle);

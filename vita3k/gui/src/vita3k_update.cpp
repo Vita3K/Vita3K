@@ -81,7 +81,7 @@ bool init_vita3k_update(GuiState &gui) {
     std::string version;
     std::getline(ver, version);
     ver.close();
-    remove(tmpver);
+    std::remove(tmpver);
     if (!version.empty() && std::isdigit(version[0]))
         git_version = std::stoi(version);
     else {
@@ -125,7 +125,7 @@ bool init_vita3k_update(GuiState &gui) {
                     git_commit_desc_list.push_back({ line, {} });
                 }
                 sha_list.close();
-                remove(tmpsha);
+                std::remove(tmpsha);
 
                 // Get Commits Message
                 char tmpmsg[L_tmpnam + 1];
