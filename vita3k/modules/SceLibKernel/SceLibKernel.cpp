@@ -544,8 +544,8 @@ EXPORT(int, sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
     return stat_file_by_fd(emuenv.io, fd, stat, emuenv.pref_path, export_name);
 }
 
-EXPORT(int, sceIoIoctl) {
-    TRACY_FUNC(sceIoIoctl);
+EXPORT(int, sceIoIoctl, SceUID fd, int cmd, const void *argp, SceSize arglen, void *bufp, SceSize buflen) {
+    TRACY_FUNC(sceIoIoctl, fd, cmd, argp, arglen, bufp, buflen);
     return UNIMPLEMENTED();
 }
 
@@ -1159,8 +1159,11 @@ EXPORT(int, sceKernelCreateMsgPipeWithLR) {
 
 EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int init_count, SceKernelMutexOptParam *opt_param) {
     TRACY_FUNC(sceKernelCreateMutex, name, attr, init_count, opt_param);
-    SceUID uid;
+    if ((attr & SCE_KERNEL_MUTEX_ATTR_CEILING)) {
+        STUBBED("priority ceiling feature is not supported");
+    }
 
+    SceUID uid;
     if (auto error = mutex_create(&uid, emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr, init_count, Ptr<SceKernelLwMutexWork>(0), SyncWeight::Heavy)) {
         return error;
     }
@@ -1340,9 +1343,9 @@ EXPORT(int, sceKernelGetMsgPipeInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelGetMutexInfo) {
-    TRACY_FUNC(sceKernelGetMutexInfo);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetMutexInfo, SceUID mutexId, SceKernelMutexInfo *info) {
+    TRACY_FUNC(sceKernelGetMutexInfo, mutexId, info);
+    return CALL_EXPORT(_sceKernelGetMutexInfo, mutexId, info);
 }
 
 EXPORT(int, sceKernelGetOpenPsId) {

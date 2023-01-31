@@ -141,6 +141,7 @@ public:
         "SceMotion",
         "SceNet",
         "SceNetCtl",
+        "SceNetInternal",
         "SceNgs",
         "SceNpCommon",
         "SceNpManager",

@@ -198,7 +198,9 @@ EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
     TRACY_FUNC(sceKernelGetModuleInfo, modid, info);
     KernelState *const state = &emuenv.kernel;
     const SceKernelModuleInfoPtrs::const_iterator module = state->loaded_modules.find(modid);
-    assert(module != state->loaded_modules.end());
+    if (module == state->loaded_modules.end()) {
+        return RET_ERROR(SCE_KERNEL_ERROR_LIBRARYDB_NO_MOD);
+    }
 
     memcpy(info, module->second.get(), module->second.get()->size);
 
