@@ -1819,8 +1819,10 @@ EXPORT(SceGxmDepthStencilForceStoreMode, sceGxmDepthStencilSurfaceGetForceStoreM
 
 EXPORT(int, sceGxmDepthStencilSurfaceGetFormat, const SceGxmDepthStencilSurface *surface) {
     TRACY_FUNC(sceGxmDepthStencilSurfaceGetFormat, surface);
-    assert(surface);
-    return UNIMPLEMENTED();
+    if (!surface) {
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+    }
+    return surface->control.content & SceGxmDepthStencilControl::format_bits;
 }
 
 EXPORT(uint32_t, sceGxmDepthStencilSurfaceGetStrideInSamples, const SceGxmDepthStencilSurface *surface) {
@@ -3102,7 +3104,9 @@ EXPORT(int, sceGxmProgramGetOutputRegisterFormat, const SceGxmProgram *program, 
     if (!program->is_fragment())
         return RET_ERROR(SCE_GXM_ERROR_INVALID_VALUE);
 
-    return UNIMPLEMENTED();
+    *type = program->get_fragment_output_type();
+    *componentCount = program->get_fragment_output_component_count();
+    return 0;
 }
 
 EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, Ptr<const SceGxmProgram> program, uint32_t index) {

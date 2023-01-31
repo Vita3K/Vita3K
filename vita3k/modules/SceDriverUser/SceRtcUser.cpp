@@ -80,9 +80,9 @@ EXPORT(int, sceRtcCheckValid, const SceDateTime *pTime) {
     return 0;
 }
 
-EXPORT(int, sceRtcCompareTick) {
-    TRACY_FUNC(sceRtcCompareTick);
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcCompareTick, const SceRtcTick *tick1, const SceRtcTick *tick2) {
+    TRACY_FUNC(sceRtcCompareTick, tick1->tick, tick2->tick);
+    return (tick1->tick < tick2->tick) ? -1 : ((tick1->tick > tick2->tick) ? 1 : 0);
 }
 
 EXPORT(int, sceRtcConvertLocalTimeToUtc, const SceRtcTick *pLocalTime, SceRtcTick *pUtc) {
@@ -291,9 +291,30 @@ EXPORT(int, sceRtcGetDaysInMonth, int year, int month) {
     return 31;
 }
 
-EXPORT(int, sceRtcGetDosTime) {
-    TRACY_FUNC(sceRtcGetDosTime);
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcGetDosTime, const SceDateTime *datePtr, uint32_t *dosTimePtr) {
+    TRACY_FUNC(sceRtcGetDosTime, datePtr, dosTimePtr);
+    // The following code is from PPSSPP
+    // Copyright (c) 2012- PPSSPP Project.
+    if (datePtr->year < 1980) {
+        *dosTimePtr = 0;
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_VALUE);
+    } else if (datePtr->year >= 2108) {
+        *dosTimePtr = 0xFF9FBF7D;
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_VALUE);
+    }
+
+    int year = ((datePtr->year - 1980) & 0x7F) << 9;
+    int month = (datePtr->month & 0xF) << 5;
+    int hour = (datePtr->hour & 0x1F) << 11;
+    int minute = (datePtr->minute & 0x3F) << 5;
+    int day = datePtr->day & 0x1F;
+    int second = (datePtr->second >> 1) & 0x1F;
+    int ymd = year | month | day;
+    int hms = hour | minute | second;
+
+    *dosTimePtr = (ymd << 16) | hms;
+
+    return 0;
 }
 
 EXPORT(int, sceRtcGetLastAdjustedTick) {
@@ -342,9 +363,22 @@ EXPORT(int, sceRtcGetTime64_t, SceDateTime *datePtr, uint64_t *timePtr) {
     return 0;
 }
 
-EXPORT(int, sceRtcGetWin32FileTime) {
-    TRACY_FUNC(sceRtcGetWin32FileTime);
-    return UNIMPLEMENTED();
+// This is the # of microseconds between January 1, 0001 and January 1, 1601 (for Win32 FILETIME.)
+constexpr uint64_t rtcFiletimeOffset = 50491123200000000ULL;
+
+EXPORT(int, sceRtcGetWin32FileTime, const SceDateTime *datePtr, SceUInt64 *win32TimePtr) {
+    TRACY_FUNC(sceRtcGetWin32FileTime, datePtr, win32TimePtr);
+    if (!datePtr || !win32TimePtr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+
+    auto ticks = __RtcPspTimeToTicks(datePtr);
+    if (ticks < rtcFiletimeOffset) {
+        *win32TimePtr = 0;
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_VALUE);
+    }
+    *win32TimePtr = (ticks - rtcFiletimeOffset) * 10;
+    return 0;
 }
 
 EXPORT(int, sceRtcIsLeapYear, int year) {
