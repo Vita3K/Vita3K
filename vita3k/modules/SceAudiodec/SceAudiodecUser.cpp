@@ -181,12 +181,12 @@ static int create_decoder(EmuEnvState &emuenv, SceAudiodecCtrl *ctrl, SceAudiode
             ctrl->pcm_size_max = info.channels * SCE_AUDIODEC_MP3_V2_MAX_PCM_SIZE;
             return 0;
         default:
-            LOG_ERROR("Invalid MPEG version {}.", log_hex(info.version));
+            LOG_ERROR("Invalid MPEG version {}.", to_debug_str(emuenv.mem, info.version));
             return SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION;
         }
     }
     default: {
-        LOG_ERROR("Unimplemented audio decoder {}.", codec);
+        LOG_ERROR("Unimplemented audio decoder {}.", to_debug_str(emuenv.mem, codec));
         return -1;
     }
     }
@@ -281,7 +281,7 @@ EXPORT(int, sceAudiodecDeleteDecoderResident) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAudiodecGetContextSize, SceAudiodecCtrl *pCtrl, SceUInt32 codecType) {
+EXPORT(int, sceAudiodecGetContextSize, SceAudiodecCtrl *pCtrl, SceAudiodecCodec codecType) {
     TRACY_FUNC(sceAudiodecGetContextSize, pCtrl, codecType);
     STUBBED("fake size");
     return 53;
