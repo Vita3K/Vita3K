@@ -47,7 +47,23 @@ void PlayerModule::on_state_change(ModuleData &data, const VoiceState previous) 
 void PlayerModule::on_param_change(const MemState &mem, ModuleData &data) {
     SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
     const SceNgsPlayerParams *old_params = reinterpret_cast<SceNgsPlayerParams *>(data.last_info.data());
-    const SceNgsPlayerParams *new_params = reinterpret_cast<SceNgsPlayerParams *>(data.info.data.get(mem));
+    SceNgsPlayerParams *new_params = reinterpret_cast<SceNgsPlayerParams *>(data.info.data.get(mem));
+
+    if (isnan(new_params->playback_scalar) || new_params->playback_scalar <= 0) {
+        new_params->playback_scalar = old_params->playback_scalar;
+        LOG_ERROR_ONCE("Invalid playback rate scaling.");
+        if (isnan(new_params->playback_scalar) || new_params->playback_scalar <= 0) {
+            new_params->playback_scalar = 1.0;
+        }
+    }
+
+    if (isnan(new_params->playback_frequency) || new_params->playback_frequency <= 0) {
+        new_params->playback_frequency = old_params->playback_frequency;
+        LOG_ERROR_ONCE("Invalid playback frequency.");
+        if (isnan(new_params->playback_frequency) || new_params->playback_frequency <= 0) {
+            new_params->playback_frequency = 48000.0;
+        }
+    }
 
     // if playback scaling changed, reset the resampler
     if (old_params->playback_frequency != new_params->playback_frequency || old_params->playback_scalar != new_params->playback_scalar) {
@@ -178,7 +194,6 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                 auto *input = params->buffer_params[state->current_buffer].buffer.cast<uint8_t>().get(mem);
 
                 DecoderSize samples_count;
-
                 // we need to know how many samples (not bytes!) we need to send (just enough for the system granularity)
                 uint32_t samples_needed = granularity - state->decoded_samples_pending;
 
@@ -212,7 +227,6 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
 
                 // Get the amount of samples about to be received from the decoder and dump the value in samples_count
                 decoder->receive(nullptr, &samples_count);
-
                 // Playback rate scaling
                 if (params->playback_scalar != 1 || static_cast<int>(round(params->playback_frequency)) != sample_rate) {
                     static bool LOG_PLAYBACK_SCALING = true;
