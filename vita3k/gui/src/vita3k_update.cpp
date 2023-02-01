@@ -69,9 +69,9 @@ bool init_vita3k_update(GuiState &gui) {
         LOG_WARN("You powershell version {} is outdated and incompatible with Vita3K Update, consider to update it", power_shell_version);
         return false;
     }
-    const auto github_version_cmd = fmt::format(R"(powershell ((Invoke-RestMethod {} -timeout 4).body.split([Environment]::NewLine) ^| Select-String -Pattern \"Vita3K Build: \") -replace \"Vita3K Build: \")", latest_link);
+    const auto github_version_cmd = fmt::format(R"(powershell ((Invoke-RestMethod {} -timeout 2).body.split([Environment]::NewLine) ^| Select-String -Pattern \"Vita3K Build: \") -replace \"Vita3K Build: \")", latest_link);
 #else
-    const auto github_version_cmd = fmt::format(R"(curl -sL {} | grep "Corresponding commit:" | cut -d " " -f 8 | grep -o '[[:digit:]]*')", latest_link);
+    const auto github_version_cmd = fmt::format(R"(curl -m 2 -sL {} | grep "Corresponding commit:" | cut -d " " -f 8 | grep -o '[[:digit:]]*')", latest_link);
 #endif
     char tmpver[L_tmpnam + 1];
     std::tmpnam(tmpver);
@@ -106,12 +106,12 @@ bool init_vita3k_update(GuiState &gui) {
             for (const auto &page : page_count) {
                 const auto continuous_link = fmt::format(R"(https://api.github.com/repos/Vita3K/Vita3K/commits?sha=continuous&page={}&per_page={})", page.first, dif_from_current < 100 ? dif_from_current : 100);
 #ifdef WIN32
-                const auto github_commit_sha_cmd = fmt::format(R"(powershell ((Invoke-RestMethod \"{}\").sha ^| Select-Object -first {}))", continuous_link, page.second);
-                const auto github_commit_msg_cmd = fmt::format(R"(powershell ((Invoke-RestMethod \"{}\").commit.message ^| Select-Object -first {}) -replace(\"\r\n\", \"`n\"))", continuous_link, page.second);
+                const auto github_commit_sha_cmd = fmt::format(R"(powershell ((Invoke-RestMethod \"{}\" -Timeout 2).sha ^| Select-Object -first {}))", continuous_link, page.second);
+                const auto github_commit_msg_cmd = fmt::format(R"(powershell ((Invoke-RestMethod \"{}\" -Timeout 2).commit.message ^| Select-Object -first {}) -replace(\"\r\n\", \"`n\"))", continuous_link, page.second);
 #else
                 const auto sha_filter = R"(grep '"sha":' | sed 's/"/ /g' | awk -v n=3 'NR%n==1' | awk '{print $3}')";
-                const auto github_commit_sha_cmd = fmt::format(R"(curl -sL "{}" | {} | head -n {})", continuous_link, sha_filter, page.second);
-                const auto github_commit_msg_cmd = fmt::format(R"(curl -sL "{}" | grep '"message":' | cut -d '"' -f4 | sed 's/",/ /g' | head -n {})", continuous_link, page.second);
+                const auto github_commit_sha_cmd = fmt::format(R"(curl -m 2 -sL "{}" | {} | head -n {})", continuous_link, sha_filter, page.second);
+                const auto github_commit_msg_cmd = fmt::format(R"(curl -m 2 -sL "{}" | grep '"message":' | cut -d '"' -f4 | sed 's/",/ /g' | head -n {})", continuous_link, page.second);
 #endif
                 std::string line;
 
