@@ -91,22 +91,28 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 static std::string get_string_output(const std::string cmd) {
+    std::string result;
     std::string tmpres = std::tmpnam(nullptr);
     std::string res_cmd = cmd + " >> " + tmpres;
-    std::system(res_cmd.c_str());
-    std::ifstream res(tmpres, std::ios::in | std::ios::binary);
-    std::remove(tmpres.c_str());
 
-    std::string result;
-    if (res.is_open()) {
-        if (!std::getline(res, result))
-            LOG_ERROR("Failed to read from input stream");
+    // Execute command and check if it was successful
+    if (std::system(res_cmd.c_str()) == 0) {
+        std::ifstream res(tmpres, std::ios::in | std::ios::binary);
+        std::remove(tmpres.c_str());
 
-        res.close();
-    } else
-        LOG_ERROR("Input stream is not open");
+        // Check if file was opened successfully
+        if (res.is_open()) {
+            // Read file and check if it was read successfully
+            if (!std::getline(res, result))
+                LOG_ERROR("Failed to read from input stream");
 
-    boost::trim(result);
+            res.close();
+        } else
+            LOG_ERROR("Input stream is not open");
+
+        // Remove trailing whitespace
+        boost::trim(result);
+    }
 
     return result;
 }
@@ -129,23 +135,23 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         return false;
     }
 
-    const auto github_updated_at_cmd = fmt::format(R"(powershell ((Invoke-RestMethod {}).body.split([Environment]::NewLine) ^| Select-String -Pattern \"Updated at: \") -replace \"Updated at: \")", latest_link);
+    const auto github_updated_at_cmd = fmt::format(R"(powershell ((Invoke-RestMethod {} -Timeout 2).body.split([Environment]::NewLine) ^| Select-String -Pattern \"Updated at: \") -replace \"Updated at: \")", latest_link);
 #else
-    const auto github_curl_url = fmt::format("curl -sL {}", latest_link);
+    const auto github_curl_url = fmt::format("curl -m 2 -sL {}", latest_link);
     const auto github_updated_at_cmd = github_curl_url + R"( | grep '"body"' | head -n 1 | awk -F "Updated at: " '{print $2}' | awk -F '"' '{print $1}')";
 #endif
 
     // Get current date of last issue updated
     const auto updated_at = get_string_output(github_updated_at_cmd);
     if (updated_at.empty()) {
-        LOG_WARN("Failed to get current updated at, try again later {}", updated_at);
+        LOG_ERROR("Failed to get current database version, check firewall/internet access, try again later.");
         return false;
     }
 
     // Check if database is up to date
     if (db_updated_at == updated_at) {
         LOG_INFO("Applications compatibility database is up to date.");
-        return false;
+        return true;
     }
 
     const auto compat_db_exist = fs::exists(compat_db_path);
@@ -160,12 +166,15 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml";
 
 #ifdef WIN32
-    const auto download_command = fmt::format("powershell Invoke-WebRequest {} -Outfile {}", app_compat_db_link, compat_db_path.string());
+    const auto download_command = fmt::format(R"(powershell Invoke-WebRequest {} -Outfile \"{}\")", app_compat_db_link, compat_db_path.string());
 #else
-    const auto download_command = fmt::format("curl -L {} -o {}", app_compat_db_link, compat_db_path.string());
+    const auto download_command = fmt::format(R"(curl -L {} -o "{}")", app_compat_db_link, compat_db_path.string());
 #endif
 
-    system(download_command.c_str());
+    if (system(download_command.c_str()) != 0) {
+        LOG_WARN("Failed to download Applications compatibility database updated at: {}", updated_at);
+        return false;
+    }
 
     const auto old_db_updated_at = db_updated_at;
 
