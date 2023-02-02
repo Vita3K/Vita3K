@@ -15,16 +15,33 @@ execute_process(
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 	OUTPUT_VARIABLE GIT_HASH
 	OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(
-	COMMAND git rev-parse --abbrev-ref HEAD
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	OUTPUT_VARIABLE GIT_BRANCH
-	OUTPUT_STRIP_TRAILING_WHITESPACE)
-execute_process(
-	COMMAND git config --get remote.origin.url
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-	OUTPUT_VARIABLE GIT_REPO
-	OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# Value is different when is PR
+if("$ENV{GITHUB_EVENT_NAME}" STREQUAL "pull_request")
+	set(GIT_BRANCH "$ENV{GITHUB_HEAD_REF}")
+	if(WIN32)
+		execute_process(
+			COMMAND powershell "(Get-Content $ENV{GITHUB_EVENT_PATH} | ConvertFrom-Json).pull_request.head.repo.html_url"
+			OUTPUT_VARIABLE GIT_REPO
+			OUTPUT_STRIP_TRAILING_WHITESPACE)
+	else()
+		execute_process(
+			COMMAND bash -c "jq .pull_request.head.repo.html_url $ENV{GITHUB_EVENT_PATH} | tr -d \\\" "
+			OUTPUT_VARIABLE GIT_REPO
+			OUTPUT_STRIP_TRAILING_WHITESPACE)
+	endif()
+else() 
+	execute_process(
+		COMMAND git rev-parse --abbrev-ref HEAD
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		OUTPUT_VARIABLE GIT_BRANCH
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+	execute_process(
+		COMMAND git config --get remote.origin.url
+		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+		OUTPUT_VARIABLE GIT_REPO
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+endif()
 
 if (NOT GIT_REPO STREQUAL "")
 	string(FIND ${GIT_REPO} "git@github.com:" IS_GIT_SSH)
