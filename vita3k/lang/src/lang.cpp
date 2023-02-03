@@ -145,6 +145,24 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     set_calendar(lang.common.small_mday, common.child("small_mday"));
                 }
 
+                // Compatibility
+                const auto compatibility_child = lang_child.child("compatibility");
+                if (!compatibility_child.empty()) {
+                    auto &lang_compatibility = lang.compatibility;
+                    // Name
+                    if (!compatibility_child.attribute("name").empty())
+                        lang_compatibility.name = compatibility_child.attribute("name").as_string();
+
+                    // States
+                    const auto states = compatibility_child.child("states");
+                    if (!states.empty()) {
+                        for (const auto state : states) {
+                            const auto id = static_cast<CompatibilityState>(state.attribute("id").as_uint());
+                            lang_compatibility.states[id] = state.text().as_string();
+                        }
+                    }
+                }
+
                 // Compile Shaders
                 set_lang_string(lang.compile_shaders, lang_child.child("compile_shaders"));
 

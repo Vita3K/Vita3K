@@ -132,7 +132,6 @@ struct LangState {
     std::map<std::string, std::string> app_context = {
         { "boot", "Boot" },
         { "check_app_compatibility", "Check App Compatibility" },
-        { "compatibility", "Compatibility" },
         { "copy_app_info", "Copy App Info" },
         { "name_and_id", "Name and Title ID" },
         { "app_summary", "App Summary" },
@@ -165,16 +164,20 @@ struct LangState {
         { "never", "Never" },
         { "time_used", "Time used" }
     };
-    std::map<CompatibilityState, std::string> compatibility = {
-        { Unknown, "Unknown" },
-        { Nothing, "Nothing" },
-        { Bootable, "Bootable" },
-        { Intro, "Intro" },
-        { Menu, "Menu" },
-        { Ingame_Less, "Ingame -" },
-        { Ingame_More, "Ingame +" },
-        { Playable, "Playable" }
+    struct Compatibility {
+        std::string name = "Compatibility";
+        std::map<CompatibilityState, std::string> states = {
+            { Unknown, "Unknown" },
+            { Nothing, "Nothing" },
+            { Bootable, "Bootable" },
+            { Intro, "Intro" },
+            { Menu, "Menu" },
+            { Ingame_Less, "Ingame -" },
+            { Ingame_More, "Ingame +" },
+            { Playable, "Playable" }
+        };
     };
+    Compatibility compatibility;
     std::map<std::string, std::string> compile_shaders = {
         { "compiling_shaders", "Compiling Shaders" },
         { "shaders_compiled", "shaders compiled" }
