@@ -279,6 +279,7 @@ struct GuiState {
     std::unique_ptr<ImGui_State> imgui_state;
 
     bool renderer_focused = true;
+    bool compat_loaded = false;
     gui::FileMenuState file_menu;
     gui::DebugMenuState debug_menu;
     gui::ConfigurationMenuState configuration_menu;

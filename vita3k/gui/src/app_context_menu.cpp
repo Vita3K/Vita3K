@@ -302,7 +302,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto common = emuenv.common_dialog.lang.common;
     auto lang_compat = gui.lang.compatibility;
 
-    const auto has_issue = gui.compat.app_compat_db.find(title_id) != gui.compat.app_compat_db.end();
+    const auto has_issue = gui.compat_loaded ? gui.compat.app_compat_db.contains(title_id) : false;
     const auto compat_state = has_issue ? gui.compat.app_compat_db[title_id].state : Unknown;
     const auto compat_state_color = gui.compat.compat_color[compat_state];
     const auto compat_state_str = has_issue ? lang_compat.states[compat_state] : lang_compat.states[Unknown];
