@@ -56,6 +56,10 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         return false;
     }
 
+    // Clear old compat database
+    gui.compat.compat_db_loaded = false;
+    gui.compat.app_compat_db.clear();
+
     db_updated_at = compatibility.attribute("db_updated_at").as_string();
 
     //  Load compatibility database
@@ -158,11 +162,6 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
     LOG_INFO("Applications compatibility database is {}, attempting to download latest updated at: {}", compat_db_exist ? "outdated" : "missing", updated_at);
 
-    // Clear old database and remove it if exists
-    gui.compat.app_compat_db.clear();
-    if (fs::exists(compat_db_path))
-        fs::remove(compat_db_path);
-
     const auto app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml";
 
 #ifdef WIN32
@@ -171,6 +170,7 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto download_command = fmt::format(R"(curl -L {} -o "{}")", app_compat_db_link, compat_db_path.string());
 #endif
 
+    // Download database
     if (system(download_command.c_str()) != 0) {
         LOG_WARN("Failed to download Applications compatibility database updated at: {}", updated_at);
         return false;
@@ -178,7 +178,8 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto old_db_updated_at = db_updated_at;
 
-    if (!load_compat_app_db(gui, emuenv) || (db_updated_at != updated_at)) {
+    gui.compat.compat_db_loaded = load_compat_app_db(gui, emuenv);
+    if (!gui.compat.compat_db_loaded || (db_updated_at != updated_at)) {
         LOG_WARN("Failed to load Applications compatibility database downloaded updated at: {}", updated_at);
         return false;
     }
