@@ -422,8 +422,17 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawFlags_RoundCornersAll);
 
+    // Size of column padding
+    const float column_padding_size = 20.f * SCALE.x;
+
+    // Size of the icon part
     const float icon_size = static_cast<float>(emuenv.cfg.icon_size) * SCALE.x;
-    const float column_icon_size = icon_size + (20.f * SCALE.x);
+    const float column_icon_size = icon_size + column_padding_size;
+
+    // Size of the compatibility part
+    const auto compat_radius = 12.f * SCALE.x;
+    const auto full_compat_radius = (3.f * SCALE.x) + compat_radius;
+    const auto column_compat_size = (full_compat_radius * 2.f) + column_padding_size;
 
     auto lang = gui.lang.home_screen;
 
@@ -447,24 +456,26 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
         ImGui::SetCursorPosY(4.f * SCALE.y);
         if (!emuenv.cfg.apps_list_grid) {
-            ImGui::Columns(6);
+            ImGui::Columns(7);
             ImGui::SetColumnWidth(0, column_icon_size);
             if (ImGui::Button(lang["filter"].c_str()))
                 ImGui::OpenPopup("app_filter");
             ImGui::NextColumn();
-            ImGui::SetColumnWidth(1, title_id_size);
+            ImGui::SetColumnWidth(1, column_compat_size);
+            ImGui::NextColumn();
+            ImGui::SetColumnWidth(2, title_id_size);
             if (ImGui::Button(title_id_label.c_str()))
                 sort_app_list(gui, emuenv, TITLE_ID);
             ImGui::NextColumn();
-            ImGui::SetColumnWidth(2, app_ver_size);
+            ImGui::SetColumnWidth(3, app_ver_size);
             if (ImGui::Button(app_ver_label.c_str()))
                 sort_app_list(gui, emuenv, APP_VER);
             ImGui::NextColumn();
-            ImGui::SetColumnWidth(3, category_size);
+            ImGui::SetColumnWidth(4, category_size);
             if (ImGui::Button(category_label.c_str()))
                 sort_app_list(gui, emuenv, CATEGORY);
             ImGui::NextColumn();
-            ImGui::SetColumnWidth(4, last_time_size);
+            ImGui::SetColumnWidth(5, last_time_size);
             if (ImGui::Button(last_time_label.c_str()))
                 sort_app_list(gui, emuenv, LAST_TIME);
             ImGui::NextColumn();
@@ -550,12 +561,13 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         const auto GRID_ICON_SIZE = ImVec2(128.f * SCALE.x, 128.f * SCALE.y);
         const auto GRID_COLUMN_SIZE = GRID_ICON_SIZE.x + (80.f * SCALE.x);
         if (!emuenv.cfg.apps_list_grid) {
-            ImGui::Columns(6, nullptr, true);
+            ImGui::Columns(7, nullptr, true);
             ImGui::SetColumnWidth(0, column_icon_size);
-            ImGui::SetColumnWidth(1, title_id_size);
-            ImGui::SetColumnWidth(2, app_ver_size);
-            ImGui::SetColumnWidth(3, category_size);
-            ImGui::SetColumnWidth(4, last_time_size);
+            ImGui::SetColumnWidth(1, column_compat_size);
+            ImGui::SetColumnWidth(2, title_id_size);
+            ImGui::SetColumnWidth(3, app_ver_size);
+            ImGui::SetColumnWidth(4, category_size);
+            ImGui::SetColumnWidth(5, last_time_size);
         } else {
             ImGui::Columns(4, nullptr, false);
             ImGui::SetColumnWidth(0, GRID_COLUMN_SIZE);
@@ -568,36 +580,69 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
             for (const auto &app : apps_list) {
                 bool selected = false;
-                if ((app.title_id.find("NPXS") == std::string::npos) && app_filter(app.title_id))
+                const auto is_not_sys_app = app.title_id.find("NPXS") == std::string::npos;
+
+                // Filter app by region and type
+                if (is_not_sys_app && app_filter(app.title_id))
                     continue;
+
+                // Search app by title or title id
                 if (!gui.app_search_bar.PassFilter(app.title.c_str()) && !gui.app_search_bar.PassFilter(app.title_id.c_str()))
                     continue;
-                const auto POS_ICON = ImGui::GetCursorPosY();
-                const auto GRID_INIT_POS = ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE / 2.f) - (10.f * SCALE.x);
+
+                const auto POS_ICON = ImGui::GetCursorPos();
+                const auto GRID_INIT_POS = POS_ICON.x + (GRID_COLUMN_SIZE / 2.f) - (10.f * SCALE.x);
                 const auto ICON_SIZE = emuenv.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size);
-                if (apps_icon.find(app.path) != apps_icon.end()) {
-                    if (emuenv.cfg.apps_list_grid)
-                        ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
-                    ImGui::Image(apps_icon[app.path], ICON_SIZE);
-                }
-                ImGui::SetCursorPosY(POS_ICON);
-                if (emuenv.cfg.apps_list_grid)
-                    ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
+                const auto GRID_ICON_POS = GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f);
                 ImGui::PushID(app.path.c_str());
+
+                // Determine if the element is within the visible area of the window.
+                ImVec2 item_rect_min = ImGui::GetItemRectMin();
+                const float margin = 200.f * SCALE.y;
+                const auto element_is_within_visible_area = (item_rect_min.y >= -margin) && (item_rect_min.y <= (ImGui::GetWindowPos().y + ImGui::GetWindowSize().y + margin));
+
+                // Draw the app icons and custom config button only when they are within the visible area.
+                if (element_is_within_visible_area) {
+                    if (apps_icon.contains(app.path)) {
+                        if (emuenv.cfg.apps_list_grid)
+                            ImGui::SetCursorPosX(GRID_ICON_POS);
+                        ImGui::Image(apps_icon[app.path], ICON_SIZE);
+                    }
+                    const auto IS_CUSTOM_CONFIG = fs::exists(fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", app.path));
+                    if (IS_CUSTOM_CONFIG) {
+                        if (emuenv.cfg.apps_list_grid)
+                            ImGui::SetCursorPosX(GRID_ICON_POS);
+                        ImGui::SetCursorPosY(POS_ICON.y + ICON_SIZE.y - ImGui::GetFontSize() - (7.8f * emuenv.dpi_scale));
+                        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+                        ImGui::Button("CC", ImVec2(40.f * SCALE.x, 0.f));
+                        ImGui::PopStyleColor();
+                    }
+                }
+
+                if (!emuenv.cfg.apps_list_grid)
+                    ImGui::NextColumn();
+
+                // Draw the compatibility badge for commercial apps when they are within the visible area.
+                if (element_is_within_visible_area && (app.title_id.find("PCS") != std::string::npos)) {
+                    const auto compat_state = (gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(app.title_id) : false) ? gui.compat.app_compat_db[app.title_id].state : Unknown;
+                    const auto compat_state_vec4 = gui.compat.compat_color[compat_state];
+                    const ImU32 compat_state_color = IM_COL32((int)(compat_state_vec4.x * 255.0f), (int)(compat_state_vec4.y * 255.0f), (int)(compat_state_vec4.z * 255.0f), (int)(compat_state_vec4.w * 255.0f));
+                    const auto current_pos = ImGui::GetCursorPos();
+                    const auto compat_padding = 4.f * SCALE.x;
+                    const auto compat_state_pos = emuenv.cfg.apps_list_grid ? ImVec2(GRID_ICON_POS + full_compat_radius + compat_padding, POS_ICON.y + full_compat_radius + compat_padding) : ImVec2(current_pos.x + ((ImGui::GetColumnWidth() - column_padding_size) / 2.f), current_pos.y + (icon_size / 2.f));
+                    ImGui::SetCursorPos(compat_state_pos);
+                    ImGui::GetWindowDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), full_compat_radius, IM_COL32(0, 0, 0, 255));
+                    ImGui::GetWindowDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), compat_radius, compat_state_color);
+                }
+
+                ImGui::SetCursorPosY(POS_ICON.y);
+                if (emuenv.cfg.apps_list_grid)
+                    ImGui::SetCursorPosX(GRID_ICON_POS);
                 ImGui::Selectable("##icon", &selected, emuenv.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, emuenv.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
                 if (!gui.configuration_menu.custom_settings_dialog && ImGui::IsItemHovered())
                     emuenv.app_path = app.path;
                 if (emuenv.app_path == app.path)
                     draw_app_context_menu(gui, emuenv, app.path);
-                const auto IS_CUSTOM_CONFIG = fs::exists(fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", app.path));
-                if (IS_CUSTOM_CONFIG) {
-                    if (emuenv.cfg.apps_list_grid)
-                        ImGui::SetCursorPosX(GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f));
-                    ImGui::SetCursorPosY(POS_ICON + ICON_SIZE.y - ImGui::GetFontSize() - (7.8f * emuenv.dpi_scale));
-                    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-                    ImGui::Button("CC", ImVec2(40.f * SCALE.x, 0.f));
-                    ImGui::PopStyleColor();
-                }
                 if (!emuenv.cfg.apps_list_grid) {
                     ImGui::NextColumn();
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
@@ -632,9 +677,9 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::PopTextWrapPos();
                 }
                 ImGui::NextColumn();
-                ImGui::PopID();
                 if (selected)
                     pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.path);
+                ImGui::PopID();
             }
         };
         // System Applications

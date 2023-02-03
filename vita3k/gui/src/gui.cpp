@@ -643,11 +643,11 @@ void pre_init(GuiState &gui, EmuEnvState &emuenv) {
 
 void init(GuiState &gui, EmuEnvState &emuenv) {
     std::thread load_and_update_compat_db_thread([&gui, &emuenv]() {
-        compat::load_compat_app_db(gui, emuenv);
+        gui.compat.compat_db_loaded = compat::load_compat_app_db(gui, emuenv);
         compat::update_compat_app_db(gui, emuenv);
-        gui.compat_loaded = true;
     });
     load_and_update_compat_db_thread.detach();
+
     get_modules_list(gui, emuenv);
     get_notice_list(emuenv);
     get_users_list(gui, emuenv);

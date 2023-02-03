@@ -89,7 +89,7 @@ void draw_shaders_count_compiled(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (2.f * emuenv.dpi_scale), emuenv.viewport_pos.y + emuenv.viewport_size.y - (42.f * emuenv.dpi_scale)));
     ImGui::SetNextWindowBgAlpha(0.6f);
     ImGui::Begin("##shaders_compiled", nullptr, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
-    ImGui::Text("%llu %s", gui.shaders_compiled_display[Count], gui.lang.compile_shaders["shaders_compiled"].c_str());
+    ImGui::Text("%lu %s", gui.shaders_compiled_display[Count], gui.lang.compile_shaders["shaders_compiled"].c_str());
     ImGui::End();
 }
 
