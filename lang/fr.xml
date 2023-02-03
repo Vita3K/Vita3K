@@ -198,6 +198,19 @@ depending on its size and your hardware.</app_delete_note>
 		<minutes_ago>Il y a {} minutes</minutes_ago>
 	</common>
 
+	<compatibility name="Compatibilité">
+		<states>
+			<state id = "0">Inconnue</state>
+			<state id = "1260231569">Rien</state>
+			<state id = "1344750319">Amorçable</state>
+			<state id = "1260231381">Intro</state>
+			<state id = "1344751053">Menu</state>
+			<state id = "1344752299">En jeu -</state>
+			<state id = "1260231985">En jeu +</state>
+			<state id = "920344019">Jouable</state>
+		</states>
+	</compatibility>
+
 	<content_manager name="Gestionnaire de contenu">
 		<application name="Applications">
 			<delete>Les applications sélectionnées et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</delete>

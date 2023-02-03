@@ -300,12 +300,12 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto app_str = gui.lang.content_manager.application;
     auto savedata_str = gui.lang.content_manager.saved_data;
     auto common = emuenv.common_dialog.lang.common;
-    auto compat_str = gui.lang.compatibility;
+    auto lang_compat = gui.lang.compatibility;
 
     const auto has_issue = gui.compat.app_compat_db.find(title_id) != gui.compat.app_compat_db.end();
     const auto compat_state = has_issue ? gui.compat.app_compat_db[title_id].state : Unknown;
     const auto compat_state_color = gui.compat.compat_color[compat_state];
-    const auto compat_state_str = has_issue ? compat_str[compat_state] : compat_str[Unknown];
+    const auto compat_state_str = has_issue ? lang_compat.states[compat_state] : lang_compat.states[Unknown];
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
@@ -313,7 +313,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         if (ImGui::MenuItem(lang["boot"].c_str()))
             pre_load_app(gui, emuenv, false, app_path);
         if (title_id.find("NPXS") == std::string::npos) {
-            if (ImGui::BeginMenu(lang["compatibility"].c_str())) {
+            if (ImGui::BeginMenu(lang_compat.name.c_str())) {
                 ImGui::Spacing();
                 ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(compat_state_str.c_str()).x / 2));
                 ImGui::TextColored(compat_state_color, "%s", compat_state_str.c_str());
@@ -560,8 +560,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["title_id"] + "  ").c_str()).x);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s  %s", lang["title_id"].c_str(), APP_INDEX->title_id.c_str());
             ImGui::Spacing();
-            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang["compatibility"] + "  ").c_str()).x);
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["compatibility"].c_str());
+            ImGui::SetCursorPosX((display_size.x / 2.f) - ImGui::CalcTextSize((lang_compat.name + "  ").c_str()).x);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang_compat.name.c_str());
             ImGui::SameLine();
             ImGui::TextColored(compat_state_color, " %s", compat_state_str.c_str());
             ImGui::Spacing();
