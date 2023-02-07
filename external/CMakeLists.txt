@@ -130,11 +130,11 @@ add_subdirectory(cubeb EXCLUDE_FROM_ALL)
 set_property(TARGET cubeb PROPERTY FOLDER externals)
 set_property(TARGET speex PROPERTY FOLDER externals)
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm|ARM|aarch64|AArch64|Aarch64)")
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm|ARM|aarch64|aarch64_be|arm64|armv8b|armv8l|AArch64|Aarch64)")
 	target_compile_definitions(speex PUBLIC
 		#_USE_NEON
 	)
-elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86|X86|amd64|AMD64|em64t|EM64T)")
+elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86|X86|x86_64|x64|amd64|AMD64|em64t|EM64T)")
 	target_compile_definitions(speex PUBLIC
 		_USE_SSE
 		_USE_SSE2
@@ -185,8 +185,10 @@ set(DYNARMIC_NO_BUNDLED_FMT ON CACHE BOOL "")
 set(DYNARMIC_FRONTENDS "A32" CACHE STRING "")
 add_subdirectory(dynarmic)
 set_property(TARGET dynarmic PROPERTY FOLDER externals)
-set_property(TARGET Zycore PROPERTY FOLDER externals)
-set_property(TARGET Zydis PROPERTY FOLDER externals)
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(amd64|AMD64|x86_64|x64)")
+	set_property(TARGET Zycore PROPERTY FOLDER externals)
+	set_property(TARGET Zydis PROPERTY FOLDER externals)
+endif()
 set_property(TARGET mcl PROPERTY FOLDER externals)
 
 if(MSVC)
