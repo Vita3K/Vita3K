@@ -63,7 +63,7 @@ struct Buffer {
     vma::Allocation allocation;
     vk::Buffer buffer;
 
-    vk::DeviceSize size;
+    vk::DeviceSize size = 0;
     // only useful is buffer is host visible
     void *mapped_data = nullptr;
 
