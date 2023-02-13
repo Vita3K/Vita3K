@@ -106,7 +106,7 @@ size_t shader::usse::utils::dest_mask_to_comp_count(shader::usse::Imm4 dest_mask
     return bit_count;
 }
 
-spv::Id shader::usse::utils::create_access_chain(spv::Builder& b, const spv::StorageClass storage_class, const spv::Id base, const std::vector<spv::Id>& offsets) {
+spv::Id shader::usse::utils::create_access_chain(spv::Builder &b, const spv::StorageClass storage_class, const spv::Id base, const std::vector<spv::Id> &offsets) {
     spv::Builder::AccessChain access_chain{};
     access_chain.base = base;
     access_chain.indexChain = offsets;

@@ -773,6 +773,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to open the Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
         ImGui::SameLine();
+        ImGui::Checkbox("Display Info Message", &emuenv.cfg.display_info_message);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Uncheck the box to display info message in log only.");
+        ImGui::Spacing();
         ImGui::Checkbox("Grid Mode", &emuenv.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to set the app list to grid mode.");

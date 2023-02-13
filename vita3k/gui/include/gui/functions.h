@@ -104,6 +104,7 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv);
 void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void draw_common_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_ime(Ime &ime, EmuEnvState &emuenv);
+void draw_info_message(GuiState &gui, EmuEnvState &emuenv);
 void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv);
 void draw_reinstall_dialog(GenericDialogState *status, GuiState &gui, EmuEnvState &emuenv);
 void draw_pre_compiling_shaders_progress(GuiState &gui, EmuEnvState &emuenv, const uint32_t &total);
