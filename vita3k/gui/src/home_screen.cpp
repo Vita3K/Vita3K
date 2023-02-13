@@ -187,7 +187,7 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
     ImGui::SetCursorPos(ImVec2(50.f * SCALE.x, 108.f * SCALE.y));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.lang.game_data["app_close"].c_str());
-    if (gui.app_selector.user_apps_icon.find(emuenv.io.app_path) != gui.app_selector.user_apps_icon.end()) {
+    if (gui.app_selector.user_apps_icon.contains(emuenv.io.app_path)) {
         const auto ICON_POS_SCALE = ImVec2(152.f * SCALE.x, (display_size.y / 2.f) - (ICON_SIZE.y / 2.f) - (10.f * SCALE.y));
         const auto ICON_SIZE_SCALE = ImVec2(ICON_POS_SCALE.x + ICON_SIZE.x, ICON_POS_SCALE.y + ICON_SIZE.y);
         ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, emuenv.io.app_path)->second, ICON_POS_SCALE, ICON_SIZE_SCALE, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, ICON_SIZE.x, ImDrawCornerFlags_All);

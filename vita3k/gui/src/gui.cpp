@@ -47,6 +47,39 @@
 
 namespace gui {
 
+void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
+    if (emuenv.cfg.display_info_message) {
+        const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
+
+        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.x), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
+        ImGui::Begin("##information", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
+        ImGui::SetNextWindowPos(ImVec2(display_size.x / 2, display_size.y / 2), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * emuenv.dpi_scale);
+        ImGui::BeginChild("##info", ImVec2(display_size.x / 1.4f, display_size.y / 2.6f), true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
+        const auto title = fmt::format("{}", spdlog::level::to_string_view(gui.info_message.level));
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(title.c_str()).x) / 2);
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str(), ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::TextWrapped("%s", gui.info_message.msg.c_str());
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        const auto BUTTON_SIZE = ImVec2(160.f * emuenv.dpi_scale, 46.f * emuenv.dpi_scale);
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f));
+        if (ImGui::Button("Ok", BUTTON_SIZE))
+            gui.info_message = {};
+        ImGui::EndChild();
+        ImGui::PopStyleVar();
+        ImGui::End();
+    } else {
+        spdlog::log(gui.info_message.level, "[{}] {}", gui.info_message.function, gui.info_message.msg);
+        gui.info_message = {};
+    }
+}
+
 static void init_style(EmuEnvState &emuenv) {
     ImGui::StyleColorsDark();
 
@@ -644,6 +677,14 @@ void pre_init(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void init(GuiState &gui, EmuEnvState &emuenv) {
+#ifdef USE_VITA3K_UPDATE
+    std::thread update_vita3k_thread([&gui]() {
+        if (init_vita3k_update(gui))
+            gui.help_menu.vita3k_update = true;
+    });
+    update_vita3k_thread.detach();
+#endif
+
     std::thread load_and_update_compat_db_thread([&gui, &emuenv]() {
         gui.compat.compat_db_loaded = compat::load_compat_app_db(gui, emuenv);
         compat::update_compat_app_db(gui, emuenv);
@@ -731,6 +772,10 @@ void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
 
     if (gui.live_area.trophy_collection)
         draw_trophy_collection(gui, emuenv);
+
+    // Info Message
+    if (!gui.info_message.msg.empty())
+        draw_info_message(gui, emuenv);
 
     ImGui::PopFont();
 

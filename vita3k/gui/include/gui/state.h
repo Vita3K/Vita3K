@@ -275,6 +275,12 @@ inline const std::vector<std::pair<SceSystemParamLang, std::string>> LIST_SYS_LA
     { SCE_SYSTEM_PARAM_LANG_CHINESE_T, "Chinese - Traditional" },
 };
 
+struct InfoMessage {
+    std::string function;
+    spdlog::level::level_enum level;
+    std::string msg;
+};
+
 struct GuiState {
     std::unique_ptr<ImGui_State> imgui_state;
 
@@ -289,6 +295,8 @@ struct GuiState {
 
     CompatState compat;
     LangState lang;
+
+    InfoMessage info_message{};
 
     std::map<std::string, User> users;
     std::map<std::string, ImGui_Texture> users_avatar;

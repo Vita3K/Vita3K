@@ -226,7 +226,7 @@ bool create(SDL_Window *window, std::unique_ptr<State> &state, const char *base_
     const std::string version = reinterpret_cast<const GLchar *>(glGetString(GL_SHADING_LANGUAGE_VERSION));
 
     LOG_INFO("GPU = {}", gpu_name);
-    LOG_INFO("GL_VERSION = {}", reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+    LOG_INFO("GL_VERSION = {}", reinterpret_cast<const char *>(glGetString(GL_VERSION)));
     LOG_INFO("GL_SHADING_LANGUAGE_VERSION = {}", version);
 
 #ifndef NDEBUG
