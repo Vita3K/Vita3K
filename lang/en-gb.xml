@@ -26,7 +26,7 @@
 
 	<about name="About">
 		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
-		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux and macOS operating systems.</about_vita3k>
+		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux, macOS and Android operating systems.</about_vita3k>
 		<note>Note: The emulator is still in a very early stage of development.</note>
 		<github_website>If you're interested in contributing, check out our GitHub:</github_website>
 		<vita3k_website>Visit our website for more info:</vita3k_website>
@@ -324,7 +324,7 @@ Do not power off the system or close the application.</warning_saving>
 		<usa>USA</usa>
 		<europe>Europe</europe>
 		<japan>Japan</japan>
-		<asia>ASIA</asia>
+		<asia>Asia</asia>
 		<by_type>By Type</by_type>
 		<commercial>Commercial</commercial>
 		<homebrew>Homebrew</homebrew>
@@ -362,7 +362,7 @@ Your Vita3K system is ready!</completed_setup>
 		<no_font_exist>No firmware font package present.
 Please download and install it.</no_font_exist>
 		<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
-		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
+		<firmware_font_package_note>Firmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
 		<delete_fw>Delete the firmware installation file?</delete_fw>
 		<select_key_type>Select key type</select_key_type>
 		<select_work>Select work.bin</select_work>
@@ -372,7 +372,7 @@ Please download and install it.</no_font_exist>
 		<copy_paste_zrif>Ctrl(Cmd) + C to copy, Ctrl(Cmd) + V to paste.</copy_paste_zrif>
 		<delete_pkg>Delete the pkg file?</delete_pkg>
 		<delete_work>Delete the work.bin file?</delete_work>
-		<check_log>Please check log for more details.</check_log>
+		<check_log>Please check the log for more details.</check_log>
 		<select_install_type>Select install type</select_install_type>
 		<select_file>Select File</select_file>
 		<select_directory>Select Directory</select_directory>

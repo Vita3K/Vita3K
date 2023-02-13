@@ -5,7 +5,7 @@
 
 ## Introduction
 
-Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS.
+Vita3K is an experimental PlayStation Vita emulator for Windows, Linux, macOS and [Android](https://github.com/Vita3K/Vita3K-Android).
 
 * [Website](https://vita3k.org/) (information for users)
 * [Wiki](https://github.com/Vita3K/Vita3K/wiki) (information for developers)
@@ -13,9 +13,11 @@ Vita3K is an experimental PlayStation Vita emulator for Windows, Linux and macOS
 * IRC `#vita3k` on **freenode** ([Web-based IRC client](https://webchat.freenode.net/?channels=%23vita3k))
 * [Patreon](https://www.patreon.com/Vita3K) (support the project)
 
+You can view the Android version [here](https://github.com/Vita3K/Vita3K-Android).
+
 ## Compatibility
 
-The emulator currently runs some homebrew programs. It is also able to load some decrypted commercial games.
+The emulator currently runs most homebrew programs. It is also able to load some decrypted commercial games.
 
 - [Homebrew compatibility page](https://vita3k.org/compatibility-homebrew.html)
 - [Commercial compatibility page](https://vita3k.org/compatibility.html)
@@ -77,4 +79,4 @@ If you support us on Patreon and would like your name added, please get in touch
 ## Note
 The purpose of this emulator is not to enable illegal activity. You can dump games by using [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm)/[FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). You can get homebrew programs from [VitaDB](https://vitadb.rinnegatamante.it/).
 
-PlayStation, PlayStation Vita and PS Vita are trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
+PlayStation and PlayStation Vita are trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
