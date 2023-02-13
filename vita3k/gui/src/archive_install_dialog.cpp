@@ -69,7 +69,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     };
     std::lock_guard<std::mutex> lock(install_mutex);
 
-    auto lang = gui.lang.install_dialog;
+    auto lang = gui.lang.install_dialog.archive_install;
     auto indicator = gui.lang.indicator;
     auto common = emuenv.common_dialog.lang.common;
 

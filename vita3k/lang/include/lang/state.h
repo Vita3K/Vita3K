@@ -121,7 +121,7 @@ struct LangState {
     std::map<std::string, std::string> about = {
         { "title", "About" },
         { "vita3k", "Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator." },
-        { "about_vita3k", "Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux and macOS operating systems." },
+        { "about_vita3k", "Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux, macOS and Android operating systems." },
         { "note", "Note: The emulator is still in a very early stage of development." },
         { "github_website", "If you're interested in contributing, check out our GitHub:" },
         { "vita3k_website", "Visit our website for more info:" },
@@ -133,6 +133,9 @@ struct LangState {
         { "boot", "Boot" },
         { "check_app_compatibility", "Check App Compatibility" },
         { "copy_app_info", "Copy App Info" },
+        { "open_issue", "Open Issue" },
+        { "create_issue", "Create Issue" },
+        { "update_database", "Update Database" },
         { "name_and_id", "Name and Title ID" },
         { "app_summary", "App Summary" },
         { "custom_config", "Custom Config" },
@@ -244,7 +247,7 @@ struct LangState {
         { "toggle_touch", "Toggle Touch" },
         { "toggle_gui_visibility", "Toggle GUI Visibility" },
         { "error", "Error" },
-        { "error_duplicate_key", "The key is used for other bindings or it is reserved" }
+        { "error_duplicate_key", "The key is used for other bindings or it is reserved." }
     };
     std::map<std::string, std::string> game_data = {
         { "app_close", "The following application will close." },
@@ -258,7 +261,7 @@ struct LangState {
         { "usa", "USA" },
         { "europe", "Europe" },
         { "japan", "Japan" },
-        { "asia", "ASIA" },
+        { "asia", "Asia" },
         { "by_type", "By Type" },
         { "commercial", "Commercial" },
         { "homebrew", "Homebrew" },
@@ -282,42 +285,60 @@ struct LangState {
         { "back", "Back" },
         { "completed_setup", "You have now completed initial setup.\nYour Vita3K system is ready!" },
         { "select_language", "Select a language" },
+        { "install_firmware", "Install Firmware." },
+        { "install_highly_recommended", "Installing both firmware files is highly recommended." },
+        { "installed", "Installed:" },
+        { "download_firmware", "Download Firmware" },
+        { "download_font_package", "Download Font Package" },
+        { "install_firmware_file", "Install Firmware File" },
         { "completed", "Completed." },
         { "next", "Next" }
     };
-    std::map<std::string, std::string> install_dialog = {
-        { "fw_installing", "Installation in progress, please wait..." },
-        { "successed_install_fw", "Firmware successfully installed." },
-        { "fw_version", "Firmware version:" },
-        { "no_font_exist", "No firmware font package present.\nPlease download and install it." },
-        { "download_firmware_font_package", "Download Firmware Font Package" },
-        { "firmware_font_package_note", "Firmware font package is mandatory for some applications and also for Asian regional font support. (Generally Recommended)" },
-        { "delete_fw", "Delete the firmware installation file?" },
-        { "select_key_type", "Select key type" },
-        { "select_work", "Select work.bin" },
-        { "enter_zrif", "Enter zRIF" },
-        { "enter_zrif_key", "Enter zRIF key" },
-        { "input_zrif", "Please input your zRIF here" },
-        { "copy_paste_zrif", "Ctrl(Cmd) + C to copy, Ctrl(Cmd) + V to paste." },
-        { "delete_pkg", "Delete the pkg file?" },
-        { "delete_work", "Delete the work.bin file?" },
-        { "check_log", "Please check log for more details." },
-        { "select_install_type", "Select install type" },
-        { "select_file", "Select File" },
-        { "select_directory", "Select Directory" },
-        { "compatible_content", "{} archive(s) found with compatible contents." },
-        { "successed_install_archive", "{} archive(s) contents successfully installed:" },
-        { "update_app", "Update App to:" },
-        { "failed_install_archive", "Failed to install {} archive(s) contents:" },
-        { "not_compatible_content", "No compatible content found in {} archive(s):" },
-        { "delete_archive", "Delete archive?" },
-        { "select_license_type", "Select license type" },
-        { "select_bin_rif", "Select work.bin/rif" },
-        { "successed_install_license", "Successfully installed license." },
-        { "content_id", "Content ID:" },
-        { "title_id", "Title ID:" },
-        { "delete_bin_rif", "Delete the work.bin/rif file?" }
+    struct InstallDialog {
+        std::map<std::string, std::string> firmware_install = {
+            { "firmware_installing", "Installation in progress, please wait..." },
+            { "successed_install_firmware", "Firmware successfully installed." },
+            { "firmware_version", "Firmware version:" },
+            { "no_font_exist", "No firmware font package present.\nPlease download and install it." },
+            { "download_firmware_font_package", "Download Firmware Font Package" },
+            { "firmware_font_package_note", "Firmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)" },
+            { "delete_firmware", "Delete the firmware installation file?" }
+        };
+        std::map<std::string, std::string> pkg_install = {
+            { "select_key_type", "Select key type" },
+            { "select_work", "Select work.bin" },
+            { "enter_zrif", "Enter zRIF" },
+            { "enter_zrif_key", "Enter zRIF key" },
+            { "input_zrif", "Please input your zRIF here" },
+            { "copy_paste_zrif", "Ctrl (Cmd) + C to copy, Ctrl (Cmd) + V to paste." },
+            { "delete_pkg", "Delete the pkg file?" },
+            { "delete_work", "Delete the work.bin file?" },
+            { "check_log", "Please check the log for more details." }
+        };
+        std::map<std::string, std::string> archive_install = {
+            { "select_install_type", "Select install type" },
+            { "select_file", "Select File" },
+            { "select_directory", "Select Directory" },
+            { "compatible_content", "{} archive(s) found with compatible contents." },
+            { "successed_install_archive", "{} archive(s) contents successfully installed:" },
+            { "update_app", "Update App to:" },
+            { "failed_install_archive", "Failed to install {} archive(s) contents:" },
+            { "not_compatible_content", "No compatible content found in {} archive(s):" },
+            { "delete_archive", "Delete archive?" }
+        };
+        std::map<std::string, std::string> license_install = {
+            { "select_license_type", "Select license type" },
+            { "select_bin_rif", "Select work.bin/rif" },
+            { "successed_install_license", "Successfully installed license." },
+            { "delete_bin_rif", "Delete the work.bin/rif file?" }
+        };
+        std::map<std::string, std::string> reinstall = {
+            { "reinstall_content", "Reinstall this content?" },
+            { "already_installed", "This content is already installed." },
+            { "reinstall_overwrite", "Do you want to reinstall it and overwrite existing data?" }
+        };
     };
+    InstallDialog install_dialog;
     struct LiveArea {
         std::map<std::string, std::string> main = {
             { "start", "Start" },
@@ -325,8 +346,8 @@ struct LangState {
         };
         std::map<std::string, std::string> help = {
             { "control_setting", "Using configuration set for keyboard in control setting" },
-            { "fw_not_detected", "Firmware not detected. Installation is highly recommended" },
-            { "fw_font_not_detected", "Firmware font not detected. Installing it is recommended for font text in Live Area" },
+            { "firmware_not_detected", "Firmware not detected. Installation is highly recommended" },
+            { "firmware_font_not_detected", "Firmware font not detected. Installing it is recommended for font text in Live Area" },
             { "live_area_help", "Live Area Help" },
             { "browse_app", "Browse in app list" },
             { "browse_app_control", "D-pad, Left Stick, Wheel in Up/Down or using Slider" },
@@ -350,6 +371,12 @@ struct LangState {
         };
     };
     LiveArea live_area;
+    std::map<std::string, std::string> performance_overlay = {
+        { "fps", "FPS" },
+        { "avg", "Avg" },
+        { "min", "Min" },
+        { "max", "Max" }
+    };
     struct Settings {
         std::map<std::string, std::string> main = { { "title", "Settings" } };
         struct ThemeBackground {
@@ -465,7 +492,7 @@ struct LangState {
     std::map<std::string, std::string> welcome = {
         { "title", "Welcome to Vita3K" },
         { "line_first", "Vita3K PlayStation Vita Emulator" },
-        { "line_second", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux and macOS." },
+        { "line_second", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS and Android." },
         { "line_third", "The emulator is still in its early stages so any feedback and testing is greatly appreciated." },
         { "line_fourth", "To get started, please install the PS Vita firmware and font packages." },
         { "download_firmware", "Download Firmware" },
@@ -475,7 +502,7 @@ struct LangState {
         { "line_seventh", "Consult the Commercial game and the Homebrew compatibility list to see what currently runs." },
         { "commercial_compatibility_list", "Commercial Compatibility List" },
         { "homebrew_compatibility_list", "Homebrew Compatibility List" },
-        { "line_eighth", "Contributions are welcome!" },
+        { "line_ninth", "Contributions are welcome!" },
         { "line_tenth", "Additional support can be found in the #help channel of the" },
         { "line_eleventh", "Vita3K does not condone piracy. You must dump your own games." },
         { "show_next_time", "Show next time" },

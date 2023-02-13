@@ -45,7 +45,7 @@ static void get_firmware_version(EmuEnvState &emuenv) {
 }
 
 void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    auto lang = gui.lang.install_dialog;
+    auto lang = gui.lang.install_dialog.firmware_install;
     host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
 
     static std::mutex install_mutex;
@@ -58,7 +58,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     std::lock_guard<std::mutex> lock(install_mutex);
 
     if (draw_file_dialog) {
-        result = host::dialog::filesystem::open_file(pup_path, { { "PlayStation Update Package", { "PUP" } } });
+        result = host::dialog::filesystem::open_file(pup_path, { { "PlayStation Vita Firmware Package", { "PUP" } } });
         draw_file_dialog = false;
         finished_installing = false;
 
@@ -83,7 +83,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (!finished_installing) {
         ImGui::OpenPopup("Firmware Installation");
         if (ImGui::BeginPopupModal("Firmware Installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["fw_installing"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["firmware_installing"].c_str());
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
             ImGui::SetCursorPosX((ImGui::GetWindowContentRegionWidth() / 2) - (150 / 2) + 10);
             ImGui::ProgressBar(progress / 100.f, ImVec2(150.f, 20.f), nullptr);
@@ -95,9 +95,9 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         ImGui::OpenPopup("Firmware Installation");
         if (ImGui::BeginPopupModal("Firmware Installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["successed_install_fw"].c_str());
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["successed_install_firmware"].c_str());
             if (!fw_version.empty())
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", lang["fw_version"].c_str(), fw_version.c_str());
+                ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", lang["firmware_version"].c_str(), fw_version.c_str());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
@@ -112,7 +112,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Separator();
                 ImGui::Spacing();
             }
-            ImGui::Checkbox(lang["delete_fw"].c_str(), &delete_pup_file);
+            ImGui::Checkbox(lang["delete_firmware"].c_str(), &delete_pup_file);
             ImGui::Spacing();
             ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
             if (ImGui::Button("OK", BUTTON_SIZE)) {

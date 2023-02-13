@@ -56,6 +56,7 @@ static float get_perf_height(EmuEnvState &emuenv) {
 }
 
 void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
+    auto lang = gui.lang.performance_overlay;
     const auto MAIN_WINDOW_SIZE = ImVec2((emuenv.cfg.performance_overlay_detail == MINIMUM ? 95.5f : 152.f) * emuenv.dpi_scale, get_perf_height(emuenv) * emuenv.dpi_scale);
     const auto WINDOW_POS = get_perf_pos(MAIN_WINDOW_SIZE, emuenv);
     const auto WINDOW_SIZE = ImVec2((emuenv.cfg.performance_overlay_detail == MINIMUM ? 72.5f : 130.f) * emuenv.dpi_scale, (emuenv.cfg.performance_overlay_detail <= LOW ? 35.f : 58.f) * emuenv.dpi_scale);
@@ -67,14 +68,17 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushStyleColor(ImGuiCol_ChildBg, PERF_OVERLAY_BG_COLOR);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.f * emuenv.dpi_scale);
     ImGui::BeginChild("#perf_stats", WINDOW_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::PushFont(gui.vita_font);
+    ImGui::SetWindowFontScale(0.7f);
     if (emuenv.cfg.performance_overlay_detail == PerfomanceOverleyDetail::MINIMUM)
-        ImGui::Text("FPS: %d", emuenv.fps);
+        ImGui::Text("%s: %d", lang["fps"].c_str(), emuenv.fps);
     else
-        ImGui::Text("FPS: %d Avg: %d", emuenv.fps, emuenv.avg_fps);
+        ImGui::Text("%s: %d %s: %d", lang["fps"].c_str(), emuenv.fps, lang["avg"].c_str(), emuenv.avg_fps);
     if (emuenv.cfg.performance_overlay_detail >= PerfomanceOverleyDetail::MEDIUM) {
         ImGui::Separator();
-        ImGui::Text("Min: %d Max: %d", emuenv.min_fps, emuenv.max_fps);
+        ImGui::Text("%s: %d %s: %d", lang["min"].c_str(), emuenv.min_fps, lang["max"].c_str(), emuenv.max_fps);
     }
+    ImGui::PopFont();
     ImGui::EndChild();
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();

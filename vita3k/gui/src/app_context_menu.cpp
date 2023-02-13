@@ -335,13 +335,13 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_path(compat_url);
                 }
                 if (has_issue) {
-                    if (ImGui::MenuItem("Open Issue"))
+                    if (ImGui::MenuItem(lang["open_issue"].c_str()))
                         open_path(fmt::format("{}/{}", ISSUES_URL, gui.compat.app_compat_db[title_id].issue_id));
                 } else {
-                    if (ImGui::MenuItem("Create Issue"))
+                    if (ImGui::MenuItem(lang["create_issue"].c_str()))
                         open_path(fmt::format("{}/new?title={} [{}]", ISSUES_URL, APP_INDEX->title, title_id));
                 }
-                if (ImGui::MenuItem("Update Database"))
+                if (ImGui::MenuItem(lang["update_database"].c_str()))
                     compat::update_compat_app_db(gui, emuenv);
 
                 ImGui::EndMenu();
