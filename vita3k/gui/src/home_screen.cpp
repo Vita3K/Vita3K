@@ -190,7 +190,7 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.app_selector.user_apps_icon.find(emuenv.io.app_path) != gui.app_selector.user_apps_icon.end()) {
         const auto ICON_POS_SCALE = ImVec2(152.f * SCALE.x, (display_size.y / 2.f) - (ICON_SIZE.y / 2.f) - (10.f * SCALE.y));
         const auto ICON_SIZE_SCALE = ImVec2(ICON_POS_SCALE.x + ICON_SIZE.x, ICON_POS_SCALE.y + ICON_SIZE.y);
-        ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, emuenv.io.app_path)->second, ICON_POS_SCALE, ICON_SIZE_SCALE, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 40.f * SCALE.x, ImDrawCornerFlags_All);
+        ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, emuenv.io.app_path)->second, ICON_POS_SCALE, ICON_SIZE_SCALE, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, ICON_SIZE.x, ImDrawCornerFlags_All);
     }
     ImGui::SetCursorPos(ImVec2(ICON_SIZE.x + (72.f * SCALE.x), (WINDOW_SIZE.y / 2.f) - ImGui::CalcTextSize(emuenv.current_app_title.c_str()).y + (4.f * SCALE.y)));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.current_app_title.c_str());
@@ -606,7 +606,9 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                     if (apps_icon.contains(app.path)) {
                         if (emuenv.cfg.apps_list_grid)
                             ImGui::SetCursorPosX(GRID_ICON_POS);
-                        ImGui::Image(apps_icon[app.path], ICON_SIZE);
+                        const auto POS_MIN = ImGui::GetCursorScreenPos();
+                        const ImVec2 POS_MAX(POS_MIN.x + ICON_SIZE.x, POS_MIN.y + ICON_SIZE.y);
+                        ImGui::GetWindowDrawList()->AddImageRounded(apps_icon[app.path], POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
                     }
                     const auto IS_CUSTOM_CONFIG = fs::exists(fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", app.path));
                     if (IS_CUSTOM_CONFIG) {
