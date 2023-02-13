@@ -151,7 +151,7 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const fs::path 
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 gui::draw_ui(*gui, emuenv);
                 ImGui::PushFont(gui->vita_font);
-                gui::draw_reinstall_dialog(&status, emuenv);
+                gui::draw_reinstall_dialog(&status, *gui, emuenv);
                 ImGui::PopFont();
                 glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
                 ImGui::Render();

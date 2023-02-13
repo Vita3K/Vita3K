@@ -223,7 +223,23 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     set_lang_string(lang.initial_setup, lang_child.child("initial_setup"));
 
                 // Install Dialog
-                set_lang_string(lang.install_dialog, lang_child.child("install_dialog"));
+                const auto install_dialog = lang_child.child("install_dialog");
+                if (!install_dialog.empty()) {
+                    // Firmware Install
+                    set_lang_string(lang.install_dialog.firmware_install, install_dialog.child("firmware_install"));
+
+                    // Package Install
+                    set_lang_string(lang.install_dialog.pkg_install, install_dialog.child("pkg_install"));
+
+                    // Archive Install
+                    set_lang_string(lang.install_dialog.archive_install, install_dialog.child("archive_install"));
+
+                    // License Install
+                    set_lang_string(lang.install_dialog.license_install, install_dialog.child("license_install"));
+
+                    // Reinstall
+                    set_lang_string(lang.install_dialog.reinstall, install_dialog.child("reinstall"));
+                }
 
                 // Live Area
                 const auto live_area = lang_child.child("live_area");
@@ -234,6 +250,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     // Help
                     set_lang_string(lang.live_area.help, live_area.child("help"));
                 }
+
+                // Performance Overlay
+                set_lang_string(lang.performance_overlay, lang_child.child("performance_overlay"));
 
                 // Settings
                 const auto settings = lang_child.child("settings");
@@ -275,7 +294,7 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                         set_lang_string(lang.settings.date_time.time_format, date_time.child("time_format"));
                     }
 
-                    // Languague
+                    // Language
                     const auto language = settings.child("language");
                     if (!language.empty()) {
                         // Main

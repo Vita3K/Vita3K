@@ -26,7 +26,7 @@
 
 	<about name="概要">
 		<vita3k>Vita3K: PS Vita/PS TVエミュレーター。 世界初の動作するPS Vita/PS TVエミュレーターです。</vita3k>
-		<about_vita3k>Vita3Kは試験的なオープンソースのC++で書かれた Windows、LinuxとmacOS向けのPlayStation Vita/PlayStation TVエミュレーターです。</about_vita3k>
+		<about_vita3k>Vita3Kは試験的なオープンソースのC++で書かれた Windows、Linux、macOSとAndroid向けのPlayStation Vita/PlayStation TVエミュレーターです。</about_vita3k>
 		<note>注意：エミュレーターは未だかなりの初期段階にあります。</note>
 		<github_website>プロジェクトへの貢献に興味がある方は、GitHubをご覧ください：</github_website>
 		<vita3k_website>詳しくはサイトをご覧ください：</vita3k_website>
@@ -38,6 +38,9 @@
 	<app_context>
 		<boot>起動</boot>
 		<check_app_compatibility>アプリの互換性を調べる</check_app_compatibility>
+		<open_issue>Open Issue</open_issue>
+		<create_issue>Create Issue</create_issue>
+		<update_database>Update Database</update_database>
 		<copy_app_info>アプリの情報をコピー</copy_app_info>
 		<name_and_id>名前とタイトルID</name_and_id>
 		<app_summary>App Summary</app_summary>
@@ -198,6 +201,19 @@
 		<minutes_ago>{}分前</minutes_ago>
 	</common>
 
+	<compatibility name="互換性">
+		<states>
+			<state id = "0">Unknown</state>
+			<state id = "1260231569">プレイ不可能</state>
+			<state id = "1344750319">起動可能</state>
+			<state id = "1260231381">イントロ</state>
+			<state id = "1344751053">メニュー</state>
+			<state id = "1344752299">プレイ開始 -</state>
+			<state id = "1260231985">プレイ開始 +</state>
+			<state id = "920344019">プレイ可能</state>
+		</states>
+	</compatibility>
+
 	<content_manager name="コンテンツ管理">
 		<search>検索</search>
 		<application name="アプリケーション">
@@ -254,6 +270,8 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<full_screen>フルスクリーン</full_screen>
 		<toggle_touch>タッチ操作の切り替え</toggle_touch>
 		<toggle_gui_visibility>GUI表示の切り替え</toggle_gui_visibility>
+		<error>Error</error>
+		<error_duplicate_key>The key is used for other bindings or it is reserved.</error_duplicate_key>
 	</controls>　
 
 	<dialog>
@@ -333,49 +351,91 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<completed_setup>初めの設定が完了しました。
 Vita3Kをお楽しみください。</completed_setup>
 		<select_language>言語を選んでください。</select_language>
+		<install_firmware>ファームウェアをインストール。</install_firmware>
+		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
+		<installed>Installed:</installed>
+		<download_firmware>ファームウェアをダウンロード</download_firmware>
+		<download_font_package>Download Font Package</download_font_package>
+		<install_firmware_file>Install Firmware File</install_firmware_file>
 		<completed>完了しました。</completed>
 		<next>次へ</next>
 	</initial_setup>
 	
 	<install_dialog>
-		<fw_installing>インストール中です、お待ちください...</fw_installing>
-		<successed_install_fw>ファームウェアのインストールに成功しました。</successed_install_fw>
-		<fw_version>ファームウェアバージョン：</fw_version>
-		<no_font_exist>ファームウェアフォントパッケージがありません。
+		<firmware_install>
+			<firmware_installing>インストール中です、お待ちください...</firmware_installing>
+			<successed_install_firmware>ファームウェアのインストールに成功しました。</successed_install_firmware>
+			<firmware_version>ファームウェアバージョン：</firmware_version>
+			<no_font_exist>ファームウェアフォントパッケージがありません。
 ダウンロードしてインストールしてください。</no_font_exist>
-		<download_firmware_font_package>ファームウェアフォントパッケージをダウンロード</download_firmware_font_package>
-		<firmware_font_package_note>ファームウェアフォントパッケージは、一部のアプリケーションや、GUIでのアジア地域のフォントサポートに必須です。
+			<download_firmware_font_package>ファームウェアフォントパッケージをダウンロード</download_firmware_font_package>
+			<firmware_font_package_note>ファームウェアフォントパッケージは、一部のアプリケーションや、GUIでのアジア地域のフォントサポートに必須です。
 また、一般的にGUIを正しく表示するために推奨されています。</firmware_font_package_note>
-		<delete_fw>インストールしたファームウェアファイルを削除しますか？</delete_fw>
-		<select_key_type>key typeを選択</select_key_type>
-		<select_work>work.binを選択</select_work>
-		<enter_zrif>zRIFを入力</enter_zrif>
-		<enter_zrif_key>zRIF keyを入力</enter_zrif_key>
-		<input_zrif>zRIFをここに入力してください</input_zrif>
-		<copy_paste_zrif>Ctrl(Cmd) + C でコピー、Ctrl(Cmd) + V でペーストします。</copy_paste_zrif>
-		<delete_pkg>先ほどのpkgを削除しますか？</delete_pkg>
-		<delete_work>先ほどのwork.binを削除しますか？</delete_work>
-		<check_log>ログで詳細をご確認ください。</check_log>
-		<select_install_type>インストール方法を選択</select_install_type>
-		<select_file>ファイルを選択</select_file>
-		<select_directory>ディレクトリを選択</select_directory>
-		<compatible_content>{}互換性のあるコンテンツを持つアーカイブが見つかりました。</compatible_content>
-		<successed_install_archive>{}アーカイブのコンテンツのインストールに成功しました：</successed_install_archive>
-		<update_app>アプリを更新：</update_app>
-		<failed_install_archive>{}コンテンツのインストールに失敗しました：</failed_install_archive>
-		<not_compatible_content>{}アーカイブに互換性のあるコンテンツを見つけられませんでした：</not_compatible_content>
-		<delete_archive>アーカイブを削除しますか？</delete_archive>
-		<select_license_type>ライセンスを選択</select_license_type>
-		<select_bin_rif>work.bin/rifを選択</select_bin_rif>
-		<successed_install_license>ライセンスのインストールに成功しました。</successed_install_license>
-		<content_id>コンテンツID：</content_id>
-		<title_id>タイトルID：</title_id>
-		<delete_bin_rif>先ほどのwork.bin/rifを削除しますか？</delete_bin_rif>
+			<delete_firmware>インストールしたファームウェアファイルを削除しますか？</delete_firmware>
+		</firmware_install>
+		<pkg_install>
+			<select_key_type>key typeを選択</select_key_type>
+			<select_work>work.binを選択</select_work>
+			<enter_zrif>zRIFを入力</enter_zrif>
+			<enter_zrif_key>zRIF keyを入力</enter_zrif_key>
+			<input_zrif>zRIFをここに入力してください</input_zrif>
+			<copy_paste_zrif>Ctrl（Cmd）+ C でコピー、Ctrl（Cmd）+ V でペーストします。</copy_paste_zrif>
+			<delete_pkg>先ほどのpkgを削除しますか？</delete_pkg>
+			<delete_work>先ほどのwork.binを削除しますか？</delete_work>
+			<check_log>ログで詳細をご確認ください。</check_log>
+		</pkg_install>
+		<archive_install>
+			<select_install_type>インストール方法を選択</select_install_type>
+			<select_file>ファイルを選択</select_file>
+			<select_directory>ディレクトリを選択</select_directory>
+			<compatible_content>{}互換性のあるコンテンツを持つアーカイブが見つかりました。</compatible_content>
+			<successed_install_archive>{}アーカイブのコンテンツのインストールに成功しました：</successed_install_archive>
+			<update_app>アプリを更新：</update_app>
+			<failed_install_archive>{}コンテンツのインストールに失敗しました：</failed_install_archive>
+			<not_compatible_content>{}アーカイブに互換性のあるコンテンツを見つけられませんでした：</not_compatible_content>
+			<delete_archive>アーカイブを削除しますか？</delete_archive>
+		</archive_install>
+		<license_install>
+			<select_license_type>ライセンスを選択</select_license_type>
+			<select_bin_rif>work.bin/rifを選択</select_bin_rif>
+			<successed_install_license>ライセンスのインストールに成功しました。</successed_install_license>
+			<delete_bin_rif>先ほどのwork.bin/rifを削除しますか？</delete_bin_rif>
+		</license_install>
+		<reinstall>
+			<reinstall_content>Reinstall this content?</reinstall_content>
+			<already_installed>This content is already installed.</already_installed>
+			<reinstall_overwrite>Do you want to reinstall it and overwrite existing data?</reinstall_overwrite>
+		</reinstall>
 	</install_dialog>
 
 	<live_area>
 		<start>はじめる</start>
 		<continue>つづける</continue>
+		<help>
+			<control_setting>Using configuration set for keyboard in control setting</control_setting>
+			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
+			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
+			<live_area_help>Live Area Help</live_area_help>
+			<browse_app>Browse in app list</browse_app>
+			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
+			<start_app>Start App</start_app>
+			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<show_hide>Show/Hide Live Area during app run</show_hide>
+			<show_hide_control>Press on PS</show_hide_control>
+			<exit_livearea>Exit Live Area</exit_livearea>
+			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
+			<manual_help>Manual Help</manual_help>
+			<browse_page>Browse page</browse_page>
+			<browse_page_control>D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on</browse_page_control>
+			<hide_show>Hide/Show button</hide_show>
+			<hide_show_control>Right Click</hide_show_control>
+			<zoom_available>Zoom if available</zoom_available>
+			<zoom_available_control>Double Left Click</zoom_available_control>
+			<scroll_zoom>Scroll in zoom</scroll_zoom>
+			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
+			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
+		</help>
 	</live_area>
 
 	<settings name="設定">
@@ -497,8 +557,7 @@ Vita3Kをお楽しみください。</completed_setup>
 
 	<welcome name="Welcome to Vita3K">
 		<line_first>Vita3K PlayStation Vita Emulator</line_first>
-		<line_second>Vita3Kは、Windows、LinuxとmacOS用にC++で書かれたオープンソースのPlayStation Vita
-エミュレーターです。</line_second>
+		<line_second>Vita3Kは、Windows、Linux、macOSとAndroid用にC++で書かれたオープンソースのPlayStation Vitaエミュレーターです。</line_second>
 		<line_third>エミュレーターは未だ初期段階にあるため、フィードバックやテストは大歓迎です。</line_third>
 		<line_fourth>まずは、PS Vitaのファームウェアとフォントのパッケージをインストールしてください。</line_fourth>
 		<download_firmware>ファームウェアをダウンロード</download_firmware>
@@ -508,7 +567,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<line_seventh>商用ゲームとHomebrew互換性リストで動作するものを御確認下さい。</line_seventh>
 		<commercial_compatibility_list>商用ゲーム互換性リスト</commercial_compatibility_list>
 		<homebrew_compatibility_list>Homebrew互換性リスト</homebrew_compatibility_list>
-		<line_eighth>寄稿者を募集しています！</line_eighth>
+		<line_ninth>寄稿者を募集しています！</line_ninth>
 		<line_tenth>その他の相談は、#help チャンネルで行うことができます。</line_tenth>
 		<line_eleventh>Vita3Kは違法行為を認めません。所有ゲームの吸出しを行ってください。</line_eleventh>
 		<show_next_time>次回以降も表示</show_next_time>

@@ -1063,13 +1063,13 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", control_setting_str);
             if (gui.modules.empty()) {
                 ImGui::Spacing();
-                auto fw_str = lang["fw_not_detected"].c_str();
+                auto fw_str = lang["firmware_not_detected"].c_str();
                 ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(fw_str).x / 2.f));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", fw_str);
             }
             if (!gui.fw_font) {
                 ImGui::Spacing();
-                auto fw_font_str = lang["fw_font_not_detected"].c_str();
+                auto fw_font_str = lang["firmware_font_not_detected"].c_str();
                 ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(fw_font_str).x / 2.f));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", fw_font_str);
             }

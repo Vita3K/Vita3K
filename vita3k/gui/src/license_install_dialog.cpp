@@ -34,7 +34,8 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto BUTTON_SIZE = ImVec2(180.f * SCALE.x, 45.f * SCALE.y);
 
-    auto lang = gui.lang.install_dialog;
+    auto lang = gui.lang.install_dialog.license_install;
+    auto zrif = gui.lang.install_dialog.pkg_install;
     auto indicator = gui.lang.indicator;
     auto common = emuenv.common_dialog.lang.common;
 
@@ -57,7 +58,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::Button(lang["select_bin_rif"].c_str(), BUTTON_SIZE))
             state = "work";
         ImGui::SetCursorPosX(POS_BUTTON);
-        if (ImGui::Button(lang["enter_zrif"].c_str(), BUTTON_SIZE))
+        if (ImGui::Button(zrif["enter_zrif"].c_str(), BUTTON_SIZE))
             state = "zrif";
         ImGui::Spacing();
         ImGui::Separator();
@@ -76,12 +77,12 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         } else
             state.clear();
     } else if (state == "zrif") {
-        title = lang["enter_zrif_key"];
+        title = zrif["enter_zrif_key"];
         ImGui::PushItemWidth(640.f * SCALE.x);
-        ImGui::InputTextWithHint("##enter_zrif", lang["input_zrif"].c_str(), &zRIF);
+        ImGui::InputTextWithHint("##enter_zrif", zrif["input_zrif"].c_str(), &zRIF);
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", lang["copy_paste_zrif"].c_str());
+            ImGui::SetTooltip("%s", zrif["copy_paste_zrif"].c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -100,7 +101,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     } else if (state == "success") {
         title = indicator["install_complete"];
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s\n%s %s\n%s %s", lang["successed_install_license"].c_str(), lang["content_id"].c_str(), emuenv.license_content_id.c_str(), lang["title_id"].c_str(), emuenv.license_title_id.c_str());
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s\n%s: %s\n%s: %s", lang["successed_install_license"].c_str(), gui.lang.settings.theme_background.theme.information["content_id"].c_str(), emuenv.license_content_id.c_str(), gui.lang.app_context["title_id"].c_str(), emuenv.license_title_id.c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -118,8 +119,9 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
     } else if (state == "fail") {
         title = indicator["install_failed"];
-        ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize(lang["check_log"].c_str()).x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["check_log"].c_str());
+        auto CHECK_LOG = gui.lang.install_dialog.pkg_install["check_log"].c_str();
+        ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize(CHECK_LOG).x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f));
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", CHECK_LOG);
         ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
         if (ImGui::Button("OK", BUTTON_SIZE)) {
             gui.file_menu.license_install_dialog = false;

@@ -140,24 +140,24 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         }
         break;
     case INSTALL_FIRMWARE:
-        title_str = "Install Firmware.";
-        ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize("Installing both firmware files is highly recommended.").x / 2.f), (WINDOW_SIZE.y / 2.f) - (ImGui::GetFontSize() * 2.f)));
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Installing both firmware files is highly recommended.");
+        title_str = lang["install_firmware"];
+        ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["install_highly_recommended"].c_str()).x / 2.f), (WINDOW_SIZE.y / 2.f) - (ImGui::GetFontSize() * 2.f)));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["install_highly_recommended"].c_str());
         ImGui::Spacing();
-        if (ImGui::Button("Download Firmware", BIG_BUTTON_SIZE))
+        if (ImGui::Button(lang["download_firmware"].c_str(), BIG_BUTTON_SIZE))
             open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
         ImGui::SameLine(0, 20.f * SCALE.x);
-        ImGui::Text("Installed: %s", FW_INSTALLED ? "V" : "X");
+        ImGui::Text("%s %s", lang["installed"].c_str(), FW_INSTALLED ? "V" : "X");
         ImGui::Spacing();
-        if (ImGui::Button("Download Font Package", BIG_BUTTON_SIZE))
+        if (ImGui::Button(lang["download_font_package"].c_str(), BIG_BUTTON_SIZE))
             open_path("https://bit.ly/2P2rb0r");
         ImGui::SameLine(0, 20.f * SCALE.x);
-        ImGui::Text("Installed: %s", FW_FONT_INSTALLED ? "V" : "X");
+        ImGui::Text("%s %s", lang["installed"].c_str(), FW_FONT_INSTALLED ? "V" : "X");
         ImGui::SetCursorPos(BIG_BUTTON_POS);
-        if (ImGui::Button("Install Firmware File", BIG_BUTTON_SIZE))
+        if (ImGui::Button(lang["install_firmware_file"].c_str(), BIG_BUTTON_SIZE))
             gui.file_menu.firmware_install_dialog = true;
         if (gui.file_menu.firmware_install_dialog) {
-            ImGui::PushFont(gui.monospaced_font);
+            ImGui::PushFont(gui.vita_font);
             draw_firmware_install_dialog(gui, emuenv);
             ImGui::PopFont();
         }

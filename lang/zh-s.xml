@@ -26,7 +26,7 @@
 
 	<about name="关于">
 		<vita3k>Vita3K：PS Vita/PS TV模拟器。 是全球首个实用的PS Vita/PS TV模拟器。</vita3k>
-		<about_vita3k>Vita3K是使用C++编写的实验性开源PlayStation Vita/PlayStation TV模拟器，适用于Windows、Linux和macOS操作系统。</about_vita3k>
+		<about_vita3k>Vita3K是使用C++编写的实验性开源PlayStation Vita/PlayStation TV模拟器，适用于Windows、Linux、macOS以及Android操作系统。</about_vita3k>
 		<note>注意：目前模拟器仍处于开发的早期阶段。</note>
 		<github_website>如果您有兴趣参与贡献，请浏览我们的GitHub：</github_website>
 		<vita3k_website>更多信息请访问我们的网站：</vita3k_website>
@@ -38,6 +38,9 @@
 	<app_context>
 		<boot>运行</boot>
 		<check_app_compatibility>查看应用程序兼容性</check_app_compatibility>
+		<open_issue>打开问题</open_issue>
+		<create_issue>创建问题</create_issue>
+		<update_database>更新数据库</update_database>
 		<copy_app_info>复制应用程序信息</copy_app_info>
 		<name_and_id>名称和标题ID</name_and_id>
 		<app_summary>应用程序摘要</app_summary>
@@ -198,6 +201,19 @@
 		<minutes_ago>{}分钟前</minutes_ago>
 	</common>
 
+	<compatibility name="兼容性">
+		<states>
+			<state id = "0">未知</state>
+			<state id = "1260231569">无法启动</state>
+			<state id = "1344750319">可引导</state>
+			<state id = "1260231381">有图像</state>
+			<state id = "1344751053">可进入菜单</state>
+			<state id = "1344752299">可进入游戏 -</state>
+			<state id = "1260231985">可进入游戏 +</state>
+			<state id = "920344019">完全可玩</state>
+		</states>
+	</compatibility>
+
 	<compile_shaders>
 		<compiling_shaders>正在编译着色器</compiling_shaders>
 		<shaders_compiled>个着色器已编译</shaders_compiled>
@@ -259,6 +275,8 @@
 		<full_screen>全屏</full_screen>
 		<toggle_touch>切换触碰</toggle_touch>
 		<toggle_gui_visibility>切换图形用户界面可见性</toggle_gui_visibility>
+		<error>错误</error>
+		<error_duplicate_key>该键已被使用并绑定其他键或被预留。</error_duplicate_key>
 	</controls>
 
 	<dialog>
@@ -338,43 +356,60 @@
 		<completed_setup>You have now completed initial setup.
 Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
+		<install_firmware>安装固件。</install_firmware>
+		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
+		<installed>已安装：</installed>
+		<download_firmware>Download Firmware</download_firmware>
+		<download_font_package>Download Font Package</download_font_package>
+		<install_firmware_file>安装固件文件</install_firmware_file>
 		<completed>已完成。</completed>
 		<next>Next</next>
 	</initial_setup>
 
 	<install_dialog>
-		<fw_installing>Installation in progress, please wait...</fw_installing>
-		<successed_install_fw>固件已成功安装。</successed_install_fw>
-		<fw_version>固件版本：</fw_version>
-		<no_font_exist>No firmware font package present.
+		<firmware_install>
+			<firmware_installing>Installation in progress, please wait...</firmware_installing>
+			<successed_install_firmware>固件已成功安装。</successed_install_firmware>
+			<firmware_version>固件版本：</firmware_version>
+			<no_font_exist>No firmware font package present.
 Please download and install it.</no_font_exist>
-		<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
-		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
-		<delete_fw>Delete the firmware installation file?</delete_fw>
-		<select_key_type>选择密钥类型</select_key_type>
-		<select_work>选择work.bin</select_work>
-		<enter_zrif>输入zRIF</enter_zrif>
-		<enter_zrif_key>输入zRIF密钥</enter_zrif_key>
-		<input_zrif>请在此处输入您的zRIF</input_zrif>
-		<copy_paste_zrif>使用Ctrl（Cmd）+ C复制，使用Ctrl（Cmd）+ V粘贴。</copy_paste_zrif>
-		<delete_pkg>删除pkg文件？</delete_pkg>
-		<delete_work>删除work.bin文件？</delete_work>
-		<check_log>详情请查看日志。</check_log>
-		<select_install_type>选择安装类型</select_install_type>
-		<select_file>选择文件</select_file>
-		<select_directory>选择目录</select_directory>
-		<compatible_content>发现兼容内容的{}个压缩包。</compatible_content>
-		<successed_install_archive>已成功安装{}个压缩包中的内容：</successed_install_archive>
-		<update_app>更新应用程序至：</update_app>
-		<failed_install_archive>无法安装{}个压缩包中的内容：</failed_install_archive>
-		<not_compatible_content>未发现兼容内容的{}个压缩包：</not_compatible_content>
-		<delete_archive>删除压缩包？</delete_archive>
-		<select_license_type>选择许可证类型</select_license_type>
-		<select_bin_rif>选择work.bin/rif</select_bin_rif>
-		<successed_install_license>已成功安装许可证。</successed_install_license>
-		<content_id>内容ID：</content_id>
-		<title_id>标题ID：</title_id>
-		<delete_bin_rif>删除work.bin/rif文件？</delete_bin_rif>
+			<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
+			<firmware_font_package_note>Firmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
+			<delete_firmware>Delete the firmware installation file?</delete_firmware>
+		</firmware_install>
+		<pkg_install>
+			<select_key_type>选择密钥类型</select_key_type>
+			<select_work>选择work.bin</select_work>
+			<enter_zrif>输入zRIF</enter_zrif>
+			<enter_zrif_key>输入zRIF密钥</enter_zrif_key>
+			<input_zrif>请在此处输入您的zRIF</input_zrif>
+			<copy_paste_zrif>使用Ctrl（Cmd）+ C复制，使用Ctrl（Cmd）+ V粘贴。</copy_paste_zrif>
+			<delete_pkg>删除pkg文件？</delete_pkg>
+			<delete_work>删除work.bin文件？</delete_work>
+			<check_log>详情请查看日志。</check_log>
+		</pkg_install>
+		<archive_install>
+			<select_install_type>选择安装类型</select_install_type>
+			<select_file>选择文件</select_file>
+			<select_directory>选择目录</select_directory>
+			<compatible_content>发现兼容内容的{}个压缩包。</compatible_content>
+			<successed_install_archive>已成功安装{}个压缩包中的内容：</successed_install_archive>
+			<update_app>更新应用程序至：</update_app>
+			<failed_install_archive>无法安装{}个压缩包中的内容：</failed_install_archive>
+			<not_compatible_content>未发现兼容内容的{}个压缩包：</not_compatible_content>
+			<delete_archive>删除压缩包？</delete_archive>
+		</archive_install>
+		<license_install>
+			<select_license_type>选择许可证类型</select_license_type>
+			<select_bin_rif>选择work.bin/rif</select_bin_rif>
+			<successed_install_license>已成功安装许可证。</successed_install_license>
+			<delete_bin_rif>删除work.bin/rif文件？</delete_bin_rif>
+		</license_install>
+		<reinstall>
+			<reinstall_content>是否重新安装该内容？</reinstall_content>
+			<already_installed>已经安装过该内容。</already_installed>
+			<reinstall_overwrite>您想要重新安装并覆盖已存在的数据吗？</reinstall_overwrite>
+		</reinstall>
 	</install_dialog>
 
 	<live_area>
@@ -382,8 +417,8 @@ Please download and install it.</no_font_exist>
 		<continue>继续</continue>
 		<help>
 			<control_setting>在控制设置中使用键盘配置</control_setting>
-			<fw_not_detected>Firmware not detected. Installation is highly recommended</fw_not_detected>
-			<fw_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</fw_font_not_detected>
+			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
+			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
 			<live_area_help>Live Area帮助</live_area_help>
 			<browse_app>浏览应用程序列表</browse_app>
 			<browse_app_control>方向键、左摇杆、滚轮上/下或使用滑块</browse_app_control>
@@ -406,6 +441,13 @@ Please download and install it.</no_font_exist>
 			<exit_manual_control>点击Esc或按PS键</exit_manual_control>
 		</help>
 	</live_area>
+
+	<performance_overlay>
+		<fps>帧数</fps>
+		<avg>平均</avg>
+		<min>最低</min>
+		<max>最高</max>
+	</performance_overlay>
 
 	<settings name="设定">
 		<theme_background name="主题&背景">
@@ -526,7 +568,7 @@ Please download and install it.</no_font_exist>
 
 	<welcome name="欢迎来到Vita3K">
 		<line_first>Vita3K PlayStation Vita模拟器</line_first>
-		<line_second>Vita3K是使用C++编写的开源PlayStation Vita模拟器，适用于Windows、Linux和macOS。</line_second>
+		<line_second>Vita3K是使用C++编写的开源PlayStation Vita模拟器，适用于Windows、Linux、macOS以及Android。</line_second>
 		<line_third>目前模拟器仍处于早期阶段，因此非常感谢任何反馈和测试。</line_third>
 		<line_fourth>要开始使用，请安装PS Vita固件和字体包。</line_fourth>
 		<download_firmware>Download Firmware</download_firmware>
@@ -536,7 +578,7 @@ Please download and install it.</no_font_exist>
 		<line_seventh>参考商业游戏以及自制程序兼容性列表来查看目前可运行的内容。</line_seventh>
 		<commercial_compatibility_list>商业游戏兼容性列表</commercial_compatibility_list>
 		<homebrew_compatibility_list>自制程序兼容性列表</homebrew_compatibility_list>
-		<line_eighth>欢迎参与贡献！</line_eighth>
+		<line_ninth>欢迎参与贡献！</line_ninth>
 		<line_tenth>可以在#help频道中找到更多支持</line_tenth>
 		<line_eleventh>Vita3K不纵容盗版。您必须提取您自己拥有的游戏。</line_eleventh>
 		<show_next_time>下次显示</show_next_time>

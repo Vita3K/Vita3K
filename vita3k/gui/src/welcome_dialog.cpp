@@ -35,7 +35,7 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_second"].c_str());
+    ImGui::TextWrapped("%s", lang["line_second"].c_str());
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_third"].c_str());
     ImGui::Spacing();
@@ -43,7 +43,7 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(lang["download_firmware"].c_str()))
         open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
     ImGui::SameLine();
-    if (ImGui::Button(gui.lang.install_dialog["download_firmware_font_package"].c_str()))
+    if (ImGui::Button(gui.lang.install_dialog.firmware_install["download_firmware_font_package"].c_str()))
         open_path("https://bit.ly/2P2rb0r");
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_sixth_part_one"].c_str());
@@ -61,7 +61,7 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(lang["homebrew_compatibility_list"].c_str()))
         open_path("https://vita3k.org/compatibility-homebrew.html");
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_eighth"].c_str());
+    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_ninth"].c_str());
     ImGui::SameLine();
     if (ImGui::Button("GitHub"))
         open_path("https://github.com/Vita3K/Vita3K");
