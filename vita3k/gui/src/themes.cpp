@@ -321,10 +321,10 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string content_id
         if (buffer.empty()) {
             buffer = init_default_icon(gui, emuenv);
             if (buffer.empty()) {
-                LOG_WARN("Name: '{}', Not found icon for system App: {}.", name, content_id);
+                LOG_WARN("Name: '{}', did not find icon for System App: {}.", name, content_id);
                 continue;
             } else
-                LOG_INFO("Default icon found for system App {}.", title_id);
+                LOG_INFO("Default icon found for System App {}.", title_id);
         }
         stbi_uc *data = stbi_load_from_memory(buffer.data(), static_cast<int>(buffer.size()), &width, &height, nullptr, STBI_rgb_alpha);
         if (!data) {
