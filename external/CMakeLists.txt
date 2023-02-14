@@ -271,7 +271,6 @@ option(SPIRV_CROSS_SKIP_INSTALL "Skips installation targets." ON)
 add_subdirectory(SPIRV-Cross)
 set_property(TARGET spirv-cross-core PROPERTY FOLDER externals)
 set_property(TARGET spirv-cross-glsl PROPERTY FOLDER externals)
-set_property(TARGET glslang-build-info PROPERTY FOLDER glslang)
 
 add_library(dlmalloc STATIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc/dlmalloc.cc")
 target_include_directories(dlmalloc PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/dlmalloc")
