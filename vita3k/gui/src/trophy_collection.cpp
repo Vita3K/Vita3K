@@ -65,56 +65,56 @@ static bool load_trophy_progress(IOState &io, const SceUID &progress_input_file,
     // Check magic
     uint32_t magic;
     if (read_trophy_progress_file(&magic, 4) != 4 || magic != TROPHY_USR_MAGIC) {
-        LOG_ERROR("Fail read stuff magic");
+        LOG_ERROR("Failed to read stuff magic");
         return false;
     }
 
     // Read trophy progress
     std::fill(np_com_id_info[np_com_id].context.trophy_progress, np_com_id_info[np_com_id].context.trophy_progress + (MAX_TROPHIES >> 5), 0);
     if (read_trophy_progress_file(np_com_id_info[np_com_id].context.trophy_progress, sizeof(np_com_id_info[np_com_id].context.trophy_progress)) != sizeof(np_com_id_info[np_com_id].context.trophy_progress)) {
-        LOG_ERROR("Fail read trophy progress");
+        LOG_ERROR("Failed to read trophy progress");
         return false;
     }
 
     // Read trophy availability
     if (read_trophy_progress_file(np_com_id_info[np_com_id].context.trophy_availability, sizeof(np_com_id_info[np_com_id].context.trophy_availability)) != sizeof(np_com_id_info[np_com_id].context.trophy_availability)) {
-        LOG_ERROR("Fail read trophy availability");
+        LOG_ERROR("Failed to read trophy availability");
         return false;
     }
 
     // Read group count
     if (read_trophy_progress_file(&np_com_id_info[np_com_id].context.group_count, 4) != 4) {
-        LOG_ERROR("Fail read count group id");
+        LOG_ERROR("Failed to read count group id");
         return false;
     }
 
     // Read trophy count
     if (read_trophy_progress_file(&np_com_id_info[np_com_id].context.trophy_count, 4) != 4) {
-        LOG_ERROR("Fail read trophy count");
+        LOG_ERROR("Failed to read trophy count");
         return false;
     }
 
     // Read platinum trophy ID
     if (read_trophy_progress_file(&np_com_id_info[np_com_id].context.platinum_trophy_id, 4) != 4) {
-        LOG_ERROR("Fail read platinum trophy ID");
+        LOG_ERROR("Failed to read platinum trophy ID");
         return false;
     }
 
     // Read trophy count by group
     if (read_trophy_progress_file(np_com_id_info[np_com_id].context.trophy_count_by_group.data(), (uint32_t)np_com_id_info[np_com_id].context.trophy_count_by_group.size() * 4) != (int)np_com_id_info[np_com_id].context.trophy_count_by_group.size() * 4) {
-        LOG_ERROR("Fail read trophy count by group");
+        LOG_ERROR("Failed to read the trophy count by group");
         return false;
     }
 
     // Read trophy timestamps
     if (read_trophy_progress_file(np_com_id_info[np_com_id].context.unlock_timestamps.data(), (uint32_t)np_com_id_info[np_com_id].context.unlock_timestamps.size() * 8) != (int)np_com_id_info[np_com_id].context.unlock_timestamps.size() * 8) {
-        LOG_ERROR("Fail read unlock_timestamp");
+        LOG_ERROR("Failed to read unlock_timestamp");
         return false;
     }
 
     // Read trophy type
     if (read_trophy_progress_file(np_com_id_info[np_com_id].context.trophy_kinds.data(), (uint32_t)np_com_id_info[np_com_id].context.trophy_kinds.size() * 4) != (int)np_com_id_info[np_com_id].context.trophy_kinds.size() * 4) {
-        LOG_ERROR("Fail read trophy type");
+        LOG_ERROR("Failed to read trophy type");
         return false;
     }
 
@@ -138,7 +138,7 @@ void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 const auto trophy_data_np_com_id_path{ fs::path(TROPHY_PATH) / "data" / np_com_id };
 
                 if (!fs::exists(trophy_data_np_com_id_path / "TROPUSR.DAT")) {
-                    LOG_ERROR("Trophy Data progress not found for Np Com ID: {}, clean trophy file.", np_com_id);
+                    LOG_ERROR("Trophy Data progress was not found for Np Com ID: {}, clean the trophy file.", np_com_id);
                     fs::remove_all(trophy_data_np_com_id_path);
                     fs::remove_all(trophy_conf_np_com_id_path);
                     continue;
@@ -153,7 +153,7 @@ void init_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 const auto progress_input_file = open_file(emuenv.io, trophy_progress_save_file.c_str(), SCE_O_RDONLY, emuenv.pref_path, "load_trophy_progress_file");
 
                 if (!load_trophy_progress(emuenv.io, progress_input_file, np_com_id)) {
-                    LOG_ERROR("Fail load trophy progress for Np Com ID: {}, clean trophy file.", np_com_id);
+                    LOG_ERROR("Failed to load trophy progress for Np Com ID: {}, clean the trophy file.", np_com_id);
                     close_file(emuenv.io, progress_input_file, "load_trophy_progress_file");
                     fs::remove_all(trophy_data_np_com_id_path);
                     fs::remove_all(trophy_conf_np_com_id_path);
