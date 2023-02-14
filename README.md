@@ -55,7 +55,7 @@ Vita3K is licensed under the **GPLv2** license. This is largely dictated by exte
 
 ## Building
 
-Please see [`building.md`](./building.md).
+Please see [`Building.md`](./documentation/Building.md).
 
 ## Running
 
