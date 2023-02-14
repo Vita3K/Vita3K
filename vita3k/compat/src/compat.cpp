@@ -23,11 +23,6 @@
 
 #include <pugixml.hpp>
 
-#ifdef __APPLE__
-#include <pwd.h>
-#include <unistd.h>
-#endif
-
 namespace compat {
 
 static std::string db_updated_at;
@@ -122,13 +117,7 @@ static std::string get_string_output(const std::string cmd) {
 }
 
 bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
-#ifndef __APPLE__
     const auto compat_db_path = fs::path(emuenv.base_path) / "cache/app_compat_db.xml";
-#else
-    struct passwd *pwent = getpwuid(getuid());
-    const auto compat_db_path = fs::path(fmt::format("{}/cache/app_compat_db.yml", pwent->pw_dir));
-#endif
-
     const auto latest_link = "https://api.github.com/repos/Vita3K/compatibility/releases/latest";
 
 #ifdef WIN32
