@@ -49,6 +49,7 @@ Vita3K is licensed under the **GPLv2** license. This is largely dictated by exte
     * [vita3k-git](https://aur.archlinux.org/packages/vita3k-git)<sup><small>AUR</small></sup>
   * Requirements:
     * xdg-desktop-portal
+* [Android](https://github.com/Vita3K/Vita3K-Android/releases)
 * Others
   * [Download Artifact](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
 
@@ -57,6 +58,7 @@ Vita3K is licensed under the **GPLv2** license. This is largely dictated by exte
 Please see [`building.md`](./building.md).
 
 ## Running
+
 Specify the path to a .vpk file as the first command line argument, or run `Vita3K --help` from the command-line for a full list of options.
 For more detailed instructions on running/installing games on all platforms, please read the **#info-faq** channel on our [Discord Server](https://discord.gg/MaWhJVH).
 
@@ -79,4 +81,4 @@ If you support us on Patreon and would like your name added, please get in touch
 ## Note
 The purpose of this emulator is not to enable illegal activity. You can dump games by using [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm)/[FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). You can get homebrew programs from [VitaDB](https://vitadb.rinnegatamante.it/).
 
-PlayStation and PlayStation Vita are trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
+PlayStation and PlayStation Vita are registered trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
