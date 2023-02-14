@@ -132,10 +132,10 @@ struct LangState {
     std::map<std::string, std::string> app_context = {
         { "boot", "Boot" },
         { "check_app_compatibility", "Check App Compatibility" },
-        { "copy_app_info", "Copy App Info" },
         { "open_issue", "Open Issue" },
         { "create_issue", "Create Issue" },
         { "update_database", "Update Database" },
+        { "copy_app_info", "Copy App Info" },
         { "name_and_id", "Name and Title ID" },
         { "app_summary", "App Summary" },
         { "custom_config", "Custom Config" },
