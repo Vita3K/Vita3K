@@ -1,6 +1,6 @@
 # Build Vita3K
 
-Vita3K uses CMake for its project configuration and generation. In theory, it should be compatible with any project generator supported by CMake, C++17 compatible compiler and an IDE with CMake support. 
+Vita3K uses CMake for its project configuration and generation. In theory, it should be compatible with any project generator supported by CMake, a C++17 compatible compiler and an IDE with CMake support. 
 
 The project provides [CMake presets](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html) to allow configuring and building Vita3K without having to deal with adding the needed arguments through a command-line interface or using the user interface of your IDE. As long as your IDE or code editor supports CMake, the software should immediately detect the presets and let you choose which configuration settings you want to use to generate the program. Reference on how to use CMake presets with various IDEs and code editors can be found here:
 
@@ -10,7 +10,7 @@ The project provides [CMake presets](https://cmake.org/cmake/help/latest/manual/
 
 All presets are named after `<target_os>-<project_generator>-<compiler>`, are automatically hidden and shown depending on your host OS and generate a binary folder of path `<source_directory>/build/<preset_name>`. For command-line users, run `cmake --list-presets` on the top directory of the repository to see which presets are available to you. For presets without `<project_generator>` and/or `<compiler>`, the project generator and/or the compiler haven't been explicitly specified in the preset to let CMake fallback to the platform defaults.
 
-If you still want to use presets but none of them works for your setup, you can make new ones by creating a `CMakeUserPresets.json` file and you can check the specification [here](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html). Git will ignore this file.
+If you still want to use presets but none of them work for your setup, you can make new ones by creating a `CMakeUserPresets.json` file and you can check the specification [here](https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html). Git will ignore this file.
 
 **Note: Vita3K doesn't support compilation for 32-bit/x86/i386 platforms. macOS is also considered unsupported due to incompatibilities with the OpenGL implementation.**
 
