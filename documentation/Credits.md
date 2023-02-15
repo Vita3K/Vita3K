@@ -32,12 +32,4 @@ Thanks to every person on [this](https://github.com/Vita3K/Vita3K/graphs/contrib
 
 Obviously, this project would not have happened without Sony creating the PlayStation Vita in the first place.
 
-**If you have helped out anywhere, whether that be on a Vita3K repo, on the Discord server or on the Patreon page:**
-  _______ _    _          _   _ _  __ __     ______  _    _ 
- |__   __| |  | |   /\   | \ | | |/ / \ \   / / __ \| |  | |
-    | |  | |__| |  /  \  |  \| | ' /   \ \_/ / |  | | |  | |
-    | |  |  __  | / /\ \ | . ` |  <     \   /| |  | | |  | |
-    | |  | |  | |/ ____ \| |\  | . \     | | | |__| | |__| |
-    |_|  |_|  |_/_/    \_\_| \_|_|\_\    |_|  \____/ \____/ 
-                                                            
-                                                            
+**If you have helped out anywhere, whether that be on a Vita3K repo, on the Discord server or on the Patreon page: thank you.**
