@@ -16,7 +16,7 @@ Vita3K is an experimental PlayStation Vita emulator for Windows, Linux, macOS an
 
 ## Compatibility
 
-This emulator currently runs most homebrew programs. It is also able to load some decrypted commercial games.
+This emulator currently runs most homebrew programs and some decrypted commercial games.
 
 - [Homebrew compatibility page](https://vita3k.org/compatibility-homebrew.html)
 - [Commercial compatibility page](https://vita3k.org/compatibility.html)
@@ -58,11 +58,11 @@ Please see [`Building.md`](./documentation/Building.md).
 
 ## Running
 
-Specify the path to a .vpk file as the first command line argument, or run `Vita3K --help` from the command-line for a full list of options.
-For more detailed instructions on running/installing games on all platforms, please read the **#info-faq** channel on our [Discord Server](https://discord.gg/MaWhJVH).
+Install your game in .pkg or .vpk format and click the play button on the game's menu.
+For more detailed instructions on running/installing games on all platforms, please read the XYZ.
 
 ## Bugs and issues
-The project is in an early stage, so please be sensitive to that when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
+Vita3K is still in an early stage of development, so please be sensitive to this when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
 
 ## Thanks
 
