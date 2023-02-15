@@ -33,7 +33,7 @@ This emulator currently runs most homebrew programs and some decrypted commercia
 | :----------------------------------------------------------------: | :------------------------------------------------------------------------: |
 | ![Fruit Ninja Screenshot](./_readme/screenshots/Fruit%20Ninja.png) | ![Jetpack Joyride Screenshot](./_readme/screenshots/Jetpack%20Joyride.png) |
 
-## Licence
+## License
 
 Vita3K is licensed under the **GPLv2** license. This is largely dictated by external dependencies, most notably Unicorn.
 
@@ -59,7 +59,7 @@ Please see [`Building.md`](./documentation/Building.md).
 ## Running
 
 Install your game in .pkg or .vpk format and click the play button on the game's menu.
-For more detailed instructions on running/installing games on all platforms, please read the XYZ.
+For more detailed instructions on running/installing games on all platforms, please read [`Running_Games.md`](./documentation/Running_Games.md).
 
 ## Bugs and issues
 Vita3K is still in an early stage of development, so please be sensitive to this when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
