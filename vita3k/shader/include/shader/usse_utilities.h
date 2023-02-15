@@ -35,10 +35,11 @@ struct SpirvUtilFunctions {
     spv::Function *pack_fx8{ nullptr };
     spv::Function *unpack_fx8{ nullptr };
 
-    // buffer_addres_vec[i] contains the buffer pointer with an array of vec_i and stride 16 bytes
+    // buffer_addres_vec[i][1] contains the buffer pointer with an array of vec_i and stride 16 bytes
+    // 0 in the last index is for the read buffer, 1 is for the write buffer
     // this is technically not a function but is the best place to put it
     // buffer_address_vec[0] is for a packed float[] array
-    spv::Id buffer_address_vec[5] = {};
+    spv::Id buffer_address_vec[5][2] = {};
 };
 
 spv::Id finalize(spv::Builder &b, spv::Id first, spv::Id second, const Swizzle4 swizz, const int offset, const Imm4 dest_mask);
@@ -52,7 +53,7 @@ spv::Id unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureStat
 spv::Id pack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id vec, const DataType source_type);
 
 spv::Id fetch_memory(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, spv::Id addr);
-void buffer_address_load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand &dest, spv::Id addr, uint32_t component_size, uint32_t nb_components, bool is_fragment, int buffer_idx = -1);
+void buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand &dest, spv::Id addr, uint32_t component_size, uint32_t nb_components, bool is_fragment, int buffer_idx = -1, bool is_buffer_store = false);
 
 spv::Id make_vector_or_scalar_type(spv::Builder &b, spv::Id component, int size);
 
