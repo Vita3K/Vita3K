@@ -20,25 +20,22 @@
 #include "state.h"
 
 struct Config;
+struct MemState;
 
 namespace renderer::vulkan {
 
 bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path);
 
-bool create(VKState &state, std::unique_ptr<Context> &context);
+bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem);
 bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);
 void destroy(VKState &state, std::unique_ptr<RenderTarget> &rt);
 bool create(std::unique_ptr<VertexProgram> &vp, VKState &state, const SceGxmProgram &program);
 bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend);
-void create(SceGxmSyncObject *sync);
-void destroy(SceGxmSyncObject *sync);
 
 void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     void *indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config);
 
 void new_frame(VKContext &context);
-void update_sync_target(SceGxmSyncObject *sync, VKRenderTarget *target);
-void update_sync_signal(SceGxmSyncObject *sync);
 
 void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, const FeatureState &features);
 void set_uniform_buffer(VKContext &context, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, const uint8_t *data);

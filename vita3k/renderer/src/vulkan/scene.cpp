@@ -34,29 +34,43 @@ void set_uniform_buffer(VKContext &context, const ShaderProgram *program, const 
         return;
     }
 
-    const uint32_t data_size_upload = std::min<uint32_t>(size, program->uniform_buffer_sizes.at(block_num) * 4);
-    const uint32_t offset_start_upload = offset * 4;
-
-    if (vertex_shader) {
-        if (!context.vertex_uniform_storage_allocated) {
-            // Allocate a region for it. Don't worry though, when the shader program is changed
-            context.vertex_uniform_stream_ring_buffer.allocate(program->max_total_uniform_buffer_storage * 4);
-            context.vertex_uniform_storage_allocated = true;
+    if (context.state.features.support_memory_mapping) {
+        const uint64_t buffer_address = context.state.get_matching_device_address(data);
+        if (vertex_shader) {
+            context.current_vert_render_info.buffer_addresses[block_num] = buffer_address;
+        } else {
+            context.current_frag_render_info.buffer_addresses[block_num] = buffer_address;
         }
-
-        context.vertex_uniform_stream_ring_buffer.copy(context.prerender_cmd, data_size_upload, data, offset_start_upload);
     } else {
-        if (!context.fragment_uniform_storage_allocated) {
-            // Allocate a region for it. Don't worry though, when the shader program is changed
-            context.fragment_uniform_stream_ring_buffer.allocate(program->max_total_uniform_buffer_storage * 4);
-            context.fragment_uniform_storage_allocated = true;
-        }
+        const uint32_t data_size_upload = std::min<uint32_t>(size, program->uniform_buffer_sizes.at(block_num) * 4);
+        const uint32_t offset_start_upload = offset * 4;
 
-        context.fragment_uniform_stream_ring_buffer.copy(context.prerender_cmd, data_size_upload, data, offset_start_upload);
+        if (vertex_shader) {
+            if (!context.vertex_uniform_storage_allocated) {
+                // Allocate a region for it. Don't worry though, when the shader program is changed
+                context.vertex_uniform_stream_ring_buffer.allocate(program->max_total_uniform_buffer_storage * 4);
+                context.vertex_uniform_storage_allocated = true;
+            }
+
+            context.vertex_uniform_stream_ring_buffer.copy(context.prerender_cmd, data_size_upload, data, offset_start_upload);
+        } else {
+            if (!context.fragment_uniform_storage_allocated) {
+                // Allocate a region for it. Don't worry though, when the shader program is changed
+                context.fragment_uniform_stream_ring_buffer.allocate(program->max_total_uniform_buffer_storage * 4);
+                context.fragment_uniform_storage_allocated = true;
+            }
+
+            context.fragment_uniform_stream_ring_buffer.copy(context.prerender_cmd, data_size_upload, data, offset_start_upload);
+        }
     }
 }
 
 void new_frame(VKContext &context) {
+    if (context.state.features.support_memory_mapping) {
+        FrameDoneRequest request = { context.frame_timestamp };
+        context.request_queue.push(request);
+    }
+
     context.frame_timestamp++;
     context.current_frame_idx = context.frame_timestamp % MAX_FRAMES_RENDERING;
 
@@ -66,13 +80,27 @@ void new_frame(VKContext &context) {
     // wait on all fences still present to make sure
     if (!frame.rendered_fences.empty()) {
         // wait for the fences, then reset them
-        constexpr uint64_t max_time = std::numeric_limits<uint64_t>::max();
-        auto result = device.waitForFences(frame.rendered_fences, VK_TRUE, max_time);
-        if (result != vk::Result::eSuccess) {
-            LOG_ERROR("Could not wait for fences.");
-            assert(false);
-            return;
+
+        if (context.state.features.support_memory_mapping) {
+            // this will underflow for the first MAX_FRAMES_RENDERING frames
+            // but that's not an issue as frame.rendered_fences will be empty
+            uint64_t previous_frame_timestamp = context.frame_timestamp - MAX_FRAMES_RENDERING;
+
+            // the wait is done by the wait thread
+            std::unique_lock<std::mutex> lock(context.new_frame_mutex);
+            context.new_frame_condv.wait(lock, [&]() {
+                return context.last_frame_waited >= previous_frame_timestamp;
+            });
+        } else {
+            auto result = device.waitForFences(frame.rendered_fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+            if (result != vk::Result::eSuccess) {
+                LOG_ERROR("Could not wait for fences.");
+                assert(false);
+                return;
+            }
         }
+
+        // reset the fences in both case (the wait thread does not do that as they can still be used)
         device.resetFences(frame.rendered_fences);
         frame.rendered_fences.clear();
     }
@@ -86,20 +114,8 @@ void new_frame(VKContext &context) {
 
     context.last_vert_texture_count = ~0;
     context.last_frag_texture_count = ~0;
-}
 
-void update_sync_target(SceGxmSyncObject *sync, VKRenderTarget *target) {
-    SyncExtraData *extra = reinterpret_cast<SyncExtraData *>(sync->extra);
-    extra->render_target = target;
-}
-
-void update_sync_signal(SceGxmSyncObject *sync) {
-    SyncExtraData *extra = reinterpret_cast<SyncExtraData *>(sync->extra);
-    if (extra->render_target) {
-        // add the render_target current fence to the list of fences
-        // this should not need a mutex (the display thread should not be able to clear the fence list now)
-        extra->fences.push_back(extra->render_target->fences[extra->render_target->fence_idx]);
-    }
+    frame.frame_timestamp = context.frame_timestamp;
 }
 
 #ifdef __APPLE__
@@ -174,8 +190,8 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
     std::array<vk::WriteDescriptorSet, 16> write_descrs;
     // some default sampler in case a slot has never been set and we read a slot with higher idx
     vk::DescriptorImageInfo default_image_info{
-        .sampler = context.default_image.sampler,
-        .imageView = context.default_image.view,
+        .sampler = context.state.default_image.sampler,
+        .imageView = context.state.default_image.view,
         .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal
     };
 
@@ -207,18 +223,20 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
         state.device.updateDescriptorSets(fragment_texture_count, write_descrs.data(), 0, nullptr);
     }
 
-    uint32_t dynamic_offsets[] = {
-        // vertex uniform
-        context.vertex_uniform_stream_ring_buffer.data_offset,
-        // fragment uniform
-        context.fragment_uniform_stream_ring_buffer.data_offset,
+    const uint32_t dynamic_offset_count = state.features.support_memory_mapping ? 2U : 4U;
+    const uint32_t dynamic_offsets[] = {
         // GXMRenderVertUniformBlock
         context.vertex_info_uniform_buffer.data_offset,
         // GXMRenderFragUniformBlock
-        context.fragment_info_uniform_buffer.data_offset
+        context.fragment_info_uniform_buffer.data_offset,
+        // vertex ssbo
+        context.vertex_uniform_stream_ring_buffer.data_offset,
+        // fragment ssbo
+        context.fragment_uniform_stream_ring_buffer.data_offset
     };
 
-    context.render_cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptors, dynamic_offsets);
+    context.render_cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0,
+        descriptors.size(), descriptors.data(), dynamic_offset_count, dynamic_offsets);
 }
 
 static void bind_vertex_streams(VKContext &context, MemState &mem) {
@@ -253,7 +271,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem) {
     if (max_stream_idx == 0)
         return;
 
-    for (std::size_t i = 0; i < max_stream_idx; i++) {
+    for (int i = 0; i < max_stream_idx; i++) {
         if (state.vertex_streams[i].data) {
 #ifdef __APPLE__
             // Vulkan allows any stride, but Metal only allows multiples of 4.
@@ -262,9 +280,16 @@ static void bind_vertex_streams(VKContext &context, MemState &mem) {
                 restride_stream(state.vertex_streams[i], vertex_program.streams[i].stride);
             }
 #endif
-            context.vertex_stream_ring_buffer.allocate(context.prerender_cmd, state.vertex_streams[i].size, state.vertex_streams[i].data);
 
-            context.vertex_buffer_offsets[i] = context.vertex_stream_ring_buffer.data_offset;
+            if (context.state.features.support_memory_mapping) {
+                auto [buffer, offset] = context.state.get_matching_mapping(state.vertex_streams[i].data);
+
+                context.vertex_stream_offsets[i] = offset;
+                context.vertex_stream_buffers[i] = buffer;
+            } else {
+                context.vertex_stream_ring_buffer.allocate(context.prerender_cmd, state.vertex_streams[i].size, state.vertex_streams[i].data);
+                context.vertex_stream_offsets[i] = context.vertex_stream_ring_buffer.data_offset;
+            }
 
 #ifdef __APPLE__
             if (restride) {
@@ -276,10 +301,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem) {
         }
     }
 
-    vk::Buffer buffers[SCE_GXM_MAX_VERTEX_STREAMS];
-    std::fill_n(buffers, max_stream_idx, context.vertex_stream_ring_buffer.handle());
-
-    context.render_cmd.bindVertexBuffers(0, max_stream_idx, buffers, context.vertex_buffer_offsets.data());
+    context.render_cmd.bindVertexBuffers(0, max_stream_idx, context.vertex_stream_buffers, context.vertex_stream_offsets);
 }
 
 #ifdef __APPLE__
@@ -368,28 +390,32 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         LOG_DEBUG("Fragment default uniform buffer: {}\n", spdlog::to_hex(context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER].begin(), context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER].end(), 16));
     }
 
-    shader::RenderVertUniformBlock &vert_ublock = context.current_vert_render_info;
+    const bool use_memory_mapping = context.state.features.support_memory_mapping;
+
+    shader::RenderVertUniformBlockWithMapping &vert_ublock = context.current_vert_render_info;
     vert_ublock.viewport_flip = context.record.viewport_flip;
     vert_ublock.viewport_flag = (context.record.viewport_flat) ? 0.0f : 1.0f;
     vert_ublock.z_offset = context.record.z_offset;
     vert_ublock.z_scale = context.record.z_scale;
     vert_ublock.screen_width = static_cast<float>(context.render_target->width);
     vert_ublock.screen_height = static_cast<float>(context.render_target->height);
+    const size_t vert_ublock_size = use_memory_mapping ? sizeof(shader::RenderVertUniformBlockWithMapping) : sizeof(shader::RenderVertUniformBlock);
 
-    if (memcmp(&context.previous_vert_info, &vert_ublock, sizeof(shader::RenderVertUniformBlock)) != 0) {
-        context.vertex_info_uniform_buffer.allocate(context.prerender_cmd, sizeof(shader::RenderVertUniformBlock), &vert_ublock);
-        context.previous_vert_info = vert_ublock;
+    if (memcmp(&context.previous_vert_info, &vert_ublock, vert_ublock_size) != 0) {
+        context.vertex_info_uniform_buffer.allocate(context.prerender_cmd, vert_ublock_size, &vert_ublock);
+        memcpy(&context.previous_vert_info, &vert_ublock, vert_ublock_size);
     }
 
-    shader::RenderFragUniformBlock &frag_ublock = context.current_frag_render_info;
+    shader::RenderFragUniformBlockWithMapping &frag_ublock = context.current_frag_render_info;
 
     frag_ublock.writing_mask = context.record.writing_mask;
     frag_ublock.use_raw_image = 0;
     frag_ublock.res_multiplier = context.state.res_multiplier;
+    const size_t frag_ublock_size = use_memory_mapping ? sizeof(shader::RenderFragUniformBlockWithMapping) : sizeof(shader::RenderFragUniformBlock);
 
-    if (memcmp(&context.previous_frag_info, &frag_ublock, sizeof(shader::RenderFragUniformBlock)) != 0) {
-        context.fragment_info_uniform_buffer.allocate(context.prerender_cmd, sizeof(shader::RenderFragUniformBlock), &frag_ublock);
-        context.previous_frag_info = frag_ublock;
+    if (memcmp(&context.previous_frag_info, &frag_ublock, frag_ublock_size) != 0) {
+        context.fragment_info_uniform_buffer.allocate(context.prerender_cmd, frag_ublock_size, &frag_ublock);
+        memcpy(&context.previous_frag_info, &frag_ublock, frag_ublock_size);
     }
 
     // create, update and bind descriptors (uniforms and textures)
@@ -400,11 +426,17 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     // Upload index data.
     vk::IndexType index_type = (format == SCE_GXM_INDEX_FORMAT_U16) ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
     const size_t index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
-    const size_t index_buffer_size = index_size * count;
 
-    context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices);
+    if (context.state.features.support_memory_mapping) {
+        auto [buffer, offset] = context.state.get_matching_mapping(indices);
+        context.render_cmd.bindIndexBuffer(buffer, offset, index_type);
+    } else {
+        const size_t index_buffer_size = index_size * count;
 
-    context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
+        context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices);
+
+        context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
+    }
 
     context.render_cmd.drawIndexed(count, instance_count, 0, 0, 0);
 

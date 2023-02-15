@@ -75,6 +75,8 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
         { CommandOpcode::SyncSurfaceData, cmd_handle_sync_surface_data },
         { CommandOpcode::CreateContext, cmd_handle_create_context },
         { CommandOpcode::CreateRenderTarget, cmd_handle_create_render_target },
+        { CommandOpcode::MemoryMap, cmd_handle_memory_map },
+        { CommandOpcode::MemoryUnmap, cmd_handle_memory_unmap },
         { CommandOpcode::Draw, cmd_handle_draw },
         { CommandOpcode::TransferCopy, cmd_handle_transfer_copy },
         { CommandOpcode::TransferDownscale, cmd_handle_transfer_downscale },

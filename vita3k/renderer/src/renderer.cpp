@@ -109,8 +109,8 @@ void transfer_fill(State &state, uint32_t fillColor, const SceGxmTransferImage *
     renderer::send_single_command(state, nullptr, renderer::CommandOpcode::TransferFill, false, fillColor, dest);
 }
 
-void sync_surface_data(State &state, Context *ctx) {
-    renderer::add_command(ctx, renderer::CommandOpcode::SyncSurfaceData, nullptr);
+void sync_surface_data(State &state, Context *ctx, const SceGxmNotification vertex_notification, const SceGxmNotification fragment_notification) {
+    renderer::add_command(ctx, renderer::CommandOpcode::SyncSurfaceData, nullptr, vertex_notification, fragment_notification);
 }
 
 bool create_context(State &state, std::unique_ptr<Context> &context) {

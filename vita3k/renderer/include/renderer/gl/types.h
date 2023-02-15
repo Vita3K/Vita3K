@@ -80,6 +80,12 @@ struct GLContext : public renderer::Context {
     std::pair<std::uint8_t *, std::size_t> vertex_uniform_buffer_storage_ptr{ nullptr, 0 };
     std::pair<std::uint8_t *, std::size_t> fragment_uniform_buffer_storage_ptr{ nullptr, 0 };
 
+    shader::RenderVertUniformBlock previous_vert_info;
+    shader::RenderFragUniformBlock previous_frag_info;
+
+    shader::RenderVertUniformBlock current_vert_render_info;
+    shader::RenderFragUniformBlock current_frag_render_info;
+
     std::vector<size_t> self_sampling_indices;
 
     explicit GLContext();
