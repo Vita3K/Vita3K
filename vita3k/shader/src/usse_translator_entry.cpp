@@ -957,7 +957,7 @@ void USSERecompiler::compile_loop_node(const usse::USSELoopNode &loop) {
     b.setBuildPoint(&loops.head);
 
     // In the head we only want to branch to body. We always do while do anyway
-    b.createLoopMerge(&loops.merge, &loops.head, 0, {});
+    b.createLoopMerge(&loops.merge, &loops.continue_target, 0, {});
     b.createBranch(&loops.body);
 
     // Emit body content
