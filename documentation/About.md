@@ -1,8 +1,8 @@
 # About Vita3K
 
-Vita3K is the world's one and only PlayStation Vita emulator. It runs, with some issues, over 50% of all commerical Vita games. As for homebrew Vita games, just under half of them can be played with no issues whatsoever.
+Vita3K was started in 2018 by frangarcj, velocity and PetMac with the aim of playing Vita games on their PCs. Fast forward 5 years and Vita3K is on Windows, Mac, Linux and Android. About half of all commercial Vita games can be played and over half of all homebrew Vita games can be played flawlessly.
 
-Vita3K was started in 2018 by frangarcj, velocity and PetMac in an effort to 
+It may not have save states, emulation speed up, built in recording or any of those fancy features, but it does have something above all emulators. It's the only existing PlayStation Vita emulator which has been publicly released.
 
 # External Links
 
