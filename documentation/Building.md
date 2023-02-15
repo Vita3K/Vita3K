@@ -49,7 +49,7 @@ If you aren't satisfied with the way the Visual Studio integrates CMake projects
    -  Either the [Build Tools for Visual Studio 2022](https://aka.ms/vs/17/release/vs_BuildTools.exe) or Visual Studio 2022 with the ` Desktop development with C++` workload.
 - On the Start Menu, open the `x64 Native Tools Command Prompt for Visual Studio 2022`.
   <p align="center">
-    <img src="./_building/vs-cmd-prompt.png">
+    <img src="./documentation/_images/Building/vs-cmd-prompt.png">
   </p>
 
 - Clone the repository:
