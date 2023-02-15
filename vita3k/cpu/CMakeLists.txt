@@ -24,5 +24,4 @@ source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCE_LIST})
 
 target_include_directories(cpu PUBLIC include)
 target_link_libraries(cpu PUBLIC mem util)
-target_include_directories(cpu PRIVATE ${capstone_INCLUDE_DIRS})
-target_link_libraries(cpu PRIVATE dynarmic unicorn capstone-static)
+target_link_libraries(cpu PRIVATE dynarmic unicorn capstone)

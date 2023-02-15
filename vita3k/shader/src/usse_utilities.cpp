@@ -104,6 +104,14 @@ size_t shader::usse::utils::dest_mask_to_comp_count(shader::usse::Imm4 dest_mask
     return bit_count;
 }
 
+spv::Id shader::usse::utils::create_access_chain(spv::Builder& b, const spv::StorageClass storage_class, const spv::Id base, const std::vector<spv::Id>& offsets) {
+    spv::Builder::AccessChain access_chain{};
+    access_chain.base = base;
+    access_chain.indexChain = offsets;
+    b.setAccessChain(access_chain);
+    return b.createAccessChain(storage_class, base, offsets);
+}
+
 static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::SpirvShaderParameters &params, shader::usse::RegisterBank reg_bank) {
     switch (reg_bank) {
     case shader::usse::RegisterBank::PRIMATTR:
@@ -142,7 +150,8 @@ static spv::Function *make_fx8_unpack_func(spv::Builder &b, const FeatureState &
     spv::Id type_f32_v4 = b.makeVectorType(type_f32, 4);
     spv::Id max_fx8_c = b.makeFloatConstant(MAX_FX8);
 
-    spv::Function *fx8_unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v4, "unpack4xF8", { type_f32 },
+    spv::Function *fx8_unpack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32_v4, "unpack4xF8", { type_f32 }, { "to_unpack" },
         decorations, &fx8_unpack_func_block);
 
     spv::Id extracted = fx8_unpack_func->getParamId(0);
@@ -171,7 +180,8 @@ static spv::Function *make_fx8_pack_func(spv::Builder &b, const FeatureState &fe
     spv::Id type_f32_v4 = b.makeVectorType(type_f32, 4);
     spv::Id max_fx8_c = b.makeFloatConstant(MAX_FX8);
 
-    spv::Function *fx8_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "pack4xF8", { type_f32_v4 },
+    spv::Function *fx8_pack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32, "pack4xF8", { type_f32_v4 }, { "to_pack" },
         decorations, &fx8_pack_func_block);
 
     spv::Id extracted = fx8_pack_func->getParamId(0);
@@ -233,7 +243,8 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
         assert(false);
     }
 
-    spv::Function *unpack_func = b.makeFunctionEntry(spv::NoPrecision, output_type, func_name.c_str(), { type_f32 },
+    spv::Function *unpack_func = b.makeFunctionEntry(
+        spv::NoPrecision, output_type, func_name.c_str(), { type_f32 }, { "to_unpack" },
         decorations, &unpack_func_block);
     spv::Id extracted = unpack_func->getParamId(0);
 
@@ -324,7 +335,8 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
         assert(false);
     }
 
-    spv::Function *pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { input_type },
+    spv::Function *pack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32, func_name.c_str(), { input_type }, { "to_pack" },
         decorations, &pack_func_block);
 
     spv::Id extracted = pack_func->getParamId(0);
@@ -361,7 +373,8 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &
     spv::Id type_f32 = b.makeFloatType(32);
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
-    spv::Function *f16_unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 },
+    spv::Function *f16_unpack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 }, { "to_unpack" },
         decorations, &f16_unpack_func_block);
 
     spv::Id extracted = f16_unpack_func->getParamId(0);
@@ -385,7 +398,8 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &fe
     spv::Id type_f32 = b.makeFloatType(32);
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
-    spv::Function *f16_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "pack2xF16", { type_f32_v2 },
+    spv::Function *f16_pack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32, "pack2xF16", { type_f32_v2 }, { "to_pack" },
         decorations, &f16_pack_func_block);
 
     spv::Id extracted = f16_pack_func->getParamId(0);
@@ -416,7 +430,7 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
 
     const std::string func_name = fmt::format("fetchMemoryForBuffer{}Base{}", buffer_index, info.base);
 
-    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { type_i32 },
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { type_i32 }, { "addr" },
         {}, &func_block);
 
     spv::Id sixteen_cst = b.makeIntConstant(16);
@@ -440,14 +454,14 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
     spv::Id rem_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem, eight_cst);
     spv::Id rem_inv_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem_inv, eight_cst);
 
-    spv::Id src = b.createLoad(b.createAccessChain(spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }), spv::NoPrecision);
+    spv::Id src = b.createLoad(utils::create_access_chain(b, spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }), spv::NoPrecision);
 
     spv::Id friend_offset = b.createBinOp(spv::OpIAdd, type_i32, base_offset, one_cst);
     spv::Id friend_vector = b.createBinOp(spv::OpIAdd, type_i32, base_vector, b.createBinOp(spv::OpSDiv, type_i32, friend_offset, b.makeIntConstant(4)));
 
     friend_offset = b.createBinOp(spv::OpSRem, type_i32, friend_offset, four_cst);
 
-    spv::Id src_friend = b.createLoad(b.createAccessChain(spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), friend_vector, friend_offset }), spv::NoPrecision);
+    spv::Id src_friend = b.createLoad(utils::create_access_chain(b, spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), friend_vector, friend_offset }), spv::NoPrecision);
     spv::Id src_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src);
     spv::Id src_friend_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src_friend);
 
@@ -472,7 +486,7 @@ static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderP
     spv::Block *func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", { type_i32 },
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", { type_i32 }, { "addr" },
         {}, &func_block);
     spv::Id addr = fetch_func->getParamId(0);
 

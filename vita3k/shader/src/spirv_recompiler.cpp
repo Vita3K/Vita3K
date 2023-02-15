@@ -761,7 +761,7 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 }
                 translation_state.color_attachment_raw_id = color_attachment_raw;
 
-                spv::Id load_normal_cond = b.createBinOp(spv::OpFOrdLessThan, b.makeBoolType(), b.createAccessChain(spv::StorageClassPrivate, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_use_raw_image) }), b.makeFloatConstant(0.5f));
+                spv::Id load_normal_cond = b.createBinOp(spv::OpFOrdLessThan, b.makeBoolType(), utils::create_access_chain(b, spv::StorageClassPrivate, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_use_raw_image) }), b.makeFloatConstant(0.5f));
                 spv::Builder::If cond_builder(load_normal_cond, spv::SelectionControlMaskNone, b);
 
                 source = b.createOp(spv::OpImageRead, v4, { b.createLoad(color_attachment, spv::NoPrecision), current_coord });
@@ -815,17 +815,17 @@ static void copy_uniform_block_to_register(spv::Builder &builder, spv::Id sa_ban
     int start_in_vec4_granularity = start / 4;
 
     utils::make_for_loop(builder, ite, builder.makeIntConstant(0), builder.makeIntConstant(vec4_count), [&]() {
-        spv::Id to_copy = builder.createAccessChain(spv::StorageClassStorageBuffer, block, { builder.createLoad(ite, spv::NoPrecision) });
+        spv::Id to_copy = utils::create_access_chain(builder, spv::StorageClassStorageBuffer, block, { builder.createLoad(ite, spv::NoPrecision) });
         to_copy = builder.createLoad(to_copy, spv::NoPrecision);
         const spv::Id ite_loaded = builder.createLoad(ite, spv::NoPrecision);
         const spv::Id ite_type = builder.getTypeId(ite_loaded);
-        spv::Id dest = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, ite_type, ite_loaded, builder.makeIntConstant(start_in_vec4_granularity)) });
+        spv::Id dest = utils::create_access_chain(builder, spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, ite_type, ite_loaded, builder.makeIntConstant(start_in_vec4_granularity)) });
         spv::Id dest_friend = spv::NoResult;
 
         if (start % 4 == 0) {
             builder.createStore(to_copy, dest);
         } else {
-            dest_friend = builder.createAccessChain(spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, ite_type, ite_loaded, builder.makeIntConstant(start_in_vec4_granularity + 1)) });
+            dest_friend = utils::create_access_chain(builder, spv::StorageClassPrivate, sa_bank, { builder.createBinOp(spv::OpIAdd, ite_type, ite_loaded, builder.makeIntConstant(start_in_vec4_granularity + 1)) });
 
             std::vector<spv::Id> ops_copy_1 = { builder.createLoad(dest, spv::NoPrecision), to_copy };
             std::vector<spv::Id> ops_copy_2 = { builder.createLoad(dest_friend, spv::NoPrecision), to_copy };
@@ -946,7 +946,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     for (const auto &buffer : program_input.uniform_buffers) {
         if (buffer.reg_block_size > 0) {
             const uint32_t reg_block_size_in_f32v = std::min<uint32_t>(buffer.reg_block_size + 3, REG_SA_COUNT) / 4;
-            const auto spv_buffer = b.createAccessChain(spv::StorageClassStorageBuffer, spv_params.buffer_container,
+            const auto spv_buffer = utils::create_access_chain(b, spv::StorageClassStorageBuffer, spv_params.buffer_container,
                 { b.makeIntConstant(spv_params.buffers.at(buffer.index).index_in_container) });
             copy_uniform_block_to_register(b, spv_params.uniforms, spv_buffer, ite_copy, buffer.reg_start_offset, reg_block_size_in_f32v);
         }
@@ -1225,7 +1225,8 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     spv::Block *frag_fin_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Function *frag_fin_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "frag_output_finalize", {},
+    spv::Function *frag_fin_func = b.makeFunctionEntry(
+        spv::NoPrecision, b.makeVoidType(), "frag_output_finalize", {}, {},
         decorations, &frag_fin_block);
 
     const SceGxmParameterType param_type = program.get_fragment_output_type();
@@ -1307,7 +1308,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         current_coord = b.createOp(spv::OpVectorShuffle, v2i32, { current_coord, current_coord, 0, 1 });
 
         // the mask is not upscaled
-        spv::Id res_multiplier = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_res_multiplier) });
+        spv::Id res_multiplier = utils::create_access_chain(b, spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_res_multiplier) });
         res_multiplier = b.createLoad(res_multiplier, spv::NoPrecision);
         res_multiplier = b.createCompositeConstruct(v2i32, { res_multiplier, res_multiplier });
         current_coord = b.createBinOp(spv::OpSDiv, v2i32, current_coord, res_multiplier);
@@ -1320,7 +1321,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeVectorType(b.makeBoolType(), 4), { texel, zero });
         spv::Id pred2 = b.createUnaryOp(spv::OpAll, b.makeBoolType(), pred);
         spv::Builder::If cond_builder(pred2, spv::SelectionControlMaskNone, b);
-        b.makeDiscard();
+        b.makeStatementTerminator(spv::OpKill, "discard");
         cond_builder.makeEndIf();
     }
 
@@ -1337,7 +1338,8 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
     spv::Block *vert_fin_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Function *vert_fin_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "vert_output_finalize", {},
+    spv::Function *vert_fin_func = b.makeFunctionEntry(
+        spv::NoPrecision, b.makeVoidType(), "vert_output_finalize", {}, {},
         decorations, &vert_fin_block);
 
     gxp::GxmVertexOutputTexCoordInfos coord_infos = {};
@@ -1440,13 +1442,13 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
                     screen_offset = b.makeCompositeConstant(v4, { neg_one, one, zero, zero });
                 }
 
-                const spv::Id viewport_flag = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_viewport_flag) });
+                const spv::Id viewport_flag = utils::create_access_chain(b, spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_viewport_flag) });
                 const spv::Id pred = b.createOp(spv::OpFOrdLessThan, b.makeBoolType(), { b.createLoad(viewport_flag, spv::NoPrecision), half });
                 spv::Builder::If cond_builder(pred, spv::SelectionControlMaskNone, b);
 
-                spv::Id screen_width = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_screen_width) });
+                spv::Id screen_width = utils::create_access_chain(b, spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_screen_width) });
                 screen_width = b.createLoad(screen_width, spv::NoPrecision);
-                spv::Id screen_height = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_screen_height) });
+                spv::Id screen_height = utils::create_access_chain(b, spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_screen_height) });
                 screen_height = b.createLoad(screen_height, spv::NoPrecision);
 
                 // o_val2 = (x,y,z,w) * (2/width, -2/height, 1, 1) + (-1,1,0,0)
@@ -1457,7 +1459,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
                 // on vulkan this is done using the viewport directly
                 if (!translation_state.is_vulkan && translation_state.render_info_id != spv::NoResult) {
-                    spv::Id flip_vec_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_viewport_flip) });
+                    spv::Id flip_vec_id = utils::create_access_chain(b, spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_viewport_flip) });
                     flip_vec_id = b.createLoad(flip_vec_id, spv::NoPrecision);
                     o_val2 = b.createBinOp(spv::OpFMul, v4, o_val2, flip_vec_id);
                 }
@@ -1466,8 +1468,8 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
                 // Note: Depth range and user clip planes are ineffective in this mode
                 // However, that can't be directly translated, so we just gonna set it to w here
-                spv::Id z_ref = b.createAccessChain(spv::StorageClassOutput, out_var, { b.makeIntConstant(2) });
-                spv::Id w_ref = b.createAccessChain(spv::StorageClassOutput, out_var, { b.makeIntConstant(3) });
+                spv::Id z_ref = utils::create_access_chain(b, spv::StorageClassOutput, out_var, { b.makeIntConstant(2) });
+                spv::Id w_ref = utils::create_access_chain(b, spv::StorageClassOutput, out_var, { b.makeIntConstant(3) });
 
                 b.createStore(b.createLoad(w_ref, spv::NoPrecision), z_ref);
 
@@ -1475,7 +1477,7 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
                 // Apply the viewport flip if opengl
                 if (!translation_state.is_vulkan && translation_state.render_info_id != spv::NoResult) {
-                    spv::Id flip_vec_id = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_viewport_flip) });
+                    spv::Id flip_vec_id = utils::create_access_chain(b, spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_viewport_flip) });
                     flip_vec_id = b.createLoad(flip_vec_id, spv::NoPrecision);
                     o_val = b.createBinOp(spv::OpFMul, out_type, o_val, flip_vec_id);
                 }
@@ -1483,13 +1485,13 @@ static spv::Function *make_vert_finalize_function(spv::Builder &b, const SpirvSh
 
                 // scale the depth and w coordinate
                 if (translation_state.render_info_id != spv::NoResult) {
-                    spv::Id z_ref = b.createAccessChain(spv::StorageClassOutput, out_var, { b.makeIntConstant(2) });
-                    spv::Id w_ref = b.createAccessChain(spv::StorageClassOutput, out_var, { b.makeIntConstant(3) });
+                    spv::Id z_ref = utils::create_access_chain(b, spv::StorageClassOutput, out_var, { b.makeIntConstant(2) });
+                    spv::Id w_ref = utils::create_access_chain(b, spv::StorageClassOutput, out_var, { b.makeIntConstant(3) });
                     spv::Id z = b.createLoad(z_ref, spv::NoPrecision);
                     const spv::Id w = b.createLoad(w_ref, spv::NoPrecision);
 
-                    spv::Id z_offset = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_z_offset) });
-                    spv::Id z_scale = b.createAccessChain(spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_z_scale) });
+                    spv::Id z_offset = utils::create_access_chain(b, spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_z_offset) });
+                    spv::Id z_scale = utils::create_access_chain(b, spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(VERT_UNIFORM_z_scale) });
                     z_offset = b.createLoad(z_offset, spv::NoPrecision);
                     z_scale = b.createLoad(z_scale, spv::NoPrecision);
 
@@ -1534,7 +1536,8 @@ static spv::Function *make_frag_initialize_function(spv::Builder &b, Translation
     spv::Block *frag_init_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Function *frag_init_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), "frag_init", {},
+    spv::Function *frag_init_func = b.makeFunctionEntry(
+        spv::NoPrecision, b.makeVoidType(), "frag_init", {}, {},
         decorations, &frag_init_block);
 
     // Note! We use CCW as Front face, however we invert the coordinates so the front face is actually CW, identical to GXM (GXM also has front-face as CW)
@@ -1542,8 +1545,8 @@ static spv::Function *make_frag_initialize_function(spv::Builder &b, Translation
     spv::Id zero = b.makeFloatConstant(0.0f);
 
     spv::Id front_facing = b.createVariable(spv::NoPrecision, spv::StorageClassInput, booltype, "gl_FrontFacing");
-    spv::Id front_disabled = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_front_disabled) });
-    spv::Id back_disabled = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_back_disabled) });
+    spv::Id front_disabled = utils::create_access_chain(b, spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_front_disabled) });
+    spv::Id back_disabled = utils::create_access_chain(b, spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_back_disabled) });
     b.addDecoration(front_facing, spv::DecorationBuiltIn, spv::BuiltInFrontFacing);
     translate_state.interfaces.push_back(front_facing);
 
@@ -1552,13 +1555,13 @@ static spv::Function *make_frag_initialize_function(spv::Builder &b, Translation
     spv::Id pred = b.createOp(spv::OpLogicalAnd, booltype, { b.createBinOp(spv::OpFOrdNotEqual, booltype, b.createLoad(front_disabled, spv::NoPrecision), zero), front_facing });
 
     spv::Builder::If front_disabled_cond_builder(pred, spv::SelectionControlMaskNone, b);
-    b.makeDiscard();
+    b.makeStatementTerminator(spv::OpKill, "kill");
     front_disabled_cond_builder.makeEndIf();
 
     pred = b.createOp(spv::OpLogicalAnd, booltype, { b.createBinOp(spv::OpFOrdNotEqual, booltype, b.createLoad(back_disabled, spv::NoPrecision), zero), b.createUnaryOp(spv::OpLogicalNot, booltype, front_facing) });
 
     spv::Builder::If back_disabled_cond_builder(pred, spv::SelectionControlMaskNone, b);
-    b.makeDiscard();
+    b.makeStatementTerminator(spv::OpKill, "kill");
     back_disabled_cond_builder.makeEndIf();
 
     b.makeReturn(false);
@@ -1568,7 +1571,7 @@ static spv::Function *make_frag_initialize_function(spv::Builder &b, Translation
 }
 
 static void generate_update_mask_body(spv::Builder &b, utils::SpirvUtilFunctions &utils, const FeatureState &features, TranslationState &translate_state) {
-    const spv::Id writing_mask_var = b.createAccessChain(spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_writing_mask) });
+    const spv::Id writing_mask_var = utils::create_access_chain(b, spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_writing_mask) });
     const spv::Id writing_mask = b.createLoad(writing_mask_var, spv::NoPrecision);
 
     const spv::Id v4 = b.makeVectorType(b.makeFloatType(32), 4);
@@ -1687,7 +1690,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
             spv::Id rezero_v = b.makeCompositeConstant(v4, { rezero, rezero, rezero, rezero });
             utils::make_for_loop(b, ite, b.makeIntConstant(0), b.makeIntConstant(REG_O_COUNT / 4), [&]() {
                 Operand target_to_store;
-                spv::Id dest = b.createAccessChain(spv::StorageClassPrivate, parameters.outs, { b.createLoad(ite, spv::NoPrecision) });
+                spv::Id dest = utils::create_access_chain(b, spv::StorageClassPrivate, parameters.outs, { b.createLoad(ite, spv::NoPrecision) });
                 b.createStore(rezero_v, dest);
             });
         }

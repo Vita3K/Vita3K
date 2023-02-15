@@ -57,6 +57,8 @@ spv::Id convert_to_int(spv::Builder &b, spv::Id opr, DataType type, bool normal)
 
 size_t dest_mask_to_comp_count(shader::usse::Imm4 dest_mask);
 
+spv::Id create_access_chain(spv::Builder &b, const spv::StorageClass storage_class, const spv::Id base, const std::vector<spv::Id> &offsets);
+
 template <typename T>
 spv::Id make_uniform_vector_from_type(spv::Builder &b, spv::Id type, T val) {
     const int num_comp = b.getNumTypeComponents(type);
