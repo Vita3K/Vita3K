@@ -31,17 +31,36 @@
 
 namespace renderer::vulkan {
 
-VKContext::VKContext(VKState &state)
+VKContext::VKContext(VKState &state, MemState &mem)
     : state(state)
+    , mem(mem)
     , vertex_stream_ring_buffer(state.allocator, vk::BufferUsageFlagBits::eVertexBuffer, MiB(/*128*/ 64))
     , index_stream_ring_buffer(state.allocator, vk::BufferUsageFlagBits::eIndexBuffer, MiB(64))
     , vertex_uniform_stream_ring_buffer(state.allocator, vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 64))
     , fragment_uniform_stream_ring_buffer(state.allocator, vk::BufferUsageFlagBits::eStorageBuffer, MiB(/*256*/ 64))
-    , vertex_info_uniform_buffer(state.allocator, vk::BufferUsageFlagBits::eUniformBuffer, MiB(8))
-    , fragment_info_uniform_buffer(state.allocator, vk::BufferUsageFlagBits::eUniformBuffer, MiB(8))
-    , default_image(state.allocator, 1, 1, vk::Format::eR8G8B8A8Unorm) {
-    memset(&previous_vert_info, 0, sizeof(shader::RenderVertUniformBlock));
-    memset(&previous_frag_info, 0, sizeof(shader::RenderFragUniformBlock));
+    , vertex_info_uniform_buffer(state.allocator, vk::BufferUsageFlagBits::eUniformBuffer, MiB(16))
+    , fragment_info_uniform_buffer(state.allocator, vk::BufferUsageFlagBits::eUniformBuffer, MiB(16)) {
+    memset(&previous_vert_info, 0, sizeof(shader::RenderVertUniformBlockWithMapping));
+    memset(&previous_frag_info, 0, sizeof(shader::RenderFragUniformBlockWithMapping));
+
+    if (state.features.support_memory_mapping) {
+        // use the default buffer
+        std::fill_n(vertex_stream_buffers, SCE_GXM_MAX_VERTEX_STREAMS, state.default_buffer.buffer);
+
+        // also initialize the gpu wait thread
+        gpu_request_wait_thread = std::thread(&VKContext::wait_thread_function, this);
+    } else {
+        // these are not needed when using memory mapping
+        vertex_stream_ring_buffer.create();
+        index_stream_ring_buffer.create();
+        vertex_uniform_stream_ring_buffer.create();
+        fragment_uniform_stream_ring_buffer.create();
+
+        std::fill_n(vertex_stream_buffers, SCE_GXM_MAX_VERTEX_STREAMS, vertex_stream_ring_buffer.handle());
+    }
+
+    vertex_info_uniform_buffer.create();
+    fragment_info_uniform_buffer.create();
 
     // default values for the viewport and scissors
     viewport = vk::Viewport{
@@ -59,6 +78,8 @@ VKContext::VKContext(VKState &state)
 
     // allocate descriptor pools
     {
+        const uint32_t nb_descriptor = state.features.support_memory_mapping ? 2U : 4U;
+
         std::array<vk::DescriptorPoolSize, 2> pool_sizes = {
             vk::DescriptorPoolSize{ vk::DescriptorType::eUniformBufferDynamic, 2 },
             vk::DescriptorPoolSize{ vk::DescriptorType::eStorageBufferDynamic, 2 },
@@ -66,7 +87,7 @@ VKContext::VKContext(VKState &state)
 
         vk::DescriptorPoolCreateInfo descriptor_pool_info{
             .maxSets = 1,
-            .poolSizeCount = static_cast<uint32_t>(pool_sizes.size()),
+            .poolSizeCount = nb_descriptor / 2,
             .pPoolSizes = pool_sizes.data()
         };
 
@@ -80,7 +101,15 @@ VKContext::VKContext(VKState &state)
         global_set = state.device.allocateDescriptorSets(descr_set_info)[0];
 
         // update it now (will not be updated after)
+        const uint64_t vert_uniform_size = state.features.support_memory_mapping ? sizeof(shader::RenderVertUniformBlockWithMapping) : sizeof(shader::RenderVertUniformBlock);
+        const uint64_t frag_uniform_size = state.features.support_memory_mapping ? sizeof(shader::RenderFragUniformBlockWithMapping) : sizeof(shader::RenderFragUniformBlock);
         std::array<vk::DescriptorBufferInfo, 4> buffers_info = {
+            vk::DescriptorBufferInfo{
+                .buffer = vertex_info_uniform_buffer.handle(),
+                .range = vert_uniform_size },
+            vk::DescriptorBufferInfo{
+                .buffer = fragment_info_uniform_buffer.handle(),
+                .range = frag_uniform_size },
             vk::DescriptorBufferInfo{
                 .buffer = vertex_uniform_stream_ring_buffer.handle(),
                 // TODO: get max range of buffer
@@ -89,12 +118,6 @@ VKContext::VKContext(VKState &state)
                 .buffer = fragment_uniform_stream_ring_buffer.handle(),
                 // TODO: get max range of buffer
                 .range = KB(500) },
-            vk::DescriptorBufferInfo{
-                .buffer = vertex_info_uniform_buffer.handle(),
-                .range = sizeof(shader::RenderVertUniformBlock) },
-            vk::DescriptorBufferInfo{
-                .buffer = fragment_info_uniform_buffer.handle(),
-                .range = sizeof(shader::RenderVertUniformBlock) },
         };
 
         std::array<vk::WriteDescriptorSet, 4> write_descr;
@@ -103,12 +126,12 @@ VKContext::VKContext(VKState &state)
                 .dstSet = global_set,
                 .dstBinding = i,
                 .dstArrayElement = 0,
-                .descriptorType = i < 2 ? vk::DescriptorType::eStorageBufferDynamic : vk::DescriptorType::eUniformBufferDynamic
+                .descriptorType = i < 2 ? vk::DescriptorType::eUniformBufferDynamic : vk::DescriptorType::eStorageBufferDynamic
             };
             write_descr[i].setBufferInfo(buffers_info[i]);
         }
 
-        state.device.updateDescriptorSets(write_descr, nullptr);
+        state.device.updateDescriptorSets(nb_descriptor, write_descr.data(), 0, nullptr);
     }
 
     for (int i = 0; i < MAX_FRAMES_RENDERING; i++) {
@@ -136,33 +159,6 @@ VKContext::VKContext(VKState &state)
         frame.descriptor_pool = state.device.createDescriptorPool(descriptor_pool_info);
 
         frame.destroy_queue.init(state.device, state.allocator);
-    }
-
-    {
-        // create the default image
-        default_image.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
-        vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(state.device, state.general_command_pool);
-        default_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
-        // make it white
-        vk::ClearColorValue white{
-            .float32 = std::array<float, 4>{ 1.0f, 1.0f, 1.0f, 1.0f }
-        };
-        cmd_buffer.clearColorImage(default_image.image, vk::ImageLayout::eTransferDstOptimal, white, vkutil::color_subresource_range);
-        default_image.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
-        vkutil::end_single_time_command(state.device, state.general_queue, state.general_command_pool, cmd_buffer);
-
-        // create the default sampler
-        vk::SamplerCreateInfo sampler_info{
-            .magFilter = vk::Filter::eLinear,
-            .minFilter = vk::Filter::eLinear,
-            .mipmapMode = vk::SamplerMipmapMode::eLinear,
-            .addressModeU = vk::SamplerAddressMode::eRepeat,
-            .addressModeV = vk::SamplerAddressMode::eRepeat,
-            .addressModeW = vk::SamplerAddressMode::eRepeat,
-            .minLod = 0.0f,
-            .maxLod = 0.0f,
-        };
-        default_image.sampler = state.device.createSampler(sampler_info);
     }
 }
 
@@ -223,8 +219,8 @@ VKRenderTarget::VKRenderTarget(VKState &state, vma::Allocator allocator, uint16_
     }
 }
 
-bool create(VKState &state, std::unique_ptr<Context> &context) {
-    context = std::make_unique<VKContext>(state);
+bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem) {
+    context = std::make_unique<VKContext>(state, mem);
 
     return true;
 }
@@ -272,14 +268,6 @@ bool create(std::unique_ptr<VertexProgram> &vp, VKState &state, const SceGxmProg
     vp = std::make_unique<VertexProgram>();
 
     return true;
-}
-
-void create(SceGxmSyncObject *sync) {
-    sync->extra = new SyncExtraData();
-}
-
-void destroy(SceGxmSyncObject *sync) {
-    delete reinterpret_cast<SyncExtraData *>(sync->extra);
 }
 
 bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend) {

@@ -55,6 +55,8 @@ COMMAND(handle_create_context);
 COMMAND(handle_destroy_context);
 COMMAND(handle_create_render_target);
 COMMAND(handle_destroy_render_target);
+COMMAND(handle_memory_map);
+COMMAND(handle_memory_unmap);
 
 // Scene
 COMMAND(handle_set_context);
