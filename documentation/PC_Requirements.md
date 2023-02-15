@@ -12,3 +12,5 @@ The recommended requirements are as follow:
 - GPU that supports OpenGL 4.4 or Vulkan 1.0
 
 You **need** a 64 bit operating system to run Vita3K.
+
+If you're on Windows and get the error "VCRUNTME140_1.dll was not found", download and install the Visual C++ 2015-2022 redistributable by clicking [here](https://aka.ms/vs/16/release/vc_redist.x64.exe) and saving and running the .exe.
