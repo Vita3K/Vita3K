@@ -166,6 +166,7 @@ Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int3
 
     if (index >= MAX_OUTPUT_PORT) {
         // We don't have enough port for you!
+        // (Skill issue)
         return {};
     }
 
@@ -185,11 +186,12 @@ Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int3
 
     if (patches[index][subindex] && patches[index][subindex].get(mem)->output_sub_index != -1) {
         // You just hit an occupied subindex! You won't get to eat, stay in detention.
+        // NOOOO
         return {};
     }
 
     if (!patches[index][subindex]) {
-        // Create the patch incase it's not yet existed
+        // Create the patch incase it hass not yet existed
         patches[index][subindex] = rack->alloc_and_init<Patch>(mem);
     }
 
@@ -280,7 +282,7 @@ SceInt32 Voice::parse_params_block(const MemState &mem, const ModuleParameterHea
 
     SceInt32 num_error = 0;
 
-    // after first loop, check if other module exist
+    // after first loop, check if other modules exist
     while (data < data_end) {
         if (!parse_params(mem, header))
             num_error++;
@@ -364,7 +366,7 @@ bool init(State &ngs, MemState &mem) {
     ngs.memspace = alloc(mem, SIZE_OF_GLOBAL_MEMSPACE, "NGS voice definitions");
 
     if (!ngs.memspace) {
-        LOG_ERROR("Can't alloc global memspace for NGS!");
+        LOG_ERROR("Can't allocate global memspace for NGS!");
         return false;
     }
 
