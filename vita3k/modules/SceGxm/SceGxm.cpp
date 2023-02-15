@@ -3089,13 +3089,15 @@ EXPORT(int, sceGxmProgramGetOutputRegisterFormat, const SceGxmProgram *program, 
 
 EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram *program, uint32_t index) {
     TRACY_FUNC(sceGxmProgramGetParameter, program, index);
+    if (index >= program->parameter_count)
+        return Ptr<SceGxmProgramParameter>(0);
+
     const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
 
     const SceGxmProgramParameter *const parameter = &parameters[index];
     const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
 
-    const Address parameter_address = static_cast<Address>(parameter_bytes - &emuenv.mem.memory[0]);
-    return Ptr<SceGxmProgramParameter>(parameter_address);
+    return Ptr<SceGxmProgramParameter>(parameter_bytes, emuenv.mem);
 }
 
 EXPORT(uint32_t, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {
