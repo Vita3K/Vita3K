@@ -1,6 +1,6 @@
 # About Vita3K
 
-Vita3K was started in 2018 by frangarcj, velocity and PetMac with the aim of playing Vita games on their PCs. Fast forward 5 years and Vita3K is on Windows, Mac, Linux and Android. About half of all commercial Vita games can be played and over half of all homebrew Vita games can be played flawlessly.
+Vita3K was started in 2018 by frangarcj, velocity and PetMac with the aim of playing Vita games on their PCs. Fast forward 5 years and Vita3K is on Windows, Mac, Linux and Android. About half of all commercial games can be played with minor issues and over half of all homebrew games can be played flawlessly.
 
 It may not have save states, emulation speed up, built in recording or any of those fancy features, but it does have something above all emulators. It's the only existing PlayStation Vita emulator which has been publicly released.
 
