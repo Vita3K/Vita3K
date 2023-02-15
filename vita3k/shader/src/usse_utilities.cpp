@@ -536,11 +536,11 @@ spv::Id shader::usse::utils::fetch_memory(spv::Builder &b, const SpirvShaderPara
     return b.createFunctionCall(utils.fetch_memory, { addr });
 }
 
-static spv::Id make_or_get_buffer_ptr(spv::Builder &b, shader::usse::utils::SpirvUtilFunctions &utils, int nb_components, int stride = 16) {
+static spv::Id make_or_get_buffer_ptr(spv::Builder &b, shader::usse::utils::SpirvUtilFunctions &utils, int nb_components, int stride = 16, bool is_write = false) {
     const int buffer_utils_idx = (stride == 4) ? 0 : nb_components;
 
-    if (utils.buffer_address_vec[buffer_utils_idx])
-        return utils.buffer_address_vec[buffer_utils_idx];
+    if (utils.buffer_address_vec[buffer_utils_idx][is_write])
+        return utils.buffer_address_vec[buffer_utils_idx][is_write];
 
     const spv::Id f32 = b.makeFloatType(32);
     const spv::Id vec = shader::usse::utils::make_vector_or_scalar_type(b, f32, nb_components);
@@ -551,14 +551,17 @@ static spv::Id make_or_get_buffer_ptr(spv::Builder &b, shader::usse::utils::Spir
     b.addDecoration(buffer_data, spv::DecorationBlock);
     b.addMemberName(buffer_data, 0, "data");
     // non-writable for the time being
-    b.addMemberDecoration(buffer_data, 0, spv::DecorationNonWritable);
+    if (is_write)
+        b.addMemberDecoration(buffer_data, 0, spv::DecorationNonReadable);
+    else
+        b.addMemberDecoration(buffer_data, 0, spv::DecorationNonWritable);
     b.addMemberDecoration(buffer_data, 0, spv::DecorationOffset, 0);
 
-    utils.buffer_address_vec[buffer_utils_idx] = b.makePointer(spv::StorageClassPhysicalStorageBuffer, buffer_data);
-    return utils.buffer_address_vec[buffer_utils_idx];
+    utils.buffer_address_vec[buffer_utils_idx][is_write] = b.makePointer(spv::StorageClassPhysicalStorageBuffer, buffer_data);
+    return utils.buffer_address_vec[buffer_utils_idx][is_write];
 }
 
-void shader::usse::utils::buffer_address_load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand &dest, spv::Id addr, uint32_t component_size, uint32_t nb_components, bool is_fragment, int buffer_idx) {
+void shader::usse::utils::buffer_address_access(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand &dest, spv::Id addr, uint32_t component_size, uint32_t nb_components, bool is_fragment, int buffer_idx, bool is_buffer_store) {
     const spv::Id i32 = b.makeIntType(32);
     const spv::Id zero = b.makeIntConstant(0);
 
@@ -579,16 +582,22 @@ void shader::usse::utils::buffer_address_load(spv::Builder &b, const SpirvShader
     buffer_address = add_uvec2_uint(b, buffer_address, addr);
 
     if (component_size == sizeof(uint32_t)) {
+        int components_left = nb_components;
         int buffer_idx_vec4 = 0;
         if (nb_components >= 4) {
             // first copy them 4 by 4 (using the fact that we can do 4-byte aligned reads)
-            const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, 4);
+            const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, 4, 16, is_buffer_store);
             const spv::Id buffer_address_vec4 = b.createUnaryOp(spv::OpBitcast, buffer_container, buffer_address);
             while (nb_components >= 4) {
-                spv::Id loaded = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, buffer_address_vec4, { zero, b.makeIntConstant(buffer_idx_vec4) });
-                loaded = b.createLoad(loaded, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+                spv::Id accessed = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, buffer_address_vec4, { zero, b.makeIntConstant(buffer_idx_vec4) });
 
-                store(b, params, utils, features, dest, loaded, 0b1111, 0);
+                if (is_buffer_store) {
+                    spv::Id data = load(b, params, utils, features, dest, 0b1111, 0);
+                    b.createStore(data, accessed, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+                } else {
+                    accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+                    store(b, params, utils, features, dest, accessed, 0b1111, 0);
+                }
 
                 dest.num += 4;
                 nb_components -= 4;
@@ -599,15 +608,28 @@ void shader::usse::utils::buffer_address_load(spv::Builder &b, const SpirvShader
         assert(nb_components < 4);
         if (nb_components > 0) {
             // do one last load for the at most 3 last components
-            const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, nb_components);
+            const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, nb_components, 16, is_buffer_store);
             const spv::Id buffer_address_vec = b.createUnaryOp(spv::OpBitcast, buffer_container, buffer_address);
 
-            spv::Id loaded = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, buffer_address_vec, { zero, b.makeIntConstant(buffer_idx_vec4) });
-            loaded = b.createLoad(loaded, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+            spv::Id accessed = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, buffer_address_vec, { zero, b.makeIntConstant(buffer_idx_vec4) });
 
-            store(b, params, utils, features, dest, loaded, (1 << nb_components) - 1, 0);
+            if (is_buffer_store) {
+                spv::Id data = load(b, params, utils, features, dest, (1 << nb_components) - 1, 0);
+                b.createStore(data, accessed, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+            } else {
+                accessed = b.createLoad(accessed, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+                store(b, params, utils, features, dest, accessed, (1 << nb_components) - 1, 0);
+            }
         }
     } else {
+        if (is_buffer_store) {
+            LOG_ERROR("non-32 bit buffer store is not implemented! Please report it to the devs.");
+            return;
+        }
+
+        spv::Id f32 = b.makeFloatType(32);
+        spv::Id u32 = b.makeUintType(32);
+
         // less optimized
         // TODO: if the gpu supports it, load it as a u16vec4 / u8vec4
         const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, 1, 4);

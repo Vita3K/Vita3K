@@ -544,11 +544,25 @@ bool USSETranslatorVisitor::vldst(
     Imm7 src1_n,
     Imm7 src2_n) {
     // TODO:
-    // - Store instruction
     // - Post or pre or any increment mode.
 
     Instruction inst;
-    inst.opcode = Opcode::LDR;
+    switch (op1) {
+    case 1:
+        inst.opcode = Opcode::LDR;
+        break;
+    case 2:
+        inst.opcode = Opcode::STR;
+        break;
+    default:
+        LOG_ERROR("Unknown load/store operation {}", op1);
+        return true;
+    }
+    const bool is_store = inst.opcode == Opcode::STR;
+    if (is_store && !m_features.support_memory_mapping) {
+        LOG_ERROR("Store opcode is not supported without memory mapping");
+        return true;
+    }
 
     DataType type_to_ldst = DataType::UNK;
 
@@ -572,24 +586,6 @@ bool USSETranslatorVisitor::vldst(
     const int total_number_to_fetch = mask_count + 1;
     const int total_bytes_fo_fetch = get_data_type_size(type_to_ldst) * total_number_to_fetch;
 
-    Operand to_store;
-
-    if (is_translating_secondary_program()) {
-        to_store.bank = RegisterBank::SECATTR;
-    } else {
-        if (dest_bank_primattr) {
-            to_store.bank = RegisterBank::PRIMATTR;
-        } else {
-            to_store.bank = RegisterBank::TEMP;
-        }
-    }
-
-    to_store.num = dest_n;
-    if (m_features.support_memory_mapping)
-        to_store.type = type_to_ldst;
-    else
-        to_store.type = DataType::F32;
-
     inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, false, 7, m_second_program);
     inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, false, 7, m_second_program);
     inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_bank_ext, false, 7, m_second_program);
@@ -598,10 +594,32 @@ bool USSETranslatorVisitor::vldst(
     inst.opr.src1.type = DataType::INT32;
     inst.opr.src2.type = DataType::INT32;
 
+    Operand to_store;
+    if (is_store) {
+        to_store = inst.opr.src2;
+        to_store.type = type_to_ldst;
+    } else {
+        if (is_translating_secondary_program()) {
+            to_store.bank = RegisterBank::SECATTR;
+        } else {
+            if (dest_bank_primattr) {
+                to_store.bank = RegisterBank::PRIMATTR;
+            } else {
+                to_store.bank = RegisterBank::TEMP;
+            }
+        }
+
+        to_store.num = dest_n;
+        if (m_features.support_memory_mapping)
+            to_store.type = type_to_ldst;
+        else
+            to_store.type = DataType::F32;
+    }
+
     std::string disasm_str = fmt::format("{:016x}: {}{}", m_instr, disasm::e_predicate_str(pred), disasm::opcode_str(inst.opcode));
     LOG_DISASM("{} {} ({} + {} + {}) [{} bytes]", disasm_str, disasm::operand_to_str(to_store, 0b1, 0),
         disasm::operand_to_str(inst.opr.src0, 0b1, 0),
-        disasm::operand_to_str(inst.opr.src1, 0b1, 0), disasm::operand_to_str(inst.opr.src2, 0b1, 0), total_bytes_fo_fetch);
+        disasm::operand_to_str(inst.opr.src1, 0b1, 0), is_store ? "0" : disasm::operand_to_str(inst.opr.src2, 0b1, 0), total_bytes_fo_fetch);
 
     // TODO: is source_2 in word or byte? Is it even used at all?
     spv::Id source_0 = load(inst.opr.src0, 0b1, 0);
@@ -611,7 +629,6 @@ bool USSETranslatorVisitor::vldst(
     }
 
     spv::Id source_1 = load(inst.opr.src1, 0b1, 0);
-    spv::Id source_2 = load(inst.opr.src2, 0b1, 0);
 
     // Seems that if it's indexed by register, offset is in bytes and based on 0x10000?
     // Maybe that's just how the memory map operates. I'm not sure. However the literals on all shader so far is that
@@ -626,14 +643,17 @@ bool USSETranslatorVisitor::vldst(
 
     spv::Id i32_type = m_b.makeIntType(32);
     spv::Id base = m_b.createBinOp(spv::OpIAdd, i32_type, source_0, source_1);
-    base = m_b.createBinOp(spv::OpIAdd, i32_type, base, source_2);
+    if (!is_store) {
+        spv::Id source_2 = load(inst.opr.src2, 0b1, 0);
+        base = m_b.createBinOp(spv::OpIAdd, i32_type, base, source_2);
+    }
 
     if (!moe_expand) {
         base = m_b.createBinOp(spv::OpIAdd, i32_type, base, m_b.makeIntConstant(4));
     }
 
     if (m_features.support_memory_mapping) {
-        utils::buffer_address_load(m_b, m_spirv_params, m_util_funcs, m_features, to_store, base, get_data_type_size(type_to_ldst), total_number_to_fetch, m_program.is_fragment());
+        utils::buffer_address_access(m_b, m_spirv_params, m_util_funcs, m_features, to_store, base, get_data_type_size(type_to_ldst), total_number_to_fetch, m_program.is_fragment(), -1, is_store);
     } else {
         for (int i = 0; i < total_bytes_fo_fetch / 4; ++i) {
             spv::Id offset = m_b.createBinOp(spv::OpIAdd, m_b.makeIntType(32), base, m_b.makeIntConstant(4 * i));
