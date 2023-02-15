@@ -170,7 +170,6 @@ void ImGui_ImplSdlGL3_RenderDrawData(ImGui_GLState &state) {
                 // fix the offset issues as per instructed in release notes of imgui v1.86
                 glDrawElements(GL_TRIANGLES, (GLsizei)pcmd->ElemCount, sizeof(ImDrawIdx) == 2 ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT, idx_buffer_offset + pcmd->IdxOffset);
             }
-            // idx_buffer_offset += pcmd->ElemCount;
         }
     }
     glDeleteVertexArrays(1, &vao_handle);
