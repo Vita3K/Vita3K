@@ -72,7 +72,7 @@ bool Atrac9DecoderState::send(const uint8_t *data, uint32_t size) {
 
     const int res = Atrac9Decode(decoder_handle, data, reinterpret_cast<short *>(result.data()), &decode_used);
     if (res != At9Status::ERR_SUCCESS) {
-        LOG_ERROR("Decode failure with code {}!", res);
+        LOG_ERROR("Atrac9 (codec) decode failure with code {}!", res);
         return false;
     }
 
@@ -109,7 +109,7 @@ Atrac9DecoderState::Atrac9DecoderState(uint32_t config_data)
     const int err = Atrac9InitDecoder(decoder_handle, reinterpret_cast<uint8_t *>(&config_data));
 
     if (err != At9Status::ERR_SUCCESS) {
-        LOG_ERROR("Error initializing decoder!");
+        LOG_ERROR("Error initializing decoder Atrac9!");
     }
 
     Atrac9CodecInfo *info = new Atrac9CodecInfo;
