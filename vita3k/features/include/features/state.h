@@ -27,6 +27,12 @@ struct FeatureState {
     bool support_unknown_format = false;
     bool support_rgb_attributes = true; ///< Do the GPU supports RGB (3 components) vertex attribute? If not (AMD GPU), some modifications must be applied to the renderer and the shader recompiler
     bool use_mask_bit = false; ///< Is the mask bit (1 per sample) emulated ? It is only used in homebrews afaik
+    // even though the image being rendered has 8-bit components,
+    // the component width while each sample is stored in the tile renderer
+    // can be wider and used as a buffer using direct fragcolor access
+    // Tearaway does this and the only way to emulate this on an immediate
+    // renderer is to use a texture with a big enough component size
+    bool use_rgba16_for_rgba8 = false;
 
     bool is_programmable_blending_supported() const {
         return support_shader_interlock || support_texture_barrier || direct_fragcolor;

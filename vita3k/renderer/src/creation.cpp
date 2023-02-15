@@ -36,6 +36,34 @@
 
 namespace renderer {
 
+void State::game_start(const char *base_path, const char *title_id, const char *self_name) {
+    this->base_path = base_path;
+    this->title_id = title_id;
+    this->self_name = self_name;
+
+    static const std::string tearaway_games[] = {
+        "PCSC00048",
+        "PCSC00064",
+        "PCSF00214",
+        "PCSF00476",
+        "PCSF00463",
+        "PCSD00072",
+        "PCSD00077",
+        "PCSA00099",
+        "PCSA00141",
+        "PCSA00142",
+        "PCSA00144"
+    };
+
+    const std::string title_string = std::string(title_id);
+    for (const auto &tearaway_game : tearaway_games) {
+        if (title_string.find(tearaway_game) != std::string::npos) {
+            features.use_rgba16_for_rgba8 = true;
+            LOG_INFO("Tearaway game detected, using improved tiled renderer emulation.");
+        }
+    }
+}
+
 static void layout_ssbo_offset_from_uniform_buffer_sizes(UniformBufferSizes &sizes, UniformBufferSizes &offsets, std::size_t &total_hold) {
     std::uint32_t last_offset = 0;
 

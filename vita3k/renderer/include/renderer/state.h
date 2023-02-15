@@ -62,6 +62,8 @@ struct State {
     bool should_display;
 
     virtual bool init(const char *base_path, const bool hashless_texture_cache) = 0;
+    // called after a game has been chosen and right before it is started
+    virtual void game_start(const char *base_path, const char *title_id, const char *self_name);
     virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem)
         = 0;

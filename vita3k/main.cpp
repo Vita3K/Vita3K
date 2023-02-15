@@ -358,9 +358,7 @@ int main(int argc, char *argv[]) {
     gui.live_area.information_bar = false;
 
     // Pre-Compile Shaders
-    emuenv.renderer->base_path = emuenv.base_path.c_str();
-    emuenv.renderer->title_id = emuenv.io.title_id.c_str();
-    emuenv.renderer->self_name = emuenv.self_name.c_str();
+    emuenv.renderer->game_start(emuenv.base_path.c_str(), emuenv.io.title_id.c_str(), emuenv.self_name.c_str());
     if (renderer::get_shaders_cache_hashs(*emuenv.renderer) && cfg.shader_cache) {
         SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, compiling shaders...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
         for (const auto &hash : emuenv.renderer->shaders_cache_hashs) {

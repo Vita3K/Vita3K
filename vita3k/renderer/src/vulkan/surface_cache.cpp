@@ -119,6 +119,9 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
         }
     }
 
+    if (state.features.use_rgba16_for_rgba8 && vk_format == vk::Format::eR8G8B8A8Unorm)
+        vk_format = vk::Format::eR16G16B16A16Sfloat;
+
     uint32_t bytes_per_stride = pixel_stride * gxm::bits_per_pixel(base_format) / 8;
     uint32_t total_surface_size = bytes_per_stride * original_height;
 
@@ -792,6 +795,10 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
             texture_size.y = info.height;
 
             if (info.swizzle == vkutil::rgba_mapping && info.texture.format == vk::Format::eR8G8B8A8Unorm)
+                return info.texture.view;
+
+            // wrong swizzle not supported in this case, if use_rgba16_for_rgba8 is enabled, the texture will be rgba16
+            if (state.features.use_rgba16_for_rgba8 && info.texture.format == vk::Format::eR16G16B16A16Sfloat)
                 return info.texture.view;
 
             if (!info.sampled_image.view) {
