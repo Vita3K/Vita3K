@@ -82,7 +82,7 @@ static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &ro
         cfg.pref_path = root_pref_path.string();
     else {
         if (string_utils::utf_to_wide(cfg.pref_path) != root_pref_path && !fs::exists(string_utils::utf_to_wide(cfg.pref_path))) {
-            LOG_ERROR("Cannot find preference path: {}", cfg.pref_path);
+            LOG_ERROR("Cannot find preference path: {}. Does the location exist?", cfg.pref_path);
             return InvalidApplicationPath;
         }
     }
@@ -133,7 +133,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     app.get_formatter()->column_width(38);
 
     // clang-format off
-    const auto ver = app.add_flag("--version,-v", "Print the version string")
+    const auto ver = app.add_flag("--version,-v", "Print the version")
         ->group("Options");
 
     // Positional options
@@ -154,25 +154,25 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
-    input->add_option("--shader-cache,-D", command_line.shader_cache, "Enable shader cache to pre-compile it at boot up")
+    input->add_option("--shader-cache,-D", command_line.shader_cache, "Enable shader cache to pre-compile it at boot")
        ->default_val(true)->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
         ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
     auto input_pkg = input->add_option("--pkg", command_line.pkg_path, "Path of app (in .pkg format) to install")
         ->default_str({})->group("Input");
-    auto input_zrif = input->add_option("--zrif", command_line.pkg_zrif, "zrif for the app (in .pkg format)")
+    auto input_zrif = input->add_option("--zrif", command_line.pkg_zrif, "zRIF for the app (.pkg format only)")
         ->default_str({})->group("Input");
     input_pkg->needs(input_zrif);
     input_zrif->needs(input_pkg);
 
     auto config = app.add_option_group("Configuration", "Modify Vita3K's config.yml file");
-    config->add_flag("--" + cfg[e_archive_log] + ",-A", command_line.archive_log, "Makes a duplicate of the log file with TITLE_ID and Game ID as title")
+    config->add_flag("--" + cfg[e_archive_log] + ",-A", command_line.archive_log, "Makes a duplicate of the log file with TITLE_ID and Game ID as the title")
         ->group("Logging");
     config->add_option("--" + cfg[e_backend_renderer] + ",-B", command_line.backend_renderer, "Renderer backend to use")
         ->ignore_case()->check(CLI::IsMember(std::set<std::string>{ "OpenGL", "Vulkan" }))->group("Vita Emulation");
     config->add_flag("--" + cfg[e_color_surface_debug] + ",-C", command_line.color_surface_debug, "Save color surfaces")
         ->group("Vita Emulation");
-    config->add_option("--config-location,-c", command_line.config_path, "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", otherwise it will be assumed to be a directory. \nDefault loaded: <Vita3K>/config.yml \nDefaults: <Vita3K>/data/config/default.yml")
+    config->add_option("--config-location,-c", command_line.config_path, "Get a configuration file from a given location. If a filename is given, it must end with \".yml\", or it will be considered as a directory. \nDefault loaded: <Vita3K>/config.yml \nDefaults: <Vita3K>/data/config/default.yml")
         ->group("YML");
     config->add_flag("!--keep-config,!-w", command_line.overwrite_config, "Do not modify the configuration file after loading.")
         ->group("YML");
@@ -234,7 +234,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     }
 
     if (cfg.console && (cfg.run_app_path || !cfg.content_path)) {
-        LOG_ERROR("Console mode only supports vpk for now");
+        LOG_ERROR("Console mode only supports .vpk, use the graphical version for .pkg support");
         return InitConfigFailed;
     }
 
