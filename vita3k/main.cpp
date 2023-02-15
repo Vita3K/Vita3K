@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     if (adminPriv) {
-        LOG_CRITICAL("PLEASE. DO NOT RUN VITA3K AS ADMIN OR WITH ADMIN PRIVILEGES.");
+        LOG_CRITICAL("PLEASE. DO NOT RUN VITA3K AS ADMIN OR WITH ADMIN PRIVILEGES, UNLESS IT IS THE ONLY WAY TO MAKE IT WORK.");
     }
 
     Config cfg{};
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
                 shader::convert_gxp_to_glsl_from_filepath(*cfg.recompile_shader_path);
             }
             if (cfg.delete_title_id.has_value()) {
-                LOG_INFO("Deleting title id {}", *cfg.delete_title_id);
+                LOG_INFO("Deleting Title Id {}", *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/app" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/addcont" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/user/00/savedata" / *cfg.delete_title_id);
@@ -171,7 +171,7 @@ int main(int argc, char *argv[]) {
         SDL_SetHint(SDL_HINT_JOYSTICK_HIDAPI_JOY_CONS, "1");
 
         if (SDL_Init(SDL_INIT_GAMECONTROLLER | SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0) {
-            app::error_dialog("SDL initialisation failed.");
+            app::error_dialog("SDL initialization failed.");
             return SDLInitFailed;
         }
         SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
