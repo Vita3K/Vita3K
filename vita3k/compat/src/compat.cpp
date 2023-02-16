@@ -124,7 +124,7 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     std::string power_shell_version;
     std::getline(std::ifstream(_popen("powershell (Get-Host).Version.major", "r")), power_shell_version);
     if (power_shell_version.empty() || !std::isdigit(power_shell_version[0]) || (std::stoi(power_shell_version) < 3)) {
-        LOG_WARN("Your Powershell version {} is outdated and incompatible with Vita3K, consider updating it.", power_shell_version);
+        LOG_WARN("Your PowerShell version {} is outdated and incompatible with Vita3K, consider updating it.", power_shell_version);
         return false;
     }
 
