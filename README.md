@@ -58,7 +58,7 @@ Please see [`Building.md`](./documentation/Building.md).
 
 ## Running
 
-Install your game in .pkg or .vpk format and click the play button on the game's menu.
+Install your game in .pkg (commercial) or .vpk (homebrew) format and click the play button on the game's menu.
 For more detailed instructions on running/installing games on all platforms, please read [`Running_Games.md`](./documentation/Running_Games.md).
 
 ## Bugs and issues
