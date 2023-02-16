@@ -170,7 +170,7 @@ Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int3
         return {};
     }
 
-    // Look if another patch has already been there
+    // Look if another patch has already been there or not
     if (subindex == -1) {
         for (std::int32_t i = 0; i < patches[index].size(); i++) {
             if (!patches[index][i] || (patches[index])[i].get(mem)->output_sub_index == -1) {
@@ -191,7 +191,7 @@ Ptr<Patch> Voice::patch(const MemState &mem, const std::int32_t index, std::int3
     }
 
     if (!patches[index][subindex]) {
-        // Create the patch incase it hass not yet existed
+        // Create the patch incase it has not yet existed
         patches[index][subindex] = rack->alloc_and_init<Patch>(mem);
     }
 
