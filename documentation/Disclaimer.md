@@ -12,4 +12,4 @@ If you have ever contributed code to Vita3K and you are not aware of the Android
 
 The purpose of this emulator is not to enable illegal activity. You are required to dump your own games from a disc or your Vita console. Acquiring games without owning them is a crime.
 
-If you have contributed code the Vita3K project prior to the Android version being released, or you want your contributions removed, please contact Macdu#7673 on Discord.
+If you have contributed code the Vita3K project prior to the Android version being released, or you want your contributions removed, please contact Macdu#7673 on Discord. If you were unaware of the Android port and have made a pull request at any point in time, speak to Macdu on Discord.
