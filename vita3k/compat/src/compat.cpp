@@ -31,7 +31,7 @@ static const uint32_t db_version = 1;
 bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto app_compat_db_path = fs::path(emuenv.base_path) / "cache/app_compat_db.xml";
     if (!fs::exists(app_compat_db_path)) {
-        LOG_WARN("Compatibility database not found at {}.", app_compat_db_path.string());
+        LOG_WARN("Application compatibility database not found at {}.", app_compat_db_path.string());
         return false;
     }
 
@@ -39,7 +39,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     pugi::xml_document doc;
     pugi::xml_parse_result result = doc.load_file(app_compat_db_path.c_str());
     if (!result) {
-        LOG_ERROR("Compatibility database {} could not be loaded: {}", app_compat_db_path.string(), result.description());
+        LOG_ERROR("Application compatibility database {} could not be loaded: {}", app_compat_db_path.string(), result.description());
         return false;
     }
 
@@ -47,7 +47,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto compatibility = doc.child("compatibility");
     const auto version = compatibility.attribute("version").as_uint();
     if (db_version != version) {
-        LOG_WARN("Compatibility database version {} is outdated, download it again.", version);
+        LOG_WARN("Application compatibility database version {} is outdated, please download it again.", version);
         return false;
     }
 
@@ -81,7 +81,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         const auto updated_at = app.child("updated_at").text().as_llong();
 
         if (state == Unknown)
-            LOG_WARN("App with title ID {} has an issue but no status label. Please check GitHub issue {} and request a status label to be added.", title_id, issue_id);
+            LOG_WARN("App with Title ID {} has an issue but no status label. Please check the GitHub issue {} and request that a status label be added.", title_id, issue_id);
 
         gui.compat.app_compat_db[title_id] = { issue_id, state, updated_at };
     }
@@ -103,11 +103,11 @@ static std::string get_string_output(const std::string cmd) {
         if (res.is_open()) {
             // Read file and check if it was read successfully
             if (!std::getline(res, result))
-                LOG_ERROR("Failed to read from input stream");
+                LOG_ERROR("Failed to read from input stream.");
 
             res.close();
         } else
-            LOG_ERROR("Input stream is not open");
+            LOG_ERROR("Input stream is not open.");
 
         // Remove trailing whitespace
         boost::trim(result);
@@ -124,7 +124,7 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     std::string power_shell_version;
     std::getline(std::ifstream(_popen("powershell (Get-Host).Version.major", "r")), power_shell_version);
     if (power_shell_version.empty() || !std::isdigit(power_shell_version[0]) || (std::stoi(power_shell_version) < 3)) {
-        LOG_WARN("You powershell version {} is outdated and incompatible with Vita3K Update, consider to update it", power_shell_version);
+        LOG_WARN("Your Powershell version {} is outdated and incompatible with Vita3K, consider updating it.", power_shell_version);
         return false;
     }
 
@@ -134,24 +134,25 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto github_updated_at_cmd = github_curl_url + R"( | grep '"body"' | head -n 1 | awk -F "Updated at: " '{print $2}' | awk -F '"' '{print $1}')";
 #endif
 
-    // Get current date of last issue updated
+    // Get current date of when the last issue was updated
     const auto updated_at = get_string_output(github_updated_at_cmd);
     if (updated_at.empty()) {
-        LOG_ERROR("Failed to get current database version, check firewall/internet access, try again later.");
+        LOG_ERROR("Failed to get the current application database version, check firewall/internet access and try again.");
         return false;
     }
 
     // Check if database is up to date
     if (db_updated_at == updated_at) {
-        LOG_INFO("Applications compatibility database is up to date.");
+        LOG_INFO("The application compatibility database is up to date.");
         return true;
     }
 
     const auto compat_db_exist = fs::exists(compat_db_path);
 
-    LOG_INFO("Applications compatibility database is {}, attempting to download latest updated at: {}", compat_db_exist ? "outdated" : "missing", updated_at);
+    LOG_INFO("Application compatibility database is {}, attempting to download latest version. Updated at: {}", compat_db_exist ? "outdated" : "missing", updated_at);
 
     const auto app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml";
+    //TODO: Add a homebrew compatibility database as well as the existing commercial one
 
 #ifdef WIN32
     const auto download_command = fmt::format(R"(powershell Invoke-WebRequest {} -Outfile \"{}\")", app_compat_db_link, compat_db_path.string());
@@ -161,7 +162,7 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
     // Download database
     if (system(download_command.c_str()) != 0) {
-        LOG_WARN("Failed to download Applications compatibility database updated at: {}", updated_at);
+        LOG_WARN("Failed to download application compatibility database. Updated at: {}", updated_at);
         return false;
     }
 
@@ -169,14 +170,14 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
     gui.compat.compat_db_loaded = load_compat_app_db(gui, emuenv);
     if (!gui.compat.compat_db_loaded || (db_updated_at != updated_at)) {
-        LOG_WARN("Failed to load Applications compatibility database downloaded updated at: {}", updated_at);
+        LOG_WARN("Failed to load application compatibility database. Downloaded updated at: {}", updated_at);
         return false;
     }
 
     if (compat_db_exist)
-        LOG_INFO("Successfully updated app compatibility database from {} to {} with a total of {} applications", old_db_updated_at, updated_at, gui.compat.app_compat_db.size());
+        LOG_INFO("Successfully updated application compatibility database from {} to {} with a total of {} application(s)", old_db_updated_at, updated_at, gui.compat.app_compat_db.size());
     else
-        LOG_INFO("Successfully downloaded app compatibility database updated at: {} with a total of {} applications", updated_at, gui.compat.app_compat_db.size());
+        LOG_INFO("Successfully downloaded application compatibility database updated at: {} with a total of {} applications", updated_at, gui.compat.app_compat_db.size());
 
     return true;
 }

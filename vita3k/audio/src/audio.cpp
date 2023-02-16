@@ -105,7 +105,7 @@ void AudioState::set_backend(const std::string &adapter_name) {
     } else if (adapter_name == "Cubeb") {
         adapter = std::make_unique<CubebAudioAdapter>(*this);
     } else {
-        LOG_ERROR("Unkown audio adapter {}", adapter_name);
+        LOG_ERROR("Unkown audio adapter {}, please switch to SDL or cubeb.", adapter_name);
         return;
     }
     this->audio_backend = adapter_name;

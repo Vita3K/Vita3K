@@ -64,7 +64,7 @@ void update_viewport(EmuEnvState &state) {
         break;
 
     default:
-        LOG_ERROR("Unimplemented backend render: {}.", static_cast<int>(state.renderer->current_backend));
+        LOG_ERROR("Unimplemented backend renderer: {}.", static_cast<int>(state.renderer->current_backend));
         break;
     }
 
@@ -75,13 +75,13 @@ void update_viewport(EmuEnvState &state) {
         const float window_aspect = static_cast<float>(w) / h;
         const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
         if (window_aspect > vita_aspect) {
-            // Window is wide. Pin top and bottom.
+            //The window is wide. Pin top and bottom.
             state.viewport_size.x = h * vita_aspect;
             state.viewport_size.y = static_cast<SceFloat>(h);
             state.viewport_pos.x = (w - state.viewport_size.x) / 2;
             state.viewport_pos.y = 0;
         } else {
-            // Window is tall. Pin left and right.
+            //The window is tall. Pin left and right.
             state.viewport_size.x = static_cast<SceFloat>(w);
             state.viewport_size.y = w / vita_aspect;
             state.viewport_pos.x = 0;
@@ -140,7 +140,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         break;
 
     default:
-        LOG_ERROR("Unimplemented backend render: {}.", state.cfg.backend_renderer);
+        LOG_ERROR("Unimplemented backend renderer: {}.", state.cfg.backend_renderer);
         break;
     }
 
@@ -158,7 +158,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     state.window = WindowPtr(SDL_CreateWindow(window_title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, state.res_width_dpi_scale, state.res_height_dpi_scale, window_type | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI), SDL_DestroyWindow);
 
     if (!state.window) {
-        LOG_ERROR("SDL failed to create window!");
+        LOG_ERROR("SDL failed to create a window!");
         return false;
     }
 
@@ -168,7 +168,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
     }
 
     if (!state.audio.init(resume_thread, state.cfg.audio_backend)) {
-        LOG_WARN("Failed to init audio! Audio will not work.");
+        LOG_WARN("Failed to initialize audio! Audio will not work, try changing the audio backend.");
     }
 
     if (!init(state.io, state.base_path, state.pref_path, state.cfg.console)) {
@@ -194,15 +194,15 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         } else {
             switch (state.backend_renderer) {
             case renderer::Backend::OpenGL:
-                error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.4?", nullptr);
+                error_dialog("Could not create OpenGL context!\nDoes your GPU support OpenGL 4.4 or higher?", nullptr);
                 break;
 
             case renderer::Backend::Vulkan:
-                error_dialog("Could not create Vulkan context!");
+                error_dialog("Could not create Vulkan context!\nDoes your GPU support Vulkan?");
                 break;
 
             default:
-                error_dialog(fmt::format("Unknown backend render: {}.", state.cfg.backend_renderer));
+                error_dialog(fmt::format("Unknown backend renderer: {}.", state.cfg.backend_renderer));
                 break;
             }
             return false;
