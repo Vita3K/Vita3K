@@ -91,14 +91,7 @@ void VKContext::wait_thread_function(const MemState &mem) {
 }
 
 void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const FeatureState &features) {
-    if (rt) {
-        context.render_target = rt;
-    } else {
-        // TODO: make context.current_render_target non-const instead of doing this
-        context.render_target = const_cast<VKRenderTarget *>(reinterpret_cast<const VKRenderTarget *>(context.current_render_target));
-        rt = context.render_target;
-    }
-
+    context.render_target = rt;
     context.scene_timestamp++;
     context.state.texture_cache.current_scene_timestamp = context.scene_timestamp;
 
@@ -332,6 +325,13 @@ void VKContext::stop_render_pass() {
         LOG_ERROR("Stopping render pass while not in render pass");
         return;
     }
+
+    // do this before ending the render pass
+    if (is_in_query) {
+        render_cmd.endQuery(current_visibility_buffer->query_pool, current_query_idx);
+        is_in_query = false;
+    }
+
     render_cmd.endRenderPass();
 
     in_renderpass = false;
@@ -341,12 +341,6 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     if (!is_recording) {
         LOG_ERROR("Stopping recording while not recording");
         return;
-    }
-
-    // do this before ending the render pass
-    if (is_in_query) {
-        render_cmd.endQuery(current_visibility_buffer->query_pool, current_query_idx);
-        is_in_query = false;
     }
 
     if (in_renderpass)

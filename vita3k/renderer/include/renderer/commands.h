@@ -68,6 +68,7 @@ enum class CommandOpcode : std::uint8_t {
 
     SetContext,
     SyncSurfaceData,
+    MidSceneFlush,
 
     /**
      * Signal sync object that fragment has been done.

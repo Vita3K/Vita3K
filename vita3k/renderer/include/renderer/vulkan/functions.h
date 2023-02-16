@@ -35,6 +35,7 @@ bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmPr
 void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format,
     Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config);
 
+void mid_scene_flush(VKContext &context, const SceGxmNotification notification);
 void new_frame(VKContext &context);
 
 void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const FeatureState &features);

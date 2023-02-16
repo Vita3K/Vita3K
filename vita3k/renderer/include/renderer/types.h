@@ -165,7 +165,7 @@ struct GxmRecordState {
 };
 
 struct Context {
-    const RenderTarget *current_render_target{};
+    RenderTarget *current_render_target{};
     GxmRecordState record;
 
     CommandList command_list;

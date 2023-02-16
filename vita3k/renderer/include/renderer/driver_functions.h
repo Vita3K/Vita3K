@@ -61,6 +61,7 @@ COMMAND(handle_memory_unmap);
 // Scene
 COMMAND(handle_set_context);
 COMMAND(handle_sync_surface_data);
+COMMAND(handle_mid_scene_flush);
 
 COMMAND(handle_draw);
 
