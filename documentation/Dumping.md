@@ -6,10 +6,8 @@ However, if you're after homebrew games, you can search online or visit [VitaDB]
 
 # Dumping methods
 
-There are four ways to dump Vita games: MaiDump, NoNpDrm, Vitamin and FAGdec. However, MaiDump and Vitamin are not supported by Vita3K.
+There are four ways to dump Vita games: MaiDump, [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm), Vitamin and FAGdec. However, MaiDump and Vitamin are not supported by Vita3K.
 
-NoNpDrm
+# Dumping with NoNpDrm
 
-# Dumping from your Vita
-
-# Dumping from your discs
+# Dumping with FAGdec
