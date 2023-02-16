@@ -337,7 +337,7 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, uint32_t z
         .finalLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal
     };
 
-    std::array<vk::SubpassDependency, 3> dependencies;
+    std::array<vk::SubpassDependency, 4> dependencies;
 
     // external dependency
     // we want the previous render pass to be done when we reach the fragment stage / stencil*depth testing
@@ -381,6 +381,17 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, uint32_t z
         .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
         .dstAccessMask = vk::AccessFlagBits::eInputAttachmentRead,
         .dependencyFlags = vk::DependencyFlagBits::eByRegion
+    };
+
+    // mid-scene flush
+    // unity games use it to write to a buffer in a vertex shader then use it as the vertex input in the next draw
+    dependencies[3] = {
+        .srcSubpass = 0,
+        .dstSubpass = 0,
+        .srcStageMask = vk::PipelineStageFlagBits::eVertexShader,
+        .dstStageMask = vk::PipelineStageFlagBits::eVertexInput,
+        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+        .dstAccessMask = vk::AccessFlagBits::eVertexAttributeRead
     };
 
     vk::RenderPassCreateInfo pass_info{};

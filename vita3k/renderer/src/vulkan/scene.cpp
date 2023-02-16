@@ -65,6 +65,37 @@ void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderPro
     }
 }
 
+void mid_scene_flush(VKContext &context, const SceGxmNotification notification) {
+    // two cases :
+    // notification.addr is 0: this means that the mid scene flush must be used as a barrier in the renderpass
+    // notification.addr is not 0: this means the app is waiting for this part to be finished to re-use the ressources
+
+    // Note: however, when testing, the barrier inside a pipeline does not work (or not entirely, depending on the GPU)
+    // maybe because I'm writing using buffer device addresses, not sure...
+    // so for the time being always restart the render pass
+    // const bool restart_render_pass = notification.address.address() != 0;
+    const bool restart_render_pass = true;
+
+    if (restart_render_pass && context.in_renderpass)
+        context.stop_render_pass();
+
+    // in case there is no notification, this will happen in the render pass
+    vk::MemoryBarrier barrier{
+        .srcAccessMask = vk::AccessFlagBits::eShaderWrite,
+        .dstAccessMask = vk::AccessFlagBits::eVertexAttributeRead,
+    };
+    context.render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eVertexShader, vk::PipelineStageFlagBits::eVertexInput,
+        vk::DependencyFlags(), barrier, {}, {});
+
+    if (restart_render_pass) {
+        SceGxmNotification empty_notification = { Ptr<uint32_t>(0), 0 };
+        const bool submit = notification.address.address() != 0;
+        context.stop_recording(notification, empty_notification, submit);
+        context.start_recording();
+        context.scene_timestamp++;
+    }
+}
+
 void new_frame(VKContext &context) {
     if (context.state.features.support_memory_mapping) {
         FrameDoneRequest request = { context.frame_timestamp };

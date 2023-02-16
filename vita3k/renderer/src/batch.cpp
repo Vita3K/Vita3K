@@ -72,6 +72,7 @@ void process_batch(renderer::State &state, const FeatureState &features, MemStat
     const static std::map<CommandOpcode, CommandHandlerFunc *> handlers = {
         { CommandOpcode::SetContext, cmd_handle_set_context },
         { CommandOpcode::SyncSurfaceData, cmd_handle_sync_surface_data },
+        { CommandOpcode::MidSceneFlush, cmd_handle_mid_scene_flush },
         { CommandOpcode::CreateContext, cmd_handle_create_context },
         { CommandOpcode::CreateRenderTarget, cmd_handle_create_render_target },
         { CommandOpcode::MemoryMap, cmd_handle_memory_map },

@@ -2656,7 +2656,8 @@ EXPORT(int, sceGxmMapVertexUsseMemory, Ptr<void> base, uint32_t size, uint32_t *
 
 EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags, SceGxmSyncObject *vertexSyncObject, const SceGxmNotification *vertexNotification) {
     TRACY_FUNC(sceGxmMidSceneFlush, immediateContext, flags, vertexSyncObject, vertexNotification);
-    STUBBED("Surfaces not flushed back to memory");
+    if (flags != 0)
+        STUBBED("Flags ignored");
 
     if (!immediateContext) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
@@ -2670,12 +2671,14 @@ EXPORT(int, sceGxmMidSceneFlush, SceGxmContext *immediateContext, uint32_t flags
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
 
-    if (vertexNotification)
-        renderer::add_command(immediateContext->renderer.get(), renderer::CommandOpcode::SignalNotification, nullptr, *vertexNotification);
+    SceGxmNotification notification = vertexNotification ? *vertexNotification : SceGxmNotification{ Ptr<uint32_t>(0), 0 };
+    renderer::add_command(immediateContext->renderer.get(), renderer::CommandOpcode::MidSceneFlush, nullptr, notification);
 
-    // send the commands recorded up to now
-    renderer::submit_command_list(*emuenv.renderer, immediateContext->renderer.get(), immediateContext->renderer->command_list);
-    renderer::reset_command_list(immediateContext->renderer->command_list);
+    if (vertexNotification) {
+        // this is necessary only if the program could wait for a notification
+        renderer::submit_command_list(*emuenv.renderer, immediateContext->renderer.get(), immediateContext->renderer->command_list);
+        renderer::reset_command_list(immediateContext->renderer->command_list);
+    }
 
     return 0;
 }
@@ -5327,9 +5330,9 @@ EXPORT(int, sceGxmUnmapVertexUsseMemory, void *base) {
     return 0;
 }
 
-EXPORT(int, sceGxmVertexFence) {
-    TRACY_FUNC(sceGxmVertexFence);
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmVertexFence, SceGxmContext *immediateContext) {
+    TRACY_FUNC(sceGxmVertexFence, immediateContext);
+    return CALL_EXPORT(sceGxmMidSceneFlush, immediateContext, 0, nullptr, nullptr);
 }
 
 EXPORT(Ptr<const SceGxmProgram>, sceGxmVertexProgramGetProgram, const SceGxmVertexProgram *vertexProgram) {

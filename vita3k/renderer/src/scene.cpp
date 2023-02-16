@@ -46,9 +46,7 @@ COMMAND(handle_set_context) {
     const SceGxmColorSurface *color_surface = helper.pop<SceGxmColorSurface *>();
     const SceGxmDepthStencilSurface *depth_stencil_surface = helper.pop<SceGxmDepthStencilSurface *>();
 
-    if (rt) {
-        render_context->current_render_target = rt;
-    }
+    render_context->current_render_target = rt;
 
     if (color_surface && !color_surface->disabled) {
         render_context->record.color_surface = *color_surface;
@@ -202,6 +200,21 @@ COMMAND(handle_sync_surface_data) {
     }
 
     signal_notifications();
+}
+
+COMMAND(handle_mid_scene_flush) {
+    TRACY_FUNC_COMMANDS(handle_mid_scene_flush);
+
+    if (!renderer.features.support_memory_mapping) {
+        // handle it like a simple notification
+        cmd_handle_notification(renderer, mem, config, helper, features, render_context, base_path, title_id, self_name);
+        return;
+    }
+
+    const SceGxmNotification notification = helper.pop<SceGxmNotification>();
+    if (renderer.current_backend == Backend::Vulkan) {
+        vulkan::mid_scene_flush(*reinterpret_cast<vulkan::VKContext *>(render_context), notification);
+    }
 }
 
 COMMAND(handle_draw) {
