@@ -213,7 +213,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    ImGui::Begin("##settings", &gui.live_area.settings, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##settings", &gui.vita_area.settings, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
         ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], ImVec2(0.f, 0.f), display_size);
     else
@@ -958,14 +958,14 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                 settings_menu = SELECT;
         } else {
             if (emuenv.app_path == "NPXS10026") {
-                gui.live_area.content_manager = true;
+                gui.vita_area.content_manager = true;
             } else {
                 if (!gui.apps_list_opened.empty() && gui.apps_list_opened[gui.current_app_selected] == "NPXS10015")
-                    gui.live_area.live_area_screen = true;
+                    gui.vita_area.live_area_screen = true;
                 else
-                    gui.live_area.home_screen = true;
+                    gui.vita_area.home_screen = true;
             }
-            gui.live_area.settings = false;
+            gui.vita_area.settings = false;
         }
     }
 

@@ -130,7 +130,7 @@ void init_theme_start_background(GuiState &gui, EmuEnvState &emuenv, const std::
         start_param.clock_pos.x = 50.f;
         break;
     default:
-        LOG_WARN("Date layout for this theme is unknown : {}", start_param.date_layout);
+        LOG_WARN("Date layout for this theme is unknown : {}", static_cast<uint32_t>(start_param.date_layout));
         break;
     }
 
@@ -373,7 +373,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(0.f, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    ImGui::Begin("##start_screen", &gui.live_area.start_screen, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##start_screen", &gui.vita_area.start_screen, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     if (gui.start_background)
         ImGui::GetBackgroundDrawList()->AddImage(gui.start_background, ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size);
@@ -432,9 +432,9 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     }
     ImGui::PopFont();
 
-    if (ImGui::IsMouseClicked(0) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
-        gui.live_area.start_screen = false;
-        gui.live_area.home_screen = true;
+    if ((ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
+        gui.vita_area.start_screen = false;
+        gui.vita_area.home_screen = true;
     }
 
     ImGui::End();

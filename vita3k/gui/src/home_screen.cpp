@@ -115,9 +115,9 @@ void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
     update_apps_list_opened(gui, emuenv, app_path);
     last_time["home"] = 0;
     init_live_area(gui, emuenv, app_path);
-    gui.live_area.home_screen = false;
-    gui.live_area.information_bar = true;
-    gui.live_area.live_area_screen = true;
+    gui.vita_area.home_screen = false;
+    gui.vita_area.information_bar = true;
+    gui.vita_area.live_area_screen = true;
 }
 
 void pre_load_app(GuiState &gui, EmuEnvState &emuenv, bool live_area, const std::string &app_path) {
@@ -136,30 +136,30 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
     if (app_path.find("NPXS") == std::string::npos) {
         if (emuenv.io.app_path != app_path) {
             if (!emuenv.io.app_path.empty())
-                gui.live_area.app_close = true;
+                gui.vita_area.app_close = true;
             else {
-                gui.live_area.home_screen = false;
-                gui.live_area.live_area_screen = false;
+                gui.vita_area.home_screen = false;
+                gui.vita_area.live_area_screen = false;
                 emuenv.io.app_path = app_path;
             }
         } else {
-            gui.live_area.live_area_screen = false;
-            gui.live_area.information_bar = false;
+            gui.vita_area.live_area_screen = false;
+            gui.vita_area.information_bar = false;
         }
     } else {
-        gui.live_area.home_screen = false;
-        gui.live_area.live_area_screen = false;
+        gui.vita_area.home_screen = false;
+        gui.vita_area.live_area_screen = false;
         init_app_background(gui, emuenv, app_path);
         update_last_time_app_used(gui, emuenv, app_path);
 
         if (app_path == "NPXS10008") {
             init_trophy_collection(gui, emuenv);
-            gui.live_area.trophy_collection = true;
+            gui.vita_area.trophy_collection = true;
         } else if (app_path == "NPXS10015")
-            gui.live_area.settings = true;
+            gui.vita_area.settings = true;
         else {
             init_content_manager(gui, emuenv);
-            gui.live_area.content_manager = true;
+            gui.vita_area.content_manager = true;
         }
     }
 }
@@ -176,7 +176,7 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-    ImGui::Begin("##app_close", &gui.live_area.app_close, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##app_close", &gui.vita_area.app_close, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
     ImGui::BeginChild("##app_close_child", WINDOW_SIZE, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
@@ -196,7 +196,7 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.current_app_title.c_str());
     ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
     if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))
-        gui.live_area.app_close = false;
+        gui.vita_area.app_close = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
     if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
         const auto app_path = gui.apps_list_opened[gui.current_app_selected];
@@ -362,7 +362,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
-    const auto MENUBAR_BG_HEIGHT = (!emuenv.cfg.show_info_bar && emuenv.display.imgui_render) || !gui.live_area.information_bar ? 22.f * SCALE.x : INFORMATION_BAR_HEIGHT;
+    const auto MENUBAR_BG_HEIGHT = (!emuenv.cfg.show_info_bar && emuenv.display.imgui_render) || !gui.vita_area.information_bar ? 22.f * SCALE.x : INFORMATION_BAR_HEIGHT;
 
     const auto is_background = (gui.users[emuenv.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
 
@@ -370,13 +370,13 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::SetNextWindowBgAlpha(is_background ? emuenv.cfg.background_alpha : 0.f);
-    ImGui::Begin("##home_screen", &gui.live_area.home_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##home_screen", &gui.vita_area.home_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
     if (!emuenv.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
-        gui.live_area.information_bar = true;
+        gui.vita_area.information_bar = true;
 
     const auto config_dialog = gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog || gui.controls_menu.controls_dialog;
     const auto install_dialog = gui.file_menu.archive_install_dialog || gui.file_menu.firmware_install_dialog || gui.file_menu.pkg_install_dialog;
-    if (!config_dialog && !install_dialog && !gui.live_area.app_close && !gui.live_area.app_information && !gui.help_menu.about_dialog && !gui.help_menu.welcome_dialog) {
+    if (!config_dialog && !install_dialog && !gui.vita_area.app_close && !gui.vita_area.app_information && !gui.help_menu.about_dialog && !gui.help_menu.welcome_dialog) {
         if (ImGui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ImGui::IsAnyItemActive() || ImGui::IsAnyItemHovered())
             last_time["start"] = 0;
         else {
@@ -386,14 +386,14 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             while (last_time["start"] + emuenv.cfg.delay_start < current_time()) {
                 last_time["start"] += emuenv.cfg.delay_start;
                 last_time["home"] = 0;
-                gui.live_area.home_screen = false;
-                gui.live_area.information_bar = true;
-                gui.live_area.start_screen = true;
+                gui.vita_area.home_screen = false;
+                gui.vita_area.information_bar = true;
+                gui.vita_area.start_screen = true;
             }
         }
     }
 
-    if (!gui.live_area.start_screen && !gui.live_area.live_area_screen && (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty())) {
+    if (!gui.vita_area.start_screen && !gui.vita_area.live_area_screen && (!gui.theme_backgrounds.empty() || !gui.user_backgrounds.empty())) {
         if (last_time["home"] == 0)
             last_time["home"] = current_time();
 
@@ -719,8 +719,8 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             || !ImGui::GetIO().WantTextInput && (ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_right) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_right))) {
             last_time["start"] = 0;
             ++gui.current_app_selected;
-            gui.live_area.home_screen = false;
-            gui.live_area.live_area_screen = true;
+            gui.vita_area.home_screen = false;
+            gui.vita_area.live_area_screen = true;
         }
     }
     if (current_scroll_pos < max_scroll_pos) {

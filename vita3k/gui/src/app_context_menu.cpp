@@ -19,13 +19,16 @@
 
 #include <compat/functions.h>
 #include <config/state.h>
+#include <config/version.h>
 #include <gui/functions.h>
 #include <io/state.h>
 
 #include <util/log.h>
 #include <util/safe_time.h>
 
+#include <SDL.h>
 #include <SDL_misc.h>
+
 #include <pugixml.hpp>
 
 namespace gui {
@@ -338,8 +341,33 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     if (ImGui::MenuItem(lang["open_issue"].c_str()))
                         open_path(fmt::format("{}/{}", ISSUES_URL, gui.compat.app_compat_db[title_id].issue_id));
                 } else {
-                    if (ImGui::MenuItem(lang["create_issue"].c_str()))
-                        open_path(fmt::format("{}/new?title={} [{}]", ISSUES_URL, APP_INDEX->title, title_id));
+                    if (ImGui::MenuItem(lang["create_issue"].c_str())) {
+                        // Create body of issue
+                        const auto app_summary = fmt::format(
+                            "%23 App summary%0A- App name: {}%0A- App serial: {}%0A- App version: {}",
+                            APP_INDEX->title, title_id, APP_INDEX->app_ver);
+
+                        const auto vita3k_summary = fmt::format(
+                            "%23 Vita3K summary%0A- Version: {}%0A- Build number: {}%0A- Commit hash: https://github.com/vita3k/vita3k/commit/{}%0A- CPU backend: {}%0A- GPU backend: {}",
+                            app_version, app_number, app_hash, get_cpu_backend(gui, emuenv, app_path), emuenv.cfg.backend_renderer);
+
+#ifdef WIN32
+                        const auto user = std::getenv("USERNAME");
+#else
+                        auto user = std::getenv("USER");
+#endif // WIN32
+
+                        // Test environement summary
+                        const auto test_env_summary = fmt::format(
+                            "%23 Test environment summary%0A- Tested by: {} <!-- Change your username if is needed -->%0A- OS: Windows 10/macOS/Linux Distro, Kernel Version?%0A- CPU: AMD/Intel?%0A- GPU: AMD/NVIDIA/Intel?%0A- RAM: {} GB",
+                            user ? user : "?", SDL_GetSystemRAM() / 1000);
+
+                        const auto rest_of_body = "%23 Issues%0A<!-- Summary of problems -->%0A%0A%23 Screenshots%0A![image](https://?)%0A%0A%23 Log%0A%0A%23 Recommended labels%0A<!-- See https://github.com/Vita3K/compatibility/labels -->%0A- A?%0A- B?%0A- C?";
+
+                        open_path(fmt::format(
+                            "{}/new?title={} [{}]&body={}%0A%0A{}%0A%0A{}%0A%0A{}",
+                            ISSUES_URL, APP_INDEX->title, title_id, app_summary, vita3k_summary, test_env_summary, rest_of_body));
+                    }
                 }
                 if (ImGui::MenuItem(lang["update_database"].c_str()))
                     compat::update_compat_app_db(gui, emuenv);
@@ -397,7 +425,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 ImGui::EndMenu();
             }
             if (!emuenv.cfg.show_live_area_screen && ImGui::BeginMenu("Live Area")) {
-                if (ImGui::MenuItem("Live Area", nullptr, &gui.live_area.live_area_screen))
+                if (ImGui::MenuItem("Live Area", nullptr, &gui.vita_area.live_area_screen))
                     open_live_area(gui, emuenv, app_path);
                 if (ImGui::MenuItem("Search", nullptr))
                     open_search(APP_INDEX->title);
@@ -429,13 +457,13 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     LOG_WARN("Patch note Error for title id: {} in path: {}", title_id, app_path);
             }
         }
-        if (ImGui::MenuItem(lang["information"].c_str(), nullptr, &gui.live_area.app_information)) {
+        if (ImGui::MenuItem(lang["information"].c_str(), nullptr, &gui.vita_area.app_information)) {
             if (title_id.find("NPXS") == std::string::npos) {
                 get_app_info(gui, emuenv, app_path);
                 const auto app_size = get_app_size(gui, emuenv, app_path);
                 gui.app_selector.app_info.size = app_size;
             }
-            gui.live_area.information_bar = false;
+            gui.vita_area.information_bar = false;
         }
         ImGui::EndPopup();
     }
@@ -516,15 +544,15 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     }
 
     // Information
-    if (gui.live_area.app_information) {
+    if (gui.vita_area.app_information) {
         ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
-        ImGui::Begin("##information", &gui.live_area.app_information, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+        ImGui::Begin("##information", &gui.vita_area.app_information, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);
         ImGui::SetCursorPos(ImVec2(10.0f * SCALE.x, 10.0f * SCALE.y));
         if (ImGui::Button("X", ImVec2(40.f * SCALE.x, 40.f * SCALE.y)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
-            gui.live_area.app_information = false;
-            gui.live_area.information_bar = true;
+            gui.vita_area.app_information = false;
+            gui.vita_area.information_bar = true;
         }
         if (get_app_icon(gui, title_id)->first == title_id) {
             ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (INFO_ICON_SIZE.x / 2.f), 22.f * SCALE.x));

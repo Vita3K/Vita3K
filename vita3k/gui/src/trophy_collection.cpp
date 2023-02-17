@@ -411,7 +411,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    ImGui::Begin("##trophy_collection", &gui.live_area.trophy_collection, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##trophy_collection", &gui.vita_area.trophy_collection, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
         ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10008"], ImVec2(0.f, 0.f), display_size);
     else
@@ -755,10 +755,10 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
             }
         } else {
             if (!gui.apps_list_opened.empty() && (gui.current_app_selected >= 0))
-                gui.live_area.live_area_screen = true;
+                gui.vita_area.live_area_screen = true;
             else
-                gui.live_area.home_screen = true;
-            gui.live_area.trophy_collection = false;
+                gui.vita_area.home_screen = true;
+            gui.vita_area.trophy_collection = false;
         }
     }
     if (trophy_id_selected.empty() && !detail_np_com_id && (np_com_id_selected.empty() || !group_id_selected.empty())) {

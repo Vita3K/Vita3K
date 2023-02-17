@@ -41,7 +41,7 @@ enum Vita3kUpdate {
 };
 
 static Vita3kUpdate state;
-static LiveAreaState live_area_state;
+static VitaAreaState vita_area_state;
 
 static int git_version;
 static std::vector<std::pair<std::string, std::string>> git_commit_desc_list;
@@ -58,7 +58,7 @@ bool init_vita3k_update(GuiState &gui) {
     state = NO_UPDATE;
     git_commit_desc_list.clear();
     git_version = 0;
-    live_area_state = {};
+    vita_area_state = {};
 
     // Get Build number of latest release
     const auto latest_link = "https://api.github.com/repos/Vita3K/Vita3K/releases/latest";
@@ -170,11 +170,11 @@ bool init_vita3k_update(GuiState &gui) {
     }
 
     if (has_update || gui.help_menu.vita3k_update) {
-        live_area_state = gui.live_area;
-        gui.live_area.home_screen = false;
-        gui.live_area.live_area_screen = false;
-        gui.live_area.start_screen = false;
-        gui.live_area.information_bar = true;
+        vita_area_state = gui.vita_area;
+        gui.vita_area.home_screen = false;
+        gui.vita_area.live_area_screen = false;
+        gui.vita_area.start_screen = false;
+        gui.vita_area.information_bar = true;
     }
 
     return has_update;
@@ -235,7 +235,6 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     auto common = emuenv.common_dialog.lang.common;
     auto lang = gui.lang.vita3k_update;
 
-    ImGui::PushFont(gui.vita_font);
     ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
     ImGui::Begin("##vita3k_update", &gui.help_menu.vita3k_update, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
@@ -334,7 +333,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         if (state < DESCRIPTION) {
             if (fs::exists("windows-latest.zip"))
                 fs::remove("windows-latest.zip");
-            gui.live_area = live_area_state;
+            gui.vita_area = vita_area_state;
             gui.help_menu.vita3k_update = false;
         } else
             state = (Vita3kUpdate)(state - 1);
@@ -353,7 +352,6 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::EndDisabled();
     }
     ImGui::PopStyleVar();
-    ImGui::PopFont();
     ImGui::End();
 }
 

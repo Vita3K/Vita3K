@@ -34,9 +34,9 @@ static std::pair<bool, bool> zoom;
 
 void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
     if (init_manual(gui, emuenv, app_path)) {
-        gui.live_area.information_bar = false;
-        gui.live_area.live_area_screen = false;
-        gui.live_area.manual = true;
+        gui.vita_area.information_bar = false;
+        gui.vita_area.live_area_screen = false;
+        gui.vita_area.manual = true;
     } else
         LOG_ERROR("Error opening Manual");
 }
@@ -98,7 +98,7 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(-5.f, -1.f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x + 10.f, display_size.y + 2.f), ImGuiCond_Always);
     ImGui::SetNextWindowBgAlpha(0.999f);
-    ImGui::Begin("##manual", &gui.live_area.manual, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##manual", &gui.vita_area.manual, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     if (zoom.first && ImGui::IsMouseDoubleClicked(0)) {
         zoom.second ? size_page["current"] = size_page["mini"] : size_page["current"] = size_page["max"];
@@ -118,10 +118,10 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::SetCursorPos(ImVec2(size_child.x - ((!zoom.second ? 70.0f : 85.f) * SCALE.x), 10.0f * SCALE.y));
     if (!hidden_button && ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_psbutton)) {
-        gui.live_area.manual = false;
-        gui.live_area.information_bar = true;
-        if (!gui.live_area.home_screen)
-            gui.live_area.live_area_screen = true;
+        gui.vita_area.manual = false;
+        gui.vita_area.information_bar = true;
+        if (!gui.vita_area.home_screen)
+            gui.vita_area.live_area_screen = true;
     }
 
     const auto wheel_counter = ImGui::GetIO().MouseWheel;

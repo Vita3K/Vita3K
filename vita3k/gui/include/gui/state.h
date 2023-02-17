@@ -123,7 +123,7 @@ struct AppsSelector {
     SelectorState state = SELECT_APP;
 };
 
-struct LiveAreaState {
+struct VitaAreaState {
     bool app_close = false;
     bool app_information = false;
     bool content_manager = false;
@@ -290,7 +290,7 @@ struct GuiState {
     gui::ConfigurationMenuState configuration_menu;
     gui::ControlMenuState controls_menu;
     gui::HelpMenuState help_menu;
-    gui::LiveAreaState live_area;
+    gui::VitaAreaState vita_area;
     gui::AppsSelector app_selector;
 
     CompatState compat;

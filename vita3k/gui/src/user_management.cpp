@@ -178,14 +178,14 @@ void init_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
 }
 
 void open_user(GuiState &gui, EmuEnvState &emuenv) {
-    gui.live_area.user_management = false;
+    gui.vita_area.user_management = false;
 
     if (gui.users[emuenv.io.user_id].start_type == "image")
         init_user_start_background(gui, gui.users[emuenv.io.user_id].start_path);
     else
         init_theme_start_background(gui, emuenv, gui.users[emuenv.io.user_id].theme_id);
 
-    gui.live_area.start_screen = true;
+    gui.vita_area.start_screen = true;
 }
 
 static auto get_users_index(GuiState &gui, const std::string &user_name) {
@@ -217,10 +217,10 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::SetNextWindowBgAlpha(0.f);
-    ImGui::Begin("##user_management", &gui.live_area.user_management, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##user_management", &gui.vita_area.user_management, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     if (!emuenv.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
-        gui.live_area.information_bar = true;
+        gui.vita_area.information_bar = true;
 
     ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size, IM_COL32(10.f, 50.f, 140.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
@@ -498,8 +498,8 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
                 else
                     menu.clear();
             } else if (USER_ALREADY_INIT) {
-                gui.live_area.user_management = false;
-                gui.live_area.home_screen = true;
+                gui.vita_area.user_management = false;
+                gui.vita_area.home_screen = true;
             }
         }
     }

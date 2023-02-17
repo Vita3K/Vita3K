@@ -19,5 +19,7 @@
 
 extern const char org_name[];
 extern const char app_name[];
+extern const char app_version[];
 extern const int app_number;
+extern const char app_hash[];
 extern const char window_title[];

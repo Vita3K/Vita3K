@@ -496,12 +496,12 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
     if (!gui.users.empty() && (gui.users.find(emuenv.cfg.user_id) != gui.users.end()) && (is_cmd || emuenv.cfg.auto_user_login)) {
         init_user(gui, emuenv, emuenv.cfg.user_id);
         if (!is_cmd && emuenv.cfg.auto_user_login) {
-            gui.live_area.information_bar = true;
+            gui.vita_area.information_bar = true;
             open_user(gui, emuenv);
         }
     } else {
-        gui.live_area.information_bar = true;
-        gui.live_area.user_management = true;
+        gui.vita_area.information_bar = true;
+        gui.vita_area.user_management = true;
     }
 }
 
@@ -725,21 +725,24 @@ void draw_end(GuiState &gui, SDL_Window *window) {
     ImGui_ImplSdl_RenderDrawData(gui.imgui_state.get());
 }
 
-void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
+void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
+    if (gui.vita_area.start_screen)
+        draw_start_screen(gui, emuenv);
+
     ImGui::PushFont(gui.vita_font);
 
-    if (gui.live_area.app_close)
+    if (gui.vita_area.app_close)
         draw_app_close(gui, emuenv);
 
-    if (gui.live_area.home_screen)
+    if (gui.vita_area.home_screen)
         draw_home_screen(gui, emuenv);
 
-    if ((emuenv.cfg.show_info_bar || !emuenv.display.imgui_render || !gui.live_area.home_screen) && gui.live_area.information_bar)
+    if ((emuenv.cfg.show_info_bar || !emuenv.display.imgui_render || !gui.vita_area.home_screen) && gui.vita_area.information_bar)
         draw_information_bar(gui, emuenv);
 
-    if (gui.live_area.live_area_screen)
+    if (gui.vita_area.live_area_screen)
         draw_live_area_screen(gui, emuenv);
-    if (gui.live_area.manual)
+    if (gui.vita_area.manual)
         draw_manual(gui, emuenv);
 
     if (gui.file_menu.archive_install_dialog)
@@ -751,7 +754,7 @@ void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.file_menu.pkg_install_dialog)
         draw_pkg_install_dialog(gui, emuenv);
 
-    if (gui.live_area.user_management)
+    if (gui.vita_area.user_management)
         draw_user_management(gui, emuenv);
 
     if (!gui.shaders_compiled_display.empty())
@@ -760,27 +763,27 @@ void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
     if (!gui.trophy_unlock_display_requests.empty())
         draw_trophies_unlocked(gui, emuenv);
 
-    if (emuenv.ime.state && !gui.live_area.home_screen && !gui.live_area.live_area_screen && get_sys_apps_state(gui))
+    if (emuenv.ime.state && !gui.vita_area.home_screen && !gui.vita_area.live_area_screen && get_sys_apps_state(gui))
         draw_ime(emuenv.ime, emuenv);
 
     // System App
-    if (gui.live_area.content_manager)
+    if (gui.vita_area.content_manager)
         draw_content_manager(gui, emuenv);
 
-    if (gui.live_area.settings)
+    if (gui.vita_area.settings)
         draw_settings(gui, emuenv);
 
-    if (gui.live_area.trophy_collection)
+    if (gui.vita_area.trophy_collection)
         draw_trophy_collection(gui, emuenv);
+
+    if (gui.help_menu.vita3k_update)
+        draw_vita3k_update(gui, emuenv);
 
     // Info Message
     if (!gui.info_message.msg.empty())
         draw_info_message(gui, emuenv);
 
     ImGui::PopFont();
-
-    if (gui.live_area.start_screen)
-        draw_start_screen(gui, emuenv);
 }
 
 void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
@@ -824,9 +827,6 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
 
     if (gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog)
         draw_settings_dialog(gui, emuenv);
-
-    if (gui.help_menu.vita3k_update)
-        draw_vita3k_update(gui, emuenv);
 
     ImGui::PopFont();
 }
