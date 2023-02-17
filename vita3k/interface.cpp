@@ -598,7 +598,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     gui.is_capturing_keys = false;
                 }
             }
-            if (!emuenv.io.title_id.empty() && !gui.live_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog) {
+            if (!emuenv.io.title_id.empty() && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog) {
                 // toggle gui state
                 if (event.key.keysym.sym == SDLK_g && !ImGui::GetIO().WantTextInput)
                     emuenv.display.imgui_render = !emuenv.display.imgui_render;
@@ -607,8 +607,8 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     if (gui::get_app_open_list_index(gui, emuenv.io.app_path) == gui.apps_list_opened.end())
                         gui::open_live_area(gui, emuenv, emuenv.io.app_path);
                     else {
-                        gui.live_area.information_bar = !gui.live_area.information_bar;
-                        gui.live_area.live_area_screen = !gui.live_area.live_area_screen;
+                        gui.vita_area.information_bar = !gui.vita_area.information_bar;
+                        gui.vita_area.live_area_screen = !gui.vita_area.live_area_screen;
                     }
                 }
             }
