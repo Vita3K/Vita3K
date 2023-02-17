@@ -182,7 +182,7 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     gui.info_message.level = spdlog::level::info;
 
     if (compat_db_exist) {
-        const auto dif = gui.compat.app_compat_db.size() - old_compat_count;
+        const int32_t dif = gui.compat.app_compat_db.size() - old_compat_count;
         if (dif > 0)
             gui.info_message.msg = fmt::format("The compatibility database was successfully updated from {} to {}.\n\n{} new application(s) are listed!", old_db_updated_at, db_updated_at, dif);
         else
