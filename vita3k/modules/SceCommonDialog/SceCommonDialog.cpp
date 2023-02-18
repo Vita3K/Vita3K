@@ -1233,6 +1233,8 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
     SceSaveDataDialogListParam *list_param;
     SceSaveDataDialogUserMessageParam *user_message;
     SceSaveDataDialogSystemMessageParam *sys_message;
+    SceSaveDataDialogProgressBarParam *progress_bar;
+    SceAppUtilSaveDataSlotEmptyParam *empty_param;
     std::vector<SceAppUtilSaveDataSlot> slot_list;
     std::vector<SceAppUtilSaveDataSlotParam> slot_param;
     SceUID fd;
@@ -1330,6 +1332,41 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
             check_empty_param(emuenv, empty_param, 0);
         }
         handle_sys_message(sys_message, emuenv);
+        break;
+    case SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR:
+    // Stub using continue code
+        emuenv.common_dialog.savedata.btn_num = 0;
+        progress_bar = p->progressBarParam.get(emuenv.mem);
+        emuenv.common_dialog.savedata.slot_id[emuenv.common_dialog.savedata.selected_save] = progress_bar->targetSlot.id;
+        emuenv.common_dialog.savedata.has_progress_bar = true;
+        if (!emuenv.common_dialog.savedata.slot_info[emuenv.common_dialog.savedata.selected_save].isExist) {
+            empty_param = progress_bar->targetSlot.emptyParam.get(emuenv.mem);
+            check_empty_param(emuenv, empty_param, emuenv.common_dialog.savedata.selected_save);
+        }
+        if (progress_bar->msg.get(emuenv.mem) != nullptr) {
+            emuenv.common_dialog.savedata.msg = reinterpret_cast<const char *>(progress_bar->msg.get(emuenv.mem));
+        } else {
+            auto lang = emuenv.common_dialog.lang;
+            auto save_data = lang.save_data;
+            switch (progress_bar->sysMsgParam.sysMsgType) {
+            case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_PROGRESS:
+                switch (emuenv.common_dialog.savedata.display_type) {
+                case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
+                    emuenv.common_dialog.savedata.msg = save_data.save["saving"];
+                    break;
+                case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
+                    emuenv.common_dialog.savedata.msg = save_data.load["loading"];
+                    break;
+                case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
+                    emuenv.common_dialog.savedata.msg = lang.common["please_wait"];
+                    break;
+                }
+                break;
+            default:
+                LOG_ERROR("Attempt to continue savedata progress dialog with unknown system message type: {}", log_hex(progress_bar->sysMsgParam.sysMsgType));
+                break;
+            }
+        }
         break;
     default:
         LOG_ERROR("Attempt to initialize savedata dialog with unknown mode: {}", log_hex(p->mode));

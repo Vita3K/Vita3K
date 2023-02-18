@@ -59,7 +59,7 @@ void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::BeginChild("##info", ImVec2(display_size.x / 1.4f, display_size.y / 2.6f), true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
         const auto title = fmt::format("{}", spdlog::level::to_string_view(gui.info_message.level));
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(title.c_str()).x) / 2);
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str(), ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
@@ -489,6 +489,12 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.app_selector.user_apps.empty() && (emuenv.cfg.load_app_list || !emuenv.cfg.run_app_path)) {
         if (!get_user_apps(gui, emuenv))
             init_user_apps(gui, emuenv);
+    }
+
+    // Init compatibilty in user apps list
+    if (gui.compat.compat_db_loaded) {
+        for (auto &app : gui.app_selector.user_apps)
+            app.compat = gui.compat.app_compat_db.contains(app.title_id) ? gui.compat.app_compat_db[app.title_id].state : Unknown;
     }
 
     init_app_background(gui, emuenv, "NPXS10015");

@@ -49,10 +49,6 @@ struct EmuEnvState;
 
 namespace gui {
 
-enum SelectorState {
-    SELECT_APP
-};
-
 enum SortState {
     NOT_SORTED,
     ASCENDANT,
@@ -62,6 +58,7 @@ enum SortState {
 enum SortType {
     APP_VER,
     CATEGORY,
+    COMPAT,
     LAST_TIME,
     TITLE,
     TITLE_ID
@@ -79,6 +76,7 @@ struct App {
     std::string title_id;
     std::string path;
     time_t last_time;
+    CompatibilityState compat;
 };
 
 struct AppInfo {
@@ -120,7 +118,6 @@ struct AppsSelector {
     std::map<std::string, ImGui_Texture> user_apps_icon;
     bool is_app_list_sorted{ false };
     std::map<SortType, SortState> app_list_sorted;
-    SelectorState state = SELECT_APP;
 };
 
 struct VitaAreaState {
