@@ -323,7 +323,7 @@
 
 	<home_screen>
 		<filter>篩選</filter>
-		<sort_app>應用程式排序依</sort_app>
+		<sort_app>應用程式排列依</sort_app>
 		<all>全部</all>
 		<by_region>依地區</by_region>
 		<usa>美國</usa>
