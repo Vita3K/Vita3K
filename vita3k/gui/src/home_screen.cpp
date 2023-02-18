@@ -290,8 +290,6 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return lhs.app_ver < rhs.app_ver;
             case DESCENDANT:
                 return lhs.app_ver > rhs.app_ver;
-            default:
-                break;
             }
         case CATEGORY:
             switch (sorted) {
@@ -299,8 +297,13 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return lhs.category < rhs.category;
             case DESCENDANT:
                 return lhs.category > rhs.category;
-            default:
-                break;
+            }
+        case COMPAT:
+            switch (sorted) {
+            case ASCENDANT:
+                return lhs.compat < rhs.compat;
+            case DESCENDANT:
+                return lhs.compat > rhs.compat;
             }
         case LAST_TIME:
             switch (sorted) {
@@ -308,8 +311,6 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return lhs.last_time > rhs.last_time;
             case DESCENDANT:
                 return lhs.last_time < rhs.last_time;
-            default:
-                break;
             }
         case TITLE:
             switch (sorted) {
@@ -317,8 +318,6 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return string_utils::toupper(lhs.title) < string_utils::toupper(rhs.title);
             case DESCENDANT:
                 return string_utils::toupper(lhs.title) > string_utils::toupper(rhs.title);
-            default:
-                break;
             }
         case TITLE_ID:
             switch (sorted) {
@@ -326,8 +325,6 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
                 return lhs.title_id < rhs.title_id;
             case DESCENDANT:
                 return lhs.title_id > rhs.title_id;
-            default:
-                break;
             }
         }
         return false;
@@ -340,6 +337,7 @@ static std::string get_label_name(GuiState &gui, const SortType &type) {
     switch (type) {
     case APP_VER: label = lang["ver"]; break;
     case CATEGORY: label = lang["cat"]; break;
+    case COMPAT: label = "Comp"; break;
     case LAST_TIME: label = lang["last_time"]; break;
     case TITLE: label = lang["tit"]; break;
     case TITLE_ID: label = gui.lang.app_context["title_id"]; break;
@@ -432,268 +430,270 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     // Size of the compatibility part
     const auto compat_radius = 12.f * SCALE.x;
     const auto full_compat_radius = (3.f * SCALE.x) + compat_radius;
-    const auto column_compat_size = (full_compat_radius * 2.f) + column_padding_size;
 
     auto lang = gui.lang.home_screen;
 
-    switch (gui.app_selector.state) {
-    case SELECT_APP:
-        ImGui::SetWindowFontScale(0.9f * RES_SCALE.x);
+    ImGui::SetWindowFontScale(0.9f * RES_SCALE.x);
 
-        // Sort Apps list when is not sorted
-        if (!gui.app_selector.is_app_list_sorted)
-            sort_app_list(gui, emuenv, gui.users[emuenv.io.user_id].sort_apps_type);
+    // Sort Apps list when is not sorted
+    if (!gui.app_selector.is_app_list_sorted)
+        sort_app_list(gui, emuenv, gui.users[emuenv.io.user_id].sort_apps_type);
 
-        const auto title_id_label = get_label_name(gui, TITLE_ID);
-        float title_id_size = (ImGui::CalcTextSize("PCSX12345").x + (40.f * SCALE.x));
-        const auto app_ver_label = get_label_name(gui, APP_VER);
-        float app_ver_size = (ImGui::CalcTextSize(app_ver_label.c_str()).x) + (38.f * SCALE.x);
-        const auto category_label = get_label_name(gui, CATEGORY);
-        float category_size = (ImGui::CalcTextSize(category_label.c_str()).x) + (38.f * SCALE.x);
-        const auto title_label = get_label_name(gui, TITLE);
-        const auto last_time_label = get_label_name(gui, LAST_TIME);
-        float last_time_size = (ImGui::CalcTextSize(last_time_label.c_str()).x) + (38.f * SCALE.x);
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-        ImGui::SetCursorPosY(4.f * SCALE.y);
-        if (!emuenv.cfg.apps_list_grid) {
-            ImGui::Columns(7);
-            ImGui::SetColumnWidth(0, column_icon_size);
-            if (ImGui::Button(lang["filter"].c_str()))
-                ImGui::OpenPopup("app_filter");
-            ImGui::NextColumn();
-            ImGui::SetColumnWidth(1, column_compat_size);
-            ImGui::NextColumn();
-            ImGui::SetColumnWidth(2, title_id_size);
-            if (ImGui::Button(title_id_label.c_str()))
-                sort_app_list(gui, emuenv, TITLE_ID);
-            ImGui::NextColumn();
-            ImGui::SetColumnWidth(3, app_ver_size);
-            if (ImGui::Button(app_ver_label.c_str()))
-                sort_app_list(gui, emuenv, APP_VER);
-            ImGui::NextColumn();
-            ImGui::SetColumnWidth(4, category_size);
-            if (ImGui::Button(category_label.c_str()))
-                sort_app_list(gui, emuenv, CATEGORY);
-            ImGui::NextColumn();
-            ImGui::SetColumnWidth(5, last_time_size);
-            if (ImGui::Button(last_time_label.c_str()))
-                sort_app_list(gui, emuenv, LAST_TIME);
-            ImGui::NextColumn();
-            if (ImGui::Button(title_label.c_str()))
-                sort_app_list(gui, emuenv, TITLE);
-        } else {
-            ImGui::Columns(2);
-            ImGui::SetColumnWidth(0, 90 * SCALE.x);
-            if (ImGui::Button(lang["filter"].c_str()))
-                ImGui::OpenPopup("app_filter");
-            ImGui::NextColumn();
-            if (ImGui::Button(lang["sort_app"].c_str()))
-                ImGui::OpenPopup("sort_apps");
-            if (ImGui::BeginPopup("sort_apps")) {
-                ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-                if (ImGui::MenuItem(app_ver_label.c_str(), nullptr, gui.app_selector.app_list_sorted[APP_VER] != NOT_SORTED))
-                    sort_app_list(gui, emuenv, APP_VER);
-                if (ImGui::MenuItem(category_label.c_str(), nullptr, gui.app_selector.app_list_sorted[CATEGORY] != NOT_SORTED))
-                    sort_app_list(gui, emuenv, CATEGORY);
-                if (ImGui::MenuItem(last_time_label.c_str(), nullptr, gui.app_selector.app_list_sorted[LAST_TIME] != NOT_SORTED))
-                    sort_app_list(gui, emuenv, LAST_TIME);
-                if (ImGui::MenuItem(title_label.c_str(), nullptr, gui.app_selector.app_list_sorted[TITLE] != NOT_SORTED))
-                    sort_app_list(gui, emuenv, TITLE);
-                if (ImGui::MenuItem(title_id_label.c_str(), nullptr, gui.app_selector.app_list_sorted[TITLE_ID] != NOT_SORTED))
-                    sort_app_list(gui, emuenv, TITLE_ID);
-                ImGui::PopStyleColor();
-                ImGui::EndPopup();
-            }
-        }
-        if (ImGui::BeginPopup("app_filter")) {
+    const auto title_id_label = get_label_name(gui, TITLE_ID);
+    const float title_id_size = (ImGui::CalcTextSize("PCSX12345").x + (40.f * SCALE.x));
+    const auto app_ver_label = get_label_name(gui, APP_VER);
+    const float app_ver_size = (ImGui::CalcTextSize(app_ver_label.c_str()).x) + (38.f * SCALE.x);
+    const auto category_label = get_label_name(gui, CATEGORY);
+    const float category_size = (ImGui::CalcTextSize(category_label.c_str()).x) + (38.f * SCALE.x);
+    const auto compat_label = get_label_name(gui, COMPAT);
+    const float compat_size = ImGui::CalcTextSize(compat_label.c_str()).x + (column_padding_size / 2.f) + (8 * SCALE.x);
+    const auto title_label = get_label_name(gui, TITLE);
+    const auto last_time_label = get_label_name(gui, LAST_TIME);
+    const float last_time_size = (ImGui::CalcTextSize(last_time_label.c_str()).x) + (38.f * SCALE.x);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+    ImGui::SetCursorPosY(4.f * SCALE.y);
+    if (!emuenv.cfg.apps_list_grid) {
+        ImGui::Columns(7);
+        ImGui::SetColumnWidth(0, column_icon_size);
+        if (ImGui::Button(lang["filter"].c_str()))
+            ImGui::OpenPopup("app_filter");
+        ImGui::NextColumn();
+        ImGui::SetColumnWidth(1, compat_size);
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() - (column_padding_size / 4.f));
+        if (ImGui::Button(compat_label.c_str()))
+            sort_app_list(gui, emuenv, COMPAT);
+        ImGui::NextColumn();
+        ImGui::SetColumnWidth(2, title_id_size);
+        if (ImGui::Button(title_id_label.c_str()))
+            sort_app_list(gui, emuenv, TITLE_ID);
+        ImGui::NextColumn();
+        ImGui::SetColumnWidth(3, app_ver_size);
+        if (ImGui::Button(app_ver_label.c_str()))
+            sort_app_list(gui, emuenv, APP_VER);
+        ImGui::NextColumn();
+        ImGui::SetColumnWidth(4, category_size);
+        if (ImGui::Button(category_label.c_str()))
+            sort_app_list(gui, emuenv, CATEGORY);
+        ImGui::NextColumn();
+        ImGui::SetColumnWidth(5, last_time_size);
+        if (ImGui::Button(last_time_label.c_str()))
+            sort_app_list(gui, emuenv, LAST_TIME);
+        ImGui::NextColumn();
+        if (ImGui::Button(title_label.c_str()))
+            sort_app_list(gui, emuenv, TITLE);
+    } else {
+        ImGui::Columns(2);
+        ImGui::SetColumnWidth(0, 90 * SCALE.x);
+        if (ImGui::Button(lang["filter"].c_str()))
+            ImGui::OpenPopup("app_filter");
+        ImGui::NextColumn();
+        if (ImGui::Button(lang["sort_app"].c_str()))
+            ImGui::OpenPopup("sort_apps");
+        if (ImGui::BeginPopup("sort_apps")) {
             ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-            if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_region == ALL))
-                app_region = ALL;
-            if (ImGui::BeginMenu(lang["by_region"].c_str())) {
-                ImGui::SetWindowFontScale(1.1f * RES_SCALE.x);
-                if (ImGui::MenuItem(lang["usa"].c_str(), nullptr, app_region == USA))
-                    app_region = USA;
-                if (ImGui::MenuItem(lang["europe"].c_str(), nullptr, app_region == EURO))
-                    app_region = EURO;
-                if (ImGui::MenuItem(lang["japan"].c_str(), nullptr, app_region == JAPAN))
-                    app_region = JAPAN;
-                if (ImGui::MenuItem(lang["asia"].c_str(), nullptr, app_region == ASIA))
-                    app_region = ASIA;
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu(lang["by_type"].c_str())) {
-                if (ImGui::MenuItem(lang["commercial"].c_str(), nullptr, app_region == COMMERCIAL))
-                    app_region = COMMERCIAL;
-                if (ImGui::MenuItem(lang["homebrew"].c_str(), nullptr, app_region == HOMEBREW))
-                    app_region = HOMEBREW;
-                ImGui::EndMenu();
-            }
+            if (ImGui::MenuItem(app_ver_label.c_str(), nullptr, gui.app_selector.app_list_sorted[APP_VER] != NOT_SORTED))
+                sort_app_list(gui, emuenv, APP_VER);
+            if (ImGui::MenuItem(category_label.c_str(), nullptr, gui.app_selector.app_list_sorted[CATEGORY] != NOT_SORTED))
+                sort_app_list(gui, emuenv, CATEGORY);
+            if (ImGui::MenuItem(compat_label.c_str(), nullptr, gui.app_selector.app_list_sorted[COMPAT] != NOT_SORTED))
+                sort_app_list(gui, emuenv, COMPAT);
+            if (ImGui::MenuItem(last_time_label.c_str(), nullptr, gui.app_selector.app_list_sorted[LAST_TIME] != NOT_SORTED))
+                sort_app_list(gui, emuenv, LAST_TIME);
+            if (ImGui::MenuItem(title_label.c_str(), nullptr, gui.app_selector.app_list_sorted[TITLE] != NOT_SORTED))
+                sort_app_list(gui, emuenv, TITLE);
+            if (ImGui::MenuItem(title_id_label.c_str(), nullptr, gui.app_selector.app_list_sorted[TITLE_ID] != NOT_SORTED))
+                sort_app_list(gui, emuenv, TITLE_ID);
             ImGui::PopStyleColor();
             ImGui::EndPopup();
         }
-        ImGui::PopStyleColor();
-        const auto search_bar_size = 120.f * SCALE.x;
-        ImGui::SameLine(ImGui::GetColumnWidth() - ImGui::CalcTextSize(lang["refresh"].c_str()).x - search_bar_size - (78 * SCALE.x));
-        if (ImGui::Button(lang["refresh"].c_str()))
-            init_user_apps(gui, emuenv);
-        ImGui::SameLine();
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
-        ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
-        gui.app_search_bar.Draw("##app_search_bar", search_bar_size);
-        ImGui::PopStyleColor(2);
-        ImGui::NextColumn();
-        ImGui::Columns(1);
-        ImGui::Separator();
-        const auto POS_APP_LIST = ImVec2(60.f * SCALE.x, INFORMATION_BAR_HEIGHT + (36.f * SCALE.y));
-        const auto SIZE_APP_LIST = ImVec2((emuenv.cfg.apps_list_grid ? 840.f : 900.f) * SCALE.x, display_size.y - POS_APP_LIST.y);
-        ImGui::SetNextWindowPos(emuenv.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
-        ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
-
-        // Set Scroll Pos
-        current_scroll_pos = ImGui::GetScrollY();
-        max_scroll_pos = ImGui::GetScrollMaxY();
-        if (scroll_type != 0) {
-            const float scroll_move = (scroll_type == -1 ? 340.f : -340.f) * SCALE.y;
-            ImGui::SetScrollY(ImGui::GetScrollY() + scroll_move);
-            scroll_type = 0;
-        }
-
-        const auto GRID_ICON_SIZE = ImVec2(128.f * SCALE.x, 128.f * SCALE.y);
-        const auto GRID_COLUMN_SIZE = GRID_ICON_SIZE.x + (80.f * SCALE.x);
-        if (!emuenv.cfg.apps_list_grid) {
-            ImGui::Columns(7, nullptr, true);
-            ImGui::SetColumnWidth(0, column_icon_size);
-            ImGui::SetColumnWidth(1, column_compat_size);
-            ImGui::SetColumnWidth(2, title_id_size);
-            ImGui::SetColumnWidth(3, app_ver_size);
-            ImGui::SetColumnWidth(4, category_size);
-            ImGui::SetColumnWidth(5, last_time_size);
-        } else {
-            ImGui::Columns(4, nullptr, false);
-            ImGui::SetColumnWidth(0, GRID_COLUMN_SIZE);
-            ImGui::SetColumnWidth(1, GRID_COLUMN_SIZE);
-            ImGui::SetColumnWidth(2, GRID_COLUMN_SIZE);
-            ImGui::SetColumnWidth(3, GRID_COLUMN_SIZE);
-        }
-        ImGui::SetWindowFontScale(1.1f);
-        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-        const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
-            for (const auto &app : apps_list) {
-                bool selected = false;
-                const auto is_not_sys_app = app.title_id.find("NPXS") == std::string::npos;
-
-                // Filter app by region and type
-                if (is_not_sys_app && app_filter(app.title_id))
-                    continue;
-
-                // Search app by title or title id
-                if (!gui.app_search_bar.PassFilter(app.title.c_str()) && !gui.app_search_bar.PassFilter(app.title_id.c_str()))
-                    continue;
-
-                const auto POS_ICON = ImGui::GetCursorPos();
-                const auto GRID_INIT_POS = POS_ICON.x + (GRID_COLUMN_SIZE / 2.f) - (10.f * SCALE.x);
-                const auto ICON_SIZE = emuenv.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size);
-                const auto GRID_ICON_POS = GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f);
-                ImGui::PushID(app.path.c_str());
-
-                // Determine if the element is within the visible area of the window.
-                ImVec2 item_rect_min = ImGui::GetItemRectMin();
-                const float margin = 200.f * SCALE.y;
-                const auto element_is_within_visible_area = (item_rect_min.y >= -margin) && (item_rect_min.y <= (ImGui::GetWindowPos().y + ImGui::GetWindowSize().y + margin));
-
-                // Draw the app icons and custom config button only when they are within the visible area.
-                if (element_is_within_visible_area) {
-                    if (apps_icon.contains(app.path)) {
-                        if (emuenv.cfg.apps_list_grid)
-                            ImGui::SetCursorPosX(GRID_ICON_POS);
-                        const auto POS_MIN = ImGui::GetCursorScreenPos();
-                        const ImVec2 POS_MAX(POS_MIN.x + ICON_SIZE.x, POS_MIN.y + ICON_SIZE.y);
-                        ImGui::GetWindowDrawList()->AddImageRounded(apps_icon[app.path], POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
-                    }
-                    const auto IS_CUSTOM_CONFIG = fs::exists(fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", app.path));
-                    if (IS_CUSTOM_CONFIG) {
-                        if (emuenv.cfg.apps_list_grid)
-                            ImGui::SetCursorPosX(GRID_ICON_POS);
-                        ImGui::SetCursorPosY(POS_ICON.y + ICON_SIZE.y - ImGui::GetFontSize() - (7.8f * emuenv.dpi_scale));
-                        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-                        ImGui::Button("CC", ImVec2(40.f * SCALE.x, 0.f));
-                        ImGui::PopStyleColor();
-                    }
-                }
-
-                if (!emuenv.cfg.apps_list_grid)
-                    ImGui::NextColumn();
-
-                // Draw the compatibility badge for commercial apps when they are within the visible area.
-                if (element_is_within_visible_area && (app.title_id.find("PCS") != std::string::npos)) {
-                    const auto compat_state = (gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(app.title_id) : false) ? gui.compat.app_compat_db[app.title_id].state : Unknown;
-                    const auto compat_state_vec4 = gui.compat.compat_color[compat_state];
-                    const ImU32 compat_state_color = IM_COL32((int)(compat_state_vec4.x * 255.0f), (int)(compat_state_vec4.y * 255.0f), (int)(compat_state_vec4.z * 255.0f), (int)(compat_state_vec4.w * 255.0f));
-                    const auto current_pos = ImGui::GetCursorPos();
-                    const auto compat_padding = 4.f * SCALE.x;
-                    const auto compat_state_pos = emuenv.cfg.apps_list_grid ? ImVec2(GRID_ICON_POS + full_compat_radius + compat_padding, POS_ICON.y + full_compat_radius + compat_padding) : ImVec2(current_pos.x + ((ImGui::GetColumnWidth() - column_padding_size) / 2.f), current_pos.y + (icon_size / 2.f));
-                    ImGui::SetCursorPos(compat_state_pos);
-                    ImGui::GetWindowDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), full_compat_radius, IM_COL32(0, 0, 0, 255));
-                    ImGui::GetWindowDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), compat_radius, compat_state_color);
-                }
-
-                ImGui::SetCursorPosY(POS_ICON.y);
-                if (emuenv.cfg.apps_list_grid)
-                    ImGui::SetCursorPosX(GRID_ICON_POS);
-                ImGui::Selectable("##icon", &selected, emuenv.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, emuenv.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
-                if (!gui.configuration_menu.custom_settings_dialog && ImGui::IsItemHovered())
-                    emuenv.app_path = app.path;
-                if (emuenv.app_path == app.path)
-                    draw_app_context_menu(gui, emuenv, app.path);
-                if (!emuenv.cfg.apps_list_grid) {
-                    ImGui::NextColumn();
-                    ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
-                    ImGui::PushStyleColor(ImGuiCol_Text, !gui.theme_backgrounds_font_color.empty() && gui.users[emuenv.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT);
-                    ImGui::Selectable(app.title_id.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
-                    ImGui::NextColumn();
-                    ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
-                    ImGui::NextColumn();
-                    ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
-                    ImGui::NextColumn();
-                    if (app.last_time) {
-                        tm date_tm = {};
-                        SAFE_LOCALTIME(&app.last_time, &date_tm);
-                        auto LAST_TIME = get_date_time(gui, emuenv, date_tm);
-                        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 1.f));
-                        ImGui::Selectable(LAST_TIME[DateTime::DATE_MINI].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size / 2.f));
-                        ImGui::PopStyleVar();
-                        const auto CLOCK_STR = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR ? fmt::format("{} {}", LAST_TIME[DateTime::CLOCK], LAST_TIME[DateTime::DAY_MOMENT]) : LAST_TIME[DateTime::CLOCK];
-                        const auto HALF_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str()).x / 2.f;
-                        ImGui::SetCursorPosX(ImGui::GetCursorPosX() - (10.f * SCALE.x) + (ImGui::GetColumnWidth() / 2.f) - HALF_CLOCK_SIZE);
-                        ImGui::Text("%s", CLOCK_STR.c_str());
-                    } else
-                        ImGui::Selectable(!gui.lang.app_context["never"].empty() ? gui.lang.app_context["never"].c_str() : "Never", false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
-                    ImGui::NextColumn();
-                    ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
-                    ImGui::PopStyleColor();
-                    ImGui::PopStyleVar();
-                } else {
-                    ImGui::SetCursorPosX(GRID_INIT_POS - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x + (32.f * SCALE.x)).x / 2.f));
-                    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE - (48.f * SCALE.x)));
-                    ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && gui.users[emuenv.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
-                    ImGui::PopTextWrapPos();
-                }
-                ImGui::NextColumn();
-                if (selected)
-                    pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.path);
-                ImGui::PopID();
-            }
-        };
-        // System Applications
-        display_app(gui.app_selector.sys_apps, gui.app_selector.sys_apps_icon);
-        // User Applications
-        display_app(gui.app_selector.user_apps, gui.app_selector.user_apps_icon);
-        ImGui::PopStyleColor();
-        ImGui::Columns(1);
-        ImGui::SetWindowFontScale(1.f);
-        ImGui::EndChild();
-        break;
     }
+    if (ImGui::BeginPopup("app_filter")) {
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
+        if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_region == ALL))
+            app_region = ALL;
+        if (ImGui::BeginMenu(lang["by_region"].c_str())) {
+            ImGui::SetWindowFontScale(1.1f * RES_SCALE.x);
+            if (ImGui::MenuItem(lang["usa"].c_str(), nullptr, app_region == USA))
+                app_region = USA;
+            if (ImGui::MenuItem(lang["europe"].c_str(), nullptr, app_region == EURO))
+                app_region = EURO;
+            if (ImGui::MenuItem(lang["japan"].c_str(), nullptr, app_region == JAPAN))
+                app_region = JAPAN;
+            if (ImGui::MenuItem(lang["asia"].c_str(), nullptr, app_region == ASIA))
+                app_region = ASIA;
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu(lang["by_type"].c_str())) {
+            if (ImGui::MenuItem(lang["commercial"].c_str(), nullptr, app_region == COMMERCIAL))
+                app_region = COMMERCIAL;
+            if (ImGui::MenuItem(lang["homebrew"].c_str(), nullptr, app_region == HOMEBREW))
+                app_region = HOMEBREW;
+            ImGui::EndMenu();
+        }
+        ImGui::PopStyleColor();
+        ImGui::EndPopup();
+    }
+    ImGui::PopStyleColor();
+    const auto search_bar_size = 120.f * SCALE.x;
+    ImGui::SameLine(ImGui::GetColumnWidth() - ImGui::CalcTextSize(lang["refresh"].c_str()).x - search_bar_size - (78 * SCALE.x));
+    if (ImGui::Button(lang["refresh"].c_str()))
+        init_user_apps(gui, emuenv);
+    ImGui::SameLine();
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_SEARCH_BAR_TEXT);
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_COLOR_SEARCH_BAR_BG);
+    gui.app_search_bar.Draw("##app_search_bar", search_bar_size);
+    ImGui::PopStyleColor(2);
+    ImGui::NextColumn();
+    ImGui::Columns(1);
+    ImGui::Separator();
+    const auto POS_APP_LIST = ImVec2(60.f * SCALE.x, INFORMATION_BAR_HEIGHT + (36.f * SCALE.y));
+    const auto SIZE_APP_LIST = ImVec2((emuenv.cfg.apps_list_grid ? 840.f : 900.f) * SCALE.x, display_size.y - POS_APP_LIST.y);
+    ImGui::SetNextWindowPos(emuenv.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
+    ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
+
+    // Set Scroll Pos
+    current_scroll_pos = ImGui::GetScrollY();
+    max_scroll_pos = ImGui::GetScrollMaxY();
+    if (scroll_type != 0) {
+        const float scroll_move = (scroll_type == -1 ? 340.f : -340.f) * SCALE.y;
+        ImGui::SetScrollY(ImGui::GetScrollY() + scroll_move);
+        scroll_type = 0;
+    }
+
+    const auto GRID_ICON_SIZE = ImVec2(128.f * SCALE.x, 128.f * SCALE.y);
+    const auto GRID_COLUMN_SIZE = GRID_ICON_SIZE.x + (80.f * SCALE.x);
+    if (!emuenv.cfg.apps_list_grid) {
+        ImGui::Columns(7, nullptr, true);
+        ImGui::SetColumnWidth(0, column_icon_size);
+        ImGui::SetColumnWidth(1, compat_size);
+        ImGui::SetColumnWidth(2, title_id_size);
+        ImGui::SetColumnWidth(3, app_ver_size);
+        ImGui::SetColumnWidth(4, category_size);
+        ImGui::SetColumnWidth(5, last_time_size);
+    } else {
+        ImGui::Columns(4, nullptr, false);
+        ImGui::SetColumnWidth(0, GRID_COLUMN_SIZE);
+        ImGui::SetColumnWidth(1, GRID_COLUMN_SIZE);
+        ImGui::SetColumnWidth(2, GRID_COLUMN_SIZE);
+        ImGui::SetColumnWidth(3, GRID_COLUMN_SIZE);
+    }
+    ImGui::SetWindowFontScale(1.1f);
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
+    const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
+        for (const auto &app : apps_list) {
+            bool selected = false;
+            const auto is_not_sys_app = app.title_id.find("NPXS") == std::string::npos;
+
+            // Filter app by region and type
+            if (is_not_sys_app && app_filter(app.title_id))
+                continue;
+
+            // Search app by title or title id
+            if (!gui.app_search_bar.PassFilter(app.title.c_str()) && !gui.app_search_bar.PassFilter(app.title_id.c_str()))
+                continue;
+
+            const auto POS_ICON = ImGui::GetCursorPos();
+            const auto GRID_INIT_POS = POS_ICON.x + (GRID_COLUMN_SIZE / 2.f) - (10.f * SCALE.x);
+            const auto ICON_SIZE = emuenv.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size);
+            const auto GRID_ICON_POS = GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f);
+            ImGui::PushID(app.path.c_str());
+
+            // Determine if the element is within the visible area of the window.
+            ImVec2 item_rect_min = ImGui::GetItemRectMin();
+            const float margin = 200.f * SCALE.y;
+            const auto element_is_within_visible_area = (item_rect_min.y >= -margin) && (item_rect_min.y <= (ImGui::GetWindowPos().y + ImGui::GetWindowSize().y + margin));
+
+            // Draw the app icons and custom config button only when they are within the visible area.
+            if (element_is_within_visible_area) {
+                if (apps_icon.contains(app.path)) {
+                    if (emuenv.cfg.apps_list_grid)
+                        ImGui::SetCursorPosX(GRID_ICON_POS);
+                    const auto POS_MIN = ImGui::GetCursorScreenPos();
+                    const ImVec2 POS_MAX(POS_MIN.x + ICON_SIZE.x, POS_MIN.y + ICON_SIZE.y);
+                    ImGui::GetWindowDrawList()->AddImageRounded(apps_icon[app.path], POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
+                }
+                const auto IS_CUSTOM_CONFIG = fs::exists(fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", app.path));
+                if (IS_CUSTOM_CONFIG) {
+                    if (emuenv.cfg.apps_list_grid)
+                        ImGui::SetCursorPosX(GRID_ICON_POS);
+                    ImGui::SetCursorPosY(POS_ICON.y + ICON_SIZE.y - ImGui::GetFontSize() - (7.8f * emuenv.dpi_scale));
+                    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+                    ImGui::Button("CC", ImVec2(40.f * SCALE.x, 0.f));
+                    ImGui::PopStyleColor();
+                }
+            }
+
+            if (!emuenv.cfg.apps_list_grid)
+                ImGui::NextColumn();
+
+            // Draw the compatibility badge for commercial apps when they are within the visible area.
+            if (element_is_within_visible_area && (app.title_id.find("PCS") != std::string::npos)) {
+                const auto compat_state = (gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(app.title_id) : false) ? gui.compat.app_compat_db[app.title_id].state : Unknown;
+                const auto compat_state_vec4 = gui.compat.compat_color[compat_state];
+                const ImU32 compat_state_color = IM_COL32((int)(compat_state_vec4.x * 255.0f), (int)(compat_state_vec4.y * 255.0f), (int)(compat_state_vec4.z * 255.0f), (int)(compat_state_vec4.w * 255.0f));
+                const auto current_pos = ImGui::GetCursorPos();
+                const auto compat_padding = 4.f * SCALE.x;
+                const auto compat_state_pos = emuenv.cfg.apps_list_grid ? ImVec2(GRID_ICON_POS + full_compat_radius + compat_padding, POS_ICON.y + full_compat_radius + compat_padding) : ImVec2(current_pos.x + ((ImGui::GetColumnWidth() - column_padding_size) / 2.f), current_pos.y + (icon_size / 2.f));
+                ImGui::SetCursorPos(compat_state_pos);
+                ImGui::GetWindowDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), full_compat_radius, IM_COL32(0, 0, 0, 255));
+                ImGui::GetWindowDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), compat_radius, compat_state_color);
+            }
+
+            ImGui::SetCursorPosY(POS_ICON.y);
+            if (emuenv.cfg.apps_list_grid)
+                ImGui::SetCursorPosX(GRID_ICON_POS);
+            ImGui::Selectable("##icon", &selected, emuenv.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, emuenv.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
+            if (!gui.configuration_menu.custom_settings_dialog && ImGui::IsItemHovered())
+                emuenv.app_path = app.path;
+            if (emuenv.app_path == app.path)
+                draw_app_context_menu(gui, emuenv, app.path);
+            if (!emuenv.cfg.apps_list_grid) {
+                ImGui::NextColumn();
+                ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+                ImGui::PushStyleColor(ImGuiCol_Text, !gui.theme_backgrounds_font_color.empty() && gui.users[emuenv.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT);
+                ImGui::Selectable(app.title_id.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::NextColumn();
+                ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::NextColumn();
+                ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::NextColumn();
+                if (app.last_time) {
+                    tm date_tm = {};
+                    SAFE_LOCALTIME(&app.last_time, &date_tm);
+                    auto LAST_TIME = get_date_time(gui, emuenv, date_tm);
+                    ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 1.f));
+                    ImGui::Selectable(LAST_TIME[DateTime::DATE_MINI].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size / 2.f));
+                    ImGui::PopStyleVar();
+                    const auto CLOCK_STR = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR ? fmt::format("{} {}", LAST_TIME[DateTime::CLOCK], LAST_TIME[DateTime::DAY_MOMENT]) : LAST_TIME[DateTime::CLOCK];
+                    const auto HALF_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str()).x / 2.f;
+                    ImGui::SetCursorPosX(ImGui::GetCursorPosX() - (10.f * SCALE.x) + (ImGui::GetColumnWidth() / 2.f) - HALF_CLOCK_SIZE);
+                    ImGui::Text("%s", CLOCK_STR.c_str());
+                } else
+                    ImGui::Selectable(!gui.lang.app_context["never"].empty() ? gui.lang.app_context["never"].c_str() : "Never", false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::NextColumn();
+                ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::PopStyleColor();
+                ImGui::PopStyleVar();
+            } else {
+                ImGui::SetCursorPosX(GRID_INIT_POS - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x + (32.f * SCALE.x)).x / 2.f));
+                ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE - (48.f * SCALE.x)));
+                ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && gui.users[emuenv.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
+                ImGui::PopTextWrapPos();
+            }
+            ImGui::NextColumn();
+            if (selected)
+                pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, app.path);
+            ImGui::PopID();
+        }
+    };
+    // System Applications
+    display_app(gui.app_selector.sys_apps, gui.app_selector.sys_apps_icon);
+    // User Applications
+    display_app(gui.app_selector.user_apps, gui.app_selector.user_apps_icon);
+    ImGui::PopStyleColor();
+    ImGui::Columns(1);
+    ImGui::SetWindowFontScale(1.f);
+    ImGui::EndChild();
 
     const auto SELECTABLE_SIZE = ImVec2(50.f * SCALE.x, 60.f * SCALE.y);
 

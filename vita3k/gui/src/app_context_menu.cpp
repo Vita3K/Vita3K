@@ -338,8 +338,20 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     open_path(compat_url);
                 }
                 if (has_issue) {
-                    if (ImGui::MenuItem(lang["open_issue"].c_str()))
+                    const auto copy_vita3k_summary = [&]() {
+                        const auto vita3k_summary = fmt::format(
+                            "# Vita3K summary\n- Version: {}\n- Build number: {}\n- Commit hash: https://github.com/vita3k/vita3k/commit/{}\n- CPU backend: {}\n- GPU backend: {}",
+                            app_version, app_number, app_hash, get_cpu_backend(gui, emuenv, app_path), emuenv.cfg.backend_renderer);
+                        ImGui::LogToClipboard();
+                        ImGui::LogText("%s", vita3k_summary.c_str());
+                        ImGui::LogFinish();
+                    };
+                    if (ImGui::MenuItem("Copy Vita3K Summary"))
+                        copy_vita3k_summary();
+                    if (ImGui::MenuItem(lang["open_issue"].c_str())) {
+                        copy_vita3k_summary();
                         open_path(fmt::format("{}/{}", ISSUES_URL, gui.compat.app_compat_db[title_id].issue_id));
+                    }
                 } else {
                     if (ImGui::MenuItem(lang["create_issue"].c_str())) {
                         // Create body of issue

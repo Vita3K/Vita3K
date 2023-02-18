@@ -28,6 +28,16 @@ namespace compat {
 static std::string db_updated_at;
 static const uint32_t db_version = 1;
 
+enum class LabelIdState {
+    Nothing = 1260231569, // 0x4b1d9b91
+    Bootable = 1344750319, // 0x502742ef
+    Intro = 1260231381, // 0x4B9F5E5D
+    Menu = 1344751053, // 0x4F1B9135
+    Ingame_Less = 1344752299, // 0x4F7B6B3B
+    Ingame_More = 1260231985, // 0x4B2A9819
+    Playable = 920344019, // 0x36db55d3
+};
+
 bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto app_compat_db_path = fs::path(emuenv.base_path) / "cache/app_compat_db.xml";
     if (!fs::exists(app_compat_db_path)) {
@@ -65,15 +75,15 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         const auto labels = app.child("labels");
         if (!labels.empty()) {
             for (const auto &label : labels) {
-                const auto label_id = static_cast<CompatibilityState>(label.text().as_uint());
+                const auto label_id = static_cast<LabelIdState>(label.text().as_uint());
                 switch (label_id) {
-                case Nothing: state = Nothing; break;
-                case Bootable: state = Bootable; break;
-                case Intro: state = Intro; break;
-                case Menu: state = Menu; break;
-                case Ingame_Less: state = Ingame_Less; break;
-                case Ingame_More: state = Ingame_More; break;
-                case Playable: state = Playable; break;
+                case LabelIdState::Nothing: state = Nothing; break;
+                case LabelIdState::Bootable: state = Bootable; break;
+                case LabelIdState::Intro: state = Intro; break;
+                case LabelIdState::Menu: state = Menu; break;
+                case LabelIdState::Ingame_Less: state = Ingame_Less; break;
+                case LabelIdState::Ingame_More: state = Ingame_More; break;
+                case LabelIdState::Playable: state = Playable; break;
                 default: break;
                 }
             }
@@ -182,7 +192,7 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     gui.info_message.level = spdlog::level::info;
 
     if (compat_db_exist) {
-        const int32_t dif = gui.compat.app_compat_db.size() - old_compat_count;
+        const auto dif = static_cast<int32_t>(gui.compat.app_compat_db.size() - old_compat_count);
         if (dif > 0)
             gui.info_message.msg = fmt::format("The compatibility database was successfully updated from {} to {}.\n\n{} new application(s) are listed!", old_db_updated_at, db_updated_at, dif);
         else

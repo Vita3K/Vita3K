@@ -22,14 +22,14 @@
 #include <string>
 
 enum CompatibilityState {
-    Unknown,
-    Nothing = 1260231569, // 0x4b1d9b91
-    Bootable = 1344750319, // 0x502742ef
-    Intro = 1260231381, // 0x4B9F5E5D
-    Menu = 1344751053, // 0x4F1B9135
-    Ingame_Less = 1344752299, // 0x4F7B6B3B
-    Ingame_More = 1260231985, // 0x4B2A9819
-    Playable = 920344019, // 0x36db55d3
+    Unknown = -1,
+    Nothing,
+    Bootable,
+    Intro,
+    Menu,
+    Ingame_Less,
+    Ingame_More,
+    Playable,
 };
 
 struct Compatibility {
