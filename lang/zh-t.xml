@@ -54,11 +54,11 @@
 		<shader_cache>著色器快取</shader_cache>
 		<shader_log>著色器記錄</shader_log>
 		<update_history>更新履歷</update_history>
-		<history_version>{}版本</history_version>
+		<history_version>{} 版本</history_version>
 		<information>資訊</information>
-		<app_delete>將會刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
+		<app_delete>刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
 		<app_delete_note>刪除應用程式可能需要一段時間
-取決於它的大小和您的硬體。</app_delete_note>
+取決於它的大小和您的硬件。</app_delete_note>
 		<save_delete>確定要刪除此保存資料嗎？</save_delete>
 		<eligible>有權</eligible>
 		<ineligible>無權</ineligible>
@@ -66,7 +66,7 @@
 		<name>名稱</name>
 		<trophy_earning>獲得獎盃</trophy_earning>
 		<parental_controls>家長監控</parental_controls>
-		<updated>更新日期</updated>
+		<updated>更新日</updated>
 		<size>檔案大小</size>
 		<version>版本</version>
 		<title_id>標題ID</title_id>
@@ -83,7 +83,7 @@
 		<no>否</no>
 		<select_all>全選</select_all>
 		<select>選擇</select>
-		<please_wait>請稍候…</please_wait>
+		<please_wait>請稍候……</please_wait>
 		<yes>是</yes>
 		<wday>
 			<day>星期日</day>
@@ -231,7 +231,7 @@
 		</saved_data>
 		<theme>主題</theme>
 		<free_space>可用容量</free_space>
-		<clear_all>全部清除</clear_all>
+		<clear_all>全解除</clear_all>
 	</content_manager>
 
 	<controllers name="控制器">
@@ -281,23 +281,23 @@
 
 	<dialog>
 		<trophy>
-			<preparing_start_app>正在準備啟動應用程式…</preparing_start_app>
+			<preparing_start_app>正在準備啟動應用程式……</preparing_start_app>
 		</trophy>
 		<save_data>
 			<delete>
 				<cancel_deleting>確定要取消刪除嗎？</cancel_deleting>
-				<deletion_complete>刪除完成。</deletion_complete>
+				<deletion_complete>已刪除。</deletion_complete>
 				<delete_saved_data>確定要刪除此保存資料嗎？</delete_saved_data>
 			</delete>
 			<info>
-				<details>詳細資料</details>
-				<updated>更新日期</updated>
+				<details>詳細內容</details>
+				<updated>更新日</updated>
 			</info>
 			<load name="載入">
 				<cancel_loading>確定要取消載入嗎？</cancel_loading>
 				<no_saved_data>找不到保存資料。</no_saved_data>
-				<load_complete>載入完成。</load_complete>
-				<loading>載入中…</loading>
+				<load_complete>已載入。</load_complete>
+				<loading>載入中……</loading>
 				<load_saved_data>確定要載入此保存資料嗎？</load_saved_data>
 			</load>
 			<save name="保存">
@@ -306,10 +306,10 @@
 記憶卡的可用容量不足。</could_not_save>
 				<not_free_space>記憶卡的可用容量不足。</not_free_space>
 				<new_saved_data>新的保存資料</new_saved_data>
-				<saving_complete>保存完成。</saving_complete>
+				<saving_complete>已保存。</saving_complete>
 				<save_the_data>確定要保存資料嗎？</save_the_data>
-				<saving>保存中…</saving>
-				<warning_saving>保存中…
+				<saving>保存中……</saving>
+				<warning_saving>保存中……
 請勿關閉電源或結束應用程式。</warning_saving>
 				<overwrite_saved_data>確定要覆寫此保存資料嗎？</overwrite_saved_data>
 			</save>
@@ -317,8 +317,8 @@
 	</dialog>
 
 	<game_data>
-		<app_close>下列應用程式將會關閉。</app_close>
-		<data_delete>將要刪除的資料：</data_delete>
+		<app_close>結束下列應用程式。</app_close>
+		<data_delete>刪除的資料：</data_delete>
 	</game_data>
 
 	<home_screen>
@@ -341,12 +341,12 @@
 	</home_screen>
 
 	<indicator>
-		<app_added_home>應用程式已追加至主頁畫面。</app_added_home>
+		<app_added_home>已追加應用程式至主頁畫面。</app_added_home>
 		<delete_all>全部刪除</delete_all>
 		<notif_deleted>刪除最新資訊。</notif_deleted>
 		<install_failed>無法安裝。</install_failed>
-		<install_complete>安裝完成。</install_complete>
-		<installing>安裝中…</installing>
+		<install_complete>已安裝。</install_complete>
+		<installing>安裝中……</installing>
 		<no_notif>找不到最新資訊。</no_notif>
 		<trophy_earned>已獲得獎盃！</trophy_earned>
 	</indicator>
@@ -355,15 +355,15 @@
 		<back>返回</back>
 		<completed_setup>已完成初期設定。
 請盡情享受Vita3K。</completed_setup>
-		<select_language>選擇語言。</select_language>
+		<select_language>Select a language.</select_language>
 		<install_firmware>安裝韌體。</install_firmware>
-		<install_highly_recommended>強烈建議您安裝這兩個韌體檔案。</install_highly_recommended>
+		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
 		<installed>已安裝：</installed>
 		<download_firmware>下載韌體</download_firmware>
 		<download_font_package>下載字型套件</download_font_package>
 		<install_firmware_file>安裝韌體檔案</install_firmware_file>
 		<completed>已完成。</completed>
-		<next>下一步</next>
+		<next>Next</next>
 	</initial_setup>
 
 	<install_dialog>
@@ -437,7 +437,7 @@
 			<zoom_available_control>按兩下左鍵</zoom_available_control>
 			<scroll_zoom>縮放捲動</scroll_zoom>
 			<scroll_zoom_control>滾輪上/下</scroll_zoom_control>
-			<exit_manual>離開說明書</exit_manual>
+			<exit_manual>解除說明書</exit_manual>
 			<exit_manual_control>按下Esc或按PS按鈕</exit_manual_control>
 		</help>
 	</live_area>
@@ -451,27 +451,27 @@
 
 	<settings name="設定">
 		<theme_background name="主題&背景">
-			<default>預設</default>
+			<default>原音</default>
 			<theme name="主題">
 				<search>搜尋</search>
 				<find_in_altervista>在Altervista尋找</find_in_altervista>
 				<information name="資訊">
 					<name>名稱</name>
 					<provider>提供者</provider>
-					<updated>更新日期</updated>
+					<updated>更新日</updated>
 					<size>檔案大小</size>
 					<version>版本</version>
 					<content_id>內容ID</content_id>
 				</information>
-				<delete>這個主題將被刪除。</delete>
+				<delete>刪除此主題。</delete>
 			</theme>
 			<start_screen name="開始畫面">
 				<image>圖像</image>
-				<add_image>追加圖像</add_image>
+				<add_image>添加圖像</add_image>
 			</start_screen>
-			<home_screen_backgrounds name="主頁畫面背景">
+			<home_screen_backgrounds name="主頁畫面的背景">
 				<delete_background>刪除背景</delete_background>
-				<add_background>追加背景</add_background>
+				<add_background>添加背景</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="日期&時間">
@@ -492,16 +492,16 @@
 					<ime_languages>
 						<lang id="1">丹麥文</lang>
 						<lang id="2">德文</lang>
-						<lang id="262144">英文（英國）</lang>
-						<lang id="4">英文（美國）</lang>
+						<lang id="262144">英文(英國)</lang>
+						<lang id="4">英文(美國)</lang>
 						<lang id="8">西班牙文</lang>
 						<lang id="16">法文</lang>
 						<lang id="32">義大利文</lang>
 						<lang id="64">荷蘭文</lang>
 						<lang id="128">挪威文</lang>
 						<lang id="256">波蘭文</lang>
-						<lang id="131072">葡萄牙文（巴西）</lang>
-						<lang id="512">葡萄牙文（葡萄牙）</lang>
+						<lang id="131072">葡萄牙文(巴西)</lang>
+						<lang id="512">葡萄牙文(葡萄牙)</lang>
 						<lang id="1024">俄文</lang>
 						<lang id="2048">芬蘭文</lang>
 						<lang id="4096">瑞典文</lang>
@@ -517,7 +517,7 @@
 		<delete_trophy>刪除獎盃</delete_trophy>
 		<trophy_deleted>這位使用者已保存的獎杯資訊將被刪除。</trophy_deleted>
 		<details>詳細資料</details>
-		<earned>獲得日期</earned>
+		<earned>獲得日</earned>
 		<name>名稱</name>
 		<no_trophies>找不到獎盃。
 遊玩支援獎盃機能的應用程式即可獲得獎盃。</no_trophies>
@@ -525,9 +525,9 @@
 		<original>原始</original>
 		<sort>排列</sort>
 		<trophies>獎盃總數</trophies>
-		<grade>階級</grade>
+		<grade>Grade（階級）</grade>
 		<progress>達成率</progress>
-		<updated>更新日期</updated>
+		<updated>更新日</updated>
 	</trophy_collection>
 
 	<user_management>
