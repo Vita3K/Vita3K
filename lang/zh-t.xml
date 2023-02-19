@@ -417,8 +417,8 @@
 		<continue>繼續</continue>
 		<help>
 			<control_setting>在控制設定中使用鍵盤組態集</control_setting>
-			<firmware_not_detected>未偵測到韌體，強烈建議安裝</firmware_not_detected>
-			<firmware_font_not_detected>未偵測到韌體字型，強烈建議為Live Area字型文字安裝</firmware_font_not_detected>
+			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
+			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
 			<live_area_help>Live Area說明</live_area_help>
 			<browse_app>瀏覽應用程式清單</browse_app>
 			<browse_app_control>方向鍵、左操作桿、滾輪上/下或使用滑桿</browse_app_control>
