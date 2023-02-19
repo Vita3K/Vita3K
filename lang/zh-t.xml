@@ -368,14 +368,14 @@
 
 	<install_dialog>
 		<firmware_install>
-			<firmware_installing>安裝進行中，請稍候…</firmware_installing>
+			<firmware_installing>Installation in progress, please wait...</firmware_installing>
 			<successed_install_firmware>韌體已成功安裝。</successed_install_firmware>
 			<firmware_version>韌體版本：</firmware_version>
 			<no_font_exist>韌體字型套件不存在。
 請下載並安裝韌體字型套件。</no_font_exist>
 			<download_firmware_font_package>下載韌體字型套件</download_firmware_font_package>
-			<firmware_font_package_note>某些應用程式和亞洲區域字型支援需要韌體字型套件（一般建議安裝）。</firmware_font_package_note>
-			<delete_firmware>刪除韌體安裝檔案？</delete_firmware>
+			<firmware_font_package_noteFirmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
+			<delete_firmware>Delete the firmware installation file?</delete_firmware>
 		</firmware_install>
 		<pkg_install>
 			<select_key_type>選擇金鑰類型</select_key_type>
@@ -515,8 +515,8 @@
 	<trophy_collection>
 		<search>搜尋</search>
 		<delete_trophy>刪除獎盃</delete_trophy>
-		<trophy_deleted>這位使用者已保存的獎杯資訊將被刪除。</trophy_deleted>
-		<details>詳細資料</details>
+		<trophy_deleted>刪除該使用者已保存的獎杯資訊。</trophy_deleted>
+		<details>詳細內容</details>
 		<earned>獲得日</earned>
 		<name>名稱</name>
 		<no_trophies>找不到獎盃。
