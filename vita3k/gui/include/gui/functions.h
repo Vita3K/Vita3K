@@ -76,6 +76,7 @@ void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string app_pat
 void init_user_apps(GuiState &gui, EmuEnvState &emuenv);
 bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string &background_path);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
+void load_and_update_compat_user_apps(GuiState &gui, EmuEnvState &emuenv);
 void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_path);
 void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string app_path);
 void open_path(const std::string &path);

@@ -203,14 +203,14 @@
 
 	<compatibility name="互換性">
 		<states>
-			<state id = "0">Unknown</state>
-			<state id = "1260231569">プレイ不可能</state>
-			<state id = "1344750319">起動可能</state>
-			<state id = "1260231381">イントロ</state>
-			<state id = "1344751053">メニュー</state>
-			<state id = "1344752299">プレイ開始 -</state>
-			<state id = "1260231985">プレイ開始 +</state>
-			<state id = "920344019">プレイ可能</state>
+			<state id = "-1">Unknown</state>
+			<state id = "0">プレイ不可能</state>
+			<state id = "1">起動可能</state>
+			<state id = "2">イントロ</state>
+			<state id = "3">メニュー</state>
+			<state id = "4">プレイ開始 -</state>
+			<state id = "5">プレイ開始 +</state>
+			<state id = "6">プレイ可能</state>
 		</states>
 	</compatibility>
 

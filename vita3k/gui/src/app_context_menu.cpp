@@ -17,7 +17,6 @@
 
 #include "private.h"
 
-#include <compat/functions.h>
 #include <config/state.h>
 #include <config/version.h>
 #include <gui/functions.h>
@@ -191,20 +190,8 @@ void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::st
         gui.time_apps[emuenv.io.user_id].push_back({ app, std::time(nullptr), 0 });
 
     get_app_index(gui, app)->last_time = std::time(nullptr);
-    if (gui.users[emuenv.io.user_id].sort_apps_type == LAST_TIME) {
-        const auto sorted = gui.app_selector.app_list_sorted[LAST_TIME];
-        std::sort(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [&sorted](const App &lhs, const App &rhs) {
-            switch (sorted) {
-            case ASCENDANT:
-                return lhs.last_time > rhs.last_time;
-            case DESCENDANT:
-                return lhs.last_time < rhs.last_time;
-            default: break;
-            }
-
-            return false;
-        });
-    }
+    if (gui.users[emuenv.io.user_id].sort_apps_type == LAST_TIME)
+        gui.app_selector.is_app_list_sorted = false;
 
     save_time_apps(gui, emuenv);
 }
@@ -382,7 +369,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                     }
                 }
                 if (ImGui::MenuItem(lang["update_database"].c_str()))
-                    compat::update_compat_app_db(gui, emuenv);
+                    load_and_update_compat_user_apps(gui, emuenv);
 
                 ImGui::EndMenu();
             }
