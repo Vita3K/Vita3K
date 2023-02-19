@@ -96,6 +96,10 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         gui.compat.app_compat_db[title_id] = { issue_id, state, updated_at };
     }
 
+    // Update compatibility status of all user apps
+    for (auto &app : gui.app_selector.user_apps)
+        app.compat = gui.compat.app_compat_db.contains(app.title_id) ? gui.compat.app_compat_db[app.title_id].state : Unknown;
+
     return !gui.compat.app_compat_db.empty();
 }
 
@@ -157,7 +161,7 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     // Check if database is up to date
     if (db_updated_at == updated_at) {
         LOG_INFO("Applications compatibility database is up to date.");
-        return true;
+        return false;
     }
 
     const auto compat_db_exist = fs::exists(compat_db_path);

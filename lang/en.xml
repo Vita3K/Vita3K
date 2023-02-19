@@ -203,14 +203,14 @@ depending on its size and your hardware.</app_delete_note>
 
 	<compatibility name="Compatibility">
 		<states>
-			<state id = "0">Unknown</state>
-			<state id = "1260231569">Nothing</state>
-			<state id = "1344750319">Bootable</state>
-			<state id = "1260231381">Intro</state>
-			<state id = "1344751053">Menu</state>
-			<state id = "1344752299">Ingame -</state>
-			<state id = "1260231985">Ingame +</state>
-			<state id = "920344019">Playable</state>
+			<state id = "-1">Unknown</state>
+			<state id = "0">Nothing</state>
+			<state id = "1">Bootable</state>
+			<state id = "2">Intro</state>
+			<state id = "3">Menu</state>
+			<state id = "4">Ingame -</state>
+			<state id = "5">Ingame +</state>
+			<state id = "6">Playable</state>
 		</states>
 	</compatibility>
 

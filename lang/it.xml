@@ -203,14 +203,14 @@ depending on its size and your hardware.</app_delete_note>
 
 	<compatibility name="Compatibilità">
 		<states>
-			<state id = "0">Unknown</state>
-			<state id = "1260231569">Niente</state>
-			<state id = "1344750319">Avviabile</state>
-			<state id = "1260231381">Intro</state>
-			<state id = "1344751053">Menu</state>
-			<state id = "1344752299">In Gioco -</state>
-			<state id = "1260231985">In Gioco +</state>
-			<state id = "920344019">Giocabile</state>
+			<state id = "-1">Unknown</state>
+			<state id = "0">Niente</state>
+			<state id = "1">Avviabile</state>
+			<state id = "2">Intro</state>
+			<state id = "3">Menu</state>
+			<state id = "4">In Gioco -</state>
+			<state id = "5">In Gioco +</state>
+			<state id = "6">Giocabile</state>
 		</states>
 	</compatibility>
 

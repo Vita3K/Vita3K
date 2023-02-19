@@ -203,14 +203,14 @@
 
 	<compatibility name="兼容性">
 		<states>
-			<state id = "0">未知</state>
-			<state id = "1260231569">无法启动</state>
-			<state id = "1344750319">可引导</state>
-			<state id = "1260231381">有图像</state>
-			<state id = "1344751053">可进入菜单</state>
-			<state id = "1344752299">可进入游戏 -</state>
-			<state id = "1260231985">可进入游戏 +</state>
-			<state id = "920344019">完全可玩</state>
+			<state id = "-1">未知</state>
+			<state id = "0">无法启动</state>
+			<state id = "1">可引导</state>
+			<state id = "2">有图像</state>
+			<state id = "3">可进入菜单</state>
+			<state id = "4">可进入游戏 -</state>
+			<state id = "5">可进入游戏 +</state>
+			<state id = "6">完全可玩</state>
 		</states>
 	</compatibility>
 
