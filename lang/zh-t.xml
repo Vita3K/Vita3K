@@ -374,7 +374,7 @@
 			<no_font_exist>韌體字型套件不存在。
 請下載並安裝韌體字型套件。</no_font_exist>
 			<download_firmware_font_package>下載韌體字型套件</download_firmware_font_package>
-			<firmware_font_package_noteFirmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
+			<firmware_font_package_note>Firmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
 			<delete_firmware>Delete the firmware installation file?</delete_firmware>
 		</firmware_install>
 		<pkg_install>
