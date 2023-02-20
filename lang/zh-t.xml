@@ -358,11 +358,11 @@
 		<select_language>Select a language.</select_language>
 		<install_firmware>Install Firmware.</install_firmware>
 		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
+		<installed>已安裝：</installed>
 		<download_firmware>Download Firmware</download_firmware>
 		<download_font_package>Download Font Package</download_font_package>
 		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
+		<completed>已完成。</completed>
 		<next>Next</next>
 	</initial_setup>
 
