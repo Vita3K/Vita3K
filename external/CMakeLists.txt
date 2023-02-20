@@ -38,6 +38,9 @@ if(NOT CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	endif()
 endif()
 
+# Define the Architecture variable, right now it should only contain "x86_64" or "arm64"
+include("dynarmic/CMakeModules/DetectArchitecture.cmake")
+
 option(CAPSTONE_BUILD_SHARED "Build shared library" OFF)
 option(CAPSTONE_BUILD_TESTS "Build tests" OFF)
 option(CAPSTONE_BUILD_CSTOOL "Build cstool" OFF)
@@ -58,8 +61,8 @@ endif()
 add_library(printf INTERFACE)
 target_include_directories(printf INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/printf")
 
+set(FMT_INSTALL ON)
 add_subdirectory(fmt)
-add_library(fmt::fmt ALIAS fmt)
 set(fmt_DIR fmt)
 set_property(TARGET fmt PROPERTY FOLDER externals)
 
@@ -128,11 +131,11 @@ add_subdirectory(cubeb EXCLUDE_FROM_ALL)
 set_property(TARGET cubeb PROPERTY FOLDER externals)
 set_property(TARGET speex PROPERTY FOLDER externals)
 
-if (CMAKE_SYSTEM_PROCESSOR MATCHES "^(arm|ARM|aarch64|AArch64|Aarch64)")
+if (ARCHITECTURE STREQUAL "arm64")
 	target_compile_definitions(speex PUBLIC
 		#_USE_NEON
 	)
-elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "^(x86|X86|amd64|AMD64|em64t|EM64T)")
+elseif (ARCHITECTURE STREQUAL "x86_64")
 	target_compile_definitions(speex PUBLIC
 		_USE_SSE
 		_USE_SSE2
@@ -183,9 +186,11 @@ set(DYNARMIC_NO_BUNDLED_FMT ON CACHE BOOL "")
 set(DYNARMIC_FRONTENDS "A32" CACHE STRING "")
 add_subdirectory(dynarmic)
 set_property(TARGET dynarmic PROPERTY FOLDER externals)
-set_property(TARGET Zycore PROPERTY FOLDER externals)
-set_property(TARGET Zydis PROPERTY FOLDER externals)
 set_property(TARGET mcl PROPERTY FOLDER externals)
+if(ARCHITECTURE STREQUAL "x86_64")
+	set_property(TARGET Zycore PROPERTY FOLDER externals)
+	set_property(TARGET Zydis PROPERTY FOLDER externals)
+endif()
 
 if(MSVC)
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

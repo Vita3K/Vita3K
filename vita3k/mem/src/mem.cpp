@@ -496,14 +496,33 @@ static void register_access_violation_handler(AccessViolationHandler handler) {
 static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
 
+#ifdef __aarch64__
+    _aarch64_ctx *ctx = reinterpret_cast<_aarch64_ctx *>(context->uc_mcontext.__reserved);
+    // get the ESR register
+    while (ctx->magic != ESR_MAGIC) {
+        if (ctx->magic == 0)
+            [[unlikely]]
+            raise(SIGTRAP);
+        else
+            [[likely]]
+            ctx = reinterpret_cast<_aarch64_ctx *>(reinterpret_cast<uint8_t *>(ctx) + ctx->size);
+    }
+
+    const uint64_t esr = reinterpret_cast<esr_context *>(ctx)->esr;
+    // https://developer.arm.com/documentation/ddi0595/2021-03/AArch64-Registers/ESR-EL1--Exception-Syndrome-Register--EL1-
+    const uint32_t exception_class = static_cast<uint32_t>(esr) >> 26;
+    const bool is_executing = (exception_class == 0b100000) || (exception_class == 0b100001);
+    const bool is_data_abort = (exception_class == 0b100100) || (exception_class == 0b100101);
+    const bool is_writing = is_data_abort && (esr & (1 << 6));
+#else
 #ifdef __APPLE__
     const uint64_t err = context->uc_mcontext->__es.__err;
 #else
     const uint64_t err = context->uc_mcontext.gregs[REG_ERR];
 #endif
-
     const bool is_executing = err & 0x10;
     const bool is_writing = err & 0x2;
+#endif
 
     if (!is_executing) {
         if (access_violation_handler(reinterpret_cast<uint8_t *>(info->si_addr), is_writing)) {

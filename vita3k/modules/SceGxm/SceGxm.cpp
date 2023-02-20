@@ -24,7 +24,6 @@
 #include <gxm/functions.h>
 #include <gxm/state.h>
 #include <gxm/types.h>
-#include <immintrin.h>
 #include <kernel/state.h>
 #include <mem/state.h>
 
