@@ -310,6 +310,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     config.callbacks = cb.get();
     config.fastmem_pointer = (log_mem || !cpu_opt) ? nullptr : parent->mem->memory.get();
     config.hook_hint_instructions = true;
+    config.enable_cycle_counting = false;
     config.global_monitor = monitor;
     config.coprocessors[15] = cp15;
     config.page_table = nullptr;
