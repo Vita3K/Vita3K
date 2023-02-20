@@ -191,14 +191,14 @@ depending on its size and your hardware.</app_delete_note>
 
 	<compatibility name="Kompatybilnośći">
 		<states>
-			<state id = "0">Unknown</state>
-			<state id = "1260231569">Nic</state>
-			<state id = "1344750319">Bootowalny</state>
-			<state id = "1260231381">Intro</state>
-			<state id = "1344751053">Menu</state>
-			<state id = "1344752299">W grze -</state>
-			<state id = "1260231985">W grze +</state>
-			<state id = "920344019">Grywalne</state>
+			<state id = "-1">Unknown</state>
+			<state id = "0">Nic</state>
+			<state id = "1">Bootowalny</state>
+			<state id = "2">Intro</state>
+			<state id = "3">Menu</state>
+			<state id = "4">W grze -</state>
+			<state id = "5">W grze +</state>
+			<state id = "6">Grywalne</state>
 		</states>
 	</compatibility>
 

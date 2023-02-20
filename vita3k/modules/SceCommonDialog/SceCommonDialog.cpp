@@ -1334,7 +1334,7 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
         handle_sys_message(sys_message, emuenv);
         break;
     case SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR:
-    // Stub using continue code
+        // Stub using continue code
         emuenv.common_dialog.savedata.btn_num = 0;
         progress_bar = p->progressBarParam.get(emuenv.mem);
         emuenv.common_dialog.savedata.slot_id[emuenv.common_dialog.savedata.selected_save] = progress_bar->targetSlot.id;

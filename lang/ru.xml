@@ -203,14 +203,14 @@ depending on its size and your hardware.</app_delete_note>
 
 	<compatibility name="Совместимости">
 		<states>
-			<state id = "0">Unknown</state>
-			<state id = "1260231569">Бесполезно</state>
-			<state id = "1344750319">Загружается</state>
-			<state id = "1260231381">Интро</state>
-			<state id = "1344751053">Меню</state>
-			<state id = "1344752299">В игре -</state>
-			<state id = "1260231985">В игре +</state>
-			<state id = "920344019">Играбельно</state>
+			<state id = "-1">Unknown</state>
+			<state id = "0">Бесполезно</state>
+			<state id = "1">Загружается</state>
+			<state id = "2">Интро</state>
+			<state id = "3">Меню</state>
+			<state id = "4">В игре -</state>
+			<state id = "5">В игре +</state>
+			<state id = "6">Играбельно</state>
 		</states>
 	</compatibility>
 

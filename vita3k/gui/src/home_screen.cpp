@@ -19,6 +19,7 @@
 
 #include <config/functions.h>
 
+#include <compat/functions.h>
 #include <config/state.h>
 #include <display/state.h>
 #include <gui/functions.h>
@@ -55,6 +56,7 @@ void init_user_apps(GuiState &gui, EmuEnvState &emuenv) {
 
         gui.app_selector.is_app_list_sorted = false;
         init_last_time_apps(gui, emuenv);
+        load_and_update_compat_user_apps(gui, emuenv);
 
         init_apps_icon(gui, emuenv, gui.app_selector.user_apps);
 
@@ -89,6 +91,16 @@ void init_last_time_apps(GuiState &gui, EmuEnvState &emuenv) {
     last_time_apps(gui.app_selector.sys_apps);
     last_time_apps(gui.app_selector.user_apps);
     gui.app_selector.is_app_list_sorted = false;
+}
+
+void load_and_update_compat_user_apps(GuiState &gui, EmuEnvState &emuenv) {
+    std::thread load_and_update_compat_user_apps_thread([&gui, &emuenv]() {
+        if (!gui.compat.compat_db_loaded)
+            gui.compat.compat_db_loaded = compat::load_compat_app_db(gui, emuenv);
+        if (compat::update_compat_app_db(gui, emuenv) && gui.users[emuenv.io.user_id].sort_apps_type == COMPAT)
+            gui.app_selector.is_app_list_sorted = false;
+    });
+    load_and_update_compat_user_apps_thread.detach();
 }
 
 std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string app_path) {
