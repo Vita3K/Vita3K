@@ -352,28 +352,28 @@
 	</indicator>
 
 	<initial_setup>
-		<back>返回</back>
+		<back>Back</back>
 		<completed_setup>已完成初期設定。
 請盡情享受Vita3K。</completed_setup>
 		<select_language>Select a language.</select_language>
-		<install_firmware>安裝韌體。</install_firmware>
+		<install_firmware>Install Firmware.</install_firmware>
 		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>已安裝：</installed>
-		<download_firmware>下載韌體</download_firmware>
-		<download_font_package>下載字型套件</download_font_package>
-		<install_firmware_file>安裝韌體檔案</install_firmware_file>
-		<completed>已完成。</completed>
+		<installed>Installed:</installed>
+		<download_firmware>Download Firmware</download_firmware>
+		<download_font_package>Download Font Package</download_font_package>
+		<install_firmware_file>Install Firmware File</install_firmware_file>
+		<completed>Completed.</completed>
 		<next>Next</next>
 	</initial_setup>
 
 	<install_dialog>
 		<firmware_install>
 			<firmware_installing>Installation in progress, please wait...</firmware_installing>
-			<successed_install_firmware>韌體已成功安裝。</successed_install_firmware>
-			<firmware_version>韌體版本：</firmware_version>
-			<no_font_exist>韌體字型套件不存在。
-請下載並安裝韌體字型套件。</no_font_exist>
-			<download_firmware_font_package>下載韌體字型套件</download_firmware_font_package>
+			<successed_install_firmware>Firmware successfully installed.</successed_install_firmware>
+			<firmware_version>Firmware version:</firmware_version>
+			<no_font_exist>No firmware font package present.
+Please download and install it.</no_font_exist>
+			<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
 			<firmware_font_package_note>Firmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
 			<delete_firmware>Delete the firmware installation file?</delete_firmware>
 		</firmware_install>
