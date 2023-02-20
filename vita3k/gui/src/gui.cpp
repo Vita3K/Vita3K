@@ -145,16 +145,14 @@ static void init_style(EmuEnvState &emuenv) {
 static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     ImGuiIO &io = ImGui::GetIO();
 
+    ImFontConfig mono_font_config{};
+    mono_font_config.SizePixels = 13.f * emuenv.dpi_scale;
+
 #ifdef _WIN32
-    if (emuenv.dpi_scale > 1) {
-        // Set monospaced font path -- ImGui's default is a bitmap font that does not scale well, so load Consolas instead
-        const auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
-        gui.monospaced_font = io.Fonts->AddFontFromFileTTF(monospaced_font_path, 13.f * emuenv.dpi_scale, NULL, io.Fonts->GetGlyphRangesJapanese());
-    } else {
-        gui.monospaced_font = io.Fonts->AddFontDefault();
-    }
+    const auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
+    gui.monospaced_font = io.Fonts->AddFontFromFileTTF(monospaced_font_path, mono_font_config.SizePixels, &mono_font_config, io.Fonts->GetGlyphRangesJapanese());
 #else
-    gui.monospaced_font = io.Fonts->AddFontDefault();
+    gui.monospaced_font = io.Fonts->AddFontDefault(&mono_font_config);
 #endif
 
     // Set Large Font
@@ -200,47 +198,61 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     };
     // clang-format on
 
+    // Merge Japanese and Extra ranges
+    ImFontGlyphRangesBuilder builder;
+    builder.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+    builder.AddRanges(extra_range);
+    ImVector<ImWchar> japanes_and_extra_ranges;
+    builder.BuildRanges(&japanes_and_extra_ranges);
+
     ImFontConfig font_config{};
+    ImFontConfig large_font_config{};
 
     // Check existence of fw font file
     if (fs::exists(latin_fw_font_path)) {
         // Add fw font to imgui
+
         gui.fw_font = true;
         font_config.SizePixels = 19.2f * emuenv.dpi_scale;
 
         gui.vita_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), font_config.SizePixels, &font_config, latin_range);
         font_config.MergeMode = true;
 
-        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), font_config.SizePixels, &font_config, io.Fonts->GetGlyphRangesJapanese());
-        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), font_config.SizePixels, &font_config, extra_range);
+        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), font_config.SizePixels, &font_config, japanes_and_extra_ranges.Data);
 
         const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
         if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN))
             io.Fonts->AddFontFromFileTTF((fw_font_path / "kr0.pvf").string().c_str(), font_config.SizePixels, &font_config, korean_range);
         if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S))
             io.Fonts->AddFontFromFileTTF((fw_font_path / "cn0.pvf").string().c_str(), font_config.SizePixels, &font_config, chinese_range);
-
-        io.Fonts->Build();
         font_config.MergeMode = false;
-        gui.large_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), 116.f * emuenv.dpi_scale, &font_config, large_font_chars);
+
+        large_font_config.SizePixels = 116.f * emuenv.dpi_scale;
+        gui.large_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
     } else {
         LOG_WARN("Could not find firmware font file at \"{}\", install firmware fonts package to fix this.", latin_fw_font_path.string());
+        font_config.SizePixels = 22.f * emuenv.dpi_scale;
+
         // Set up default font path
         const auto default_font_path{ fs::path(emuenv.base_path) / "data/fonts/mplus-1mn-bold.ttf" };
         // Check existence of default font file
         if (fs::exists(default_font_path)) {
             gui.vita_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 22.f * emuenv.dpi_scale, &font_config, latin_range);
             font_config.MergeMode = true;
-            io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 22.f * emuenv.dpi_scale, &font_config, io.Fonts->GetGlyphRangesJapanese());
-
-            io.Fonts->Build();
+            io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), font_config.SizePixels, &font_config, japanes_and_extra_ranges.Data);
             font_config.MergeMode = false;
-            gui.large_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 134.f * emuenv.dpi_scale, &font_config, large_font_chars);
+
+            large_font_config.SizePixels = 134.f * emuenv.dpi_scale;
+            gui.large_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
 
             LOG_INFO("Using default Vita3K font.");
         } else
             LOG_WARN("Could not find default Vita3K font, using default ImGui font.", default_font_path.string());
     }
+
+    // Build font atlas loaded and upload to GPU
+    io.Fonts->Build();
+
     // DPI scaling
     io.DisplayFramebufferScale = { emuenv.dpi_scale, emuenv.dpi_scale };
 }
