@@ -148,10 +148,13 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         state.display.fullscreen = true;
         window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
-#ifdef WIN32
+
     float ddpi, hdpi, vdpi;
     SDL_GetDisplayDPI(0, &ddpi, &hdpi, &vdpi);
+#ifdef WIN32
     state.dpi_scale = ddpi / 96;
+#elif ANDROID
+    state.dpi_scale = ddpi / 160;
 #endif
     state.res_width_dpi_scale = DEFAULT_RES_WIDTH * state.dpi_scale;
     state.res_height_dpi_scale = DEFAULT_RES_HEIGHT * state.dpi_scale;
