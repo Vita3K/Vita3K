@@ -24,8 +24,58 @@
 #include <gxm/functions.h>
 
 #include <util/log.h>
+#include <util/overloaded.h>
 
 namespace renderer::vulkan {
+
+void VKContext::wait_thread_function() {
+    // try to wait for multiple fences at the same time if possible
+    std::vector<vk::Fence> fences;
+
+    while (true) {
+        auto wait_request = request_queue.pop();
+
+        if (!wait_request)
+            break;
+
+        std::visit(overloaded{
+                       [&](NotificationRequest &request) {
+                           fences.push_back(request.fence);
+
+                           if (request.notifications[0].address || request.notifications[1].address) {
+                               state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+                               // don't reset them
+                               fences.clear();
+
+                               // same as in handle_sync_surface_data
+                               std::unique_lock<std::mutex> lock(state.notification_mutex);
+
+                               if (request.notifications[0].address)
+                                   *request.notifications[0].address.get(mem) = request.notifications[0].value;
+                               if (request.notifications[1].address)
+                                   *request.notifications[1].address.get(mem) = request.notifications[1].value;
+
+                               // unlocking before a notify should be faster
+                               lock.unlock();
+                               state.notification_ready.notify_all();
+                           }
+                       },
+                       [&](FrameDoneRequest &request) {
+                           if (!fences.empty()) {
+                               state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+                               fences.clear();
+                           }
+
+                           // don't reset them, the reset will be done in the new_frame function
+                           // and these fences can still be waited for during texture uploading
+                           std::unique_lock<std::mutex> lock(new_frame_mutex);
+                           last_frame_waited = request.frame_timestamp;
+                           lock.unlock();
+                           new_frame_condv.notify_one();
+                       } },
+            *wait_request);
+    }
+}
 
 void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, const FeatureState &features) {
     if (rt) {
@@ -220,7 +270,7 @@ void VKContext::stop_render_pass() {
     in_renderpass = false;
 }
 
-void VKContext::stop_recording() {
+void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2) {
     if (!is_recording) {
         LOG_ERROR("Stopping recording while not recording");
         return;
@@ -243,6 +293,15 @@ void VKContext::stop_recording() {
 
     state.general_queue.submit(submit_info, fence);
     frame().rendered_fences.push_back(fence);
+
+    if (state.features.support_memory_mapping) {
+        // send it to the wait queue
+        NotificationRequest request = {
+            .notifications = { notif1, notif2 },
+            .fence = fence
+        };
+        request_queue.push(request);
+    }
 
     render_cmd = nullptr;
     prerender_cmd = nullptr;

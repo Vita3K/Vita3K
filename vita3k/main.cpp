@@ -283,7 +283,7 @@ int main(int argc, char *argv[]) {
 #if USE_DISCORD
                 discordrpc::update_init_status(emuenv.cfg.discord_rich_presence, &discord_rich_presence_old);
 #endif
-                gui::draw_live_area(gui, emuenv);
+                gui::draw_vita_area(gui, emuenv);
                 gui::draw_ui(gui, emuenv);
 
                 gui::draw_end(gui, emuenv.window.get());
@@ -355,7 +355,7 @@ int main(int argc, char *argv[]) {
     if (const auto err = load_app(entry_point, emuenv, string_utils::utf_to_wide(emuenv.io.app_path)) != Success)
         return err;
 
-    gui.live_area.information_bar = false;
+    gui.vita_area.information_bar = false;
 
     // Pre-Compile Shaders
     emuenv.renderer->base_path = emuenv.base_path.c_str();
@@ -422,9 +422,9 @@ int main(int argc, char *argv[]) {
 
         gui::draw_begin(gui, emuenv);
         gui::draw_common_dialog(gui, emuenv);
-        gui::draw_live_area(gui, emuenv);
+        gui::draw_vita_area(gui, emuenv);
 
-        if (emuenv.cfg.performance_overlay && !gui.live_area.home_screen && !gui.live_area.live_area_screen && gui::get_sys_apps_state(gui))
+        if (emuenv.cfg.performance_overlay && !gui.vita_area.home_screen && !gui.vita_area.live_area_screen && !gui.vita_area.start_screen && gui::get_sys_apps_state(gui))
             gui::draw_perf_overlay(gui, emuenv);
 
         if (emuenv.display.imgui_render) {

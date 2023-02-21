@@ -213,7 +213,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    ImGui::Begin("##settings", &gui.live_area.settings, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##settings", &gui.vita_area.settings, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
         ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], ImVec2(0.f, 0.f), display_size);
     else
@@ -254,7 +254,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImVec2(ARROW_UPP_CENTER.x + (20.f * SCALE.x), ARROW_UPP_CENTER.y + (16.f * SCALE.y)), ARROW_COLOR);
                 ImGui::SetCursorPos(ImVec2(ARROW_UPP_CENTER.x - (ARROW_SIZE.x / 2.f), ARROW_UPP_CENTER.y - ARROW_SIZE.y));
                 if ((ImGui::Selectable("##upp", false, ImGuiSelectableFlags_None, ARROW_SIZE))
-                    || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_up) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_up))
+                    || !ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_up) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_up))
                     set_scroll_pos = current_scroll_pos - (340 * SCALE.y);
             }
             if (current_scroll_pos < max_scroll_pos) {
@@ -265,7 +265,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     ImVec2(ARROW_DOWN_CENTER.x - (20.f * SCALE.x), ARROW_DOWN_CENTER.y - (16.f * SCALE.y)), ARROW_COLOR);
                 ImGui::SetCursorPos(ImVec2(ARROW_DOWN_CENTER.x - (ARROW_SIZE.x / 2.f), ARROW_DOWN_CENTER.y - ARROW_SIZE.y));
                 if ((ImGui::Selectable("##down", false, ImGuiSelectableFlags_None, ARROW_SIZE))
-                    || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_down) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_down))
+                    || !ImGui::GetIO().WantTextInput && ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_down) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_down))
                     set_scroll_pos = current_scroll_pos + (340 * SCALE.y);
             }
         }
@@ -958,14 +958,14 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                 settings_menu = SELECT;
         } else {
             if (emuenv.app_path == "NPXS10026") {
-                gui.live_area.content_manager = true;
+                gui.vita_area.content_manager = true;
             } else {
                 if (!gui.apps_list_opened.empty() && gui.apps_list_opened[gui.current_app_selected] == "NPXS10015")
-                    gui.live_area.live_area_screen = true;
+                    gui.vita_area.live_area_screen = true;
                 else
-                    gui.live_area.home_screen = true;
+                    gui.vita_area.home_screen = true;
             }
-            gui.live_area.settings = false;
+            gui.vita_area.settings = false;
         }
     }
 

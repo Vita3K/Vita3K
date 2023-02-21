@@ -2075,24 +2075,30 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
     // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).
     size_t max_index = 0;
-    if (indexType == SCE_GXM_INDEX_FORMAT_U16) {
-        const uint16_t *const data = static_cast<const uint16_t *>(indexData);
-        max_index = *std::max_element(&data[0], &data[indexCount]);
-    } else {
-        const uint32_t *const data = static_cast<const uint32_t *>(indexData);
-        max_index = *std::max_element(&data[0], &data[indexCount]);
+    if (!emuenv.renderer->features.support_memory_mapping) {
+        // we don't need to get the vertex buffer size with memory mapping
+        if (indexType == SCE_GXM_INDEX_FORMAT_U16) {
+            const uint16_t *const data = static_cast<const uint16_t *>(indexData);
+            max_index = *std::max_element(&data[0], &data[indexCount]);
+        } else {
+            const uint32_t *const data = static_cast<const uint32_t *>(indexData);
+            max_index = *std::max_element(&data[0], &data[indexCount]);
+        }
     }
 
     size_t max_data_length[SCE_GXM_MAX_VERTEX_STREAMS] = {};
     std::uint32_t stream_used = 0;
     for (const SceGxmVertexAttribute &attribute : gxm_vertex_program.attributes) {
-        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
-        const size_t attribute_size = gxm::attribute_format_size(attribute_format) * attribute.componentCount;
-        const SceGxmVertexStream &stream = gxm_vertex_program.streams[attribute.streamIndex];
-        const SceGxmIndexSource index_source = static_cast<SceGxmIndexSource>(stream.indexSource);
-        const size_t data_passed_length = gxm::is_stream_instancing(index_source) ? ((instanceCount - 1) * stream.stride) : (max_index * stream.stride);
-        const size_t data_length = attribute.offset + data_passed_length + attribute_size;
-        max_data_length[attribute.streamIndex] = std::max<size_t>(max_data_length[attribute.streamIndex], data_length);
+        if (!emuenv.renderer->features.support_memory_mapping) {
+            const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
+            const size_t attribute_size = gxm::attribute_format_size(attribute_format) * attribute.componentCount;
+            const SceGxmVertexStream &stream = gxm_vertex_program.streams[attribute.streamIndex];
+            const SceGxmIndexSource index_source = static_cast<SceGxmIndexSource>(stream.indexSource);
+            const size_t data_passed_length = gxm::is_stream_instancing(index_source) ? ((instanceCount - 1) * stream.stride) : (max_index * stream.stride);
+            const size_t data_length = attribute.offset + data_passed_length + attribute_size;
+            max_data_length[attribute.streamIndex] = std::max<size_t>(max_data_length[attribute.streamIndex], data_length);
+        }
+
         stream_used |= (1 << attribute.streamIndex);
     }
 
@@ -2175,13 +2181,16 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
 
     // Update vertex data. We should stores a copy of the data to pass it to GPU later, since another scene
     // may start to overwrite stuff when this scene is being processed in our queue (in case of OpenGL).
-    size_t max_index = 0;
-    if (draw->index_format == SCE_GXM_INDEX_FORMAT_U16) {
-        const uint16_t *const data = draw->index_data.cast<const uint16_t>().get(emuenv.mem);
-        max_index = *std::max_element(&data[0], &data[draw->vertex_count]);
-    } else {
-        const uint32_t *const data = draw->index_data.cast<const uint32_t>().get(emuenv.mem);
-        max_index = *std::max_element(&data[0], &data[draw->vertex_count]);
+    uint32_t max_index = 0;
+    if (!emuenv.renderer->features.support_memory_mapping) {
+        // we don't need to get the vertex buffer size with memory mapping
+        if (draw->index_format == SCE_GXM_INDEX_FORMAT_U16) {
+            const uint16_t *const data = draw->index_data.cast<const uint16_t>().get(emuenv.mem);
+            max_index = *std::max_element(&data[0], &data[draw->vertex_count]);
+        } else {
+            const uint32_t *const data = draw->index_data.cast<const uint32_t>().get(emuenv.mem);
+            max_index = *std::max_element(&data[0], &data[draw->vertex_count]);
+        }
     }
 
     // set all textures that are used and mark them as dirty
@@ -2204,13 +2213,16 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
     size_t max_data_length[SCE_GXM_MAX_VERTEX_STREAMS] = {};
     std::uint32_t stream_used = 0;
     for (const SceGxmVertexAttribute &attribute : vertex_program->attributes) {
-        const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
-        const size_t attribute_size = gxm::attribute_format_size(attribute_format) * attribute.componentCount;
-        const SceGxmVertexStream &stream = vertex_program->streams[attribute.streamIndex];
-        const SceGxmIndexSource index_source = static_cast<SceGxmIndexSource>(stream.indexSource);
-        const size_t data_passed_length = gxm::is_stream_instancing(index_source) ? ((draw->instance_count - 1) * stream.stride) : (max_index * stream.stride);
-        const size_t data_length = attribute.offset + data_passed_length + attribute_size;
-        max_data_length[attribute.streamIndex] = std::max<size_t>(max_data_length[attribute.streamIndex], data_length);
+        if (!emuenv.renderer->features.support_memory_mapping) {
+            const SceGxmAttributeFormat attribute_format = static_cast<SceGxmAttributeFormat>(attribute.format);
+            const size_t attribute_size = gxm::attribute_format_size(attribute_format) * attribute.componentCount;
+            const SceGxmVertexStream &stream = vertex_program->streams[attribute.streamIndex];
+            const SceGxmIndexSource index_source = static_cast<SceGxmIndexSource>(stream.indexSource);
+            const size_t data_passed_length = gxm::is_stream_instancing(index_source) ? ((draw->instance_count - 1) * stream.stride) : (max_index * stream.stride);
+            const size_t data_length = attribute.offset + data_passed_length + attribute_size;
+            max_data_length[attribute.streamIndex] = std::max<size_t>(max_data_length[attribute.streamIndex], data_length);
+        }
+
         stream_used |= (1 << attribute.streamIndex);
     }
 
@@ -2281,18 +2293,10 @@ EXPORT(int, sceGxmEndScene, SceGxmContext *context, SceGxmNotification *vertexNo
         return RET_ERROR(SCE_GXM_ERROR_WITHIN_SCENE);
     }
 
+    SceGxmNotification empty_notification = { Ptr<uint32_t>(0), 0 };
+
     // Add command to end the scene
-    renderer::sync_surface_data(*emuenv.renderer, context->renderer.get());
-
-    if (vertexNotification) {
-        renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
-            nullptr, *vertexNotification, true);
-    }
-
-    if (fragmentNotification) {
-        renderer::add_command(context->renderer.get(), renderer::CommandOpcode::SignalNotification,
-            nullptr, *fragmentNotification, false);
-    }
+    renderer::sync_surface_data(*emuenv.renderer, context->renderer.get(), vertexNotification ? *vertexNotification : empty_notification, fragmentNotification ? *fragmentNotification : empty_notification);
 
     if (context->state.fragment_sync_object) {
         SceGxmSyncObject *sync = context->state.fragment_sync_object.get(mem);
@@ -2594,8 +2598,21 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
     GxmState &gxm = emuenv.gxm;
 
     auto ite = gxm.memory_mapped_regions.lower_bound(base.address());
-    if ((ite == gxm.memory_mapped_regions.end()) || (ite->first != base.address())) {
+    if (ite == gxm.memory_mapped_regions.end() || ite->first != base.address()) {
+        if (ite != gxm.memory_mapped_regions.end() && base.address() + size >= ite->first) {
+            LOG_ERROR("Overlapping mapped memory detected");
+
+            if (emuenv.renderer->features.support_memory_mapping) {
+                // overlapping memory mapping is not supported
+                return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+            }
+        }
         gxm.memory_mapped_regions.emplace(base.address(), MemoryMapInfo{ base.address(), size, attribs });
+
+        // little big planet maps regions of size 0
+        if (emuenv.renderer->features.support_memory_mapping && size > 0)
+            renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryMap, true, base, size);
+
         return 0;
     }
 
@@ -3089,13 +3106,15 @@ EXPORT(int, sceGxmProgramGetOutputRegisterFormat, const SceGxmProgram *program, 
 
 EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram *program, uint32_t index) {
     TRACY_FUNC(sceGxmProgramGetParameter, program, index);
+    if (index >= program->parameter_count)
+        return Ptr<SceGxmProgramParameter>(0);
+
     const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
 
     const SceGxmProgramParameter *const parameter = &parameters[index];
     const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
 
-    const Address parameter_address = static_cast<Address>(parameter_bytes - &emuenv.mem.memory[0]);
-    return Ptr<SceGxmProgramParameter>(parameter_address);
+    return Ptr<SceGxmProgramParameter>(parameter_bytes, emuenv.mem);
 }
 
 EXPORT(uint32_t, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {
@@ -5213,6 +5232,9 @@ EXPORT(int, sceGxmUnmapMemory, Ptr<void> base) {
     if (ite == emuenv.gxm.memory_mapped_regions.end()) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
+
+    if (emuenv.renderer->features.support_memory_mapping && ite->second.size > 0)
+        renderer::send_single_command(*emuenv.renderer, nullptr, renderer::CommandOpcode::MemoryUnmap, true, base);
 
     emuenv.gxm.memory_mapped_regions.erase(ite);
     return 0;

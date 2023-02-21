@@ -45,6 +45,7 @@ std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const 
 std::map<DateTime, std::string> get_date_time(GuiState &gui, EmuEnvState &emuenv, const tm &date_time);
 std::string get_unit_size(const size_t &size);
 void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string app_path);
+std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::string app_path);
 void get_modules_list(GuiState &gui, EmuEnvState &emuenv);
 void get_notice_list(EmuEnvState &emuenv);
 std::string get_theme_title_from_buffer(const vfs::FileBuffer buffer);
@@ -75,6 +76,7 @@ void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string app_pat
 void init_user_apps(GuiState &gui, EmuEnvState &emuenv);
 bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string &background_path);
 bool init_user_start_background(GuiState &gui, const std::string &image_path);
+void load_and_update_compat_user_apps(GuiState &gui, EmuEnvState &emuenv);
 void open_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_path);
 void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string app_path);
 void open_path(const std::string &path);
@@ -98,14 +100,15 @@ void save_notice_list(EmuEnvState &emuenv);
 
 void draw_begin(GuiState &gui, EmuEnvState &emuenv);
 void draw_end(GuiState &emuenv, SDL_Window *window);
-void draw_live_area(GuiState &gui, EmuEnvState &emuenv);
+void draw_vita_area(GuiState &gui, EmuEnvState &emuenv);
 void draw_ui(GuiState &gui, EmuEnvState &emuenv);
 
 void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void draw_common_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_ime(Ime &ime, EmuEnvState &emuenv);
+void draw_info_message(GuiState &gui, EmuEnvState &emuenv);
 void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv);
-void draw_reinstall_dialog(GenericDialogState *status, EmuEnvState &emuenv);
+void draw_reinstall_dialog(GenericDialogState *status, GuiState &gui, EmuEnvState &emuenv);
 void draw_pre_compiling_shaders_progress(GuiState &gui, EmuEnvState &emuenv, const uint32_t &total);
 void draw_shaders_count_compiled(GuiState &gui, EmuEnvState &emuenv);
 void draw_trophies_unlocked(GuiState &gui, EmuEnvState &emuenv);

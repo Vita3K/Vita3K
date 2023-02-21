@@ -151,7 +151,7 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const fs::path 
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 gui::draw_ui(*gui, emuenv);
                 ImGui::PushFont(gui->vita_font);
-                gui::draw_reinstall_dialog(&status, emuenv);
+                gui::draw_reinstall_dialog(&status, *gui, emuenv);
                 ImGui::PopFont();
                 glViewport(0, 0, static_cast<int>(ImGui::GetIO().DisplaySize.x), static_cast<int>(ImGui::GetIO().DisplaySize.y));
                 ImGui::Render();
@@ -598,21 +598,21 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     gui.is_capturing_keys = false;
                 }
             }
-            if (!emuenv.io.title_id.empty() && !gui.live_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog) {
+            if (!emuenv.io.title_id.empty() && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog) {
                 // toggle gui state
-                if (event.key.keysym.sym == SDLK_g)
+                if (event.key.keysym.sym == SDLK_g && !ImGui::GetIO().WantTextInput)
                     emuenv.display.imgui_render = !emuenv.display.imgui_render;
                 // Show/Hide Live Area during app run, TODO pause app running
-                else if (gui::get_sys_apps_state(gui) && (event.key.keysym.scancode == emuenv.cfg.keyboard_button_psbutton)) {
+                else if (gui::get_sys_apps_state(gui) && (event.key.keysym.scancode == emuenv.cfg.keyboard_button_psbutton && !ImGui::GetIO().WantTextInput)) {
                     if (gui::get_app_open_list_index(gui, emuenv.io.app_path) == gui.apps_list_opened.end())
                         gui::open_live_area(gui, emuenv, emuenv.io.app_path);
                     else {
-                        gui.live_area.information_bar = !gui.live_area.information_bar;
-                        gui.live_area.live_area_screen = !gui.live_area.live_area_screen;
+                        gui.vita_area.information_bar = !gui.vita_area.information_bar;
+                        gui.vita_area.live_area_screen = !gui.vita_area.live_area_screen;
                     }
                 }
             }
-            if (event.key.keysym.sym == SDLK_t && !gui.is_key_capture_dropped)
+            if (event.key.keysym.sym == SDLK_t && !gui.is_key_capture_dropped && !ImGui::GetIO().WantTextInput)
                 toggle_touchscreen();
             if (event.key.keysym.sym == SDLK_F11 && !gui.is_key_capture_dropped)
                 switch_full_screen(emuenv);
@@ -691,14 +691,6 @@ static std::vector<std::string> split(const std::string &input, const std::strin
 }
 
 ExitCode run_app(EmuEnvState &emuenv, Ptr<const void> &entry_point) {
-    const CallImport call_import = [&emuenv](CPUState &cpu, uint32_t nid, SceUID main_thread_id) {
-        ::call_import(emuenv, cpu, nid, main_thread_id);
-    };
-
-    const ResolveNIDName resolve_nid_name = [&emuenv](Address addr) {
-        return ::resolve_nid_name(emuenv.kernel, addr);
-    };
-
     const ThreadStatePtr thread = emuenv.kernel.create_thread(emuenv.mem, emuenv.io.title_id.c_str(), entry_point, SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN), nullptr);
     if (!thread) {
         app::error_dialog("Failed to init main thread.", emuenv.window.get());

@@ -119,6 +119,7 @@ enum PerfomanceOverleyPosition {
     code(std::string, "user-id", std::string{}, user_id)                                                \
     code(bool, "user-auto-connect", false, auto_user_login)                                             \
     code(bool, "dump-textures", false, dump_textures)                                                   \
+    code(bool, "display-info-message", true, display_info_message)                                      \
     code(bool, "show-welcome", true, show_welcome)                                                      \
     code(bool, "asia-font-support", false, asia_font_support)                                           \
     code(bool, "shader-cache", true, shader_cache)                                                      \

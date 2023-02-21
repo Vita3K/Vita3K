@@ -26,7 +26,7 @@
 
 	<about name="關於">
 		<vita3k>Vita3K：PS Vita/PS TV模擬器。 是全球首個實用的PS Vita/PS TV模擬器。</vita3k>
-		<about_vita3k>Vita3K是使用C++編寫的實驗性開源PlayStation Vita/PlayStation TV模擬器，適用於Windows、Linux和macOS作業系統。</about_vita3k>
+		<about_vita3k>Vita3K是使用C++編寫的實驗性開源PlayStation Vita/PlayStation TV模擬器，適用於Windows、Linux、macOS以及Android作業系統。</about_vita3k>
 		<note>注意：目前模擬器仍處於開發的早期階段。</note>
 		<github_website>如果您有興趣參與貢獻，請瀏覽我們的GitHub：</github_website>
 		<vita3k_website>更多信息請訪問我們的網站：</vita3k_website>
@@ -38,6 +38,9 @@
 	<app_context>
 		<boot>運行</boot>
 		<check_app_compatibility>查看應用程式兼容性</check_app_compatibility>
+		<open_issue>打開問題</open_issue>
+		<create_issue>創建問題</create_issue>
+		<update_database>更新數據庫</update_database>
 		<copy_app_info>複製應用程式信息</copy_app_info>
 		<name_and_id>名稱和標題ID</name_and_id>
 		<app_summary>應用程式摘要</app_summary>
@@ -198,13 +201,26 @@
 		<minutes_ago>{}分鐘前</minutes_ago>
 	</common>
 
+	<compatibility name="兼容性">
+		<states>
+			<state id = "-1">未知</state>
+			<state id = "0">无法啓動</state>
+			<state id = "1">可引導</state>
+			<state id = "2">有圖像</state>
+			<state id = "3">可進入菜單</state>
+			<state id = "4">可進入遊戲 -</state>
+			<state id = "5">可進入遊戲 +</state>
+			<state id = "6">完全可玩</state>
+		</states>
+	</compatibility>
+
 	<compile_shaders>
 		<compiling_shaders>編譯着色器中</compiling_shaders>
 		<shaders_compiled>個着色器已編譯</shaders_compiled>
 	</compile_shaders>
 
 	<content_manager name="內容管理">
-		<search>搜索</search>
+		<search>搜尋</search>
 		<application name="應用程式">
 			<delete>即將刪除您選擇的應用程式及所有相關資料（包括保存資料）。</delete>
 			<no_item>找不到內容。</no_item>
@@ -259,6 +275,8 @@
 		<full_screen>全熒幕</full_screen>
 		<toggle_touch>切換觸碰</toggle_touch>
 		<toggle_gui_visibility>切換圖形用戶界面可見性</toggle_gui_visibility>
+		<error>錯誤</error>
+		<error_duplicate_key>該按鈕已被使用並綁定其他按鈕或被預留。</error_duplicate_key>
 	</controls>
 
 	<dialog>
@@ -338,43 +356,60 @@
 		<completed_setup>已完成初期設定。
 請盡情享受Vita3K。</completed_setup>
 		<select_language>Select a language.</select_language>
+		<install_firmware>安裝固件。</install_firmware>
+		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
+		<installed>已安裝：</installed>
+		<download_firmware>下載固件</download_firmware>
+		<download_font_package>下載字庫包</download_font_package>
+		<install_firmware_file>安裝固件文件</install_firmware_file>
 		<completed>已完成。</completed>
 		<next>Next</next>
 	</initial_setup>
 
 	<install_dialog>
-		<fw_installing>Installation in progress, please wait...</fw_installing>
-		<successed_install_fw>固件已成功安裝。</successed_install_fw>
-		<fw_version>固件版本：</fw_version>
-		<no_font_exist>固件字庫包不存在。
+		<firmware_install>
+			<firmware_installing>Installation in progress, please wait...</firmware_installing>
+			<successed_install_firmware>固件已成功安裝。</successed_install_firmware>
+			<firmware_version>固件版本：</firmware_version>
+			<no_font_exist>固件字庫包不存在。
 請下載安裝固件字庫包。</no_font_exist>
-		<download_firmware_font_package>下載字庫固件包</download_firmware_font_package>
-		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
-		<delete_fw>Delete the firmware installation file?</delete_fw>
-		<select_key_type>選擇密鑰類型</select_key_type>
-		<select_work>選擇work.bin</select_work>
-		<enter_zrif>輸入zRIF</enter_zrif>
-		<enter_zrif_key>輸入zRIF密鑰</enter_zrif_key>
-		<input_zrif>請在此處輸入您的zRIF</input_zrif>
-		<copy_paste_zrif>使用Ctrl（Cmd）+ C複製，使用Ctrl（Cmd）+ V粘貼。</copy_paste_zrif>
-		<delete_pkg>刪除pkg文件？</delete_pkg>
-		<delete_work>刪除work.bin文件？</delete_work>
-		<check_log>詳情請查看日志。</check_log>
-		<select_install_type>選擇安裝類型</select_install_type>
-		<select_file>選擇文件</select_file>
-		<select_directory>選擇目錄</select_directory>
-		<compatible_content>發現兼容內容的{}個檔案包。</compatible_content>
-		<successed_install_archive>已成功安裝{}個檔案包中的內容：</successed_install_archive>
-		<update_app>更新應用程式至：</update_app>
-		<failed_install_archive>無法安裝{}個檔案包中的內容：</failed_install_archive>
-		<not_compatible_content>未發現兼容內容的{}個檔案包：</not_compatible_content>
-		<delete_archive>刪除檔案包？</delete_archive>
-		<select_license_type>選擇許可證類型</select_license_type>
-		<select_bin_rif>選擇work.bin/rif</select_bin_rif>
-		<successed_install_license>已成功安裝許可證。</successed_install_license>
-		<content_id>內容ID：</content_id>
-		<title_id>標題ID：</title_id>
-		<delete_bin_rif>刪除work.bin/rif文件？</delete_bin_rif>
+			<download_firmware_font_package>下載字庫固件包</download_firmware_font_package>
+			<firmware_font_package_note>Firmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
+			<delete_firmware>Delete the firmware installation file?</delete_firmware>
+		</firmware_install>
+		<pkg_install>
+			<select_key_type>選擇密鑰類型</select_key_type>
+			<select_work>選擇work.bin</select_work>
+			<enter_zrif>輸入zRIF</enter_zrif>
+			<enter_zrif_key>輸入zRIF密鑰</enter_zrif_key>
+			<input_zrif>請在此處輸入您的zRIF</input_zrif>
+			<copy_paste_zrif>使用Ctrl（Cmd）+ C複製，使用Ctrl（Cmd）+ V粘貼。</copy_paste_zrif>
+			<delete_pkg>刪除pkg文件？</delete_pkg>
+			<delete_work>刪除work.bin文件？</delete_work>
+			<check_log>詳情請查看日志。</check_log>
+		</pkg_install>
+		<archive_install>
+			<select_install_type>選擇安裝類型</select_install_type>
+			<select_file>選擇文件</select_file>
+			<select_directory>選擇目錄</select_directory>
+			<compatible_content>發現兼容內容的{}個檔案包。</compatible_content>
+			<successed_install_archive>已成功安裝{}個檔案包中的內容：</successed_install_archive>
+			<update_app>更新應用程式至：</update_app>
+			<failed_install_archive>無法安裝{}個檔案包中的內容：</failed_install_archive>
+			<not_compatible_content>未發現兼容內容的{}個檔案包：</not_compatible_content>
+			<delete_archive>刪除檔案包？</delete_archive>
+		</archive_install>
+		<license_install>
+			<select_license_type>選擇許可證類型</select_license_type>
+			<select_bin_rif>選擇work.bin/rif</select_bin_rif>
+			<successed_install_license>已成功安裝許可證。</successed_install_license>
+			<delete_bin_rif>刪除work.bin/rif文件？</delete_bin_rif>
+		</license_install>
+		<reinstall>
+			<reinstall_content>是否重新安裝該內容？</reinstall_content>
+			<already_installed>已經安裝過該內容。</already_installed>
+			<reinstall_overwrite>您想要重新安裝並覆蓋已存在的數據吗？</reinstall_overwrite>
+		</reinstall>
 	</install_dialog>
 
 	<live_area>
@@ -382,8 +417,8 @@
 		<continue>繼續</continue>
 		<help>
 			<control_setting>在控制設置中使用鍵盤配置</control_setting>
-			<fw_not_detected>Firmware not detected. Installation is highly recommended</fw_not_detected>
-			<fw_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</fw_font_not_detected>
+			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
+			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
 			<live_area_help>Live Area幫助</live_area_help>
 			<browse_app>瀏覽應用程式列表</browse_app>
 			<browse_app_control>方向鍵、左操作桿、滾輪上/下或使用滑塊</browse_app_control>
@@ -407,11 +442,18 @@
 		</help>
 	</live_area>
 
+	<performance_overlay>
+		<fps>幀數</fps>
+		<avg>平均</avg>
+		<min>最低</min>
+		<max>最高</max>
+	</performance_overlay>
+
 	<settings name="設定">
 		<theme_background name="主題&背景">
 			<default>原音</default>
 			<theme name="主題">
-				<search>搜索</search>
+				<search>搜尋</search>
 				<find_in_altervista>在Altervista尋找</find_in_altervista>
 				<information name="資訊">
 					<name>名稱</name>
@@ -471,7 +513,7 @@
 	</settings>
 
 	<trophy_collection>
-		<search>搜索</search>
+		<search>搜尋</search>
 		<delete_trophy>刪除獎盃</delete_trophy>
 		<trophy_deleted>刪除該使用者已保存的獎杯資訊。</trophy_deleted>
 		<details>詳細內容</details>
@@ -526,7 +568,7 @@
 
 	<welcome name="歡迎來到Vita3K">
 		<line_first>Vita3K PlayStation Vita模擬器</line_first>
-		<line_second>Vita3K是使用C++編寫的開源PlayStation Vita模擬器，適用於Windows、Linux和macOS。</line_second>
+		<line_second>Vita3K是使用C++編寫的開源PlayStation Vita模擬器，適用於Windows、Linux、macOS以及Android。</line_second>
 		<line_third>目前模擬器仍處於早期階段，因此非常感謝任何反饋和測試。</line_third>
 		<line_fourth>要開始使用，請安裝PS Vita固件和字庫包。</line_fourth>
 		<download_firmware>下載固件</download_firmware>
@@ -536,7 +578,7 @@
 		<line_seventh>參考商業遊戲以及自制程式兼容性列表來查看目前可運行的內容。</line_seventh>
 		<commercial_compatibility_list>商業遊戲兼容性列表</commercial_compatibility_list>
 		<homebrew_compatibility_list>自制程式兼容性列表</homebrew_compatibility_list>
-		<line_eighth>歡迎參與貢獻！</line_eighth>
+		<line_ninth>歡迎參與貢獻！</line_ninth>
 		<line_tenth>可以在#help頻道中找到更多支持</line_tenth>
 		<line_eleventh>Vita3K不縱容盜版。您必須提取您自己擁有的遊戲。</line_eleventh>
 		<show_next_time>下次顯示</show_next_time>

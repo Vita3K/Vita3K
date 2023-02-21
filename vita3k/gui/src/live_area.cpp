@@ -38,7 +38,7 @@
 namespace gui {
 
 bool get_sys_apps_state(GuiState &gui) {
-    return !gui.live_area.content_manager && !gui.live_area.settings && !gui.live_area.trophy_collection && !gui.live_area.manual && !gui.live_area.user_management;
+    return !gui.vita_area.content_manager && !gui.vita_area.settings && !gui.vita_area.trophy_collection && !gui.vita_area.manual && !gui.vita_area.user_management;
 }
 
 struct FRAME {
@@ -142,10 +142,10 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
     const VitaIoDevice app_device = is_sys_app ? VitaIoDevice::vs0 : VitaIoDevice::ux0;
     const auto APP_INDEX = get_app_index(gui, app_path);
 
-    if (is_ps_app && (sku_flag.find(app_path) == sku_flag.end()))
+    if (is_ps_app && !sku_flag.contains(app_path))
         sku_flag[app_path] = get_license_sku_flag(emuenv, APP_INDEX->content_id);
 
-    if (gui.live_area_contents.find(app_path) == gui.live_area_contents.end()) {
+    if (!gui.live_area_contents.contains(app_path)) {
         auto default_contents = false;
         const auto fw_path{ fs::path(emuenv.pref_path) / "vs0" };
         const auto default_fw_contents{ fw_path / "data/internal/livearea/default/sce_sys/livearea/contents/template.xml" };
@@ -525,9 +525,9 @@ void open_search(const std::string title) {
 }
 
 void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
-    if (gui.live_area_contents.find(app_path) != gui.live_area_contents.end())
+    if (gui.live_area_contents.contains(app_path))
         gui.live_area_contents.erase(app_path);
-    if (gui.live_items.find(app_path) != gui.live_items.end())
+    if (gui.live_items.contains(app_path))
         gui.live_items.erase(app_path);
 
     init_user_app(gui, emuenv, app_path);
@@ -553,7 +553,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
 
     ImGui::SetNextWindowBgAlpha(is_background ? 0.5f : 0.f);
-    ImGui::Begin("##live_area", &gui.live_area.live_area_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##live_area", &gui.vita_area.live_area_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     if (is_background)
         ImGui::GetBackgroundDrawList()->AddImage((gui.users[emuenv.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[gui.users[emuenv.io.user_id].backgrounds[gui.current_user_bg]],
@@ -565,7 +565,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto pos_bg = ImVec2(display_size.x - background_pos.x, display_size.y - background_pos.y);
     const auto background_size = ImVec2(840.0f * SCALE.x, 500.0f * SCALE.y);
 
-    if (gui.live_area_contents[app_path].find("livearea-background") != gui.live_area_contents[app_path].end())
+    if (gui.live_area_contents[app_path].contains("livearea-background"))
         ImGui::GetWindowDrawList()->AddImage(gui.live_area_contents[app_path]["livearea-background"], pos_bg, ImVec2(pos_bg.x + background_size.x, pos_bg.y + background_size.y));
     else
         ImGui::GetWindowDrawList()->AddRectFilled(pos_bg, ImVec2(pos_bg.x + background_size.x, pos_bg.y + background_size.y), IM_COL32(148.f, 164.f, 173.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
@@ -578,12 +578,12 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             while (last_time[app_path][frame.id] + frame.autoflip < current_time()) {
                 last_time[app_path][frame.id] += frame.autoflip;
 
-                if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end()) {
+                if (gui.live_items[app_path][frame.id].contains("background")) {
                     if (current_item[app_path][frame.id] != int(gui.live_items[app_path][frame.id]["background"].size()) - 1)
                         ++current_item[app_path][frame.id];
                     else
                         current_item[app_path][frame.id] = 0;
-                } else if (gui.live_items[app_path][frame.id].find("image") != gui.live_items[app_path][frame.id].end()) {
+                } else if (gui.live_items[app_path][frame.id].contains("image")) {
                     if (current_item[app_path][frame.id] != int(gui.live_items[app_path][frame.id]["image"].size()) - 1)
                         ++current_item[app_path][frame.id];
                     else
@@ -698,11 +698,11 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             img_pos.y += pos_frame.y - img_pos.y;
 
         // Display items
-        if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end()) {
+        if (gui.live_items[app_path][frame.id].contains("background")) {
             ImGui::SetCursorPos(bg_pos);
             ImGui::Image(gui.live_items[app_path][frame.id]["background"][current_item[app_path][frame.id]], bg_scal_size);
         }
-        if (gui.live_items[app_path][frame.id].find("image") != gui.live_items[app_path][frame.id].end()) {
+        if (gui.live_items[app_path][frame.id].contains("image")) {
             ImGui::SetCursorPos(img_pos);
             ImGui::Image(gui.live_items[app_path][frame.id]["image"][current_item[app_path][frame.id]], img_scal_size);
         }
@@ -737,14 +737,14 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
 
                 // Origin
                 if (liveitem[app_path][frame.id]["text"]["origin"].second.empty() || (liveitem[app_path][frame.id]["text"]["origin"].second == "background")) {
-                    if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end())
+                    if (gui.live_items[app_path][frame.id].contains("background"))
                         str_size = bg_scal_size, text_pos = bg_pos;
-                    else if (!liveitem[app_path][frame.id]["text"]["origin"].second.empty() && (gui.live_items[app_path][frame.id].find("image") != gui.live_items[app_path][frame.id].end()))
+                    else if (!liveitem[app_path][frame.id]["text"]["origin"].second.empty() && gui.live_items[app_path][frame.id].contains("image"))
                         str_size = img_scal_size, text_pos = img_pos;
                 } else if (liveitem[app_path][frame.id]["text"]["origin"].second == "image") {
-                    if (gui.live_items[app_path][frame.id].find("image") != gui.live_items[app_path][frame.id].end())
+                    if (gui.live_items[app_path][frame.id].contains("image"))
                         str_size = img_scal_size, text_pos = img_pos;
-                    else if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end())
+                    else if (gui.live_items[app_path][frame.id].contains("background"))
                         str_size = bg_scal_size, text_pos = bg_pos;
                 }
 
@@ -798,7 +798,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                         else if (liveitem[app_path][frame.id]["text"]["line-align"].second == "outside-right") {
                             text_pos.x += str_size.x;
                             if (liveitem[app_path][frame.id]["text"]["origin"].second == "image") {
-                                if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end())
+                                if (gui.live_items[app_path][frame.id].contains("background"))
                                     str_size.x = bg_scal_size.x - img_scal_size.x - (img_pos.x - bg_pos.x);
                                 else
                                     str_size = scal_size_frame, text_pos = pos_frame;
@@ -816,7 +816,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                         else if (liveitem[app_path][frame.id]["text"]["text-align"].second == "outside-right") {
                             text_pos.x += str_size.x;
                             if (liveitem[app_path][frame.id]["text"]["origin"].second == "image") {
-                                if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end())
+                                if (gui.live_items[app_path][frame.id].contains("background"))
                                     str_size.x = bg_scal_size.x - img_scal_size.x - (img_pos.x - bg_pos.x);
                                 else
                                     str_size = scal_size_frame, text_pos = pos_frame;
@@ -833,7 +833,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
                     else if (liveitem[app_path][frame.id]["text"]["align"].second == "outside-right") {
                         text_pos.x += str_size.x;
                         if (liveitem[app_path][frame.id]["text"]["origin"].second == "image") {
-                            if (gui.live_items[app_path][frame.id].find("background") != gui.live_items[app_path][frame.id].end())
+                            if (gui.live_items[app_path][frame.id].contains("background"))
                                 str_size.x = bg_scal_size.x - img_scal_size.x - (img_pos.x - bg_pos.x);
                             else
                                 str_size = scal_size_frame, text_pos = pos_frame;
@@ -950,7 +950,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto BUTTON_SIZE = ImVec2(72.f * SCALE.x, 30.f * SCALE.y);
 
-    if (gui.live_area_contents[app_path].find("gate") != gui.live_area_contents[app_path].end()) {
+    if (gui.live_area_contents[app_path].contains("gate")) {
         ImGui::SetCursorPos(GATE_POS);
         ImGui::Image(gui.live_area_contents[app_path]["gate"], GATE_SIZE);
     } else {
@@ -1030,7 +1030,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     auto lang = gui.lang.live_area.help;
 
-    if (!gui.live_area.content_manager && !gui.live_area.manual) {
+    if (!gui.vita_area.content_manager && !gui.vita_area.manual) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * SCALE.x);
         ImGui::SetCursorPos(ImVec2(display_size.x - (60.0f * SCALE.x) - BUTTON_SIZE.x, 44.0f * SCALE.y));
         if (ImGui::Button("Esc", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
@@ -1043,8 +1043,8 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             } else {
                 gui.apps_list_opened.erase(get_app_open_list_index(gui, app_path));
                 if (gui.current_app_selected == 0) {
-                    gui.live_area.live_area_screen = false;
-                    gui.live_area.home_screen = true;
+                    gui.vita_area.live_area_screen = false;
+                    gui.vita_area.home_screen = true;
                 }
                 --gui.current_app_selected;
             }
@@ -1063,13 +1063,13 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", control_setting_str);
             if (gui.modules.empty()) {
                 ImGui::Spacing();
-                auto fw_str = lang["fw_not_detected"].c_str();
+                auto fw_str = lang["firmware_not_detected"].c_str();
                 ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(fw_str).x / 2.f));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", fw_str);
             }
             if (!gui.fw_font) {
                 ImGui::Spacing();
-                auto fw_font_str = lang["fw_font_not_detected"].c_str();
+                auto fw_font_str = lang["firmware_font_not_detected"].c_str();
                 ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(fw_font_str).x / 2.f));
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", fw_font_str);
             }
@@ -1110,10 +1110,10 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         ImVec2(ARROW_LEFT_CENTER.x - (16.f * SCALE.x), ARROW_LEFT_CENTER.y),
         ImVec2(ARROW_LEFT_CENTER.x + (16.f * SCALE.x), ARROW_LEFT_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
     ImGui::SetCursorPos(ImVec2(ARROW_LEFT_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_LEFT_CENTER.y - (SELECTABLE_SIZE.y / 2.f)));
-    if ((ImGui::Selectable("##left", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_l1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_left) || (wheel_counter == 1)) {
+    if ((ImGui::Selectable("##left", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_l1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_left) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_left) || (wheel_counter == 1)) {
         if (gui.current_app_selected == 0) {
-            gui.live_area.live_area_screen = false;
-            gui.live_area.home_screen = true;
+            gui.vita_area.live_area_screen = false;
+            gui.vita_area.home_screen = true;
         }
         --gui.current_app_selected;
     }
@@ -1124,7 +1124,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImVec2(ARROW_RIGHT_CENTER.x + (16.f * SCALE.x), ARROW_RIGHT_CENTER.y),
             ImVec2(ARROW_RIGHT_CENTER.x - (16.f * SCALE.x), ARROW_RIGHT_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
         ImGui::SetCursorPos(ImVec2(ARROW_RIGHT_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_RIGHT_CENTER.y - (SELECTABLE_SIZE.y / 2.f)));
-        if ((ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_right) || (wheel_counter == -1))
+        if ((ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_right) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_right) || (wheel_counter == -1))
             ++gui.current_app_selected;
     }
     ImGui::SetWindowFontScale(1.f);

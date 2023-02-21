@@ -510,18 +510,18 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     const ImU32 DEFAULT_BAR_COLOR = 0xFF000000; // Black
     const ImU32 DEFAULT_INDICATOR_COLOR = 0xFFFFFFFF; // White
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
-    const auto is_notif_pos = !gui.live_area.start_screen && (gui.live_area.live_area_screen || gui.live_area.home_screen) ? 78.f * SCALE.x : 0.f;
-    const auto is_theme_color = gui.live_area.home_screen || gui.live_area.live_area_screen || gui.live_area.start_screen;
+    const auto is_notif_pos = !gui.vita_area.start_screen && (gui.vita_area.live_area_screen || gui.vita_area.home_screen) ? 78.f * SCALE.x : 0.f;
+    const auto is_theme_color = gui.vita_area.home_screen || gui.vita_area.live_area_screen || gui.vita_area.start_screen;
     const auto indicator_color = gui.information_bar_color.indicator;
     const auto bar_color = gui.information_bar_color.bar;
 
     ImGui::SetNextWindowPos(ImVec2(0.f, 0.f), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
-    ImGui::Begin("##information_bar", &gui.live_area.information_bar, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##information_bar", &gui.vita_area.information_bar, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, INFORMATION_BAR_HEIGHT), is_theme_color ? bar_color : DEFAULT_BAR_COLOR, 0.f, ImDrawFlags_RoundCornersAll);
 
-    if (gui.live_area.home_screen || gui.live_area.live_area_screen) {
+    if (gui.vita_area.home_screen || gui.vita_area.live_area_screen) {
         const auto HOME_ICON_POS_CENTER = (display_size.x / 2.f) - (32.f * ((float(gui.apps_list_opened.size())) / 2.f)) * SCALE.x;
         const auto APP_IS_OPEN = gui.current_app_selected >= 0;
 
@@ -551,7 +551,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
 
             // Check if icon exist
             if (APP_ICON_TYPE.find(APPS_OPENED) != APP_ICON_TYPE.end())
-                ImGui::GetForegroundDrawList()->AddImageRounded(APP_ICON_TYPE[APPS_OPENED], ICON_POS_MINI_SCALE, ICON_POS_MAX_SCALE, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, 15.f * SCALE.x, ImDrawFlags_RoundCornersAll);
+                ImGui::GetForegroundDrawList()->AddImageRounded(APP_ICON_TYPE[APPS_OPENED], ICON_POS_MINI_SCALE, ICON_POS_MAX_SCALE, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, ICON_SIZE_SCALE, ImDrawFlags_RoundCornersAll);
             else
                 ImGui::GetForegroundDrawList()->AddCircleFilled(ICON_CENTER_POS, ICON_SIZE_SCALE / 2.f, IM_COL32_WHITE);
 
@@ -589,8 +589,8 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (54.f * SCALE.x) - is_notif_pos, 12.f * SCALE.y), ImVec2(display_size.x - (50.f * SCALE.x) - is_notif_pos, 20 * SCALE.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(display_size.x - (50.f * SCALE.x) - is_notif_pos, 5.f * SCALE.y), ImVec2(display_size.x - (12.f * SCALE.x) - is_notif_pos, 27 * SCALE.y), IM_COL32(81.f, 169.f, 32.f, 255.f), 2.f * SCALE.x, ImDrawFlags_RoundCornersAll);
 
-    if (emuenv.display.imgui_render && !gui.live_area.start_screen && !gui.live_area.live_area_screen && !gui.help_menu.vita3k_update && get_sys_apps_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
-        gui.live_area.information_bar = false;
+    if (emuenv.display.imgui_render && !gui.vita_area.start_screen && !gui.vita_area.live_area_screen && !gui.help_menu.vita3k_update && get_sys_apps_state(gui) && (ImGui::IsWindowHovered(ImGuiHoveredFlags_None) || ImGui::IsItemClicked(0)))
+        gui.vita_area.information_bar = false;
 
     if (is_notif_pos)
         draw_notice_info(gui, emuenv);

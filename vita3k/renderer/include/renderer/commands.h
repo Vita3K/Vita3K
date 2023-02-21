@@ -41,6 +41,9 @@ enum class CommandOpcode : std::uint8_t {
     CreateContext,
     CreateRenderTarget,
 
+    MemoryMap,
+    MemoryUnmap,
+
     /**
      * Do draw.
      */

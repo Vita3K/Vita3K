@@ -15,9 +15,11 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <shader/spirv_recompiler.h>
 #include <shader/usse_constant_table.h>
 #include <shader/usse_program_analyzer.h>
 #include <shader/usse_utilities.h>
+
 #include <util/log.h>
 
 #include <SPIRV/GLSL.std.450.h>
@@ -104,6 +106,14 @@ size_t shader::usse::utils::dest_mask_to_comp_count(shader::usse::Imm4 dest_mask
     return bit_count;
 }
 
+spv::Id shader::usse::utils::create_access_chain(spv::Builder &b, const spv::StorageClass storage_class, const spv::Id base, const std::vector<spv::Id> &offsets) {
+    spv::Builder::AccessChain access_chain{};
+    access_chain.base = base;
+    access_chain.indexChain = offsets;
+    b.setAccessChain(access_chain);
+    return b.createAccessChain(storage_class, base, offsets);
+}
+
 static const shader::usse::SpirvVarRegBank *get_reg_bank(const shader::usse::SpirvShaderParameters &params, shader::usse::RegisterBank reg_bank) {
     switch (reg_bank) {
     case shader::usse::RegisterBank::PRIMATTR:
@@ -142,7 +152,8 @@ static spv::Function *make_fx8_unpack_func(spv::Builder &b, const FeatureState &
     spv::Id type_f32_v4 = b.makeVectorType(type_f32, 4);
     spv::Id max_fx8_c = b.makeFloatConstant(MAX_FX8);
 
-    spv::Function *fx8_unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v4, "unpack4xF8", { type_f32 },
+    spv::Function *fx8_unpack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32_v4, "unpack4xF8", { type_f32 }, { "to_unpack" },
         decorations, &fx8_unpack_func_block);
 
     spv::Id extracted = fx8_unpack_func->getParamId(0);
@@ -171,7 +182,8 @@ static spv::Function *make_fx8_pack_func(spv::Builder &b, const FeatureState &fe
     spv::Id type_f32_v4 = b.makeVectorType(type_f32, 4);
     spv::Id max_fx8_c = b.makeFloatConstant(MAX_FX8);
 
-    spv::Function *fx8_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "pack4xF8", { type_f32_v4 },
+    spv::Function *fx8_pack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32, "pack4xF8", { type_f32_v4 }, { "to_pack" },
         decorations, &fx8_pack_func_block);
 
     spv::Id extracted = fx8_pack_func->getParamId(0);
@@ -233,7 +245,8 @@ static spv::Function *make_unpack_func(spv::Builder &b, const FeatureState &feat
         assert(false);
     }
 
-    spv::Function *unpack_func = b.makeFunctionEntry(spv::NoPrecision, output_type, func_name.c_str(), { type_f32 },
+    spv::Function *unpack_func = b.makeFunctionEntry(
+        spv::NoPrecision, output_type, func_name.c_str(), { type_f32 }, { "to_unpack" },
         decorations, &unpack_func_block);
     spv::Id extracted = unpack_func->getParamId(0);
 
@@ -324,7 +337,8 @@ static spv::Function *make_pack_func(spv::Builder &b, const FeatureState &featur
         assert(false);
     }
 
-    spv::Function *pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { input_type },
+    spv::Function *pack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32, func_name.c_str(), { input_type }, { "to_pack" },
         decorations, &pack_func_block);
 
     spv::Id extracted = pack_func->getParamId(0);
@@ -361,7 +375,8 @@ static spv::Function *make_f16_unpack_func(spv::Builder &b, const FeatureState &
     spv::Id type_f32 = b.makeFloatType(32);
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
-    spv::Function *f16_unpack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 },
+    spv::Function *f16_unpack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32_v2, "unpack2xF16", { type_f32 }, { "to_unpack" },
         decorations, &f16_unpack_func_block);
 
     spv::Id extracted = f16_unpack_func->getParamId(0);
@@ -385,7 +400,8 @@ static spv::Function *make_f16_pack_func(spv::Builder &b, const FeatureState &fe
     spv::Id type_f32 = b.makeFloatType(32);
     spv::Id type_f32_v2 = b.makeVectorType(type_f32, 2);
 
-    spv::Function *f16_pack_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "pack2xF16", { type_f32_v2 },
+    spv::Function *f16_pack_func = b.makeFunctionEntry(
+        spv::NoPrecision, type_f32, "pack2xF16", { type_f32_v2 }, { "to_pack" },
         decorations, &f16_pack_func_block);
 
     spv::Id extracted = f16_pack_func->getParamId(0);
@@ -416,7 +432,7 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
 
     const std::string func_name = fmt::format("fetchMemoryForBuffer{}Base{}", buffer_index, info.base);
 
-    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { type_i32 },
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, func_name.c_str(), { type_i32 }, { "addr" },
         {}, &func_block);
 
     spv::Id sixteen_cst = b.makeIntConstant(16);
@@ -440,14 +456,14 @@ static spv::Function *make_fetch_memory_func_for_array(spv::Builder &b, spv::Id 
     spv::Id rem_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem, eight_cst);
     spv::Id rem_inv_in_bits = b.createBinOp(spv::OpIMul, type_i32, rem_inv, eight_cst);
 
-    spv::Id src = b.createLoad(b.createAccessChain(spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }), spv::NoPrecision);
+    spv::Id src = b.createLoad(utils::create_access_chain(b, spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), base_vector, base_offset }), spv::NoPrecision);
 
     spv::Id friend_offset = b.createBinOp(spv::OpIAdd, type_i32, base_offset, one_cst);
     spv::Id friend_vector = b.createBinOp(spv::OpIAdd, type_i32, base_vector, b.createBinOp(spv::OpSDiv, type_i32, friend_offset, b.makeIntConstant(4)));
 
     friend_offset = b.createBinOp(spv::OpSRem, type_i32, friend_offset, four_cst);
 
-    spv::Id src_friend = b.createLoad(b.createAccessChain(spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), friend_vector, friend_offset }), spv::NoPrecision);
+    spv::Id src_friend = b.createLoad(utils::create_access_chain(b, spv::StorageClassStorageBuffer, buffer_container, { b.makeIntConstant(info.index_in_container), friend_vector, friend_offset }), spv::NoPrecision);
     spv::Id src_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src);
     spv::Id src_friend_casted = b.createUnaryOp(spv::OpBitcast, type_ui32, src_friend);
 
@@ -472,7 +488,7 @@ static spv::Function *make_fetch_memory_func(spv::Builder &b, const SpirvShaderP
     spv::Block *func_block;
     spv::Block *last_build_point = b.getBuildPoint();
 
-    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", { type_i32 },
+    spv::Function *fetch_func = b.makeFunctionEntry(spv::NoPrecision, type_f32, "fetchMemory", { type_i32 }, { "addr" },
         {}, &func_block);
     spv::Id addr = fetch_func->getParamId(0);
 
@@ -518,6 +534,124 @@ spv::Id shader::usse::utils::fetch_memory(spv::Builder &b, const SpirvShaderPara
     }
 
     return b.createFunctionCall(utils.fetch_memory, { addr });
+}
+
+static spv::Id make_or_get_buffer_ptr(spv::Builder &b, shader::usse::utils::SpirvUtilFunctions &utils, int nb_components, int stride = 16) {
+    const int buffer_utils_idx = (stride == 4) ? 0 : nb_components;
+
+    if (utils.buffer_address_vec[buffer_utils_idx])
+        return utils.buffer_address_vec[buffer_utils_idx];
+
+    const spv::Id f32 = b.makeFloatType(32);
+    const spv::Id vec = shader::usse::utils::make_vector_or_scalar_type(b, f32, nb_components);
+    const spv::Id runtime_array = b.makeRuntimeArray(vec);
+    // always a stride of 16, even if the array size is less
+    b.addDecoration(runtime_array, spv::DecorationArrayStride, stride);
+    const spv::Id buffer_data = b.makeStructType({ runtime_array }, fmt::format("buffer_ptr{}_s{}", nb_components, stride).c_str());
+    b.addDecoration(buffer_data, spv::DecorationBlock);
+    b.addMemberName(buffer_data, 0, "data");
+    // non-writable for the time being
+    b.addMemberDecoration(buffer_data, 0, spv::DecorationNonWritable);
+    b.addMemberDecoration(buffer_data, 0, spv::DecorationOffset, 0);
+
+    utils.buffer_address_vec[buffer_utils_idx] = b.makePointer(spv::StorageClassPhysicalStorageBuffer, buffer_data);
+    return utils.buffer_address_vec[buffer_utils_idx];
+}
+
+void shader::usse::utils::buffer_address_load(spv::Builder &b, const SpirvShaderParameters &params, SpirvUtilFunctions &utils, const FeatureState &features, Operand &dest, spv::Id addr, uint32_t component_size, uint32_t nb_components, bool is_fragment, int buffer_idx) {
+    const spv::Id i32 = b.makeIntType(32);
+    const spv::Id zero = b.makeIntConstant(0);
+
+    spv::Id buffer_idx_val;
+    if (buffer_idx == -1) {
+        // buffer index is in the upper 4 bits of addr
+        buffer_idx_val = b.createBinOp(spv::OpShiftRightLogical, i32, addr, b.makeIntConstant(28));
+        // remove the buffer index bits from the address
+        addr = b.createBinOp(spv::OpBitwiseAnd, i32, addr, b.makeIntConstant((1 << 28) - 1));
+    } else {
+        buffer_idx_val = b.makeIntConstant(buffer_idx);
+    }
+
+    const int render_buffer_idx = is_fragment ? shader::FRAG_UNIFORM_buffer_addresses : shader::VERT_UNIFORM_buffer_addresses;
+    spv::Id buffer_address = utils::create_access_chain(b, spv::StorageClassUniform, params.render_info_id, { b.makeIntConstant(render_buffer_idx), buffer_idx_val });
+    buffer_address = b.createLoad(buffer_address, spv::NoPrecision);
+    // add the offset from the base address
+    buffer_address = add_uvec2_uint(b, buffer_address, addr);
+
+    if (component_size == sizeof(uint32_t)) {
+        int components_left = nb_components;
+        int buffer_idx_vec4 = 0;
+        if (nb_components >= 4) {
+            // first copy them 4 by 4 (using the fact that we can do 4-byte aligned reads)
+            const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, 4);
+            const spv::Id buffer_address_vec4 = b.createUnaryOp(spv::OpBitcast, buffer_container, buffer_address);
+            while (nb_components >= 4) {
+                spv::Id loaded = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, buffer_address_vec4, { zero, b.makeIntConstant(buffer_idx_vec4) });
+                loaded = b.createLoad(loaded, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+
+                store(b, params, utils, features, dest, loaded, 0b1111, 0);
+
+                dest.num += 4;
+                nb_components -= 4;
+                buffer_idx_vec4++;
+            }
+        }
+
+        assert(nb_components < 4);
+        if (nb_components > 0) {
+            // do one last load for the at most 3 last components
+            const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, nb_components);
+            const spv::Id buffer_address_vec = b.createUnaryOp(spv::OpBitcast, buffer_container, buffer_address);
+
+            spv::Id loaded = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, buffer_address_vec, { zero, b.makeIntConstant(buffer_idx_vec4) });
+            loaded = b.createLoad(loaded, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+
+            store(b, params, utils, features, dest, loaded, (1 << nb_components) - 1, 0);
+        }
+    } else {
+        spv::Id f32 = b.makeFloatType(32);
+        spv::Id u32 = b.makeUintType(32);
+
+        // less optimized
+        // TODO: if the gpu supports it, load it as a u16vec4 / u8vec4
+        const spv::Id buffer_container = make_or_get_buffer_ptr(b, utils, 1, 4);
+        // pack the component by groups of 4 (except possible the last ones) when storing them
+        std::vector<spv::Id> loaded_components;
+
+        for (int component_idx = 0; component_idx < nb_components; component_idx++) {
+            spv::Id component_addr = add_uvec2_uint(b, buffer_address, b.makeUintConstant(component_idx * component_size));
+            // we must make it 4-byte aligned
+            spv::Id addr_low_bits = b.createCompositeExtract(component_addr, i32, { 0 });
+            spv::Id alignment = b.createBinOp(spv::OpBitwiseAnd, i32, addr_low_bits, b.makeIntConstant(0b11));
+            addr_low_bits = b.createBinOp(spv::OpBitwiseAnd, i32, addr_low_bits, b.makeIntConstant(~0b11));
+            component_addr = b.createCompositeInsert(addr_low_bits, component_addr, b.getTypeId(component_addr), { 0 });
+
+            // now we can finally load it
+            component_addr = b.createUnaryOp(spv::OpBitcast, buffer_container, component_addr);
+            spv::Id loaded = utils::create_access_chain(b, spv::StorageClassPhysicalStorageBuffer, component_addr, { zero, zero });
+            loaded = b.createLoad(loaded, spv::NoPrecision, spv::MemoryAccessAlignedMask, spv::ScopeMax, 4);
+
+            // now keep only the interesting 8/16 bits
+            loaded = b.createUnaryOp(spv::OpBitcast, i32, loaded);
+            spv::Id shift = b.createBinOp(spv::OpShiftLeftLogical, i32, alignment, b.makeIntConstant(3)); // 1 byte = 8 bits
+            loaded = b.createOp(spv::OpBitFieldSExtract, i32, { loaded, shift, b.makeIntConstant(component_size * 8) });
+
+            loaded_components.push_back(loaded);
+
+            if (loaded_components.size() == 4 || component_idx == nb_components - 1) {
+                spv::Id component_vec;
+                if (loaded_components.size() == 1) {
+                    component_vec = loaded_components[0];
+                } else {
+                    component_vec = b.createCompositeConstruct(b.makeVectorType(i32, loaded_components.size()), loaded_components);
+                }
+                store(b, params, utils, features, dest, component_vec, (1 << loaded_components.size()) - 1, 0);
+
+                dest.num += component_size;
+                loaded_components.clear();
+            }
+        }
+    }
 }
 
 spv::Id shader::usse::utils::unpack_one(spv::Builder &b, SpirvUtilFunctions &utils, const FeatureState &features, spv::Id scalar, const DataType type) {
@@ -1394,4 +1528,30 @@ spv::Id shader::usse::utils::convert_to_int(spv::Builder &b, spv::Id opr, DataTy
     }
 
     return opr;
+}
+
+spv::Id shader::usse::utils::add_uvec2_uint(spv::Builder &b, spv::Id vec, spv::Id to_add) {
+    if (b.isConstant(to_add) && b.getConstantScalar(to_add) == 0)
+        return vec;
+
+    const spv::Id u32 = b.makeUintType(32);
+    const spv::Id uvec2 = b.makeVectorType(u32, 2);
+    const spv::Id add_result_type = b.makeStructResultType(u32, u32);
+
+    if (!b.isUintType(b.getTypeId(to_add)))
+        // convert i32 to u32
+        to_add = b.createUnaryOp(spv::OpBitcast, u32, to_add);
+
+    // add to_add to the lower part of vec then add the carry to the upper part of vec
+    // something like this
+    // uint carry;
+    // vec.x = uaddCarry(vec.x, to_add, carry);
+    // vec.y += carry;
+    spv::Id lower = b.createCompositeExtract(vec, u32, { 0 });
+    spv::Id lower_add = b.createBinOp(spv::OpIAddCarry, add_result_type, lower, to_add);
+    spv::Id carry = b.createCompositeExtract(lower_add, u32, { 1 });
+    spv::Id upper = b.createCompositeExtract(vec, u32, { 1 });
+    upper = b.createBinOp(spv::OpIAdd, u32, upper, carry);
+    lower = b.createCompositeExtract(lower_add, u32, { 0 });
+    return b.createCompositeConstruct(uvec2, { lower, upper });
 }

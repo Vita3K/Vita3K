@@ -31,6 +31,7 @@
 #include <bitset>
 #include <map>
 #include <string>
+#include <thread>
 #include <tuple>
 #include <vector>
 
@@ -173,12 +174,6 @@ struct Context {
 
     Sha256Hash last_draw_fragment_program_hash;
     Sha256Hash last_draw_vertex_program_hash;
-
-    shader::RenderVertUniformBlock previous_vert_info;
-    shader::RenderFragUniformBlock previous_frag_info;
-
-    shader::RenderVertUniformBlock current_vert_render_info;
-    shader::RenderFragUniformBlock current_frag_render_info;
 
     std::map<int, std::vector<uint8_t>> ubo_data;
 

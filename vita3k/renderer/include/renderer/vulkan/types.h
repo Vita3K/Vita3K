@@ -20,7 +20,10 @@
 #include <renderer/texture_cache_state.h>
 #include <renderer/types.h>
 
+#include <threads/queue.h>
 #include <vkutil/objects.h>
+
+struct MemState;
 
 namespace renderer::vulkan {
 
@@ -72,26 +75,54 @@ struct FrameObject {
     vk::DescriptorPool descriptor_pool;
 
     std::vector<vk::Fence> rendered_fences;
+    // equals to context.frame_timestamp when the frame object is used
+    uint64_t frame_timestamp;
 
     // destroy gpu objects MAX_FRAMES_RENDERING frames later to make sure they are no longer being used
     vkutil::DestroyQueue destroy_queue;
 };
 
+struct MappedMemory {
+    void *address;
+    uint32_t size;
+    vk::DeviceMemory memory;
+    vk::Buffer buffer;
+    uint64_t buffer_address;
+};
+
+// request to trigger a notification after the fence has been waited for
+struct NotificationRequest {
+    SceGxmNotification notifications[2];
+    vk::Fence fence;
+};
+
+struct FrameDoneRequest {
+    uint64_t frame_timestamp;
+};
+
+// A parallel thread is handling these request and telling other waiting threads
+// when they are done
+// only used if memory mapping is enabled
+typedef std::variant<NotificationRequest, FrameDoneRequest> WaitThreadRequest;
+
 struct VKContext : public renderer::Context {
     // GXM Context Info
     VKState &state;
 
+    MemState &mem;
+
     std::array<FrameObject, MAX_FRAMES_RENDERING> frames;
-    int current_frame_idx = 0;
-    uint64_t frame_timestamp = 0;
-    uint64_t scene_timestamp = 0;
+    // start at 1 because last_frame_waited is set to 0
+    int current_frame_idx = 1;
+    uint64_t frame_timestamp = 1;
+    uint64_t scene_timestamp = 1;
 
     vkutil::HostRingBuffer vertex_stream_ring_buffer;
     vkutil::HostRingBuffer index_stream_ring_buffer;
     vkutil::HostRingBuffer vertex_uniform_stream_ring_buffer;
     vkutil::HostRingBuffer fragment_uniform_stream_ring_buffer;
-    vkutil::LocalRingBuffer vertex_info_uniform_buffer;
-    vkutil::LocalRingBuffer fragment_info_uniform_buffer;
+    vkutil::HostRingBuffer vertex_info_uniform_buffer;
+    vkutil::HostRingBuffer fragment_info_uniform_buffer;
 
     vk::DescriptorImageInfo vertex_textures[SCE_GXM_MAX_TEXTURE_UNITS] = {};
     vk::DescriptorImageInfo fragment_textures[SCE_GXM_MAX_TEXTURE_UNITS] = {};
@@ -99,7 +130,14 @@ struct VKContext : public renderer::Context {
     bool vertex_uniform_storage_allocated = false;
     bool fragment_uniform_storage_allocated = false;
 
-    std::array<vk::DeviceSize, SCE_GXM_MAX_VERTEX_STREAMS> vertex_buffer_offsets = {};
+    vk::Buffer vertex_stream_buffers[SCE_GXM_MAX_VERTEX_STREAMS];
+    vk::DeviceSize vertex_stream_offsets[SCE_GXM_MAX_VERTEX_STREAMS] = {};
+
+    shader::RenderVertUniformBlockWithMapping previous_vert_info;
+    shader::RenderFragUniformBlockWithMapping previous_frag_info;
+
+    shader::RenderVertUniformBlockWithMapping current_vert_render_info;
+    shader::RenderFragUniformBlockWithMapping current_frag_render_info;
 
     // descriptor pool for dynamic uniforms (allocated once for the whole game)
     vk::DescriptorPool global_descriptor_pool;
@@ -136,21 +174,29 @@ struct VKContext : public renderer::Context {
     vk::CommandBuffer prerender_cmd{};
     VKRenderTarget *cmd_target = nullptr;
 
-    // image used when a shader read from an image that has not been set
-    vkutil::Image default_image;
+    // only used if memory mapping is enabled
+    std::mutex new_frame_mutex;
+    std::condition_variable new_frame_condv;
+    // queue were new notification and frame done request are added
+    Queue<WaitThreadRequest> request_queue;
+    std::thread gpu_request_wait_thread;
+    uint64_t last_frame_waited = 0;
 
     inline FrameObject &frame() {
         return frames[current_frame_idx];
     }
 
-    explicit VKContext(VKState &state);
+    explicit VKContext(VKState &state, MemState &mem);
     // TODO: properly destroy the context
     ~VKContext() override = default;
 
     void start_recording();
     void start_render_pass();
     void stop_render_pass();
-    void stop_recording();
+    void stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2);
+
+private:
+    void wait_thread_function();
 };
 
 struct VKRenderTarget : public renderer::RenderTarget {
@@ -180,12 +226,5 @@ struct VKRenderTarget : public renderer::RenderTarget {
 struct VKFragmentProgram : public renderer::FragmentProgram {
     vk::PipelineColorBlendAttachmentState blending;
     uint64_t blending_hash;
-};
-
-// used with SceGxmSyncObject
-struct SyncExtraData {
-    VKRenderTarget *render_target = nullptr;
-    // fences the display queue must wait for before displaying the buffer
-    std::vector<vk::Fence> fences;
 };
 } // namespace renderer::vulkan

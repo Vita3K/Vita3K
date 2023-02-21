@@ -22,14 +22,14 @@
 #include <string>
 
 enum CompatibilityState {
-    Unknown,
-    Nothing = 1260231569, // 0x4b1d9b91
-    Bootable = 1344750319, // 0x502742ef
-    Intro = 1260231381, // 0x4B9F5E5D
-    Menu = 1344751053, // 0x4F1B9135
-    Ingame_Less = 1344752299, // 0x4F7B6B3B
-    Ingame_More = 1260231985, // 0x4B2A9819
-    Playable = 920344019, // 0x36db55d3
+    Unknown = -1,
+    Nothing,
+    Bootable,
+    Intro,
+    Menu,
+    Ingame_Less,
+    Ingame_More,
+    Playable,
 };
 
 struct Compatibility {
@@ -39,15 +39,16 @@ struct Compatibility {
 };
 
 struct CompatState {
+    bool compat_db_loaded = false;
     std::map<std::string, Compatibility> app_compat_db;
     std::map<CompatibilityState, ImVec4> compat_color{
         { Unknown, ImVec4(0.54f, 0.54f, 0.54f, 1.f) },
-        { Nothing, ImVec4(0.70f, 0.13f, 0.13f, 1.f) }, // #b60205
+        { Nothing, ImVec4(1.00f, 0.00f, 0.00f, 1.f) }, // #ff0000
         { Bootable, ImVec4(0.39f, 0.12f, 0.62f, 1.f) }, // #621fa5
-        { Intro, ImVec4(0.85f, 0.24f, 0.05f, 1.f) }, // #d93f0b
-        { Menu, ImVec4(0.05f, 0.49f, 0.95f, 1.f) }, // #85def2
-        { Ingame_Less, ImVec4(0.98f, 0.79f, 0.02f, 1.f) }, // #fbca04
-        { Ingame_More, ImVec4(0.98f, 0.79f, 0.02f, 1.f) }, // #fbca04
+        { Intro, ImVec4(0.77f, 0.08f, 0.52f, 1.f) }, // #c71585
+        { Menu, ImVec4(0.11f, 0.46f, 0.85f, 1.f) }, // #1d76db
+        { Ingame_Less, ImVec4(0.88f, 0.54f, 0.12f, 1.f) }, // #e08a1e
+        { Ingame_More, ImVec4(1.00f, 0.84f, 0.00f, 1.f) }, // #ffd700
         { Playable, ImVec4(0.05f, 0.54f, 0.09f, 1.f) }, // #0e8a16
     };
 };

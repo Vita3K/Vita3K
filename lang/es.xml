@@ -26,25 +26,28 @@
 
 	<about name="Acerca de">
 		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
-		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux and macOS operating systems.</about_vita3k>
+		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux, macOS and Android operating systems.</about_vita3k>
 		<note>Note: The emulator is still in a very early stage of development.</note>
 		<github_website>If you're interested in contributing, check out our GitHub:</github_website>
 		<vita3k_website>Visit our website for more info:</vita3k_website>
 		<vita3k_staff>Vita3K Staff</vita3k_staff>
-		<developers>Developers</developers>
-		<contributors>Contributors</contributors>
+		<developers>Desarrolladores</developers>
+		<contributors>Ayudantes</contributors>
 	</about>
 
 	<app_context>
-		<boot>Boot</boot>
+		<boot>Comenzar</boot>
 		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
+		<open_issue>Open Issue</open_issue>
+		<create_issue>Create Issue</create_issue>
+		<update_database>Update Database</update_database>
 		<copy_app_info>Copy App Info</copy_app_info>
-		<name_and_id>Name and Title ID</name_and_id>
+		<name_and_id>Nombre y título ID</name_and_id>
 		<app_summary>App Summary</app_summary>
 		<custom_config>Custom Config</custom_config>
-		<create>Create</create>
-		<edit>Edit</edit>
-		<remove>Remove</remove>
+		<create>Hacer</create>
+		<edit>Editar</edit>
+		<remove>Quitar</remove>
 		<open_folder>Open Folder</open_folder>
 		<addcont>DLCs</addcont>
 		<license>License</license>
@@ -213,8 +216,8 @@ depending on its size and your hardware.</app_delete_note>
 		<clear_all>Borrar todo</clear_all>
 	</content_manager>
 
-	<controllers name="Controllers">
-		<connected>Controllers connected</connected>
+	<controllers name="Controles">
+		<connected>Controles conectado</connected>
 		<name>Nombre</name>
 		<num>Num</num>
 		<not_connected>No compatible controllers connected.
@@ -279,6 +282,12 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		<completed_setup>Completaste la configuración inicial.
 ¡Tu sistema Vita3K está listo!</completed_setup>
 		<select_language>Selecciona un idioma.</select_language>
+		<install_firmware>Instalar Firmware.</install_firmware>
+		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
+		<installed>Installed:</installed>
+		<download_firmware>Download Firmware</download_firmware>
+		<download_font_package>Download Font Package</download_font_package>
+		<install_firmware_file>Install Firmware File</install_firmware_file>
 		<completed>Completed.</completed>
 		<next>Siguiente</next>
 	</initial_setup>
@@ -286,6 +295,31 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 	<live_area>
 		<start>Iniciar</start>
 		<continue>Continuar</continue>
+		<help>
+			<control_setting>Using configuration set for keyboard in control setting</control_setting>
+			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
+			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
+			<live_area_help>Live Area Help</live_area_help>
+			<browse_app>Browse in app list</browse_app>
+			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
+			<start_app>Start App</start_app>
+			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<show_hide>Show/Hide Live Area during app run</show_hide>
+			<show_hide_control>Press on PS</show_hide_control>
+			<exit_livearea>Exit Live Area</exit_livearea>
+			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
+			<manual_help>Manual Help</manual_help>
+			<browse_page>Browse page</browse_page>
+			<browse_page_control>D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on</browse_page_control>
+			<hide_show>Hide/Show button</hide_show>
+			<hide_show_control>Right Click</hide_show_control>
+			<zoom_available>Zoom if available</zoom_available>
+			<zoom_available_control>Double Left Click</zoom_available_control>
+			<scroll_zoom>Scroll in zoom</scroll_zoom>
+			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
+			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
+		</help>
 	</live_area>
 
 	<settings name="Ajustes">
