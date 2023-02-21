@@ -93,7 +93,7 @@ void set_vertex_stream(State &state, Context *ctx, const std::size_t index, cons
     renderer::add_state_set_command(ctx, renderer::GXMState::VertexStream, stream, index, data_len);
 }
 
-void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, const void *index_data, const std::uint32_t index_count, const std::uint32_t instance_count) {
+void draw(State &state, Context *ctx, SceGxmPrimitiveType prim_type, SceGxmIndexFormat index_type, Ptr<const void> index_data, const std::uint32_t index_count, const std::uint32_t instance_count) {
     renderer::add_command(ctx, renderer::CommandOpcode::Draw, nullptr, prim_type, index_type, index_data, index_count, instance_count);
 }
 

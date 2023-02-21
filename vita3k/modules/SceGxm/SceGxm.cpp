@@ -2016,7 +2016,7 @@ static void gxmSetUniformBuffers(renderer::State &state, GxmState &gxm, SceGxmCo
     }
 }
 
-static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, const SceUID thread_id, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount, uint32_t instanceCount) {
+static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, const SceUID thread_id, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, Ptr<const void> indexData, uint32_t indexCount, uint32_t instanceCount) {
     if (!context || !indexData)
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
 
@@ -2038,6 +2038,8 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
     // Set uniforms
     const SceGxmProgram &vertex_program_gxp = *gxm_vertex_program.program.get(emuenv.mem);
     const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(emuenv.mem);
+
+    const void *indices_ptr = indexData.get(emuenv.mem);
 
     gxmSetUniformBuffers(*emuenv.renderer, emuenv.gxm, context, vertex_program_gxp, context->state.vertex_uniform_buffers, gxm_vertex_program.renderer_data->uniform_buffer_sizes,
         emuenv.kernel, emuenv.mem, thread_id);
@@ -2077,10 +2079,10 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
     if (!emuenv.renderer->features.support_memory_mapping) {
         // we don't need to get the vertex buffer size with memory mapping
         if (indexType == SCE_GXM_INDEX_FORMAT_U16) {
-            const uint16_t *const data = static_cast<const uint16_t *>(indexData);
+            const uint16_t *const data = reinterpret_cast<const uint16_t *>(indices_ptr);
             max_index = *std::max_element(&data[0], &data[indexCount]);
         } else {
-            const uint32_t *const data = static_cast<const uint32_t *>(indexData);
+            const uint32_t *const data = reinterpret_cast<const uint32_t *>(indices_ptr);
             max_index = *std::max_element(&data[0], &data[indexCount]);
         }
     }
@@ -2118,12 +2120,12 @@ static int gxmDrawElementGeneral(EmuEnvState &emuenv, const char *export_name, c
     return 0;
 }
 
-EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount) {
+EXPORT(int, sceGxmDraw, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, Ptr<const void> indexData, uint32_t indexCount) {
     TRACY_FUNC(sceGxmDraw, context, primType, indexType, indexData, indexCount);
     return gxmDrawElementGeneral(emuenv, export_name, thread_id, context, primType, indexType, indexData, indexCount, 1);
 }
 
-EXPORT(int, sceGxmDrawInstanced, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, const void *indexData, uint32_t indexCount, uint32_t indexWrap) {
+EXPORT(int, sceGxmDrawInstanced, SceGxmContext *context, SceGxmPrimitiveType primType, SceGxmIndexFormat indexType, Ptr<const void> indexData, uint32_t indexCount, uint32_t indexWrap) {
     TRACY_FUNC(sceGxmDrawInstanced, context, primType, indexType, indexData, indexCount, indexWrap);
     if (indexCount % indexWrap != 0) {
         LOG_WARN("Extra vertexes are requested to be drawn (ignored)");
@@ -2238,7 +2240,7 @@ EXPORT(int, sceGxmDrawPrecomputed, SceGxmContext *context, SceGxmPrecomputedDraw
         }
     }
 
-    renderer::draw(*emuenv.renderer, context->renderer.get(), draw->type, draw->index_format, draw->index_data.get(emuenv.mem), draw->vertex_count, draw->instance_count);
+    renderer::draw(*emuenv.renderer, context->renderer.get(), draw->type, draw->index_format, draw->index_data, draw->vertex_count, draw->instance_count);
 
     context->last_precomputed = true;
     return 0;
@@ -3103,17 +3105,19 @@ EXPORT(int, sceGxmProgramGetOutputRegisterFormat, const SceGxmProgram *program, 
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, const SceGxmProgram *program, uint32_t index) {
+EXPORT(Ptr<SceGxmProgramParameter>, sceGxmProgramGetParameter, Ptr<const SceGxmProgram> program, uint32_t index) {
     TRACY_FUNC(sceGxmProgramGetParameter, program, index);
-    if (index >= program->parameter_count)
+
+    const SceGxmProgram *program_ptr = program.get(emuenv.mem);
+    if (index >= program_ptr->parameter_count)
         return Ptr<SceGxmProgramParameter>(0);
 
-    const SceGxmProgramParameter *const parameters = reinterpret_cast<const SceGxmProgramParameter *>(reinterpret_cast<const uint8_t *>(&program->parameters_offset) + program->parameters_offset);
+    Address parameter_addr = program.address();
+    parameter_addr += offsetof(SceGxmProgram, parameters_offset);
+    parameter_addr += program_ptr->parameters_offset;
+    parameter_addr += index * sizeof(SceGxmProgramParameter);
 
-    const SceGxmProgramParameter *const parameter = &parameters[index];
-    const uint8_t *const parameter_bytes = reinterpret_cast<const uint8_t *>(parameter);
-
-    return Ptr<SceGxmProgramParameter>(parameter_bytes, emuenv.mem);
+    return Ptr<SceGxmProgramParameter>(parameter_addr);
 }
 
 EXPORT(uint32_t, sceGxmProgramGetParameterCount, const SceGxmProgram *program) {

@@ -61,6 +61,8 @@ struct State {
 
     bool should_display;
 
+    bool need_page_table = false;
+
     virtual bool init(const char *base_path, const bool hashless_texture_cache) = 0;
     virtual void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem)
@@ -69,10 +71,13 @@ struct State {
     virtual void set_fxaa(bool enable_fxaa) = 0;
     virtual int get_max_anisotropic_filtering() = 0;
     virtual void set_anisotropic_filtering(int anisotropic_filtering) = 0;
-    virtual bool map_memory(void *address, uint32_t size) {
+    virtual void set_surface_sync_state(bool disable) {
+        disable_surface_sync = disable;
+    }
+    virtual bool map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         return true;
     }
-    virtual void unmap_memory(void *address) {}
+    virtual void unmap_memory(MemState &mem, Ptr<void> address) {}
     virtual std::vector<std::string> get_gpu_list() {
         return { "Automatic" };
     }

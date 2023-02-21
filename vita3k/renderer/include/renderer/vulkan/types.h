@@ -82,11 +82,16 @@ struct FrameObject {
     vkutil::DestroyQueue destroy_queue;
 };
 
-struct MappedMemory {
-    void *address;
-    uint32_t size;
+struct MappedMemoryBuffer {
     vk::DeviceMemory memory;
     vk::Buffer buffer;
+};
+
+struct MappedMemory {
+    Address address;
+    std::variant<vk::DeviceMemory, vkutil::Buffer> buffer_impl;
+    vk::Buffer buffer;
+    uint32_t size;
     uint64_t buffer_address;
 };
 

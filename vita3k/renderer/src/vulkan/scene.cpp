@@ -28,14 +28,14 @@
 
 namespace renderer::vulkan {
 
-void set_uniform_buffer(VKContext &context, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, const uint8_t *data) {
+void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, Ptr<uint8_t> data) {
     auto offset = program->uniform_buffer_data_offsets.at(block_num);
     if (offset == static_cast<std::uint32_t>(-1)) {
         return;
     }
 
     if (context.state.features.support_memory_mapping) {
-        const uint64_t buffer_address = context.state.get_matching_device_address(data);
+        const uint64_t buffer_address = context.state.get_matching_device_address(data.address());
         if (vertex_shader) {
             context.current_vert_render_info.buffer_addresses[block_num] = buffer_address;
         } else {
@@ -52,7 +52,7 @@ void set_uniform_buffer(VKContext &context, const ShaderProgram *program, const 
                 context.vertex_uniform_storage_allocated = true;
             }
 
-            context.vertex_uniform_stream_ring_buffer.copy(context.prerender_cmd, data_size_upload, data, offset_start_upload);
+            context.vertex_uniform_stream_ring_buffer.copy(context.prerender_cmd, data_size_upload, data.get(mem), offset_start_upload);
         } else {
             if (!context.fragment_uniform_storage_allocated) {
                 // Allocate a region for it. Don't worry though, when the shader program is changed
@@ -60,7 +60,7 @@ void set_uniform_buffer(VKContext &context, const ShaderProgram *program, const 
                 context.fragment_uniform_storage_allocated = true;
             }
 
-            context.fragment_uniform_stream_ring_buffer.copy(context.prerender_cmd, data_size_upload, data, offset_start_upload);
+            context.fragment_uniform_stream_ring_buffer.copy(context.prerender_cmd, data_size_upload, data.get(mem), offset_start_upload);
         }
     }
 }
@@ -121,17 +121,17 @@ void new_frame(VKContext &context) {
 #ifdef __APPLE__
 // restride vertex attribute binding strides to multiple of 4
 // needed for metal because it only allows multiples of 4.
-void restride_stream(GXMStreamInfo &stream, uint32_t old_stride) {
-    const uint32_t new_stride = align(old_stride, 4);
-    const uint32_t nb_vertex_input = ((stream.size + old_stride - 1) / old_stride);
+void restride_stream(const uint8_t *&stream, uint32_t size, uint32_t stride) {
+    const uint32_t new_stride = align(stride, 4);
+    const uint32_t nb_vertex_input = ((size + stride - 1) / stride);
 
     uint8_t *new_data = new uint8_t[nb_vertex_input * new_stride];
     for (uint32_t i = 0; i < nb_vertex_input; i++) {
-        memcpy(new_data + new_stride * i, stream.data + old_stride * i, old_stride);
+        memcpy(new_data + new_stride * i, stream + stride * i, stride);
     }
 
-    stream.size = nb_vertex_input * new_stride;
-    stream.data = new_data;
+    stream = new_data;
+    size = nb_vertex_input * new_stride;
 }
 #endif
 
@@ -273,29 +273,31 @@ static void bind_vertex_streams(VKContext &context, MemState &mem) {
 
     for (int i = 0; i < max_stream_idx; i++) {
         if (state.vertex_streams[i].data) {
-#ifdef __APPLE__
-            // Vulkan allows any stride, but Metal only allows multiples of 4.
-            const bool restride = vertex_program.streams[i].stride % 4 != 0;
-            if (restride) {
-                restride_stream(state.vertex_streams[i], vertex_program.streams[i].stride);
-            }
-#endif
-
             if (context.state.features.support_memory_mapping) {
-                auto [buffer, offset] = context.state.get_matching_mapping(state.vertex_streams[i].data);
+                auto [buffer, offset] = context.state.get_matching_mapping(state.vertex_streams[i].data.cast<void>());
 
                 context.vertex_stream_offsets[i] = offset;
                 context.vertex_stream_buffers[i] = buffer;
             } else {
-                context.vertex_stream_ring_buffer.allocate(context.prerender_cmd, state.vertex_streams[i].size, state.vertex_streams[i].data);
+                const uint8_t *stream = state.vertex_streams[i].data.get(mem);
+                uint32_t stream_size = state.vertex_streams[i].size;
+#ifdef __APPLE__
+                // Vulkan allows any stride, but Metal only allows multiples of 4.
+                const bool restride = vertex_program.streams[i].stride % 4 != 0;
+                if (restride) {
+                    restride_stream(stream, stream_size, vertex_program.streams[i].stride);
+                }
+#endif
+                context.vertex_stream_ring_buffer.allocate(context.prerender_cmd, stream_size, stream);
                 context.vertex_stream_offsets[i] = context.vertex_stream_ring_buffer.data_offset;
-            }
 
 #ifdef __APPLE__
-            if (restride) {
-                delete[] state.vertex_streams[i].data;
-            }
+                if (restride) {
+                    delete[] stream;
+                }
 #endif
+            }
+
             state.vertex_streams[i].data = nullptr;
             state.vertex_streams[i].size = 0;
         }
@@ -332,15 +334,16 @@ void triangle_fan_to_triangle_list(void *&indices, size_t &count) {
 #endif
 
 void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format,
-    void *indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config) {
+    Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config) {
+    void *indices_ptr = indices.get(mem);
 #ifdef __APPLE__
     bool replaced_indices = (type == SCE_GXM_PRIMITIVE_TRIANGLE_FAN);
     // metal does not support triangle fans
     if (replaced_indices) {
         if (format == SCE_GXM_INDEX_FORMAT_U16) {
-            triangle_fan_to_triangle_list<uint16_t>(indices, count);
+            triangle_fan_to_triangle_list<uint16_t>(indices_ptr, count);
         } else {
-            triangle_fan_to_triangle_list<uint32_t>(indices, count);
+            triangle_fan_to_triangle_list<uint32_t>(indices_ptr, count);
         }
         type = SCE_GXM_PRIMITIVE_TRIANGLES;
     }
@@ -433,7 +436,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     } else {
         const size_t index_buffer_size = index_size * count;
 
-        context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices);
+        context.index_stream_ring_buffer.allocate(context.prerender_cmd, index_buffer_size, indices_ptr);
 
         context.render_cmd.bindIndexBuffer(context.index_stream_ring_buffer.handle(), context.index_stream_ring_buffer.data_offset, index_type);
     }
@@ -441,7 +444,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     context.render_cmd.drawIndexed(count, instance_count, 0, 0, 0);
 
     if (replaced_indices)
-        delete[] reinterpret_cast<uint8_t *>(indices);
+        delete[] reinterpret_cast<uint8_t *>(indices_ptr);
 
     context.vertex_uniform_storage_allocated = false;
     context.fragment_uniform_storage_allocated = false;

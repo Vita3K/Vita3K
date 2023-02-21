@@ -109,7 +109,7 @@ COMMAND_SET_STATE(program) {
 
 COMMAND_SET_STATE(uniform_buffer) {
     TRACY_FUNC_COMMANDS_SET_STATE(uniform_buffer);
-    const uint8_t *data = helper.pop<const Ptr<void>>().cast<uint8_t>().get(mem);
+    const Ptr<uint8_t> data = helper.pop<const Ptr<uint8_t>>();
     const bool is_vertex = helper.pop<bool>();
     const int block_num = helper.pop<int>();
     const std::uint32_t size = helper.pop<std::uint32_t>();
@@ -119,11 +119,11 @@ COMMAND_SET_STATE(uniform_buffer) {
 
     switch (renderer.current_backend) {
     case Backend::OpenGL:
-        gl::set_uniform_buffer(*reinterpret_cast<gl::GLContext *>(render_context), program, is_vertex, block_num, size, data);
+        gl::set_uniform_buffer(*reinterpret_cast<gl::GLContext *>(render_context), program, is_vertex, block_num, size, data.get(mem));
         break;
 
     case Backend::Vulkan:
-        vulkan::set_uniform_buffer(*reinterpret_cast<vulkan::VKContext *>(render_context), program, is_vertex, block_num, size, data);
+        vulkan::set_uniform_buffer(*reinterpret_cast<vulkan::VKContext *>(render_context), mem, program, is_vertex, block_num, size, data);
         break;
 
     default:
@@ -135,7 +135,7 @@ COMMAND_SET_STATE(uniform_buffer) {
     if (offset != static_cast<uint32_t>(-1) && config.log_active_shaders) {
         const int base_binding_ubo_relative = is_vertex ? 0 : (SCE_GXM_REAL_MAX_UNIFORM_BUFFER + 1);
 
-        std::vector<uint8_t> my_data((uint8_t *)data, (uint8_t *)data + size);
+        std::vector<uint8_t> my_data(data.get(mem), data.get(mem) + size);
         render_context->ubo_data[base_binding_ubo_relative + block_num] = my_data;
     }
 }
@@ -484,7 +484,7 @@ COMMAND_SET_STATE(cull_mode) {
 
 COMMAND_SET_STATE(vertex_stream) {
     TRACY_FUNC_COMMANDS_SET_STATE(vertex_stream);
-    const uint8_t *stream_data = helper.pop<Ptr<const void>>().cast<const uint8_t>().get(mem);
+    const Ptr<const uint8_t> stream_data = helper.pop<Ptr<const uint8_t>>();
     const std::size_t stream_index = helper.pop<std::size_t>();
     const std::size_t stream_data_length = helper.pop<std::size_t>();
 
