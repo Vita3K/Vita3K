@@ -23,20 +23,23 @@
 
 namespace gui {
 
-void draw_reinstall_dialog(GenericDialogState *status, EmuEnvState &emuenv) {
+void draw_reinstall_dialog(GenericDialogState *status, GuiState &gui, EmuEnvState &emuenv) {
+    auto lang = gui.lang.install_dialog.reinstall;
+    auto info = gui.lang.app_context;
+    auto common = emuenv.common_dialog.lang.common;
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(0, 0));
-    ImGui::Begin("Reinstall this content?");
-    ImGui::Text("This content is already installed.");
+    ImGui::Begin(lang["reinstall_content"].c_str());
+    ImGui::Text("%s", lang["already_installed"].c_str());
     ImGui::Spacing();
-    ImGui::Text("Title: %s.\nTitle ID: %s.\nVersion: %s.", emuenv.app_info.app_title.c_str(), emuenv.app_info.app_title_id.c_str(), emuenv.app_info.app_version.c_str());
+    ImGui::Text("%s: %s\n%s: %s\n%s: %s", gui.lang.home_screen["tit"].c_str(), emuenv.app_info.app_title.c_str(), info["title_id"].c_str(), emuenv.app_info.app_title_id.c_str(), info["version"].c_str(), emuenv.app_info.app_version.c_str());
     ImGui::Spacing();
-    ImGui::Text("Do you want to reinstall it and overwrite existing data?");
-    if (ImGui::Button("Yes")) {
+    ImGui::Text("%s", lang["reinstall_overwrite"].c_str());
+    if (ImGui::Button(common["yes"].c_str())) {
         *status = CONFIRM_STATE;
     }
     ImGui::SameLine();
-    if (ImGui::Button("No")) {
+    if (ImGui::Button(common["no"].c_str())) {
         *status = CANCEL_STATE;
     }
     ImGui::End();

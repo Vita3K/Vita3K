@@ -86,7 +86,7 @@ void get_modules_list(GuiState &gui, EmuEnvState &emuenv) {
 
 static void reset_emulator(GuiState &gui, EmuEnvState &emuenv) {
     gui.configuration_menu.settings_dialog = false;
-    gui.live_area.home_screen = false;
+    gui.vita_area.home_screen = false;
 
     // Clean and save new config value
     emuenv.cfg.auto_user_login = false;
@@ -312,6 +312,13 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.psn_status = config.psn_status;
     }
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
+}
+
+std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
+    if (!get_custom_config(gui, emuenv, app_path))
+        return emuenv.cfg.cpu_backend;
+
+    return config.cpu_backend;
 }
 
 static void set_vsync_state(const bool &state) {
@@ -773,6 +780,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to open the Live Area by default when clicking on an application.\nIf disabled, right click on an application to open it.");
         ImGui::SameLine();
+        ImGui::Checkbox("Display Info Message", &emuenv.cfg.display_info_message);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Uncheck the box to display info message in log only.");
+        ImGui::Spacing();
         ImGui::Checkbox("Grid Mode", &emuenv.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to set the app list to grid mode.");

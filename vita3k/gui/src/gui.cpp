@@ -23,7 +23,6 @@
 #include <gui/state.h>
 
 #include <boost/algorithm/string/trim.hpp>
-#include <compat/functions.h>
 #include <config/state.h>
 #include <display/state.h>
 #include <glutil/gl.h>
@@ -46,6 +45,39 @@
 #include <vector>
 
 namespace gui {
+
+void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
+    if (emuenv.cfg.display_info_message) {
+        const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
+
+        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.x), ImGuiCond_Always);
+        ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
+        ImGui::Begin("##information", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
+        ImGui::SetNextWindowPos(ImVec2(display_size.x / 2, display_size.y / 2), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * emuenv.dpi_scale);
+        ImGui::BeginChild("##info", ImVec2(display_size.x / 1.4f, display_size.y / 2.6f), true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
+        const auto title = fmt::format("{}", spdlog::level::to_string_view(gui.info_message.level));
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(title.c_str()).x) / 2);
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        ImGui::TextWrapped("%s", gui.info_message.msg.c_str());
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::Spacing();
+        const auto BUTTON_SIZE = ImVec2(160.f * emuenv.dpi_scale, 46.f * emuenv.dpi_scale);
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f));
+        if (ImGui::Button("Ok", BUTTON_SIZE))
+            gui.info_message = {};
+        ImGui::EndChild();
+        ImGui::PopStyleVar();
+        ImGui::End();
+    } else {
+        spdlog::log(gui.info_message.level, "[{}] {}", gui.info_message.function, gui.info_message.msg);
+        gui.info_message = {};
+    }
+}
 
 static void init_style(EmuEnvState &emuenv) {
     ImGui::StyleColorsDark();
@@ -149,10 +181,9 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         0x0100, 0x017F, // Latin Extended A
         0x2200, 0x22FF, // Math operators 
         0x2150, 0x218F, // Numeral forms
-        0x2600, 0x26FF, // Miscellaneous symbols
+        0x25A0, 0x26FF, // Miscellaneous symbols
         0x4E00, 0x9FFF, // Unified ideograms CJC
         0x2460, 0x24FF, // Enclosed Alphanumerics
-        0x25A0, 0x25FF, // Miscellaneous Symbols
         0,
     };
 
@@ -175,16 +206,19 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     if (fs::exists(latin_fw_font_path)) {
         // Add fw font to imgui
         gui.fw_font = true;
-        gui.vita_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), 19.2f * emuenv.dpi_scale, &font_config, latin_range);
+        font_config.SizePixels = 19.2f * emuenv.dpi_scale;
+
+        gui.vita_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), font_config.SizePixels, &font_config, latin_range);
         font_config.MergeMode = true;
-        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), 19.2f * emuenv.dpi_scale, &font_config, io.Fonts->GetGlyphRangesJapanese());
-        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), 19.2f * emuenv.dpi_scale, &font_config, extra_range);
+
+        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), font_config.SizePixels, &font_config, io.Fonts->GetGlyphRangesJapanese());
+        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), font_config.SizePixels, &font_config, extra_range);
 
         const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
         if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN))
-            io.Fonts->AddFontFromFileTTF((fw_font_path / "kr0.pvf").string().c_str(), 19.2f * emuenv.dpi_scale, &font_config, korean_range);
+            io.Fonts->AddFontFromFileTTF((fw_font_path / "kr0.pvf").string().c_str(), font_config.SizePixels, &font_config, korean_range);
         if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S))
-            io.Fonts->AddFontFromFileTTF((fw_font_path / "cn0.pvf").string().c_str(), 19.2f * emuenv.dpi_scale, &font_config, chinese_range);
+            io.Fonts->AddFontFromFileTTF((fw_font_path / "cn0.pvf").string().c_str(), font_config.SizePixels, &font_config, chinese_range);
 
         io.Fonts->Build();
         font_config.MergeMode = false;
@@ -402,6 +436,7 @@ static bool get_user_apps(GuiState &gui, EmuEnvState &emuenv) {
         }
 
         init_apps_icon(gui, emuenv, gui.app_selector.user_apps);
+        load_and_update_compat_user_apps(gui, emuenv);
     }
 
     return !gui.app_selector.user_apps.empty();
@@ -457,16 +492,17 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     init_app_background(gui, emuenv, "NPXS10015");
+
     const auto is_cmd = emuenv.cfg.run_app_path || emuenv.cfg.content_path;
     if (!gui.users.empty() && (gui.users.find(emuenv.cfg.user_id) != gui.users.end()) && (is_cmd || emuenv.cfg.auto_user_login)) {
         init_user(gui, emuenv, emuenv.cfg.user_id);
         if (!is_cmd && emuenv.cfg.auto_user_login) {
-            gui.live_area.information_bar = true;
+            gui.vita_area.information_bar = true;
             open_user(gui, emuenv);
         }
     } else {
-        gui.live_area.information_bar = true;
-        gui.live_area.user_management = true;
+        gui.vita_area.information_bar = true;
+        gui.vita_area.user_management = true;
     }
 }
 
@@ -642,12 +678,14 @@ void pre_init(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void init(GuiState &gui, EmuEnvState &emuenv) {
-    std::thread load_and_update_compat_db_thread([&gui, &emuenv]() {
-        compat::load_compat_app_db(gui, emuenv);
-        compat::update_compat_app_db(gui, emuenv);
-        gui.compat_loaded = true;
+#ifdef USE_VITA3K_UPDATE
+    std::thread update_vita3k_thread([&gui]() {
+        if (init_vita3k_update(gui))
+            gui.help_menu.vita3k_update = true;
     });
-    load_and_update_compat_db_thread.detach();
+    update_vita3k_thread.detach();
+#endif
+
     get_modules_list(gui, emuenv);
     get_notice_list(emuenv);
     get_users_list(gui, emuenv);
@@ -682,21 +720,24 @@ void draw_end(GuiState &gui, SDL_Window *window) {
     ImGui_ImplSdl_RenderDrawData(gui.imgui_state.get());
 }
 
-void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
+void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
+    if (gui.vita_area.start_screen)
+        draw_start_screen(gui, emuenv);
+
     ImGui::PushFont(gui.vita_font);
 
-    if (gui.live_area.app_close)
+    if (gui.vita_area.app_close)
         draw_app_close(gui, emuenv);
 
-    if (gui.live_area.home_screen)
+    if (gui.vita_area.home_screen)
         draw_home_screen(gui, emuenv);
 
-    if ((emuenv.cfg.show_info_bar || !emuenv.display.imgui_render || !gui.live_area.home_screen) && gui.live_area.information_bar)
+    if ((emuenv.cfg.show_info_bar || !emuenv.display.imgui_render || !gui.vita_area.home_screen) && gui.vita_area.information_bar)
         draw_information_bar(gui, emuenv);
 
-    if (gui.live_area.live_area_screen)
+    if (gui.vita_area.live_area_screen)
         draw_live_area_screen(gui, emuenv);
-    if (gui.live_area.manual)
+    if (gui.vita_area.manual)
         draw_manual(gui, emuenv);
 
     if (gui.file_menu.archive_install_dialog)
@@ -708,7 +749,7 @@ void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
     if (gui.file_menu.pkg_install_dialog)
         draw_pkg_install_dialog(gui, emuenv);
 
-    if (gui.live_area.user_management)
+    if (gui.vita_area.user_management)
         draw_user_management(gui, emuenv);
 
     if (!gui.shaders_compiled_display.empty())
@@ -717,23 +758,27 @@ void draw_live_area(GuiState &gui, EmuEnvState &emuenv) {
     if (!gui.trophy_unlock_display_requests.empty())
         draw_trophies_unlocked(gui, emuenv);
 
-    if (emuenv.ime.state && !gui.live_area.home_screen && !gui.live_area.live_area_screen && get_sys_apps_state(gui))
+    if (emuenv.ime.state && !gui.vita_area.home_screen && !gui.vita_area.live_area_screen && get_sys_apps_state(gui))
         draw_ime(emuenv.ime, emuenv);
 
     // System App
-    if (gui.live_area.content_manager)
+    if (gui.vita_area.content_manager)
         draw_content_manager(gui, emuenv);
 
-    if (gui.live_area.settings)
+    if (gui.vita_area.settings)
         draw_settings(gui, emuenv);
 
-    if (gui.live_area.trophy_collection)
+    if (gui.vita_area.trophy_collection)
         draw_trophy_collection(gui, emuenv);
 
-    ImGui::PopFont();
+    if (gui.help_menu.vita3k_update)
+        draw_vita3k_update(gui, emuenv);
 
-    if (gui.live_area.start_screen)
-        draw_start_screen(gui, emuenv);
+    // Info Message
+    if (!gui.info_message.msg.empty())
+        draw_info_message(gui, emuenv);
+
+    ImGui::PopFont();
 }
 
 void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
@@ -777,9 +822,6 @@ void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
 
     if (gui.configuration_menu.custom_settings_dialog || gui.configuration_menu.settings_dialog)
         draw_settings_dialog(gui, emuenv);
-
-    if (gui.help_menu.vita3k_update)
-        draw_vita3k_update(gui, emuenv);
 
     ImGui::PopFont();
 }

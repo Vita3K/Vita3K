@@ -69,7 +69,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     };
     std::lock_guard<std::mutex> lock(install_mutex);
 
-    auto lang = gui.lang.install_dialog;
+    auto lang = gui.lang.install_dialog.archive_install;
     auto indicator = gui.lang.indicator;
     auto common = emuenv.common_dialog.lang.common;
 
@@ -107,6 +107,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (type == "file") {
                 // Set file filters for the file picking dialog
                 std::vector<host::dialog::filesystem::FileFilter> file_filters = {
+                    { "PlayStation Vita commercial software package (NoNpDrm/FAGDec) / PlayStation Vita homebrew software package", { "zip", "vpk" } },
                     { "PlayStation Vita commercial software package (NoNpDrm/FAGDec)", { "zip" } },
                     { "PlayStation Vita homebrew software package", { "vpk" } },
                 };

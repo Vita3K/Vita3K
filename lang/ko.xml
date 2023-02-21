@@ -26,7 +26,7 @@
 
 	<about name="Vita3K 정보">
 		<vita3k>Vita3K: PS Vita/PS TV 에뮬레이터. 세계 최초의 작동하는 PS Vita/PS TV 에뮬레이터.</vita3k>
-		<about_vita3k>Vita3K는 C++로 작성된 윈도우와 리눅스 OS용 실험적 오픈소스 PlayStation Vita/PlayStation TV 에뮬레이터입니다.</about_vita3k>
+		<about_vita3k>Vita3K는 C++로 작성된 윈도우, 리눅스, macOS와 안 드 로이드 OS용 실험적 오픈소스 PlayStation Vita/PlayStation TV 에뮬레이터입니다.</about_vita3k>
 		<note>참고: 에뮬레이터는 아직 개발 초기 단계입니다.</note>
 		<github_website>기여에 관심이 있다면, Github를 확인해 주세요:</github_website>
 		<vita3k_website>더 많은 정보를 확인하시려면 웹사이트를 방문해 주세요:</vita3k_website>
@@ -38,6 +38,9 @@
 	<app_context>
 		<boot>부트</boot>
 		<check_app_compatibility>앱 호환성 확인</check_app_compatibility>
+		<open_issue>Open Issue</open_issue>
+		<create_issue>Create Issue</create_issue>
+		<update_database>Update Database</update_database>
 		<copy_app_info>앱 정보 복사</copy_app_info>
 		<name_and_id>이름와 Title ID</name_and_id>
 		<app_summary>App Summary</app_summary>
@@ -198,6 +201,19 @@ depending on its size and your hardware.</app_delete_note>
 		<minutes_ago>{} 분 전</minutes_ago>
 	</common>
 
+	<compatibility name="호환성">
+		<states>
+			<state id = "-1">Unknown</state>
+			<state id = "0">Nothing</state>
+			<state id = "1">Bootable</state>
+			<state id = "2">Intro</state>
+			<state id = "3">Menu</state>
+			<state id = "4">Ingame -</state>
+			<state id = "5">Ingame +</state>
+			<state id = "6">Playable</state>
+		</states>
+	</compatibility>
+
 	<content_manager name="콘텐츠 관리">
 		<search>Search</search>
 		<application name="애플리케이션">
@@ -279,6 +295,12 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<completed_setup>You have now completed initial setup.
 Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
+		<install_firmware>Install Firmware.</install_firmware>
+		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
+		<installed>Installed:</installed>
+		<download_firmware>Download Firmware</download_firmware>
+		<download_font_package>Download Font Package</download_font_package>
+		<install_firmware_file>Install Firmware File</install_firmware_file>
 		<completed>Completed.</completed>
 		<next>Next</next>
 	</initial_setup>
@@ -286,6 +308,31 @@ Your Vita3K system is ready!</completed_setup>
 	<live_area>
 		<start>시작</start>
 		<continue>계속</continue>
+		<help>
+			<control_setting>Using configuration set for keyboard in control setting</control_setting>
+			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
+			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
+			<live_area_help>Live Area Help</live_area_help>
+			<browse_app>Browse in app list</browse_app>
+			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
+			<start_app>Start App</start_app>
+			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<show_hide>Show/Hide Live Area during app run</show_hide>
+			<show_hide_control>Press on PS</show_hide_control>
+			<exit_livearea>Exit Live Area</exit_livearea>
+			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
+			<manual_help>Manual Help</manual_help>
+			<browse_page>Browse page</browse_page>
+			<browse_page_control>D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on</browse_page_control>
+			<hide_show>Hide/Show button</hide_show>
+			<hide_show_control>Right Click</hide_show_control>
+			<zoom_available>Zoom if available</zoom_available>
+			<zoom_available_control>Double Left Click</zoom_available_control>
+			<scroll_zoom>Scroll in zoom</scroll_zoom>
+			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
+			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
+		</help>
 	</live_area>
 
 	<settings name="설정">

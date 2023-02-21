@@ -67,7 +67,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
 
-    auto lang = gui.lang.install_dialog;
+    auto lang = gui.lang.install_dialog.pkg_install;
     auto indicator = gui.lang.indicator;
     auto common = emuenv.common_dialog.lang.common;
 

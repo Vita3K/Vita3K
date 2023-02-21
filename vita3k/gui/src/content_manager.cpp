@@ -251,7 +251,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
 
-    ImGui::Begin("##content_manager", &gui.live_area.content_manager, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
+    ImGui::Begin("##content_manager", &gui.vita_area.content_manager, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     if (is_background)
         ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10026"], ImVec2(0.f, 0.f), display_size);
     else
@@ -327,7 +327,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetWindowFontScale(1.2f);
         if (ImGui::Selectable(lang.main["theme"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT))) {
             emuenv.app_path = "NPXS10026";
-            gui.live_area.content_manager = false;
+            gui.vita_area.content_manager = false;
             pre_run_app(gui, emuenv, "NPXS10015");
         }
         ImGui::NextColumn();
@@ -564,10 +564,10 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
                     menu.clear();
             } else {
                 if (!gui.apps_list_opened.empty() && gui.apps_list_opened[gui.current_app_selected] == "NPXS10026")
-                    gui.live_area.live_area_screen = true;
+                    gui.vita_area.live_area_screen = true;
                 else
-                    gui.live_area.home_screen = true;
-                gui.live_area.content_manager = false;
+                    gui.vita_area.home_screen = true;
+                gui.vita_area.content_manager = false;
             }
         }
     } else {

@@ -26,7 +26,7 @@
 
 	<about name="About">
 		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
-		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux and macOS operating systems.</about_vita3k>
+		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux, macOS and Android operating systems.</about_vita3k>
 		<note>Note: The emulator is still in a very early stage of development.</note>
 		<github_website>If you're interested in contributing, check out our GitHub:</github_website>
 		<vita3k_website>Visit our website for more info:</vita3k_website>
@@ -38,6 +38,9 @@
 	<app_context>
 		<boot>Boot</boot>
 		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
+		<open_issue>Open Issue</open_issue>
+		<create_issue>Create Issue</create_issue>
+		<update_database>Update Database</update_database>
 		<copy_app_info>Copy App Info</copy_app_info>
 		<name_and_id>Name and Title ID</name_and_id>
 		<app_summary>App Summary</app_summary>
@@ -200,14 +203,14 @@ depending on its size and your hardware.</app_delete_note>
 
 	<compatibility name="Compatibility">
 		<states>
-			<state id = "0">Unknown</state>
-			<state id = "1260231569">Nothing</state>
-			<state id = "1344750319">Bootable</state>
-			<state id = "1260231381">Intro</state>
-			<state id = "1344751053">Menu</state>
-			<state id = "1344752299">Ingame -</state>
-			<state id = "1260231985">Ingame +</state>
-			<state id = "920344019">Playable</state>
+			<state id = "-1">Unknown</state>
+			<state id = "0">Nothing</state>
+			<state id = "1">Bootable</state>
+			<state id = "2">Intro</state>
+			<state id = "3">Menu</state>
+			<state id = "4">Ingame -</state>
+			<state id = "5">Ingame +</state>
+			<state id = "6">Playable</state>
 		</states>
 	</compatibility>
 
@@ -272,6 +275,8 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<full_screen>Full Screen</full_screen>
 		<toggle_touch>Toggle Touch</toggle_touch>
 		<toggle_gui_visibility>Toggle GUI Visibility</toggle_gui_visibility>
+		<error>Error</error>
+		<error_duplicate_key>The key is used for other bindings or it is reserved.</error_duplicate_key>
 	</controls>
 
 	<dialog>
@@ -324,7 +329,7 @@ Do not power off the system or close the application.</warning_saving>
 		<usa>USA</usa>
 		<europe>Europe</europe>
 		<japan>Japan</japan>
-		<asia>ASIA</asia>
+		<asia>Asia</asia>
 		<by_type>By Type</by_type>
 		<commercial>Commercial</commercial>
 		<homebrew>Homebrew</homebrew>
@@ -351,43 +356,60 @@ Do not power off the system or close the application.</warning_saving>
 		<completed_setup>You have now completed initial setup.
 Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
+		<install_firmware>Install Firmware.</install_firmware>
+		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
+		<installed>Installed:</installed>
+		<download_firmware>Download Firmware</download_firmware>
+		<download_font_package>Download Font Package</download_font_package>
+		<install_firmware_file>Install Firmware File</install_firmware_file>
 		<completed>Completed.</completed>
 		<next>Next</next>
 	</initial_setup>
 
 	<install_dialog>
-		<fw_installing>Installation in progress, please wait...</fw_installing>
-		<successed_install_fw>Firmware successfully installed.</successed_install_fw>
-		<fw_version>Firmware version:</fw_version>
-		<no_font_exist>No firmware font package present.
+		<firmware_install>
+			<firmware_installing>Installation in progress, please wait...</firmware_installing>
+			<successed_install_firmware>Firmware successfully installed.</successed_install_firmware>
+			<firmware_version>Firmware version:</firmware_version>
+			<no_font_exist>No firmware font package present.
 Please download and install it.</no_font_exist>
-		<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
-		<firmware_font_package_note>Firmware font package is mandatory for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
-		<delete_fw>Delete the firmware installation file?</delete_fw>
-		<select_key_type>Select key type</select_key_type>
-		<select_work>Select work.bin</select_work>
-		<enter_zrif>Enter zRIF</enter_zrif>
-		<enter_zrif_key>Enter zRIF key</enter_zrif_key>
-		<input_zrif>Please input your zRIF here</input_zrif>
-		<copy_paste_zrif>Ctrl(Cmd) + C to copy, Ctrl(Cmd) + V to paste.</copy_paste_zrif>
-		<delete_pkg>Delete the pkg file?</delete_pkg>
-		<delete_work>Delete the work.bin file?</delete_work>
-		<check_log>Please check log for more details.</check_log>
-		<select_install_type>Select install type</select_install_type>
-		<select_file>Select File</select_file>
-		<select_directory>Select Directory</select_directory>
-		<compatible_content>{} archive(s) found with compatible contents.</compatible_content>
-		<successed_install_archive>{} archive(s) contents successfully installed:</successed_install_archive>
-		<update_app>Update App to:</update_app>
-		<failed_install_archive>Failed to install {} archive(s) contents:</failed_install_archive>
-		<not_compatible_content>No compatible content found in {} archive(s):</not_compatible_content>
-		<delete_archive>Delete archive?</delete_archive>
-		<select_license_type>Select license type</select_license_type>
-		<select_bin_rif>Select work.bin/rif</select_bin_rif>
-		<successed_install_license>Successfully installed license.</successed_install_license>
-		<content_id>Content ID:</content_id>
-		<title_id>Title ID:</title_id>
-		<delete_bin_rif>Delete the work.bin/rif file?</delete_bin_rif>
+			<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
+			<firmware_font_package_note>Firmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
+			<delete_firmware>Delete the firmware installation file?</delete_firmware>
+		</firmware_install>
+		<pkg_install>
+			<select_key_type>Select key type</select_key_type>
+			<select_work>Select work.bin</select_work>
+			<enter_zrif>Enter zRIF</enter_zrif>
+			<enter_zrif_key>Enter zRIF key</enter_zrif_key>
+			<input_zrif>Please input your zRIF here</input_zrif>
+			<copy_paste_zrif>Ctrl (Cmd) + C to copy, Ctrl (Cmd) + V to paste.</copy_paste_zrif>
+			<delete_pkg>Delete the pkg file?</delete_pkg>
+			<delete_work>Delete the work.bin file?</delete_work>
+			<check_log>Please check the log for more details.</check_log>
+		</pkg_install>
+		<archive_install>
+			<select_install_type>Select install type</select_install_type>
+			<select_file>Select File</select_file>
+			<select_directory>Select Directory</select_directory>
+			<compatible_content>{} archive(s) found with compatible contents.</compatible_content>
+			<successed_install_archive>{} archive(s) contents successfully installed:</successed_install_archive>
+			<update_app>Update App to:</update_app>
+			<failed_install_archive>Failed to install {} archive(s) contents:</failed_install_archive>
+			<not_compatible_content>No compatible content found in {} archive(s):</not_compatible_content>
+			<delete_archive>Delete archive?</delete_archive>
+		</archive_install>
+		<license_install>
+			<select_license_type>Select license type</select_license_type>
+			<select_bin_rif>Select work.bin/rif</select_bin_rif>
+			<successed_install_license>Successfully installed license.</successed_install_license>
+			<delete_bin_rif>Delete the work.bin/rif file?</delete_bin_rif>
+		</license_install>
+		<reinstall>
+			<reinstall_content>Reinstall this content?</reinstall_content>
+			<already_installed>This content is already installed.</already_installed>
+			<reinstall_overwrite>Do you want to reinstall it and overwrite existing data?</reinstall_overwrite>
+		</reinstall>
 	</install_dialog>
 
 	<live_area>
@@ -395,8 +417,8 @@ Please download and install it.</no_font_exist>
 		<continue>Continue</continue>
 		<help>
 			<control_setting>Using configuration set for keyboard in control setting</control_setting>
-			<fw_not_detected>Firmware not detected. Installation is highly recommended</fw_not_detected>
-			<fw_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</fw_font_not_detected>
+			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
+			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
 			<live_area_help>Live Area Help</live_area_help>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
@@ -419,6 +441,13 @@ Please download and install it.</no_font_exist>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
+
+	<performance_overlay>
+		<fps>FPS</fps>
+		<avg>Avg</avg>
+		<min>Min</min>
+		<max>Max</max>
+	</performance_overlay>
 
 	<settings name="Settings">
 		<theme_background name="Theme & Background">
@@ -539,7 +568,7 @@ After the download is complete, Vita3K will restart automatically and then insta
 
 	<welcome name="Welcome to Vita3K">
 		<line_first>Vita3K PlayStation Vita Emulator</line_first>
-		<line_second>Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux and macOS.</line_second>
+		<line_second>Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS and Android.</line_second>
 		<line_third>The emulator is still in its early stages so any feedback and testing is greatly appreciated.</line_third>
 		<line_fourth>To get started, please install the PS Vita firmware and font packages.</line_fourth>
 		<download_firmware>Download Firmware</download_firmware>
@@ -549,7 +578,7 @@ After the download is complete, Vita3K will restart automatically and then insta
 		<line_seventh>Consult the Commercial game and the Homebrew compatibility list to see what currently runs.</line_seventh>
 		<commercial_compatibility_list>Commercial Compatibility List</commercial_compatibility_list>
 		<homebrew_compatibility_list>Homebrew Compatibility List</homebrew_compatibility_list>
-		<line_eighth>Contributions are welcome!</line_eighth>
+		<line_ninth>Contributions are welcome!</line_ninth>
 		<line_tenth>Additional support can be found in the #help channel of the</line_tenth>
 		<line_eleventh>Vita3K does not condone piracy. You must dump your own games.</line_eleventh>
 		<show_next_time>Show next time</show_next_time>

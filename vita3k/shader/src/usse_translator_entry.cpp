@@ -957,7 +957,7 @@ void USSERecompiler::compile_loop_node(const usse::USSELoopNode &loop) {
     b.setBuildPoint(&loops.head);
 
     // In the head we only want to branch to body. We always do while do anyway
-    b.createLoopMerge(&loops.merge, &loops.head, 0, {});
+    b.createLoopMerge(&loops.merge, &loops.continue_target, 0, {});
     b.createBranch(&loops.body);
 
     // Emit body content
@@ -1017,7 +1017,7 @@ spv::Function *USSERecompiler::compile_program_function() {
 
     const auto sub_name = fmt::format("{}_program", visitor.is_translating_secondary_program() ? "secondary" : "primary");
 
-    spv::Function *ret_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), sub_name.c_str(), {}, {},
+    spv::Function *ret_func = b.makeFunctionEntry(spv::NoPrecision, b.makeVoidType(), sub_name.c_str(), {}, {}, {},
         &new_sub_block);
 
     compile_block(tree_block_node);

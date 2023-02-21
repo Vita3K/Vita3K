@@ -92,28 +92,6 @@ Address resolve_export(KernelState &kernel, uint32_t nid) {
     return export_address->second;
 }
 
-uint32_t resolve_nid(KernelState &kernel, Address addr) {
-    auto nid = kernel.nid_from_export.find(addr);
-    if (nid == kernel.nid_from_export.end()) {
-        // resolve the thumbs address
-        addr = addr | 1;
-        nid = kernel.nid_from_export.find(addr);
-        if (nid == kernel.nid_from_export.end()) {
-            return 0;
-        }
-    }
-
-    return nid->second;
-}
-
-std::string resolve_nid_name(KernelState &kernel, Address addr) {
-    auto nid = resolve_nid(kernel, addr);
-    if (nid == 0) {
-        return "";
-    }
-    return import_name(nid);
-}
-
 static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist, Address lr) {
     if (nid_blacklist.find(nid) == nid_blacklist.end()) {
         const char *const name = import_name(nid);

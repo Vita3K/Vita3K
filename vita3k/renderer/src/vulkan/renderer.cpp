@@ -23,6 +23,7 @@
 #include <config/version.h>
 #include <display/state.h>
 #include <shader/spirv_recompiler.h>
+#include <util/float_to_half.h>
 #include <util/log.h>
 #include <vkutil/vkutil.h>
 
@@ -40,8 +41,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
         && (message_type & ~VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)) {
         std::string_view message = callback_data->pMessage;
         // ignore this message for now
-        if (message.find("VUID-vkCmdDrawIndexed-None-02721") == std::string_view::npos
-            && message.find("VUID-VkDeviceQueueCreateInfo-pNext-pNext") == std::string_view::npos)
+        if (message.find("VUID-vkCmdDrawIndexed-None-02721") == std::string_view::npos)
             LOG_ERROR("Validation layer: {}", callback_data->pMessage);
     }
     return VK_FALSE;
@@ -183,6 +183,17 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         instance_extensions.resize(instance_req_ext_count);
         SDL_Vulkan_GetInstanceExtensions(window, &instance_req_ext_count, instance_extensions.data());
 
+        const std::set<std::string> optional_instance_extensions = {
+            VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
+            VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
+        };
+        for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties()) {
+            auto ite = optional_instance_extensions.find(prop.extensionName);
+            if (ite != optional_instance_extensions.end()) {
+                instance_extensions.push_back(ite->c_str());
+            }
+        }
+
         // look if we can use the validation layer
         bool has_debug_extension = false;
         bool has_validation_layer = false;
@@ -294,6 +305,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         std::vector<const char *> device_extensions(required_device_extensions);
         bool temp_bool;
         bool support_global_priority = false;
+        bool support_buffer_device_address = false;
+        bool support_standard_layout = false;
         const std::map<std::string, bool *> optional_extensions = {
             { VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, &temp_bool },
             // can be used by vma to improve performance
@@ -302,6 +315,13 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             { VK_EXT_GLOBAL_PRIORITY_EXTENSION_NAME, &support_global_priority },
             // can be used to specify which format will be used by mutable images
             { VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME, &surface_cache.support_image_format_specifier },
+            { VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, &temp_bool },
+            // can host memory directly be used for gxm memory
+            { VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME, &features.support_memory_mapping },
+            // also needed for reading mapped memory in the shader
+            { VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, &support_buffer_device_address },
+            // needed for uniform uvec2 arrays not to take twice the size
+            { VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME, &support_standard_layout }
         };
 
         for (const vk::ExtensionProperties &ext : physical_device.enumerateDeviceExtensionProperties()) {
@@ -312,6 +332,33 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                 device_extensions.push_back(it->first.c_str());
             }
         }
+
+        if (support_buffer_device_address) {
+            auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceBufferAddressFeaturesEXT>();
+            support_buffer_device_address &= static_cast<bool>(features.get<vk::PhysicalDeviceBufferAddressFeaturesEXT>().bufferDeviceAddress);
+        }
+        features.support_memory_mapping &= support_buffer_device_address;
+
+        if (support_standard_layout) {
+            auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
+            support_standard_layout &= static_cast<bool>(features.get<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>().uniformBufferStandardLayout);
+        }
+        features.support_memory_mapping &= support_standard_layout;
+
+        if (features.support_memory_mapping) {
+            // disable memory mapping on GPUs with an alignment requirement higher than 4096 (should only
+            // concern a few intel iGPUs)
+            auto props = physical_device.getProperties2KHR<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>();
+            features.support_memory_mapping &= static_cast<bool>(props.get<vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>().minImportedHostPointerAlignment <= 4096);
+        }
+
+#ifdef __APPLE__
+        // we need to make a copy of the vertex buffer for moltenvk, so disable memory mapping
+        features.support_memory_mapping = false;
+#endif
+
+        if (features.support_memory_mapping)
+            LOG_INFO("Memory mapping is enabled");
 
         if (physical_device_properties.vendorID == 4318) {
             // Nvidia does not allow us to set the device priority higher than normal
@@ -332,14 +379,24 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         // We use subpass input to get something similar to direct fragcolor access (there is no difference for the shader)
         features.direct_fragcolor = true;
 
-        vk::DeviceCreateInfo device_info{
-            .pEnabledFeatures = &enabled_features
+        vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceBufferAddressFeaturesEXT, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures> device_info{
+            vk::DeviceCreateInfo{
+                .pEnabledFeatures = &enabled_features },
+            vk::PhysicalDeviceBufferAddressFeaturesEXT{
+                .bufferDeviceAddress = VK_TRUE },
+            vk::PhysicalDeviceUniformBufferStandardLayoutFeatures{
+                .uniformBufferStandardLayout = VK_TRUE }
         };
-        device_info.setQueueCreateInfos(queue_infos);
-        device_info.setPEnabledExtensionNames(device_extensions);
+        device_info.get().setQueueCreateInfos(queue_infos);
+        device_info.get().setPEnabledExtensionNames(device_extensions);
+
+        if (!features.support_memory_mapping) {
+            device_info.unlink<vk::PhysicalDeviceBufferAddressFeaturesEXT>();
+            device_info.unlink<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
+        }
 
         try {
-            device = physical_device.createDevice(device_info);
+            device = physical_device.createDevice(device_info.get());
         } catch (vk::NotPermittedKHRError) {
             // according to the vk spec, when using a priority higher than medium
             // we can get this error (although I think it will only possibly happen
@@ -347,7 +404,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             for (auto &queue_info : queue_infos) {
                 queue_info.pNext = nullptr;
             }
-            device = physical_device.createDevice(device_info);
+            device = physical_device.createDevice(device_info.get());
         }
         VULKAN_HPP_DEFAULT_DISPATCHER.init(device);
     }
@@ -391,6 +448,39 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation;
 
         allocator = vma::createAllocator(allocator_info);
+    }
+
+    // create the default image and buffer
+    {
+        default_buffer = vkutil::Buffer(allocator, KiB(4));
+        default_buffer.init_buffer(vk::BufferUsageFlagBits::eVertexBuffer);
+
+        // create the default image, it must be cleared then transitioned
+        default_image = vkutil::Image(allocator, 1, 1, vk::Format::eR8G8B8A8Unorm);
+
+        default_image.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
+        vk::CommandBuffer cmd_buffer = vkutil::create_single_time_command(device, general_command_pool);
+        default_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
+        // make it white
+        vk::ClearColorValue white{
+            .float32 = std::array<float, 4>{ 1.0f, 1.0f, 1.0f, 1.0f }
+        };
+        cmd_buffer.clearColorImage(default_image.image, vk::ImageLayout::eTransferDstOptimal, white, vkutil::color_subresource_range);
+        default_image.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
+        vkutil::end_single_time_command(device, general_queue, general_command_pool, cmd_buffer);
+
+        // create the default sampler
+        vk::SamplerCreateInfo sampler_info{
+            .magFilter = vk::Filter::eLinear,
+            .minFilter = vk::Filter::eLinear,
+            .mipmapMode = vk::SamplerMipmapMode::eLinear,
+            .addressModeU = vk::SamplerAddressMode::eRepeat,
+            .addressModeV = vk::SamplerAddressMode::eRepeat,
+            .addressModeW = vk::SamplerAddressMode::eRepeat,
+            .minLod = 0.0f,
+            .maxLod = 0.0f,
+        };
+        default_image.sampler = device.createSampler(sampler_info);
     }
 
     if (!screen_renderer.setup(base_path))
@@ -486,6 +576,98 @@ void VKState::swap_window(SDL_Window *window) {
 
 void VKState::set_fxaa(bool enable_fxaa) {
     screen_renderer.enable_fxaa = enable_fxaa;
+}
+
+bool VKState::map_memory(void *address, uint32_t size) {
+    assert(features.support_memory_mapping);
+    // the adress should be 4K aligned
+    assert(((uint64_t)address & 4095) == 0);
+
+    auto host_mem_props = device.getMemoryHostPointerPropertiesEXT(vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT, address);
+    uint32_t host_mem_types = host_mem_props.memoryTypeBits;
+    assert(host_mem_types != 0);
+
+    uint32_t mapped_memory_type = 0;
+    while (host_mem_types != 0) {
+        // try to find a cached memory type
+        mapped_memory_type = std::countr_zero(host_mem_types);
+        host_mem_types -= (1 << mapped_memory_type);
+
+        if (physical_device_memory.memoryTypes[mapped_memory_type].propertyFlags & vk::MemoryPropertyFlagBits::eHostCached)
+            break;
+    }
+
+    vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryHostPointerInfoEXT> alloc_info{
+        vk::MemoryAllocateInfo{
+            .allocationSize = size,
+            .memoryTypeIndex = mapped_memory_type },
+        vk::ImportMemoryHostPointerInfoEXT{
+            .handleType = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
+            .pHostPointer = address }
+    };
+    const vk::DeviceMemory device_memory = device.allocateMemory(alloc_info.get());
+
+    vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
+        vk::BufferCreateInfo{
+            .size = size,
+            .usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT,
+            .sharingMode = vk::SharingMode::eExclusive },
+        vk::ExternalMemoryBufferCreateInfoKHR{
+            .handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT }
+    };
+    const vk::Buffer mapped_buffer = device.createBuffer(buffer_info.get());
+    device.bindBufferMemory(mapped_buffer, device_memory, 0);
+
+    vk::BufferDeviceAddressInfoKHR address_info{
+        .buffer = mapped_buffer
+    };
+    const uint64_t buffer_address = device.getBufferAddress(address_info);
+
+    mapped_memories[std::bit_cast<uint64_t>(address)] = { address, size, device_memory, mapped_buffer, buffer_address };
+
+    return true;
+}
+
+void VKState::unmap_memory(void *address) {
+    assert(features.support_memory_mapping);
+
+    auto ite = mapped_memories.find(std::bit_cast<uint64_t>(address));
+    if (ite == mapped_memories.end()) {
+        LOG_CRITICAL("Could not find mapped memory to erase");
+        return;
+    }
+
+    // we need to wait in case the buffer is being used
+    device.waitIdle();
+
+    // deferred destory it instead
+    device.destroyBuffer(ite->second.buffer);
+    device.freeMemory(ite->second.memory);
+    mapped_memories.erase(ite);
+}
+
+std::tuple<vk::Buffer, uint32_t> VKState::get_matching_mapping(const void *address) {
+    uint64_t address_value = std::bit_cast<uint64_t>(address);
+    auto mapped_memory = mapped_memories.lower_bound(address_value);
+    if (mapped_memory == mapped_memories.end()
+        || mapped_memory->first + mapped_memory->second.size < address_value) {
+        LOG_ERROR("Could not find matching mapped buffer for vertex stream");
+        return { nullptr, 0 };
+    }
+
+    return std::make_tuple(mapped_memory->second.buffer, static_cast<uint32_t>(address_value - mapped_memory->first));
+}
+
+uint64_t VKState::get_matching_device_address(const void *address) {
+    uint64_t address_value = std::bit_cast<uint64_t>(address);
+    auto mapped_memory = mapped_memories.lower_bound(address_value);
+    if (mapped_memory == mapped_memories.end()
+        || mapped_memory->first + mapped_memory->second.size < address_value) {
+        LOG_ERROR("Could not find matching mapped buffer for vertex stream");
+        return 0;
+    }
+
+    return mapped_memory->second.buffer_address + address_value - mapped_memory->first;
 }
 
 int VKState::get_max_anisotropic_filtering() {

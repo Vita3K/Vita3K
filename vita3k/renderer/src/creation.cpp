@@ -64,7 +64,7 @@ COMMAND(handle_create_context) {
     }
 
     case Backend::Vulkan: {
-        result = vulkan::create(dynamic_cast<vulkan::VKState &>(renderer), *ctx);
+        result = vulkan::create(dynamic_cast<vulkan::VKState &>(renderer), *ctx, mem);
         break;
     }
 
@@ -143,6 +143,30 @@ COMMAND(handle_destroy_render_target) {
     complete_command(renderer, helper, 0);
 }
 
+COMMAND(handle_memory_map) {
+    TRACY_FUNC_COMMANDS(handle_memory_map);
+    const Ptr<void> addr = helper.pop<Ptr<void>>();
+    const uint32_t size = helper.pop<uint32_t>();
+
+    if (renderer.current_backend == Backend::Vulkan) {
+        dynamic_cast<vulkan::VKState &>(renderer).map_memory(addr.get(mem), size);
+    }
+
+    complete_command(renderer, helper, 0);
+}
+
+COMMAND(handle_memory_unmap) {
+    TRACY_FUNC_COMMANDS(handle_memory_unmap);
+
+    const Ptr<void> addr = helper.pop<Ptr<void>>();
+
+    if (renderer.current_backend == Backend::Vulkan) {
+        dynamic_cast<vulkan::VKState &>(renderer).unmap_memory(addr.get(mem));
+    }
+
+    complete_command(renderer, helper, 0);
+}
+
 // Client
 bool create(std::unique_ptr<FragmentProgram> &fp, State &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend, GXPPtrMap &gxp_ptr_map, const char *base_path, const char *title_id) {
     switch (state.current_backend) {
@@ -211,14 +235,10 @@ void create(SceGxmSyncObject *sync, State &state) {
     sync->timestamp_current = 0;
     sync->timestamp_ahead = 0;
     sync->extra = 0;
-
-    if (state.current_backend == Backend::Vulkan)
-        vulkan::create(sync);
 }
 
 void destroy(SceGxmSyncObject *sync, State &state) {
-    if (state.current_backend == Backend::Vulkan)
-        vulkan::destroy(sync);
+    // nothing to do right now
 }
 
 bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, const Config &config, const char *base_path) {

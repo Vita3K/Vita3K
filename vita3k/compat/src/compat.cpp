@@ -23,15 +23,20 @@
 
 #include <pugixml.hpp>
 
-#ifdef __APPLE__
-#include <pwd.h>
-#include <unistd.h>
-#endif
-
 namespace compat {
 
 static std::string db_updated_at;
 static const uint32_t db_version = 1;
+
+enum class LabelIdState {
+    Nothing = 1260231569, // 0x4b1d9b91
+    Bootable = 1344750319, // 0x502742ef
+    Intro = 1260231381, // 0x4B9F5E5D
+    Menu = 1344751053, // 0x4F1B9135
+    Ingame_Less = 1344752299, // 0x4F7B6B3B
+    Ingame_More = 1260231985, // 0x4B2A9819
+    Playable = 920344019, // 0x36db55d3
+};
 
 bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto app_compat_db_path = fs::path(emuenv.base_path) / "cache/app_compat_db.xml";
@@ -56,6 +61,10 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         return false;
     }
 
+    // Clear old compat database
+    gui.compat.compat_db_loaded = false;
+    gui.compat.app_compat_db.clear();
+
     db_updated_at = compatibility.attribute("db_updated_at").as_string();
 
     //  Load compatibility database
@@ -66,15 +75,15 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         const auto labels = app.child("labels");
         if (!labels.empty()) {
             for (const auto &label : labels) {
-                const auto label_id = static_cast<CompatibilityState>(label.text().as_uint());
+                const auto label_id = static_cast<LabelIdState>(label.text().as_uint());
                 switch (label_id) {
-                case Nothing: state = Nothing; break;
-                case Bootable: state = Bootable; break;
-                case Intro: state = Intro; break;
-                case Menu: state = Menu; break;
-                case Ingame_Less: state = Ingame_Less; break;
-                case Ingame_More: state = Ingame_More; break;
-                case Playable: state = Playable; break;
+                case LabelIdState::Nothing: state = Nothing; break;
+                case LabelIdState::Bootable: state = Bootable; break;
+                case LabelIdState::Intro: state = Intro; break;
+                case LabelIdState::Menu: state = Menu; break;
+                case LabelIdState::Ingame_Less: state = Ingame_Less; break;
+                case LabelIdState::Ingame_More: state = Ingame_More; break;
+                case LabelIdState::Playable: state = Playable; break;
                 default: break;
                 }
             }
@@ -86,6 +95,10 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
         gui.compat.app_compat_db[title_id] = { issue_id, state, updated_at };
     }
+
+    // Update compatibility status of all user apps
+    for (auto &app : gui.app_selector.user_apps)
+        app.compat = gui.compat.app_compat_db.contains(app.title_id) ? gui.compat.app_compat_db[app.title_id].state : Unknown;
 
     return !gui.compat.app_compat_db.empty();
 }
@@ -118,20 +131,16 @@ static std::string get_string_output(const std::string cmd) {
 }
 
 bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
-#ifndef __APPLE__
     const auto compat_db_path = fs::path(emuenv.base_path) / "cache/app_compat_db.xml";
-#else
-    struct passwd *pwent = getpwuid(getuid());
-    const auto compat_db_path = fs::path(fmt::format("{}/cache/app_compat_db.yml", pwent->pw_dir));
-#endif
-
     const auto latest_link = "https://api.github.com/repos/Vita3K/compatibility/releases/latest";
+    gui.info_message.function = SPDLOG_FUNCTION;
 
 #ifdef WIN32
     std::string power_shell_version;
     std::getline(std::ifstream(_popen("powershell (Get-Host).Version.major", "r")), power_shell_version);
     if (power_shell_version.empty() || !std::isdigit(power_shell_version[0]) || (std::stoi(power_shell_version) < 3)) {
-        LOG_WARN("You powershell version {} is outdated and incompatible with Vita3K Update, consider to update it", power_shell_version);
+        gui.info_message.level = spdlog::level::err;
+        gui.info_message.msg = fmt::format("You powershell version {} is outdated and incompatible with Vita3K Update, consider to update it", power_shell_version);
         return false;
     }
 
@@ -144,24 +153,20 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     // Get current date of last issue updated
     const auto updated_at = get_string_output(github_updated_at_cmd);
     if (updated_at.empty()) {
-        LOG_ERROR("Failed to get current database version, check firewall/internet access, try again later.");
+        gui.info_message.level = spdlog::level::err;
+        gui.info_message.msg = "Failed to get current compatibility database version, check firewall/internet access, try again later.";
         return false;
     }
 
     // Check if database is up to date
     if (db_updated_at == updated_at) {
         LOG_INFO("Applications compatibility database is up to date.");
-        return true;
+        return false;
     }
 
     const auto compat_db_exist = fs::exists(compat_db_path);
 
     LOG_INFO("Applications compatibility database is {}, attempting to download latest updated at: {}", compat_db_exist ? "outdated" : "missing", updated_at);
-
-    // Clear old database and remove it if exists
-    gui.compat.app_compat_db.clear();
-    if (fs::exists(compat_db_path))
-        fs::remove(compat_db_path);
 
     const auto app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml";
 
@@ -171,22 +176,33 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto download_command = fmt::format(R"(curl -L {} -o "{}")", app_compat_db_link, compat_db_path.string());
 #endif
 
+    // Download database
     if (system(download_command.c_str()) != 0) {
-        LOG_WARN("Failed to download Applications compatibility database updated at: {}", updated_at);
+        gui.info_message.level = spdlog::level::err;
+        gui.info_message.msg = fmt::format("Failed to download Applications compatibility database updated at: {}", updated_at);
         return false;
     }
 
     const auto old_db_updated_at = db_updated_at;
+    const auto old_compat_count = !gui.compat.app_compat_db.empty() ? gui.compat.app_compat_db.size() : 0;
 
-    if (!load_compat_app_db(gui, emuenv) || (db_updated_at != updated_at)) {
-        LOG_WARN("Failed to load Applications compatibility database downloaded updated at: {}", updated_at);
+    gui.compat.compat_db_loaded = load_compat_app_db(gui, emuenv);
+    if (!gui.compat.compat_db_loaded || (db_updated_at != updated_at)) {
+        gui.info_message.level = spdlog::level::err;
+        gui.info_message.msg = fmt::format("Failed to load Applications compatibility database downloaded updated at: {}", updated_at);
         return false;
     }
 
-    if (compat_db_exist)
-        LOG_INFO("Successfully updated app compatibility database from {} to {} with a total of {} applications", old_db_updated_at, updated_at, gui.compat.app_compat_db.size());
-    else
-        LOG_INFO("Successfully downloaded app compatibility database updated at: {} with a total of {} applications", updated_at, gui.compat.app_compat_db.size());
+    gui.info_message.level = spdlog::level::info;
+
+    if (compat_db_exist) {
+        const auto dif = static_cast<int32_t>(gui.compat.app_compat_db.size() - old_compat_count);
+        if (dif > 0)
+            gui.info_message.msg = fmt::format("The compatibility database was successfully updated from {} to {}.\n\n{} new application(s) are listed!", old_db_updated_at, db_updated_at, dif);
+        else
+            gui.info_message.msg = fmt::format("The compatibility database was successfully updated from {} to {}.\n\n{} applications are listed!", old_db_updated_at, db_updated_at, gui.compat.app_compat_db.size());
+    } else
+        gui.info_message.msg = fmt::format("The compatibility database updated at {} has been successfully downloaded and loaded.\n\n{} applications are listed!", db_updated_at, gui.compat.app_compat_db.size());
 
     return true;
 }

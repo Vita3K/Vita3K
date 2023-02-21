@@ -49,10 +49,6 @@ struct EmuEnvState;
 
 namespace gui {
 
-enum SelectorState {
-    SELECT_APP
-};
-
 enum SortState {
     NOT_SORTED,
     ASCENDANT,
@@ -62,6 +58,7 @@ enum SortState {
 enum SortType {
     APP_VER,
     CATEGORY,
+    COMPAT,
     LAST_TIME,
     TITLE,
     TITLE_ID
@@ -79,6 +76,7 @@ struct App {
     std::string title_id;
     std::string path;
     time_t last_time;
+    CompatibilityState compat;
 };
 
 struct AppInfo {
@@ -120,10 +118,9 @@ struct AppsSelector {
     std::map<std::string, ImGui_Texture> user_apps_icon;
     bool is_app_list_sorted{ false };
     std::map<SortType, SortState> app_list_sorted;
-    SelectorState state = SELECT_APP;
 };
 
-struct LiveAreaState {
+struct VitaAreaState {
     bool app_close = false;
     bool app_information = false;
     bool content_manager = false;
@@ -275,21 +272,28 @@ inline const std::vector<std::pair<SceSystemParamLang, std::string>> LIST_SYS_LA
     { SCE_SYSTEM_PARAM_LANG_CHINESE_T, "Chinese - Traditional" },
 };
 
+struct InfoMessage {
+    std::string function;
+    spdlog::level::level_enum level;
+    std::string msg;
+};
+
 struct GuiState {
     std::unique_ptr<ImGui_State> imgui_state;
 
     bool renderer_focused = true;
-    bool compat_loaded = false;
     gui::FileMenuState file_menu;
     gui::DebugMenuState debug_menu;
     gui::ConfigurationMenuState configuration_menu;
     gui::ControlMenuState controls_menu;
     gui::HelpMenuState help_menu;
-    gui::LiveAreaState live_area;
+    gui::VitaAreaState vita_area;
     gui::AppsSelector app_selector;
 
     CompatState compat;
     LangState lang;
+
+    InfoMessage info_message{};
 
     std::map<std::string, User> users;
     std::map<std::string, ImGui_Texture> users_avatar;

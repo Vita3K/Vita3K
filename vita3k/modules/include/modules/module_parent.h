@@ -30,7 +30,6 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
 bool load_module(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleModuleId module_id);
 Address resolve_export(KernelState &kernel, uint32_t nid);
 uint32_t resolve_nid(KernelState &kernel, Address addr);
-std::string resolve_nid_name(KernelState &kernel, Address addr);
 
 struct VarExport {
     uint32_t nid;

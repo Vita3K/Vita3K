@@ -69,6 +69,10 @@ struct State {
     virtual void set_fxaa(bool enable_fxaa) = 0;
     virtual int get_max_anisotropic_filtering() = 0;
     virtual void set_anisotropic_filtering(int anisotropic_filtering) = 0;
+    virtual bool map_memory(void *address, uint32_t size) {
+        return true;
+    }
+    virtual void unmap_memory(void *address) {}
     virtual std::vector<std::string> get_gpu_list() {
         return { "Automatic" };
     }

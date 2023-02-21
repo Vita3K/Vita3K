@@ -82,9 +82,9 @@ static void draw_config_menu(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginMenu(lang["title"].c_str())) {
         if (ImGui::MenuItem(lang["settings"].c_str(), nullptr, &settings_dialog))
             init_config(gui, emuenv, emuenv.io.app_path);
-        if (ImGui::MenuItem(lang["user_management"].c_str(), nullptr, &gui.live_area.user_management, (!gui.live_area.user_management && emuenv.io.title_id.empty()))) {
-            gui.live_area.home_screen = false;
-            gui.live_area.information_bar = true;
+        if (ImGui::MenuItem(lang["user_management"].c_str(), nullptr, &gui.vita_area.user_management, (!gui.vita_area.user_management && emuenv.io.title_id.empty()))) {
+            gui.vita_area.home_screen = false;
+            gui.vita_area.information_bar = true;
         }
         ImGui::EndMenu();
     }

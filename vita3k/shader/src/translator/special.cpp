@@ -111,7 +111,7 @@ bool USSETranslatorVisitor::kill(
     LOG_DISASM("{:016x}: KILL {}", m_instr, disasm::s_predicate_str(pred));
 
     m_b.setLine(m_recompiler.cur_pc);
-    m_b.makeDiscard();
+    m_b.makeStatementTerminator(spv::OpKill, "kill");
 
     return true;
 }

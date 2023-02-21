@@ -61,7 +61,6 @@ typedef std::shared_ptr<SceKernelModuleInfo> SceKernelModuleInfoPtr;
 typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
 typedef std::map<SceUID, CallbackPtr> CallbackPtrs;
 typedef std::unordered_map<uint32_t, Address> ExportNids;
-typedef std::map<Address, uint32_t> NidFromExport;
 typedef std::map<Address, uint32_t> NotFoundVars;
 typedef std::unique_ptr<CPUProtocol> CPUProtocolPtr;
 
@@ -113,6 +112,16 @@ struct CorenumAllocator {
     void free_corenum(const int num);
 };
 
+struct late_binding_info {
+    void *entries;
+    uint32_t size;
+    uint32_t module_nid;
+};
+
+typedef std::multimap<uint32_t, late_binding_info> VarLateBindingInfos;
+
+typedef std::map<uint32_t, uint32_t> ModuleUidByNid;
+
 struct KernelState {
     KernelState();
 
@@ -140,7 +149,8 @@ struct KernelState {
     LoadedSysmodules loaded_sysmodules;
     ExportNids export_nids;
     std::shared_mutex export_nids_mutex;
-    NidFromExport nid_from_export;
+    VarLateBindingInfos late_binding_infos;
+    ModuleUidByNid module_uid_by_nid;
 
     bool cpu_opt;
     CPUBackend cpu_backend;
@@ -154,8 +164,6 @@ struct KernelState {
     SceRtcTick base_tick;
     TimerStates timers;
     Ptr<SceProcessParam> process_param;
-
-    NotFoundVars not_found_vars;
 
     Debugger debugger;
 
