@@ -102,7 +102,7 @@
         "CMAKE_CXX_COMPILER": "clang++-14"
       },
       "environment": {
-        "LDFLAGS": "-fuse-ld=lld"
+        "LDFLAGS": "-fuse-ld=lld-14"
       }
     },
     {
