@@ -86,7 +86,7 @@ enum class GXMState : std::uint16_t {
 struct RenderTarget;
 
 struct GXMStreamInfo {
-    const uint8_t *data = nullptr;
+    Ptr<const uint8_t> data = Ptr<const uint8_t>(0);
     size_t size = 0;
 };
 

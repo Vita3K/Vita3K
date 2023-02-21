@@ -25,15 +25,17 @@
 #include <mutex>
 #include <set>
 
-struct MemPage {
+struct AllocMemPage {
     uint32_t allocated : 4;
     uint32_t size : 28;
 };
 
-static_assert(sizeof(MemPage) == 4);
+static_assert(sizeof(AllocMemPage) == 4);
 
+typedef uint8_t *PagePtr;
 typedef std::unique_ptr<uint8_t[], std::function<void(uint8_t *)>> Memory;
-typedef std::unique_ptr<MemPage[], std::function<void(MemPage *)>> PageTable;
+typedef std::unique_ptr<AllocMemPage[]> AllocPageTable;
+typedef std::unique_ptr<PagePtr[]> PageTable;
 typedef std::map<int, std::string> PageNameMap;
 
 struct ProtectBlockInfo {
@@ -69,15 +71,24 @@ struct ProtectSegmentInfo {
 
 typedef std::set<ProtectSegmentInfo> ProtectSegmentTrees;
 
+struct MemExternalMapping {
+    Address address;
+    uint32_t size;
+};
+
 struct MemState {
     std::mutex generation_mutex;
     std::mutex protect_mutex;
 
     size_t page_size = 0;
     Memory memory;
-    PageTable page_table;
+    AllocPageTable alloc_table;
     BitmapAllocator allocator;
     ProtectSegmentTrees protect_tree;
 
     PageNameMap page_name_map;
+
+    bool use_page_table;
+    PageTable page_table;
+    std::map<uint64_t, MemExternalMapping, std::greater<uint64_t>> external_mapping;
 };

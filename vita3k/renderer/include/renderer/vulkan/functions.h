@@ -33,12 +33,12 @@ bool create(std::unique_ptr<VertexProgram> &vp, VKState &state, const SceGxmProg
 bool create(std::unique_ptr<FragmentProgram> &fp, VKState &state, const SceGxmProgram &program, const SceGxmBlendInfo *blend);
 
 void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format,
-    void *indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config);
+    Ptr<void> indices, size_t count, uint32_t instance_count, MemState &mem, const Config &config);
 
 void new_frame(VKContext &context);
 
 void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, const FeatureState &features);
-void set_uniform_buffer(VKContext &context, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, const uint8_t *data);
+void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderProgram *program, const bool vertex_shader, const int block_num, const int size, Ptr<uint8_t> data);
 
 void sync_clipping(VKContext &context);
 void sync_stencil_func(VKContext &context, const bool is_back);

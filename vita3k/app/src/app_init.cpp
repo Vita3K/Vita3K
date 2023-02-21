@@ -162,10 +162,35 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         return false;
     }
 
-    if (!init(state.mem)) {
+    // initialize the renderer first because we need to know if we need a page table
+    if (!state.cfg.console) {
+        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, state.base_path.data())) {
+            update_viewport(state);
+        } else {
+            switch (state.backend_renderer) {
+            case renderer::Backend::OpenGL:
+                error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.4?", nullptr);
+                break;
+
+            case renderer::Backend::Vulkan:
+                error_dialog("Could not create Vulkan context!");
+                break;
+
+            default:
+                error_dialog(fmt::format("Unknown backend render: {}.", state.cfg.backend_renderer));
+                break;
+            }
+            return false;
+        }
+    }
+
+    if (!init(state.mem, state.renderer->need_page_table)) {
         LOG_ERROR("Failed to initialize memory for emulator state!");
         return false;
     }
+
+    if (state.mem.use_page_table && state.kernel.cpu_backend == CPUBackend::Unicorn)
+        LOG_CRITICAL("Unicorn backend is not supported with a page table");
 
     if (!state.audio.init(resume_thread, state.cfg.audio_backend)) {
         LOG_WARN("Failed to init audio! Audio will not work.");
@@ -186,28 +211,6 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         discordrpc::update_presence();
     }
 #endif
-
-    if (!state.cfg.console) {
-        if (renderer::init(state.window.get(), state.renderer, state.backend_renderer, state.cfg, state.base_path.data())) {
-            update_viewport(state);
-            return true;
-        } else {
-            switch (state.backend_renderer) {
-            case renderer::Backend::OpenGL:
-                error_dialog("Could not create OpenGL context!\nDoes your GPU at least support OpenGL 4.4?", nullptr);
-                break;
-
-            case renderer::Backend::Vulkan:
-                error_dialog("Could not create Vulkan context!");
-                break;
-
-            default:
-                error_dialog(fmt::format("Unknown backend render: {}.", state.cfg.backend_renderer));
-                break;
-            }
-            return false;
-        }
-    }
 
     return true;
 }

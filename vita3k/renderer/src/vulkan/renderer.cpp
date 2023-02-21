@@ -41,7 +41,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
         && (message_type & ~VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)) {
         std::string_view message = callback_data->pMessage;
         // ignore this message for now
-        if (message.find("VUID-vkCmdDrawIndexed-None-02721") == std::string_view::npos)
+        if (message.find("VUID-vkCmdDrawIndexed-None-02721") == std::string_view::npos
+            && message.find("VUID-VkMemoryAllocateInfo-flags-03331") == std::string_view::npos)
             LOG_ERROR("Validation layer: {}", callback_data->pMessage);
     }
     return VK_FALSE;
@@ -186,6 +187,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         const std::set<std::string> optional_instance_extensions = {
             VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
             VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
+            VK_KHR_DEVICE_GROUP_CREATION_EXTENSION_NAME
         };
         for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties()) {
             auto ite = optional_instance_extensions.find(prop.extensionName);
@@ -307,6 +309,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         bool support_global_priority = false;
         bool support_buffer_device_address = false;
         bool support_standard_layout = false;
+        bool support_external_memory = false;
         const std::map<std::string, bool *> optional_extensions = {
             { VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, &temp_bool },
             // can be used by vma to improve performance
@@ -316,8 +319,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             // can be used to specify which format will be used by mutable images
             { VK_KHR_IMAGE_FORMAT_LIST_EXTENSION_NAME, &surface_cache.support_image_format_specifier },
             { VK_KHR_EXTERNAL_MEMORY_EXTENSION_NAME, &temp_bool },
+            { VK_KHR_DEVICE_GROUP_EXTENSION_NAME, &temp_bool },
             // can host memory directly be used for gxm memory
-            { VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME, &features.support_memory_mapping },
+            { VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME, &support_external_memory },
             // also needed for reading mapped memory in the shader
             { VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, &support_buffer_device_address },
             // needed for uniform uvec2 arrays not to take twice the size
@@ -333,9 +337,10 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
+        features.support_memory_mapping = true;
         if (support_buffer_device_address) {
-            auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceBufferAddressFeaturesEXT>();
-            support_buffer_device_address &= static_cast<bool>(features.get<vk::PhysicalDeviceBufferAddressFeaturesEXT>().bufferDeviceAddress);
+            auto features = physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceBufferDeviceAddressFeatures>();
+            support_buffer_device_address &= static_cast<bool>(features.get<vk::PhysicalDeviceBufferDeviceAddressFeatures>().bufferDeviceAddress);
         }
         features.support_memory_mapping &= support_buffer_device_address;
 
@@ -345,17 +350,24 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         }
         features.support_memory_mapping &= support_standard_layout;
 
-        if (features.support_memory_mapping) {
-            // disable memory mapping on GPUs with an alignment requirement higher than 4096 (should only
-            // concern a few intel iGPUs)
-            auto props = physical_device.getProperties2KHR<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>();
-            features.support_memory_mapping &= static_cast<bool>(props.get<vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>().minImportedHostPointerAlignment <= 4096);
-        }
-
 #ifdef __APPLE__
         // we need to make a copy of the vertex buffer for moltenvk, so disable memory mapping
         features.support_memory_mapping = false;
 #endif
+
+        if (features.support_memory_mapping) {
+            if (support_external_memory) {
+                // disable this extension on GPUs with an alignment requirement higher than 4096 (should only
+                // concern a few intel iGPUs)
+                auto props = physical_device.getProperties2KHR<vk::PhysicalDeviceProperties2, vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>();
+                support_external_memory = static_cast<bool>(props.get<vk::PhysicalDeviceExternalMemoryHostPropertiesEXT>().minImportedHostPointerAlignment <= 4096);
+            }
+
+            if (!support_external_memory) {
+                LOG_INFO("Using a page table for memory mapping");
+                need_page_table = true;
+            }
+        }
 
         if (features.support_memory_mapping)
             LOG_INFO("Memory mapping is enabled");
@@ -379,10 +391,10 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         // We use subpass input to get something similar to direct fragcolor access (there is no difference for the shader)
         features.direct_fragcolor = true;
 
-        vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceBufferAddressFeaturesEXT, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures> device_info{
+        vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceBufferDeviceAddressFeatures, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures> device_info{
             vk::DeviceCreateInfo{
                 .pEnabledFeatures = &enabled_features },
-            vk::PhysicalDeviceBufferAddressFeaturesEXT{
+            vk::PhysicalDeviceBufferDeviceAddressFeatures{
                 .bufferDeviceAddress = VK_TRUE },
             vk::PhysicalDeviceUniformBufferStandardLayoutFeatures{
                 .uniformBufferStandardLayout = VK_TRUE }
@@ -391,7 +403,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         device_info.get().setPEnabledExtensionNames(device_extensions);
 
         if (!features.support_memory_mapping) {
-            device_info.unlink<vk::PhysicalDeviceBufferAddressFeaturesEXT>();
+            device_info.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
             device_info.unlink<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
         }
 
@@ -447,6 +459,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         if (support_dedicated_allocations)
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation;
 
+        if (features.support_memory_mapping)
+            allocator_info.flags |= vma::AllocatorCreateFlagBits::eBufferDeviceAddress;
+
         allocator = vma::createAllocator(allocator_info);
     }
 
@@ -489,6 +504,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     pipeline_cache.init();
     texture_cache.backend = &current_backend;
     texture::init(texture_cache, false);
+
+    // surface sync is not supported on the Vulkan renderer yet
+    disable_surface_sync = true;
 
     return true;
 }
@@ -578,60 +596,85 @@ void VKState::set_fxaa(bool enable_fxaa) {
     screen_renderer.enable_fxaa = enable_fxaa;
 }
 
-bool VKState::map_memory(void *address, uint32_t size) {
+bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     assert(features.support_memory_mapping);
     // the adress should be 4K aligned
     assert(((uint64_t)address & 4095) == 0);
+    constexpr vk::BufferUsageFlags mapped_memory_flags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
-    auto host_mem_props = device.getMemoryHostPointerPropertiesEXT(vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT, address);
-    uint32_t host_mem_types = host_mem_props.memoryTypeBits;
-    assert(host_mem_types != 0);
+    if (mem.use_page_table) {
+        // add 4 KiB because we can as an easy way to prevent crashes due to memory accesses right after the memory boundary
+        vkutil::Buffer buffer(allocator, size + KiB(4));
+        static constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
+            .flags = vma::AllocationCreateFlagBits::eMapped,
+            .usage = vma::MemoryUsage::eAutoPreferHost,
+            .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
+            .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
+        };
+        buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
 
-    uint32_t mapped_memory_type = 0;
-    while (host_mem_types != 0) {
-        // try to find a cached memory type
-        mapped_memory_type = std::countr_zero(host_mem_types);
-        host_mem_types -= (1 << mapped_memory_type);
+        vk::BufferDeviceAddressInfoKHR address_info{
+            .buffer = buffer.buffer
+        };
+        const uint64_t buffer_address = device.getBufferAddress(address_info);
+        const vk::Buffer mapped_buffer = buffer.buffer;
 
-        if (physical_device_memory.memoryTypes[mapped_memory_type].propertyFlags & vk::MemoryPropertyFlagBits::eHostCached)
-            break;
+        add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(buffer.mapped_data));
+        mapped_memories[address.address()] = { address.address(), std::move(buffer), mapped_buffer, size, buffer_address };
+    } else {
+        void *host_address = address.get(mem);
+        auto host_mem_props = device.getMemoryHostPointerPropertiesEXT(vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT, host_address);
+        uint32_t host_mem_types = host_mem_props.memoryTypeBits;
+        assert(host_mem_types != 0);
+
+        uint32_t mapped_memory_type = 0;
+        while (host_mem_types != 0) {
+            // try to find a cached memory type
+            mapped_memory_type = std::countr_zero(host_mem_types);
+            host_mem_types -= (1 << mapped_memory_type);
+
+            if (physical_device_memory.memoryTypes[mapped_memory_type].propertyFlags & vk::MemoryPropertyFlagBits::eHostCached)
+                break;
+        }
+
+        vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryHostPointerInfoEXT, vk::MemoryAllocateFlagsInfo> alloc_info{
+            vk::MemoryAllocateInfo{
+                .allocationSize = size,
+                .memoryTypeIndex = mapped_memory_type },
+            vk::ImportMemoryHostPointerInfoEXT{
+                .handleType = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
+                .pHostPointer = host_address },
+            vk::MemoryAllocateFlagsInfo{
+                .flags = vk::MemoryAllocateFlagBits::eDeviceAddress }
+        };
+        const vk::DeviceMemory device_memory = device.allocateMemory(alloc_info.get());
+
+        vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
+            vk::BufferCreateInfo{
+                .size = size,
+                .usage = mapped_memory_flags,
+                .sharingMode = vk::SharingMode::eExclusive },
+            vk::ExternalMemoryBufferCreateInfoKHR{
+                .handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT }
+        };
+        const vk::Buffer mapped_buffer = device.createBuffer(buffer_info.get());
+        device.bindBufferMemory(mapped_buffer, device_memory, 0);
+
+        vk::BufferDeviceAddressInfoKHR address_info{
+            .buffer = mapped_buffer
+        };
+        const uint64_t buffer_address = device.getBufferAddress(address_info);
+
+        mapped_memories[address.address()] = { address.address(), device_memory, mapped_buffer, size, buffer_address };
     }
-
-    vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryHostPointerInfoEXT> alloc_info{
-        vk::MemoryAllocateInfo{
-            .allocationSize = size,
-            .memoryTypeIndex = mapped_memory_type },
-        vk::ImportMemoryHostPointerInfoEXT{
-            .handleType = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
-            .pHostPointer = address }
-    };
-    const vk::DeviceMemory device_memory = device.allocateMemory(alloc_info.get());
-
-    vk::StructureChain<vk::BufferCreateInfo, vk::ExternalMemoryBufferCreateInfoKHR> buffer_info{
-        vk::BufferCreateInfo{
-            .size = size,
-            .usage = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddressEXT,
-            .sharingMode = vk::SharingMode::eExclusive },
-        vk::ExternalMemoryBufferCreateInfoKHR{
-            .handleTypes = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT }
-    };
-    const vk::Buffer mapped_buffer = device.createBuffer(buffer_info.get());
-    device.bindBufferMemory(mapped_buffer, device_memory, 0);
-
-    vk::BufferDeviceAddressInfoKHR address_info{
-        .buffer = mapped_buffer
-    };
-    const uint64_t buffer_address = device.getBufferAddress(address_info);
-
-    mapped_memories[std::bit_cast<uint64_t>(address)] = { address, size, device_memory, mapped_buffer, buffer_address };
 
     return true;
 }
 
-void VKState::unmap_memory(void *address) {
+void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
     assert(features.support_memory_mapping);
 
-    auto ite = mapped_memories.find(std::bit_cast<uint64_t>(address));
+    auto ite = mapped_memories.find(address.address());
     if (ite == mapped_memories.end()) {
         LOG_CRITICAL("Could not find mapped memory to erase");
         return;
@@ -640,34 +683,35 @@ void VKState::unmap_memory(void *address) {
     // we need to wait in case the buffer is being used
     device.waitIdle();
 
-    // deferred destory it instead
-    device.destroyBuffer(ite->second.buffer);
-    device.freeMemory(ite->second.memory);
+    if (!mem.use_page_table) {
+        device.destroyBuffer(ite->second.buffer);
+        device.freeMemory(std::get<vk::DeviceMemory>(ite->second.buffer_impl));
+    } else {
+        remove_external_mapping(mem, address.cast<uint8_t>().get(mem));
+    }
     mapped_memories.erase(ite);
 }
 
-std::tuple<vk::Buffer, uint32_t> VKState::get_matching_mapping(const void *address) {
-    uint64_t address_value = std::bit_cast<uint64_t>(address);
-    auto mapped_memory = mapped_memories.lower_bound(address_value);
+std::tuple<vk::Buffer, uint32_t> VKState::get_matching_mapping(const Ptr<void> address) {
+    auto mapped_memory = mapped_memories.lower_bound(address.address());
     if (mapped_memory == mapped_memories.end()
-        || mapped_memory->first + mapped_memory->second.size < address_value) {
+        || mapped_memory->first + mapped_memory->second.size < address.address()) {
         LOG_ERROR("Could not find matching mapped buffer for vertex stream");
         return { nullptr, 0 };
     }
 
-    return std::make_tuple(mapped_memory->second.buffer, static_cast<uint32_t>(address_value - mapped_memory->first));
+    return std::make_tuple(mapped_memory->second.buffer, address.address() - mapped_memory->first);
 }
 
-uint64_t VKState::get_matching_device_address(const void *address) {
-    uint64_t address_value = std::bit_cast<uint64_t>(address);
-    auto mapped_memory = mapped_memories.lower_bound(address_value);
+uint64_t VKState::get_matching_device_address(const Address address) {
+    auto mapped_memory = mapped_memories.lower_bound(address);
     if (mapped_memory == mapped_memories.end()
-        || mapped_memory->first + mapped_memory->second.size < address_value) {
+        || mapped_memory->first + mapped_memory->second.size < address) {
         LOG_ERROR("Could not find matching mapped buffer for vertex stream");
         return 0;
     }
 
-    return mapped_memory->second.buffer_address + address_value - mapped_memory->first;
+    return mapped_memory->second.buffer_address + address - mapped_memory->first;
 }
 
 int VKState::get_max_anisotropic_filtering() {
@@ -676,6 +720,10 @@ int VKState::get_max_anisotropic_filtering() {
 
 void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
+}
+
+void VKState::set_surface_sync_state(bool disable) {
+    // Vulkan does not supports surface sync yet
 }
 
 std::vector<std::string> VKState::get_gpu_list() {

@@ -476,7 +476,7 @@ void sync_vertex_streams_and_attributes(GLContext &context, GxmRecordState &stat
             if (!result.first) {
                 LOG_ERROR("Failed to allocate vertex stream data from GPU!");
             } else {
-                std::memcpy(result.first, state.vertex_streams[i].data, state.vertex_streams[i].size);
+                std::memcpy(result.first, state.vertex_streams[i].data.get(mem), state.vertex_streams[i].size);
                 offset_in_buffer[i] = result.second;
             }
 

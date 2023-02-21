@@ -374,7 +374,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     }
 
     // can be changed while ingame
-    emuenv.renderer->disable_surface_sync = emuenv.cfg.current_config.disable_surface_sync;
+    emuenv.renderer->set_surface_sync_state(emuenv.cfg.current_config.disable_surface_sync);
     emuenv.renderer->set_fxaa(emuenv.cfg.current_config.enable_fxaa);
     if (emuenv.renderer->current_backend == renderer::Backend::OpenGL)
         set_vsync_state(emuenv.cfg.current_config.v_sync);
