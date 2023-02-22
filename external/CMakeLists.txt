@@ -214,7 +214,7 @@ set_property(TARGET yaml-cpp PROPERTY FOLDER externals)
 if(USE_DISCORD_RICH_PRESENCE)
 	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip")
 		message(STATUS "Downloading discord gamesdk...")
-		file(DOWNLOAD https://dl-game-sdk.discordapp.net/2.5.6/discord_game_sdk.zip
+		file(DOWNLOAD https://dl-game-sdk.discordapp.net/latest/discord_game_sdk.zip
 			"${CMAKE_BINARY_DIR}/external/discord_game_sdk.zip" SHOW_PROGRESS)
 	endif()
 endif()
@@ -245,7 +245,11 @@ if(USE_DISCORD_RICH_PRESENCE)
 		${CMAKE_BINARY_DIR}/external/discord_game_sdk/cpp/voice_manager.cpp)
 
 	if(APPLE)
-		target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dylib")
+		if(ARCHITECTURE STREQUAL "x86_64")
+			target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dylib")
+		else()
+			target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/aarch64/discord_game_sdk.dylib")
+		endif()
 	elseif(WIN32)
 		target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dll.lib")
 	elseif(UNIX)
@@ -310,9 +314,18 @@ set_property(TARGET libzRIF PROPERTY FOLDER externals)
 set_property(TARGET libb64 PROPERTY FOLDER externals)
 
 if(APPLE)
-	set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
-	set(OPENSSL_LIBRARIES "/usr/local/opt/openssl/lib")
-	set(OPENSSL_USE_STATIC_LIBS TRUE)
+ 	execute_process(
+ 		COMMAND brew --prefix openssl
+ 		RESULT_VARIABLE BREW_RESULT
+ 		OUTPUT_VARIABLE BREW_OPENSSL
+ 		OUTPUT_STRIP_TRAILING_WHITESPACE
+ 	)
+ 	if(BREW_RESULT EQUAL 0)
+ 		set(OPENSSL_ROOT_DIR "${BREW_OPENSSL}")
+		set(OPENSSL_USE_STATIC_LIBS TRUE)
+ 	else()
+		message(FATAL_ERROR "Cannot locate OpenSSL directory\nPlease run: brew install openssl")
+	endif()
 endif()
 find_package(OpenSSL QUIET)
 

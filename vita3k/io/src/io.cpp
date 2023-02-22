@@ -41,6 +41,10 @@
 #include <iterator>
 #include <string>
 
+#if defined(__aarch64__) && defined(__APPLE__)
+#define stat64 stat
+#endif
+
 // ****************************
 // * Utility functions *
 // ****************************
