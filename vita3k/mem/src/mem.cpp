@@ -497,6 +497,9 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
 
 #ifdef __aarch64__
+#ifdef __APPLE__
+    const uint32_t esr = context->uc_mcontext->__es.__esr;
+#else
     _aarch64_ctx *ctx = reinterpret_cast<_aarch64_ctx *>(context->uc_mcontext.__reserved);
     // get the ESR register
     while (ctx->magic != ESR_MAGIC) {
@@ -509,6 +512,7 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     }
 
     const uint64_t esr = reinterpret_cast<esr_context *>(ctx)->esr;
+#endif
     // https://developer.arm.com/documentation/ddi0595/2021-03/AArch64-Registers/ESR-EL1--Exception-Syndrome-Register--EL1-
     const uint32_t exception_class = static_cast<uint32_t>(esr) >> 26;
     const bool is_executing = (exception_class == 0b100000) || (exception_class == 0b100001);
