@@ -76,7 +76,7 @@ struct App {
     std::string title_id;
     std::string path;
     time_t last_time;
-    CompatibilityState compat;
+    compat::CompatibilityState compat;
 };
 
 struct AppInfo {
@@ -290,7 +290,7 @@ struct GuiState {
     gui::VitaAreaState vita_area;
     gui::AppsSelector app_selector;
 
-    CompatState compat;
+    compat::CompatState compat;
     LangState lang;
 
     InfoMessage info_message{};

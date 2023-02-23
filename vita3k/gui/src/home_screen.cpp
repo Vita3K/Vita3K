@@ -640,7 +640,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
 
             // Draw the compatibility badge for commercial apps when they are within the visible area.
             if (element_is_within_visible_area && (app.title_id.find("PCS") != std::string::npos)) {
-                const auto compat_state = (gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(app.title_id) : false) ? gui.compat.app_compat_db[app.title_id].state : Unknown;
+                const auto compat_state = (gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(app.title_id) : false) ? gui.compat.app_compat_db[app.title_id].state : compat::Unknown;
                 const auto compat_state_vec4 = gui.compat.compat_color[compat_state];
                 const ImU32 compat_state_color = IM_COL32((int)(compat_state_vec4.x * 255.0f), (int)(compat_state_vec4.y * 255.0f), (int)(compat_state_vec4.z * 255.0f), (int)(compat_state_vec4.w * 255.0f));
                 const auto current_pos = ImGui::GetCursorPos();

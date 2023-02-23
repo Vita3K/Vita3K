@@ -293,9 +293,9 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto lang_compat = gui.lang.compatibility;
 
     const auto has_issue = gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(title_id) : false;
-    const auto compat_state = has_issue ? gui.compat.app_compat_db[title_id].state : Unknown;
+    const auto compat_state = has_issue ? gui.compat.app_compat_db[title_id].state : compat::Unknown;
     const auto compat_state_color = gui.compat.compat_color[compat_state];
-    const auto compat_state_str = has_issue ? lang_compat.states[compat_state] : lang_compat.states[Unknown];
+    const auto compat_state_str = has_issue ? lang_compat.states[compat_state] : lang_compat.states[compat::Unknown];
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
