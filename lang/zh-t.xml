@@ -352,7 +352,7 @@
 	</indicator>
 
 	<initial_setup>
-		<back>Back</back>
+		<back>返回</back>
 		<completed_setup>已完成初期設定。
 請盡情享受Vita3K。</completed_setup>
 		<select_language>Select a language.</select_language>
@@ -571,7 +571,7 @@ Please download and install it.</no_font_exist>
 		<line_second>Vita3K是使用C++編寫的開源PlayStation Vita模擬器，適用於Windows、Linux、macOS以及Android。</line_second>
 		<line_third>目前模擬器仍處於早期階段，因此非常感謝任何回饋和測試。</line_third>
 		<line_fourth>要開始使用，請安裝PS Vita韌體和字型套件。</line_fourth>
-		<download_firmware>下載韌體</download_firmware>
+		<download_firmware>Download Firmware</download_firmware>
 		<line_sixth_part_one>有關如何設定Vita3K的全方位指南可在</line_sixth_part_one>
 		<quickstart>快速入門</quickstart>
 		<line_sixth_part_two>頁面中找到。</line_sixth_part_two>
