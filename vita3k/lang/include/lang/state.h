@@ -169,15 +169,15 @@ struct LangState {
     };
     struct Compatibility {
         std::string name = "Compatibility";
-        std::map<CompatibilityState, std::string> states = {
-            { Unknown, "Unknown" },
-            { Nothing, "Nothing" },
-            { Bootable, "Bootable" },
-            { Intro, "Intro" },
-            { Menu, "Menu" },
-            { Ingame_Less, "Ingame -" },
-            { Ingame_More, "Ingame +" },
-            { Playable, "Playable" }
+        std::map<compat::CompatibilityState, std::string> states = {
+            { compat::Unknown, "Unknown" },
+            { compat::Nothing, "Nothing" },
+            { compat::Bootable, "Bootable" },
+            { compat::Intro, "Intro" },
+            { compat::Menu, "Menu" },
+            { compat::Ingame_Less, "Ingame -" },
+            { compat::Ingame_More, "Ingame +" },
+            { compat::Playable, "Playable" }
         };
     };
     Compatibility compatibility;

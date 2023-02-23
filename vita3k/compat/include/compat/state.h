@@ -21,6 +21,8 @@
 #include <map>
 #include <string>
 
+namespace compat {
+
 enum CompatibilityState {
     Unknown = -1,
     Nothing,
@@ -34,7 +36,7 @@ enum CompatibilityState {
 
 struct Compatibility {
     uint32_t issue_id;
-    CompatibilityState state = Unknown;
+    CompatibilityState state = CompatibilityState::Unknown;
     time_t updated_at;
 };
 
@@ -52,3 +54,5 @@ struct CompatState {
         { Playable, ImVec4(0.05f, 0.54f, 0.09f, 1.f) }, // #0e8a16
     };
 };
+
+} // namespace compat
