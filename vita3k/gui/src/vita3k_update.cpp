@@ -24,10 +24,9 @@
 #include <SDL.h>
 #include <boost/algorithm/string.hpp>
 
-#ifdef __APPLE__
-#include <pwd.h>
-#include <unistd.h>
-#endif
+#include <https/functions.h>
+
+#include <regex>
 
 namespace gui {
 
@@ -46,42 +45,14 @@ static VitaAreaState vita_area_state;
 static int git_version;
 static std::vector<std::pair<std::string, std::string>> git_commit_desc_list;
 bool init_vita3k_update(GuiState &gui) {
-#ifndef __APPLE__
-    const std::string path = "vita3k-latest.zip";
-#else
-    struct passwd *pwent = getpwuid(getuid());
-    const std::string path = fmt::format("{}/vita3k-latest.dmg", pwent->pw_dir);
-#endif
-    if (fs::exists(path))
-        fs::remove(path);
-
     state = NO_UPDATE;
     git_commit_desc_list.clear();
     git_version = 0;
     vita_area_state = {};
+    const auto latest_link = "https://api.github.com/repos/Vita3K/Vita3K/releases/latest";
 
     // Get Build number of latest release
-    const auto latest_link = "https://api.github.com/repos/Vita3K/Vita3K/releases/latest";
-#ifdef WIN32
-    std::string power_shell_version;
-    std::getline(std::ifstream(_popen("powershell (Get-Host).Version.major", "r")), power_shell_version);
-    if (power_shell_version.empty() || !std::isdigit(power_shell_version[0]) || (std::stoi(power_shell_version) < 3)) {
-        LOG_WARN("You powershell version {} is outdated and incompatible with Vita3K Update, consider to update it", power_shell_version);
-        return false;
-    }
-    const auto github_version_cmd = fmt::format(R"(powershell ((Invoke-RestMethod {} -timeout 2).body.split([Environment]::NewLine) ^| Select-String -Pattern \"Vita3K Build: \") -replace \"Vita3K Build: \")", latest_link);
-#else
-    const auto github_version_cmd = fmt::format(R"(curl -m 2 -sL {} | grep "Corresponding commit:" | cut -d " " -f 8 | grep -o '[[:digit:]]*')", latest_link);
-#endif
-    char tmpver[L_tmpnam + 1];
-    std::tmpnam(tmpver);
-    std::string ver_cmd = github_version_cmd + " >> " + tmpver;
-    std::system(ver_cmd.c_str());
-    std::ifstream ver(tmpver, std::ios::in | std::ios::binary);
-    std::string version;
-    std::getline(ver, version);
-    ver.close();
-    std::remove(tmpver);
+    const auto version = https::get_web_regex_result(latest_link, std::regex("Vita3K Build: (\\d+)"));
     if (!version.empty() && std::isdigit(version[0]))
         git_version = std::stoi(version);
     else {
@@ -102,66 +73,47 @@ bool init_vita3k_update(GuiState &gui) {
                 page_count.push_back({ page, per_page });
             }
 
-            uint32_t commit_pos = 0;
+            // Browse all page
             for (const auto &page : page_count) {
                 const auto continuous_link = fmt::format(R"(https://api.github.com/repos/Vita3K/Vita3K/commits?sha=continuous&page={}&per_page={})", page.first, dif_from_current < 100 ? dif_from_current : 100);
-#ifdef WIN32
-                const auto github_commit_sha_cmd = fmt::format(R"(powershell ((Invoke-RestMethod \"{}\" -Timeout 2).sha ^| Select-Object -first {}))", continuous_link, page.second);
-                const auto github_commit_msg_cmd = fmt::format(R"(powershell ((Invoke-RestMethod \"{}\" -Timeout 2).commit.message ^| Select-Object -first {}) -replace(\"\r\n\", \"`n\"))", continuous_link, page.second);
-#else
-                const auto sha_filter = R"(grep '"sha":' | sed 's/"/ /g' | awk -v n=3 'NR%n==1' | awk '{print $3}')";
-                const auto github_commit_sha_cmd = fmt::format(R"(curl -m 2 -sL "{}" | {} | head -n {})", continuous_link, sha_filter, page.second);
-                const auto github_commit_msg_cmd = fmt::format(R"(curl -m 2 -sL "{}" | grep '"message":' | cut -d '"' -f4 | sed 's/",/ /g' | head -n {})", continuous_link, page.second);
-#endif
-                std::string line;
 
-                // Get Commits SHA
-                char tmpsha[L_tmpnam + 1];
-                std::tmpnam(tmpsha);
-                std::string sha_cmd = github_commit_sha_cmd + " >> " + tmpsha;
-                std::system(sha_cmd.c_str());
-                std::ifstream sha_list(tmpsha, std::ios::in | std::ios::binary);
-                while (std::getline(sha_list, line)) {
-                    git_commit_desc_list.push_back({ line, {} });
-                }
-                sha_list.close();
-                std::remove(tmpsha);
+                // Get response from github api
+                auto response = https::get_web_response(continuous_link);
 
-                // Get Commits Message
-                char tmpmsg[L_tmpnam + 1];
-                std::tmpnam(tmpmsg);
-                std::string msg_cmd = github_commit_msg_cmd + " >> " + tmpmsg;
-                std::system(msg_cmd.c_str());
-                std::ifstream msg_list(tmpmsg, std::ios::in | std::ios::binary);
-                const auto push_commit = [&](const std::string commit) {
-                    if (git_commit_desc_list.size() < commit_pos) {
-                        LOG_WARN("Error of get commit description, abort");
-                        return false;
+                // Check if response is not empty
+                if (!response.empty()) {
+                    // Get commits from response with remove HTTP header
+                    std::string commits = response.substr(response.find("\r\n\r\n") + 4);
+                    std::string msg, sha;
+                    std::smatch match;
+
+                    // Replace \" to &quot; for help regex search message
+                    boost::replace_all(commits, "\\\"", "&quot;");
+
+                    // Using regex to get sha from commits
+                    const std::regex commit_regex("\"sha\":\"([a-f0-9]{40})\".*?\"message\":\"([^\"]+)\"");
+                    while (std::regex_search(commits, match, commit_regex)) {
+                        // Get sha and message from regex match result
+                        sha = match[1];
+                        msg = match[2];
+
+                        if (!sha.empty() && !msg.empty()) {
+                            // Replace &quot; to \" for get back original message
+                            boost::replace_all(msg, "&quot;", "\"");
+                            // Replace \r and \n to new line
+                            boost::replace_all(msg, "\\r\\n", "\n");
+                            boost::replace_all(msg, "\\n", "\n");
+
+                            // Add commit to list
+                            git_commit_desc_list.push_back({ sha, msg });
+                        }
+
+                        // Remove current commit for next search
+                        const std::regex end_commit(R"(\s*"parents":\[\{"sha":"[a-f0-9]{40}","url":"[^"]+","html_url":"[^"]+"\}\]\})");
+                        if (std::regex_search(commits, match, end_commit))
+                            commits = match.suffix();
                     }
-
-                    git_commit_desc_list[commit_pos].second = commit;
-                    ++commit_pos;
-                    return true;
-                };
-                std::string commit_msg;
-                while (std::getline(msg_list, line)) {
-#ifdef WIN32
-                    if (line.find(static_cast<char>('\r\n')) != std::string::npos) {
-                        commit_msg += line;
-                        if (!push_commit(commit_msg))
-                            break;
-                        commit_msg.clear();
-                    } else
-                        commit_msg += line + "\n";
-#else
-                    // Contrary to windows, each line is a commit
-                    boost::replace_all(line, "\\n", "\n");
-                    if (!push_commit(line))
-                        break;
-#endif
                 }
-                msg_list.close();
-                remove(tmpmsg);
             }
         });
         get_commit_desc.detach();
@@ -180,48 +132,46 @@ bool init_vita3k_update(GuiState &gui) {
     return has_update;
 }
 
-static void download_update() {
-#ifndef __APPLE__
-    const std::string path = "vita3k-latest.zip";
-#else
-    struct passwd *pwent = getpwuid(getuid());
-    const std::string path = fmt::format("{}/vita3k-latest.dmg", pwent->pw_dir);
-#endif
-    if (!fs::exists(path)) {
-        std::thread download([path]() {
+static void download_update(const std::string base_path) {
+    std::thread download([base_path]() {
+        std::string download_continuous_link = "https://github.com/Vita3K/Vita3K/releases/download/continuous";
 #ifdef WIN32
-            const auto download_command = "powershell Invoke-WebRequest https://github.com/Vita3K/Vita3K/releases/download/continuous/windows-latest.zip -OutFile vita3k-latest.zip";
+        download_continuous_link += "/windows-latest.zip";
 #elif defined(__APPLE__)
-            const auto download_command = "curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/macos-latest.dmg -o ~/vita3k-latest.dmg";
+        download_continuous_link += "/macos-latest.dmg";
 #else
-            const auto download_command = "curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/ubuntu-latest.zip -o ./vita3k-latest.zip";
-#endif
-            LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
-            system(download_command);
-            if (fs::exists(path)) {
-                SDL_Event event;
-                event.type = SDL_QUIT;
-                SDL_PushEvent(&event);
-
-#ifdef WIN32
-                const auto vita3K_batch = "update-vita3k.bat";
-#elif defined(__APPLE__)
-                char *base_path = SDL_GetBasePath();
-                std::string batch = fmt::format("sh {}/update-vita3k.sh {}/../../..", base_path, base_path);
-                const auto vita3K_batch = batch.c_str();
-                SDL_free(base_path);
-#else
-                const auto vita3K_batch = "chmod +x ./update-vita3k.sh && ./update-vita3k.sh";
+        download_continuous_link += "/ubuntu-latest.zip";
 #endif
 
-                std::system(vita3K_batch);
-            } else {
-                state = NOT_COMPLETE_UPDATE;
-                LOG_WARN("Download failed, please try again later.");
-            }
-        });
-        download.detach();
-    }
+#ifdef __APPLE__
+        const std::string archive_ext = ".dmg";
+#else
+        const std::string archive_ext = ".zip";
+#endif
+
+        const auto vita3k_latest_path = base_path + "vita3k-latest" + archive_ext;
+
+        LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
+        if (https::download_file(download_continuous_link, vita3k_latest_path)) {
+            SDL_Event event;
+            event.type = SDL_QUIT;
+            SDL_PushEvent(&event);
+
+#ifdef WIN32
+            const auto vita3K_batch = fmt::format("{}/update-vita3k.bat", base_path);
+#elif defined(__APPLE__)
+            const auto vita3K_batch = fmt::format("sh {}/update-vita3k.sh", base_path);
+#else
+            const auto vita3K_batch = fmt::format("chmod +x {}/update-vita3k.sh && {}/update-vita3k.sh", base_path, base_path);
+#endif
+
+            std::system(vita3K_batch.c_str());
+        } else {
+            state = NOT_COMPLETE_UPDATE;
+            LOG_WARN("Download failed, please try again later.");
+        }
+    });
+    download.detach();
 }
 
 void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
@@ -346,7 +296,7 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::Button(state < UPDATE_VITA3K ? lang["next"].c_str() : lang["update"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
             state = (Vita3kUpdate)(state + 1);
             if (state == DOWNLOAD)
-                download_update();
+                download_update(emuenv.base_path);
         }
         if (state == DOWNLOAD)
             ImGui::EndDisabled();

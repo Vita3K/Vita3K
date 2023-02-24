@@ -36,7 +36,7 @@ enum CompatibilityState {
 
 struct Compatibility {
     uint32_t issue_id;
-    CompatibilityState state = CompatibilityState::Unknown;
+    CompatibilityState state = Unknown;
     time_t updated_at;
 };
 
