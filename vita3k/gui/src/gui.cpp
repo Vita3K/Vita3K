@@ -49,28 +49,35 @@ namespace gui {
 void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
     if (emuenv.cfg.display_info_message) {
         const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
+        const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+        const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+
+        const ImVec2 WINDOW_SIZE(680.0f * SCALE.x, 320.0f * SCALE.y);
+        const ImVec2 BUTTON_SIZE(160.f * SCALE.x, 46.f * SCALE.y);
 
         ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.x), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##information", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
-        ImGui::SetNextWindowPos(ImVec2(display_size.x / 2, display_size.y / 2), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * emuenv.dpi_scale);
-        ImGui::BeginChild("##info", ImVec2(display_size.x / 1.4f, display_size.y / 2.6f), true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
+        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
+        ImGui::BeginChild("##info", WINDOW_SIZE, true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
         const auto title = fmt::format("{}", spdlog::level::to_string_view(gui.info_message.level));
+        ImGui::SetWindowFontScale(RES_SCALE.x);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(title.c_str()).x) / 2);
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::Spacing();
+        const auto text_size = ImGui::CalcTextSize(gui.info_message.msg.c_str(), 0 , false, WINDOW_SIZE.x - (24.f * SCALE.x));
+        const auto text_pos = ImVec2((WINDOW_SIZE.x / 2.f) - (text_size.x / 2.f), (WINDOW_SIZE.y / 2.f) - (text_size.y / 2.f) - (24 * SCALE.y));
+        ImGui::SetCursorPos(text_pos);
         ImGui::TextWrapped("%s", gui.info_message.msg.c_str());
-        ImGui::Spacing();
+        ImGui::SetCursorPosY(WINDOW_SIZE.y - BUTTON_SIZE.y - (42.0f * SCALE.y));
         ImGui::Separator();
-        ImGui::Spacing();
-        const auto BUTTON_SIZE = ImVec2(160.f * emuenv.dpi_scale, 46.f * emuenv.dpi_scale);
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f));
+        ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
         if (ImGui::Button("Ok", BUTTON_SIZE))
             gui.info_message = {};
         ImGui::EndChild();
+
         ImGui::PopStyleVar();
         ImGui::End();
     } else {
