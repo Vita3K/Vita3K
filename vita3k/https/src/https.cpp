@@ -52,8 +52,9 @@ static void close_ssl(SSL *ssl) {
     SSL_free(ssl);
 }
 
+static uint64_t file_size = 0, header_size = 0;
 constexpr int READ_BUFFER_SIZE = 1048;
-std::string get_web_response(const std::string url) {
+std::string get_web_response(const std::string url, const std::string method, const std::function<void(float)> &progress_callback) {
 #ifdef WIN32
     WORD versionWanted = MAKEWORD(2, 2);
     WSADATA wsaData;
@@ -101,8 +102,15 @@ std::string get_web_response(const std::string url) {
 
     // Get address info with using host and port
     auto ret = getaddrinfo(host.c_str(), "https", &hints, &result);
-    if (ret < 0) {
-        LOG_ERROR("getaddrinfo = {}", ret);
+
+    // Check if getaddrinfo failed or unable to resolve address for host
+    if ((ret < 0) || !result) {
+        if (!result)
+            LOG_ERROR("Unable to resolve address for host: {}", host);
+        else {
+            LOG_ERROR("getaddrinfo error: {}", gai_strerror(ret));
+            freeaddrinfo(result);
+        }
         SSL_CTX_free(ctx);
         close_socket(sockfd);
         return {};
@@ -112,6 +120,26 @@ std::string get_web_response(const std::string url) {
     ret = connect(sockfd, result->ai_addr, static_cast<uint32_t>(result->ai_addrlen));
     if (ret < 0) {
         LOG_ERROR("connect({},...) = {}, errno={}({})", sockfd, ret, errno, strerror(errno));
+        freeaddrinfo(result);
+        SSL_CTX_free(ctx);
+        close_socket(sockfd);
+        return {};
+    }
+
+    // Check if socket is connected
+    int error = 0;
+    socklen_t errlen = sizeof(error);
+    ret = getsockopt(sockfd, SOL_SOCKET, SO_ERROR, reinterpret_cast<char *>(&error), &errlen);
+    if (ret < 0) {
+        LOG_ERROR("getsockopt({}, SOL_SOCKET, SO_ERROR, ...) failed: {}", sockfd, strerror(errno));
+        freeaddrinfo(result);
+        SSL_CTX_free(ctx);
+        close_socket(sockfd);
+        return {};
+    }
+    if (error != 0) {
+        LOG_ERROR("connect({}, ...) failed: {}", sockfd, error);
+        freeaddrinfo(result);
         SSL_CTX_free(ctx);
         close_socket(sockfd);
         return {};
@@ -125,6 +153,7 @@ std::string get_web_response(const std::string url) {
         char err_buf[256];
         ERR_error_string_n(ERR_get_error(), err_buf, sizeof(err_buf));
         LOG_ERROR("Error establishing SSL connection: {}", err_buf);
+        freeaddrinfo(result);
         SSL_CTX_free(ctx);
         close_ssl(ssl);
         close_socket(sockfd);
@@ -132,7 +161,7 @@ std::string get_web_response(const std::string url) {
     }
 
     // Send HTTP GET request to extracted URI
-    std::string request = "GET " + uri + " HTTP/1.1\r\n";
+    std::string request = method + " " + uri + " HTTP/1.1\r\n";
     request += "Host: " + host + "\r\n";
     request += "User-Agent: OpenSSL/1.1.1\r\n";
     request += "Connection: close\r\n\r\n";
@@ -140,6 +169,7 @@ std::string get_web_response(const std::string url) {
     if (SSL_write(ssl, request.c_str(), static_cast<uint32_t>(request.length())) <= 0) {
         char err_buf[256];
         ERR_error_string_n(ERR_get_error(), err_buf, sizeof(err_buf));
+        freeaddrinfo(result);
         SSL_CTX_free(ctx);
         close_ssl(ssl);
         close_socket(sockfd);
@@ -149,10 +179,20 @@ std::string get_web_response(const std::string url) {
 
     std::array<char, READ_BUFFER_SIZE> read_buffer{};
     std::string response;
+    uint64_t current_size = 0;
     while (auto bytes_read = SSL_read(ssl, read_buffer.data(), static_cast<uint32_t>(read_buffer.size()))) {
         response += std::string(read_buffer.data(), bytes_read);
+        current_size += bytes_read;
+        if (progress_callback && (file_size > 0)) {
+            float progress_percent = static_cast<float>(current_size - header_size) / static_cast<float>(file_size) * 100.0f;
+            progress_callback(progress_percent);
+        }
     }
 
+    if (method == "HEAD")
+        header_size = current_size;
+
+    freeaddrinfo(result);
     SSL_CTX_free(ctx);
     close_ssl(ssl);
     close_socket(sockfd);
@@ -168,11 +208,11 @@ std::string get_web_response(const std::string url) {
     return response;
 }
 
-std::string get_web_regex_result(const std::string url, const std::regex regex) {
+std::string get_web_regex_result(const std::string url, const std::regex regex, const std::string method) {
     std::string result;
 
     // Get the response of the web
-    const auto response = https::get_web_response(url);
+    const auto response = https::get_web_response(url, method);
 
     // Check if the response is not empty
     if (!response.empty()) {
@@ -190,7 +230,22 @@ std::string get_web_regex_result(const std::string url, const std::regex regex) 
     return result;
 }
 
-bool download_file(const std::string url, const std::string output_file_path) {
+static uint64_t get_file_size(const std::string url) {
+    uint64_t content_length = 0;
+
+    // Get the file size from the header
+    const auto content_length_str = get_web_regex_result(url, std::regex("Content-Length: (\\d+)"), "HEAD");
+
+    // Check if the content length is not empty
+    if (!content_length_str.empty())
+        content_length = std::stoll(content_length_str);
+
+    return content_length;
+}
+
+bool download_file(const std::string url, const std::string output_file_path, const std::function<void(float)> &progress_callback) {
+    file_size = 0;
+
     // Get the response of the app compat db
     auto response = get_web_response(url);
 
@@ -198,17 +253,28 @@ bool download_file(const std::string url, const std::string output_file_path) {
     if (!response.empty()) {
         // Check if the response is a redirection
         if (response.find("HTTP/1.1 302 Found") != std::string::npos) {
-            // Extract the redirection URL from the response
-            std::string location_header = "Location: ";
-            size_t location_index = response.find(location_header);
-            size_t end_of_location_index = response.find("\r\n", location_index + location_header.length());
-            const auto redirected_url = response.substr(location_index + location_header.length(), end_of_location_index - location_index - location_header.length());
+            // Get the redirection URL from the response header (Location)
+            std::smatch match;
+            if (std::regex_search(response, match, std::regex("Location: (https?://[^\\s]+)"))) {
+                const std::string redirected_url(match[1]);
 
-            // Get response of redirect url
-            response = get_web_response(redirected_url);
-            if (response.empty()) {
-                LOG_ERROR("Failed to get response on redirected url: {}", redirected_url);
-                return false;
+                // Get file size from the redirection URL when progress callback is not null
+                if (progress_callback) {
+                    file_size = get_file_size(redirected_url);
+                    if (file_size == 0) {
+                        LOG_ERROR("Failed to get file size");
+                        return false;
+                    }
+                }
+
+                // Download the file from the redirection URL with using progress callback
+                response = get_web_response(redirected_url, "GET", progress_callback);
+
+                // Check if the response is empty
+                if (response.empty()) {
+                    LOG_ERROR("Failed to download file");
+                    return false;
+                }
             }
         }
 

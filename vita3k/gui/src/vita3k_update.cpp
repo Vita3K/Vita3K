@@ -100,6 +100,7 @@ bool init_vita3k_update(GuiState &gui) {
                         if (!sha.empty() && !msg.empty()) {
                             // Replace &quot; to \" for get back original message
                             boost::replace_all(msg, "&quot;", "\"");
+
                             // Replace \r and \n to new line
                             boost::replace_all(msg, "\\r\\n", "\n");
                             boost::replace_all(msg, "\\n", "\n");
@@ -132,6 +133,11 @@ bool init_vita3k_update(GuiState &gui) {
     return has_update;
 }
 
+static std::atomic<float> progress(0);
+static const auto progress_callback = [](float updated_progress) {
+    progress = updated_progress;
+};
+
 static void download_update(const std::string base_path) {
     std::thread download([base_path]() {
         std::string download_continuous_link = "https://github.com/Vita3K/Vita3K/releases/download/continuous";
@@ -152,7 +158,7 @@ static void download_update(const std::string base_path) {
         const auto vita3k_latest_path = base_path + "vita3k-latest" + archive_ext;
 
         LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
-        if (https::download_file(download_continuous_link, vita3k_latest_path)) {
+        if (https::download_file(download_continuous_link, vita3k_latest_path, progress_callback)) {
             SDL_Event event;
             event.type = SDL_QUIT;
             SDL_PushEvent(&event);
@@ -265,6 +271,15 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2(92.f * SCALE.x, (display_size.y / 2.f) - (calc_str.y / 2.f)));
         ImGui::PushTextWrapPos(868.f * SCALE.x);
         ImGui::Text("%s", lang["downloading"].c_str());
+        const float PROGRESS_BAR_WIDTH = 820.f * SCALE.x;
+        ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), ImGui::GetCursorPosY() + 30.f * emuenv.dpi_scale));
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
+        ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * emuenv.dpi_scale), "");
+        const auto progress_str = std::to_string(uint32_t(progress)).append("%");
+        ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + 16.f * emuenv.dpi_scale));
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
+        ImGui::PopStyleColor();
+
         ImGui::PopTextWrapPos();
 
         break;
