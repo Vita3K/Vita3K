@@ -22,8 +22,8 @@
 
 namespace https {
 
-std::string get_web_response(const std::string url);
-std::string get_web_regex_result(const std::string url, const std::regex regex);
-bool download_file(const std::string url, std::string output_file_path);
+std::string get_web_response(const std::string url, const std::string method = "GET", const std::function<void(float)> &progress_callback = nullptr);
+std::string get_web_regex_result(const std::string url, const std::regex regex, const std::string method = "GET");
+bool download_file(const std::string url, const std::string output_file_path, const std::function<void(float)> &progress_callback = nullptr);
 
 } // namespace https

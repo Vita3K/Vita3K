@@ -67,7 +67,7 @@ void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
         ImGui::Spacing();
         ImGui::Separator();
-        const auto text_size = ImGui::CalcTextSize(gui.info_message.msg.c_str(), 0 , false, WINDOW_SIZE.x - (24.f * SCALE.x));
+        const auto text_size = ImGui::CalcTextSize(gui.info_message.msg.c_str(), 0, false, WINDOW_SIZE.x - (24.f * SCALE.x));
         const auto text_pos = ImVec2((WINDOW_SIZE.x / 2.f) - (text_size.x / 2.f), (WINDOW_SIZE.y / 2.f) - (text_size.y / 2.f) - (24 * SCALE.y));
         ImGui::SetCursorPos(text_pos);
         ImGui::TextWrapped("%s", gui.info_message.msg.c_str());
