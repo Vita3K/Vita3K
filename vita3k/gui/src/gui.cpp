@@ -47,7 +47,7 @@
 namespace gui {
 
 void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
-    if (emuenv.cfg.display_info_message) {
+    if (emuenv.io.title_id.empty() && emuenv.cfg.display_info_message) {
         const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
         const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
         const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
@@ -55,13 +55,14 @@ void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
         const ImVec2 WINDOW_SIZE(680.0f * SCALE.x, 320.0f * SCALE.y);
         const ImVec2 BUTTON_SIZE(160.f * SCALE.x, 46.f * SCALE.y);
 
-        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.x), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##information", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
         ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::BeginChild("##info", WINDOW_SIZE, true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
-        const auto title = fmt::format("{}", spdlog::level::to_string_view(gui.info_message.level));
+        auto title = fmt::format("{}", spdlog::level::to_string_view(gui.info_message.level));
+        title[0] = std::toupper(title[0]);
         ImGui::SetWindowFontScale(RES_SCALE.x);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(title.c_str()).x) / 2);
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
@@ -697,14 +698,6 @@ void pre_init(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void init(GuiState &gui, EmuEnvState &emuenv) {
-#ifdef USE_VITA3K_UPDATE
-    std::thread update_vita3k_thread([&gui]() {
-        if (init_vita3k_update(gui))
-            gui.help_menu.vita3k_update = true;
-    });
-    update_vita3k_thread.detach();
-#endif
-
     get_modules_list(gui, emuenv);
     get_notice_list(emuenv);
     get_users_list(gui, emuenv);
@@ -716,6 +709,14 @@ void init(GuiState &gui, EmuEnvState &emuenv) {
     get_sys_apps_title(gui, emuenv);
 
     init_home(gui, emuenv);
+
+#ifdef USE_VITA3K_UPDATE
+    std::thread update_vita3k_thread([&gui]() {
+        if (init_vita3k_update(gui))
+            gui.help_menu.vita3k_update = true;
+    });
+    update_vita3k_thread.detach();
+#endif
 
     // Initialize trophy callback
     emuenv.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {

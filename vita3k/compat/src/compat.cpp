@@ -132,7 +132,7 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
     if (!https::download_file(app_compat_db_link, app_compat_db_path.string())) {
         gui.info_message.level = spdlog::level::err;
-        gui.info_message.msg = fmt::format("Failed to download Applications compatibility database updated at: {}", updated_at);
+        gui.info_message.msg = fmt::format("Failed to download Applications compatibility database updated at: {}, try again later.", updated_at);
         return false;
     }
 
@@ -151,7 +151,7 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     if (compat_db_exist) {
         const auto dif = static_cast<int32_t>(gui.compat.app_compat_db.size() - old_compat_count);
         if (!old_db_updated_at.empty() && dif > 0)
-            gui.info_message.msg = fmt::format("The compatibility database was successfully updated from:\n{} to {}.\n\n{} new application(s) are listed!", old_db_updated_at, db_updated_at, dif);
+            gui.info_message.msg = fmt::format("The compatibility database was successfully updated from:\n{} to {}.\n\n{} new application(s) are listed, bringing the total to {}!", old_db_updated_at, db_updated_at, dif, gui.compat.app_compat_db.size());
         else
             gui.info_message.msg = fmt::format("The compatibility database was successfully updated from:\n{} to {}.\n\n{} applications are listed!", old_db_updated_at, db_updated_at, gui.compat.app_compat_db.size());
     } else
