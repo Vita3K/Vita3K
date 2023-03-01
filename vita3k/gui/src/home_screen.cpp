@@ -177,7 +177,7 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 }
 
 void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size = ImGui::GetIO().DisplaySize;
+    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
@@ -186,10 +186,10 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
 
     auto common = emuenv.common_dialog.lang.common;
 
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y), ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
     ImGui::Begin("##app_close", &gui.vita_area.app_close, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
     ImGui::BeginChild("##app_close_child", WINDOW_SIZE, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
@@ -200,9 +200,11 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetCursorPos(ImVec2(50.f * SCALE.x, 108.f * SCALE.y));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.lang.game_data["app_close"].c_str());
     if (gui.app_selector.user_apps_icon.contains(emuenv.io.app_path)) {
-        const auto ICON_POS_SCALE = ImVec2(152.f * SCALE.x, (display_size.y / 2.f) - (ICON_SIZE.y / 2.f) - (10.f * SCALE.y));
+        const auto ICON_POS_SCALE = ImVec2(50.f * SCALE.x, (WINDOW_SIZE.y / 2.f) - (ICON_SIZE.y / 2.f) - (10.f * SCALE.y));
         const auto ICON_SIZE_SCALE = ImVec2(ICON_POS_SCALE.x + ICON_SIZE.x, ICON_POS_SCALE.y + ICON_SIZE.y);
-        ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, emuenv.io.app_path)->second, ICON_POS_SCALE, ICON_SIZE_SCALE, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, ICON_SIZE.x, ImDrawCornerFlags_All);
+        ImGui::SetCursorPos(ICON_POS_SCALE);
+        const auto POS_MIN = ImGui::GetCursorScreenPos();
+        ImGui::GetWindowDrawList()->AddImageRounded(get_app_icon(gui, emuenv.io.app_path)->second, POS_MIN, ImVec2(POS_MIN.x + ICON_SIZE.x, POS_MIN.y + ICON_SIZE.y), ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, ICON_SIZE.x, ImDrawCornerFlags_All);
     }
     ImGui::SetCursorPos(ImVec2(ICON_SIZE.x + (72.f * SCALE.x), (WINDOW_SIZE.y / 2.f) - ImGui::CalcTextSize(emuenv.current_app_title.c_str()).y + (4.f * SCALE.y)));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", emuenv.current_app_title.c_str());
@@ -432,20 +434,25 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     else
         ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawFlags_RoundCornersAll);
 
+    const ImVec2 VIEWPORT_RES_SCALE(emuenv.viewport_size.x / emuenv.res_width_dpi_scale, emuenv.viewport_size.y / emuenv.res_height_dpi_scale);
+    const ImVec2 VIEWPORT_SCALE(VIEWPORT_RES_SCALE.x * emuenv.dpi_scale, VIEWPORT_RES_SCALE.y * emuenv.dpi_scale);
+
+    // Size of the icon depending view mode
+    const ImVec2 ICON_SIZE(emuenv.cfg.apps_list_grid ? ImVec2(128.f * VIEWPORT_SCALE.x, 128.f * VIEWPORT_SCALE.y) : ImVec2(emuenv.cfg.icon_size * SCALE.x, emuenv.cfg.icon_size * SCALE.x));
+
     // Size of column padding
     const float column_padding_size = 20.f * SCALE.x;
 
     // Size of the icon part
-    const float icon_size = static_cast<float>(emuenv.cfg.icon_size) * SCALE.x;
-    const float column_icon_size = icon_size + column_padding_size;
+    const float column_icon_size = ICON_SIZE.x + column_padding_size + (5.f * SCALE.x);
 
     // Size of the compatibility part
-    const auto compat_radius = 12.f * SCALE.x;
-    const auto full_compat_radius = (3.f * SCALE.x) + compat_radius;
+    const auto compat_radius = 12.f * (emuenv.cfg.apps_list_grid ? VIEWPORT_SCALE.x: SCALE.x);
+    const auto full_compat_radius = (3.f * (emuenv.cfg.apps_list_grid ? VIEWPORT_SCALE.x : SCALE.x)) + compat_radius;
 
     auto lang = gui.lang.home_screen;
 
-    ImGui::SetWindowFontScale(0.9f * RES_SCALE.x);
+    ImGui::SetWindowFontScale(0.9f * VIEWPORT_RES_SCALE.x);
 
     // Sort Apps list when is not sorted
     if (!gui.app_selector.is_app_list_sorted)
@@ -524,7 +531,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_region == ALL))
             app_region = ALL;
         if (ImGui::BeginMenu(lang["by_region"].c_str())) {
-            ImGui::SetWindowFontScale(1.1f * RES_SCALE.x);
+            ImGui::SetWindowFontScale(1.1f * VIEWPORT_RES_SCALE.x);
             if (ImGui::MenuItem(lang["usa"].c_str(), nullptr, app_region == USA))
                 app_region = USA;
             if (ImGui::MenuItem(lang["europe"].c_str(), nullptr, app_region == EURO))
@@ -558,9 +565,10 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::NextColumn();
     ImGui::Columns(1);
     ImGui::Separator();
-    const auto POS_APP_LIST = ImVec2(60.f * SCALE.x, INFORMATION_BAR_HEIGHT + (36.f * SCALE.y));
-    const auto SIZE_APP_LIST = ImVec2((emuenv.cfg.apps_list_grid ? 840.f : 900.f) * SCALE.x, display_size.y - POS_APP_LIST.y);
-    ImGui::SetNextWindowPos(emuenv.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(1.f, POS_APP_LIST.y), ImGuiCond_Always);
+    const auto MARGIN_HEIGHT = INFORMATION_BAR_HEIGHT + (34.f * SCALE.y);
+    const auto POS_APP_LIST = ImVec2(emuenv.viewport_pos.x + (60.f * VIEWPORT_SCALE.x), MARGIN_HEIGHT);
+    const auto SIZE_APP_LIST = ImVec2(emuenv.cfg.apps_list_grid ? 840.f * VIEWPORT_SCALE.x : 900.f * SCALE.x, display_size.y - MARGIN_HEIGHT);
+    ImGui::SetNextWindowPos(emuenv.cfg.apps_list_grid ? POS_APP_LIST : ImVec2(0, MARGIN_HEIGHT), ImGuiCond_Always);
     ImGui::BeginChild("##apps_list", SIZE_APP_LIST, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
     // Set Scroll Pos
@@ -572,8 +580,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         scroll_type = 0;
     }
 
-    const auto GRID_ICON_SIZE = ImVec2(128.f * SCALE.x, 128.f * SCALE.y);
-    const auto GRID_COLUMN_SIZE = GRID_ICON_SIZE.x + (80.f * SCALE.x);
+    const auto GRID_COLUMN_SIZE = ICON_SIZE.x + (80.f * VIEWPORT_SCALE.x);
     if (!emuenv.cfg.apps_list_grid) {
         ImGui::Columns(7, nullptr, true);
         ImGui::SetColumnWidth(0, column_icon_size);
@@ -605,9 +612,9 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                 continue;
 
             const auto POS_ICON = ImGui::GetCursorPos();
-            const auto GRID_INIT_POS = POS_ICON.x + (GRID_COLUMN_SIZE / 2.f) - (10.f * SCALE.x);
-            const auto ICON_SIZE = emuenv.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(icon_size, icon_size);
-            const auto GRID_ICON_POS = GRID_INIT_POS - (GRID_ICON_SIZE.x / 2.f);
+            const auto GRID_INIT_POS = POS_ICON.x + (GRID_COLUMN_SIZE / 2.f) - (10.f * VIEWPORT_SCALE.x);
+
+            const auto GRID_ICON_POS = GRID_INIT_POS - (ICON_SIZE.x / 2.f);
             ImGui::PushID(app.path.c_str());
 
             // Determine if the element is within the visible area of the window.
@@ -620,6 +627,8 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                 if (apps_icon.contains(app.path)) {
                     if (emuenv.cfg.apps_list_grid)
                         ImGui::SetCursorPosX(GRID_ICON_POS);
+                    else
+                        ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPos().x + (5.f * SCALE.x), ImGui::GetCursorPos().y + (5.f * SCALE.y)));
                     const auto POS_MIN = ImGui::GetCursorScreenPos();
                     const ImVec2 POS_MAX(POS_MIN.x + ICON_SIZE.x, POS_MIN.y + ICON_SIZE.y);
                     ImGui::GetWindowDrawList()->AddImageRounded(apps_icon[app.path], POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
@@ -644,8 +653,8 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                 const auto compat_state_vec4 = gui.compat.compat_color[compat_state];
                 const ImU32 compat_state_color = IM_COL32((int)(compat_state_vec4.x * 255.0f), (int)(compat_state_vec4.y * 255.0f), (int)(compat_state_vec4.z * 255.0f), (int)(compat_state_vec4.w * 255.0f));
                 const auto current_pos = ImGui::GetCursorPos();
-                const auto compat_padding = 4.f * SCALE.x;
-                const auto compat_state_pos = emuenv.cfg.apps_list_grid ? ImVec2(GRID_ICON_POS + full_compat_radius + compat_padding, POS_ICON.y + full_compat_radius + compat_padding) : ImVec2(current_pos.x + ((ImGui::GetColumnWidth() - column_padding_size) / 2.f), current_pos.y + (icon_size / 2.f));
+                const auto grid_compat_padding = 4.f * VIEWPORT_SCALE.x;
+                const auto compat_state_pos = emuenv.cfg.apps_list_grid ? ImVec2(GRID_ICON_POS + full_compat_radius + grid_compat_padding, POS_ICON.y + full_compat_radius + grid_compat_padding) : ImVec2(current_pos.x + ((ImGui::GetColumnWidth() - column_padding_size) / 2.f), current_pos.y + (ICON_SIZE.y / 2.f));
                 ImGui::SetCursorPos(compat_state_pos);
                 ImGui::GetWindowDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), full_compat_radius, IM_COL32(0, 0, 0, 255));
                 ImGui::GetWindowDrawList()->AddCircleFilled(ImGui::GetCursorScreenPos(), compat_radius, compat_state_color);
@@ -654,7 +663,9 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPosY(POS_ICON.y);
             if (emuenv.cfg.apps_list_grid)
                 ImGui::SetCursorPosX(GRID_ICON_POS);
-            ImGui::Selectable("##icon", &selected, emuenv.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns, emuenv.cfg.apps_list_grid ? GRID_ICON_SIZE : ImVec2(0.f, icon_size));
+            const auto icon_flags = emuenv.cfg.apps_list_grid ? ImGuiSelectableFlags_None : ImGuiSelectableFlags_SpanAllColumns;
+            const ImVec2 list_selectable_size(0.f, ICON_SIZE.y + (10.f * SCALE.y));
+            ImGui::Selectable("##icon", &selected, icon_flags, emuenv.cfg.apps_list_grid ? ICON_SIZE : list_selectable_size);
             if (!gui.configuration_menu.custom_settings_dialog && ImGui::IsItemHovered())
                 emuenv.app_path = app.path;
             if (emuenv.app_path == app.path)
@@ -663,31 +674,31 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::NextColumn();
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
                 ImGui::PushStyleColor(ImGuiCol_Text, !gui.theme_backgrounds_font_color.empty() && gui.users[emuenv.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT);
-                ImGui::Selectable(app.title_id.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::Selectable(app.title_id.c_str(), false, ImGuiSelectableFlags_None, list_selectable_size);
                 ImGui::NextColumn();
-                ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::Selectable(app.app_ver.c_str(), false, ImGuiSelectableFlags_None, list_selectable_size);
                 ImGui::NextColumn();
-                ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::Selectable(app.category.c_str(), false, ImGuiSelectableFlags_None, list_selectable_size);
                 ImGui::NextColumn();
                 if (app.last_time) {
                     tm date_tm = {};
                     SAFE_LOCALTIME(&app.last_time, &date_tm);
                     auto LAST_TIME = get_date_time(gui, emuenv, date_tm);
                     ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 1.f));
-                    ImGui::Selectable(LAST_TIME[DateTime::DATE_MINI].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size / 2.f));
+                    ImGui::Selectable(LAST_TIME[DateTime::DATE_MINI].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, ICON_SIZE.y / 2.f));
                     ImGui::PopStyleVar();
                     const auto CLOCK_STR = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR ? fmt::format("{} {}", LAST_TIME[DateTime::CLOCK], LAST_TIME[DateTime::DAY_MOMENT]) : LAST_TIME[DateTime::CLOCK];
                     const auto HALF_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str()).x / 2.f;
                     ImGui::SetCursorPosX(ImGui::GetCursorPosX() - (10.f * SCALE.x) + (ImGui::GetColumnWidth() / 2.f) - HALF_CLOCK_SIZE);
                     ImGui::Text("%s", CLOCK_STR.c_str());
                 } else
-                    ImGui::Selectable(!gui.lang.app_context["never"].empty() ? gui.lang.app_context["never"].c_str() : "Never", false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                    ImGui::Selectable(!gui.lang.app_context["never"].empty() ? gui.lang.app_context["never"].c_str() : "Never", false, ImGuiSelectableFlags_None, ImVec2(0.f, ICON_SIZE.y));
                 ImGui::NextColumn();
-                ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, icon_size));
+                ImGui::Selectable(app.title.c_str(), false, ImGuiSelectableFlags_None, list_selectable_size);
                 ImGui::PopStyleColor();
                 ImGui::PopStyleVar();
             } else {
-                ImGui::SetCursorPosX(GRID_INIT_POS - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, GRID_ICON_SIZE.x + (32.f * SCALE.x)).x / 2.f));
+                ImGui::SetCursorPosX(GRID_INIT_POS - (ImGui::CalcTextSize(app.stitle.c_str(), 0, false, ICON_SIZE.x + (32.f * SCALE.x)).x / 2.f));
                 ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + (GRID_COLUMN_SIZE - (48.f * SCALE.x)));
                 ImGui::TextColored(!gui.theme_backgrounds_font_color.empty() && gui.users[emuenv.io.user_id].use_theme_bg ? gui.theme_backgrounds_font_color[gui.current_theme_bg] : GUI_COLOR_TEXT, "%s", app.stitle.c_str());
                 ImGui::PopTextWrapPos();
