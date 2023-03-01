@@ -95,7 +95,17 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         if (state == Unknown)
             LOG_WARN("App with title ID {} has an issue but no status label. Please check GitHub issue {} and request a status label to be added.", title_id, issue_id);
 
-        gui.compat.app_compat_db[title_id] = { issue_id, state, updated_at };
+        // Check if app already exists in compatibility database
+        if (gui.compat.app_compat_db.contains(title_id)) {
+            const auto exist_app = gui.compat.app_compat_db[title_id];
+            const auto duplicate_issue = issue_id > exist_app.issue_id ? issue_id : exist_app.issue_id;
+            LOG_WARN("App with title ID {} already exists in compatibility database. Please check and close GitHub issue {}.", title_id, duplicate_issue);
+
+            // If the issue ID is different, update the issue for using original old issue
+            if (duplicate_issue != issue_id)
+                gui.compat.app_compat_db[title_id] = { issue_id, state, updated_at };
+        } else
+            gui.compat.app_compat_db[title_id] = { issue_id, state, updated_at };
     }
 
     // Update compatibility status of all user apps
