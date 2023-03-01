@@ -179,18 +179,20 @@ std::string get_web_response(const std::string url, const std::string method, co
 
     std::array<char, READ_BUFFER_SIZE> read_buffer{};
     std::string response;
-    uint64_t current_size = 0;
-    while (auto bytes_read = SSL_read(ssl, read_buffer.data(), static_cast<uint32_t>(read_buffer.size()))) {
+    int64_t downloaded_size = 0;
+
+    // Remove header size from downloaded size if header size is not 0
+    if (header_size > 0)
+        downloaded_size -= header_size;
+
+    while (const auto bytes_read = SSL_read(ssl, read_buffer.data(), static_cast<uint32_t>(read_buffer.size()))) {
         response += std::string(read_buffer.data(), bytes_read);
-        current_size += bytes_read;
+        downloaded_size += bytes_read;
         if (progress_callback && (file_size > 0)) {
-            float progress_percent = static_cast<float>(current_size - header_size) / static_cast<float>(file_size) * 100.0f;
+            float progress_percent = static_cast<float>(downloaded_size) / static_cast<float>(file_size) * 100.0f;
             progress_callback(progress_percent);
         }
     }
-
-    if (method == "HEAD")
-        header_size = current_size;
 
     freeaddrinfo(result);
     SSL_CTX_free(ctx);
@@ -198,6 +200,14 @@ std::string get_web_response(const std::string url, const std::string method, co
     close_socket(sockfd);
 
     boost::trim(response);
+
+    // Set header size if method is HEAD
+    if (method == "HEAD") {
+        header_size = downloaded_size;
+    } else if ((header_size > 0) && (downloaded_size < (file_size * 0.01))) {
+        LOG_ERROR("Downloaded size is not equal to file size, downloaded size: {}/{}", downloaded_size, file_size);
+        return {};
+    }
 
     // Check if the response is resource not found
     if (response.find("HTTP/1.1 404 Not Found") != std::string::npos) {
@@ -244,6 +254,7 @@ static uint64_t get_file_size(const std::string url) {
 }
 
 bool download_file(const std::string url, const std::string output_file_path, const std::function<void(float)> &progress_callback) {
+    header_size = 0;
     file_size = 0;
 
     // Get the response of the app compat db
@@ -258,13 +269,11 @@ bool download_file(const std::string url, const std::string output_file_path, co
             if (std::regex_search(response, match, std::regex("Location: (https?://[^\\s]+)"))) {
                 const std::string redirected_url(match[1]);
 
-                // Get file size from the redirection URL when progress callback is not null
-                if (progress_callback) {
-                    file_size = get_file_size(redirected_url);
-                    if (file_size == 0) {
-                        LOG_ERROR("Failed to get file size");
-                        return false;
-                    }
+                // Get file size from the redirection URL
+                file_size = get_file_size(redirected_url);
+                if (file_size == 0) {
+                    LOG_ERROR("Failed to get file size");
+                    return false;
                 }
 
                 // Download the file from the redirection URL with using progress callback
