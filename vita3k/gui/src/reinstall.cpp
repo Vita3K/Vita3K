@@ -32,7 +32,7 @@ void draw_reinstall_dialog(GenericDialogState *status, GuiState &gui, EmuEnvStat
     ImGui::Begin(lang["reinstall_content"].c_str());
     ImGui::Text("%s", lang["already_installed"].c_str());
     ImGui::Spacing();
-    ImGui::Text("%s: %s\n%s: %s\n%s: %s", gui.lang.home_screen["tit"].c_str(), emuenv.app_info.app_title.c_str(), info["title_id"].c_str(), emuenv.app_info.app_title_id.c_str(), info["version"].c_str(), emuenv.app_info.app_version.c_str());
+    ImGui::Text("%s: %s\n%s: %s\n%s: %s", gui.lang.app_context["name"].c_str(), emuenv.app_info.app_title.c_str(), info["title_id"].c_str(), emuenv.app_info.app_title_id.c_str(), info["version"].c_str(), emuenv.app_info.app_version.c_str());
     ImGui::Spacing();
     ImGui::Text("%s", lang["reinstall_overwrite"].c_str());
     if (ImGui::Button(common["yes"].c_str())) {

@@ -349,9 +349,9 @@ static std::string get_label_name(GuiState &gui, const SortType &type) {
     switch (type) {
     case APP_VER: label = lang["ver"]; break;
     case CATEGORY: label = lang["cat"]; break;
-    case COMPAT: label = "Comp"; break;
+    case COMPAT: label = lang["comp"]; break;
     case LAST_TIME: label = lang["last_time"]; break;
-    case TITLE: label = lang["tit"]; break;
+    case TITLE: label = gui.lang.app_context["name"]; break;
     case TITLE_ID: label = gui.lang.app_context["title_id"]; break;
     }
 

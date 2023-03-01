@@ -132,6 +132,7 @@ struct LangState {
     std::map<std::string, std::string> app_context = {
         { "boot", "Boot" },
         { "check_app_compatibility", "Check App Compatibility" },
+        { "copy_vita3k_summary", "Copy Vita3K Summary" },
         { "open_issue", "Open Issue" },
         { "create_issue", "Create Issue" },
         { "update_database", "Update Database" },
@@ -267,8 +268,8 @@ struct LangState {
         { "homebrew", "Homebrew" },
         { "ver", "Ver" },
         { "cat", "Cat" },
+        { "comp", "Comp" },
         { "last_time", "Last Time" },
-        { "tit", "Title" },
         { "refresh", "Refresh" }
     };
     std::map<std::string, std::string> indicator = {
