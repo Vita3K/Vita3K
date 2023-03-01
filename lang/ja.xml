@@ -38,6 +38,7 @@
 	<app_context>
 		<boot>起動</boot>
 		<check_app_compatibility>アプリの互換性を調べる</check_app_compatibility>
+		<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
 		<open_issue>Open Issue</open_issue>
 		<create_issue>Create Issue</create_issue>
 		<update_database>Update Database</update_database>
@@ -330,8 +331,8 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<homebrew>自作ゲーム</homebrew>
 		<ver>Ver</ver>
 		<cat>カテゴリー</cat>
+		<comp>互換性</comp>
 		<last_time>最終プレイ日時</last_time>
-		<tit>名前</tit>
 		<refresh>更新</refresh>
 	</home_screen>
 	

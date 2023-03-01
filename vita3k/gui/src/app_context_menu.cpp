@@ -333,7 +333,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                         ImGui::LogText("%s", vita3k_summary.c_str());
                         ImGui::LogFinish();
                     };
-                    if (ImGui::MenuItem("Copy Vita3K Summary"))
+                    if (ImGui::MenuItem(lang["copy_vita3k_summary"].c_str()))
                         copy_vita3k_summary();
                     if (ImGui::MenuItem(lang["open_issue"].c_str())) {
                         copy_vita3k_summary();

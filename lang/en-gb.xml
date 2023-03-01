@@ -38,6 +38,7 @@
 	<app_context>
 		<boot>Boot</boot>
 		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
+		<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
 		<open_issue>Open Issue</open_issue>
 		<create_issue>Create Issue</create_issue>
 		<update_database>Update Database</update_database>
@@ -335,8 +336,8 @@ Do not power off the system or close the application.</warning_saving>
 		<homebrew>Homebrew</homebrew>
 		<ver>Ver</ver>
 		<cat>Cat</cat>
+		<comp>Comp</comp>
 		<last_time>Last Time</last_time>
-		<tit>Title</tit>
 		<refresh>Refresh</refresh>
 	</home_screen>
 

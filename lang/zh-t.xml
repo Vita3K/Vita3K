@@ -38,6 +38,7 @@
 	<app_context>
 		<boot>運行</boot>
 		<check_app_compatibility>查看應用程式兼容性</check_app_compatibility>
+		<copy_vita3k_summary>複製Vita3K摘要</copy_vita3k_summary>
 		<open_issue>打開問題</open_issue>
 		<create_issue>創建問題</create_issue>
 		<update_database>更新數據庫</update_database>
@@ -335,8 +336,8 @@
 		<homebrew>自制</homebrew>
 		<ver>版本</ver>
 		<cat>類別</cat>
+		<comp>兼容性</comp>
 		<last_time>最近使用時間</last_time>
-		<tit>標題</tit>
 		<refresh>刷新</refresh>
 	</home_screen>
 

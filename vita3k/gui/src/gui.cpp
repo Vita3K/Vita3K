@@ -75,7 +75,7 @@ void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosY(WINDOW_SIZE.y - BUTTON_SIZE.y - (42.0f * SCALE.y));
         ImGui::Separator();
         ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
-        if (ImGui::Button("Ok", BUTTON_SIZE))
+        if (ImGui::Button("OK", BUTTON_SIZE))
             gui.info_message = {};
         ImGui::EndChild();
 
