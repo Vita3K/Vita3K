@@ -599,7 +599,7 @@ void VKState::set_fxaa(bool enable_fxaa) {
 bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     assert(features.support_memory_mapping);
     // the adress should be 4K aligned
-    assert(((uint64_t)address & 4095) == 0);
+    assert((address.address() & 4095) == 0);
     constexpr vk::BufferUsageFlags mapped_memory_flags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
     if (mem.use_page_table) {
