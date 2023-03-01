@@ -54,7 +54,7 @@ static void close_ssl(SSL *ssl) {
 
 static uint64_t file_size = 0, header_size = 0;
 constexpr int READ_BUFFER_SIZE = 1048;
-std::string get_web_response(const std::string url, const std::string method, const std::function<void(float)> &progress_callback) {
+std::string get_web_response(const std::string &url, const std::string &method, ProgressCallback progress_callback) {
 #ifdef WIN32
     WORD versionWanted = MAKEWORD(2, 2);
     WSADATA wsaData;
@@ -70,8 +70,13 @@ std::string get_web_response(const std::string url, const std::string method, co
 
     // Create socket
     const auto sockfd = socket(AF_INET, SOCK_STREAM, 0);
+#ifdef WIN32
+    if (sockfd == INVALID_SOCKET) {
+        LOG_ERROR("ERROR opening socket: {}", log_hex(WSAGetLastError()));
+#else
     if (sockfd < 0) {
-        LOG_ERROR("ERROR opening socket: {}", sockfd);
+        LOG_ERROR("ERROR opening socket: {}", log_hex(sockfd));
+#endif
         SSL_CTX_free(ctx);
         return {};
     }
@@ -81,7 +86,7 @@ std::string get_web_response(const std::string url, const std::string method, co
     size_t start = url.find("://");
     if (start != std::string::npos) {
         start += 3; // skip "://"
-        size_t end = url.find("/", start);
+        size_t end = url.find('/', start);
         if (end != std::string::npos) {
             host = url.substr(start, end - start);
             uri = url.substr(end);
@@ -218,7 +223,7 @@ std::string get_web_response(const std::string url, const std::string method, co
     return response;
 }
 
-std::string get_web_regex_result(const std::string url, const std::regex regex, const std::string method) {
+std::string get_web_regex_result(const std::string &url, const std::regex &regex, const std::string &method) {
     std::string result;
 
     // Get the response of the web
@@ -240,7 +245,7 @@ std::string get_web_regex_result(const std::string url, const std::regex regex, 
     return result;
 }
 
-static uint64_t get_file_size(const std::string url) {
+static uint64_t get_file_size(const std::string &url) {
     uint64_t content_length = 0;
 
     // Get the file size from the header
@@ -253,58 +258,57 @@ static uint64_t get_file_size(const std::string url) {
     return content_length;
 }
 
-bool download_file(const std::string url, const std::string output_file_path, const std::function<void(float)> &progress_callback) {
+bool download_file(const std::string &url, const std::string &output_file_path, ProgressCallback progress_callback) {
     header_size = 0;
     file_size = 0;
 
-    // Get the response of the app compat db
+    // Get the response
     auto response = get_web_response(url);
 
     // Check if the response is not empty
-    if (!response.empty()) {
-        // Check if the response is a redirection
-        if (response.find("HTTP/1.1 302 Found") != std::string::npos) {
-            // Get the redirection URL from the response header (Location)
-            std::smatch match;
-            if (std::regex_search(response, match, std::regex("Location: (https?://[^\\s]+)"))) {
-                const std::string redirected_url(match[1]);
+    if (response.empty()) {
+        LOG_ERROR("Failed to download file on url: {}", url);
+        return false;
+    }
+    // Check if the response is a redirection
+    if (response.find("HTTP/1.1 302 Found") != std::string::npos) {
+        // Get the redirection URL from the response header (Location)
+        std::smatch match;
+        if (std::regex_search(response, match, std::regex("Location: (https?://[^\\s]+)"))) {
+            const std::string redirected_url(match[1]);
 
-                // Get file size from the redirection URL
-                file_size = get_file_size(redirected_url);
-                if (file_size == 0) {
-                    LOG_ERROR("Failed to get file size");
-                    return false;
-                }
+            // Get file size from the redirection URL
+            file_size = get_file_size(redirected_url);
+            if (file_size == 0) {
+                LOG_ERROR("Failed to get file size on url: {}", redirected_url);
+                return false;
+            }
 
-                // Download the file from the redirection URL with using progress callback
-                response = get_web_response(redirected_url, "GET", progress_callback);
+            // Download the file from the redirection URL with using progress callback
+            response = get_web_response(redirected_url, "GET", progress_callback);
 
-                // Check if the response is empty
-                if (response.empty()) {
-                    LOG_ERROR("Failed to download file");
-                    return false;
-                }
+            // Check if the response is empty
+            if (response.empty()) {
+                LOG_ERROR("Failed to download file on url: {}", redirected_url);
+                return false;
             }
         }
-
-        // Get the content of the response
-        std::string content = response.substr(response.find("\r\n\r\n") + 4);
-
-        // Create the output file
-        std::ofstream output_file(output_file_path, std::ios::binary);
-        if (!output_file.is_open()) {
-            LOG_ERROR("Failed to open output file: {}", output_file_path);
-            return false;
-        }
-
-        // Write the content to the output file
-        output_file.write(content.c_str(), content.length());
-        output_file.close();
-
-        return fs::exists(output_file_path);
     }
 
-    return false;
-}
+    // Get the content of the response
+    std::string content = response.substr(response.find("\r\n\r\n") + 4);
 
+    // Create the output file
+    std::ofstream output_file(output_file_path, std::ios::binary);
+    if (!output_file.is_open()) {
+        LOG_ERROR("Failed to open output file: {}", output_file_path);
+        return false;
+    }
+
+    // Write the content to the output file
+    output_file.write(content.c_str(), content.length());
+    output_file.close();
+
+    return fs::exists(output_file_path);
+}
 } // namespace https
