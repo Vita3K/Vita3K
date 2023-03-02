@@ -38,6 +38,7 @@
 	<app_context>
 		<boot>부트</boot>
 		<check_app_compatibility>앱 호환성 확인</check_app_compatibility>
+		<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
 		<open_issue>Open Issue</open_issue>
 		<create_issue>Create Issue</create_issue>
 		<update_database>Update Database</update_database>

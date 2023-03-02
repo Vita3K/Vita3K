@@ -47,6 +47,7 @@
 #define SCE_KERNEL_ATTR_NOTIFY_CB_WAKEUP_ONLY 0x00000800U
 
 #define SCE_KERNEL_MUTEX_ATTR_RECURSIVE 0x2U
+#define SCE_KERNEL_MUTEX_ATTR_CEILING 0x4U
 
 #define SCE_KERNEL_MSG_PIPE_MODE_ASAP 0x00000000U
 #define SCE_KERNEL_MSG_PIPE_MODE_FULL 0x00000001U
@@ -727,6 +728,18 @@ struct SceKernelEventFlagInfo {
     SceUInt32 initPattern;
     SceUInt32 currentPattern;
     SceUInt32 numWaitThreads;
+};
+
+struct SceKernelMutexInfo {
+    SceSize size;
+    SceUID mutexId;
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    SceUInt32 attr;
+    SceUInt32 initCount;
+    SceUInt32 currentCount;
+    SceUID currentOwnerId;
+    SceUInt32 numWaitThreads;
+    SceInt32 ceilingPriority;
 };
 
 struct SceKernelSemaInfo {

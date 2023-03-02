@@ -281,7 +281,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     const auto SHADER_LOG_PATH{ fs::path(emuenv.base_path) / "shaderlog" / title_id };
     const auto ISSUES_URL = "https://github.com/Vita3K/compatibility/issues";
 
-    const auto display_size = ImGui::GetIO().DisplaySize;
+    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
 
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
@@ -293,9 +293,9 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto lang_compat = gui.lang.compatibility;
 
     const auto has_issue = gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(title_id) : false;
-    const auto compat_state = has_issue ? gui.compat.app_compat_db[title_id].state : Unknown;
+    const auto compat_state = has_issue ? gui.compat.app_compat_db[title_id].state : compat::Unknown;
     const auto compat_state_color = gui.compat.compat_color[compat_state];
-    const auto compat_state_str = has_issue ? lang_compat.states[compat_state] : lang_compat.states[Unknown];
+    const auto compat_state_str = has_issue ? lang_compat.states[compat_state] : lang_compat.states[compat::Unknown];
 
     // App Context Menu
     if (ImGui::BeginPopupContextItem("##app_context_menu")) {
@@ -333,7 +333,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                         ImGui::LogText("%s", vita3k_summary.c_str());
                         ImGui::LogFinish();
                     };
-                    if (ImGui::MenuItem("Copy Vita3K Summary"))
+                    if (ImGui::MenuItem(lang["copy_vita3k_summary"].c_str()))
                         copy_vita3k_summary();
                     if (ImGui::MenuItem(lang["open_issue"].c_str())) {
                         copy_vita3k_summary();
@@ -476,11 +476,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
     // Context Dialog
     if (!context_dialog.empty()) {
-        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##context_dialog", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetNextWindowBgAlpha(0.999f);
-        ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2.f) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
         ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
         ImGui::BeginChild("##context_dialog_child", WINDOW_SIZE, true, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 10.f * SCALE.x);
@@ -510,7 +510,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 const ImVec2 POS_MAX(POS_MIN.x + PUPOP_ICON_SIZE.x, POS_MIN.y + PUPOP_ICON_SIZE.y);
                 ImGui::GetWindowDrawList()->AddImageRounded(gui.app_selector.user_apps_icon[title_id], POS_MIN, POS_MAX, ImVec2(0, 0), ImVec2(1, 1), IM_COL32_WHITE, PUPOP_ICON_SIZE.x * SCALE.x, ImDrawFlags_RoundCornersAll);
             }
-            ImGui::SetWindowFontScale(1.6f);
+            ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(APP_INDEX->stitle.c_str()).x / 2.f), ICON_MARGIN + PUPOP_ICON_SIZE.y + (4.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->stitle.c_str());
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
@@ -544,7 +544,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
     // Information
     if (gui.vita_area.app_information) {
-        ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##information", &gui.vita_area.app_information, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(1.5f * RES_SCALE.x);

@@ -36,8 +36,9 @@
 	</about>
 
 	<app_context>
-		<boot>啟動</boot>
+		<boot>執行</boot>
 		<check_app_compatibility>檢查應用程式相容性</check_app_compatibility>
+		<copy_vita3k_summary>複製Vita3K摘要</copy_vita3k_summary>
 		<open_issue>開啟問題</open_issue>
 		<create_issue>建立問題</create_issue>
 		<update_database>更新資料庫</update_database>
@@ -335,8 +336,8 @@
 		<homebrew>自製</homebrew>
 		<ver>版本</ver>
 		<cat>類別</cat>
+		<comp>兼容性</comp>
 		<last_time>最近使用時間</last_time>
-		<tit>標題</tit>
 		<refresh>更新</refresh>
 	</home_screen>
 

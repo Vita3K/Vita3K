@@ -555,6 +555,28 @@ void float_to_half_AVX_F16C(const float *src, std::uint16_t *dest, const int tot
 void float_to_half(const float *src, std::uint16_t *dest, const int total) {
     float_to_half_AVX_F16C(src, dest, total);
 }
+#elif defined(__aarch64__)
+#include <arm_neon.h>
+void float_to_half(const float *src, std::uint16_t *dest, const int total) {
+    int left = total;
+    while (left >= 4) {
+        float32x4_t floatx4 = vld1q_f32(src);
+        float16x4_t halfx4 = vcvt_f16_f32(floatx4);
+        vst1_f16(reinterpret_cast<float16_t *>(dest), halfx4);
+        left -= 4;
+        src += 4;
+        dest += 4;
+    }
+
+    if (left > 0) {
+        float data[4] = { 0.0, 0.0, 0.0, 0.0 };
+        std::copy_n(src, left, data);
+        float32x4_t floatx4 = vld1q_f32(data);
+        float16x4_t halfx4 = vcvt_f16_f32(floatx4);
+        vst1_f16(reinterpret_cast<float16_t *>(data), halfx4);
+        std::copy_n(reinterpret_cast<uint16_t *>(data), left, dest);
+    }
+}
 #else
 #include <util/float_to_half.h>
 void float_to_half_basic(const float *src, std::uint16_t *dest, const int total) {

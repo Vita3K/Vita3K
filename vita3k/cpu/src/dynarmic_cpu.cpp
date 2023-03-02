@@ -308,11 +308,16 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
     Dynarmic::A32::UserConfig config;
     config.arch_version = Dynarmic::A32::ArchVersion::v7;
     config.callbacks = cb.get();
-    config.fastmem_pointer = (log_mem || !cpu_opt) ? nullptr : parent->mem->memory.get();
+    if (parent->mem->use_page_table) {
+        config.page_table = (log_mem || !cpu_opt) ? nullptr : reinterpret_cast<decltype(config.page_table)>(parent->mem->page_table.get());
+        config.absolute_offset_page_table = true;
+    } else {
+        config.fastmem_pointer = (log_mem || !cpu_opt) ? nullptr : parent->mem->memory.get();
+    }
     config.hook_hint_instructions = true;
+    config.enable_cycle_counting = false;
     config.global_monitor = monitor;
     config.coprocessors[15] = cp15;
-    config.page_table = nullptr;
     config.processor_id = core_id;
     config.optimizations = cpu_opt ? Dynarmic::all_safe_optimizations : Dynarmic::no_optimizations;
 

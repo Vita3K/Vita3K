@@ -132,6 +132,7 @@ struct LangState {
     std::map<std::string, std::string> app_context = {
         { "boot", "Boot" },
         { "check_app_compatibility", "Check App Compatibility" },
+        { "copy_vita3k_summary", "Copy Vita3K Summary" },
         { "open_issue", "Open Issue" },
         { "create_issue", "Create Issue" },
         { "update_database", "Update Database" },
@@ -169,15 +170,15 @@ struct LangState {
     };
     struct Compatibility {
         std::string name = "Compatibility";
-        std::map<CompatibilityState, std::string> states = {
-            { Unknown, "Unknown" },
-            { Nothing, "Nothing" },
-            { Bootable, "Bootable" },
-            { Intro, "Intro" },
-            { Menu, "Menu" },
-            { Ingame_Less, "Ingame -" },
-            { Ingame_More, "Ingame +" },
-            { Playable, "Playable" }
+        std::map<compat::CompatibilityState, std::string> states = {
+            { compat::Unknown, "Unknown" },
+            { compat::Nothing, "Nothing" },
+            { compat::Bootable, "Bootable" },
+            { compat::Intro, "Intro" },
+            { compat::Menu, "Menu" },
+            { compat::Ingame_Less, "Ingame -" },
+            { compat::Ingame_More, "Ingame +" },
+            { compat::Playable, "Playable" }
         };
     };
     Compatibility compatibility;
@@ -267,8 +268,8 @@ struct LangState {
         { "homebrew", "Homebrew" },
         { "ver", "Ver" },
         { "cat", "Cat" },
+        { "comp", "Comp" },
         { "last_time", "Last Time" },
-        { "tit", "Title" },
         { "refresh", "Refresh" }
     };
     std::map<std::string, std::string> indicator = {

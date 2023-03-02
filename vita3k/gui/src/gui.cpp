@@ -47,30 +47,38 @@
 namespace gui {
 
 void draw_info_message(GuiState &gui, EmuEnvState &emuenv) {
-    if (emuenv.cfg.display_info_message) {
+    if (emuenv.io.title_id.empty() && emuenv.cfg.display_info_message) {
         const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
+        const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+        const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
-        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.x), ImGuiCond_Always);
+        const ImVec2 WINDOW_SIZE(680.0f * SCALE.x, 320.0f * SCALE.y);
+        const ImVec2 BUTTON_SIZE(160.f * SCALE.x, 46.f * SCALE.y);
+
+        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y), ImGuiCond_Always);
         ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
         ImGui::Begin("##information", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
-        ImGui::SetNextWindowPos(ImVec2(display_size.x / 2, display_size.y / 2), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * emuenv.dpi_scale);
-        ImGui::BeginChild("##info", ImVec2(display_size.x / 1.4f, display_size.y / 2.6f), true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
-        const auto title = fmt::format("{}", spdlog::level::to_string_view(gui.info_message.level));
+        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
+        ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 10.f * SCALE.x);
+        ImGui::BeginChild("##info", WINDOW_SIZE, true, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration);
+        auto title = fmt::format("{}", spdlog::level::to_string_view(gui.info_message.level));
+        title[0] = std::toupper(title[0]);
+        ImGui::SetWindowFontScale(RES_SCALE.x);
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() - ImGui::CalcTextSize(title.c_str()).x) / 2);
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", title.c_str());
         ImGui::Spacing();
         ImGui::Separator();
-        ImGui::Spacing();
+        const auto text_size = ImGui::CalcTextSize(gui.info_message.msg.c_str(), 0, false, WINDOW_SIZE.x - (24.f * SCALE.x));
+        const auto text_pos = ImVec2((WINDOW_SIZE.x / 2.f) - (text_size.x / 2.f), (WINDOW_SIZE.y / 2.f) - (text_size.y / 2.f) - (24 * SCALE.y));
+        ImGui::SetCursorPos(text_pos);
         ImGui::TextWrapped("%s", gui.info_message.msg.c_str());
-        ImGui::Spacing();
+        ImGui::SetCursorPosY(WINDOW_SIZE.y - BUTTON_SIZE.y - (42.0f * SCALE.y));
         ImGui::Separator();
-        ImGui::Spacing();
-        const auto BUTTON_SIZE = ImVec2(160.f * emuenv.dpi_scale, 46.f * emuenv.dpi_scale);
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f));
-        if (ImGui::Button("Ok", BUTTON_SIZE))
+        ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
+        if (ImGui::Button("OK", BUTTON_SIZE))
             gui.info_message = {};
         ImGui::EndChild();
+
         ImGui::PopStyleVar();
         ImGui::End();
     } else {
@@ -145,16 +153,14 @@ static void init_style(EmuEnvState &emuenv) {
 static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     ImGuiIO &io = ImGui::GetIO();
 
+    ImFontConfig mono_font_config{};
+    mono_font_config.SizePixels = 13.f * emuenv.dpi_scale;
+
 #ifdef _WIN32
-    if (emuenv.dpi_scale > 1) {
-        // Set monospaced font path -- ImGui's default is a bitmap font that does not scale well, so load Consolas instead
-        const auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
-        gui.monospaced_font = io.Fonts->AddFontFromFileTTF(monospaced_font_path, 13.f * emuenv.dpi_scale, NULL, io.Fonts->GetGlyphRangesJapanese());
-    } else {
-        gui.monospaced_font = io.Fonts->AddFontDefault();
-    }
+    const auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
+    gui.monospaced_font = io.Fonts->AddFontFromFileTTF(monospaced_font_path, mono_font_config.SizePixels, &mono_font_config, io.Fonts->GetGlyphRangesJapanese());
 #else
-    gui.monospaced_font = io.Fonts->AddFontDefault();
+    gui.monospaced_font = io.Fonts->AddFontDefault(&mono_font_config);
 #endif
 
     // Set Large Font
@@ -200,47 +206,61 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     };
     // clang-format on
 
+    // Merge Japanese and Extra ranges
+    ImFontGlyphRangesBuilder builder;
+    builder.AddRanges(io.Fonts->GetGlyphRangesJapanese());
+    builder.AddRanges(extra_range);
+    ImVector<ImWchar> japanes_and_extra_ranges;
+    builder.BuildRanges(&japanes_and_extra_ranges);
+
     ImFontConfig font_config{};
+    ImFontConfig large_font_config{};
 
     // Check existence of fw font file
     if (fs::exists(latin_fw_font_path)) {
         // Add fw font to imgui
+
         gui.fw_font = true;
         font_config.SizePixels = 19.2f * emuenv.dpi_scale;
 
         gui.vita_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), font_config.SizePixels, &font_config, latin_range);
         font_config.MergeMode = true;
 
-        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), font_config.SizePixels, &font_config, io.Fonts->GetGlyphRangesJapanese());
-        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), font_config.SizePixels, &font_config, extra_range);
+        io.Fonts->AddFontFromFileTTF((fw_font_path / "jpn0.pvf").string().c_str(), font_config.SizePixels, &font_config, japanes_and_extra_ranges.Data);
 
         const auto sys_lang = static_cast<SceSystemParamLang>(emuenv.cfg.sys_lang);
         if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN))
             io.Fonts->AddFontFromFileTTF((fw_font_path / "kr0.pvf").string().c_str(), font_config.SizePixels, &font_config, korean_range);
         if (emuenv.cfg.asia_font_support || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T) || (sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S))
             io.Fonts->AddFontFromFileTTF((fw_font_path / "cn0.pvf").string().c_str(), font_config.SizePixels, &font_config, chinese_range);
-
-        io.Fonts->Build();
         font_config.MergeMode = false;
-        gui.large_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), 116.f * emuenv.dpi_scale, &font_config, large_font_chars);
+
+        large_font_config.SizePixels = 116.f * emuenv.dpi_scale;
+        gui.large_font = io.Fonts->AddFontFromFileTTF(latin_fw_font_path.string().c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
     } else {
         LOG_WARN("Could not find firmware font file at \"{}\", install firmware fonts package to fix this.", latin_fw_font_path.string());
+        font_config.SizePixels = 22.f * emuenv.dpi_scale;
+
         // Set up default font path
         const auto default_font_path{ fs::path(emuenv.base_path) / "data/fonts/mplus-1mn-bold.ttf" };
         // Check existence of default font file
         if (fs::exists(default_font_path)) {
             gui.vita_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 22.f * emuenv.dpi_scale, &font_config, latin_range);
             font_config.MergeMode = true;
-            io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 22.f * emuenv.dpi_scale, &font_config, io.Fonts->GetGlyphRangesJapanese());
-
-            io.Fonts->Build();
+            io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), font_config.SizePixels, &font_config, japanes_and_extra_ranges.Data);
             font_config.MergeMode = false;
-            gui.large_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), 134.f * emuenv.dpi_scale, &font_config, large_font_chars);
+
+            large_font_config.SizePixels = 134.f * emuenv.dpi_scale;
+            gui.large_font = io.Fonts->AddFontFromFileTTF(default_font_path.string().c_str(), large_font_config.SizePixels, &large_font_config, large_font_chars);
 
             LOG_INFO("Using default Vita3K font.");
         } else
             LOG_WARN("Could not find default Vita3K font, using default ImGui font.", default_font_path.string());
     }
+
+    // Build font atlas loaded and upload to GPU
+    io.Fonts->Build();
+
     // DPI scaling
     io.DisplayFramebufferScale = { emuenv.dpi_scale, emuenv.dpi_scale };
 }
@@ -678,14 +698,6 @@ void pre_init(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void init(GuiState &gui, EmuEnvState &emuenv) {
-#ifdef USE_VITA3K_UPDATE
-    std::thread update_vita3k_thread([&gui]() {
-        if (init_vita3k_update(gui))
-            gui.help_menu.vita3k_update = true;
-    });
-    update_vita3k_thread.detach();
-#endif
-
     get_modules_list(gui, emuenv);
     get_notice_list(emuenv);
     get_users_list(gui, emuenv);
@@ -697,6 +709,14 @@ void init(GuiState &gui, EmuEnvState &emuenv) {
     get_sys_apps_title(gui, emuenv);
 
     init_home(gui, emuenv);
+
+#ifdef USE_VITA3K_UPDATE
+    std::thread update_vita3k_thread([&gui]() {
+        if (init_vita3k_update(gui))
+            gui.help_menu.vita3k_update = true;
+    });
+    update_vita3k_thread.detach();
+#endif
 
     // Initialize trophy callback
     emuenv.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {

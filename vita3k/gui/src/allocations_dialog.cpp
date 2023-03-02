@@ -42,7 +42,7 @@ void draw_allocations_dialog(GuiState &gui, EmuEnvState &emuenv) {
     for (const auto &pair : emuenv.mem.page_name_map) {
         const auto generation_num = pair.first;
         const auto generation_name = pair.second;
-        const auto page = emuenv.mem.page_table[generation_num];
+        const auto page = emuenv.mem.alloc_table[generation_num];
 
         if (std::find(std::begin(blacklist), std::end(blacklist), generation_name) != std::end(blacklist))
             continue;

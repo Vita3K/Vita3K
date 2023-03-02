@@ -1122,9 +1122,12 @@ EXPORT(int, setvbuf, FILE *stream, char *buffer, int mode, size_t size) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, snprintf) {
-    TRACY_FUNC(snprintf);
-    return UNIMPLEMENTED();
+EXPORT(int, snprintf, char *s, size_t n, const char *format, module::vargs args) {
+    // TODO: add args to tracy func
+    TRACY_FUNC(snprintf, s, n, format);
+
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    return utils::snprintf(s, n, format, *(thread->cpu), emuenv.mem, args);
 }
 
 EXPORT(int, snprintf_s) {
@@ -1490,14 +1493,11 @@ EXPORT(int, vscanf_s) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, vsnprintf, char *s, size_t n, const char *format, va_list arg) {
-    TRACY_FUNC(vsnprintf, s, n, format, arg);
-    // Disable warninig here is needed to compile on windows because we
-    // are turning some warnings into errors to allow makepkg default flags
-#pragma warning(push)
-#pragma warning(disable : 4774)
-    return snprintf(s, n, format, arg);
-#pragma warning(pop)
+EXPORT(int, vsnprintf, char *s, size_t n, const char *format, Address args) {
+    TRACY_FUNC(vsnprintf, s, n, format, args);
+
+    module::vargs vargs(args);
+    return CALL_EXPORT(snprintf, s, n, format, vargs);
 }
 
 EXPORT(int, vsnprintf_s) {

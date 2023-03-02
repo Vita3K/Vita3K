@@ -20,6 +20,7 @@
 
 #include <util/align.h>
 #include <util/log.h>
+#include <util/float_to_half.h>
 
 #include <algorithm>
 #include <cassert>
@@ -46,9 +47,8 @@ static void register_access_violation_handler(AccessViolationHandler handler);
 
 static Address alloc_inner(MemState &state, uint32_t start_page, int page_count, const char *name, const bool force);
 static void delete_memory(uint8_t *memory);
-static void delete_pagetable(MemPage *page_table);
 
-bool init(MemState &state) {
+bool init(MemState &state, const bool use_page_table) {
 #ifdef WIN32
     SYSTEM_INFO system_info = {};
     GetSystemInfo(&system_info);
@@ -88,8 +88,8 @@ bool init(MemState &state) {
 #endif
 
     const size_t table_length = TOTAL_MEM_SIZE / state.page_size;
-    state.page_table = PageTable(new MemPage[table_length], delete_pagetable);
-    memset(state.page_table.get(), 0, sizeof(MemPage) * table_length);
+    state.alloc_table = AllocPageTable(new AllocMemPage[table_length]);
+    memset(state.alloc_table.get(), 0, sizeof(AllocMemPage) * table_length);
 
     state.allocator.set_maximum(table_length);
 
@@ -108,6 +108,13 @@ bool init(MemState &state) {
     mprotect(state.memory.get(), state.page_size, PROT_NONE);
 #endif
 
+    state.use_page_table = use_page_table;
+    if (use_page_table) {
+        state.page_table = PageTable(new PagePtr[TOTAL_MEM_SIZE / KiB(4)]);
+        // we use an absolute offset (it is faster), so each entry is the same
+        std::fill_n(state.page_table.get(), TOTAL_MEM_SIZE / KiB(4), state.memory.get());
+    }
+
     return true;
 }
 
@@ -120,10 +127,6 @@ static void delete_memory(uint8_t *memory) {
         munmap(memory, TOTAL_MEM_SIZE);
 #endif
     }
-}
-
-static void delete_pagetable(MemPage *page_table) {
-    delete[] page_table;
 }
 
 bool is_valid_addr(const MemState &state, Address addr) {
@@ -163,7 +166,7 @@ static Address alloc_inner(MemState &state, uint32_t start_page, int page_count,
 #endif
     std::memset(memory, 0, size);
 
-    MemPage &page = state.page_table[page_num];
+    AllocMemPage &page = state.alloc_table[page_num];
     assert(!page.allocated);
     page.allocated = 1;
     page.size = page_count;
@@ -187,8 +190,8 @@ Address alloc(MemState &state, size_t size, const char *name, unsigned int align
     const size_t align_page_num = align_addr / state.page_size;
 
     if (page_num != align_page_num) {
-        MemPage &page = state.page_table[page_num];
-        MemPage &align_page = state.page_table[align_page_num];
+        AllocMemPage &page = state.alloc_table[page_num];
+        AllocMemPage &align_page = state.alloc_table[align_page_num];
         const size_t remnant_front = align_page_num - page_num;
         state.allocator.free(page_num, remnant_front);
         page.allocated = 0;
@@ -219,23 +222,27 @@ void unprotect_inner(MemState &state, Address addr, size_t size) {
     if (LOG_PROTECT) {
         fmt::print("Unprotect: {} {}\n", log_hex(addr), size);
     }
+    uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
+
 #ifdef WIN32
     DWORD old_protect = 0;
-    const BOOL ret = VirtualProtect(&state.memory[addr], size - 1, PAGE_READWRITE, &old_protect);
+    const BOOL ret = VirtualProtect(&addr_ptr[addr], size - 1, PAGE_READWRITE, &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", log_hex(GetLastError()));
 #else
-    mprotect(&state.memory[addr], size, PROT_READ | PROT_WRITE);
+    mprotect(&addr_ptr[addr], size, PROT_READ | PROT_WRITE);
 #endif
 }
 
 void protect_inner(MemState &state, Address addr, size_t size, const std::uint32_t perm) {
+    uint8_t *addr_ptr = state.use_page_table ? state.page_table[addr / KiB(4)] : state.memory.get();
+
 #ifdef WIN32
     DWORD old_protect = 0;
-    const BOOL ret = VirtualProtect(&state.memory[addr], size - 1, (perm == MEM_PERM_NONE) ? PAGE_NOACCESS : ((perm == MEM_PERM_READONLY) ? PAGE_READONLY : PAGE_READWRITE), &old_protect);
+    const BOOL ret = VirtualProtect(&addr_ptr[addr], size - 1, (perm == MEM_PERM_NONE) ? PAGE_NOACCESS : ((perm == MEM_PERM_READONLY) ? PAGE_READONLY : PAGE_READWRITE), &old_protect);
     LOG_CRITICAL_IF(!ret, "VirtualAlloc failed: {}", log_hex(GetLastError()));
 
 #else
-    mprotect(&state.memory[addr], size, (perm == MEM_PERM_NONE) ? PROT_NONE : ((perm == MEM_PERM_READONLY) ? PROT_READ : (PROT_READ | PROT_WRITE)));
+    mprotect(&addr_ptr[addr], size, (perm == MEM_PERM_NONE) ? PROT_NONE : ((perm == MEM_PERM_READONLY) ? PROT_READ : (PROT_READ | PROT_WRITE)));
 #endif
 }
 
@@ -249,10 +256,27 @@ static ProtectSegmentTrees::iterator find_protect_segment(ProtectSegmentTrees &t
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept {
     const uintptr_t memory_addr = reinterpret_cast<uintptr_t>(state.memory.get());
     const uintptr_t fault_addr = reinterpret_cast<uintptr_t>(addr);
+
+    Address vaddr = 0;
+    const std::unique_lock<std::mutex> lock(state.protect_mutex);
     if (fault_addr < memory_addr || fault_addr >= memory_addr + TOTAL_MEM_SIZE) {
-        return false;
+
+        if(state.use_page_table){
+            // this may come from an external mapping
+            uint64_t addr_val = std::bit_cast<uint64_t>(addr);
+            auto it = state.external_mapping.lower_bound(addr_val);
+            if(it != state.external_mapping.end() && addr_val < it->first + it->second.size){
+                vaddr = addr_val - it->first + it->second.address;
+            } else {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    } else {
+        vaddr = fault_addr - memory_addr;
     }
-    const Address vaddr = fault_addr - memory_addr;
+
     if (!is_valid_addr(state, vaddr)) {
         return false;
     }
@@ -260,7 +284,6 @@ bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcep
         fmt::print("Access: {}\n", log_hex(vaddr));
     }
 
-    const std::unique_lock<std::mutex> lock(state.protect_mutex);
     const auto it = find_protect_segment(state.protect_tree, vaddr);
     if (it == state.protect_tree.end()) {
         // HACK: keep going
@@ -394,6 +417,62 @@ void close_access_parent_protect_segment(MemState &state, Address addr) {
     }
 }
 
+void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t* addr_ptr) {
+    assert((size & 4095) == 0);
+
+    uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+    uint8_t *page_table_entry = addr_ptr - addr;
+    uint8_t *original_address = &mem.memory[addr];
+    for (int block = 0; block < size / KiB(4); block++) {
+        // this is not thread write safe, but hopefully not other thread is busy copying while this happens
+        memcpy(addr_ptr + block * KiB(4), original_address + block * KiB(4), KiB(4));
+        mem.page_table[addr / KiB(4) + block] = page_table_entry;
+    }
+
+    // set the first page table entry to the original value to be able to call protect_inner
+    mem.page_table[addr / KiB(4)] = mem.memory.get();
+    protect_inner(mem, addr, size, MEM_PERM_NONE);
+    mem.page_table[addr / KiB(4)] = page_table_entry;
+
+    const std::unique_lock<std::mutex> lock(mem.protect_mutex);
+    mem.external_mapping[addr_value] = {addr, size};
+}
+
+void remove_external_mapping(MemState &mem, uint8_t *addr_ptr) {
+    uint64_t addr_value = std::bit_cast<uint64_t>(addr_ptr);
+    MemExternalMapping mapping;
+    {     
+        const std::unique_lock<std::mutex> lock(mem.protect_mutex);
+        auto it = mem.external_mapping.find(addr_value);
+        assert(it != mem.external_mapping.end());
+
+        mapping = it->second;
+        mem.external_mapping.erase(it);
+    }
+
+    // remove all protections on this range
+    unprotect_inner(mem, mapping.address, mapping.size);
+    {
+        const std::unique_lock<std::mutex> lock(mem.protect_mutex);
+        auto prot_it = mem.protect_tree.lower_bound(ProtectSegmentInfo(mapping.address));
+        while(prot_it != mem.protect_tree.end() && prot_it->addr < mapping.address + mapping.size){
+            mem.protect_tree.erase(prot_it++);
+        }
+    }
+
+    // unprotect the original memory range
+    mem.page_table[mapping.address / KiB(4)] = mem.memory.get();
+    unprotect_inner(mem, mapping.address, mapping.size);
+    // copy back and reset the page table
+    for (int block = 0; block < mapping.size / KiB(4); block++) {
+        // this is not thread write safe, but hopefully not other thread is busy copying while this happens
+        memcpy(&mem.memory[mapping.address] + block * KiB(4), addr_ptr + block * KiB(4), KiB(4));
+        mem.page_table[mapping.address / KiB(4) + block] = mem.memory.get();
+    }
+
+    LOG_DEBUG("Remove mappping");
+}
+
 Address alloc(MemState &state, size_t size, const char *name) {
     const std::lock_guard<std::mutex> lock(state.generation_mutex);
     const size_t page_count = align(size, state.page_size) / state.page_size;
@@ -433,7 +512,7 @@ void free(MemState &state, Address address) {
     const size_t page_num = address / state.page_size;
     assert(page_num >= 0);
 
-    MemPage &page = state.page_table[page_num];
+    AllocMemPage &page = state.alloc_table[page_num];
     if (!page.allocated) {
         LOG_CRITICAL("Freeing unallocated page");
     }
@@ -444,6 +523,7 @@ void free(MemState &state, Address address) {
         state.page_name_map.erase(page_num);
     }
 
+    assert(!state.use_page_table || state.page_table[address / KiB(4)] == state.memory.get());
     uint8_t *const memory = &state.memory[page_num * state.page_size];
 
 #ifdef WIN32
@@ -496,14 +576,37 @@ static void register_access_violation_handler(AccessViolationHandler handler) {
 static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
     auto context = static_cast<ucontext_t *>(uct);
 
+#ifdef __aarch64__
+#ifdef __APPLE__
+    const uint32_t esr = context->uc_mcontext->__es.__esr;
+#else
+    _aarch64_ctx *ctx = reinterpret_cast<_aarch64_ctx *>(context->uc_mcontext.__reserved);
+    // get the ESR register
+    while (ctx->magic != ESR_MAGIC) {
+        if (ctx->magic == 0)
+            [[unlikely]]
+            raise(SIGTRAP);
+        else
+            [[likely]]
+            ctx = reinterpret_cast<_aarch64_ctx *>(reinterpret_cast<uint8_t *>(ctx) + ctx->size);
+    }
+
+    const uint64_t esr = reinterpret_cast<esr_context *>(ctx)->esr;
+#endif
+    // https://developer.arm.com/documentation/ddi0595/2021-03/AArch64-Registers/ESR-EL1--Exception-Syndrome-Register--EL1-
+    const uint32_t exception_class = static_cast<uint32_t>(esr) >> 26;
+    const bool is_executing = (exception_class == 0b100000) || (exception_class == 0b100001);
+    const bool is_data_abort = (exception_class == 0b100100) || (exception_class == 0b100101);
+    const bool is_writing = is_data_abort && (esr & (1 << 6));
+#else
 #ifdef __APPLE__
     const uint64_t err = context->uc_mcontext->__es.__err;
 #else
     const uint64_t err = context->uc_mcontext.gregs[REG_ERR];
 #endif
-
     const bool is_executing = err & 0x10;
     const bool is_writing = err & 0x2;
+#endif
 
     if (!is_executing) {
         if (access_violation_handler(reinterpret_cast<uint8_t *>(info->si_addr), is_writing)) {
@@ -511,6 +614,7 @@ static void signal_handler(int sig, siginfo_t *info, void *uct) noexcept {
         }
     }
 
+    LOG_CRITICAL("Unhandled access to {}", log_hex(*reinterpret_cast<uint64_t *>(&info->si_addr)));
     raise(SIGTRAP);
     return;
 }

@@ -31,7 +31,7 @@ enum {
     MEM_PERM_READWRITE = MEM_PERM_READONLY | MEM_PERM_WRITE
 };
 
-bool init(MemState &state);
+bool init(MemState &state, const bool use_page_table);
 Address alloc(MemState &state, size_t size, const char *name);
 Address alloc(MemState &state, size_t size, const char *name, unsigned int alignment);
 void protect_inner(MemState &state, Address addr, size_t size, const std::uint32_t perm);
@@ -39,6 +39,8 @@ void unprotect_inner(MemState &state, Address addr, size_t size);
 bool add_protect(MemState &state, Address addr, const size_t size, const std::uint32_t perm, ProtectCallback callback);
 void open_access_parent_protect_segment(MemState &mem, Address addr);
 void close_access_parent_protect_segment(MemState &mem, Address addr);
+void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t* addr_ptr);
+void remove_external_mapping(MemState &mem, uint8_t* addr_ptr);
 bool is_protecting(MemState &state, Address addr, std::uint32_t *perm = nullptr);
 bool is_valid_addr(const MemState &state, Address addr);
 bool is_valid_addr_range(const MemState &state, Address start, Address end);

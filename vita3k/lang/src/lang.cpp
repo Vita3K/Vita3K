@@ -157,7 +157,7 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     const auto states = compatibility_child.child("states");
                     if (!states.empty()) {
                         for (const auto state : states) {
-                            const auto id = static_cast<CompatibilityState>(state.attribute("id").as_int());
+                            const auto id = static_cast<compat::CompatibilityState>(state.attribute("id").as_int());
                             lang_compatibility.states[id] = state.text().as_string();
                         }
                     }

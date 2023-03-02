@@ -15,20 +15,17 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <boost/algorithm/string/trim.hpp>
+#include <compat/functions.h>
 #include <compat/state.h>
 
 #include <emuenv/state.h>
 #include <gui/state.h>
 
+#include <https/functions.h>
+
 #include <pugixml.hpp>
 
-namespace compat {
-
-static std::string db_updated_at;
-static const uint32_t db_version = 1;
-
-enum class LabelIdState {
+enum LabelIdState {
     Nothing = 1260231569, // 0x4b1d9b91
     Bootable = 1344750319, // 0x502742ef
     Intro = 1260231381, // 0x4B9F5E5D
@@ -37,6 +34,11 @@ enum class LabelIdState {
     Ingame_More = 1260231985, // 0x4B2A9819
     Playable = 920344019, // 0x36db55d3
 };
+
+namespace compat {
+
+static std::string db_updated_at;
+static const uint32_t db_version = 1;
 
 bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto app_compat_db_path = fs::path(emuenv.base_path) / "cache/app_compat_db.xml";
@@ -58,7 +60,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto version = compatibility.attribute("version").as_uint();
     if (db_version != version) {
         LOG_WARN("Compatibility database version {} is outdated, download it again.", version);
-        return false;
+        return update_compat_app_db(gui, emuenv);
     }
 
     // Clear old compat database
@@ -71,7 +73,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     for (const auto &app : doc.child("compatibility")) {
         const std::string title_id = app.attribute("title_id").as_string();
         const auto issue_id = app.child("issue_id").text().as_uint();
-        auto state = Unknown;
+        auto state = CompatibilityState::Unknown;
         const auto labels = app.child("labels");
         if (!labels.empty()) {
             for (const auto &label : labels) {
@@ -93,68 +95,38 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         if (state == Unknown)
             LOG_WARN("App with title ID {} has an issue but no status label. Please check GitHub issue {} and request a status label to be added.", title_id, issue_id);
 
-        gui.compat.app_compat_db[title_id] = { issue_id, state, updated_at };
+        // Check if app already exists in compatibility database
+        if (gui.compat.app_compat_db.contains(title_id)) {
+            const auto exist_app = gui.compat.app_compat_db[title_id];
+            const auto duplicate_issue = issue_id > exist_app.issue_id ? issue_id : exist_app.issue_id;
+            LOG_WARN("App with title ID {} already exists in compatibility database. Please check and close GitHub issue {}.", title_id, duplicate_issue);
+
+            // If the issue ID is different, update the issue for using original old issue
+            if (duplicate_issue != issue_id)
+                gui.compat.app_compat_db[title_id] = { issue_id, state, updated_at };
+        } else
+            gui.compat.app_compat_db[title_id] = { issue_id, state, updated_at };
     }
 
     // Update compatibility status of all user apps
     for (auto &app : gui.app_selector.user_apps)
-        app.compat = gui.compat.app_compat_db.contains(app.title_id) ? gui.compat.app_compat_db[app.title_id].state : Unknown;
+        app.compat = gui.compat.app_compat_db.contains(app.title_id) ? gui.compat.app_compat_db[app.title_id].state : CompatibilityState::Unknown;
 
     return !gui.compat.app_compat_db.empty();
 }
 
-static std::string get_string_output(const std::string cmd) {
-    std::string result;
-    std::string tmpres = std::tmpnam(nullptr);
-    std::string res_cmd = cmd + " >> " + tmpres;
-
-    // Execute command and check if it was successful
-    if (std::system(res_cmd.c_str()) == 0) {
-        std::ifstream res(tmpres, std::ios::in | std::ios::binary);
-        std::remove(tmpres.c_str());
-
-        // Check if file was opened successfully
-        if (res.is_open()) {
-            // Read file and check if it was read successfully
-            if (!std::getline(res, result))
-                LOG_ERROR("Failed to read from input stream");
-
-            res.close();
-        } else
-            LOG_ERROR("Input stream is not open");
-
-        // Remove trailing whitespace
-        boost::trim(result);
-    }
-
-    return result;
-}
+static const std::string latest_link = "https://api.github.com/repos/Vita3K/compatibility/releases/latest";
+static const std::string app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml";
 
 bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
-    const auto compat_db_path = fs::path(emuenv.base_path) / "cache/app_compat_db.xml";
-    const auto latest_link = "https://api.github.com/repos/Vita3K/compatibility/releases/latest";
+    const auto app_compat_db_path = fs::path(emuenv.base_path) / "cache/app_compat_db.xml";
     gui.info_message.function = SPDLOG_FUNCTION;
 
-#ifdef WIN32
-    std::string power_shell_version;
-    std::getline(std::ifstream(_popen("powershell (Get-Host).Version.major", "r")), power_shell_version);
-    if (power_shell_version.empty() || !std::isdigit(power_shell_version[0]) || (std::stoi(power_shell_version) < 3)) {
-        gui.info_message.level = spdlog::level::err;
-        gui.info_message.msg = fmt::format("You powershell version {} is outdated and incompatible with Vita3K Update, consider to update it", power_shell_version);
-        return false;
-    }
-
-    const auto github_updated_at_cmd = fmt::format(R"(powershell ((Invoke-RestMethod {} -Timeout 2).body.split([Environment]::NewLine) ^| Select-String -Pattern \"Updated at: \") -replace \"Updated at: \")", latest_link);
-#else
-    const auto github_curl_url = fmt::format("curl -m 2 -sL {}", latest_link);
-    const auto github_updated_at_cmd = github_curl_url + R"( | grep '"body"' | head -n 1 | awk -F "Updated at: " '{print $2}' | awk -F '"' '{print $1}')";
-#endif
-
-    // Get current date of last issue updated
-    const auto updated_at = get_string_output(github_updated_at_cmd);
+    // Get current date of last compat database updated at
+    const auto updated_at = https::get_web_regex_result(latest_link, std::regex("Updated at: (\\d{2}-\\d{2}-\\d{4} \\d{2}:\\d{2}:\\d{2})"));
     if (updated_at.empty()) {
         gui.info_message.level = spdlog::level::err;
-        gui.info_message.msg = "Failed to get current compatibility database version, check firewall/internet access, try again later.";
+        gui.info_message.msg = "Failed to get current compatibility database updated at, check firewall/internet access, try again later.";
         return false;
     }
 
@@ -164,22 +136,13 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         return false;
     }
 
-    const auto compat_db_exist = fs::exists(compat_db_path);
+    const auto compat_db_exist = fs::exists(app_compat_db_path);
 
     LOG_INFO("Applications compatibility database is {}, attempting to download latest updated at: {}", compat_db_exist ? "outdated" : "missing", updated_at);
 
-    const auto app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml";
-
-#ifdef WIN32
-    const auto download_command = fmt::format(R"(powershell Invoke-WebRequest {} -Outfile \"{}\")", app_compat_db_link, compat_db_path.string());
-#else
-    const auto download_command = fmt::format(R"(curl -L {} -o "{}")", app_compat_db_link, compat_db_path.string());
-#endif
-
-    // Download database
-    if (system(download_command.c_str()) != 0) {
+    if (!https::download_file(app_compat_db_link, app_compat_db_path.string())) {
         gui.info_message.level = spdlog::level::err;
-        gui.info_message.msg = fmt::format("Failed to download Applications compatibility database updated at: {}", updated_at);
+        gui.info_message.msg = fmt::format("Failed to download Applications compatibility database updated at: {}, try again later.", updated_at);
         return false;
     }
 
@@ -197,10 +160,10 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
     if (compat_db_exist) {
         const auto dif = static_cast<int32_t>(gui.compat.app_compat_db.size() - old_compat_count);
-        if (dif > 0)
-            gui.info_message.msg = fmt::format("The compatibility database was successfully updated from {} to {}.\n\n{} new application(s) are listed!", old_db_updated_at, db_updated_at, dif);
+        if (!old_db_updated_at.empty() && dif > 0)
+            gui.info_message.msg = fmt::format("The compatibility database was successfully updated from:\n{} to {}.\n\n{} new application(s) are listed, bringing the total to {}!", old_db_updated_at, db_updated_at, dif, gui.compat.app_compat_db.size());
         else
-            gui.info_message.msg = fmt::format("The compatibility database was successfully updated from {} to {}.\n\n{} applications are listed!", old_db_updated_at, db_updated_at, gui.compat.app_compat_db.size());
+            gui.info_message.msg = fmt::format("The compatibility database was successfully updated from:\n{} to {}.\n\n{} applications are listed!", old_db_updated_at, db_updated_at, gui.compat.app_compat_db.size());
     } else
         gui.info_message.msg = fmt::format("The compatibility database updated at {} has been successfully downloaded and loaded.\n\n{} applications are listed!", db_updated_at, gui.compat.app_compat_db.size());
 

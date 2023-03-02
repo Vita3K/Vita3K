@@ -149,7 +149,7 @@ COMMAND(handle_memory_map) {
     const uint32_t size = helper.pop<uint32_t>();
 
     if (renderer.current_backend == Backend::Vulkan) {
-        dynamic_cast<vulkan::VKState &>(renderer).map_memory(addr.get(mem), size);
+        dynamic_cast<vulkan::VKState &>(renderer).map_memory(mem, addr, size);
     }
 
     complete_command(renderer, helper, 0);
@@ -161,7 +161,7 @@ COMMAND(handle_memory_unmap) {
     const Ptr<void> addr = helper.pop<Ptr<void>>();
 
     if (renderer.current_backend == Backend::Vulkan) {
-        dynamic_cast<vulkan::VKState &>(renderer).unmap_memory(addr.get(mem));
+        dynamic_cast<vulkan::VKState &>(renderer).unmap_memory(mem, addr);
     }
 
     complete_command(renderer, helper, 0);
