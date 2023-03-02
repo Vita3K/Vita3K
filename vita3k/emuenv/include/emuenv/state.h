@@ -150,9 +150,9 @@ public:
     Ime &ime;
     SfoFile &sfo_handle;
     NIDSet missing_nids;
-    float dpi_scale = 1.0f;
-    float res_width_dpi_scale{};
-    float res_height_dpi_scale{};
+    float dpi_scale = 1.f;
+    uint32_t res_width_dpi_scale = 0;
+    uint32_t res_height_dpi_scale = 0;
     GDBState &gdb;
     HTTPState &http;
 
