@@ -25,7 +25,7 @@
 	</main_menubar>
 
 	<about name="关于">
-		<vita3k>Vita3K：PS Vita/PS TV模拟器。 是全球首个实用的PS Vita/PS TV模拟器。</vita3k>
+		<vita3k>Vita3K：PS Vita/PS TV模拟器,是全球首个实用的PS Vita/PS TV模拟器。</vita3k>
 		<about_vita3k>Vita3K是使用C++编写的实验性开源PlayStation Vita/PlayStation TV模拟器，适用于Windows、Linux、macOS以及Android操作系统。</about_vita3k>
 		<note>注意：目前模拟器仍处于开发的早期阶段。</note>
 		<github_website>如果您有兴趣参与贡献，请浏览我们的GitHub：</github_website>
@@ -354,14 +354,14 @@
 
 	<initial_setup>
 		<back>返回</back>
-		<completed_setup>You have now completed initial setup.
-Your Vita3K system is ready!</completed_setup>
+		<completed_setup>你已经完成初期设定,
+请享受Visa3K吧!</completed_setup>
 		<select_language>Select a language.</select_language>
 		<install_firmware>安装固件。</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
+		<install_highly_recommended>强烈建议您安装下面两个固件.</install_highly_recommended>
 		<installed>已安装：</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
+		<download_firmware>下载系统固件</download_firmware>
+		<download_font_package>下载字体包</download_font_package>
 		<install_firmware_file>安装固件文件</install_firmware_file>
 		<completed>已完成。</completed>
 		<next>Next</next>
@@ -369,14 +369,14 @@ Your Vita3K system is ready!</completed_setup>
 
 	<install_dialog>
 		<firmware_install>
-			<firmware_installing>Installation in progress, please wait...</firmware_installing>
+			<firmware_installing>正在安装,请稍后...</firmware_installing>
 			<successed_install_firmware>固件已成功安装。</successed_install_firmware>
 			<firmware_version>固件版本：</firmware_version>
 			<no_font_exist>No firmware font package present.
 Please download and install it.</no_font_exist>
 			<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
 			<firmware_font_package_note>Firmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
-			<delete_firmware>Delete the firmware installation file?</delete_firmware>
+			<delete_firmware>删除已经安装完毕的固件?</delete_firmware>
 		</firmware_install>
 		<pkg_install>
 			<select_key_type>选择密钥类型</select_key_type>
