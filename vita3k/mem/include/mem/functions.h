@@ -24,30 +24,32 @@ struct MemState;
 
 typedef std::function<bool(uint8_t *addr, bool write)> AccessViolationHandler;
 
-enum {
-    MEM_PERM_NONE = 0,
-    MEM_PERM_READONLY = 1 << 0,
-    MEM_PERM_WRITE = 1 << 1,
-    MEM_PERM_READWRITE = MEM_PERM_READONLY | MEM_PERM_WRITE
+// Permission when protecting a memory range
+// Note: WriteOnly is actually not supported (ReadWrite used instead)
+enum struct MemPerm {
+    None = 0,
+    ReadOnly = 1 << 0,
+    WriteOnly = 1 << 1,
+    ReadWrite = ReadOnly | WriteOnly
 };
 
 bool init(MemState &state, const bool use_page_table);
-Address alloc(MemState &state, size_t size, const char *name);
-Address alloc(MemState &state, size_t size, const char *name, unsigned int alignment);
-void protect_inner(MemState &state, Address addr, size_t size, const std::uint32_t perm);
-void unprotect_inner(MemState &state, Address addr, size_t size);
-bool add_protect(MemState &state, Address addr, const size_t size, const std::uint32_t perm, ProtectCallback callback);
+Address alloc(MemState &state, uint32_t size, const char *name);
+Address alloc(MemState &state, uint32_t size, const char *name, unsigned int alignment);
+void protect_inner(MemState &state, Address addr, uint32_t size, const MemPerm perm);
+void unprotect_inner(MemState &state, Address addr, uint32_t size);
+bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPerm perm, ProtectCallback callback);
 void open_access_parent_protect_segment(MemState &mem, Address addr);
 void close_access_parent_protect_segment(MemState &mem, Address addr);
 void add_external_mapping(MemState &mem, Address addr, uint32_t size, uint8_t* addr_ptr);
 void remove_external_mapping(MemState &mem, uint8_t* addr_ptr);
-bool is_protecting(MemState &state, Address addr, std::uint32_t *perm = nullptr);
+bool is_protecting(MemState &state, Address addr, MemPerm *perm = nullptr);
 bool is_valid_addr(const MemState &state, Address addr);
 bool is_valid_addr_range(const MemState &state, Address start, Address end);
 bool handle_access_violation(MemState &state, uint8_t *addr, bool write) noexcept;
-Block alloc_block(MemState &mem, size_t size, const char *name);
-Address alloc_at(MemState &state, Address address, size_t size, const char *name);
-Address try_alloc_at(MemState &state, Address address, size_t size, const char *name);
+Block alloc_block(MemState &mem, uint32_t size, const char *name);
+Address alloc_at(MemState &state, Address address, uint32_t size, const char *name);
+Address try_alloc_at(MemState &state, Address address, uint32_t size, const char *name);
 void free(MemState &state, Address address);
 uint32_t mem_available(MemState &state);
 const char *mem_name(Address address, MemState &state);
