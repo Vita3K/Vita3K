@@ -23,6 +23,7 @@
 #include <config/version.h>
 #include <display/state.h>
 #include <shader/spirv_recompiler.h>
+#include <util/align.h>
 #include <util/float_to_half.h>
 #include <util/log.h>
 #include <vkutil/vkutil.h>
@@ -604,19 +605,23 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 
     if (mem.use_page_table) {
         // add 4 KiB because we can as an easy way to prevent crashes due to memory accesses right after the memory boundary
+        // also make sure later the mapped address is 4K aligned
         vkutil::Buffer buffer(allocator, size + KiB(4));
-        static constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
+        constexpr vma::AllocationCreateInfo memory_mapped_alloc = {
             .flags = vma::AllocationCreateFlagBits::eMapped,
             .usage = vma::MemoryUsage::eAutoPreferHost,
             .requiredFlags = vk::MemoryPropertyFlagBits::eHostCoherent,
             .preferredFlags = vk::MemoryPropertyFlagBits::eHostCached,
         };
         buffer.init_buffer(mapped_memory_flags, memory_mapped_alloc);
+        const uint64_t buffer_ptr_val = std::bit_cast<uint64_t>(buffer.mapped_data);
+        const uint64_t buffer_offset = align(buffer_ptr_val, KiB(4)) - buffer_ptr_val;
+        buffer.mapped_data = std::bit_cast<void *>(buffer_ptr_val + buffer_offset);
 
         vk::BufferDeviceAddressInfoKHR address_info{
             .buffer = buffer.buffer
         };
-        const uint64_t buffer_address = device.getBufferAddress(address_info);
+        const uint64_t buffer_address = device.getBufferAddress(address_info) + buffer_offset;
         const vk::Buffer mapped_buffer = buffer.buffer;
 
         add_external_mapping(mem, address.address(), size, reinterpret_cast<uint8_t *>(buffer.mapped_data));
@@ -624,23 +629,38 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     } else {
         void *host_address = address.get(mem);
         auto host_mem_props = device.getMemoryHostPointerPropertiesEXT(vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT, host_address);
-        uint32_t host_mem_types = host_mem_props.memoryTypeBits;
-        assert(host_mem_types != 0);
+        assert(host_mem_props.memoryTypeBits != 0);
 
-        uint32_t mapped_memory_type = 0;
-        while (host_mem_types != 0) {
-            // try to find a cached memory type
-            mapped_memory_type = std::countr_zero(host_mem_types);
-            host_mem_types -= (1 << mapped_memory_type);
+        int mapped_memory_type = -1;
+        auto find_mem_type_with_flag = [&](const vk::MemoryPropertyFlags flags) {
+            uint32_t host_mem_types = host_mem_props.memoryTypeBits;
+            while (host_mem_types != 0) {
+                // try to find a cached memory type
+                mapped_memory_type = std::countr_zero(host_mem_types);
+                host_mem_types -= (1 << mapped_memory_type);
 
-            if (physical_device_memory.memoryTypes[mapped_memory_type].propertyFlags & vk::MemoryPropertyFlagBits::eHostCached)
-                break;
+                if ((physical_device_memory.memoryTypes[mapped_memory_type].propertyFlags & flags) == flags)
+                    return;
+            }
+
+            mapped_memory_type = -1;
+        };
+
+        // first try to find a memory that is both coherent and cached
+        find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent | vk::MemoryPropertyFlagBits::eHostCached);
+        if (mapped_memory_type == -1)
+            // then only coherent (lower performance)
+            find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent);
+
+        if (mapped_memory_type == -1) {
+            LOG_CRITICAL("No coherent memory available for memory mapping, please report it to the devs!");
+            return false;
         }
 
         vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryHostPointerInfoEXT, vk::MemoryAllocateFlagsInfo> alloc_info{
             vk::MemoryAllocateInfo{
                 .allocationSize = size,
-                .memoryTypeIndex = mapped_memory_type },
+                .memoryTypeIndex = static_cast<uint32_t>(mapped_memory_type) },
             vk::ImportMemoryHostPointerInfoEXT{
                 .handleType = vk::ExternalMemoryHandleTypeFlagBits::eHostAllocationEXT,
                 .pHostPointer = host_address },
