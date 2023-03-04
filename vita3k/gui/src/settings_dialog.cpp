@@ -391,13 +391,17 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
 }
 
 void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.48f));
+    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.48f));
     const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
     auto &settings_dialog = is_custom_config ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     ImGui::Begin("##settings", &settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushFont(gui.vita_font);
-    ImGui::SetWindowFontScale(0.7f);
+    ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
     auto settings_str = gui.lang.main_menubar.configuration["settings"].c_str();
     const auto title = is_custom_config ? fmt::format("{}: {} [{}]", settings_str, get_app_index(gui, emuenv.app_path)->title, emuenv.app_path) : settings_str;
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (ImGui::CalcTextSize(title.c_str()).x / 2.f));
@@ -405,7 +409,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PopFont();
     ImGui::Spacing();
     ImGui::Separator();
-    ImGui::SetWindowFontScale(1.f);
+    ImGui::SetWindowFontScale(1.f * RES_SCALE.x);
     ImGui::BeginTabBar("SettingsTabBar", ImGuiTabBarFlags_None);
 
     // Core
@@ -429,7 +433,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your desired modules.");
             ImGui::Spacing();
-            ImGui::PushItemWidth(240 * emuenv.dpi_scale);
+            ImGui::PushItemWidth(240 * SCALE.x);
             if (ImGui::BeginListBox("##modules_list", { 0.0f, ImGui::GetTextLineHeightWithSpacing() * 8.25f + ImGui::GetStyle().FramePadding.y * 2.0f })) {
                 for (auto &m : gui.modules) {
                     const auto module = std::find(config.lle_modules.begin(), config.lle_modules.end(), m.first);
@@ -448,7 +452,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PopItemWidth();
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT, "Search modules");
-            gui.module_search_bar.Draw("##module_search_bar", 200 * emuenv.dpi_scale);
+            gui.module_search_bar.Draw("##module_search_bar", 200 * SCALE.x);
             ImGui::Spacing();
             if (ImGui::Button("Clear List")) {
                 config.lle_modules.clear();
@@ -551,12 +555,12 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushID("Res scal");
         if (config.resolution_multiplier == 1)
             ImGui::BeginDisabled();
-        if (ImGui::Button("<", ImVec2(20.f * emuenv.dpi_scale, 0)))
+        if (ImGui::Button("<", ImVec2(20.f * SCALE.x, 0)))
             --config.resolution_multiplier;
         if (config.resolution_multiplier == 1)
             ImGui::EndDisabled();
-        ImGui::SameLine(0, 5 * emuenv.dpi_scale);
-        ImGui::PushItemWidth(-100.f * emuenv.dpi_scale);
+        ImGui::SameLine(0, 5.f * SCALE.x);
+        ImGui::PushItemWidth(-100.f * SCALE.x);
         if (ImGui::SliderInt("##res_scal", &config.resolution_multiplier, 1, 8, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
             if (config.resolution_multiplier > 1)
                 config.disable_surface_sync = true;
@@ -564,17 +568,17 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Enable upscaling for Vita3K.\nExperimental: games are not guaranteed to render properly at more than 1x");
-        ImGui::SameLine(0, 5 * emuenv.dpi_scale);
+        ImGui::SameLine(0, 5 * SCALE.x);
         if (config.resolution_multiplier == 8)
             ImGui::BeginDisabled();
-        if (ImGui::Button(">", ImVec2(20.f * emuenv.dpi_scale, 0)))
+        if (ImGui::Button(">", ImVec2(20.f * SCALE.x, 0)))
             ++config.resolution_multiplier;
         if (config.resolution_multiplier == 8)
             ImGui::EndDisabled();
         ImGui::SameLine();
         if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
             ImGui::BeginDisabled();
-        if (ImGui::Button("Reset", ImVec2(60.f * emuenv.dpi_scale, 0))) {
+        if (ImGui::Button("Reset", ImVec2(60.f * SCALE.x, 0))) {
             config.resolution_multiplier = 1;
             config.disable_surface_sync = false;
         }
@@ -582,7 +586,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::EndDisabled();
         ImGui::Spacing();
         const auto res_scal = fmt::format("{}x{}", 960 * config.resolution_multiplier, 544 * config.resolution_multiplier);
-        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * emuenv.dpi_scale));
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(res_scal.c_str()).x / 2.f) - (35.f * SCALE.x));
         ImGui::Text("%s", res_scal.c_str());
         ImGui::PopID();
 
@@ -597,28 +601,28 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PushID("Aniso filter");
         if (config.anisotropic_filtering == 1)
             ImGui::BeginDisabled();
-        if (ImGui::Button("<", ImVec2(20.f * emuenv.dpi_scale, 0)))
+        if (ImGui::Button("<", ImVec2(20.f * SCALE.x, 0)))
             config.anisotropic_filtering = 1 << --current_aniso_filter_log;
         if (config.anisotropic_filtering == 1)
             ImGui::EndDisabled();
-        ImGui::SameLine(0, 5 * emuenv.dpi_scale);
-        ImGui::PushItemWidth(-100.f * emuenv.dpi_scale);
+        ImGui::SameLine(0, 5 * SCALE.x);
+        ImGui::PushItemWidth(-100.f * SCALE.x);
         if (ImGui::SliderInt("##aniso_filter", &current_aniso_filter_log, 0, max_aniso_filter_log, fmt::format("{}x", config.anisotropic_filtering).c_str()))
             config.anisotropic_filtering = 1 << current_aniso_filter_log;
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped relative to the viewer.\nIt has no drawback but can impact performance.");
-        ImGui::SameLine(0, 5 * emuenv.dpi_scale);
+        ImGui::SameLine(0, 5 * SCALE.x);
         if (current_aniso_filter_log == max_aniso_filter_log)
             ImGui::BeginDisabled();
-        if (ImGui::Button(">", ImVec2(20.f * emuenv.dpi_scale, 0)))
+        if (ImGui::Button(">", ImVec2(20.f * SCALE.x, 0)))
             config.anisotropic_filtering = 1 << ++current_aniso_filter_log;
         if (current_aniso_filter_log == max_aniso_filter_log)
             ImGui::EndDisabled();
         ImGui::SameLine();
         if (config.anisotropic_filtering == 1)
             ImGui::BeginDisabled();
-        if (ImGui::Button("Reset", ImVec2(60.f * emuenv.dpi_scale, 0))) {
+        if (ImGui::Button("Reset", ImVec2(60.f * SCALE.x, 0))) {
             config.anisotropic_filtering = 1;
             current_aniso_filter_log = 0;
         }
@@ -1055,11 +1059,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     ImGui::Separator();
     ImGui::Spacing();
-    static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
-    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * emuenv.dpi_scale));
+    static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
+    ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * SCALE.x));
     if (ImGui::Button("Close", BUTTON_SIZE))
         settings_dialog = false;
-    ImGui::SameLine(0, 20.f * emuenv.dpi_scale);
+    ImGui::SameLine(0, 20.f * SCALE.x);
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));
     const auto is_reboot = (emuenv.renderer->current_backend != emuenv.backend_renderer) || (config.resolution_multiplier != emuenv.cfg.current_config.resolution_multiplier);
     if (ImGui::Button(is_apply ? (is_reboot ? "Save & Reboot" : "Save & Apply") : "Save", BUTTON_SIZE)) {

@@ -148,7 +148,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         state.display.fullscreen = true;
         window_type |= SDL_WINDOW_FULLSCREEN_DESKTOP;
     }
-#ifndef __APPLE__
+#if defined(WIN32) || defined(__LINUX__)
     const auto isSteamDeck = []() {
 #ifdef __LINUX__
         std::ifstream file("/etc/os-release");

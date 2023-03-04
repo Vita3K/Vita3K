@@ -57,19 +57,25 @@ static float get_perf_height(EmuEnvState &emuenv) {
 
 void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     auto lang = gui.lang.performance_overlay;
-    const auto MAIN_WINDOW_SIZE = ImVec2((emuenv.cfg.performance_overlay_detail == MINIMUM ? 95.5f : 152.f) * emuenv.dpi_scale, get_perf_height(emuenv) * emuenv.dpi_scale);
+
+    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+
+    const auto MAIN_WINDOW_SIZE = ImVec2((emuenv.cfg.performance_overlay_detail == MINIMUM ? 95.5f : 152.f) * SCALE.x, get_perf_height(emuenv) * SCALE.y);
+
     const auto WINDOW_POS = get_perf_pos(MAIN_WINDOW_SIZE, emuenv);
-    const auto WINDOW_SIZE = ImVec2((emuenv.cfg.performance_overlay_detail == MINIMUM ? 72.5f : 130.f) * emuenv.dpi_scale, (emuenv.cfg.performance_overlay_detail <= LOW ? 35.f : 58.f) * emuenv.dpi_scale);
+    const auto WINDOW_SIZE = ImVec2((emuenv.cfg.performance_overlay_detail == MINIMUM ? 72.5f : 130.f) * SCALE.x, (emuenv.cfg.performance_overlay_detail <= LOW ? 35.f : 58.f) * SCALE.y);
 
     ImGui::SetNextWindowSize(MAIN_WINDOW_SIZE);
     ImGui::SetNextWindowPos(WINDOW_POS);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::Begin("##performance", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus);
     ImGui::PushStyleColor(ImGuiCol_ChildBg, PERF_OVERLAY_BG_COLOR);
-    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.f * emuenv.dpi_scale);
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildRounding, 5.f * SCALE.x);
     ImGui::BeginChild("#perf_stats", WINDOW_SIZE, true, ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
     ImGui::PushFont(gui.vita_font);
-    ImGui::SetWindowFontScale(0.7f);
+    ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
     if (emuenv.cfg.performance_overlay_detail == PerfomanceOverleyDetail::MINIMUM)
         ImGui::Text("%s: %d", lang["fps"].c_str(), emuenv.fps);
     else
@@ -83,7 +89,7 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
     if (emuenv.cfg.performance_overlay_detail == PerfomanceOverleyDetail::MAXIMUM) {
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (5.f * emuenv.dpi_scale));
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (5.f * SCALE.y));
         ImGui::PlotLines("##fps_graphic", emuenv.fps_values, IM_ARRAYSIZE(emuenv.fps_values), emuenv.current_fps_offset, nullptr, 0.f, float(emuenv.max_fps), WINDOW_SIZE);
     }
     ImGui::End();

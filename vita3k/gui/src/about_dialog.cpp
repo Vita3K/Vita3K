@@ -45,12 +45,15 @@ static std::vector<const char *> contributors_list = {
 };
 
 void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
+    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+  
     auto lang = gui.lang.about;
-    const auto display_size = ImGui::GetIO().DisplaySize;
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin(lang["title"].c_str(), &gui.help_menu.about_dialog, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_AlwaysAutoResize);
     const auto HALF_WINDOW_WIDTH = ImGui::GetWindowWidth() / 2.f;
     ImGui::SetCursorPosX(HALF_WINDOW_WIDTH - (ImGui::CalcTextSize(window_title).x / 2.f));
+    ImGui::SetWindowFontScale(RES_SCALE.x);
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", window_title);
 
     ImGui::Spacing();
