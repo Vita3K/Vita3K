@@ -39,11 +39,12 @@ static void draw_file_menu(GuiState &gui, EmuEnvState &emuenv) {
     }
 }
 
-static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv) {
+static void draw_emulation_menu(GuiState &gui, EmuEnvState &emuenv, const float scale) {
     auto lang = gui.lang.main_menubar.emulation;
     if (ImGui::BeginMenu(lang["title"].c_str())) {
         if (ImGui::BeginMenu(lang["last_apps_used"].c_str())) {
             if (!gui.time_apps[emuenv.io.user_id].empty()) {
+                ImGui::SetWindowFontScale(scale);
                 for (auto i = 0; i < std::min(14, int32_t(gui.time_apps[emuenv.io.user_id].size())); i++) {
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                     const auto time_app = gui.time_apps[emuenv.io.user_id][i];
@@ -112,11 +113,14 @@ static void draw_help_menu(GuiState &gui) {
 
 void draw_main_menu_bar(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::BeginMainMenuBar()) {
-        ImGui::SetWindowFontScale(ImGui::GetIO().DisplaySize.x / emuenv.res_width_dpi_scale);
+        const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
+        const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+
+        ImGui::SetWindowFontScale(RES_SCALE.x);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
 
         draw_file_menu(gui, emuenv);
-        draw_emulation_menu(gui, emuenv);
+        draw_emulation_menu(gui, emuenv, RES_SCALE.x);
         draw_debug_menu(gui.debug_menu);
         draw_config_menu(gui, emuenv);
         draw_controls_menu(gui);
