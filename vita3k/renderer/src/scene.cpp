@@ -178,7 +178,7 @@ COMMAND(handle_sync_surface_data) {
     // Need to reprotect. In the case of explicit get, 100% chance it will be unlock later anyway.
     // No need to bother. Assumption of course.
     if (!helper.cmd->status && is_protecting(mem, data)) {
-        protect_inner(mem, data, total_size, MEM_PERM_NONE);
+        protect_inner(mem, data, total_size, MemPerm::None);
     }
 
     close_access_parent_protect_segment(mem, data);

@@ -803,7 +803,7 @@ void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_t
         upload_bound_texture(cache, gxm_texture, mem);
         if (!info->use_hash) {
             info->dirty = false;
-            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MEM_PERM_READONLY, [info, gxm_texture](Address, bool) {
+            add_protect(mem, range_protect_begin, range_protect_end - range_protect_begin, MemPerm::ReadOnly, [info, gxm_texture](Address, bool) {
                 if (memcmp(&info->texture, &gxm_texture, sizeof(SceGxmTexture)) == 0) {
                     info->dirty = true;
                 }

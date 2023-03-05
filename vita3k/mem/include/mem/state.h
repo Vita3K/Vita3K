@@ -39,37 +39,24 @@ typedef std::unique_ptr<PagePtr[]> PageTable;
 typedef std::map<int, std::string> PageNameMap;
 
 struct ProtectBlockInfo {
-    Address addr = 0;
-    size_t size = 0;
+    uint32_t size = 0;
     ProtectCallback callback;
-
-    bool operator<(const ProtectBlockInfo &other) const {
-        return this->addr < other.addr;
-    }
 };
 
 struct ProtectSegmentInfo {
-    Address addr = 0;
-    size_t size = 0;
-    std::set<ProtectBlockInfo> blocks;
-    std::int32_t ref_count = 0; // When reference count is active, we don't interfere protection.
-    std::uint32_t perm = 0;
+    std::multimap<Address, ProtectBlockInfo> blocks;
+    uint32_t size = 0;
+    int32_t ref_count = 0; // When reference count is active, we don't interfere protection.
+    MemPerm perm = MemPerm::None;
 
-    ProtectSegmentInfo() = delete;
-    explicit ProtectSegmentInfo(Address addr)
-        : addr(addr) {}
-    explicit ProtectSegmentInfo(Address addr, size_t size, std::uint32_t perm)
-        : addr(addr)
-        , size(size)
+    explicit ProtectSegmentInfo() {}
+    explicit ProtectSegmentInfo(uint32_t size, MemPerm perm)
+        : size(size)
         , perm(perm) {
-    }
-
-    bool operator<(const ProtectSegmentInfo &other) const {
-        return this->addr < other.addr;
     }
 };
 
-typedef std::set<ProtectSegmentInfo> ProtectSegmentTrees;
+typedef std::map<Address, ProtectSegmentInfo, std::greater<Address>> ProtectSegmentTrees;
 
 struct MemExternalMapping {
     Address address;
@@ -80,7 +67,7 @@ struct MemState {
     std::mutex generation_mutex;
     std::mutex protect_mutex;
 
-    size_t page_size = 0;
+    uint32_t page_size = 0;
     Memory memory;
     AllocPageTable alloc_table;
     BitmapAllocator allocator;
