@@ -447,7 +447,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const float column_icon_size = ICON_SIZE.x + column_padding_size + (5.f * SCALE.x);
 
     // Size of the compatibility part
-    const auto compat_radius = 12.f * (emuenv.cfg.apps_list_grid ? VIEWPORT_SCALE.x: SCALE.x);
+    const auto compat_radius = 12.f * (emuenv.cfg.apps_list_grid ? VIEWPORT_SCALE.x : SCALE.x);
     const auto full_compat_radius = (3.f * (emuenv.cfg.apps_list_grid ? VIEWPORT_SCALE.x : SCALE.x)) + compat_radius;
 
     auto lang = gui.lang.home_screen;
