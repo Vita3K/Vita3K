@@ -66,13 +66,18 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>Det har oppstått en feil.
+Feilkode: {}</an_error_occurred>
 		<cancel>Avbryt</cancel>
 		<delete>Slett</delete>
+		<file_corrupted>Filen er korrupt.</file_corrupted>
+		<microphone_disabled>Aktiver mikrofonen.</microphone_disabled>
 		<no>Nei</no>
+		<ok>OK</ok>
+		<please_wait>Vennligst vent...</please_wait>
 		<select_all>Velg alle</select_all>
 		<select>Velg</select>
-		<please_wait>Vennligst vent...</please_wait>
+		<submit>Submit</submit>
 		<yes>Ja</yes>
 		<wday>
 			<day>Søndag</day>

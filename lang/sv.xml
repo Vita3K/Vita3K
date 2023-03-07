@@ -66,13 +66,18 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 	
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>Ett fel har inträffat.
+Felkod: {}</an_error_occurred>
 		<cancel>Avbryt</cancel>
 		<delete>Radera</delete>
+		<file_corrupted>Filen är skadad.</file_corrupted>
+		<microphone_disabled>Aktivera mikrofonen.</microphone_disabled>
 		<no>Nej</no>
+		<ok>OK</ok>
+		<please_wait>Vänta...</please_wait>
 		<select_all>Välj alla</select_all>
 		<select>Välj</select>
-		<please_wait>Vänta...</please_wait>
+		<submit>Submit</submit>
 		<yes>Ja</yes>
 		<wday>
 			<day>söndag</day>

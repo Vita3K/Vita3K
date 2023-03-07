@@ -481,7 +481,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::Button(cancel_str, BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))
                     delete_np_com_id.clear();
                 ImGui::SameLine(0, 20.f * SCALE.x);
-                if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
+                if (ImGui::Button(emuenv.common_dialog.lang.common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
                     fs::remove_all(TROPHY_PATH / "conf" / delete_np_com_id);
                     fs::remove_all(TROPHY_PATH / "data" / delete_np_com_id);
                     const auto np_com_id_index = std::find_if(np_com_id_list.begin(), np_com_id_list.end(), [&](const NPComIdSort &np_com) {

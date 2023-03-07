@@ -48,6 +48,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     const auto BIG_BUTTON_POS = ImVec2((WINDOW_SIZE.x / 2.f) - (BIG_BUTTON_SIZE.x / 2.f), WINDOW_SIZE.y - BIG_BUTTON_SIZE.y - (20.f * SCALE.y));
 
     auto lang = gui.lang.initial_setup;
+    auto common = emuenv.common_dialog.lang.common;
     const auto completed_setup = lang["completed_setup"].c_str();
 
     const auto is_default_path = emuenv.cfg.pref_path == emuenv.default_path;
@@ -188,7 +189,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(completed_setup).x / 2.f), (WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize()));
         ImGui::Text("%s", completed_setup);
         ImGui::SetCursorPos(BIG_BUTTON_POS);
-        if (ImGui::Button("OK", BIG_BUTTON_SIZE))
+        if (ImGui::Button(common["ok"].c_str(), BIG_BUTTON_SIZE))
             emuenv.cfg.initial_setup = true;
         break;
     default: break;

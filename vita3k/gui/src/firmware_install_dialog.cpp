@@ -46,6 +46,8 @@ static void get_firmware_version(EmuEnvState &emuenv) {
 
 void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto lang = gui.lang.install_dialog.firmware_install;
+    auto common = emuenv.common_dialog.lang.common;
+
     host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
 
     static std::mutex install_mutex;
@@ -115,7 +117,7 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Checkbox(lang["delete_firmware"].c_str(), &delete_pup_file);
             ImGui::Spacing();
             ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2 - 30);
-            if (ImGui::Button("OK", BUTTON_SIZE)) {
+            if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 if (delete_pup_file) {
                     fs::remove(fs::path(pup_path.wstring()));
                     delete_pup_file = false;

@@ -77,14 +77,18 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>Une erreur est survenue.
+Code d'erreur: {}</an_error_occurred>
 		<cancel>Annuler</cancel>
 		<delete>Supprimer</delete>
 		<file_corrupted>Le fichier est corrompu.</file_corrupted>
+		<microphone_disabled>Activez le microphone.</microphone_disabled>
 		<no>Non</no>
+		<ok>OK</ok>
+		<please_wait>Merci de patienter...</please_wait>
 		<select_all>Sélectionner tout</select_all>
 		<select>Sélectionner</select>
-		<please_wait>Merci de patienter...</please_wait>
+		<submit>Submit</submit>
 		<yes>Oui</yes>
 		<wday>
 			<day>dimanche</day>

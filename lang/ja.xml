@@ -77,14 +77,18 @@
 	</app_context>
 
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>エラーが起きました。
+エラーコード：{}</an_error_occurred>
 		<cancel>キャンセル</cancel>
 		<delete>削除</delete>
 		<file_corrupted>ファイルが壊れています。</file_corrupted>
+		<microphone_disabled>マイクを有効にしてください。</microphone_disabled>
 		<no>いいえ</no>
+		<ok>OK</ok>
+		<please_wait>しばらくお待ちください...</please_wait>
 		<select_all>すべて選択</select_all>
 		<select>選択</select>
-		<please_wait>しばらくお待ちください...</please_wait>
+		<submit>Submit</submit>
 		<yes>はい</yes>
 		<wday>
 			<day>日曜日</day>

@@ -478,7 +478,7 @@ static void draw_notice_info(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::CloseCurrentPopup();
                     }
                     ImGui::SameLine(0.f, 20.f);
-                    if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
+                    if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
                         notice_info.clear();
                         for (auto &notice : gui.notice_info_icon)
                             notice.second = {};

@@ -77,14 +77,18 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>에러기 발생했습니다.
+에러  코드: {}</an_error_occurred>
 		<cancel>취소</cancel>
 		<delete>삭제</delete>
 		<file_corrupted>파일이 손상되어 있습니다.</file_corrupted>
+		<microphone_disabled>마이크를 활성화해 주십시오.</microphone_disabled>
 		<no>아니요</no>
+		<ok>OK</ok>
+		<please_wait>잠시 기다려 주십시오...</please_wait>
 		<select_all>모두 선택</select_all>
 		<select>선택</select>
-		<please_wait>잠시 기다려 주십시오...</please_wait>
+		<submit>Submit</submit>
 		<yes>예</yes>
 		<wday>
 			<day>일요일</day>

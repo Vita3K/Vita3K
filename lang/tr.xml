@@ -77,14 +77,18 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>Bir hata oluştu.
+Hata Kodu: {}</an_error_occurred>
 		<cancel>İptal</cancel>
 		<delete>Sil</delete>
 		<file_corrupted>Dosya bozuk.</file_corrupted>
+		<microphone_disabled>Enable the microphone.</microphone_disabled>
 		<no>Hayır</no>
+		<ok>Tamam</ok>
+		<please_wait>Lütfen bekleyin...</please_wait>
 		<select_all>Tümünü Seç</select_all>
 		<select>Seç</select>
-		<please_wait>Lütfen bekleyin...</please_wait>
+		<submit>Submit</submit>
 		<yes>Evet</yes>
 		<wday>
 			<day>Pazar</day>

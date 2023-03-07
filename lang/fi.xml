@@ -66,13 +66,18 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>Virhe on tapahtunut.
+Virhekoodi: {}</an_error_occurred>
 		<cancel>Peruuta</cancel>
 		<delete>Poista</delete>
+		<file_corrupted>Tiedosto on vioittunt.</file_corrupted>
+		<microphone_disabled>Ota mikrofoni käyttöön.</microphone_disabled>
 		<no>Ei</no>
+		<ok>OK</ok>
+		<please_wait>Odota hetki...</please_wait>
 		<select_all>Valitse kaikki</select_all>
 		<select>Valitse</select>
-		<please_wait>Odota hetki...</please_wait>
+		<submit>Submit</submit>
 		<yes>Kyllä</yes>
 		<wday>
 			<day>sunnuntai</day>

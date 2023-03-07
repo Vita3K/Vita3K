@@ -77,14 +77,18 @@
 	</app_context>
 
 	<common>
-		<submit>提交</submit>
+		<an_error_occurred>發生錯誤。
+錯誤編號：{}</an_error_occurred>
 		<cancel>取消</cancel>
 		<delete>刪除</delete>
 		<file_corrupted>檔案已毀損。</file_corrupted>
+		<microphone_disabled>請啟用麥克風。</microphone_disabled>
 		<no>否</no>
+		<ok>OK</ok>
+		<please_wait>請稍候……</please_wait>
 		<select_all>全選</select_all>
 		<select>選擇</select>
-		<please_wait>請稍候……</please_wait>
+		<submit>提交</submit>
 		<yes>是</yes>
 		<wday>
 			<day>星期日</day>
@@ -337,7 +341,7 @@
 		<ver>版本</ver>
 		<cat>類別</cat>
 		<comp>相容性</comp>
-		<last_time>最近使用時間</last_time>
+		<last_time>上次使用時間</last_time>
 		<refresh>更新</refresh>
 	</home_screen>
 
@@ -361,7 +365,7 @@
 		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
 		<installed>已安裝：</installed>
 		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
+		<download_font_package>下載字型套件</download_font_package>
 		<install_firmware_file>Install Firmware File</install_firmware_file>
 		<completed>已完成。</completed>
 		<next>Next</next>
@@ -386,7 +390,7 @@ Please download and install it.</no_font_exist>
 			<input_zrif>請在此處輸入您的zRIF</input_zrif>
 			<copy_paste_zrif>使用Ctrl（Cmd）+ C複製，使用Ctrl（Cmd）+ V貼上。</copy_paste_zrif>
 			<delete_pkg>刪除pkg檔案？</delete_pkg>
-			<delete_work>刪除work.bin文件？</delete_work>
+			<delete_work>刪除work.bin檔案？</delete_work>
 			<check_log>更多資料請查看記錄。</check_log>
 		</pkg_install>
 		<archive_install>

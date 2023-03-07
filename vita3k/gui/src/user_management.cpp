@@ -401,7 +401,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + AVATAR_SIZE.x / 2 - ImGui::CalcTextSize(gui.users[user_id].name.c_str()).x / 2, AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCALE.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.users[user_id].name.c_str());
         ImGui::SetCursorPos(BUTTON_POS);
-        if (ImGui::Button("OK", BUTTON_SIZE)) {
+        if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
             clear_temp(gui);
             menu.clear();
         }
@@ -473,7 +473,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_deleted"].c_str());
                 ImGui::SetWindowFontScale(1.f);
                 ImGui::SetCursorPos(BUTTON_POS);
-                if (ImGui::Button("OK", BUTTON_SIZE)) {
+                if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                     del_menu.clear();
                     user_id.clear();
                     if (gui.users.empty())
