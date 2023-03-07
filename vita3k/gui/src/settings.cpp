@@ -433,7 +433,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))
                             popup.clear();
                         ImGui::SameLine(0, 40.f * SCALE.x);
-                        if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
+                        if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
                             if (selected == gui.users[emuenv.io.user_id].theme_id) {
                                 gui.users[emuenv.io.user_id].theme_id = "default";
                                 gui.users[emuenv.io.user_id].start_path.clear();

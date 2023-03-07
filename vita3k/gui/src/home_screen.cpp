@@ -212,7 +212,7 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
     if (ImGui::Button(common["cancel"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle))
         gui.vita_area.app_close = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
-    if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
+    if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
         const auto app_path = gui.apps_list_opened[gui.current_app_selected];
         update_time_app_used(gui, emuenv, emuenv.io.app_path);
         emuenv.kernel.exit_delete_all_threads();

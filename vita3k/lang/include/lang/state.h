@@ -31,14 +31,18 @@ enum TypeLang {
 
 struct DialogLangState {
     std::map<std::string, std::string> common = {
-        { "submit", "Submit" },
+        { "an_error_occurred", "An error occurred.\nError code: {}" },
         { "cancel", "Cancel" },
         { "delete", "Delete" },
         { "file_corrupted", "The file is corrupt." },
+        { "microphone_disabled", "Enable the microphone." },
+        { "nospace", "There is not enough free space on the memory card." },
         { "no", "No" },
+        { "ok", "OK" },
+        { "please_wait", "Please wait..." },
         { "select_all", "Select All" },
         { "select", "Select" },
-        { "please_wait", "Please wait..." },
+        { "submit", "Submit" },
         { "yes", "Yes" }
     };
     std::map<std::string, std::string> trophy = { { "preparing_start_app", "Preparing to start the application..." } };

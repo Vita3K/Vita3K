@@ -77,14 +77,18 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>Произошла ошибка.
+Код ошибки: {}</an_error_occurred>
 		<cancel>Отмена</cancel>
 		<delete>Удалить</delete>
 		<file_corrupted>Файл поврежден.</file_corrupted>
+		<microphone_disabled>Включите микрофон.</microphone_disabled>
 		<no>Нет</no>
+		<ok>OK</ok>
+		<please_wait>Подождите...</please_wait>
 		<select_all>Выбрать все</select_all>
 		<select>Выбрать</select>
-		<please_wait>Подождите...</please_wait>
+		<submit>Submit</submit>
 		<yes>Да</yes>
 		<wday>
 			<day>воскресенье</day>

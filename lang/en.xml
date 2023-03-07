@@ -77,14 +77,18 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>An error occurred.
+Error code: {}</an_error_occurred>
 		<cancel>Cancel</cancel>
 		<delete>Delete</delete>
 		<file_corrupted>The file is corrupt.</file_corrupted>
+		<microphone_disabled>Enable the microphone.</microphone_disabled>
 		<no>No</no>
+		<ok>OK</ok>
+		<please_wait>Please wait...</please_wait>
 		<select_all>Select All</select_all>
 		<select>Select</select>
-		<please_wait>Please wait...</please_wait>
+		<submit>Submit</submit>
 		<yes>Yes</yes>
 		<wday>
 			<day>Sunday</day>

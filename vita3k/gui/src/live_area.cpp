@@ -1029,6 +1029,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     auto lang = gui.lang.live_area.help;
+    auto common = emuenv.common_dialog.lang.common;
 
     if (!gui.vita_area.content_manager && !gui.vita_area.manual) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * SCALE.x);
@@ -1094,7 +1095,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["exit_manual"].c_str(), lang["exit_manual_control"].c_str());
             ImGui::Spacing();
             ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (BUTTON_SIZE.x / 2.f));
-            if (ImGui::Button("OK", BUTTON_SIZE))
+            if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE))
                 ImGui::CloseCurrentPopup();
 
             ImGui::EndPopup();

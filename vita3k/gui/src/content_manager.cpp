@@ -387,7 +387,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
                 popup = false;
             }
             ImGui::SameLine(0, 20.f * SCALE.x);
-            if (ImGui::Button("OK", BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
+            if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
                 content_delete = true;
                 popup = false;
             }

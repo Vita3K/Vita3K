@@ -276,7 +276,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
         switch (up->buttonType) {
         case SCE_MSG_DIALOG_BUTTON_TYPE_OK:
             emuenv.common_dialog.msg.btn_num = 1;
-            emuenv.common_dialog.msg.btn[0] = "OK";
+            emuenv.common_dialog.msg.btn[0] = common["ok"];
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_YESNO:
@@ -291,7 +291,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             break;
         case SCE_MSG_DIALOG_BUTTON_TYPE_OK_CANCEL:
             emuenv.common_dialog.msg.btn_num = 2;
-            emuenv.common_dialog.msg.btn[0] = "OK";
+            emuenv.common_dialog.msg.btn[0] = common["ok"];
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
             emuenv.common_dialog.msg.btn[1] = CANCEL;
             emuenv.common_dialog.msg.btn_val[1] = SCE_MSG_DIALOG_BUTTON_ID_NO;
@@ -332,9 +332,9 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_MIC_DISABLED:
-            emuenv.common_dialog.msg.message = "The microphone is disabled";
+            emuenv.common_dialog.msg.message = common["microphone_disabled"];
             emuenv.common_dialog.msg.btn_num = 1;
-            emuenv.common_dialog.msg.btn[0] = CANCEL;
+            emuenv.common_dialog.msg.btn[0] = common["ok"];
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_CANCEL:
@@ -352,8 +352,10 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NOSPACE_CONTINUABLE:
-            emuenv.common_dialog.msg.message = "There is not enough free space on the memory card.";
-            emuenv.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.message = common["nospace"];
+            emuenv.common_dialog.msg.btn_num = 1;
+            emuenv.common_dialog.msg.btn[0] = common["ok"];
+            emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_MIC_DISABLED:
             emuenv.common_dialog.msg.message = "You must enable the microphone.";
@@ -377,9 +379,9 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
         }
         break;
     case SCE_MSG_DIALOG_MODE_ERROR_CODE:
-        emuenv.common_dialog.msg.message = fmt::format("An error occurred. Errorcode: {}", log_hex(p->errorCodeParam.get(emuenv.mem)->errorCode));
+        emuenv.common_dialog.msg.message = fmt::format(fmt::runtime(common["an_error_occurred"]), log_hex(p->errorCodeParam.get(emuenv.mem)->errorCode));
         emuenv.common_dialog.msg.btn_num = 1;
-        emuenv.common_dialog.msg.btn[0] = "OK";
+        emuenv.common_dialog.msg.btn[0] = common["ok"];
         emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_MSG_DIALOG_MODE_PROGRESS_BAR:
@@ -856,7 +858,7 @@ static void handle_user_message(SceSaveDataDialogUserMessageParam *user_message,
     switch (user_message->buttonType) {
     case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_OK:
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn[0] = common["ok"];
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_BUTTON_TYPE_YESNO:
@@ -885,7 +887,7 @@ static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message,
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NODATA:
         emuenv.common_dialog.savedata.msg = load["no_saved_data"];
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn[0] = common["ok"];
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_CONFIRM:
@@ -945,7 +947,7 @@ static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message,
             break;
         }
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn[0] = common["ok"];
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_CONFIRM_CANCEL:
@@ -969,20 +971,20 @@ static void handle_sys_message(SceSaveDataDialogSystemMessageParam *sys_message,
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_FILE_CORRUPTED:
         emuenv.common_dialog.savedata.msg = common["file_corrupted"];
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn[0] = common["ok"];
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     case SCE_SAVEDATA_DIALOG_SYSMSG_TYPE_NOSPACE_CONTINUABLE:
         emuenv.common_dialog.savedata.msg = save["could_not_save"];
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn[0] = common["ok"];
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_TYPE_OK;
         break;
     case SCE_SAVEDATE_DIALOG_SYSMSG_TYPE_NODATA_IMPORT:
         emuenv.common_dialog.savedata.msg = "There is no saved data that can be used with this application.\n\
 			If the saved data you want to use is on the memory card, select the \"import saved data\" icon on the LiveArea screen.";
         emuenv.common_dialog.savedata.btn_num = 1;
-        emuenv.common_dialog.savedata.btn[0] = "OK";
+        emuenv.common_dialog.savedata.btn[0] = common["ok"];
         emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
         break;
     default: break;
@@ -1019,6 +1021,8 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
     emuenv.common_dialog.savedata.mode = p->mode;
     emuenv.common_dialog.savedata.display_type = p->dispType == 0 ? emuenv.common_dialog.savedata.display_type : p->dispType;
     emuenv.common_dialog.savedata.userdata = p->userdata;
+
+    auto common = emuenv.common_dialog.lang.common;
 
     switch (emuenv.common_dialog.savedata.mode) {
     default:
@@ -1072,7 +1076,7 @@ EXPORT(int, sceSaveDataDialogContinue, const Ptr<SceSaveDataDialogParam> param) 
                 check_empty_param(emuenv, empty_param, emuenv.common_dialog.savedata.selected_save);
             }
             emuenv.common_dialog.savedata.btn_num = 1;
-            emuenv.common_dialog.savedata.btn[0] = "OK";
+            emuenv.common_dialog.savedata.btn[0] = common["ok"];
             emuenv.common_dialog.savedata.btn_val[0] = SCE_SAVEDATA_DIALOG_BUTTON_ID_OK;
             switch (emuenv.common_dialog.savedata.display_type) {
             case SCE_SAVEDATA_DIALOG_TYPE_SAVE:

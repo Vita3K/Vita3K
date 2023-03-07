@@ -121,7 +121,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 zRIF.clear();
             }
             ImGui::SameLine(0, 20.f * SCALE.x);
-            if (ImGui::Button("OK", BUTTON_SIZE) && !zRIF.empty())
+            if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) && !zRIF.empty())
                 state = "install";
         } else if (state == "install") {
             std::thread installation([&emuenv]() {
@@ -148,7 +148,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Checkbox(lang["delete_work"].c_str(), &delete_work_file);
             ImGui::Spacing();
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
-            if (ImGui::Button("OK", BUTTON_SIZE)) {
+            if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 if (delete_pkg_file) {
                     fs::remove(fs::path(pkg_path.wstring()));
                     delete_pkg_file = false;
@@ -173,7 +173,7 @@ void draw_pkg_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize(lang["check_log"].c_str()).x / 2.f), (WINDOW_SIZE.y / 2.f) - (20.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["check_log"].c_str());
             ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
-            if (ImGui::Button("OK", BUTTON_SIZE)) {
+            if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
                 gui.file_menu.pkg_install_dialog = false;
                 pkg_path = "";
                 draw_file_dialog = true;

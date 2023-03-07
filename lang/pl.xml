@@ -66,13 +66,18 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>Wystąpił błąd.
+Kod błędu: {}</an_error_occurred>
 		<cancel>Anuluj</cancel>
 		<delete>Usuń</delete>
+		<file_corrupted>Plik jest uszkodzony.</file_corrupted>
+		<microphone_disabled>Włącz mikrofon.</microphone_disabled>
 		<no>Nie</no>
+		<ok>OK</ok>
+		<please_wait>Czekaj...</please_wait>
 		<select_all>Zaznacz wszystko</select_all>
 		<select>Zaznacz</select>
-		<please_wait>Czekaj...</please_wait>
+		<submit>Submit</submit>
 		<yes>Tak</yes>
 		<wday>
 			<day>niedziela</day>

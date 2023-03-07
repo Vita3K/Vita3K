@@ -92,7 +92,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
             zRIF.clear();
         }
         ImGui::SameLine(0, 20.f * SCALE.x);
-        if (ImGui::Button("OK", BUTTON_SIZE) && !zRIF.empty()) {
+        if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) && !zRIF.empty()) {
             if (create_license(emuenv, zRIF))
                 state = "success";
             else
@@ -108,7 +108,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (work_path != "")
             ImGui::Checkbox(lang["delete_bin_rif"].c_str(), &delete_work_file);
         ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
-        if (ImGui::Button("OK", BUTTON_SIZE)) {
+        if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
             if (delete_work_file) {
                 fs::remove(fs::path(work_path.wstring()));
                 delete_work_file = false;
@@ -123,7 +123,7 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize(CHECK_LOG).x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", CHECK_LOG);
         ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
-        if (ImGui::Button("OK", BUTTON_SIZE)) {
+        if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
             gui.file_menu.license_install_dialog = false;
             work_path = nullptr;
             state.clear();

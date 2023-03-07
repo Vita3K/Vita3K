@@ -77,14 +77,18 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>Er is een fout opgetreden.
+Foutcode: {}</an_error_occurred>
 		<cancel>Annuleren</cancel>
 		<delete>Verwijderen</delete>
 		<file_corrupted>Het bestand is beschadigd.</file_corrupted>
+		<microphone_disabled>Schakel de microfoon in.</microphone_disabled>
 		<no>Nee</no>
+		<ok>OK</ok>
+		<please_wait>Een ogenblik geduld...</please_wait>
 		<select_all>Alles selecteren</select_all>
 		<select>Selecteren</select>
-		<please_wait>Een ogenblik geduld...</please_wait>
+		<submit>Submit</submit>
 		<yes>Ja</yes>
 		<wday>
 			<day>zondag</day>

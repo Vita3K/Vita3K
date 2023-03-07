@@ -77,14 +77,18 @@ depending on its size and your hardware.</app_delete_note>
 	</app_context>
 
 	<common>
-		<submit>Submit</submit>
+		<an_error_occurred>Ein Fehle ist aufgetreten.
+Fehlercode: {}</an_error_occurred>
 		<cancel>Abbrechen</cancel>
 		<delete>Löschen</delete>
 		<file_corrupted>Die Datei ist beschädigt.</file_corrupted>
+		<microphone_disabled>Aktiviere das Mikrofon.</microphone_disabled>
 		<no>Nein</no>
+		<ok>OK</ok>
+		<please_wait>Warte bitte ...</please_wait>
 		<select_all>Alle auswählen</select_all>
 		<select>Auswählen</select>
-		<please_wait>Warte bitte ...</please_wait>
+		<submit>Submit</submit>
 		<yes>Ja</yes>
 		<wday>
 			<day>Sonntag</day>
