@@ -83,6 +83,7 @@
 		<delete>删除</delete>
 		<file_corrupted>文件已损坏。</file_corrupted>
 		<microphone_disabled>请启用麦克风。</microphone_disabled>
+		<nospace>存储卡没有足够的空余容量。</nospace>
 		<no>否</no>
 		<ok>OK</ok>
 		<please_wait>请稍等…</please_wait>

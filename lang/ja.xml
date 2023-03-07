@@ -83,6 +83,7 @@
 		<delete>削除</delete>
 		<file_corrupted>ファイルが壊れています。</file_corrupted>
 		<microphone_disabled>マイクを有効にしてください。</microphone_disabled>
+		<nospace>メモリーカードの空き容量が不足しています。</nospace>
 		<no>いいえ</no>
 		<ok>OK</ok>
 		<please_wait>しばらくお待ちください...</please_wait>

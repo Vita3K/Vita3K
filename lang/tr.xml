@@ -83,6 +83,7 @@ Hata Kodu: {}</an_error_occurred>
 		<delete>Sil</delete>
 		<file_corrupted>Dosya bozuk.</file_corrupted>
 		<microphone_disabled>Enable the microphone.</microphone_disabled>
+		<nospace>Hafıza kartında yeterli boş alan yok.</nospace>
 		<no>Hayır</no>
 		<ok>Tamam</ok>
 		<please_wait>Lütfen bekleyin...</please_wait>

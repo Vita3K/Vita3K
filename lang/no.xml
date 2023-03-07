@@ -72,6 +72,7 @@ Feilkode: {}</an_error_occurred>
 		<delete>Slett</delete>
 		<file_corrupted>Filen er korrupt.</file_corrupted>
 		<microphone_disabled>Aktiver mikrofonen.</microphone_disabled>
+		<nospace>Det er ikke nok ledig plass på minnekortet.</nospace>
 		<no>Nei</no>
 		<ok>OK</ok>
 		<please_wait>Vennligst vent...</please_wait>

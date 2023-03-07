@@ -83,6 +83,7 @@ Codice di errore: {}</an_error_occurred>
 		<delete>Elimina</delete>
 		<file_corrupted>Il file è danneggiato.</file_corrupted>
 		<microphone_disabled>Attiva il microfono.</microphone_disabled>
+		<nospace>Spazio libero insufficiente sulla scheda di memoria.</nospace>
 		<no>No</no>
 		<ok>OK</ok>
 		<please_wait>Attendi...</please_wait>

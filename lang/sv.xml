@@ -72,6 +72,7 @@ Felkod: {}</an_error_occurred>
 		<delete>Radera</delete>
 		<file_corrupted>Filen är skadad.</file_corrupted>
 		<microphone_disabled>Aktivera mikrofonen.</microphone_disabled>
+		<nospace>Det finns inte tillräckligt med ledigt utrymme på minneskortet.</nospace>
 		<no>Nej</no>
 		<ok>OK</ok>
 		<please_wait>Vänta...</please_wait>

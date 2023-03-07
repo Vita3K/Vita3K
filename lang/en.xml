@@ -83,6 +83,7 @@ Error code: {}</an_error_occurred>
 		<delete>Delete</delete>
 		<file_corrupted>The file is corrupt.</file_corrupted>
 		<microphone_disabled>Enable the microphone.</microphone_disabled>
+		<nospace>There is not enough free space on the memory card.</nospace>
 		<no>No</no>
 		<ok>OK</ok>
 		<please_wait>Please wait...</please_wait>

@@ -72,6 +72,7 @@ Fejlkode: {}</an_error_occurred>
 		<delete>Slet</delete>
 		<file_corrupted>Filen er defekt.</file_corrupted>
 		<microphone_disabled>Aktivér mikrofonen.</microphone_disabled>
+		<nospace>Der er ikke nok ledig plads på hukommelseskortet.</nospace>
 		<no>Nej</no>
 		<ok>OK</ok>
 		<please_wait>Vent venligst...</please_wait>

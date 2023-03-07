@@ -72,6 +72,7 @@ Kod błędu: {}</an_error_occurred>
 		<delete>Usuń</delete>
 		<file_corrupted>Plik jest uszkodzony.</file_corrupted>
 		<microphone_disabled>Włącz mikrofon.</microphone_disabled>
+		<nospace>Na karcie pamięci nie ma wystarczającej ilości wolnego miejsca.</nospace>
 		<no>Nie</no>
 		<ok>OK</ok>
 		<please_wait>Czekaj...</please_wait>

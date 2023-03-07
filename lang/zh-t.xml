@@ -83,6 +83,7 @@
 		<delete>刪除</delete>
 		<file_corrupted>檔案已毀損。</file_corrupted>
 		<microphone_disabled>請啟用麥克風。</microphone_disabled>
+		<nospace>記憶卡的可用容量不足。</nospace>
 		<no>否</no>
 		<ok>OK</ok>
 		<please_wait>請稍候……</please_wait>
