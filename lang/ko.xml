@@ -83,6 +83,7 @@ depending on its size and your hardware.</app_delete_note>
 		<delete>삭제</delete>
 		<file_corrupted>파일이 손상되어 있습니다.</file_corrupted>
 		<microphone_disabled>마이크를 활성화해 주십시오.</microphone_disabled>
+		<nospace>메모리 카드의 빈 용량이 부족합니다.</nospace>
 		<no>아니요</no>
 		<ok>OK</ok>
 		<please_wait>잠시 기다려 주십시오...</please_wait>

@@ -72,6 +72,7 @@ Virhekoodi: {}</an_error_occurred>
 		<delete>Poista</delete>
 		<file_corrupted>Tiedosto on vioittunt.</file_corrupted>
 		<microphone_disabled>Ota mikrofoni käyttöön.</microphone_disabled>
+		<nospace>Muistikortilla ei ole tarpeeksi vapaata tilaa.</nospace>
 		<no>Ei</no>
 		<ok>OK</ok>
 		<please_wait>Odota hetki...</please_wait>

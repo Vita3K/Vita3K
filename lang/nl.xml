@@ -83,6 +83,7 @@ Foutcode: {}</an_error_occurred>
 		<delete>Verwijderen</delete>
 		<file_corrupted>Het bestand is beschadigd.</file_corrupted>
 		<microphone_disabled>Schakel de microfoon in.</microphone_disabled>
+		<nospace>Er is onvoldoende vrije ruimte op de geheugenkaart.</nospace>
 		<no>Nee</no>
 		<ok>OK</ok>
 		<please_wait>Een ogenblik geduld...</please_wait>

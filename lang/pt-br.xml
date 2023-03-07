@@ -83,6 +83,7 @@ Código de erro: {}</an_error_occurred>
 		<delete>Excluir</delete>
 		<file_corrupted>O arquivo está corrompido.</file_corrupted>
 		<microphone_disabled>Ative o microfone.</microphone_disabled>
+		<nospace>Não há espaço livre suficiente no cartão de memória.</nospace>
 		<no>Não</no>
 		<ok>OK</ok>
 		<please_wait>Aguarde...</please_wait>

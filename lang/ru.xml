@@ -83,6 +83,7 @@ depending on its size and your hardware.</app_delete_note>
 		<delete>Удалить</delete>
 		<file_corrupted>Файл поврежден.</file_corrupted>
 		<microphone_disabled>Включите микрофон.</microphone_disabled>
+		<nospace>На карте памяти недостаточно свободного места.</nospace>
 		<no>Нет</no>
 		<ok>OK</ok>
 		<please_wait>Подождите...</please_wait>
