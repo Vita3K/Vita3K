@@ -190,8 +190,10 @@ static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {
         }
     }
     if (do_sink) {
+        // TODO : implement spdlog::flush();
         // In this logger any flush is done async and return immediately. force flush can be done only on shutdown
-        spdlog::shutdown();
+        // I can't distinguish recoverable and non-recoverable exceptions. Even if exception will be catched the program crash. So I disable it completely for now.
+        // spdlog::shutdown();
     }
     return EXCEPTION_CONTINUE_SEARCH;
 }
