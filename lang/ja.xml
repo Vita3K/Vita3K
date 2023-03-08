@@ -38,10 +38,10 @@
 	<app_context>
 		<boot>起動</boot>
 		<check_app_compatibility>アプリの互換性を調べる</check_app_compatibility>
-		<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
-		<open_issue>Open Issue</open_issue>
-		<create_issue>Create Issue</create_issue>
-		<update_database>Update Database</update_database>
+		<copy_vita3k_summary>Vita3K Summaryをコピー</copy_vita3k_summary>
+		<open_issue>Issueを開く</open_issue>
+		<create_issue>Issueを作成する</create_issue>
+		<update_database>データベースを更新</update_database>
 		<copy_app_info>アプリの情報をコピー</copy_app_info>
 		<name_and_id>名前とタイトルID</name_and_id>
 		<app_summary>App Summary</app_summary>
@@ -89,7 +89,7 @@
 		<please_wait>しばらくお待ちください...</please_wait>
 		<select_all>すべて選択</select_all>
 		<select>選択</select>
-		<submit>Submit</submit>
+		<submit>確認</submit>
 		<yes>はい</yes>
 		<wday>
 			<day>日曜日</day>
@@ -209,7 +209,7 @@
 
 	<compatibility name="互換性">
 		<states>
-			<state id = "-1">Unknown</state>
+			<state id = "-1">不明</state>
 			<state id = "0">プレイ不可能</state>
 			<state id = "1">起動可能</state>
 			<state id = "2">イントロ</state>
@@ -219,6 +219,11 @@
 			<state id = "6">プレイ可能</state>
 		</states>
 	</compatibility>
+
+	<compile_shaders>
+		<compiling_shaders>Compiling Shaders</compiling_shaders>
+		<shaders_compiled>shaders compiled</shaders_compiled>
+	</compile_shaders>
 
 	<content_manager name="コンテンツ管理">
 		<search>検索</search>
@@ -236,7 +241,7 @@
 	</content_manager>
 
 	<controllers name="コントローラー">
-		<connected>Controllers connected</connected>
+		<connected>コントローラー接続済み</connected>
 		<name>名前</name>
 		<num>番号</num>
 		<not_connected>利用可能なコントローラーが接続されていません。
@@ -276,8 +281,8 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<full_screen>フルスクリーン</full_screen>
 		<toggle_touch>タッチ操作の切り替え</toggle_touch>
 		<toggle_gui_visibility>GUI表示の切り替え</toggle_gui_visibility>
-		<error>Error</error>
-		<error_duplicate_key>The key is used for other bindings or it is reserved.</error_duplicate_key>
+		<error>エラー</error>
+		<error_duplicate_key>そのキーはすでに使用済みです</error_duplicate_key>
 	</controls>　
 
 	<dialog>
@@ -358,11 +363,11 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 Vita3Kをお楽しみください。</completed_setup>
 		<select_language>言語を選んでください。</select_language>
 		<install_firmware>ファームウェアをインストール。</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
+		<install_highly_recommended>どちらのファームウェアもインストールすることを推奨します。</install_highly_recommended>
+		<installed>インストールされました:</installed>
 		<download_firmware>ファームウェアをダウンロード</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
+		<download_font_package>フォントパッケージをダウンロード</download_font_package>
+		<install_firmware_file>ファームウェアファイルをインストール</install_firmware_file>
 		<completed>完了しました。</completed>
 		<next>次へ</next>
 	</initial_setup>
@@ -408,9 +413,9 @@ Vita3Kをお楽しみください。</completed_setup>
 			<delete_bin_rif>先ほどのwork.bin/rifを削除しますか？</delete_bin_rif>
 		</license_install>
 		<reinstall>
-			<reinstall_content>Reinstall this content?</reinstall_content>
-			<already_installed>This content is already installed.</already_installed>
-			<reinstall_overwrite>Do you want to reinstall it and overwrite existing data?</reinstall_overwrite>
+			<reinstall_content>このコンテンツを再インストールしますか？</reinstall_content>
+			<already_installed>このコンテンツはすでにインストールされています。</already_installed>
+			<reinstall_overwrite>現在あるデータを上書きし、再インストールしますか？</reinstall_overwrite>
 		</reinstall>
 	</install_dialog>
 
@@ -418,31 +423,38 @@ Vita3Kをお楽しみください。</completed_setup>
 		<start>はじめる</start>
 		<continue>つづける</continue>
 		<help>
-			<control_setting>Using configuration set for keyboard in control setting</control_setting>
-			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
-			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
+			<control_setting>コントロール設定でキーを変更できます</control_setting>
+			<firmware_not_detected>ファームウェアが検出されませんでした。インストールを強くお勧めします</firmware_not_detected>
+			<firmware_font_not_detected>フォントのファームウェアが検出されませんでした。Liveareaのフォントのために、インストールを推奨します</firmware_font_not_detected>
 			<live_area_help>Live Area Help</live_area_help>
-			<browse_app>Browse in app list</browse_app>
-			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
-			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
-			<show_hide>Show/Hide Live Area during app run</show_hide>
-			<show_hide_control>Press on PS</show_hide_control>
-			<exit_livearea>Exit Live Area</exit_livearea>
-			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
+			<browse_app>アプリリストの閲覧</browse_app>
+			<browse_app_control>方向キー、左ステック、ホイールの上下またはスライダー</browse_app_control>
+			<start_app>アプリの開始</start_app>
+			<start_app_control>はじめるを押すか、×ボタンを押す</start_app_control>
+			<show_hide>アプリの起動中にLiveareaの表示/非表示を切り替える</show_hide>
+			<show_hide_control>PSボタンを押す</show_hide_control>
+			<exit_livearea>Liveareaを閉じる</exit_livearea>
+			<exit_livearea_control>Escを押すか〇ボタンを押す</exit_livearea_control>
 			<manual_help>Manual Help</manual_help>
-			<browse_page>Browse page</browse_page>
-			<browse_page_control>D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on</browse_page_control>
-			<hide_show>Hide/Show button</hide_show>
-			<hide_show_control>Right Click</hide_show_control>
-			<zoom_available>Zoom if available</zoom_available>
-			<zoom_available_control>Double Left Click</zoom_available_control>
-			<scroll_zoom>Scroll in zoom</scroll_zoom>
-			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
-			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
+			<browse_page>ページの閲覧</browse_page>
+			<browse_page_control>方向キー、左ステック、ホイールの上下または</browse_page_control>
+			<hide_show>ボタンの表示/非表示</hide_show>
+			<hide_show_control>右クリック</hide_show_control>
+			<zoom_available>可能であればズーム</zoom_available>
+			<zoom_available_control>ダブルクリック</zoom_available_control>
+			<scroll_zoom>ズーム中のスクロール</scroll_zoom>
+			<scroll_zoom_control>ホイールの上下</scroll_zoom_control>
+			<exit_manual>マニュアルを閉じる</exit_manual>
+			<exit_manual_control>Escを押すかPSボタンを押す</exit_manual_control>
 		</help>
 	</live_area>
+
+	<performance_overlay>
+		<fps>FPS</fps>
+		<avg>Avg</avg>
+		<min>Min</min>
+		<max>Max</max>
+	</performance_overlay>
 
 	<settings name="設定">
 		<theme_background name="テーマ&背景">
@@ -570,12 +582,12 @@ Vita3Kをお楽しみください。</completed_setup>
 		<line_sixth_part_one>Vita3Kのセットアップ方法については、以下のページで解説しています。</line_sixth_part_one>
 		<quickstart>クイックスタート</quickstart>
 		<line_sixth_part_two>ページ。</line_sixth_part_two>
-		<line_seventh>商用ゲームとHomebrew互換性リストで動作するものを御確認下さい。</line_seventh>
+		<line_seventh>商用ゲーム互換性リストとHomebrew互換性リストで動作するものを御確認下さい。</line_seventh>
 		<commercial_compatibility_list>商用ゲーム互換性リスト</commercial_compatibility_list>
 		<homebrew_compatibility_list>Homebrew互換性リスト</homebrew_compatibility_list>
 		<line_ninth>寄稿者を募集しています！</line_ninth>
 		<line_tenth>その他の相談は、#help チャンネルで行うことができます。</line_tenth>
-		<line_eleventh>Vita3Kは違法行為を認めません。所有ゲームの吸出しを行ってください。</line_eleventh>
+		<line_eleventh>Vita3Kは著作権侵害を認めません。所有ゲームの吸出しを行ってください。</line_eleventh>
 		<show_next_time>次回以降も表示</show_next_time>
 		<close>閉じる</close>
 	</welcome>

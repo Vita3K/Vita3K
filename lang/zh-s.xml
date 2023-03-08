@@ -429,7 +429,7 @@ Please download and install it.</no_font_exist>
 			<browse_app>浏览应用程序列表</browse_app>
 			<browse_app_control>方向键、左摇杆、滚轮上/下或使用滑块</browse_app_control>
 			<start_app>开启应用</start_app>
-			<start_app_control>滚轮上/下或使用滑块</start_app_control>
+			<start_app_control>点击开始或按下X键</start_app_control>
 			<show_hide>应用程序运行时显示/隐藏</show_hide>
 			<show_hide_control>按PS键</show_hide_control>
 			<exit_livearea>退出Live Area</exit_livearea>
@@ -443,7 +443,7 @@ Please download and install it.</no_font_exist>
 			<zoom_available_control>双击左键</zoom_available_control>
 			<scroll_zoom>缩放滚动</scroll_zoom>
 			<scroll_zoom_control>滚轮上/下</scroll_zoom_control>
-			<exit_manual>退出手册帮助</exit_manual>
+			<exit_manual>退出说明书</exit_manual>
 			<exit_manual_control>点击Esc或按PS键</exit_manual_control>
 		</help>
 	</live_area>
