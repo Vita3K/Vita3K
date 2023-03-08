@@ -429,7 +429,7 @@ Please download and install it.</no_font_exist>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -443,7 +443,7 @@ Please download and install it.</no_font_exist>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>

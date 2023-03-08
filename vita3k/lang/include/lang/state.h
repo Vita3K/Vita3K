@@ -357,7 +357,7 @@ struct LangState {
             { "browse_app", "Browse in app list" },
             { "browse_app_control", "D-pad, Left Stick, Wheel in Up/Down or using Slider" },
             { "start_app", "Start App" },
-            { "start_app_control", "Wheel in Up/Down or using Slider" },
+            { "start_app_control", "Click on Start or Press on Cross" },
             { "show_hide", "Show/Hide Live Area during app run" },
             { "show_hide_control", "Press on PS" },
             { "exit_livearea", "Exit Live Area" },
@@ -371,7 +371,7 @@ struct LangState {
             { "zoom_available_control", "Double Left Click" },
             { "scroll_zoom", "Scroll in zoom" },
             { "scroll_zoom_control", "Wheel Up/Down" },
-            { "exit_manual", "Exit Manual Help" },
+            { "exit_manual", "Exit Manual" },
             { "exit_manual_control", "Click on Esc or Press on PS" }
         };
     };

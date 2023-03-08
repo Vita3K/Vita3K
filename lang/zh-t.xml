@@ -429,7 +429,7 @@ Please download and install it.</no_font_exist>
 			<browse_app>瀏覽應用程式清單</browse_app>
 			<browse_app_control>方向鍵、左操作桿、滾輪上/下或使用滑桿</browse_app_control>
 			<start_app>啟動應用程式</start_app>
-			<start_app_control>滾輪上/下或使用滑桿</start_app_control>
+			<start_app_control>按下啟動或按交叉按鈕</start_app_control>
 			<show_hide>應用程式執行時顯示/隱藏Live Area</show_hide>
 			<show_hide_control>按PS按鈕</show_hide_control>
 			<exit_livearea>解除Live Area</exit_livearea>
