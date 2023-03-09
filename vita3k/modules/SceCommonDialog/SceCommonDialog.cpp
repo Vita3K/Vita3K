@@ -358,8 +358,10 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_MIC_DISABLED:
-            emuenv.common_dialog.msg.message = "You must enable the microphone.";
-            emuenv.common_dialog.msg.btn_num = 0;
+            emuenv.common_dialog.msg.message = common["microphone_disabled"];
+            emuenv.common_dialog.msg.btn_num = 1;
+            emuenv.common_dialog.msg.btn[0] = common["ok"];
+            emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_TRC_WIFI_REQUIRED_OPERATION:
             emuenv.common_dialog.msg.message = "You must use Wi-Fi to do this.";
