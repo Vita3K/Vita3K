@@ -1,0 +1,606 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<lang>
+	<main_menubar>
+		<file name="Файл">
+			<open_pref_path>Открыть путь файлов</open_pref_path>
+			<install_firmware>Установить прошивку</install_firmware>
+			<install_pkg>Установить .pkg</install_pkg>
+			<install_zip>Установить .zip, .vpk</install_zip>
+			<install_license>Установить Лицензию</install_license>
+		</file>
+		<emulation name="Эмуляция">
+			<last_apps_used>Последнее использованные приложения</last_apps_used>
+		</emulation>
+		<configuration name="Конфигурация">
+			<settings>Настройки</settings>
+			<user_management>Управление пользователями</user_management>
+		</configuration>
+		<controls name="Управление">
+			<keyboard_controls>Элементы управления клавиатурой</keyboard_controls>
+		</controls>
+		<help name="Помощь">
+			<welcome>Добро пожаловать</welcome>
+		</help>
+	</main_menubar>
+
+	<about name="О программе">
+		<vita3k>Vita3K: эмулятор PS Vita/PS TV. Первый в мире функциональный эмулятор PS Vita/PS TV.</vita3k>
+		<about_vita3k>Vita3K - это экспериментальный эмулятор PlayStation Vita/PlayStation TV с открытым исходным кодом, написанный на C++ для операционных систем Windows, Linux, macOS и Android.</about_vita3k>
+		<note>Примечание: Эмулятор все еще в ранней стадии разработки.</note>
+		<github_website>Если вы заинтересованы в том, чтобы внести свой вклад, загляните в наш GitHub:</github_website>
+		<vita3k_website>Посетите наш сайт для большей информации:</vita3k_website>
+		<vita3k_staff>Сотрудники Vita3K</vita3k_staff>
+		<developers>Разработчики</developers>
+		<contributors>Участники</contributors>
+	</about>
+
+	<app_context>
+		<boot>Запустить</boot>
+		<check_app_compatibility>Проверить совместимость приложений</check_app_compatibility>
+		<copy_vita3k_summary>Скопировать лицензию Vita3K</copy_vita3k_summary>
+		<open_issue>Открыть вопрос</open_issue>
+		<create_issue>Создать вопрос</create_issue>
+		<update_database>Обновление базы данных</update_database>
+		<copy_app_info>Скопировать инвормацию приложения</copy_app_info>
+		<name_and_id>Имя и идентификатор</name_and_id>
+		<app_summary>Лицензия приложения</app_summary>
+		<custom_config>Пользовательская конвигурация</custom_config>
+		<create>Создать</create>
+		<edit>Редактировать</edit>
+		<remove>Удалить</remove>
+		<open_folder>Открыть файлы</open_folder>
+		<addcont>Дополнения</addcont>
+		<license>Лицензия</license>
+		<shader_cache>Кэш шейдеров</shader_cache>
+		<shader_log>Журнал шейдеров</shader_log>
+		<update_history>История обновлений</update_history>
+		<history_version>Версия {}</history_version>
+		<information>Информация</information>
+		<app_delete>Это приложение и все связанные с ним данные, включая сохраненные данные, будут удалены.</app_delete>
+		<app_delete_note>
+			Удаление приложения может занять некоторое время
+			в зависимости от его размера и вашего оборудования.
+		</app_delete_note>
+		<save_delete>Вы хотите удалить эти файлы сохранения?</save_delete>
+		<eligible>Допущен</eligible>
+		<ineligible>Не допущен</ineligible>
+		<level>Уровень</level>
+		<name>Имя</name>
+		<trophy_earning>Доступные трофеи</trophy_earning>
+		<parental_controls>Родительский контроль</parental_controls>
+		<updated>Обновлено</updated>
+		<size>Размер</size>
+		<version>Версия</version>
+		<title_id>Идентификат.</title_id>
+		<last_time_used>Последнее использование</last_time_used>
+		<never>Никогда</never>
+		<time_used>Время использования</time_used>
+	</app_context>
+
+	<common>
+		<submit>Представить</submit>
+		<cancel>Отмена</cancel>
+		<delete>Удалить</delete>
+		<file_corrupted>Этот файл поврежждён.</file_corrupted>
+		<no>Нет</no>
+		<select_all>Выбрать все</select_all>
+		<select>Выбрать</select>
+		<please_wait>Пожалуйста подождите...</please_wait>
+		<yes>Да</yes>
+		<wday>
+			<day>Воскресение</day>
+			<day>Понедельник</day>
+			<day>Вторник</day>
+			<day>Среда</day>
+			<day>Четверг</day>
+			<day>Пятница</day>
+			<day>Суббота</day>
+		</wday>
+		<ymonth>
+			<month>Январь</month>
+			<month>Февраль</month>
+			<month>Март</month>
+			<month>Апрель</month>
+			<month>Май</month>
+			<month>Июнь</month>
+			<month>Июль</month>
+			<month>Август</month>
+			<month>Сентябрь</month>
+			<month>Октябрь</month>
+			<month>Ноябрь</month>
+			<month>Декабрь</month>
+		</ymonth>
+		<small_ymonth>
+			<month>январь</month>
+			<month>февраль</month>
+			<month>март</month>
+			<month>апрель</month>
+			<month>май</month>
+			<month>июнь</month>
+			<month>июль</month>
+			<month>август</month>
+			<month>сентябрь</month>
+			<month>октябрь</month>
+			<month>ноябрь</month>
+			<month>декабрь</month>
+		</small_ymonth>
+		<mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</mday>
+		<small_mday>
+			<days></days>
+			<days>1</days>
+			<days>2</days>
+			<days>3</days>
+			<days>4</days>
+			<days>5</days>
+			<days>6</days>
+			<days>7</days>
+			<days>8</days>
+			<days>9</days>
+			<days>10</days>
+			<days>11</days>
+			<days>12</days>
+			<days>13</days>
+			<days>14</days>
+			<days>15</days>
+			<days>16</days>
+			<days>17</days>
+			<days>18</days>
+			<days>19</days>
+			<days>20</days>
+			<days>21</days>
+			<days>22</days>
+			<days>23</days>
+			<days>24</days>
+			<days>25</days>
+			<days>26</days>
+			<days>27</days>
+			<days>28</days>
+			<days>29</days>
+			<days>30</days>
+			<days>31</days>
+		</small_mday>
+		<hidden_trophy>Скрытый приз</hidden_trophy>
+		<one_hour_ago>1 Час назад</one_hour_ago>
+		<one_minute_ago>1 Минуту нузад</one_minute_ago>
+		<bronze>Бронза</bronze>
+		<gold>Золото</gold>
+		<platinum>Платина</platinum>
+		<silver>Серебро</silver>
+		<hours_ago>{} Часов назад</hours_ago>
+		<minutes_ago>{} Минут назад</minutes_ago>
+	</common>
+
+	<compatibility name="Совместимость">
+		<states>
+			<state id = "-1">Неивестно</state>
+			<state id = "0">Ничего</state>
+			<state id = "1">Запускается</state>
+			<state id = "2">Заставка</state>
+			<state id = "3">Меню</state>
+			<state id = "4">Игра -</state>
+			<state id = "5">Игра +</state>
+			<state id = "6">Играбельно</state>
+		</states>
+	</compatibility>
+
+	<compile_shaders>
+		<compiling_shaders>Компиляция Шейдеров</compiling_shaders>
+		<shaders_compiled>шейдеры скомпилированы</shaders_compiled>
+	</compile_shaders>
+
+	<content_manager name="Менеджер контента">
+		<search>Поиск</search>
+		<application name="Приложения">
+			<delete>Выбранные приложения и все связанные с ними данные, в том числе сохраненные данные, будут удалены.</delete>
+			<no_item>Отсутствуют элементы данных.</no_item>
+		</application>
+		<saved_data name="Сохранённые данные">
+			<delete>Выбранные сохраненные данные будут удалены.</delete>
+			<no_saved_data>Отсуствуют данные сохранения</no_saved_data>
+		</saved_data>
+		<theme>Темы</theme>
+		<free_space>Свободное</free_space>
+		<clear_all>Очистить всё</clear_all>
+	</content_manager>
+
+	<controllers name="Контроллёры">
+		<connected>Контроллёры подключены</connected>
+		<name>Имя</name>
+		<num>Номер</num>
+		<not_connected>
+			Не подключены совместимые контроллеры.
+			Подключите контроллер, совместимый с SDL2.
+		</not_connected>
+	</controllers>
+
+	<controls name="Управление">
+		<button>Кнопка</button>
+		<mapped_button>Клавиша</mapped_button>
+		<left_stick_up>Левый стик вверх</left_stick_up>
+		<left_stick_down>Левый стик вниз</left_stick_down>
+		<left_stick_right>Левый стик на право</left_stick_right>
+		<left_stick_left>Левый стик на лево</left_stick_left>
+		<right_stick_up>Правый стик вверх</right_stick_up>
+		<right_stick_down>Правый стик вниз</right_stick_down>
+		<right_stick_right>Правый стик на право</right_stick_right>
+		<right_stick_left>Правый стик на лево</right_stick_left>
+		<d_pad_up>Крестовина вверх</d_pad_up>
+		<d_pad_down>Крестовина вних</d_pad_down>
+		<d_pad_right>Крестовина на право</d_pad_right>
+		<d_pad_left>Крестовина на лево</d_pad_left>
+		<square_button>Кнопка Квадрат</square_button>
+		<cross_button>Кнопка Крест</cross_button>
+		<circle_button>Кнопка Круг</circle_button>
+		<triangle_button>Кнопка Треугольник</triangle_button>
+		<start_button>Кнопка Старт</start_button>
+		<select_button>Кнопка Выбрать</select_button>
+		<ps_button>Кнопка PS</ps_button>
+		<l1_button>Кнопка L1</l1_button>
+		<r1_button>Кнопка R1</r1_button>
+		<ps_tv_mode>Только в режиме PS TV.</ps_tv_mode>
+		<l2_button>Кнопка L2</l2_button>
+		<r2_button>Кнопка R2</r2_button>
+		<l3_button>Кнопка L3</l3_button>
+		<r3_button>Кнопка R3</r3_button>
+		<gui>Граф. интерфейс</gui>
+		<full_screen>Полный экран</full_screen>
+		<toggle_touch>Кнопка переключения</toggle_touch>
+		<toggle_gui_visibility>Переключить видимость</toggle_gui_visibility>
+		<error>Ошибка</error>
+		<error_duplicate_key>Ключ используется для других привязок или зарезервирован.</error_duplicate_key>
+	</controls>
+
+	<dialog>
+		<trophy>
+			<preparing_start_app>Подготовка к запуску приложения...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Вы хотите отменить удаление?</cancel_deleting>
+				<deletion_complete>Удаление завершено.</deletion_complete>
+				<delete_saved_data>Вы хотите удалить эти сохраненные данные?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Подробности</details>
+				<updated>Обновлено</updated>
+			</info>
+			<load name="Загрузка">
+				<cancel_loading>Вы хотите отменить загрузку?</cancel_loading>
+				<no_saved_data>Нет сохраненных данных.</no_saved_data>
+				<load_complete>Загрузка завершена.</load_complete>
+				<loading>Загрузка...</loading>
+				<load_saved_data>Вы хотите загрузить эти сохраненные данные?</load_saved_data>
+			</load>
+			<save name="Сохранить">
+				<cancel_saving>Вы хотите пропустить сохранение?</cancel_saving>
+				<could_not_save>
+					Не удалось сохранить файл.
+					На карте памяти недостаточно свободного места.
+				</could_not_save>
+				<not_free_space>На карте памяти недостаточно свободного места.</not_free_space>
+				<new_saved_data>Новые сохраненные данные</new_saved_data>
+				<saving_complete>Сохранение завершено.</saving_complete>
+				<save_the_data>Вы хотите сохранить эти данные?</save_the_data>
+				<saving>Сохранение...</saving>
+				<warning_saving>
+					Сохранение...
+					Не выключайте систему и не закрывайте приложение.
+				</warning_saving>
+				<overwrite_saved_data>Вы хотите перезаписать эти сохраненные данные?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
+	<game_data>
+		<app_close>Это приложение закроется.</app_close>
+		<data_delete>Данные для удаления:</data_delete>
+	</game_data>
+
+	<home_screen>
+		<filter>Фильтр</filter>
+		<sort_app>Сорт. по</sort_app>
+		<all>Все</all>
+		<by_region>Регион</by_region>
+		<usa>США</usa>
+		<europe>Европпа</europe>
+		<japan>Япония</japan>
+		<asia>Азия</asia>
+		<by_type>По типу</by_type>
+		<commercial>Коммерческое</commercial>
+		<homebrew>Хомебрю</homebrew>
+		<ver>Вер.</ver>
+		<cat>Cat</cat>
+		<comp>Comp</comp>
+		<last_time>Последний запуск</last_time>
+		<refresh>Обновить</refresh>
+	</home_screen>
+
+	<indicator>
+		<app_added_home>Это приложение добавлено на главный экран.</app_added_home>
+		<delete_all>Удалить всё</delete_all>
+		<notif_deleted>Уведомления будут удалены.</notif_deleted>
+		<install_failed>Не удалось установить.</install_failed>
+		<install_complete>Установка завершена.</install_complete>
+		<installing>Установка...</installing>
+		<no_notif>Нет уведомлений.</no_notif>
+		<trophy_earned>Вы получили трофей!</trophy_earned>
+	</indicator>
+
+	<initial_setup>
+		<back>Назад</back>
+		<completed_setup>
+			Вы завершили первоначальную настройку.
+			Ваша система Vita3K готова!
+		</completed_setup>
+		<select_language>Выбрать язык.</select_language>
+		<install_firmware>Установить прошивку.</install_firmware>
+		<install_highly_recommended>Настоятельно рекомендуется установить оба файла прошивки.</install_highly_recommended>
+		<installed>Установлено:</installed>
+		<download_firmware>Загрузить прошивку</download_firmware>
+		<download_font_package>Загрузить пакет шрифтов</download_font_package>
+		<install_firmware_file>Установить файл прошивки</install_firmware_file>
+		<completed>Завершено.</completed>
+		<next>Далее</next>
+	</initial_setup>
+
+	<install_dialog>
+		<firmware_install>
+			<firmware_installing>Выполняется установка, пожалуйста, подождите...</firmware_installing>
+			<successed_install_firmware>Прошивка успешно установлена.</successed_install_firmware>
+			<firmware_version>Версия прошивки:</firmware_version>
+			<no_font_exist>
+				Отсутствует пакет шрифтов прошивки.
+				Загрузите и установите его.
+			</no_font_exist>
+			<download_firmware_font_package>Загрузить пакет шрифтов прошивки</download_firmware_font_package>
+			<firmware_font_package_note>Пакет встроенных шрифтов необходим для некоторых приложений, а также для поддержки азиатских региональных шрифтов. (обычно рекомендуется)</firmware_font_package_note>
+			<delete_firmware>Удалить файл установки прошивки?</delete_firmware>
+		</firmware_install>
+		<pkg_install>
+			<select_key_type>Выберите тип ключа</select_key_type>
+			<select_work>Выберите work.bin</select_work>
+			<enter_zrif>Ввод zRIF</enter_zrif>
+			<enter_zrif_key>Ввод zRIF key</enter_zrif_key>
+			<input_zrif>Пожалуйста введите zRIF здесь</input_zrif>
+			<copy_paste_zrif>Ctrl (Cmd) + C копировать, Ctrl (Cmd) + V вставить.</copy_paste_zrif>
+			<delete_pkg>Удалить файл pkg?</delete_pkg>
+			<delete_work>Удалить файл work.bin?</delete_work>
+			<check_log>Пожалуйста, проверьте журнал для более подробной информации.</check_log>
+		</pkg_install>
+		<archive_install>
+			<select_install_type>Выбрать тип установки</select_install_type>
+			<select_file>Выбрать файл</select_file>
+			<select_directory>Выбрать расположение</select_directory>
+			<compatible_content>{} найдены архивы с совместимым содержимым.</compatible_content>
+			<successed_install_archive>{} содержимое архива(ов) успешно установлено:</successed_install_archive>
+			<update_app>Обновить приложение до:</update_app>
+			<failed_install_archive>Не удалось установить содержимое {} архива(ов):</failed_install_archive>
+			<not_compatible_content>В {} архивах не найдено совместимого контента.:</not_compatible_content>
+			<delete_archive>Удалить архив?</delete_archive>
+		</archive_install>
+		<license_install>
+			<select_license_type>Выберите тип лицензии</select_license_type>
+			<select_bin_rif>Выбрать work.bin/rif</select_bin_rif>
+			<successed_install_license>Лицензия успешно установлено.</successed_install_license>
+			<delete_bin_rif>Удалить этот work.bin/rif файл?</delete_bin_rif>
+		</license_install>
+		<reinstall>
+			<reinstall_content>Переустановите этот контент?</reinstall_content>
+			<already_installed>Этот контент уже установлен.</already_installed>
+			<reinstall_overwrite>Вы хотите переустановить его и перезаписать существующие данные?</reinstall_overwrite>
+		</reinstall>
+	</install_dialog>
+
+	<live_area>
+		<start>Старт</start>
+		<continue>Продолжить</continue>
+		<help>
+			<control_setting>Использование набора конфигурации для клавиатуры в настройках управления</control_setting>
+			<firmware_not_detected>Прошивка не обнаружена. Установка настоятельно рекомендуется</firmware_not_detected>
+			<firmware_font_not_detected>Шрифт прошивки не обнаружен. Установка рекомендуется для шрифтового текста в Live Area</firmware_font_not_detected>
+			<live_area_help>Справака по Live Area</live_area_help>
+			<browse_app>Просмотр в списке приложений</browse_app>
+			<browse_app_control>Крестовина, Левый стик, Колесо вверх/вниз или с помощью ползунка</browse_app_control>
+			<start_app>Запустить приложение</start_app>
+			<start_app_control>Колесо вверх/вниз или с помощью ползунка</start_app_control>
+			<show_hide>Показать/скрыть Live Area во время работы приложения</show_hide>
+			<show_hide_control>Нажмите на PS</show_hide_control>
+			<exit_livearea>Выход в Live Area</exit_livearea>
+			<exit_livearea_control>Нажмите Esc или нажмите на Круг</exit_livearea_control>
+			<manual_help>Руководство</manual_help>
+			<browse_page>Просмотр страницы</browse_page>
+			<browse_page_control>Крестовина, Левый стик влево/вправо или колесо вверх/вниз или нажмите на</browse_page_control>
+			<hide_show>Кнопка «Скрыть/показать»</hide_show>
+			<hide_show_control>Щелкните правой кнопкой мыши</hide_show_control>
+			<zoom_available>Увеличить, если доступно</zoom_available>
+			<zoom_available_control>Двойной щелчок левой кнопкой мыши</zoom_available_control>
+			<scroll_zoom>Прокрутить в увеличении</scroll_zoom>
+			<scroll_zoom_control>Колесо вверх/вниз</scroll_zoom_control>
+			<exit_manual>Выйти из руководства</exit_manual>
+			<exit_manual_control>Нажмите Esc или нажмите PS</exit_manual_control>
+		</help>
+	</live_area>
+
+	<performance_overlay>
+		<fps>FPS</fps>
+		<avg>Avg</avg>
+		<min>Min</min>
+		<max>Max</max>
+	</performance_overlay>
+
+	<settings name="Настройки">
+		<theme_background name="Тема и Фон">
+			<default>Стандартное</default>
+			<theme name="Тема">
+				<search>Поиск</search>
+				<find_in_altervista>Найти в Altervista</find_in_altervista>
+				<information name="Информация">
+					<name>Имя</name>
+					<provider>Провайдер</provider>
+					<updated>Обновлено</updated>
+					<size>Размер</size>
+					<version>Версия</version>
+					<content_id>Идентифмкат.</content_id>
+				</information>
+				<delete>Эта тема будет удалена.</delete>
+			</theme>
+			<start_screen name="Начальный экран">
+				<image>Изображение</image>
+				<add_image>Добавить изображение</add_image>
+			</start_screen>
+			<home_screen_backgrounds name="Фоны главного экрана">
+				<delete_background>Удалить фон</delete_background>
+				<add_background>Добавить фон</add_background>
+			</home_screen_backgrounds>
+		</theme_background>
+		<date_time name="Дата и Время">
+			<date_format name ="Формат даты">
+				<yyyy_mm_dd>ГГГГ/ММ/ДД</yyyy_mm_dd>
+				<dd_mm_yyyy>ДД/ММ/ГГГГ</dd_mm_yyyy>
+				<mm_dd_yyyy>ММ/ДД/ГГГГ</mm_dd_yyyy>
+			</date_format>
+			<time_format name="Формат времениt">
+				<clock_12_hour>12-ти часовой</clock_12_hour>
+				<clock_24_hour>24 часовой</clock_24_hour>
+			</time_format>
+		</date_time>
+		<language name="Язык">
+			<system_language>Язык системы</system_language>
+			<input_language name="Язык ввода">
+				<keyboards name="Клавиши">
+					<ime_languages>
+						<lang id="1">Danish</lang>
+						<lang id="2">German</lang>
+						<lang id="262144">English (United Kingdom)</lang>
+						<lang id="4">English (United States)</lang>
+						<lang id="8">Spanish</lang>
+						<lang id="16">French</lang>
+						<lang id="32">Italian</lang>
+						<lang id="64">Dutch</lang>
+						<lang id="128">Norwegian</lang>
+						<lang id="256">Polish</lang>
+						<lang id="131072">Portuguese (Brazil)</lang>
+						<lang id="512">Portuguese (Portugal)</lang>
+						<lang id="1024">Russian</lang>
+						<lang id="2048">Finnish</lang>
+						<lang id="4096">Swedish</lang>
+						<lang id="524288">Turkish</lang>
+					</ime_languages>
+				</keyboards>
+			</input_language>
+		</language>
+	</settings>
+
+	<trophy_collection>
+		<search>Поиск</search>
+		<delete_trophy>Удалить трофей</delete_trophy>
+		<trophy_deleted>Эта информация о трофеях, сохраненная для этого пользователя, будет удалена..</trophy_deleted>
+		<details>Детали</details>
+		<earned>Заработано</earned>
+		<name>Имя</name>
+		<no_trophies>
+			Трофеев нет.
+			Вы можете зарабатывать трофеи, используя приложение, поддерживающее функцию трофеев.
+		</no_trophies>
+		<not_earned>Не заработано</not_earned>
+		<original>Оригинал</original>
+		<sort>Сорт</sort>
+		<trophies>Трофеи</trophies>
+		<grade>Оценка</grade>
+		<progress>Прогресс</progress>
+		<updated>Обновлено</updated>
+	</trophy_collection>
+
+	<user_management>
+		<select_user>Выберите свой профиль</select_user>
+		<create_user>Создать профиль</create_user>
+		<user_created>Создан следующий профиль.</user_created>
+		<edit_user>Редактировать профиль</edit_user>
+		<user_name_used>Это имя уже используется.</user_name_used>
+		<delete_user>Удалить профиль</delete_user>
+		<user_delete>Выберите профиль который хотите удалить.</user_delete>
+		<user_delete_msg>Следующий профиль будет удалён.</user_delete_msg>
+		<user_delete_message>Если вы удалите профиль, сохраненные данные этого профиля, трофеи будут удалены.</user_delete_message>
+		<user_delete_warn>
+			Пользователь будет удален.
+			Вы уверены что хотите продолжить?
+		</user_delete_warn>
+		<user_deleted>Профиль удалён.</user_deleted>
+		<change_avatar>Выберите аватар</change_avatar>
+		<reset_avatar>Сбросить аватар</reset_avatar>
+		<name>Имя</name>
+		<user>Профиль</user>
+		<confirm>Подтвердить</confirm>
+		<automatic_user_login>Автоматический вход в профиль</automatic_user_login>
+	</user_management>
+
+	<vita3k_update name="Обновление Vita3K">
+		<new_version_available>Доступна новая версия Vita3K.</new_version_available>
+		<back>Back</back>
+		<downloading>
+			Загрузка...
+			После завершения загрузки Vita3K автоматически перезапустится, а затем установит новую версию Vita3K.
+		</downloading>
+		<not_complete_update>Не удалось завершить обновление.</not_complete_update>
+		<next>Далее</next>
+		<update_vita3k>Хотите обновить Vita3K?</update_vita3k>
+		<later_version_already_installed>Более поздняя версия Vita3K уже установлена.</later_version_already_installed>
+		<latest_version_already_installed>Последняя версия Vita3K уже установлена.</latest_version_already_installed>
+		<new_features>Новые функции в версии {}</new_features>
+		<update>Обновить</update>
+		<version>Версия {}</version>
+	</vita3k_update>
+
+	<welcome name="Добро пожаловать в Vita3K">
+		<line_first>Vita3K Эмулятор PlayStation Vita</line_first>
+		<line_second>Vita3K — это эмулятор PlayStation Vita с открытым исходным кодом, написанный на C++ для Windows, Linux, macOS и Android.</line_second>
+		<line_third>Эмулятор все еще находится на ранней стадии, поэтому мы будем очень признательны за любые отзывы и тестирование.</line_third>
+		<line_fourth>Для начала установите прошивку PS Vita и пакеты шрифтов.</line_fourth>
+		<download_firmware>Загрузить прошивку</download_firmware>
+		<line_sixth_part_one>Подробное руководство по настройке Vita3K можно найти на</line_sixth_part_one>
+		<quickstart>Быстрый старт</quickstart>
+		<line_sixth_part_two>страница.</line_sixth_part_two>
+		<line_seventh>Обратитесь к коммерческой игре и списку совместимости Homebrew, чтобы узнать, что в настоящее время работает..</line_seventh>
+		<commercial_compatibility_list>Список коммерческой совместимости</commercial_compatibility_list>
+		<homebrew_compatibility_list>Список совместимости с Хомебрю</homebrew_compatibility_list>
+		<line_ninth>Взносы приветствуются!</line_ninth>
+		<line_tenth>Дополнительную поддержку можно найти на канале #help</line_tenth>
+		<line_eleventh>Vita3K не приветствует пиратство. Вы должны сбросить свои собственные игры.</line_eleventh>
+		<show_next_time>Показать в следующий раз</show_next_time>
+		<close>Close</close>
+	</welcome>
+</lang>
