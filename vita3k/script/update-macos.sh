@@ -1,7 +1,5 @@
 #!/bin/sh
-if [ ! -e ~/vita3k-latest.dmg ]; then
-    curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/macos-latest.dmg -o ~/vita3k-latest.dmg
-fi
+[ ! -e ~/vita3k-latest.dmg ] && curl -L https://github.com/Vita3K/Vita3K/releases/download/continuous/macos-latest.dmg -o ~/vita3k-latest.dmg
 
 hdiutil attach ~/vita3k-latest.dmg
 cp -Rf -p /Volumes/Vita3K\ Installer/Vita3K.app $1
