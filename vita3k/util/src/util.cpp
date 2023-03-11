@@ -75,11 +75,26 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
         assert(0);
     });
 
-    register_log_exception_handler();
 #ifdef WIN32
     // set console codepage to UTF-8
     SetConsoleOutputCP(65001);
 #endif
+
+    register_log_exception_handler();
+
+    static std::terminate_handler old_terminate = nullptr;
+    old_terminate = std::set_terminate([]() {
+        try {
+            std::rethrow_exception(std::current_exception());
+        } catch (const std::exception &e) {
+            LOG_CRITICAL("Unhandled C++ exception. {}", e.what());
+        } catch (...) {
+            LOG_CRITICAL("Unhandled C++ exception. UNKNOWN");
+        }
+        spdlog::shutdown();
+        if (old_terminate)
+            old_terminate();
+    });
     return Success;
 }
 
@@ -133,7 +148,6 @@ int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_
 #ifdef WIN32
 static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {
     const unsigned ec = pExp->ExceptionRecord->ExceptionCode;
-    bool do_sink = (pExp->ExceptionRecord->ExceptionFlags & EXCEPTION_NONCONTINUABLE);
     switch (ec) {
     case EXCEPTION_ACCESS_VIOLATION:
         LOG_CRITICAL("Exception EXCEPTION_ACCESS_VIOLATION ({}). ", log_hex(ec));
@@ -175,28 +189,15 @@ static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {
     case EXCEPTION_STACK_OVERFLOW:
         LOG_CRITICAL("Exception EXCEPTION_STACK_OVERFLOW ({}). ", log_hex(ec));
         break;
-    case 0xe06d7363: //(C++ EH exception)
-    {
-        const auto exception = reinterpret_cast<const std::exception *>(pExp->ExceptionRecord->ExceptionInformation[1]);
-        LOG_CRITICAL("Exception {} C++ EH exception. {}", log_hex(ec), exception->what());
-        break;
-    }
-    case 0x80040155: // Interface not registered
-        do_sink = false;
-        break;
     default:
-        if (do_sink) {
-            LOG_CRITICAL("Exception {}", log_hex(ec));
-        }
+        return EXCEPTION_CONTINUE_SEARCH;
     }
-    if (do_sink) {
-        // TODO : implement spdlog::flush();
-        // In this logger any flush is done async and return immediately. force flush can be done only on shutdown
-        // I can't distinguish recoverable and non-recoverable exceptions. Even if exception will be catched the program crash. So I disable it completely for now.
-        // spdlog::shutdown();
-    }
+    // TODO : implement spdlog::flush();
+    // In this logger any flush is done async and return immediately. force flush can be done only on shutdown
+    spdlog::shutdown();
     return EXCEPTION_CONTINUE_SEARCH;
 }
+
 void register_log_exception_handler() {
     if (!AddVectoredExceptionHandler(0, exception_handler)) {
         LOG_CRITICAL("Failed to register an exception handler");
