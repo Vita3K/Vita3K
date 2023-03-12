@@ -94,6 +94,7 @@ bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt, bool 
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16
