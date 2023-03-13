@@ -62,6 +62,10 @@ std::vector<spdlog::sink_ptr> sinks;
 
 void register_log_exception_handler();
 
+void flush() {
+    spdlog::details::registry::instance().flush_all();
+}
+
 ExitCode init(const Root &root_paths, bool use_stdout) {
     sinks.clear();
     if (use_stdout)
@@ -91,7 +95,7 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
         } catch (...) {
             LOG_CRITICAL("Unhandled C++ exception. UNKNOWN");
         }
-        spdlog::shutdown();
+        flush();
         if (old_terminate)
             old_terminate();
     });
@@ -192,9 +196,7 @@ static LONG WINAPI exception_handler(PEXCEPTION_POINTERS pExp) noexcept {
     default:
         return EXCEPTION_CONTINUE_SEARCH;
     }
-    // TODO : implement spdlog::flush();
-    // In this logger any flush is done async and return immediately. force flush can be done only on shutdown
-    spdlog::shutdown();
+    flush();
     return EXCEPTION_CONTINUE_SEARCH;
 }
 
