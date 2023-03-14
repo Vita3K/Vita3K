@@ -61,6 +61,8 @@ struct GLState : public renderer::State {
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
 
+    std::string_view get_gpu_name() override;
+
     void precompile_shader(const ShadersHash &hash) override;
     void preclose_action() override;
 };

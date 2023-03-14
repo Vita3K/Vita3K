@@ -151,16 +151,16 @@ static bool select_queues(VKState &vk_state,
 std::string get_driver_version(uint32_t vendor_id, uint32_t version_raw) {
     // NVIDIA
     if (vendor_id == 4318)
-        return fmt::format("{}.{}.{}.{}", (version_raw >> 22) & 0x3ff, (version_raw >> 14) & 0x0ff, (version_raw >> 6) & 0x0ff, (version_raw)&0x003f);
+        return fmt::format("{}.{}.{}.{}", (version_raw >> 22) & 0x3ff, (version_raw >> 14) & 0x0ff, (version_raw >> 6) & 0x0ff, version_raw & 0x003f);
 
 #ifdef WIN32
     // Intel drivers on Windows
     if (vendor_id == 0x8086)
-        return fmt::format("{}.{}", version_raw >> 14, (version_raw)&0x3fff);
+        return fmt::format("{}.{}", version_raw >> 14, version_raw & 0x3fff);
 #endif
 
     // Use Vulkan version conventions if vendor mapping is not available
-    return fmt::format("{}.{}.{}", (version_raw >> 22) & 0x3ff, (version_raw >> 12) & 0x3ff, (version_raw)&0xfff);
+    return fmt::format("{}.{}.{}", (version_raw >> 22) & 0x3ff, (version_raw >> 12) & 0x3ff, version_raw & 0xfff);
 }
 
 bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const Config &config) {
@@ -957,6 +957,10 @@ std::vector<std::string> VKState::get_gpu_list() {
         gpu_list.emplace_back(gpu.getProperties().deviceName.data());
 
     return gpu_list;
+}
+
+std::string_view VKState::get_gpu_name() {
+    return physical_device_properties.deviceName.data();
 }
 
 void VKState::precompile_shader(const ShadersHash &hash) {
