@@ -130,6 +130,7 @@ struct VKState : public renderer::State {
     // return the GPU buffer device address matching this one
     uint64_t get_matching_device_address(const Address address);
     std::vector<std::string> get_gpu_list() override;
+    std::string_view get_gpu_name() override;
 
     void precompile_shader(const ShadersHash &hash) override;
     void preclose_action() override;
