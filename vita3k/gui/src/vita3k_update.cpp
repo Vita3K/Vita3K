@@ -42,8 +42,14 @@ enum Vita3kUpdate {
 static Vita3kUpdate state;
 static VitaAreaState vita_area_state;
 
+struct GitCommitDesc {
+    std::string author;
+    std::string sha;
+    std::string msg;
+};
+
 static int git_version;
-static std::vector<std::pair<std::string, std::string>> git_commit_desc_list;
+static std::vector<GitCommitDesc> git_commit_desc_list;
 bool init_vita3k_update(GuiState &gui) {
     state = NO_UPDATE;
     git_commit_desc_list.clear();
@@ -84,20 +90,21 @@ bool init_vita3k_update(GuiState &gui) {
                 if (!response.empty()) {
                     // Get commits from response with remove HTTP header
                     std::string commits = response.substr(response.find("\r\n\r\n") + 4);
-                    std::string msg, sha;
+                    std::string author, msg, sha;
                     std::smatch match;
 
                     // Replace \" to &quot; for help regex search message
                     boost::replace_all(commits, "\\\"", "&quot;");
 
-                    // Using regex to get sha from commits
-                    const std::regex commit_regex("\"sha\":\"([a-f0-9]{40})\".*?\"message\":\"([^\"]+)\"");
+                    // Using regex to get sha, author and message from commits
+                    const std::regex commit_regex("\"sha\":\"([a-f0-9]{40})\".*?\"author\":\\{\"name\":\"([^\"]+)\".*?\"message\":\"([^\"]+)\"");
                     while (std::regex_search(commits, match, commit_regex)) {
                         // Get sha and message from regex match result
                         sha = match[1];
-                        msg = match[2];
-
-                        if (!sha.empty() && !msg.empty()) {
+                        author = match[2];
+                        msg = match[3];
+        
+                        if (!sha.empty() && !author.empty() && !msg.empty()) {
                             // Replace &quot; to \" for get back original message
                             boost::replace_all(msg, "&quot;", "\"");
 
@@ -106,7 +113,7 @@ bool init_vita3k_update(GuiState &gui) {
                             boost::replace_all(msg, "\\n", "\n");
 
                             // Add commit to list
-                            git_commit_desc_list.push_back({ sha, msg });
+                            git_commit_desc_list.push_back({ author, sha, msg });
                         }
 
                         // Remove current commit for next search
@@ -243,19 +250,34 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetNextWindowBgAlpha(0.f);
         ImGui::BeginChild("##description_child", ImVec2(860 * SCALE.x, 334.f * SCALE.y), true, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(0.8f);
+        ImGui::Columns(2, "commit_columns", true);
+        ImGui::SetColumnWidth(0, 200 * SCALE.x);
+        const auto space_margin = ImGui::GetStyle().ItemSpacing.x * 2.f;
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Author");
+        ImGui::NextColumn();
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Comments");
+        ImGui::Separator();
+        ImGui::NextColumn();
         for (const auto &desc : git_commit_desc_list) {
             const auto pos = ImGui::GetCursorPosY();
-            ImGui::Spacing();
-            ImGui::TextWrapped("%s", !desc.second.empty() ? desc.second.c_str() : "Loading...");
-            ImGui::Spacing();
+            const auto author_height = ImGui::CalcTextSize(desc.author.c_str(), nullptr, false, ImGui::GetColumnWidth(0) - space_margin).y;
+            const auto comment_height = ImGui::CalcTextSize(desc.msg.c_str(), nullptr, false, ImGui::GetColumnWidth(1) - space_margin).y;
+            const auto max_height = std::max(author_height, comment_height);
+            ImGui::SetCursorPosY(pos + (max_height / 2.f) - (author_height / 2.f));
+            ImGui::TextWrapped("%s", desc.author.c_str());
+            ImGui::NextColumn();
+            ImGui::SetCursorPosY(pos + (max_height / 2.f) - (comment_height / 2.f));
+            ImGui::TextWrapped("%s", desc.msg.c_str());
+            ImGui::NextColumn();
             ImGui::SetCursorPosY(pos);
-            ImGui::PushID(desc.first.c_str());
-            if (ImGui::Selectable("##commit_link", false, ImGuiSelectableFlags_None, ImVec2(ImGui::GetWindowWidth(), ImGui::CalcTextSize(desc.second.c_str(), nullptr, false, ImGui::GetWindowWidth() - (20.f * SCALE.x) - (15.f * SCALE.x)).y + 20.f))) {
-                open_path(fmt::format("https://github.com/Vita3K/Vita3K/commit/{}", desc.first));
+            ImGui::PushID(desc.sha.c_str());
+            if (ImGui::Selectable("##commit_link", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(ImGui::GetWindowWidth(), max_height))) {
+                open_path(fmt::format("https://github.com/Vita3K/Vita3K/commit/{}", desc.sha));
             }
             ImGui::PopID();
             ImGui::Separator();
         }
+        ImGui::Columns(1);
         ImGui::EndChild();
         ImGui::PopStyleVar(3);
 
