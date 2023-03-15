@@ -103,7 +103,7 @@ bool init_vita3k_update(GuiState &gui) {
                         sha = match[1];
                         author = match[2];
                         msg = match[3];
-        
+
                         if (!sha.empty() && !author.empty() && !msg.empty()) {
                             // Replace &quot; to \" for get back original message
                             boost::replace_all(msg, "&quot;", "\"");
