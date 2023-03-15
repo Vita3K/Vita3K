@@ -28,6 +28,8 @@
 #include <SDL.h>
 #include <SDL_misc.h>
 
+#include <boost/algorithm/string/replace.hpp>
+
 #include <pugixml.hpp>
 
 namespace gui {
@@ -342,10 +344,31 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 } else {
                     if (ImGui::MenuItem(lang["create_issue"].c_str())) {
                         // Create body of issue
+
+                        // Encode title for URL
+                        const auto encode_title_url = [](std::string title) {
+                            const std::map<std::string, std::string> replace_map = {
+                                { "#", "%23" },
+                                { "&", "%26" },
+                                { "+", "%2B" }
+                                // Add other replacement associations here if necessary.
+                            };
+
+                            // Replace all occurences found in title
+                            for (const auto &[replace, with] : replace_map) {
+                                boost::replace_all(title, replace, with);
+                            }
+
+                            return title;
+                        };
+                        const auto title = encode_title_url(APP_INDEX->title);
+
+                        // Create App summary
                         const auto app_summary = fmt::format(
                             "%23 App summary%0A- App name: {}%0A- App serial: {}%0A- App version: {}",
-                            APP_INDEX->title, title_id, APP_INDEX->app_ver);
+                            title, title_id, APP_INDEX->app_ver);
 
+                        // Create Vita3K summary
                         const auto vita3k_summary = fmt::format(
                             "%23 Vita3K summary%0A- Version: {}%0A- Build number: {}%0A- Commit hash: https://github.com/vita3k/vita3k/commit/{}%0A- CPU backend: {}%0A- GPU backend: {}",
                             app_version, app_number, app_hash, get_cpu_backend(gui, emuenv, app_path), emuenv.cfg.backend_renderer);
@@ -365,7 +388,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
 
                         open_path(fmt::format(
                             "{}/new?title={} [{}]&body={}%0A%0A{}%0A%0A{}%0A%0A{}",
-                            ISSUES_URL, APP_INDEX->title, title_id, app_summary, vita3k_summary, test_env_summary, rest_of_body));
+                            ISSUES_URL, title, title_id, app_summary, vita3k_summary, test_env_summary, rest_of_body));
                     }
                 }
                 if (ImGui::MenuItem(lang["update_database"].c_str()))
