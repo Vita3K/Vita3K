@@ -83,7 +83,6 @@ Código de erro: {}</an_error_occurred>
 		<delete>Excluir</delete>
 		<file_corrupted>O arquivo está corrompido.</file_corrupted>
 		<microphone_disabled>Ative o microfone.</microphone_disabled>
-		<nospace>Não há espaço livre suficiente no cartão de memória.</nospace>
 		<no>Não</no>
 		<ok>OK</ok>
 		<please_wait>Aguarde...</please_wait>
@@ -227,7 +226,7 @@ Código de erro: {}</an_error_occurred>
 			<no_item>Não há nenhum itens de conteúdo.</no_item>
 		</application>
 		<saved_data name="Dados salvos">
-			<delete>Os itens de dados salvos selecionados serão excludíos.</delete>
+			<delete>Os itens de dados salvos selecionados serão excluídos.</delete>
 			<no_saved_data>Não há dados salvos.</no_saved_data>
 		</saved_data>
 		<theme>Tema</theme>
@@ -249,33 +248,33 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		</trophy>
 		<save_data>
 			<delete>
-				<cancel_deleting>Você quer cancelar a exclusão?</cancel_deleting>
-				<deletion_complete>Exclusão completa.</deletion_complete>
-				<delete_saved_data>Você quer apagar estes dados salvos?</delete_saved_data>
+				<cancel_deleting>Deseja cancelar a exclusão?</cancel_deleting>
+				<deletion_complete>Exclusão concluída.</deletion_complete>
+				<delete_saved_data>Deseja excluir esses dados salvos?</delete_saved_data>
 			</delete>
 			<info>
 				<details>Detalhes</details>
 				<updated>Atualizado</updated>
 			</info>
 			<load name="Carregar">
-				<cancel_loading>Você quer cancelar o carregamento?</cancel_loading>
+				<cancel_loading>Deseja cancelar o carregamento?</cancel_loading>
 				<no_saved_data>Não há dados salvos.</no_saved_data>
-				<load_complete>Carregamento completo.</load_complete>
-				<loading>Carregamento...</loading>
-				<load_saved_data>Você quer carregar estes dados salvos?</load_saved_data>
+				<load_complete>Carregamento concluído.</load_complete>
+				<loading>Carregando...</loading>
+				<load_saved_data>Deseja carregar esses dados salvos?</load_saved_data>
 			</load>
 			<save name="Salvar">
-				<cancel_saving>Você quer cancelar o salvamento?</cancel_saving>
-				<could_not_save>Não pôde salvar o arquivo.
-Não há espaço livre o bastante no memory card.</could_not_save>
-				<not_free_space>Não há espaço livre o bastante no memory card.</not_free_space>
-				<new_saved_data>Novos Dados Salvos</new_saved_data>
-				<saving_complete>Salvamento completo.</saving_complete>
-				<save_the_data>Você quer salvar os dados?</save_the_data>
+				<cancel_saving>Deseja cancelar o salvamento?</cancel_saving>
+				<could_not_save>Não foi possível salvar o arquivo.
+Não há espaço livre suficiente no cartão de memória.</could_not_save>
+				<not_free_space>Não há espaço livre suficiente no cartão de memória.</not_free_space>
+				<new_saved_data>Novos dados salvos</new_saved_data>
+				<saving_complete>Gravação concluída.</saving_complete>
+				<save_the_data>Deseja salvar os dados?</save_the_data>
 				<saving>Salvando...</saving>
 				<warning_saving>Salvando...
-Não desligue o sistema ou feche o aplicativo.</warning_saving>
-				<overwrite_saved_data>Você quer sobrescrever estes dados salvos?</overwrite_saved_data>
+Não desligue o sistema nem feche o aplicativo.</warning_saving>
+				<overwrite_saved_data>Deseja substituir esses dados salvos?</overwrite_saved_data>
 			</save>
 		</save_data>
 	</dialog>
@@ -322,7 +321,7 @@ O seu sistema Vita3K está pronto!</completed_setup>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -336,7 +335,7 @@ O seu sistema Vita3K está pronto!</completed_setup>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -427,6 +426,7 @@ Você pode conquistar troféus usando um aplicativo compatível com o recurso de
 		<create_user>Criar usuário</create_user>
 		<user_created>O usuários a seguir foi criado:</user_created>
 		<edit_user>Editar usuário</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>O nome já está sendo usado.</user_name_used>
 		<delete_user>Excluir usuário</delete_user>
 		<user_delete>Selecione o usuário que você deseja excluir.</user_delete>
@@ -442,4 +442,21 @@ Tem certeza de que deseja continuar?</user_delete_warn>
 		<confirm>Confirmar</confirm>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Atualização Vita3K">
+ 		<new_version_available>Uma nova versão Vita3K está disponível.</new_version_available>
+		<back>Voltar</back>
+		<downloading>Fazendo download...
+Quando o download terminar, Vita3K será reiniciado automaticamente e o novo Vita3K será instalado.</downloading>
+		<not_complete_update>Não foi possível concluir a atualização.</not_complete_update>
+		<next>Próximo</next>
+		<update_vita3k>Deseja atualizar o Vita3K?</update_vita3k>
+		<later_version_already_installed>A versão posterior Vita3K já está instalada.</later_version_already_installed>
+		<latest_version_already_installed>A versão mais recente Vita3K já está instalada.</latest_version_already_installed>
+		<new_features>Novos recursos da versão {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>Atualizar</update>
+		<version>Versão {}</version>
+	</vita3k_update>
 </lang>

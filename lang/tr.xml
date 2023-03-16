@@ -83,7 +83,6 @@ Hata Kodu: {}</an_error_occurred>
 		<delete>Sil</delete>
 		<file_corrupted>Dosya bozuk.</file_corrupted>
 		<microphone_disabled>Enable the microphone.</microphone_disabled>
-		<nospace>Hafıza kartında yeterli boş alan yok.</nospace>
 		<no>Hayır</no>
 		<ok>Tamam</ok>
 		<please_wait>Lütfen bekleyin...</please_wait>
@@ -309,7 +308,7 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -323,7 +322,7 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -414,6 +413,7 @@ Kupa özelliğini destekleyen bir uygulamayı kullanarak kupa kazanabilirsiniz.<
 		<create_user>Kullanıcı Oluştur</create_user>
 		<user_created>Şu kullanıcı oluşturuldu:</user_created>
 		<edit_user>Kullanıcı Düzenle</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>Bu isim zaten kullanılıyor.</user_name_used>
 		<delete_user>Kullanıcıyı Sil</delete_user>
 		<user_delete>Silmek istediğiniz kullanıcıyı seçin.</user_delete>
@@ -429,4 +429,21 @@ Devam etmek istediğinizden emin misiniz?</user_delete_warn>
 		<confirm>Onayla</confirm>
 		<automatic_user_login>Otomatik Kullanıcı Girişi</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Vita3K Güncelleme">
+ 		<new_version_available>Vita3K yeni bir sürümü mevcut.</new_version_available>
+		<back>Geri</back>
+		<downloading>İndiriliyor...
+İndirme tamamlandığında, Vita3K otomatik olarak yeniden başlatılır ve yeni sabit yazılım kurulur.</downloading>
+		<not_complete_update>Could not complete the update.</not_complete_update>
+		<next>İleri</next>
+		<update_vita3k>Vita3K güncellemek istiyor musunuz?</update_vita3k>
+		<later_version_already_installed>Vita3K sonraki sürümü önceden kuruldu.</later_version_already_installed>
+		<latest_version_already_installed>Vita3K en son sürümü önceden kuruldu.</latest_version_already_installed>
+		<new_features>%1 Sürümündeki Yeni Özellikler</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>Güncelle</update>
+		<version>Sürüm {}</version>
+	</vita3k_update>
 </lang>

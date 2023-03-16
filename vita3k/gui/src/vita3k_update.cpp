@@ -253,9 +253,9 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Columns(2, "commit_columns", true);
         ImGui::SetColumnWidth(0, 200 * SCALE.x);
         const auto space_margin = ImGui::GetStyle().ItemSpacing.x * 2.f;
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Author");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["authors"].c_str());
         ImGui::NextColumn();
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Comments");
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["comments"].c_str());
         ImGui::Separator();
         ImGui::NextColumn();
         for (const auto &desc : git_commit_desc_list) {

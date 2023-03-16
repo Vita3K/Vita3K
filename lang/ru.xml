@@ -83,7 +83,6 @@ depending on its size and your hardware.</app_delete_note>
 		<delete>Удалить</delete>
 		<file_corrupted>Файл поврежден.</file_corrupted>
 		<microphone_disabled>Включите микрофон.</microphone_disabled>
-		<nospace>На карте памяти недостаточно свободного места.</nospace>
 		<no>Нет</no>
 		<ok>OK</ok>
 		<please_wait>Подождите...</please_wait>
@@ -322,7 +321,7 @@ depending on its size and your hardware.</app_delete_note>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -336,7 +335,7 @@ depending on its size and your hardware.</app_delete_note>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -428,6 +427,7 @@ depending on its size and your hardware.</app_delete_note>
 		<create_user>Создать пользователя</create_user>
 		<user_created>Создан следующий пользователь:</user_created>
 		<edit_user>Изменить пользователя</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>Это имя уже используется.</user_name_used>
 		<delete_user>Удалить пользователя</delete_user>
 		<user_delete>Выберите пользователя, которого хотите удалить.</user_delete>
@@ -443,4 +443,21 @@ depending on its size and your hardware.</app_delete_note>
 		<confirm>Подтвердить</confirm>
 		<automatic_user_login>Автоматический вход пользователя</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Обновление Vita3K">
+ 		<new_version_available>Доступна новая версия Vita3K.</new_version_available>
+		<back>Назад</back>
+		<downloading>Идет загрузка...
+После завершения загрузки Vita3K автоматически перезапустится и установит новую версию.</downloading>
+		<not_complete_update>Не удалось завершить обновление.</not_complete_update>
+		<next>Далее</next>
+		<update_vita3k>Обновить Vita3K?</update_vita3k>
+		<later_version_already_installed>Более поздняя версия Vita3K уже установлена.</later_version_already_installed>
+		<latest_version_already_installed>Установлена последняя версия Vita3K.</latest_version_already_installed>
+		<new_features>Новые функции в версии {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>Обновление</update>
+		<version>Версия {}</version>
+	</vita3k_update>
 </lang>

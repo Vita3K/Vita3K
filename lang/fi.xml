@@ -72,7 +72,6 @@ Virhekoodi: {}</an_error_occurred>
 		<delete>Poista</delete>
 		<file_corrupted>Tiedosto on vioittunt.</file_corrupted>
 		<microphone_disabled>Ota mikrofoni käyttöön.</microphone_disabled>
-		<nospace>Muistikortilla ei ole tarpeeksi vapaata tilaa.</nospace>
 		<no>Ei</no>
 		<ok>OK</ok>
 		<please_wait>Odota hetki...</please_wait>
@@ -219,10 +218,58 @@ Virhekoodi: {}</an_error_occurred>
 Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
+	<dialog>
+		<trophy>
+			<preparing_start_app>Valmistellaan sovelluksen käynnistämistä...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Haluatko peruuttaa poistamisen?</cancel_deleting>
+				<deletion_complete>Poistaminen suoritettu.</deletion_complete>
+				<delete_saved_data>Haluatko poistaa nämä tallennetut tiedot?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Lisätiedot</details>
+				<updated>Päivitetty</updated>
+			</info>
+			<load name="Lataa">
+				<cancel_loading>Haluatko peruuttaa latauksen?</cancel_loading>
+				<no_saved_data>Tallennettua tietoa ei ole saatavilla.</no_saved_data>
+				<load_complete>Lataus suoritettu.</load_complete>
+				<loading>Ladataan...</loading>
+				<load_saved_data>Haluatko ladata tallennetun tiedon?</load_saved_data>
+			</load>
+			<save name="Tallenna">
+				<cancel_saving>Haluatko peruuttaa tallennuksen?</cancel_saving>
+				<could_not_save>Tiedostoa ei voitu tallentaa.
+Muistikortilla ei ole tarpeeksi vapaata tilaa.</could_not_save>
+				<not_free_space>Muistikortilla ei ole tarpeeksi vapaata tilaa.</not_free_space>
+				<new_saved_data>Uusi tallennettu tieto</new_saved_data>
+				<saving_complete>Tallennus suoritettu.</saving_complete>
+				<save_the_data>Haluatko tallentaa tiedot?</save_the_data>
+				<saving>Tallennetaan...</saving>
+				<warning_saving>Tallennetaan...
+Älä katkaise virtaa järjestelmästä tai sulje sovellusta.</warning_saving>
+				<overwrite_saved_data>Haluatko kirjoittaa tallennetun tiedon päälle?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
 	<game_data>
 		<app_close>Seuraava sovellus suljetaan.</app_close>
 		<data_delete>Poistettavat tiedot:</data_delete>
 	</game_data>
+
+	<indicator>
+		<app_added_home>Sovellus on lisätty aloitusnäyttöön.</app_added_home>
+		<delete_all>Poista kaikki</delete_all>
+		<notif_deleted>Ilmoitukset poistetaan.</notif_deleted>
+		<install_failed>Ei voitu asentaa.</install_failed>
+		<install_complete>Asennus suoritettu.</install_complete>
+		<installing>Asennetaan...</installing>
+		<no_notif>Ei ilmoituksia.</no_notif>
+		<trophy_earned>Olet ansainnut trophyn!</trophy_earned>
+	</indicator>
 
 	<initial_setup>
 		<back>Takaisin</back>
@@ -250,7 +297,7 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -264,7 +311,7 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -355,6 +402,7 @@ Voit ansaita trophyjä käyttämällä trophy-ominaisuutta tukevaa sovellusta.</
 		<create_user>Luo käyttäjä</create_user>
 		<user_created>Seuraava käyttäjä on luotu:</user_created>
 		<edit_user>Edit User</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>This name is already in use.</user_name_used>
 		<delete_user>Poista käyttäjä</delete_user>
 		<user_delete>Valitse käyttäjä, jonka haulat poistaa.</user_delete>
@@ -370,4 +418,21 @@ Oletko varma, että haluat jatkaa?</user_delete_warn>
 		<confirm>Vahvista</confirm>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Vita3K-päivitys">
+ 		<new_version_available>Vita3K on saatavissa uusi versio.</new_version_available>
+		<back>Takaisin</back>
+		<downloading>Ladataan...
+Kun lataus on valmis, Vita3K käynnistyy automaattisesti uudelleen ja asentaa sitten uuden Vita3K.</downloading>
+		<not_complete_update>Päivityksen suoritus ei onnistunut.</not_complete_update>
+		<next>Seuraava</next>
+		<update_vita3k>Haluatko päivittää Vita3K?</update_vita3k>
+		<later_version_already_installed>Vita3K viimeisin versio on jo asennettu.</later_version_already_installed>
+		<latest_version_already_installed>Vita3K viimeisin versio on jo asennettu.</latest_version_already_installed>
+		<new_features>Uutta versiossa {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>Päivitä</update>
+		<version>Versio {}</version>
+	</vita3k_update>
 </lang>

@@ -83,7 +83,6 @@ Error code: {}</an_error_occurred>
 		<delete>Delete</delete>
 		<file_corrupted>The file is corrupt.</file_corrupted>
 		<microphone_disabled>Enable the microphone.</microphone_disabled>
-		<nospace>There is not enough free space on the memory card.</nospace>
 		<no>No</no>
 		<ok>OK</ok>
 		<please_wait>Please wait...</please_wait>
@@ -541,6 +540,7 @@ You can earn trophies by using an application that supports the trophy feature.<
 		<create_user>Create User</create_user>
 		<user_created>The following user has been created.</user_created>
 		<edit_user>Edit User</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>This name is already in use.</user_name_used>
 		<delete_user>Delete User</delete_user>
 		<user_delete>Select the user you want to delete.</user_delete>
@@ -568,6 +568,8 @@ After the download is complete, Vita3K will restart automatically and then insta
 		<later_version_already_installed>The later version of Vita3K is already installed.</later_version_already_installed>
 		<latest_version_already_installed>The latest version of Vita3K is already installed.</latest_version_already_installed>
 		<new_features>New Features in Version {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
 		<update>Update</update>
 		<version>Version {}</version>
 	</vita3k_update>

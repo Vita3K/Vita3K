@@ -36,7 +36,6 @@ struct DialogLangState {
         { "delete", "Delete" },
         { "file_corrupted", "The file is corrupt." },
         { "microphone_disabled", "Enable the microphone." },
-        { "nospace", "There is not enough free space on the memory card." },
         { "no", "No" },
         { "ok", "OK" },
         { "please_wait", "Please wait..." },
@@ -466,6 +465,7 @@ struct LangState {
         { "create_user", "Create User" },
         { "user_created", "The following user has been created." },
         { "edit_user", "Edit User" },
+        { "open_user_folder", "Open User Folder" },
         { "user_name_used", "This name is already in use." },
         { "delete_user", "Delete User" },
         { "user_delete", "Select the user you want to delete." },
@@ -491,6 +491,8 @@ struct LangState {
         { "later_version_already_installed", "The later version of Vita3K is already installed." },
         { "latest_version_already_installed", "The latest version of Vita3K is already installed." },
         { "new_features", "New Features in Version {}" },
+        { "authors", "Authors" },
+        { "comments", "Comments" },
         { "update", "Update" },
         { "version", "Version {}" }
     };

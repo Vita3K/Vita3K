@@ -83,7 +83,6 @@ Fehlercode: {}</an_error_occurred>
 		<delete>Löschen</delete>
 		<file_corrupted>Die Datei ist beschädigt.</file_corrupted>
 		<microphone_disabled>Aktiviere das Mikrofon.</microphone_disabled>
-		<nospace>Nicht genügend freier Speicherplatz auf der Speicherkarte.</nospace>
 		<no>Nein</no>
 		<ok>OK</ok>
 		<please_wait>Warte bitte ...</please_wait>
@@ -232,37 +231,37 @@ Connect a controller that is compatible with SDL2.</not_connected>
 
 	<dialog>
 		<trophy>
-			<preparing_start_app>Bereite den Start der Anwendung vor...</preparing_start_app>
+			<preparing_start_app>Starten der Anwendung wird vorbereitet ...</preparing_start_app>
 		</trophy>
 		<save_data>
 			<delete>
-				<cancel_deleting>Willst du das Löschen abbrechen?</cancel_deleting>
-				<deletion_complete>Daten gelöscht.</deletion_complete>
-				<delete_saved_data>Diese Nutzerdaten löschen?</delete_saved_data>
+				<cancel_deleting>Möchtest du den Löschvorgang abbrechen?</cancel_deleting>
+				<deletion_complete>Löschen abgeschlossen.</deletion_complete>
+				<delete_saved_data>Möchtest du diese gespeicherten Daten löschen?</delete_saved_data>
 			</delete>
 			<info>
-				<details>Details</details>
+				<details>Einzelheiten</details>
 				<updated>Aktualisiert</updated>
 			</info>
 			<load name="Laden">
-				<cancel_loading>Willst du das Laden abbrechen?</cancel_loading>
-				<no_saved_data>Keine Nutzerdaten vorhanden.</no_saved_data>
-				<load_complete>Daten geladen.</load_complete>
-				<loading>Lade...</loading>
-				<load_saved_data>Diese Nutzerdaten laden?</load_saved_data>
+				<cancel_loading>Möchtest du den Ladevorgang abbrechen?</cancel_loading>
+				<no_saved_data>Es gibt keine gespeicherten Daten.</no_saved_data>
+				<load_complete>Laden abgeschlossen.</load_complete>
+				<loading>Lädt ...</loading>
+				<load_saved_data>Möchtest du diese gespeicherten Daten laden?</load_saved_data>
 			</load>
 			<save name="Speichern">
-				<cancel_saving>Willst du das Speichern abbrechen?</cancel_saving>
-				<could_not_save>Konnte die Datei nicht speichern.
-Es fehlt freier Platz auf der Speicherkarte.</could_not_save>
-				<not_free_space>Es fehlt freier Platz auf der Speicherkarte.</not_free_space>
-				<new_saved_data>Neue Nutzerdaten</new_saved_data>
-				<saving_complete>Daten gespeichert.</saving_complete>
-				<save_the_data>Diese Nutzerdaten speichern?</save_the_data>
-				<saving>Speichere...</saving>
-				<warning_saving>Speichere...
-Schalte die Konsole nicht aus und beende nicht die Anwendung.</warning_saving>
-				<overwrite_saved_data>Vorhandene Nutzerdaten überschreiben?</overwrite_saved_data>
+				<cancel_saving>Möchtest du den Speichervorgang abbrechen?</cancel_saving>
+				<could_not_save>Speichern der Datei gescheitert.
+Nicht genügend freier Speicherplatz auf der Speicherkarte.</could_not_save>
+				<not_free_space>Nicht genügend freier Speicherplatz auf der Speicherkarte.</not_free_space>
+				<new_saved_data>Neue gespeicherte Daten</new_saved_data>
+				<saving_complete>Speichern abgeschlossen.</saving_complete>
+				<save_the_data>Möchtest du die Daten speichern?</save_the_data>
+				<saving>Speichert ...</saving>
+				<warning_saving>Speichert ...
+Schalte das System nicht aus und schließe die Anwendung nicht.</warning_saving>
+				<overwrite_saved_data>Möchtest du diese gespeicherten Daten überschreiben?</overwrite_saved_data>
 			</save>
 		</save_data>
 	</dialog>
@@ -309,7 +308,7 @@ Dein Vita3K-System ist bereit!</completed_setup>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -323,7 +322,7 @@ Dein Vita3K-System ist bereit!</completed_setup>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -414,6 +413,7 @@ Du kannst Trophäen in Anwendungen verdienen, die die Trophäen-Funktionen unter
 		<create_user>Benutzer erstellen</create_user>
 		<user_created>Der folgende Benutzer wurde erstellt.</user_created>
 		<edit_user>Benutzer bearbeiten</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>Dieser Name wird bereits verwendet.</user_name_used>
 		<delete_user>Benutzer löschen</delete_user>
 		<user_delete>Wähle den Benutzer aus, den löschen möchtest.</user_delete>
@@ -429,4 +429,21 @@ Wirklich fortfahren?</user_delete_warn>
 		<confirm>Bestätigen</confirm>
 		<automatic_user_login>Benutzer automatisch einloggen</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Vita3K Aktualisiert">
+ 		<new_version_available>Es ist eine neue Version der Vita3K verfügbar.</new_version_available>
+		<back>Zurück</back>
+		<downloading>Download läuft ...
+Nach dem Herunterladen wird Vita3K automatisch neu gestartet und die neue Vita3K installiert.</downloading>
+		<not_complete_update>Aktualisierung konnte nicht abgeschlossen werden.</not_complete_update>
+		<next>Weiter</next>
+		<update_vita3k>Möchtest du Vita3K aktualisieren?</update_vita3k>
+		<later_version_already_installed>Es ist bereits eine höhere Version der Vita3K installiert.</later_version_already_installed>
+		<latest_version_already_installed>Es ist bereits die aktuellste Version der Vita3K installiert.</latest_version_already_installed>
+		<new_features>Neue Funktionen in Version {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>Aktualisieren</update>
+		<version>Version {}</version>
+	</vita3k_update>
 </lang>

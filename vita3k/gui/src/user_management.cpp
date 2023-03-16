@@ -316,7 +316,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetWindowFontScale(0.9f);
             ImGui::PopStyleColor();
             if (ImGui::BeginPopupContextItem("##user_context_menu")) {
-                if (ImGui::MenuItem("Open User Folder"))
+                if (ImGui::MenuItem(lang["open_user_folder"].c_str()))
                     open_path((user_path / user.first).string());
                 ImGui::EndPopup();
             }

@@ -267,6 +267,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
     emuenv.common_dialog.msg.status = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
 
     auto common = emuenv.common_dialog.lang.common;
+    auto save = emuenv.common_dialog.lang.save_data.save;
     const auto CANCEL = common["cancel"];
 
     switch (p->mode) {
@@ -322,7 +323,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NOSPACE:
-            emuenv.common_dialog.msg.message = "There is not enough free space on the memory card.";
+            emuenv.common_dialog.msg.message = save["not_free_space"];
             emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_MAGNETIC_CALIBRATION:
@@ -352,7 +353,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NOSPACE_CONTINUABLE:
-            emuenv.common_dialog.msg.message = common["nospace"];
+            emuenv.common_dialog.msg.message = save["not_free_space"];
             emuenv.common_dialog.msg.btn_num = 1;
             emuenv.common_dialog.msg.btn[0] = common["ok"];
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_OK;

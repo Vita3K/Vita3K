@@ -83,7 +83,6 @@ Code d'erreur: {}</an_error_occurred>
 		<delete>Supprimer</delete>
 		<file_corrupted>Le fichier est corrompu.</file_corrupted>
 		<microphone_disabled>Activez le microphone.</microphone_disabled>
-		<nospace>Espace libre insuffisant sur la carte mémoire.</nospace>
 		<no>Non</no>
 		<ok>OK</ok>
 		<please_wait>Merci de patienter...</please_wait>
@@ -320,8 +319,8 @@ Votre système Vita3K est prêt !</completed_setup>
 			<live_area_help>Live Area Help</live_area_help>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
-			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app>Démarrer App</start_app>
+			<start_app_control>Cliquer sur Démarrer ou Appuyer sur Croix</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -335,7 +334,7 @@ Votre système Vita3K est prêt !</completed_setup>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -426,6 +425,7 @@ Pour obtenir des trophées, utilisez une application compatible avec cette fonct
 		<create_user>Créer un utilisateur</create_user>
 		<user_created>L'utilisateur suivant a été créés :</user_created>
 		<edit_user>Modifier un utilisateur</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>! Ce nom est déjà utilisé.</user_name_used>
 		<delete_user>Supprimer un utilisateur</delete_user>
 		<user_delete>Sélectionnez l'utilisateur que vous souhaitez supprimer.</user_delete>
@@ -453,6 +453,8 @@ Une fois le téléchargement terminé, Vita3K redémarrera automatiquement et in
 		<later_version_already_installed>Une version plus récente de Vita3K est déjà installée.</later_version_already_installed>
 		<latest_version_already_installed>La dernière version de Vita3K est déjà installée.</latest_version_already_installed>
 		<new_features>Nouveautés de la version {}</new_features>
+		<authors>Auterus</authors>
+		<comments>Commentaires</comments>
 		<update>Mettre à jour</update>
 		<version>Version {}</version>
 	</vita3k_update>

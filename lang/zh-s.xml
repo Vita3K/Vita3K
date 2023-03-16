@@ -83,7 +83,6 @@
 		<delete>删除</delete>
 		<file_corrupted>文件已损坏。</file_corrupted>
 		<microphone_disabled>请启用麦克风。</microphone_disabled>
-		<nospace>存储卡没有足够的空余容量。</nospace>
 		<no>否</no>
 		<ok>OK</ok>
 		<please_wait>请稍等…</please_wait>
@@ -541,6 +540,7 @@ Please download and install it.</no_font_exist>
 		<create_user>创建用户</create_user>
 		<user_created>已创建以下用户。</user_created>
 		<edit_user>编辑用户</edit_user>
+		<open_user_folder>打开用户文件夹</open_user_folder>
 		<user_name_used>此名称已被使用。</user_name_used>
 		<delete_user>删除用户</delete_user>
 		<user_delete>请选择要删除的用户。</user_delete>
@@ -562,12 +562,14 @@ Please download and install it.</no_font_exist>
 		<back>返回</back>
 		<downloading>下载中…
 下载完毕后，Vita3K将会自动重新启动，并安装新的版本。</downloading>
-		<not_complete_update>无法完成更新。</not_complete_update>
+		<not_complete_update>无法完成升级。</not_complete_update>
 		<next>继续</next>
 		<update_vita3k>要升级Vita3K吗？</update_vita3k>
-		<later_version_already_installed>已安装更新版本的Vita3K。</later_version_already_installed>
+		<later_version_already_installed>已安装新版本的Vita3K。</later_version_already_installed>
 		<latest_version_already_installed>已安装最新版本的Vita3K。</latest_version_already_installed>
 		<new_features>{}版本的追加功能</new_features>
+		<authors>作者</authors>
+		<comments>注释</comments>
 		<update>更新</update>
 		<version>{}版本</version>
 	</vita3k_update>
