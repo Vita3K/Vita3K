@@ -83,7 +83,6 @@ depending on its size and your hardware.</app_delete_note>
 		<delete>삭제</delete>
 		<file_corrupted>파일이 손상되어 있습니다.</file_corrupted>
 		<microphone_disabled>마이크를 활성화해 주십시오.</microphone_disabled>
-		<nospace>메모리 카드의 빈 용량이 부족합니다.</nospace>
 		<no>아니요</no>
 		<ok>OK</ok>
 		<please_wait>잠시 기다려 주십시오...</please_wait>
@@ -322,7 +321,7 @@ Your Vita3K system is ready!</completed_setup>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -336,7 +335,7 @@ Your Vita3K system is ready!</completed_setup>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -427,6 +426,7 @@ Your Vita3K system is ready!</completed_setup>
 		<create_user>사용자 생성</create_user>
 		<user_created>해당 사용자가 생성되었습니다.</user_created>
 		<edit_user>사용자 편집</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>이미 사용하고 있는 이름입니다.</user_name_used>
 		<delete_user>사용자 삭제</delete_user>
 		<user_delete>지우려고 하는 사용자를 선택하세요.</user_delete>
@@ -442,4 +442,21 @@ Your Vita3K system is ready!</completed_setup>
 		<confirm>확인</confirm>
 		<automatic_user_login>자동 로그인</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Vita3K 업데이트">
+ 		<new_version_available>새 버전의 Vita3K 있습니다.</new_version_available>
+		<back>돌아가기</back>
+		<downloading>다운로드 중입니다...
+다운로드 후에 Vita3K 자동으로 재기동하여 새로운 Vita3K를 설치합니다.</downloading>
+		<not_complete_update>업데이트하지 못했습니다.</not_complete_update>
+		<next>다음</next>
+		<update_vita3k>Vita3K를 업데이트하시겠습니까?</update_vita3k>
+		<later_version_already_installed>새 버전의 Vita3K가 설치되어 있습니다.</later_version_already_installed>
+		<latest_version_already_installed>최신 버전의 Vita3K가 설치되어 있습니다.</latest_version_already_installed>
+		<new_features>버전 {}의 새로운 기능</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>업데이트</update>
+		<version>버전 {}</version>
+	</vita3k_update>
 </lang>

@@ -72,7 +72,6 @@ Felkod: {}</an_error_occurred>
 		<delete>Radera</delete>
 		<file_corrupted>Filen är skadad.</file_corrupted>
 		<microphone_disabled>Aktivera mikrofonen.</microphone_disabled>
-		<nospace>Det finns inte tillräckligt med ledigt utrymme på minneskortet.</nospace>
 		<no>Nej</no>
 		<ok>OK</ok>
 		<please_wait>Vänta...</please_wait>
@@ -219,10 +218,58 @@ Felkod: {}</an_error_occurred>
 Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
+	<dialog>
+		<trophy>
+			<preparing_start_app>Förbereder start av applikationen...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Vill du avbryta raderingen?</cancel_deleting>
+				<deletion_complete>Radering slutförd.</deletion_complete>
+				<delete_saved_data>Vill du radera dessa sparade data?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Detaljer</details>
+				<updated>Uppdaterat</updated>
+			</info>
+			<load name="Ladda">
+				<cancel_loading>Vill du avbryta laddningen?</cancel_loading>
+				<no_saved_data>Det finns inga sparade data.</no_saved_data>
+				<load_complete>Laddning slutförd.</load_complete>
+				<loading>Laddar...</loading>
+				<load_saved_data>Vill du ladda in dessa sparade data?</load_saved_data>
+			</load>
+			<save name="Spara">
+				<cancel_saving>Vill du avbryta sparningen?</cancel_saving>
+				<could_not_save>Kunde inte spara filen.
+Det finns inte tillräckligt med ledigt utrymme på minneskortet.</could_not_save>
+				<not_free_space>Det finns inte tillräckligt med ledigt utrymme på minneskortet.</not_free_space>
+				<new_saved_data>Nya sparade data</new_saved_data>
+				<saving_complete>Sparning slutförd.</saving_complete>
+				<save_the_data>Vill du spara datan?</save_the_data>
+				<saving>Sparar...</saving>
+				<warning_saving>Sparar...
+Stäng inte av systemet och stäng inte applikationen.</warning_saving>
+				<overwrite_saved_data>Vill du skriva över dessa sparade data?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
 	<game_data>
 		<app_close>Följande applikation stängs.</app_close>
 		<data_delete>Data att radera:</data_delete>
 	</game_data>
+
+	<indicator>
+		<app_added_home>Applikationen har lagts till på hemskärmen.</app_added_home>
+		<delete_all>Radera alla</delete_all>
+		<notif_deleted>Notiserna raderas.</notif_deleted>
+		<install_failed>Kunde inte installera.</install_failed>
+		<install_complete>Installation slutförd.</install_complete>
+		<installing>Installerar...</installing>
+		<no_notif>Det finns inga notiser.</no_notif>
+		<trophy_earned>Du har vunnit en trophy!</trophy_earned>
+	</indicator>
 
 	<initial_setup>
 		<back>Tillbaka</back>
@@ -250,7 +297,7 @@ Ditt Vita3K-system är redo!</completed_setup>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -264,7 +311,7 @@ Ditt Vita3K-system är redo!</completed_setup>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -355,6 +402,7 @@ Du kan få trophies om du använder en applikation som stder trophy-funktionen.<
 		<create_user>Skapa användare</create_user>
 		<user_created>Följande användare har skapats:</user_created>
 		<edit_user>Edit User</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>Namnet finns redan.</user_name_used>
 		<delete_user>Ta bort användare</delete_user>
 		<user_delete>Välj den användare du vill ta bort.</user_delete>
@@ -370,4 +418,21 @@ Du kan få trophies om du använder en applikation som stder trophy-funktionen.<
 		<confirm>Bekräfta</confirm>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Vita3K-uppdatering">
+ 		<new_version_available>En ny version av Vita3K är tillgänglig.</new_version_available>
+		<back>Tillbaka</back>
+		<downloading>Laddar ned...
+När nedladdningen är slutförd kommer Vita3K automatiskt att startas om och den nya Vita3K installeras.</downloading>
+		<not_complete_update>Kunde inte slutföra uppdateringen.</not_complete_update>
+		<next>Nästa</next>
+		<update_vita3k>Vill du uppdatera Vita3K?</update_vita3k>
+		<later_version_already_installed>Den senare versionen av Vita3K har redan installerats.</later_version_already_installed>
+		<latest_version_already_installed>Den senaste versionen av Vita3K har redan installerats.</latest_version_already_installed>
+		<new_features>Nya funktioner i version {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>Uppdatera</update>
+		<version>Version {}</version>
+	</vita3k_update>
 </lang>

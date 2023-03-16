@@ -83,7 +83,6 @@ Código del error: {}</an_error_occurred>
 		<delete>Eliminar</delete>
 		<file_corrupted>El archivo está dañado.</file_corrupted>
 		<microphone_disabled>Activa el micrófono.</microphone_disabled>
-		<nospace>No hay suficiente espacio libre en la tarjeta de memoria.</nospace>
 		<no>No</no>
 		<ok>OK</ok>
 		<please_wait>Espera un momento...</please_wait>
@@ -309,7 +308,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -323,7 +322,7 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -415,6 +414,7 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 		<user_created>Se ha creado el siguiente usuario:</user_created>
 		<user_name_used>El nombre ya está en uso.</user_name_used>
 		<edit_user>Modificar usuario</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<delete_user>Eliminar usuario</delete_user>
 		<user_delete>Seleciona el usuario que quieres eliminar.</user_delete>
 		<user_delete_msg>Se eliminará el siguiente usuario:</user_delete_msg>
@@ -431,7 +431,7 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 	</user_management>
 
 	<vita3k_update name="Actualizar Vita3K">
-		<new_version_available>Hay una nueva actualización de Vita3K disponible.</new_version_available>
+		<new_version_available>Está disponible una nueva versión de Vita3K.</new_version_available>
 		<back>Atrás</back>
 		<downloading>Descargando...
 Cuando la descarga se haya completado, Vita3K se reiniciará automáticamente e instalará la actualización.</downloading>
@@ -441,6 +441,8 @@ Cuando la descarga se haya completado, Vita3K se reiniciará automáticamente e 
 		<later_version_already_installed>Ya está instalada una versión posterior de Vita3K.</later_version_already_installed>
 		<latest_version_already_installed>Ya está instalada la versión más reciente de Vita3K.</latest_version_already_installed>
 		<new_features>Nuevas funciones de la versión {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
 		<update>Actualizar</update>
 		<version>Versión {}</version>
 	</vita3k_update>

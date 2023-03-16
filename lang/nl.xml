@@ -83,7 +83,6 @@ Foutcode: {}</an_error_occurred>
 		<delete>Verwijderen</delete>
 		<file_corrupted>Het bestand is beschadigd.</file_corrupted>
 		<microphone_disabled>Schakel de microfoon in.</microphone_disabled>
-		<nospace>Er is onvoldoende vrije ruimte op de geheugenkaart.</nospace>
 		<no>Nee</no>
 		<ok>OK</ok>
 		<please_wait>Een ogenblik geduld...</please_wait>
@@ -296,7 +295,7 @@ Schakel het systeem niet uit en sluit de applicatie niet.</warning_saving>
 		<trophy_earned>Je hebt een trofee gewonnen!</trophy_earned>
 	</indicator>
 
-    <initial_setup>
+	<initial_setup>
 		<back>Terug</back>
 		<completed_setup>Je hebt de initiële setup nu voltooid.
 Je Vita3K-systeem is gereed!</completed_setup>
@@ -322,7 +321,7 @@ Je Vita3K-systeem is gereed!</completed_setup>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -336,7 +335,7 @@ Je Vita3K-systeem is gereed!</completed_setup>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -427,6 +426,7 @@ Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefuncti
 		<create_user>Gebruiker maken</create_user>
 		<user_created>De volgende gebruiker is gemaakt:</user_created>
 		<edit_user>Gebruiker bewerken</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>This name is already in use.</user_name_used>
 		<delete_user>Gebruiker verwijderen</delete_user>
 		<user_delete>Selecteer de gebruiker die u wil verwijderen.</user_delete>
@@ -442,4 +442,21 @@ Weet je zeker dat je doorgaan?</user_delete_warn>
 		<confirm>Bevestigen</confirm>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Vita3K-update">
+ 		<new_version_available>Een nieuwe versie van Vita3K is beschikbaar.</new_version_available>
+		<back>Terug</back>
+		<downloading>Bezig met downloaden...
+Nadat het downloaden is voltooid, Vita3K automatisch opnieuw gestart en wordt de nieuwe Vita3K geïnstalleerd.</downloading>
+		<not_complete_update>Kan de update niet voltooien.</not_complete_update>
+		<next>Volgende</next>
+		<update_vita3k>Wil je Vita3K updaten?</update_vita3k>
+		<later_version_already_installed>Een recentere versie van Vita3K is al geïnstalleerd.</later_version_already_installed>
+		<latest_version_already_installed>De meest recente versie van Vita3K is al geïnstalleerd.</latest_version_already_installed>
+		<new_features>Nieuwe functies in versie {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>Update</update>
+		<version>Versie {}</version>
+	</vita3k_update>
 </lang>

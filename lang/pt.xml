@@ -72,7 +72,6 @@ Código de erro: {}</an_error_occurred>
 		<delete>Eliminar</delete>
 		<file_corrupted>O ficheiro está corrompido.</file_corrupted>
 		<microphone_disabled>Ative o microfone.</microphone_disabled>
-		<nospace>Não existe espaço livre suficiente no cartão de memória.</nospace>
 		<no>Não</no>
 		<ok>OK</ok>
 		<please_wait>Por favor aguarde...</please_wait>
@@ -219,10 +218,58 @@ Código de erro: {}</an_error_occurred>
 Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
+	<dialog>
+		<trophy>
+			<preparing_start_app>A preparar para iniciar a aplicação...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Pretende cancelar a eliminação?</cancel_deleting>
+				<deletion_complete>Eliminação concluída.</deletion_complete>
+				<delete_saved_data>Pretende eliminar estes dados guardados?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Detalhes</details>
+				<updated>Atualizado</updated>
+			</info>
+			<load name="Carregar">
+				<cancel_loading>Pretende cancelar o carregamento?</cancel_loading>
+				<no_saved_data>Não existem dados guardados.</no_saved_data>
+				<load_complete>Carregamento concluído.</load_complete>
+				<loading>A carregar...</loading>
+				<load_saved_data>Pretende carregar estes dados guardados?</load_saved_data>
+			</load>
+			<save name="Guardar">
+				<cancel_saving>Pretende cancelar a operação de guardar?</cancel_saving>
+				<could_not_save>Não foi possível guardar o ficheiro.
+Não existe espaço livre suficiente no cartão de memória.</could_not_save>
+				<not_free_space>Não existe espaço livre suficiente no cartão de memória.</not_free_space>
+				<new_saved_data>Novos dados guardados</new_saved_data>
+				<saving_complete>Guardado.</saving_complete>
+				<save_the_data>Pretende guardar os dados?</save_the_data>
+				<saving>A guardar...</saving>
+				<warning_saving>A guardar...
+Não desligue o sistema nem feche a aplicação.</warning_saving>
+				<overwrite_saved_data>Pretende gravar por cima destes dados guardados?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
 	<game_data>
 		<app_close>A seguinte aplicação será fechada.</app_close>
 		<data_delete>Dados a serem eliminados:</data_delete>
 	</game_data>
+
+	<indicator>
+		<app_added_home>A aplicação foi adicionada ao ecrã de início.</app_added_home>
+		<delete_all>Elimine todos</delete_all>
+		<notif_deleted>As notificações serão eliminadas.</notif_deleted>
+		<install_failed>Não foi possível instalar.</install_failed>
+		<install_complete>Instalação concluída.</install_complete>
+		<installing>A instalar...</installing>
+		<no_notif>Não existem notificações.</no_notif>
+		<trophy_earned>Ganhaste um troféu!</trophy_earned>
+	</indicator>
 
 	<initial_setup>
 		<back>Retroceder</back>
@@ -250,7 +297,7 @@ O seu sistema Vita3K está pronto!</completed_setup>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -264,7 +311,7 @@ O seu sistema Vita3K está pronto!</completed_setup>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -355,6 +402,7 @@ Pode ganhar troféus utilizando uma aplicações que suporte a funcionalidade de
 		<create_user>Criar utilizador</create_user>
 		<user_created>O seguinte utilizador foi criado:</user_created>
 		<edit_user>Editar utilizador</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>O nome já está a ser utilizador.</user_name_used>
 		<delete_user>Eliminar utilizador</delete_user>
 		<user_delete>Selecione o utilizador que pretende eliminar.</user_delete>
@@ -370,4 +418,21 @@ Tem a certeza de que pretende continuar?</user_delete_warn>
 		<confirm>Confirmar</confirm>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Atualização Vita3K">
+ 		<new_version_available>Está disponível uma nova versão da Vita3K.</new_version_available>
+		<back>Retroceder</back>
+		<downloading>A transferir...
+Uma vez concluída a transferência, Vita3K será reiniciado automaticamente e, em seguida, instalará o novo Vita3K.</downloading>
+		<not_complete_update>Não foi possível concluir a atualização.</not_complete_update>
+		<next>Seguinte</next>
+		<update_vita3k>Pretende atualizar o Vita3K?</update_vita3k>
+		<later_version_already_installed>Já está instalada a versão mais recente Vita3K.</later_version_already_installed>
+		<latest_version_already_installed>A última versão Vita3K já está instalada.</latest_version_already_installed>
+		<new_features>Novas funcionalidades na versão {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>Atualizar</update>
+		<version>Versão {}</version>
+	</vita3k_update>
 </lang>

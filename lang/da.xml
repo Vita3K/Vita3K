@@ -72,7 +72,6 @@ Fejlkode: {}</an_error_occurred>
 		<delete>Slet</delete>
 		<file_corrupted>Filen er defekt.</file_corrupted>
 		<microphone_disabled>Aktivér mikrofonen.</microphone_disabled>
-		<nospace>Der er ikke nok ledig plads på hukommelseskortet.</nospace>
 		<no>Nej</no>
 		<ok>OK</ok>
 		<please_wait>Vent venligst...</please_wait>
@@ -219,10 +218,58 @@ Fejlkode: {}</an_error_occurred>
 Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
+	<dialog>
+		<trophy>
+			<preparing_start_app>Forbereder start af programmet...</preparing_start_app>
+		</trophy>
+		<save_data>
+			<delete>
+				<cancel_deleting>Ønsker du at afbryde sletningen?</cancel_deleting>
+				<deletion_complete>Sletning udført.</deletion_complete>
+				<delete_saved_data>Ønsker du at slette disse gemte data?</delete_saved_data>
+			</delete>
+			<info>
+				<details>Detaljer</details>
+				<updated>Opdateret</updated>
+			</info>
+			<load name="Indlæs">
+				<cancel_loading>Ønsker du at afbryde indlæsningen?</cancel_loading>
+				<no_saved_data>Der er ingen gemte data.</no_saved_data>
+				<load_complete>Indlæsning udført.</load_complete>
+				<loading>Indlæser...</loading>
+				<load_saved_data>Ønsker du at indlæse disse gemte data?</load_saved_data>
+			</load>
+			<save name="Gem">
+				<cancel_saving>Ønsker du at afbryde lagringen?</cancel_saving>
+				<could_not_save>Kunne ikke gemme filen.
+Der er ikke nok ledig plads på hukommelseskortet.</could_not_save>
+				<not_free_space>Der er ikke nok ledig plads på hukommelseskortet.</not_free_space>
+				<new_saved_data>Nye gemte data</new_saved_data>
+				<saving_complete>Lagring udført.</saving_complete>
+				<save_the_data>Ønsker du at gemme dataene?</save_the_data>
+				<saving>Gemmer...</saving>
+				<warning_saving>Gemmer...
+Undlad at slukke for systemet eller lukke programmet.</warning_saving>
+				<overwrite_saved_data>Ønsker du at overskrive disse gemte data?</overwrite_saved_data>
+			</save>
+		</save_data>
+	</dialog>
+
 	<game_data>
 		<app_close>Følgende program bliver lukket.</app_close>
 		<data_delete>Data, som skal slettes:</data_delete>
 	</game_data>
+
+	<indicator>
+		<app_added_home>Programmet er blevet føjet til hjemmeskærm.</app_added_home>
+		<delete_all>Slet alt</delete_all>
+		<notif_deleted>Meddelelserne vil blive slettet.</notif_deleted>
+		<install_failed>Kunne ikke installere.</install_failed>
+		<install_complete>Installation udført.</install_complete>
+		<installing>Installerer...</installing>
+		<no_notif>Der er ingen meddelelsen.</no_notif>
+		<trophy_earned>Du har opnået et trophy!</trophy_earned>
+	</indicator>
 
 	<initial_setup>
 		<back>Tilbage</back>
@@ -250,7 +297,7 @@ Dit Vita3K-system er klart!</completed_setup>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -264,7 +311,7 @@ Dit Vita3K-system er klart!</completed_setup>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -355,6 +402,7 @@ Du kan opnå trophies ved at bruge et program, der understøtter trophy-funkitio
 		<create_user>Opret bruger</create_user>
 		<user_created>Den følgende bruger er blevet oprettet:</user_created>
 		<edit_user>Edit User</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>Navent er allerede i brug.</user_name_used>
 		<delete_user>Slet bruger</delete_user>
 		<user_delete>Vælg den bruger, som du vil slette.</user_delete>
@@ -370,4 +418,21 @@ Er du sikker på, at du ønsker at fortsætte.</user_delete_warn>
 		<confirm>Bekræft</confirm>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Vita3K-opdatering">
+ 		<new_version_available>En ny version af Vita3K er tilgængelig.</new_version_available>
+		<back>Tilbage</back>
+		<downloading>Downloader...
+Efter download er udført, vil Vita3K automatisk genstarte og derefter installere den nye Vita3K.</downloading>
+		<not_complete_update>Kunne ikke udføre opdateringen.</not_complete_update>
+		<next>Næste</next>
+		<update_vita3k>Ønsker du at opdatere Vita3K?</update_vita3k>
+		<later_version_already_installed>Den senere version af Vita3K er allerede installeret.</later_version_already_installed>
+		<latest_version_already_installed>Den seneste version af Vita3K er allerede installeret.</latest_version_already_installed>
+		<new_features>Nye funktioner i version {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>Opdater</update>
+		<version>Version {}</version>
+	</vita3k_update>
 </lang>

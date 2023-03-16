@@ -83,7 +83,6 @@ Codice di errore: {}</an_error_occurred>
 		<delete>Elimina</delete>
 		<file_corrupted>Il file è danneggiato.</file_corrupted>
 		<microphone_disabled>Attiva il microfono.</microphone_disabled>
-		<nospace>Spazio libero insufficiente sulla scheda di memoria.</nospace>
 		<no>No</no>
 		<ok>OK</ok>
 		<please_wait>Attendi...</please_wait>
@@ -322,7 +321,7 @@ Il tuo sistema Vita3K è pronto per l'uso!</completed_setup>
 			<browse_app>Browse in app list</browse_app>
 			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
 			<start_app>Start App</start_app>
-			<start_app_control>Wheel in Up/Down or using Slider</start_app_control>
+			<start_app_control>Click on Start or Press on Cross</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
 			<show_hide_control>Press on PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
@@ -336,7 +335,7 @@ Il tuo sistema Vita3K è pronto per l'uso!</completed_setup>
 			<zoom_available_control>Double Left Click</zoom_available_control>
 			<scroll_zoom>Scroll in zoom</scroll_zoom>
 			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual Help</exit_manual>
+			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>
 	</live_area>
@@ -427,6 +426,7 @@ Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.</no_
 		<create_user>Crea utente</create_user>
 		<user_created>L'utente seguente è stato creato:</user_created>
 		<edit_user>Modifica utente</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>Il nome utente è già in uso.</user_name_used>
 		<delete_user>Elimina utente</delete_user>
 		<user_delete>Seleziona l'utente che vuoi eliminare.</user_delete>
@@ -442,4 +442,21 @@ Vuoi davvero continuare?</user_delete_warn>
 		<confirm>Conferma</confirm>
 		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
+
+	<vita3k_update name="Aggiornamento del Vita3K">
+ 		<new_version_available>È disponibile una nuova versione del Vita3K.</new_version_available>
+		<back>Indietro</back>
+		<downloading>Download in corso...
+Al termine del download, Vita3K si riavvierà automaticamente e quindi installerà il nuovo Vita3K.</downloading>
+		<not_complete_update>Impossibile completare l'aggiornamento.</not_complete_update>
+		<next>Seguente</next>
+		<update_vita3k>Vuoi aggiornare Vita3K?</update_vita3k>
+		<later_version_already_installed>È già installata una versione più recente del Vita3K.</later_version_already_installed>
+		<latest_version_already_installed>La versione più recente del Vita3K è già installata.</latest_version_already_installed>
+		<new_features>Nuove funzioni disponibili nella versione {}</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
+		<update>Aggiorna</update>
+		<version>Versione {}</version>
+	</vita3k_update>
 </lang>

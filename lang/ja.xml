@@ -83,7 +83,6 @@
 		<delete>削除</delete>
 		<file_corrupted>ファイルが壊れています。</file_corrupted>
 		<microphone_disabled>マイクを有効にしてください。</microphone_disabled>
-		<nospace>メモリーカードの空き容量が不足しています。</nospace>
 		<no>いいえ</no>
 		<ok>OK</ok>
 		<please_wait>しばらくお待ちください...</please_wait>
@@ -364,7 +363,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<select_language>言語を選んでください。</select_language>
 		<install_firmware>ファームウェアをインストール。</install_firmware>
 		<install_highly_recommended>どちらのファームウェアもインストールすることを推奨します。</install_highly_recommended>
-		<installed>インストールされました:</installed>
+		<installed>インストールされました：</installed>
 		<download_firmware>ファームウェアをダウンロード</download_firmware>
 		<download_font_package>フォントパッケージをダウンロード</download_font_package>
 		<install_firmware_file>ファームウェアファイルをインストール</install_firmware_file>
@@ -542,6 +541,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<create_user>ユーザーを作成する</create_user>
 		<user_created>以下のユーザーを作成しました。</user_created>
 		<edit_user>ユーザーを編集する</edit_user>
+		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>その名前はすでに使われています。</user_name_used>
 		<delete_user>ユーザーを削除する</delete_user>
 		<user_delete>削除するユーザーを選んでください。</user_delete>
@@ -559,16 +559,18 @@ Vita3Kをお楽しみください。</completed_setup>
 	</user_management>
 	
 	<vita3k_update name="Vita3Kのアップデート">
- 		<new_version_available>新しいバージョンのVita3Kが利用できます。</new_version_available>
+ 		<new_version_available>新しいバージョンのVita3Kがあります。</new_version_available>
 		<back>戻る</back>
 		<downloading>ダウンロード中...
-ダウンロードが終了すると、自動的にVita3Kが再起動し、更新が完了します。</downloading>
+ダウンロード後にVita3Kは自動的に再起動して、新しいVita3Kをインストールします。</downloading>
 		<not_complete_update>アップデートできませんでした。</not_complete_update>
 		<next>次へ</next>
 		<update_vita3k>Vita3Kをアップデートしますか?</update_vita3k>
-		<later_version_already_installed>新しいVita3Kがすでにインストールされています。</later_version_already_installed>
-		<latest_version_already_installed>Vita3Kはすでに最新の状態です。</latest_version_already_installed>
-		<new_features>{}　で新たに変更された点</new_features>
+		<later_version_already_installed>新しいバージョンのVita3Kがインストールされています。</later_version_already_installed>
+		<latest_version_already_installed>最新のバージョンのVita3Kがインストールされています。</latest_version_already_installed>
+		<new_features>バージョン{}の新しい機能</new_features>
+		<authors>Authors</authors>
+		<comments>Comments</comments>
 		<update>アップデート</update>
 		<version>バージョン {}</version>
 	</vita3k_update>

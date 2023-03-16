@@ -532,11 +532,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\n FXAA comes at almost no performance cost but makes games look slightly blurry.");
+            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\nFXAA comes at almost no performance cost but makes games look slightly blurry.");
 
         // Linear Filter
         ImGui::Spacing();
-        ImGui::Checkbox("Enable Linear Filter (Reboot to Appy)", &emuenv.cfg.enable_linear_filter);
+        ImGui::Checkbox("Enable Linear Filter (Reboot to apply)", &emuenv.cfg.enable_linear_filter);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("The image will be softer, which could help with aliasing.\nDisabling Linear filtering will result in a more sharper aliased image.");
 
@@ -899,7 +899,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (psn / 2.f));
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "PlayStation Network");
         ImGui::Spacing();
-        ImGui::Combo("PSN Status", &config.psn_status, "Unknown\0Signed Out\0Signed In\0Online");
+        ImGui::Combo("PSN Status", &config.psn_status, "Unknown\0Signed Out\0Signed In\0Online\0");
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Select the state of the PS Network.");
 
@@ -926,10 +926,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::SliderInt("HTTP Read End Attempts", &emuenv.cfg.http_read_end_attempts, 0, 100);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("How many attempts to do when there isn't more data to read, lower can improve performance but can make games unstable if you have bad enough internet.");
+            ImGui::SetTooltip("How many attempts to do when there isn't more data to read,\nlower can improve performance but can make games unstable if you have bad enough internet.");
         ImGui::SliderInt("HTTP Read End Sleep", &emuenv.cfg.http_read_end_sleep_ms, 50, 3000);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Attempt sleep time when there isn't more data to read, lower can improve performance but can make games unstable if you have bad enough internet.");
+            ImGui::SetTooltip("Attempt sleep time when there isn't more data to read,\nlower can improve performance but can make games unstable if you have bad enough internet.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
