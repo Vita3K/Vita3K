@@ -36,13 +36,12 @@
 	</about>
 
 	<app_context>
-		<boot>Boot</boot>
-		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
+		<check_app_state>Check App state</check_app_state>
 		<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
-		<open_issue>Open Issue</open_issue>
-		<create_issue>Create Issue</create_issue>
-		<update_database>Update Database</update_database>
-		<copy_app_info>Copy App Info</copy_app_info>
+		<open_state_report>Open state report</open_state_report>
+		<create_state_report>Create state report</create_state_report>
+		<update_database>Update database</update_database>
+		<copy_app_info>Copy App info</copy_app_info>
 		<name_and_id>Name and Title ID</name_and_id>
 		<app_summary>App Summary</app_summary>
 		<custom_config>Custom Config</custom_config>
@@ -52,8 +51,8 @@
 		<open_folder>Open Folder</open_folder>
 		<addcont>DLCs</addcont>
 		<license>License</license>
-		<shader_cache>Shader Cache</shader_cache>
-		<shader_log>Shader Log</shader_log>
+		<shaders_cache>Shaders Cache</shaders_cache>
+		<shaders_log>Shaders Log</shaders_log>
 		<update_history>Update History</update_history>
 		<history_version>Version {}</history_version>
 		<information>Information</information>

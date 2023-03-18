@@ -36,24 +36,9 @@
 	</about>
 
 	<app_context>
-		<boot>Comenzar</boot>
-		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
-		<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
-		<open_issue>Open Issue</open_issue>
-		<create_issue>Create Issue</create_issue>
-		<update_database>Update Database</update_database>
-		<copy_app_info>Copy App Info</copy_app_info>
-		<name_and_id>Nombre y título ID</name_and_id>
-		<app_summary>App Summary</app_summary>
-		<custom_config>Custom Config</custom_config>
 		<create>Hacer</create>
 		<edit>Editar</edit>
 		<remove>Quitar</remove>
-		<open_folder>Open Folder</open_folder>
-		<addcont>DLCs</addcont>
-		<license>License</license>
-		<shader_cache>Shader Cache</shader_cache>
-		<shader_log>Shader Log</shader_log>
 		<update_history>Historial de actualizaciones</update_history>
 		<history_version>Versión {}</history_version>
 		<information>Información</information>

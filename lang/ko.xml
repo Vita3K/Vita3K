@@ -36,15 +36,8 @@
 	</about>
 
 	<app_context>
-		<boot>부트</boot>
-		<check_app_compatibility>앱 호환성 확인</check_app_compatibility>
-		<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
-		<open_issue>Open Issue</open_issue>
-		<create_issue>Create Issue</create_issue>
-		<update_database>Update Database</update_database>
 		<copy_app_info>앱 정보 복사</copy_app_info>
 		<name_and_id>이름와 Title ID</name_and_id>
-		<app_summary>App Summary</app_summary>
 		<custom_config>커스텀 설정</custom_config>
 		<create>만들기</create>
 		<edit>편집</edit>
@@ -52,14 +45,12 @@
 		<open_folder>폴더 열기</open_folder>
 		<addcont>DLC</addcont>
 		<license>라이센스</license>
-		<shader_cache>셰이더 캐시</shader_cache>
-		<shader_log>셰이더 로그</shader_log>
+		<shaders_cache>셰이더 캐시</shaders_cache>
+		<shaders_log>셰이더 로그</shadesr_log>
 		<update_history>업데이트 이력</update_history>
 		<history_version>버전 {}</history_version>
 		<information>정보</information>
 		<app_delete>이 애플리케이션 및 모든 관련 데이터(저장 데이터 포함)를 삭제합니다.</app_delete>
-		<app_delete_note>Deleting a application may take a while
-depending on its size and your hardware.</app_delete_note>
 		<save_delete>이 저장 데이터를 삭제하시겠습니까?</save_delete>
 		<eligible>권리 있음</eligible>
 		<ineligible>권리 없음</ineligible>
@@ -70,10 +61,6 @@ depending on its size and your hardware.</app_delete_note>
 		<updated>갱신일</updated>
 		<size>크기</size>
 		<version>버전</version>
-		<title_id>Title ID</title_id>
-		<last_time_used>Last time used</last_time_used>
-		<never>Never</never>
-		<time_used>Time used</time_used>
 	</app_context>
 
 	<common>

@@ -25,24 +25,6 @@
 	</main_menubar>
 
 	<app_context>
-		<boot>Boot</boot>
-		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
-		<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
-		<open_issue>Open Issue</open_issue>
-		<create_issue>Create Issue</create_issue>
-		<update_database>Update Database</update_database>
-		<copy_app_info>Copy App Info</copy_app_info>
-		<name_and_id>Name and Title ID</name_and_id>
-		<app_summary>App Summary</app_summary>
-		<custom_config>Custom Config</custom_config>
-		<create>Create</create>
-		<edit>Edit</edit>
-		<remove>Remove</remove>
-		<open_folder>Open Folder</open_folder>
-		<addcont>DLCs</addcont>
-		<license>License</license>
-		<shader_cache>Shader Cache</shader_cache>
-		<shader_log>Shader Log</shader_log>
 		<update_history>Histórico de atualização</update_history>
 		<history_version>Versão {}</history_version>
 		<information>Informações</information>
@@ -59,7 +41,6 @@ depending on its size and your hardware.</app_delete_note>
 		<updated>Atualizado</updated>
 		<size>Tamanho</size>
 		<version>Versão</version>
-		<title_id>Title ID</title_id>
 		<last_time_used>Usado pela última vez</last_time_used>
 		<never>Nunca</never>
 		<time_used>Tempo usado</time_used>

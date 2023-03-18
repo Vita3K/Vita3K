@@ -25,30 +25,10 @@
 	</main_menubar>
 
 	<app_context>
-		<boot>Boot</boot>
-		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
-		<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
-		<open_issue>Open Issue</open_issue>
-		<create_issue>Create Issue</create_issue>
-		<update_database>Update Database</update_database>
-		<copy_app_info>Copy App Info</copy_app_info>
-		<name_and_id>Name and Title ID</name_and_id>
-		<app_summary>App Summary</app_summary>
-		<custom_config>Custom Config</custom_config>
-		<create>Create</create>
-		<edit>Edit</edit>
-		<remove>Remove</remove>
-		<open_folder>Open Folder</open_folder>
-		<addcont>DLCs</addcont>
-		<license>License</license>
-		<shader_cache>Shader Cache</shader_cache>
-		<shader_log>Shader Log</shader_log>
 		<update_history>Oppdater historikk</update_history>
 		<history_version>Versjon {}</history_version>
 		<information>Informasjon</information>
 		<app_delete>Dette programmet og all relatert data, inkludert lagreda data, vil bli slettet.</app_delete>
-		<app_delete_note>Deleting a application may take a while
-depending on its size and your hardware.</app_delete_note>
 		<save_delete>Vil du slette disse lagrede dataene?</save_delete>
 		<eligible>Valgbar</eligible>
 		<ineligible>Ikke valgbar</ineligible>
@@ -59,10 +39,6 @@ depending on its size and your hardware.</app_delete_note>
 		<updated>Oppdatert</updated>
 		<size>Størrelse</size>
 		<version>Versjon</version>
-		<title_id>Title ID</title_id>
-		<last_time_used>Last time used</last_time_used>
-		<never>Never</never>
-		<time_used>Time used</time_used>
 	</app_context>
 
 	<common>

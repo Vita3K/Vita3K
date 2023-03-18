@@ -36,24 +36,23 @@
 	</about>
 
 	<app_context>
-		<boot>Boot</boot>
-		<check_app_compatibility>Check App Compatibility</check_app_compatibility>
-		<copy_vita3k_summary>Copy Vita3K Summary</copy_vita3k_summary>
-		<open_issue>Open Issue</open_issue>
-		<create_issue>Create Issue</create_issue>
-		<update_database>Update Database</update_database>
-		<copy_app_info>Copy App Info</copy_app_info>
-		<name_and_id>Name and Title ID</name_and_id>
+		<check_app_state>Vérifier l'état de l'App</check_app_state>
+		<copy_vita3k_summary>Copier le résumé de Vita3K</copy_vita3k_summary>
+		<open_state_report>Ouvrir le rapport d'état</open_state_report>
+		<create_state_report>Créer le rapport d'état</create_state_report>
+		<update_database>Mettre à jour la base de donnée</update_database>
+		<copy_app_info>Copier l'info de l'App</copy_app_info>
+		<name_and_id>Nom et ID du Titre</name_and_id>
 		<app_summary>App Summary</app_summary>
-		<custom_config>Custom Config</custom_config>
-		<create>Create</create>
-		<edit>Edit</edit>
-		<remove>Remove</remove>
-		<open_folder>Open Folder</open_folder>
+		<custom_config>Config personnalisée</custom_config>
+		<create>Créer</create>
+		<edit>Editer</edit>
+		<remove>Supprimer</remove>
+		<open_folder>Ouvrir le dossier</open_folder>
 		<addcont>DLCs</addcont>
 		<license>License</license>
-		<shader_cache>Shader Cache</shader_cache>
-		<shader_log>Shader Log</shader_log>
+		<shaders_cache>Cache des shaders</shaders_cache>
+		<shaders_log>Journal des shaders</shaders_log>
 		<update_history>Historique de mise à jour</update_history>
 		<history_version>Version {}</history_version>
 		<information>Informations</information>
@@ -70,7 +69,7 @@ depending on its size and your hardware.</app_delete_note>
 		<updated>Mis à jour</updated>
 		<size>Taille</size>
 		<version>Version</version>
-		<title_id>Title ID</title_id>
+		<title_id>ID du Titre</title_id>
 		<last_time_used>Dernière fois utilisé</last_time_used>
 		<never>Jamais</never>
 		<time_used>Temps utilisé</time_used>

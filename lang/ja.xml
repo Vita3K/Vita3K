@@ -36,15 +36,13 @@
 	</about>
 
 	<app_context>
-		<boot>起動</boot>
-		<check_app_compatibility>アプリの互換性を調べる</check_app_compatibility>
-		<copy_vita3k_summary>Vita3K Summaryをコピー</copy_vita3k_summary>
-		<open_issue>Issueを開く</open_issue>
-		<create_issue>Issueを作成する</create_issue>
+		<check_app_state>アプリの状態をチェック</check_app_state>
+		<copy_vita3k_summary>Vita3K概要をコピー</copy_vita3k_summary>
+		<open_state_report>状態レポートを開く</open_state_report>
+		<create_state_report>状態レポートを作成</create_state_report>
 		<update_database>データベースを更新</update_database>
 		<copy_app_info>アプリの情報をコピー</copy_app_info>
 		<name_and_id>名前とタイトルID</name_and_id>
-		<app_summary>App Summary</app_summary>
 		<custom_config>カスタム設定</custom_config>
 		<create>作成</create>
 		<edit>編集</edit>
@@ -52,8 +50,8 @@
 		<open_folder>フォルダを開く</open_folder>
 		<addcont>追加データ</addcont>
 		<license>ライセンス</license>
-		<shader_cache>シェーダーキャッシュ</shader_cache>
-		<shader_log>シェーダーログ</shader_log>
+		<shaders_cache>シェーダーキャッシュ</shaders_cache>
+		<shaders_log>シェーダーログ</shaders_log>
 		<update_history>アップデート履歴</update_history>
 		<history_version>バージョン {}</history_version>
 		<information>情報</information>
