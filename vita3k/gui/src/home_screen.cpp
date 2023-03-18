@@ -155,6 +155,7 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
                 emuenv.io.app_path = app_path;
             }
         } else {
+            gui.vita_area.home_screen = false;
             gui.vita_area.live_area_screen = false;
             gui.vita_area.information_bar = false;
         }
@@ -213,7 +214,7 @@ void draw_app_close(GuiState &gui, EmuEnvState &emuenv) {
         gui.vita_area.app_close = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
     if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
-        const auto app_path = gui.apps_list_opened[gui.current_app_selected];
+        const auto app_path = gui.vita_area.live_area_screen ? gui.apps_list_opened[gui.current_app_selected] : emuenv.app_path;
         update_time_app_used(gui, emuenv, emuenv.io.app_path);
         emuenv.kernel.exit_delete_all_threads();
         emuenv.load_app_path = app_path;

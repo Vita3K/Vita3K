@@ -36,11 +36,10 @@
 	</about>
 
 	<app_context>
-		<boot>启动</boot>
-		<check_app_compatibility>查看应用程序兼容性</check_app_compatibility>
+		<check_app_state>检查应用状态</check_app_state>
 		<copy_vita3k_summary>复制Vita3K摘要</copy_vita3k_summary>
-		<open_issue>打开问题</open_issue>
-		<create_issue>创建问题</create_issue>
+		<open_state_report>打开状态报告</open_state_report>
+		<create_state_report>创建状态报告</create_state_report>
 		<update_database>更新数据库</update_database>
 		<copy_app_info>复制应用程序信息</copy_app_info>
 		<name_and_id>名称和标题ID</name_and_id>
@@ -52,8 +51,8 @@
 		<open_folder>打开文件夹</open_folder>
 		<addcont>追加内容</addcont>
 		<license>授权</license>
-		<shader_cache>着色器缓存</shader_cache>
-		<shader_log>着色器日志</shader_log>
+		<shaders_cache>着色器缓存</shaders_cache>
+		<shaders_log>着色器日志</shaders_log>
 		<update_history>更新历史记录</update_history>
 		<history_version>{}版本</history_version>
 		<information>信息</information>
