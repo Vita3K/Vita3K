@@ -36,7 +36,7 @@
 	</about>
 
 	<app_context>
-		<check_app_state>检查应用状态</check_app_state>
+		<check_app_state>检查应用程序状态</check_app_state>
 		<copy_vita3k_summary>复制Vita3K摘要</copy_vita3k_summary>
 		<open_state_report>打开状态报告</open_state_report>
 		<create_state_report>创建状态报告</create_state_report>

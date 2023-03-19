@@ -36,6 +36,7 @@
 	</about>
 
 	<app_context>
+		<name_and_id>Nombre y título ID</name_and_id>
 		<create>Hacer</create>
 		<edit>Editar</edit>
 		<remove>Quitar</remove>
@@ -55,7 +56,7 @@ depending on its size and your hardware.</app_delete_note>
 		<updated>Actualizado</updated>
 		<size>Tamaño</size>
 		<version>Versión</version>
-		<title_id>Title ID</title_id>
+		<title_id>Título ID</title_id>
 		<last_time_used>Última vez que se utilizó</last_time_used>
 		<never>Nunca</never>
 		<time_used>Tiempo utilizado</time_used>
