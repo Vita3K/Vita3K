@@ -452,7 +452,7 @@ Une fois le téléchargement terminé, Vita3K redémarrera automatiquement et in
 		<later_version_already_installed>Une version plus récente de Vita3K est déjà installée.</later_version_already_installed>
 		<latest_version_already_installed>La dernière version de Vita3K est déjà installée.</latest_version_already_installed>
 		<new_features>Nouveautés de la version {}</new_features>
-		<authors>Auterus</authors>
+		<authors>Auteurs</authors>
 		<comments>Commentaires</comments>
 		<update>Mettre à jour</update>
 		<version>Version {}</version>
