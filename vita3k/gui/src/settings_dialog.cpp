@@ -811,7 +811,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (gui.fw_font) {
             ImGui::Checkbox("Asia Region", &emuenv.cfg.asia_font_support);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Check this box to enable font support for Korean and Simplified/Traditional Chinese.\nEnabling this will use more memory and will require you to restart the emulator.");
+                ImGui::SetTooltip("Check this box to enable font support for Korean and Chinese.\nEnabling this will use more memory and will require you to restart the emulator.");
         } else {
             ImGui::TextColored(GUI_COLOR_TEXT, "No firmware font package present.\nPlease download and install it.");
             if (ImGui::Button("Download Firmware Font Package"))
