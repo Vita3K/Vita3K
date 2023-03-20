@@ -269,7 +269,7 @@ inline const std::vector<std::pair<SceSystemParamLang, std::string>> LIST_SYS_LA
     { SCE_SYSTEM_PARAM_LANG_JAPANESE, reinterpret_cast<const char *>(u8"日本語") },
     { SCE_SYSTEM_PARAM_LANG_KOREAN, "Korean" },
     { SCE_SYSTEM_PARAM_LANG_CHINESE_S, "Chinese - Simplified" },
-    { SCE_SYSTEM_PARAM_LANG_CHINESE_T, "Chinese - Traditional" },
+    { SCE_SYSTEM_PARAM_LANG_CHINESE_T, reinterpret_cast<const char *>(u8"繁體中文") },
 };
 
 struct InfoMessage {
