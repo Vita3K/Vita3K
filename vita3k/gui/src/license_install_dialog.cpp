@@ -119,9 +119,8 @@ void draw_license_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
     } else if (state == "fail") {
         title = indicator["install_failed"];
-        auto CHECK_LOG = gui.lang.install_dialog.pkg_install["check_log"].c_str();
-        ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize(CHECK_LOG).x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f));
-        ImGui::TextColored(GUI_COLOR_TEXT, "%s", CHECK_LOG);
+        ImGui::SetCursorPos(ImVec2((ImGui::GetWindowSize().x / 2.f) - (ImGui ::CalcTextSize(lang["check_bin_rif"].c_str()).x / 2.f), ImGui::GetWindowSize().y / 2.f - 20.f));
+        ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["check_bin_rif"].c_str());
         ImGui::SetCursorPos(ImVec2(POS_BUTTON, ImGui::GetWindowSize().y - BUTTON_SIZE.y - (20.f * SCALE.y)));
         if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
             gui.file_menu.license_install_dialog = false;

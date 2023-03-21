@@ -390,7 +390,6 @@ Vita3Kをお楽しみください。</completed_setup>
 			<copy_paste_zrif>Ctrl（Cmd）+ C でコピー、Ctrl（Cmd）+ V でペーストします。</copy_paste_zrif>
 			<delete_pkg>先ほどのpkgを削除しますか？</delete_pkg>
 			<delete_work>先ほどのwork.binを削除しますか？</delete_work>
-			<check_log>ログで詳細をご確認ください。</check_log>
 		</pkg_install>
 		<archive_install>
 			<select_install_type>インストール方法を選択</select_install_type>
