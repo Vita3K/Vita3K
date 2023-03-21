@@ -390,7 +390,7 @@ Please download and install it.</no_font_exist>
 			<copy_paste_zrif>使用Ctrl（Cmd）+ C複製，使用Ctrl（Cmd）+ V貼上。</copy_paste_zrif>
 			<delete_pkg>刪除pkg檔案？</delete_pkg>
 			<delete_work>刪除work.bin檔案？</delete_work>
-			<check_log>更多資料請查看記錄。</check_log>
+			<check_file>請檢查pkg檔案或正確的work.bin/zrif。</check_file>
 		</pkg_install>
 		<archive_install>
 			<select_install_type>選擇安裝類型</select_install_type>
@@ -408,6 +408,7 @@ Please download and install it.</no_font_exist>
 			<select_bin_rif>選擇work.bin/rif</select_bin_rif>
 			<successed_install_license>已成功安裝授權。</successed_install_license>
 			<delete_bin_rif>刪除work.bin/rif檔案？</delete_bin_rif>
+			<check_bin_rif>請檢查正確的work.bin/rif檔案。</check_bin_rif>
 		</license_install>
 		<reinstall>
 			<reinstall_content>重新安裝此內容？</reinstall_content>
