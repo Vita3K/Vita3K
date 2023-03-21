@@ -359,7 +359,7 @@
 		<back>返回</back>
 		<completed_setup>已完成初期設定。
 請盡情享受Vita3K。</completed_setup>
-		<select_language>Select a language.</select_language>
+		<select_language>請選擇語言。</select_language>
 		<install_firmware>Install Firmware.</install_firmware>
 		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
 		<installed>已安裝：</installed>
@@ -367,7 +367,7 @@
 		<download_font_package>下載字型套件</download_font_package>
 		<install_firmware_file>Install Firmware File</install_firmware_file>
 		<completed>已完成。</completed>
-		<next>Next</next>
+		<next>繼續</next>
 	</initial_setup>
 
 	<install_dialog>

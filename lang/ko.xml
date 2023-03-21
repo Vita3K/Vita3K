@@ -46,7 +46,7 @@
 		<addcont>DLC</addcont>
 		<license>라이센스</license>
 		<shaders_cache>셰이더 캐시</shaders_cache>
-		<shaders_log>셰이더 로그</shadesr_log>
+		<shaders_log>셰이더 로그</shaders_log>
 		<update_history>업데이트 이력</update_history>
 		<history_version>버전 {}</history_version>
 		<information>정보</information>
