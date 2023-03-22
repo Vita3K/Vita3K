@@ -558,10 +558,14 @@ Vita3Kをお楽しみください。</completed_setup>
 	<vita3k_update name="Vita3Kのアップデート">
  		<new_version_available>新しいバージョンのVita3Kがあります。</new_version_available>
 		<back>戻る</back>
+		<cancel_update_resume>アップデートをキャンセルしますか？
+キャンセルした場合、Vita3Kは次回のアップデートでこの時点のダウンロードを再開します。</cancel_update_resume>
 		<downloading>ダウンロード中...
-ダウンロード後にVita3Kは自動的に再起動して、新しいVita3Kをインストールします。</downloading>
+ダウンロードが完了すると、Vita3Kが自動的に再起動し、新しいアップデートがインストールされます。</downloading>
 		<not_complete_update>アップデートできませんでした。</not_complete_update>
+		<minutes_left>残り {}分</minutes_left>
 		<next>次へ</next>
+		<seconds_left>残り {}秒</seconds_left>
 		<update_vita3k>Vita3Kをアップデートしますか?</update_vita3k>
 		<later_version_already_installed>新しいバージョンのVita3Kがインストールされています。</later_version_already_installed>
 		<latest_version_already_installed>最新のバージョンのVita3Kがインストールされています。</latest_version_already_installed>
