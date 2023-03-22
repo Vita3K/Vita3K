@@ -560,10 +560,14 @@ Are you sure you want to continue?</user_delete_warn>
 	<vita3k_update name="Vita3K Update">
  		<new_version_available>A new version of Vita3K is available.</new_version_available>
 		<back>Back</back>
+ 		<cancel_update_resume>Do you want to cancel the update?
+If you cancel, the next time you update, Vita3K will start downloading from this point.</cancel_update_resume>
 		<downloading>Downloading...
-After the download is complete, Vita3K will restart automatically and then install the new Vita3K.</downloading>
+After the download is complete, Vita3K will restart automatically and then install the new update.</downloading>
 		<not_complete_update>Could not complete the update.</not_complete_update>
+		<minutes_left>{} Minutes Left</minutes_left>
 		<next>Next</next>
+		<seconds_left>{} Seconds Left</seconds_left>
 		<update_vita3k>Do you want to update Vita3K?</update_vita3k>
 		<later_version_already_installed>The later version of Vita3K is already installed.</later_version_already_installed>
 		<latest_version_already_installed>The latest version of Vita3K is already installed.</latest_version_already_installed>

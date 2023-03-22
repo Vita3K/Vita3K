@@ -59,7 +59,7 @@ bool init_vita3k_update(GuiState &gui) {
 
     // Get Build number of latest release
     const auto version = https::get_web_regex_result(latest_link, std::regex("Vita3K Build: (\\d+)"));
-    if (!version.empty() && std::isdigit(version[0]))
+    if (!version.empty() && std::all_of(version.begin(), version.end(), ::isdigit))
         git_version = std::stoi(version);
     else {
         LOG_WARN("Failed to get current git version, try again later\n{}", version);
@@ -141,11 +141,18 @@ bool init_vita3k_update(GuiState &gui) {
 }
 
 static std::atomic<float> progress(0);
-static const auto progress_callback = [](float updated_progress) {
+static std::atomic<uint64_t> remaining(0);
+static https::ProgressState progress_state{};
+
+static const auto progress_callback = [](float updated_progress, uint64_t updated_remaining) {
     progress = updated_progress;
+    remaining = updated_remaining;
+    return progress_state;
 };
 
 static void download_update(const std::string base_path) {
+    progress_state.download = true;
+    progress_state.pause = false;
     std::thread download([base_path]() {
         std::string download_continuous_link = "https://github.com/Vita3K/Vita3K/releases/download/continuous";
 #ifdef WIN32
@@ -162,8 +169,40 @@ static void download_update(const std::string base_path) {
         const std::string archive_ext = ".zip";
 #endif
 
+        const auto latest_ver_path = base_path + "latest-ver";
         const auto vita3k_latest_path = base_path + "vita3k-latest" + archive_ext;
 
+        const std::string version = std::to_string(git_version);
+
+        // check if vita3k_latest_path exist
+        if (fs::exists(vita3k_latest_path)) {
+            // read latest ver file if exist
+            std::ifstream latest_ver(latest_ver_path, std::ios::binary);
+            std::string latest_version{};
+            if (latest_ver.is_open()) {
+                std::getline(latest_ver, latest_version);
+                latest_ver.close();
+            }
+
+            // check if latest version is same with current git version for can resume download
+            if (latest_version == version)
+                LOG_INFO("Resume download of version: {}", latest_version);
+            else {
+                fs::remove(latest_ver_path);
+                fs::remove(vita3k_latest_path);
+                LOG_INFO("Start download of version: {}", latest_version);
+            }
+        }
+
+        // check if latest_ver file exist
+        if (!fs::exists(latest_ver_path)) {
+            // write latest_info file
+            std::ofstream latest_ver(latest_ver_path, std::ios::binary);
+            latest_ver.write(version.c_str(), version.size());
+            latest_ver.close();
+        }
+
+        // Download latest Vita3K version
         LOG_INFO("Attempting to download and extract the latest Vita3K version {} in progress...", git_version);
         if (https::download_file(download_continuous_link, vita3k_latest_path, progress_callback)) {
             SDL_Event event;
@@ -177,20 +216,33 @@ static void download_update(const std::string base_path) {
 #else
             const auto vita3K_batch = fmt::format("chmod +x {}/update-vita3k.sh && {}/update-vita3k.sh", base_path, base_path);
 #endif
+            // When success finish download, remove latest ver file
+            fs::remove(latest_ver_path);
 
             std::system(vita3K_batch.c_str());
         } else {
-            state = NOT_COMPLETE_UPDATE;
-            LOG_WARN("Download failed, please try again later.");
+            if (progress_state.download) {
+                LOG_WARN("Download failed, please try again later.");
+                state = NOT_COMPLETE_UPDATE;
+            } else
+                state = HAS_UPDATE;
         }
     });
     download.detach();
 }
 
+static std::string get_remaining_str(LangState &lang, const uint64_t remaining) {
+    if (remaining > 60)
+        return fmt::format(fmt::runtime(lang.vita3k_update["minutes_left"]), remaining / 60);
+    else
+        return fmt::format(fmt::runtime(lang.vita3k_update["seconds_left"]), remaining > 0 ? remaining : 1);
+}
+
 void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
-    const ImVec2 display_size = ImGui::GetIO().DisplaySize;
+    const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 WINDOW_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
 
     const auto BUTTON_SIZE = ImVec2(150.f * SCALE.x, 46.f * SCALE.y);
     const auto is_background = gui.apps_background.find("NPXS10015") != gui.apps_background.end();
@@ -198,14 +250,14 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     auto common = emuenv.common_dialog.lang.common;
     auto lang = gui.lang.vita3k_update;
 
-    ImGui::SetNextWindowPos(ImVec2(0, 0), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
     ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
     ImGui::Begin("##vita3k_update", &gui.help_menu.vita3k_update, ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], ImVec2(0.f, 0.f), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10015"], WINDOW_POS, display_size);
     else
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), display_size, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawCornerFlags_All);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(WINDOW_POS, display_size, IM_COL32(36.f, 120.f, 12.f, 255.f), 0.f, ImDrawCornerFlags_All);
 
     ImGui::SetWindowFontScale(1.6f * RES_SCALE.x);
     ImGui::SetCursorPos(ImVec2((display_size.x / 2.f) - (ImGui::CalcTextSize(lang["title"].c_str()).x / 2.f), 44.f * SCALE.y));
@@ -289,20 +341,23 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
 
         break;
     case DOWNLOAD: {
-        const auto calc_str = ImGui::CalcTextSize(lang["downloading"].c_str(), 0, false, 776.f * SCALE.x);
-        ImGui::SetCursorPos(ImVec2(92.f * SCALE.x, (display_size.y / 2.f) - (calc_str.y / 2.f)));
-        ImGui::PushTextWrapPos(868.f * SCALE.x);
+        ImGui::SetWindowFontScale(1.25f * RES_SCALE.x);
+        ImGui::SetCursorPos(ImVec2(102.f * SCALE.x, ImGui::GetCursorPosY() + (44 * SCALE.y)));
+        ImGui::PushTextWrapPos(WINDOW_POS.x + (858.f * SCALE.x));
         ImGui::Text("%s", lang["downloading"].c_str());
-        const float PROGRESS_BAR_WIDTH = 820.f * SCALE.x;
-        ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), ImGui::GetCursorPosY() + 30.f * emuenv.dpi_scale));
+        ImGui::PopTextWrapPos();
+        ImGui::SetWindowFontScale(1.04f * RES_SCALE.x);
+        const auto remaining_str = get_remaining_str(gui.lang, remaining);
+        ImGui::SetCursorPos(ImVec2(display_size.x - (90 * SCALE.x) - (ImGui::CalcTextSize(remaining_str.c_str()).x), display_size.y - (196.f * SCALE.y) - ImGui::GetFontSize()));
+        ImGui::Text("%s", remaining_str.c_str());
+        const float PROGRESS_BAR_WIDTH = 780.f * SCALE.x;
+        ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2) - (PROGRESS_BAR_WIDTH / 2.f), display_size.y - (186.f * SCALE.y)));
         ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
-        ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * emuenv.dpi_scale), "");
+        ImGui::ProgressBar(progress / 100.f, ImVec2(PROGRESS_BAR_WIDTH, 15.f * SCALE.y), "");
         const auto progress_str = std::to_string(uint32_t(progress)).append("%");
         ImGui::SetCursorPos(ImVec2((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(progress_str.c_str()).x / 2.f), ImGui::GetCursorPosY() + 16.f * emuenv.dpi_scale));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", progress_str.c_str());
         ImGui::PopStyleColor();
-
-        ImGui::PopTextWrapPos();
 
         break;
     }
@@ -313,23 +368,22 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetWindowFontScale(1.2f * RES_SCALE.x);
     ImGui::SetCursorPosY(display_size.y - BUTTON_SIZE.y - (20.f * SCALE.y));
     ImGui::Separator();
-    if (state == DOWNLOAD)
-        ImGui::BeginDisabled();
-    ImGui::SetCursorPos(ImVec2(10.f * SCALE.x, (display_size.y - BUTTON_SIZE.y - (12.f * SCALE.y))));
-    if (ImGui::Button(state < DESCRIPTION ? common["cancel"].c_str() : lang["back"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
+    ImGui::SetCursorPos(ImVec2(WINDOW_POS.x + (10.f * SCALE.x), (display_size.y - BUTTON_SIZE.y - (12.f * SCALE.y))));
+    if (ImGui::Button((state < DESCRIPTION) || (state == DOWNLOAD) ? common["cancel"].c_str() : lang["back"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
         if (state < DESCRIPTION) {
             if (fs::exists("windows-latest.zip"))
                 fs::remove("windows-latest.zip");
             gui.vita_area = vita_area_state;
             gui.help_menu.vita3k_update = false;
+        } else if (state == DOWNLOAD) {
+            progress_state.pause = true;
+            ImGui::OpenPopup("cancel_update_popup");
         } else
             state = (Vita3kUpdate)(state - 1);
     }
-    if (state == DOWNLOAD)
-        ImGui::EndDisabled();
 
     if (state > NO_UPDATE && state < DOWNLOAD) {
-        ImGui::SetCursorPos(ImVec2(display_size.x - BUTTON_SIZE.x - (10.f * SCALE.x), (display_size.y - BUTTON_SIZE.y - (12.f * SCALE.y))));
+        ImGui::SetCursorPos(ImVec2(display_size.x - WINDOW_POS.x - BUTTON_SIZE.x - (10.f * SCALE.x), (display_size.y - BUTTON_SIZE.y - (12.f * SCALE.y))));
         if (ImGui::Button(state < UPDATE_VITA3K ? lang["next"].c_str() : lang["update"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
             state = (Vita3kUpdate)(state + 1);
             if (state == DOWNLOAD)
@@ -338,7 +392,31 @@ void draw_vita3k_update(GuiState &gui, EmuEnvState &emuenv) {
         if (state == DOWNLOAD)
             ImGui::EndDisabled();
     }
-    ImGui::PopStyleVar();
+
+    // Draw Cancel popup
+    const auto POPUP_SIZE = ImVec2(760.0f * SCALE.x, 436.0f * SCALE.y);
+    ImGui::SetNextWindowSize(POPUP_SIZE, ImGuiCond_Always);
+    ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x + (display_size.x / 2.f) - (POPUP_SIZE.x / 2.f), WINDOW_POS.y + (display_size.y / 2.f) - (POPUP_SIZE.y / 2.f)), ImGuiCond_Always);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 10.f * SCALE.x);
+    if (ImGui::BeginPopupModal("cancel_update_popup", &progress_state.pause, ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoDecoration)) {
+        const auto LARGE_BUTTON_SIZE = ImVec2(310.f * SCALE.x, 46.f * SCALE.y);
+        auto common = emuenv.common_dialog.lang.common;
+        const auto str_size = ImGui::CalcTextSize(lang["cancel_update_resume"].c_str(), 0, false, POPUP_SIZE.x - (120.f * SCALE.x));
+        ImGui::SetCursorPos(ImVec2(60.f * SCALE.x, (ImGui::GetWindowHeight() / 2.f) - (str_size.y / 2.f)));
+        ImGui::TextWrapped("%s", lang["cancel_update_resume"].c_str());
+        ImGui::SetCursorPos(ImVec2((POPUP_SIZE.x / 2.f) - LARGE_BUTTON_SIZE.x - (20.f * SCALE.x), POPUP_SIZE.y - LARGE_BUTTON_SIZE.y - (22.0f * SCALE.y)));
+        if (ImGui::Button(common["no"].c_str(), LARGE_BUTTON_SIZE)) {
+            progress_state.pause = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::SameLine(0, 40.f * SCALE.x);
+        if (ImGui::Button(common["yes"].c_str(), LARGE_BUTTON_SIZE)) {
+            progress_state.download = false;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::PopStyleVar(2);
     ImGui::End();
 }
 

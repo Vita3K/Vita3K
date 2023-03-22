@@ -113,7 +113,8 @@ static const std::string latest_link = "https://api.github.com/repos/Vita3K/comp
 static const std::string app_compat_db_link = "https://github.com/Vita3K/compatibility/releases/download/compat_db/app_compat_db.xml";
 
 bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
-    const auto app_compat_db_path = fs::path(emuenv.base_path) / "cache/app_compat_db.xml";
+    const auto cache_path = fs::path(emuenv.base_path) / "cache";
+    const auto app_compat_db_path = cache_path / "app_compat_db.xml";
     gui.info_message.function = SPDLOG_FUNCTION;
 
     // Get current date of last compat database updated at
@@ -134,11 +135,17 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
     LOG_INFO("Applications compatibility database is {}, attempting to download latest updated at: {}", compat_db_exist ? "outdated" : "missing", updated_at);
 
-    if (!https::download_file(app_compat_db_link, app_compat_db_path.string())) {
+    const auto new_app_compat_db_path = cache_path / "new_app_compat_db.xml";
+
+    if (!https::download_file(app_compat_db_link, new_app_compat_db_path.string())) {
         gui.info_message.level = spdlog::level::err;
         gui.info_message.msg = fmt::format("Failed to download Applications compatibility database updated at: {}, try again later.", updated_at);
         return false;
     }
+
+    // Remove old database and rename new database
+    fs::remove(app_compat_db_path);
+    fs::rename(new_app_compat_db_path, app_compat_db_path);
 
     const auto old_db_updated_at = db_updated_at;
     const auto old_compat_count = !gui.compat.app_compat_db.empty() ? gui.compat.app_compat_db.size() : 0;
