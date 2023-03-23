@@ -53,7 +53,7 @@ static void close_ssl(SSL *ssl) {
 static uint64_t header_size = 0;
 static abs_socket sockfd = 0;
 
-static SSL *init_https(const std::string url, const std::string method = "GET", const uint64_t downloaded_file_size = 0) {
+static SSL *init(const std::string url, const std::string method = "GET", const uint64_t downloaded_file_size = 0) {
     sockfd = 0;
 
 #ifdef WIN32
@@ -197,7 +197,7 @@ static SSL *init_https(const std::string url, const std::string method = "GET", 
 
 std::string get_web_response(const std::string url, const std::string method) {
     // Initialize SSL and socket connection
-    const auto ssl = init_https(url, method);
+    auto ssl = init(url, method);
     if (!ssl)
         return {};
 
@@ -324,7 +324,7 @@ bool download_file(std::string url, const std::string output_file_path, Progress
     }
 
     // Init SSL and socket connection with the downloaded file size (if exists)
-    const auto ssl = init_https(url, "GET", downloaded_file_size);
+    auto ssl = init(url, "GET", downloaded_file_size);
     if (!ssl)
         return false;
 
