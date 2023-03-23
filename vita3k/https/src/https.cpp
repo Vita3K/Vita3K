@@ -51,11 +51,13 @@ static void close_ssl(SSL *ssl) {
 }
 
 static uint64_t header_size = 0;
-static abs_socket sockfd = 0;
 
-static SSL *init(const std::string url, const std::string method = "GET", const uint64_t downloaded_file_size = 0) {
-    sockfd = 0;
+struct Https {
+    SSL *ssl;
+    abs_socket sockfd = 0;
+};
 
+static Https init(const std::string url, const std::string method = "GET", const uint64_t downloaded_file_size = 0) {
 #ifdef WIN32
     // Initialize Winsock
     WORD versionWanted = MAKEWORD(2, 2);
@@ -67,20 +69,22 @@ static SSL *init(const std::string url, const std::string method = "GET", const 
     const auto ctx = SSL_CTX_new(SSLv23_client_method());
     if (!ctx) {
         LOG_ERROR("Error creating SSL context");
-        return nullptr;
+        return {};
     }
 
+    Https https{};
+
     // Create socket
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    https.sockfd = socket(AF_INET, SOCK_STREAM, 0);
 #ifdef WIN32
-    if (sockfd == INVALID_SOCKET) {
+    if (https.sockfd == INVALID_SOCKET) {
         LOG_ERROR("ERROR opening socket: {}", log_hex(WSAGetLastError()));
 #else
-    if (sockfd < 0) {
-        LOG_ERROR("ERROR opening socket: {}", log_hex(sockfd));
+    if (https.sockfd < 0) {
+        LOG_ERROR("ERROR opening socket: {}", log_hex(https.sockfd));
 #endif
         SSL_CTX_free(ctx);
-        return nullptr;
+        return {};
     }
 
     // Parse URL to get host and uri
@@ -119,51 +123,51 @@ static SSL *init(const std::string url, const std::string method = "GET", const 
             freeaddrinfo(result);
         }
         SSL_CTX_free(ctx);
-        close_socket(sockfd);
-        return nullptr;
+        close_socket(https.sockfd);
+        return {};
     }
 
     // Connect to host
-    ret = connect(sockfd, result->ai_addr, static_cast<uint32_t>(result->ai_addrlen));
+    ret = connect(https.sockfd, result->ai_addr, static_cast<uint32_t>(result->ai_addrlen));
     if (ret < 0) {
-        LOG_ERROR("connect({},...) = {}, errno={}({})", sockfd, ret, errno, strerror(errno));
+        LOG_ERROR("connect({},...) = {}, errno={}({})", https.sockfd, ret, errno, strerror(errno));
         freeaddrinfo(result);
         SSL_CTX_free(ctx);
-        close_socket(sockfd);
-        return nullptr;
+        close_socket(https.sockfd);
+        return {};
     }
 
     // Check if socket is connected
     int error = 0;
     socklen_t errlen = sizeof(error);
-    ret = getsockopt(sockfd, SOL_SOCKET, SO_ERROR, reinterpret_cast<char *>(&error), &errlen);
+    ret = getsockopt(https.sockfd, SOL_SOCKET, SO_ERROR, reinterpret_cast<char *>(&error), &errlen);
     if (ret < 0) {
-        LOG_ERROR("getsockopt({}, SOL_SOCKET, SO_ERROR, ...) failed: {}", sockfd, strerror(errno));
+        LOG_ERROR("getsockopt({}, SOL_SOCKET, SO_ERROR, ...) failed: {}", https.sockfd, strerror(errno));
         freeaddrinfo(result);
         SSL_CTX_free(ctx);
-        close_socket(sockfd);
-        return nullptr;
+        close_socket(https.sockfd);
+        return {};
     }
     if (error != 0) {
-        LOG_ERROR("connect({}, ...) failed: {}", sockfd, error);
+        LOG_ERROR("connect({}, ...) failed: {}", https.sockfd, error);
         freeaddrinfo(result);
         SSL_CTX_free(ctx);
-        close_socket(sockfd);
-        return nullptr;
+        close_socket(https.sockfd);
+        return {};
     }
 
     // Create and connect SSL
-    SSL *ssl = SSL_new(ctx);
-    SSL_set_fd(ssl, static_cast<uint32_t>(sockfd));
-    if (SSL_connect(ssl) <= 0) {
+    https.ssl = SSL_new(ctx);
+    SSL_set_fd(https.ssl, static_cast<uint32_t>(https.sockfd));
+    if (SSL_connect(https.ssl) <= 0) {
         char err_buf[256];
         ERR_error_string_n(ERR_get_error(), err_buf, sizeof(err_buf));
         LOG_ERROR("Error establishing SSL connection: {}", err_buf);
         freeaddrinfo(result);
         SSL_CTX_free(ctx);
-        close_ssl(ssl);
-        close_socket(sockfd);
-        return ssl;
+        close_ssl(https.ssl);
+        close_socket(https.sockfd);
+        return {};
     }
 
     // Send HTTP GET request to extracted URI
@@ -177,28 +181,28 @@ static SSL *init(const std::string url, const std::string method = "GET", const 
     request += "Connection: close\r\n\r\n";
 
     // Send request to host
-    if (SSL_write(ssl, request.c_str(), static_cast<uint32_t>(request.length())) <= 0) {
+    if (SSL_write(https.ssl, request.c_str(), static_cast<uint32_t>(request.length())) <= 0) {
         char err_buf[256];
         ERR_error_string_n(ERR_get_error(), err_buf, sizeof(err_buf));
         freeaddrinfo(result);
         SSL_CTX_free(ctx);
-        close_ssl(ssl);
-        close_socket(sockfd);
+        close_ssl(https.ssl);
+        close_socket(https.sockfd);
         LOG_ERROR("Error sending request: {},\n{}", err_buf, request);
-        return ssl;
+        return {};
     }
 
     // Free address info and ssl ctx 
     freeaddrinfo(result);
     SSL_CTX_free(ctx);
 
-    return ssl;
+    return https;
 }
 
 std::string get_web_response(const std::string url, const std::string method) {
     // Initialize SSL and socket connection
-    auto ssl = init(url, method);
-    if (!ssl)
+    auto https = init(url, method);
+    if (!https.ssl)
         return {};
 
     // Create read buffer and response string
@@ -207,14 +211,14 @@ std::string get_web_response(const std::string url, const std::string method) {
     uint64_t downloaded_size = 0;
 
     // Read response from SSL connection and append to response string
-    while (const auto bytes_read = SSL_read(ssl, read_buffer.data(), static_cast<uint32_t>(read_buffer.size()))) {
+    while (const auto bytes_read = SSL_read(https.ssl, read_buffer.data(), static_cast<uint32_t>(read_buffer.size()))) {
         response += std::string(read_buffer.data(), bytes_read);
         downloaded_size += bytes_read;
     }
 
     // Close SSL and socket connection
-    close_ssl(ssl);
-    close_socket(sockfd);
+    close_ssl(https.ssl);
+    close_socket(https.sockfd);
 
     boost::trim(response);
 
@@ -324,19 +328,19 @@ bool download_file(std::string url, const std::string output_file_path, Progress
     }
 
     // Init SSL and socket connection with the downloaded file size (if exists)
-    auto ssl = init(url, "GET", downloaded_file_size);
-    if (!ssl)
+    auto https = init(url, "GET", downloaded_file_size);
+    if (!https.ssl)
         return false;
 
     // Create read buffer with using header size
     std::vector<char> read_buffer(header_size);
 
     // Read the header of the response and check if the response is resource not found
-    uint32_t bytes_read = SSL_read(ssl, read_buffer.data(), static_cast<uint32_t>(read_buffer.size()));
+    uint32_t bytes_read = SSL_read(https.ssl, read_buffer.data(), static_cast<uint32_t>(read_buffer.size()));
     if (std::string(read_buffer.data()).find("HTTP/1.1 404 Not Found") != std::string::npos) {
         LOG_ERROR("404 Not Found");
-        close_ssl(ssl);
-        close_socket(sockfd);
+        close_ssl(https.ssl);
+        close_socket(https.sockfd);
 
         return false;
     }
@@ -344,8 +348,8 @@ bool download_file(std::string url, const std::string output_file_path, Progress
     // Check if bytes read is diferent of header size
     if (bytes_read < (header_size * 0.99f)) {
         LOG_ERROR("Error reading header: {}/{}\n{}", bytes_read, header_size, read_buffer.data());
-        close_ssl(ssl);
-        close_socket(sockfd);
+        close_ssl(https.ssl);
+        close_socket(https.sockfd);
         return false;
     }
 
@@ -369,7 +373,7 @@ bool download_file(std::string url, const std::string output_file_path, Progress
 
     while (progress_state.download && bytes_read) {
         if (!progress_state.pause) {
-            if ((bytes_read = SSL_read(ssl, read_buffer.data(), static_cast<uint32_t>(read_buffer.size())))) {
+            if ((bytes_read = SSL_read(https.ssl, read_buffer.data(), static_cast<uint32_t>(read_buffer.size())))) {
                 // Write the read buffer to the output file
                 outfile.write(read_buffer.data(), bytes_read);
 
@@ -407,8 +411,8 @@ bool download_file(std::string url, const std::string output_file_path, Progress
     outfile.close();
     
     // Close SSL and socket connection
-    close_ssl(ssl);
-    close_socket(sockfd);
+    close_ssl(https.ssl);
+    close_socket(https.sockfd);
 
     // Check if download file size is same of file size
     if (downloaded_file_size < (file_size * 0.99)) {
