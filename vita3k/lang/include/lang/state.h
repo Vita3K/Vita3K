@@ -316,7 +316,7 @@ struct LangState {
             { "copy_paste_zrif", "Ctrl (Cmd) + C to copy, Ctrl (Cmd) + V to paste." },
             { "delete_pkg", "Delete the pkg file?" },
             { "delete_work", "Delete the work.bin file?" },
-            { "check_file", "Please check the pkg file or correct the work.bin/zrif." }
+            { "failed_install_package", "Failed to install package.\nPlease check pkg and work.bin file or zRIF key." }
         };
         std::map<std::string, std::string> archive_install = {
             { "select_install_type", "Select install type" },
@@ -334,7 +334,7 @@ struct LangState {
             { "select_bin_rif", "Select work.bin/rif" },
             { "successed_install_license", "Successfully installed license." },
             { "delete_bin_rif", "Delete the work.bin/rif file?" },
-            { "check_file", "Please check correct the work.bin/rif file." }
+            { "failed_install_license", "Failed to install license.\nPlease check work.bin/rif file or zRIF key." }
         };
         std::map<std::string, std::string> reinstall = {
             { "reinstall_content", "Reinstall this content?" },

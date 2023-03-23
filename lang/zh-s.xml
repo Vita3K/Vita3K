@@ -390,7 +390,8 @@ Please download and install it.</no_font_exist>
 			<copy_paste_zrif>使用Ctrl（Cmd）+ C复制，使用Ctrl（Cmd）+ V粘贴。</copy_paste_zrif>
 			<delete_pkg>删除pkg文件？</delete_pkg>
 			<delete_work>删除work.bin文件？</delete_work>
-			<check_file>请检查pkg文件或正确的work.bin/zrif。</check_file>
+			<failed_install_package>无法安装该包。
+请检查pkg以及work.bin文件或zRIF密钥。</failed_install_package>
 		</pkg_install>
 		<archive_install>
 			<select_install_type>选择安装类型</select_install_type>
@@ -408,7 +409,8 @@ Please download and install it.</no_font_exist>
 			<select_bin_rif>选择work.bin/rif</select_bin_rif>
 			<successed_install_license>已成功安装授权。</successed_install_license>
 			<delete_bin_rif>删除work.bin/rif文件？</delete_bin_rif>
-			<check_bin_rif>请检查正确的work.bin/rif文件。</check_bin_rif>
+			<failed_install_license>无法安装授权。
+请检查work.bin/rif文件或zRIF密钥。</failed_install_license>
 		</license_install>
 		<reinstall>
 			<reinstall_content>是否重新安装该内容？</reinstall_content>
@@ -560,10 +562,14 @@ Please download and install it.</no_font_exist>
 	<vita3k_update name="Vita3K更新">
  		<new_version_available>检测到新版本的Vita3K。</new_version_available>
 		<back>返回</back>
+ 		<cancel_update_resume>要取消升级吗？
+若取消升级，下次升级时将从中断处开始下载。</cancel_update_resume>
 		<downloading>下载中…
-下载完毕后，Vita3K将会自动重新启动，并安装新的版本。</downloading>
+下载完毕后，Vita3K将会自动重新启动，并安装新的升级。</downloading>
 		<not_complete_update>无法完成升级。</not_complete_update>
+		<minutes_left>剩余 {}分钟</minutes_left>
 		<next>继续</next>
+		<seconds_left>剩余 {}秒</seconds_left>
 		<update_vita3k>要升级Vita3K吗？</update_vita3k>
 		<later_version_already_installed>已安装新版本的Vita3K。</later_version_already_installed>
 		<latest_version_already_installed>已安装最新版本的Vita3K。</latest_version_already_installed>

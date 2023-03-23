@@ -419,10 +419,14 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 	<vita3k_update name="Actualizar Vita3K">
 		<new_version_available>Está disponible una nueva versión de Vita3K.</new_version_available>
 		<back>Atrás</back>
+ 		<cancel_update_resume>¿Quieres cancelar la actualización?
+Si cancelas el proceso, la próxima vez que actualices, Vita3K comenzará la descarga desde este punto.</cancel_update_resume>
 		<downloading>Descargando...
 Cuando la descarga se haya completado, Vita3K se reiniciará automáticamente e instalará la actualización.</downloading>
 		<not_complete_update>No se ha podido completar la actualización.</not_complete_update>
+		<minutes_left>{} minutos restantes</minutes_left>
 		<next>Siguiente</next>
+		<seconds_left>{} segundos restantes</seconds_left>
 		<update_vita3k>¿Quieres actualizar Vita3K?</update_vita3k>
 		<later_version_already_installed>Ya está instalada una versión posterior de Vita3K.</later_version_already_installed>
 		<latest_version_already_installed>Ya está instalada la versión más reciente de Vita3K.</latest_version_already_installed>

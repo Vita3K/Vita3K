@@ -414,10 +414,14 @@ Devam etmek istediğinizden emin misiniz?</user_delete_warn>
 	<vita3k_update name="Vita3K Güncelleme">
  		<new_version_available>Vita3K yeni bir sürümü mevcut.</new_version_available>
 		<back>Geri</back>
+ 		<cancel_update_resume>Güncelleme işlemini iptal etmek istiyor musunuz?
+İptal ederseniz, bir sonraki güncellemenizde Vita3K indirmeye kaldığı yerden devam eder.</cancel_update_resume>
 		<downloading>İndiriliyor...
-İndirme tamamlandığında, Vita3K otomatik olarak yeniden başlatılır ve yeni sabit yazılım kurulur.</downloading>
-		<not_complete_update>Could not complete the update.</not_complete_update>
+İndirme tamamlandığında, Vita3K otomatik olarak yeniden başlatılır ve yeni güncelleme kurulur.</downloading>
+		<not_complete_update>Güncelleme tamamlanamadı.</not_complete_update>
+		<minutes_left>{} Dakika Kaldı</minutes_left>
 		<next>İleri</next>
+		<seconds_left>{} Saniye Kaldı</seconds_left>
 		<update_vita3k>Vita3K güncellemek istiyor musunuz?</update_vita3k>
 		<later_version_already_installed>Vita3K sonraki sürümü önceden kuruldu.</later_version_already_installed>
 		<latest_version_already_installed>Vita3K en son sürümü önceden kuruldu.</latest_version_already_installed>
