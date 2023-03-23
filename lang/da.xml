@@ -402,10 +402,14 @@ Er du sikker på, at du ønsker at fortsætte.</user_delete_warn>
 	<vita3k_update name="Vita3K-opdatering">
  		<new_version_available>En ny version af Vita3K er tilgængelig.</new_version_available>
 		<back>Tilbage</back>
+ 		<cancel_update_resume>Ønsker du at afbryde opdateringen?
+Hvis du afbryder, vil Vita3K starte download fra dette punkt, næste gang du opdaterer.</cancel_update_resume>
 		<downloading>Downloader...
-Efter download er udført, vil Vita3K automatisk genstarte og derefter installere den nye Vita3K.</downloading>
+Efter download er udført, vil Vita3K automatisk genstarte og derefter installere den nye opdateringen.</downloading>
 		<not_complete_update>Kunne ikke udføre opdateringen.</not_complete_update>
+		<minutes_left>{} minutter tilbage</minutes_left>
 		<next>Næste</next>
+		<seconds_left>{} sekunder tilbage</seconds_left>
 		<update_vita3k>Ønsker du at opdatere Vita3K?</update_vita3k>
 		<later_version_already_installed>Den senere version af Vita3K er allerede installeret.</later_version_already_installed>
 		<latest_version_already_installed>Den seneste version af Vita3K er allerede installeret.</latest_version_already_installed>

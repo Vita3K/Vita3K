@@ -427,10 +427,14 @@ Weet je zeker dat je doorgaan?</user_delete_warn>
 	<vita3k_update name="Vita3K-update">
  		<new_version_available>Een nieuwe versie van Vita3K is beschikbaar.</new_version_available>
 		<back>Terug</back>
+ 		<cancel_update_resume>Wil je de update annuleren?
+Als je annuleert zet het Vita3K bij de volgende update het downloaden verder vanaf dit punt.</cancel_update_resume>
 		<downloading>Bezig met downloaden...
-Nadat het downloaden is voltooid, Vita3K automatisch opnieuw gestart en wordt de nieuwe Vita3K geïnstalleerd.</downloading>
+Nadat het downloaden is voltooid, Vita3K automatisch opnieuw gestart en wordt de nieuwe update geïnstalleerd.</downloading>
 		<not_complete_update>Kan de update niet voltooien.</not_complete_update>
+		<minutes_left>{} minuten resterend</minutes_left>
 		<next>Volgende</next>
+		<seconds_left>{} seconden resterend</seconds_left>
 		<update_vita3k>Wil je Vita3K updaten?</update_vita3k>
 		<later_version_already_installed>Een recentere versie van Vita3K is al geïnstalleerd.</later_version_already_installed>
 		<latest_version_already_installed>De meest recente versie van Vita3K is al geïnstalleerd.</latest_version_already_installed>

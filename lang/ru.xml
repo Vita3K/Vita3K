@@ -428,10 +428,14 @@ depending on its size and your hardware.</app_delete_note>
 	<vita3k_update name="Обновление Vita3K">
  		<new_version_available>Доступна новая версия Vita3K.</new_version_available>
 		<back>Назад</back>
+ 		<cancel_update_resume>Отменить обновление?
+Если отменить обновление, то при следующем его запуске Vita3K начнет загрузку с этой точки.</cancel_update_resume>
 		<downloading>Идет загрузка...
-После завершения загрузки Vita3K автоматически перезапустится и установит новую версию.</downloading>
+После завершения загрузки Vita3K автоматически перезапустится и установит новую обновление.</downloading>
 		<not_complete_update>Не удалось завершить обновление.</not_complete_update>
+		<minutes_left>Осталось минут: {}</minutes_left>
 		<next>Далее</next>
+		<seconds_left>Осталось секунд: {}</seconds_left>
 		<update_vita3k>Обновить Vita3K?</update_vita3k>
 		<later_version_already_installed>Более поздняя версия Vita3K уже установлена.</later_version_already_installed>
 		<latest_version_already_installed>Установлена последняя версия Vita3K.</latest_version_already_installed>

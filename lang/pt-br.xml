@@ -427,10 +427,14 @@ Tem certeza de que deseja continuar?</user_delete_warn>
 	<vita3k_update name="Atualização Vita3K">
  		<new_version_available>Uma nova versão Vita3K está disponível.</new_version_available>
 		<back>Voltar</back>
+ 		<cancel_update_resume>Deseja cancelar a atualização?
+Se cancelar a operação, na próxima atualização, o Vita3K iniciará o download desse ponto.</cancel_update_resume>
 		<downloading>Fazendo download...
-Quando o download terminar, Vita3K será reiniciado automaticamente e o novo Vita3K será instalado.</downloading>
+Quando o download terminar, Vita3K será reiniciado automaticamente e o novo atualização será instalado.</downloading>
 		<not_complete_update>Não foi possível concluir a atualização.</not_complete_update>
+		<minutes_left>Faltam {} minutos</minutes_left>
 		<next>Próximo</next>
+		<seconds_left>Faltam {} segundos</seconds_left>
 		<update_vita3k>Deseja atualizar o Vita3K?</update_vita3k>
 		<later_version_already_installed>A versão posterior Vita3K já está instalada.</later_version_already_installed>
 		<latest_version_already_installed>A versão mais recente Vita3K já está instalada.</latest_version_already_installed>

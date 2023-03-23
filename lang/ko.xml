@@ -433,10 +433,14 @@ Your Vita3K system is ready!</completed_setup>
 	<vita3k_update name="Vita3K 업데이트">
  		<new_version_available>새 버전의 Vita3K 있습니다.</new_version_available>
 		<back>돌아가기</back>
+ 		<cancel_update_resume>업데이트를 취소하시겠습니까?
+취소한 경우 다음에 업데이트할 때는 이 지점부터 계속하여 다운로드합니다.</cancel_update_resume>
 		<downloading>다운로드 중입니다...
-다운로드 후에 Vita3K 자동으로 재기동하여 새로운 Vita3K를 설치합니다.</downloading>
+다운로드 후에 Vita3K 자동으로 재기동하여 새로운 업데이트를 설치합니다.</downloading>
 		<not_complete_update>업데이트하지 못했습니다.</not_complete_update>
+		<minutes_left>남은 시간 {} 분</minutes_left>
 		<next>다음</next>
+		<seconds_left>남은 시간 {} 초</seconds_left>
 		<update_vita3k>Vita3K를 업데이트하시겠습니까?</update_vita3k>
 		<later_version_already_installed>새 버전의 Vita3K가 설치되어 있습니다.</later_version_already_installed>
 		<latest_version_already_installed>최신 버전의 Vita3K가 설치되어 있습니다.</latest_version_already_installed>
