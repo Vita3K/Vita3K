@@ -793,8 +793,11 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Spacing();
                 ImGui::Separator();
                 ImGui::Spacing();
-                if (ImGui::MenuItem(gui.lang.indicator["delete_all"].c_str()))
-                    fs::remove_all(TROPHY_PATH);
+                if (ImGui::MenuItem(gui.lang.indicator["delete_all"].c_str())) {
+                    if (fs::remove_all(TROPHY_PATH)) {
+                        LOG_INFO("Delete all trophies successfully.");
+                    }
+                }
             } else {
                 if (ImGui::MenuItem(lang["original"].c_str(), nullptr, trophy_sort == "original")) {
                     std::sort(trophy_list.begin(), trophy_list.end(), [](const auto &ta, const auto &tb) {
