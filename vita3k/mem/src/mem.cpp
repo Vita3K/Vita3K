@@ -395,7 +395,7 @@ void open_access_parent_protect_segment(MemState &state, Address addr) {
     auto ite = state.protect_tree.lower_bound(addr);
 
     if (ite != state.protect_tree.end() && addr < ite->first + ite->second.size) {
-        ite->second.ref_count;
+        ite->second.ref_count++;
     } else {
         ProtectSegmentInfo protect(0, MemPerm::ReadWrite);
         protect.ref_count = 1;
