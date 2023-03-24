@@ -657,8 +657,11 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
             find_mem_type_with_flag(vk::MemoryPropertyFlagBits::eHostCoherent);
 
         if (mapped_memory_type == -1) {
-            LOG_CRITICAL("No coherent memory available for memory mapping, please report it to the devs!");
-            return false;
+            static bool has_happened = false;
+            LOG_CRITICAL_IF(!has_happened, "No coherent memory available for memory mapping, this may be caused by an old driver!");
+            has_happened = true;
+
+            mapped_memory_type = std::countr_zero(host_mem_props.memoryTypeBits);
         }
 
         vk::StructureChain<vk::MemoryAllocateInfo, vk::ImportMemoryHostPointerInfoEXT, vk::MemoryAllocateFlagsInfo> alloc_info{
