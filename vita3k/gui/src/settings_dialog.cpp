@@ -771,6 +771,16 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Reset Vita3K emulator path to the default.\nYou will need to move your old folder to the new location manually.");
         }
+        ImGui::Spacing();
+        ImGui::Separator();
+        ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize("Custom Config Settings").x / 2.f));
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Custom Config Settings");
+        ImGui::Spacing();
+        if (ImGui::Button("Clear Custom Config")) {
+            if (fs::remove_all({ fs::path(emuenv.base_path) / "config" })) {
+                LOG_INFO("Clear all custom config settings successfully.");
+            }
+        }
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
