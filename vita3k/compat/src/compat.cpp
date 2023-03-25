@@ -73,6 +73,13 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     for (const auto &app : doc.child("compatibility")) {
         const std::string title_id = app.attribute("title_id").as_string();
         const auto issue_id = app.child("issue_id").text().as_uint();
+
+        // Check if title ID is valid
+        if ((title_id.find("PCS") == std::string::npos) && (title_id != "NPXS10007")) {
+            LOG_WARN("title ID {} is invalid. Please check GitHub issue {} and verify it!", title_id, issue_id);
+            continue;
+        }
+
         auto state = CompatibilityState::Unknown;
         const auto labels = app.child("labels");
         if (!labels.empty()) {
@@ -92,6 +99,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         }
         const auto updated_at = app.child("updated_at").text().as_llong();
 
+        // Check if app missing a status label
         if (state == Unknown)
             LOG_WARN("App with title ID {} has an issue but no status label. Please check GitHub issue {} and request a status label to be added.", title_id, issue_id);
 
