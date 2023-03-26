@@ -390,8 +390,8 @@ Please download and install it.</no_font_exist>
 			<copy_paste_zrif>使用Ctrl（Cmd）+ C複製，使用Ctrl（Cmd）+ V貼上。</copy_paste_zrif>
 			<delete_pkg>刪除pkg檔案？</delete_pkg>
 			<delete_work>刪除work.bin檔案？</delete_work>
-			<failed_install_pkg>無法安裝該包。
-請檢查pkg以及work.bin檔案或zRIF金鑰。</failed_install_pkg>
+			<failed_install_package>無法安裝該包。
+請檢查pkg以及work.bin檔案或zRIF金鑰。</failed_install_package>
 		</pkg_install>
 		<archive_install>
 			<select_install_type>選擇安裝類型</select_install_type>
