@@ -803,6 +803,15 @@ int remove_dir(IOState &io, const char *dir, const std::wstring &pref_path, cons
     return 0;
 }
 
+static std::string standardize_path(std::string_view path) {
+    // replace app0:... by app0:/...
+    bool start_with_app0 = path.starts_with("app0:");
+    if (start_with_app0 && path.size() >= 6 && path[5] != '/')
+        return "app0:/" + std::string(path.substr(5));
+    else
+        return std::string(path);
+}
+
 SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay) {
     std::lock_guard<std::mutex> lock(io.overlay_mutex);
 
@@ -811,8 +820,8 @@ SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay) {
         .type = fios_overlay->type,
         .order = fios_overlay->order,
         .process_id = fios_overlay->process_id,
-        .dst = std::string(fios_overlay->dst),
-        .src = std::string(fios_overlay->src)
+        .dst = standardize_path(fios_overlay->dst),
+        .src = standardize_path(fios_overlay->src)
     };
 
     // find location where to put it
@@ -829,7 +838,7 @@ SceUID create_overlay(IOState &io, SceFiosProcessOverlay *fios_overlay) {
 std::string resolve_path(IOState &io, const char *input, const bool is_write, const SceUInt32 min_order, const SceUInt32 max_order) {
     std::lock_guard<std::mutex> lock(io.overlay_mutex);
 
-    std::string curr_path = std::string(input);
+    std::string curr_path = input;
 
     int overlay_idx = 0;
     while (overlay_idx < io.overlays.size() && io.overlays[overlay_idx].order < min_order)
