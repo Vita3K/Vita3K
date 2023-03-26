@@ -131,6 +131,7 @@ struct GxmRecordState {
     SceGxmFragmentProgramMode back_side_fragment_program_mode = SCE_GXM_FRAGMENT_PROGRAM_ENABLED;
 
     bool is_maskupdate = false;
+    bool is_gamma_corrected = false;
 
     // Do not put any state not used for the Vulkan pipeline creation before vertex_streams
     std::array<GXMStreamInfo, SCE_GXM_MAX_VERTEX_STREAMS> vertex_streams;
