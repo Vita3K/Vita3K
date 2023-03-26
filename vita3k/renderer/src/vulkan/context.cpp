@@ -90,6 +90,7 @@ void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, co
     SceGxmColorSurface *color_surface_fin = &context.record.color_surface;
     // set these values for the pipeline cache
     context.record.color_base_format = gxm::get_base_format(color_surface_fin->colorFormat);
+    context.record.is_gamma_corrected = static_cast<bool>(color_surface_fin->gamma);
     vk::Format vk_format = color::translate_format(context.record.color_base_format);
 
     if (color_surface_fin->gamma && (vk_format == vk::Format::eR8G8B8A8Unorm)) {
