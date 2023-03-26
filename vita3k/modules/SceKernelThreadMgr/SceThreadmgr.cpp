@@ -1006,10 +1006,19 @@ EXPORT(int, sceKernelDelayThreadCB200, SceUInt delay) {
     return delay_thread_cb(emuenv, thread_id, delay);
 }
 
-EXPORT(int, sceKernelDeleteCallback) {
-    TRACY_FUNC(sceKernelDeleteCallback);
-    // TODO
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelDeleteCallback, SceUID callbackId) {
+    TRACY_FUNC(sceKernelDeleteCallback, callbackId);
+    const CallbackPtr cb = lock_and_find(callbackId, emuenv.kernel.callbacks, emuenv.kernel.mutex);
+    if (!cb)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_CALLBACK_ID);
+    auto cb_owner_thread = emuenv.kernel.get_thread(cb->get_owner_thread_id());
+    std::lock_guard lock(emuenv.kernel.mutex);
+    emuenv.kernel.callbacks.erase(callbackId);
+    if (cb_owner_thread) {
+        auto &v = cb_owner_thread->callbacks;
+        v.erase(std::remove(v.begin(), v.end(), cb), v.end());
+    }
+    return 0;
 }
 
 EXPORT(int, sceKernelDeleteCond, SceUID condition_variable_id) {
