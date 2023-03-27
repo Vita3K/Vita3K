@@ -355,7 +355,8 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                                 const std::map<std::string, std::string> replace_map = {
                                     { "#", "%23" },
                                     { "&", "%26" },
-                                    { "+", "%2B" }
+                                    { "+", "%2B" },
+                                    { ";", "%3B" }
                                     // Add other replacement associations here if necessary.
                                 };
 
