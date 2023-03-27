@@ -349,7 +349,7 @@ static void unpackModulations(const PVRTCWord &word, const PVRTCWord &nwWord, in
                     if (isII && hardTransitionBit && (y + offsetY >= 2) && (y + offsetY <= 5)
                         && (x + offsetX >= 2) && (x + offsetX <= 5)) {
                         // Use palette built up
-                        i32ModulationValues += 30;
+                        i32ModulationValues[y + offsetY][x + offsetX] += 30;
                     } else {
                         // if (i32ModulationValues==0) {}. We don't need to check 0, 0 = 0/8.
                         if (i32ModulationValues[y + offsetY][x + offsetX] == 1) {
