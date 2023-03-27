@@ -281,56 +281,25 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 	<live_area>
 		<start>Başlat</start>
 		<continue>Devam</continue>
-		<help>
-			<control_setting>Using configuration set for keyboard in control setting</control_setting>
-			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
-			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
-			<live_area_help>Live Area Help</live_area_help>
-			<browse_app>Browse in app list</browse_app>
-			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
-			<start_app>Start App</start_app>
-			<start_app_control>Click on Start or Press on Cross</start_app_control>
-			<show_hide>Show/Hide Live Area during app run</show_hide>
-			<show_hide_control>Press on PS</show_hide_control>
-			<exit_livearea>Exit Live Area</exit_livearea>
-			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
-			<manual_help>Manual Help</manual_help>
-			<browse_page>Browse page</browse_page>
-			<browse_page_control>D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on</browse_page_control>
-			<hide_show>Hide/Show button</hide_show>
-			<hide_show_control>Right Click</hide_show_control>
-			<zoom_available>Zoom if available</zoom_available>
-			<zoom_available_control>Double Left Click</zoom_available_control>
-			<scroll_zoom>Scroll in zoom</scroll_zoom>
-			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual</exit_manual>
-			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
-		</help>
 	</live_area>
 
 	<settings name="Ayarlar">
 		<theme_background name="Tema & Arkaplan">
 			<default>Varsayılan</default>
 			<theme name="Tema">
-				<search>Search</search>
-				<find_in_altervista>Altervista'da Bul</find_in_altervista>
 				<information name="Bilgi">
 					<name>Ad</name>
 					<provider>Sağlayıcı</provider>
 					<updated>Güncelleme Tarihi</updated>
 					<size>Boyut</size>
 					<version>Sürüm</version>
-					<content_id>Content ID</content_id>
 				</information>
 				<delete>Bu tema silinecek.</delete>
 			</theme>
 			<start_screen name="Başlangıç Ekranı">
 				<image>Görüntü</image>
-				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Giriş Ekranı Arka Planları">
-				<delete_background>Delete Background</delete_background>
-				<add_background>Add Background</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Tarih & Saat">
@@ -372,9 +341,6 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 	</settings>
 
 	<trophy_collection>
-		<search>Search</search>
-		<delete_trophy>Delete Trophy</delete_trophy>
-		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Ayrıntılı Bilgi</details>
 		<earned>Kazanıldığı Tarih</earned>
 		<name>Ad</name>
@@ -394,7 +360,6 @@ Kupa özelliğini destekleyen bir uygulamayı kullanarak kupa kazanabilirsiniz.<
 		<create_user>Kullanıcı Oluştur</create_user>
 		<user_created>Şu kullanıcı oluşturuldu:</user_created>
 		<edit_user>Kullanıcı Düzenle</edit_user>
-		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>Bu isim zaten kullanılıyor.</user_name_used>
 		<delete_user>Kullanıcıyı Sil</delete_user>
 		<user_delete>Silmek istediğiniz kullanıcıyı seçin.</user_delete>
@@ -426,8 +391,6 @@ Devam etmek istediğinizden emin misiniz?</user_delete_warn>
 		<later_version_already_installed>Vita3K sonraki sürümü önceden kuruldu.</later_version_already_installed>
 		<latest_version_already_installed>Vita3K en son sürümü önceden kuruldu.</latest_version_already_installed>
 		<new_features>%1 Sürümündeki Yeni Özellikler</new_features>
-		<authors>Authors</authors>
-		<comments>Comments</comments>
 		<update>Güncelle</update>
 		<version>Sürüm {}</version>
 	</vita3k_update>

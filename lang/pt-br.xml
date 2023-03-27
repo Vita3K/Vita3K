@@ -294,56 +294,25 @@ O seu sistema Vita3K está pronto!</completed_setup>
 	<live_area>
 		<start>Iniciar</start>
 		<continue>Continuar</continue>
-		<help>
-			<control_setting>Using configuration set for keyboard in control setting</control_setting>
-			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
-			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
-			<live_area_help>Live Area Help</live_area_help>
-			<browse_app>Browse in app list</browse_app>
-			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
-			<start_app>Start App</start_app>
-			<start_app_control>Click on Start or Press on Cross</start_app_control>
-			<show_hide>Show/Hide Live Area during app run</show_hide>
-			<show_hide_control>Press on PS</show_hide_control>
-			<exit_livearea>Exit Live Area</exit_livearea>
-			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
-			<manual_help>Manual Help</manual_help>
-			<browse_page>Browse page</browse_page>
-			<browse_page_control>D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on</browse_page_control>
-			<hide_show>Hide/Show button</hide_show>
-			<hide_show_control>Right Click</hide_show_control>
-			<zoom_available>Zoom if available</zoom_available>
-			<zoom_available_control>Double Left Click</zoom_available_control>
-			<scroll_zoom>Scroll in zoom</scroll_zoom>
-			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual</exit_manual>
-			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
-		</help>
 	</live_area>
 
 	<settings name="Configurações">
 		<theme_background name="Tema e fundo">
 			<default>Padrão</default>
 			<theme name="Tema">
-				<search>Search</search>
-				<find_in_altervista>Encontrar na Altervista</find_in_altervista>
 				<information name="Informações">
 					<name>Nome</name>
 					<provider>Provedor</provider>
 					<updated>Atualizado</updated>
 					<size>Tamanho</size>
 					<version>Versão</version>
-					<content_id>Content ID</content_id>
 				</information>
 				<delete>Esse tema será excluído.</delete>
 			</theme>
 			<start_screen name="Tela inicial">
 				<image>Imagem</image>
-				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Planos de fundo da tela principal">
-				<delete_background>Delete Background</delete_background>
-				<add_background>Add Background</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Data e hora">
@@ -385,9 +354,6 @@ O seu sistema Vita3K está pronto!</completed_setup>
 	</settings>
 
 	<trophy_collection>
-		<search>Search</search>
-		<delete_trophy>Delete Trophy</delete_trophy>
-		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Detalhes</details>
 		<earned>Conquistado</earned>
 		<name>Nome</name>
@@ -403,11 +369,9 @@ Você pode conquistar troféus usando um aplicativo compatível com o recurso de
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Select your user</select_user>
 		<create_user>Criar usuário</create_user>
 		<user_created>O usuários a seguir foi criado:</user_created>
 		<edit_user>Editar usuário</edit_user>
-		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>O nome já está sendo usado.</user_name_used>
 		<delete_user>Excluir usuário</delete_user>
 		<user_delete>Selecione o usuário que você deseja excluir.</user_delete>
@@ -417,11 +381,9 @@ Você pode conquistar troféus usando um aplicativo compatível com o recurso de
 Tem certeza de que deseja continuar?</user_delete_warn>
 		<user_deleted>Usuário excluído.</user_deleted>
 		<change_avatar>Alterar avatar</change_avatar>
-		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Nome</name>
 		<user>Usuario</user>
 		<confirm>Confirmar</confirm>
-		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Atualização Vita3K">
@@ -439,8 +401,6 @@ Quando o download terminar, Vita3K será reiniciado automaticamente e o novo atu
 		<later_version_already_installed>A versão posterior Vita3K já está instalada.</later_version_already_installed>
 		<latest_version_already_installed>A versão mais recente Vita3K já está instalada.</latest_version_already_installed>
 		<new_features>Novos recursos da versão {}</new_features>
-		<authors>Authors</authors>
-		<comments>Comments</comments>
 		<update>Atualizar</update>
 		<version>Versão {}</version>
 	</vita3k_update>

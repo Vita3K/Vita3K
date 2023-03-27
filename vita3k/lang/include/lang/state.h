@@ -392,7 +392,7 @@ struct LangState {
                 std::map<std::string, std::string> main = {
                     { "title", "Theme" },
                     { "search", "Search" },
-                    { "find_in_altervista", "Find in Altervista" },
+                    { "find_a_psvita_custom_themes", "Find a PSVita Custom Themes" },
                     { "delete", "This theme will be deleted." }
                 };
                 std::map<std::string, std::string> information = {

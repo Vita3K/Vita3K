@@ -294,56 +294,25 @@ Je Vita3K-systeem is gereed!</completed_setup>
 	<live_area>
 		<start>Starten</start>
 		<continue>Doorgaan</continue>
-		<help>
-			<control_setting>Using configuration set for keyboard in control setting</control_setting>
-			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
-			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
-			<live_area_help>Live Area Help</live_area_help>
-			<browse_app>Browse in app list</browse_app>
-			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
-			<start_app>Start App</start_app>
-			<start_app_control>Click on Start or Press on Cross</start_app_control>
-			<show_hide>Show/Hide Live Area during app run</show_hide>
-			<show_hide_control>Press on PS</show_hide_control>
-			<exit_livearea>Exit Live Area</exit_livearea>
-			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
-			<manual_help>Manual Help</manual_help>
-			<browse_page>Browse page</browse_page>
-			<browse_page_control>D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on</browse_page_control>
-			<hide_show>Hide/Show button</hide_show>
-			<hide_show_control>Right Click</hide_show_control>
-			<zoom_available>Zoom if available</zoom_available>
-			<zoom_available_control>Double Left Click</zoom_available_control>
-			<scroll_zoom>Scroll in zoom</scroll_zoom>
-			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual</exit_manual>
-			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
-		</help>
 	</live_area>
 
 	<settings name="Instellingen">
 		<theme_background name="Thema en achtergrond">
 			<default>Standaard</default>
 			<theme name="Thema">
-				<search>Search</search>
-				<find_in_altervista>Zoeken in Altervista</find_in_altervista>
 				<information name="Informatie">
 					<name>Naam</name>
 					<provider>Provider</provider>
 					<updated>Geüpdatet</updated>
 					<size>Grootte</size>
 					<version>Versie</version>
-					<content_id>Content ID</content_id>
 				</information>
 				<delete>Dit thema wordt verwijderd.</delete>
 			</theme>
 			<start_screen name="Startscherm">
 				<image>Afbeelding</image>
-				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Achtergronden voor beginscherm">
-				<delete_background>Delete Background</delete_background>
-				<add_background>Add Background</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Datum en tijd">
@@ -385,9 +354,6 @@ Je Vita3K-systeem is gereed!</completed_setup>
 	</settings>
 
 	<trophy_collection>
-		<search>Search</search>
-		<delete_trophy>Delete Trophy</delete_trophy>
-		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Details</details>
 		<earned>Gewonnen</earned>
 		<name>Naam</name>
@@ -403,7 +369,6 @@ Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefuncti
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Select your user</select_user>
 		<create_user>Gebruiker maken</create_user>
 		<user_created>De volgende gebruiker is gemaakt:</user_created>
 		<edit_user>Gebruiker bewerken</edit_user>
@@ -417,11 +382,9 @@ Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefuncti
 Weet je zeker dat je doorgaan?</user_delete_warn>
 		<user_deleted>Gebruiker verwijderd.</user_deleted>
 		<change_avatar>Avatar wijzigen</change_avatar>
-		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Naam</name>
 		<user>Gebruiker</user>
 		<confirm>Bevestigen</confirm>
-		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Vita3K-update">
@@ -439,9 +402,6 @@ Nadat het downloaden is voltooid, Vita3K automatisch opnieuw gestart en wordt de
 		<later_version_already_installed>Een recentere versie van Vita3K is al geïnstalleerd.</later_version_already_installed>
 		<latest_version_already_installed>De meest recente versie van Vita3K is al geïnstalleerd.</latest_version_already_installed>
 		<new_features>Nieuwe functies in versie {}</new_features>
-		<authors>Authors</authors>
-		<comments>Comments</comments>
-		<update>Update</update>
 		<version>Versie {}</version>
 	</vita3k_update>
 </lang>

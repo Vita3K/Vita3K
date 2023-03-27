@@ -233,11 +233,11 @@ Code d'erreur: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Contrôleurs">
-		<connected>Controllers connected</connected>
+		<connected>Contrôleurs connectés</connected>
 		<name>Nom</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
+		<not_connected>Aucun contrôleur compatible n'est connecté.
+Connecter un contrôleur compatible avec SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -321,7 +321,7 @@ Votre système Vita3K est prêt !</completed_setup>
 			<start_app>Démarrer App</start_app>
 			<start_app_control>Cliquer sur Démarrer ou Appuyer sur Croix</start_app_control>
 			<show_hide>Show/Hide Live Area during app run</show_hide>
-			<show_hide_control>Press on PS</show_hide_control>
+			<show_hide_control>Appuyer sur PS</show_hide_control>
 			<exit_livearea>Exit Live Area</exit_livearea>
 			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
 			<manual_help>Manual Help</manual_help>
@@ -342,8 +342,8 @@ Votre système Vita3K est prêt !</completed_setup>
 		<theme_background name="Thème et Arrière-plan">
 			<default>Par défaut</default>
 			<theme name="Thème">
-				<search>Search</search>
-				<find_in_altervista>Trouver dans Altervista</find_in_altervista>
+				<search>Recherche</search>
+				<find_a_psvita_custom_themes>Trouver un thème personnalisé pour PSVita</find_a_psvita_custom_themes>
 				<information name="Informations">
 					<name>Nom</name>
 					<provider>Prestataire</provider>
@@ -356,7 +356,7 @@ Votre système Vita3K est prêt !</completed_setup>
 			</theme>
 			<start_screen name="Écran de démarrage">
 				<image>Image</image>
-				<add_image>Add Image</add_image>
+				<add_image>Ajouter une image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Arrière-plans d'écran d'accueil">
 				<delete_background>Delete Background</delete_background>
@@ -402,9 +402,9 @@ Votre système Vita3K est prêt !</completed_setup>
 	</settings>
 
 	<trophy_collection>
-		<search>Search</search>
-		<delete_trophy>Delete Trophy</delete_trophy>
-		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
+		<search>Recherche</search>
+		<delete_trophy>Supprimer le trophée</delete_trophy>
+		<trophy_deleted>Les informations sur les trophées enregistrées pour cet utilisateur seront supprimées.</trophy_deleted>
 		<details>Détails</details>
 		<earned>Obtenu</earned>
 		<name>Nom</name>
@@ -420,11 +420,11 @@ Pour obtenir des trophées, utilisez une application compatible avec cette fonct
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Select your user</select_user>
+		<select_user>Sélectionnez votre utilisateur</select_user>
 		<create_user>Créer un utilisateur</create_user>
 		<user_created>L'utilisateur suivant a été créés :</user_created>
 		<edit_user>Modifier un utilisateur</edit_user>
-		<open_user_folder>Open User Folder</open_user_folder>
+		<open_user_folder>Ouvrir le dossier de l'utilisateur</open_user_folder>
 		<user_name_used>! Ce nom est déjà utilisé.</user_name_used>
 		<delete_user>Supprimer un utilisateur</delete_user>
 		<user_delete>Sélectionnez l'utilisateur que vous souhaitez supprimer.</user_delete>
@@ -434,11 +434,11 @@ Pour obtenir des trophées, utilisez une application compatible avec cette fonct
 Voulez-vous vraiment continuer?</user_delete_warn>
 		<user_deleted>Utilisateur supprimé.</user_deleted>
 		<change_avatar>Changer d'avatar</change_avatar>
-		<reset_avatar>Reset Avatar</reset_avatar>
+		<reset_avatar>Réinitialiser l'avatar</reset_avatar>
 		<name>Nom</name>
 		<user>Utilisateur</user>
 		<confirm>Confirmer</confirm>
-		<automatic_user_login>Automatic User Login</automatic_user_login>
+		<automatic_user_login>Connexion automatique de l'utilisateur</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Mise à jour Vita3K">

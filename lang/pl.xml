@@ -280,39 +280,12 @@ System Vita3K jest gotowy!</completed_setup>
 	<live_area>
 		<start>Rozpocznij</start>
 		<continue>Kontynuuj</continue>
-		<help>
-			<control_setting>Using configuration set for keyboard in control setting</control_setting>
-			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
-			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
-			<live_area_help>Live Area Help</live_area_help>
-			<browse_app>Browse in app list</browse_app>
-			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
-			<start_app>Start App</start_app>
-			<start_app_control>Click on Start or Press on Cross</start_app_control>
-			<show_hide>Show/Hide Live Area during app run</show_hide>
-			<show_hide_control>Press on PS</show_hide_control>
-			<exit_livearea>Exit Live Area</exit_livearea>
-			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
-			<manual_help>Manual Help</manual_help>
-			<browse_page>Browse page</browse_page>
-			<browse_page_control>D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on</browse_page_control>
-			<hide_show>Hide/Show button</hide_show>
-			<hide_show_control>Right Click</hide_show_control>
-			<zoom_available>Zoom if available</zoom_available>
-			<zoom_available_control>Double Left Click</zoom_available_control>
-			<scroll_zoom>Scroll in zoom</scroll_zoom>
-			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual</exit_manual>
-			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
-		</help>
 	</live_area>
 	
 	<settings name="Ustawienia">
 		<theme_background name="Motyw i tło">
 			<default>Domyślnie</default>
 			<theme name="Motyw">
-				<search>Search</search>
-				<find_in_altervista>Znajdź w sklepie Altervista</find_in_altervista>
 				<information name="Informacje">
 					<name>Nazwa</name>
 					<provider>Dostawca</provider>
@@ -325,7 +298,6 @@ System Vita3K jest gotowy!</completed_setup>
 			</theme>
 			<start_screen name="Ekran startowy">
 				<image>Obraz</image>
-				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Tło ekranu głównego">
 			</home_screen_backgrounds>
@@ -369,9 +341,6 @@ System Vita3K jest gotowy!</completed_setup>
 	</settings>
 
 	<trophy_collection>
-		<search>Search</search>
-		<delete_trophy>Delete Trophy</delete_trophy>
-		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Szczegóły</details>
 		<earned>Zdobyto</earned>
 		<name>Nazwa</name>
@@ -387,11 +356,8 @@ Trofea można zdobywać, korzystając z aplikacji obsługującej funkcję trofe�
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Select your user</select_user>
 		<create_user>Utwórz użytkownika</create_user>
 		<user_created>Został utworzony następujący użytkownik:</user_created>
-		<edit_user>Edit User</edit_user>
-		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>Ta nazwa jest już używana.</user_name_used>
 		<delete_user>Usuń użytkownika</delete_user>
 		<user_delete>Wybierz użytkownika, którego chcesz usunąć.</user_delete>
@@ -401,7 +367,6 @@ Trofea można zdobywać, korzystając z aplikacji obsługującej funkcję trofe�
 Czy na pewno chcesz kontynuować?</user_delete_warn>
 		<user_deleted>Usunięto użytkownika.</user_deleted>
 		<change_avatar>Zmień awatara</change_avatar>
-		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Nazwa</name>
 		<user>Uzytkownik</user>
 		<confirm>Potwierdź</confirm>
@@ -423,8 +388,6 @@ Po ukończeniu pobierania Vita3K zostanie automatycznie ponownie uruchomiony, a 
 		<later_version_already_installed>Zainstalowana jest już nowsza wersja Vita3K.</later_version_already_installed>
 		<latest_version_already_installed>Najnowsza wersja Vita3K jest już zainstalowana.</latest_version_already_installed>
 		<new_features>Nowe funkcje w wersji {}</new_features>
-		<authors>Authors</authors>
-		<comments>Comments</comments>
 		<update>Aktualizuj</update>
 		<version>Wersja {}</version>
 	</vita3k_update>

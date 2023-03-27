@@ -445,19 +445,12 @@ Vita3Kをお楽しみください。</completed_setup>
 		</help>
 	</live_area>
 
-	<performance_overlay>
-		<fps>FPS</fps>
-		<avg>Avg</avg>
-		<min>Min</min>
-		<max>Max</max>
-	</performance_overlay>
-
 	<settings name="設定">
 		<theme_background name="テーマ&背景">
 			<default>デフォルト</default>
 			<theme name="テーマ">
 				<search>検索</search>
-				<find_in_altervista>Altervistaで探す</find_in_altervista>
+				<find_a_psvita_custom_themes>PSVita用カスタムテーマを探す</find_a_psvita_custom_themes>
 				<information name="情報">
 					<name>名前</name>
 					<provider>提供者</provider>
