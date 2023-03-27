@@ -38,9 +38,6 @@ if(NOT CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	endif()
 endif()
 
-# Define the Architecture variable, right now it should only contain "x86_64" or "arm64"
-include("dynarmic/CMakeModules/DetectArchitecture.cmake")
-
 option(CAPSTONE_BUILD_SHARED "Build shared library" OFF)
 option(CAPSTONE_BUILD_TESTS "Build tests" OFF)
 option(CAPSTONE_BUILD_CSTOOL "Build cstool" OFF)

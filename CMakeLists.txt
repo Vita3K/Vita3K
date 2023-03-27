@@ -31,6 +31,19 @@ endif()
 
 enable_testing()
 
+# Define the Architecture variable, right now it should only contain "x86_64" or "arm64"
+include("external/dynarmic/CMakeModules/DetectArchitecture.cmake")
+# Enable AVX on x86_64
+if(ARCHITECTURE STREQUAL "x86_64")
+    if(MSVC)
+        string(APPEND CMAKE_C_FLAGS " /arch:AVX")
+        string(APPEND CMAKE_CXX_FLAGS " /arch:AVX")
+    else()
+        string(APPEND CMAKE_C_FLAGS " -mavx -mf16c")
+        string(APPEND CMAKE_CXX_FLAGS " -mavx -mf16c")
+    endif()
+endif()
+
 ############################
 ########## Boost ###########
 ############################
