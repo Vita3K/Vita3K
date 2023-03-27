@@ -186,6 +186,14 @@ void open_user(GuiState &gui, EmuEnvState &emuenv) {
         init_theme_start_background(gui, emuenv, gui.users[emuenv.io.user_id].theme_id);
 
     gui.vita_area.start_screen = true;
+
+#ifdef USE_VITA3K_UPDATE
+    std::thread update_vita3k_thread([&gui]() {
+        if (init_vita3k_update(gui))
+            gui.help_menu.vita3k_update = true;
+    });
+    update_vita3k_thread.detach();
+#endif
 }
 
 static auto get_users_index(GuiState &gui, const std::string &user_name) {
