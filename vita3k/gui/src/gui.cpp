@@ -710,14 +710,6 @@ void init(GuiState &gui, EmuEnvState &emuenv) {
 
     init_home(gui, emuenv);
 
-#ifdef USE_VITA3K_UPDATE
-    std::thread update_vita3k_thread([&gui]() {
-        if (init_vita3k_update(gui))
-            gui.help_menu.vita3k_update = true;
-    });
-    update_vita3k_thread.detach();
-#endif
-
     // Initialize trophy callback
     emuenv.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {
         const std::lock_guard<std::mutex> guard(gui.trophy_unlock_display_requests_access_mutex);
