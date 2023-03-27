@@ -305,23 +305,23 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
         const auto select = common["select"].c_str();
         if (menu.empty()) {
             title = theme_background.main["title"];
-            ImGui::SetWindowFontScale(1.2f);
             ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
             if (!themes_info.empty()) {
-                if (ImGui::Selectable(theme_background.theme.main["title"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, SIZE_SELECT)))
+                ImGui::SetWindowFontScale(0.74f);
+                const auto CALC_TITLE = ImGui::CalcTextSize(themes_info[gui.users[emuenv.io.user_id].theme_id].title.c_str(), 0, false, 230.f * SCALE.x).y;
+                const auto PAD_MARGIN = 40.f * SCALE.y;
+                const auto THEME_SELECT_SIZE = CALC_TITLE + PAD_MARGIN > SIZE_SELECT ? CALC_TITLE + PAD_MARGIN : SIZE_SELECT;
+                ImGui::SetWindowFontScale(1.2f);
+                if (ImGui::Selectable(theme_background.theme.main["title"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, THEME_SELECT_SIZE)))
                     menu = "theme";
                 ImGui::SetWindowFontScale(0.74f);
-                const auto CALC_TITLE = ImGui::CalcTextSize(themes_info[gui.users[emuenv.io.user_id].theme_id].title.c_str(), 0, false, 260.f * SCALE.x).y / 2.f;
                 ImGui::SameLine(0, 420.f * SCALE.x);
-                const auto CALC_POS_TITLE = (SIZE_SELECT / 2.f) - CALC_TITLE;
+                const auto CALC_POS_TITLE = (THEME_SELECT_SIZE / 2.f) - (CALC_TITLE / 2.f);
                 ImGui::SetCursorPosY(CALC_POS_TITLE);
-                ImGui::PushTextWrapPos(SIZE_LIST.x);
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[gui.users[emuenv.io.user_id].theme_id].title.c_str());
-                ImGui::PopTextWrapPos();
-                ImGui::SetWindowFontScale(1.2f);
-                ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (CALC_POS_TITLE > 0 ? CALC_POS_TITLE : -CALC_POS_TITLE));
+                ImGui::TextWrapped("%s", themes_info[gui.users[emuenv.io.user_id].theme_id].title.c_str());
                 ImGui::Separator();
             }
+            ImGui::SetWindowFontScale(1.2f);
             if (ImGui::Selectable(theme_background.start_screen["title"].c_str(), false, ImGuiSelectableFlags_None, ImVec2(0.f, 80.f * SCALE.y)))
                 menu = "start";
             ImGui::Separator();
@@ -361,7 +361,6 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         const auto POS_IMAGE = ImGui::GetCursorPosY();
                         if (gui.themes_preview[theme.first].find(PACKAGE) != gui.themes_preview[theme.first].end())
                             ImGui::Image(gui.themes_preview[theme.first][PACKAGE], SIZE_PACKAGE);
-                        const auto POS_TITLE = ImGui::GetCursorPosY();
                         ImGui::SetCursorPosY(POS_IMAGE);
                         ImGui::PushID(theme.first.c_str());
                         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
@@ -374,14 +373,15 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                         ImGui::PopStyleVar();
                         ImGui::PopID();
                         ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + SIZE_PACKAGE.x);
-                        ImGui::SetCursorPosY(POS_TITLE);
                         ImGui::TextColored(GUI_COLOR_TEXT, "%s", themes_info[theme.first].title.c_str());
                         ImGui::PopTextWrapPos();
                         ImGui::NextColumn();
                     }
                     if (ImGui::Selectable("##download_theme", true, ImGuiSelectableFlags_None, SIZE_PACKAGE))
-                        open_path("https://psv.altervista.org/");
-                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", theme.main["find_in_altervista"].c_str());
+                        open_path("https://psvt.ovh");
+                    ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + SIZE_PACKAGE.x);
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", theme.main["find_a_psvita_custom_themes"].c_str());
+                    ImGui::PopTextWrapPos();
                     ImGui::NextColumn();
                     ImGui::Columns(1);
                 } else {

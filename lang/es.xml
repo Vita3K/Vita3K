@@ -286,39 +286,12 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 	<live_area>
 		<start>Iniciar</start>
 		<continue>Continuar</continue>
-		<help>
-			<control_setting>Using configuration set for keyboard in control setting</control_setting>
-			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
-			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
-			<live_area_help>Live Area Help</live_area_help>
-			<browse_app>Browse in app list</browse_app>
-			<browse_app_control>D-pad, Left Stick, Wheel in Up/Down or using Slider</browse_app_control>
-			<start_app>Start App</start_app>
-			<start_app_control>Click on Start or Press on Cross</start_app_control>
-			<show_hide>Show/Hide Live Area during app run</show_hide>
-			<show_hide_control>Press on PS</show_hide_control>
-			<exit_livearea>Exit Live Area</exit_livearea>
-			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
-			<manual_help>Manual Help</manual_help>
-			<browse_page>Browse page</browse_page>
-			<browse_page_control>D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on</browse_page_control>
-			<hide_show>Hide/Show button</hide_show>
-			<hide_show_control>Right Click</hide_show_control>
-			<zoom_available>Zoom if available</zoom_available>
-			<zoom_available_control>Double Left Click</zoom_available_control>
-			<scroll_zoom>Scroll in zoom</scroll_zoom>
-			<scroll_zoom_control>Wheel Up/Down</scroll_zoom_control>
-			<exit_manual>Exit Manual</exit_manual>
-			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
-		</help>
 	</live_area>
 
 	<settings name="Ajustes">
 		<theme_background name="Tema y Fondo">
 			<default>Predeterminado</default>
 			<theme name="Tema">
-				<search>Search</search>
-				<find_in_altervista>Buscar en Altervista</find_in_altervista>
 				<information name="Información">
 					<name>Nombre</name>
 					<provider>Proveedor</provider>
@@ -331,11 +304,8 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 			</theme>
 			<start_screen name="Pantalla inicial">
 				<image>Imagen</image>
-				<add_image>Add Image</add_image>
 			</start_screen>
 			<home_screen_backgrounds name="Fondos de la pantalla de inicio">
-				<delete_background>Delete Background</delete_background>
-				<add_background>Add Background</add_background>
 			</home_screen_backgrounds>
 		</theme_background>
 		<date_time name="Fecha y hora">
@@ -377,9 +347,6 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 	</settings>
 
 	<trophy_collection>
-		<search>Search</search>
-		<delete_trophy>Delete Trophy</delete_trophy>
-		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Detalles</details>
 		<earned>Ganado</earned>
 		<name>Nombre</name>
@@ -395,7 +362,6 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Select your user</select_user>
 		<create_user>Crear usuario</create_user>
 		<user_created>Se ha creado el siguiente usuario:</user_created>
 		<user_name_used>El nombre ya está en uso.</user_name_used>

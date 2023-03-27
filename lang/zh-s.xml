@@ -461,7 +461,7 @@ Please download and install it.</no_font_exist>
 			<default>原始</default>
 			<theme name="主题">
 				<search>搜索</search>
-				<find_in_altervista>在Altervista中寻找</find_in_altervista>
+				<find_a_psvita_custom_themes>寻找PSVita自制主题</find_a_psvita_custom_themes>
 				<information name="信息">
 					<name>名称</name>
 					<provider>提供者</provider>
