@@ -77,9 +77,9 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushFont(gui.vita_font);
     ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
     if (emuenv.cfg.performance_overlay_detail == PerfomanceOverleyDetail::MINIMUM)
-        ImGui::Text("%s: %d", lang["fps"].c_str(), emuenv.fps);
+        ImGui::Text("FPS: %d", emuenv.fps);
     else
-        ImGui::Text("%s: %d %s: %d", lang["fps"].c_str(), emuenv.fps, lang["avg"].c_str(), emuenv.avg_fps);
+        ImGui::Text("FPS: %d %s: %d", emuenv.fps, lang["avg"].c_str(), emuenv.avg_fps);
     if (emuenv.cfg.performance_overlay_detail >= PerfomanceOverleyDetail::MEDIUM) {
         ImGui::Separator();
         ImGui::Text("%s: %d %s: %d", lang["min"].c_str(), emuenv.min_fps, lang["max"].c_str(), emuenv.max_fps);

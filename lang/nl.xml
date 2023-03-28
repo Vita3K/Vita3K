@@ -402,6 +402,7 @@ Nadat het downloaden is voltooid, Vita3K automatisch opnieuw gestart en wordt de
 		<later_version_already_installed>Een recentere versie van Vita3K is al geïnstalleerd.</later_version_already_installed>
 		<latest_version_already_installed>De meest recente versie van Vita3K is al geïnstalleerd.</latest_version_already_installed>
 		<new_features>Nieuwe functies in versie {}</new_features>
+		<update>Update</update>
 		<version>Versie {}</version>
 	</vita3k_update>
 </lang>
