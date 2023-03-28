@@ -450,7 +450,6 @@ Please check work.bin/rif file or zRIF key.</failed_install_license>
 	</live_area>
 
 	<performance_overlay>
-		<fps>FPS</fps>
 		<avg>Avg</avg>
 		<min>Min</min>
 		<max>Max</max>

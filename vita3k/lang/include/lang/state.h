@@ -376,7 +376,6 @@ struct LangState {
     };
     LiveArea live_area;
     std::map<std::string, std::string> performance_overlay = {
-        { "fps", "FPS" },
         { "avg", "Avg" },
         { "min", "Min" },
         { "max", "Max" }

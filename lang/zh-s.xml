@@ -450,7 +450,6 @@ Please download and install it.</no_font_exist>
 	</live_area>
 
 	<performance_overlay>
-		<fps>帧数</fps>
 		<avg>平均</avg>
 		<min>最低</min>
 		<max>最高</max>
