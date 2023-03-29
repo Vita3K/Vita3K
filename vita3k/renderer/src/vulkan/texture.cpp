@@ -434,9 +434,9 @@ void upload_bound_texture(VKTextureCacheState &cache, SceGxmTextureBaseFormat ba
 
     const void *text_data = pixels;
     std::vector<uint8_t> temp_data;
-    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8) {
+    if (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8 || base_format == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8) {
         text_data = add_alpha_channel(pixels, pixels_per_stride, height, temp_data);
-        base_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
+        base_format = (base_format == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8) ? SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8 : SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8;
     }
 
     vk::DeviceSize upload_size;

@@ -661,6 +661,7 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
 
     // 3 components
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
     case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
     case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
         return translate_swizzle3(static_cast<SceGxmTextureSwizzle3Mode>(swizzle));
@@ -774,6 +775,10 @@ vk::Format translate_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV420P3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_YUV422:
         return vk::Format::eR8G8B8A8Unorm;
+
+    // Because of the lack of support of s8s8s8, an alpha channel is added to this texture
+    case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8:
+        return vk::Format::eR8G8B8A8Snorm;
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
         return vk::Format::eR4G4B4A4UnormPack16;

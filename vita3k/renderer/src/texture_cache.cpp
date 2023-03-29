@@ -96,6 +96,7 @@ bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt, bool 
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16
         || (is_vulkan && fmt == SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9);
