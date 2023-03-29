@@ -322,8 +322,8 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
 
     temp_buffer.clear();
 
-    state->samples_generated_since_key_on += decoded_size;
-    state->samples_generated_total += decoded_size;
+    state->samples_generated_since_key_on += decoded_size * params->channels;
+    state->samples_generated_total += decoded_size * params->channels;
     state->bytes_consumed_since_key_on += superframe_size;
     state->total_bytes_consumed += superframe_size;
 
