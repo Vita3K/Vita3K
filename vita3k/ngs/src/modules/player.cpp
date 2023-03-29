@@ -297,8 +297,8 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
     state->decoded_samples_pending -= samples_to_be_passed;
     state->decoded_samples_passed += samples_to_be_passed;
-    state->samples_generated_since_key_on += samples_to_be_passed;
-    state->samples_generated_total += samples_to_be_passed;
+    state->samples_generated_since_key_on += samples_to_be_passed * params->channels;
+    state->samples_generated_total += samples_to_be_passed * params->channels;
 
     if (finished) {
         state->samples_generated_since_key_on = 0;
