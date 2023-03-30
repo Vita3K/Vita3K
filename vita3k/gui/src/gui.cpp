@@ -312,8 +312,9 @@ static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::str
 
 void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) {
     IconData data = load_app_icon(gui, emuenv, app_path);
-
-    gui.app_selector.user_apps_icon[app_path].init(gui.imgui_state.get(), data.data.get(), data.width, data.height);
+    if (data.data) {
+        gui.app_selector.user_apps_icon[app_path].init(gui.imgui_state.get(), data.data.get(), data.width, data.height);
+    }
 }
 
 IconData::IconData()
@@ -322,8 +323,11 @@ IconData::IconData()
 void IconAsyncLoader::commit(GuiState &gui) {
     std::lock_guard<std::mutex> lock(mutex);
 
-    for (const auto &pair : icon_data)
-        gui.app_selector.user_apps_icon[pair.first].init(gui.imgui_state.get(), pair.second.data.get(), pair.second.width, pair.second.height);
+    for (const auto &pair : icon_data) {
+        if (pair.second.data) {
+            gui.app_selector.user_apps_icon[pair.first].init(gui.imgui_state.get(), pair.second.data.get(), pair.second.width, pair.second.height);
+        }
+    }
 
     icon_data.clear();
 }
