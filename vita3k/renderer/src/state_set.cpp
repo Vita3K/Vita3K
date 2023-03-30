@@ -343,7 +343,7 @@ COMMAND_SET_STATE(point_line_width) {
         break;
 
     case Backend::Vulkan:
-        vulkan::refresh_pipeline(*reinterpret_cast<vulkan::VKContext *>(render_context));
+        vulkan::sync_point_line_width(*reinterpret_cast<vulkan::VKContext *>(render_context), is_front);
         break;
 
     default:
