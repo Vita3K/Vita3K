@@ -167,7 +167,7 @@ void sync_point_line_width(VKContext &context, const bool is_front) {
     if (!context.is_recording)
         return;
 
-    if (is_front)
+    if (is_front && context.state.physical_device_features.wideLines)
         context.render_cmd.setLineWidth(static_cast<float>(context.record.line_width));
 }
 
