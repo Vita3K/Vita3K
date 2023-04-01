@@ -242,43 +242,48 @@ enum AppRegion {
     HOMEBREW,
 };
 
+constexpr compat::CompatibilityState ALL_COMPAT_STATE = static_cast<compat::CompatibilityState>(7);
+
 static AppRegion app_region = ALL;
+static compat::CompatibilityState app_compat_state = ALL_COMPAT_STATE;
+
 static bool app_filter(const std::string &app) {
-    const auto filter_app_region = [&](const std::vector<std::string> &app_region) {
-        const auto app_region_index = std::find_if(app_region.begin(), app_region.end(), [&](const std::string &a) {
+    const auto filter_app = [&](const std::vector<std::string> &app_region) {
+        const auto app_index = std::find_if(app_region.begin(), app_region.end(), [&](const std::string &a) {
             return app.find(a) != std::string::npos;
         });
-        return app_region_index == app_region.end();
+        return app_index == app_region.end();
     };
 
     switch (app_region) {
     case ALL:
         break;
     case USA:
-        if (filter_app_region({ "PCSA", "PCSE" }))
+        if (filter_app({ "PCSA", "PCSE" }))
             return true;
         break;
     case EURO:
-        if (filter_app_region({ "PCSF", "PCSB" }))
+        if (filter_app({ "PCSF", "PCSB" }))
             return true;
         break;
     case JAPAN:
-        if (filter_app_region({ "PCSC", "PCSG" }))
+        if (filter_app({ "PCSC", "PCSG" }))
             return true;
         break;
     case ASIA:
-        if (filter_app_region({ "PCSD", "PCSH" }))
+        if (filter_app({ "PCSD", "PCSH" }))
             return true;
         break;
     case COMMERCIAL:
-        if (filter_app_region({ "PCS" }))
+        if (filter_app({ "PCS" }))
             return true;
         break;
     case HOMEBREW:
-        if (!filter_app_region({ "PCS" }))
+        if (!filter_app({ "PCS" }))
             return true;
         break;
     }
+
     return false;
 }
 
@@ -528,11 +533,11 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
     if (ImGui::BeginPopup("app_filter")) {
+        ImGui::SetWindowFontScale(1.1f * VIEWPORT_RES_SCALE.x);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
-        if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_region == ALL))
-            app_region = ALL;
+        if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_region == ALL && app_compat_state == ALL_COMPAT_STATE))
+            app_region = AppRegion::ALL, app_compat_state = ALL_COMPAT_STATE;
         if (ImGui::BeginMenu(lang["by_region"].c_str())) {
-            ImGui::SetWindowFontScale(1.1f * VIEWPORT_RES_SCALE.x);
             if (ImGui::MenuItem(lang["usa"].c_str(), nullptr, app_region == USA))
                 app_region = USA;
             if (ImGui::MenuItem(lang["europe"].c_str(), nullptr, app_region == EURO))
@@ -548,6 +553,29 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
                 app_region = COMMERCIAL;
             if (ImGui::MenuItem(lang["homebrew"].c_str(), nullptr, app_region == HOMEBREW))
                 app_region = HOMEBREW;
+            ImGui::EndMenu();
+        }
+        if (ImGui::BeginMenu(lang["by_compatibility_state"].c_str())) {
+            if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_compat_state == ALL_COMPAT_STATE))
+                app_compat_state = ALL_COMPAT_STATE;
+            auto lang_compat = gui.lang.compatibility.states;
+            if (ImGui::MenuItem(lang_compat[compat::UNKNOWN].c_str(), nullptr, app_compat_state == compat::UNKNOWN))
+                app_compat_state = compat::UNKNOWN;
+            if (ImGui::MenuItem(lang_compat[compat::NOTHING].c_str(), nullptr, app_compat_state == compat::NOTHING))
+                app_compat_state = compat::NOTHING;
+            if (ImGui::MenuItem(lang_compat[compat::BOOTABLE].c_str(), nullptr, app_compat_state == compat::BOOTABLE))
+                app_compat_state = compat::BOOTABLE;
+            if (ImGui::MenuItem(lang_compat[compat::INTRO].c_str(), nullptr, app_compat_state == compat::INTRO))
+                app_compat_state = compat::INTRO;
+            if (ImGui::MenuItem(lang_compat[compat::MENU].c_str(), nullptr, app_compat_state == compat::MENU))
+                app_compat_state = compat::MENU;
+            if (ImGui::MenuItem(lang_compat[compat::INGAME_LESS].c_str(), nullptr, app_compat_state == compat::INGAME_LESS))
+                app_compat_state = compat::INGAME_LESS;
+            if (ImGui::MenuItem(lang_compat[compat::INGAME_MORE].c_str(), nullptr, app_compat_state == compat::INGAME_MORE))
+                app_compat_state = compat::INGAME_MORE;
+            if (ImGui::MenuItem(lang_compat[compat::PLAYABLE].c_str(), nullptr, app_compat_state == compat::PLAYABLE))
+                app_compat_state = compat::PLAYABLE;
+
             ImGui::EndMenu();
         }
         ImGui::PopStyleColor();
@@ -604,9 +632,15 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             bool selected = false;
             const auto is_not_sys_app = app.title_id.find("NPXS") == std::string::npos;
 
-            // Filter app by region and type
-            if (is_not_sys_app && app_filter(app.title_id))
-                continue;
+            if (is_not_sys_app) {
+                // Filter app by region and type
+                if (app_filter(app.title_id))
+                    continue;
+
+                // Filter commercial app by compatibility
+                if ((app_region != HOMEBREW) && (app_compat_state != ALL_COMPAT_STATE) && (app_compat_state != app.compat))
+                    continue;
+            }
 
             // Search app by title or title id
             if (!gui.app_search_bar.PassFilter(app.title.c_str()) && !gui.app_search_bar.PassFilter(app.title_id.c_str()))
@@ -650,7 +684,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
 
             // Draw the compatibility badge for commercial apps when they are within the visible area.
             if (element_is_within_visible_area && (app.title_id.find("PCS") != std::string::npos)) {
-                const auto compat_state = (gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(app.title_id) : false) ? gui.compat.app_compat_db[app.title_id].state : compat::Unknown;
+                const auto compat_state = (gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(app.title_id) : false) ? gui.compat.app_compat_db[app.title_id].state : compat::UNKNOWN;
                 const auto compat_state_vec4 = gui.compat.compat_color[compat_state];
                 const ImU32 compat_state_color = IM_COL32((int)(compat_state_vec4.x * 255.0f), (int)(compat_state_vec4.y * 255.0f), (int)(compat_state_vec4.z * 255.0f), (int)(compat_state_vec4.w * 255.0f));
                 const auto current_pos = ImGui::GetCursorPos();

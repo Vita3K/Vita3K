@@ -341,6 +341,7 @@ Do not power off the system or close the application.</warning_saving>
 		<by_type>By Type</by_type>
 		<commercial>Commercial</commercial>
 		<homebrew>Homebrew</homebrew>
+		<by_compatibility_state>By Compatibility State</by_compatibility_state>
 		<ver>Ver</ver>
 		<cat>Cat</cat>
 		<comp>Comp</comp>

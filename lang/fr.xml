@@ -282,6 +282,26 @@ Ne pas éteindre le système, ni fermer l'application.</warning_saving>
 		<data_delete>Données à supprimer :</data_delete>
 	</game_data>
 
+	<home_screen>
+		<filter>Filtre</filter>
+		<sort_app>Trier les applications par</sort_app>
+		<all>Toutes</all>
+		<by_region>Par région</by_region>
+		<usa>USA</usa>
+		<europe>Europe</europe>
+		<japan>Japon</japan>
+		<asia>Asie</asia>
+		<by_type>Par type</by_type>
+		<commercial>Commercial</commercial>
+		<homebrew>Homebrew</homebrew>
+		<by_compatibility_state>Par état de compatibilité</by_compatibility_state>
+		<ver>Ver</ver>
+		<cat>Cat</cat>
+		<comp>Comp</comp>
+		<last_time>Dernière fois</last_time>
+		<refresh>Rafraîchir</refresh>
+	</home_screen>
+
 	<indicator>
 		<app_added_home>L'application a été ajoutée à l'écran d'accueil.</app_added_home>
 		<delete_all>Supprimer tout</delete_all>
