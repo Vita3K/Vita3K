@@ -153,10 +153,10 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Text("%-16s    %-16s", lang["full_screen"].c_str(), "F11");
     ImGui::Text("%-16s    %-16s", lang["toggle_touch"].c_str(), "T");
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Toggles between back touch and screen touch.");
+        ImGui::SetTooltip("%s", lang["toggle_touch_note"].c_str());
     ImGui::Text("%-16s    %-16s", lang["toggle_gui_visibility"].c_str(), "G");
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Toggles between showing and hiding the GUI at the top of the screen while the app is running.");
+        ImGui::SetTooltip("%s", lang["toggle_gui_visibility_note"].c_str());
 
     const char *error_text = lang["error_duplicate_key"].c_str();
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
@@ -165,7 +165,7 @@ void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::NewLine();
         static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));
-        if (ImGui::Button(gui.lang.welcome["close"].c_str(), BUTTON_SIZE)) {
+        if (ImGui::Button(emuenv.common_dialog.lang.common["ok"].c_str(), BUTTON_SIZE)) {
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();

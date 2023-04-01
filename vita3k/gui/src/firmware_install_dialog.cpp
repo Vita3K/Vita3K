@@ -46,6 +46,7 @@ static void get_firmware_version(EmuEnvState &emuenv) {
 
 void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto lang = gui.lang.install_dialog.firmware_install;
+    auto firmware_installation = lang["firmware_installation"].c_str();
     auto common = emuenv.common_dialog.lang.common;
 
     host::dialog::filesystem::Result result = host::dialog::filesystem::Result::CANCEL;
@@ -83,8 +84,8 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     if (!finished_installing) {
-        ImGui::OpenPopup("Firmware Installation");
-        if (ImGui::BeginPopupModal("Firmware Installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::OpenPopup(firmware_installation);
+        if (ImGui::BeginPopupModal(firmware_installation, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["firmware_installing"].c_str());
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
             ImGui::SetCursorPosX((ImGui::GetWindowContentRegionWidth() / 2) - (150 / 2) + 10);
@@ -95,8 +96,8 @@ void draw_firmware_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
     } else {
         static const auto BUTTON_SIZE = ImVec2(60.f, 0.f);
 
-        ImGui::OpenPopup("Firmware Installation");
-        if (ImGui::BeginPopupModal("Firmware Installation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::OpenPopup(firmware_installation);
+        if (ImGui::BeginPopupModal(firmware_installation, nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["successed_install_firmware"].c_str());
             if (!fw_version.empty())
                 ImGui::TextColored(GUI_COLOR_TEXT, "%s %s", lang["firmware_version"].c_str(), fw_version.c_str());

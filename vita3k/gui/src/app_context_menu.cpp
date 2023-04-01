@@ -466,13 +466,13 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             }
             if (ImGui::BeginMenu(common["delete"].c_str())) {
                 if (ImGui::MenuItem(app_str["title"].c_str()))
-                    context_dialog = "app";
+                    context_dialog = lang["app_delete"];
                 if (fs::exists(ADDCONT_PATH) && ImGui::MenuItem(lang["addcont"].c_str()))
-                    fs::remove_all(ADDCONT_PATH);
+                    context_dialog = lang["addcont_delete"];
                 if (fs::exists(LICENSE_PATH) && ImGui::MenuItem(lang["license"].c_str()))
-                    fs::remove_all(LICENSE_PATH);
+                    context_dialog = lang["license_delete"];
                 if (fs::exists(SAVE_DATA_PATH) && ImGui::MenuItem(savedata_str["title"].c_str()))
-                    context_dialog = "save";
+                    context_dialog = lang["save_delete"];
                 if (fs::exists(SHADER_CACHE_PATH) && ImGui::MenuItem(lang["shaders_cache"].c_str()))
                     fs::remove_all(SHADER_CACHE_PATH);
                 if (fs::exists(SHADER_LOG_PATH) && ImGui::MenuItem(lang["shaders_log"].c_str()))
@@ -544,12 +544,11 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(APP_INDEX->stitle.c_str()).x / 2.f), ICON_MARGIN + PUPOP_ICON_SIZE.y + (4.f * SCALE.y)));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", APP_INDEX->stitle.c_str());
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
-            const auto ask_delete = context_dialog == "save" ? lang["save_delete"].c_str() : lang["app_delete"].c_str();
-            ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(ask_delete, 0, false, WINDOW_SIZE.x - (108.f * SCALE.x)).x / 2, (WINDOW_SIZE.y / 2) + 10));
+            ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(context_dialog.c_str(), 0, false, WINDOW_SIZE.x - (108.f * SCALE.x)).x / 2, (WINDOW_SIZE.y / 2) + 10));
             ImGui::PushTextWrapPos(WINDOW_SIZE.x - (54.f * SCALE.x));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", ask_delete);
+            ImGui::TextColored(GUI_COLOR_TEXT, "%s", context_dialog.c_str());
             ImGui::PopTextWrapPos();
-            if ((context_dialog == "app") && ImGui::IsItemHovered())
+            if ((context_dialog == lang["app_delete"]) && ImGui::IsItemHovered())
                 ImGui::SetTooltip("%s", lang["app_delete_note"].c_str());
             ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
             ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2) - (BUTTON_SIZE.x + (20.f * SCALE.x)), WINDOW_SIZE.y - BUTTON_SIZE.y - (24.0f * SCALE.y)));
@@ -560,9 +559,13 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             ImGui::SetCursorPosX((WINDOW_SIZE.x / 2.f) + (20.f * SCALE.x));
         }
         if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_cross)) {
-            if (context_dialog == "app")
+            if (context_dialog == lang["app_delete"])
                 delete_app(gui, emuenv, app_path);
-            else if (context_dialog == "save")
+            if (context_dialog == lang["addcont_delete"])
+                fs::remove_all(ADDCONT_PATH);
+            if (context_dialog == lang["license_delete"])
+                fs::remove_all(LICENSE_PATH);
+            else if (context_dialog == lang["save_delete"])
                 fs::remove_all(SAVE_DATA_PATH);
             context_dialog.clear();
         }

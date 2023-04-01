@@ -49,7 +49,7 @@
 		<edit>Edit</edit>
 		<remove>Remove</remove>
 		<open_folder>Open Folder</open_folder>
-		<addcont>DLCs</addcont>
+		<addcont>DLC</addcont>
 		<license>License</license>
 		<shaders_cache>Shaders Cache</shaders_cache>
 		<shaders_log>Shaders Log</shaders_log>
@@ -59,6 +59,8 @@
 		<app_delete>This application and all related data, including saved data, will be deleted.</app_delete>
 		<app_delete_note>Deleting a application may take a while
 depending on its size and your hardware.</app_delete_note>
+		<addcont_delete>Do you want to delete this add-on data?</addcont_delete>
+		<license_delete>Do you want to delete this license?</license_delete>
 		<save_delete>Do you want to delete this saved data?</save_delete>
 		<eligible>Eligible</eligible>
 		<ineligible>Ineligible</ineligible>
@@ -220,7 +222,7 @@ Error code: {}</an_error_occurred>
 
 	<compile_shaders>
 		<compiling_shaders>Compiling Shaders</compiling_shaders>
-		<shaders_compiled>shaders compiled</shaders_compiled>
+		<shaders_compiled>{} shaders compiled</shaders_compiled>
 	</compile_shaders>
 
 	<content_manager name="Content Manager">
@@ -278,7 +280,9 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<gui>GUI</gui>
 		<full_screen>Full Screen</full_screen>
 		<toggle_touch>Toggle Touch</toggle_touch>
+		<toggle_touch_note>Toggles between back touch and screen touch.</toggle_touch_note>
 		<toggle_gui_visibility>Toggle GUI Visibility</toggle_gui_visibility>
+		<toggle_gui_visibility_note>Toggles between showing and hiding the GUI at the top of the screen while the app is running.</toggle_gui_visibility_note>
 		<error>Error</error>
 		<error_duplicate_key>The key is used for other bindings or it is reserved.</error_duplicate_key>
 	</controls>
@@ -372,6 +376,7 @@ Your Vita3K system is ready!</completed_setup>
 
 	<install_dialog>
 		<firmware_install>
+			<firmware_installation>Firmware Installation</firmware_installation>
 			<firmware_installing>Installation in progress, please wait...</firmware_installing>
 			<successed_install_firmware>Firmware successfully installed.</successed_install_firmware>
 			<firmware_version>Firmware version:</firmware_version>
@@ -522,6 +527,7 @@ Please check work.bin/rif file or zRIF key.</failed_install_license>
 		<search>Search</search>
 		<delete_trophy>Delete Trophy</delete_trophy>
 		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
+		<locked>Locked</locked>
 		<details>Details</details>
 		<earned>Earned</earned>
 		<name>Name</name>

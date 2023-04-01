@@ -146,7 +146,7 @@ struct LangState {
         { "edit", "Edit" },
         { "remove", "Remove" },
         { "open_folder", "Open Folder" },
-        { "addcont", "DLCs" },
+        { "addcont", "DLC" },
         { "license", "License" },
         { "shaders_cache", "Shaders Cache" },
         { "shaders_log", "Shaders Log" },
@@ -155,6 +155,8 @@ struct LangState {
         { "information", "Information" },
         { "app_delete", "This application and all related data, including saved data, will be deleted." },
         { "app_delete_note", "Deleting a application may take a while\ndepending on its size and your hardware." },
+        { "addcont_delete", "Do you want to delete this add-on data?" },
+        { "license_delete", "Do you want to delete this license?" },
         { "save_delete", "Do you want to delete this saved data?" },
         { "eligible", "Eligible" },
         { "ineligible", "Ineligible" },
@@ -186,7 +188,7 @@ struct LangState {
     Compatibility compatibility;
     std::map<std::string, std::string> compile_shaders = {
         { "compiling_shaders", "Compiling Shaders" },
-        { "shaders_compiled", "shaders compiled" }
+        { "shaders_compiled", "{} shaders compiled" }
     };
     struct ContentManager {
         std::map<std::string, std::string> main = {
@@ -248,7 +250,9 @@ struct LangState {
         { "gui", "GUI" },
         { "full_screen", "Full Screen" },
         { "toggle_touch", "Toggle Touch" },
+        { "toggle_touch_note", "Toggles between back touch and screen touch." },
         { "toggle_gui_visibility", "Toggle GUI Visibility" },
+        { "toggle_gui_visibility_note", "Toggles between showing and hiding the GUI at the top of the screen while the app is running." },
         { "error", "Error" },
         { "error_duplicate_key", "The key is used for other bindings or it is reserved." }
     };
@@ -299,6 +303,7 @@ struct LangState {
     };
     struct InstallDialog {
         std::map<std::string, std::string> firmware_install = {
+            { "firmware_installation", "Firmware Installation" },
             { "firmware_installing", "Installation in progress, please wait..." },
             { "successed_install_firmware", "Firmware successfully installed." },
             { "firmware_version", "Firmware version:" },
@@ -447,6 +452,7 @@ struct LangState {
         { "search", "Search" },
         { "delete_trophy", "Delete Trophy" },
         { "trophy_deleted", "This trophy information saved on this user will be deleted." },
+        { "locked", "Locked" },
         { "details", "Details" },
         { "earned", "Earned" },
         { "name", "Name" },
