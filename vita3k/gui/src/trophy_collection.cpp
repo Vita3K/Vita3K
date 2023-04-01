@@ -660,7 +660,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     else {
                         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.f, 0.5f));
                         ImGui::PushID(trophy.id.c_str());
-                        if (ImGui::Selectable("Locked", false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_TROPHY_LIST.y))) {
+                        if (ImGui::Selectable(lang["locked"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_TROPHY_LIST.y))) {
                             trophy_id_selected = trophy.id;
                             scroll_pos["trophy"] = ImGui::GetScrollY();
                         }
@@ -692,7 +692,7 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                     ImGui::Image(gui.trophy_list[trophy_id_selected], SIZE_TROPHY_LIST);
                 else {
                     ImGui::SetCursorPosY((SIZE_TROPHY_LIST.y / 2.f) - (15.f * SCALE.y));
-                    ImGui::TextColored(GUI_COLOR_TEXT, "Lock");
+                    ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["locked"].c_str());
                 }
                 const auto hidden_trophy = (!trophy_info[trophy_id_selected].earned && (trophy_info[trophy_id_selected].hidden == "yes"));
                 const auto CALC_NAME = ImGui::CalcTextSize(hidden_trophy ? hidden_trophy_str : trophy_info[trophy_id_selected].name.c_str(), nullptr, false, SIZE_INFO.x - SIZE_TROPHY_LIST.x - 48.f).y / 2.f;
@@ -794,9 +794,8 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::Separator();
                 ImGui::Spacing();
                 if (ImGui::MenuItem(gui.lang.indicator["delete_all"].c_str())) {
-                    if (fs::remove_all(TROPHY_PATH)) {
+                    if (fs::remove_all(TROPHY_PATH))
                         LOG_INFO("Delete all trophies successfully.");
-                    }
                 }
             } else {
                 if (ImGui::MenuItem(lang["original"].c_str(), nullptr, trophy_sort == "original")) {

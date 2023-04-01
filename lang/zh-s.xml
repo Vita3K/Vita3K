@@ -59,6 +59,8 @@
 		<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
 		<app_delete_note>删除应用程序可能需要一段时间。
 取决于它的大小和您的硬件。</app_delete_note>
+		<addcont_delete>要删除此追加内容吗？</addcont_delete>
+		<license_delete>要删除此授权吗？</license_delete>
 		<save_delete>要删除此保存数据吗？</save_delete>
 		<eligible>有权</eligible>
 		<ineligible>无权</ineligible>
@@ -220,7 +222,7 @@
 
 	<compile_shaders>
 		<compiling_shaders>正在编译着色器</compiling_shaders>
-		<shaders_compiled>个着色器已编译</shaders_compiled>
+		<shaders_compiled>已编译{}个着色器</shaders_compiled>
 	</compile_shaders>
 
 	<content_manager name="内容管理">
@@ -278,7 +280,9 @@
 		<gui>图形用户界面</gui>
 		<full_screen>全屏</full_screen>
 		<toggle_touch>切换触碰</toggle_touch>
+		<toggle_touch_note>在背触和前触之间切换。</toggle_touch_note>
 		<toggle_gui_visibility>切换图形用户界面可见性</toggle_gui_visibility>
+		<toggle_gui_visibility_note>在应用程序运行时，在屏幕顶部显示和隐藏图形用户界面之间切换。</toggle_gui_visibility_note>
 		<error>错误</error>
 		<error_duplicate_key>该键已被使用并绑定其他键或被预留。</error_duplicate_key>
 	</controls>
@@ -337,6 +341,7 @@
 		<by_type>按类型</by_type>
 		<commercial>商业</commercial>
 		<homebrew>自制</homebrew>
+		<by_compatibility_state>按兼容性状态</by_compatibility_state>
 		<ver>版本</ver>
 		<cat>类别</cat>
 		<comp>兼容性</comp>
@@ -372,6 +377,7 @@ Your Vita3K system is ready!</completed_setup>
 
 	<install_dialog>
 		<firmware_install>
+			<firmware_installation>固件安装</firmware_installation>
 			<firmware_installing>Installation in progress, please wait...</firmware_installing>
 			<successed_install_firmware>固件已成功安装。</successed_install_firmware>
 			<firmware_version>固件版本：</firmware_version>
@@ -521,7 +527,8 @@ Please download and install it.</no_font_exist>
 	<trophy_collection>
 		<search>搜索</search>
 		<delete_trophy>删除奖杯</delete_trophy>
-		<trophy_deleted>该用户已保存的奖杯信息将被删除。</trophy_deleted>
+		<trophy_deleted>此用户已保存的奖杯信息将被删除。</trophy_deleted>
+		<locked>未解锁</locked>
 		<details>详细信息</details>
 		<earned>获得日期</earned>
 		<name>名称</name>
@@ -546,7 +553,7 @@ Please download and install it.</no_font_exist>
 		<delete_user>删除用户</delete_user>
 		<user_delete>请选择要删除的用户。</user_delete>
 		<user_delete_msg>将删除以下用户。</user_delete_msg>
-		<user_delete_message>若删除用户，该用户的保存数据、奖杯也会一并被删除。</user_delete_message>
+		<user_delete_message>若删除用户，此用户的保存数据、奖杯也会一并被删除。</user_delete_message>
 		<user_delete_warn>用户将被删除。
 确定要继续吗？</user_delete_warn>
 		<user_deleted>用户已删除。</user_deleted>

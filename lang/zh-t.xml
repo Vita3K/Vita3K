@@ -36,7 +36,7 @@
 	</about>
 
 	<app_context>
-		<check_app_state>檢查應用程式狀態</check_app_state>
+		<check_app_state>檢查應用程式狀況</check_app_state>
 		<copy_vita3k_summary>複製Vita3K摘要</copy_vita3k_summary>
 		<open_state_report>開啟狀態匯報</open_state_report>
 		<create_state_report>建立狀態匯報</create_state_report>
@@ -59,6 +59,8 @@
 		<app_delete>刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
 		<app_delete_note>刪除應用程式可能需要一段時間
 取決於它的大小和您的硬件。</app_delete_note>
+		<addcont_delete>確定要刪除此追加內容嗎？</addcont_delete>
+		<license_delete>確定要刪除此授權嗎？</license_delete>
 		<save_delete>確定要刪除此保存資料嗎？</save_delete>
 		<eligible>有權</eligible>
 		<ineligible>無權</ineligible>
@@ -220,7 +222,7 @@
 
 	<compile_shaders>
 		<compiling_shaders>正在編譯著色器</compiling_shaders>
-		<shaders_compiled>個著色器已編譯</shaders_compiled>
+		<shaders_compiled>已編譯{}個著色器</shaders_compiled>
 	</compile_shaders>
 
 	<content_manager name="內容管理">
@@ -278,7 +280,9 @@
 		<gui>圖形化使用者介面</gui>
 		<full_screen>全螢幕</full_screen>
 		<toggle_touch>切換觸碰</toggle_touch>
+		<toggle_touch_note>在背觸和前觸之間切換。</toggle_touch_note>
 		<toggle_gui_visibility>切換圖形化使用者介面可見性</toggle_gui_visibility>
+		<toggle_gui_visibility_note>在應用程式運行时，在螢幕頂部顯示和隱藏圖形化使用者介面之間切換。</toggle_gui_visibility_note>
 		<error>錯誤</error>
 		<error_duplicate_key>此按鈕已繫結至其他按鈕或已被保留。</error_duplicate_key>
 	</controls>
@@ -337,6 +341,7 @@
 		<by_type>依類型</by_type>
 		<commercial>商業</commercial>
 		<homebrew>自製</homebrew>
+		<by_compatibility_state>依相容性狀況</by_compatibility_state>
 		<ver>版本</ver>
 		<cat>類別</cat>
 		<comp>相容性</comp>
@@ -372,6 +377,7 @@
 
 	<install_dialog>
 		<firmware_install>
+			<firmware_installation>Firmware Installation</firmware_installation>
 			<firmware_installing>Installation in progress, please wait...</firmware_installing>
 			<successed_install_firmware>Firmware successfully installed.</successed_install_firmware>
 			<firmware_version>Firmware version:</firmware_version>
@@ -521,7 +527,8 @@ Please download and install it.</no_font_exist>
 	<trophy_collection>
 		<search>搜尋</search>
 		<delete_trophy>刪除獎盃</delete_trophy>
-		<trophy_deleted>刪除該使用者已保存的獎杯資訊。</trophy_deleted>
+		<trophy_deleted>刪除此使用者已保存的獎杯資訊。</trophy_deleted>
+		<locked>未解鎖</locked>
 		<details>詳細內容</details>
 		<earned>獲得日</earned>
 		<name>名稱</name>
@@ -546,7 +553,7 @@ Please download and install it.</no_font_exist>
 		<delete_user>刪除使用者</delete_user>
 		<user_delete>請選擇要刪除的使用者。</user_delete>
 		<user_delete_msg>將刪除以下使用者。</user_delete_msg>
-		<user_delete_message>若刪除該用戶，該使用者的保存資料、獎盃也會一併被刪除。</user_delete_message>
+		<user_delete_message>若刪除使用者，此使用者的保存資料、獎盃也會一併被刪除。</user_delete_message>
 		<user_delete_warn>刪除使用者。
 確定要繼續嗎？</user_delete_warn>
 		<user_deleted>已刪除使用者。</user_deleted>
