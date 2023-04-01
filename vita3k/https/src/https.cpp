@@ -192,7 +192,7 @@ static Https init(const std::string url, const std::string method = "GET", const
         return {};
     }
 
-    // Free address info and ssl ctx 
+    // Free address info and ssl ctx
     freeaddrinfo(result);
     SSL_CTX_free(ctx);
 
@@ -409,7 +409,7 @@ bool download_file(std::string url, const std::string output_file_path, Progress
 
     // Close the output file
     outfile.close();
-    
+
     // Close SSL and socket connection
     close_ssl(https.ssl);
     close_socket(https.sockfd);

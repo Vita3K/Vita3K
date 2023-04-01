@@ -336,6 +336,7 @@ SDL2に対応したコントローラーを接続してください。</not_conn
 		<by_type>種類</by_type>
 		<commercial>商用ゲーム</commercial>
 		<homebrew>自作ゲーム</homebrew>
+		<by_compatibility_state>互換性状態別</by_compatibility_state>
 		<ver>Ver</ver>
 		<cat>カテゴリー</cat>
 		<comp>互換性</comp>

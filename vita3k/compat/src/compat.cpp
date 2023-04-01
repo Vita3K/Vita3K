@@ -80,19 +80,19 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
             continue;
         }
 
-        auto state = CompatibilityState::Unknown;
+        auto state = CompatibilityState::UNKNOWN;
         const auto labels = app.child("labels");
         if (!labels.empty()) {
             for (const auto &label : labels) {
                 const auto label_id = static_cast<LabelIdState>(label.text().as_uint());
                 switch (label_id) {
-                case LabelIdState::Nothing: state = Nothing; break;
-                case LabelIdState::Bootable: state = Bootable; break;
-                case LabelIdState::Intro: state = Intro; break;
-                case LabelIdState::Menu: state = Menu; break;
-                case LabelIdState::Ingame_Less: state = Ingame_Less; break;
-                case LabelIdState::Ingame_More: state = Ingame_More; break;
-                case LabelIdState::Playable: state = Playable; break;
+                case LabelIdState::Nothing: state = NOTHING; break;
+                case LabelIdState::Bootable: state = BOOTABLE; break;
+                case LabelIdState::Intro: state = INTRO; break;
+                case LabelIdState::Menu: state = MENU; break;
+                case LabelIdState::Ingame_Less: state = INGAME_LESS; break;
+                case LabelIdState::Ingame_More: state = INGAME_MORE; break;
+                case LabelIdState::Playable: state = PLAYABLE; break;
                 default: break;
                 }
             }
@@ -100,7 +100,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
         const auto updated_at = app.child("updated_at").text().as_llong();
 
         // Check if app missing a status label
-        if (state == Unknown)
+        if (state == UNKNOWN)
             LOG_WARN("App with title ID {} has an issue but no status label. Please check GitHub issue {} and request a status label to be added.", title_id, issue_id);
 
         // Check if app already exists in compatibility database
@@ -112,7 +112,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
     // Update compatibility status of all user apps
     for (auto &app : gui.app_selector.user_apps)
-        app.compat = gui.compat.app_compat_db.contains(app.title_id) ? gui.compat.app_compat_db[app.title_id].state : CompatibilityState::Unknown;
+        app.compat = gui.compat.app_compat_db.contains(app.title_id) ? gui.compat.app_compat_db[app.title_id].state : CompatibilityState::UNKNOWN;
 
     return !gui.compat.app_compat_db.empty();
 }

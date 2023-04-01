@@ -638,24 +638,23 @@ std::map<DateTime, std::string> get_date_time(GuiState &gui, EmuEnvState &emuenv
         const auto days_str = gui.lang.common.mday[date_time.tm_mday];
         const auto year = date_time.tm_year + 1900;
         const auto month = date_time.tm_mon + 1;
-        const auto days = date_time.tm_mday;
+        const auto day = date_time.tm_mday;
         switch (emuenv.cfg.sys_date_format) {
         case SCE_SYSTEM_PARAM_DATE_FORMAT_YYYYMMDD:
             date_time_str[DateTime::DATE_DETAIL] = fmt::format("{} {} ({})", month_str, days_str, day_str);
-            date_time_str[DateTime::DATE_MINI] = fmt::format("{}/{}/{}", year, month, days);
+            date_time_str[DateTime::DATE_MINI] = fmt::format("{}/{}/{}", year, month, day);
             break;
         case SCE_SYSTEM_PARAM_DATE_FORMAT_DDMMYYYY: {
             const auto small_month_str = gui.lang.common.small_ymonth[date_time.tm_mon];
-            const auto small_days_str = gui.lang.common.small_mday[date_time.tm_mon];
+            const auto small_days_str = gui.lang.common.small_mday[day];
             date_time_str[DateTime::DATE_DETAIL] = fmt::format("{} {} ({})", small_days_str, small_month_str, day_str);
-            date_time_str[DateTime::DATE_MINI] = fmt::format("{}/{}/{}", days, month, year);
+            date_time_str[DateTime::DATE_MINI] = fmt::format("{}/{}/{}", day, month, year);
             break;
         }
         case SCE_SYSTEM_PARAM_DATE_FORMAT_MMDDYYYY:
             date_time_str[DateTime::DATE_DETAIL] = fmt::format("{} {} ({})", month_str, days_str, day_str);
-            date_time_str[DateTime::DATE_MINI] = fmt::format("{}/{}/{}", month, days, year);
+            date_time_str[DateTime::DATE_MINI] = fmt::format("{}/{}/{}", month, day, year);
             break;
-        default: break;
         }
     }
     const auto is_afternoon = date_time.tm_hour > 12;
