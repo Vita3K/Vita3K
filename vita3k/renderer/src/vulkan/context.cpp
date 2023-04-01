@@ -28,7 +28,7 @@
 
 namespace renderer::vulkan {
 
-void VKContext::wait_thread_function() {
+void VKContext::wait_thread_function(const MemState &mem) {
     // try to wait for multiple fences at the same time if possible
     std::vector<vk::Fence> fences;
 
@@ -72,12 +72,22 @@ void VKContext::wait_thread_function() {
                            last_frame_waited = request.frame_timestamp;
                            lock.unlock();
                            new_frame_condv.notify_one();
+                       },
+                       [&](PostSurfaceSyncRequest &request) {
+                           if (!fences.empty()) {
+                               // wait for the render to be done
+                               state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+                               // don't reset them
+                               fences.clear();
+                           }
+
+                           state.surface_cache.perform_post_surface_sync(mem, request.cache_info);
                        } },
             *wait_request);
     }
 }
 
-void set_context(VKContext &context, const MemState &mem, VKRenderTarget *rt, const FeatureState &features) {
+void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const FeatureState &features) {
     if (rt) {
         context.render_target = rt;
     } else {
@@ -279,8 +289,13 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
 
     if (in_renderpass)
         stop_render_pass();
-    render_cmd.end();
+
+    ColorSurfaceCacheInfo *surface_info = nullptr;
+    if (state.features.support_memory_mapping && !state.disable_surface_sync)
+        surface_info = state.surface_cache.perform_surface_sync();
+
     prerender_cmd.end();
+    render_cmd.end();
 
     vk::Fence fence = render_target->fences[render_target->fence_idx];
     render_target->fence_idx++;
@@ -302,6 +317,10 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
             .fence = fence
         };
         request_queue.push(request);
+
+        if (surface_info) {
+            request_queue.push(PostSurfaceSyncRequest{ surface_info });
+        }
     }
 
     render_cmd = nullptr;

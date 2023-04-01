@@ -72,7 +72,7 @@ struct State {
     virtual void set_linear_filter(bool enable_linear_filter) = 0;
     virtual int get_max_anisotropic_filtering() = 0;
     virtual void set_anisotropic_filtering(int anisotropic_filtering) = 0;
-    virtual void set_surface_sync_state(bool disable) {
+    void set_surface_sync_state(bool disable) {
         disable_surface_sync = disable;
     }
     virtual bool map_memory(MemState &mem, Ptr<void> address, uint32_t size) {

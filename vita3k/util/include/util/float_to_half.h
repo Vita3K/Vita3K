@@ -15,6 +15,8 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#pragma once
+
 // original source:https://stackoverflow.com/questions/1659440/32-bit-to-16-bit-floating-point-conversion
 // public domain
 

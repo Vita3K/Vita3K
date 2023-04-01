@@ -502,12 +502,14 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
     if (!screen_renderer.setup(base_path))
         return false;
 
+#ifdef __linux__
+    // According to my tests (Macdu), mprotect on buffers (mapped with external memory host) only works with Nvidia drivers
+    surface_cache.can_mprotect_mapped_memory = std::string_view(physical_device_properties.deviceName).find("NVIDIA") != std::string_view::npos;
+#endif
+
     pipeline_cache.init();
     texture_cache.backend = &current_backend;
     texture::init(texture_cache, false);
-
-    // surface sync is not supported on the Vulkan renderer yet
-    disable_surface_sync = true;
 
     return true;
 }
@@ -605,7 +607,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
     assert(features.support_memory_mapping);
     // the adress should be 4K aligned
     assert((address.address() & 4095) == 0);
-    constexpr vk::BufferUsageFlags mapped_memory_flags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress;
+    constexpr vk::BufferUsageFlags mapped_memory_flags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eTransferDst;
 
     if (mem.use_page_table) {
         // add 4 KiB because we can as an easy way to prevent crashes due to memory accesses right after the memory boundary
@@ -747,10 +749,6 @@ int VKState::get_max_anisotropic_filtering() {
 
 void VKState::set_anisotropic_filtering(int anisotropic_filtering) {
     texture_cache.anisotropic_filtering = anisotropic_filtering;
-}
-
-void VKState::set_surface_sync_state(bool disable) {
-    // Vulkan does not supports surface sync yet
 }
 
 std::vector<std::string> VKState::get_gpu_list() {

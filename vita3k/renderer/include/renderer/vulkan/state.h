@@ -80,7 +80,6 @@ struct VKState : public renderer::State {
     void set_linear_filter(bool enable_linear_filter) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
-    void set_surface_sync_state(bool disable) override;
     bool map_memory(MemState &mem, Ptr<void> address, uint32_t size) override;
     void unmap_memory(MemState &mem, Ptr<void> address) override;
     // return the matching buffer and offset for the memory location

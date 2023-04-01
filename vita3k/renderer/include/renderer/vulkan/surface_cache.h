@@ -62,8 +62,19 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
 
     Ptr<void> data;
     std::vector<CastedTexture> casted_textures;
+    // use a unique_ptr for the following objects as they may not be used
+
     // same image with a different view(swizzle) used for sampling
-    vkutil::Image sampled_image;
+    std::unique_ptr<vkutil::Image> sampled_image;
+
+    // only used when upscaling is enabled, to downscale the image first
+    std::unique_ptr<vkutil::Image> blit_image;
+
+    // only used for 3-component rgb textures which can't be copied directly
+    std::unique_ptr<vkutil::Buffer> copy_buffer;
+
+    // pointer shared with the memory trap indicating if this surface sync is needed
+    std::shared_ptr<bool> need_surface_sync;
 };
 
 struct DepthSurfaceView {
@@ -95,6 +106,7 @@ private:
     std::vector<size_t> last_use_depth_stencil_surface_index;
 
     VKRenderTarget *target = nullptr;
+    ColorSurfaceCacheInfo *last_written_surface = nullptr;
 
     // destroy all framebuffers using view as their color or depth-stencil
     void destroy_framebuffers(vk::ImageView view);
@@ -107,19 +119,30 @@ public:
     // the possible format used for an image view to improve performance ?
     bool support_image_format_specifier = false;
 
+    // can we protect mapped memory ?
+    // On Windows this causes no issue, but according to my test
+    // It only works with Nvidia drivers on Linux...
+    bool can_mprotect_mapped_memory = true;
+
     explicit VKSurfaceCache(VKState &state);
 
     // when writing, the swizzled given to this function is inversed
-    vkutil::Image *retrieve_color_surface_texture_handle(uint16_t width, uint16_t height, const uint16_t pixel_stride,
-        const SceGxmColorBaseFormat base_format, const bool is_srgb, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, vk::ComponentMapping &swizzle,
+    vkutil::Image *retrieve_color_surface_texture_handle(MemState &mem, uint16_t width, uint16_t height, const uint16_t pixel_stride,
+        const SceGxmColorBaseFormat base_format, const SceGxmColorSurfaceType surface_type, const bool is_srgb, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, vk::ComponentMapping &swizzle,
         uint16_t *stored_height = nullptr, uint16_t *stored_width = nullptr);
 
     vkutil::Image *retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, int32_t width,
         int32_t height, const bool is_reading = false);
 
-    vk::Framebuffer retrieve_framebuffer_handle(const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
+    vk::Framebuffer retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
         vk::RenderPass render_pass, vkutil::Image **color_texture_handle, vkutil::Image **ds_texture_handle,
         uint16_t *stored_height, const uint32_t width, const uint32_t height);
+
+    // If non-null, the return value must be sent as a PostSurfaceSyncRequest
+    ColorSurfaceCacheInfo *perform_surface_sync();
+
+    // Called after the render has been done
+    void perform_post_surface_sync(const MemState &mem, ColorSurfaceCacheInfo *surface);
 
     // destroy all framebuffers associated with render_target
     // (meaning their color or depth-stencil surface is not backed by memory)

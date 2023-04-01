@@ -59,11 +59,12 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
     uint16_t height = static_cast<std::uint16_t>(gxm::get_height(&texture));
 
     if (renderer::texture::convert_base_texture_format_to_base_color_format(base_format, format_target_of_texture)) {
-        std::uint16_t stride_in_pixels = width;
+        uint16_t stride_in_pixels = width;
 
+        SceGxmColorSurfaceType surface_type = SCE_GXM_COLOR_SURFACE_LINEAR;
         switch (texture.texture_type()) {
         case SCE_GXM_TEXTURE_LINEAR_STRIDED:
-            stride_in_pixels = static_cast<std::uint16_t>(gxm::get_stride_in_bytes(&texture)) / ((renderer::texture::bits_per_pixel(base_format) + 7) >> 3);
+            stride_in_pixels = static_cast<uint16_t>(gxm::get_stride_in_bytes(&texture)) / ((renderer::texture::bits_per_pixel(base_format) + 7) >> 3);
             break;
         case SCE_GXM_TEXTURE_LINEAR:
             // when the texture is linear, the stride should be aligned to 8 pixels
@@ -72,13 +73,17 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
         case SCE_GXM_TEXTURE_TILED:
             // tiles are 32x32
             stride_in_pixels = align(stride_in_pixels, 32);
+            surface_type = SCE_GXM_COLOR_SURFACE_TILED;
             break;
+        case SCE_GXM_TEXTURE_SWIZZLED:
+        case SCE_GXM_TEXTURE_SWIZZLED_ARBITRARY:
+            surface_type = SCE_GXM_COLOR_SURFACE_SWIZZLED;
         }
 
         vk::ComponentMapping swizzle = texture::translate_swizzle(format);
 
         image = context.state.surface_cache.retrieve_color_surface_texture_handle(
-            width, height, stride_in_pixels, format_target_of_texture, static_cast<bool>(texture.gamma_mode), Ptr<void>(data_addr),
+            mem, width, height, stride_in_pixels, format_target_of_texture, surface_type, static_cast<bool>(texture.gamma_mode), Ptr<void>(data_addr),
             renderer::SurfaceTextureRetrievePurpose::READING, swizzle);
     }
 
