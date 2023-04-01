@@ -91,6 +91,11 @@ void Image::init_image(vk::ImageUsageFlags usage, vk::ComponentMapping mapping, 
 
     std::tie(image, allocation) = allocator.createImage(image_info, vma_auto_alloc);
 
+    // only create a view if one of these flags is set
+    constexpr vk::ImageUsageFlags view_usages = vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eStorage;
+    if (!(usage & view_usages))
+        return;
+
     vk::ImageSubresourceRange range = (format == vk::Format::eD32SfloatS8Uint) ? vkutil::ds_subresource_range : vkutil::color_subresource_range;
     vk::ImageViewCreateInfo view_info{
         .image = image,

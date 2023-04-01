@@ -523,13 +523,16 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::Combo("GPU (Reboot to apply)", &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size())))
                 ImGui::SetTooltip("Select the GPU Vita3K should run on.");
         } else {
-            ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
-            if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on).");
-            ImGui::SameLine();
             ImGui::Checkbox("V-Sync", &config.v_sync);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid visual tearing.");
+            ImGui::SameLine();
+        }
+        if (!is_vulkan || emuenv.renderer->features.support_memory_mapping) {
+            // surface sync is supported on vulkan only when memory mapping is enabled
+            ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on).");
         }
 
         // Anti-aliasing FXAA
@@ -562,7 +565,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SameLine(0, 5.f * SCALE.x);
         ImGui::PushItemWidth(-100.f * SCALE.x);
         if (ImGui::SliderInt("##res_scal", &config.resolution_multiplier, 1, 8, fmt::format("{}x", config.resolution_multiplier).c_str(), ImGuiSliderFlags_None)) {
-            if (config.resolution_multiplier > 1)
+            if (config.resolution_multiplier > 1 && !is_vulkan)
                 config.disable_surface_sync = true;
         }
         ImGui::PopItemWidth();
@@ -578,10 +581,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SameLine();
         if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
             ImGui::BeginDisabled();
-        if (ImGui::Button("Reset", ImVec2(60.f * SCALE.x, 0))) {
+        if (ImGui::Button("Reset", ImVec2(60.f * SCALE.x, 0)))
             config.resolution_multiplier = 1;
-            config.disable_surface_sync = false;
-        }
+
         if ((config.resolution_multiplier == 1) && !config.disable_surface_sync)
             ImGui::EndDisabled();
         ImGui::Spacing();

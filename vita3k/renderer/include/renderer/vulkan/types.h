@@ -95,6 +95,8 @@ struct MappedMemory {
     uint64_t buffer_address;
 };
 
+struct ColorSurfaceCacheInfo;
+
 // request to trigger a notification after the fence has been waited for
 struct NotificationRequest {
     SceGxmNotification notifications[2];
@@ -105,10 +107,14 @@ struct FrameDoneRequest {
     uint64_t frame_timestamp;
 };
 
+struct PostSurfaceSyncRequest {
+    ColorSurfaceCacheInfo *cache_info;
+};
+
 // A parallel thread is handling these request and telling other waiting threads
 // when they are done
 // only used if memory mapping is enabled
-typedef std::variant<NotificationRequest, FrameDoneRequest> WaitThreadRequest;
+typedef std::variant<NotificationRequest, FrameDoneRequest, PostSurfaceSyncRequest> WaitThreadRequest;
 
 struct VKContext : public renderer::Context {
     // GXM Context Info
@@ -201,7 +207,7 @@ struct VKContext : public renderer::Context {
     void stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2);
 
 private:
-    void wait_thread_function();
+    void wait_thread_function(const MemState &mem);
 };
 
 struct VKRenderTarget : public renderer::RenderTarget {

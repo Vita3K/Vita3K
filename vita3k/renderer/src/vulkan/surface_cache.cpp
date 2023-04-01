@@ -25,7 +25,33 @@
 
 #include <vulkan/vulkan_format_traits.hpp>
 
+#include <util/align.h>
+#include <util/keywords.h>
 #include <util/log.h>
+
+static bool format_support_surface_sync(SceGxmColorBaseFormat format) {
+    // we use rgba16 to emulate this format, don't even try to convert it back for now
+    return format != SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10;
+}
+
+static bool format_support_swizzle(SceGxmColorBaseFormat format) {
+    // do we support something more than the identity swizzle
+    // for now we do not support any texture whose component size
+    // are all not the same or not a multiple of a byte
+    return format != SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10
+        && format != SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10
+        && format != SCE_GXM_COLOR_BASE_FORMAT_U4U4U4U4
+        && format != SCE_GXM_COLOR_BASE_FORMAT_U1U5U5U5
+        && format != SCE_GXM_COLOR_BASE_FORMAT_SE5M9M9M9
+        && format != SCE_GXM_COLOR_BASE_FORMAT_F11F11F10
+        && format != SCE_GXM_COLOR_BASE_FORMAT_U5U6U5;
+}
+
+static bool format_need_additional_memory(SceGxmColorBaseFormat format) {
+    // we are using 4-component surfaces to emulate them
+    // so we can't simply use the allocated memory for them
+    return format == SCE_GXM_COLOR_BASE_FORMAT_U8U8U8;
+}
 
 namespace renderer::vulkan {
 
@@ -53,9 +79,11 @@ void VKSurfaceCache::destroy_surface(ColorSurfaceCacheInfo &info) {
         destroy_queue.add_image(casted.texture);
     }
 
-    // make sure it is not destroyed twice (if set info.sampled_image.image is the same as info.texture.image)
-    info.sampled_image.image = nullptr;
-    destroy_queue.add_image(info.sampled_image);
+    if (info.sampled_image) {
+        // make sure it is not destroyed twice (if set info.sampled_image.image is the same as info.texture.image)
+        info.sampled_image->image = nullptr;
+        destroy_queue.add_image(*info.sampled_image);
+    }
     destroy_framebuffers(info.texture.view);
     destroy_queue.add_image(info.texture);
 }
@@ -78,8 +106,8 @@ VKSurfaceCache::VKSurfaceCache(VKState &state)
     }
 }
 
-vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t width, uint16_t height, const uint16_t pixel_stride,
-    const SceGxmColorBaseFormat base_format, const bool is_srgb, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, vk::ComponentMapping &swizzle,
+vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &mem, uint16_t width, uint16_t height, const uint16_t pixel_stride,
+    const SceGxmColorBaseFormat base_format, const SceGxmColorSurfaceType surface_type, const bool is_srgb, Ptr<void> address, SurfaceTextureRetrievePurpose purpose, vk::ComponentMapping &swizzle,
     uint16_t *stored_height, uint16_t *stored_width) {
     // Create the key to access the cache struct
     const std::uint64_t key = address.address();
@@ -211,12 +239,6 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                 if (static_cast<uint16_t>(start_sourced_line + height) > info.height) {
                     LOG_ERROR("Trying to present non-existen segment in cached color surface!");
                     return 0;
-                }
-
-                if (start_x > 0) {
-                    static bool has_happened = false;
-                    LOG_ERROR_IF(!has_happened, "Surface copy with nonzero delta x");
-                    has_happened = true;
                 }
 
                 const vk::Image color_handle = reinterpret_cast<VKContext *>(state.context)->current_color_attachment->image;
@@ -365,10 +387,13 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                         // we can use the same texture view
                         return &info.texture;
 
-                    if (!info.sampled_image.view) {
+                    if (!info.sampled_image)
+                        info.sampled_image = std::make_unique<vkutil::Image>();
+
+                    if (!info.sampled_image->view) {
                         vk::ComponentMapping resulting_mapping = vkutil::color_to_texture_swizzle(info.swizzle, swizzle);
                         // do not destroy multiple times
-                        info.sampled_image.destroy_on_deletion = false;
+                        info.sampled_image->destroy_on_deletion = false;
                         vk::ImageViewCreateInfo view_info{
                             .image = info.texture.image,
                             .viewType = vk::ImageViewType::e2D,
@@ -376,10 +401,10 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                             .components = resulting_mapping,
                             .subresourceRange = vkutil::color_subresource_range
                         };
-                        info.sampled_image.view = state.device.createImageView(view_info);
+                        info.sampled_image->view = state.device.createImageView(view_info);
                     }
 
-                    return &info.sampled_image;
+                    return info.sampled_image.get();
                 }
             }
         }
@@ -391,13 +416,17 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                 }
 
                 last_use_color_surface_index.push_back(ite->first);
+                last_written_surface = &info;
 
                 if (vk_format == info.texture.format) {
                     return &info.texture;
                 } else {
                     // using both srgb/linear
-                    if (!info.sampled_image.view) {
-                        info.sampled_image.destroy_on_deletion = false;
+                    if (!info.sampled_image)
+                        info.sampled_image = std::make_unique<vkutil::Image>();
+
+                    if (!info.sampled_image->view) {
+                        info.sampled_image->destroy_on_deletion = false;
                         vk::ImageViewCreateInfo view_info{
                             .image = info.texture.image,
                             .viewType = vk::ImageViewType::e2D,
@@ -405,12 +434,12 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
                             .components = vkutil::default_comp_mapping,
                             .subresourceRange = vkutil::color_subresource_range
                         };
-                        info.sampled_image.view = state.device.createImageView(view_info);
+                        info.sampled_image->view = state.device.createImageView(view_info);
                     }
                     // needed in order not to sample from this image during rendering
-                    info.sampled_image.image = info.texture.image;
+                    info.sampled_image->image = info.texture.image;
 
-                    return &info.sampled_image;
+                    return info.sampled_image.get();
                 }
             } else {
                 return nullptr;
@@ -491,6 +520,30 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(uint16_t wi
 
     if (stored_width) {
         *stored_width = width;
+    }
+
+    last_written_surface = &info_added;
+    info_added.need_surface_sync.reset();
+    info_added.need_surface_sync = std::make_shared<bool>();
+    *info_added.need_surface_sync = false;
+
+    // we only support surface sync of linear surfaces for now
+    if (!can_mprotect_mapped_memory) {
+        // peform surface sync on everything
+        // it is slow but well... we can't mprotect the buffer
+        *info_added.need_surface_sync = surface_type == SCE_GXM_COLOR_SURFACE_LINEAR;
+    } else if (surface_type == SCE_GXM_COLOR_SURFACE_LINEAR && format_support_surface_sync(base_format)) {
+        uint32_t addr_start = align(info_added.data.address(), KiB(4));
+        uint32_t addr_end = align_down(info_added.data.address() + info_added.total_bytes, KiB(4));
+        if (addr_start >= addr_end) {
+            // we still need to protect something, even if it's not completely accurate
+            addr_start = align_down(info_added.data.address(), KiB(4));
+            addr_end = align(info_added.data.address() + info_added.total_bytes, KiB(4));
+        }
+        add_protect(mem, addr_start, addr_end - addr_start, MemPerm::None, [need_sync = info_added.need_surface_sync](Address addr, bool) {
+            *need_sync = true;
+            return true;
+        });
     }
 
     return &info_added.texture;
@@ -678,7 +731,7 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
     return &image;
 }
 
-vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(const MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
+vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
     vk::RenderPass render_pass, vkutil::Image **color_texture_handle, vkutil::Image **ds_texture_handle,
     uint16_t *stored_height, const uint32_t width, const uint32_t height) {
     if (!target) {
@@ -698,8 +751,8 @@ vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(const MemState &mem,
     if (color && color->data) {
         const SceGxmColorBaseFormat color_base_format = gxm::get_base_format(color->colorFormat);
         vk::ComponentMapping swizzle = color::translate_swizzle(color->colorFormat);
-        color_handle = retrieve_color_surface_texture_handle(color->width,
-            color->height, color->strideInPixels, color_base_format, static_cast<bool>(color->gamma),
+        color_handle = retrieve_color_surface_texture_handle(mem, color->width,
+            color->height, color->strideInPixels, color_base_format, color->surfaceType, static_cast<bool>(color->gamma),
             color->data, renderer::SurfaceTextureRetrievePurpose::WRITING, swizzle, stored_height);
     } else {
         color_handle = &target->color;
@@ -741,6 +794,205 @@ vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(const MemState &mem,
 
     framebuffer_array[key] = fb;
     return fb;
+}
+
+ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
+    // surface sync is supported only if memory mapping is enabled
+    if (!state.features.support_memory_mapping)
+        return nullptr;
+
+    if (last_written_surface == nullptr || !*last_written_surface->need_surface_sync)
+        return nullptr;
+
+    VKContext *context = reinterpret_cast<VKContext *>(state.context);
+    vk::CommandBuffer cmd_buffer = context->render_cmd;
+
+    vk::Image image_to_copy = last_written_surface->texture.image;
+    vk::ImageLayout image_layout = vk::ImageLayout::eGeneral;
+
+    // this works for surface swizzles
+    bool is_swizzle_identity = last_written_surface->swizzle.r == vk::ComponentSwizzle::eR;
+    if (!is_swizzle_identity && !format_support_swizzle(last_written_surface->format)) {
+        static bool has_happened = false;
+        LOG_WARN_IF(!has_happened, "Surface sync with swizzle not support on {}", vk::to_string(last_written_surface->texture.format));
+        has_happened = true;
+
+        is_swizzle_identity = true;
+    }
+
+    if (state.res_multiplier > 1) {
+        // downscale the image using a blit command first
+
+        if (!last_written_surface->blit_image)
+            last_written_surface->blit_image = std::make_unique<vkutil::Image>();
+
+        vkutil::Image &blit_image = *last_written_surface->blit_image;
+
+        if (!blit_image.image) {
+            blit_image.allocator = state.allocator;
+            blit_image.format = last_written_surface->texture.format;
+            blit_image.width = last_written_surface->original_width;
+            blit_image.height = last_written_surface->original_height;
+
+            blit_image.init_image(vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst);
+            blit_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
+        } else {
+            blit_image.transition_to_discard(cmd_buffer, vkutil::ImageLayout::TransferDst);
+        }
+
+        vk::ImageBlit blit{
+            .srcSubresource = vkutil::color_subresource_layer,
+            .srcOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{ 0, 0, 0 }, vk::Offset3D{ last_written_surface->width, last_written_surface->height, 1 } },
+            .dstSubresource = vkutil::color_subresource_layer,
+            .dstOffsets = std::array<vk::Offset3D, 2>{ vk::Offset3D{ 0, 0, 0 }, vk::Offset3D{ last_written_surface->original_width, last_written_surface->original_height, 1 } },
+        };
+        // Apply nearest filter for the time being, linear might be better if we have no data in the texture tho
+        cmd_buffer.blitImage(image_to_copy, image_layout, blit_image.image, vk::ImageLayout::eTransferDstOptimal, blit, vk::Filter::eNearest);
+
+        blit_image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferSrc);
+        image_to_copy = blit_image.image;
+        image_layout = vk::ImageLayout::eTransferSrcOptimal;
+    }
+
+    vk::Buffer buffer;
+    uint32_t offset;
+    if (format_need_additional_memory(last_written_surface->format)) {
+        if (!last_written_surface->copy_buffer)
+            last_written_surface->copy_buffer = std::make_unique<vkutil::Buffer>();
+
+        vkutil::Buffer &copy_buffer = *last_written_surface->copy_buffer;
+
+        if (!copy_buffer.buffer) {
+            copy_buffer.allocator = state.allocator;
+            // TODO: change the 4 if the format pixel size can become something else than 4 bytes (not the case now)
+            copy_buffer.size = last_written_surface->pixel_stride * last_written_surface->original_height * 4;
+            copy_buffer.init_buffer(vk::BufferUsageFlagBits::eTransferDst, vkutil::vma_mapped_alloc);
+        }
+
+        buffer = copy_buffer.buffer;
+        offset = 0;
+    } else {
+        std::tie(buffer, offset) = state.get_matching_mapping(last_written_surface->data);
+    }
+    vk::BufferImageCopy copy{
+        .bufferOffset = offset,
+        .bufferRowLength = last_written_surface->pixel_stride,
+        .bufferImageHeight = last_written_surface->original_height,
+        .imageSubresource = vkutil::color_subresource_layer,
+        .imageOffset = { 0, 0, 0 },
+        .imageExtent = { last_written_surface->original_width, last_written_surface->original_height, 1 }
+    };
+    cmd_buffer.copyImageToBuffer(image_to_copy, image_layout, buffer, copy);
+
+    const bool need_post_sync = !is_swizzle_identity || format_need_additional_memory(last_written_surface->format);
+    ColorSurfaceCacheInfo *return_value = need_post_sync ? last_written_surface : nullptr;
+    last_written_surface = nullptr;
+
+    return return_value;
+}
+
+template <bool sizzle_identity>
+void sync_copy_3_components(uint8_t *restrict src, uint8_t *restrict dst, uint32_t nb_pixels) {
+    for (int i = 0; i < nb_pixels; i++) {
+        if constexpr (sizzle_identity) {
+            dst[i * 3] = src[i * 4];
+            dst[i * 3 + 1] = src[i * 4 + 1];
+            dst[i * 3 + 2] = src[i * 4 + 2];
+        } else {
+            // BGR format
+            dst[i * 3] = src[i * 4 + 2];
+            dst[i * 3 + 1] = src[i * 4 + 1];
+            dst[i * 3 + 2] = src[i * 4];
+        }
+    }
+}
+
+template <typename T>
+void swizzle_text_T_2(T *pixels, uint32_t nb_pixel) {
+    for (int i = 0; i < nb_pixel; i++) {
+        std::swap(pixels[2 * i], pixels[2 * i + 1]);
+    }
+}
+
+template <typename T, size_t type>
+void swizzle_text_T_4(T *pixels, uint32_t nb_pixel) {
+    for (int i = 0; i < nb_pixel; i++) {
+        if constexpr (type == 0) {
+            // BGRA
+            std::swap(pixels[4 * i], pixels[4 * i + 2]);
+        } else if constexpr (type == 1) {
+            // ABGR
+            std::swap(pixels[4 * i], pixels[4 * i + 3]);
+            std::swap(pixels[4 * i + 1], pixels[4 * i + 2]);
+        } else {
+            // ARGB
+            T copy[] = { pixels[4 * i],
+                pixels[4 * i + 1],
+                pixels[4 * i + 2],
+                pixels[4 * i + 3] };
+            pixels[4 * i] = copy[3];
+            pixels[4 * i + 1] = copy[0];
+            pixels[4 * i + 2] = copy[1];
+            pixels[4 * i + 3] = copy[2];
+        }
+    }
+}
+
+template <typename T>
+void swizzle_text_T(T *pixels, uint32_t nb_pixel, ColorSurfaceCacheInfo *surface) {
+    // there can only be 2 or 4 component textures here
+    if (vk::componentCount(surface->texture.format) == 2) {
+        swizzle_text_T_2<T>(pixels, nb_pixel);
+    } else {
+        // find the swizzle
+        // swizzles are inversed
+        switch (surface->swizzle.r) {
+        case vk::ComponentSwizzle::eB:
+            // BGRA
+            swizzle_text_T_4<T, 0>(pixels, nb_pixel);
+            break;
+        case vk::ComponentSwizzle::eA:
+            // ABGR
+            swizzle_text_T_4<T, 1>(pixels, nb_pixel);
+            break;
+        case vk::ComponentSwizzle::eG:
+            // ARGB
+            swizzle_text_T_4<T, 2>(pixels, nb_pixel);
+            break;
+        }
+    }
+}
+
+void VKSurfaceCache::perform_post_surface_sync(const MemState &mem, ColorSurfaceCacheInfo *surface) {
+    if (surface == nullptr)
+        return;
+
+    const uint32_t nb_pixels = surface->pixel_stride * surface->original_height;
+    uint8_t *pixels = surface->data.cast<uint8_t>().get(mem);
+
+    if (format_need_additional_memory(surface->format)) {
+        // special case, use a custom function
+        const bool is_swizzle_identity = surface->swizzle.r == vk::ComponentSwizzle::eR;
+        uint8_t *src = reinterpret_cast<uint8_t *>(surface->copy_buffer->mapped_data);
+        if (is_swizzle_identity) {
+            sync_copy_3_components<true>(src, pixels, nb_pixels);
+        } else {
+            sync_copy_3_components<false>(src, pixels, nb_pixels);
+        }
+        return;
+    }
+
+    switch (vk::componentBits(surface->texture.format, 0)) {
+    case 8:
+        swizzle_text_T<uint8_t>(pixels, nb_pixels, surface);
+        break;
+    case 16:
+        swizzle_text_T<uint16_t>(reinterpret_cast<uint16_t *>(pixels), nb_pixels, surface);
+        break;
+    case 32:
+        swizzle_text_T<uint32_t>(reinterpret_cast<uint32_t *>(pixels), nb_pixels, surface);
+        break;
+    }
 }
 
 void VKSurfaceCache::destroy_associated_framebuffers(const VKRenderTarget *render_target) {
@@ -794,9 +1046,12 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
             if (info.swizzle == vkutil::rgba_mapping && info.texture.format == vk::Format::eR8G8B8A8Unorm)
                 return info.texture.view;
 
-            if (!info.sampled_image.view) {
+            if (!info.sampled_image)
+                info.sampled_image = std::make_unique<vkutil::Image>();
+
+            if (!info.sampled_image->view) {
                 // create a view with the right swizzle and without gamma correction
-                info.sampled_image.destroy_on_deletion = false;
+                info.sampled_image->destroy_on_deletion = false;
                 vk::ImageViewCreateInfo view_info{
                     .image = info.texture.image,
                     .viewType = vk::ImageViewType::e2D,
@@ -804,10 +1059,10 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
                     .components = vkutil::color_to_texture_swizzle(info.swizzle, vkutil::rgba_mapping),
                     .subresourceRange = vkutil::color_subresource_range
                 };
-                info.sampled_image.view = state.device.createImageView(view_info);
+                info.sampled_image->view = state.device.createImageView(view_info);
             }
 
-            return info.sampled_image.view;
+            return info.sampled_image->view;
         }
     }
 

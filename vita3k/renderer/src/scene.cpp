@@ -125,7 +125,7 @@ COMMAND(handle_sync_surface_data) {
         }
     }
 
-    if (renderer.disable_surface_sync) {
+    if (renderer.disable_surface_sync || renderer.current_backend == Backend::Vulkan) {
         if (helper.cmd->status)
             complete_command(renderer, helper, 0);
         return;
@@ -154,7 +154,6 @@ COMMAND(handle_sync_surface_data) {
         break;
 
     case Backend::Vulkan:
-        // not implemented for now
         break;
 
     default:
