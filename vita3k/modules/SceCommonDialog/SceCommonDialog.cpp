@@ -490,8 +490,8 @@ typedef struct SceNetCheckDialogResult {
 
 EXPORT(int, sceNetCheckDialogGetResult, SceNetCheckDialogResult *result) {
     TRACY_FUNC(sceNetCheckDialogGetResult, result);
-    result->result = -1;
-    return STUBBED("result->result = -1, return 0");
+    result->result = 0;
+    return STUBBED("result->result = 0");
 }
 
 EXPORT(SceCommonDialogStatus, sceNetCheckDialogGetStatus) {

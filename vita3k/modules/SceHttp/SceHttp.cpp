@@ -23,6 +23,7 @@
 #include <ws2tcpip.h>
 #define write(x, y, z) _write(x, y, z)
 #define read(x, y, z) _read(x, y, z)
+#define close(x) _close(x)
 #else
 #include <netdb.h>
 #include <sys/socket.h>
@@ -30,8 +31,11 @@
 
 #include <http/state.h>
 
+#include <kernel/state.h>
+#include <net/state.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
+#include <util/lock_and_find.h>
 #include <util/log.h>
 #include <util/net_utils.h>
 #include <util/tracy.h>
@@ -216,7 +220,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
         }
         case SCE_HTTP_ERROR_OUT_OF_SIZE: return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_SIZE);
         default:
-            LOG_WARN("Returning missing case of parse_url {}", parseRet);
+            LOG_WARN("Returning missing case of parse_url {}", (int)parseRet);
             assert(false);
             return parseRet;
         }
@@ -246,12 +250,6 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
         return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN);
     }
 
-    if (!emuenv.cfg.http_enable) {
-        // Need to push the connection here so the id exists when "sending" the request
-        emuenv.http.connections.emplace(connId, SceConnection{ tmplId, urlStr, enableKeepalive, isSecure, sockfd });
-        return 0;
-    }
-
     const addrinfo hints = {
         AI_PASSIVE, /* For wildcard IP address */
         AF_UNSPEC, /* Allow IPv4 or IPv6 */
@@ -260,10 +258,40 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
     };
     addrinfo *result = { 0 };
 
+    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+
     auto ret = getaddrinfo(parsed.hostname.c_str(), port.c_str(), &hints, &result);
     if (ret < 0) {
+        if (!emuenv.cfg.http_enable) {
+            LOG_WARN("getaddrinfo failed, but http is disabled, asume we still got it");
+
+            // Even if we didnt get the ip, we should send the ip obtained callback
+            for (auto &callback : emuenv.netctl.callbacks) {
+                if (callback.pc != 0) {
+                    thread->run_callback(callback.pc, { SCE_NET_CTL_EVENT_TYPE_IPOBTAINED, callback.arg });
+                }
+            }
+            // Need to push the connection here so the id exists when "sending" the request
+            emuenv.http.connections.emplace(connId, SceConnection{ tmplId, urlStr, enableKeepalive, isSecure, sockfd });
+
+            return connId;
+        }
+
         LOG_ERROR("getaddrinfo({},{},...) = {}", url, port, ret);
         return RET_ERROR(SCE_HTTP_ERROR_RESOLVER_ENODNS);
+    }
+
+    // We got the ip, send the IPOPBTAINED callback event
+    for (auto &callback : emuenv.netctl.callbacks) {
+        if (callback.pc != 0) {
+            thread->run_callback(callback.pc, { SCE_NET_CTL_EVENT_TYPE_IPOBTAINED, callback.arg });
+        }
+    }
+
+    if (!emuenv.cfg.http_enable) {
+        // Need to push the connection here so the id exists when "sending" the request
+        emuenv.http.connections.emplace(connId, SceConnection{ tmplId, urlStr, enableKeepalive, isSecure, sockfd });
+        return connId;
     }
 
     ret = connect(sockfd, result->ai_addr, result->ai_addrlen);
@@ -370,7 +398,7 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceHttpMethods method
         }
         case SCE_HTTP_ERROR_OUT_OF_SIZE: return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_SIZE);
         default:
-            LOG_WARN("Returning missing case of parse_url {}", parseRet);
+            LOG_WARN("Returning missing case of parse_url {}", (int)parseRet);
             assert(false);
             return parseRet;
         }
@@ -382,10 +410,6 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceHttpMethods method
     std::string slash = "/";
     if (parsed.path.empty())
         parsed.path = slash;
-    if (parsed.query.empty())
-        parsed.query = "";
-    if (parsed.fragment.empty())
-        parsed.fragment = "";
     std::string resourcePath = parsed.path + parsed.query + parsed.fragment;
 
     SceRequest req;
@@ -687,6 +711,10 @@ EXPORT(SceInt, sceHttpGetResponseContentLength, SceInt reqId, SceULong64 *conten
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     auto req = emuenv.http.requests.find(reqId);
+    if (!emuenv.cfg.http_enable) {
+        *contentLength = req->second.res.contentLength;
+        return 0;
+    }
 
     auto length_it = req->second.res.headers.find("Content-Length");
     if (length_it == req->second.res.headers.end())
@@ -836,8 +864,6 @@ EXPORT(SceInt, sceHttpReadData, SceInt reqId, void *data, SceSize size) {
     auto conn = emuenv.http.connections.find(req->second.connId);
     auto tmpl = emuenv.http.templates.find(conn->second.tmplId);
 
-    SceSize read = 0;
-
     // If the game wants to read more than whats available, change the read ammount to what is available
     if (size > (req->second.res.contentLength - req->second.res.responseRead)) {
         size = req->second.res.contentLength - req->second.res.responseRead;
@@ -848,11 +874,16 @@ EXPORT(SceInt, sceHttpReadData, SceInt reqId, void *data, SceSize size) {
         return 0;
     }
 
-    memcpy(data, req->second.res.body + req->second.res.responseRead, size);
+    if (!emuenv.cfg.http_enable) {
+        memset(data, 0, size);
+        LOG_WARN("READ DATA FILLED WITH 0");
+    } else {
+        memcpy(data, req->second.res.body + req->second.res.responseRead, size);
+    }
 
-    req->second.res.responseRead += read;
+    req->second.res.responseRead += size;
 
-    return read;
+    return size;
 }
 
 EXPORT(int, sceHttpRedirectCacheFlush) {
@@ -906,12 +937,18 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
-    if (!emuenv.cfg.http_enable)
-        return 0;
-
     auto req = emuenv.http.requests.find(reqId);
     auto conn = emuenv.http.connections.find(req->second.connId);
     auto tmpl = emuenv.http.templates.find(conn->second.tmplId);
+
+    if (!emuenv.cfg.http_enable) {
+        req->second.res.statusCode = 200;
+        req->second.res.reasonPhrase = "OK";
+        req->second.res.contentLength = 4096;
+        STUBBED("statusCode = 200; reason = \"OK\"; contentLength = 4096");
+
+        return 0;
+    }
 
     LOG_DEBUG("Sending {} request to {}", net_utils::int_method_to_char(req->second.method), req->second.url);
 
@@ -1116,7 +1153,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         } while (sent < total);
 
         //  Once we send the request we need to send the actual data
-        auto dataSent = 0;
+        SceSize dataSent = 0;
         auto dataBytes = 0;
         do {
             if (conn->second.isSecure)
@@ -1493,7 +1530,7 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<
         }
         case SCE_HTTP_ERROR_OUT_OF_SIZE: return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_SIZE);
         default:
-            LOG_WARN("Returning missing case of parse_url {}", parseRet);
+            LOG_WARN("Returning missing case of parse_url {}", (int)parseRet);
             assert(false);
             return parseRet;
         }
@@ -1505,7 +1542,7 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<
     if (parsed.port.empty())
         parsed.port = "0"; // Threat 0 as invalid, even if it isn't
 
-    const uint32_t internal_require = parsed.scheme.size() + parsed.username.size() + parsed.password.size() + parsed.hostname.size() + parsed.path.size() + parsed.query.size() + parsed.fragment.size() + 7;
+    const SceSize internal_require = parsed.scheme.size() + parsed.username.size() + parsed.password.size() + parsed.hostname.size() + parsed.path.size() + parsed.query.size() + parsed.fragment.size() + 7;
     if (require) {
         *require = internal_require;
     }
@@ -1559,7 +1596,7 @@ EXPORT(SceInt, sceHttpUriSweepPath, char *dst, const char *src, SceSize srcSize)
         }
         case SCE_HTTP_ERROR_OUT_OF_SIZE: return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_SIZE);
         default:
-            LOG_WARN("Returning missing case of parse_url {}", parseRet);
+            LOG_WARN("Returning missing case of parse_url {}", (int)parseRet);
             assert(false);
             return parseRet;
         }

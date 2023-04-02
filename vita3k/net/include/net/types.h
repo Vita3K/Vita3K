@@ -19,6 +19,11 @@
 
 #include <mem/ptr.h>
 
+// I dont know why, dont ask why, i dont want to know why, but for some reason a property name is getting treated as a define reference
+#ifdef _WIN32
+#undef s_addr
+#endif
+
 enum SceNetProtocol : uint32_t {
     SCE_NET_IPPROTO_IP = 0,
     SCE_NET_IPPROTO_ICMP = 1,
@@ -349,4 +354,10 @@ struct SceNetEpollEvent {
     unsigned int reserved;
     unsigned int system[4];
     SceNetEpollData data;
+};
+
+enum SceNetCtlEventType {
+    SCE_NET_CTL_EVENT_TYPE_DISCONNECTED = 1,
+    SCE_NET_CTL_EVENT_TYPE_DISCONNECT_REQ_FINISHED = 2,
+    SCE_NET_CTL_EVENT_TYPE_IPOBTAINED = 3,
 };
