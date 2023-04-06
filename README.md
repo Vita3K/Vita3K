@@ -5,22 +5,20 @@
 
 ## Introduction
 
-Vita3K is an experimental PlayStation Vita emulator for Windows, Linux, macOS and [Android](https://github.com/Vita3K/Vita3K-Android).
+Vita3K is an experimental PlayStation Vita emulator for Windows, Linux, macOS and Android.
 
 * [Website](https://vita3k.org/) (information for users)
 * [Wiki](https://github.com/Vita3K/Vita3K/wiki) (information for developers)
-* [**Discord**](https://discord.gg/MaWhJVH) (recommended)
-* IRC `#vita3k` on **freenode** ([Web-based IRC client](https://webchat.freenode.net/?channels=%23vita3k))
-* [Patreon](https://www.patreon.com/Vita3K) (support the project)
-
-You can view the Android version [here](https://github.com/Vita3K/Vita3K-Android).
+* [Discord server](https://discord.gg/MaWhJVH) (recommended)
 
 ## Compatibility
 
-The emulator currently runs most homebrew programs. It is also able to load some decrypted commercial games.
+The emulator currently runs most homebrew programs. It is also able to load some commercial games.
 
 - [Homebrew compatibility page](https://vita3k.org/compatibility-homebrew.html)
 - [Commercial compatibility page](https://vita3k.org/compatibility.html)
+
+## Gallery
 
 |               **Persona 4 Golden** by Atlus                   |                     **A Rose in the Twilight** by Nippon Ichi Software                         |
 | :-----------------------------------------------------------: | :--------------------------------------------------------------------------------------------: |
@@ -34,7 +32,7 @@ The emulator currently runs most homebrew programs. It is also able to load some
 | :----------------------------------------------------------------: | :------------------------------------------------------------------------: |
 | ![Fruit Ninja Screenshot](./_readme/screenshots/Fruit%20Ninja.png) | ![Jetpack Joyride Screenshot](./_readme/screenshots/Jetpack%20Joyride.png) |
 
-## Licence
+## License
 
 Vita3K is licensed under the **GPLv2** license. This is largely dictated by external dependencies, most notably Unicorn.
 
@@ -49,6 +47,8 @@ Vita3K is licensed under the **GPLv2** license. This is largely dictated by exte
     * [vita3k-git](https://aur.archlinux.org/packages/vita3k-git)<sup><small>AUR</small></sup>
   * Requirements:
     * xdg-desktop-portal
+* [Android](https://github.com/Vita3K/Vita3K-Android/releases/)
+    * [Adreno drivers](https://github.com/K11MCH1/AdrenoToolsDrivers/releases/)
 * Others
   * [Download Artifact](https://github.com/Vita3K/Vita3K/actions?query=event%3Apush+is%3Asuccess+branch%3Amaster)
 
@@ -57,26 +57,17 @@ Vita3K is licensed under the **GPLv2** license. This is largely dictated by exte
 Please see [`building.md`](./building.md).
 
 ## Running
-Specify the path to a .vpk file as the first command line argument, or run `Vita3K --help` from the command-line for a full list of options.
-For more detailed instructions on running/installing games on all platforms, please read the **#info-faq** channel on our [Discord Server](https://discord.gg/MaWhJVH).
+Look through the app list and click on the app you would like to run and click the start button.
+
+For more detailed instructions on running/installing apps on Vita3K, please read the **#info-faq** channel on our [Discord Server](https://discord.gg/MaWhJVH).
 
 ## Bugs and issues
-The project is in an early stage, so please be sensitive to that when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
+The project is in an early stage, so please be mindful when opening new issues. Expect crashes, glitches, low compatibility and poor performance.
 
 ## Thanks
-Thanks go out to people who offered advice or otherwise made this project possible, such as Davee, korruptor, Rinnegatamante, ScHlAuChi, Simon Kilroy, TheFlow, xerpi, xyz, Yifan Lu and many others.
-
-## Donations
-If you would like to show your appreciation or help fund development, the project has a [Patreon](https://www.patreon.com/Vita3K) page.
-
-## Supporters
-Thank you to the following supporters:
-* Mored1984
-* soiaf
-
-If you support us on Patreon and would like your name added, please get in touch or open a Pull Request.
+Thanks go out to the developer team and [everyone who has contributed](https://github.com/Vita3K/Vita3K/graphs/contributors). These are people like petmac, frangarcj, VelocityRa, 1whatleytay, EXtremeExploit, HolyMcDiver, HorrorTroll, IllusionMan1212, KorewaWatchful, scribam, sunho, wfscans, Macdu, bookmist and pent0.
 
 ## Note
-The purpose of this emulator is not to enable illegal activity. You can dump games by using [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm)/[FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). You can get homebrew programs from [VitaDB](https://vitadb.rinnegatamante.it/).
+The purpose of this emulator is not to enable illegal activity. You can dump games from a Vita by using [NoNpDrm](https://github.com/TheOfficialFloW/NoNpDrm) or [FAGDec](https://github.com/CelesteBlue-dev/PSVita-RE-tools/tree/master/FAGDec/build). You can get homebrew programs from [VitaDB](https://vitadb.rinnegatamante.it/).
 
-PlayStation and PlayStation Vita are trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.
+PlayStation, PlayStation Vita and PlayStation Network are all registered trademarks of Sony Interactive Entertainment Inc. This emulator is not related to or endorsed by Sony, or derived from confidential materials belonging to Sony.

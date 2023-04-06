@@ -76,7 +76,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
         // Check if title ID is valid
         if ((title_id.find("PCS") == std::string::npos) && (title_id != "NPXS10007")) {
-            LOG_WARN("title ID {} is invalid. Please check GitHub issue {} and verify it!", title_id, issue_id);
+            LOG_WARN("Title ID {} is invalid. Please check GitHub issue {} and verify it!", title_id, issue_id);
             continue;
         }
 
@@ -101,7 +101,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
         // Check if app missing a status label
         if (state == UNKNOWN)
-            LOG_WARN("App with title ID {} has an issue but no status label. Please check GitHub issue {} and request a status label to be added.", title_id, issue_id);
+            LOG_WARN("App with Title ID {} has an issue but no status label. Please check GitHub issue {} and request a status label be added.", title_id, issue_id);
 
         // Check if app already exists in compatibility database
         if (gui.compat.app_compat_db.contains(title_id))
@@ -129,7 +129,7 @@ bool update_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
     const auto updated_at = https::get_web_regex_result(latest_link, std::regex("Updated at: (\\d{2}-\\d{2}-\\d{4} \\d{2}:\\d{2}:\\d{2})"));
     if (updated_at.empty()) {
         gui.info_message.level = spdlog::level::err;
-        gui.info_message.msg = "Failed to get current compatibility database updated at, check firewall/internet access, try again later.";
+        gui.info_message.msg = "Failed to get current compatibility database, check firewall/internet access, try again later.";
         return false;
     }
 

@@ -154,7 +154,7 @@ struct LangState {
         { "history_version", "Version {}" },
         { "information", "Information" },
         { "app_delete", "This application and all related data, including saved data, will be deleted." },
-        { "app_delete_note", "Deleting a application may take a while\ndepending on its size and your hardware." },
+        { "app_delete_note", "Deleting an application may take a while\ndepending on its size and your hardware." },
         { "addcont_delete", "Do you want to delete this add-on data?" },
         { "license_delete", "Do you want to delete this license?" },
         { "save_delete", "Do you want to delete this saved data?" },
