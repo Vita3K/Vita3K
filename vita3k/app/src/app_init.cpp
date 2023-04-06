@@ -190,7 +190,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
                 break;
 
             case renderer::Backend::Vulkan:
-                error_dialog("Could not create Vulkan context!");
+                error_dialog("Could not create Vulkan context!\nDoes your device support Vulkan?");
                 break;
 
             default:
@@ -210,7 +210,7 @@ bool init(EmuEnvState &state, Config &cfg, const Root &root_paths) {
         LOG_CRITICAL("Unicorn backend is not supported with a page table");
 
     if (!state.audio.init(resume_thread, state.cfg.audio_backend)) {
-        LOG_WARN("Failed to init audio! Audio will not work.");
+        LOG_WARN("Failed to initialize audio! Audio will not work.");
     }
 
     if (!init(state.io, state.base_path, state.pref_path, state.cfg.console)) {

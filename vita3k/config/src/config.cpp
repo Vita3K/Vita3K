@@ -67,7 +67,7 @@ static fs::path check_path(const fs::path &output_path) {
 static ExitCode parse(Config &cfg, const fs::path &load_path, const fs::path &root_pref_path) {
     const auto loaded_path = check_path(load_path);
     if (loaded_path.empty() || !fs::exists(loaded_path)) {
-        LOG_ERROR("Config file input path invalid (did you make sure to name the extension \".yml\"?)");
+        LOG_ERROR("Config file input path invalid (did you name the extension \".yml\"?)");
         return FileNotFound;
     }
 
@@ -232,7 +232,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     }
 
     if (cfg.console && (cfg.run_app_path || !cfg.content_path)) {
-        LOG_ERROR("Console mode only supports vpk for now");
+        LOG_ERROR("Command line version only supports .vpk for now.");
         return InitConfigFailed;
     }
 

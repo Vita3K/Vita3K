@@ -483,7 +483,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
                 if (get_update_history(gui, emuenv, app_path))
                     context_dialog = "history";
                 else
-                    LOG_WARN("Patch note Error for title id: {} in path: {}", title_id, app_path);
+                    LOG_WARN("Patch note Error for Title ID {} in path {}", title_id, app_path);
             }
         }
         if (ImGui::MenuItem(lang["information"].c_str(), nullptr, &gui.vita_area.app_information)) {
