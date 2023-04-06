@@ -42,6 +42,8 @@ static const GLint swizzle_rg[4] = { GL_GREEN, GL_RED, GL_ZERO, GL_ONE };
 static const GLint swizzle_ar[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_GREEN };
 static const GLint swizzle_ra[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_GREEN };
 
+static const GLint swizzle_r[4] = { GL_RED, GL_ZERO, GL_ZERO, GL_ONE };
+
 static const GLint *translate_swizzle(SceGxmColorSwizzle4Mode mode) {
     switch (mode) {
     case SCE_GXM_COLOR_SWIZZLE4_ABGR:
@@ -85,6 +87,18 @@ static const GLint *translate_swizzle(SceGxmColorSwizzle2Mode mode) {
     return swizzle_gr;
 }
 
+static const GLint *translate_swizzle(SceGxmColorSwizzle1Mode mode) {
+    switch (mode) {
+    case SCE_GXM_COLOR_SWIZZLE1_R:
+        return swizzle_r;
+    case SCE_GXM_COLOR_SWIZZLE1_G:
+        LOG_ERROR("unimplemented swizzle1 mode {}", log_hex(mode));
+        break;
+    }
+
+    return swizzle_r;
+}
+
 // Translate popular color base format that can be bit-casted for purposes
 GLenum translate_internal_format(SceGxmColorBaseFormat base_format) {
     switch (base_format) {
@@ -105,6 +119,9 @@ GLenum translate_internal_format(SceGxmColorBaseFormat base_format) {
 
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
         return GL_RG32F;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_F16:
+        return GL_R16F;
 
     default:
         LOG_ERROR("Unknown base format {}", log_hex(base_format));
@@ -129,8 +146,10 @@ GLenum translate_format(SceGxmColorBaseFormat base_format) {
     case SCE_GXM_COLOR_BASE_FORMAT_F11F11F10:
         return GL_RGB;
 
-    default:
-        return GL_RGBA;
+    case SCE_GXM_COLOR_BASE_FORMAT_F16:
+        return GL_RED;
+
+    default: return GL_RGBA;
     }
 }
 
@@ -153,6 +172,9 @@ GLenum translate_type(SceGxmColorBaseFormat base_format) {
 
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
         return GL_FLOAT;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_F16:
+        return GL_HALF_FLOAT;
 
     default:
         return GL_UNSIGNED_BYTE;
@@ -179,6 +201,9 @@ const GLint *translate_swizzle(SceGxmColorFormat fmt) {
     case SCE_GXM_COLOR_BASE_FORMAT_F32F32:
         return translate_swizzle(static_cast<SceGxmColorSwizzle2Mode>(swizzle));
 
+    case SCE_GXM_COLOR_BASE_FORMAT_F16:
+        return translate_swizzle(static_cast<SceGxmColorSwizzle1Mode>(swizzle));
+
     default:
         break;
     }
@@ -192,6 +217,8 @@ size_t bytes_per_pixel(SceGxmColorBaseFormat base_format) {
 
 size_t bytes_per_pixel_in_gl_storage(SceGxmColorBaseFormat base_format) {
     switch (base_format) {
+    case SCE_GXM_COLOR_BASE_FORMAT_F16:
+        return 2;
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
