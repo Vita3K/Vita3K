@@ -553,7 +553,7 @@ You can earn trophies by using an application that supports the trophy feature.<
 		<delete_user>Delete User</delete_user>
 		<user_delete>Select the user you want to delete.</user_delete>
 		<user_delete_msg>The following user will be deleted.</user_delete_msg>
-		<user_delete_message>If you delete the user, that user's saved data and trophies will be deleted.</user_delete_message>
+		<user_delete_message>If you delete the user, that user's saved data, trophies will be deleted.</user_delete_message>
 		<user_delete_warn>The user will be deleted.
 Are you sure you want to continue?</user_delete_warn>
 		<user_deleted>User deleted.</user_deleted>
@@ -580,7 +580,7 @@ After the download is complete, Vita3K will restart automatically and then insta
 		<later_version_already_installed>The later version of Vita3K is already installed.</later_version_already_installed>
 		<latest_version_already_installed>The latest version of Vita3K is already installed.</latest_version_already_installed>
 		<new_features>New Features in Version {}</new_features>
-		<authors>Author</authors>
+		<authors>Authors</authors>
 		<comments>Comments</comments>
 		<update>Update</update>
 		<version>Version {}</version>

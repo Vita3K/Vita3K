@@ -476,7 +476,7 @@ struct LangState {
         { "delete_user", "Delete User" },
         { "user_delete", "Select the user you want to delete." },
         { "user_delete_msg", "The following user will be deleted." },
-        { "user_delete_message", "If you delete the user, that user's saved data and trophies will be deleted." },
+        { "user_delete_message", "If you delete the user, that user's saved data, trophies will be deleted." },
         { "user_delete_warn", "The user will be deleted.\nAre you sure you want to continue?" },
         { "user_deleted", "User deleted." },
         { "change_avatar", "Change Avatar" },
@@ -500,7 +500,7 @@ struct LangState {
         { "later_version_already_installed", "The later version of Vita3K is already installed." },
         { "latest_version_already_installed", "The latest version of Vita3K is already installed." },
         { "new_features", "New Features in Version {}" },
-        { "authors", "Author" },
+        { "authors", "Authors" },
         { "comments", "Comments" },
         { "update", "Update" },
         { "version", "Version {}" }
