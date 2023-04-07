@@ -97,7 +97,7 @@ void load_and_update_compat_user_apps(GuiState &gui, EmuEnvState &emuenv) {
     std::thread load_and_update_compat_user_apps_thread([&gui, &emuenv]() {
         if (!gui.compat.compat_db_loaded)
             gui.compat.compat_db_loaded = compat::load_compat_app_db(gui, emuenv);
-        if (compat::update_compat_app_db(gui, emuenv) && gui.users[emuenv.io.user_id].sort_apps_type == COMPAT)
+        if (compat::update_compat_app_db(gui, emuenv) && !emuenv.io.user_id.empty() && gui.users[emuenv.io.user_id].sort_apps_type == COMPAT)
             gui.app_selector.is_app_list_sorted = false;
     });
     load_and_update_compat_user_apps_thread.detach();
