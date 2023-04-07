@@ -126,10 +126,10 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
         items_pos["a5"]["frame7"]["size"] = ImVec2(360.f, 210.f);
         // psmobile
         items_pos["psmobile"]["gate"]["pos"] = ImVec2(380.f, 339.f);
-        // items_pos["psmobile"]["frame1"]["pos"] = ImVec2(900.f, 414.f);
-        // items_pos["psmobile"]["frame1"]["size"] = ImVec2(480.f, 68.f);
+        items_pos["psmobile"]["frame1"]["pos"] = ImVec2(865.f, 408.f);
+        items_pos["psmobile"]["frame1"]["size"] = ImVec2(480.f, 68.f);
         items_pos["psmobile"]["frame2"]["pos"] = ImVec2(865.f, 215.f);
-        items_pos["psmobile"]["frame2"]["size"] = ImVec2(440.f, 68.f);
+        items_pos["psmobile"]["frame2"]["size"] = ImVec2(480.f, 68.f);
         items_pos["psmobile"]["frame3"]["pos"] = ImVec2(865.f, 113.f);
         items_pos["psmobile"]["frame3"]["size"] = ImVec2(440.f, 34.f);
         items_pos["psmobile"]["frame4"]["pos"] = ImVec2(865.f, 39.f);

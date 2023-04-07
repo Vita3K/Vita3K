@@ -210,11 +210,11 @@ static void download_update(const std::string base_path) {
             SDL_PushEvent(&event);
 
 #ifdef WIN32
-            const auto vita3K_batch = fmt::format("{}/update-vita3k.bat", base_path);
+            const auto vita3K_batch = fmt::format("\"{}/update-vita3k.bat\"", base_path);
 #elif defined(__APPLE__)
-            const auto vita3K_batch = fmt::format("sh {}/update-vita3k.sh", base_path);
+            const auto vita3K_batch = fmt::format("sh \"{}/update-vita3k.sh\"", base_path);
 #else
-            const auto vita3K_batch = fmt::format("chmod +x {}/update-vita3k.sh && {}/update-vita3k.sh", base_path, base_path);
+            const auto vita3K_batch = fmt::format("chmod +x \"{}/update-vita3k.sh\" && \"{}/update-vita3k.sh\"", base_path, base_path);
 #endif
             // When success finish download, remove latest ver file
             fs::remove(latest_ver_path);
