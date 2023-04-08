@@ -511,10 +511,9 @@ COMMAND_SET_STATE(fragment_program_enable) {
 COMMAND(handle_set_state) {
     // TRACY_FUNC_COMMANDS(handle_set_state); All set state commands have tracy so kinda redundant
     renderer::GXMState gxm_state_to_set = helper.pop<renderer::GXMState>();
-    using StateChangeHandlerFunc = std::function<void(renderer::State &, MemState &, Config &, CommandHelper &,
-        Context *, const char *base_path, const char *title_id)>;
+    using StateChangeHandlerFunc = decltype(cmd_set_state_region_clip);
 
-    static const std::map<renderer::GXMState, StateChangeHandlerFunc> handlers = {
+    static const std::map<renderer::GXMState, StateChangeHandlerFunc *> handlers = {
         { GXMState::RegionClip, cmd_set_state_region_clip },
         { GXMState::Program, cmd_set_state_program },
         { GXMState::Viewport, cmd_set_state_viewport },
