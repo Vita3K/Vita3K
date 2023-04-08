@@ -67,10 +67,9 @@ bool wait_cmd(MemState &mem, CommandList &command_list) {
 }
 
 void process_batch(renderer::State &state, const FeatureState &features, MemState &mem, Config &config, CommandList &command_list) {
-    using CommandHandlerFunc = std::function<void(renderer::State &, MemState &, Config &,
-        CommandHelper &, const FeatureState &, Context *, const char *, const char *, const char *)>;
+    using CommandHandlerFunc = decltype(cmd_handle_set_context);
 
-    const static std::map<CommandOpcode, CommandHandlerFunc> handlers = {
+    const static std::map<CommandOpcode, CommandHandlerFunc *> handlers = {
         { CommandOpcode::SetContext, cmd_handle_set_context },
         { CommandOpcode::SyncSurfaceData, cmd_handle_sync_surface_data },
         { CommandOpcode::CreateContext, cmd_handle_create_context },
