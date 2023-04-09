@@ -14,3 +14,5 @@ build
 .cache
 # CMake user presets
 CMakeUserPresets.json
+# External deps and Conan install folder
+.deps/

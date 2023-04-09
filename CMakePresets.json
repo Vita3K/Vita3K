@@ -13,6 +13,10 @@
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "USE_DISCORD_RICH_PRESENCE": true
+      },
+      "environment": {
+        "CMAKE_C_COMPILER_LAUNCHER": "$penv{CMAKE_C_COMPILER_LAUNCHER}",
+        "CMAKE_CXX_COMPILER_LAUNCHER": "$penv{CMAKE_CXX_COMPILER_LAUNCHER}"
       }
     },
     {
@@ -112,7 +116,8 @@
       "description": "Linux native build using Ninja Multi-Config generator and GNU GCC compiler",
       "cacheVariables": {
         "CMAKE_C_COMPILER": "gcc",
-        "CMAKE_CXX_COMPILER": "g++"
+        "CMAKE_CXX_COMPILER": "g++",
+        "CMAKE_CXX_FLAGS": "-D_GLIBCXX_USE_CXX11_ABI=0"
       }
     },
     {

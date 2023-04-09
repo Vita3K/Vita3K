@@ -75,24 +75,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	set(LINUX TRUE)
 endif()
 
-macro(configure_boost)
-	message("configuring boost")
-
-	set(Boost_USE_STATIC_LIBS ON)
-	set(Boost_USE_MULTITHREADED ON)
-	set(BOOST_COMPONENTS filesystem system)
-
-	find_package(Boost COMPONENTS ${BOOST_COMPONENTS} REQUIRED)
-
-	include_directories(${Boost_INCLUDE_DIRS})
-
-	message("Using Boost_VERSION: ${Boost_VERSION}")
-	message("Using Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
-	message("Using Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
-endmacro(configure_boost)
-
-configure_boost()
-
 if (USE_DISCORD_RICH_PRESENCE)
 	add_definitions(-DUSE_DISCORD)
 endif()
@@ -144,6 +126,49 @@ add_subdirectory(packages)
 add_subdirectory(vkutil)
 
 add_executable(vita3k MACOSX_BUNDLE main.cpp interface.cpp interface.h performance.cpp)
+
+# Add step to copy shared library files from Conan into executable build dir
+list(APPEND VITA3K_SHARED_TARGETS_TO_COPY)
+foreach(target ${VITA3K_SHARED_TARGETS_TO_COPY})
+	# Get the target's file location (configuration-agnostic)
+	get_target_property(LOCATION ${target} "IMPORTED_LOCATION")
+
+	# Upper-case CMAKE_CONFIGURATION_TYPES
+	list(APPEND CONFIGURATION_TYPES)
+	foreach(configuration ${CMAKE_CONFIGURATION_TYPES})
+		# Uppercase the configuration name
+		string(TOUPPER ${configuration} configuration)
+
+		# Add it to the list
+		list(APPEND CONFIGURATION_TYPES ${configuration})
+	endforeach()
+
+	# Get the target's file location (configuration-specific)
+	foreach(configuration ${CONFIGURATION_TYPES})
+		# Get location for the imported target
+		get_target_property(LOCATION_${configuration} ${target} "IMPORTED_LOCATION_${configuration}")
+
+		# If the property isn't found, set the variable to an empty string
+		if(LOCATION_${configuration} STREQUAL "LOCATION_${configuration}-NOTFOUND")
+			set(LOCATION_${configuration} "")
+		endif()
+	endforeach()
+
+	# Compose the list of configuration-specific arguments to pass to the CMake script
+	list(APPEND CONFIG_SPECIFIC_ARGS)
+	foreach(configuration ${CONFIGURATION_TYPES})
+		list(APPEND CONFIG_SPECIFIC_ARGS "-DLOCATION_${configuration}=\"${LOCATION_${configuration}}\" ")
+	endforeach()
+
+	# Copy the shared library
+	add_custom_command(TARGET vita3k POST_BUILD
+		COMMAND ${CMAKE_COMMAND} -DBUILD_TYPE="$<CONFIG>"
+		-DLOCATION="${LOCATION}"
+		${CONFIG_SPECIFIC_ARGS}
+		-DDESTINATION="$<TARGET_FILE_DIR:vita3k>"
+		-P"${CMAKE_SOURCE_DIR}/cmake/CopySharedLib.cmake"
+	)
+endforeach()
 
 target_link_libraries(vita3k PRIVATE app config ctrl display gdbstub gui gxm io miniz modules packages renderer shader touch)
 if(USE_DISCORD_RICH_PRESENCE)

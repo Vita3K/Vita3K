@@ -1,0 +1,10 @@
+{
+    "version": "0.5",
+    "requires": [
+        "boost/1.81.0#8dcd9d9df9e0d320714b83cceddbe120%1676029990.142"
+    ],
+    "build_requires": [
+        "b2/4.9.3#5445210661950ce568cfd76158d9e117%1675784082.47"
+    ],
+    "python_requires": []
+}

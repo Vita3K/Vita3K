@@ -30,23 +30,31 @@ jobs:
         os: [ubuntu-latest]
         config: [Release]
         cmake_preset: [linux-ninja-clang14]
+        conan_profile: [linux_ci-clang_libstdc++]
+        conan_home: [/tmp/conan2]
 
     steps:
-      - name: Set up build environment (ubuntu-latest)
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install ccache libboost-filesystem-dev libboost-program-options-dev libboost-system-dev libgtk-3-dev libsdl2-dev ninja-build lld-11
-
-      - uses: actions/cache@v3
-        with:
-          path: ~/.ccache
-          key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
-          restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
-
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
+          fetch-depth: 1
           submodules: recursive
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.ccache
+            /tmp/conan2
+          key: ccache-${{ matrix.os }}-${{ matrix.config }}-${{ github.sha }}
+          restore-keys: ccache-${{ matrix.os }}-${{ matrix.config }}-
+
+      - name: Set up build environment (ubuntu-latest)
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install ccache libgtk-3-dev libsdl2-dev ninja-build lld-11
+          pip install conan
+          export CONAN_HOME=${{ matrix.conan_home }}
+          conan install . -b missing -of .deps -pr:h conan/profiles/${{ matrix.conan_profile }} -pr:b conan/profiles/${{ matrix.conan_profile }}
 
       - name: Set up SDL 2.24.0 (ubuntu-latest)
         run: |

@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 project(Vita3K)
 
-# Detects the amount of processors of the host machine and forwards the result to CPU_COUNT
-include(ProcessorCount)
-ProcessorCount(CPU_COUNT)
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -31,149 +27,44 @@ endif()
 
 enable_testing()
 
-############################
-########## Boost ###########
-############################
+# Add Conan output path to CMake prefix path so that all dependencies are able to find
+# the packages they need
+list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_BINARY_DIR}/.deps")
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/.deps")
 
-# Macro to build Boost buildsystem executable
-macro(b2_build)
-	if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-		execute_process(
-			COMMAND ${BOOST_SOURCEDIR}/bootstrap.bat --with-toolset=${BOOST_TOOLSET}
-			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
-            OUTPUT_QUIET
-		)
-	elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
-		execute_process(
-			COMMAND chmod +x ${BOOST_SOURCEDIR}/tools/build/src/engine/build.sh
-			COMMAND sh ${BOOST_SOURCEDIR}/bootstrap.sh
-			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
-            OUTPUT_QUIET
-		)
-    elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-		execute_process(
-			COMMAND chmod +x ${BOOST_SOURCEDIR}/tools/build/src/engine/build.sh
-			COMMAND sh ${BOOST_SOURCEDIR}/bootstrap.sh --with-toolset=${BOOST_TOOLSET}
-			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
-            OUTPUT_QUIET
-		)
-	endif()
-endmacro(b2_build)
+message("Configuring boost...")
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_MULTITHREADED ON)
 
-# Macro to compile Boost
-macro(boost_compile)
-	if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-		execute_process(
-			COMMAND ${b2} -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} address-model=64 --architecture=x64 toolset=${BOOST_TOOLSET} cxxflags=${BOOST_CXX_FLAGS} stage
-			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
-            OUTPUT_QUIET
-		)
-	elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-		execute_process(
-			COMMAND ${b2} -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} cxxflags=${BOOST_CXX_FLAGS} stage
-			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
-            OUTPUT_QUIET
-		)
-	elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-		execute_process(
-			COMMAND ${b2} --ignore-site-config -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} toolset=${BOOST_TOOLSET} cxxflags=${BOOST_CXX_FLAGS} stage
-			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
-            OUTPUT_QUIET
-		)
-	endif()
-endmacro(boost_compile)
+find_package(Boost COMPONENTS filesystem system program_options)
 
-option(VITA3K_FORCE_CUSTOM_BOOST "Force Vita3K build process to use the Boost version included with the repository" OFF)
-option(VITA3K_FORCE_SYSTEM_BOOST "Force Vita3K build process to use the Boost version in the system and CMake's default paths and ignore the Boost version included with Vita3K" OFF)
+message("Using Boost_VERSION: ${Boost_VERSION}")
+message("Using Boost_INCLUDE_DIRS: ${Boost_INCLUDE_DIRS}")
+message("Using Boost_LIBRARY_DIRS: ${Boost_LIBRARY_DIRS}")
 
-# Boost modules to be found by CMake
-# variant and icl should also be found but CMake cannot find them due to not being included in FindBoost module
-set(BOOST_MODULES_TO_FIND filesystem system program_options)
 
-# If build process isn't set to forcefully use system Boost
-if(NOT VITA3K_FORCE_SYSTEM_BOOST)
-    # find_package(Boost ...) setting
-    set(Boost_USE_STATIC_LIBS ON)
-
-    # First, try to find Boost without any hints (system Boost)
-    if(NOT VITA3K_FORCE_CUSTOM_BOOST)
-        find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} QUIET)
-    endif()
-
-    # If system Boost hasn't been found, then enable hints to find custom Boost
-    if (NOT Boost_FOUND)
-        message(STATUS "A Boost distribution that meets the requirements needed for the project hasn't been found in your system. Falling back to custom Boost distribution...")
-    
-        # Set path hints for Boost search inside the repository folder and assist in compilation if needed
-        set(BOOST_SOURCEDIR "${CMAKE_SOURCE_DIR}/external/boost")       # For internal use
-        set(BOOST_INSTALLDIR "${CMAKE_BINARY_DIR}/external/boost")      # For internal use
-        set(BOOST_ROOT "${BOOST_SOURCEDIR}")                            # find_package(Boost ...) hint
-        set(BOOST_INCLUDEDIR "${BOOST_SOURCEDIR}")                      # find_package(Boost ...) hint
-        set(BOOST_LIBRARYDIR "${BOOST_INSTALLDIR}/lib")                 # find_package(Boost ...) hint
-
-        # Find Boost again to check for a existing compilation of the custom distribution
-        find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} QUIET)
-
-        # If no build of the custom distribution is found, compile it
-        if(NOT Boost_FOUND)
-            message(STATUS "No existing custom distribution of Boost has been found in ${BOOST_INSTALLDIR}. Proceeding to compile Boost...")
-
-            # Set compilation toolset for b2 and Boost builds
-            if (CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-                if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-                    if(CMAKE_GENERATOR_TOOLSET STREQUAL "ClangCL")
-                        # Proper toolset should be "clang-win", but b2 has a bug that makes it spam Visual Studio instances if set
-                        # Since Clang for Windows is ABI-compatible with MSVC, using MSVC is fine
-                        set(BOOST_TOOLSET "msvc")
-                    else()
-                        message(WARNING "Boost compilation on Windows requires the use of a clang-cl compiler running inside a Visual Studio Developer CLI environment with a Windows C++ SDK available.")
-                        set(BOOST_TOOLSET "msvc")
-                    endif()
-                else()
-                    set(BOOST_TOOLSET "msvc")
-                endif()
-            elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
-                if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-                    set(BOOST_TOOLSET "clang")
-                elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-                    set(BOOST_TOOLSET "gcc")
-                endif()
-            endif()
-
-            # Determine b2 executable name depending on host system
-            if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
-                set(b2_EXECUTABLE_NAME "b2.exe")
-            else()
-                set(b2_EXECUTABLE_NAME "b2")
-            endif()
-
-            # Find b2
-            find_program(b2 NAME ${b2_EXECUTABLE_NAME} PATHS ${BOOST_SOURCEDIR} NO_CACHE)
-
-            # Compile b2 if it isn't found
-            if(b2 STREQUAL "b2-NOTFOUND")
-                message(STATUS "The b2 buildsystem executable hasn't been found in your system. Compiling b2...")
-                b2_build()
-
-                # Find b2 again after compilation
-                find_program(b2 NAME ${b2_EXECUTABLE_NAME} PATHS ${BOOST_SOURCEDIR} NO_CACHE)
-            endif()
-
-            # Compile Boost
-            message(STATUS "Compiling Boost...")
-            boost_compile()
-
-            # Find Boost again
-            find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} QUIET)
-        else()
-            message(STATUS "Custom Boost distribution found in ${BOOST_INSTALLDIR}")
-        endif()
-    endif()
+# Commented until FFmpeg from Conan works with Conan 2.0
+#[[
+option(VITA3K_USE_SYSTEM_FFMPEG OFF)
+if(NOT VITA3K_USE_SYSTEM_FFMPEG)
+    # Look for FFmpeg in config mode
+    message(STATUS "Looking for FFmpeg using find_package() in CONFIG mode...")
+    find_package(FFmpeg CONFIG COMPONENTS avcodec avformat avutil swresample swscale REQUIRED)
 else()
-    # Try to find Boost on the system and CMake's default paths
-    set(Boost_USE_STATIC_LIBS ON)
-    find_package(Boost COMPONENTS ${BOOST_MODULES_TO_FIND} QUIET)
+    find_package(PkgConfig REQUIRED)
+
+    # Look for FFmpeg using pkg-config
+    pkg_check_modules(FFMPEG REQUIRED IMPORTED_TARGET libavcodec libavformat libavutil libswscale libswresample)
+
+    # Create interface library as a way to bundle all FFmpeg libraries into a single target
+    add_library(ffmpeg INTERFACE)
+    target_link_libraries(ffmpeg INTERFACE "${FFMPEG_LIBRARIES}")
+    target_include_directories(ffmpeg INTERFACE "${FFMPEG_INCLUDE_DIRS}")
+
+    # Alias the target to make its origin agnostic and match the imported name from Conan
+    add_library(ffmpeg::ffmpeg ALIAS ffmpeg)
 endif()
+#]]
 
 if(WIN32)
 	add_definitions (/D "_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS" /D "_CRT_SECURE_NO_WARNINGS" /D "NOMINMAX")
