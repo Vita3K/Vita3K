@@ -240,12 +240,15 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                         if (state->swr)
                             swr_free(&state->swr);
 
-                        state->swr = swr_alloc_set_opts(nullptr,
-                            AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, sample_rate,
-                            AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, src_sample_rate,
+                        AVChannelLayout layout_stereo = AV_CHANNEL_LAYOUT_STEREO;
+                        int ret = swr_alloc_set_opts2(&state->swr,
+                            &layout_stereo, AV_SAMPLE_FMT_FLT, sample_rate,
+                            &layout_stereo, AV_SAMPLE_FMT_FLT, src_sample_rate,
                             0, nullptr);
+                        assert(ret == 0);
 
-                        swr_init(state->swr);
+                        ret = swr_init(state->swr);
+                        assert(ret == 0);
                         state->reset_swr = false;
                     }
                     int scaled_samples_amount = swr_get_out_samples(state->swr, samples_count.samples);

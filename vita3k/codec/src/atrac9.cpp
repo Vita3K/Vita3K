@@ -56,7 +56,7 @@ uint32_t Atrac9DecoderState::get_es_size() {
     return es_size_used;
 }
 
-void Atrac9DecoderState::clear_context() {
+void Atrac9DecoderState::flush() {
     Atrac9CodecInfo *info = reinterpret_cast<Atrac9CodecInfo *>(atrac9_info);
     superframe_frame_idx = 0;
     superframe_data_left = info->superframeSize;

@@ -110,7 +110,7 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
 }
 
 MjpegDecoderState::MjpegDecoderState() {
-    AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_MJPEG);
+    const AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_MJPEG);
     assert(codec);
 
     context = avcodec_alloc_context3(codec);

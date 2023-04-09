@@ -123,13 +123,9 @@ uint32_t Mp3DecoderState::get_es_size() {
     return es_size_used;
 }
 
-void Mp3DecoderState::clear_context() {
-    codec->flush(context);
-}
-
 uint32_t Mp3DecoderState::get(DecoderQuery query) {
     switch (query) {
-    case DecoderQuery::CHANNELS: return context->channels;
+    case DecoderQuery::CHANNELS: return context->ch_layout.nb_channels;
     default: return 0;
     }
 }
@@ -173,9 +169,9 @@ bool Mp3DecoderState::receive(uint8_t *data, DecoderSize *size) {
         int data_size = av_get_bytes_per_sample(context->sample_fmt);
 
         for (int i = 0; i < frame->nb_samples; i++) {
-            for (int ch = 0; ch < context->channels; ch++) {
+            for (int ch = 0; ch < context->ch_layout.nb_channels; ch++) {
                 for (int j = 0; j < data_size; j++) {
-                    data[((data_size + context->channels) * i) + (ch * context->channels) + j] = frame->data[ch][data_size * i + j];
+                    data[((data_size + context->ch_layout.nb_channels) * i) + (ch * context->ch_layout.nb_channels) + j] = frame->data[ch][data_size * i + j];
                 }
             }
         }
@@ -196,7 +192,10 @@ Mp3DecoderState::Mp3DecoderState(uint32_t channels) {
     context = avcodec_alloc_context3(codec);
     assert(context);
 
-    context->channels = channels;
+    if (channels == 2)
+        context->ch_layout = AV_CHANNEL_LAYOUT_STEREO;
+    else
+        context->ch_layout = AV_CHANNEL_LAYOUT_MONO;
 
     int err = avcodec_open2(context, codec, nullptr);
     assert(err == 0);

@@ -296,18 +296,23 @@ PCMDecoderState::PCMDecoderState(const float dest_frequency)
     , source_channels(2)
     , source_frequency(48000.0f)
     , he_adpcm(false) {
+    AVChannelLayout layout_mono = AV_CHANNEL_LAYOUT_MONO;
+    AVChannelLayout layout_stereo = AV_CHANNEL_LAYOUT_STEREO;
+
     // we are not resampling, we don't care about the sample rate
-    swr_mono_to_stereo = swr_alloc_set_opts(nullptr,
-        AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, 48000,
-        AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, 48000,
+    int ret = swr_alloc_set_opts2(&swr_mono_to_stereo,
+        &layout_stereo, AV_SAMPLE_FMT_FLT, 48000,
+        &layout_mono, AV_SAMPLE_FMT_S16, 48000,
         0, nullptr);
+    assert(ret == 0);
 
     swr_init(swr_mono_to_stereo);
 
-    swr_stereo = swr_alloc_set_opts(nullptr,
-        AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, 48000,
-        AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, 48000,
+    ret = swr_alloc_set_opts2(&swr_stereo,
+        &layout_stereo, AV_SAMPLE_FMT_FLT, 48000,
+        &layout_stereo, AV_SAMPLE_FMT_S16, 48000,
         0, nullptr);
+    assert(ret == 0);
 
     swr_init(swr_stereo);
 }
