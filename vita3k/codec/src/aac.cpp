@@ -17,6 +17,8 @@
 
 #include <codec/state.h>
 
+#include <map>
+
 #define DEBUG
 
 extern "C" {
@@ -26,27 +28,47 @@ extern "C" {
 #include <libavutil/log.h>
 #include <libavutil/opt.h>
 #include <libswresample/swresample.h>
+
+#include <libavcodec/codec_internal.h>
 }
 
 #include <util/log.h>
 
-static void convert_f32_to_s16(const float *f32, int16_t *s16, uint32_t channels, uint32_t samples, uint32_t freq) {
-    const int channel_type = channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+AacDecoderState::AacDecoderState(uint32_t sample_rate, uint32_t channels) {
+    codec = avcodec_find_decoder(AV_CODEC_ID_AAC);
+    assert(codec);
 
-    SwrContext *swr = swr_alloc_set_opts(nullptr,
-        channel_type, AV_SAMPLE_FMT_S16, freq,
-        channel_type, AV_SAMPLE_FMT_FLTP, freq,
+    context = avcodec_alloc_context3(codec);
+    assert(context);
+
+    frame = av_frame_alloc();
+
+    context->codec_type = AVMEDIA_TYPE_AUDIO;
+    av_channel_layout_default(&context->ch_layout, channels);
+    context->sample_rate = sample_rate;
+
+    int err = avcodec_open2(context, codec, nullptr);
+    assert(err == 0);
+
+    swr = nullptr;
+    int ret = swr_alloc_set_opts2(&swr,
+        &context->ch_layout, AV_SAMPLE_FMT_S16, sample_rate,
+        &context->ch_layout, AV_SAMPLE_FMT_FLTP, sample_rate,
         0, nullptr);
-    swr_init(swr);
+    assert(ret == 0);
 
-    const int result = swr_convert(swr, (uint8_t **)&s16, samples, (const uint8_t **)(f32), samples);
+    ret = swr_init(swr);
+    assert(ret == 0);
+}
+
+AacDecoderState::~AacDecoderState() {
+    av_frame_free(&frame);
     swr_free(&swr);
-    assert(result > 0);
 }
 
 uint32_t AacDecoderState::get(DecoderQuery query) {
     switch (query) {
-    case DecoderQuery::CHANNELS: return context->channels;
+    case DecoderQuery::CHANNELS: return context->ch_layout.nb_channels;
     case DecoderQuery::BIT_RATE: return context->bit_rate;
     case DecoderQuery::SAMPLE_RATE: return context->sample_rate;
     default:
@@ -61,8 +83,9 @@ bool AacDecoderState::send(const uint8_t *data, uint32_t size) {
 
     av_frame_unref(frame);
 
+    const FFCodec *ff_codec = ffcodec(codec);
     int got_frame;
-    int len = codec->decode(context, frame, &got_frame, packet);
+    int len = ff_codec->cb.decode(context, frame, &got_frame, packet);
     assert(got_frame);
 
     av_packet_free(&packet);
@@ -80,11 +103,8 @@ bool AacDecoderState::receive(uint8_t *data, DecoderSize *size) {
     assert(frame->format == AV_SAMPLE_FMT_FLTP);
 
     if (data) {
-        convert_f32_to_s16(
-            reinterpret_cast<float *>(frame->extended_data),
-            reinterpret_cast<int16_t *>(data),
-            context->channels, frame->nb_samples,
-            context->sample_rate);
+        int ret = swr_convert(swr, &data, frame->nb_samples, const_cast<const uint8_t **>(frame->extended_data), frame->nb_samples);
+        assert(ret == 0);
     }
 
     if (size) {
@@ -96,30 +116,4 @@ bool AacDecoderState::receive(uint8_t *data, DecoderSize *size) {
 
 uint32_t AacDecoderState::get_es_size() {
     return es_size_used;
-}
-
-void AacDecoderState::clear_context() {
-    codec->flush(context);
-}
-
-AacDecoderState::AacDecoderState(uint32_t sample_rate, uint32_t channels) {
-    codec = avcodec_find_decoder(AV_CODEC_ID_AAC);
-    assert(codec);
-
-    context = avcodec_alloc_context3(codec);
-    assert(context);
-
-    frame = av_frame_alloc();
-
-    context->codec_type = AVMEDIA_TYPE_AUDIO;
-    context->channels = channels;
-    context->sample_rate = sample_rate;
-    context->channel_layout = channels == 2 ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
-
-    int err = avcodec_open2(context, codec, nullptr);
-    assert(err == 0);
-}
-
-AacDecoderState::~AacDecoderState() {
-    av_frame_free(&frame);
 }

@@ -64,12 +64,10 @@ struct DecoderState {
 
     virtual uint32_t get(DecoderQuery query);
 
-    // TODO: proper error handling (return bool?)
     virtual void flush();
     virtual bool send(const uint8_t *data, uint32_t size) = 0;
     virtual bool receive(uint8_t *data, DecoderSize *size = nullptr) = 0;
     virtual uint32_t get_es_size();
-    virtual void clear_context();
 
     virtual ~DecoderState();
 };
@@ -126,23 +124,20 @@ struct Atrac9DecoderState : public DecoderState {
     uint32_t get(DecoderQuery query) override;
     uint32_t get_es_size() override;
 
-    void clear_context() override;
-
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size) override;
+    void flush() override;
 
     explicit Atrac9DecoderState(uint32_t config_data);
     ~Atrac9DecoderState() override;
 };
 
 struct Mp3DecoderState : public DecoderState {
-    AVCodec *codec;
+    const AVCodec *codec;
     uint32_t es_size_used;
 
     uint32_t get(DecoderQuery query) override;
     uint32_t get_es_size() override;
-
-    void clear_context() override;
 
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size) override;
@@ -189,12 +184,11 @@ public:
 };
 
 struct AacDecoderState : public DecoderState {
-    AVCodec *codec;
+    const AVCodec *codec;
+    SwrContext *swr;
     AVFrame *frame;
     uint32_t es_size_used;
     uint32_t get(DecoderQuery query) override;
-
-    void clear_context() override;
 
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size) override;

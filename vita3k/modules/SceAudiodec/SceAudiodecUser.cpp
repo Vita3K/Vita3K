@@ -120,7 +120,7 @@ EXPORT(int, sceAudiodecClearContext, SceAudiodecCtrl *ctrl) {
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
     const DecoderPtr &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
 
-    decoder->clear_context();
+    decoder->flush();
 
     return 0;
 }

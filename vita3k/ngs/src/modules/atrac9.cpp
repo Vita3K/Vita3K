@@ -236,21 +236,29 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
         SwrContext *swr;
         if (channel_count == 1) {
             if (!swr_mono_to_stereo) {
-                swr_mono_to_stereo = swr_alloc_set_opts(nullptr,
-                    AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, 480000,
-                    AV_CH_LAYOUT_MONO, AV_SAMPLE_FMT_S16, 480000,
+                AVChannelLayout layout_mono = AV_CHANNEL_LAYOUT_MONO;
+                AVChannelLayout layout_stereo = AV_CHANNEL_LAYOUT_STEREO;
+
+                int ret = swr_alloc_set_opts2(&swr_mono_to_stereo,
+                    &layout_stereo, AV_SAMPLE_FMT_FLT, 480000,
+                    &layout_mono, AV_SAMPLE_FMT_S16, 480000,
                     0, nullptr);
-                swr_init(swr_mono_to_stereo);
+                assert(ret == 0);
+                ret = swr_init(swr_mono_to_stereo);
+                assert(ret == 0);
             }
 
             swr = swr_mono_to_stereo;
         } else {
             if (!swr_stereo) {
-                swr_stereo = swr_alloc_set_opts(nullptr,
-                    AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, 480000,
-                    AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_S16, 480000,
+                AVChannelLayout layout_stereo = AV_CHANNEL_LAYOUT_STEREO;
+                int ret = swr_alloc_set_opts2(&swr_stereo,
+                    &layout_stereo, AV_SAMPLE_FMT_FLT, 480000,
+                    &layout_stereo, AV_SAMPLE_FMT_S16, 480000,
                     0, nullptr);
-                swr_init(swr_stereo);
+                assert(ret == 0);
+                ret = swr_init(swr_stereo);
+                assert(ret == 0);
             }
 
             swr = swr_stereo;
@@ -277,12 +285,15 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
             src_sample_rate *= params->playback_scalar;
 
         if (!state->swr) {
-            state->swr = swr_alloc_set_opts(nullptr,
-                AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, sample_rate,
-                AV_CH_LAYOUT_STEREO, AV_SAMPLE_FMT_FLT, src_sample_rate,
+            AVChannelLayout layout_stereo = AV_CHANNEL_LAYOUT_STEREO;
+            int ret = swr_alloc_set_opts2(&state->swr,
+                &layout_stereo, AV_SAMPLE_FMT_FLT, sample_rate,
+                &layout_stereo, AV_SAMPLE_FMT_FLT, src_sample_rate,
                 0, nullptr);
+            assert(ret == 0);
 
-            swr_init(state->swr);
+            ret = swr_init(state->swr);
+            assert(ret == 0);
         }
         // assume the skipped samples happen before the scaling
         int scaled_samples_amount = swr_get_out_samples(state->swr, decoded_size);
@@ -316,8 +327,8 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
         scheduler_lock.lock();
         voice_lock.lock();
 
-        // clear the context or we'll get en error next time we cant to decode
-        decoder->clear_context();
+        // flush or we'll get en error next time we cant to decode
+        decoder->flush();
     }
 
     temp_buffer.clear();

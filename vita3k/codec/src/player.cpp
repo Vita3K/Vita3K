@@ -46,19 +46,14 @@ void PlayerState::pop_video() {
 }
 
 void PlayerState::free_video() {
-    if (video_context) {
-        avcodec_close(video_context);
+    if (video_context)
         avcodec_free_context(&video_context);
-    }
 
-    if (audio_context) {
-        avcodec_close(audio_context);
+    if (audio_context)
         avcodec_free_context(&audio_context);
-    }
 
-    if (format) {
+    if (format)
         avformat_close_input(&format);
-    }
 
     while (!video_packets.empty()) {
         AVPacket *packet = video_packets.front();
@@ -93,7 +88,7 @@ void PlayerState::switch_video(const std::string &path) {
 
     if (video_stream_id >= 0) {
         AVStream *video_stream = format->streams[video_stream_id];
-        AVCodec *video_codec = avcodec_find_decoder(video_stream->codecpar->codec_id);
+        const AVCodec *video_codec = avcodec_find_decoder(video_stream->codecpar->codec_id);
         video_context = avcodec_alloc_context3(video_codec);
         avcodec_parameters_to_context(video_context, video_stream->codecpar);
         avcodec_open2(video_context, video_codec, nullptr);
@@ -101,7 +96,7 @@ void PlayerState::switch_video(const std::string &path) {
 
     if (audio_stream_id >= 0) {
         AVStream *audio_stream = format->streams[audio_stream_id];
-        AVCodec *audio_codec = avcodec_find_decoder(audio_stream->codecpar->codec_id);
+        const AVCodec *audio_codec = avcodec_find_decoder(audio_stream->codecpar->codec_id);
         audio_context = avcodec_alloc_context3(audio_codec);
         avcodec_parameters_to_context(audio_context, audio_stream->codecpar);
         avcodec_open2(audio_context, audio_codec, nullptr);
@@ -174,19 +169,19 @@ std::vector<int16_t> PlayerState::receive_audio() {
 
         LOG_WARN_IF(frame->format != AV_SAMPLE_FMT_FLTP, "Unknown audio format {}.", frame->format);
 
-        last_channels = frame->channels;
+        last_channels = frame->ch_layout.nb_channels;
         last_sample_count = frame->nb_samples;
         last_sample_rate = frame->sample_rate;
 
-        data.resize(frame->nb_samples * frame->channels);
+        data.resize(frame->nb_samples * frame->ch_layout.nb_channels);
 
         for (int a = 0; a < frame->nb_samples; a++) {
-            for (int b = 0; b < frame->channels; b++) {
+            for (int b = 0; b < frame->ch_layout.nb_channels; b++) {
                 auto *frame_data = reinterpret_cast<float *>(frame->data[b]);
                 float current_sample = frame_data[a];
                 int16_t pcm_sample = current_sample * INT16_MAX;
 
-                data[a * frame->channels + b] = pcm_sample;
+                data[a * frame->ch_layout.nb_channels + b] = pcm_sample;
             }
         }
 

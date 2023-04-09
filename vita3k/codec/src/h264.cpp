@@ -134,7 +134,7 @@ void H264DecoderState::get_pts(uint32_t &upper, uint32_t &lower) {
 }
 
 H264DecoderState::H264DecoderState(uint32_t width, uint32_t height) {
-    AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+    const AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_H264);
     assert(codec);
 
     parser = av_parser_init(codec->id);
