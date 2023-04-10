@@ -29,6 +29,10 @@
 #include <util/keywords.h>
 #include <util/log.h>
 
+extern "C" {
+#include <libswscale/swscale.h>
+}
+
 static bool format_support_surface_sync(SceGxmColorBaseFormat format) {
     // we use rgba16 to emulate this format, don't even try to convert it back for now
     return format != SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10;
@@ -56,6 +60,10 @@ static bool format_need_additional_memory(SceGxmColorBaseFormat format) {
 namespace renderer::vulkan {
 
 static constexpr std::uint64_t CASTED_UNUSED_TEXTURE_PURGE_SECS = 40;
+
+ColorSurfaceCacheInfo::~ColorSurfaceCacheInfo() {
+    sws_freeContext(sws_context);
+}
 
 void VKSurfaceCache::destroy_framebuffers(vk::ImageView view) {
     for (auto it = framebuffer_array.begin(); it != framebuffer_array.end();) {
@@ -891,22 +899,6 @@ ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
     return return_value;
 }
 
-template <bool sizzle_identity>
-void sync_copy_3_components(uint8_t *restrict src, uint8_t *restrict dst, uint32_t nb_pixels) {
-    for (int i = 0; i < nb_pixels; i++) {
-        if constexpr (sizzle_identity) {
-            dst[i * 3] = src[i * 4];
-            dst[i * 3 + 1] = src[i * 4 + 1];
-            dst[i * 3 + 2] = src[i * 4 + 2];
-        } else {
-            // BGR format
-            dst[i * 3] = src[i * 4 + 2];
-            dst[i * 3 + 1] = src[i * 4 + 1];
-            dst[i * 3 + 2] = src[i * 4];
-        }
-    }
-}
-
 template <typename T>
 void swizzle_text_T_2(T *pixels, uint32_t nb_pixel) {
     for (int i = 0; i < nb_pixel; i++) {
@@ -973,12 +965,15 @@ void VKSurfaceCache::perform_post_surface_sync(const MemState &mem, ColorSurface
     if (format_need_additional_memory(surface->format)) {
         // special case, use a custom function
         const bool is_swizzle_identity = surface->swizzle.r == vk::ComponentSwizzle::eR;
-        uint8_t *src = reinterpret_cast<uint8_t *>(surface->copy_buffer->mapped_data);
-        if (is_swizzle_identity) {
-            sync_copy_3_components<true>(src, pixels, nb_pixels);
-        } else {
-            sync_copy_3_components<false>(src, pixels, nb_pixels);
+        if (!surface->sws_context) {
+            const AVPixelFormat dst_fmt = is_swizzle_identity ? AV_PIX_FMT_RGB24 : AV_PIX_FMT_BGR24;
+            surface->sws_context = sws_getContext(surface->original_width, surface->original_height, AV_PIX_FMT_RGB0, surface->original_width, surface->original_height, dst_fmt, 0, nullptr, nullptr, nullptr);
+            assert(surface->sws_context != NULL);
         }
+
+        int src_stride = surface->pixel_stride * 4;
+        int dst_stride = surface->pixel_stride * 3;
+        sws_scale(surface->sws_context, reinterpret_cast<const uint8_t *const *>(&surface->copy_buffer->mapped_data), &src_stride, 0, surface->original_height, &pixels, &dst_stride);
         return;
     }
 
