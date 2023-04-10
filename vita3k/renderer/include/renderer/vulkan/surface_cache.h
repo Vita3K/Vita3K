@@ -21,6 +21,8 @@
 
 #include <vkutil/objects.h>
 
+struct SwsContext;
+
 namespace renderer::vulkan {
 
 struct VKRenderTarget;
@@ -75,6 +77,11 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
 
     // pointer shared with the memory trap indicating if this surface sync is needed
     std::shared_ptr<bool> need_surface_sync;
+
+    // pointer to decoder used for surface sync (if necessary)
+    SwsContext *sws_context = nullptr;
+
+    ~ColorSurfaceCacheInfo();
 };
 
 struct DepthSurfaceView {
