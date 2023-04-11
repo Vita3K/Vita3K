@@ -369,7 +369,7 @@ struct LangState {
             { "exit_livearea_control", "Click on Esc or Press on Circle" },
             { "manual_help", "Manual Help" },
             { "browse_page", "Browse page" },
-            { "browse_page_control", "D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on" },
+            { "browse_page_control", "D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on </>" },
             { "hide_show", "Hide/Show button" },
             { "hide_show_control", "Right Click" },
             { "zoom_available", "Zoom if available" },

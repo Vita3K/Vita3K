@@ -17,6 +17,7 @@
 
 #include "private.h"
 
+#include <SDL_scancode.h>
 #include <config/functions.h>
 #include <config/state.h>
 #include <emuenv/state.h>
@@ -43,7 +44,7 @@ static char const *SDL_key_to_string[]{ "[unset]", "[unknown]", "[unknown]", "[u
     "Keypad Mem+", "Keypad Mem-", "Keypad Mem*", "Keypad Mem/", "Keypad +/-", "Keypad Clear", "Keypad ClearEntry", "Keypad Binary", "Keypad Octal",
     "Keypad Dec", "Keypad HexaDec", "[unset]", "[unset]", "LCtrl", "LShift", "LAlt", "Win/Cmd", "RCtrl", "RShift", "RAlt", "RWin/Cmd" };
 
-static const short total_key_entries = 25;
+static const short total_key_entries = 28;
 
 static bool exists_in_array(int *ptr, int val, size_t size) {
     if (!ptr || !size) {
@@ -79,13 +80,21 @@ static void prepare_map_array(EmuEnvState &emuenv, std::array<int, total_key_ent
     map[22] = emuenv.cfg.keyboard_button_r2;
     map[23] = emuenv.cfg.keyboard_button_l3;
     map[24] = emuenv.cfg.keyboard_button_r3;
+    map[25] = emuenv.cfg.keyboard_gui_toggle_gui;
+    map[26] = emuenv.cfg.keyboard_gui_fullscreen;
+    map[27] = emuenv.cfg.keyboard_gui_toggle_touch;
 }
 
-static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, const char *button_name, const ImVec2 &dummy_size) {
-    ImGui::Text("%-16s", button_name);
-    ImGui::SameLine();
-    ImGui::Dummy(dummy_size);
-    ImGui::SameLine();
+bool need_open_error_duplicate_key_popup = false;
+
+static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, const char *button_name, const char *tooltip = nullptr) {
+    ImGui::TableNextRow();
+    ImGui::TableSetColumnIndex(0);
+    ImGui::Text("%s", button_name);
+    if (tooltip && ImGui::IsItemHovered()) {
+        ImGui::SetTooltip("%s", tooltip);
+    }
+    ImGui::TableSetColumnIndex(1);
     // the association of the key
     int key_association = *button;
     if (ImGui::Button(SDL_key_to_string[key_association])) {
@@ -99,11 +108,11 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
             *button = gui.captured_key;
             if (*button < 0 || *button > 231)
                 *button = 0;
-            else if (gui.is_key_capture_dropped || !gui.is_capturing_keys && *button != key_association && exists_in_array(original_state.data(), *button, total_key_entries)) {
+            else if (gui.is_key_capture_dropped || (!gui.is_capturing_keys && *button != key_association && exists_in_array(original_state.data(), *button, original_state.size()))) {
                 // undo the changes
                 *button = key_association;
-                ImGui::OpenPopup(gui.lang.controls["error"].c_str());
                 gui.is_key_capture_dropped = false;
+                need_open_error_duplicate_key_popup = true;
             }
         }
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
@@ -111,57 +120,80 @@ static void remapper_button(GuiState &gui, EmuEnvState &emuenv, int *button, con
 }
 
 void draw_controls_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    auto lang = gui.lang.controls;
-    float width = ImGui::GetWindowWidth() / 1.25f * emuenv.dpi_scale;
-    float height = ImGui::GetWindowHeight() / 1.25f * emuenv.dpi_scale;
-    ImGui::SetNextWindowSize(ImVec2(width, height));
+    auto &lang = gui.lang.controls;
+    float height = emuenv.viewport_size.y / emuenv.dpi_scale;
+    if (ImGui::BeginMainMenuBar()) {
+        height = height - ImGui::GetWindowHeight() * 2;
+        ImGui::EndMainMenuBar();
+    }
+
+    ImGui::SetNextWindowSize(ImVec2(0, height));
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin(lang["title"].c_str(), &gui.controls_menu.controls_dialog);
-    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s    %-16s", lang["button"].c_str(), lang["mapped_button"].c_str());
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_up, lang["left_stick_up"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_down, lang["left_stick_down"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_right, lang["left_stick_right"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_left, lang["left_stick_left"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_up, lang["right_stick_up"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_down, lang["right_stick_down"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_right, lang["right_stick_right"].c_str(), ImVec2(0.3f, 0.3f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_left, lang["right_stick_left"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_up, lang["d_pad_up"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_down, lang["d_pad_down"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_right, lang["d_pad_right"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_left, lang["d_pad_left"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_square, lang["square_button"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_cross, lang["cross_button"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_circle, lang["circle_button"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_triangle, lang["triangle_button"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_start, lang["start_button"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_select, lang["select_button"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_psbutton, lang["ps_button"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l1, lang["l1_button"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r1, lang["r1_button"].c_str(), ImVec2(7.0f, 7.0f));
+    if (ImGui::BeginTable("main", 2)) {
+        ImGui::TableSetupColumn("button");
+        ImGui::TableSetupColumn("mapped_button");
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["button"].c_str());
+        ImGui::TableSetColumnIndex(1);
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["mapped_button"].c_str());
+
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_up, lang["left_stick_up"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_down, lang["left_stick_down"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_right, lang["left_stick_right"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_leftstick_left, lang["left_stick_left"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_up, lang["right_stick_up"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_down, lang["right_stick_down"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_right, lang["right_stick_right"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_rightstick_left, lang["right_stick_left"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_up, lang["d_pad_up"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_down, lang["d_pad_down"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_right, lang["d_pad_right"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_left, lang["d_pad_left"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_square, lang["square_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_cross, lang["cross_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_circle, lang["circle_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_triangle, lang["triangle_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_start, lang["start_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_select, lang["select_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_psbutton, lang["ps_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l1, lang["l1_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r1, lang["r1_button"].c_str());
+        ImGui::EndTable();
+    }
+
     ImGui::Separator();
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["ps_tv_mode"].c_str());
     ImGui::Spacing();
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l2, lang["l2_button"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r2, lang["r2_button"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l3, lang["l3_button"].c_str(), ImVec2(7.0f, 7.0f));
-    remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r3, lang["r3_button"].c_str(), ImVec2(7.0f, 7.0f));
+    if (ImGui::BeginTable("PSTV_mode", 2)) {
+        ImGui::TableSetupColumn("button");
+        ImGui::TableSetupColumn("mapped_button");
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l2, lang["l2_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r2, lang["r2_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_l3, lang["l3_button"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_button_r3, lang["r3_button"].c_str());
+        ImGui::EndTable();
+    }
     ImGui::Separator();
     ImGui::Spacing();
-    ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%-16s", lang["gui"].c_str());
-    ImGui::Text("%-16s    %-16s", lang["full_screen"].c_str(), "F11");
-    ImGui::Text("%-16s    %-16s", lang["toggle_touch"].c_str(), "T");
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("%s", lang["toggle_touch_note"].c_str());
-    ImGui::Text("%-16s    %-16s", lang["toggle_gui_visibility"].c_str(), "G");
-    if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("%s", lang["toggle_gui_visibility_note"].c_str());
-
-    const char *error_text = lang["error_duplicate_key"].c_str();
+    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["gui"].c_str());
+    if (ImGui::BeginTable("gui", 2)) {
+        ImGui::TableSetupColumn("button");
+        ImGui::TableSetupColumn("mapped_button");
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_gui_fullscreen, lang["full_screen"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_gui_toggle_touch, lang["toggle_touch"].c_str(), lang["toggle_touch_note"].c_str());
+        remapper_button(gui, emuenv, &emuenv.cfg.keyboard_gui_toggle_gui, lang["toggle_gui_visibility"].c_str(), lang["toggle_gui_visibility_note"].c_str());
+        ImGui::EndTable();
+    }
+    if (need_open_error_duplicate_key_popup) {
+        ImGui::OpenPopup(gui.lang.controls["error"].c_str());
+        need_open_error_duplicate_key_popup = false;
+    }
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     if (ImGui::BeginPopupModal(lang["error"].c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("%s", error_text);
+        ImGui::Text("%s", lang["error_duplicate_key"].c_str());
         ImGui::NewLine();
         static const auto BUTTON_SIZE = ImVec2(120.f * emuenv.dpi_scale, 0.f);
         ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - (BUTTON_SIZE.x / 2.f));

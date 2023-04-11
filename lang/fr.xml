@@ -346,7 +346,7 @@ Votre système Vita3K est prêt !</completed_setup>
 			<exit_livearea_control>Click on Esc or Press on Circle</exit_livearea_control>
 			<manual_help>Manual Help</manual_help>
 			<browse_page>Browse page</browse_page>
-			<browse_page_control>D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on</browse_page_control>
+			<browse_page_control>D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on &lt;/&gt;</browse_page_control>
 			<hide_show>Hide/Show button</hide_show>
 			<hide_show_control>Right Click</hide_show_control>
 			<zoom_available>Zoom if available</zoom_available>

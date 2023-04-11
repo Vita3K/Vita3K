@@ -428,7 +428,7 @@
 			<exit_livearea_control>点击Esc或按O键</exit_livearea_control>
 			<manual_help>说明书帮助</manual_help>
 			<browse_page>浏览页面</browse_page>
-			<browse_page_control>方向键、左摇杆左/右或滚轮上/下或点击</browse_page_control>
+			<browse_page_control>方向键、左摇杆左/右或滚轮上/下或点击 &lt;/&gt;</browse_page_control>
 			<hide_show>隐藏/显示按钮</hide_show>
 			<hide_show_control>点击右键</hide_show_control>
 			<zoom_available>缩放如果可用</zoom_available>

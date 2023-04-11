@@ -537,7 +537,7 @@ void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string app_path) 
         init_live_area(gui, emuenv, app_path);
 }
 
-static const ImU32 ARROW_COLOR = 4294967295; // White
+static const ImU32 ARROW_COLOR = 0xFFFFFFFF; // White
 
 void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size = ImGui::GetIO().DisplaySize;
@@ -989,12 +989,12 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         const auto search_pos = ImVec2((manual_exist ? 633.f : 578.f) * SCALE.x, 505.0f * SCALE.y);
         const auto pos_scal_search = ImVec2(display_size.x - search_pos.x, display_size.y - search_pos.y);
 
-        const std::string SEARCH = "Search";
-        const auto SEARCH_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(SEARCH.c_str()).x * scal_widget_font_size) * SCALE.x, (ImGui::CalcTextSize(SEARCH.c_str()).y * scal_widget_font_size) * SCALE.y);
+        const char *SEARCH = "Search";
+        const auto SEARCH_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(SEARCH).x * scal_widget_font_size) * SCALE.x, (ImGui::CalcTextSize(SEARCH).y * scal_widget_font_size) * SCALE.y);
         const auto POS_STR_SEARCH = ImVec2(pos_scal_search.x + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.x / 2.f)),
             pos_scal_search.y + ((widget_scal_size.x / 2.f) - (SEARCH_SCAL_SIZE.y / 2.f)));
         ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_search, ImVec2(pos_scal_search.x + widget_scal_size.x, pos_scal_search.y + widget_scal_size.y), IM_COL32(10, 169, 246, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
-        ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH.c_str());
+        ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, POS_STR_SEARCH, IM_COL32(255, 255, 255, 255), SEARCH);
         ImGui::SetCursorPos(pos_scal_search);
         if (ImGui::Selectable("##Search", ImGuiSelectableFlags_None, false, widget_scal_size))
             open_search(get_app_index(gui, app_path)->title);
@@ -1003,12 +1003,12 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             const auto manual_pos = ImVec2(520.f * SCALE.x, 505.0f * SCALE.y);
             const auto pos_scal_manual = ImVec2(display_size.x - manual_pos.x, display_size.y - manual_pos.y);
 
-            const std::string MANUAL_STR = "Manual";
-            const auto MANUAL_STR_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(MANUAL_STR.c_str()).x * scal_widget_font_size) * SCALE.x, (ImGui::CalcTextSize(MANUAL_STR.c_str()).y * scal_widget_font_size) * SCALE.y);
+            const char *MANUAL_STR = "Manual";
+            const auto MANUAL_STR_SCAL_SIZE = ImVec2((ImGui::CalcTextSize(MANUAL_STR).x * scal_widget_font_size) * SCALE.x, (ImGui::CalcTextSize(MANUAL_STR).y * scal_widget_font_size) * SCALE.y);
             const auto MANUAL_STR_POS = ImVec2(pos_scal_manual.x + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.x / 2.f)),
                 pos_scal_manual.y + ((widget_scal_size.x / 2.f) - (MANUAL_STR_SCAL_SIZE.y / 2.f)));
             ImGui::GetWindowDrawList()->AddRectFilled(pos_scal_manual, ImVec2(pos_scal_manual.x + widget_scal_size.x, pos_scal_manual.y + widget_scal_size.y), IM_COL32(202, 0, 106, 255), 12.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
-            ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR.c_str());
+            ImGui::GetWindowDrawList()->AddText(gui.vita_font, 23.0f * SCALE.x, MANUAL_STR_POS, IM_COL32(255, 255, 255, 255), MANUAL_STR);
             ImGui::SetCursorPos(pos_scal_manual);
             if (ImGui::Selectable("##manual", ImGuiSelectableFlags_None, false, widget_scal_size))
                 open_manual(gui, emuenv, app_path);
@@ -1028,8 +1028,9 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             update_app(gui, emuenv, app_path);
     }
 
-    auto lang = gui.lang.live_area.help;
-    auto common = emuenv.common_dialog.lang.common;
+    bool show_triangle_arrows = true;
+    auto &lang = gui.lang.live_area.help;
+    auto &common = emuenv.common_dialog.lang.common;
 
     if (!gui.vita_area.content_manager && !gui.vita_area.manual) {
         ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.f * SCALE.x);
@@ -1055,44 +1056,51 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::OpenPopup("Live Area Help");
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         if (ImGui::BeginPopupModal("Live Area Help", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
-            auto help_str = gui.lang.main_menubar.help["title"].c_str();
-            ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(help_str).x / 2.f));
-            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", help_str);
-            ImGui::Spacing();
-            auto control_setting_str = lang["control_setting"].c_str();
-            ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(control_setting_str).x / 2.f));
-            ImGui::TextColored(GUI_COLOR_TEXT, "%s", control_setting_str);
-            if (gui.modules.empty()) {
+            show_triangle_arrows = false;
+            auto TextColoredCentered = [](GuiState &gui, const ImVec4 &col, const char *text_id) {
+                auto str = gui.lang.main_menubar.help[text_id].c_str();
+                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(str).x / 2.f));
+                ImGui::TextColored(col, "%s", str);
                 ImGui::Spacing();
-                auto fw_str = lang["firmware_not_detected"].c_str();
-                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(fw_str).x / 2.f));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", fw_str);
+            };
+            TextColoredCentered(gui, GUI_COLOR_TEXT_TITLE, "title");
+            TextColoredCentered(gui, GUI_COLOR_TEXT, "control_setting");
+            if (gui.modules.empty()) {
+                TextColoredCentered(gui, GUI_COLOR_TEXT, "firmware_not_detected");
             }
             if (!gui.fw_font) {
-                ImGui::Spacing();
-                auto fw_font_str = lang["firmware_font_not_detected"].c_str();
-                ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(fw_font_str).x / 2.f));
-                ImGui::TextColored(GUI_COLOR_TEXT, "%s", fw_font_str);
+                TextColoredCentered(gui, GUI_COLOR_TEXT, "firmware_font_not_detected");
             }
-            ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["live_area_help"].c_str());
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["browse_app"].c_str(), lang["browse_app_control"].c_str());
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["start_app"].c_str(), lang["start_app_control"].c_str());
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["show_hide"].c_str(), lang["show_hide_control"].c_str());
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["exit_livearea"].c_str(), lang["exit_livearea_control"].c_str());
+            auto draw_help_table = [](GuiState &gui, const char *const *items, size_t items_count) {
+                auto &lang = gui.lang.live_area.help;
+                // here I just need any unique value
+                if (ImGui::BeginTable(log_hex(reinterpret_cast<uintptr_t>(items)).c_str(), 2)) {
+                    ImGui::TableSetupColumn("01");
+                    ImGui::TableSetupColumn("02");
+                    for (int i = 0; i < items_count; i++) {
+                        ImGui::TableNextRow();
+                        ImGui::TableSetColumnIndex(0);
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang[items[i]].c_str());
+                        ImGui::TableSetColumnIndex(1);
+                        ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang[std::string(items[i]) + "_control"].c_str());
+                    }
+                    ImGui::EndTable();
+                }
+            };
+            const std::array<const char *, 4> help_items_01{ "browse_app", "start_app", "show_hide", "exit_livearea" };
+            draw_help_table(gui, help_items_01.data(), help_items_01.size());
             ImGui::Spacing();
             ImGui::Separator();
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["manual_help"].c_str());
             ImGui::Spacing();
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s </>", lang["browse_page"].c_str(), lang["browse_page_control"].c_str());
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["hide_show"].c_str(), lang["hide_show_control"].c_str());
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["zoom_available"].c_str(), lang["zoom_available_control"].c_str());
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["scroll_zoom"].c_str(), lang["scroll_zoom_control"].c_str());
-            ImGui::TextColored(GUI_COLOR_TEXT, "%-16s    %-16s", lang["exit_manual"].c_str(), lang["exit_manual_control"].c_str());
+            const std::array<const char *, 5> help_items_02{ "browse_page", "hide_show", "zoom_available", "scroll_zoom", "exit_manual" };
+            draw_help_table(gui, help_items_02.data(), help_items_02.size());
+
             ImGui::Spacing();
             ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (BUTTON_SIZE.x / 2.f));
             if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE))
@@ -1103,30 +1111,32 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleVar();
     }
 
-    const auto SELECTABLE_SIZE = ImVec2(50.f * SCALE.x, 60.f * SCALE.y);
-    const auto wheel_counter = ImGui::GetIO().MouseWheel;
-    const auto ARROW_LEFT_CENTER = ImVec2(30.f * SCALE.x, display_size.y - (250.f * SCALE.y));
-    ImGui::GetForegroundDrawList()->AddTriangleFilled(
-        ImVec2(ARROW_LEFT_CENTER.x + (16.f * SCALE.x), ARROW_LEFT_CENTER.y - (20.f * SCALE.y)),
-        ImVec2(ARROW_LEFT_CENTER.x - (16.f * SCALE.x), ARROW_LEFT_CENTER.y),
-        ImVec2(ARROW_LEFT_CENTER.x + (16.f * SCALE.x), ARROW_LEFT_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
-    ImGui::SetCursorPos(ImVec2(ARROW_LEFT_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_LEFT_CENTER.y - (SELECTABLE_SIZE.y / 2.f)));
-    if ((ImGui::Selectable("##left", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_l1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_left) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_left) || (wheel_counter == 1)) {
-        if (gui.current_app_selected == 0) {
-            gui.vita_area.live_area_screen = false;
-            gui.vita_area.home_screen = true;
-        }
-        --gui.current_app_selected;
-    }
-    if (gui.current_app_selected < gui.apps_list_opened.size() - 1) {
-        const auto ARROW_RIGHT_CENTER = ImVec2(display_size.x - (30.f * SCALE.x), display_size.y - (250.f * SCALE.y));
+    if (show_triangle_arrows) {
+        const auto SELECTABLE_SIZE = ImVec2(50.f * SCALE.x, 60.f * SCALE.y);
+        const auto wheel_counter = ImGui::GetIO().MouseWheel;
+        const auto ARROW_LEFT_CENTER = ImVec2(30.f * SCALE.x, display_size.y - (250.f * SCALE.y));
         ImGui::GetForegroundDrawList()->AddTriangleFilled(
-            ImVec2(ARROW_RIGHT_CENTER.x - (16.f * SCALE.x), ARROW_RIGHT_CENTER.y - (20.f * SCALE.y)),
-            ImVec2(ARROW_RIGHT_CENTER.x + (16.f * SCALE.x), ARROW_RIGHT_CENTER.y),
-            ImVec2(ARROW_RIGHT_CENTER.x - (16.f * SCALE.x), ARROW_RIGHT_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
-        ImGui::SetCursorPos(ImVec2(ARROW_RIGHT_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_RIGHT_CENTER.y - (SELECTABLE_SIZE.y / 2.f)));
-        if ((ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_right) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_right) || (wheel_counter == -1))
-            ++gui.current_app_selected;
+            ImVec2(ARROW_LEFT_CENTER.x + (16.f * SCALE.x), ARROW_LEFT_CENTER.y - (20.f * SCALE.y)),
+            ImVec2(ARROW_LEFT_CENTER.x - (16.f * SCALE.x), ARROW_LEFT_CENTER.y),
+            ImVec2(ARROW_LEFT_CENTER.x + (16.f * SCALE.x), ARROW_LEFT_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
+        ImGui::SetCursorPos(ImVec2(ARROW_LEFT_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_LEFT_CENTER.y - (SELECTABLE_SIZE.y / 2.f)));
+        if ((ImGui::Selectable("##left", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_l1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_left) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_left) || (wheel_counter == 1)) {
+            if (gui.current_app_selected == 0) {
+                gui.vita_area.live_area_screen = false;
+                gui.vita_area.home_screen = true;
+            }
+            --gui.current_app_selected;
+        }
+        if (gui.current_app_selected < gui.apps_list_opened.size() - 1) {
+            const auto ARROW_RIGHT_CENTER = ImVec2(display_size.x - (30.f * SCALE.x), display_size.y - (250.f * SCALE.y));
+            ImGui::GetForegroundDrawList()->AddTriangleFilled(
+                ImVec2(ARROW_RIGHT_CENTER.x - (16.f * SCALE.x), ARROW_RIGHT_CENTER.y - (20.f * SCALE.y)),
+                ImVec2(ARROW_RIGHT_CENTER.x + (16.f * SCALE.x), ARROW_RIGHT_CENTER.y),
+                ImVec2(ARROW_RIGHT_CENTER.x - (16.f * SCALE.x), ARROW_RIGHT_CENTER.y + (20.f * SCALE.y)), ARROW_COLOR);
+            ImGui::SetCursorPos(ImVec2(ARROW_RIGHT_CENTER.x - (SELECTABLE_SIZE.x / 2.f), ARROW_RIGHT_CENTER.y - (SELECTABLE_SIZE.y / 2.f)));
+            if ((ImGui::Selectable("##right", false, ImGuiSelectableFlags_None, SELECTABLE_SIZE)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_r1) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_right) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_right) || (wheel_counter == -1))
+                ++gui.current_app_selected;
+        }
     }
     ImGui::SetWindowFontScale(1.f);
     ImGui::End();
