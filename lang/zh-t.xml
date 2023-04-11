@@ -426,7 +426,7 @@
 			<exit_livearea_control>按下Esc或按圓形按鈕</exit_livearea_control>
 			<manual_help>說明書</manual_help>
 			<browse_page>瀏覽頁面</browse_page>
-			<browse_page_control>方向鍵、左操作桿左/右或滾輪上/下或按下</browse_page_control>
+			<browse_page_control>方向鍵、左操作桿左/右或滾輪上/下或按下 &lt;/&gt;</browse_page_control>
 			<hide_show>隱藏/顯示按鈕</hide_show>
 			<hide_show_control>按下右鍵</hide_show_control>
 			<zoom_available>縮放如果可用</zoom_available>

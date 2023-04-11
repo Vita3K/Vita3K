@@ -588,19 +588,18 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
         case SDL_KEYDOWN:
             if (gui.is_capturing_keys && event.key.keysym.scancode) {
                 gui.is_key_capture_dropped = false;
-                if ((event.key.keysym.scancode == SDL_SCANCODE_G) || (event.key.keysym.scancode == SDL_SCANCODE_F11) || (event.key.keysym.scancode == SDL_SCANCODE_T) || (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE)) {
+                if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
                     LOG_ERROR("Key is reserved!");
                     gui.captured_key = gui.old_captured_key;
-                    gui.is_capturing_keys = false;
                     gui.is_key_capture_dropped = true;
                 } else {
                     gui.captured_key = static_cast<int>(event.key.keysym.scancode);
-                    gui.is_capturing_keys = false;
                 }
+                gui.is_capturing_keys = false;
             }
             if (!emuenv.io.title_id.empty() && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog) {
                 // toggle gui state
-                if (event.key.keysym.sym == SDLK_g && !ImGui::GetIO().WantTextInput)
+                if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_gui && !ImGui::GetIO().WantTextInput)
                     emuenv.display.imgui_render = !emuenv.display.imgui_render;
                 // Show/Hide Live Area during app run, TODO pause app running
                 else if (gui::get_sys_apps_state(gui) && (event.key.keysym.scancode == emuenv.cfg.keyboard_button_psbutton && !ImGui::GetIO().WantTextInput)) {
@@ -612,9 +611,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     }
                 }
             }
-            if (event.key.keysym.sym == SDLK_t && !gui.is_key_capture_dropped && !ImGui::GetIO().WantTextInput)
+            if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_touch && !gui.is_key_capture_dropped && !ImGui::GetIO().WantTextInput)
                 toggle_touchscreen();
-            if (event.key.keysym.sym == SDLK_F11 && !gui.is_key_capture_dropped)
+            if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped)
                 switch_full_screen(emuenv);
 
             break;

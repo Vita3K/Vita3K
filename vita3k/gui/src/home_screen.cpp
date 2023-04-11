@@ -353,7 +353,7 @@ static void sort_app_list(GuiState &gui, EmuEnvState &emuenv, const SortType &ty
 
 static std::string get_label_name(GuiState &gui, const SortType &type) {
     std::string label;
-    auto lang = gui.lang.home_screen;
+    auto &lang = gui.lang.home_screen;
     switch (type) {
     case APP_VER: label = lang["ver"]; break;
     case CATEGORY: label = lang["cat"]; break;
@@ -372,7 +372,7 @@ static std::string get_label_name(GuiState &gui, const SortType &type) {
     return label;
 }
 
-static const ImU32 ARROW_COLOR = 4294967295; // White
+static const ImU32 ARROW_COLOR = 0xFFFFFFFF; // White
 static float scroll_type, current_scroll_pos, max_scroll_pos;
 
 void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
@@ -456,7 +456,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto compat_radius = 12.f * (emuenv.cfg.apps_list_grid ? VIEWPORT_SCALE.x : SCALE.x);
     const auto full_compat_radius = (3.f * (emuenv.cfg.apps_list_grid ? VIEWPORT_SCALE.x : SCALE.x)) + compat_radius;
 
-    auto lang = gui.lang.home_screen;
+    auto &lang = gui.lang.home_screen;
 
     ImGui::SetWindowFontScale(0.9f * VIEWPORT_RES_SCALE.x);
 
