@@ -105,7 +105,7 @@ bool load_compat_app_db(GuiState &gui, EmuEnvState &emuenv) {
 
         // Check if app already exists in compatibility database
         if (gui.compat.app_compat_db.contains(title_id))
-            LOG_WARN("App with title ID {} already exists in compatibility database. Please check and close GitHub issue {}.", title_id, gui.compat.app_compat_db[title_id].issue_id);
+            LOG_WARN("App with Title ID {} already exists in compatibility database. Please check and close GitHub issue {}.", title_id, gui.compat.app_compat_db[title_id].issue_id);
 
         gui.compat.app_compat_db[title_id] = { issue_id, state, updated_at };
     }

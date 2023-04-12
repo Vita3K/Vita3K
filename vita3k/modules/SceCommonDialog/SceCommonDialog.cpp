@@ -319,7 +319,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
         switch (p->sysMsgParam.get(emuenv.mem)->sysMsgType) {
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT:
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_SMALL:
-            emuenv.common_dialog.msg.message = "Please wait.";
+            emuenv.common_dialog.msg.message = common["please_wait"];
             emuenv.common_dialog.msg.btn_num = 0;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_NOSPACE:
@@ -339,7 +339,7 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_INVALID;
             break;
         case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_CANCEL:
-            emuenv.common_dialog.msg.message = "Please wait.";
+            emuenv.common_dialog.msg.message = common["please_wait"];
             emuenv.common_dialog.msg.btn[0] = CANCEL;
             emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_NO;
             emuenv.common_dialog.msg.btn_num = 1;
@@ -397,12 +397,12 @@ EXPORT(int, sceMsgDialogInit, const Ptr<SceMsgDialogParam> param) {
             switch (pp->sysMsgParam.sysMsgType) {
             case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT:
             case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_SMALL:
-                emuenv.common_dialog.msg.message = "Please Wait.";
+                emuenv.common_dialog.msg.message = common["please_wait"];
                 break;
             case SCE_MSG_DIALOG_SYSMSG_TYPE_WAIT_CANCEL:
-                emuenv.common_dialog.msg.message = "Please Wait";
+                emuenv.common_dialog.msg.message = common["please_wait"];
                 emuenv.common_dialog.msg.btn_num = 1;
-                emuenv.common_dialog.msg.btn[0] = "CANCEL";
+                emuenv.common_dialog.msg.btn[0] = CANCEL;
                 emuenv.common_dialog.msg.btn_val[0] = SCE_MSG_DIALOG_BUTTON_ID_NO;
                 break;
             }
