@@ -365,28 +365,13 @@
 		<completed_setup>已完成初期設定。
 請盡情享受Vita3K。</completed_setup>
 		<select_language>請選擇語言。</select_language>
-		<install_firmware>Install Firmware.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
 		<installed>已安裝：</installed>
-		<download_firmware>Download Firmware</download_firmware>
 		<download_font_package>下載字型套件</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
 		<completed>已完成。</completed>
 		<next>繼續</next>
 	</initial_setup>
 
 	<install_dialog>
-		<firmware_install>
-			<firmware_installation>Firmware Installation</firmware_installation>
-			<firmware_installing>Installation in progress, please wait...</firmware_installing>
-			<successed_install_firmware>Firmware successfully installed.</successed_install_firmware>
-			<firmware_version>Firmware version:</firmware_version>
-			<no_font_exist>No firmware font package present.
-Please download and install it.</no_font_exist>
-			<download_firmware_font_package>Download Firmware Font Package</download_firmware_font_package>
-			<firmware_font_package_note>Firmware font package is needed for some applications and also for Asian regional font support. (Generally Recommended)</firmware_font_package_note>
-			<delete_firmware>Delete the firmware installation file?</delete_firmware>
-		</firmware_install>
 		<pkg_install>
 			<select_key_type>選擇金鑰類型</select_key_type>
 			<select_work>選擇work.bin</select_work>
@@ -430,8 +415,6 @@ Please download and install it.</no_font_exist>
 		<continue>繼續</continue>
 		<help>
 			<control_setting>在控制設定中使用鍵盤組態集</control_setting>
-			<firmware_not_detected>Firmware not detected. Installation is highly recommended</firmware_not_detected>
-			<firmware_font_not_detected>Firmware font not detected. Installing it is recommended for font text in Live Area</firmware_font_not_detected>
 			<live_area_help>Live Area說明</live_area_help>
 			<browse_app>瀏覽應用程式清單</browse_app>
 			<browse_app_control>方向鍵、左操作桿、滾輪上/下或使用滑桿</browse_app_control>
@@ -591,7 +574,6 @@ Please download and install it.</no_font_exist>
 		<line_second>Vita3K是使用C++編寫的開源PlayStation Vita模擬器，適用於Windows、Linux、macOS以及Android。</line_second>
 		<line_third>目前模擬器仍處於早期階段，因此非常感謝任何回饋和測試。</line_third>
 		<line_fourth>要開始使用，請安裝PS Vita韌體和字型套件。</line_fourth>
-		<download_firmware>Download Firmware</download_firmware>
 		<line_sixth_part_one>有關如何設定Vita3K的全方位指南可在</line_sixth_part_one>
 		<quickstart>快速入門</quickstart>
 		<line_sixth_part_two>頁面中找到。</line_sixth_part_two>
