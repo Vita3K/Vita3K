@@ -19,6 +19,7 @@
 
 #include <kernel/state.h>
 #include <net/state.h>
+#include <net/types.h>
 #include <rtc/rtc.h>
 #include <util/lock_and_find.h>
 
@@ -262,13 +263,13 @@ EXPORT(int, sceNetCtlCheckCallback) {
 
     for (auto &callback : emuenv.netctl.callbacks) {
         if (callback.pc != 0) {
-            thread->run_callback(callback.pc, { 1, callback.arg });
+            thread->run_callback(callback.pc, { SCE_NET_CTL_EVENT_TYPE_DISCONNECTED, callback.arg });
         }
     }
 
     for (auto &callback : emuenv.netctl.adhocCallbacks) {
         if (callback.pc != 0) {
-            thread->run_callback(callback.pc, { 1, callback.arg });
+            thread->run_callback(callback.pc, { SCE_NET_CTL_EVENT_TYPE_DISCONNECTED, callback.arg });
         }
     }
 
