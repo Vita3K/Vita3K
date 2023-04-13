@@ -157,8 +157,8 @@ struct PCMDecoderState : public DecoderState {
 private:
     std::vector<std::uint8_t> final_result;
     float dest_frequency;
-    SwrContext *swr_mono_to_stereo;
-    SwrContext *swr_stereo;
+    SwrContext *swr_mono_to_stereo = nullptr;
+    SwrContext *swr_stereo = nullptr;
 
 public:
     // there are at most 2 channels
@@ -185,7 +185,7 @@ public:
 
 struct AacDecoderState : public DecoderState {
     const AVCodec *codec;
-    SwrContext *swr;
+    SwrContext *swr = nullptr;
     AVFrame *frame;
     uint32_t es_size_used;
     uint32_t get(DecoderQuery query) override;
