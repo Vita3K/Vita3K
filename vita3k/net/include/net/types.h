@@ -19,11 +19,6 @@
 
 #include <mem/ptr.h>
 
-// I dont know why, dont ask why, i dont want to know why, but for some reason a property name is getting treated as a define reference
-#ifdef _WIN32
-#undef s_addr
-#endif
-
 enum SceNetProtocol : uint32_t {
     SCE_NET_IPPROTO_IP = 0,
     SCE_NET_IPPROTO_ICMP = 1,
@@ -320,9 +315,13 @@ struct SceNetCtlCallback {
     Address arg;
 };
 
+//s_addr can be a macro on windows
+#pragma push_macro("s_addr")
+#undef s_addr
 struct SceNetInAddr {
     unsigned int s_addr;
 };
+#pragma pop_macro("s_addr")
 
 struct SceNetSockaddrIn {
     unsigned char sin_len;
