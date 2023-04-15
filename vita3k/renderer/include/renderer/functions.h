@@ -185,6 +185,8 @@ void tiled_texture_to_linear_texture(uint8_t *dest, const uint8_t *src, uint16_t
 
 uint16_t get_upload_mip(const uint16_t true_mip, const uint16_t width, const uint16_t height, const SceGxmTextureBaseFormat base_format);
 
+uint32_t decode_morton2_x(uint32_t code);
+uint32_t decode_morton2_y(uint32_t code);
 void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &gxm_texture, const MemState &mem);
 void cache_and_bind_texture(TextureCacheState &cache, const SceGxmTexture &gxm_texture, MemState &mem);
 size_t bits_per_pixel(SceGxmTextureBaseFormat base_format);

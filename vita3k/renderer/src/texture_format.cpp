@@ -169,11 +169,11 @@ static uint32_t compact_one_by_one(uint32_t x) {
     return x;
 }
 
-static uint32_t decode_morton2_x(uint32_t code) {
+uint32_t decode_morton2_x(uint32_t code) {
     return compact_one_by_one(code >> 0);
 }
 
-static uint32_t decode_morton2_y(uint32_t code) {
+uint32_t decode_morton2_y(uint32_t code) {
     return compact_one_by_one(code >> 1);
 }
 
