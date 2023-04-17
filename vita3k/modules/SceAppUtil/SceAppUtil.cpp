@@ -262,6 +262,11 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
     TRACY_FUNC(sceAppUtilSaveDataDataSave, slot, files, fileNum, mountPoint, requiredSizeKiB);
     SceUID fd;
 
+    if (requiredSizeKiB)
+        // requiredSizeKiB must be set to 0 if there is enough space available
+        // else we need to set it to the space needed in KiB (TODO)
+        *requiredSizeKiB = 0;
+
     for (unsigned int i = 0; i < fileNum; i++) {
         const auto file_path = construct_savedata0_path(files[i].dataPath.get(emuenv.mem));
         switch (files[i].mode) {
