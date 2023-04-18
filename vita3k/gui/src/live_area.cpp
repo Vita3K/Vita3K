@@ -1057,13 +1057,16 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
         if (ImGui::BeginPopupModal("Live Area Help", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings)) {
             show_triangle_arrows = false;
+            auto help_str = gui.lang.main_menubar.help["title"].c_str();
+            ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(help_str).x / 2.f));
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", help_str);
+            ImGui::Spacing();
             auto TextColoredCentered = [](GuiState &gui, const ImVec4 &col, const char *text_id) {
-                auto str = gui.lang.main_menubar.help[text_id].c_str();
+                auto str = gui.lang.live_area.help[text_id].c_str();
                 ImGui::SetCursorPosX(ImGui::GetWindowWidth() / 2.f - (ImGui::CalcTextSize(str).x / 2.f));
                 ImGui::TextColored(col, "%s", str);
                 ImGui::Spacing();
             };
-            TextColoredCentered(gui, GUI_COLOR_TEXT_TITLE, "title");
             TextColoredCentered(gui, GUI_COLOR_TEXT, "control_setting");
             if (gui.modules.empty()) {
                 TextColoredCentered(gui, GUI_COLOR_TEXT, "firmware_not_detected");
