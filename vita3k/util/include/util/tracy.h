@@ -35,7 +35,7 @@ std::string to_debug_str(const MemState &mem, T data) {
 template <typename U>
 std::string to_debug_str(const MemState &mem, U *data) {
     std::stringstream datass;
-    datass << log_hex_fast(Ptr<U>(data, mem).address()); // Convert host ptr to guest
+    datass << log_hex(Ptr<U>(data, mem).address()); // Convert host ptr to guest
     return datass.str();
 }
 
@@ -43,13 +43,13 @@ std::string to_debug_str(const MemState &mem, U *data) {
 template <typename U>
 std::string to_debug_str(const MemState &mem, Ptr<U> data) {
     std::stringstream datass;
-    datass << log_hex_fast(data.address());
+    datass << log_hex(data.address());
     return datass.str();
 }
 
 template <>
 inline std::string to_debug_str(const MemState &mem, Ptr<char> data) {
-    return std::string(data.address() ? log_hex_fast(data.address()) + " " + data.get(mem) : "0x0 NULLPTR");
+    return std::string(data.address() ? log_hex(data.address()) + " " + data.get(mem) : "0x0 NULLPTR");
 }
 
 // Override for char pointers as the contents are readable
@@ -57,13 +57,13 @@ template <>
 inline std::string to_debug_str(const MemState &mem, char *data) {
     // Format for correct char* should be "(address in hex (0x12345)) (string)", this is just in the
     // extreme case that the string is actually "0x0 NULLPTR" and be confusing
-    return std::string(data ? log_hex_fast(Ptr<char *>(data, mem).address()) + " " + data : "0x0 NULLPTR");
+    return std::string(data ? log_hex(Ptr<char *>(data, mem).address()) + " " + data : "0x0 NULLPTR");
 }
 
 // Override for char pointers as the contents are readable
 template <>
 inline std::string to_debug_str(const MemState &mem, const char *data) {
-    return std::string(data ? log_hex_fast(Ptr<const char *>(data, mem).address()) + " " + data : "0x0 NULLPTR");
+    return std::string(data ? log_hex(Ptr<const char *>(data, mem).address()) + " " + data : "0x0 NULLPTR");
 }
 
 template <>

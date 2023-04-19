@@ -264,7 +264,6 @@ EXPORT(int, sceAppUtilSaveDataDataSave, SceAppUtilSaveDataFileSlot *slot, SceApp
 
     if (requiredSizeKiB)
         // requiredSizeKiB must be set to 0 if there is enough space available
-        // else we need to set it to the space needed in KiB (TODO)
         *requiredSizeKiB = 0;
 
     for (unsigned int i = 0; i < fileNum; i++) {

@@ -67,29 +67,45 @@ int ret_error_impl(const char *name, const char *error_str, std::uint32_t error_
 
 #define RET_ERROR(error) logging::ret_error_impl(export_name, #error, error)
 
+// Using stringstream as its 2x faster than fmt::format
+
+/*
+    returns: A string with the input number formatted in hexadecimal
+    Examples:
+        * `12` returns: `"0xC"`
+        * `1337` returns: `"0x539"`
+        * `72742069` returns: `"0x455F4B5"`
+*/
 template <typename T>
 std::string log_hex(T val) {
     using unsigned_type = typename std::make_unsigned<T>::type;
-    return fmt::format("0x{:0X}", static_cast<unsigned_type>(val));
+    std::stringstream ss;
+    ss << "0x";
+    ss << std::hex << static_cast<unsigned_type>(val);
+    return ss.str();
 }
 
+/*
+    returns: A string with the input number formatted in hexadecimal with padding of the inputted type size
+    Examples:
+        * `uint8_t 5` returns: `"0x05"`
+        * `uint8_t 15` returns: `"0x0F"`
+        * `uint8_t 255` returns: `"0xFF"`
+
+        * `uint16_t 15` returns: `"0x000F"`
+        * `uint16_t 1337` returns: `"0x0539"`
+        * `uint16_t 65535` returns: `"0xFFFF"`
+
+
+        * `uint32_t 15` returns: `"0x0000000F"`
+        * `uint32_t 1337` returns: `"0x00000539"`
+        * `uint32_t 65535` returns: `"0x0000FFFF"`
+        * `uint32_t 134217728` returns: `"0x08000000"`
+*/
 template <typename T>
 std::string log_hex_full(T val) {
     std::stringstream ss;
     ss << "0x";
     ss << std::setfill('0') << std::setw(sizeof(T) * 2) << std::hex << val;
-    return ss.str();
-}
-
-// same as log_hex_full but without the padding.
-// using a stringstream is 2x faster than fmt.
-// mainly here to print pointers addresses into tracy
-// TODO: get rid of log_hex in for this faster one
-template <typename T>
-std::string log_hex_fast(T val) {
-    using unsigned_type = typename std::make_unsigned<T>::type;
-    std::stringstream ss;
-    ss << "0x";
-    ss << std::hex << static_cast<unsigned_type>(val);
     return ss.str();
 }
