@@ -28,7 +28,8 @@
 		<vita3k>Vita3K: PS Vita/PS TVエミュレーター。 世界初の動作するPS Vita/PS TVエミュレーターです。</vita3k>
 		<about_vita3k>Vita3Kは試験的なオープンソースのC++で書かれた Windows、Linux、macOSとAndroid向けのPlayStation Vita/PlayStation TVエミュレーターです。</about_vita3k>
 		<note>注意：エミュレーターは未だかなりの初期段階にあります。</note>
-		<github_website>プロジェクトへの貢献に興味がある方は、GitHubをご覧ください：</github_website>
+		<special_credit>特別クレジット：Vita3Kのアイコンは、デザインされました：</special_credit>
+		<github_website>プロジェクトへの貢献に興味がある方は、をご覧ください：</github_website>
 		<vita3k_website>詳しくはサイトをご覧ください：</vita3k_website>
 		<vita3k_staff>Vita3K スタッフ</vita3k_staff>
 		<developers>開発者</developers>
