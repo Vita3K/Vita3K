@@ -28,7 +28,8 @@
 		<vita3k>Vita3K：PS Vita/PS TV模擬器，是全球首個實用的PS Vita/PS TV模擬器。</vita3k>
 		<about_vita3k>Vita3K是使用C++編寫的實驗性開源PlayStation Vita/PlayStation TV模擬器，適用於Windows、Linux、macOS以及Android作業系統。</about_vita3k>
 		<note>注意：目前模擬器仍處於開發的早期階段。</note>
-		<github_website>如果您有興趣參與貢獻，請瀏覽我們的GitHub：</github_website>
+		<special_credit>特別鳴謝：Vita3K圖標設計由：</special_credit>
+		<github_website>如果您有興趣參與貢獻，請瀏覽我們的:</github_website>
 		<vita3k_website>更多資訊請造訪我們的網站：</vita3k_website>
 		<vita3k_staff>Vita3K人員名單</vita3k_staff>
 		<developers>開發人員</developers>

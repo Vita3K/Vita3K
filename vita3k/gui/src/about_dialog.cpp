@@ -70,14 +70,29 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Separator();
     ImGui::Spacing();
 
-    ImGui::Text("%s", lang["github_website"].c_str());
-    if (ImGui::Button("GitHub"))
-        open_path("https://github.com/Vita3K/Vita3K");
+    const auto open_link = [](const char *name, const char *link) {
+        ImGui::PushStyleColor(0, IM_COL32(0.f, 128.f, 255.f, 255.f));
+		if (ImGui::Selectable(name, false, ImGuiSelectableFlags_None, ImVec2(ImGui::CalcTextSize(name))))
+			open_path(link);
+        ImGui::PopStyleColor();
+	};
+
+    ImGui::Text("%s ", lang["special_credit"].c_str());
+    ImGui::SameLine(0, 0);
+    open_link("Gordon Mackay", "https://gordonmackayillustration.blogspot.com");
+
+    ImGui::Spacing();
+    ImGui::Separator();
     ImGui::Spacing();
 
-    ImGui::Text("%s", lang["vita3k_website"].c_str());
-    if (ImGui::Button("vita3k.org"))
-        open_path("https://vita3k.org");
+    ImGui::Text("%s ", lang["github_website"].c_str());
+    ImGui::SameLine(0, 0);
+    open_link("Github", "https://github.com/Vita3K/Vita3K");
+    ImGui::Spacing();
+
+    ImGui::Text("%s ", lang["vita3k_website"].c_str());
+    ImGui::SameLine(0, 0);
+    open_link("vita3k.org", "https://vita3k.org");
 
     ImGui::Spacing();
     ImGui::Separator();
@@ -101,11 +116,19 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["contributors"].c_str());
     ImGui::NextColumn();
     ImGui::Separator();
+
+    const auto open_author_history = [&](const char *author) {
+        open_link(author, fmt::format("https://github.com/Vita3K/Vita3K/commits?author={}", author).c_str());
+    };
+
+    // Developers list
     for (const auto developer : developers_list)
-        ImGui::Text("%s", developer);
+         open_author_history(developer);
     ImGui::NextColumn();
+
+    // Contributors list
     for (const auto contributor : contributors_list)
-        ImGui::Text("%s", contributor);
+        open_author_history(contributor);
     ImGui::NextColumn();
     ImGui::Columns(1);
     ImGui::EndChild();
