@@ -93,6 +93,11 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Text("%s ", lang["vita3k_website"].c_str());
     ImGui::SameLine(0, 0);
     open_link("vita3k.org", "https://vita3k.org");
+    ImGui::Spacing();
+
+    ImGui::Text("%s ", lang["ko-fi_website"].c_str());
+    ImGui::SameLine(0, 0);
+    open_link("Ko-fi", "https://ko-fi.com/vita3k");
 
     ImGui::Spacing();
     ImGui::Separator();
