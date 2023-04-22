@@ -129,6 +129,7 @@ struct LangState {
         { "special_credit", "Special credit: The Vita3K icon was designed by:" },
         { "github_website", "If you're interested in contributing, check out our:" },
         { "vita3k_website", "Visit our website for more info:" },
+        { "ko-fi_website", "If you want to support us, you can make a donation or subscribe to our:" },
         { "vita3k_staff", "Vita3K Staff" },
         { "developers", "Developers" },
         { "contributors", "Contributors" }
