@@ -44,6 +44,10 @@ static std::vector<const char *> contributors_list = {
     "xyzz", "yousifd", "Yunotchi"
 };
 
+static std::vector<const char *> supporters_list = {
+    "j0hnnybrav0"
+};
+
 void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
@@ -72,10 +76,10 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto open_link = [](const char *name, const char *link) {
         ImGui::PushStyleColor(0, IM_COL32(0.f, 128.f, 255.f, 255.f));
-		if (ImGui::Selectable(name, false, ImGuiSelectableFlags_None, ImVec2(ImGui::CalcTextSize(name))))
-			open_path(link);
+        if (ImGui::Selectable(name, false, ImGuiSelectableFlags_None, ImVec2(ImGui::CalcTextSize(name))))
+            open_path(link);
         ImGui::PopStyleColor();
-	};
+    };
 
     ImGui::Text("%s ", lang["special_credit"].c_str());
     ImGui::SameLine(0, 0);
@@ -108,35 +112,42 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["vita3k_staff"].c_str());
     ImGui::Spacing();
 
-    const auto STAFF_LIST_SIZE = ImVec2(440.f * emuenv.dpi_scale, 160.f * emuenv.dpi_scale);
-    const auto HALF_STAFF_LIST_WIDTH = STAFF_LIST_SIZE.x / 2.f;
+    const auto STAFF_LIST_SIZE = ImVec2(630.f * emuenv.dpi_scale, 140.f * emuenv.dpi_scale);
+    static constexpr int STAFF_COLUMN_COUNT(3);
+    const float STAFF_COLUMN_SIZE(STAFF_LIST_SIZE.x / STAFF_COLUMN_COUNT);
+    const float STAFF_COLUMN_POS(HALF_WINDOW_WIDTH - (STAFF_LIST_SIZE.x / 2.f));
 
-    ImGui::SetCursorPosX(HALF_WINDOW_WIDTH - HALF_STAFF_LIST_WIDTH);
-    ImGui::BeginChild("##vita3k_staff", STAFF_LIST_SIZE, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings);
-    ImGui::Columns(2, nullptr, true);
-    ImGui::SetColumnWidth(0, HALF_STAFF_LIST_WIDTH);
-    ImGui::SetColumnWidth(1, HALF_STAFF_LIST_WIDTH);
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["developers"].c_str());
-    ImGui::NextColumn();
-    ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["contributors"].c_str());
-    ImGui::NextColumn();
-    ImGui::Separator();
+    ImGui::SetCursorPosX(STAFF_COLUMN_POS);
+    if (ImGui::BeginTable("##vita3k_staff_table", STAFF_COLUMN_COUNT, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersV | ImGuiTableFlags_NoSavedSettings, STAFF_LIST_SIZE)) {
+        ImGui::TableSetupScrollFreeze(1, 1);
+        ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
+        ImGui::TableSetupColumn(lang["developers"].c_str(), ImGuiTableColumnFlags_NoHide, STAFF_COLUMN_SIZE);
+        ImGui::TableSetupColumn(lang["contributors"].c_str(), ImGuiTableColumnFlags_NoHide, STAFF_COLUMN_SIZE);
+        ImGui::TableSetupColumn(lang["supporters"].c_str(), ImGuiTableColumnFlags_NoHide, STAFF_COLUMN_SIZE);
+        ImGui::TableHeadersRow();
+        ImGui::PopStyleColor();
+        ImGui::TableNextRow();
+        ImGui::TableNextColumn();
 
-    const auto open_author_history = [&](const char *author) {
-        open_link(author, fmt::format("https://github.com/Vita3K/Vita3K/commits?author={}", author).c_str());
-    };
+        const auto open_author_history = [&](const char *author) {
+            open_link(author, fmt::format("https://github.com/Vita3K/Vita3K/commits?author={}", author).c_str());
+        };
 
-    // Developers list
-    for (const auto developer : developers_list)
-         open_author_history(developer);
-    ImGui::NextColumn();
+        // Developers list
+        for (const auto developer : developers_list)
+            open_author_history(developer);
+        ImGui::TableNextColumn();
 
-    // Contributors list
-    for (const auto contributor : contributors_list)
-        open_author_history(contributor);
-    ImGui::NextColumn();
-    ImGui::Columns(1);
-    ImGui::EndChild();
+        // Contributors list
+        for (const auto contributor : contributors_list)
+            open_author_history(contributor);
+        ImGui::TableNextColumn();
+
+        // Supporters list
+        for (const auto supporter : supporters_list)
+            ImGui::Text("%s", supporter);
+        ImGui::EndTable();
+    }
 
     ImGui::End();
 }

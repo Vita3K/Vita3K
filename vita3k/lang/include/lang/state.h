@@ -132,7 +132,8 @@ struct LangState {
         { "ko-fi_website", "If you want to support us, you can make a donation or subscribe to our:" },
         { "vita3k_staff", "Vita3K Staff" },
         { "developers", "Developers" },
-        { "contributors", "Contributors" }
+        { "contributors", "Contributors" },
+        { "supporters", "Supporters" }
     };
     std::map<std::string, std::string> app_context = {
         { "check_app_state", "Check App state" },
