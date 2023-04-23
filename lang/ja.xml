@@ -436,7 +436,7 @@ Vita3Kをお楽しみください。</completed_setup>
 			<exit_livearea_control>Escを押すか〇ボタンを押す</exit_livearea_control>
 			<manual_help>Manual Help</manual_help>
 			<browse_page>ページの閲覧</browse_page>
-			<browse_page_control>方向キー、左ステック、ホイールの上下または &lt;/&gt;</browse_page_control>
+			<browse_page_control>方向キー、左ステック、ホイールの上下または&lt;/&gt;</browse_page_control>
 			<hide_show>ボタンの表示/非表示</hide_show>
 			<hide_show_control>右クリック</hide_show_control>
 			<zoom_available>可能であればズーム</zoom_available>

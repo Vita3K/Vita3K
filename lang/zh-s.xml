@@ -31,6 +31,7 @@
 		<special_credit>特别鸣谢：Vita3K图标设计由：</special_credit>
 		<github_website>如果您有兴趣参与贡献，请浏览我们的:</github_website>
 		<vita3k_website>更多信息请访问我们的网站：</vita3k_website>
+		<ko-fi_website>如果您想支持我们，您可以捐赠或者订阅我们的:</ko-fi_website>
 		<vita3k_staff>Vita3K人员名单</vita3k_staff>
 		<developers>开发人员</developers>
 		<contributors>贡献者</contributors>
@@ -429,7 +430,7 @@
 			<exit_livearea_control>点击Esc或按O键</exit_livearea_control>
 			<manual_help>说明书帮助</manual_help>
 			<browse_page>浏览页面</browse_page>
-			<browse_page_control>方向键、左摇杆左/右或滚轮上/下或点击 &lt;/&gt;</browse_page_control>
+			<browse_page_control>方向键、左摇杆左/右或滚轮上/下或点击&lt;/&gt;</browse_page_control>
 			<hide_show>隐藏/显示按钮</hide_show>
 			<hide_show_control>点击右键</hide_show_control>
 			<zoom_available>缩放如果可用</zoom_available>
