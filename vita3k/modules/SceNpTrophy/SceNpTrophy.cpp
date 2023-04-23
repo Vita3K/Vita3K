@@ -32,7 +32,7 @@ EXPORT(int, sceNpTrophyAbortHandle) {
 }
 
 EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const np::CommunicationID *comm_id,
-    void *comm_sign, const std::uint64_t options) {
+    void *comm_sign, const uint64_t options) {
     TRACY_FUNC(sceNpTrophyCreateContext, context, comm_id, comm_sign, options);
     if (!emuenv.np.trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
@@ -43,7 +43,7 @@ EXPORT(int, sceNpTrophyCreateContext, np::trophy::ContextHandle *context, const 
     }
 
     np::NpTrophyError err = np::NpTrophyError::TROPHY_ERROR_NONE;
-    *context = create_trophy_context(emuenv.np, &emuenv.io, emuenv.pref_path, comm_id, static_cast<std::uint32_t>(emuenv.cfg.sys_lang),
+    *context = create_trophy_context(emuenv.np, &emuenv.io, emuenv.pref_path, comm_id, static_cast<uint32_t>(emuenv.cfg.sys_lang),
         &err);
 
     if (*context == np::trophy::INVALID_CONTEXT_HANDLE) {
@@ -142,7 +142,7 @@ EXPORT(int, sceNpTrophyGetGameInfo, np::trophy::ContextHandle context_handle, Sc
         memcpy((char *)details->title, name.c_str(), name.size() + 1);
         memcpy((char *)details->description, detail.c_str(), detail.size() + 1);
 
-        for (std::uint32_t i = 0; i < context->trophy_count; i++) {
+        for (uint32_t i = 0; i < context->trophy_count; i++) {
             switch (context->trophy_kinds[i]) {
             case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
                 details->numPlatinum++;
@@ -165,7 +165,7 @@ EXPORT(int, sceNpTrophyGetGameInfo, np::trophy::ContextHandle context_handle, Sc
     if (data) {
         data->unlockedTrophies = context->total_trophy_unlocked();
 
-        for (std::uint32_t i = 0; i < context->trophy_count; i++) {
+        for (uint32_t i = 0; i < context->trophy_count; i++) {
             if (context->is_trophy_unlocked(i)) {
                 switch (context->trophy_kinds[i]) {
                 case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
@@ -197,9 +197,89 @@ EXPORT(int, sceNpTrophyGetGroupIcon) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpTrophyGetGroupInfo) {
-    TRACY_FUNC(sceNpTrophyGetGroupInfo);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNpTrophyGetGroupInfo, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle, SceNpTrophyGroupId group_id, SceNpTrophyGroupDetails *details, SceNpTrophyGroupData *data) {
+    TRACY_FUNC(sceNpTrophyGetGroupInfo, context_handle, api_handle, group_id, details, data);
+    STUBBED("More then one default trophies group is not supported");
+    if (!emuenv.np.trophy_state.inited) {
+        return RET_ERROR(SCE_NP_TROPHY_ERROR_NOT_INITIALIZED);
+    }
+
+    if ((context_handle == np::trophy::INVALID_CONTEXT_HANDLE)
+        || (api_handle == -1)
+        || ((group_id < -1) || (group_id >= np::trophy::MAX_GROUPS))
+        || (!details && !data)
+        || (details && (details->size != sizeof(*details)))
+        || (data && (data->size != sizeof(*data)))) {
+        return RET_ERROR(SCE_NP_TROPHY_ERROR_INVALID_ARGUMENT);
+    }
+
+    np::trophy::Context *context = get_trophy_context(emuenv.np.trophy_state, context_handle);
+    if (!context) {
+        return RET_ERROR(SCE_NP_TROPHY_ERROR_INVALID_CONTEXT);
+    }
+
+    if (group_id != -1) { // SCE_NP_TROPHY_BASE_GAME_GROUP_ID
+        return UNIMPLEMENTED();
+    }
+
+    if (details) {
+        details->groupId = group_id;
+        details->numTrophies = context->trophy_count;
+
+        std::string name, detail;
+        if (!context->get_trophy_set(name, detail))
+            return RET_ERROR(SCE_NP_TROPHY_ERROR_UNSUPPORTED_TROPHY_CONF);
+
+        memcpy((char *)details->title, name.c_str(), name.size() + 1);
+        memcpy((char *)details->description, detail.c_str(), detail.size() + 1);
+
+        for (uint32_t i = 0; i < context->trophy_count; i++) {
+            switch (context->trophy_kinds[i]) {
+            case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
+                details->numPlatinum++;
+                break;
+            case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD:
+                details->numGold++;
+                break;
+            case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER:
+                details->numSilver++;
+                break;
+            case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE:
+                details->numBronze++;
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+    if (data) {
+        data->unlockedTrophies = context->total_trophy_unlocked();
+
+        for (uint32_t i = 0; i < context->trophy_count; i++) {
+            if (context->is_trophy_unlocked(i)) {
+                switch (context->trophy_kinds[i]) {
+                case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
+                    data->unlockedPlatinum++;
+                    break;
+                case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD:
+                    data->unlockedGold++;
+                    break;
+                case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_SILVER:
+                    data->unlockedSilver++;
+                    break;
+                case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_BRONZE:
+                    data->unlockedBronze++;
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+
+        data->progressPercentage = data->unlockedTrophies * 100 / context->trophy_count;
+    }
+    return 0;
 }
 
 EXPORT(int, sceNpTrophyGetTrophyIcon, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
@@ -269,7 +349,7 @@ EXPORT(int, sceNpTrophyGetTrophyInfo, np::trophy::ContextHandle context_handle, 
 }
 
 EXPORT(int, sceNpTrophyGetTrophyUnlockState, np::trophy::ContextHandle context_handle, SceNpTrophyHandle api_handle,
-    np::trophy::TrophyFlagArray *flag_array, std::uint32_t *count) {
+    np::trophy::TrophyFlagArray *flag_array, uint32_t *count) {
     TRACY_FUNC(sceNpTrophyGetTrophyUnlockState, context_handle, api_handle, flag_array, count);
     if (!emuenv.np.trophy_state.inited) {
         return SCE_NP_TROPHY_ERROR_NOT_INITIALIZED;
@@ -336,7 +416,7 @@ static int do_trophy_callback(EmuEnvState &emuenv, np::trophy::Context *context,
 
     // Call this async.
     if (emuenv.np.trophy_state.trophy_unlock_callback) {
-        std::uint32_t buf_size = 0;
+        uint32_t buf_size = 0;
 
         // Make filename
         const std::string trophy_icon_filename = fmt::format("TROP{:0>3d}.PNG", trophy_id);

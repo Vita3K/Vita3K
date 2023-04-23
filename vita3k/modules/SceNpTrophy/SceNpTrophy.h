@@ -17,13 +17,13 @@
 
 #pragma once
 
-#include <cstdint>
+// #include <cstdint>
 #include <module/module.h>
 #include <rtc/rtc.h>
 
-using SceNpTrophyHandle = std::int32_t;
-using SceNpTrophyID = std::int32_t;
-using SceNpTrophyGroupId = std::int32_t;
+using SceNpTrophyHandle = int32_t;
+using SceNpTrophyID = int32_t;
+using SceNpTrophyGroupId = int32_t;
 
 #define SCE_NP_TROPHY_ERROR_UNKNOWN 0x80551600
 #define SCE_NP_TROPHY_ERROR_NOT_INITIALIZED 0x80551601
@@ -64,6 +64,8 @@ using SceNpTrophyGroupId = std::int32_t;
 #define SCE_NP_TROPHY_GAME_DESCR_MAX_SIZE 1024
 #define SCE_NP_TROPHY_NAME_MAX_SIZE 128
 #define SCE_NP_TROPHY_DESCR_MAX_SIZE 1024
+#define SCE_NP_TROPHY_GROUP_TITLE_MAX_SIZE 128
+#define SCE_NP_TROPHY_GROUP_DESCR_MAX_SIZE 1024
 
 struct SceNpTrophyGameDetails {
     SceSize size;
@@ -79,6 +81,29 @@ struct SceNpTrophyGameDetails {
 
 struct SceNpTrophyGameData {
     SceSize size;
+    SceUInt32 unlockedTrophies;
+    SceUInt32 unlockedPlatinum;
+    SceUInt32 unlockedGold;
+    SceUInt32 unlockedSilver;
+    SceUInt32 unlockedBronze;
+    SceUInt32 progressPercentage;
+};
+
+struct SceNpTrophyGroupDetails {
+    SceSize size;
+    SceNpTrophyGroupId groupId;
+    SceUInt32 numTrophies;
+    SceUInt32 numPlatinum;
+    SceUInt32 numGold;
+    SceUInt32 numSilver;
+    SceUInt32 numBronze;
+    SceChar8 title[SCE_NP_TROPHY_GROUP_TITLE_MAX_SIZE];
+    SceChar8 description[SCE_NP_TROPHY_GROUP_DESCR_MAX_SIZE];
+};
+
+struct SceNpTrophyGroupData {
+    SceSize size;
+    SceNpTrophyGroupId groupId;
     SceUInt32 unlockedTrophies;
     SceUInt32 unlockedPlatinum;
     SceUInt32 unlockedGold;

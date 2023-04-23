@@ -22,21 +22,20 @@
 #include <util/types.h>
 
 #include <array>
-#include <cstdint>
 
 struct IOState;
 
 namespace np::trophy {
 
-using ContextHandle = std::int32_t;
+using ContextHandle = int32_t;
 
 static constexpr ContextHandle INVALID_CONTEXT_HANDLE = static_cast<ContextHandle>(-1);
-static constexpr std::uint32_t MAX_TROPHIES = 128;
-static constexpr std::uint32_t MAX_GROUPS = 16;
+static constexpr uint32_t MAX_TROPHIES = 128;
+static constexpr uint32_t MAX_GROUPS = 16;
 
 // Each bit indicates a trophy unlocked. An uint32_t has total of 32 bits, so divide
 // 128 with 32, or 128 >> 5
-using TrophyFlagArray = std::uint32_t[MAX_TROPHIES >> 5];
+using TrophyFlagArray = uint32_t[MAX_TROPHIES >> 5];
 
 enum class SceNpTrophyGrade : SceInt32 {
     SCE_NP_TROPHY_GRADE_UNKNOWN = 0,
@@ -56,20 +55,20 @@ struct Context {
 
     TrophyFlagArray trophy_progress;
     TrophyFlagArray trophy_availability; ///< bit 1 set - hidden
-    std::uint32_t group_count;
-    std::uint32_t trophy_count;
+    uint32_t group_count;
+    uint32_t trophy_count;
 
-    std::array<std::uint32_t, MAX_GROUPS> trophy_count_by_group;
+    std::array<uint32_t, MAX_GROUPS> trophy_count_by_group;
 
-    std::array<std::uint64_t, MAX_TROPHIES> unlock_timestamps;
+    std::array<uint64_t, MAX_TROPHIES> unlock_timestamps;
     std::array<SceNpTrophyGrade, MAX_TROPHIES> trophy_kinds;
 
-    std::int32_t platinum_trophy_id{ -1 };
+    int32_t platinum_trophy_id{ -1 };
 
     std::string trophy_progress_output_file_path;
     std::string trophy_detail_xml;
 
-    std::uint32_t lang{ 1 };
+    uint32_t lang{ 1 };
 
     IOState *io;
     std::wstring pref_path;
@@ -80,7 +79,7 @@ struct Context {
     int copy_file_data_from_trophy_file(const char *filename, void *buffer, SceSize *size);
     int install_trophy_conf(IOState *io, const std::wstring &pref_path, const std::string &np_com_id);
     bool init_info_from_trp();
-    bool unlock_trophy(std::int32_t id, np::NpTrophyError *err, const bool force_unlock = false);
+    bool unlock_trophy(int32_t id, np::NpTrophyError *err, const bool force_unlock = false);
 
     const bool is_trophy_hidden(const uint32_t &trophy_index);
     const bool is_trophy_unlocked(const uint32_t &trophy_index);
