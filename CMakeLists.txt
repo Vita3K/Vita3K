@@ -63,21 +63,23 @@ endmacro(b2_build)
 
 # Macro to compile Boost
 macro(boost_compile)
+    list(TRANSFORM BOOST_MODULES_TO_FIND PREPEND --with- OUTPUT_VARIABLE b2_cmd_line_common)
+    set(b2_cmd_line_common ${b2} ${b2_cmd_line_common} -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} cxxflags=${BOOST_CXX_FLAGS})
 	if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
 		execute_process(
-			COMMAND ${b2} -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} address-model=64 --architecture=x64 toolset=${BOOST_TOOLSET} cxxflags=${BOOST_CXX_FLAGS} stage
+			COMMAND ${b2_cmd_line_common} address-model=64 --architecture=x64 toolset=${BOOST_TOOLSET} stage
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
             OUTPUT_QUIET
 		)
 	elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 		execute_process(
-			COMMAND ${b2} -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} cxxflags=${BOOST_CXX_FLAGS} stage
+			COMMAND ${b2_cmd_line_common} stage
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
             OUTPUT_QUIET
 		)
 	elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		execute_process(
-			COMMAND ${b2} --ignore-site-config -j${CPU_COUNT} --build-dir=${BOOST_INSTALLDIR} --stagedir=${BOOST_INSTALLDIR} toolset=${BOOST_TOOLSET} cxxflags=${BOOST_CXX_FLAGS} stage
+			COMMAND ${b2_cmd_line_common} --ignore-site-config toolset=${BOOST_TOOLSET} stage
 			WORKING_DIRECTORY ${BOOST_SOURCEDIR}
             OUTPUT_QUIET
 		)
@@ -88,13 +90,14 @@ option(VITA3K_FORCE_CUSTOM_BOOST "Force Vita3K build process to use the Boost ve
 option(VITA3K_FORCE_SYSTEM_BOOST "Force Vita3K build process to use the Boost version in the system and CMake's default paths and ignore the Boost version included with Vita3K" OFF)
 
 # Boost modules to be found by CMake
-# variant and icl should also be found but CMake cannot find them due to not being included in FindBoost module
-set(BOOST_MODULES_TO_FIND filesystem system program_options)
+set(BOOST_MODULES_TO_FIND filesystem system)
 
 # If build process isn't set to forcefully use system Boost
 if(NOT VITA3K_FORCE_SYSTEM_BOOST)
     # find_package(Boost ...) setting
     set(Boost_USE_STATIC_LIBS ON)
+
+    set(Boost_NO_WARN_NEW_VERSIONS 1)
 
     # First, try to find Boost without any hints (system Boost)
     if(NOT VITA3K_FORCE_CUSTOM_BOOST)
