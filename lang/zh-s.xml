@@ -34,6 +34,7 @@
 		<vita3k_staff>Vita3K人员名单</vita3k_staff>
 		<developers>开发人员</developers>
 		<contributors>贡献者</contributors>
+		<supporters>支持者</supporters>
 	</about>
 
 	<app_context>
@@ -215,9 +216,9 @@
 			<state id = "1">可引导</state>
 			<state id = "2">有图像</state>
 			<state id = "3">可进入菜单</state>
-			<state id = "4">可进入游戏 -</state>
-			<state id = "5">可进入游戏 +</state>
-			<state id = "6">完全可玩</state>
+			<state id = "4">可进入游戏-</state>
+			<state id = "5">可进入游戏+</state>
+			<state id = "6">可玩</state>
 		</states>
 	</compatibility>
 
