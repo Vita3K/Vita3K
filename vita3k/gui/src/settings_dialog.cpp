@@ -664,6 +664,19 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     } else
         ImGui::PopStyleColor();
 
+    // Audio
+    ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
+    if (ImGui::BeginTabItem("Audio")) {
+        ImGui::PopStyleColor();
+        ImGui::Spacing();
+        ImGui::TextColored(GUI_COLOR_TEXT, "Select your preferred audio backend.");
+        static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
+        if (ImGui::Combo("Audio Backend", reinterpret_cast<int *>(&audio_backend_idx), LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
+            emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
+        ImGui::EndTabItem();
+    } else
+        ImGui::PopStyleColor();
+
     // System
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     if (ImGui::BeginTabItem("System")) {
@@ -689,18 +702,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox("Boot apps in full screen", &emuenv.cfg.boot_apps_full_screen);
         ImGui::Spacing();
-
         if (!emuenv.io.app_path.empty())
             ImGui::BeginDisabled();
-
-        static const char *LIST_BACKEND_AUDIO[] = { "SDL", "Cubeb" };
-        if (ImGui::Combo("Audio Backend", reinterpret_cast<int *>(&audio_backend_idx), LIST_BACKEND_AUDIO, IM_ARRAYSIZE(LIST_BACKEND_AUDIO)))
-            emuenv.cfg.audio_backend = LIST_BACKEND_AUDIO[audio_backend_idx];
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Select your preferred audio backend.");
-
-        if (!emuenv.io.app_path.empty())
-            ImGui::EndDisabled();
 
         ImGui::Checkbox("Enable NGS support", &config.ngs_enable);
         if (ImGui::IsItemHovered())
