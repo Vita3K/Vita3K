@@ -94,7 +94,7 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
     ImGui::Text("%s ", lang["github_website"].c_str());
     ImGui::SameLine(0, 0);
-    open_link("Github", "https://github.com/Vita3K/Vita3K");
+    open_link("GitHub", "https://github.com/Vita3K/Vita3K");
     ImGui::Spacing();
 
     ImGui::Text("%s ", lang["vita3k_website"].c_str());
