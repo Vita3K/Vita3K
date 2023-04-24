@@ -27,7 +27,6 @@
 	<about name="О программе">
 		<vita3k>Vita3K: эмулятор PS Vita/PS TV. Первый в мире функциональный эмулятор PS Vita/PS TV.</vita3k>
 		<about_vita3k>Vita3K - это экспериментальный эмулятор PlayStation Vita/PlayStation TV с открытым исходным кодом, написанный на C++ для операционных систем Windows, Linux, macOS и Android.</about_vita3k>
-		<note>Note: Эмулятор все еще в ранней стадии разработки.</note>
 		<github_website>Если вы заинтересованы в том, чтобы внести свой вклад, загляните в наш:</github_website>
 		<vita3k_website>Посетите наш сайт для большей информации:</vita3k_website>
 		<vita3k_staff>Сотрудники Vita3K</vita3k_staff>
