@@ -32,6 +32,30 @@ endif()
 
 enable_testing()
 
+cmake_policy(SET CMP0069 NEW)
+set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+
+set(lto_usage_mode ALWAYS RELEASE_ONLY NEVER)
+set(USE_LTO RELEASE_ONLY CACHE STRING "Use interprocedural optimization/link time optimization")
+set_property(CACHE USE_LTO PROPERTY STRINGS ${lto_usage_mode})
+
+if (NOT (USE_LTO STREQUAL "NEVER"))
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT ipo_supported OUTPUT ipo_supported_error)
+
+    if( ipo_supported )
+        if (USE_LTO STREQUAL "ALWAYS") 
+            set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+        elseif (USE_LTO STREQUAL "RELEASE_ONLY")
+            set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+        endif()
+    else()
+        message(STATUS "IPO / LTO not supported: <${ipo_supported_error}>")
+        set(USE_LTO NEVER CACHE STRING "Use interprocedural optimization/link time optimization")
+    endif()
+endif()
+
+
 ############################
 ########## Boost ###########
 ############################
