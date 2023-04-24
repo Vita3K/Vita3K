@@ -125,7 +125,6 @@ struct LangState {
         { "title", "About" },
         { "vita3k", "Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator." },
         { "about_vita3k", "Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux, macOS and Android operating systems." },
-        { "note", "Note: The emulator is still in a very early stage of development." },
         { "special_credit", "Special credit: The Vita3K icon was designed by:" },
         { "github_website", "If you're interested in contributing, check out our:" },
         { "vita3k_website", "Visit our website for more info:" },

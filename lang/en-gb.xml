@@ -27,7 +27,6 @@
 	<about name="About">
 		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
 		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux, macOS and Android operating systems.</about_vita3k>
-		<note>Note: The emulator is still in a very early stage of development.</note>
 		<special_credit>Special credit: The Vita3K icon was designed by:</special_credit>
 		<github_website>If you're interested in contributing, check out our:</github_website>
 		<ko-fi_website>If you want to support us, you can make a donation or subscribe to our:</ko-fi_website>

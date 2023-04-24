@@ -31,17 +31,21 @@ static std::vector<const char *> developers_list = {
 };
 
 static std::vector<const char *> contributors_list = {
-    "0nza1101", "0x8080", "ArbestRi", "BogdanTheGeek", "bsinky",
-    "bythos14", "Cpasjuste", "CreepNT", "Croden1999", "d3m3vilurr",
-    "DerRM", "devnoname120", "dracc", "Felipefpl", "Frain-Breeze",
-    "francois-berder", "FromAlaska", "Ghabry", "hobyst", "ichisadashioko",
-    "isJuhn", "jlachniet", "Johnnynator", "johnothwolo", "kd-11",
-    "korenkonder", "MaddTheSane", "Margen67", "merryhime", "mkersey",
-    "mrcmunir", "muemart", "NeveHanter", "Nicba1010", "Princess-of-Sleeping",
-    "qurious-pixel", "Ristellise", "scribam", "smitdylan2001", "strikersh",
-    "Talkashie", "TarikYildiz366", "TehPsychedelic", "thp", "tcoyvwac",
-    "TingPing", "TomasKralCZ", "totlmstr", "wfscans", "xerpi",
-    "xyzz", "yousifd", "Yunotchi"
+    "0nza1101", "0x8080", "AtticFinder65536", "BogdanTheGeek", "bsinky",
+    "bythos14", "cobalt2727", "CoffeeBrewer64", "Cpasjuste", "CreepNT",
+    "Croden1999", "d3m3vilurr", "Danik2343", "DerRM", "devnoname120",
+    "dima-xd", "dracc", "edwinr", "Felipefpl", "FlotterCodername",
+    "Frain-Breeze", "francois-berder", "FromAlaska", "Ghabry", "hobyst",
+    "HuanJiCanShang", "ichisadashioko", "illusion0001", "isJuhn",
+    "jdoe0000000", "jlachniet", "Johnnynator", "johnothwolo", "Kaitul",
+    "kd-11", "KhoraLee", "lephilousophe", "lybxlpsv", "MaddTheSane",
+    "Margen67", "merryhime", "mirusu400", "mkersey", "mrcmunir",
+    "muemart", "NabsiYa", "NeveHanter", "ngeojiajun", "Nicba1010",
+    "nishinji", "nn9dev", "Princess-of-Sleeping", "qurious-pixel", "Ristellise",
+    "scribam", "sitiom", "smitdylan2001", "SonicMastr", "Talkashie",
+    "Tarik366", "tcoyvwac", "thp", "TingPing", "TomasKralCZ",
+    "totlmstr", "wfscans", "xero-lib", "xerpi", "xyzz", 
+    "yousifd", "Yunotchi"
 };
 
 static std::vector<const char *> supporters_list = {
@@ -50,7 +54,8 @@ static std::vector<const char *> supporters_list = {
 
 void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 display_size(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const ImVec2 RES_SCALE(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     auto lang = gui.lang.about;
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
@@ -67,8 +72,6 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Text("%s", lang["vita3k"].c_str());
     ImGui::Spacing();
     ImGui::TextWrapped("%s", lang["about_vita3k"].c_str());
-    ImGui::Spacing();
-    ImGui::Text("%s", lang["note"].c_str());
 
     ImGui::Spacing();
     ImGui::Separator();
@@ -112,7 +115,7 @@ void draw_about_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["vita3k_staff"].c_str());
     ImGui::Spacing();
 
-    const auto STAFF_LIST_SIZE = ImVec2(630.f * emuenv.dpi_scale, 140.f * emuenv.dpi_scale);
+    const auto STAFF_LIST_SIZE = ImVec2(630.f * SCALE.x, 160.f * SCALE.y);
     static constexpr int STAFF_COLUMN_COUNT(3);
     const float STAFF_COLUMN_SIZE(STAFF_LIST_SIZE.x / STAFF_COLUMN_COUNT);
     const float STAFF_COLUMN_POS(HALF_WINDOW_WIDTH - (STAFF_LIST_SIZE.x / 2.f));
