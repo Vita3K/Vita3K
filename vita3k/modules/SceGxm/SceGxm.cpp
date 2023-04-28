@@ -2330,6 +2330,9 @@ EXPORT(int, sceGxmExecuteCommandList, SceGxmContext *context, SceGxmCommandList 
         return RET_ERROR(SCE_GXM_ERROR_NOT_WITHIN_SCENE);
     }
 
+    if (!commandList || !commandList->list)
+        return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
+
     // Emit a jump to the first command of given command list
     // Since only one immediate context exists per process, direct linking like this should be fine! (I hope)
     renderer::CommandList &imm_cmds = context->renderer->command_list;
