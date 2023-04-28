@@ -88,7 +88,12 @@ EXPORT(int, __sce_aeabi_ldiv0) {
 
 EXPORT(int, __stack_chk_fail) {
     TRACY_FUNC(__stack_chk_fail);
-    LOG_ERROR("Stack corruption");
+    LOG_CRITICAL("Stack corruption on TID: {}", thread_id);
+
+    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    auto ctx = save_context(*thread->cpu);
+    LOG_ERROR("{}", ctx.description());
+
     return UNIMPLEMENTED();
 }
 
