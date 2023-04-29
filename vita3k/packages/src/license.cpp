@@ -76,7 +76,7 @@ bool copy_license(EmuEnvState &emuenv, const fs::path &license_path) {
 
         const auto license_dst_path{ dst_path / fmt::format("{}.rif", emuenv.license_content_id) };
         if (license_path != license_dst_path) {
-            fs::copy_file(license_path, license_dst_path, fs::copy_option::overwrite_if_exists);
+            fs::copy_file(license_path, license_dst_path, fs::copy_options::overwrite_existing);
             if (fs::exists(license_dst_path)) {
                 LOG_INFO("Success copy license file to: {}", license_dst_path.string());
                 return true;

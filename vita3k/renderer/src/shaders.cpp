@@ -214,7 +214,7 @@ shader::GeneratedShader load_shader_generic(shader::Target target, const SceGxmP
         if (fs::exists(shader_base_path)) {
             try {
                 const auto shader_dst_path = fs_utils::construct_file_name(base_path, shaders_cache_path, hash_hex_ver.c_str(), shader_type_str);
-                fs::copy_file(shader_base_path, shader_dst_path, fs::copy_option::overwrite_if_exists);
+                fs::copy_file(shader_base_path, shader_dst_path, fs::copy_options::overwrite_existing);
                 fs::remove(shader_base_path);
             } catch (std::exception &e) {
                 LOG_ERROR("Failed to moved shaders file: \n{}", e.what());
