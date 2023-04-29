@@ -712,7 +712,7 @@ bool copy_directories(const fs::path &src_path, const fs::path &dst_path) {
             LOG_INFO("Copy {}", dst_path.string());
 
             if (fs::is_regular_file(src))
-                fs::copy_file(src, dst_path, fs::copy_option::overwrite_if_exists);
+                fs::copy_file(src, dst_path, fs::copy_options::overwrite_existing);
             else if (!fs::exists(dst_path))
                 fs::create_directory(dst_path);
         }
