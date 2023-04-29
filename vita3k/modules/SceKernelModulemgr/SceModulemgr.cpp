@@ -210,9 +210,19 @@ EXPORT(int, sceKernelGetModuleInfo, SceUID modid, SceKernelModuleInfo *info) {
 EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
     TRACY_FUNC(sceKernelGetModuleList, flags, modids, num);
     const std::lock_guard<std::mutex> lock(emuenv.kernel.mutex);
+    // for Maidump main module should be the last module
     int i = 0;
+    SceUID main_module_id = 0;
     for (SceKernelModuleInfoPtrs::iterator module = emuenv.kernel.loaded_modules.begin(); module != emuenv.kernel.loaded_modules.end(); ++module) {
-        modids[i] = module->first;
+        if (module->second->path == "app0:" + emuenv.self_path) {
+            main_module_id = module->first;
+        } else {
+            modids[i] = module->first;
+            i++;
+        }
+    }
+    if (main_module_id != 0) {
+        modids[i] = main_module_id;
         i++;
     }
     *num = i;
