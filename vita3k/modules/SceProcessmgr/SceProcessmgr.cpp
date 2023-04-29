@@ -46,7 +46,21 @@ struct VitaTimezone {
     int tz_dsttime;
 };
 
-using VitaTime = std::uint32_t;
+using VitaTime = uint32_t;
+struct VitaTM {
+    int tm_sec;
+    int tm_min;
+    int tm_hour;
+    int tm_mday;
+    int tm_mon;
+    int tm_year;
+    int tm_wday;
+    int tm_yday;
+    int tm_isdst;
+};
+
+static_assert(sizeof(VitaTM) == 36);
+static_assert(sizeof(VitaTM) <= sizeof(struct tm));
 
 struct SceLibkernelAddresses {
     uint32_t size;
@@ -190,26 +204,33 @@ EXPORT(int, sceKernelLibcGettimeofday, VitaTimeval *timeAddr, VitaTimezone *tzAd
     return 0;
 }
 
-EXPORT(Ptr<struct tm>, sceKernelLibcGmtime_r, const VitaTime *time, Ptr<struct tm> date) {
+EXPORT(Ptr<VitaTM>, sceKernelLibcGmtime_r, const VitaTime *time, Ptr<VitaTM> date) {
     TRACY_FUNC(sceKernelLibcGmtime_r, time, date);
     const time_t plat_time = *time;
 
-    SAFE_GMTIME(&plat_time, date.get(emuenv.mem));
+    auto dateIn = date.get(emuenv.mem);
+
+    tm host_tm = {};
+    SAFE_GMTIME(&plat_time, &host_tm);
+    memcpy(dateIn, &host_tm, sizeof(VitaTM));
 
     return date;
 }
 
-EXPORT(Ptr<struct tm>, sceKernelLibcLocaltime_r, const VitaTime *time, Ptr<struct tm> date) {
+EXPORT(Ptr<VitaTM>, sceKernelLibcLocaltime_r, const VitaTime *time, Ptr<VitaTM> date) {
     TRACY_FUNC(sceKernelLibcLocaltime_r, time, date);
     const time_t plat_time = *time;
+    auto dateIn = date.get(emuenv.mem);
 
-    SAFE_LOCALTIME(&plat_time, date.get(emuenv.mem));
+    tm host_tm = {};
+    SAFE_LOCALTIME(&plat_time, &host_tm);
+    memcpy(dateIn, &host_tm, sizeof(VitaTM));
 
     return date;
 }
 
-EXPORT(int, sceKernelLibcMktime, struct tm *date, VitaTime *time, uint64_t *param_3) {
-    TRACY_FUNC(sceKernelLibcMktime, date, time, param_3);
+EXPORT(int, sceKernelLibcMktime, VitaTM *date, VitaTime *time, uint64_t *param_3) {
+    TRACY_FUNC(sceKernelLibcMktime, date, time);
     // param_3 - result, 8 bytes, unused
     if (!date) {
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
@@ -219,7 +240,12 @@ EXPORT(int, sceKernelLibcMktime, struct tm *date, VitaTime *time, uint64_t *para
         date->tm_year -= 1900;
         year_1900 = true;
     }
-    auto time_local = mktime(date);
+    tm host_tm = {};
+    // Copy the input date to host_tm and use that on mktime instead of the input directly
+    // to avoid stack corruption on systems where tm size is different
+    memcpy(&host_tm, date, sizeof(VitaTM));
+    auto time_local = mktime(&host_tm);
+    memcpy(date, &host_tm, sizeof(VitaTM));
     if (year_1900) {
         date->tm_year += 1900;
     }
