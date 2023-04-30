@@ -315,7 +315,7 @@ struct SceNetCtlCallback {
     Address arg;
 };
 
-//s_addr can be a macro on windows
+// s_addr can be a macro on windows
 #pragma push_macro("s_addr")
 #undef s_addr
 struct SceNetInAddr {

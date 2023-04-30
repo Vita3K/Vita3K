@@ -415,28 +415,9 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
 
             for (auto &item : items_name) {
                 current_item[app_path][item.first] = 0;
-                if (!item.second["background"].empty()) {
-                    for (auto &bg_name : item.second["background"])
-                        gui.live_items[app_path][item.first]["background"].push_back({});
-                }
-                if (!item.second["image"].empty()) {
-                    for (auto &img_name : item.second["image"])
-                        gui.live_items[app_path][item.first]["image"].push_back({});
-                }
-            }
-
-            auto pos = 0;
-            std::map<std::string, std::string> current_frame;
-            for (auto &item : items_name) {
                 if (!item.second.empty()) {
                     for (auto &bg_name : item.second["background"]) {
                         if (!bg_name.empty()) {
-                            if (current_frame["background"] != item.first) {
-                                current_frame["background"] = item.first;
-                                pos = 0;
-                            } else
-                                ++pos;
-
                             if (bg_name.find('\n') != std::string::npos)
                                 bg_name.erase(remove(bg_name.begin(), bg_name.end(), '\n'), bg_name.end());
                             bg_name.erase(remove_if(bg_name.begin(), bg_name.end(), isspace), bg_name.end());
@@ -462,19 +443,13 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
                             }
 
                             items[app_path][item.first]["background"]["size"] = ImVec2(float(width), float(height));
-                            gui.live_items[app_path][item.first]["background"][pos].init(gui.imgui_state.get(), data, width, height);
+                            gui.live_items[app_path][item.first]["background"].emplace_back(gui.imgui_state.get(), data, width, height);
                             stbi_image_free(data);
                         }
                     }
 
                     for (auto &img_name : item.second["image"]) {
                         if (!img_name.empty()) {
-                            if (current_frame["image"] != item.first) {
-                                current_frame["image"] = item.first;
-                                pos = 0;
-                            } else
-                                ++pos;
-
                             if (img_name.find('\n') != std::string::npos)
                                 img_name.erase(remove(img_name.begin(), img_name.end(), '\n'), img_name.end());
                             img_name.erase(remove_if(img_name.begin(), img_name.end(), isspace), img_name.end());
@@ -500,7 +475,7 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string app_pa
                             }
 
                             items[app_path][item.first]["image"]["size"] = ImVec2(float(width), float(height));
-                            gui.live_items[app_path][item.first]["image"][pos].init(gui.imgui_state.get(), data, width, height);
+                            gui.live_items[app_path][item.first]["image"].emplace_back(gui.imgui_state.get(), data, width, height);
                             stbi_image_free(data);
                         }
                     }

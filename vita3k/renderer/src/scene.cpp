@@ -296,7 +296,7 @@ COMMAND(handle_transfer_copy) {
         for (uint32_t i = 0; i < (src_width * src_height); i++) {
             // Set aligned i
             const uint32_t i_aligned = i >> (2 * k) << (2 * k);
-                        
+
             // Decode morton 2 x/y of i and mask it
             const uint32_t masked_dm_x = texture::decode_morton2_x(i) & mask;
             const uint32_t masked_dm_y = texture::decode_morton2_y(i) & mask;

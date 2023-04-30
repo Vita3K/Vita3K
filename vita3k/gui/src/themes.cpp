@@ -356,8 +356,7 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string content_id
             continue;
         }
 
-        gui.theme_backgrounds.push_back({});
-        gui.theme_backgrounds.back().init(gui.imgui_state.get(), data, width, height);
+        gui.theme_backgrounds.emplace_back(gui.imgui_state.get(), data, width, height);
         stbi_image_free(data);
     }
 
