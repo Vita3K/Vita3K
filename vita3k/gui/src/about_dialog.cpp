@@ -44,7 +44,7 @@ static std::vector<const char *> contributors_list = {
     "nishinji", "nn9dev", "Princess-of-Sleeping", "qurious-pixel", "Ristellise",
     "scribam", "sitiom", "smitdylan2001", "SonicMastr", "Talkashie",
     "Tarik366", "tcoyvwac", "thp", "TingPing", "TomasKralCZ",
-    "totlmstr", "wfscans", "xero-lib", "xerpi", "xyzz", 
+    "totlmstr", "wfscans", "xero-lib", "xerpi", "xyzz",
     "yousifd", "Yunotchi"
 };
 
