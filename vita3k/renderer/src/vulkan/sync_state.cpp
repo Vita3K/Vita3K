@@ -54,8 +54,8 @@ void sync_clipping(VKContext &context) {
         break;
     case SCE_GXM_REGION_CLIP_INSIDE:
         // TODO: Implement SCE_GXM_REGION_CLIP_INSIDE
-        LOG_WARN("Unimplemented region clip mode used: SCE_GXM_REGION_CLIP_INSIDE");
-        context.scissor = vk::Rect2D{};
+        LOG_WARN("STUB SCE_GXM_REGION_CLIP_INSIDE");
+        context.scissor = vk::Rect2D{ { 0, 0 }, { context.render_target->width, context.render_target->height } };
         break;
     }
 
