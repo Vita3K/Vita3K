@@ -450,9 +450,6 @@
 либо нажав &lt;/&gt;</browse_page_control>
 			<hide_show>Скрыть/показать кнопки</hide_show>
 			<hide_show_control>Правая кнопка мышки</hide_show_control>
-			<zoom_available>Зум при возможности</zoom_available>
-			<zoom_available_control>Два раза ЛКМ</zoom_available_control>
-			<scroll_zoom_control>Колёсико вверх/вниз</scroll_zoom_control>
 			<exit_manual>Закрыть мануал</exit_manual>
 			<exit_manual_control>Нажать на Esc или PS</exit_manual_control>
 		</help>
