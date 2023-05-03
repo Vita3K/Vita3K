@@ -64,10 +64,10 @@
 		<license_delete>Удалить лицензию?</license_delete>
 		<save_delete>Удалить эти сохранённые данные?</save_delete>
 		<eligible>Допущен</eligible>
-		<ineligible>Не допущен</ineligible>	
+		<ineligible>Не допущен</ineligible>
 		<level>Уровень</level>
-		<name>Название</name>		
-		<trophy_earning>Полученные призы</trophy_earning>	
+		<name>Название</name>
+		<trophy_earning>Полученные призы</trophy_earning>
 		<parental_controls>Родительский контроль</parental_controls>
 		<updated>Обновлен</updated>		
 		<size>Размер</size>
@@ -211,7 +211,7 @@
 			<state id = "-1">Неизвестно</state>
 			<state id = "0">Не запускается</state>
 			<state id = "1">Запускается</state>
-			<state id = "2">Заставка</state>		
+			<state id = "2">Заставка</state>
 			<state id = "3">Меню</state>
 			<state id = "4">В игре -</state>
 			<state id = "5">В игре +</state>
@@ -225,7 +225,7 @@
 	</compile_shaders>
 
 	<content_manager name="Управление данными">
-	<search>Поиск</search>
+		<search>Поиск</search>
 		<application name="Приложения">
 			<delete>Выбранные приложения и все связанные с ними данные, в том числе сохраненные данные, будут удалены.</delete>
 			<no_item>Отсутствуют элементы данных.</no_item>
@@ -483,7 +483,7 @@
 				<image>Изображение</image>
 				<add_image>Добавить
 изображение</add_image>
-				</start_screen>
+			</start_screen>
 			<home_screen_backgrounds name="Фон начального экрана">
 				<delete_background>Удалить фон</delete_background>
 				<add_background>Добавить фон</add_background>
@@ -505,22 +505,22 @@
 			<input_language name="Языки ввода">
 				<keyboards name="Клавиатуры">
 					<ime_languages>
-						<lang id="1">Датская</lang>
-						<lang id="2">Немецкая</lang>
-						<lang id="262144">Английская (Великобритания)</lang>
-						<lang id="4">Английская (США)</lang>
-						<lang id="8">Испанская</lang>
-						<lang id="16">Французская</lang>
-						<lang id="32">Итальянская</lang>
-						<lang id="64">Голландская</lang>
-						<lang id="128">Норвежская</lang>
-						<lang id="256">Польская</lang>
-						<lang id="131072">Португальская (Бразилия)</lang>
-						<lang id="512">Португальская (Португалия)</lang>
-						<lang id="1024">Русская</lang>
-						<lang id="2048">Финская</lang>
-						<lang id="4096">Шведская</lang>
-						<lang id="524288">Турецкая</lang>
+						<lang id="1">Датский</lang>
+						<lang id="2">Немецкий</lang>
+						<lang id="262144">Английский (Великобритания)</lang>
+						<lang id="4">Английский (США)</lang>
+						<lang id="8">Испанский</lang>
+						<lang id="16">Французский</lang>
+						<lang id="32">Итальянский</lang>
+						<lang id="64">Голландский</lang>
+						<lang id="128">Норвежский</lang>
+						<lang id="256">Польский</lang>
+						<lang id="131072">Португальский (Бразилия)</lang>
+						<lang id="512">Португальский (Португалия)</lang>
+						<lang id="1024">Русский</lang>
+						<lang id="2048">Финский</lang>
+						<lang id="4096">Шведский</lang>
+						<lang id="524288">Турецкий</lang>
 					</ime_languages>
 				</keyboards>
 			</input_language>
@@ -577,8 +577,8 @@
 		<back>Назад</back>
 		<cancel_update_resume>Отменить обновление?
 Если отменить обновление, то при следующем его запуске Vita3K начнет загрузку с этой точки.</cancel_update_resume>
-		<downloading>Идёт загрузка...
-После завершения загрузки Vita3K автоматически перезапустится и установит новую версию.</downloading>
+		<downloading>Идет загрузка...
+После завершения загрузки Vita3K автоматически перезапустится и установит новое обновление.</downloading>
 		<not_complete_update>Не удалось завершить обновление.</not_complete_update>
 		<minutes_left>Осталось минут: {}</minutes_left>
 		<next>Далее</next>
