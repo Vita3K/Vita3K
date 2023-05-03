@@ -1432,6 +1432,8 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
         SceSize copied_size = (SceSize)copyOut();
         wakeup_senders();
         return copied_size;
+    } else if (waitMode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT) {
+        return 0;
     } else { // sleep until we can insert
         WaitingThreadData wait_data;
         wait_data.thread = thread;
@@ -1522,8 +1524,6 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
     const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
     std::unique_lock<std::mutex> msgpipe_lock(msgpipe->mutex);
 
-    // FIXME implement SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT (for now, all requests are handled synchronously)
-
     // If ASAP and there's at least 1 free byte, or FULL and there's enough space, copy and return directly.
     std::size_t freeSize = msgpipe->data_buffer.Free();
     if ((freeSize >= sendSize) || (ASAP && (freeSize >= 1))) {
@@ -1532,6 +1532,8 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
         wakeup_receivers();
 
         return copied_size;
+    } else if (waitMode & SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT) {
+        return 0;
     } else { // Go to sleep until there's more space
         WaitingThreadData wait_data;
         wait_data.thread = thread;
