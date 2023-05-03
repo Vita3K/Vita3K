@@ -69,7 +69,7 @@
 		<name>Название</name>
 		<trophy_earning>Полученные призы</trophy_earning>
 		<parental_controls>Родительский контроль</parental_controls>
-		<updated>Обновлен</updated>		
+		<updated>Обновлен</updated>
 		<size>Размер</size>
 		<version>Версия</version>
 		<last_time_used>Время последнего использования</last_time_used>
@@ -82,7 +82,7 @@
 Код ошибки: {}</an_error_occurred>
 		<cancel>Отмена</cancel>
 		<delete>Удалить</delete>
-		<file_corrupted>Файл повреждён.</file_corrupted>
+		<file_corrupted>Файл поврежден.</file_corrupted>
 		<microphone_disabled>Включите микрофон.</microphone_disabled>
 		<no>Нет</no>
 		<ok>OK</ok>
