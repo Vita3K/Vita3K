@@ -17,6 +17,7 @@
 
 #include <display/functions.h>
 
+#include <dialog/state.h>
 #include <display/state.h>
 #include <emuenv/state.h>
 #include <kernel/state.h>
@@ -41,13 +42,14 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
             {
                 const std::lock_guard<std::mutex> guard_info(display.display_info_mutex);
                 display.vblank_count++;
+
                 // register framebuf change made by _sceDisplaySetFrameBuf
-                if (display.has_next_frame) {
+                if (display.has_next_frame)
                     display.has_next_frame = false;
-                    // do not set it here as it as already been set in _sceDisplaySetFrameBuf
-                    // display.frame = display.next_frame;
-                    // emuenv.renderer->should_display = true;
-                }
+
+                // in this case, even though no new game frames are being rendered, we still need to update the screen
+                if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING)
+                    emuenv.renderer->should_display = true;
             }
 
             // maybe we should also use a mutex for this part, but it shouldn't be an issue
