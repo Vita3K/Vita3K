@@ -54,6 +54,7 @@ COMMAND(handle_set_context) {
         render_context->record.color_surface = *color_surface;
     } else {
         render_context->record.color_surface.data = nullptr;
+        render_context->record.color_surface.downscale = false;
     }
 
     if (color_surface)
