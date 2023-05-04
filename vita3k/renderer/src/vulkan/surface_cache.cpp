@@ -561,8 +561,22 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
     int32_t height, const bool is_reading) {
     bool packed_ds = (surface.control.content & SceGxmDepthStencilControl::format_bits) == SCE_GXM_DEPTH_STENCIL_FORMAT_S8D24;
 
-    if (is_reading) {
+    int32_t memory_width = width;
+    int32_t memory_height = height;
+
+    if (!is_reading) {
         // when writing we use the render target size which is already upscaled
+        memory_width /= state.res_multiplier;
+        memory_height /= state.res_multiplier;
+
+        // check if MSAA is used, the depth buffer is never downscaled
+        if (target->multisample_mode != SCE_GXM_MULTISAMPLE_NONE)
+            memory_width *= 2;
+        if (target->multisample_mode == SCE_GXM_MULTISAMPLE_4X)
+            memory_height *= 2;
+
+    } else {
+        // take upscaling into account
         width *= state.res_multiplier;
         height *= state.res_multiplier;
     }
@@ -586,23 +600,29 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
 
         DepthStencilSurfaceCacheInfo &cached_info = depth_stencil_textures[found_index];
         bool need_remake = false;
-        if (cached_info.width < width) {
+        if (cached_info.memory_width < memory_width) {
             if (is_reading)
                 return nullptr;
-            cached_info.width = width;
+            cached_info.memory_width = memory_width;
             need_remake = true;
         }
 
-        if (cached_info.height < height) {
+        if (cached_info.memory_height < memory_height) {
             if (is_reading)
                 return nullptr;
-            cached_info.height = height;
+            cached_info.memory_height = memory_height;
             need_remake = true;
         }
 
         if (!need_remake) {
             if (!is_reading)
                 return &cached_info.texture;
+
+            // take MSAA into account
+            if (cached_info.multisample_mode != SCE_GXM_MULTISAMPLE_NONE)
+                width /= 2;
+            if (cached_info.multisample_mode == SCE_GXM_MULTISAMPLE_4X)
+                height /= 2;
 
             const uint64_t scene_timestamp = reinterpret_cast<VKContext *>(state.context)->scene_timestamp;
 
@@ -710,12 +730,14 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
     }
 
     last_use_depth_stencil_surface_index.push_back(found_index);
-    depth_stencil_textures[found_index].flags = 0;
-    depth_stencil_textures[found_index].surface = surface;
-    depth_stencil_textures[found_index].width = width;
-    depth_stencil_textures[found_index].height = height;
+    DepthStencilSurfaceCacheInfo &cached_info = depth_stencil_textures[found_index];
+    cached_info.flags = 0;
+    cached_info.surface = surface;
+    cached_info.memory_width = memory_width;
+    cached_info.memory_height = memory_height;
+    cached_info.multisample_mode = target->multisample_mode;
 
-    vkutil::Image &image = depth_stencil_textures[found_index].texture;
+    vkutil::Image &image = cached_info.texture;
 
     // use prerender cmd in case we read from the depth buffer (although I really doubt this could happen)
     VKContext *context = reinterpret_cast<VKContext *>(state.context);

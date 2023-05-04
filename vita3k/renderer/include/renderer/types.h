@@ -211,7 +211,7 @@ struct ShadersHash {
 
 struct RenderTarget {
     int holder;
-    uint16_t multisample_mode;
+    SceGxmMultisampleMode multisample_mode;
     virtual ~RenderTarget() = default;
 };
 

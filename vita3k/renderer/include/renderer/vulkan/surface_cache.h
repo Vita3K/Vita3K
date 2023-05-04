@@ -92,8 +92,10 @@ struct DepthSurfaceView {
 
 struct DepthStencilSurfaceCacheInfo : public SurfaceCacheInfo {
     SceGxmDepthStencilSurface surface;
-    int32_t width;
-    int32_t height;
+    // dimensions of the depth buffer in memory
+    int32_t memory_width;
+    int32_t memory_height;
+    SceGxmMultisampleMode multisample_mode;
 
     // used when reading from this depth stencil in a shader
     std::vector<DepthSurfaceView> read_surfaces;

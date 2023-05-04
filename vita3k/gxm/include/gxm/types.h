@@ -323,12 +323,18 @@ enum SceGxmTextureAddrMode : uint32_t {
     SCE_GXM_TEXTURE_ADDR_CLAMP_HALF_BORDER = 0x00000007u
 };
 
+enum SceGxmMultisampleMode : uint16_t {
+    SCE_GXM_MULTISAMPLE_NONE,
+    SCE_GXM_MULTISAMPLE_2X,
+    SCE_GXM_MULTISAMPLE_4X
+};
+
 struct SceGxmRenderTargetParams {
     uint32_t flags;
     uint16_t width;
     uint16_t height;
     uint16_t scenesPerFrame;
-    uint16_t multisampleMode;
+    SceGxmMultisampleMode multisampleMode;
     uint32_t multisampleLocations;
     SceUID driverMemBlock;
 };
@@ -1057,12 +1063,6 @@ enum SceGxmMemoryAttribFlags {
     SCE_GXM_MEMORY_ATTRIB_READ = 1,
     SCE_GXM_MEMORY_ATTRIB_WRITE = 2,
     SCE_GXM_MEMORY_ATTRIB_RW = (SCE_GXM_MEMORY_ATTRIB_READ | SCE_GXM_MEMORY_ATTRIB_WRITE)
-};
-
-enum SceGxmMultisampleMode {
-    SCE_GXM_MULTISAMPLE_NONE,
-    SCE_GXM_MULTISAMPLE_2X,
-    SCE_GXM_MULTISAMPLE_4X
 };
 
 enum SceGxmAttributeFormat {
