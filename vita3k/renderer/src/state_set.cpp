@@ -158,10 +158,10 @@ COMMAND_SET_STATE(viewport) {
 
         const float xOffset = helper.pop<float>() / divide_factor;
         const float yOffset = helper.pop<float>() / divide_factor;
-        const float zOffset = helper.pop<float>() / divide_factor;
+        const float zOffset = helper.pop<float>();
         const float xScale = helper.pop<float>() / divide_factor;
         const float yScale = helper.pop<float>() / divide_factor;
-        const float zScale = helper.pop<float>() / divide_factor;
+        const float zScale = helper.pop<float>();
 
         const float ymin = yOffset + yScale;
         const float ymax = yOffset - yScale - 1;
