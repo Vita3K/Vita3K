@@ -2517,8 +2517,12 @@ static int SDLCALL thread_function(void *data) {
         params.gxm->display_queue.pop();
 
         // Now run callback
-        const ThreadStatePtr display_thread = util::find(params.thid, params.kernel->threads);
-        display_thread->run_guest_function(*params.kernel, display_callback->pc, display_callback->data);
+        const ThreadStatePtr display_thread = params.kernel->get_thread(params.thid);
+        if (display_thread) {
+            display_thread->run_guest_function(*params.kernel, display_callback->pc, display_callback->data);
+        } else {
+            LOG_ERROR("display_thread not found. thid:{} display_callback function: {}", params.thid, log_hex(display_callback->pc));
+        }
 
         free(*params.mem, display_callback->data);
 
