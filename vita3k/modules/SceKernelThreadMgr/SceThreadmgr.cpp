@@ -213,7 +213,7 @@ EXPORT(SceInt32, _sceKernelGetCondInfo, SceUID condId, Ptr<SceKernelCondInfo> pI
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
 
     info->condId = condId;
-    std::copy(condvar->name, condvar->name + KERNELOBJECT_MAX_NAME_LENGTH, info->name);
+    strncpy(info->name, condvar->name, KERNELOBJECT_MAX_NAME_LENGTH + 1);
     info->attr = condvar->attr;
     info->mutexId = condvar->associated_mutex->uid;
     info->numWaitThreads = condvar->waiting_threads->size();
@@ -235,7 +235,7 @@ EXPORT(SceInt32, _sceKernelGetEventFlagInfo, SceUID evfId, Ptr<SceKernelEventFla
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT_SIZE);
 
     info->evfId = evfId;
-    std::copy(eventflag->name, eventflag->name + KERNELOBJECT_MAX_NAME_LENGTH, info->name);
+    strncpy(info->name, eventflag->name, KERNELOBJECT_MAX_NAME_LENGTH + 1);
     info->attr = eventflag->attr;
     info->initPattern = eventflag->flags; // Todo, give only current pattern
     info->currentPattern = eventflag->flags;
@@ -276,7 +276,7 @@ EXPORT(int, _sceKernelGetLwMutexInfoById, SceUID lightweight_mutex_id, Ptr<SceKe
     MutexPtr mutex = mutex_get(emuenv.kernel, export_name, thread_id, lightweight_mutex_id, SyncWeight::Light);
     if (mutex) {
         info_data->uid = lightweight_mutex_id;
-        std::copy(mutex->name, mutex->name + KERNELOBJECT_MAX_NAME_LENGTH, info_data->name);
+        strncpy(info_data->name, mutex->name, KERNELOBJECT_MAX_NAME_LENGTH + 1);
         info_data->attr = mutex->attr;
         info_data->pWork = mutex->workarea;
         info_data->initCount = mutex->init_count;
@@ -318,7 +318,7 @@ EXPORT(int, _sceKernelGetMutexInfo, SceUID mutexId, SceKernelMutexInfo *pInfo) {
     if (!mutex)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
     info_data->mutexId = mutexId;
-    std::copy(mutex->name, mutex->name + KERNELOBJECT_MAX_NAME_LENGTH, pInfo->name);
+    strncpy(pInfo->name, mutex->name, KERNELOBJECT_MAX_NAME_LENGTH + 1);
     info_data->attr = mutex->attr;
     info_data->initCount = mutex->init_count;
     info_data->currentCount = mutex->lock_count;
@@ -336,8 +336,56 @@ EXPORT(int, _sceKernelGetMutexInfo, SceUID mutexId, SceKernelMutexInfo *pInfo) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, _sceKernelGetRWLockInfo) {
-    TRACY_FUNC(_sceKernelGetRWLockInfo);
+EXPORT(int, _sceKernelGetRWLockInfo, SceUID rwlockId, SceKernelRWLockInfo *info) {
+    TRACY_FUNC(_sceKernelGetRWLockInfo, rwlockId, info);
+    if (!info)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    if (info->size < sizeof(SceKernelRWLockInfo))
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    const RWLockPtr rwlock = lock_and_find(rwlockId, emuenv.kernel.rwlocks, emuenv.kernel.mutex);
+    if (!rwlock)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_RW_LOCK_ID);
+    const std::lock_guard<std::mutex> rwlock_lock(rwlock->mutex);
+    info->rwLockId = rwlock->uid;
+    strncpy(info->name, rwlock->name, KERNELOBJECT_MAX_NAME_LENGTH + 1);
+    info->attr = rwlock->attr;
+    if (rwlock->state == RWLockState::Unlocked) {
+        info->lockCount = 0;
+        info->writeOwnerId = 0;
+        info->numReadWaitThreads = 0;
+        info->numWriteWaitThreads = 0;
+    } else if (rwlock->state == RWLockState::ReadLocked) {
+        int lock_count = 0;
+        for (auto &t : rwlock->owners) {
+            lock_count += t.second;
+        }
+        info->lockCount = lock_count;
+        info->writeOwnerId = 0;
+        info->numReadWaitThreads = 0;
+        info->numWriteWaitThreads = 0;
+        if (rwlock->waiting_threads->size() > 0) {
+            STUBBED("info for rw lock with waiting threads is not implemented");
+        }
+    } else {
+        if (rwlock->owners.size() == 1) {
+            int lock_count = 0;
+            SceUID owner_id = 0;
+            for (auto &t : rwlock->owners) {
+                lock_count += t.second;
+                owner_id = t.first->id;
+            }
+            info->lockCount = lock_count;
+            info->writeOwnerId = owner_id;
+        } else {
+            STUBBED("info for locked rw lock is not implemented");
+        }
+        if (rwlock->waiting_threads->size() == 0) {
+            info->numReadWaitThreads = 0;
+            info->numWriteWaitThreads = 0;
+        } else {
+            STUBBED("info for rw lock with waiting threads is not implemented");
+        }
+    }
     return UNIMPLEMENTED();
 }
 
@@ -358,7 +406,7 @@ EXPORT(SceInt32, _sceKernelGetSemaInfo, SceUID semaId, Ptr<SceKernelSemaInfo> pI
     info->currentCount = semaphore->val;
     info->initCount = semaphore->init_val;
     info->maxCount = semaphore->max;
-    std::copy(semaphore->name, semaphore->name + KERNELOBJECT_MAX_NAME_LENGTH, info->name);
+    strncpy(info->name, semaphore->name, KERNELOBJECT_MAX_NAME_LENGTH + 1);
     info->semaId = semaId;
     info->numWaitThreads = semaphore->waiting_threads->size();
 
