@@ -324,6 +324,10 @@ Vita3K-systemet ditt er klart!</completed_setup>
 		</language>
 	</settings>
 
+	<settings_dialog>
+		<save>Lagre</save>
+	</settings_dialog>
+
 	<trophy_collection>
 		<details>Detaljer</details>
 		<earned>Oppnådd</earned>

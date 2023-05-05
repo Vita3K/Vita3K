@@ -345,6 +345,10 @@ Je Vita3K-systeem is gereed!</completed_setup>
 		</language>
 	</settings>
 
+	<settings_dialog>
+		<save>Opslaan</save>
+	</settings_dialog>
+
 	<trophy_collection>
 		<details>Details</details>
 		<earned>Gewonnen</earned>

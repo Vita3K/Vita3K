@@ -343,6 +343,10 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		</language>
 	</settings>
 
+	<settings_dialog>
+		<save>저장</save>
+	</settings_dialog>
+
 	<trophy_collection>
 		<details>상세</details>
 		<earned>획득일</earned>

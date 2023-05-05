@@ -341,6 +341,10 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 		</language>
 	</settings>
 
+	<settings_dialog>
+		<save>Guardar</save>
+	</settings_dialog>
+
 	<trophy_collection>
 		<details>Detalles</details>
 		<earned>Ganado</earned>

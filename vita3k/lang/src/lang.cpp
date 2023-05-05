@@ -325,6 +325,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     }
                 }
 
+                // Settings Dialog
+                set_lang_string(lang.settings_dialog, lang_child.child("settings_dialog"));
+
                 // Trophy Collection
                 set_lang_string(lang.trophy_collection, lang_child.child("trophy_collection"));
 

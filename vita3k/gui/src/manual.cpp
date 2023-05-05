@@ -115,9 +115,9 @@ void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
 
     // Set scroll with mouse wheel or keyboard up/down keys
     const auto wheel_counter = ImGui::GetIO().MouseWheel;
-    if ((wheel_counter == 1.f) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_up))
+    if ((wheel_counter == 1.f) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_up) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_up))
         scroll -= std::min(40.f * SCALE.y, scroll);
-    else if ((wheel_counter == -1.f) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_down))
+    else if ((wheel_counter == -1.f) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_leftstick_down) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_down))
         scroll += std::min(40.f * SCALE.y, max_scroll - scroll);
 
     // Set scroll y position

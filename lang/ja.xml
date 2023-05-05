@@ -436,13 +436,9 @@ Vita3Kをお楽しみください。</completed_setup>
 			<exit_livearea_control>Escを押すか〇ボタンを押す</exit_livearea_control>
 			<manual_help>Manual Help</manual_help>
 			<browse_page>ページの閲覧</browse_page>
-			<browse_page_control>方向キー、左ステック、ホイールの上下または&lt;/&gt;</browse_page_control>
+			<browse_page_control>方向キー、左ステック、ホイールの上下またはスライダーまたは&lt;/&gt;</browse_page_control>
 			<hide_show>ボタンの表示/非表示</hide_show>
 			<hide_show_control>右クリック</hide_show_control>
-			<zoom_available>可能であればズーム</zoom_available>
-			<zoom_available_control>ダブルクリック</zoom_available_control>
-			<scroll_zoom>ズーム中のスクロール</scroll_zoom>
-			<scroll_zoom_control>ホイールの上下</scroll_zoom_control>
 			<exit_manual>マニュアルを閉じる</exit_manual>
 			<exit_manual_control>Escを押すかPSボタンを押す</exit_manual_control>
 		</help>
@@ -510,6 +506,11 @@ Vita3Kをお楽しみください。</completed_setup>
 			</input_language>
 		</language>
 	</settings>
+
+	<settings_dialog>
+		<close>閉じる</close>
+		<save>セーブ</save>
+	</settings_dialog>
 
 	<trophy_collection>
 		<search>検索</search>

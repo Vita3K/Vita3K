@@ -332,6 +332,10 @@ Vita3K sisteminiz artık hazır!</completed_setup>
 		</language>
 	</settings>
 
+	<settings_dialog>
+		<save>Kaydet</save>
+	</settings_dialog>
+
 	<trophy_collection>
 		<details>Ayrıntılı Bilgi</details>
 		<earned>Kazanıldığı Tarih</earned>

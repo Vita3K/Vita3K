@@ -371,13 +371,9 @@ struct LangState {
             { "exit_livearea_control", "Click on Esc or Press on Circle" },
             { "manual_help", "Manual Help" },
             { "browse_page", "Browse page" },
-            { "browse_page_control", "D-pad, Left Stick in Left/Right or Wheel in Up/Down or Click on </>" },
+            { "browse_page_control", "D-pad, Left Stick, Wheel in Up/Down or using Slider, Click on </>" },
             { "hide_show", "Hide/Show button" },
             { "hide_show_control", "Right Click" },
-            { "zoom_available", "Zoom if available" },
-            { "zoom_available_control", "Double Left Click" },
-            { "scroll_zoom", "Scroll in zoom" },
-            { "scroll_zoom_control", "Wheel Up/Down" },
             { "exit_manual", "Exit Manual" },
             { "exit_manual_control", "Click on Esc or Press on PS" }
         };
@@ -451,6 +447,13 @@ struct LangState {
         Language language;
     };
     Settings settings;
+    std::map<std::string, std::string> settings_dialog = {
+        { "close", "Close" },
+        { "save_reboot", "Save & Reboot" },
+        { "save_apply", "Save & Apply" },
+        { "save", "Save" },
+        { "keep_changes", "Click on Save to keep your changes." }
+    };
     std::map<std::string, std::string> trophy_collection = {
         { "search", "Search" },
         { "delete_trophy", "Delete Trophy" },

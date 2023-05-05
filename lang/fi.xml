@@ -325,6 +325,10 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		</language>
 	</settings>
 
+	<settings_dialog>
+		<save>Tallenna</save>
+	</settings_dialog>
+
 	<trophy_collection>
 		<details>Lisätiedot</details>
 		<earned>Ansaittu</earned>
