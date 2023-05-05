@@ -1251,9 +1251,9 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
 static void generate_shader_body(spv::Builder &b, const SpirvShaderParameters &parameters, const SceGxmProgram &program,
     const FeatureState &features, utils::SpirvUtilFunctions &utils, spv::Function *begin_hook_func, spv::Function *end_hook_func,
-    const NonDependentTextureQueryCallInfos &texture_queries, const spv::Id render_info_id) {
+    const NonDependentTextureQueryCallInfos &texture_queries, const spv::Id render_info_id, spv::Function *spv_func_main, std::vector<spv::Id> &interfaces) {
     // Do texture queries
-    usse::convert_gxp_usse_to_spirv(b, program, features, parameters, utils, begin_hook_func, end_hook_func, texture_queries, render_info_id);
+    usse::convert_gxp_usse_to_spirv(b, program, features, parameters, utils, begin_hook_func, end_hook_func, texture_queries, render_info_id, spv_func_main, interfaces);
 }
 
 static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvShaderParameters &parameters,
@@ -1740,7 +1740,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
             });
         }
 
-        generate_shader_body(b, parameters, program, features, utils, begin_hook_func, end_hook_func, texture_queries, translation_state.render_info_id);
+        generate_shader_body(b, parameters, program, features, utils, begin_hook_func, end_hook_func, texture_queries, translation_state.render_info_id, spv_func_main, translation_state.interfaces);
     } else {
         generate_update_mask_body(b, utils, features, translation_state);
     }

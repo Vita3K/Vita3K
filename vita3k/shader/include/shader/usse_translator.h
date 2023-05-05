@@ -55,6 +55,7 @@ public:
 
     spv::Block *main_block;
     spv::Id out;
+    spv::Id frag_depth_id = 0;
 
     // Contains repeat increasement offset
     int repeat_increase[4][17];
@@ -775,6 +776,23 @@ public:
         Imm2 dest_bank,
         Imm7 dest_num,
         Imm21 imm_value_first_21bits);
+
+    bool depthf(bool sync,
+        bool src0_bank_ext,
+        bool end,
+        Imm1 src1_bank_ext,
+        Imm1 src2_bank_ext,
+        bool nosched,
+        ShortPredicate pred,
+        bool two_sided,
+        Imm2 feedback,
+        Imm1 src0_bank,
+        Imm2 src1_bank,
+        Imm2 src2_bank,
+        Imm7 dest_n,
+        Imm7 src0_n,
+        Imm7 src1_n,
+        Imm7 src2_n);
 
     bool spec(bool special,
         SpecialCategory category);
