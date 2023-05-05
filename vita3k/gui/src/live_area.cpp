@@ -1076,7 +1076,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Spacing();
             ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["manual_help"].c_str());
             ImGui::Spacing();
-            const std::array<const char *, 5> help_items_02{ "browse_page", "hide_show", "exit_manual" };
+            const std::array<const char *, 3> help_items_02{ "browse_page", "hide_show", "exit_manual" };
             draw_help_table(gui, help_items_02.data(), help_items_02.size());
 
             ImGui::Spacing();
