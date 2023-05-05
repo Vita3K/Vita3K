@@ -174,6 +174,24 @@ void KernelState::exit_delete_all_threads() {
     }
 }
 
+void KernelState::pause_threads() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    for (auto [_, thread] : threads) {
+        paused_threads_status[thread->id] = thread->status;
+        if (thread->status == ThreadStatus::run)
+            thread->suspend();
+    }
+}
+
+void KernelState::resume_threads() {
+    const std::lock_guard<std::mutex> lock(mutex);
+    for (auto [_, thread] : threads) {
+        if (paused_threads_status[thread->id] == ThreadStatus::run)
+            thread->resume();
+    }
+    paused_threads_status.clear();
+}
+
 std::shared_ptr<SceKernelModuleInfo> KernelState::find_module_by_addr(Address address) {
     const auto lock = std::lock_guard(mutex);
     for (auto [_, mod] : loaded_modules) {

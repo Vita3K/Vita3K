@@ -609,6 +609,8 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                         gui.vita_area.information_bar = !gui.vita_area.information_bar;
                         gui.vita_area.live_area_screen = !gui.vita_area.live_area_screen;
                     }
+
+                    app::switch_state(emuenv, !emuenv.kernel.is_threads_paused());
                 }
             }
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_touch && !gui.is_key_capture_dropped && !ImGui::GetIO().WantTextInput)

@@ -55,4 +55,5 @@ public:
     AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample) override;
     void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) override;
     void set_volume(AudioOutPort &out_port, float volume) override;
+    void switch_state(const bool pause) override;
 };

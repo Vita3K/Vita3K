@@ -17,6 +17,7 @@
 
 #include "private.h"
 
+#include <app/functions.h>
 #include <config/functions.h>
 
 #include <compat/functions.h>
@@ -158,6 +159,7 @@ void pre_run_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
             gui.vita_area.home_screen = false;
             gui.vita_area.live_area_screen = false;
             gui.vita_area.information_bar = false;
+            app::switch_state(emuenv, false);
         }
     } else {
         gui.vita_area.home_screen = false;

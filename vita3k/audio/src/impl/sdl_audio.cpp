@@ -67,3 +67,7 @@ bool SDLAudioAdapter::init() {
 
     return true;
 }
+
+void SDLAudioAdapter::switch_state(const bool pause) {
+    SDL_PauseAudioDevice(device_id, pause);
+}
