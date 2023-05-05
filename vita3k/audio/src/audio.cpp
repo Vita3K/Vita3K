@@ -171,3 +171,7 @@ void AudioState::set_volume(AudioOutPort &out_port, float volume) {
 
     adapter->set_volume(out_port, volume);
 }
+
+void AudioState::switch_state(const bool pause) {
+    adapter->switch_state(pause);
+}

@@ -28,4 +28,5 @@ public:
     ~SDLAudioAdapter();
 
     bool init() override;
+    void switch_state(const bool pause) override;
 };

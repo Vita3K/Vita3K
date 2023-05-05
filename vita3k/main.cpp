@@ -421,7 +421,8 @@ int main(int argc, char *argv[]) {
         gui::set_shaders_compiled_display(gui, emuenv);
 
         gui::draw_begin(gui, emuenv);
-        gui::draw_common_dialog(gui, emuenv);
+        if (!gui.vita_area.live_area_screen)
+            gui::draw_common_dialog(gui, emuenv);
         gui::draw_vita_area(gui, emuenv);
 
         if (emuenv.cfg.performance_overlay && !gui.vita_area.home_screen && !gui.vita_area.live_area_screen && !gui.vita_area.start_screen && gui::get_sys_apps_state(gui))

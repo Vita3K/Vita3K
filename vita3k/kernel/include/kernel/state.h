@@ -143,6 +143,7 @@ struct KernelState {
     MsgPipePtrs msgpipes;
     CallbackPtrs callbacks;
 
+    std::map<SceUID, ThreadStatus> paused_threads_status;
     ThreadStatePtrs threads;
 
     SceKernelModuleInfoPtrs loaded_modules;
@@ -178,7 +179,11 @@ struct KernelState {
 
     ThreadStatePtr get_thread(SceUID thread_id);
     Ptr<Ptr<void>> get_thread_tls_addr(MemState &mem, SceUID thread_id, int key);
+
     void exit_delete_all_threads();
+    bool is_threads_paused() { return !paused_threads_status.empty(); };
+    void pause_threads();
+    void resume_threads();
 
     void set_memory_watch(bool enabled);
     void invalidate_jit_cache(Address start, size_t length);

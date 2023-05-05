@@ -48,7 +48,7 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
                     display.has_next_frame = false;
 
                 // in this case, even though no new game frames are being rendered, we still need to update the screen
-                if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING)
+                if (emuenv.kernel.is_threads_paused() || (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING))
                     emuenv.renderer->should_display = true;
             }
 

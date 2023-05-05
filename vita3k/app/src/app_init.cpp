@@ -247,4 +247,13 @@ void destroy(EmuEnvState &emuenv, ImGui_State *imgui) {
         config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
 
+void switch_state(EmuEnvState &emuenv, const bool pause) {
+    if (pause)
+        emuenv.kernel.pause_threads();
+    else
+        emuenv.kernel.resume_threads();
+
+    emuenv.audio.switch_state(pause);
+}
+
 } // namespace app

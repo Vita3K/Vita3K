@@ -93,6 +93,7 @@ public:
     virtual AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample) { return nullptr; }
     virtual void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer) {}
     virtual void set_volume(AudioOutPort &out_port, float volume) {}
+    virtual void switch_state(const bool pause) {}
 
     friend struct AudioState;
 };
@@ -113,4 +114,5 @@ struct AudioState {
     AudioOutPortPtr open_port(int nb_channels, int freq, int nb_sample);
     void audio_output(ThreadState &thread, AudioOutPort &out_port, const void *buffer);
     void set_volume(AudioOutPort &out_port, float volume);
+    void switch_state(const bool pause);
 };
