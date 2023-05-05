@@ -1381,9 +1381,9 @@ EXPORT(SceUInt64, sceKernelGetProcessTimeWide) {
     return rtc_get_ticks(emuenv.kernel.base_tick.tick) - emuenv.kernel.start_tick;
 }
 
-EXPORT(int, sceKernelGetRWLockInfo) {
-    TRACY_FUNC(sceKernelGetRWLockInfo);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelGetRWLockInfo, SceUID rwlockId, SceKernelRWLockInfo *info) {
+    TRACY_FUNC(sceKernelGetRWLockInfo, rwlockId, info);
+    return CALL_EXPORT(_sceKernelGetRWLockInfo, rwlockId, info);
 }
 
 EXPORT(SceInt32, sceKernelGetSemaInfo, SceUID semaId, Ptr<SceKernelSemaInfo> pInfo) {
@@ -1751,9 +1751,20 @@ EXPORT(int, sceKernelTryReceiveMsgPipeVector) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelTrySendMsgPipe) {
-    TRACY_FUNC(sceKernelTrySendMsgPipe);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelTrySendMsgPipe, SceUID msgPipeId, const void *pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult) {
+    TRACY_FUNC(sceKernelTrySendMsgPipe, msgPipeId, pSendBuf, sendSize, waitMode, pResult);
+    STUBBED("");
+    waitMode |= SCE_KERNEL_MSG_PIPE_MODE_DONT_WAIT;
+    SceUInt32 pTimeout = 0;
+    const auto ret = msgpipe_send(emuenv.kernel, export_name, thread_id, msgPipeId, waitMode, pSendBuf, sendSize, &pTimeout);
+    if (static_cast<int>(ret) < 0) {
+        return ret;
+    }
+    if (pResult) {
+        *pResult = ret;
+    }
+    return SCE_KERNEL_OK;
+    // return UNIMPLEMENTED();
 }
 
 EXPORT(int, sceKernelTrySendMsgPipeVector) {

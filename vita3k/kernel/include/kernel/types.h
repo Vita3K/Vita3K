@@ -701,7 +701,7 @@ struct SceKernelMsgPipeInfo {
     /** Size of the structure */
     SceSize size;
     SceUID id;
-    char name[32];
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
     /** == 0x00000100U if msgpipe uses openLimit */
     uint32_t attr;
     SceSize bufferSize;
@@ -742,6 +742,28 @@ struct SceKernelMutexInfo {
     SceInt32 ceilingPriority;
 };
 
+/** Current state of a rwlock.
+ * @see sceKernelGetRWLockInfo
+ */
+struct SceKernelRWLockInfo {
+    /** Size of the ::SceKernelRWLockInfo structure */
+    SceSize size;
+    /** The UID of the rwlock */
+    SceUID rwLockId;
+    /** NULL-terminated name of the rwlock */
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+    /** Attributes */
+    SceUInt32 attr;
+    /** The current lock count */
+    SceInt32 lockCount;
+    /** The UID of the current owner of the rwlock with write access, 0 when locked for reads */
+    SceUID writeOwnerId;
+    /** The number of threads waiting on the rwlock for read access */
+    SceUInt32 numReadWaitThreads;
+    /** The number of threads waiting on the rwlock for write access */
+    SceUInt32 numWriteWaitThreads;
+};
+
 struct SceKernelSemaInfo {
     SceSize size;
     SceUID semaId;
@@ -759,7 +781,7 @@ struct SceKernelThreadInfo {
     /** The UID of the process where the thread belongs */
     SceUID processId;
     /** Nul terminated name of the thread */
-    char name[32];
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
     /** Thread attributes */
     SceUInt32 attr;
     /** Thread status */
