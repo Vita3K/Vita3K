@@ -60,6 +60,48 @@ bool USSETranslatorVisitor::spec(
     return true;
 }
 
+bool USSETranslatorVisitor::depthf(
+    bool sync,
+    bool src0_bank_ext,
+    bool end,
+    Imm1 src1_bank_ext,
+    Imm1 src2_bank_ext,
+    bool nosched,
+    ShortPredicate pred,
+    bool two_sided,
+    Imm2 feedback,
+    Imm1 src0_bank,
+    Imm2 src1_bank,
+    Imm2 src2_bank,
+    Imm7 dest_n,
+    Imm7 src0_n,
+    Imm7 src1_n,
+    Imm7 src2_n) {
+    Instruction inst;
+    inst.opcode = Opcode::DEPTHF;
+
+    inst.opr.src0 = decode_src0(inst.opr.src0, src0_n, src0_bank, src0_bank_ext, true, 7, m_second_program);
+    // TODO: Figure out how/when to use src1 and src2
+    inst.opr.src1 = decode_src12(inst.opr.src1, src1_n, src1_bank, src1_bank_ext, false, 7, m_second_program);
+    inst.opr.src2 = decode_src12(inst.opr.src2, src2_n, src2_bank, src2_bank_ext, false, 7, m_second_program);
+
+    LOG_DISASM("{:016x}: {}{} {} {} {}", m_instr, disasm::s_predicate_str(pred), disasm::opcode_str(inst.opcode),
+        disasm::operand_to_str(inst.opr.src0, 0b0001, 0), disasm::operand_to_str(inst.opr.src1, 0b0001, 0),
+        disasm::operand_to_str(inst.opr.src2, 0b0001, 0));
+
+    m_b.setLine(m_recompiler.cur_pc);
+
+    if (frag_depth_id == 0) {
+        frag_depth_id = m_b.createVariable(spv::NoPrecision, spv::StorageClassOutput, type_f32, "gl_FragDepth");
+        m_b.addDecoration(frag_depth_id, spv::DecorationBuiltIn, spv::BuiltInFragDepth);
+    }
+
+    spv::Id depth = load(inst.opr.src0, 0b1);
+    m_b.createStore(depth, frag_depth_id);
+
+    return true;
+}
+
 bool USSETranslatorVisitor::smlsi(
     Imm1 nosched,
     Imm4 temp_limit,

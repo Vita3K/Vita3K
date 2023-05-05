@@ -460,15 +460,15 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
         /*
                                    10001 = opcode1
                                         pp = pred (2 bits)
-                                          m = cmod1 (1 bit)
+                                          c = cmod1 (1 bit)
                                            s = skipinv (1 bit)
                                             n = nosched (1 bit)
-                                             cc = cop (2 bits)
+                                             oo = cop (2 bits)
                                                d = destbext (1 bit)
                                                 e = end (1 bit)
                                                  r = src1bext (1 bit)
                                                   b = src2bext (1 bit)
-                                                   o = cmod2 (1 bit)
+                                                   m = cmod2 (1 bit)
                                                     a = amod1 (1 bit)
                                                      ll = asel1 (2 bits)
                                                        f = dmod (1 bit)
@@ -484,7 +484,7 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
                                                                                      wwwwwww = src1n (7 bits)
                                                                                             xxxxxxx = src2n (7 bits)
         */
-        INST(&V::sop3, "SOP3 ()", "10001ppmsnccderboallfgghhhiiikttjjqquuuuuuuvvvvvvvwwwwwwwxxxxxxx"),
+        INST(&V::sop3, "SOP3 ()", "10001ppcsnooderbmallfgghhhiiikttjjqquuuuuuuvvvvvvvwwwwwwwxxxxxxx"),
         // 8-bit integer Multiply and Add
         /*
                                      10011 = opcode1
@@ -775,6 +775,33 @@ static std::optional<const USSEMatcher<V>> DecodeUSSE(uint64_t instruction) {
                                                                               vvvvvvvvvvvvvvvvvvvvv = imm_value_first_21bits (21 bits)
         */
         INST(&V::limm, "LIMM ()", "11111100sn10deiiiiiipppmmmmm--tt----uuuuuuuvvvvvvvvvvvvvvvvvvvvv"),
+        // Depth Replacement instruction
+        /*
+                                       11111 = op1
+                                            011 = op2
+                                               s = sync (1 bit, bool)
+                                                - = don't care
+                                                 11 = opcat
+                                                   r = src0_bank_ext (1 bit, bool)
+                                                    e = end (1 bit, bool)
+                                                     c = src1_bank_ext (1 bit)
+                                                      b = src2_bank_ext (1 bit)
+                                                       ---- = don't care
+                                                           n = nosched (1 bit, bool)
+                                                            pp = pred (2 bits, ShortPredicate)
+                                                              --- = don't care
+                                                                 t = two_sided (1 bit, bool)
+                                                                  ff = feedback (2 bits)
+                                                                    a = src0_bank (1 bit)
+                                                                     -- = don't care
+                                                                       kk = src1_bank (2 bits)
+                                                                         dd = src2_bank (2 bits)
+                                                                           ggggggg = dest_n (7 bits)
+                                                                                  hhhhhhh = src0_n (7 bits)
+                                                                                         iiiiiii = src1_n (7 bits)
+                                                                                                jjjjjjj = src2_n (7 bits)
+        */
+        INST(&V::depthf, "DEPTHF ()", "11111011s-11recb----npp---tffa--kkddggggggghhhhhhhiiiiiiijjjjjjj"),
         // Special
         /*
                                    11111 = op1
@@ -1029,7 +1056,7 @@ spv::Function *USSERecompiler::compile_program_function() {
 }
 
 void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, const FeatureState &features, const SpirvShaderParameters &parameters, utils::SpirvUtilFunctions &utils,
-    spv::Function *begin_hook_func, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const spv::Id render_info_id) {
+    spv::Function *begin_hook_func, spv::Function *end_hook_func, const NonDependentTextureQueryCallInfos &queries, const spv::Id render_info_id, spv::Function *spv_func_main, std::vector<spv::Id> &interfaces) {
     const uint64_t *primary_program = program.primary_program_start();
     const uint64_t primary_program_instr_count = program.primary_program_instr_count;
 
@@ -1075,6 +1102,11 @@ void convert_gxp_usse_to_spirv(spv::Builder &b, const SceGxmProgram &program, co
 
     if (features.should_use_shader_interlock() && program.is_fragment() && program.is_frag_color_used())
         b.createNoResultOp(spv::OpEndInvocationInterlockEXT);
+
+    if (recomp.visitor.frag_depth_id != 0) {
+        interfaces.push_back(recomp.visitor.frag_depth_id);
+        b.addExecutionMode(spv_func_main, spv::ExecutionModeDepthReplacing);
+    }
 }
 
 } // namespace shader::usse

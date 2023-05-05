@@ -1586,6 +1586,73 @@ LIMM:
         - imm_value_first_21bits:
             size: 21
             offset: 0
+
+DEPTHF:
+    description: Depth Replacement instruction
+    members:
+        - op1: '11111'
+        - op2:
+            match: '011'
+            size: 3
+            offset: 56
+        - sync:
+            size: 1
+            offset: 55
+            type: bool
+        - opcat: 
+            match: '11'
+            size: 2
+            offset: 52
+        - src0_bank_ext:
+            size: 1
+            offset: 51
+            type: bool
+        - end:
+            size: 1
+            offset: 50
+            type: bool
+        - src1_bank_ext:
+            size: 1
+            offset: 49
+        - src2_bank_ext:
+            size: 1
+            offset: 48
+        - nosched:
+            size: 1
+            offset: 43
+            type: bool
+        - pred:
+            type: ShortPredicate
+            size: 2
+            offset: 41
+        - two_sided:
+            size: 1
+            offset: 37
+            type: bool
+        - feedback:
+            size: 2
+            offset: 35
+        - src0_bank:
+            size: 1
+            offset: 34
+        - src1_bank:
+            size: 2
+            offset: 30
+        - src2_bank:
+            size: 2
+            offset: 28
+        - dest_n:
+            size: 7
+            offset: 21
+        - src0_n:
+            size: 7
+            offset: 14
+        - src1_n:
+            size: 7
+            offset: 7
+        - src2_n:
+            size: 7
+            offset: 0
         
 SPEC:
     description: Special
