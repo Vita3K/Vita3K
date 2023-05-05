@@ -395,6 +395,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
+    auto &lang = gui.lang.settings_dialog;
+
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
     ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.48f));
     const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
@@ -1073,18 +1075,21 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     static const auto BUTTON_SIZE = ImVec2(120.f * SCALE.x, 0.f);
     ImGui::SetCursorPosX((ImGui::GetWindowSize().x / 2.f) - BUTTON_SIZE.x - (10.f * SCALE.x));
-    if (ImGui::Button("Close", BUTTON_SIZE))
+    ImGui::PushFont(gui.vita_font);
+    ImGui::SetWindowFontScale(0.7f * RES_SCALE.x);
+    if (ImGui::Button(lang["close"].c_str(), BUTTON_SIZE))
         settings_dialog = false;
     ImGui::SameLine(0, 20.f * SCALE.x);
     const auto is_apply = !emuenv.io.app_path.empty() && (!is_custom_config || (emuenv.app_path == emuenv.io.app_path));
     const auto is_reboot = (emuenv.renderer->current_backend != emuenv.backend_renderer) || (config.resolution_multiplier != emuenv.cfg.current_config.resolution_multiplier);
-    if (ImGui::Button(is_apply ? (is_reboot ? "Save & Reboot" : "Save & Apply") : "Save", BUTTON_SIZE)) {
+    if (ImGui::Button(is_apply ? (is_reboot ? lang["save_reboot"].c_str() : lang["save_apply"].c_str()) : lang["save"].c_str(), BUTTON_SIZE)) {
         save_config(gui, emuenv);
         if (is_apply)
             set_config(gui, emuenv, emuenv.io.app_path);
     }
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("Click on Save to keep your changes.");
+        ImGui::SetTooltip("%s", lang["keep_changes"].c_str());
+    ImGui::PopFont();
 
     ImGui::End();
 }

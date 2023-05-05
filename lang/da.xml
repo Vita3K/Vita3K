@@ -328,6 +328,10 @@ Dit Vita3K-system er klart!</completed_setup>
 			</input_language>
 		</language>
 	</settings>
+
+	<settings_dialog>
+		<save>Gem</save>
+	</settings_dialog>
 	
 	<trophy_collection>
 		<details>Detaljer</details>

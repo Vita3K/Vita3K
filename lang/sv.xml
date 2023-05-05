@@ -327,6 +327,10 @@ Ditt Vita3K-system är redo!</completed_setup>
 		</language>
 	</settings>
 
+	<settings_dialog>
+		<save>Spara</save>
+	</settings_dialog>
+
 	<trophy_collection>
 		<search>Search</search>
 		<delete_trophy>Delete Trophy</delete_trophy>

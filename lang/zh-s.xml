@@ -430,13 +430,9 @@
 			<exit_livearea_control>点击Esc或按O键</exit_livearea_control>
 			<manual_help>说明书帮助</manual_help>
 			<browse_page>浏览页面</browse_page>
-			<browse_page_control>方向键、左摇杆左/右或滚轮上/下或点击&lt;/&gt;</browse_page_control>
+			<browse_page_control>方向键、左摇杆、滚轮上/下或使用滑块、点击&lt;/&gt;</browse_page_control>
 			<hide_show>隐藏/显示按钮</hide_show>
 			<hide_show_control>点击右键</hide_show_control>
-			<zoom_available>缩放如果可用</zoom_available>
-			<zoom_available_control>双击左键</zoom_available_control>
-			<scroll_zoom>缩放滚动</scroll_zoom>
-			<scroll_zoom_control>滚轮上/下</scroll_zoom_control>
 			<exit_manual>退出说明书</exit_manual>
 			<exit_manual_control>点击Esc或按PS键</exit_manual_control>
 		</help>
@@ -510,6 +506,14 @@
 			</input_language>
 		</language>
 	</settings>
+
+	<settings_dialog>
+		<close>关闭</close>
+		<save_reboot>保存并重启</save_reboot>
+		<save_apply>保存并应用</save_apply>
+		<save>保存</save>
+		<keep_changes>点击保存保留您的更改。</keep_changes>
+	</settings_dialog>
 
 	<trophy_collection>
 		<search>搜索</search>

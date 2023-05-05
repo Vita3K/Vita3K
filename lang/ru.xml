@@ -524,6 +524,10 @@
 		</language>
 	</settings>
 
+	<settings_dialog>
+		<save>Сохранить</save>
+	</settings_dialog>
+
 	<trophy_collection>
 		<search>Поиск</search>
 		<delete_trophy>Удалить призы</delete_trophy>

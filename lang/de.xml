@@ -334,6 +334,10 @@ Dein Vita3K-System ist bereit!</completed_setup>
 		</language>
 	</settings>
 
+	<settings_dialog>
+		<save>Speichern</save>
+	</settings_dialog>
+
 	<trophy_collection>
 		<details>Details</details>
 		<earned>Verdient</earned>
