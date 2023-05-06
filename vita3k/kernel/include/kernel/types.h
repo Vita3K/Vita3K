@@ -409,7 +409,7 @@ enum SceKernelMemBlockType {
     SCE_KERNEL_MEMBLOCK_TYPE_USER_CDRAM_RW = 0x09408060
 };
 
-enum SceSysmoduleModuleId {
+enum SceSysmoduleModuleId : uint16_t {
     SCE_SYSMODULE_INVALID = 0x0000,
     SCE_SYSMODULE_NET = 0x0001,
     SCE_SYSMODULE_HTTP = 0x0002,
