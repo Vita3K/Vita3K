@@ -17,6 +17,7 @@
 
 #include "SceSysmodule.h"
 
+#include <kernel/state.h>
 #include <module/load_module.h>
 #include <modules/module_parent.h>
 #include <util/tracy.h>
@@ -167,15 +168,12 @@ static bool is_modules_enable(EmuEnvState &emuenv, SceSysmoduleModuleId module_i
 EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId module_id) {
     TRACY_FUNC(sceSysmoduleIsLoaded, module_id);
     if (module_id < 0 || module_id > SYSMODULE_COUNT)
-        return SCE_SYSMODULE_ERROR_INVALID_VALUE;
+        return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
 
-    if (is_modules_enable(emuenv, module_id)) {
-        if (is_module_loaded(emuenv.kernel, module_id))
-            return SCE_SYSMODULE_LOADED;
-        else
-            return SCE_SYSMODULE_ERROR_UNLOADED;
-    } else
+    if (is_module_loaded(emuenv.kernel, module_id))
         return SCE_SYSMODULE_LOADED;
+    else
+        return RET_ERROR(SCE_SYSMODULE_ERROR_UNLOADED);
 }
 
 EXPORT(int, sceSysmoduleIsLoadedInternal, SceSysmoduleInternalModuleId module_id) {
@@ -186,15 +184,17 @@ EXPORT(int, sceSysmoduleIsLoadedInternal, SceSysmoduleInternalModuleId module_id
 EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
     TRACY_FUNC(sceSysmoduleLoadModule, module_id);
     if (module_id < 0 || module_id > SYSMODULE_COUNT)
-        return SCE_SYSMODULE_ERROR_INVALID_VALUE;
+        return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
 
     if (is_modules_enable(emuenv, module_id)) {
         if (load_module(emuenv, thread_id, module_id))
             return SCE_SYSMODULE_LOADED;
         else
-            return SCE_SYSMODULE_ERROR_UNLOADED;
-    } else
+            return RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);
+    } else {
+        emuenv.kernel.loaded_sysmodules.push_back(module_id);
         return SCE_SYSMODULE_LOADED;
+    }
 }
 
 EXPORT(int, sceSysmoduleLoadModuleInternal, SceSysmoduleInternalModuleId module_id) {
