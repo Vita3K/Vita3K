@@ -31,6 +31,7 @@
 #include <SDL_vulkan.h>
 
 #ifdef __APPLE__
+#include <mvk_config.h>
 #include <vulkan/vulkan_beta.h>
 #endif
 
@@ -252,6 +253,33 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             debug_messenger = instance.createDebugUtilsMessengerEXT(debug_info);
         }
     }
+
+#ifdef __APPLE__
+    {
+        // Enable full swizzle on MoltenVK
+        // Get the MoltenVK specific function
+        bool applied_full_swizzle = false;
+        void *libMoltenVK = dlopen("libMoltenVK.dylib", RTLD_LAZY);
+        auto _vkGetMoltenVKConfigurationMVK = reinterpret_cast<PFN_vkGetMoltenVKConfigurationMVK>(dlsym(libMoltenVK, "vkGetMoltenVKConfigurationMVK"));
+        auto _vkSetMoltenVKConfigurationMVK = reinterpret_cast<PFN_vkSetMoltenVKConfigurationMVK>(dlsym(libMoltenVK, "vkSetMoltenVKConfigurationMVK"));
+        if (_vkGetMoltenVKConfigurationMVK != nullptr && _vkSetMoltenVKConfigurationMVK != nullptr) {
+            MVKConfiguration config;
+            size_t config_size = sizeof(config);
+            auto err = _vkGetMoltenVKConfigurationMVK(VK_NULL_HANDLE, &config, &config_size);
+            // An incomplete error is fine too
+            if (err == VK_SUCCESS || err == VK_INCOMPLETE) {
+                // full swizzle is needed by Vita3K and the GUI
+                config.fullImageViewSwizzle = VK_TRUE;
+                err = _vkSetMoltenVKConfigurationMVK(VK_NULL_HANDLE, &config, &config_size);
+                applied_full_swizzle = (err == VK_SUCCESS || err == VK_INCOMPLETE);
+            }
+        }
+        if (applied_full_swizzle)
+            LOG_INFO("MoltenVK full swizzle enabled");
+        else
+            LOG_INFO("Failed to apply MoltenVK full swizzle");
+    }
+#endif
 
     // Create Surface
     if (!screen_renderer.create(window))
