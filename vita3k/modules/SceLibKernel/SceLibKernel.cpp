@@ -1519,6 +1519,11 @@ EXPORT(int, sceKernelLockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int lock_c
     return CALL_EXPORT(_sceKernelLockLwMutex, workarea, lock_count, ptimeout);
 }
 
+EXPORT(int, sceKernelLockLwMutex_0, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
+    TRACY_FUNC(sceKernelLockLwMutex_0, workarea, lock_count, ptimeout);
+    return CALL_EXPORT(_sceKernelLockLwMutex, workarea, lock_count, ptimeout);
+}
+
 EXPORT(int, sceKernelLockLwMutexCB, Ptr<SceKernelLwMutexWork> workarea, int lock_count, unsigned int *ptimeout) {
     TRACY_FUNC(sceKernelLockLwMutexCB, workarea, lock_count, ptimeout);
     process_callbacks(emuenv.kernel, thread_id);
@@ -1765,6 +1770,11 @@ EXPORT(int, sceKernelUnlockLwMutex, Ptr<SceKernelLwMutexWork> workarea, int unlo
     TRACY_FUNC(sceKernelUnlockLwMutex, workarea, unlock_count);
     const auto lwmutexid = workarea.get(emuenv.mem)->uid;
     return mutex_unlock(emuenv.kernel, export_name, thread_id, lwmutexid, unlock_count, SyncWeight::Light);
+}
+
+EXPORT(int, sceKernelUnlockLwMutex_0, Ptr<SceKernelLwMutexWork> workarea, int unlock_count) {
+    TRACY_FUNC(sceKernelUnlockLwMutex_0, workarea, unlock_count);
+    return CALL_EXPORT(sceKernelUnlockLwMutex, workarea, unlock_count);
 }
 
 EXPORT(int, sceKernelUnlockLwMutex2, Ptr<SceKernelLwMutexWork> workarea, int unlock_count) {
@@ -2272,6 +2282,7 @@ BRIDGE_IMPL(sceKernelGetTimerTime)
 BRIDGE_IMPL(sceKernelLoadModule)
 BRIDGE_IMPL(sceKernelLoadStartModule)
 BRIDGE_IMPL(sceKernelLockLwMutex)
+BRIDGE_IMPL(sceKernelLockLwMutex_0)
 BRIDGE_IMPL(sceKernelLockLwMutexCB)
 BRIDGE_IMPL(sceKernelLockMutex)
 BRIDGE_IMPL(sceKernelLockMutexCB)
@@ -2313,6 +2324,7 @@ BRIDGE_IMPL(sceKernelTrySendMsgPipe)
 BRIDGE_IMPL(sceKernelTrySendMsgPipeVector)
 BRIDGE_IMPL(sceKernelUnloadModule)
 BRIDGE_IMPL(sceKernelUnlockLwMutex)
+BRIDGE_IMPL(sceKernelUnlockLwMutex_0)
 BRIDGE_IMPL(sceKernelUnlockLwMutex2)
 BRIDGE_IMPL(sceKernelWaitCond)
 BRIDGE_IMPL(sceKernelWaitCondCB)
