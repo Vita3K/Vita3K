@@ -104,7 +104,7 @@ bool AacDecoderState::receive(uint8_t *data, DecoderSize *size) {
 
     if (data) {
         int ret = swr_convert(swr, &data, frame->nb_samples, const_cast<const uint8_t **>(frame->extended_data), frame->nb_samples);
-        assert(ret == 0);
+        assert(ret >= 0);
     }
 
     if (size) {
