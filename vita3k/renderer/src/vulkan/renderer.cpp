@@ -30,6 +30,10 @@
 
 #include <SDL_vulkan.h>
 
+#ifdef __APPLE__
+#include <vulkan/vulkan_beta.h>
+#endif
+
 static vk::DebugUtilsMessengerEXT debug_messenger;
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
@@ -188,7 +192,10 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         const std::set<std::string> optional_instance_extensions = {
             VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME,
             VK_KHR_EXTERNAL_MEMORY_CAPABILITIES_EXTENSION_NAME,
-            VK_KHR_DEVICE_GROUP_CREATION_EXTENSION_NAME
+            VK_KHR_DEVICE_GROUP_CREATION_EXTENSION_NAME,
+#ifdef __APPLE__
+            VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+#endif
         };
         for (const vk::ExtensionProperties &prop : vk::enumerateInstanceExtensionProperties()) {
             auto ite = optional_instance_extensions.find(prop.extensionName);
@@ -223,7 +230,10 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         }
 
         vk::InstanceCreateInfo instance_info{
-            .pApplicationInfo = &app_info
+#ifdef __APPLE__
+            .flags = vk::InstanceCreateFlagBits::eEnumeratePortabilityKHR,
+#endif
+            .pApplicationInfo = &app_info,
         };
         instance_info.setPEnabledLayerNames(instance_layers);
         instance_info.setPEnabledExtensionNames(instance_extensions);
@@ -326,7 +336,11 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             // also needed for reading mapped memory in the shader
             { VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, &support_buffer_device_address },
             // needed for uniform uvec2 arrays not to take twice the size
-            { VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME, &support_standard_layout }
+            { VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME, &support_standard_layout },
+#ifdef __APPLE__
+            // Needed to create the MoltenVK device
+            { VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, &temp_bool },
+#endif
         };
 
         for (const vk::ExtensionProperties &ext : physical_device.enumerateDeviceExtensionProperties()) {
