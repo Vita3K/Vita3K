@@ -79,7 +79,7 @@ struct SceCtrlData2 {
     SceUInt8 rx; //!< R analog controller (X-axis)
     SceUInt8 ry; //!< R analog controller (Y-axis)
     SceUInt8 up; //!< Up press value
-    SceUInt8 right; ///!< Right epress value
+    SceUInt8 right; ///!< Right press value
     SceUInt8 down; //!< Down press value
     SceUInt8 left; //!< Left press value
     SceUInt8 l2; //!< L2 press value

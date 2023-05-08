@@ -21,12 +21,13 @@
 
 #include <config/state.h>
 #include <dialog/state.h>
+#include <display/functions.h>
+#include <display/state.h>
+#include <kernel/state.h>
 
 #include <SDL_keyboard.h>
 
 #include <array>
-
-static uint64_t timestamp;
 
 static constexpr std::array<ControllerBinding, 13> controller_bindings = { {
     { SDL_CONTROLLER_BUTTON_BACK, SCE_CTRL_SELECT },
@@ -229,27 +230,27 @@ static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameControlle
     axes[3] += axis_to_axis(SDL_GameControllerGetAxis(controller, SDL_CONTROLLER_AXIS_RIGHTY));
 }
 
-static int peek_buffer(EmuEnvState &emuenv, int port, bool ext, int count, bool negative, bool from_ext_function, SceUInt64 &timeStamp, SceUInt32 &buttons, SceUInt8 &lx, SceUInt8 &ly, SceUInt8 &rx, SceUInt8 &ry) {
+static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool negative, bool from_ext_function, SceUInt32 &buttons, SceUInt8 &lx, SceUInt8 &ly, SceUInt8 &rx, SceUInt8 &ry) {
     if (port == 0) {
         port++;
     }
     CtrlState &state = emuenv.ctrl;
     refresh_controllers(state);
 
-    timeStamp = timestamp++; // TODO Use the real time and units.
-
     if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
-        return 0;
+        if (negative)
+            buttons ^= ~0;
+        return;
     }
 
     std::array<float, 4> axes;
     axes.fill(0);
     if (port == 1) {
-        apply_keyboard(&buttons, axes.data(), ext, emuenv);
+        apply_keyboard(&buttons, axes.data(), is_v2, emuenv);
     }
     for (const auto &controller : state.controllers) {
         if (controller.second.port == port) {
-            apply_controller(&buttons, axes.data(), controller.second.controller.get(), ext);
+            apply_controller(&buttons, axes.data(), controller.second.controller.get(), is_v2);
         }
     }
 
@@ -266,33 +267,47 @@ static int peek_buffer(EmuEnvState &emuenv, int port, bool ext, int count, bool 
         ry = float_to_byte(axes[3]);
     }
 
-    if (negative) {
-        buttons = 0xFFFFFFFF - buttons;
-    }
-
-    return count;
+    if (negative)
+        buttons ^= ~0;
 }
 
-int peek_data(EmuEnvState &emuenv, int port, SceCtrlData *&pad_data, int count, bool negative, bool from_ext_function) {
-    memset(pad_data, 0, sizeof(*pad_data));
-
-    count = peek_buffer(emuenv, port, false, count, negative, from_ext_function, pad_data->timeStamp, pad_data->buttons, pad_data->lx, pad_data->ly, pad_data->rx, pad_data->ry);
-
-    for (int i = 1; i < count; i++) {
-        memcpy(&pad_data[i], &pad_data[0], sizeof(SceCtrlData));
+int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2 *pData, SceUInt32 count, bool negative, bool is_peek, bool is_v2, bool from_ext) {
+    if (port > 1 && !emuenv.cfg.current_config.pstv_mode) {
+        const char *export_name = "sceCtrl*Buffer*";
+        return RET_ERROR(SCE_CTRL_ERROR_NO_DEVICE);
     }
 
-    return count;
-}
+    memset(pData, 0, sizeof(SceCtrlData2) * count);
 
-int peek_data(EmuEnvState &emuenv, int port, SceCtrlData2 *&pad_data, int count, bool negative, bool from_ext_function) {
-    memset(pad_data, 0, sizeof(*pad_data));
+    CtrlState &state = emuenv.ctrl;
 
-    count = peek_buffer(emuenv, port, true, count, negative, from_ext_function, pad_data->timeStamp, pad_data->buttons, pad_data->lx, pad_data->ly, pad_data->rx, pad_data->ry);
+    int nb_returned_data = 1;
+    if (is_peek) {
+        nb_returned_data = count;
+    } else {
+        uint64_t vblank_count = emuenv.display.vblank_count;
+        if (vblank_count <= state.last_vcount[port]) {
+            // sceCtrlRead is blocking, wait for the next vsync for the buffer to be updated
+            auto thread = emuenv.kernel.get_thread(thread_id);
 
-    for (int i = 1; i < count; i++) {
-        memcpy(&pad_data[i], &pad_data[0], sizeof(SceCtrlData2));
+            wait_vblank(emuenv.display, emuenv.kernel, thread, state.last_vcount[port] + 1, false);
+            vblank_count = emuenv.display.vblank_count;
+        }
+        nb_returned_data = std::min<int>(count, emuenv.display.vblank_count - state.last_vcount[port]);
+        state.last_vcount[port] = emuenv.display.vblank_count;
     }
 
-    return count;
+    std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
+    uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
+    pData->timeStamp = timestamp;
+    retrieve_ctrl_data(emuenv, port, is_v2, negative, from_ext, pData->buttons, pData->lx, pData->ly, pData->rx, pData->ry);
+
+    for (int i = 1; i < nb_returned_data; i++) {
+        memcpy(&pData[i], &pData[0], sizeof(SceCtrlData2));
+
+        // update the timestamp, 1 vsync = 1/60 sec = 16 667 us earlier
+        pData[i].timeStamp -= i * 16667ULL;
+    }
+
+    return nb_returned_data;
 }
