@@ -26,21 +26,21 @@ extern "C" {
 
 #include <cassert>
 
-void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height) {
-    SwsContext *context = sws_getContext(width, height, AV_PIX_FMT_YUV444P, width, height, AV_PIX_FMT_RGBA,
+void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height, const bool is_yuv420) {
+    SwsContext *context = sws_getContext(width, height, is_yuv420 ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUV444P, width, height, AV_PIX_FMT_RGBA,
         0, nullptr, nullptr, nullptr);
     assert(context);
 
     const uint8_t *slices[] = {
         &yuv[0], // Y Slice
         &yuv[width * height], // U Slice
-        &yuv[width * height * 2], // V Slice
+        &yuv[static_cast<uint32_t>(width * height * (is_yuv420 ? 1.25 : 2))], // V Slice
     };
 
     int strides[] = {
         static_cast<int>(width),
-        static_cast<int>(width),
-        static_cast<int>(width),
+        static_cast<int>(width) / (is_yuv420 ? 2 : 1),
+        static_cast<int>(width) / (is_yuv420 ? 2 : 1),
     };
 
     uint8_t *dst_slices[] = {
@@ -83,19 +83,41 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
     }
 
     if (data) {
-        uint8_t *channels[] = {
-            &data[0], // y
-            &data[frame->width * frame->height], // u
-            &data[frame->width * frame->height * 2], // v
-        };
+        switch (frame->format) {
+        case AV_PIX_FMT_YUVJ444P: {
+            uint8_t *channels[] = {
+                &data[0], // y
+                &data[frame->width * frame->height], // u
+                &data[frame->width * frame->height * 2], // v
+            };
 
-        assert(frame->format == AV_PIX_FMT_YUVJ444P);
-
-        // Copy YUV444 data.
-        for (uint32_t a = 0; a < 3; a++) {
-            for (int b = 0; b < frame->height; b++) {
-                std::memcpy(&channels[a][b * frame->width], &frame->data[a][b * frame->linesize[a]], frame->width);
+            // Copy YUV444 data.
+            for (uint32_t a = 0; a < 3; a++) {
+                for (int b = 0; b < frame->height; b++) {
+                    std::memcpy(&channels[a][b * frame->width], &frame->data[a][b * frame->linesize[a]], frame->width);
+                }
             }
+            break;
+        }
+        case AV_PIX_FMT_YUVJ420P: {
+            uint8_t *channels[] = {
+                &data[0], // y
+                &data[frame->width * frame->height], // u
+                &data[frame->width * frame->height * 5 / 4], // v
+            };
+
+            // Copy YUV420 data.
+            for (uint32_t a = 0; a < 3; a++) {
+                for (int b = 0; b < frame->height / (a ? 2 : 1); b++) {
+                    std::memcpy(&channels[a][b * frame->width / (a ? 2 : 1)], &frame->data[a][b * frame->linesize[a]], frame->width / (a ? 2 : 1));
+                }
+            }
+            break;
+        }
+        default:
+            LOG_WARN("Mjpeg frame is in unimplemented format {}.", frame->format);
+            av_frame_free(&frame);
+            return false;
         }
     }
 

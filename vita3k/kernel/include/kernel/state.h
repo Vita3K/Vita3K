@@ -143,7 +143,6 @@ struct KernelState {
     MsgPipePtrs msgpipes;
     CallbackPtrs callbacks;
 
-    std::map<SceUID, ThreadStatus> paused_threads_status;
     ThreadStatePtrs threads;
 
     SceKernelModuleInfoPtrs loaded_modules;
@@ -191,4 +190,5 @@ struct KernelState {
 
 private:
     std::atomic<SceUID> next_uid{ 1 };
+    std::map<SceUID, ThreadStatus> paused_threads_status;
 };

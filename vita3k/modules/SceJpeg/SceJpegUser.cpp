@@ -61,9 +61,24 @@ EXPORT(int, sceJpegCsc) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceJpegDecodeMJpeg) {
-    TRACY_FUNC(sceJpegDecodeMJpeg);
-    return UNIMPLEMENTED();
+EXPORT(int, sceJpegDecodeMJpeg, const unsigned char *pJpeg, SceSize isize, uint8_t *pRGBA, SceSize osize,
+    int decodeMode, uint8_t *pTempBuffer, SceSize tempBufferSize, void *pCoefBuffer, SceSize coefBufferSize) {
+    TRACY_FUNC(sceJpegDecodeMJpeg, pJpeg, isize, pRGBA, osize, decodeMode, pTempBuffer, tempBufferSize, pCoefBuffer, coefBufferSize);
+
+    const auto state = emuenv.kernel.obj_store.get<MJpegState>();
+
+    DecoderSize size = {};
+
+    // allocates i think an extra frame but i want to be careful here
+    std::vector<uint8_t> temporary(osize);
+
+    state->decoder->send(pJpeg, isize);
+    state->decoder->receive(temporary.data(), &size);
+
+    convert_yuv_to_rgb(temporary.data(), pRGBA, size.width, size.height, true);
+
+    // Top 16 bits = width, bottom 16 bits = height.
+    return (size.width << 16u) | size.height;
 }
 
 EXPORT(int, sceJpegDecodeMJpegYCbCr, const uint8_t *jpeg_data, uint32_t jpeg_size,
@@ -135,7 +150,7 @@ EXPORT(int, sceJpegMJpegCsc, uint8_t *rgba, const uint8_t *yuv,
     uint32_t width = size >> 16u;
     uint32_t height = size & (~0u >> 16u);
 
-    convert_yuv_to_rgb(yuv, rgba, width, height);
+    convert_yuv_to_rgb(yuv, rgba, width, height, false);
 
     return 0;
 }
