@@ -91,7 +91,7 @@ bool TRPFile::header_parse() {
     return true;
 }
 
-bool TRPFile::get_entry_data(const std::uint32_t idx, TRPWriteFunc write_func) {
+bool TRPFile::get_entry_data(const uint32_t idx, TRPWriteFunc write_func) {
     // Check if the index is not out of range
     if (idx >= entries.size()) {
         return false;
