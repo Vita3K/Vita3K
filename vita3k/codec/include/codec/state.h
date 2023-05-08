@@ -236,6 +236,6 @@ struct PlayerState {
     ~PlayerState();
 };
 
-void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height);
+void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height, const bool is_yuv420);
 void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest);
 std::string codec_error_name(int error);
