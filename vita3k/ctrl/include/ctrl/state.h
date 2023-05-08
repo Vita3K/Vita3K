@@ -50,4 +50,7 @@ struct CtrlState {
     bool free_ports[SCE_CTRL_MAX_WIRELESS_NUM] = { true, true, true, true };
     SceCtrlPadInputMode input_mode = SCE_CTRL_MODE_DIGITAL;
     SceCtrlPadInputMode input_mode_ext = SCE_CTRL_MODE_DIGITAL;
+
+    // last vsync the data was read
+    uint64_t last_vcount[5] = {};
 };
