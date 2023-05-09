@@ -345,7 +345,7 @@ bool add_protect(MemState &state, Address addr, const uint32_t size, const MemPe
     protect.blocks.emplace(addr, std::move(block));
 
     auto it = state.protect_tree.lower_bound(addr);
-    if (it->first + it->second.size <= addr) {
+    if (it == state.protect_tree.end() || it->first + it->second.size <= addr) {
         if (it == state.protect_tree.begin())
             it = state.protect_tree.end();
         else
