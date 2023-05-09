@@ -621,10 +621,10 @@ void shader::usse::utils::buffer_address_load(spv::Builder &b, const SpirvShader
         for (int component_idx = 0; component_idx < nb_components; component_idx++) {
             spv::Id component_addr = add_uvec2_uint(b, buffer_address, b.makeUintConstant(component_idx * component_size));
             // we must make it 4-byte aligned
-            spv::Id addr_low_bits = b.createCompositeExtract(component_addr, i32, { 0 });
+            spv::Id addr_low_bits = b.createCompositeExtract(component_addr, i32, 0);
             spv::Id alignment = b.createBinOp(spv::OpBitwiseAnd, i32, addr_low_bits, b.makeIntConstant(0b11));
             addr_low_bits = b.createBinOp(spv::OpBitwiseAnd, i32, addr_low_bits, b.makeIntConstant(~0b11));
-            component_addr = b.createCompositeInsert(addr_low_bits, component_addr, b.getTypeId(component_addr), { 0 });
+            component_addr = b.createCompositeInsert(addr_low_bits, component_addr, b.getTypeId(component_addr), 0);
 
             // now we can finally load it
             component_addr = b.createUnaryOp(spv::OpBitcast, buffer_container, component_addr);
@@ -1547,11 +1547,11 @@ spv::Id shader::usse::utils::add_uvec2_uint(spv::Builder &b, spv::Id vec, spv::I
     // uint carry;
     // vec.x = uaddCarry(vec.x, to_add, carry);
     // vec.y += carry;
-    spv::Id lower = b.createCompositeExtract(vec, u32, { 0 });
+    spv::Id lower = b.createCompositeExtract(vec, u32, 0);
     spv::Id lower_add = b.createBinOp(spv::OpIAddCarry, add_result_type, lower, to_add);
-    spv::Id carry = b.createCompositeExtract(lower_add, u32, { 1 });
-    spv::Id upper = b.createCompositeExtract(vec, u32, { 1 });
+    spv::Id carry = b.createCompositeExtract(lower_add, u32, 1);
+    spv::Id upper = b.createCompositeExtract(vec, u32, 1);
     upper = b.createBinOp(spv::OpIAdd, u32, upper, carry);
-    lower = b.createCompositeExtract(lower_add, u32, { 0 });
+    lower = b.createCompositeExtract(lower_add, u32, 0);
     return b.createCompositeConstruct(uvec2, { lower, upper });
 }
