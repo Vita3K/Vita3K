@@ -43,7 +43,12 @@ void VKContext::wait_thread_function(const MemState &mem) {
                            fences.push_back(request.fence);
 
                            if (request.notifications[0].address || request.notifications[1].address) {
-                               state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+                               auto result = state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+                               if (result != vk::Result::eSuccess) {
+                                   LOG_ERROR("Could not wait for fences.");
+                                   assert(false);
+                                   return;
+                               }
                                // don't reset them
                                fences.clear();
 
@@ -62,7 +67,12 @@ void VKContext::wait_thread_function(const MemState &mem) {
                        },
                        [&](FrameDoneRequest &request) {
                            if (!fences.empty()) {
-                               state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+                               auto result = state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+                               if (result != vk::Result::eSuccess) {
+                                   LOG_ERROR("Could not wait for fences.");
+                                   assert(false);
+                                   return;
+                               }
                                fences.clear();
                            }
 
@@ -76,7 +86,12 @@ void VKContext::wait_thread_function(const MemState &mem) {
                        [&](PostSurfaceSyncRequest &request) {
                            if (!fences.empty()) {
                                // wait for the render to be done
-                               state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+                               auto result = state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+                               if (result != vk::Result::eSuccess) {
+                                   LOG_ERROR("Could not wait for fences.");
+                                   assert(false);
+                                   return;
+                               }
                                // don't reset them
                                fences.clear();
                            }
