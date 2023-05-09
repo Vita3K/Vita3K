@@ -160,7 +160,12 @@ void VKTextureCacheState::prepare_staging_buffer(bool is_configure) {
             vk::SubmitInfo submit_info{};
             submit_info.setCommandBuffers(context->prerender_cmd);
             state.general_queue.submit(submit_info, current_fence);
-            state.device.waitForFences(current_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+            auto result = state.device.waitForFences(current_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+            if (result != vk::Result::eSuccess) {
+                LOG_ERROR("Could not wait for fences.");
+                assert(false);
+                return;
+            }
             state.device.resetFences(current_fence);
 
             // also call begin again on the prerender command
@@ -176,7 +181,12 @@ void VKTextureCacheState::prepare_staging_buffer(bool is_configure) {
             }
         } else {
             // wait for the fence, but don't reset it
-            state.device.waitForFences(staging_buffer->waiting_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+            auto result = state.device.waitForFences(staging_buffer->waiting_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
+            if (result != vk::Result::eSuccess) {
+                LOG_ERROR("Could not wait for fences.");
+                assert(false);
+                return;
+            }
             last_waited_scene = staging_buffer->scene_timestamp;
         }
     }
