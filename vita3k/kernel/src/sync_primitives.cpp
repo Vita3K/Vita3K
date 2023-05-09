@@ -172,11 +172,9 @@ SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, S
         *result_pattern = event->pattern;
 
     if (event->pattern & wait_pattern) {
-        if (event->auto_reset) {
-            SceUInt32 common = event->pattern & wait_pattern;
-            SceUInt32 first_common_bit = common & (-common);
-            event->pattern &= ~first_common_bit;
-        }
+        if (event->auto_reset)
+            // all common bits are zeroed
+            event->pattern &= ~wait_pattern;
 
         if (user_data)
             *user_data = event->last_user_data;
@@ -244,11 +242,9 @@ SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, S
             if (waiting_thread_data.user_data)
                 *waiting_thread_data.user_data = event->last_user_data;
 
-            if (event->auto_reset) {
-                SceUInt32 common = event->pattern & waiting_pattern;
-                SceUInt32 common_first_bit = common & (-common);
-                event->pattern &= ~common_first_bit;
-            }
+            if (event->auto_reset)
+                // all common bit are zeroed
+                event->pattern &= ~waiting_pattern;
 
             const std::lock_guard<std::mutex> waiting_thread_lock(waiting_thread->mutex);
 
@@ -836,9 +832,7 @@ int semaphore_signal(KernelState &kernel, const char *export_name, SceUID thread
         if (semaphore->val < waiting_signal_count)
             break;
 
-        const std::unique_lock<std::mutex> waiting_thread_lock(waiting_thread->mutex, std::try_to_lock);
-        if (!waiting_thread_lock)
-            continue;
+        const std::unique_lock<std::mutex> waiting_thread_lock(waiting_thread->mutex);
 
         waiting_thread->update_status(ThreadStatus::run, ThreadStatus::wait);
 
