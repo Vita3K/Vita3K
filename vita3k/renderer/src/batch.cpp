@@ -51,7 +51,7 @@ bool is_cmd_ready(MemState &mem, CommandList &command_list) {
         return true;
 
     SceGxmSyncObject *sync = reinterpret_cast<Ptr<SceGxmSyncObject> *>(&command_list.first->data[0])->get(mem);
-    const uint32_t timestamp = *reinterpret_cast<uint32_t *>(&command_list.first->data[sizeof(uint32_t) + sizeof(void *)]);
+    const uint32_t timestamp = *reinterpret_cast<uint32_t *>(&command_list.first->data[sizeof(uint32_t)]);
 
     return sync->timestamp_current >= timestamp;
 }
