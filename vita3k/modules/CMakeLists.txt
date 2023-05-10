@@ -60,6 +60,7 @@ set(SOURCE_LIST
 	SceHid/SceHid.cpp SceHid/SceHid.h
 	SceHttp/SceHttp.cpp SceHttp/SceHttp.h
 	SceIme/SceIme.cpp SceIme/SceIme.h
+	SceIpmi/SceIpmi.cpp SceIpmi/SceIpmi.h
 	SceIncomingDialog/SceIncomingDialog.cpp SceIncomingDialog/SceIncomingDialog.h
 	SceIofilemgr/SceIofilemgr.cpp SceIofilemgr/SceIofilemgr.h
 	SceJpeg/SceJpegUser.cpp SceJpeg/SceJpegUser.h

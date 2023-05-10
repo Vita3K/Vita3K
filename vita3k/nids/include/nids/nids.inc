@@ -6519,6 +6519,8 @@ NID(sceShellUtilRequestLaunchApp, 0xFD521712)
 NID(sceShellUtilUnlock, 0x21A6CF54)
 // Library "SceShellUtilLaunchApp"
 NID(sceShellUtilLaunchAppRequestLaunchApp, 0x5372EEDB)
+// Library "SceIpmi"
+NID(SceIpmi_B282B430, 0xB282B430)
 // Module "SceShutterSound"
 // Library "SceShutterSound"
 NID(sceShutterSoundPlay, 0x7FFB6D79)
