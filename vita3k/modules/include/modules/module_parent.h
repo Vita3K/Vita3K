@@ -52,6 +52,7 @@ bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceUID thread_id, Sc
 
 Address resolve_export(KernelState &kernel, uint32_t nid);
 uint32_t resolve_nid(KernelState &kernel, Address addr);
+Ptr<void> create_vtable(const std::vector<uint32_t> &nids, MemState &mem);
 
 struct VarExport {
     uint32_t nid;

@@ -59,6 +59,7 @@ set(SOURCE_LIST
 	SceHid/SceHid.cpp
 	SceHttp/SceHttp.cpp
 	SceIme/SceIme.cpp
+        SceIpmi/SceIpmi.cpp
 	SceIncomingDialog/SceIncomingDialog.cpp
 	SceIofilemgr/SceIofilemgr.cpp
 	SceJpeg/SceJpegUser.cpp
