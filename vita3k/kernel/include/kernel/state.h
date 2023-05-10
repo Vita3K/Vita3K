@@ -69,6 +69,7 @@ struct CodecEngineBlock {
 };
 
 using LoadedSysmodules = std::vector<SceSysmoduleModuleId>;
+using LoadedInternalSysmodules = std::vector<SceSysmoduleInternalModuleId>;
 
 struct CorenumAllocator {
     BitmapAllocator alloc;
@@ -121,6 +122,7 @@ struct KernelState {
 
     SceKernelModuleInfoPtrs loaded_modules;
     LoadedSysmodules loaded_sysmodules;
+    LoadedInternalSysmodules loaded_internal_sysmodules;
     ExportNids export_nids;
     std::shared_mutex export_nids_mutex;
     VarLateBindingInfos late_binding_infos;
