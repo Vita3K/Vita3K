@@ -559,6 +559,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     if (kernel.debugger.dump_elfs) {
         // Dump elf
         std::vector<uint8_t> dump_elf(self_bytes + self_header.header_len, self_bytes + self_header.self_filesize);
+        dump_elf.resize(self_header.elf_filesize);
         Elf32_Phdr *dump_segments = reinterpret_cast<Elf32_Phdr *>(dump_elf.data() + elf.e_phoff);
         uint16_t last_index = 0;
         for (const auto &[seg_index, segment] : segment_reloc_info) {
