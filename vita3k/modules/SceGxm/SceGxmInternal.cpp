@@ -17,20 +17,28 @@
 
 #include <module/module.h>
 
+#include "SceGxm.h"
+
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(SceGxmInternal);
+
 EXPORT(int, sceGxmCheckMemoryInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmCreateRenderTargetInternal) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmCreateRenderTargetInternal, const SceGxmRenderTargetParams *params, Ptr<SceGxmRenderTarget> *renderTarget) {
+    TRACY_FUNC(sceGxmCreateRenderTargetInternal, params, renderTarget);
+    return CALL_EXPORT(sceGxmCreateRenderTarget, params, renderTarget);
 }
 
 EXPORT(int, sceGxmGetDisplayQueueThreadIdInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceGxmGetRenderTargetMemSizeInternal) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceGxmGetRenderTargetMemSizeInternal, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize) {
+    TRACY_FUNC(sceGxmGetRenderTargetMemSizeInternal, params, hostMemSize);
+    return CALL_EXPORT(sceGxmGetRenderTargetMemSize, params, hostMemSize);
 }
 
 EXPORT(int, sceGxmGetTopContextInternal) {
