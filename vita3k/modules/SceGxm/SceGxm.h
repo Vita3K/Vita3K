@@ -20,4 +20,9 @@
 #include <module/module.h>
 
 struct SceGxmInitializeParams;
+struct SceGxmRenderTargetParams;
+struct SceGxmRenderTarget;
+
 DECL_EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params);
+DECL_EXPORT(int, sceGxmCreateRenderTarget, const SceGxmRenderTargetParams *params, Ptr<SceGxmRenderTarget> *renderTarget);
+DECL_EXPORT(int, sceGxmGetRenderTargetMemSize, const SceGxmRenderTargetParams *params, uint32_t *hostMemSize);
