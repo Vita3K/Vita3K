@@ -24,6 +24,7 @@
 static constexpr auto SYSMODULE_COUNT = 0x56;
 
 using SysmodulePaths = std::array<std::vector<const char *>, SYSMODULE_COUNT>;
+using SysmoduleInternalPaths = std::map<SceSysmoduleInternalModuleId, std::vector<const char *>>;
 
 inline SysmodulePaths init_sysmodule_paths() {
     SysmodulePaths p;
@@ -114,7 +115,32 @@ inline SysmodulePaths init_sysmodule_paths() {
     return p;
 }
 
+inline SysmoduleInternalPaths init_sysmodule_internal_paths() {
+    SysmoduleInternalPaths p;
+
+    p[SCE_SYSMODULE_INTERNAL_JPEG_ENC_ARM] = { "libscejpegencarm" };
+    p[SCE_SYSMODULE_INTERNAL_AUDIOCODEC] = { "audiocodec" };
+    p[SCE_SYSMODULE_INTERNAL_BXCE] = { "bXCe" };
+    p[SCE_SYSMODULE_INTERNAL_INI_FILE_PROCESSOR] = { "ini_file_processor" };
+    p[SCE_SYSMODULE_INTERNAL_NP_ACTIVITY_NET] = { "np_activity" };
+    p[SCE_SYSMODULE_INTERNAL_PAF] = { "libpaf" };
+    p[SCE_SYSMODULE_INTERNAL_SQLITE_VSH] = { "sqlite" };
+    p[SCE_SYSMODULE_INTERNAL_DBUTIL] = { "dbutil" };
+    p[SCE_SYSMODULE_INTERNAL_ACTIVITY_DB] = { "activity_db" };
+    p[SCE_SYSMODULE_INTERNAL_COMMON_GUI_DIALOG] = { "common_gui_dialog" };
+    p[SCE_SYSMODULE_INTERNAL_MSG_DIALOG] = { "libcdlg_msg" };
+    p[SCE_SYSMODULE_INTERNAL_SAVEDATA_DIALOG] = { "libcdlg_savedata" };
+    p[SCE_SYSMODULE_INTERNAL_IME_DIALOG] = { "libcdlg_ime" };
+    p[SCE_SYSMODULE_INTERNAL_COMMON_DIALOG_MAIN] = { "libcdlg_main" };
+    p[SCE_SYSMODULE_INTERNAL_DB_RECOVERY_UTILITY] = { "dbrecovery_utility" };
+    p[SCE_SYSMODULE_INTERNAL_DRM_PSM_KDC] = { "psmkdc" }; 
+    p[SCE_SYSMODULE_INTERNAL_LOCATION_INTERNAL] = { "liblocation_internal" };
+
+    return p;
+}
+
 const SysmodulePaths sysmodule_paths = init_sysmodule_paths();
+const SysmoduleInternalPaths sysmodule_internal_paths = init_sysmodule_internal_paths();
 
 bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv);
 bool is_lle_module(const std::string &module_name, EmuEnvState &emuenv);

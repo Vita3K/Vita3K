@@ -544,7 +544,7 @@ enum SceSysmoduleInternalModuleId {
 
 struct SceSysmoduleOpt {
     int flags;
-    int *result;
+    Ptr<int> result;
     int unused[2];
 };
 

@@ -241,6 +241,30 @@ bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
     return true;
 }
 
+bool load_sys_module_internal_with_arg(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, int *retcode) {
+    LOG_INFO("Loading internal module ID: {}", log_hex(module_id));
+
+    if (sysmodule_internal_paths.count(module_id) == 0)
+        return false;
+
+    const auto module_paths = sysmodule_internal_paths.at(module_id);
+
+    for (auto module_filename : module_paths) {
+        std::string module_path = fmt::format("vs0:sys/external/{}.suprx", module_filename);
+        auto loaded_module_uid = load_module(emuenv, module_path);
+
+        if (loaded_module_uid < 0) {
+            return false;
+        }
+        const auto module = emuenv.kernel.loaded_modules[loaded_module_uid];
+        auto ret = start_module(emuenv, module, args, argp);
+        if (retcode)
+            *retcode = static_cast<int>(ret);
+    }
+    emuenv.kernel.loaded_internal_sysmodules.push_back(module_id);
+    return true;
+}
+
 void init_libraries(EmuEnvState &emuenv) {
 #define LIBRARY(name) import_library_init_##name(emuenv);
 #include <modules/library_init_list.inc>
