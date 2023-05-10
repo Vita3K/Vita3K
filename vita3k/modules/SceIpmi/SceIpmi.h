@@ -19,4 +19,4 @@
 
 #include <module/module.h>
 
-BRIDGE_DECL(SceIpmi_B282B430)
+BRIDGE_DECL(_ZN4IPMI6Client6createEPPS0_PKNS0_6ConfigEPvS6_)

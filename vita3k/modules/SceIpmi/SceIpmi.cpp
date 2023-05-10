@@ -28,7 +28,8 @@ struct SceImpiStruct {
     uint8_t func_content[2];
 };
 
-EXPORT(int, SceIpmi_B282B430, Ptr<SceImpiStruct>* s, uint32_t unkn1, uint32_t unkn2, uint32_t unkn3) {
+EXPORT(int, _ZN4IPMI6Client6createEPPS0_PKNS0_6ConfigEPvS6_, Ptr<SceImpiStruct> *s, void* config, void* user_data, void* memory) {
+    STUBBED("stubbed");
     *s = alloc<SceImpiStruct>(emuenv.mem, export_name);
     SceImpiStruct *s_ptr = s->get(emuenv.mem);
     s_ptr->itself = *s;
@@ -40,4 +41,4 @@ EXPORT(int, SceIpmi_B282B430, Ptr<SceImpiStruct>* s, uint32_t unkn1, uint32_t un
     return 0;
 }
 
-BRIDGE_IMPL(SceIpmi_B282B430)
+BRIDGE_IMPL(_ZN4IPMI6Client6createEPPS0_PKNS0_6ConfigEPvS6_)
