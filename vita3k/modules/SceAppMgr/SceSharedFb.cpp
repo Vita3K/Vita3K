@@ -15,22 +15,91 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "../SceDisplay/SceDisplay.h"
 #include <module/module.h>
 
-EXPORT(int, _sceSharedFbOpen) {
-    return UNIMPLEMENTED();
+#include <gxm/types.h>
+
+#include <kernel/state.h>
+
+#include <modules/module_parent.h>
+
+#include <util/tracy.h>
+
+TRACY_MODULE_NAME(SceSharedFB);
+
+typedef struct SceSharedFbInfo { // size is 0x58
+    Ptr<void> base1; // cdram base
+    int memsize;
+    Ptr<void> base2; // cdram base
+    int unk_0C;
+    Ptr<void> unk_10;
+    int unk_14;
+    int unk_18;
+    int unk_1C;
+    int unk_20;
+    int pitch; // 960
+    int width; // 960
+    int height; // 544
+    SceGxmColorFormat color_format; // SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR
+    int curbuf;
+    int unk_38;
+    int unk_3C;
+    int unk_40;
+    int unk_44;
+    int vsync;
+    int unk_4C;
+    int unk_50;
+    int unk_54;
+} SceSharedFbInfo;
+
+struct SharedFbState {
+    SceSharedFbInfo info;
+};
+
+LIBRARY_INIT(SceSharedFb) {
+    emuenv.kernel.obj_store.create<SharedFbState>();
 }
 
-EXPORT(int, sceSharedFbBegin) {
-    return UNIMPLEMENTED();
+DECL_EXPORT(int, sceSharedFbCreate, int smth);
+
+EXPORT(int, _sceSharedFbOpen, int smth) {
+    TRACY_FUNC(_sceSharedFbOpen, smth);
+    STUBBED("sceSharedFbCreate");
+    return CALL_EXPORT(sceSharedFbCreate, smth);
+}
+
+EXPORT(int, sceSharedFbBegin, int id, SceSharedFbInfo *info) {
+    TRACY_FUNC(sceSharedFbBegin, id, info);
+    SharedFbState *state = emuenv.kernel.obj_store.get<SharedFbState>();
+    state->info.curbuf = 1;
+    *info = state->info;
+    return 0;
 }
 
 EXPORT(int, sceSharedFbClose) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSharedFbCreate) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceSharedFbCreate, int smth) {
+    TRACY_FUNC(sceSharedFbCreate, smth);
+    SharedFbState *state = emuenv.kernel.obj_store.get<SharedFbState>();
+    if (state->info.memsize == 0) {
+        // enough memory for 2 956x544 buffers
+        constexpr uint32_t alloc_size = 4 * 1024 * 512 * 2;
+        Ptr<uint8_t> data = Ptr<uint8_t>(alloc(emuenv.mem, alloc_size, "sharedFB"));
+        state->info = SceSharedFbInfo{
+            .base1 = data,
+            .memsize = alloc_size,
+            .base2 = data + alloc_size / 2,
+            .pitch = 960,
+            .width = 960,
+            .height = 544,
+            .color_format = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR,
+            .curbuf = 1,
+        };
+    }
+    return 1;
 }
 
 EXPORT(int, sceSharedFbDelete) {
@@ -38,11 +107,25 @@ EXPORT(int, sceSharedFbDelete) {
 }
 
 EXPORT(int, sceSharedFbEnd) {
-    return UNIMPLEMENTED();
+    TRACY_FUNC(sceSharedFbEnd);
+    SharedFbState *state = emuenv.kernel.obj_store.get<SharedFbState>();
+    Ptr<void> data = (state->info.curbuf == 0) ? state->info.base2 : state->info.base1;
+    // tell the display a new buffer is ready
+    SceDisplayFrameBuf frame_buf{
+        .size = sizeof(SceDisplayFrameBuf),
+        .base = data,
+        .pitch = 960,
+        .width = 960,
+        .height = 544
+    };
+    return CALL_EXPORT(_sceDisplaySetFrameBuf, &frame_buf, SCE_DISPLAY_SETBUF_NEXTFRAME, nullptr);
 }
 
-EXPORT(int, sceSharedFbGetInfo) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceSharedFbGetInfo, int id, SceSharedFbInfo *info) {
+    TRACY_FUNC(sceSharedFbGetInfo);
+    SharedFbState *state = emuenv.kernel.obj_store.get<SharedFbState>();
+    *info = state->info;
+    return 0;
 }
 
 EXPORT(int, sceSharedFbGetRenderingInfo) {

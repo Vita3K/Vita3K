@@ -17,4 +17,5 @@
 
 LIBRARY(SceAudiodec)
 LIBRARY(SceFiber)
+LIBRARY(SceSharedFb)
 LIBRARY(SceSysmem)
