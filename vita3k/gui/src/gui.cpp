@@ -371,7 +371,7 @@ void init_apps_icon(GuiState &gui, EmuEnvState &emuenv, const std::vector<gui::A
 }
 
 void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    if (gui.apps_background.find(app_path) != gui.apps_background.end())
+    if (gui.apps_background.contains(app_path))
         return;
 
     const auto APP_INDEX = get_app_index(gui, app_path);
@@ -525,10 +525,8 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
             gui.vita_area.information_bar = true;
             open_user(gui, emuenv);
         }
-    } else {
-        gui.vita_area.information_bar = true;
-        gui.vita_area.user_management = true;
-    }
+    } else
+        init_user_management(gui, emuenv);
 }
 
 void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
