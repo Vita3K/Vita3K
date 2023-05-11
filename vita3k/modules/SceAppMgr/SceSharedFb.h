@@ -18,7 +18,9 @@
 #pragma once
 
 #include <module/module.h>
+#include <modules/module_parent.h>
 
+LIBRARY_INIT_DECL(SceSharedFb);
 BRIDGE_DECL(_sceSharedFbOpen)
 BRIDGE_DECL(sceSharedFbBegin)
 BRIDGE_DECL(sceSharedFbClose)
