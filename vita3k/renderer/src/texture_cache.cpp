@@ -381,7 +381,7 @@ static void remove_compressed_arbitrary_blocks(SceGxmTextureBaseFormat fmt, void
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_SBC4:
         block_size = 8;
-        return;
+        break;
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC2:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC3:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC5:
