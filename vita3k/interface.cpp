@@ -615,7 +615,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             }
             if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_toggle_touch && !gui.is_key_capture_dropped && !ImGui::GetIO().WantTextInput)
                 toggle_touchscreen();
-            if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped)
+            if (event.key.keysym.scancode == emuenv.cfg.keyboard_gui_fullscreen && !gui.is_key_capture_dropped && !ImGui::GetIO().WantTextInput)
                 switch_full_screen(emuenv);
 
             break;

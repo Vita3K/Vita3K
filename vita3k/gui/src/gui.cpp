@@ -175,21 +175,21 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         0x0020, 0x017F, // Basic Latin + Latin Supplement
         0x0370, 0x03FF, // Greek and Coptic
         0x0400, 0x052F, // Cyrillic + Cyrillic Supplement
-        0x2DE0, 0x2DFF, // Cyrillic Extended-A
-        0xA640, 0xA69F, // Cyrillic Extended-B
-        0x2000, 0x206F, // General Punctuation
         0x20A0, 0x20CF, // Currency Symbols
         0x2100, 0x214F, // Letter type symbols
+        0x2DE0, 0x2DFF, // Cyrillic Extended-A
+        0xA640, 0xA69F, // Cyrillic Extended-B
         0,
     };
 
     static const ImWchar extra_range[] = {
         0x0100, 0x017F, // Latin Extended A
-        0x2200, 0x22FF, // Math operators 
+        0x2000, 0x206F, // General Punctuation
         0x2150, 0x218F, // Numeral forms
+        0x2200, 0x22FF, // Math operators
+        0x2460, 0x24FF, // Enclosed Alphanumerics
         0x25A0, 0x26FF, // Miscellaneous symbols
         0x4E00, 0x9FFF, // Unified ideograms CJC
-        0x2460, 0x24FF, // Enclosed Alphanumerics
         0,
     };
 
