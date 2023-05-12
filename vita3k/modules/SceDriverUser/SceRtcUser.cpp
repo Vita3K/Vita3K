@@ -485,9 +485,26 @@ EXPORT(int, sceRtcTickAddMinutes, SceRtcTick *pTick0, const SceRtcTick *pTick1, 
     return 0;
 }
 
-EXPORT(int, sceRtcTickAddMonths) {
-    TRACY_FUNC(sceRtcTickAddMonths);
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcTickAddMonths, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceInt iAdd) {
+    TRACY_FUNC(sceRtcTickAddMonths, pTick0, pTick1, iAdd);
+    if (pTick0 == nullptr || pTick1 == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+    SceDateTime t{};
+    __RtcTicksToPspTime(&t, pTick1->tick);
+    if (t.day == 0) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_VALUE);
+    }
+    int months = t.year * 12 + t.month - 1 + iAdd;
+    t.year = months / 12;
+    t.month = months % 12 + 1;
+    if (t.year == 0)
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_YEAR);
+    int days_in_month = CALL_EXPORT(sceRtcGetDaysInMonth, t.year, t.month);
+    if (t.day > days_in_month)
+        t.day = days_in_month;
+    pTick0->tick = __RtcPspTimeToTicks(&t);
+    return 0;
 }
 
 EXPORT(int, sceRtcTickAddSeconds, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceLong64 lAdd) {
@@ -520,9 +537,24 @@ EXPORT(int, sceRtcTickAddWeeks, SceRtcTick *pTick0, const SceRtcTick *pTick1, Sc
     return 0;
 }
 
-EXPORT(int, sceRtcTickAddYears) {
-    TRACY_FUNC(sceRtcTickAddYears);
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcTickAddYears, SceRtcTick *pTick0, const SceRtcTick *pTick1, SceInt iAdd) {
+    TRACY_FUNC(sceRtcTickAddYears, pTick0, pTick1, iAdd);
+    if (pTick0 == nullptr || pTick1 == nullptr) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_POINTER);
+    }
+    SceDateTime t{};
+    __RtcTicksToPspTime(&t, pTick1->tick);
+    if (t.day == 0) {
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_VALUE);
+    }
+    t.year += iAdd;
+    if (t.year == 0)
+        return RET_ERROR(SCE_RTC_ERROR_INVALID_YEAR);
+    int days_in_month = CALL_EXPORT(sceRtcGetDaysInMonth, t.year, t.month);
+    if (t.day > days_in_month)
+        t.day = days_in_month;
+    pTick0->tick = __RtcPspTimeToTicks(&t);
+    return 0;
 }
 
 BRIDGE_IMPL(sceRtcCheckValid)
