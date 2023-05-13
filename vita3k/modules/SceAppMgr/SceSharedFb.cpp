@@ -19,6 +19,7 @@
 
 #include "../SceDisplay/SceDisplay.h"
 
+#include <gxm/types.h>
 #include <kernel/state.h>
 
 typedef struct SceSharedFbInfo { // size is 0x58
@@ -34,7 +35,7 @@ typedef struct SceSharedFbInfo { // size is 0x58
     int pitch; // 960
     int width; // 960
     int height; // 544
-    int unk_30;
+    SceGxmColorFormat color_format; // SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR
     int curbuf;
     int unk_38;
     int unk_3C;
@@ -62,9 +63,9 @@ EXPORT(int, _sceSharedFbOpen, int smth) {
     return CALL_EXPORT(sceSharedFbCreate, smth);
 }
 
-EXPORT(int, sceSharedFbBegin, int id, SceSharedFbInfo* info) {
-    SharedFbState* state = emuenv.kernel.obj_store.get<SharedFbState>();
-    state->info.curbuf = 1 - state->info.curbuf;
+EXPORT(int, sceSharedFbBegin, int id, SceSharedFbInfo *info) {
+    SharedFbState *state = emuenv.kernel.obj_store.get<SharedFbState>();
+    state->info.curbuf = 1;
     *info = state->info;
     return 0;
 }
@@ -83,10 +84,11 @@ EXPORT(int, sceSharedFbCreate, int smth) {
             .base1 = data,
             .memsize = alloc_size,
             .base2 = data + alloc_size / 2,
-            .curbuf = 0,
+            .curbuf = 1,
             .pitch = 960,
             .width = 960,
-            .height = 544
+            .height = 544,
+            .color_format = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR
         };
     }
     return 1;
@@ -100,7 +102,7 @@ EXPORT(int, sceSharedFbEnd) {
     SharedFbState *state = emuenv.kernel.obj_store.get<SharedFbState>();
     Ptr<void> data = (state->info.curbuf == 0) ? state->info.base2 : state->info.base1;
     // tell the display a new buffer is ready
-    SceDisplayFrameBuf frame_buf {
+    SceDisplayFrameBuf frame_buf{
         .size = sizeof(SceDisplayFrameBuf),
         .base = data,
         .pitch = 960,
@@ -110,7 +112,7 @@ EXPORT(int, sceSharedFbEnd) {
     return CALL_EXPORT(_sceDisplaySetFrameBuf, &frame_buf, SCE_DISPLAY_SETBUF_NEXTFRAME);
 }
 
-EXPORT(int, sceSharedFbGetInfo, int id, SceSharedFbInfo* info) {
+EXPORT(int, sceSharedFbGetInfo, int id, SceSharedFbInfo *info) {
     SharedFbState *state = emuenv.kernel.obj_store.get<SharedFbState>();
     *info = state->info;
     return 0;
