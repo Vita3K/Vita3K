@@ -96,6 +96,27 @@ Address resolve_export(KernelState &kernel, uint32_t nid) {
     return export_address->second;
 }
 
+Ptr<void> create_vtable(const std::vector<uint32_t>& nids, MemState& mem) {
+    // we need 4 bytes for the function pointer and 12 bytes for the syscall
+    const uint32_t vtable_size = nids.size() * 4 * sizeof(uint32_t);
+    Ptr<void> vtable = Ptr<void>(alloc(mem, vtable_size, "vtable"));
+    uint32_t *function_pointer = vtable.cast<uint32_t>().get(mem);
+    uint32_t *function_svc = function_pointer + nids.size();
+    uint32_t function_location = vtable.address() + nids.size() * sizeof(uint32_t);
+    for (uint32_t nid : nids) {
+        *function_pointer = function_location;
+        // encode svc call
+        function_svc[0] = 0xef000000; // svc #0 - Call our interrupt hook.
+        function_svc[1] = 0xe1a0f00e; // mov pc, lr - Return to the caller.
+        function_svc[2] = nid; // Our interrupt hook will read this.
+
+        function_pointer++;
+        function_svc += 3;
+        function_location += 3 * sizeof(uint32_t);
+    }
+    return vtable;
+}
+
 static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id, const std::unordered_set<uint32_t> &nid_blacklist, Address lr) {
     if (nid_blacklist.find(nid) == nid_blacklist.end()) {
         const char *const name = import_name(nid);
@@ -123,6 +144,7 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
         } else if (emuenv.missing_nids.count(nid) == 0 || LOG_UNK_NIDS_ALWAYS) {
             const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
             LOG_ERROR("Import function for NID {} not found (thread name: {}, thread ID: {})", log_hex(nid), thread->name, thread_id);
+            LOG_DEBUG("{}\n{}", save_context(*thread->cpu).description(), thread->log_stack_traceback(emuenv.kernel));
 
             if (!LOG_UNK_NIDS_ALWAYS)
                 emuenv.missing_nids.insert(nid);
