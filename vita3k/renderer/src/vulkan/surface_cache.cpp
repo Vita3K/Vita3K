@@ -828,7 +828,7 @@ vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGx
 
 ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {
     // surface sync is supported only if memory mapping is enabled
-    if (!state.features.support_memory_mapping)
+    if (!state.features.enable_memory_mapping)
         return nullptr;
 
     if (last_written_surface == nullptr || !*last_written_surface->need_surface_sync)

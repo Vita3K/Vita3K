@@ -24,7 +24,7 @@ struct MemState;
 
 namespace renderer::vulkan {
 
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path);
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path, const Config &config);
 
 bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem);
 bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features);

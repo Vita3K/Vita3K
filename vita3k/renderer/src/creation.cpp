@@ -254,7 +254,7 @@ bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, co
         state = std::make_unique<vulkan::VKState>(config.gpu_idx);
         state->set_linear_filter(config.enable_linear_filter);
 
-        if (!vulkan::create(window, state, base_path))
+        if (!vulkan::create(window, state, base_path, config))
             return false;
         break;
 

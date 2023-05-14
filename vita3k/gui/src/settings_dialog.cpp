@@ -530,11 +530,19 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SetTooltip("Disabling V-Sync can fix the speed issue in some games.\nIt is recommended to keep it enabled to avoid visual tearing.");
             ImGui::SameLine();
         }
-        if (!is_vulkan || emuenv.renderer->features.support_memory_mapping) {
+        if (!is_vulkan || emuenv.renderer->features.enable_memory_mapping) {
             // surface sync is supported on vulkan only when memory mapping is enabled
             ImGui::Checkbox("Disable surface sync", &config.disable_surface_sync);
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on).");
+        }
+
+        if (emuenv.renderer->features.support_memory_mapping) {
+            ImGui::Spacing();
+            ImGui::Checkbox("Enable memory mapping (Reboot to apply)", &emuenv.cfg.memory_mapping);
+            if (ImGui::IsItemHovered()) {
+                ImGui::SetTooltip("Memory mapping improved performances, reduces memory usage and fixes many graphical issues.\nHowever, it may be unstable on some GPUs");
+            }
         }
 
         // Anti-aliasing FXAA

@@ -19,6 +19,7 @@
 
 #include <renderer/state.h>
 #include <renderer/types.h>
+#include <config/state.h>
 
 #include <renderer/vulkan/pipeline_cache.h>
 #include <renderer/vulkan/screen_renderer.h>
@@ -71,7 +72,7 @@ struct VKState : public renderer::State {
     VKState(int gpu_idx);
 
     bool init(const char *base_path, const bool hashless_texture_cache) override;
-    bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path);
+    bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path, const Config &config);
     void cleanup();
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem) override;

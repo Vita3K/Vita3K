@@ -21,6 +21,7 @@
 #include <renderer/vulkan/state.h>
 
 #include <config/version.h>
+#include <config/state.h>
 #include <display/state.h>
 #include <shader/spirv_recompiler.h>
 #include <util/align.h>
@@ -147,10 +148,10 @@ std::string get_driver_version(uint32_t vendor_id, uint32_t version_raw) {
     return fmt::format("{}.{}.{}", (version_raw >> 22) & 0x3ff, (version_raw >> 12) & 0x3ff, (version_raw)&0xfff);
 }
 
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path) {
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path, const Config &config) {
     auto &vk_state = dynamic_cast<VKState &>(*state);
 
-    return vk_state.create(window, state, base_path);
+    return vk_state.create(window, state, base_path, config);
 }
 
 VKState::VKState(int gpu_idx)
@@ -166,7 +167,7 @@ bool VKState::init(const char *base_path, const bool hashless_texture_cache) {
     return true;
 }
 
-bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path) {
+bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path, const Config &config) {
     // Create Instance
     {
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
@@ -398,6 +399,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         features.support_memory_mapping = false;
 #endif
 
+        features.enable_memory_mapping = config.memory_mapping;
+
         if (features.support_memory_mapping) {
             if (support_external_memory) {
                 // disable this extension on GPUs with an alignment requirement higher than 4096 (should only
@@ -412,7 +415,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             }
         }
 
-        if (features.support_memory_mapping)
+        if (features.enable_memory_mapping)
             LOG_INFO("Memory mapping is enabled");
 
         if (physical_device_properties.vendorID == 4318) {
@@ -445,7 +448,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         device_info.get().setQueueCreateInfos(queue_infos);
         device_info.get().setPEnabledExtensionNames(device_extensions);
 
-        if (!features.support_memory_mapping) {
+        if (!features.enable_memory_mapping) {
             device_info.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
             device_info.unlink<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
         }
@@ -502,7 +505,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         if (support_dedicated_allocations)
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eKhrDedicatedAllocation;
 
-        if (features.support_memory_mapping)
+        if (features.enable_memory_mapping)
             allocator_info.flags |= vma::AllocatorCreateFlagBits::eBufferDeviceAddress;
 
         allocator = vma::createAllocator(allocator_info);
@@ -646,7 +649,7 @@ void VKState::set_linear_filter(bool enable_linear_filter) {
 }
 
 bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
-    assert(features.support_memory_mapping);
+    assert(features.enable_memory_mapping);
     // the adress should be 4K aligned
     assert((address.address() & 4095) == 0);
     constexpr vk::BufferUsageFlags mapped_memory_flags = vk::BufferUsageFlagBits::eIndexBuffer | vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress | vk::BufferUsageFlagBits::eTransferDst;
@@ -743,7 +746,7 @@ bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
 }
 
 void VKState::unmap_memory(MemState &mem, Ptr<void> address) {
-    assert(features.support_memory_mapping);
+    assert(features.enable_memory_mapping);
 
     auto ite = mapped_memories.find(address.address());
     if (ite == mapped_memories.end()) {
