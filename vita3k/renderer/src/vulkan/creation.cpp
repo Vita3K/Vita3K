@@ -43,7 +43,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
     memset(&previous_vert_info, 0, sizeof(shader::RenderVertUniformBlockWithMapping));
     memset(&previous_frag_info, 0, sizeof(shader::RenderFragUniformBlockWithMapping));
 
-    if (state.features.support_memory_mapping) {
+    if (state.features.enable_memory_mapping) {
         // use the default buffer
         std::fill_n(vertex_stream_buffers, SCE_GXM_MAX_VERTEX_STREAMS, state.default_buffer.buffer);
 
@@ -78,7 +78,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
 
     // allocate descriptor pools
     {
-        const uint32_t nb_descriptor = state.features.support_memory_mapping ? 2U : 4U;
+        const uint32_t nb_descriptor = state.features.enable_memory_mapping ? 2U : 4U;
 
         std::array<vk::DescriptorPoolSize, 2> pool_sizes = {
             vk::DescriptorPoolSize{ vk::DescriptorType::eUniformBufferDynamic, 2 },
@@ -101,8 +101,8 @@ VKContext::VKContext(VKState &state, MemState &mem)
         global_set = state.device.allocateDescriptorSets(descr_set_info)[0];
 
         // update it now (will not be updated after)
-        const uint64_t vert_uniform_size = state.features.support_memory_mapping ? sizeof(shader::RenderVertUniformBlockWithMapping) : sizeof(shader::RenderVertUniformBlock);
-        const uint64_t frag_uniform_size = state.features.support_memory_mapping ? sizeof(shader::RenderFragUniformBlockWithMapping) : sizeof(shader::RenderFragUniformBlock);
+        const uint64_t vert_uniform_size = state.features.enable_memory_mapping ? sizeof(shader::RenderVertUniformBlockWithMapping) : sizeof(shader::RenderVertUniformBlock);
+        const uint64_t frag_uniform_size = state.features.enable_memory_mapping ? sizeof(shader::RenderFragUniformBlockWithMapping) : sizeof(shader::RenderFragUniformBlock);
         std::array<vk::DescriptorBufferInfo, 4> buffers_info = {
             vk::DescriptorBufferInfo{
                 .buffer = vertex_info_uniform_buffer.handle(),

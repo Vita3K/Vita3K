@@ -399,7 +399,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         features.support_memory_mapping = false;
 #endif
 
-        features.enable_memory_mapping = config.memory_mapping;
+        if (features.support_memory_mapping)
+            features.enable_memory_mapping = config.memory_mapping;
 
         if (features.support_memory_mapping) {
             if (support_external_memory) {

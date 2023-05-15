@@ -96,7 +96,7 @@ COMMAND(handle_sync_surface_data) {
     const SceGxmNotification fragment_notification = helper.pop<SceGxmNotification>();
 
     if ((vertex_notification.address || fragment_notification.address)
-        && !renderer.features.support_memory_mapping) {
+        && !renderer.features.enable_memory_mapping) {
         // signal the notification now
         std::unique_lock<std::mutex> lock(renderer.notification_mutex);
 

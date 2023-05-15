@@ -307,7 +307,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         stop_render_pass();
 
     ColorSurfaceCacheInfo *surface_info = nullptr;
-    if (state.features.support_memory_mapping && !state.disable_surface_sync)
+    if (state.features.enable_memory_mapping && !state.disable_surface_sync)
         surface_info = state.surface_cache.perform_surface_sync();
 
     prerender_cmd.end();
@@ -326,7 +326,7 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     state.general_queue.submit(submit_info, fence);
     frame().rendered_fences.push_back(fence);
 
-    if (state.features.support_memory_mapping) {
+    if (state.features.enable_memory_mapping) {
         // send it to the wait queue
         NotificationRequest request = {
             .notifications = { notif1, notif2 },

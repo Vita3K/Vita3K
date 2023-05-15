@@ -539,9 +539,9 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
 
         if (emuenv.renderer->features.support_memory_mapping) {
             ImGui::Spacing();
-            ImGui::Checkbox("Enable memory mapping (Reboot to apply)", &emuenv.cfg.memory_mapping);
+            ImGui::Checkbox("Enable memory mapping (deprecated)", &emuenv.cfg.memory_mapping);
             if (ImGui::IsItemHovered()) {
-                ImGui::SetTooltip("Memory mapping improved performances, reduces memory usage and fixes many graphical issues.\nHowever, it may be unstable on some GPUs");
+                ImGui::SetTooltip("Memory mapping improved performances, reduces memory usage and fixes many graphical issues.\nHowever, it may be unstable on some GPUs\n\nNOTE: disabling memory mapping will require you to re-compile all shaders.");
             }
         }
 

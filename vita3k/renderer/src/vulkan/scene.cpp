@@ -34,7 +34,7 @@ void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderPro
         return;
     }
 
-    if (context.state.features.support_memory_mapping) {
+    if (context.state.features.enable_memory_mapping) {
         const uint64_t buffer_address = context.state.get_matching_device_address(data.address());
         if (vertex_shader) {
             context.current_vert_render_info.buffer_addresses[block_num] = buffer_address;
@@ -66,7 +66,7 @@ void set_uniform_buffer(VKContext &context, const MemState &mem, const ShaderPro
 }
 
 void new_frame(VKContext &context) {
-    if (context.state.features.support_memory_mapping) {
+    if (context.state.features.enable_memory_mapping) {
         FrameDoneRequest request = { context.frame_timestamp };
         context.request_queue.push(request);
     }
@@ -81,7 +81,7 @@ void new_frame(VKContext &context) {
     if (!frame.rendered_fences.empty()) {
         // wait for the fences, then reset them
 
-        if (context.state.features.support_memory_mapping) {
+        if (context.state.features.enable_memory_mapping) {
             // this will underflow for the first MAX_FRAMES_RENDERING frames
             // but that's not an issue as frame.rendered_fences will be empty
             uint64_t previous_frame_timestamp = context.frame_timestamp - MAX_FRAMES_RENDERING;
@@ -223,7 +223,7 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
         state.device.updateDescriptorSets(fragment_texture_count, write_descrs.data(), 0, nullptr);
     }
 
-    const uint32_t dynamic_offset_count = state.features.support_memory_mapping ? 2U : 4U;
+    const uint32_t dynamic_offset_count = state.features.enable_memory_mapping ? 2U : 4U;
     const uint32_t dynamic_offsets[] = {
         // GXMRenderVertUniformBlock
         context.vertex_info_uniform_buffer.data_offset,
@@ -273,7 +273,7 @@ static void bind_vertex_streams(VKContext &context, MemState &mem) {
 
     for (int i = 0; i < max_stream_idx; i++) {
         if (state.vertex_streams[i].data) {
-            if (context.state.features.support_memory_mapping) {
+            if (context.state.features.enable_memory_mapping) {
                 auto [buffer, offset] = context.state.get_matching_mapping(state.vertex_streams[i].data.cast<void>());
 
                 context.vertex_stream_offsets[i] = offset;
@@ -393,7 +393,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
         LOG_DEBUG("Fragment default uniform buffer: {}\n", spdlog::to_hex(context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER].begin(), context.ubo_data[SCE_GXM_REAL_MAX_UNIFORM_BUFFER].end(), 16));
     }
 
-    const bool use_memory_mapping = context.state.features.support_memory_mapping;
+    const bool use_memory_mapping = context.state.features.enable_memory_mapping;
 
     shader::RenderVertUniformBlockWithMapping &vert_ublock = context.current_vert_render_info;
     vert_ublock.viewport_flip = context.record.viewport_flip;
@@ -430,7 +430,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     vk::IndexType index_type = (format == SCE_GXM_INDEX_FORMAT_U16) ? vk::IndexType::eUint16 : vk::IndexType::eUint32;
     const size_t index_size = (format == SCE_GXM_INDEX_FORMAT_U16) ? 2 : 4;
 
-    if (context.state.features.support_memory_mapping) {
+    if (context.state.features.enable_memory_mapping) {
         auto [buffer, offset] = context.state.get_matching_mapping(indices);
         context.render_cmd.bindIndexBuffer(buffer, offset, index_type);
     } else {

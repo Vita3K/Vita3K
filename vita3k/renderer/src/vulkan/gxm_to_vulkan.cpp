@@ -480,6 +480,7 @@ namespace texture {
 
 static const vk::ComponentMapping translate_swizzle1(SceGxmTextureSwizzle1Mode mode) {
     switch (mode) {
+    /**/
     case SCE_GXM_TEXTURE_SWIZZLE1_R:
         return swizzle_r001;
     case SCE_GXM_TEXTURE_SWIZZLE1_000R:

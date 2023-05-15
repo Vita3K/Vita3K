@@ -874,7 +874,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     int last_base = 0;
     int total_members = 0;
 
-    if (!features.support_memory_mapping && !buffer_sizes.empty()) {
+    if (!features.enable_memory_mapping && !buffer_sizes.empty()) {
         std::vector<spv::Id> buffer_container_member_types;
         const bool is_vert = (program_type == SceGxmProgramType::Vertex);
 
@@ -932,7 +932,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     if (program_type == SceGxmProgramType::Vertex) {
         // Create the default reg uniform buffer
         std::vector<spv::Id> uniform_composition = { v4, f32, f32, f32, f32, f32 };
-        if (features.support_memory_mapping)
+        if (features.enable_memory_mapping)
             uniform_composition.push_back(buffer_addresses_type);
 
         spv::Id render_buf_type = b.makeStructType(uniform_composition, "GxmRenderVertBufferBlock");
@@ -950,7 +950,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         ADD_VERT_UNIFORM_MEMBER(screen_height);
         ADD_VERT_UNIFORM_MEMBER(z_offset);
         ADD_VERT_UNIFORM_MEMBER(z_scale);
-        if (features.support_memory_mapping) {
+        if (features.enable_memory_mapping) {
             ADD_VERT_UNIFORM_MEMBER(buffer_addresses);
         }
 
@@ -965,7 +965,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     if (program_type == SceGxmProgramType::Fragment) {
         std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, i32 };
-        if (features.support_memory_mapping)
+        if (features.enable_memory_mapping)
             uniform_composition.push_back(buffer_addresses_type);
         spv::Id render_buf_type = b.makeStructType(uniform_composition, "GxmRenderFragBufferBlock");
 
@@ -982,7 +982,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
         ADD_FRAG_UNIFORM_MEMBER(writing_mask);
         ADD_FRAG_UNIFORM_MEMBER(use_raw_image);
         ADD_FRAG_UNIFORM_MEMBER(res_multiplier);
-        if (features.support_memory_mapping) {
+        if (features.enable_memory_mapping) {
             ADD_FRAG_UNIFORM_MEMBER(buffer_addresses);
         }
 
@@ -999,7 +999,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
 
     for (const auto &buffer : program_input.uniform_buffers) {
         if (buffer.reg_block_size > 0) {
-            if (features.support_memory_mapping) {
+            if (features.enable_memory_mapping) {
                 Operand dest{
                     .num = static_cast<uint16_t>(buffer.reg_start_offset),
                     .bank = RegisterBank::SECATTR,
@@ -1137,7 +1137,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
                            reg.num = input.offset;
                            reg.type = DataType::INT32;
                            uint32_t base;
-                           if (features.support_memory_mapping) {
+                           if (features.enable_memory_mapping) {
                                // encode the index in the upper 4 bits
                                base = (s.index << 28) + s.base;
                            } else {
@@ -1608,7 +1608,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
     b.setSourceFile(shader_hash);
     b.setEmitOpLines();
     b.addSourceExtension("gxp");
-    if (features.support_memory_mapping)
+    if (features.enable_memory_mapping)
         b.setMemoryModel(spv::AddressingModelPhysicalStorageBuffer64, spv::MemoryModelGLSL450);
     else
         b.setMemoryModel(spv::AddressingModelLogical, spv::MemoryModelGLSL450);
@@ -1619,7 +1619,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
         b.addCapability(spv::CapabilityImageQuery);
     if (features.support_unknown_format)
         b.addCapability(spv::CapabilityStorageImageReadWithoutFormat);
-    if (features.support_memory_mapping) {
+    if (features.enable_memory_mapping) {
         b.addExtension("SPV_KHR_physical_storage_buffer");
         b.addCapability(spv::CapabilityPhysicalStorageBufferAddresses);
     }
@@ -1659,7 +1659,7 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
 
     std::vector<spv::Id> empty_args;
 
-    if (translation_state.is_vulkan && !features.support_memory_mapping)
+    if (translation_state.is_vulkan && !features.enable_memory_mapping)
         // core in spv 1.3
         b.addExtension("SPV_KHR_storage_buffer_storage_class");
 
