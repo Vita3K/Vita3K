@@ -600,18 +600,11 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
 
         DepthStencilSurfaceCacheInfo &cached_info = depth_stencil_textures[found_index];
         bool need_remake = false;
-        if (cached_info.memory_width < memory_width) {
-            if (is_reading)
+        if (is_reading) {
+            if (cached_info.memory_width < memory_width || cached_info.memory_height < memory_height)
                 return nullptr;
-            cached_info.memory_width = memory_width;
-            need_remake = true;
-        }
-
-        if (cached_info.memory_height < memory_height) {
-            if (is_reading)
-                return nullptr;
-            cached_info.memory_height = memory_height;
-            need_remake = true;
+        } else {
+            need_remake = cached_info.texture.width < width || cached_info.texture.height < height;
         }
 
         if (!need_remake) {
