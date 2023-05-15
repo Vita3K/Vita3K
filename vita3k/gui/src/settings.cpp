@@ -613,6 +613,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     const auto bg = std::find(gui.users[emuenv.io.user_id].backgrounds.begin(), gui.users[emuenv.io.user_id].backgrounds.end(), delete_user_background);
                     gui.users[emuenv.io.user_id].backgrounds.erase(bg);
                     gui.user_backgrounds.erase(delete_user_background);
+                    gui.user_backgrounds_infos.erase(delete_user_background);
                     if (gui.users[emuenv.io.user_id].backgrounds.size())
                         gui.current_user_bg = 0;
                     else if (!gui.theme_backgrounds.empty())
@@ -621,13 +622,16 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     delete_user_background.clear();
                 }
 
-                ImGui::SetWindowFontScale(0.90f);
+                ImGui::SetWindowFontScale(0.80f);
                 ImGui::Columns(3, nullptr, false);
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 1.0f));
                 for (const auto &background : gui.users[emuenv.io.user_id].backgrounds) {
-                    const auto IMAGE_POS = ImGui::GetCursorPosY();
-                    ImGui::Image(gui.user_backgrounds[background], SIZE_PACKAGE);
-                    ImGui::SetCursorPosY(IMAGE_POS);
+                    const auto IMAGE_POS = ImGui::GetCursorPos();
+                    const auto PREVIEW_POS = ImVec2(IMAGE_POS.x + (gui.user_backgrounds_infos[background].prev_pos.x * SCALE.x), IMAGE_POS.y + (gui.user_backgrounds_infos[background].prev_pos.y * SCALE.y));
+                    const auto PREVIEW_SIZE = ImVec2(gui.user_backgrounds_infos[background].prev_size.x * SCALE.x, gui.user_backgrounds_infos[background].prev_size.y * SCALE.y);
+                    ImGui::SetCursorPos(PREVIEW_POS);
+                    ImGui::Image(gui.user_backgrounds[background], PREVIEW_SIZE);
+                    ImGui::SetCursorPosY(IMAGE_POS.y);
                     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
                     ImGui::PushID(background.c_str());
                     if (ImGui::Selectable(theme_background.home_screen_backgrounds["delete_background"].c_str(), false, ImGuiSelectableFlags_None, SIZE_PACKAGE))
@@ -640,7 +644,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     std::filesystem::path background_path = "";
                     host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(background_path, { { "Image file", { "bmp", "gif", "jpg", "png", "tif" } } });
 
-                    if ((result == host::dialog::filesystem::Result::SUCCESS) && (gui.user_backgrounds.find(background_path.string()) == gui.user_backgrounds.end())) {
+                    if ((result == host::dialog::filesystem::Result::SUCCESS) && (!gui.user_backgrounds.contains(background_path.string()))) {
                         if (init_user_background(gui, emuenv, emuenv.io.user_id, background_path.string())) {
                             gui.users[emuenv.io.user_id].backgrounds.push_back(background_path.string());
                             gui.users[emuenv.io.user_id].use_theme_bg = false;

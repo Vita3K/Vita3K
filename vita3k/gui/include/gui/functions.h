@@ -105,6 +105,7 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv);
 void draw_ui(GuiState &gui, EmuEnvState &emuenv);
 
 void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
+void draw_background(GuiState &gui, EmuEnvState &emuenv);
 void draw_common_dialog(GuiState &gui, EmuEnvState &emuenv);
 void draw_ime(Ime &ime, EmuEnvState &emuenv);
 void draw_info_message(GuiState &gui, EmuEnvState &emuenv);

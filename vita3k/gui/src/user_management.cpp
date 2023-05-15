@@ -42,7 +42,6 @@ struct AvatarInfo {
 
 static std::map<std::string, AvatarInfo> users_avatar_infos;
 static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string avatar) {
-    gui.users_avatar[user_id] = {};
     const auto avatar_path = avatar == "default" ? fs::path(emuenv.base_path) / "data/image/icon.png" : fs::path(string_utils::utf_to_wide(avatar));
 
     if (!fs::exists(avatar_path)) {
@@ -66,20 +65,23 @@ static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &u
         return false;
     }
 
+    gui.users_avatar[user_id] = {};
     gui.users_avatar[user_id].init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
     fclose(f);
 
     // Calculate avatar size and position based of aspect ratio
     auto &user_avatar = users_avatar_infos[user_id];
-    const auto ratio = static_cast<float>(width) / static_cast<float>(height);
-    if (ratio > 1) {
-        user_avatar.size = ImVec2(avatar_size, avatar_size / ratio);
-        user_avatar.small_size = ImVec2(avatar_small_size, avatar_small_size / ratio);
-    } else {
-        user_avatar.size = ImVec2(avatar_size * ratio, avatar_size);
-        user_avatar.small_size = ImVec2(avatar_small_size * ratio, avatar_small_size);
-    }
+
+    // Resize for small avatar
+    const auto small_ratio = std::min(avatar_small_size / static_cast<float>(width), avatar_small_size / static_cast<float>(height));
+    user_avatar.small_size = ImVec2(width * small_ratio, height * small_ratio);
+
+    // Resize for avatar
+    const auto ratio = std::min(avatar_size / static_cast<float>(width), avatar_size / static_cast<float>(height));
+    user_avatar.size = ImVec2(width * ratio, height * ratio);
+
+    // Calculate position for both avatar size
     user_avatar.pos = ImVec2((avatar_size / 2.f) - (user_avatar.size.x / 2.f), (avatar_size / 2.f) - (user_avatar.size.y / 2.f));
     user_avatar.small_pos = ImVec2((avatar_small_size / 2.f) - (user_avatar.small_size.x / 2.f), (avatar_small_size / 2.f) - (user_avatar.small_size.y / 2.f));
 
@@ -187,7 +189,7 @@ void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
         LOG_ERROR("Fail save xml for user id: {}, name: {}, in path: {}", user.id, user.name, user_path.string());
 }
 
-void init_user_management(GuiState& gui, EmuEnvState& emuenv) {
+void init_user_management(GuiState &gui, EmuEnvState &emuenv) {
     init_app_background(gui, emuenv, "NPXS10013");
     gui.vita_area.home_screen = false;
     gui.vita_area.information_bar = true;
