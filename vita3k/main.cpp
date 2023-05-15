@@ -339,16 +339,12 @@ int main(int argc, char *argv[]) {
         const auto pos_min = ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
         const auto pos_max = ImVec2(pos_min.x + emuenv.viewport_size.x, pos_min.y + emuenv.viewport_size.y);
 
-        if (gui.apps_background.find(emuenv.io.app_path) != gui.apps_background.end())
+        if (gui.apps_background.contains(emuenv.io.app_path))
             // Display application background
             ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background[emuenv.io.app_path], pos_min, pos_max);
         // Application background not found
-        else if (!gui.theme_backgrounds.empty())
-            // Display theme background if exist
-            ImGui::GetBackgroundDrawList()->AddImage(gui.theme_backgrounds[0], pos_min, pos_max);
-        else if (!gui.user_backgrounds.empty())
-            // Display user background if exist
-            ImGui::GetBackgroundDrawList()->AddImage(gui.user_backgrounds[gui.users[emuenv.io.user_id].backgrounds[0]], pos_min, pos_max);
+        else
+            gui::draw_background(gui, emuenv);
     };
 
     Ptr<const void> entry_point;

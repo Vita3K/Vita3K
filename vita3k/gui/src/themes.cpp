@@ -20,6 +20,7 @@
 #include <config/state.h>
 #include <gui/functions.h>
 #include <io/device.h>
+#include <io/state.h>
 #include <util/safe_time.h>
 #include <util/string_utils.h>
 
@@ -35,8 +36,9 @@ std::string get_theme_title_from_buffer(const vfs::FileBuffer &buffer) {
     return "Internal error";
 }
 
+static constexpr ImVec2 background_size(960.f, 512.f), background_preview_size(226.f, 128.f);
+
 bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string &background_path) {
-    gui.user_backgrounds[background_path] = {};
     const std::wstring background_path_wstr = string_utils::utf_to_wide(background_path);
 
     if (!fs::exists(fs::path(background_path_wstr))) {
@@ -60,13 +62,27 @@ bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string 
         return false;
     }
 
+    gui.user_backgrounds[background_path] = {};
     gui.user_backgrounds[background_path].init(gui.imgui_state.get(), data, width, height);
     stbi_image_free(data);
     fclose(f);
 
-    gui.current_user_bg = 0;
+    // Resize background to fit screen size if needed (keep aspect ratio)
+    auto &user_background = gui.user_backgrounds_infos[background_path];
 
-    return gui.user_backgrounds.find(background_path) != gui.user_backgrounds.end();
+    // Resize for preview
+    const auto prew_ratio = std::min(background_preview_size.x / static_cast<float>(width), background_preview_size.y / static_cast<float>(height));
+    user_background.prev_size = ImVec2(width * prew_ratio, height * prew_ratio);
+
+    // Resize for home screen
+    const auto ratio = std::min(background_size.x / static_cast<float>(width), background_size.y / static_cast<float>(height));
+    user_background.size = ImVec2(width * ratio, height * ratio);
+
+    // Center background on screen (keep aspect ratio)
+    user_background.prev_pos = ImVec2((background_preview_size.x / 2.f) - (user_background.prev_size.x / 2.f), (background_preview_size.y / 2.f) - (user_background.prev_size.y / 2.f));
+    user_background.pos = ImVec2((background_size.x / 2.f) - (user_background.size.x / 2.f), (background_size.y / 2.f) - (user_background.size.y / 2.f));
+ 
+    return gui.user_backgrounds.contains(background_path);
 }
 
 enum DateLayout {
@@ -361,6 +377,41 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
     }
 
     return !gui.theme_backgrounds.empty();
+}
+
+void draw_background(GuiState &gui, EmuEnvState &emuenv) {
+    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const auto RES_SCALE = ImVec2(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
+    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+
+    const auto INFO_BAR_HEIGHT = 32.f * SCALE.y;
+    const auto HALF_INFO_BAR_HEIGHT = INFO_BAR_HEIGHT / 2.f;
+
+    const auto is_user_background = !gui.user_backgrounds.empty() && !gui.users[emuenv.io.user_id].use_theme_bg;
+    const auto is_theme_background = !gui.theme_backgrounds.empty() && gui.users[emuenv.io.user_id].use_theme_bg;
+    const auto background_color = gui.vita_area.home_screen ? IM_COL32(11.f, 90.f, 252.f, 160.f) : IM_COL32(0.f, 0.f, 0.f, 255.f);
+
+    // Draw background
+    auto draw_list = ImGui::GetBackgroundDrawList();
+    draw_list->AddRectFilled(ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize, background_color, 0.f, ImDrawFlags_RoundCornersAll);
+
+    if (is_theme_background || is_user_background) {
+        // Draw background image
+        auto background_pos_min = ImVec2(0, gui.vita_area.home_screen ? INFO_BAR_HEIGHT : HALF_INFO_BAR_HEIGHT);
+        ImVec2 background_pos_max = VIEWPORT_SIZE;
+        std::string user_bg_path;
+        if (is_user_background) {
+            user_bg_path = gui.users[emuenv.io.user_id].backgrounds[gui.current_user_bg];
+            const auto user_background_infos = gui.user_backgrounds_infos[user_bg_path];
+            background_pos_min = ImVec2(user_background_infos.pos.x * SCALE.x, background_pos_min.y + (user_background_infos.pos.y * SCALE.y));
+            background_pos_max = ImVec2(background_pos_min.x + (user_background_infos.size.x * SCALE.x), background_pos_min.y + (user_background_infos.size.y * SCALE.y));
+        } else if (is_theme_background && !gui.vita_area.home_screen)
+            background_pos_max.y -= HALF_INFO_BAR_HEIGHT;
+
+        const auto &background = is_user_background ? gui.user_backgrounds[user_bg_path] : gui.theme_backgrounds[gui.current_theme_bg];
+
+        draw_list->AddImage(background, background_pos_min, background_pos_max);
+    }
 }
 
 void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {

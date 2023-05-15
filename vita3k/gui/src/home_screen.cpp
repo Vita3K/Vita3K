@@ -381,14 +381,11 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
-    const auto MENUBAR_BG_HEIGHT = (!emuenv.cfg.show_info_bar && emuenv.display.imgui_render) || !gui.vita_area.information_bar ? 22.f * SCALE.x : INFORMATION_BAR_HEIGHT;
-
-    const auto is_background = (gui.users[emuenv.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) || !gui.user_backgrounds.empty();
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-    ImGui::SetNextWindowBgAlpha(is_background ? emuenv.cfg.background_alpha : 0.f);
+    ImGui::SetNextWindowBgAlpha(emuenv.cfg.background_alpha);
     ImGui::Begin("##home_screen", &gui.vita_area.home_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
     if (!emuenv.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
         gui.vita_area.information_bar = true;
@@ -419,27 +416,14 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         while (last_time["home"] + emuenv.cfg.delay_background < current_time()) {
             last_time["home"] += emuenv.cfg.delay_background;
 
-            if (gui.users[emuenv.io.user_id].use_theme_bg) {
-                if (gui.current_theme_bg < uint64_t(gui.theme_backgrounds.size() - 1))
-                    ++gui.current_theme_bg;
-                else
-                    gui.current_theme_bg = 0;
-            } else {
-                if (gui.user_backgrounds.size() > 1) {
-                    if (gui.current_user_bg < uint64_t(gui.user_backgrounds.size() - 1))
-                        ++gui.current_user_bg;
-                    else
-                        gui.current_user_bg = 0;
-                }
-            }
+            if (gui.users[emuenv.io.user_id].use_theme_bg)
+                gui.current_theme_bg = ++gui.current_theme_bg % uint64_t(gui.theme_backgrounds.size());
+            else if (gui.user_backgrounds.size() > 1)
+                gui.current_user_bg = ++gui.current_user_bg % uint64_t(gui.user_backgrounds.size());
         }
     }
 
-    if (is_background)
-        ImGui::GetBackgroundDrawList()->AddImage((gui.users[emuenv.io.user_id].use_theme_bg && !gui.theme_backgrounds.empty()) ? gui.theme_backgrounds[gui.current_theme_bg] : gui.user_backgrounds[gui.users[emuenv.io.user_id].backgrounds[gui.current_user_bg]],
-            ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size);
-    else
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, MENUBAR_BG_HEIGHT), display_size, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawFlags_RoundCornersAll);
+    draw_background(gui, emuenv);
 
     const ImVec2 VIEWPORT_RES_SCALE(emuenv.viewport_size.x / emuenv.res_width_dpi_scale, emuenv.viewport_size.y / emuenv.res_height_dpi_scale);
     const ImVec2 VIEWPORT_SCALE(VIEWPORT_RES_SCALE.x * emuenv.dpi_scale, VIEWPORT_RES_SCALE.y * emuenv.dpi_scale);
