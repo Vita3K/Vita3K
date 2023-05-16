@@ -23,7 +23,6 @@
 #include <ws2tcpip.h>
 #define write(x, y, z) _write(x, y, z)
 #define read(x, y, z) _read(x, y, z)
-#define close(x) _close(x)
 #else
 #include <netdb.h>
 #include <sys/socket.h>
@@ -551,12 +550,15 @@ EXPORT(SceInt, sceHttpDeleteConnection, SceInt connId) {
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
-    if (emuenv.http.connections.find(connId) == emuenv.http.connections.end())
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
-
     auto connIt = emuenv.http.connections.find(connId);
 
+    if (connIt == emuenv.http.connections.end())
+        return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
+#ifdef WIN32
+    closesocket(connIt->second.sockfd);
+#else
     close(connIt->second.sockfd);
+#endif // WIN32
 
     emuenv.http.connections.erase(connIt);
 
@@ -859,8 +861,6 @@ EXPORT(SceInt, sceHttpReadData, SceInt reqId, void *data, SceSize size) {
     // These methods have no body
     if (req->second.method == SCE_HTTP_METHOD_HEAD || req->second.method == SCE_HTTP_METHOD_OPTIONS)
         return 0;
-
-    auto conn = emuenv.http.connections.find(req->second.connId);
 
     // If the game wants to read more than whats available, change the read ammount to what is available
     if (size > (req->second.res.contentLength - req->second.res.responseRead)) {
