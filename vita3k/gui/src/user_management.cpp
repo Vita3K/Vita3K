@@ -199,10 +199,7 @@ void init_user_management(GuiState &gui, EmuEnvState &emuenv) {
 void init_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
     emuenv.io.user_id = user_id;
     emuenv.io.user_name = gui.users[user_id].name;
-    if (!gui.users[user_id].backgrounds.empty()) {
-        for (const auto &bg : gui.users[user_id].backgrounds)
-            init_user_background(gui, emuenv, user_id, bg);
-    }
+    init_user_backgrounds(gui, emuenv);
     init_theme(gui, emuenv, gui.users[user_id].theme_id);
     init_notice_info(gui, emuenv);
     init_last_time_apps(gui, emuenv);

@@ -614,8 +614,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     gui.users[emuenv.io.user_id].backgrounds.erase(bg);
                     gui.user_backgrounds.erase(delete_user_background);
                     gui.user_backgrounds_infos.erase(delete_user_background);
-                    if (gui.users[emuenv.io.user_id].backgrounds.size())
-                        gui.current_user_bg = 0;
+                    if (!gui.users[emuenv.io.user_id].backgrounds.empty())
+                        gui.current_user_bg = gui.current_user_bg % uint64_t(gui.user_backgrounds.size()); 
                     else if (!gui.theme_backgrounds.empty())
                         gui.users[emuenv.io.user_id].use_theme_bg = true;
                     save_user(gui, emuenv, emuenv.io.user_id);
@@ -645,7 +645,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(background_path, { { "Image file", { "bmp", "gif", "jpg", "png", "tif" } } });
 
                     if ((result == host::dialog::filesystem::Result::SUCCESS) && (!gui.user_backgrounds.contains(background_path.string()))) {
-                        if (init_user_background(gui, emuenv, emuenv.io.user_id, background_path.string())) {
+                        if (init_user_background(gui, emuenv, background_path.string())) {
                             gui.users[emuenv.io.user_id].backgrounds.push_back(background_path.string());
                             gui.users[emuenv.io.user_id].use_theme_bg = false;
                             save_user(gui, emuenv, emuenv.io.user_id);

@@ -38,7 +38,7 @@ std::string get_theme_title_from_buffer(const vfs::FileBuffer &buffer) {
 
 static constexpr ImVec2 background_size(960.f, 512.f), background_preview_size(226.f, 128.f);
 
-bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string &background_path) {
+bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string &background_path) {
     const std::wstring background_path_wstr = string_utils::utf_to_wide(background_path);
 
     if (!fs::exists(fs::path(background_path_wstr))) {
@@ -83,6 +83,16 @@ bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string 
     user_background.pos = ImVec2((background_size.x / 2.f) - (user_background.size.x / 2.f), (background_size.y / 2.f) - (user_background.size.y / 2.f));
  
     return gui.user_backgrounds.contains(background_path);
+}
+
+bool init_user_backgrounds(GuiState &gui, EmuEnvState &emuenv) {
+    gui.user_backgrounds.clear();
+    gui.user_backgrounds_infos.clear();
+    gui.current_user_bg = 0;
+    for (const auto &bg : gui.users[emuenv.io.user_id].backgrounds)
+        init_user_background(gui, emuenv, bg);
+
+    return !gui.user_backgrounds.empty();
 }
 
 enum DateLayout {
