@@ -189,11 +189,8 @@ Felkod: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<connected>Controllers connected</connected>
 		<name>Namn</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -332,9 +329,6 @@ Ditt Vita3K-system är redo!</completed_setup>
 	</settings_dialog>
 
 	<trophy_collection>
-		<search>Search</search>
-		<delete_trophy>Delete Trophy</delete_trophy>
-		<trophy_deleted>This trophy information saved on this user will be deleted.</trophy_deleted>
 		<details>Detaljer</details>
 		<earned>Vunna</earned>
 		<name>Namn</name>
@@ -362,7 +356,6 @@ Du kan få trophies om du använder en applikation som stder trophy-funktionen.<
 		<user_deleted>Användaren har tagits bort.</user_deleted>
 		<change_avatar>Ändra avatar</change_avatar>
 		<name>Namn</name>
-		<user>User</user>
 		<confirm>Bekräfta</confirm>
 	</user_management>
 

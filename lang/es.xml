@@ -203,11 +203,9 @@ Código del error: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controles">
-		<connected>Controles conectado</connected>
+		<connected>{} controles conectado</connected>
 		<name>Nombre</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -365,7 +363,6 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 		<user_created>Se ha creado el siguiente usuario:</user_created>
 		<user_name_used>El nombre ya está en uso.</user_name_used>
 		<edit_user>Modificar usuario</edit_user>
-		<open_user_folder>Open User Folder</open_user_folder>
 		<delete_user>Eliminar usuario</delete_user>
 		<user_delete>Seleciona el usuario que quieres eliminar.</user_delete>
 		<user_delete_msg>Se eliminará el siguiente usuario:</user_delete_msg>
@@ -374,11 +371,9 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 ¿Deseas continuar?</user_delete_warn>
 		<user_deleted>Usuario eliminado.</user_deleted>
 		<change_avatar>Cambiar avatar</change_avatar>
-		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Nombre</name>
 		<user>Usuario</user>
 		<confirm>Confirmar</confirm>
-		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Actualizar Vita3K">

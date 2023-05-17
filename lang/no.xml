@@ -187,11 +187,8 @@ Feilkode: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<connected>Controllers connected</connected>
 		<name>Navn</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -355,7 +352,6 @@ Du kan Oppnå trophies ved å bruke et program som Støtter trophy-funksjonen.</
 Er du sikker på at du vil fortsette?</user_delete_warn>
 		<user_deleted>Bruker slettet.</user_deleted>
 		<change_avatar>Endre avatar</change_avatar>
-		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Nanv</name>
 		<user>Bruker</user>
 		<confirm>Bekreft</confirm>

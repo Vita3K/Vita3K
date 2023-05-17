@@ -207,11 +207,8 @@ Codice di errore: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<connected>Controllers connected</connected>
 		<name>Nome</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -371,7 +368,6 @@ Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.</no_
 		<create_user>Crea utente</create_user>
 		<user_created>L'utente seguente è stato creato:</user_created>
 		<edit_user>Modifica utente</edit_user>
-		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>Il nome utente è già in uso.</user_name_used>
 		<delete_user>Elimina utente</delete_user>
 		<user_delete>Seleziona l'utente che vuoi eliminare.</user_delete>
@@ -381,7 +377,6 @@ Puoi guadagnare trofei usando un'applicazione che supporta questa funzione.</no_
 Vuoi davvero continuare?</user_delete_warn>
 		<user_deleted>Utente eliminato.</user_deleted>
 		<change_avatar>Cambia avatar</change_avatar>
-		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Nome</name>
 		<user>Utente</user>
 		<confirm>Conferma</confirm>

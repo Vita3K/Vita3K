@@ -235,7 +235,7 @@ Code d'erreur: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Contrôleurs">
-		<connected>Contrôleurs connectés</connected>
+		<connected>{} contrôleurs connectés</connected>
 		<name>Nom</name>
 		<num>Num</num>
 		<not_connected>Aucun contrôleur compatible n'est connecté.

@@ -221,11 +221,7 @@
 	</content_manager>
 
 	<controllers name="Controllers">
-		<connected>Controllers connected</connected>
 		<name>이름</name>
-		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -367,7 +363,6 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<create_user>사용자 생성</create_user>
 		<user_created>해당 사용자가 생성되었습니다.</user_created>
 		<edit_user>사용자 편집</edit_user>
-		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>이미 사용하고 있는 이름입니다.</user_name_used>
 		<delete_user>사용자 삭제</delete_user>
 		<user_delete>지우려고 하는 사용자를 선택하세요.</user_delete>
@@ -379,7 +374,6 @@ Connect a controller that is compatible with SDL2.</not_connected>
 		<change_avatar>아바타 변경</change_avatar>
 		<reset_avatar>아바타 리셋</reset_avatar>
 		<name>이름</name>
-		<user>사용자</user>
 		<confirm>확인</confirm>
 		<automatic_user_login>자동 로그인</automatic_user_login>
 	</user_management>

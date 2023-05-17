@@ -191,11 +191,8 @@ Fejlkode: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<connected>Controllers connected</connected>
 		<name>Navn</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -349,11 +346,8 @@ Du kan opnå trophies ved at bruge et program, der understøtter trophy-funkitio
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Select your user</select_user>
 		<create_user>Opret bruger</create_user>
 		<user_created>Den følgende bruger er blevet oprettet:</user_created>
-		<edit_user>Edit User</edit_user>
-		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>Navent er allerede i brug.</user_name_used>
 		<delete_user>Slet bruger</delete_user>
 		<user_delete>Vælg den bruger, som du vil slette.</user_delete>
@@ -363,11 +357,9 @@ Du kan opnå trophies ved at bruge et program, der understøtter trophy-funkitio
 Er du sikker på, at du ønsker at fortsætte.</user_delete_warn>
 		<user_deleted>Bruger blev slettet.</user_deleted>
 		<change_avatar>Skift avatar</change_avatar>
-		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Navn</name>
 		<user>Bruger</user>
 		<confirm>Bekræft</confirm>
-		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Vita3K-opdatering">

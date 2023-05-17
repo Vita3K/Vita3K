@@ -187,11 +187,8 @@ Virhekoodi: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<connected>Controllers connected</connected>
 		<name>Nimi</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -345,12 +342,8 @@ Voit ansaita trophyjä käyttämällä trophy-ominaisuutta tukevaa sovellusta.</
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Select your user</select_user>
 		<create_user>Luo käyttäjä</create_user>
 		<user_created>Seuraava käyttäjä on luotu:</user_created>
-		<edit_user>Edit User</edit_user>
-		<open_user_folder>Open User Folder</open_user_folder>
-		<user_name_used>This name is already in use.</user_name_used>
 		<delete_user>Poista käyttäjä</delete_user>
 		<user_delete>Valitse käyttäjä, jonka haulat poistaa.</user_delete>
 		<user_delete_msg>Seuraava käyttäjä poistetaan:</user_delete_msg>
@@ -359,11 +352,9 @@ Voit ansaita trophyjä käyttämällä trophy-ominaisuutta tukevaa sovellusta.</
 Oletko varma, että haluat jatkaa?</user_delete_warn>
 		<user_deleted>Käyttäjä on poistettu.</user_deleted>
 		<change_avatar>Vaihda avatar</change_avatar>
-		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Nimi</name>
 		<user>Kayttaja</user>
 		<confirm>Vahvista</confirm>
-		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Vita3K-päivitys">

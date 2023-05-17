@@ -208,11 +208,8 @@ Foutcode: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<connected>Controllers connected</connected>
 		<name>Naam</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -368,8 +365,7 @@ Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefuncti
 		<create_user>Gebruiker maken</create_user>
 		<user_created>De volgende gebruiker is gemaakt:</user_created>
 		<edit_user>Gebruiker bewerken</edit_user>
-		<open_user_folder>Open User Folder</open_user_folder>
-		<user_name_used>This name is already in use.</user_name_used>
+		<user_name_used>De naam is al in gebruik.</user_name_used>
 		<delete_user>Gebruiker verwijderen</delete_user>
 		<user_delete>Selecteer de gebruiker die u wil verwijderen.</user_delete>
 		<user_delete_msg>De volgende gebruiker wordt verwijderd:</user_delete_msg>

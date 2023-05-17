@@ -202,11 +202,8 @@ Kod błędu: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<connected>Controllers connected</connected>
 		<name>Nazwa</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -374,7 +371,6 @@ Czy na pewno chcesz kontynuować?</user_delete_warn>
 		<name>Nazwa</name>
 		<user>Uzytkownik</user>
 		<confirm>Potwierdź</confirm>
-		<automatic_user_login>Automatic User Login</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Aktualizacja Vita3K">

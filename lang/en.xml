@@ -243,7 +243,7 @@ Error code: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<connected>Controllers connected</connected>
+		<connected>{} controllers connected</connected>
 		<name>Name</name>
 		<num>Num</num>
 		<not_connected>No compatible controllers connected.
@@ -595,7 +595,7 @@ After the download is complete, Vita3K will restart automatically and then insta
 	<welcome name="Welcome to Vita3K">
 		<line_first>Vita3K PlayStation Vita Emulator</line_first>
 		<line_second>Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS and Android.</line_second>
-		<line_third>The emulator is still in its early stages so any feedback and testing is greatly appreciated.</line_third>
+		<line_third>The emulator is still in its development stages so any feedback and testing is greatly appreciated.</line_third>
 		<line_fourth>To get started, please install the PS Vita firmware and font packages.</line_fourth>
 		<download_firmware>Download Firmware</download_firmware>
 		<line_sixth_part_one>A comprehensive guide on how to set-up Vita3K can be found on the</line_sixth_part_one>

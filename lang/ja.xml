@@ -28,7 +28,7 @@
 		<vita3k>Vita3K: PS Vita/PS TVエミュレーター。 世界初の動作するPS Vita/PS TVエミュレーターです。</vita3k>
 		<about_vita3k>Vita3Kは試験的なオープンソースのC++で書かれた Windows、Linux、macOSとAndroid向けのPlayStation Vita/PlayStation TVエミュレーターです。</about_vita3k>
 		<special_credit>特別クレジット：Vita3Kアイコンデザイナー：</special_credit>
-		<github_website>プロジェクトへの貢献に興味がある方は、Githubをご覧ください：</github_website>
+		<github_website>プロジェクトへの貢献に興味がある方は、GitHubをご覧ください：</github_website>
 		<vita3k_website>詳しくはサイトをご覧ください：</vita3k_website>
 		<ko-fi_website>私たちを応援したい方は、寄付や購読をお願いします：</ko-fi_website>
 		<vita3k_staff>Vita3K スタッフ</vita3k_staff>
@@ -235,7 +235,7 @@
 	</content_manager>
 
 	<controllers name="コントローラー">
-		<connected>コントローラー接続済み</connected>
+		<connected>{}コントローラー接続済み</connected>
 		<name>名前</name>
 		<num>番号</num>
 		<not_connected>利用可能なコントローラーが接続されていません。
@@ -542,7 +542,6 @@ Vita3Kをお楽しみください。</completed_setup>
 		<change_avatar>アバターを変更する</change_avatar>
 		<reset_avatar>アバターをリセットする</reset_avatar>
 		<name>名前</name>
-		<user>ユーザー</user>
 		<confirm>確定</confirm>
 		<automatic_user_login>ユーザー自動ログインをする</automatic_user_login>
 	</user_management>
@@ -562,8 +561,6 @@ Vita3Kをお楽しみください。</completed_setup>
 		<later_version_already_installed>新しいバージョンのVita3Kがインストールされています。</later_version_already_installed>
 		<latest_version_already_installed>最新のバージョンのVita3Kがインストールされています。</latest_version_already_installed>
 		<new_features>バージョン{}の新しい機能</new_features>
-		<authors>Authors</authors>
-		<comments>Comments</comments>
 		<update>アップデート</update>
 		<version>バージョン {}</version>
 	</vita3k_update>
@@ -571,7 +568,7 @@ Vita3Kをお楽しみください。</completed_setup>
 	<welcome name="Welcome to Vita3K">
 		<line_first>Vita3K PlayStation Vita Emulator</line_first>
 		<line_second>Vita3Kは、Windows、Linux、macOSとAndroid用にC++で書かれたオープンソースのPlayStation Vitaエミュレーターです。</line_second>
-		<line_third>エミュレーターは未だ初期段階にあるため、フィードバックやテストは大歓迎です。</line_third>
+		<line_third>エミュレーターは未だ開発段階にあるため、フィードバックやテストは大歓迎です。</line_third>
 		<line_fourth>まずは、PS Vitaのファームウェアとフォントのパッケージをインストールしてください。</line_fourth>
 		<download_firmware>ファームウェアをダウンロード</download_firmware>
 		<line_sixth_part_one>Vita3Kのセットアップ方法については、以下のページで解説しています。</line_sixth_part_one>

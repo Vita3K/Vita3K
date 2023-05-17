@@ -214,7 +214,7 @@ struct LangState {
     ContentManager content_manager;
     std::map<std::string, std::string> controllers = {
         { "title", "Controllers" },
-        { "connected", "Controllers connected" },
+        { "connected", "{} controllers connected" },
         { "name", "Name" },
         { "num", "Num" },
         { "not_connected", "No compatible controllers connected.\nConnect a controller that is compatible with SDL2." }
@@ -514,7 +514,7 @@ struct LangState {
         { "title", "Welcome to Vita3K" },
         { "line_first", "Vita3K PlayStation Vita Emulator" },
         { "line_second", "Vita3K is an open-source PlayStation Vita emulator written in C++ for Windows, Linux, macOS and Android." },
-        { "line_third", "The emulator is still in its early stages so any feedback and testing is greatly appreciated." },
+        { "line_third", "The emulator is still in its development stages so any feedback and testing is greatly appreciated." },
         { "line_fourth", "To get started, please install the PS Vita firmware and font packages." },
         { "download_firmware", "Download Firmware" },
         { "line_sixth_part_one", "A comprehensive guide on how to set-up Vita3K can be found on the" },

@@ -22,24 +22,34 @@
 namespace gui {
 
 void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
-    auto lang = gui.lang.controllers;
+    auto &lang = gui.lang.controllers;
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin(lang["title"].c_str(), &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     auto &ctrl = emuenv.ctrl;
     refresh_controllers(ctrl);
     if (ctrl.controllers_num) {
-        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%d %s", ctrl.controllers_num, lang["connected"].c_str());
+        const auto connected_str = fmt::format(fmt::runtime(lang["connected"].c_str()), ctrl.controllers_num);
+        ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", connected_str.c_str());
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
-        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%-8s %s", lang["num"].c_str(), lang["name"].c_str());
-        ImGui::Spacing();
-        for (auto i = 0; i < ctrl.controllers_num; i++) {
-            ImGui::Text("%-8d", i);
-            ImGui::SameLine();
-            ImGui::Dummy(ImVec2(7.f, 7.f));
-            ImGui::SameLine();
-            ImGui::Text("%s", ctrl.controllers_name[i]);
+        if (ImGui::BeginTable("main", 2)) {
+            ImGui::TableSetupColumn("num");
+            ImGui::TableSetupColumn("name");
+            ImGui::TableNextRow();
+            ImGui::TableSetColumnIndex(0);
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["num"].c_str());
+            ImGui::TableSetColumnIndex(1);
+            ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["name"].c_str());
+            ImGui::Spacing();
+            for (auto i = 0; i < ctrl.controllers_num; i++) {
+                ImGui::TableNextRow();
+                ImGui::TableSetColumnIndex(0);
+                ImGui::Text("%-8d", i);
+                ImGui::TableSetColumnIndex(1);
+                ImGui::Text("%s", ctrl.controllers_name[i]);
+            }
+            ImGui::EndTable();
         }
     } else
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["not_connected"].c_str());
