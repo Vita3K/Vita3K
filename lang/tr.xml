@@ -195,11 +195,8 @@ Hata Kodu: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Kontroller">
-		<connected>Controllers connected</connected>
 		<name>Ad</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -367,7 +364,6 @@ Devam etmek istediğinizden emin misiniz?</user_delete_warn>
 		<change_avatar>Avatar Değiştir</change_avatar>
 		<reset_avatar>Avatar Sıfırla</reset_avatar>
 		<name>Ad</name>
-		<user>Kullanıcı</user>
 		<confirm>Onayla</confirm>
 		<automatic_user_login>Otomatik Kullanıcı Girişi</automatic_user_login>
 	</user_management>

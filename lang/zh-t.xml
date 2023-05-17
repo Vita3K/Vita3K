@@ -28,7 +28,7 @@
 		<vita3k>Vita3K：PS Vita/PS TV模擬器，是全球首個實用的PS Vita/PS TV模擬器。</vita3k>
 		<about_vita3k>Vita3K是使用C++編寫的實驗性開源PlayStation Vita/PlayStation TV模擬器，適用於Windows、Linux、macOS以及Android作業系統。</about_vita3k>
 		<special_credit>特別鳴謝：Vita3K圖標設計由：</special_credit>
-		<github_website>如果您有興趣參與貢獻，請瀏覽我們的:</github_website>
+		<github_website>如果您有興趣參與貢獻，請瀏覽我們的：</github_website>
 		<vita3k_website>更多資訊請造訪我們的網站：</vita3k_website>
 		<ko-fi_website>如果您想支持我們，您可以捐贈或者訂閱我們的：</ko-fi_website>
 		<vita3k_staff>Vita3K人員名單</vita3k_staff>
@@ -243,7 +243,7 @@
 	</content_manager>
 
 	<controllers name="控制器">
-		<connected>個控制器已連接</connected>
+		<connected>已連接{}個控制器</connected>
 		<name>名稱</name>
 		<num>編號</num>
 		<not_connected>未連接相容的控制器。
@@ -419,7 +419,7 @@
 			<control_setting>在控制設定中使用鍵盤組態集</control_setting>
 			<live_area_help>Live Area說明</live_area_help>
 			<browse_app>瀏覽應用程式清單</browse_app>
-			<browse_app_control>方向鍵、左操作桿、滾輪上/下或使用滑桿</browse_app_control>
+			<browse_app_control>方向鍵、左操作桿、滾輪上/下或使用滾動條</browse_app_control>
 			<start_app>啟動應用程式</start_app>
 			<start_app_control>按下啟動或按交叉按鈕</start_app_control>
 			<show_hide>應用程式執行時顯示/隱藏Live Area</show_hide>
@@ -428,7 +428,7 @@
 			<exit_livearea_control>按下Esc或按圓形按鈕</exit_livearea_control>
 			<manual_help>說明書</manual_help>
 			<browse_page>瀏覽頁面</browse_page>
-			<browse_page_control>方向鍵、左操作桿、滾輪上/下或使用滑桿、按下&lt;/&gt;</browse_page_control>
+			<browse_page_control>方向鍵、左操作桿、滾輪上/下或使用滾動條、按下&lt;/&gt;</browse_page_control>
 			<hide_show>隱藏/顯示按鈕</hide_show>
 			<hide_show_control>按下右鍵</hide_show_control>
 			<exit_manual>解除說明書</exit_manual>
@@ -549,7 +549,6 @@
 		<change_avatar>變更個人造型</change_avatar>
 		<reset_avatar>重設個人造型</reset_avatar>
 		<name>名稱</name>
-		<user>使用者</user>
 		<confirm>確定</confirm>
 		<automatic_user_login>自動登入使用者</automatic_user_login>
 	</user_management>
@@ -578,7 +577,7 @@
 	<welcome name="歡迎使用Vita3K">
 		<line_first>Vita3K PlayStation Vita模擬器</line_first>
 		<line_second>Vita3K是使用C++編寫的開源PlayStation Vita模擬器，適用於Windows、Linux、macOS以及Android。</line_second>
-		<line_third>目前模擬器仍處於早期階段，因此非常感謝任何回饋和測試。</line_third>
+		<line_third>目前模擬器仍處於開發階段，因此非常感謝任何回饋和測試。</line_third>
 		<line_fourth>要開始使用，請安裝PS Vita韌體和字型套件。</line_fourth>
 		<line_sixth_part_one>有關如何設定Vita3K的全方位指南可在</line_sixth_part_one>
 		<quickstart>快速入門</quickstart>

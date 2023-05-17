@@ -192,11 +192,8 @@ Código de erro: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controllers">
-		<connected>Controllers connected</connected>
 		<name>Nome</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>

@@ -202,11 +202,8 @@ Fehlercode: {}</an_error_occurred>
 	</content_manager>
 
 	<controllers name="Controller">
-		<connected>Controllers connected</connected>
 		<name>Name</name>
 		<num>Num</num>
-		<not_connected>No compatible controllers connected.
-Connect a controller that is compatible with SDL2.</not_connected>
 	</controllers>
 
 	<dialog>
@@ -358,7 +355,6 @@ Du kannst Trophäen in Anwendungen verdienen, die die Trophäen-Funktionen unter
 		<create_user>Benutzer erstellen</create_user>
 		<user_created>Der folgende Benutzer wurde erstellt.</user_created>
 		<edit_user>Benutzer bearbeiten</edit_user>
-		<open_user_folder>Open User Folder</open_user_folder>
 		<user_name_used>Dieser Name wird bereits verwendet.</user_name_used>
 		<delete_user>Benutzer löschen</delete_user>
 		<user_delete>Wähle den Benutzer aus, den löschen möchtest.</user_delete>

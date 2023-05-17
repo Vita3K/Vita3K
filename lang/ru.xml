@@ -240,7 +240,7 @@
 	</content_manager>
 
 	<controllers name="Контроллеры">
-		<connected>Контроллеры подключены</connected>
+		<connected>Контроллеров подключено: {}</connected>
 		<name>Название</name>
 		<num>Количество</num>
 		<not_connected>Не подключены совместимые контроллеры.
@@ -568,7 +568,6 @@
 		<change_avatar>Сменить аватар</change_avatar>
 		<reset_avatar>Сбросить аватар</reset_avatar>
 		<name>Название</name>
-		<user>Пользователь</user>
 		<confirm>Подтвердить</confirm>
 		<automatic_user_login>Автоматический вход в систему</automatic_user_login>
 	</user_management>
@@ -597,7 +596,7 @@
 	<welcome name="Добро пожаловать в Vita3K">
 		<line_first>Vita3K, эмулятор PlayStation Vita</line_first>
 		<line_second>Vita3K - это эмулятор PlayStation Vita с открытым исходным кодом, написанный на C++ для Windows, Linux, macOS и Android.</line_second>
-		<line_third>Эмулятор до сих пор находится в ранних стадиях, мы очень ценим любые отзывы и тесты.</line_third>
+		<line_third>Эмулятор до сих пор находится в разработке, мы очень ценим любые отзывы и тесты.</line_third>
 		<line_fourth>Для начала, пожалуйста, установите прошивку PS Vita и пакет шрифтов.</line_fourth>
 		<download_firmware>Скачать прошивку</download_firmware>
 		<line_sixth_part_one>Полное руководство для настройки Vita3K можно найти</line_sixth_part_one>
