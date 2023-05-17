@@ -25,7 +25,6 @@
 	</main_menubar>
 
 	<about name="Acerca de">
-		<vita3k_staff>Vita3K Staff</vita3k_staff>
 		<developers>Desarrolladores</developers>
 		<contributors>Ayudantes</contributors>
 	</about>
@@ -39,8 +38,6 @@
 		<history_version>Versión {}</history_version>
 		<information>Información</information>
 		<app_delete>Se eliminarán la aplicación y todos los datos relacionados, incluidos los datos guardados.</app_delete>
-		<app_delete_note>Deleting a application may take a while
-depending on its size and your hardware.</app_delete_note>
 		<save_delete>¿Quieres eliminar estos datos guardados?</save_delete>
 		<eligible>Elegible</eligible>
 		<ineligible>No elegible</ineligible>
@@ -64,12 +61,9 @@ Código del error: {}</an_error_occurred>
 		<delete>Eliminar</delete>
 		<file_corrupted>El archivo está dañado.</file_corrupted>
 		<microphone_disabled>Activa el micrófono.</microphone_disabled>
-		<no>No</no>
-		<ok>OK</ok>
 		<please_wait>Espera un momento...</please_wait>
 		<select_all>Seleccionar todo</select_all>
 		<select>Seleccionar</select>
-		<submit>Submit</submit>
 		<yes>Sí</yes>
 		<wday>
 			<day>domingo</day>
@@ -188,7 +182,6 @@ Código del error: {}</an_error_occurred>
 	</common>
 
 	<content_manager name="Gestor de contenido">
-		<search>Search</search>
 		<application name="Aplicaciones">
 			<delete>Se eliminarán las aplicaciones seleccionadas y todos los datos relacionados, incluidos los datos guardados.</delete>
 			<no_item>No hay elementos de contenido.</no_item>
@@ -267,12 +260,6 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 ¡Tu sistema Vita3K está listo!</completed_setup>
 		<select_language>Selecciona un idioma.</select_language>
 		<install_firmware>Instalar Firmware.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
 		<next>Siguiente</next>
 	</initial_setup>
 
@@ -291,7 +278,6 @@ No apagues el sistema ni cierres la aplicación.</warning_saving>
 					<updated>Actualizado</updated>
 					<size>Tamaño</size>
 					<version>Versión</version>
-					<content_id>Content ID</content_id>
 				</information>
 				<delete>Este tema se eliminará.</delete>
 			</theme>
@@ -359,6 +345,7 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Seleccionar usuario</select_user>
 		<create_user>Crear usuario</create_user>
 		<user_created>Se ha creado el siguiente usuario:</user_created>
 		<user_name_used>El nombre ya está en uso.</user_name_used>
@@ -370,7 +357,7 @@ Podrás conseguir trofeos si usas una aplicación compatible con la función de 
 		<user_delete_warn>Se eliminará el usuario.
 ¿Deseas continuar?</user_delete_warn>
 		<user_deleted>Usuario eliminado.</user_deleted>
-		<change_avatar>Cambiar avatar</change_avatar>
+		<choose_avatar>Elegir avatar</choose_avatar>
 		<name>Nombre</name>
 		<user>Usuario</user>
 		<confirm>Confirmar</confirm>
@@ -391,8 +378,6 @@ Cuando la descarga se haya completado, Vita3K se reiniciará automáticamente e 
 		<later_version_already_installed>Ya está instalada una versión posterior de Vita3K.</later_version_already_installed>
 		<latest_version_already_installed>Ya está instalada la versión más reciente de Vita3K.</latest_version_already_installed>
 		<new_features>Nuevas funciones de la versión {}</new_features>
-		<authors>Authors</authors>
-		<comments>Comments</comments>
 		<update>Actualizar</update>
 		<version>Versión {}</version>
 	</vita3k_update>

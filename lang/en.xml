@@ -550,7 +550,7 @@ You can earn trophies by using an application that supports the trophy feature.<
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Select your user</select_user>
+		<select_user>Select User</select_user>
 		<create_user>Create User</create_user>
 		<user_created>The following user has been created.</user_created>
 		<edit_user>Edit User</edit_user>
@@ -563,7 +563,7 @@ You can earn trophies by using an application that supports the trophy feature.<
 		<user_delete_warn>The user will be deleted.
 Are you sure you want to continue?</user_delete_warn>
 		<user_deleted>User deleted.</user_deleted>
-		<change_avatar>Change Avatar</change_avatar>
+		<choose_avatar>Choose Avatar</choose_avatar>
 		<reset_avatar>Reset Avatar</reset_avatar>
 		<name>Name</name>
 		<user>User</user>

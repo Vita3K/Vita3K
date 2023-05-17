@@ -32,8 +32,6 @@
 		<history_version>Sürüm {}</history_version>
 		<information>Bilgi</information>
 		<app_delete>Bu uygulama ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</app_delete>
-		<app_delete_note>Deleting a application may take a while
-depending on its size and your hardware.</app_delete_note>
 		<save_delete>Bu kayıtlı verileri silmek istiyor musunuz?</save_delete>
 		<eligible>Uygun</eligible> 
 		<ineligible>Uygun değil</ineligible>
@@ -55,13 +53,11 @@ Hata Kodu: {}</an_error_occurred>
 		<cancel>İptal</cancel>
 		<delete>Sil</delete>
 		<file_corrupted>Dosya bozuk.</file_corrupted>
-		<microphone_disabled>Enable the microphone.</microphone_disabled>
 		<no>Hayır</no>
 		<ok>Tamam</ok>
 		<please_wait>Lütfen bekleyin...</please_wait>
 		<select_all>Tümünü Seç</select_all>
 		<select>Seç</select>
-		<submit>Submit</submit>
 		<yes>Evet</yes>
 		<wday>
 			<day>Pazar</day>
@@ -180,7 +176,6 @@ Hata Kodu: {}</an_error_occurred>
 	</common>
 
 	<content_manager name="İçerik Yöneticisi">
-		<search>Search</search>
 		<application name="Uygulamalar">
 			<delete>Seçilen uygulamalar ve kayıtlı veriler dahil ilgili tüm veriler silinecek.</delete>
 			<no_item>İçerik öğesi yok.</no_item>
@@ -258,12 +253,6 @@ Sistemi veya uygulamayı kapatmayın.</warning_saving>
 Vita3K sisteminiz artık hazır!</completed_setup>
 		<select_language>Dil seçin.</select_language>
 		<install_firmware>Yazılım Yükle.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
 		<next>İleri</next>
 	</initial_setup>
 
@@ -349,19 +338,19 @@ Kupa özelliğini destekleyen bir uygulamayı kullanarak kupa kazanabilirsiniz.<
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Kullanıcıyı Seç</select_user>
+		<select_user>Kullanıcı Seç</select_user>
 		<create_user>Kullanıcı Oluştur</create_user>
 		<user_created>Şu kullanıcı oluşturuldu:</user_created>
 		<edit_user>Kullanıcı Düzenle</edit_user>
 		<user_name_used>Bu isim zaten kullanılıyor.</user_name_used>
-		<delete_user>Kullanıcıyı Sil</delete_user>
+		<delete_user>Kullanıcı Sil</delete_user>
 		<user_delete>Silmek istediğiniz kullanıcıyı seçin.</user_delete>
 		<user_delete_msg>Şu kullanıcı silinecek:</user_delete_msg>
 		<user_delete_message>Kullanıcıyı silerseniz, bu kullanıcının kayıtlı verileri, kupalar silinir.</user_delete_message>
 		<user_delete_warn>Kullanıcı silinecek.
 Devam etmek istediğinizden emin misiniz?</user_delete_warn>
 		<user_deleted>Kullanıcı Silindi.</user_deleted>
-		<change_avatar>Avatar Değiştir</change_avatar>
+		<choose_avatar>Avatar Seç</choose_avatar>
 		<reset_avatar>Avatar Sıfırla</reset_avatar>
 		<name>Ad</name>
 		<confirm>Onayla</confirm>

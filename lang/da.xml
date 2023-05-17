@@ -53,11 +53,9 @@ Fejlkode: {}</an_error_occurred>
 		<file_corrupted>Filen er defekt.</file_corrupted>
 		<microphone_disabled>Aktivér mikrofonen.</microphone_disabled>
 		<no>Nej</no>
-		<ok>OK</ok>
 		<please_wait>Vent venligst...</please_wait>
 		<select_all>Vælg alle</select_all>
 		<select>Vælg</select>
-		<submit>Submit</submit>
 		<yes>Ja</yes>
 		<wday>
 			<day>søndag</day>
@@ -176,7 +174,6 @@ Fejlkode: {}</an_error_occurred>
 	</common>
 	
 	<content_manager name="Indholdsadministrator">
-		<search>Search</search>
 		<application name="Programmer">
 			<delete>De valgte programmer og alle relaterede data, herunder gemte data, vil blive slettet.</delete>
 			<no_item>Der er ingen indholdsenheder.</no_item>
@@ -253,13 +250,6 @@ Undlad at slukke for systemet eller lukke programmet.</warning_saving>
 		<completed_setup>Nu har du udført opstartsopsætningen.
 Dit Vita3K-system er klart!</completed_setup>
 		<select_language>Vælg et sprog.</select_language>
-		<install_firmware>Install Firmware.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
 		<next>Næste</next>
 	</initial_setup>
 
@@ -278,7 +268,6 @@ Dit Vita3K-system er klart!</completed_setup>
 					<updated>Opdateret</updated>
 					<size>Størrelse</size>
 					<version>Version</version>
-					<content_id>Content ID</content_id>
 				</information>
 				<delete>Dette tema vil blive slettet.</delete>
 			</theme>
@@ -346,6 +335,7 @@ Du kan opnå trophies ved at bruge et program, der understøtter trophy-funkitio
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Vælg bruger</select_user>
 		<create_user>Opret bruger</create_user>
 		<user_created>Den følgende bruger er blevet oprettet:</user_created>
 		<user_name_used>Navent er allerede i brug.</user_name_used>
@@ -356,7 +346,7 @@ Du kan opnå trophies ved at bruge et program, der understøtter trophy-funkitio
 		<user_delete_warn>Brugeren vil bilve slettet.
 Er du sikker på, at du ønsker at fortsætte.</user_delete_warn>
 		<user_deleted>Bruger blev slettet.</user_deleted>
-		<change_avatar>Skift avatar</change_avatar>
+		<choose_avatar>Vælg avatar</choose_avatar>
 		<name>Navn</name>
 		<user>Bruger</user>
 		<confirm>Bekræft</confirm>
@@ -377,8 +367,6 @@ Efter download er udført, vil Vita3K automatisk genstarte og derefter installer
 		<later_version_already_installed>Den senere version af Vita3K er allerede installeret.</later_version_already_installed>
 		<latest_version_already_installed>Den seneste version af Vita3K er allerede installeret.</latest_version_already_installed>
 		<new_features>Nye funktioner i version {}</new_features>
-		<authors>Authors</authors>
-		<comments>Comments</comments>
 		<update>Opdater</update>
 		<version>Version {}</version>
 	</vita3k_update>

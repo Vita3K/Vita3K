@@ -87,7 +87,6 @@
 		<file_corrupted>文件已损坏。</file_corrupted>
 		<microphone_disabled>请启用麦克风。</microphone_disabled>
 		<no>否</no>
-		<ok>OK</ok>
 		<please_wait>请稍等…</please_wait>
 		<select_all>全部选择</select_all>
 		<select>选择</select>
@@ -518,7 +517,7 @@
 	<trophy_collection>
 		<search>搜索</search>
 		<delete_trophy>删除奖杯</delete_trophy>
-		<trophy_deleted>此用户已保存的奖杯信息将被删除。</trophy_deleted>
+		<trophy_deleted>该用户已保存的奖杯信息将被删除。</trophy_deleted>
 		<locked>未解锁</locked>
 		<details>详细信息</details>
 		<earned>获得日期</earned>
@@ -544,12 +543,12 @@
 		<delete_user>删除用户</delete_user>
 		<user_delete>请选择要删除的用户。</user_delete>
 		<user_delete_msg>将删除以下用户。</user_delete_msg>
-		<user_delete_message>若删除用户，此用户的保存数据、奖杯也会一并被删除。</user_delete_message>
+		<user_delete_message>若删除用户，该用户的保存数据、奖杯也会一并被删除。</user_delete_message>
 		<user_delete_warn>用户将被删除。
 确定要继续吗？</user_delete_warn>
 		<user_deleted>用户已删除。</user_deleted>
-		<change_avatar>变更虚拟形象</change_avatar>
-		<reset_avatar>重设虚拟形象</reset_avatar>
+		<choose_avatar>选择虚拟形象</choose_avatar>
+		<reset_avatar>重置虚拟形象</reset_avatar>
 		<name>名称</name>
 		<confirm>确定</confirm>
 		<automatic_user_login>自动登录用户</automatic_user_login>

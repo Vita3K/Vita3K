@@ -14,7 +14,7 @@
 		</emulation>
 		<configuration name="설정">
 			<settings>설정</settings>
-			<user_management>사용자 관리</user_management>
+			<user_management>유저 관리</user_management>
 		</configuration>
 		<controls name="컨트롤">
 			<keyboard_controls>키보드 컨트롤</keyboard_controls>
@@ -42,7 +42,6 @@
 		<edit>편집</edit>
 		<remove>삭제</remove>
 		<open_folder>폴더 열기</open_folder>
-		<addcont>DLC</addcont>
 		<license>라이센스</license>
 		<shaders_cache>셰이더 캐시</shaders_cache>
 		<shaders_log>셰이더 로그</shaders_log>
@@ -70,11 +69,9 @@
 		<file_corrupted>파일이 손상되어 있습니다.</file_corrupted>
 		<microphone_disabled>마이크를 활성화해 주십시오.</microphone_disabled>
 		<no>아니요</no>
-		<ok>OK</ok>
 		<please_wait>잠시 기다려 주십시오...</please_wait>
 		<select_all>모두 선택</select_all>
 		<select>선택</select>
-		<submit>Submit</submit>
 		<yes>예</yes>
 		<wday>
 			<day>일요일</day>
@@ -359,23 +356,23 @@
 	</trophy_collection>
 
 	<user_management>
-		<select_user>사용자를 선택하세요</select_user>
-		<create_user>사용자 생성</create_user>
-		<user_created>해당 사용자가 생성되었습니다.</user_created>
-		<edit_user>사용자 편집</edit_user>
-		<user_name_used>이미 사용하고 있는 이름입니다.</user_name_used>
-		<delete_user>사용자 삭제</delete_user>
-		<user_delete>지우려고 하는 사용자를 선택하세요.</user_delete>
-		<user_delete_msg>해당 사용자가 삭제됩니다.</user_delete_msg>
-		<user_delete_message>사용자를 삭제하게 되면, 사용자의 저장된 데이터, 트로피가 삭제됩니다.</user_delete_message>
-		<user_delete_warn>사용자가 삭제됩니다.
-계속 하시겠습니까?</user_delete_warn>
-		<user_deleted>사용자가 삭제되었습니다.</user_deleted>
-		<change_avatar>아바타 변경</change_avatar>
+		<select_user>유저 선택</select_user>
+		<create_user>유저 작성하기</create_user>
+		<user_created>아래의 유저를 작성했습니다.</user_created>
+		<edit_user>유저 편집</edit_user>
+		<user_name_used>이미 사용중인 이름입니다.</user_name_used>
+		<delete_user>유저 삭제하기</delete_user>
+		<user_delete>삭제할 유저를 선택해 주세요.</user_delete>
+		<user_delete_msg>아래의 유저를 삭제합니다.</user_delete_msg>
+		<user_delete_message>유저를 삭제하면 해당 유저의 저장 데이터,트로피 클립도 삭제됩니다.</user_delete_message>
+		<user_delete_warn>유저를 삭제합니다.
+정말 계속할까요?</user_delete_warn>
+		<user_deleted>유저를 삭제했습니다.</user_deleted>
+		<choose_avatar>아바타 선택하기</choose_avatar>
 		<reset_avatar>아바타 리셋</reset_avatar>
 		<name>이름</name>
 		<confirm>확인</confirm>
-		<automatic_user_login>자동 로그인</automatic_user_login>
+		<automatic_user_login>유저를 자동 로그인</automatic_user_login>
 	</user_management>
 
 	<vita3k_update name="Vita3K 업데이트">

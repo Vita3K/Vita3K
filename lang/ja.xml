@@ -84,7 +84,6 @@
 		<file_corrupted>ファイルが壊れています。</file_corrupted>
 		<microphone_disabled>マイクを有効にしてください。</microphone_disabled>
 		<no>いいえ</no>
-		<ok>OK</ok>
 		<please_wait>しばらくお待ちください...</please_wait>
 		<select_all>すべて選択</select_all>
 		<select>選択</select>
@@ -420,7 +419,6 @@ Vita3Kをお楽しみください。</completed_setup>
 			<control_setting>コントロール設定でキーを変更できます</control_setting>
 			<firmware_not_detected>ファームウェアが検出されませんでした。インストールを強くお勧めします</firmware_not_detected>
 			<firmware_font_not_detected>フォントのファームウェアが検出されませんでした。Liveareaのフォントのために、インストールを推奨します</firmware_font_not_detected>
-			<live_area_help>Live Area Help</live_area_help>
 			<browse_app>アプリリストの閲覧</browse_app>
 			<browse_app_control>方向キー、左ステック、ホイールの上下またはスライダー</browse_app_control>
 			<start_app>アプリの開始</start_app>
@@ -429,7 +427,6 @@ Vita3Kをお楽しみください。</completed_setup>
 			<show_hide_control>PSボタンを押す</show_hide_control>
 			<exit_livearea>Liveareaを閉じる</exit_livearea>
 			<exit_livearea_control>Escを押すか〇ボタンを押す</exit_livearea_control>
-			<manual_help>Manual Help</manual_help>
 			<browse_page>ページの閲覧</browse_page>
 			<browse_page_control>方向キー、左ステック、ホイールの上下またはスライダーまたは&lt;/&gt;</browse_page_control>
 			<hide_show>ボタンの表示/非表示</hide_show>
@@ -539,7 +536,7 @@ Vita3Kをお楽しみください。</completed_setup>
 		<user_delete_warn>ユーザーを削除します。
 本当によろしいですか？</user_delete_warn>
 		<user_deleted>ユーザーを削除しました。</user_deleted>
-		<change_avatar>アバターを変更する</change_avatar>
+		<choose_avatar>アバターを選ぶ</choose_avatar>
 		<reset_avatar>アバターをリセットする</reset_avatar>
 		<name>名前</name>
 		<confirm>確定</confirm>

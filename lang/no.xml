@@ -49,11 +49,9 @@ Feilkode: {}</an_error_occurred>
 		<file_corrupted>Filen er korrupt.</file_corrupted>
 		<microphone_disabled>Aktiver mikrofonen.</microphone_disabled>
 		<no>Nei</no>
-		<ok>OK</ok>
 		<please_wait>Vennligst vent...</please_wait>
 		<select_all>Velg alle</select_all>
 		<select>Velg</select>
-		<submit>Submit</submit>
 		<yes>Ja</yes>
 		<wday>
 			<day>Søndag</day>
@@ -172,7 +170,6 @@ Feilkode: {}</an_error_occurred>
 	</common>
 
 	<content_manager name="Innholdsadministrator">
-		<search>Search</search>
 		<application name="Programmer">
 			<delete>De valgte programmene og alle de tilknyttede dataene, inkludert lagreda data, vil bli slettet.</delete>
 			<no_item>Det er ingen innholdselementer.</no_item>
@@ -249,13 +246,6 @@ Slå ikke av systemet og lukk ikke programmet.</warning_saving>
 		<completed_setup>Du har nå fullført oppstartsinnstillingen.
 Vita3K-systemet ditt er klart!</completed_setup>
 		<select_language>Velg et språk.</select_language>
-		<install_firmware>Install Firmware.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
 		<next>Neste</next>
 	</initial_setup>
 
@@ -341,6 +331,7 @@ Du kan Oppnå trophies ved å bruke et program som Støtter trophy-funksjonen.</
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Velg bruker</select_user>
 		<create_user>Opprett bruker</create_user>
 		<user_created>Følgende bruker er opprettet:</user_created>
 		<user_name_used>Navnet er allerede i bruk.</user_name_used>
@@ -351,7 +342,7 @@ Du kan Oppnå trophies ved å bruke et program som Støtter trophy-funksjonen.</
 		<user_delete_warn>Brukeren vil bli slettet.
 Er du sikker på at du vil fortsette?</user_delete_warn>
 		<user_deleted>Bruker slettet.</user_deleted>
-		<change_avatar>Endre avatar</change_avatar>
+		<choose_avatar>Velg avatar</choose_avatar>
 		<name>Nanv</name>
 		<user>Bruker</user>
 		<confirm>Bekreft</confirm>

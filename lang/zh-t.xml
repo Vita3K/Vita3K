@@ -87,7 +87,6 @@
 		<file_corrupted>檔案已毀損。</file_corrupted>
 		<microphone_disabled>請啟用麥克風。</microphone_disabled>
 		<no>否</no>
-		<ok>OK</ok>
 		<please_wait>請稍候……</please_wait>
 		<select_all>全選</select_all>
 		<select>選擇</select>
@@ -516,7 +515,7 @@
 	<trophy_collection>
 		<search>搜尋</search>
 		<delete_trophy>刪除獎盃</delete_trophy>
-		<trophy_deleted>刪除此使用者已保存的獎杯資訊。</trophy_deleted>
+		<trophy_deleted>刪除該使用者已保存的獎杯資訊。</trophy_deleted>
 		<locked>未解鎖</locked>
 		<details>詳細內容</details>
 		<earned>獲得日</earned>
@@ -542,12 +541,12 @@
 		<delete_user>刪除使用者</delete_user>
 		<user_delete>請選擇要刪除的使用者。</user_delete>
 		<user_delete_msg>將刪除以下使用者。</user_delete_msg>
-		<user_delete_message>若刪除使用者，此使用者的保存資料、獎盃也會一併被刪除。</user_delete_message>
+		<user_delete_message>若刪除使用者，該使用者的保存資料、獎盃也會一併被刪除。</user_delete_message>
 		<user_delete_warn>刪除使用者。
 確定要繼續嗎？</user_delete_warn>
 		<user_deleted>已刪除使用者。</user_deleted>
-		<change_avatar>變更個人造型</change_avatar>
-		<reset_avatar>重設個人造型</reset_avatar>
+		<choose_avatar>選擇個人造型</choose_avatar>
+		<reset_avatar>重置個人造型</reset_avatar>
 		<name>名稱</name>
 		<confirm>確定</confirm>
 		<automatic_user_login>自動登入使用者</automatic_user_login>

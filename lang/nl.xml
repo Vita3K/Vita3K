@@ -32,8 +32,6 @@
 		<history_version>Versie {}</history_version>
 		<information>Informatie</information>
 		<app_delete>Deze applicatie en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</app_delete>
-		<app_delete_note>Deleting a application may take a while
-depending on its size and your hardware.</app_delete_note>
 		<save_delete>Wil je deze opgeslagen data verwijderen?</save_delete>
 		<eligible>Geschikt</eligible>
 		<ineligible>Niet geschikt</ineligible>
@@ -57,11 +55,9 @@ Foutcode: {}</an_error_occurred>
 		<file_corrupted>Het bestand is beschadigd.</file_corrupted>
 		<microphone_disabled>Schakel de microfoon in.</microphone_disabled>
 		<no>Nee</no>
-		<ok>OK</ok>
 		<please_wait>Een ogenblik geduld...</please_wait>
 		<select_all>Alles selecteren</select_all>
 		<select>Selecteren</select>
-		<submit>Submit</submit>
 		<yes>Ja</yes>
 		<wday>
 			<day>zondag</day>
@@ -193,7 +189,6 @@ Foutcode: {}</an_error_occurred>
 	</compatibility>
 
 	<content_manager name="Content manager">
-		<search>Search</search>
 		<application name="Applicaties">
 			<delete>De geselecteerde applicaties en alle gerelateerde data, inclusief opgeslagen data, worden verwijderd.</delete>
 			<no_item>Er zijn geen content-items.</no_item>
@@ -271,12 +266,6 @@ Schakel het systeem niet uit en sluit de applicatie niet.</warning_saving>
 Je Vita3K-systeem is gereed!</completed_setup>
 		<select_language>Selecteer een taal.</select_language>
 		<install_firmware>Installeer Firmware.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
 		<next>Volgende</next>
 	</initial_setup>
 
@@ -362,6 +351,7 @@ Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefuncti
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Gebruiker selecteren</select_user>
 		<create_user>Gebruiker maken</create_user>
 		<user_created>De volgende gebruiker is gemaakt:</user_created>
 		<edit_user>Gebruiker bewerken</edit_user>
@@ -373,7 +363,7 @@ Je kunt trofeeën verdienen door een applicatie te gebruiken die de trofeefuncti
 		<user_delete_warn>De gebruiker wordt verwijderd.
 Weet je zeker dat je doorgaan?</user_delete_warn>
 		<user_deleted>Gebruiker verwijderd.</user_deleted>
-		<change_avatar>Avatar wijzigen</change_avatar>
+		<choose_avatar>Avatar kiezen</choose_avatar>
 		<name>Naam</name>
 		<user>Gebruiker</user>
 		<confirm>Bevestigen</confirm>

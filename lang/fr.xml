@@ -59,8 +59,6 @@
 		<history_version>Version {}</history_version>
 		<information>Informations</information>
 		<app_delete>Cette application et toutes les données associées, y compris les données sauvegardées, vont être supprimées.</app_delete>
-		<app_delete_note>Deleting a application may take a while
-depending on its size and your hardware.</app_delete_note>
 		<save_delete>Supprimer ces données sauvegardées ?</save_delete>
  		<eligible>Autorisé</eligible>
 		<ineligible>Non autorisé</ineligible>
@@ -85,11 +83,9 @@ Code d'erreur: {}</an_error_occurred>
 		<file_corrupted>Le fichier est corrompu.</file_corrupted>
 		<microphone_disabled>Activez le microphone.</microphone_disabled>
 		<no>Non</no>
-		<ok>OK</ok>
 		<please_wait>Merci de patienter...</please_wait>
 		<select_all>Sélectionner tout</select_all>
 		<select>Sélectionner</select>
-		<submit>Submit</submit>
 		<yes>Oui</yes>
 		<wday>
 			<day>dimanche</day>
@@ -442,12 +438,12 @@ Pour obtenir des trophées, utilisez une application compatible avec cette fonct
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Sélectionnez votre utilisateur</select_user>
+		<select_user>Sélectionnez un utilisateur</select_user>
 		<create_user>Créer un utilisateur</create_user>
-		<user_created>L'utilisateur suivant a été créés :</user_created>
+		<user_created>L'utilisateur suivant a été créé :</user_created>
 		<edit_user>Modifier un utilisateur</edit_user>
 		<open_user_folder>Ouvrir le dossier de l'utilisateur</open_user_folder>
-		<user_name_used>! Ce nom est déjà utilisé.</user_name_used>
+		<user_name_used>Ce nom est déjà utilisé.</user_name_used>
 		<delete_user>Supprimer un utilisateur</delete_user>
 		<user_delete>Sélectionnez l'utilisateur que vous souhaitez supprimer.</user_delete>
 		<user_delete_msg>L'utilisateur suivant va être supprimé.</user_delete_msg>
@@ -455,7 +451,7 @@ Pour obtenir des trophées, utilisez une application compatible avec cette fonct
 		<user_delete_warn>L'utilisateur va être supprimé.
 Voulez-vous vraiment continuer?</user_delete_warn>
 		<user_deleted>Utilisateur supprimé.</user_deleted>
-		<change_avatar>Changer d'avatar</change_avatar>
+		<choose_avatar>Choisir un avatar</choose_avatar>
 		<reset_avatar>Réinitialiser l'avatar</reset_avatar>
 		<name>Nom</name>
 		<user>Utilisateur</user>
