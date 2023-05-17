@@ -29,8 +29,6 @@
 		<history_version>Versão {}</history_version>
 		<information>Informações</information>
 		<app_delete>Esta aplicação e todos os dados relacionados, incluindo dados guardados, serão elminados.</app_delete>
-		<app_delete_note>Deleting a application may take a while
-depending on its size and your hardware.</app_delete_note>
 		<save_delete>Pretende elminar estes dados guardados?</save_delete>
 		<eligible>Elegível</eligible>
 		<ineligible>Inelegível</ineligible>
@@ -54,11 +52,9 @@ Código de erro: {}</an_error_occurred>
 		<file_corrupted>O ficheiro está corrompido.</file_corrupted>
 		<microphone_disabled>Ative o microfone.</microphone_disabled>
 		<no>Não</no>
-		<ok>OK</ok>
 		<please_wait>Por favor aguarde...</please_wait>
 		<select_all>Selecionar Todos</select_all>
 		<select>Selecionar</select>
-		<submit>Submit</submit>
 		<yes>Sim</yes>
 		<wday>
 			<day>domingo</day>
@@ -177,7 +173,6 @@ Código de erro: {}</an_error_occurred>
 	</common>
 
 	<content_manager name="Gestor de conteúdo">
-		<search>Search</search>
 		<application name="Aplicações">
 			<delete>As aplicações selecionadas e todos os dados relacionados, incluindo dados guardados, serão eliminados.</delete>
 			<no_item>Não há itens de conteúdo.</no_item>
@@ -254,13 +249,6 @@ Não desligue o sistema nem feche a aplicação.</warning_saving>
 		<completed_setup>Concluiu a configuração inicial.
 O seu sistema Vita3K está pronto!</completed_setup>
 		<select_language>Selecione um idioma.</select_language>
-		<install_firmware>Install Firmware.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
 		<next>Seguinte</next>
 	</initial_setup>
 
@@ -346,6 +334,7 @@ Pode ganhar troféus utilizando uma aplicações que suporte a funcionalidade de
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Selecionar utilizador</select_user>
 		<create_user>Criar utilizador</create_user>
 		<user_created>O seguinte utilizador foi criado:</user_created>
 		<edit_user>Editar utilizador</edit_user>
@@ -357,7 +346,7 @@ Pode ganhar troféus utilizando uma aplicações que suporte a funcionalidade de
 		<user_delete_warn>O utilizador será eliminado.
 Tem a certeza de que pretende continuar?</user_delete_warn>
 		<user_deleted>Utilizador eliminado.</user_deleted>
-		<change_avatar>Alterar avatar</change_avatar>
+		<choose_avatar>Escolher avatar</choose_avatar>
 		<name>Nome</name>
 		<user>Utilizador</user>
 		<confirm>Confirmar</confirm>

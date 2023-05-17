@@ -472,7 +472,7 @@ struct LangState {
         { "updated", "Updated" }
     };
     std::map<std::string, std::string> user_management = {
-        { "select_user", "Select your user" },
+        { "select_user", "Select User" },
         { "create_user", "Create User" },
         { "user_created", "The following user has been created." },
         { "edit_user", "Edit User" },
@@ -484,7 +484,7 @@ struct LangState {
         { "user_delete_message", "If you delete the user, that user's saved data, trophies will be deleted." },
         { "user_delete_warn", "The user will be deleted.\nAre you sure you want to continue?" },
         { "user_deleted", "User deleted." },
-        { "change_avatar", "Change Avatar" },
+        { "choose_avatar", "Choose Avatar" },
         { "reset_avatar", "Reset Avatar" },
         { "name", "Name" },
         { "user", "User" },

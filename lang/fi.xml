@@ -49,11 +49,9 @@ Virhekoodi: {}</an_error_occurred>
 		<file_corrupted>Tiedosto on vioittunt.</file_corrupted>
 		<microphone_disabled>Ota mikrofoni käyttöön.</microphone_disabled>
 		<no>Ei</no>
-		<ok>OK</ok>
 		<please_wait>Odota hetki...</please_wait>
 		<select_all>Valitse kaikki</select_all>
 		<select>Valitse</select>
-		<submit>Submit</submit>
 		<yes>Kyllä</yes>
 		<wday>
 			<day>sunnuntai</day>
@@ -172,7 +170,6 @@ Virhekoodi: {}</an_error_occurred>
 	</common>
 
 	<content_manager name="Sisällönhallinta">
-		<search>Search</search>
 		<application name="Sovellukset">
 			<delete>Valitut sovellukset ja kaikki siihin liittyvät tiedot, mukaan lukien tallennetut tiedot, poistetaan.</delete>
 			<no_item>Sisältökohteita ei ole.</no_item>
@@ -249,13 +246,6 @@ Muistikortilla ei ole tarpeeksi vapaata tilaa.</could_not_save>
 		<completed_setup>Olet nyt saanut valmiiksi alkumäärityksen.
 Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 		<select_language>Valitse kieli.</select_language>
-		<install_firmware>Install Firmware.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
 		<next>Seuraava</next>
 	</initial_setup>
 
@@ -274,7 +264,6 @@ Vita3K-järjestelmäsi on nyt käyttövalmis!</completed_setup>
 					<updated>Päivitetty</updated>
 					<size>Koko</size>
 					<version>Versio</version>
-					<content_id>Content ID</content_id>
 				</information>
 				<delete>Tämä teema poistetaan.</delete>
 			</theme>
@@ -342,6 +331,7 @@ Voit ansaita trophyjä käyttämällä trophy-ominaisuutta tukevaa sovellusta.</
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Valitse käyttäjä</select_user>
 		<create_user>Luo käyttäjä</create_user>
 		<user_created>Seuraava käyttäjä on luotu:</user_created>
 		<delete_user>Poista käyttäjä</delete_user>
@@ -351,7 +341,7 @@ Voit ansaita trophyjä käyttämällä trophy-ominaisuutta tukevaa sovellusta.</
 		<user_delete_warn>Käyttäjä poistetaan.
 Oletko varma, että haluat jatkaa?</user_delete_warn>
 		<user_deleted>Käyttäjä on poistettu.</user_deleted>
-		<change_avatar>Vaihda avatar</change_avatar>
+		<choose_avatar>Valitse avatar</choose_avatar>
 		<name>Nimi</name>
 		<user>Kayttaja</user>
 		<confirm>Vahvista</confirm>

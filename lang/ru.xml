@@ -85,7 +85,6 @@
 		<file_corrupted>Файл поврежден.</file_corrupted>
 		<microphone_disabled>Включите микрофон.</microphone_disabled>
 		<no>Нет</no>
-		<ok>OK</ok>
 		<please_wait>Подождите...</please_wait>
 		<select_all>Выбрать все</select_all>
 		<select>Выбрать</select>
@@ -550,10 +549,10 @@
 	</trophy_collection>
 
 	<user_management>
-		<select_user>Выберите пользователя</select_user>
-		<create_user>Создать 
+		<select_user>Выбрать пользователя</select_user>
+		<create_user>Создание 
 пользователя</create_user>
-		<user_created>Создан пользователь:</user_created>
+		<user_created>Создан следующий пользователь:</user_created>
 		<edit_user>Изменить пользователя</edit_user>
 		<open_user_folder>Открыть папку пользователя</open_user_folder>
 		<user_name_used>Это имя уже используется.</user_name_used>
@@ -561,11 +560,11 @@
 пользователя</delete_user>
 		<user_delete>Выберите пользователя, которого хотите удалить.</user_delete>
 		<user_delete_msg>Выбранный пользователь был удален:</user_delete_msg>
-		<user_delete_message>При удалении пользователя, его сохранённые данные, призы будут удалены.</user_delete_message>
+		<user_delete_message>При удалении пользователя, его сохраненные данные, призы будут удалены.</user_delete_message>
 		<user_delete_warn>Пользователь будет удален.
 Продолжить?</user_delete_warn>
 		<user_deleted>Пользователь удален.</user_deleted>
-		<change_avatar>Сменить аватар</change_avatar>
+		<choose_avatar>Выбрать аватар</choose_avatar>
 		<reset_avatar>Сбросить аватар</reset_avatar>
 		<name>Название</name>
 		<confirm>Подтвердить</confirm>

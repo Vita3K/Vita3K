@@ -412,9 +412,9 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             init_avatar(gui, emuenv, "temp", "default");
         }
         draw_avatar("temp", false, AVATAR_POS);
-        const auto CHANGE_AVATAR_BTN_SIZE = ImGui::CalcTextSize(lang["change_avatar"].c_str()).x + (ImGui::GetStyle().FramePadding.x * 2.f);
-        ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + (AVATAR_SIZE.x / 2.f) - (CHANGE_AVATAR_BTN_SIZE / 2.f), AVATAR_POS.y + AVATAR_SIZE.y));
-        if (ImGui::Button(lang["change_avatar"].c_str(), ImVec2(CHANGE_AVATAR_BTN_SIZE, BUTTON_SIZE.y))) {
+        const auto CHOOSE_AVATAR_BTN_SIZE = ImGui::CalcTextSize(lang["choose_avatar"].c_str()).x + (ImGui::GetStyle().FramePadding.x * 2.f);
+        ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + (AVATAR_SIZE.x / 2.f) - (CHOOSE_AVATAR_BTN_SIZE / 2.f), AVATAR_POS.y + AVATAR_SIZE.y));
+        if (ImGui::Button(lang["choose_avatar"].c_str(), ImVec2(CHOOSE_AVATAR_BTN_SIZE, BUTTON_SIZE.y))) {
             std::filesystem::path avatar_path = "";
             host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(avatar_path, { { "Image file", { "bmp", "gif", "jpg", "png", "tif" } } });
 

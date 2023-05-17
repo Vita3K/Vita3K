@@ -29,8 +29,6 @@
 		<history_version>Wersja {}</history_version>
 		<information>Informacje</information>
 		<app_delete>Aplikacja i wszystkie powiązane dane, w tym zapisane dane, zostaną usunięte.</app_delete>
-		<app_delete_note>Deleting a application may take a while
-depending on its size and your hardware.</app_delete_note>
 		<save_delete>Czy chcesz usunąć te zapisane dane?</save_delete>
 		<eligible>Spełnia warunki</eligible>
 		<ineligible>Nie spełnia warunków</ineligible>
@@ -51,11 +49,9 @@ Kod błędu: {}</an_error_occurred>
 		<file_corrupted>Plik jest uszkodzony.</file_corrupted>
 		<microphone_disabled>Włącz mikrofon.</microphone_disabled>
 		<no>Nie</no>
-		<ok>OK</ok>
 		<please_wait>Czekaj...</please_wait>
 		<select_all>Zaznacz wszystko</select_all>
 		<select>Zaznacz</select>
-		<submit>Submit</submit>
 		<yes>Tak</yes>
 		<wday>
 			<day>niedziela</day>
@@ -187,7 +183,6 @@ Kod błędu: {}</an_error_occurred>
 	</compatibility>
 
 	<content_manager name="Menedźer zawartości">
-		<search>Search</search>
 		<application name="Aplikacje">
 			<delete>Wybrane aplikacje i wszystkie powiązane dane, w tym zapisane dane, zostaną usunięte.</delete>
 			<no_item>Bark elementów zawartości.</no_item>
@@ -264,13 +259,6 @@ Nie wyłączaj systemu ani nie zamykaj aplikacji.</warning_saving>
 		<completed_setup>Konfiguracja początkowa została ukończona.
 System Vita3K jest gotowy!</completed_setup>
 		<select_language>Wybierz język.</select_language>
-		<install_firmware>Install Firmware.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
 		<next>Dalej</next>
 	</initial_setup>
 
@@ -289,7 +277,6 @@ System Vita3K jest gotowy!</completed_setup>
 					<updated>Zaktualizowano</updated>
 					<size>Rozmiar</size>
 					<version>Wersja</version>
-					<content_id>Content ID</content_id>
 				</information>
 				<delete>Ten motyw zostanie usunięty.</delete>
 			</theme>
@@ -357,6 +344,7 @@ Trofea można zdobywać, korzystając z aplikacji obsługującej funkcję trofe�
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Zaznacz użytkownika</select_user>
 		<create_user>Utwórz użytkownika</create_user>
 		<user_created>Został utworzony następujący użytkownik:</user_created>
 		<user_name_used>Ta nazwa jest już używana.</user_name_used>
@@ -367,7 +355,7 @@ Trofea można zdobywać, korzystając z aplikacji obsługującej funkcję trofe�
 		<user_delete_warn>Użytkownik zostanie usunięty.
 Czy na pewno chcesz kontynuować?</user_delete_warn>
 		<user_deleted>Usunięto użytkownika.</user_deleted>
-		<change_avatar>Zmień awatara</change_avatar>
+		<choose_avatar>Wybierz awatara</choose_avatar>
 		<name>Nazwa</name>
 		<user>Uzytkownik</user>
 		<confirm>Potwierdź</confirm>

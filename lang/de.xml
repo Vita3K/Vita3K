@@ -25,13 +25,6 @@
 	</main_menubar>
 
 	<about name="Über">
-		<vita3k>Vita3K: a PS Vita/PS TV Emulator. The world's first functional PS Vita/PS TV emulator.</vita3k>
-		<about_vita3k>Vita3K is an experimental open-source PlayStation Vita/PlayStation TV emulator written in C++ for Windows, Linux, macOS and Android operating systems.</about_vita3k>
-		<github_website>If you're interested in contributing, check out our GitHub:</github_website>
-		<vita3k_website>Visit our website for more info:</vita3k_website>
-		<vita3k_staff>Vita3K Staff</vita3k_staff>
-		<developers>Developers</developers>
-		<contributors>Contributors</contributors>
 	</about>
 
 	<app_context>
@@ -39,8 +32,6 @@
 		<history_version>Version {}</history_version>
 		<information>Information</information>
 		<app_delete>Diese Anwendung, sowie alle damit verbundenen Dateien und Nutzerdaten, werden gelöscht.</app_delete>
-		<app_delete_note>Deleting a application may take a while
-depending on its size and your hardware.</app_delete_note>
 		<save_delete>Willst du die Nutzerdaten löschen?</save_delete>
 		<eligible>berechtigt</eligible>
 		<ineligible>nicht berechtigt</ineligible>
@@ -64,11 +55,9 @@ Fehlercode: {}</an_error_occurred>
 		<file_corrupted>Die Datei ist beschädigt.</file_corrupted>
 		<microphone_disabled>Aktiviere das Mikrofon.</microphone_disabled>
 		<no>Nein</no>
-		<ok>OK</ok>
 		<please_wait>Warte bitte ...</please_wait>
 		<select_all>Alle auswählen</select_all>
 		<select>Auswählen</select>
-		<submit>Submit</submit>
 		<yes>Ja</yes>
 		<wday>
 			<day>Sonntag</day>
@@ -187,7 +176,6 @@ Fehlercode: {}</an_error_occurred>
 	</common>
 
 	<content_manager name="Inhaltsmanager">
-		<search>Search</search>
 		<application name="Anwendungen">
 			<delete>Die ausgewählten Anwendungen und alle dazugehörigen Daten, einschließlich gespeicherter Daten, werden gelöscht.</delete>
 			<no_item>Es gibt keine Inhaltsobjekte.</no_item>
@@ -363,7 +351,7 @@ Du kannst Trophäen in Anwendungen verdienen, die die Trophäen-Funktionen unter
 		<user_delete_warn>Der Benutzer wird gelöscht.
 Wirklich fortfahren?</user_delete_warn>
 		<user_deleted>Benutzer gelöscht.</user_deleted>
-		<change_avatar>Avatar ändere</change_avatar>
+		<choose_avatar>Avatar auswählen</choose_avatar>
 		<reset_avatar>Avatar zurücksetzen</reset_avatar>
 		<name>Name</name>
 		<user>Benutzer</user>

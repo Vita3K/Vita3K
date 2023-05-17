@@ -32,8 +32,6 @@
 		<history_version>Versão {}</history_version>
 		<information>Informações</information>
 		<app_delete>Esse aplicativo e todos os dados relacionados, inclusive dados salvos, serão excluídos.</app_delete>
-		<app_delete_note>Deleting a application may take a while
-depending on its size and your hardware.</app_delete_note>
 		<save_delete>Deseja excluir esses dados salvos?</save_delete>
 		<eligible>Qualificado</eligible>
 		<ineligible>Não qualificado</ineligible>
@@ -57,11 +55,9 @@ Código de erro: {}</an_error_occurred>
 		<file_corrupted>O arquivo está corrompido.</file_corrupted>
 		<microphone_disabled>Ative o microfone.</microphone_disabled>
 		<no>Não</no>
-		<ok>OK</ok>
 		<please_wait>Aguarde...</please_wait>
 		<select_all>Selecionar tudo</select_all>
 		<select>Selecionar</select>
-		<submit>Submit</submit>
 		<yes>Sim</yes>
 		<wday>
 			<day>domingo</day>
@@ -193,7 +189,6 @@ Código de erro: {}</an_error_occurred>
 	</compatibility>
 
 	<content_manager name="Gerenciador de conteúdo">
-		<search>Search</search>
 		<application name="Aplicativos">
 			<delete>Os aplicativos selecionados e todos os dados relacionados, inclusive dados salvos, serão excluídos.</delete>
 			<no_item>Não há nenhum itens de conteúdo.</no_item>
@@ -271,12 +266,6 @@ Não desligue o sistema nem feche o aplicativo.</warning_saving>
 O seu sistema Vita3K está pronto!</completed_setup>
 		<select_language>Selecione um idioma.</select_language>
 		<install_firmware>Instalar firmware.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
 		<next>Próximo</next>
 	</initial_setup>
 
@@ -362,6 +351,7 @@ Você pode conquistar troféus usando um aplicativo compatível com o recurso de
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Selecionar usuário</select_user>
 		<create_user>Criar usuário</create_user>
 		<user_created>O usuários a seguir foi criado:</user_created>
 		<edit_user>Editar usuário</edit_user>
@@ -373,7 +363,7 @@ Você pode conquistar troféus usando um aplicativo compatível com o recurso de
 		<user_delete_warn>O usuário será excluído.
 Tem certeza de que deseja continuar?</user_delete_warn>
 		<user_deleted>Usuário excluído.</user_deleted>
-		<change_avatar>Alterar avatar</change_avatar>
+		<choose_avatar>Escolher avatar</choose_avatar>
 		<name>Nome</name>
 		<user>Usuario</user>
 		<confirm>Confirmar</confirm>

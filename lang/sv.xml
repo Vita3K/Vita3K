@@ -29,8 +29,6 @@
 		<history_version>Version {}</history_version>
 		<information>Information</information>
 		<app_delete>Den här applikationen och alla tillhörande data, inklusive sparade data, kommer att raderas.</app_delete>
-		<app_delete_note>Deleting a application may take a while
-depending on its size and your hardware.</app_delete_note>
 		<save_delete>Vill du radera dessa sparade data?</save_delete>
 		<eligible>Möjligt</eligible>
 		<ineligible>Inte möjligt</ineligible>
@@ -51,11 +49,9 @@ Felkod: {}</an_error_occurred>
 		<file_corrupted>Filen är skadad.</file_corrupted>
 		<microphone_disabled>Aktivera mikrofonen.</microphone_disabled>
 		<no>Nej</no>
-		<ok>OK</ok>
 		<please_wait>Vänta...</please_wait>
 		<select_all>Välj alla</select_all>
 		<select>Välj</select>
-		<submit>Submit</submit>
 		<yes>Ja</yes>
 		<wday>
 			<day>söndag</day>
@@ -174,7 +170,6 @@ Felkod: {}</an_error_occurred>
 	</common>
 
 	<content_manager name="Innehållshanterare">
-		<search>Search</search>
 		<application name="Applikationer">
 			<delete>De markerade applikationerna och alla tillhörande data, inklusive sparade data, kommer att raderas.</delete>
 			<no_item>Det finns inga innehållsobjekt.</no_item>
@@ -251,13 +246,6 @@ Stäng inte av systemet och stäng inte applikationen.</warning_saving>
 		<completed_setup>Du har slutfört den första inställningen.
 Ditt Vita3K-system är redo!</completed_setup>
 		<select_language>Välj ett språk.</select_language>
-		<install_firmware>Install Firmware.</install_firmware>
-		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
-		<installed>Installed:</installed>
-		<download_firmware>Download Firmware</download_firmware>
-		<download_font_package>Download Font Package</download_font_package>
-		<install_firmware_file>Install Firmware File</install_firmware_file>
-		<completed>Completed.</completed>
 		<next>Nästa</next>
 	</initial_setup>
 
@@ -344,6 +332,7 @@ Du kan få trophies om du använder en applikation som stder trophy-funktionen.<
 	</trophy_collection>
 
 	<user_management>
+		<select_user>Välj användare</select_user>
 		<create_user>Skapa användare</create_user>
 		<user_created>Följande användare har skapats:</user_created>
 		<user_name_used>Namnet finns redan.</user_name_used>
@@ -354,7 +343,7 @@ Du kan få trophies om du använder en applikation som stder trophy-funktionen.<
 		<user_delete_warn>Användare kommer att tas bort.
 Är du säker på att du vill fortsetta?</user_delete_warn>
 		<user_deleted>Användaren har tagits bort.</user_deleted>
-		<change_avatar>Ändra avatar</change_avatar>
+		<choose_avatar>Välj avatar</choose_avatar>
 		<name>Namn</name>
 		<confirm>Bekräfta</confirm>
 	</user_management>
