@@ -550,14 +550,12 @@
 
 	<user_management>
 		<select_user>Выбрать пользователя</select_user>
-		<create_user>Создание 
-пользователя</create_user>
+		<create_user>Создание пользователя</create_user>
 		<user_created>Создан следующий пользователь:</user_created>
 		<edit_user>Изменить пользователя</edit_user>
 		<open_user_folder>Открыть папку пользователя</open_user_folder>
 		<user_name_used>Это имя уже используется.</user_name_used>
-		<delete_user>Удалить 
-пользователя</delete_user>
+		<delete_user>Удалить пользователя</delete_user>
 		<user_delete>Выберите пользователя, которого хотите удалить.</user_delete>
 		<user_delete_msg>Выбранный пользователь был удален:</user_delete_msg>
 		<user_delete_message>При удалении пользователя, его сохраненные данные, призы будут удалены.</user_delete_message>
