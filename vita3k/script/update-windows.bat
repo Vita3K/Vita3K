@@ -1,5 +1,6 @@
 @echo off
 color 2
+title Vita3K Updater
 echo ============================================================
 echo ====================== Vita3K Updater ======================
 echo ============================================================
@@ -61,4 +62,7 @@ if exist vita3k-latest.zip (
 ) else if %boot% EQU 0 (
     echo Download failed, please try again by running the script as administrator.
 )
-pause
+
+if %boot% EQU 0 (
+    pause
+)

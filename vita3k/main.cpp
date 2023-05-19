@@ -74,7 +74,9 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
     } else
         args[3] = NULL;
 
+    // Execute the emulator again with some arguments
 #ifdef WIN32
+    FreeConsole();
     _execv(argv[0], args);
 #elif defined(__unix__) || defined(__APPLE__) && defined(__MACH__)
     execv(argv[0], args);
