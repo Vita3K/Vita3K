@@ -82,6 +82,7 @@ ExitCode init(const Root &root_paths, bool use_stdout) {
 #ifdef WIN32
     // set console codepage to UTF-8
     SetConsoleOutputCP(65001);
+    SetConsoleTitle("Vita3K PSVita Emulator");
 #endif
 
     register_log_exception_handler();

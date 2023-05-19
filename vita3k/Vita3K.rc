@@ -87,7 +87,7 @@ BEGIN
             VALUE "FileDescription", "Vita3K PSVita Emulator"
             VALUE "FileVersion", FILE_VERSION_STR "\0"
             VALUE "InternalName", "Vita3K.exe"
-            VALUE "LegalCopyright", "Copyright (C) 2022"
+            VALUE "LegalCopyright", "Copyright (C) 2018-2023"
             VALUE "OriginalFilename", "Vita3K.exe"
             VALUE "ProductName", "Vita3K"
             VALUE "ProductVersion", FILE_VERSION_STR "\0"
