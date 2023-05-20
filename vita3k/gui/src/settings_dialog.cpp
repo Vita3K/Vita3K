@@ -165,7 +165,7 @@ static bool get_custom_config(GuiState &gui, EmuEnvState &emuenv, const std::str
                 const auto gpu_child = config_child.child("gpu");
                 config.resolution_multiplier = gpu_child.attribute("resolution-multiplier").as_int();
                 config.disable_surface_sync = gpu_child.attribute("disable-surface-sync").as_bool();
-                config.enable_fxaa = gpu_child.attribute("enable-fxaa").as_bool();
+                config.screen_filter = gpu_child.attribute("screen-filter").as_string();
                 config.v_sync = gpu_child.attribute("v-sync").as_bool();
                 config.anisotropic_filtering = gpu_child.attribute("anisotropic-filtering").as_int();
             }
@@ -221,7 +221,7 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.lle_modules = emuenv.cfg.lle_modules;
         config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
         config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
-        config.enable_fxaa = emuenv.cfg.enable_fxaa;
+        config.screen_filter = emuenv.cfg.screen_filter;
         config.v_sync = emuenv.cfg.v_sync;
         config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         config.pstv_mode = emuenv.cfg.pstv_mode;
@@ -278,7 +278,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         auto gpu_child = config_child.append_child("gpu");
         gpu_child.append_attribute("resolution-multiplier") = config.resolution_multiplier;
         gpu_child.append_attribute("disable-surface-sync") = config.disable_surface_sync;
-        gpu_child.append_attribute("enable-fxaa") = config.enable_fxaa;
+        gpu_child.append_attribute("screen-filter") = config.screen_filter.c_str();
         gpu_child.append_attribute("v-sync") = config.v_sync;
         gpu_child.append_attribute("anisotropic-filtering") = config.anisotropic_filtering;
 
@@ -305,7 +305,7 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.pstv_mode = config.pstv_mode;
         emuenv.cfg.resolution_multiplier = config.resolution_multiplier;
         emuenv.cfg.disable_surface_sync = config.disable_surface_sync;
-        emuenv.cfg.enable_fxaa = config.enable_fxaa;
+        emuenv.cfg.screen_filter = config.screen_filter;
         emuenv.cfg.v_sync = config.v_sync;
         emuenv.cfg.anisotropic_filtering = config.anisotropic_filtering;
         emuenv.cfg.ngs_enable = config.ngs_enable;
@@ -356,7 +356,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.pstv_mode = emuenv.cfg.pstv_mode;
         emuenv.cfg.current_config.resolution_multiplier = emuenv.cfg.resolution_multiplier;
         emuenv.cfg.current_config.disable_surface_sync = emuenv.cfg.disable_surface_sync;
-        emuenv.cfg.current_config.enable_fxaa = emuenv.cfg.enable_fxaa;
+        emuenv.cfg.current_config.screen_filter = emuenv.cfg.screen_filter;
         emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
@@ -374,8 +374,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     }
 
     // can be changed while ingame
-    emuenv.renderer->set_surface_sync_state(emuenv.cfg.current_config.disable_surface_sync);
-    emuenv.renderer->set_fxaa(emuenv.cfg.current_config.enable_fxaa);
+    emuenv.renderer->set_screen_filter(emuenv.cfg.current_config.screen_filter);
     if (emuenv.renderer->current_backend == renderer::Backend::OpenGL)
         set_vsync_state(emuenv.cfg.current_config.v_sync);
 
@@ -522,7 +521,8 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             std::vector<const char *> gpu_list;
             for (const auto &gpu : gpu_list_str)
                 gpu_list.push_back(gpu.c_str());
-            if (ImGui::Combo("GPU (Reboot to apply)", &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size())))
+            ImGui::Combo("GPU (Reboot to apply)", &emuenv.cfg.gpu_idx, gpu_list.data(), static_cast<int>(gpu_list.size()));
+            if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select the GPU Vita3K should run on.");
         } else {
             ImGui::Checkbox("V-Sync", &config.v_sync);
@@ -537,17 +537,28 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::SetTooltip("Speed hack, check the box to disable surface syncing between CPU and GPU.\nSurface syncing is needed by a few games.\nGives a big performance boost if disabled (in particular when upscaling is on).");
         }
 
-        // Anti-aliasing FXAA
+        // Screen Filter
         ImGui::Spacing();
-        ImGui::Checkbox("Enable anti-aliasing (FXAA)", &config.enable_fxaa);
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anti-aliasing is a technique for smoothing out jagged edges.\nFXAA comes at almost no performance cost but makes games look slightly blurry.");
+        int curr_filter = 0;
+        const std::array<const char *, 3> possible_filters = {
+            "Nearest",
+            "Bilinear",
+            "FXAA"
+        };
+        const int filters_available = emuenv.renderer->get_supported_filters();
+        std::vector<const char *> filters;
+        for (int i = 0; i < possible_filters.size(); i++) {
+            if (config.screen_filter == possible_filters[i])
+                curr_filter = filters.size();
 
-        // Linear Filter
-        ImGui::Spacing();
-        ImGui::Checkbox("Enable Linear Filter (Reboot to apply)", &emuenv.cfg.enable_linear_filter);
+            if ((1 << i) & filters_available)
+                filters.push_back(possible_filters[i]);
+        }
+
+        if (ImGui::Combo("Screen Filter", &curr_filter, filters.data(), filters.size()))
+            config.screen_filter = filters[curr_filter];
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("The image will be softer, which could help with aliasing.\nDisabling Linear filtering will result in a more sharper aliased image.");
+            ImGui::SetTooltip("Set post-processing filter to Apply");
 
         ImGui::Spacing();
         ImGui::Separator();

@@ -25,16 +25,6 @@
 
 namespace renderer::vulkan {
 
-struct screen_vertex {
-    float pos[3];
-    float uv[2];
-};
-
-static constexpr size_t screen_vertex_size = sizeof(screen_vertex);
-static constexpr uint32_t screen_vertex_count = 4;
-
-using screen_vertices_t = screen_vertex[screen_vertex_count];
-
 ScreenRenderer::ScreenRenderer(VKState &state)
     : state(state) {
 }
@@ -54,10 +44,6 @@ bool ScreenRenderer::create(SDL_Window *window) {
 }
 
 bool ScreenRenderer::setup(const char *base_path) {
-    vk::SemaphoreCreateInfo semaphore_info{};
-    image_acquired_semaphore = state.device.createSemaphore(semaphore_info);
-    image_ready_semaphore = state.device.createSemaphore(semaphore_info);
-
     const auto surface_formats = state.physical_device.getSurfaceFormatsKHR(surface);
     bool surface_format_found = false;
     for (const auto &format : surface_formats) {
@@ -96,11 +82,6 @@ bool ScreenRenderer::setup(const char *base_path) {
     }
     LOG_INFO("Present mode: {}", vk::to_string(present_mode));
 
-    // part of the swapchain that does not need to be rebuilt every time
-    const auto builtin_shaders_path = std::string(base_path) + "shaders-builtin/vulkan/";
-    shader_vertex = vkutil::load_shader(state.device, builtin_shaders_path + "render_main.vert.spv");
-    shader_fragment = vkutil::load_shader(state.device, builtin_shaders_path + "render_main.frag.spv");
-    shader_fragment_fxaa = vkutil::load_shader(state.device, builtin_shaders_path + "render_main_fxaa.frag.spv");
     create_render_pass();
 
     create_swapchain();
@@ -109,8 +90,8 @@ bool ScreenRenderer::setup(const char *base_path) {
     create_layout_sync();
     create_surface_image();
 
-    if (!create_graphics_pipelines())
-        return false;
+    filter = std::make_unique<FXAAScreenFilter>(*this);
+    filter->init();
 
     return true;
 }
@@ -127,6 +108,9 @@ void ScreenRenderer::create_swapchain() {
         extent.width = std::clamp<uint32_t>(width, surface_capabilities.minImageExtent.width, surface_capabilities.maxImageExtent.width);
         extent.height = std::clamp<uint32_t>(height, surface_capabilities.minImageExtent.height, surface_capabilities.maxImageExtent.height);
     }
+
+    if (extent.width == 0 || extent.height == 0)
+        return;
 
     swapchain_size = surface_capabilities.minImageCount + 1;
     if (surface_capabilities.maxImageCount != 0)
@@ -185,11 +169,6 @@ void ScreenRenderer::create_swapchain() {
 }
 
 void ScreenRenderer::destroy_swapchain() {
-    if (pipeline) {
-        state.device.destroy(pipeline);
-        pipeline = nullptr;
-    }
-
     for (vk::Framebuffer framebuffer : swapchain_framebuffers)
         state.device.destroy(framebuffer);
     swapchain_framebuffers.clear();
@@ -205,21 +184,21 @@ void ScreenRenderer::destroy_swapchain() {
 }
 
 void ScreenRenderer::cleanup() {
+    state.device.waitIdle();
     for (vk::Framebuffer fb : swapchain_framebuffers)
         state.device.destroy(fb);
 
-    state.device.destroy(pipeline);
-    state.device.destroy(pipeline_layout);
-    state.device.destroy(shader_fragment);
-    state.device.destroy(shader_vertex);
     state.device.destroy(render_pass);
 
     for (vk::ImageView view : swapchain_views)
         state.device.destroy(view);
     state.device.destroy(swapchain);
 
-    state.device.destroy(image_acquired_semaphore);
-    state.allocator.destroyBuffer(vao, vao_allocation);
+    for (uint32_t i = 0; i < swapchain_size; i++) {
+        state.device.destroy(fences[i]);
+        state.device.destroy(image_acquired_semaphores[i]);
+        state.device.destroy(image_ready_semaphores[i]);
+    }
 
     state.instance.destroy(surface);
 }
@@ -228,9 +207,14 @@ static constexpr uint64_t next_image_timeout = std::numeric_limits<uint64_t>::ma
 
 bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
     vk::Result acquire_result = vk::Result::eErrorOutOfDateKHR;
+
+    current_frame++;
+    if (current_frame == swapchain_size)
+        current_frame = 0;
+
     if (swapchain)
         acquire_result = state.device.acquireNextImageKHR(swapchain,
-            next_image_timeout, image_acquired_semaphore, vk::Fence(), &swapchain_image_idx);
+            next_image_timeout, image_acquired_semaphores[current_frame], vk::Fence(), &swapchain_image_idx);
 
     if (acquire_result != vk::Result::eSuccess) {
         if (acquire_result == vk::Result::eErrorOutOfDateKHR || acquire_result == vk::Result::eSuboptimalKHR) {
@@ -243,8 +227,8 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
                 return false;
 
             create_swapchain();
-            create_graphics_pipelines();
-            need_rebuild = true;
+            if (swapchain)
+                need_rebuild = true;
         } else {
             LOG_WARN("Failed to get next image. Error: {}", vk::to_string(acquire_result));
         }
@@ -292,80 +276,27 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
     return true;
 }
 
-void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, std::array<float, 4> &uvs, SceFVector2 &texture_size) {
+void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, const Viewport &viewport) {
     if (swapchain_image_idx == ~0 && !acquire_swapchain_image())
         return;
 
-    {
-        // if necessary update vao (should not happen often)
-        if (uvs != last_uvs[swapchain_image_idx]) {
-            screen_vertices_t vertex_buffer_data = {
-                { { 1.f, -1.f, 0.0f }, { 1.f, 0.f } },
-                { { -1.f, -1.f, 0.0f }, { 0.f, 0.f } },
-                { { 1.f, 1.f, 0.0f }, { 1.f, 1.f } },
-                { { -1.f, 1.f, 0.0f }, { 0.f, 1.f } },
-            };
-            vertex_buffer_data[0].uv[0] = uvs[2];
-            vertex_buffer_data[0].uv[1] = uvs[1];
+    // we need to apply the screen filter at the right moment (before or after we start the render pass depending on it)
+    filter->render(true, image_view, layout, viewport);
 
-            vertex_buffer_data[1].uv[0] = uvs[0];
-            vertex_buffer_data[1].uv[1] = uvs[1];
+    vk::RenderPassBeginInfo pass_info{
+        .renderPass = render_pass,
+        .framebuffer = swapchain_framebuffers[swapchain_image_idx],
+        .renderArea = {
+            .offset = { 0, 0 },
+            .extent = extent }
+    };
+    vk::ClearValue clear_color{
+        .color = { std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f } }
+    };
+    pass_info.setClearValues(clear_color);
+    current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
 
-            vertex_buffer_data[2].uv[0] = uvs[2];
-            vertex_buffer_data[2].uv[1] = uvs[3];
-
-            vertex_buffer_data[3].uv[0] = uvs[0];
-            vertex_buffer_data[3].uv[1] = uvs[3];
-
-            current_cmd_buffer.updateBuffer(vao, swapchain_image_idx * sizeof(screen_vertices_t), sizeof(screen_vertices_t), &vertex_buffer_data);
-            last_uvs[swapchain_image_idx] = uvs;
-        }
-    }
-
-    {
-        // update descriptor set
-        vk::DescriptorImageInfo descr_image_info{
-            .sampler = vita_surface_sampler,
-            .imageView = image_view,
-            .imageLayout = layout,
-        };
-        vk::WriteDescriptorSet write_descr{
-            .dstSet = descriptor_sets[swapchain_image_idx],
-            .dstBinding = 0,
-            .dstArrayElement = 0,
-            .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-        };
-        write_descr.setImageInfo(descr_image_info);
-        state.device.updateDescriptorSets(write_descr, {});
-    }
-
-    {
-        vk::RenderPassBeginInfo pass_info{
-            .renderPass = render_pass,
-            .framebuffer = swapchain_framebuffers[swapchain_image_idx],
-            .renderArea = {
-                .offset = { 0, 0 },
-                .extent = extent }
-        };
-        vk::ClearValue clear_color{
-            .color = { std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f } }
-        };
-        pass_info.setClearValues(clear_color);
-        current_cmd_buffer.beginRenderPass(pass_info, vk::SubpassContents::eInline);
-
-        vk::DeviceSize offset = swapchain_image_idx * sizeof(screen_vertices_t);
-        current_cmd_buffer.bindVertexBuffers(0, vao, offset);
-
-        current_cmd_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, enable_fxaa ? pipeline_fxaa : pipeline);
-        current_cmd_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, pipeline_layout, 0, descriptor_sets[swapchain_image_idx], {});
-
-        if (enable_fxaa) {
-            std::array<float, 2> inv_size = { 1 / texture_size.x, 1 / texture_size.y };
-            current_cmd_buffer.pushConstants(pipeline_layout, vk::ShaderStageFlagBits::eFragment, 0, 2 * sizeof(float), inv_size.data());
-        }
-
-        current_cmd_buffer.draw(4, 1, 0, 0);
-    }
+    filter->render(false, image_view, layout, viewport);
 }
 
 void ScreenRenderer::swap_window() {
@@ -378,19 +309,19 @@ void ScreenRenderer::swap_window() {
     current_cmd_buffer.endRenderPass();
     current_cmd_buffer.end();
     vk::SubmitInfo submit_info{};
-    std::array<vk::Semaphore, 1> wait_semaphores = { image_acquired_semaphore };
+    std::array<vk::Semaphore, 1> wait_semaphores = { image_acquired_semaphores[current_frame] };
     std::array<vk::PipelineStageFlags, 1> dst_masks
         = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
     submit_info.setWaitSemaphores(wait_semaphores);
     submit_info.setWaitDstStageMask(dst_masks);
-    submit_info.setSignalSemaphores(image_ready_semaphore);
+    submit_info.setSignalSemaphores(image_ready_semaphores[current_frame]);
     submit_info.setCommandBuffers(current_cmd_buffer);
     state.general_queue.submit(submit_info, fences[swapchain_image_idx]);
 
     // then present the surface
     vk::PresentInfoKHR present_info{
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &image_ready_semaphore,
+        .pWaitSemaphores = &image_ready_semaphores[current_frame],
         .swapchainCount = 1,
         .pSwapchains = &swapchain,
         .pImageIndices = &swapchain_image_idx,
@@ -410,8 +341,8 @@ void ScreenRenderer::swap_window() {
         SDL_Vulkan_GetDrawableSize(window, &width, &height);
         if (width > 0 && height > 0) {
             create_swapchain();
-            create_graphics_pipelines();
-            need_rebuild = true;
+            if (swapchain)
+                need_rebuild = true;
         }
     }
 
@@ -419,45 +350,23 @@ void ScreenRenderer::swap_window() {
     current_cmd_buffer = nullptr;
 }
 
+void ScreenRenderer::set_filter(const std::string_view &filter) {
+    if (this->filter && filter == this->filter->get_name())
+        // we are already using this filter
+        return;
+
+    this->filter.reset();
+    if (filter == "FXAA")
+        this->filter = std::make_unique<FXAAScreenFilter>(*this);
+    else if (filter == "Nearest")
+        this->filter = std::make_unique<NearestScreenFilter>(*this);
+    else
+        this->filter = std::make_unique<BilinearScreenFilter>(*this);
+
+    this->filter->init();
+}
+
 void ScreenRenderer::create_layout_sync() {
-    vk::DescriptorSetLayoutBinding sampler_layout_binding{
-        .binding = 0,
-        .descriptorType = vk::DescriptorType::eCombinedImageSampler,
-        .descriptorCount = 1,
-        .stageFlags = vk::ShaderStageFlagBits::eFragment,
-    };
-    vk::DescriptorSetLayoutCreateInfo descriptor_info{};
-    descriptor_info.setBindings(sampler_layout_binding);
-    descriptor_set_layout = state.device.createDescriptorSetLayout(descriptor_info);
-
-    vk::DescriptorPoolSize pool_size{
-        .type = vk::DescriptorType::eCombinedImageSampler,
-        .descriptorCount = swapchain_size
-    };
-    vk::DescriptorPoolCreateInfo pool_info{
-        .maxSets = swapchain_size,
-    };
-    pool_info.setPoolSizes(pool_size);
-    descriptor_pool = state.device.createDescriptorPool(pool_info);
-
-    vk::DescriptorSetAllocateInfo descr_set_info{
-        .descriptorPool = descriptor_pool,
-    };
-    std::vector<vk::DescriptorSetLayout> descr_set_layouts(swapchain_size, descriptor_set_layout);
-    descr_set_info.setSetLayouts(descr_set_layouts);
-    descriptor_sets = state.device.allocateDescriptorSets(descr_set_info);
-
-    vk::PipelineLayoutCreateInfo layout_info{};
-    layout_info.setSetLayouts(descriptor_set_layout);
-    // add push constant for fxaa pipeline, not used by the normal pipeline
-    vk::PushConstantRange push_constant{
-        .stageFlags = vk::ShaderStageFlagBits::eFragment,
-        .offset = 0,
-        .size = 2 * sizeof(float),
-    };
-    layout_info.setPushConstantRanges(push_constant);
-    pipeline_layout = state.device.createPipelineLayout(layout_info);
-
     vk::CommandBufferAllocateInfo cmd_buffer_info{
         .commandPool = state.general_command_pool,
         .level = vk::CommandBufferLevel::ePrimary,
@@ -465,25 +374,19 @@ void ScreenRenderer::create_layout_sync() {
     };
     command_buffers = state.device.allocateCommandBuffers(cmd_buffer_info);
 
-    // create fences (in signaled state)
+    // create fences (in signaled state) and semaphores
     vk::FenceCreateInfo fence_info{
         .flags = vk::FenceCreateFlagBits::eSignaled
     };
+    vk::SemaphoreCreateInfo semaphore_info{};
     fences.resize(swapchain_size);
-    for (uint32_t i = 0; i < swapchain_size; i++)
+    image_acquired_semaphores.resize(swapchain_size);
+    image_ready_semaphores.resize(swapchain_size);
+    for (uint32_t i = 0; i < swapchain_size; i++) {
         fences[i] = state.device.createFence(fence_info);
-
-    // create vao
-    vk::BufferCreateInfo buffer_info{
-        .size = sizeof(screen_vertices_t) * swapchain_size,
-        .usage = vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eTransferDst,
-        .sharingMode = vk::SharingMode::eExclusive
-    };
-    std::tie(vao, vao_allocation) = state.allocator.createBuffer(buffer_info, vkutil::vma_auto_alloc);
-
-    // create and zero-fill uvs
-    last_uvs.resize(swapchain_size);
-    std::fill(last_uvs.begin(), last_uvs.end(), std::array<float, 4>());
+        image_acquired_semaphores[i] = state.device.createSemaphore(semaphore_info);
+        image_ready_semaphores[i] = state.device.createSemaphore(semaphore_info);
+    }
 }
 
 void ScreenRenderer::create_render_pass() {
@@ -523,138 +426,8 @@ void ScreenRenderer::create_render_pass() {
     render_pass = state.device.createRenderPass(pass_info);
 }
 
-vk::Pipeline ScreenRenderer::create_graphics_pipeline_impl(std::array<vk::PipelineShaderStageCreateInfo, 2> &shader_stages) {
-    vk::VertexInputBindingDescription binding_descr{
-        .binding = 0,
-        .stride = screen_vertex_size,
-        .inputRate = vk::VertexInputRate::eVertex
-    };
-    std::array<vk::VertexInputAttributeDescription, 2> attr_descr;
-    // pos
-    attr_descr[0] = vk::VertexInputAttributeDescription{
-        .location = 0,
-        .binding = 0,
-        .format = vk::Format::eR32G32B32Sfloat,
-        .offset = offsetof(screen_vertex, pos)
-    };
-    // uv
-    attr_descr[1] = vk::VertexInputAttributeDescription{
-        .location = 1,
-        .binding = 0,
-        .format = vk::Format::eR32G32Sfloat,
-        .offset = offsetof(screen_vertex, uv)
-    };
-    vk::PipelineVertexInputStateCreateInfo vertex_input{};
-    vertex_input.setVertexBindingDescriptions(binding_descr);
-    vertex_input.setVertexAttributeDescriptions(attr_descr);
-
-    vk::PipelineInputAssemblyStateCreateInfo input_assembly{
-        .topology = vk::PrimitiveTopology::eTriangleStrip
-    };
-    vk::Viewport viewport{
-        .minDepth = 0.0f,
-        .maxDepth = 1.0f
-    };
-    {
-        // compute viewport now
-        const float window_aspect = static_cast<float>(extent.width) / extent.height;
-        const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-        if (window_aspect > vita_aspect) {
-            // Window is wide. Pin top and bottom.
-            viewport.width = extent.height * vita_aspect;
-            viewport.height = static_cast<float>(extent.height);
-            viewport.x = (extent.width - viewport.width) / 2.0f;
-            viewport.y = 0.0f;
-        } else {
-            // Window is tall. Pin left and right.
-            viewport.width = static_cast<float>(extent.width);
-            viewport.height = extent.width / vita_aspect;
-            viewport.x = 0.0f;
-            viewport.y = (extent.height - viewport.height) / 2;
-        }
-    }
-    vk::Rect2D scissor{
-        .offset = { 0, 0 },
-        .extent = extent
-    };
-    vk::PipelineViewportStateCreateInfo viewport_state{};
-    viewport_state.setViewports(viewport);
-    viewport_state.setScissors(scissor);
-    vk::PipelineRasterizationStateCreateInfo rasterizer{
-        .polygonMode = vk::PolygonMode::eFill,
-        .cullMode = vk::CullModeFlagBits::eNone,
-        .frontFace = vk::FrontFace::eClockwise,
-        .lineWidth = 1.0f
-    };
-    vk::PipelineMultisampleStateCreateInfo multisampling{
-        .rasterizationSamples = vk::SampleCountFlagBits::e1
-    };
-    vk::PipelineColorBlendAttachmentState blend_attachment{
-        .blendEnable = VK_FALSE,
-        .colorWriteMask = vkutil::default_color_mask
-    };
-    vk::PipelineColorBlendStateCreateInfo color_blending{};
-    color_blending.setAttachments(blend_attachment);
-
-    vk::GraphicsPipelineCreateInfo pipeline_info{
-        .pVertexInputState = &vertex_input,
-        .pInputAssemblyState = &input_assembly,
-        .pViewportState = &viewport_state,
-        .pRasterizationState = &rasterizer,
-        .pMultisampleState = &multisampling,
-        .pColorBlendState = &color_blending,
-        .layout = pipeline_layout,
-        .renderPass = render_pass,
-        .subpass = 0
-    };
-    pipeline_info.setStages(shader_stages);
-
-    const auto result = state.device.createGraphicsPipeline(VK_NULL_HANDLE, pipeline_info);
-    if (result.result != vk::Result::eSuccess) {
-        LOG_CRITICAL("Failed to create pipeline.");
-        return nullptr;
-    }
-
-    return result.value;
-}
-
-bool ScreenRenderer::create_graphics_pipelines() {
-    vk::PipelineShaderStageCreateInfo vert_info{
-        .stage = vk::ShaderStageFlagBits::eVertex,
-        .module = shader_vertex,
-        .pName = "main"
-    };
-    vk::PipelineShaderStageCreateInfo frag_info{
-        .stage = vk::ShaderStageFlagBits::eFragment,
-        .module = shader_fragment,
-        .pName = "main"
-    };
-    std::array<vk::PipelineShaderStageCreateInfo, 2> shader_stages = { vert_info, frag_info };
-
-    pipeline = create_graphics_pipeline_impl(shader_stages);
-    if (!pipeline)
-        return false;
-
-    shader_stages[1].module = shader_fragment_fxaa;
-    pipeline_fxaa = create_graphics_pipeline_impl(shader_stages);
-    if (!pipeline_fxaa)
-        return false;
-
-    return true;
-}
-
 void ScreenRenderer::create_surface_image() {
     vita_surface.resize(swapchain_size);
-
-    vk::SamplerCreateInfo sampler_info{
-        // use linear as it renders a lot better compared to nearest (although it adds a slight blur)
-        .magFilter = enable_linear_filter ? vk::Filter::eLinear : vk::Filter::eNearest,
-        .minFilter = enable_linear_filter ? vk::Filter::eLinear : vk::Filter::eNearest,
-        .addressModeU = vk::SamplerAddressMode::eClampToEdge,
-        .addressModeV = vk::SamplerAddressMode::eClampToEdge,
-        .addressModeW = vk::SamplerAddressMode::eClampToEdge,
-    };
-    vita_surface_sampler = state.device.createSampler(sampler_info);
 
     vk::BufferCreateInfo buffer_info{
         // make sure it is big enough

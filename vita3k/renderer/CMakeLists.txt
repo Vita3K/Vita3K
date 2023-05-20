@@ -22,6 +22,7 @@ add_library(
 	src/vulkan/pipeline_cache.cpp
 	src/vulkan/renderer.cpp
 	src/vulkan/scene.cpp
+	src/vulkan/screen_filters.cpp
 	src/vulkan/screen_renderer.cpp
 	src/vulkan/surface_cache.cpp
 	src/vulkan/sync_state.cpp

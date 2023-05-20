@@ -65,12 +65,12 @@ void set_window_title(EmuEnvState &emuenv) {
     const auto af = emuenv.cfg.current_config.anisotropic_filtering > 1 ? fmt ::format(" | AF {}x", emuenv.cfg.current_config.anisotropic_filtering) : "";
     const auto x = emuenv.display.frame.image_size.x * emuenv.cfg.current_config.resolution_multiplier;
     const auto y = emuenv.display.frame.image_size.y * emuenv.cfg.current_config.resolution_multiplier;
-    const std::string title_to_set = fmt::format("{} | {} ({}) | {} | {} FPS ({} ms) | {}x{}{} {}",
+    const std::string title_to_set = fmt::format("{} | {} ({}) | {} | {} FPS ({} ms) | {}x{}{} | {}",
         window_title,
         emuenv.current_app_title, emuenv.io.title_id,
         emuenv.cfg.backend_renderer,
         emuenv.fps, emuenv.ms_per_frame,
-        x, y, af, emuenv.cfg.current_config.enable_fxaa ? "| FXAA" : "");
+        x, y, af, emuenv.cfg.current_config.screen_filter);
 
     SDL_SetWindowTitle(emuenv.window.get(), title_to_set.c_str());
 }

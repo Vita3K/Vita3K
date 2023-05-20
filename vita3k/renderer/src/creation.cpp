@@ -245,14 +245,12 @@ bool init(SDL_Window *window, std::unique_ptr<State> &state, Backend backend, co
     switch (backend) {
     case Backend::OpenGL:
         state = std::make_unique<gl::GLState>();
-        state->set_linear_filter(config.enable_linear_filter);
         if (!gl::create(window, state, base_path, config.hashless_texture_cache))
             return false;
         break;
 
     case Backend::Vulkan:
         state = std::make_unique<vulkan::VKState>(config.gpu_idx);
-        state->set_linear_filter(config.enable_linear_filter);
 
         if (!vulkan::create(window, state, base_path))
             return false;
