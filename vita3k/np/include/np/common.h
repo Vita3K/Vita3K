@@ -17,23 +17,27 @@
 
 #pragma once
 
+#include <mem/ptr.h>
+#include <util/types.h>
+
 #include <cstdint>
 #include <cstring>
-#include <mem/ptr.h>
 
 namespace np {
 
-struct NpOnlineID {
-    // Maximum name is 16 bytes
-    char name[16];
+#define SCE_NP_ONLINEID_MIN_LENGTH 3
+#define SCE_NP_ONLINEID_MAX_LENGTH 16
+
+struct SceNpOnlineId {
+    char data[SCE_NP_ONLINEID_MAX_LENGTH];
     char term;
     char dummy[3];
 };
 
-struct NpId {
-    NpOnlineID online_id;
-    std::uint8_t opt[8];
-    std::uint8_t unk0[8];
+struct SceNpId {
+    SceNpOnlineId handle;
+    SceUChar8 opt[8];
+    SceUChar8 reserved[8];
 };
 
 struct CommunicationID {

@@ -19,11 +19,13 @@
 
 #include <config/functions.h>
 #include <config/state.h>
+
 #include <display/state.h>
 #include <gui/functions.h>
 #include <host/dialog/filesystem.hpp>
 #include <io/state.h>
-#include <misc/cpp/imgui_stdlib.h>
+#include <np/common.h>
+
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -32,20 +34,27 @@
 
 namespace gui {
 
-static constexpr float avatar_size = 132.f, avatar_small_size = 34.f;
-struct AvatarInfo {
-    ImVec2 pos;
-    ImVec2 small_pos;
-    ImVec2 size;
-    ImVec2 small_size;
+enum AvatarSize {
+    SMALL = 34,
+    MEDIUM = 130,
+    LARGE = 160
 };
 
-static std::map<std::string, AvatarInfo> users_avatar_infos;
-static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string avatar) {
-    const auto avatar_path = avatar == "default" ? fs::path(emuenv.base_path) / "data/image/icon.png" : fs::path(string_utils::utf_to_wide(avatar));
+static ImVec2 get_avatar_size(AvatarSize size, const ImVec2 scale = { 1, 1 }) {
+    return ImVec2(static_cast<float>(size) * scale.x, static_cast<float>(size) * scale.y);
+}
 
-    if (!fs::exists(avatar_path)) {
-        LOG_WARN("Avatar image doesn't exist: {}.", avatar_path.string());
+struct AvatarInfo {
+    ImVec2 pos;
+    ImVec2 size;
+};
+
+static std::map<std::string, std::map<AvatarSize, AvatarInfo>> users_avatar_infos;
+static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id, const std::string avatar_path) {
+    const auto avatar_path_wstr = avatar_path == "default" ? fs::path(emuenv.base_path) / "data/image/icon.png" : fs::path(string_utils::utf_to_wide(avatar_path));
+
+    if (!fs::exists(avatar_path_wstr)) {
+        LOG_WARN("Avatar image doesn't exist: {}.", avatar_path_wstr.string());
         return false;
     }
 
@@ -53,7 +62,7 @@ static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &u
     int32_t height = 0;
 
 #ifdef _WIN32
-    FILE *f = _wfopen(avatar_path.c_str(), L"rb");
+    FILE *f = _wfopen(avatar_path_wstr.c_str(), L"rb");
 #else
     FILE *f = fopen(avatar_path.c_str(), "rb");
 #endif
@@ -61,7 +70,7 @@ static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &u
     stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
 
     if (!data) {
-        LOG_ERROR("Invalid or corrupted image: {}.", avatar_path.string());
+        LOG_ERROR("Invalid or corrupted image: {}.", avatar_path_wstr.string());
         return false;
     }
 
@@ -71,19 +80,15 @@ static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &u
     fclose(f);
 
     // Calculate avatar size and position based of aspect ratio
-    auto &user_avatar = users_avatar_infos[user_id];
-
-    // Resize for small avatar
-    const auto small_ratio = std::min(avatar_small_size / static_cast<float>(width), avatar_small_size / static_cast<float>(height));
-    user_avatar.small_size = ImVec2(width * small_ratio, height * small_ratio);
-
-    // Resize for avatar
-    const auto ratio = std::min(avatar_size / static_cast<float>(width), avatar_size / static_cast<float>(height));
-    user_avatar.size = ImVec2(width * ratio, height * ratio);
-
-    // Calculate position for both avatar size
-    user_avatar.pos = ImVec2((avatar_size / 2.f) - (user_avatar.size.x / 2.f), (avatar_size / 2.f) - (user_avatar.size.y / 2.f));
-    user_avatar.small_pos = ImVec2((avatar_small_size / 2.f) - (user_avatar.small_size.x / 2.f), (avatar_small_size / 2.f) - (user_avatar.small_size.y / 2.f));
+    // Resize for all size of avatar
+    constexpr std::array<AvatarSize, 3> sizes = { SMALL, MEDIUM, LARGE };
+    for (const auto size : sizes) {
+        const auto avatar_size = get_avatar_size(size);
+        const auto ratio = std::min(avatar_size.x / static_cast<float>(width), avatar_size.y / static_cast<float>(height));
+        auto &avatar = users_avatar_infos[user_id][size];
+        avatar.size = ImVec2(width * ratio, height * ratio);
+        avatar.pos = ImVec2((avatar_size.x / 2.f) - (avatar.size.x / 2.f), (avatar_size.y / 2.f) - (avatar.size.y / 2.f));
+    }
 
     return gui.users_avatar.contains(user_id);
 }
@@ -192,7 +197,7 @@ void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
 void init_user_management(GuiState &gui, EmuEnvState &emuenv) {
     init_app_background(gui, emuenv, "NPXS10013");
     gui.vita_area.home_screen = false;
-    gui.vita_area.information_bar = true;
+    gui.vita_area.information_bar = false;
     gui.vita_area.user_management = true;
 }
 
@@ -213,6 +218,7 @@ void open_user(GuiState &gui, EmuEnvState &emuenv) {
     else
         init_theme_start_background(gui, emuenv, gui.users[emuenv.io.user_id].theme_id);
 
+    gui.vita_area.information_bar = true;
     gui.vita_area.start_screen = true;
 
 #ifdef USE_VITA3K_UPDATE
@@ -232,91 +238,119 @@ static auto get_users_index(GuiState &gui, const std::string &user_name) {
     return profils_index;
 }
 
-static std::string menu, del_menu, title, user_id_selected;
+static std::string del_menu, title, user_id_selected;
 static User temp;
 
-void clear_temp(GuiState &gui) {
-    temp = {};
-    gui.users_avatar["temp"] = {};
-    gui.users_avatar.erase("temp");
-    user_id_selected.clear();
-}
+enum UserMenu {
+    SELECT,
+    CREATE,
+    EDIT,
+    CONFIRM,
+    DELETE_USER,
+};
+
+static UserMenu menu = SELECT;
 
 void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
-    const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
+    const ImVec2 WINDOW_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const auto RES_SCALE = ImVec2(WINDOW_SIZE.x / emuenv.res_width_dpi_scale, WINDOW_SIZE.y / emuenv.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
-    const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
-    const auto WINDOW_SIZE = ImVec2(display_size.x, display_size.y - INFORMATION_BAR_HEIGHT);
 
-    const auto draw_avatar = [&](const std::string user_id, const bool is_small, const ImVec2 origin_pos) {
-        if (gui.users_avatar.contains(user_id)) {
-            ImVec2 AVATAR_SIZE;
-            ImVec2 AVATAR_POS;
-            const auto user_avatar_infos = users_avatar_infos[user_id];
-            if (is_small) {
-                AVATAR_POS = ImVec2(origin_pos.x + (user_avatar_infos.small_pos.x * SCALE.x), origin_pos.y + (user_avatar_infos.small_pos.y * SCALE.y));
-                AVATAR_SIZE = ImVec2(user_avatar_infos.small_size.x * SCALE.x, user_avatar_infos.small_size.y * SCALE.y);
-            } else {
-                AVATAR_POS = ImVec2(origin_pos.x + (user_avatar_infos.pos.x * SCALE.x), origin_pos.y + (user_avatar_infos.pos.y * SCALE.y));
-                AVATAR_SIZE = ImVec2(user_avatar_infos.size.x * SCALE.x, user_avatar_infos.size.y * SCALE.y);
-            }
-            ImGui::SetCursorPos(AVATAR_POS);
-            ImGui::Image(gui.users_avatar[user_id], AVATAR_SIZE);
-        }
-    };
-
-    ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
+    const ImVec2 WINDOW_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+    ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
     ImGui::SetNextWindowBgAlpha(0.f);
     ImGui::Begin("##user_management", &gui.vita_area.user_management, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
-    if (!emuenv.display.imgui_render || ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows))
-        gui.vita_area.information_bar = true;
+    ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize, IM_COL32(0.f, 0.f, 0.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
+    const ImVec2 WINDOW_POS_MAX(WINDOW_POS.x + WINDOW_SIZE.x, WINDOW_POS.y + WINDOW_SIZE.y);
     if (gui.apps_background.contains("NPXS10013"))
-        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10013"], ImVec2(0, INFORMATION_BAR_HEIGHT), display_size);
+        ImGui::GetBackgroundDrawList()->AddImage(gui.apps_background["NPXS10013"], WINDOW_POS, WINDOW_POS_MAX);
     else
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size, IM_COL32(10.f, 50.f, 140.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
+        ImGui::GetBackgroundDrawList()->AddRectFilled(WINDOW_POS, WINDOW_POS_MAX, IM_COL32(10.f, 50.f, 140.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
     const auto user_path{ fs::path(emuenv.pref_path) / "ux0/user" };
-    const auto SMALL_AVATAR_SIZE = (ImVec2(avatar_small_size * SCALE.x, avatar_small_size * SCALE.y));
+
+    const auto SMALL_AVATAR_SIZE = get_avatar_size(SMALL, SCALE);
+    const auto MED_AVATAR_SIZE = get_avatar_size(MEDIUM, SCALE);
+    const auto LARGE_AVATAR_SIZE = get_avatar_size(LARGE, SCALE);
+    const auto USER_NAME_BG_SIZE = ImVec2(MED_AVATAR_SIZE.x, 60.f * SCALE.y);
+
     ImGui::SetWindowFontScale(1.4f * RES_SCALE.x);
     const auto calc_title = ImGui::CalcTextSize(title.c_str()).y / 2.f;
     ImGui::SetCursorPos(ImVec2(54.f * SCALE.x, (32.f * SCALE.y) - calc_title));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
 
-    const auto AVATAR_SIZE = ImVec2(avatar_size * SCALE.x, avatar_size * SCALE.y);
-    const auto SIZE_USER = ImVec2(960.f * SCALE.x, 376.f * SCALE.y);
-    const auto POS_SEPARATOR = 68.f * SCALE.y;
-    const auto SPACE_AVATAR = AVATAR_SIZE.x + (20.f * SCALE.x);
+    const auto SIZE_USER = ImVec2(WINDOW_SIZE.x, 408.f * SCALE.y);
+    const auto POS_SEPARATOR = 66.f * SCALE.y;
+    const auto SPACE_AVATAR = MED_AVATAR_SIZE.x + (20.f * SCALE.x);
 
     ImGui::SetCursorPosY(POS_SEPARATOR);
     ImGui::Separator();
 
-    if (menu.empty())
-        ImGui::SetNextWindowContentSize(ImVec2(SIZE_USER.x + ((gui.users.size() - 2.5f) * SPACE_AVATAR), 0.0f));
-    ImGui::SetNextWindowPos(ImVec2(0.f, 102.f * SCALE.y), ImGuiCond_Always);
+    if (menu == SELECT)
+        ImGui::SetNextWindowContentSize(ImVec2(SIZE_USER.x + ((gui.users.size() - 2.6f) * SPACE_AVATAR), 0.0f));
+    ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x, WINDOW_POS.y + (68.f * SCALE.y)), ImGuiCond_Always);
     ImGui::BeginChild("##user_child", SIZE_USER, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
 
-    const auto AVATAR_POS = ImVec2((SIZE_USER.x / 2) - (AVATAR_SIZE.x / 2.f), (((menu == "create" || menu == "edit") ? 48.f * SCALE.y : (SIZE_USER.y / 2) - (AVATAR_SIZE.y / 2.f))));
-    const auto NEW_USER_POS = AVATAR_POS.x - (gui.users.size() ? SPACE_AVATAR : 0.f);
-    const auto DELETE_USER_POS = AVATAR_POS.x + (SPACE_AVATAR * (gui.users.size()));
+    // Clear temp user
+    const auto clear_temp_user = [&]() {
+        temp = {};
+        gui.users_avatar["temp"] = {};
+        gui.users_avatar.erase("temp");
+        user_id_selected.clear();
+    };
+
+    // Draw user background
+    const auto draw_user_bg = [&](const AvatarSize size, const ImVec2 origin_pos) {
+        ImGui::SetCursorPos(origin_pos);
+        const auto BG_AVATAR_SIZE = get_avatar_size(size, SCALE);
+        auto draw_list = ImGui::GetWindowDrawList();
+        draw_list->AddRectFilled(ImGui::GetCursorScreenPos(), ImVec2(ImGui::GetCursorScreenPos().x + BG_AVATAR_SIZE.x, ImGui::GetCursorScreenPos().y + BG_AVATAR_SIZE.y), IM_COL32(19.f, 69.f, 167.f, 150.f));
+        if (size == MEDIUM) {
+            ImGui::SetCursorPos(ImVec2(origin_pos.x, origin_pos.y + MED_AVATAR_SIZE.y));
+            draw_list->AddRectFilled(ImGui::GetCursorScreenPos(), ImVec2(ImGui::GetCursorScreenPos().x + BG_AVATAR_SIZE.x, ImGui::GetCursorScreenPos().y + USER_NAME_BG_SIZE.y), IM_COL32(19.f, 69.f, 167.f, 255.f));
+        }
+    };
+
+    // Draw user avatar
+    const auto draw_avatar = [&](const std::string user_id, const AvatarSize size, const ImVec2 origin_pos) {
+        draw_user_bg(size, origin_pos);
+        if (gui.users_avatar.contains(user_id)) {
+            ImVec2 AVATAR_SIZE;
+            ImVec2 AVATAR_POS;
+            const auto user_avatar_infos = users_avatar_infos[user_id][size];
+            AVATAR_POS = ImVec2(origin_pos.x + (user_avatar_infos.pos.x * SCALE.x), origin_pos.y + (user_avatar_infos.pos.y * SCALE.y));
+            AVATAR_SIZE = ImVec2(user_avatar_infos.size.x * SCALE.x, user_avatar_infos.size.y * SCALE.y);
+            ImGui::SetCursorPos(AVATAR_POS);
+            ImGui::Image(gui.users_avatar[user_id], AVATAR_SIZE);
+        }
+    };
+
+    const auto AVATAR_POS = ImVec2((SIZE_USER.x / 2) - (((menu == CREATE) || (menu == EDIT) ? LARGE_AVATAR_SIZE.x : MED_AVATAR_SIZE.x) / 2.f), ((menu == CREATE) || (menu == EDIT)) ? 46.f * SCALE.y : (SIZE_USER.y / 2) - (MED_AVATAR_SIZE.y / 2.f));
+    const ImVec2 CREATE_USER_POS(AVATAR_POS.x - (!gui.users.empty() ? SPACE_AVATAR : 0.f), AVATAR_POS.y);
+    const ImVec2 DELETE_USER_POS(AVATAR_POS.x + (SPACE_AVATAR * gui.users.size()), AVATAR_POS.y);
+    const ImVec2 SELECTABLE_USER_SIZE(MED_AVATAR_SIZE.x, MED_AVATAR_SIZE.y + USER_NAME_BG_SIZE.y);
+
     const auto BUTTON_SIZE = ImVec2(220 * SCALE.x, 36 * SCALE.y);
-    const auto BUTTON_POS = ImVec2((SIZE_USER.x / 2.f) - (BUTTON_SIZE.x / 2.f), 314.f * SCALE.y);
-    const auto TEXT_USER_PADDING = AVATAR_SIZE.x + (5.f * SCALE.x);
+    const auto BUTTON_POS = ImVec2((SIZE_USER.x / 2.f) - (BUTTON_SIZE.x / 2.f), SIZE_USER.y - BUTTON_SIZE.y - (28.f * SCALE.y));
+    const auto TEXT_USER_PADDING = MED_AVATAR_SIZE.x + (5.f * SCALE.x);
+    const auto USER_NAME_PADDING = 10.f * SCALE.x;
     auto lang = gui.lang.user_management;
     auto common = emuenv.common_dialog.lang.common;
 
-    if (menu.empty()) {
+    switch (menu) {
+    case SELECT: {
         // Users list
         title = lang["select_user"];
-        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
+        ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.3f));
         ImGui::SetWindowFontScale(1.6f);
-        ImGui::SetCursorPos(ImVec2(NEW_USER_POS, AVATAR_POS.y));
-        if (ImGui::Selectable("+", false, ImGuiSelectableFlags_None, AVATAR_SIZE)) {
-            menu = "create";
+        draw_user_bg(MEDIUM, CREATE_USER_POS);
+        ImGui::SetCursorPos(CREATE_USER_POS);
+        if (ImGui::Selectable("+", false, ImGuiSelectableFlags_None, SELECTABLE_USER_SIZE)) {
+            menu = CREATE;
             auto id = 0;
             for (const auto &user : gui.users) {
                 if (id != std::stoi(user.first))
@@ -339,34 +373,34 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             temp.start_type = "default";
             init_avatar(gui, emuenv, "temp", "default");
         }
-        ImGui::SetWindowFontScale(0.84f);
-        const auto CREATE_USER_SIZE_STR = (AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["create_user"].c_str(), 0, false, TEXT_USER_PADDING).x / 2.f);
-        ImGui::PushTextWrapPos(NEW_USER_POS + TEXT_USER_PADDING);
-        ImGui::SetCursorPos(ImVec2(NEW_USER_POS + CREATE_USER_SIZE_STR, AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCALE.y)));
+        ImGui::SetWindowFontScale(0.7f);
+        const auto CREATE_USER_SIZE_STR = (MED_AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["create_user"].c_str(), 0, false, TEXT_USER_PADDING).x / 2.f);
+        ImGui::PushTextWrapPos(CREATE_USER_POS.x + TEXT_USER_PADDING);
+        ImGui::SetCursorPos(ImVec2(CREATE_USER_POS.x + CREATE_USER_SIZE_STR, AVATAR_POS.y + MED_AVATAR_SIZE.y + (5.f * SCALE.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["create_user"].c_str());
         ImGui::PopTextWrapPos();
         ImGui::SetCursorPos(AVATAR_POS);
         for (const auto &user : gui.users) {
             ImGui::PushID(user.first.c_str());
             const auto USER_POS = ImGui::GetCursorPos();
-            const auto EDIT_USER_STR_SIZE = ImGui::CalcTextSize(lang["edit_user"].c_str(), 0, false, AVATAR_SIZE.x - (ImGui::GetStyle().FramePadding.x * 2.f));
-            const auto EDIT_USER_STR_POS = ImVec2(USER_POS.x + (AVATAR_SIZE.x / 2.f) - (EDIT_USER_STR_SIZE.x / 2.f), USER_POS.y - EDIT_USER_STR_SIZE.y - ImGui::GetStyle().FramePadding.y);
-            ImGui::PushTextWrapPos(USER_POS.x + AVATAR_SIZE.x);
+            const auto EDIT_USER_STR_SIZE = ImGui::CalcTextSize(lang["edit_user"].c_str(), 0, false, MED_AVATAR_SIZE.x - (ImGui::GetStyle().FramePadding.x * 2.f));
+            const auto EDIT_USER_STR_POS = ImVec2(USER_POS.x + (MED_AVATAR_SIZE.x / 2.f) - (EDIT_USER_STR_SIZE.x / 2.f), USER_POS.y - EDIT_USER_STR_SIZE.y - ImGui::GetStyle().FramePadding.y);
+            ImGui::PushTextWrapPos(USER_POS.x + MED_AVATAR_SIZE.x);
             ImGui::SetCursorPos(EDIT_USER_STR_POS);
             ImGui::Text("%s", lang["edit_user"].c_str());
             ImGui::PopTextWrapPos();
             const auto EDIT_USER_POS_SEL = ImVec2(USER_POS.x + ImGui::GetStyle().FramePadding.x, USER_POS.y - EDIT_USER_STR_SIZE.y - ImGui::GetStyle().FramePadding.y);
             ImGui::SetCursorPos(EDIT_USER_POS_SEL);
-            if (ImGui::Selectable("##edit_user", false, ImGuiSelectableFlags_None, ImVec2(AVATAR_SIZE.x - (ImGui::GetStyle().FramePadding.x * 2.f), EDIT_USER_STR_SIZE.y))) {
+            if (ImGui::Selectable("##edit_user", false, ImGuiSelectableFlags_None, ImVec2(MED_AVATAR_SIZE.x - (ImGui::GetStyle().FramePadding.x * 2.f), EDIT_USER_STR_SIZE.y))) {
                 user_id_selected = user.first;
                 init_avatar(gui, emuenv, "temp", gui.users[user.first].avatar);
                 temp = gui.users[user.first];
-                menu = "edit";
+                menu = EDIT;
             }
-            draw_avatar(user.first, false, USER_POS);
+            draw_avatar(user.first, MEDIUM, USER_POS);
             ImGui::SetCursorPos(USER_POS);
             ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-            if (ImGui::Selectable("##avatar", false, ImGuiSelectableFlags_None, AVATAR_SIZE)) {
+            if (ImGui::Selectable("##avatar", false, ImGuiSelectableFlags_None, SELECTABLE_USER_SIZE)) {
                 if (emuenv.io.user_id != user.first)
                     init_user(gui, emuenv, user.first);
                 if (emuenv.cfg.user_id != user.first) {
@@ -381,40 +415,44 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
                     open_path((user_path / user.first).string());
                 ImGui::EndPopup();
             }
-            ImGui::PopID();
-            const auto POS_NAME = ImVec2(USER_POS.x + AVATAR_SIZE.x / 2 - ImGui::CalcTextSize(user.second.name.c_str()).x / 2, USER_POS.y + AVATAR_SIZE.y + (5.f * SCALE.y));
-            ImGui::SetCursorPos(POS_NAME);
+            ImGui::SetCursorPos(ImVec2(USER_POS.x + USER_NAME_PADDING, USER_POS.y + MED_AVATAR_SIZE.y + (5.f * SCALE.y)));
+            ImGui::PushTextWrapPos(USER_POS.x + MED_AVATAR_SIZE.x - USER_NAME_PADDING);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", user.second.name.c_str());
+            ImGui::PopTextWrapPos();
+            ImGui::PopID();
             ImGui::SetCursorPos(ImVec2(USER_POS.x + SPACE_AVATAR, USER_POS.y));
         }
-        if (gui.users.size()) {
-            ImGui::SetCursorPos(ImVec2(DELETE_USER_POS, AVATAR_POS.y));
+        if (!gui.users.empty()) {
+            draw_user_bg(MEDIUM, DELETE_USER_POS);
+            ImGui::SetCursorPos(DELETE_USER_POS);
             ImGui::SetWindowFontScale(1.6f);
-            if (ImGui::Selectable("-", false, ImGuiSelectableFlags_None, AVATAR_SIZE))
-                menu = "delete";
+            if (ImGui::Selectable("-", false, ImGuiSelectableFlags_None, SELECTABLE_USER_SIZE))
+                menu = DELETE_USER;
             ImGui::PopStyleVar();
-            ImGui::SetWindowFontScale(0.84f);
-            ImGui::PushTextWrapPos(DELETE_USER_POS + TEXT_USER_PADDING);
-            const auto DEL_USER_POS_STR = DELETE_USER_POS + (AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["delete_user"].c_str(), 0, false, TEXT_USER_PADDING).x / 2.f);
+            ImGui::SetWindowFontScale(0.7f);
+            ImGui::PushTextWrapPos(DELETE_USER_POS.x + TEXT_USER_PADDING);
+            const auto DEL_USER_POS_STR = DELETE_USER_POS.x + (MED_AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["delete_user"].c_str(), 0, false, TEXT_USER_PADDING).x / 2.f);
             ImGui::SetCursorPos(ImVec2(DEL_USER_POS_STR, AVATAR_POS.y + TEXT_USER_PADDING));
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["delete_user"].c_str());
             ImGui::PopTextWrapPos();
-        } else {
+        } else
             ImGui::PopStyleVar();
-        }
-    } else if ((menu == "create") || (menu == "edit")) {
-        title = menu == "create" ? lang["create_user"].c_str() : lang["edit_user"].c_str();
+        break;
+    }
+    case CREATE:
+    case EDIT: {
+        title = menu == CREATE ? lang["create_user"].c_str() : lang["edit_user"].c_str();
         ImGui::SetWindowFontScale(0.6f);
         const auto RESET_AVATAR_BTN_SIZE = ImGui::CalcTextSize(lang["reset_avatar"].c_str()).x + (ImGui::GetStyle().FramePadding.x * 2.f);
-        ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + (AVATAR_SIZE.x / 2.f) - (RESET_AVATAR_BTN_SIZE / 2.f), AVATAR_POS.y - BUTTON_SIZE.y));
+        ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + (LARGE_AVATAR_SIZE.x / 2.f) - (RESET_AVATAR_BTN_SIZE / 2.f), AVATAR_POS.y - (5.f * SCALE.y) - BUTTON_SIZE.y));
         if ((temp.avatar != "default") && ImGui::Button(lang["reset_avatar"].c_str(), ImVec2(RESET_AVATAR_BTN_SIZE, BUTTON_SIZE.y))) {
             temp.avatar = "default";
             init_avatar(gui, emuenv, "temp", "default");
         }
-        draw_avatar("temp", false, AVATAR_POS);
-        const auto CHOOSE_AVATAR_BTN_SIZE = ImGui::CalcTextSize(lang["choose_avatar"].c_str()).x + (ImGui::GetStyle().FramePadding.x * 2.f);
-        ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + (AVATAR_SIZE.x / 2.f) - (CHOOSE_AVATAR_BTN_SIZE / 2.f), AVATAR_POS.y + AVATAR_SIZE.y));
-        if (ImGui::Button(lang["choose_avatar"].c_str(), ImVec2(CHOOSE_AVATAR_BTN_SIZE, BUTTON_SIZE.y))) {
+        draw_avatar("temp", LARGE, AVATAR_POS);
+        const ImVec2 CHANGE_AVATAR_BTN_SIZE(LARGE_AVATAR_SIZE.x, 36.f * SCALE.y);
+        ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + (LARGE_AVATAR_SIZE.x / 2.f) - (CHANGE_AVATAR_BTN_SIZE.x / 2.f), AVATAR_POS.y + LARGE_AVATAR_SIZE.y + (5.f * SCALE.y)));
+        if (ImGui::Button(lang["choose_avatar"].c_str(), CHANGE_AVATAR_BTN_SIZE)) {
             std::filesystem::path avatar_path = "";
             host::dialog::filesystem::Result result = host::dialog::filesystem::open_file(avatar_path, { { "Image file", { "bmp", "gif", "jpg", "png", "tif" } } });
 
@@ -423,19 +461,21 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         }
         ImGui::SetWindowFontScale(0.8f);
         const auto INPUT_NAME_SIZE = 330.f * SCALE.x;
-        const auto INPUT_NAME_POS = ImVec2((SIZE_USER.x / 2.f) - (INPUT_NAME_SIZE / 2.f), 244.f * SCALE.y);
+        const auto INPUT_NAME_POS = ImVec2((SIZE_USER.x / 2.f) - (INPUT_NAME_SIZE / 2.f), SIZE_USER.y - (118.f * SCALE.y));
         ImGui::SetCursorPos(ImVec2(INPUT_NAME_POS.x, INPUT_NAME_POS.y - (30.f * SCALE.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["name"].c_str());
         ImGui::SetCursorPos(INPUT_NAME_POS);
         ImGui::PushItemWidth(INPUT_NAME_SIZE);
-        ImGui::InputText("##user_name", &temp.name);
+        if (ImGui::InputText("##user_name", temp.name.data(), SCE_NP_ONLINEID_MAX_LENGTH))
+            temp.name = temp.name.data();
         ImGui::PopItemWidth();
         const auto free_name = get_users_index(gui, temp.name) == gui.users.end();
-        const auto check_free_name = (menu == "create" ? free_name : (temp.name == gui.users[user_id_selected].name) || free_name);
+        const auto check_free_name = (menu == CREATE ? free_name : (temp.name == gui.users[user_id_selected].name) || free_name);
         if (!check_free_name) {
-            ImGui::SetCursorPos(ImVec2(INPUT_NAME_POS.x + INPUT_NAME_SIZE + 10.f, INPUT_NAME_POS.y));
+            ImGui::SetCursorPos(ImVec2(INPUT_NAME_POS.x + INPUT_NAME_SIZE + (10.f * SCALE.x), INPUT_NAME_POS.y));
             ImGui::TextColored(GUI_COLOR_TEXT, "! %s", lang["user_name_used"].c_str());
         }
+        ImGui::SetWindowFontScale(0.6f);
         ImGui::SetCursorPos(BUTTON_POS);
         ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.5f, 0.5f));
         const auto confirm = lang["confirm"].c_str();
@@ -444,29 +484,37 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             gui.users[user_id_selected] = temp;
             users_avatar_infos[user_id_selected] = users_avatar_infos["temp"];
             save_user(gui, emuenv, user_id_selected);
-            if (menu == "create")
-                menu = "confirm";
+            if (menu == CREATE)
+                menu = CONFIRM;
             else {
-                clear_temp(gui);
-                menu.clear();
+                clear_temp_user();
+                menu = SELECT;
             }
         }
         ImGui::PopStyleVar();
-    } else if (menu == "confirm") {
+        break;
+    }
+    case CONFIRM: {
         ImGui::SetWindowFontScale(0.8f);
         const std::string msg = lang["user_created"];
         const auto calc_text = (SIZE_USER.x / 2.f) - (ImGui::CalcTextSize(msg.c_str()).x / 2.f);
         ImGui::SetCursorPos(ImVec2(calc_text, (44.f * SCALE.y)));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", msg.c_str());
-        draw_avatar(user_id_selected, false, AVATAR_POS);
-        ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + AVATAR_SIZE.x / 2 - ImGui::CalcTextSize(gui.users[user_id_selected].name.c_str()).x / 2, AVATAR_POS.y + AVATAR_SIZE.y + (5.f * SCALE.y)));
+        const auto AVATAR_CONFIRM_POS = ImVec2((SIZE_USER.x / 2) - (MED_AVATAR_SIZE.x / 2.f), 96.f * SCALE.y);
+        draw_avatar(user_id_selected, MEDIUM, AVATAR_CONFIRM_POS);
+        ImGui::SetWindowFontScale(0.7f);
+        ImGui::SetCursorPos(ImVec2(AVATAR_CONFIRM_POS.x + USER_NAME_PADDING, AVATAR_CONFIRM_POS.y + MED_AVATAR_SIZE.y + (5.f * SCALE.y)));
+        ImGui::PushTextWrapPos(AVATAR_CONFIRM_POS.x + MED_AVATAR_SIZE.x - USER_NAME_PADDING);
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.users[user_id_selected].name.c_str());
+        ImGui::PopTextWrapPos();
         ImGui::SetCursorPos(BUTTON_POS);
         if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
-            clear_temp(gui);
-            menu.clear();
+            clear_temp_user();
+            menu = SELECT;
         }
-    } else if (menu == "delete") {
+        break;
+    }
+    case DELETE_USER: {
         title = lang["delete_user"];
         if (user_id_selected.empty()) {
             ImGui::SetWindowFontScale(1.f);
@@ -475,17 +523,19 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             const auto SELECT_SIZE = ImVec2(674.f * SCALE.x, 46.f * SCALE.y);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_delete"].c_str());
             ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
-            ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, (168.f * SCALE.y)), ImGuiCond_Always, ImVec2(0.5f, 0.f));
+            ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x / 2.f, (168.f * SCALE.y)), ImGuiCond_Always, ImVec2(0.5f, 0.f));
             ImGui::BeginChild("##delete_user_child", CHILD_DELETE_USER_SIZE, false, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings);
-            ImGui::SetWindowFontScale(1.6f);
+            ImGui::SetWindowFontScale(RES_SCALE.x);
             ImGui::Columns(2, nullptr, false);
             ImGui::SetColumnWidth(0, SMALL_AVATAR_SIZE.x + (10.f * SCALE.x));
+            ImGui::Separator();
             for (const auto &user : gui.users) {
-                draw_avatar(user.first, true, ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + (SELECT_SIZE.y / 2.f) - (SMALL_AVATAR_SIZE.y / 2.f)));
+                draw_avatar(user.first, SMALL, ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + (SELECT_SIZE.y / 2.f) - (SMALL_AVATAR_SIZE.y / 2.f)));
                 ImGui::NextColumn();
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.0f, 0.5f));
                 if (ImGui::Selectable(user.second.name.c_str(), false, ImGuiSelectableFlags_SpanAllColumns, SELECT_SIZE))
                     user_id_selected = user.first;
+                ImGui::Separator();
                 ImGui::NextColumn();
                 ImGui::PopStyleVar();
             }
@@ -537,39 +587,42 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
                     del_menu.clear();
                     user_id_selected.clear();
                     if (gui.users.empty())
-                        menu.clear();
+                        menu = SELECT;
                 }
             }
         }
+        break;
+    }
     }
     ImGui::EndChild();
+
     ImGui::SetCursorPosY(WINDOW_SIZE.y - POS_SEPARATOR);
     ImGui::Separator();
-    ImGui::SetWindowFontScale(1.f);
+    ImGui::SetWindowFontScale(RES_SCALE.x);
     const auto USER_ALREADY_INIT = !gui.users.empty() && !emuenv.io.user_id.empty() && (emuenv.cfg.user_id == emuenv.io.user_id);
-    if ((menu.empty() && USER_ALREADY_INIT) || (!menu.empty() && (menu != "confirm") && del_menu.empty())) {
+    if ((menu == SELECT && USER_ALREADY_INIT) || ((menu != SELECT) && (menu != CONFIRM) && del_menu.empty())) {
         ImGui::SetCursorPos(ImVec2(54.f * SCALE.x, ImGui::GetCursorPosY() + (10.f * SCALE.y)));
         if (ImGui::Button(common["cancel"].c_str(), ImVec2(80.f * SCALE.x, 40.f * SCALE.y))) {
-            if (!menu.empty()) {
-                if ((menu == "create") || (menu == "edit"))
-                    clear_temp(gui);
-                if ((menu == "delete") && !user_id_selected.empty())
+            if (menu != SELECT) {
+                if ((menu == CREATE) || (menu == EDIT))
+                    clear_temp_user();
+                if ((menu == DELETE_USER) && !user_id_selected.empty())
                     user_id_selected.clear();
                 else
-                    menu.clear();
+                    menu = SELECT;
             } else if (USER_ALREADY_INIT) {
                 gui.vita_area.user_management = false;
                 gui.vita_area.home_screen = true;
             }
         }
     }
-    if (menu.empty() && !gui.users.empty()) {
+    if (menu == SELECT && !gui.users.empty()) {
         ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["automatic_user_login"].c_str()).x / 2.f), WINDOW_SIZE.y - 50.f * SCALE.y));
         if (ImGui::Checkbox(lang["automatic_user_login"].c_str(), &emuenv.cfg.auto_user_login))
             config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
     }
     if (!gui.users.empty() && gui.users.contains(emuenv.cfg.user_id)) {
-        draw_avatar(emuenv.cfg.user_id, true, ImVec2(WINDOW_SIZE.x - (220.f * SCALE.x), WINDOW_SIZE.y - (POS_SEPARATOR / 2.f) - (SMALL_AVATAR_SIZE.y / 2.f)));
+        draw_avatar(emuenv.cfg.user_id, SMALL, ImVec2(WINDOW_SIZE.x - (220.f * SCALE.x), WINDOW_SIZE.y - (POS_SEPARATOR / 2.f) - (SMALL_AVATAR_SIZE.y / 2.f)));
         ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - 180.f * SCALE.x, WINDOW_SIZE.y - (POS_SEPARATOR / 2.f) - (ImGui::CalcTextSize(gui.users[emuenv.cfg.user_id].name.c_str()).y / 2.f)));
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.users[emuenv.cfg.user_id].name.c_str());
     }

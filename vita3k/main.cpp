@@ -74,7 +74,7 @@ static void run_execv(char *argv[], EmuEnvState &emuenv) {
     } else
         args[3] = NULL;
 
-    // Execute the emulator again with some arguments
+        // Execute the emulator again with some arguments
 #ifdef WIN32
     FreeConsole();
     _execv(argv[0], args);

@@ -615,7 +615,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     gui.user_backgrounds.erase(delete_user_background);
                     gui.user_backgrounds_infos.erase(delete_user_background);
                     if (!gui.users[emuenv.io.user_id].backgrounds.empty())
-                        gui.current_user_bg = gui.current_user_bg % uint64_t(gui.user_backgrounds.size()); 
+                        gui.current_user_bg = gui.current_user_bg % uint64_t(gui.user_backgrounds.size());
                     else if (!gui.theme_backgrounds.empty())
                         gui.users[emuenv.io.user_id].use_theme_bg = true;
                     save_user(gui, emuenv, emuenv.io.user_id);

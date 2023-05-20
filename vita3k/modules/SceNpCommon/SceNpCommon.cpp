@@ -90,10 +90,10 @@ EXPORT(int, sceNpAuthTerm) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNpCmpNpId, np::NpId *npid1, np::NpId *npid2) {
+EXPORT(int, sceNpCmpNpId, np::SceNpId *npid1, np::SceNpId *npid2) {
     TRACY_FUNC(sceNpCmpNpId, npid1, npid2);
     STUBBED("assume single user");
-    if (std::string(npid1->online_id.name) == emuenv.io.user_name && std::string(npid2->online_id.name) == emuenv.io.user_name) {
+    if (std::string(npid1->handle.data) == emuenv.io.user_name && std::string(npid2->handle.data) == emuenv.io.user_name) {
         return 0;
     }
     return 0x80550605; // INVALID NP ID

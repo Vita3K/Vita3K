@@ -797,7 +797,8 @@ void draw_vita_area(GuiState &gui, EmuEnvState &emuenv) {
 
 void draw_ui(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushFont(gui.vita_font);
-    draw_main_menu_bar(gui, emuenv);
+    if (!gui.vita_area.user_management)
+        draw_main_menu_bar(gui, emuenv);
 
     if (gui.controls_menu.controls_dialog)
         draw_controls_dialog(gui, emuenv);
