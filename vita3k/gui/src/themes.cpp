@@ -81,7 +81,7 @@ bool init_user_background(GuiState &gui, EmuEnvState &emuenv, const std::string 
     // Center background on screen (keep aspect ratio)
     user_background.prev_pos = ImVec2((background_preview_size.x / 2.f) - (user_background.prev_size.x / 2.f), (background_preview_size.y / 2.f) - (user_background.prev_size.y / 2.f));
     user_background.pos = ImVec2((background_size.x / 2.f) - (user_background.size.x / 2.f), (background_size.y / 2.f) - (user_background.size.y / 2.f));
- 
+
     return gui.user_backgrounds.contains(background_path);
 }
 

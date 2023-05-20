@@ -109,19 +109,19 @@ EXPORT(int, sceNpManagerGetContentRatingFlag, SceInt *isRestricted, SceInt *age)
     return STUBBED("isRestricted = 0; age = 21; return 0;");
 }
 
-EXPORT(int, sceNpManagerGetNpId, np::NpId *id) {
+EXPORT(int, sceNpManagerGetNpId, np::SceNpId *id) {
     TRACY_FUNC(sceNpManagerGetNpId, id);
-    if (emuenv.io.user_name.length() > 16) {
+    if (emuenv.io.user_name.length() > SCE_NP_ONLINEID_MAX_LENGTH) {
         LOG_ERROR("Your online ID has over 16 characters, try again with shorter name");
         return SCE_NP_MANAGER_ERROR_ID_NOT_AVAIL;
     }
-    strcpy(id->online_id.name, emuenv.io.user_name.c_str());
-    id->online_id.term = '\0';
-    std::fill(id->online_id.dummy, id->online_id.dummy + 3, 0);
+    strcpy(id->handle.data, emuenv.io.user_name.c_str());
+    id->handle.term = '\0';
+    std::fill(id->handle.dummy, id->handle.dummy + 3, 0);
 
     // Fill the unused stuffs to 0 (prevent some weird things happen)
     std::fill(id->opt, id->opt + 8, 0);
-    std::fill(id->unk0, id->unk0 + 8, 0);
+    std::fill(id->reserved, id->reserved + 8, 0);
 
     return 0;
 }
