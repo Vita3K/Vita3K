@@ -1010,7 +1010,7 @@ void VKSurfaceCache::destroy_associated_framebuffers(const VKRenderTarget *rende
     destroy_framebuffers(render_target->depthstencil.view);
 }
 
-vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const std::uint32_t pitch, std::array<float, 4> &uvs, const int res_multiplier, SceFVector2 &texture_size) {
+vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t pitch, Viewport &viewport) {
     // get closest surface with an address below address
     auto ite = color_surface_textures.upper_bound(address.address());
     if (ite == color_surface_textures.begin()) {
@@ -1023,16 +1023,13 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
         // they do not overlap
         return nullptr;
 
-    width *= res_multiplier;
-    height *= res_multiplier;
-
     if (info.pixel_stride == pitch) {
         // In assumption the format is RGBA8
-        const std::size_t data_delta = address.address() - ite->first;
-        std::uint32_t limited_height = height;
+        const size_t data_delta = address.address() - ite->first;
+        uint32_t limited_height = viewport.height;
         if ((data_delta % (pitch * 4)) == 0) {
-            std::uint32_t start_sourced_line = (data_delta / (pitch * 4)) * res_multiplier;
-            if ((start_sourced_line + height) > info.height) {
+            uint32_t start_sourced_line = (data_delta / (pitch * 4)) * state.res_multiplier;
+            if ((start_sourced_line + viewport.height) > info.height) {
                 // Sometimes the surface is just missing a little bit of lines
                 if (start_sourced_line < info.height) {
                     // Just limit the height and display it
@@ -1043,15 +1040,13 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
                 }
             }
 
-            // Calculate uvs
-            // First two top left, the two others bottom right
-            uvs[0] = 0.0f;
-            uvs[1] = static_cast<float>(start_sourced_line) / info.height;
-            uvs[2] = static_cast<float>(width) / info.width;
-            uvs[3] = static_cast<float>(start_sourced_line + limited_height) / info.height;
-
-            texture_size.x = info.width;
-            texture_size.y = info.height;
+            // Compute position in texture
+            viewport.offset_x = 0;
+            viewport.offset_y = start_sourced_line;
+            viewport.width = std::min(viewport.width, static_cast<uint32_t>(info.width));
+            viewport.height = limited_height;
+            viewport.texture_width = info.width;
+            viewport.texture_height = info.height;
 
             if (info.swizzle == vkutil::rgba_mapping && info.texture.format == vk::Format::eR8G8B8A8Unorm)
                 return info.texture.view;

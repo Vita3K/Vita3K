@@ -105,13 +105,13 @@ static vma::Allocation &from_u64(uint64_t &vk_object) {
     return reinterpret_cast<vma::Allocation &>(vk_object);
 }
 
-vk::CommandBuffer create_single_time_command(vk::Device &device, vk::CommandPool &cmd_pool);
-void end_single_time_command(vk::Device &device, vk::Queue &queue, vk::CommandPool &cmd_pool, vk::CommandBuffer cmd_buffer);
+vk::CommandBuffer create_single_time_command(vk::Device device, vk::CommandPool cmd_pool);
+void end_single_time_command(vk::Device device, vk::Queue queue, vk::CommandPool cmd_pool, vk::CommandBuffer cmd_buffer);
 
-vk::ShaderModule load_shader(vk::Device &device, const std::string &path);
-vk::ShaderModule load_shader(vk::Device &device, const void *data, const uint32_t size);
+vk::ShaderModule load_shader(vk::Device device, const std::string &path);
+vk::ShaderModule load_shader(vk::Device device, const void *data, const uint32_t size);
 
-void copy_buffer(vk::Device &device, vk::CommandPool &cmd_pool, vk::Queue &queue, vk::Buffer &src, vk::Buffer &dst, vk::DeviceSize size);
+void copy_buffer(vk::Device device, vk::CommandPool cmd_pool, vk::Queue queue, vk::Buffer src, vk::Buffer dst, vk::DeviceSize size);
 
 enum struct ImageLayout {
     Undefined,
@@ -124,12 +124,13 @@ enum struct ImageLayout {
     StorageImage,
     DepthReadOnly
 };
-void transition_image_layout(vk::CommandBuffer &cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range = color_subresource_range);
+void transition_image_layout(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range = color_subresource_range);
 // transition image layout assuming you don't care about the former image content
-void transition_image_layout_discard(vk::CommandBuffer &cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range = color_subresource_range);
+void transition_image_layout_discard(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range = color_subresource_range);
 
 // given the swizzle of the color surface (which was written as rgba because vulkan doesn't support swizzle on framebuffers)
 // and the swizzle of the texture that's reading from the color surface
 // return the swizzle the texture should to make it like the color actually had a swizzle applied to it
 vk::ComponentMapping color_to_texture_swizzle(const vk::ComponentMapping &swizzle_color, const vk::ComponentMapping &swizzle_texture);
+
 } // namespace vkutil

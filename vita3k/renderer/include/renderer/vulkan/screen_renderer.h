@@ -19,8 +19,11 @@
 
 #include <vkutil/objects.h>
 
+#include "screen_filters.h"
+
+#include <memory>
+
 struct SDL_Window;
-struct SceFVector2;
 
 namespace renderer::vulkan {
 
@@ -46,27 +49,13 @@ public:
     std::vector<vk::CommandBuffer> command_buffers;
     std::vector<vk::Fence> fences;
 
-    vk::ShaderModule shader_vertex;
-    vk::ShaderModule shader_fragment;
-    vk::ShaderModule shader_fragment_fxaa;
     vk::RenderPass render_pass;
-    vk::DescriptorSetLayout descriptor_set_layout;
-    std::vector<vk::DescriptorSet> descriptor_sets;
-    vk::DescriptorPool descriptor_pool;
-    vk::PipelineLayout pipeline_layout;
 
-    vk::Pipeline pipeline;
-    vk::Pipeline pipeline_fxaa;
-
-    vk::Semaphore image_acquired_semaphore;
-    vk::Semaphore image_ready_semaphore;
-
-    vma::Allocation vao_allocation;
-    vk::Buffer vao;
-    std::vector<std::array<float, 4>> last_uvs;
+    std::unique_ptr<ScreenFilter> filter;
+    std::vector<vk::Semaphore> image_acquired_semaphores;
+    std::vector<vk::Semaphore> image_ready_semaphores;
 
     std::vector<vkutil::Image> vita_surface;
-    vk::Sampler vita_surface_sampler;
     vma::Allocation vita_surface_staging_alloc;
     vma::AllocationInfo vita_surface_staging_info;
     vk::Buffer vita_surface_staging;
@@ -75,12 +64,10 @@ public:
 
     // these are used by the gui
     uint32_t swapchain_image_idx = ~0;
+    // between 0 and swapchain_size - 1, used as the index for semaphores
+    int current_frame = 0;
     // set to true after a window resize, in this case the pipeline needs to be rebuilt
     bool need_rebuild = false;
-    // is fxaa used
-    bool enable_fxaa = false;
-    // is linear filtering used
-    bool enable_linear_filter = true;
 
     ScreenRenderer(VKState &state);
 
@@ -90,8 +77,9 @@ public:
     void cleanup();
 
     bool acquire_swapchain_image(bool start_render_pass = false);
-    void render(vk::ImageView image_view, vk::ImageLayout layout, std::array<float, 4> &uvs, SceFVector2 &texture_size);
+    void render(vk::ImageView image_view, vk::ImageLayout layout, const Viewport &viewport);
     void swap_window();
+    void set_filter(const std::string_view &filter);
 
 private:
     void create_render_pass();

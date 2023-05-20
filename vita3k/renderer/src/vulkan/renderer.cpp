@@ -167,6 +167,7 @@ bool VKState::init(const char *base_path, const bool hashless_texture_cache) {
 }
 
 bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path) {
+    this->base_path = base_path;
     // Create Instance
     {
         PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
@@ -582,12 +583,13 @@ void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         return;
 
     // Check if the surface exists
-    std::array<float, 4> uvs = { 0.0f, 0.0f, 1.0f, 1.0f };
-    SceFVector2 texture_size;
+    Viewport viewport;
+    viewport.width = display.frame.image_size.x * res_multiplier;
+    viewport.height = display.frame.image_size.y * res_multiplier;
 
     vk::ImageLayout layout = vk::ImageLayout::eGeneral;
     vk::ImageView surface_handle = surface_cache.sourcing_color_surface_for_presentation(
-        display.frame.base, display.frame.image_size.x, display.frame.image_size.y, display.frame.pitch, uvs, this->res_multiplier, texture_size);
+        display.frame.base, display.frame.pitch, viewport);
 
     if (!surface_handle) {
         vkutil::Image &vita_surface = screen_renderer.vita_surface[screen_renderer.swapchain_image_idx];
@@ -618,11 +620,18 @@ void VKState::render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &v
         vita_surface.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
 
         surface_handle = vita_surface.view;
-        texture_size = { static_cast<float>(display.frame.image_size.x), static_cast<float>(display.frame.image_size.y) };
+        viewport = {
+            .offset_x = 0,
+            .offset_y = 0,
+            .width = static_cast<uint32_t>(display.frame.image_size.x),
+            .height = static_cast<uint32_t>(display.frame.image_size.y),
+            .texture_width = static_cast<uint32_t>(display.frame.image_size.x),
+            .texture_height = static_cast<uint32_t>(display.frame.image_size.y)
+        };
         layout = vk::ImageLayout::eShaderReadOnlyOptimal;
     }
 
-    screen_renderer.render(surface_handle, layout, uvs, texture_size);
+    screen_renderer.render(surface_handle, layout, viewport);
 }
 
 void VKState::swap_window(SDL_Window *window) {
@@ -637,12 +646,13 @@ void VKState::swap_window(SDL_Window *window) {
     }
 }
 
-void VKState::set_fxaa(bool enable_fxaa) {
-    screen_renderer.enable_fxaa = enable_fxaa;
+int VKState::get_supported_filters() {
+    int filters = static_cast<int>(Filter::NEAREST) | static_cast<int>(Filter::BILINEAR) | static_cast<int>(Filter::FXAA);
+    return filters;
 }
 
-void VKState::set_linear_filter(bool enable_linear_filter) {
-    screen_renderer.enable_linear_filter = enable_linear_filter;
+void VKState::set_screen_filter(const std::string_view &filter) {
+    screen_renderer.set_filter(filter);
 }
 
 bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {

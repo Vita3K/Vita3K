@@ -64,8 +64,7 @@ enum PerfomanceOverleyPosition {
     code(int, "gpu-idx", 0, gpu_idx)                                                                    \
     code(int, "resolution-multiplier", 1, resolution_multiplier)                                        \
     code(bool, "disable-surface-sync", true, disable_surface_sync)                                      \
-    code(bool, "enable-fxaa", false, enable_fxaa)                                                       \
-    code(bool, "enable-linear-filter", true, enable_linear_filter)                                      \
+    code(std::string, "screen-filter", "Bilinear", screen_filter)                                       \
     code(bool, "v-sync", true, v_sync)                                                                  \
     code(int, "anisotropic-filtering", 1, anisotropic_filtering)                                        \
     code(bool, "texture-cache", true, texture_cache)                                                    \

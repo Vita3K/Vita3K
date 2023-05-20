@@ -31,6 +31,13 @@ struct DisplayState;
 struct GxmState;
 
 namespace renderer {
+
+enum struct Filter : int {
+    NEAREST = 1 << 0,
+    BILINEAR = 1 << 1,
+    FXAA = 1 << 2
+};
+
 struct State {
     const char *base_path;
     const char *title_id;
@@ -68,8 +75,9 @@ struct State {
         const GxmState &gxm, MemState &mem)
         = 0;
     virtual void swap_window(SDL_Window *window) = 0;
-    virtual void set_fxaa(bool enable_fxaa) = 0;
-    virtual void set_linear_filter(bool enable_linear_filter) = 0;
+    // return a bitmask with the Filter enum values of the supported enum filters
+    virtual int get_supported_filters() = 0;
+    virtual void set_screen_filter(const std::string_view &filter) = 0;
     virtual int get_max_anisotropic_filtering() = 0;
     virtual void set_anisotropic_filtering(int anisotropic_filtering) = 0;
     void set_surface_sync_state(bool disable) {

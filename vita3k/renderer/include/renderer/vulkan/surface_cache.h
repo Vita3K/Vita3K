@@ -27,6 +27,7 @@ namespace renderer::vulkan {
 
 struct VKRenderTarget;
 struct VKState;
+struct Viewport;
 
 struct SurfaceCacheInfo {
     enum {
@@ -157,7 +158,9 @@ public:
     // (meaning their color or depth-stencil surface is not backed by memory)
     void destroy_associated_framebuffers(const VKRenderTarget *render_target);
 
-    vk::ImageView sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t width, uint32_t height, const uint32_t pitch, std::array<float, 4> &uvs, const int res_multiplier, SceFVector2 &texture_size);
+    // Return the image along with the viewport to be displayed on the screen
+    // Viewport should already have its fields width and height filled
+    vk::ImageView sourcing_color_surface_for_presentation(Ptr<const void> address, uint32_t pitch, Viewport &viewport);
 
     void set_render_target(VKRenderTarget *new_target) {
         target = new_target;

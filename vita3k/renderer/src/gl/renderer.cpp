@@ -728,12 +728,14 @@ void GLState::swap_window(SDL_Window *window) {
     SDL_GL_SwapWindow(window);
 }
 
-void GLState::set_fxaa(bool enable_fxaa) {
-    screen_renderer.enable_fxaa = enable_fxaa;
+int GLState::get_supported_filters() {
+    // actually it's not even bilinear, it's either bilinear or nearest depending on the last use of the texture..
+    return static_cast<int>(Filter::BILINEAR) | static_cast<int>(Filter::FXAA);
 }
 
-void GLState::set_linear_filter(bool enable_linear_filter) {
-    screen_renderer.enable_linear_filter = enable_linear_filter;
+void GLState::set_screen_filter(const std::string_view &filter) {
+    // we only support bilinear and fxaa
+    screen_renderer.enable_fxaa = (filter == "FXAA");
 }
 
 int GLState::get_max_anisotropic_filtering() {

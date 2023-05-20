@@ -28,6 +28,16 @@
 typedef void *ImTextureID;
 
 namespace renderer::vulkan {
+
+struct Viewport {
+    uint32_t offset_x;
+    uint32_t offset_y;
+    uint32_t width;
+    uint32_t height;
+    uint32_t texture_width;
+    uint32_t texture_height;
+};
+
 struct VKState : public renderer::State {
     // 0 = automatic, > 0 = order in instance.enumeratePhysicalDevices
     int gpu_idx;
@@ -76,8 +86,8 @@ struct VKState : public renderer::State {
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem) override;
     void swap_window(SDL_Window *window) override;
-    void set_fxaa(bool enable_fxaa) override;
-    void set_linear_filter(bool enable_linear_filter) override;
+    int get_supported_filters() override;
+    void set_screen_filter(const std::string_view &filter) override;
     int get_max_anisotropic_filtering() override;
     void set_anisotropic_filtering(int anisotropic_filtering) override;
     bool map_memory(MemState &mem, Ptr<void> address, uint32_t size) override;

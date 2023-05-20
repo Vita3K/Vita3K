@@ -22,7 +22,7 @@
 
 namespace vkutil {
 
-vk::CommandBuffer create_single_time_command(vk::Device &device, vk::CommandPool &cmd_pool) {
+vk::CommandBuffer create_single_time_command(vk::Device device, vk::CommandPool cmd_pool) {
     vk::CommandBufferAllocateInfo command_buffer_info{
         .commandPool = cmd_pool,
         .level = vk::CommandBufferLevel::ePrimary,
@@ -39,7 +39,7 @@ vk::CommandBuffer create_single_time_command(vk::Device &device, vk::CommandPool
     return buffer;
 }
 
-void end_single_time_command(vk::Device &device, vk::Queue &queue, vk::CommandPool &cmd_pool, vk::CommandBuffer cmd_buffer) {
+void end_single_time_command(vk::Device device, vk::Queue queue, vk::CommandPool cmd_pool, vk::CommandBuffer cmd_buffer) {
     cmd_buffer.end();
 
     vk::SubmitInfo submit_info{};
@@ -50,7 +50,7 @@ void end_single_time_command(vk::Device &device, vk::Queue &queue, vk::CommandPo
     device.freeCommandBuffers(cmd_pool, cmd_buffer);
 }
 
-vk::ShaderModule load_shader(vk::Device &device, const std::string &path) {
+vk::ShaderModule load_shader(vk::Device device, const std::string &path) {
     const auto shader_path = fs::path(path);
     fs::ifstream is(shader_path, fs::ifstream::binary);
     if (!is) {
@@ -71,7 +71,7 @@ vk::ShaderModule load_shader(vk::Device &device, const std::string &path) {
     return load_shader(device, shader_code.data(), size_read);
 }
 
-vk::ShaderModule load_shader(vk::Device &device, const void *data, const uint32_t size) {
+vk::ShaderModule load_shader(vk::Device device, const void *data, const uint32_t size) {
     vk::ShaderModuleCreateInfo shader_info{
         .codeSize = size,
         .pCode = reinterpret_cast<const uint32_t *>(data)
@@ -80,7 +80,7 @@ vk::ShaderModule load_shader(vk::Device &device, const void *data, const uint32_
     return device.createShaderModule(shader_info);
 }
 
-void copy_buffer(vk::Device &device, vk::CommandPool &cmd_pool, vk::Queue &queue, vk::Buffer &src, vk::Buffer &dst, vk::DeviceSize size) {
+void copy_buffer(vk::Device device, vk::CommandPool cmd_pool, vk::Queue queue, vk::Buffer src, vk::Buffer dst, vk::DeviceSize size) {
     vk::CommandBuffer cmd_buffer = create_single_time_command(device, cmd_pool);
 
     vk::BufferCopy copy_region{
@@ -147,7 +147,7 @@ static constexpr ImageLayoutTransition layout_transitions[] = {
         vk::AccessFlagBits::eShaderRead },
 };
 
-static void transition_image_layout_impl(vk::CommandBuffer &cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range, bool initial_undefined) {
+static void transition_image_layout_impl(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range, bool initial_undefined) {
     const ImageLayoutTransition &src_transition = layout_transitions[static_cast<int>(src_layout)];
     const ImageLayoutTransition &dst_transition = layout_transitions[static_cast<int>(dst_layout)];
 
@@ -165,11 +165,11 @@ static void transition_image_layout_impl(vk::CommandBuffer &cmd_buffer, vk::Imag
     cmd_buffer.pipelineBarrier(src_transition.stages, dst_transition.stages, vk::DependencyFlags(), {}, {}, barrier);
 }
 
-void transition_image_layout(vk::CommandBuffer &cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range) {
+void transition_image_layout(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range) {
     transition_image_layout_impl(cmd_buffer, image, src_layout, dst_layout, range, false);
 }
 
-void transition_image_layout_discard(vk::CommandBuffer &cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range) {
+void transition_image_layout_discard(vk::CommandBuffer cmd_buffer, vk::Image image, ImageLayout src_layout, ImageLayout dst_layout, const vk::ImageSubresourceRange &range) {
     transition_image_layout_impl(cmd_buffer, image, src_layout, dst_layout, range, true);
 }
 
