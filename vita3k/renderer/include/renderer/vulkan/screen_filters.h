@@ -32,8 +32,13 @@ protected:
 public:
     ScreenFilter(ScreenRenderer &screen_renderer);
     virtual void init() = 0;
+    virtual void on_resize(){};
     virtual void render(bool is_pre_renderpass, vk::ImageView src_img, vk::ImageLayout src_layout, const Viewport &viewport) = 0;
     virtual std::string_view get_name() = 0;
+    // do we need the render pass not to clear the swapchain content ?
+    virtual bool need_post_processing_render_pass() {
+        return false;
+    }
 };
 
 class SinglePassScreenFilter : public ScreenFilter {
@@ -106,6 +111,42 @@ public:
 
     std::string_view get_name() override {
         return "FXAA";
+    }
+};
+
+class FSRScreenFilter : public ScreenFilter {
+private:
+    // dst of the easu shader, src of the rcas shader
+    std::vector<vkutil::Image> intermediate_images;
+
+    vk::ShaderModule easu_shader;
+    vk::ShaderModule rcas_shader;
+
+    vk::DescriptorSetLayout descriptor_set_layout;
+    vk::DescriptorPool descriptor_pool;
+    std::vector<vk::DescriptorSet> descriptor_sets;
+    vk::PipelineLayout pipeline_layout_easu;
+    vk::PipelineLayout pipeline_layout_rcas;
+    vk::Pipeline pipeline_easu;
+    vk::Pipeline pipeline_rcas;
+
+    vk::Extent2D output_offset;
+    vk::Extent2D output_size;
+
+    vk::Sampler sampler;
+
+public:
+    FSRScreenFilter(ScreenRenderer &screen_renderer)
+        : ScreenFilter(screen_renderer) {}
+    ~FSRScreenFilter();
+    void init() override;
+    void on_resize() override;
+    void render(bool is_pre_renderpass, vk::ImageView src_img, vk::ImageLayout src_layout, const Viewport &viewport) override;
+    std::string_view get_name() override {
+        return "FSR";
+    }
+    bool need_post_processing_render_pass() override {
+        return true;
     }
 };
 

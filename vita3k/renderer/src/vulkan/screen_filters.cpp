@@ -20,6 +20,8 @@
 
 #include "renderer/vulkan/state.h"
 
+#include <util/align.h>
+
 namespace renderer::vulkan {
 
 ScreenFilter::ScreenFilter(ScreenRenderer &screen_renderer)
@@ -48,6 +50,8 @@ SinglePassScreenFilter::~SinglePassScreenFilter() {
     device.freeDescriptorSets(descriptor_pool, descriptor_sets);
     device.destroy(descriptor_pool);
     device.destroy(descriptor_set_layout);
+    device.destroy(fragment_shader);
+    device.destroy(vertex_shader);
 
     device.destroy(sampler);
 }
@@ -184,7 +188,7 @@ void SinglePassScreenFilter::create_graphics_pipeline() {
         .pColorBlendState = &color_blending,
         .pDynamicState = &dynamic_info,
         .layout = pipeline_layout,
-        .renderPass = screen.render_pass,
+        .renderPass = screen.default_render_pass,
         .subpass = 0
     };
     pipeline_info.setStages(shader_stages);
@@ -333,7 +337,6 @@ std::string_view FXAAScreenFilter::get_fragment_name() {
 
 vk::Sampler FXAAScreenFilter::create_sampler() {
     vk::SamplerCreateInfo sampler_info{
-        // I'm still unsure whether the FXAA sampler should be nearest or linear...
         .magFilter = vk::Filter::eLinear,
         .minFilter = vk::Filter::eLinear,
         .addressModeU = vk::SamplerAddressMode::eClampToEdge,
@@ -341,6 +344,287 @@ vk::Sampler FXAAScreenFilter::create_sampler() {
         .addressModeW = vk::SamplerAddressMode::eClampToEdge,
     };
     return screen.state.device.createSampler(sampler_info);
+}
+
+struct EasuConstant {
+    Viewport viewport;
+    vk::Extent2D output_size;
+};
+
+struct RcasConstant {
+    vk::Extent2D offset;
+    float sharpening;
+};
+
+FSRScreenFilter::~FSRScreenFilter() {
+    vk::Device device = screen.state.device;
+    device.waitIdle();
+
+    device.destroy(sampler);
+
+    device.destroy(pipeline_easu);
+    device.destroy(pipeline_rcas);
+    device.destroy(pipeline_layout_easu);
+    device.destroy(pipeline_layout_rcas);
+    device.freeDescriptorSets(descriptor_pool, descriptor_sets);
+    device.destroy(descriptor_pool);
+    device.destroy(descriptor_set_layout);
+
+    device.destroy(rcas_shader);
+    device.destroy(easu_shader);
+}
+
+void FSRScreenFilter::init() {
+    vk::Device device = screen.state.device;
+
+    // create sampler
+    vk::SamplerCreateInfo sampler_info{
+        .magFilter = vk::Filter::eLinear,
+        .minFilter = vk::Filter::eLinear,
+        .addressModeU = vk::SamplerAddressMode::eClampToEdge,
+        .addressModeV = vk::SamplerAddressMode::eClampToEdge,
+        .addressModeW = vk::SamplerAddressMode::eClampToEdge,
+    };
+    sampler = device.createSampler(sampler_info);
+
+    const auto builtin_shaders_path = std::string(screen.state.base_path) + "shaders-builtin/vulkan/";
+    easu_shader = vkutil::load_shader(screen.state.device, builtin_shaders_path + "fsr_filter_easu.comp.spv");
+    rcas_shader = vkutil::load_shader(screen.state.device, builtin_shaders_path + "fsr_filter_rcas.comp.spv");
+
+    std::array<vk::DescriptorSetLayoutBinding, 3> layout_bindings = {
+        // src img
+        vk::DescriptorSetLayoutBinding{
+            .binding = 1,
+            .descriptorType = vk::DescriptorType::eSampledImage,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute },
+        // dst img
+        vk::DescriptorSetLayoutBinding{
+            .binding = 2,
+            .descriptorType = vk::DescriptorType::eStorageImage,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute },
+        // src img sampler
+        vk::DescriptorSetLayoutBinding{
+            .binding = 3,
+            .descriptorType = vk::DescriptorType::eSampler,
+            .descriptorCount = 1,
+            .stageFlags = vk::ShaderStageFlagBits::eCompute,
+            .pImmutableSamplers = &sampler },
+    };
+
+    vk::DescriptorSetLayoutCreateInfo layout_create_info{};
+    layout_create_info.setBindings(layout_bindings);
+    descriptor_set_layout = device.createDescriptorSetLayout(layout_create_info);
+
+    std::array<vk::DescriptorPoolSize, 3> pool_sizes{
+        vk::DescriptorPoolSize{
+            .type = vk::DescriptorType::eSampledImage,
+            .descriptorCount = screen.swapchain_size * 2 },
+        vk::DescriptorPoolSize{
+            .type = vk::DescriptorType::eStorageImage,
+            .descriptorCount = screen.swapchain_size * 2 },
+        vk::DescriptorPoolSize{
+            .type = vk::DescriptorType::eSampler,
+            .descriptorCount = screen.swapchain_size * 2 },
+    };
+    vk::DescriptorPoolCreateInfo pool_info{
+        .maxSets = screen.swapchain_size * 2,
+    };
+    pool_info.setPoolSizes(pool_sizes);
+    descriptor_pool = device.createDescriptorPool(pool_info);
+
+    vk::DescriptorSetAllocateInfo descr_set_info{
+        .descriptorPool = descriptor_pool,
+    };
+    std::vector<vk::DescriptorSetLayout> descr_set_layouts(screen.swapchain_size * 2, descriptor_set_layout);
+    descr_set_info.setSetLayouts(descr_set_layouts);
+    descriptor_sets = device.allocateDescriptorSets(descr_set_info);
+
+    vk::PipelineLayoutCreateInfo layout_info{};
+    layout_info.setSetLayouts(descriptor_set_layout);
+    vk::PushConstantRange push_constant{
+        .stageFlags = vk::ShaderStageFlagBits::eCompute,
+        .offset = 0,
+        .size = sizeof(EasuConstant),
+    };
+    layout_info.setPushConstantRanges(push_constant);
+    pipeline_layout_easu = device.createPipelineLayout(layout_info);
+
+    push_constant.size = sizeof(RcasConstant);
+    pipeline_layout_rcas = device.createPipelineLayout(layout_info);
+
+    // create easu and rcas pipelines
+    vk::ComputePipelineCreateInfo compute_info{
+        .stage = {
+            .stage = vk::ShaderStageFlagBits::eCompute,
+            .module = easu_shader,
+            .pName = "main" },
+        .layout = pipeline_layout_easu
+    };
+    auto result = device.createComputePipeline(nullptr, compute_info);
+    if (result.result != vk::Result::eSuccess)
+        LOG_ERROR("Failed to create compute pipeline");
+    pipeline_easu = result.value;
+
+    compute_info.stage.module = rcas_shader;
+    compute_info.layout = pipeline_layout_rcas;
+    result = device.createComputePipeline(nullptr, compute_info);
+    if (result.result != vk::Result::eSuccess)
+        LOG_ERROR("Failed to create compute pipeline");
+    pipeline_rcas = result.value;
+
+    // create intermediate images
+    intermediate_images.resize(screen.swapchain_size);
+    for (auto &img : intermediate_images) {
+        img.allocator = screen.state.allocator;
+        img.format = vk::Format::eR8G8B8A8Unorm;
+    }
+    on_resize();
+}
+
+void FSRScreenFilter::on_resize() {
+    // compute the extent
+    const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
+    const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
+    if (window_aspect > vita_aspect) {
+        // Window is wide. Pin top and bottom.
+        output_size.width = static_cast<uint32_t>(std::round(screen.extent.height * vita_aspect));
+        output_size.height = screen.extent.height;
+        output_offset.width = static_cast<uint32_t>(std::round((screen.extent.width - output_size.width) / 2.0f));
+        output_offset.height = 0.0;
+    } else {
+        // Window is tall. Pin left and right.
+        output_size.width = screen.extent.width;
+        output_size.height = static_cast<uint32_t>(std::round(screen.extent.width / vita_aspect));
+        output_offset.width = 0.0f;
+        output_offset.height = static_cast<uint32_t>(std::round((screen.extent.height - output_size.height) / 2.0f));
+    }
+
+    // recreate the intermediate images
+    for (auto &img : intermediate_images) {
+        img.destroy();
+        img.width = output_size.width;
+        img.height = output_size.height;
+        img.init_image(vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eSampled);
+    }
+
+    // update the descriptor sets (except the first sampler image as it is not fixed)
+    std::vector<vk::DescriptorImageInfo> descr_images(screen.swapchain_size * 3);
+    std::vector<vk::WriteDescriptorSet> write_descr(screen.swapchain_size * 3);
+    for (int i = 0; i < write_descr.size(); i++) {
+        descr_images[i].imageView = intermediate_images[i / 3].view;
+        write_descr[i].setImageInfo(descr_images[i]);
+    }
+
+    for (int i = 0; i < screen.swapchain_size; i++) {
+        // easu dst
+        descr_images[i * 3].imageLayout = vk::ImageLayout::eGeneral;
+        write_descr[i * 3]
+            .setDstSet(descriptor_sets[i * 2])
+            .setDstBinding(2)
+            .setDescriptorType(vk::DescriptorType::eStorageImage);
+        // rcas src
+        descr_images[i * 3 + 1].imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
+        write_descr[i * 3 + 1]
+            .setDstSet(descriptor_sets[i * 2 + 1])
+            .setDstBinding(1)
+            .setDescriptorType(vk::DescriptorType::eSampledImage);
+        // rcas dst
+        descr_images[i * 3 + 2]
+            .setImageView(screen.swapchain_views[i])
+            .setImageLayout(vk::ImageLayout::eGeneral);
+        write_descr[i * 3 + 2]
+            .setDstSet(descriptor_sets[i * 2 + 1])
+            .setDstBinding(2)
+            .setDescriptorType(vk::DescriptorType::eStorageImage);
+    }
+    screen.state.device.updateDescriptorSets(write_descr, {});
+}
+
+void FSRScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_img, vk::ImageLayout src_layout, const Viewport &viewport) {
+    if (!is_pre_renderpass)
+        // we are using compute shaders
+        return;
+
+    // update descriptor set, (only the easu src)
+    vk::DescriptorImageInfo descr_image_info{
+        .imageView = src_img,
+        .imageLayout = src_layout,
+    };
+    vk::WriteDescriptorSet write_descr{
+        .dstSet = descriptor_sets[2 * screen.swapchain_image_idx],
+        .dstBinding = 1,
+        .dstArrayElement = 0,
+        .descriptorType = vk::DescriptorType::eSampledImage,
+    };
+    write_descr.setImageInfo(descr_image_info);
+    screen.state.device.updateDescriptorSets(write_descr, {});
+
+    vk::CommandBuffer cmd_buffer = screen.current_cmd_buffer;
+    // first, make a barrier to make sure we can write to the intermediate texture
+    // we don't care about the previous content
+    intermediate_images[screen.swapchain_image_idx].transition_to_discard(cmd_buffer, vkutil::ImageLayout::StorageImage);
+
+    // upscaling pass
+    cmd_buffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline_easu);
+    cmd_buffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipeline_layout_easu, 0, descriptor_sets[2 * screen.swapchain_image_idx], {});
+    // push the viewport to the shader
+    EasuConstant easu_constant{
+        .viewport = viewport,
+        .output_size = output_size
+    };
+    cmd_buffer.pushConstants(pipeline_layout_easu, vk::ShaderStageFlagBits::eCompute, 0, sizeof(EasuConstant), &easu_constant);
+    const int dispatch_x = (output_size.width + 15) / 16;
+    const int dispatch_y = (output_size.height + 15) / 16;
+    cmd_buffer.dispatch(dispatch_x, dispatch_y, 1);
+
+    // meanwhile, we need to clear the swapchain surface
+    vk::ImageMemoryBarrier barrier{
+        .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+        .dstAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .oldLayout = vk::ImageLayout::eUndefined,
+        .newLayout = vk::ImageLayout::eTransferDstOptimal,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = screen.swapchain_images[screen.swapchain_image_idx],
+        .subresourceRange = vkutil::color_subresource_range
+    };
+    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eTransfer,
+        vk::DependencyFlags(), {}, {}, barrier);
+
+    vk::ClearColorValue clear_color{ std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 0.0f }) };
+    cmd_buffer.clearColorImage(screen.swapchain_images[screen.swapchain_image_idx], vk::ImageLayout::eTransferDstOptimal, clear_color, vkutil::color_subresource_range);
+
+    // then transition the read texture to sampled // wait for the previous compute shader to be done
+    intermediate_images[screen.swapchain_image_idx].transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
+
+    // also transition the swapchain image to general
+    barrier = {
+        .srcAccessMask = vk::AccessFlagBits::eTransferWrite,
+        .dstAccessMask = vk::AccessFlagBits::eShaderWrite,
+        .oldLayout = vk::ImageLayout::eTransferDstOptimal,
+        .newLayout = vk::ImageLayout::eGeneral,
+        .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+        .image = screen.swapchain_images[screen.swapchain_image_idx],
+        .subresourceRange = vkutil::color_subresource_range
+    };
+    cmd_buffer.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer, vk::PipelineStageFlagBits::eComputeShader,
+        vk::DependencyFlags(), {}, {}, barrier);
+
+    // sharpening pass
+    cmd_buffer.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline_rcas);
+    cmd_buffer.bindDescriptorSets(vk::PipelineBindPoint::eCompute, pipeline_layout_rcas, 0, descriptor_sets[2 * screen.swapchain_image_idx + 1], {});
+    RcasConstant rcas_constant{
+        .offset = output_offset,
+        // some default value for sharpening
+        .sharpening = 0.2f
+    };
+    cmd_buffer.pushConstants(pipeline_layout_rcas, vk::ShaderStageFlagBits::eCompute, 0, sizeof(RcasConstant), &rcas_constant);
+    cmd_buffer.dispatch(dispatch_x, dispatch_y, 1);
+
+    // the barrier for the render pass will be handled by the renderpass external dependencies
 }
 
 } // namespace renderer::vulkan

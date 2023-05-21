@@ -118,6 +118,11 @@ void ScreenRenderer::create_swapchain() {
 
     // Create Swapchain
     {
+        vk::ImageUsageFlags surface_usage = vk::ImageUsageFlagBits::eColorAttachment;
+        if (surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage)
+            // needed for FSR
+            surface_usage |= vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage;
+
         vk::SwapchainCreateInfoKHR swapchain_info{
             .surface = surface,
             .minImageCount = swapchain_size,
@@ -125,7 +130,7 @@ void ScreenRenderer::create_swapchain() {
             .imageColorSpace = surface_format.colorSpace,
             .imageExtent = extent,
             .imageArrayLayers = 1,
-            .imageUsage = vk::ImageUsageFlagBits::eColorAttachment,
+            .imageUsage = surface_usage,
             .imageSharingMode = vk::SharingMode::eExclusive,
             .preTransform = surface_capabilities.currentTransform,
             .compositeAlpha = vk::CompositeAlphaFlagBitsKHR::eOpaque,
@@ -157,7 +162,7 @@ void ScreenRenderer::create_swapchain() {
     swapchain_framebuffers.resize(swapchain_size);
     for (uint32_t i = 0; i < swapchain_size; i++) {
         vk::FramebufferCreateInfo fb_info{
-            .renderPass = render_pass,
+            .renderPass = default_render_pass,
             .width = extent.width,
             .height = extent.height,
             .layers = 1
@@ -166,6 +171,9 @@ void ScreenRenderer::create_swapchain() {
 
         swapchain_framebuffers[i] = state.device.createFramebuffer(fb_info);
     }
+
+    if (filter)
+        filter->on_resize();
 }
 
 void ScreenRenderer::destroy_swapchain() {
@@ -188,7 +196,8 @@ void ScreenRenderer::cleanup() {
     for (vk::Framebuffer fb : swapchain_framebuffers)
         state.device.destroy(fb);
 
-    state.device.destroy(render_pass);
+    state.device.destroy(default_render_pass);
+    state.device.destroy(post_filter_render_pass);
 
     for (vk::ImageView view : swapchain_views)
         state.device.destroy(view);
@@ -260,7 +269,7 @@ bool ScreenRenderer::acquire_swapchain_image(bool start_render_pass) {
 
     if (start_render_pass) {
         vk::RenderPassBeginInfo pass_info{
-            .renderPass = render_pass,
+            .renderPass = default_render_pass,
             .framebuffer = swapchain_framebuffers[swapchain_image_idx],
             .renderArea = {
                 .offset = { 0, 0 },
@@ -283,6 +292,7 @@ void ScreenRenderer::render(vk::ImageView image_view, vk::ImageLayout layout, co
     // we need to apply the screen filter at the right moment (before or after we start the render pass depending on it)
     filter->render(true, image_view, layout, viewport);
 
+    const auto render_pass = filter->need_post_processing_render_pass() ? post_filter_render_pass : default_render_pass;
     vk::RenderPassBeginInfo pass_info{
         .renderPass = render_pass,
         .framebuffer = swapchain_framebuffers[swapchain_image_idx],
@@ -311,7 +321,7 @@ void ScreenRenderer::swap_window() {
     vk::SubmitInfo submit_info{};
     std::array<vk::Semaphore, 1> wait_semaphores = { image_acquired_semaphores[current_frame] };
     std::array<vk::PipelineStageFlags, 1> dst_masks
-        = { vk::PipelineStageFlagBits::eColorAttachmentOutput };
+        = { vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eTransfer };
     submit_info.setWaitSemaphores(wait_semaphores);
     submit_info.setWaitDstStageMask(dst_masks);
     submit_info.setSignalSemaphores(image_ready_semaphores[current_frame]);
@@ -356,7 +366,9 @@ void ScreenRenderer::set_filter(const std::string_view &filter) {
         return;
 
     this->filter.reset();
-    if (filter == "FXAA")
+    if (filter == "FSR")
+        this->filter = std::make_unique<FSRScreenFilter>(*this);
+    else if (filter == "FXAA")
         this->filter = std::make_unique<FXAAScreenFilter>(*this);
     else if (filter == "Nearest")
         this->filter = std::make_unique<NearestScreenFilter>(*this);
@@ -412,10 +424,11 @@ void ScreenRenderer::create_render_pass() {
     vk::SubpassDependency dependency{
         .srcSubpass = VK_SUBPASS_EXTERNAL,
         .dstSubpass = 0,
-        .srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
+        .srcStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput | vk::PipelineStageFlagBits::eComputeShader,
         .dstStageMask = vk::PipelineStageFlagBits::eColorAttachmentOutput,
         .srcAccessMask = vk::AccessFlags(),
-        .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite
+        // don't forget blending
+        .dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite
     };
 
     vk::RenderPassCreateInfo pass_info{};
@@ -423,7 +436,13 @@ void ScreenRenderer::create_render_pass() {
     pass_info.setSubpasses(subpass);
     pass_info.setDependencies(dependency);
 
-    render_pass = state.device.createRenderPass(pass_info);
+    default_render_pass = state.device.createRenderPass(pass_info);
+
+    // renderpass after post processing filter
+    color_attachment
+        .setLoadOp(vk::AttachmentLoadOp::eLoad)
+        .setInitialLayout(vk::ImageLayout::eGeneral);
+    post_filter_render_pass = state.device.createRenderPass(pass_info);
 }
 
 void ScreenRenderer::create_surface_image() {
