@@ -540,10 +540,11 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         // Screen Filter
         ImGui::Spacing();
         int curr_filter = 0;
-        const std::array<const char *, 3> possible_filters = {
+        const std::array<const char *, 4> possible_filters = {
             "Nearest",
             "Bilinear",
-            "FXAA"
+            "FXAA",
+            "FSR"
         };
         const int filters_available = emuenv.renderer->get_supported_filters();
         std::vector<const char *> filters;

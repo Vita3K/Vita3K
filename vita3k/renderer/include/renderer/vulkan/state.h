@@ -78,6 +78,8 @@ struct VKState : public renderer::State {
     vkutil::Image default_image;
     vkutil::Buffer default_buffer;
 
+    bool support_fsr = false;
+
     VKState(int gpu_idx);
 
     bool init(const char *base_path, const bool hashless_texture_cache) override;

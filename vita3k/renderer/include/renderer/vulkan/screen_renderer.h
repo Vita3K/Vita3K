@@ -49,7 +49,10 @@ public:
     std::vector<vk::CommandBuffer> command_buffers;
     std::vector<vk::Fence> fences;
 
-    vk::RenderPass render_pass;
+    // renderpass used when no effect is done previously (clear the swapchain content)
+    vk::RenderPass default_render_pass;
+    // renderpass used after a post-processing pass clearing the swapchain, compatible with the default render pass
+    vk::RenderPass post_filter_render_pass;
 
     std::unique_ptr<ScreenFilter> filter;
     std::vector<vk::Semaphore> image_acquired_semaphores;

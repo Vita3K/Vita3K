@@ -417,7 +417,7 @@ static bool ImGui_ImplSdlVulkan_CreatePipeline(ImGui_VulkanState &state) {
         .pColorBlendState = &gui_pipeline_blend_info,
         .pDynamicState = &gui_pipeline_dynamic_info,
         .layout = state.PipelineLayout,
-        .renderPass = vk_state.screen_renderer.render_pass,
+        .renderPass = vk_state.screen_renderer.default_render_pass,
     };
     gui_pipeline_info.setStages(shader_stage_infos);
 

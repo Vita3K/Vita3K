@@ -341,6 +341,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .fillModeNonSolid = physical_device_features.fillModeNonSolid,
             .wideLines = physical_device_features.wideLines,
             .samplerAnisotropy = physical_device_features.samplerAnisotropy,
+            .shaderInt16 = physical_device_features.shaderInt16
         };
 
         // look for optional extensions
@@ -350,7 +351,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         bool support_buffer_device_address = false;
         bool support_standard_layout = false;
         bool support_external_memory = false;
-        const std::map<std::string, bool *> optional_extensions = {
+        const std::map<std::string_view, bool *> optional_extensions = {
             { VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, &temp_bool },
             // can be used by vma to improve performance
             { VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME, &support_dedicated_allocations },
@@ -366,6 +367,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             { VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME, &support_buffer_device_address },
             // needed for uniform uvec2 arrays not to take twice the size
             { VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME, &support_standard_layout },
+            // needed for FSR
+            { VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, &support_fsr },
 #ifdef __APPLE__
             // Needed to create the MoltenVK device
             { VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, &temp_bool },
@@ -377,7 +380,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             if (it != optional_extensions.end()) {
                 // this extension is available on the GPU
                 *it->second = true;
-                device_extensions.push_back(it->first.c_str());
+                device_extensions.push_back(it->first.data());
             }
         }
 
@@ -435,14 +438,21 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         // We use subpass input to get something similar to direct fragcolor access (there is no difference for the shader)
         features.direct_fragcolor = true;
 
-        vk::StructureChain<vk::DeviceCreateInfo, vk::PhysicalDeviceBufferDeviceAddressFeatures, vk::PhysicalDeviceUniformBufferStandardLayoutFeatures> device_info{
-            vk::DeviceCreateInfo{
-                .pEnabledFeatures = &enabled_features },
-            vk::PhysicalDeviceBufferDeviceAddressFeatures{
-                .bufferDeviceAddress = VK_TRUE },
-            vk::PhysicalDeviceUniformBufferStandardLayoutFeatures{
-                .uniformBufferStandardLayout = VK_TRUE }
-        };
+        vk::StructureChain<vk::DeviceCreateInfo,
+            vk::PhysicalDeviceBufferDeviceAddressFeatures,
+            vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
+            vk::PhysicalDeviceShaderFloat16Int8Features>
+            device_info{
+                vk::DeviceCreateInfo{
+                    .pEnabledFeatures = &enabled_features },
+                vk::PhysicalDeviceBufferDeviceAddressFeatures{
+                    .bufferDeviceAddress = VK_TRUE },
+                vk::PhysicalDeviceUniformBufferStandardLayoutFeatures{
+                    .uniformBufferStandardLayout = VK_TRUE },
+                vk::PhysicalDeviceShaderFloat16Int8Features{
+                    // FSR uses float16
+                    .shaderFloat16 = VK_TRUE }
+            };
         device_info.get().setQueueCreateInfos(queue_infos);
         device_info.get().setPEnabledExtensionNames(device_extensions);
 
@@ -450,6 +460,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             device_info.unlink<vk::PhysicalDeviceBufferDeviceAddressFeatures>();
             device_info.unlink<vk::PhysicalDeviceUniformBufferStandardLayoutFeatures>();
         }
+
+        if (!support_fsr)
+            device_info.unlink<vk::PhysicalDeviceShaderFloat16Int8Features>();
 
         try {
             device = physical_device.createDevice(device_info.get());
@@ -544,6 +557,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
     if (!screen_renderer.setup(base_path))
         return false;
+
+    support_fsr &= static_cast<bool>(screen_renderer.surface_capabilities.supportedUsageFlags & vk::ImageUsageFlagBits::eStorage);
 
 #ifdef __linux__
     // According to my tests (Macdu), mprotect on buffers (mapped with external memory host) only works with Nvidia drivers
@@ -648,11 +663,18 @@ void VKState::swap_window(SDL_Window *window) {
 
 int VKState::get_supported_filters() {
     int filters = static_cast<int>(Filter::NEAREST) | static_cast<int>(Filter::BILINEAR) | static_cast<int>(Filter::FXAA);
+    if (support_fsr)
+        filters |= static_cast<int>(Filter::FSR);
     return filters;
 }
 
 void VKState::set_screen_filter(const std::string_view &filter) {
-    screen_renderer.set_filter(filter);
+    if (filter == "FSR" && !support_fsr) {
+        LOG_WARN("Trying to enable FSR but the GPU does not support it");
+        screen_renderer.set_filter("");
+    } else {
+        screen_renderer.set_filter(filter);
+    }
 }
 
 bool VKState::map_memory(MemState &mem, Ptr<void> address, uint32_t size) {

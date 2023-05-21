@@ -1,0 +1,66 @@
+// Vita3K emulator project
+// Copyright (C) 2023 Vita3K team
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License along
+// with this program; if not, write to the Free Software Foundation, Inc.,
+// 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
+#extension GL_ARB_shading_language_420pack : enable
+#extension GL_GOOGLE_include_directive : enable
+
+layout(push_constant) uniform viewport
+{
+	uvec2 offset;
+	float sharpening;
+};
+
+uvec4 con0;
+
+#define A_GPU 1
+#define A_GLSL 1
+
+#define A_HALF
+#include "../../../external/GPUOpen/ffx_a.h"
+layout(set=0,binding=1) uniform texture2D InputTexture;
+layout(set=0,binding=2,rgba16f) uniform image2D OutputTexture;
+layout(set=0,binding=3) uniform sampler InputSampler;
+#define FSR_RCAS_H
+AH4 FsrRcasLoadH(ASW2 p) { return AH4(texelFetch(sampler2D(InputTexture,InputSampler), ASU2(p), 0)); }
+void FsrRcasInputH(inout AH1 r,inout AH1 g,inout AH1 b){}
+
+#include "../../../external/GPUOpen/ffx_fsr1.h"
+
+void CurrFilter(AU2 pos)
+{
+	AH3 c;
+	FsrRcasH(c.r, c.g, c.b, pos, con0);
+	imageStore(OutputTexture, ASU2(pos) + ASU2(offset), AH4(c, 1));
+}
+
+layout(local_size_x=64) in;
+void main()
+{
+	FsrRcasCon(con0, sharpening);
+	// Do remapping of local xy in workgroup for a more PS-like swizzle pattern.
+	AU2 gxy = ARmp8x8(gl_LocalInvocationID.x) + AU2(gl_WorkGroupID.x << 4u, gl_WorkGroupID.y << 4u);
+	CurrFilter(gxy);
+	gxy.x += 8u;
+	CurrFilter(gxy);
+	gxy.y += 8u;
+	CurrFilter(gxy);
+	gxy.x -= 8u;
+	CurrFilter(gxy);
+}
+
