@@ -1,13 +1,15 @@
 @echo off
 color 2
 title Vita3K Updater
+timeout /t 1 /nobreak >nul
+
 echo ============================================================
 echo ====================== Vita3K Updater ======================
 echo ============================================================
 
-for /f "delims=" %%g in ('powershell "((Invoke-WebRequest https://github.com/Vita3K/Vita3K/releases/tag/continuous).ParsedHtml.body.outerText.Split("\"`n"\") | Select-String -Pattern 'Vita3K Build:') -replace  'Vita3K Build: '"') do @set git_version=%%g
+for /f "delims=" %%g in ('powershell "((Invoke-RestMethod https://api.github.com/repos/Vita3K/Vita3K/releases/latest -timeout 2).body.Split("\"`n"\") | Select-String -Pattern 'Vita3K Build:') -replace  'Vita3K Build: '"') do @set git_version=%%g
 if exist Vita3K.exe (
-   for /f "delims=" %%v in ('powershell "((Get-Item Vita3K.exe).VersionInfo.FileVersion) -replace '0.1.6.'"') do @set version=%%v
+   for /f "delims=" %%v in ('powershell "((Get-Item Vita3K.exe).VersionInfo.FileVersion) -replace '0.1.8.'"') do @set version=%%v
 )
 set boot=0
 
