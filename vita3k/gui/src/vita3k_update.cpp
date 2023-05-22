@@ -17,14 +17,19 @@
 
 #include "private.h"
 
-#include <config/state.h>
-#include <config/version.h>
-#include <gui/functions.h>
-
-#include <SDL.h>
 #include <boost/algorithm/string.hpp>
 
+#include <config/state.h>
+#include <config/version.h>
+
+#include <gui/functions.h>
 #include <https/functions.h>
+
+#include <SDL.h>
+
+#ifdef WIN32
+#include <combaseapi.h>
+#endif
 
 #include <regex>
 
@@ -211,11 +216,13 @@ static void download_update(const std::string &base_path) {
 
 #ifdef WIN32
             const auto vita3K_batch = fmt::format("\"{}/update-vita3k.bat\"", base_path);
+            FreeConsole();
 #elif defined(__APPLE__)
             const auto vita3K_batch = fmt::format("sh \"{}/update-vita3k.sh\"", base_path);
 #else
             const auto vita3K_batch = fmt::format("chmod +x \"{}/update-vita3k.sh\" && \"{}/update-vita3k.sh\"", base_path, base_path);
 #endif
+
             // When success finish download, remove latest ver file
             fs::remove(latest_ver_path);
 
