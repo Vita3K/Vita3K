@@ -64,7 +64,7 @@ static bool init_avatar(GuiState &gui, EmuEnvState &emuenv, const std::string &u
 #ifdef _WIN32
     FILE *f = _wfopen(avatar_path_wstr.c_str(), L"rb");
 #else
-    FILE *f = fopen(avatar_path.c_str(), "rb");
+    FILE *f = fopen(avatar_path_wstr.c_str(), "rb");
 #endif
 
     stbi_uc *data = stbi_load_from_file(f, &width, &height, nullptr, STBI_rgb_alpha);
