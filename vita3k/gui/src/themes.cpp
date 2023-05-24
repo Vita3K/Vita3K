@@ -391,29 +391,37 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
 
 void draw_background(GuiState &gui, EmuEnvState &emuenv) {
     const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
-    const auto RES_SCALE = ImVec2(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
+    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+    const ImVec2 VIEWPORT_POS_MAX(emuenv.viewport_pos.x + emuenv.viewport_size.x, emuenv.viewport_pos.y + emuenv.viewport_size.y);
+    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
     const auto INFO_BAR_HEIGHT = 32.f * SCALE.y;
     const auto HALF_INFO_BAR_HEIGHT = INFO_BAR_HEIGHT / 2.f;
 
     const auto is_user_background = !gui.user_backgrounds.empty() && !gui.users[emuenv.io.user_id].use_theme_bg;
     const auto is_theme_background = !gui.theme_backgrounds.empty() && gui.users[emuenv.io.user_id].use_theme_bg;
-    const auto background_color = gui.vita_area.home_screen ? IM_COL32(11.f, 90.f, 252.f, 160.f) : IM_COL32(0.f, 0.f, 0.f, 255.f);
 
-    // Draw background
     auto draw_list = ImGui::GetBackgroundDrawList();
-    draw_list->AddRectFilled(ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize, background_color, 0.f, ImDrawFlags_RoundCornersAll);
 
-    if (is_theme_background || is_user_background) {
+    // Draw black background for full screens
+    draw_list->AddRectFilled(ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize, IM_COL32(0.f, 0.f, 0.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
+
+    // Draw blue background for home screen and live area screen only
+    if (gui.vita_area.home_screen || gui.vita_area.live_area_screen)
+        draw_list->AddRectFilled(VIEWPORT_POS, VIEWPORT_POS_MAX, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawFlags_RoundCornersAll);
+
+    // Draw background image for home screen and app loading screen only
+    if (!gui.vita_area.live_area_screen && (is_theme_background || is_user_background)) {
+        ImVec2 background_pos_min(VIEWPORT_POS.x, VIEWPORT_POS.y + (gui.vita_area.home_screen ? INFO_BAR_HEIGHT : HALF_INFO_BAR_HEIGHT));
+        ImVec2 background_pos_max(background_pos_min.x + VIEWPORT_SIZE.x, background_pos_min.y + VIEWPORT_SIZE.y);
+
         // Draw background image
-        auto background_pos_min = ImVec2(0, gui.vita_area.home_screen ? INFO_BAR_HEIGHT : HALF_INFO_BAR_HEIGHT);
-        ImVec2 background_pos_max = VIEWPORT_SIZE;
         std::string user_bg_path;
         if (is_user_background) {
             user_bg_path = gui.users[emuenv.io.user_id].backgrounds[gui.current_user_bg];
             const auto user_background_infos = gui.user_backgrounds_infos[user_bg_path];
-            background_pos_min = ImVec2(user_background_infos.pos.x * SCALE.x, background_pos_min.y + (user_background_infos.pos.y * SCALE.y));
+            background_pos_min = ImVec2(background_pos_min.x + (user_background_infos.pos.x * SCALE.x), background_pos_min.y + (user_background_infos.pos.y * SCALE.y));
             background_pos_max = ImVec2(background_pos_min.x + (user_background_infos.size.x * SCALE.x), background_pos_min.y + (user_background_infos.size.y * SCALE.y));
         } else if (is_theme_background && !gui.vita_area.home_screen)
             background_pos_max.y -= HALF_INFO_BAR_HEIGHT;
