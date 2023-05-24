@@ -529,7 +529,7 @@ void draw_live_area_screen(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Begin("##live_area", &gui.vita_area.live_area_screen, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoSavedSettings);
 
     // Draw background
-    ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), display_size, IM_COL32(11.f, 90.f, 252.f, 160.f), 0.f, ImDrawFlags_RoundCornersAll);
+    draw_background(gui, emuenv);
 
     const auto background_pos = ImVec2(900.0f * SCALE.x, 500.0f * SCALE.y);
     const auto pos_bg = ImVec2(display_size.x - background_pos.x, display_size.y - background_pos.y);
