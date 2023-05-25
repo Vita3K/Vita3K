@@ -103,6 +103,12 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
             *stored_width = info.original_width;
         }
 
+        if (purpose == SurfaceTextureRetrievePurpose::READING
+            && (base_format == SCE_GXM_COLOR_BASE_FORMAT_U8U8U8 || info.format == SCE_GXM_COLOR_BASE_FORMAT_U8U8U8)
+            && base_format != info.format)
+            // don't even try to match u8u8u8 with something else
+            return 0;
+
         // There are four situations I think of:
         // 1. Different base address, lookup for write, in this case, if the cached surface range contains the given address, then
         // probably this cached surface has already been freed GPU-wise. So erase.
