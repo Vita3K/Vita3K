@@ -1902,6 +1902,22 @@ bool USSETranslatorVisitor::vdual(
             result = m_b.createBinOp(spv::OpFAdd, type, result, third);
             break;
         }
+        case Opcode::FSUBFLR: {
+            // result = ops1 - Floor(ops2)
+            // If two source are identical, let's use the fractional function
+            const spv::Id first = load(ops[0], write_mask_source);
+            const spv::Id type = m_b.getTypeId(first);
+            if (ops[0].is_same(ops[1], write_mask_source)) {
+                result = m_b.createBuiltinCall(type, std_builtins, GLSLstd450Fract, { first });
+            } else {
+                // We need to floor source 2
+                const spv::Id second = load(ops[1], write_mask_source);
+                spv::Id second_floored = m_b.createBuiltinCall(type, std_builtins, GLSLstd450Floor, { second });
+                // Then subtract source 1 with the floored source 2.
+                result = m_b.createBinOp(spv::OpFSub, type, first, second_floored);
+            }
+            break;
+        }
         default:
             LOG_ERROR("Missing implementation for DUAL {}.", disasm::opcode_str(code));
             return spv::NoResult;
