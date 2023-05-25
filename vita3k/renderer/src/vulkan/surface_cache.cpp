@@ -160,6 +160,13 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
 
     if (overlap) {
         ColorSurfaceCacheInfo &info = ite->second;
+
+        if (purpose == SurfaceTextureRetrievePurpose::READING
+            && (base_format == SCE_GXM_COLOR_BASE_FORMAT_U8U8U8 || info.format == SCE_GXM_COLOR_BASE_FORMAT_U8U8U8)
+            && base_format != info.format)
+            // don't even try to match u8u8u8 with something else
+            return nullptr;
+
         auto used_iterator = std::find(last_use_color_surface_index.begin(), last_use_color_surface_index.end(), ite->first);
 
         if (stored_width) {
