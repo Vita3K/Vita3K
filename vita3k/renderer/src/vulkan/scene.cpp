@@ -400,8 +400,8 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     vert_ublock.viewport_flag = (context.record.viewport_flat) ? 0.0f : 1.0f;
     vert_ublock.z_offset = context.record.z_offset;
     vert_ublock.z_scale = context.record.z_scale;
-    vert_ublock.screen_width = static_cast<float>(context.render_target->width);
-    vert_ublock.screen_height = static_cast<float>(context.render_target->height);
+    vert_ublock.screen_width = static_cast<float>(context.render_target->width / context.state.res_multiplier);
+    vert_ublock.screen_height = static_cast<float>(context.render_target->height / context.state.res_multiplier);
     const size_t vert_ublock_size = use_memory_mapping ? sizeof(shader::RenderVertUniformBlockWithMapping) : sizeof(shader::RenderVertUniformBlock);
 
     if (memcmp(&context.previous_vert_info, &vert_ublock, vert_ublock_size) != 0) {
