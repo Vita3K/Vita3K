@@ -162,17 +162,23 @@ VKContext::VKContext(VKState &state, MemState &mem)
     }
 }
 
-VKRenderTarget::VKRenderTarget(VKState &state, vma::Allocator allocator, uint16_t width, uint16_t height, uint16_t samples_per_frame)
-    : mask(allocator, width, height, vk::Format::eR8G8B8A8Unorm)
-    , color(allocator, width * state.res_multiplier, height * state.res_multiplier, vk::Format::eR8G8B8A8Unorm)
-    , depthstencil(allocator, width * state.res_multiplier, height * state.res_multiplier, vk::Format::eD32SfloatS8Uint) {
-    this->width = width * state.res_multiplier;
-    this->height = height * state.res_multiplier;
+VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params)
+    : mask(state.allocator, params.width, params.height, vk::Format::eR8G8B8A8Unorm)
+    , color(state.allocator, params.width * state.res_multiplier, params.height * state.res_multiplier, vk::Format::eR8G8B8A8Unorm)
+    , depthstencil(state.allocator, params.width * state.res_multiplier, params.height * state.res_multiplier, vk::Format::eD32SfloatS8Uint) {
+    width = params.width * state.res_multiplier;
+    height = params.height * state.res_multiplier;
 
     if (state.features.use_mask_bit)
         mask.init_image(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eStorage);
 
     color.init_image(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment);
+    if (params.multisampleMode == SCE_GXM_MULTISAMPLE_4X) {
+        // the depth buffer may need to be 4x bigger if we use a texture without downscale
+        depthstencil.width *= 2;
+        depthstencil.height *= 2;
+    }
+
     depthstencil.init_image(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc);
 
     // transition images to their right state (not needed for the mask)
@@ -199,7 +205,7 @@ VKRenderTarget::VKRenderTarget(VKState &state, vma::Allocator allocator, uint16_
 
     constexpr uint16_t SCE_GXM_MAX_SCENES_PER_RENDERTARGET = 8;
     // hopefully this will always be enough
-    samples_per_frame = std::min<uint16_t>(samples_per_frame + 2, SCE_GXM_MAX_SCENES_PER_RENDERTARGET);
+    const uint16_t samples_per_frame = std::min<uint16_t>(params.scenesPerFrame + 2, SCE_GXM_MAX_SCENES_PER_RENDERTARGET);
 
     // the maximum number of fence we will ever need simultaneously is samples_per_frame * MAX_FRAMES_RENDERING
     fences.resize(samples_per_frame * MAX_FRAMES_RENDERING);
@@ -226,7 +232,7 @@ bool create(VKState &state, std::unique_ptr<Context> &context, MemState &mem) {
 }
 
 bool create(VKState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRenderTargetParams &params, const FeatureState &features) {
-    rt = std::make_unique<VKRenderTarget>(state, state.allocator, params.width, params.height, params.scenesPerFrame);
+    rt = std::make_unique<VKRenderTarget>(state, params);
 
     if (state.features.use_mask_bit) {
         vkutil::Image &mask = reinterpret_cast<VKRenderTarget *>(rt.get())->mask;

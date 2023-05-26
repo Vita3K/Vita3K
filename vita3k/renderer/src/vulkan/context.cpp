@@ -119,13 +119,25 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     context.record.is_gamma_corrected = static_cast<bool>(color_surface_fin->gamma);
     vk::Format vk_format = color::translate_format(context.record.color_base_format);
 
-    if (color_surface_fin->gamma && (vk_format == vk::Format::eR8G8B8A8Unorm)) {
+    if (color_surface_fin->gamma && vk_format == vk::Format::eR8G8B8A8Unorm) {
         vk_format = vk::Format::eR8G8B8A8Srgb;
     }
 
     if (color_surface_fin->data.address() == 0) {
         color_surface_fin = nullptr;
+
+        // set back default values
         vk_format = vk::Format::eR8G8B8A8Unorm;
+        context.record.color_surface.downscale = false;
+        context.record.is_gamma_corrected = false;
+        context.record.is_maskupdate = false;
+        context.record.color_base_format = SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8;
+    }
+
+    if (rt->multisample_mode && !context.record.color_surface.downscale) {
+        // using MSAA without downscaling, emulate this as best as we can by multiplying the width and height of the render target by 2
+        rt->width *= 2;
+        rt->height *= 2;
     }
 
     SceGxmDepthStencilSurface *ds_surface_fin = &context.record.depth_stencil_surface;
@@ -337,6 +349,12 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         if (surface_info) {
             request_queue.push(PostSurfaceSyncRequest{ surface_info });
         }
+    }
+
+    if (render_target->multisample_mode && !record.color_surface.downscale) {
+        // revert changes made in set_context
+        render_target->width /= 2;
+        render_target->height /= 2;
     }
 
     render_cmd = nullptr;

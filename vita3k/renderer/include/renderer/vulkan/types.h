@@ -230,7 +230,7 @@ struct VKRenderTarget : public renderer::RenderTarget {
     // the command buffer index we're at in a frame
     int cmd_buffer_idx = 0;
 
-    VKRenderTarget(VKState &state, vma::Allocator allocator, uint16_t width, uint16_t height, uint16_t samples_per_frame);
+    VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params);
     ~VKRenderTarget() override = default;
 };
 
