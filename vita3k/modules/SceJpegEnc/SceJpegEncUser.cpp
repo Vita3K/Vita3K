@@ -17,43 +17,143 @@
 
 #include "SceJpegEncUser.h"
 
-EXPORT(int, sceJpegEncoderCsc) {
-    return UNIMPLEMENTED();
+#include <codec/state.h>
+#include <codec/types.h>
+
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceJpegEncUser);
+
+struct SceJpegEncoderContext {
+    int32_t inWidth;
+    int32_t inHeight;
+    int32_t pixelFormat;
+    Ptr<uint8_t> outBuffer;
+    uint32_t outSize;
+    SceJpegEncoderInitParamOption option;
+
+    int32_t compressRatio;
+    int32_t headerMode;
+};
+
+int sceJpegEncoderInitImpl(SceJpegEncoderContext *context, int32_t inWidth, int32_t inHeight, int32_t pixelFormat, Ptr<uint8_t> outBuffer, uint32_t outSize, SceJpegEncoderInitParamOption option = SCE_JPEGENC_INIT_PARAM_OPTION_NONE) {
+    context->inWidth = inWidth;
+    context->inHeight = inHeight;
+    context->pixelFormat = pixelFormat;
+    context->outBuffer = outBuffer;
+    context->outSize = outSize;
+    context->option = option;
+
+    context->compressRatio = 255;
+    context->headerMode = SCE_JPEGENC_HEADER_MODE_JPEG;
+
+    return 0;
 }
 
-EXPORT(int, sceJpegEncoderEncode) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceJpegEncoderCsc, SceJpegEncoderContext *context, Ptr<uint8_t> outBuffer, Ptr<uint8_t> inBuffer, int32_t inPitch, int32_t inPixelFormat) {
+    TRACY_FUNC(sceJpegEncoderCsc, context, outBuffer, inBuffer, inPitch, inPixelFormat);
+    auto inBufferData = inBuffer.get(emuenv.mem);
+    auto outBufferData = outBuffer.get(emuenv.mem);
+
+    bool is_yuv420 = false;
+
+    if ((context->pixelFormat & SCE_JPEGENC_PIXEL_YCBCR422) == SCE_JPEGENC_PIXEL_YCBCR422) {
+        is_yuv420 = false;
+    } else if ((context->pixelFormat & SCE_JPEGENC_PIXEL_YCBCR420) == SCE_JPEGENC_PIXEL_YCBCR420) {
+        is_yuv420 = true;
+    } else {
+        return SCE_JPEGENC_ERROR_INVALID_PIXELFORMAT;
+    }
+
+    if (inPixelFormat != SCE_JPEGENC_PIXEL_RGBA8888) {
+        return STUBBED("Only RGBA8888 to YCbCr is implemented.");
+    }
+
+    int32_t width = inPitch;
+    int32_t height = context->inHeight * inPitch / context->inWidth;
+
+    convert_rgb_to_yuv(inBufferData, outBufferData, context->inWidth, context->inHeight, is_yuv420);
+
+    return 0;
 }
 
-EXPORT(int, sceJpegEncoderEnd) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceJpegEncoderEncode, SceJpegEncoderContext *context, Ptr<uint8_t> inBuffer) {
+    TRACY_FUNC(sceJpegEncoderEncode, context, inBuffer);
+
+    auto inBufferData = inBuffer.get(emuenv.mem);
+    auto outBufferData = context->outBuffer.get(emuenv.mem);
+
+    int width = context->inWidth;
+    int height = context->inHeight;
+
+    bool is_yuv420 = false;
+
+    if ((context->pixelFormat & SCE_JPEGENC_PIXEL_YCBCR422) == SCE_JPEGENC_PIXEL_YCBCR422) {
+        is_yuv420 = false;
+    } else if ((context->pixelFormat & SCE_JPEGENC_PIXEL_YCBCR420) == SCE_JPEGENC_PIXEL_YCBCR420) {
+        is_yuv420 = true;
+    } else {
+        return SCE_JPEGENC_ERROR_INVALID_PIXELFORMAT;
+    }
+
+    uint32_t size = convert_yuv_to_jpeg(inBufferData, outBufferData, width, height, context->outSize, is_yuv420);
+
+    if (size == -1) {
+        return SCE_JPEGENC_ERROR_INSUFFICIENT_BUFFER;
+    }
+
+    return size;
+}
+
+EXPORT(int, sceJpegEncoderEnd, SceJpegEncoderContext *context) {
+    TRACY_FUNC(sceJpegEncoderEnd, context);
+    return 0;
 }
 
 EXPORT(int, sceJpegEncoderGetContextSize) {
-    return UNIMPLEMENTED();
+    TRACY_FUNC(sceJpegEncoderGetContextSize);
+    return sizeof(SceJpegEncoderContext);
 }
 
-EXPORT(int, sceJpegEncoderInit) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceJpegEncoderInit, SceJpegEncoderContext *context, int32_t inWidth, int32_t inHeight, int32_t pixelFormat, Ptr<uint8_t> outBuffer, uint32_t outSize) {
+    TRACY_FUNC(sceJpegEncoderInit, context, inWidth, inHeight, pixelFormat, outBuffer, outSize);
+    return sceJpegEncoderInitImpl(context, inWidth, inHeight, pixelFormat, outBuffer, outSize, SCE_JPEGENC_INIT_PARAM_OPTION_NONE);
 }
 
-EXPORT(int, sceJpegEncoderInitWithParam) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceJpegEncoderInitWithParam, SceJpegEncoderContext *context, SceJpegEncoderInitParam *initParam) {
+    TRACY_FUNC(sceJpegEncoderInitWithParam, context, initParam);
+    return sceJpegEncoderInitImpl(context, initParam->inWidth, initParam->inHeight, initParam->pixelFormat, initParam->outBuffer, initParam->outSize, initParam->option);
 }
 
-EXPORT(int, sceJpegEncoderSetCompressionRatio) {
-    return UNIMPLEMENTED();
+// TODO: CompressionRatio is ignored for the time being.
+EXPORT(int, sceJpegEncoderSetCompressionRatio, SceJpegEncoderContext *context, int32_t ratio) {
+    TRACY_FUNC(sceJpegEncoderSetCompressionRatio, context, ratio);
+    if (ratio < 0 || ratio > 255) {
+        return SCE_JPEGENC_ERROR_INVALID_COMPRATIO;
+    }
+    context->compressRatio = ratio;
+    return 0;
 }
 
-EXPORT(int, sceJpegEncoderSetHeaderMode) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceJpegEncoderSetHeaderMode, SceJpegEncoderContext *context, int32_t mode) {
+    TRACY_FUNC(sceJpegEncoderSetHeaderMode, context, mode);
+    if (mode != SCE_JPEGENC_HEADER_MODE_JPEG && mode != SCE_JPEGENC_HEADER_MODE_MJPEG) {
+        return SCE_JPEGENC_ERROR_INVALID_HEADER_MODE;
+    } else if (mode == SCE_JPEGENC_HEADER_MODE_MJPEG) {
+        return STUBBED("SCE_JPEGENC_HEADER_MODE_MJPEG is not supported");
+    }
+    context->headerMode = mode;
+    return 0;
 }
 
-EXPORT(int, sceJpegEncoderSetOutputAddr) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceJpegEncoderSetOutputAddr, SceJpegEncoderContext *context, Ptr<uint8_t> outBuffer, uint32_t outSize) {
+    TRACY_FUNC(sceJpegEncoderSetOutputAddr, context, outBuffer, outSize);
+    context->outBuffer = outBuffer;
+    context->outSize = outSize;
+    return 0;
 }
 
-EXPORT(int, sceJpegEncoderSetValidRegion) {
+EXPORT(int, sceJpegEncoderSetValidRegion, SceJpegEncoderContext *context, int32_t inWidth, int32_t inHeight) {
+    TRACY_FUNC(sceJpegEncoderSetValidRegion, context, inWidth, inHeight);
     return UNIMPLEMENTED();
 }
 
