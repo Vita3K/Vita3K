@@ -41,16 +41,18 @@ COMMAND_SET_STATE(region_clip) {
     render_context->record.region_clip_mode = helper.pop<SceGxmRegionClipMode>();
 
     // see COMMAND_SET_STATE(viewport) for an explanation
-    const uint32_t divide_factor = (render_context->record.color_surface.downscale
-                                       && render_context->current_render_target
-                                       && !render_context->current_render_target->multisample_mode)
-        ? 2
-        : 1;
+    float factor = 1.0f;
+    const bool has_msaa = (render_context->current_render_target && render_context->current_render_target->multisample_mode);
+    const bool has_downscale = render_context->record.color_surface.downscale;
+    if (has_msaa && !has_downscale)
+        factor = 2.0;
+    else if (!has_msaa && has_downscale)
+        factor = 1.0;
 
-    const uint32_t xMin = helper.pop<uint32_t>() / divide_factor;
-    const uint32_t xMax = helper.pop<uint32_t>() / divide_factor;
-    const uint32_t yMin = helper.pop<uint32_t>() / divide_factor;
-    const uint32_t yMax = helper.pop<uint32_t>() / divide_factor;
+    const uint32_t xMin = helper.pop<uint32_t>() * factor;
+    const uint32_t xMax = helper.pop<uint32_t>() * factor;
+    const uint32_t yMin = helper.pop<uint32_t>() * factor;
+    const uint32_t yMax = helper.pop<uint32_t>() * factor;
 
     render_context->record.region_clip_min.x = static_cast<SceInt>(align_down(xMin, SCE_GXM_TILE_SIZEX));
     render_context->record.region_clip_min.y = static_cast<SceInt>(align_down(yMin, SCE_GXM_TILE_SIZEY));
@@ -147,20 +149,21 @@ COMMAND_SET_STATE(viewport) {
 
     const float previous_flip_y = render_context->record.viewport_flip[1];
     if (!flat) {
-        // we are supposed to downscale the surface before saving it, both opengl and vulkan
-        // directly work with the downscaled surface instead so we must divide all the values
-        // by 2 to match the dimensions of the downscaled surface
-        const int divide_factor = (render_context->record.color_surface.downscale
-                                      && render_context->current_render_target
-                                      && !render_context->current_render_target->multisample_mode)
-            ? 2
-            : 1;
+        // if we use msaa without downscaling the texture or the opposite, the surface size will differ from the expected
+        // one by a factor of 2, one way or an other
+        float factor = 1.0f;
+        const bool has_msaa = (render_context->current_render_target && render_context->current_render_target->multisample_mode);
+        const bool has_downscale = render_context->record.color_surface.downscale;
+        if (has_msaa && !has_downscale)
+            factor = 2.0;
+        else if (!has_msaa && has_downscale)
+            factor = 1.0;
 
-        const float xOffset = helper.pop<float>() / divide_factor;
-        const float yOffset = helper.pop<float>() / divide_factor;
+        const float xOffset = helper.pop<float>() * factor;
+        const float yOffset = helper.pop<float>() * factor;
         const float zOffset = helper.pop<float>();
-        const float xScale = helper.pop<float>() / divide_factor;
-        const float yScale = helper.pop<float>() / divide_factor;
+        const float xScale = helper.pop<float>() * factor;
+        const float yScale = helper.pop<float>() * factor;
         const float zScale = helper.pop<float>();
 
         const float ymin = yOffset + yScale;
