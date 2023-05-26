@@ -2603,7 +2603,7 @@ EXPORT(int, sceGxmMapMemory, Ptr<void> base, uint32_t size, uint32_t attribs) {
 
     auto ite = gxm.memory_mapped_regions.lower_bound(base.address());
     if (ite == gxm.memory_mapped_regions.end() || ite->first != base.address()) {
-        if (ite != gxm.memory_mapped_regions.end() && base.address() + size >= ite->first) {
+        if (ite != gxm.memory_mapped_regions.end() && base.address() + size > ite->first) {
             LOG_ERROR("Overlapping mapped memory detected");
 
             if (emuenv.renderer->features.support_memory_mapping) {
