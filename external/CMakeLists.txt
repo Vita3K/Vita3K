@@ -13,7 +13,7 @@ function(check_submodules_present)
 		# Get module name
 		string(REGEX REPLACE "path *= *" "" module ${module})
 
-		# Stat the folder and get ammount of entries
+		# Stat the folder and get amount of entries
 		file(GLOB RESULT "${CMAKE_SOURCE_DIR}/${module}/*")
 		list(LENGTH RESULT RES_LEN)
 
@@ -193,12 +193,11 @@ if(ARCHITECTURE STREQUAL "x86_64")
 endif()
 
 if(MSVC)
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-        list(APPEND MCL_CXX_FLAGS
-             -Qunused-arguments
-             -Wno-missing-braces)
-		target_compile_options(mcl PRIVATE ${MCL_CXX_FLAGS})
-    endif()
+	if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+		get_target_property(MCL_COMPILE_OPTIONS mcl COMPILE_OPTIONS)
+		list(REMOVE_ITEM MCL_COMPILE_OPTIONS /std:c++latest)
+		set_property(TARGET mcl PROPERTY COMPILE_OPTIONS ${MCL_COMPILE_OPTIONS})
+	endif()
 endif()
 
 add_library(vita-toolchain INTERFACE)
