@@ -293,7 +293,7 @@ struct LangState {
     };
     std::map<std::string, std::string> initial_setup = {
         { "back", "Back" },
-        { "completed_setup", "You have now completed initial setup.\nYour Vita3K system is ready!" },
+        { "completed_setup", "You have now completed initial setup.\nYour Vita3K is ready!" },
         { "select_language", "Select a language" },
         { "install_firmware", "Install Firmware." },
         { "install_highly_recommended", "Installing both firmware files is highly recommended." },
