@@ -365,7 +365,7 @@ Do not power off the system or close the application.</warning_saving>
 	<initial_setup>
 		<back>Back</back>
 		<completed_setup>You have now completed initial setup.
-Your Vita3K system is ready!</completed_setup>
+Your Vita3K is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
 		<install_firmware>Install Firmware.</install_firmware>
 		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
