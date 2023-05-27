@@ -463,7 +463,6 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                 // divide by the resolution multiplier
                 spv::Id res_multiplier = utils::create_access_chain(b, spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_res_multiplier) });
                 res_multiplier = b.createLoad(res_multiplier, spv::NoPrecision);
-                res_multiplier = b.createUnaryOp(spv::OpConvertSToF, b.makeFloatType(32), res_multiplier);
                 // don't change the z and w coords
                 spv::Id one = b.makeFloatConstant(1.0f);
                 res_multiplier = b.createCompositeConstruct(v4, { res_multiplier, res_multiplier, one, one });
@@ -974,7 +973,7 @@ static SpirvShaderParameters create_parameters(spv::Builder &b, const SceGxmProg
     }
 
     if (program_type == SceGxmProgramType::Fragment) {
-        std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, i32 };
+        std::vector<spv::Id> uniform_composition = { f32, f32, f32, f32, f32 };
         if (features.support_memory_mapping)
             uniform_composition.push_back(buffer_addresses_type);
         spv::Id render_buf_type = b.makeStructType(uniform_composition, "GxmRenderFragBufferBlock");
@@ -1327,12 +1326,6 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
         spv::Id v2i32 = b.makeVectorType(i32, 2);
         current_coord = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(i32, 4), b.createLoad(current_coord, spv::NoPrecision));
         current_coord = b.createOp(spv::OpVectorShuffle, v2i32, { current_coord, current_coord, 0, 1 });
-
-        // the mask is not upscaled
-        spv::Id res_multiplier = utils::create_access_chain(b, spv::StorageClassUniform, translate_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_res_multiplier) });
-        res_multiplier = b.createLoad(res_multiplier, spv::NoPrecision);
-        res_multiplier = b.createCompositeConstruct(v2i32, { res_multiplier, res_multiplier });
-        current_coord = b.createBinOp(spv::OpSDiv, v2i32, current_coord, res_multiplier);
 
         spv::Id sampled_type = b.makeFloatType(32);
         spv::Id v4 = b.makeVectorType(sampled_type, 4);
