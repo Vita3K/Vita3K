@@ -307,7 +307,8 @@ static spv::Id create_input_variable(spv::Builder &b, SpirvShaderParameters &par
         get_dest_mask();
 
         if (!b.isConstant(var)) {
-            var = b.createLoad(var, spv::NoPrecision);
+            if (b.isPointer(var))
+                var = b.createLoad(var, spv::NoPrecision);
             var = utils::finalize(b, var, var, SWIZZLE_CHANNEL_4_DEFAULT, 0, dest_mask);
 
             if (!features.support_rgb_attributes && !translation_state.is_fragment && dest_mask == 0b1111) {
@@ -457,11 +458,21 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
 
             // TODO how about centroid?
             if (input_id == 0xD000) {
-                // do we need to divide the frag_coord_id by the resolution multiplier?
-                pa_iter_var = translation_state.frag_coord_id;
+                pa_iter_var = b.createLoad(translation_state.frag_coord_id, spv::NoPrecision);
+
+                // divide by the resolution multiplier
+                spv::Id res_multiplier = utils::create_access_chain(b, spv::StorageClassUniform, translation_state.render_info_id, { b.makeIntConstant(FRAG_UNIFORM_res_multiplier) });
+                res_multiplier = b.createLoad(res_multiplier, spv::NoPrecision);
+                res_multiplier = b.createUnaryOp(spv::OpConvertSToF, b.makeFloatType(32), res_multiplier);
+                // don't change the z and w coords
+                spv::Id one = b.makeFloatConstant(1.0f);
+                res_multiplier = b.createCompositeConstruct(v4, { res_multiplier, res_multiplier, one, one });
+
+                pa_iter_var = b.createBinOp(spv::OpFDiv, v4, pa_iter_var, res_multiplier);
             } else {
                 pa_iter_var = b.createVariable(spv::NoPrecision, spv::StorageClassInput, pa_iter_type, pa_name.c_str());
                 b.addDecoration(pa_iter_var, spv::DecorationLocation, pa_loc);
+                translation_state.interfaces.push_back(pa_iter_var);
             }
 
             translation_state.var_to_regs.push_back(
@@ -470,7 +481,6 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
                     pa_iter_size,
                     pa_dtype,
                     true });
-            translation_state.interfaces.push_back(pa_iter_var);
             LOG_DEBUG("Iterator: pa{} = ({}{}) {}", pa_offset, pa_type, num_comp, pa_name);
 
             bool do_coord = false;
