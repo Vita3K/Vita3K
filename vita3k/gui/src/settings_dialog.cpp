@@ -998,6 +998,12 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Dump loaded code as ELFs");
         ImGui::Spacing();
+        if (emuenv.backend_renderer == renderer::Backend::Vulkan) {
+            ImGui::Checkbox("Validation Layer (Reboot required)", &emuenv.cfg.validation_layer);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("Enable Vulkan validation layer.");
+            ImGui::Spacing();
+        }
         if (ImGui::Button(emuenv.kernel.debugger.watch_code ? "Unwatch Code" : "Watch Code")) {
             emuenv.kernel.debugger.watch_code = !emuenv.kernel.debugger.watch_code;
             emuenv.kernel.debugger.update_watches();

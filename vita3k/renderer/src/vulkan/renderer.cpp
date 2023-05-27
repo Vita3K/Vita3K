@@ -20,6 +20,7 @@
 #include <renderer/vulkan/functions.h>
 #include <renderer/vulkan/state.h>
 
+#include <config/state.h>
 #include <config/version.h>
 #include <display/state.h>
 #include <shader/spirv_recompiler.h>
@@ -147,10 +148,10 @@ std::string get_driver_version(uint32_t vendor_id, uint32_t version_raw) {
     return fmt::format("{}.{}.{}", (version_raw >> 22) & 0x3ff, (version_raw >> 12) & 0x3ff, (version_raw)&0xfff);
 }
 
-bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path) {
+bool create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path, const Config &config) {
     auto &vk_state = dynamic_cast<VKState &>(*state);
 
-    return vk_state.create(window, state, base_path);
+    return vk_state.create(window, state, base_path, config);
 }
 
 VKState::VKState(int gpu_idx)
@@ -166,7 +167,7 @@ bool VKState::init(const char *base_path, const bool hashless_texture_cache) {
     return true;
 }
 
-bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path) {
+bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state, const char *base_path, const Config &config) {
     this->base_path = base_path;
     // Create Instance
     {
@@ -226,9 +227,12 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         std::vector<const char *> instance_layers;
         if (has_debug_extension && has_validation_layer) {
-            LOG_INFO("Enabling vulkan validation layers (has a performance impact but allows better error messages)");
-            instance_extensions.push_back(debug_extension.c_str());
-            instance_layers.push_back(validation_layer.c_str());
+            if (config.validation_layer) {
+                LOG_INFO("Enabling vulkan validation layers (has a performance impact but allows better error messages)");
+                instance_extensions.push_back(debug_extension.c_str());
+                instance_layers.push_back(validation_layer.c_str());
+            } else
+                LOG_INFO("Disabling Vulkan validation layers (may improve performance but provides limited error messages)");
         }
 
         vk::InstanceCreateInfo instance_info{
@@ -243,7 +247,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         instance = vk::createInstance(instance_info);
         VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
 
-        if (has_debug_extension && has_validation_layer) {
+        if (has_debug_extension && has_validation_layer && config.validation_layer) {
             vk::DebugUtilsMessengerCreateInfoEXT debug_info{
                 .messageSeverity = vk::DebugUtilsMessageSeverityFlagBitsEXT::eVerbose
                     | vk::DebugUtilsMessageSeverityFlagBitsEXT::eWarning | vk::DebugUtilsMessageSeverityFlagBitsEXT::eError,
