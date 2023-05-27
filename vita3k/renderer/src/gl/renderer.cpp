@@ -334,7 +334,7 @@ bool create(GLState &state, std::unique_ptr<RenderTarget> &rt, const SceGxmRende
     glBindTexture(GL_TEXTURE_2D, render_target->masktexture[0]);
     // we need to make the masktexture format immutable, otherwise image load operations
     // won't work on mesa drivers
-    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, params.width, params.height);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, params.width * state.res_multiplier, params.height * state.res_multiplier);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glBindFramebuffer(GL_FRAMEBUFFER, render_target->maskbuffer[0]);

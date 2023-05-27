@@ -163,7 +163,7 @@ VKContext::VKContext(VKState &state, MemState &mem)
 }
 
 VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &params)
-    : mask(state.allocator, params.width, params.height, vk::Format::eR8G8B8A8Unorm)
+    : mask(state.allocator, params.width * state.res_multiplier, params.height * state.res_multiplier, vk::Format::eR8G8B8A8Unorm)
     , color(state.allocator, params.width * state.res_multiplier, params.height * state.res_multiplier, vk::Format::eR8G8B8A8Unorm)
     , depthstencil(state.allocator, params.width * state.res_multiplier, params.height * state.res_multiplier, vk::Format::eD32SfloatS8Uint) {
     width = params.width * state.res_multiplier;

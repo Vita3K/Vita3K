@@ -36,7 +36,7 @@ namespace shader {
 static constexpr int COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE = 0;
 static constexpr int MASK_TEXTURE_SLOT_IMAGE = 1;
 static constexpr int COLOR_ATTACHMENT_RAW_TEXTURE_SLOT_IMAGE = 3;
-static constexpr uint32_t CURRENT_VERSION = 9;
+static constexpr uint32_t CURRENT_VERSION = 10;
 
 struct RenderVertUniformBlock {
     std::array<float, 4> viewport_flip;
@@ -64,11 +64,11 @@ enum VertUniformFieldId : uint32_t {
 };
 
 struct RenderFragUniformBlock {
-    float back_disabled = 0;
-    float front_disabled = 0;
-    float writing_mask = 0;
-    float use_raw_image = 0;
-    int32_t res_multiplier = 0;
+    float back_disabled;
+    float front_disabled;
+    float writing_mask;
+    float use_raw_image;
+    float res_multiplier;
 };
 
 struct RenderFragUniformBlockWithMapping : public RenderFragUniformBlock {

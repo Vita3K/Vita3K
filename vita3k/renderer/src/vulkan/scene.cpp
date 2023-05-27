@@ -410,10 +410,15 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     }
 
     shader::RenderFragUniformBlockWithMapping &frag_ublock = context.current_frag_render_info;
-
     frag_ublock.writing_mask = context.record.writing_mask;
-    frag_ublock.use_raw_image = 0;
-    frag_ublock.res_multiplier = context.state.res_multiplier;
+    frag_ublock.res_multiplier = static_cast<float>(context.state.res_multiplier);
+    const bool has_msaa = context.render_target->multisample_mode;
+    const bool has_downscale = context.record.color_surface.downscale;
+    if (has_msaa && !has_downscale)
+        frag_ublock.res_multiplier *= 2;
+    else if (!has_msaa && has_downscale)
+        frag_ublock.res_multiplier /= 2;
+
     const size_t frag_ublock_size = use_memory_mapping ? sizeof(shader::RenderFragUniformBlockWithMapping) : sizeof(shader::RenderFragUniformBlock);
 
     if (memcmp(&context.previous_frag_info, &frag_ublock, frag_ublock_size) != 0) {
