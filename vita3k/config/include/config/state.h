@@ -128,6 +128,7 @@ public:
         "SceHttp",
         "SceIme",
         "SceIofilemgr",
+        "SceJpegEncUser",
         "SceJpegUser",
         "SceKernelForMono",
         "SceKernelForVM",
