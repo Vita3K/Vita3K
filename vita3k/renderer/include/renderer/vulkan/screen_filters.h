@@ -99,6 +99,21 @@ public:
     }
 };
 
+class BicubicScreenFilter : public SinglePassScreenFilter {
+protected:
+    // the Bicubic filter uses a custom shader
+    std::string_view get_fragment_name() override;
+    vk::Sampler create_sampler() override;
+
+public:
+    BicubicScreenFilter(ScreenRenderer &screen)
+        : SinglePassScreenFilter(screen) {}
+
+    std::string_view get_name() override {
+        return "Bicubic";
+    }
+};
+
 class FXAAScreenFilter : public SinglePassScreenFilter {
 protected:
     // the FXAA filter uses a custom shader

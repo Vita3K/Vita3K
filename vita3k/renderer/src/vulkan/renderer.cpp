@@ -673,7 +673,7 @@ void VKState::swap_window(SDL_Window *window) {
 }
 
 int VKState::get_supported_filters() {
-    int filters = static_cast<int>(Filter::NEAREST) | static_cast<int>(Filter::BILINEAR) | static_cast<int>(Filter::FXAA);
+    int filters = static_cast<int>(Filter::NEAREST) | static_cast<int>(Filter::BILINEAR) | static_cast<int>(Filter::BICUBIC) | static_cast<int>(Filter::FXAA);
     if (support_fsr)
         filters |= static_cast<int>(Filter::FSR);
     return filters;

@@ -331,6 +331,21 @@ vk::Sampler BilinearScreenFilter::create_sampler() {
     return screen.state.device.createSampler(sampler_info);
 }
 
+std::string_view BicubicScreenFilter::get_fragment_name() {
+    return "render_main_bicubic.frag.spv";
+}
+
+vk::Sampler BicubicScreenFilter::create_sampler() {
+    vk::SamplerCreateInfo sampler_info{
+        .magFilter = vk::Filter::eNearest,
+        .minFilter = vk::Filter::eNearest,
+        .addressModeU = vk::SamplerAddressMode::eClampToEdge,
+        .addressModeV = vk::SamplerAddressMode::eClampToEdge,
+        .addressModeW = vk::SamplerAddressMode::eClampToEdge,
+    };
+    return screen.state.device.createSampler(sampler_info);
+}
+
 std::string_view FXAAScreenFilter::get_fragment_name() {
     return "render_main_fxaa.frag.spv";
 }

@@ -35,8 +35,9 @@ namespace renderer {
 enum struct Filter : int {
     NEAREST = 1 << 0,
     BILINEAR = 1 << 1,
-    FXAA = 1 << 2,
-    FSR = 1 << 3
+    BICUBIC = 1 << 2,
+    FXAA = 1 << 3,
+    FSR = 1 << 4
 };
 
 struct State {
