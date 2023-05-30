@@ -730,6 +730,7 @@ void GLState::swap_window(SDL_Window *window) {
 
 int GLState::get_supported_filters() {
     // actually it's not even bilinear, it's either bilinear or nearest depending on the last use of the texture..
+    // TODO: add bicubic filter and allow disabling bilinear.
     return static_cast<int>(Filter::BILINEAR) | static_cast<int>(Filter::FXAA);
 }
 
