@@ -42,6 +42,14 @@ union DecoderSize {
     };
 };
 
+enum DecoderColorSpace {
+    COLORSPACE_UNKNOWN,
+    COLORSPACE_GRAYSCALE,
+    COLORSPACE_YUV444P,
+    COLORSPACE_YUV422P,
+    COLORSPACE_YUV420P,
+};
+
 // glGet sort of API to use virtual stuff
 enum class DecoderQuery {
     // Video
@@ -106,8 +114,11 @@ struct H264DecoderState : public DecoderState {
 };
 
 struct MjpegDecoderState : public DecoderState {
+    DecoderColorSpace color_space_out;
+
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size) override;
+    DecoderColorSpace get_color_space();
 
     MjpegDecoderState();
 };
@@ -236,8 +247,8 @@ struct PlayerState {
     ~PlayerState();
 };
 
-void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const bool is_yuv420);
-void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height, const bool is_yuv420);
-int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint32_t height, uint32_t max_size, bool is_yuv420);
+void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const DecoderColorSpace color_space);
+void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height, const DecoderColorSpace color_space);
+int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint32_t height, uint32_t max_size, const DecoderColorSpace color_space);
 void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest);
 std::string codec_error_name(int error);

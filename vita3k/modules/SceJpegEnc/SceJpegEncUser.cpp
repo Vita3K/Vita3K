@@ -54,13 +54,16 @@ EXPORT(int, sceJpegEncoderCsc, SceJpegEncoderContext *context, Ptr<uint8_t> outB
     auto inBufferData = inBuffer.get(emuenv.mem);
     auto outBufferData = outBuffer.get(emuenv.mem);
 
-    bool is_yuv420 = false;
+    DecoderColorSpace color_space = COLORSPACE_UNKNOWN;
 
-    if ((context->pixelFormat & SCE_JPEGENC_PIXEL_YCBCR422) == SCE_JPEGENC_PIXEL_YCBCR422) {
-        is_yuv420 = false;
-    } else if ((context->pixelFormat & SCE_JPEGENC_PIXEL_YCBCR420) == SCE_JPEGENC_PIXEL_YCBCR420) {
-        is_yuv420 = true;
-    } else {
+    switch (context->pixelFormat & 0xF) {
+    case SCE_JPEGENC_PIXEL_YCBCR422:
+        color_space = COLORSPACE_YUV422P;
+        break;
+    case SCE_JPEGENC_PIXEL_YCBCR420:
+        color_space = COLORSPACE_YUV420P;
+        break;
+    default:
         return SCE_JPEGENC_ERROR_INVALID_PIXELFORMAT;
     }
 
@@ -71,7 +74,7 @@ EXPORT(int, sceJpegEncoderCsc, SceJpegEncoderContext *context, Ptr<uint8_t> outB
     int32_t width = inPitch;
     int32_t height = context->inHeight * inPitch / context->inWidth;
 
-    convert_rgb_to_yuv(inBufferData, outBufferData, context->inWidth, context->inHeight, is_yuv420);
+    convert_rgb_to_yuv(inBufferData, outBufferData, context->inWidth, context->inHeight, color_space);
 
     return 0;
 }
@@ -85,17 +88,20 @@ EXPORT(int, sceJpegEncoderEncode, SceJpegEncoderContext *context, Ptr<uint8_t> i
     int width = context->inWidth;
     int height = context->inHeight;
 
-    bool is_yuv420 = false;
+    DecoderColorSpace color_space = COLORSPACE_UNKNOWN;
 
-    if ((context->pixelFormat & SCE_JPEGENC_PIXEL_YCBCR422) == SCE_JPEGENC_PIXEL_YCBCR422) {
-        is_yuv420 = false;
-    } else if ((context->pixelFormat & SCE_JPEGENC_PIXEL_YCBCR420) == SCE_JPEGENC_PIXEL_YCBCR420) {
-        is_yuv420 = true;
-    } else {
+    switch (context->pixelFormat & 0xF) {
+    case SCE_JPEGENC_PIXEL_YCBCR422:
+        color_space = COLORSPACE_YUV422P;
+        break;
+    case SCE_JPEGENC_PIXEL_YCBCR420:
+        color_space = COLORSPACE_YUV420P;
+        break;
+    default:
         return SCE_JPEGENC_ERROR_INVALID_PIXELFORMAT;
     }
 
-    uint32_t size = convert_yuv_to_jpeg(inBufferData, outBufferData, width, height, context->outSize, is_yuv420);
+    uint32_t size = convert_yuv_to_jpeg(inBufferData, outBufferData, width, height, context->outSize, color_space);
 
     if (size == -1) {
         return SCE_JPEGENC_ERROR_INSUFFICIENT_BUFFER;
