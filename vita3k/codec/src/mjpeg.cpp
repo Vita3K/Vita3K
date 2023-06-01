@@ -27,21 +27,42 @@ extern "C" {
 
 #include <cassert>
 
-void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height, const bool is_yuv420) {
-    SwsContext *context = sws_getContext(width, height, is_yuv420 ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUV444P, width, height, AV_PIX_FMT_RGBA,
-        0, nullptr, nullptr, nullptr);
+void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height, const DecoderColorSpace color_space) {
+    AVPixelFormat format = AV_PIX_FMT_YUVJ444P;
+    int strides_divisor = 1;
+    int slice_position = 8;
+
+    switch (color_space) {
+    case COLORSPACE_YUV444P:
+        format = AV_PIX_FMT_YUV444P;
+        strides_divisor = 1;
+        slice_position = 8; // 2
+        break;
+    case COLORSPACE_YUV422P:
+        format = AV_PIX_FMT_YUV422P;
+        strides_divisor = 2;
+        slice_position = 6; // 1.5
+        break;
+    case COLORSPACE_YUV420P:
+        format = AV_PIX_FMT_YUV420P;
+        strides_divisor = 2;
+        slice_position = 5; // 1.25
+        break;
+    }
+
+    SwsContext *context = sws_getContext(width, height, format, width, height, AV_PIX_FMT_RGBA, SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND, nullptr, nullptr, nullptr);
     assert(context);
 
     const uint8_t *slices[] = {
         &yuv[0], // Y Slice
         &yuv[width * height], // U Slice
-        &yuv[static_cast<uint32_t>(width * height * (is_yuv420 ? 1.25 : 2))], // V Slice
+        &yuv[static_cast<uint32_t>(width * height * slice_position / 4)], // V Slice
     };
 
     int strides[] = {
         static_cast<int>(width),
-        static_cast<int>(width) / (is_yuv420 ? 2 : 1),
-        static_cast<int>(width) / (is_yuv420 ? 2 : 1),
+        static_cast<int>(width) / strides_divisor,
+        static_cast<int>(width) / strides_divisor,
     };
 
     uint8_t *dst_slices[] = {
@@ -57,9 +78,31 @@ void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint3
     sws_freeContext(context);
 }
 
-void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const bool is_yuv420) {
-    SwsContext *context = sws_getContext(width, height, AV_PIX_FMT_RGBA, width, height, is_yuv420 ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUV422P,
-        0, nullptr, nullptr, nullptr);
+void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const DecoderColorSpace color_space) {
+    AVPixelFormat format;
+    int strides_divisor = 1;
+    int slice_position = 8;
+
+    switch (color_space) {
+    case COLORSPACE_YUV444P:
+        format = AV_PIX_FMT_YUV444P;
+        strides_divisor = 1;
+        slice_position = 8; // 2
+        break;
+    case COLORSPACE_YUV422P:
+        format = AV_PIX_FMT_YUV422P;
+        strides_divisor = 2;
+        slice_position = 6; // 1.5
+        break;
+    case COLORSPACE_YUV420P:
+        format = AV_PIX_FMT_YUV420P;
+        strides_divisor = 2;
+        slice_position = 5; // 1.25
+        break;
+    }
+
+    SwsContext *context = sws_getContext(width, height, AV_PIX_FMT_RGBA, width, height, format,
+        SWS_FULL_CHR_H_INT | SWS_ACCURATE_RND, nullptr, nullptr, nullptr);
     assert(context);
 
     const uint8_t *slices[] = {
@@ -73,13 +116,13 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
     uint8_t *dst_slices[] = {
         &yuv[0], // Y Slice
         &yuv[width * height], // U Slice
-        &yuv[static_cast<uint32_t>(width * height * (is_yuv420 ? 1.25 : 1.5))], // V Slice
+        &yuv[static_cast<uint32_t>(width * height * slice_position / 4)], // V Slice
     };
 
     const int dst_strides[] = {
         static_cast<int>(width),
-        static_cast<int>(width) / (is_yuv420 ? 2 : 1),
-        static_cast<int>(width) / (is_yuv420 ? 2 : 1),
+        static_cast<int>(width) / strides_divisor,
+        static_cast<int>(width) / strides_divisor,
     };
 
     int error = sws_scale(context, slices, strides, 0, height, dst_slices, dst_strides);
@@ -87,50 +130,32 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
     assert(error == height);
 }
 
-void convert_yuv420_to_yuv444(const uint8_t *yuv420, uint8_t *yuv444, uint32_t width, uint32_t height) {
-    SwsContext *context = sws_getContext(width, height, AV_PIX_FMT_YUV420P, width, height, AV_PIX_FMT_YUV444P,
-        0, nullptr, nullptr, nullptr);
-    assert(context);
+int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint32_t height, uint32_t max_size, const DecoderColorSpace color_space) {
+    AVPixelFormat format = AV_PIX_FMT_YUV444P;
+    int strides_divisor = 1;
+    int slice_position = 8;
 
-    const uint8_t *src_slices[] = {
-        &yuv420[0], // Y Slice
-        &yuv420[width * height], // U Slice
-        &yuv420[static_cast<uint32_t>(width * height * 1.25)], // V Slice
-    };
-
-    int src_strides[] = {
-        static_cast<int>(width),
-        static_cast<int>(width) / 2,
-        static_cast<int>(width) / 2,
-    };
-
-    uint8_t *dst_slices[] = {
-        &yuv444[0], // Y Slice
-        &yuv444[width * height], // U Slice
-        &yuv444[2 * width * height], // V Slice
-    };
-
-    const int dst_strides[] = {
-        static_cast<int>(width),
-        static_cast<int>(width),
-        static_cast<int>(width),
-    };
-
-    int error = sws_scale(context, src_slices, src_strides, 0, height, dst_slices, dst_strides);
-    sws_freeContext(context);
-    assert(error == height);
-}
-
-int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint32_t height, uint32_t max_size, bool is_yuv420) {
     const AVCodec *codec = avcodec_find_encoder(AV_CODEC_ID_MJPEG);
     assert(codec);
 
     AVCodecContext *context = avcodec_alloc_context3(codec);
     assert(context);
 
+    switch (color_space) {
+    case COLORSPACE_YUV444P:
+        format = AV_PIX_FMT_YUVJ444P;
+        break;
+    case COLORSPACE_YUV422P:
+        format = AV_PIX_FMT_YUVJ422P;
+        break;
+    case COLORSPACE_YUV420P:
+        format = AV_PIX_FMT_YUVJ420P;
+        break;
+    }
+
     context->width = width;
     context->height = height;
-    context->pix_fmt = is_yuv420 ? AV_PIX_FMT_YUVJ420P : AV_PIX_FMT_YUVJ422P;
+    context->pix_fmt = format;
     context->time_base.num = 1;
     context->time_base.den = 25;
 
@@ -210,6 +235,21 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
             }
             break;
         }
+        case AV_PIX_FMT_YUVJ422P: {
+            uint8_t *channels[] = {
+                &data[0], // y
+                &data[frame->width * frame->height], // u
+                &data[frame->width * frame->height * 3 / 2], // v
+            };
+
+            // Copy YUV422 data.
+            for (uint32_t a = 0; a < 3; a++) {
+                for (int b = 0; b < frame->height; b++) {
+                    std::memcpy(&channels[a][b * frame->width / (a ? 2 : 1)], &frame->data[a][b * frame->linesize[a]], frame->width / (a ? 2 : 1));
+                }
+            }
+            break;
+        }
         case AV_PIX_FMT_YUVJ420P: {
             uint8_t *channels[] = {
                 &data[0], // y
@@ -225,11 +265,23 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
             }
             break;
         }
-        default:
-            LOG_WARN("Mjpeg frame is in unimplemented format {}.", frame->format);
-            av_frame_free(&frame);
-            return false;
         }
+    }
+
+    switch (frame->format) {
+    case AV_PIX_FMT_YUVJ444P:
+        this->color_space_out = COLORSPACE_YUV444P;
+        break;
+    case AV_PIX_FMT_YUVJ422P:
+        this->color_space_out = COLORSPACE_YUV422P;
+        break;
+    case AV_PIX_FMT_YUVJ420P:
+        this->color_space_out = COLORSPACE_YUV420P;
+        break;
+    default:
+        LOG_WARN("Mjpeg frame is in unimplemented format {}.", frame->format);
+        av_frame_free(&frame);
+        return false;
     }
 
     if (size) {
@@ -242,6 +294,10 @@ bool MjpegDecoderState::receive(uint8_t *data, DecoderSize *size) {
     return true;
 }
 
+DecoderColorSpace MjpegDecoderState::get_color_space() {
+    return this->color_space_out;
+}
+
 MjpegDecoderState::MjpegDecoderState() {
     const AVCodec *codec = avcodec_find_decoder(AV_CODEC_ID_MJPEG);
     assert(codec);
@@ -250,4 +306,5 @@ MjpegDecoderState::MjpegDecoderState() {
     assert(context);
     int error = avcodec_open2(context, codec, nullptr);
     assert(error == 0);
+    this->color_space_out = COLORSPACE_UNKNOWN;
 }
