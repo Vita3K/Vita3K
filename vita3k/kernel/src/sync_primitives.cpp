@@ -1405,6 +1405,10 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
 
     const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
     std::unique_lock msgpipe_lock(msgpipe->mutex);
+    // check in case of delete happens while waiting (un)lock
+    if (msgpipe->beingDeleted) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    }
 
     const auto wakeup_senders = [&] {
         if (!msgpipe->senders->empty()) {
@@ -1440,7 +1444,6 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
         thread->update_status(ThreadStatus::wait, ThreadStatus::run); // Mark ourselves as sleeping
 
         const auto finish = [&] {
-            msgpipe_lock.lock(); // Lock message pipe again
             thread->update_status(ThreadStatus::run); // Wake up
 
             SceSize readSize = (SceSize)copyOut();
@@ -1449,22 +1452,22 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
             return readSize;
         };
 
-        msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
         if (!pTimeout) { // No timeout - loop forever until we can fill the buffer
             do {
                 // FIXME sleep on SimpleEvent
+                msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
                 thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::run; });
-
+                if (msgpipe->beingDeleted) { // if beingDeleted then message pipe is locked, so we can't lock again
+                    std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
+                    return SCE_KERNEL_ERROR_WAIT_DELETE;
+                }
+                msgpipe_lock.lock(); // Lock message pipe again
                 availableSize = msgpipe->data_buffer.Used();
-            } while ((availableSize < recvSize) && (ASAP && (availableSize < 1)) && !msgpipe->beingDeleted);
-
-            if (msgpipe->beingDeleted) {
-                std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
-                return SCE_KERNEL_ERROR_WAIT_DELETE;
-            }
+            } while (!((availableSize >= recvSize) || (ASAP && (availableSize > 0))));
 
             return finish();
         } else { // There's a timeout - wait until we can fill buffer or timeout
+            msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
             auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::run; });
             if (msgpipe->beingDeleted) {
                 std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
@@ -1475,7 +1478,7 @@ SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread
                 thread->update_status(ThreadStatus::run, ThreadStatus::wait);
                 return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
             }
-
+            msgpipe_lock.lock(); // Lock message pipe again
             return finish();
         }
     }
@@ -1517,6 +1520,10 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
 
     const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
     std::unique_lock<std::mutex> msgpipe_lock(msgpipe->mutex);
+    // check in case of delete happens while waiting (un)lock
+    if (msgpipe->beingDeleted) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    }
 
     // If ASAP and there's at least 1 free byte, or FULL and there's enough space, copy and return directly.
     std::size_t freeSize = msgpipe->data_buffer.Free();
@@ -1540,7 +1547,6 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
         thread->update_status(ThreadStatus::wait, ThreadStatus::run); // Mark ourselves as sleeping
 
         const auto finish = [&] {
-            msgpipe_lock.lock(); // Lock message pipe again
             thread->update_status(ThreadStatus::run); // Wake up
 
             SceSize insertedSize = (SceSize)msgpipe->data_buffer.Insert(pSendBuf, sendSize);
@@ -1549,22 +1555,23 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
             return (int)insertedSize;
         };
 
-        msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
         if (!pTimeout) { // No timeout - loop forever until we can fill the buffer
             do {
                 // FIXME sleep on SimpleEvent
+                msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
                 thread->status_cond.wait(thread_lock, [&] { return thread->status == ThreadStatus::run; });
-
+                if (msgpipe->beingDeleted) { // if beingDeleted then message pipe is locked, so we can't lock again
+                    std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
+                    return SCE_KERNEL_ERROR_WAIT_DELETE;
+                }
+                msgpipe_lock.lock(); // Lock message pipe before read from data_buffer
                 freeSize = msgpipe->data_buffer.Free();
-            } while (((freeSize >= sendSize) || (ASAP && (freeSize >= 1))) || msgpipe->beingDeleted);
+            } while (!((freeSize >= sendSize) || (ASAP && (freeSize >= 1))));
 
-            if (msgpipe->beingDeleted) {
-                std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
-                return SCE_KERNEL_ERROR_WAIT_DELETE;
-            }
-
+            // Message pipe is still locked here, so we can read from data_buffer in finish()
             return finish();
         } else { // There's a timeout - wait until we can fill buffer or timeout
+            msgpipe_lock.unlock(); // Unlock message pipe object, else we'll deadlock
             auto status = thread->status_cond.wait_for(thread_lock, std::chrono::microseconds{ *pTimeout }, [&] { return thread->status == ThreadStatus::run; });
             if (msgpipe->beingDeleted) {
                 std::atomic_fetch_add(&msgpipe->remainingThreads, -1);
@@ -1575,7 +1582,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
                 thread->update_status(ThreadStatus::run, ThreadStatus::wait);
                 return RET_ERROR(SCE_KERNEL_ERROR_WAIT_TIMEOUT);
             }
-
+            msgpipe_lock.lock(); // Lock message pipe before read from data_buffer in finish()
             return finish();
         }
     }
@@ -1586,7 +1593,7 @@ SceUID msgpipe_delete(KernelState &kernel, const char *export_name, const char *
 
     const MsgPipePtr msgpipe = lock_and_find(msgpipe_id, kernel.msgpipes, kernel.mutex);
     if (!msgpipe) {
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVF_ID);
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
     }
 
     if (LOG_SYNC_PRIMITIVES) {
@@ -1601,14 +1608,14 @@ SceUID msgpipe_delete(KernelState &kernel, const char *export_name, const char *
         std::atomic_thread_fence(std::memory_order_release);
 
         // Wake up every thread
-        for (auto it = msgpipe->senders->begin(); it != msgpipe->senders->end(); it++) {
-            (*it).thread->update_status(ThreadStatus::run, ThreadStatus::wait);
+        for (auto it : *msgpipe->senders) {
+            it.thread->update_status(ThreadStatus::run, ThreadStatus::wait);
         }
-        for (auto it = msgpipe->receivers->begin(); it != msgpipe->receivers->end(); it++) {
-            (*it).thread->update_status(ThreadStatus::run, ThreadStatus::wait);
+        for (auto it : *msgpipe->receivers) {
+            it.thread->update_status(ThreadStatus::run, ThreadStatus::wait);
         }
         while (std::atomic_load(&msgpipe->remainingThreads) != 0) // FIXME busy loop bad
-            ;
+            std::this_thread::yield();
     }
 
     const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
