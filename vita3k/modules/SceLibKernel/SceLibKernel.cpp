@@ -430,9 +430,23 @@ EXPORT(int, sceClibVdprintf) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceClibVprintf) {
-    TRACY_FUNC(sceClibVprintf);
-    return UNIMPLEMENTED();
+EXPORT(int, sceClibVprintf, const char *fmt, module::vargs args) {
+    TRACY_FUNC(sceClibVprintf, fmt);
+    const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
+    if (!thread) {
+        return SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID;
+    }
+    constexpr int dst_max_size = 1024;
+    char dst[dst_max_size];
+    int result = utils::snprintf(dst, dst_max_size, fmt, *(thread->cpu), emuenv.mem, args);
+    if (!result) {
+        return SCE_KERNEL_ERROR_INVALID_ARGUMENT;
+    }
+    if (result == dst_max_size) {
+        LOG_WARN("Predefined buffer too small. Result truncated");
+    }
+    LOG_INFO("{}", dst);
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, sceClibVsnprintf, char *dst, SceSize dst_max_size, const char *fmt, Address list) {
