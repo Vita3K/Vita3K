@@ -256,9 +256,10 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
                     return 0;
                 }
 
-                const vk::Image color_handle = reinterpret_cast<VKContext *>(state.context)->current_color_attachment->image;
+                const vk::ImageView color_handle_view = reinterpret_cast<VKContext *>(state.context)->current_color_attachment->view;
+                const bool is_same_image = (color_handle_view == info.texture.view) || (info.sampled_image && color_handle_view == info.sampled_image->view);
                 // TODO: we can read an srgb image as linear (or the opposite) without having to do a copy
-                if (info.texture.image == color_handle || (start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format)) {
+                if (is_same_image || (start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format)) {
                     uint64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
                         std::chrono::steady_clock::now().time_since_epoch())
                                                 .count();
@@ -407,8 +408,7 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
 
                     if (!info.sampled_image->view) {
                         vk::ComponentMapping resulting_mapping = vkutil::color_to_texture_swizzle(info.swizzle, swizzle);
-                        // do not destroy multiple times
-                        info.sampled_image->destroy_on_deletion = false;
+
                         vk::ImageViewCreateInfo view_info{
                             .image = info.texture.image,
                             .viewType = vk::ImageViewType::e2D,
@@ -441,7 +441,6 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
                         info.sampled_image = std::make_unique<vkutil::Image>();
 
                     if (!info.sampled_image->view) {
-                        info.sampled_image->destroy_on_deletion = false;
                         vk::ImageViewCreateInfo view_info{
                             .image = info.texture.image,
                             .viewType = vk::ImageViewType::e2D,
@@ -451,8 +450,6 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
                         };
                         info.sampled_image->view = state.device.createImageView(view_info);
                     }
-                    // needed in order not to sample from this image during rendering
-                    info.sampled_image->image = info.texture.image;
 
                     return info.sampled_image.get();
                 }
@@ -592,7 +589,7 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
 
     // The whole depth stencil struct is reserved for future use
     for (size_t i = 0; i < depth_stencil_textures.size(); i++) {
-        if ((depth_stencil_textures[i].surface.depthData == surface.depthData) && (packed_ds || depth_stencil_textures[i].surface.stencilData == surface.stencilData)) {
+        if ((depth_stencil_textures[i].surface.depthData == surface.depthData) || (is_reading && !packed_ds && surface.depthData == depth_stencil_textures[i].surface.stencilData)) {
             found_index = i;
             break;
         }
@@ -625,10 +622,12 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
                 height /= 2;
 
             const uint64_t scene_timestamp = reinterpret_cast<VKContext *>(state.context)->scene_timestamp;
+            const bool is_stencil = depth_stencil_textures[found_index].surface.depthData != surface.depthData;
 
             int read_surface_idx = -1;
             for (int i = 0; i < cached_info.read_surfaces.size(); i++) {
-                if (cached_info.read_surfaces[i].depth_view.width == width && cached_info.read_surfaces[i].depth_view.height == height) {
+                if (cached_info.read_surfaces[i].depth_view.width == width
+                    && cached_info.read_surfaces[i].depth_view.height == height) {
                     read_surface_idx = i;
                     break;
                 }
@@ -636,17 +635,27 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
 
             if (read_surface_idx == -1) {
                 // no compatible read surface found
-                vk::ImageSubresourceRange range = vkutil::ds_subresource_range;
-                range.aspectMask = vk::ImageAspectFlagBits::eDepth;
 
                 DepthSurfaceView read_only{
                     .depth_view = vkutil::Image(state.allocator, width, height, vk::Format::eD32SfloatS8Uint),
                     .scene_timestamp = 0
                 };
                 read_only.depth_view.init_image(vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eTransferDst);
-                // we want a texture view with only the depth aspect bit
+                // we want a texture view with only the depth or stencil aspect bit
                 // TODO: not efficient
                 state.device.destroy(read_only.depth_view.view);
+                read_only.depth_view.view = nullptr;
+
+                read_surface_idx = cached_info.read_surfaces.size();
+                cached_info.read_surfaces.emplace_back(std::move(read_only));
+            }
+
+            DepthSurfaceView &read_only = cached_info.read_surfaces[read_surface_idx];
+            vkutil::Image &img_view = is_stencil ? read_only.stencil_view : read_only.depth_view;
+
+            if (!img_view.view) {
+                vk::ImageSubresourceRange range = vkutil::ds_subresource_range;
+                range.aspectMask = is_stencil ? vk::ImageAspectFlagBits::eStencil : vk::ImageAspectFlagBits::eDepth;
                 vk::ImageViewCreateInfo view_info{
                     .image = read_only.depth_view.image,
                     .viewType = vk::ImageViewType::e2D,
@@ -654,16 +663,12 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
                     .components = {},
                     .subresourceRange = range
                 };
-                read_only.depth_view.view = state.device.createImageView(view_info);
-                read_surface_idx = cached_info.read_surfaces.size();
-                cached_info.read_surfaces.emplace_back(std::move(read_only));
+                img_view.view = state.device.createImageView(view_info);
             }
-
-            DepthSurfaceView &read_only = cached_info.read_surfaces[read_surface_idx];
 
             // copy the depth stencil only once per scene
             if (read_only.scene_timestamp == scene_timestamp)
-                return &read_only.depth_view;
+                return &img_view;
 
             read_only.scene_timestamp = scene_timestamp;
 
@@ -689,7 +694,7 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
             cached_info.texture.transition_to(cmd_buffer, vkutil::ImageLayout::DepthStencilAttachment, vkutil::ds_subresource_range);
             read_only.depth_view.transition_to(cmd_buffer, vkutil::ImageLayout::DepthReadOnly, vkutil::ds_subresource_range);
 
-            return &read_only.depth_view;
+            return &img_view;
         }
     }
 
@@ -1063,7 +1068,6 @@ vk::ImageView VKSurfaceCache::sourcing_color_surface_for_presentation(Ptr<const 
 
             if (!info.sampled_image->view) {
                 // create a view with the right swizzle and without gamma correction
-                info.sampled_image->destroy_on_deletion = false;
                 vk::ImageViewCreateInfo view_info{
                     .image = info.texture.image,
                     .viewType = vk::ImageViewType::e2D,
