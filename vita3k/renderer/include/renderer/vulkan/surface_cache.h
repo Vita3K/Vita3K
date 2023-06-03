@@ -87,6 +87,8 @@ struct ColorSurfaceCacheInfo : public SurfaceCacheInfo {
 
 struct DepthSurfaceView {
     vkutil::Image depth_view;
+    // only contains an image view with the stencil aspect
+    vkutil::Image stencil_view;
     // used so that we copy the depth stencil at most once per scene
     uint64_t scene_timestamp;
 };

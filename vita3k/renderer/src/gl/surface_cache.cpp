@@ -512,7 +512,7 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
 
     // The whole depth stencil struct is reserved for future use
     for (std::size_t i = 0; i < depth_stencil_textures.size(); i++) {
-        if ((depth_stencil_textures[i].surface.depthData == surface.depthData) && (packed_ds || depth_stencil_textures[i].surface.stencilData == surface.stencilData)) {
+        if (depth_stencil_textures[i].surface.depthData == surface.depthData) {
             found_index = i;
             break;
         }
