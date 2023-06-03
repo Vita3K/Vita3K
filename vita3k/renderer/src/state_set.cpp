@@ -511,6 +511,26 @@ COMMAND_SET_STATE(fragment_program_enable) {
     }
 }
 
+COMMAND_SET_STATE(visibility_buffer) {
+    TRACY_FUNC_COMMANDS_SET_STATE(visibility_buffer);
+    const Ptr<uint32_t> buffer = helper.pop<Ptr<uint32_t>>();
+    const uint32_t stride = helper.pop<uint32_t>();
+
+    if (renderer.current_backend == Backend::Vulkan) {
+        vulkan::sync_visibility_buffer(*reinterpret_cast<vulkan::VKContext *>(render_context), buffer, stride);
+    }
+}
+
+COMMAND_SET_STATE(visibility_index) {
+    TRACY_FUNC_COMMANDS_SET_STATE(visibility_index);
+    const uint32_t index = helper.pop<uint32_t>();
+    const bool enable = helper.pop<bool>();
+
+    if (renderer.current_backend == Backend::Vulkan) {
+        vulkan::sync_visibility_index(*reinterpret_cast<vulkan::VKContext *>(render_context), enable, index);
+    }
+}
+
 COMMAND(handle_set_state) {
     // TRACY_FUNC_COMMANDS(handle_set_state); All set state commands have tracy so kinda redundant
     renderer::GXMState gxm_state_to_set = helper.pop<renderer::GXMState>();
@@ -532,7 +552,9 @@ COMMAND(handle_set_state) {
         { GXMState::CullMode, cmd_set_state_cull_mode },
         { GXMState::VertexStream, cmd_set_state_vertex_stream },
         { GXMState::UniformBuffer, cmd_set_state_uniform_buffer },
-        { GXMState::FragmentProgramEnable, cmd_set_state_fragment_program_enable }
+        { GXMState::FragmentProgramEnable, cmd_set_state_fragment_program_enable },
+        { GXMState::VisibilityBuffer, cmd_set_state_visibility_buffer },
+        { GXMState::VisibilityIndex, cmd_set_state_visibility_index }
     };
 
     auto result = handlers.find(gxm_state_to_set);

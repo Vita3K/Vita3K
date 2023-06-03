@@ -217,6 +217,49 @@ void sync_viewport_real(VKContext &context, const float xOffset, const float yOf
     context.render_cmd.setViewport(0, context.viewport);
 }
 
+void sync_visibility_buffer(VKContext &context, Ptr<uint32_t> buffer, uint32_t stride) {
+    if (!buffer) {
+        context.current_visibility_buffer = nullptr;
+        return;
+    }
+
+    auto ite = context.visibility_buffers.find(buffer.address());
+    if (ite == context.visibility_buffers.end()) {
+        // create a new query pool
+        vk::QueryPoolCreateInfo pool_info{
+            .queryType = vk::QueryType::eOcclusion,
+            .queryCount = static_cast<uint32_t>(stride / sizeof(uint32_t))
+        };
+        vk::QueryPool query_pool = context.state.device.createQueryPool(pool_info);
+
+        context.visibility_buffers[buffer.address()] = { buffer.address(), nullptr, 0, static_cast<uint32_t>(stride / sizeof(uint32_t)), query_pool };
+        ite = context.visibility_buffers.find(buffer.address());
+
+        std::tie(ite->second.gpu_buffer, ite->second.buffer_offset) = context.state.get_matching_mapping(buffer.cast<void>());
+    }
+
+    context.current_visibility_buffer = &ite->second;
+}
+
+void sync_visibility_index(VKContext &context, bool enable, uint32_t index) {
+    if (!enable) {
+        if (context.is_in_query) {
+            context.render_cmd.endQuery(context.current_visibility_buffer->query_pool, context.current_query_idx);
+            context.is_in_query = false;
+        }
+
+        context.current_query_idx = -1;
+        return;
+    }
+
+    // do not end the query if it's the same index
+    if (context.is_in_query && context.current_query_idx != index) {
+        context.render_cmd.endQuery(context.current_visibility_buffer->query_pool, context.current_query_idx);
+        context.is_in_query = false;
+    }
+    context.current_query_idx = index;
+}
+
 void refresh_pipeline(VKContext &context) {
     context.refresh_pipeline = true;
 }

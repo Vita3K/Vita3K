@@ -32,6 +32,19 @@ void VKContext::wait_thread_function(const MemState &mem) {
     // try to wait for multiple fences at the same time if possible
     std::vector<vk::Fence> fences;
 
+    auto wait_for_fences = [&]() {
+        if (!fences.empty()) {
+            auto result = state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
+            if (result != vk::Result::eSuccess) {
+                LOG_ERROR("Could not wait for fences.");
+                assert(false);
+                return;
+            }
+            // don't reset them
+            fences.clear();
+        }
+    };
+
     while (true) {
         auto wait_request = request_queue.pop();
 
@@ -43,14 +56,7 @@ void VKContext::wait_thread_function(const MemState &mem) {
                            fences.push_back(request.fence);
 
                            if (request.notifications[0].address || request.notifications[1].address) {
-                               auto result = state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
-                               if (result != vk::Result::eSuccess) {
-                                   LOG_ERROR("Could not wait for fences.");
-                                   assert(false);
-                                   return;
-                               }
-                               // don't reset them
-                               fences.clear();
+                               wait_for_fences();
 
                                // same as in handle_sync_surface_data
                                std::unique_lock<std::mutex> lock(state.notification_mutex);
@@ -66,15 +72,7 @@ void VKContext::wait_thread_function(const MemState &mem) {
                            }
                        },
                        [&](FrameDoneRequest &request) {
-                           if (!fences.empty()) {
-                               auto result = state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
-                               if (result != vk::Result::eSuccess) {
-                                   LOG_ERROR("Could not wait for fences.");
-                                   assert(false);
-                                   return;
-                               }
-                               fences.clear();
-                           }
+                           wait_for_fences();
 
                            // don't reset them, the reset will be done in the new_frame function
                            // and these fences can still be waited for during texture uploading
@@ -84,17 +82,7 @@ void VKContext::wait_thread_function(const MemState &mem) {
                            new_frame_condv.notify_one();
                        },
                        [&](PostSurfaceSyncRequest &request) {
-                           if (!fences.empty()) {
-                               // wait for the render to be done
-                               auto result = state.device.waitForFences(fences, VK_TRUE, std::numeric_limits<uint64_t>::max());
-                               if (result != vk::Result::eSuccess) {
-                                   LOG_ERROR("Could not wait for fences.");
-                                   assert(false);
-                                   return;
-                               }
-                               // don't reset them
-                               fences.clear();
-                           }
+                           wait_for_fences();
 
                            state.surface_cache.perform_post_surface_sync(mem, request.cache_info);
                        } },
@@ -315,8 +303,21 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         return;
     }
 
+    // do this before ending the render pass
+    if (is_in_query) {
+        render_cmd.endQuery(current_visibility_buffer->query_pool, current_query_idx);
+        is_in_query = false;
+    }
+
     if (in_renderpass)
         stop_render_pass();
+
+    if (visibility_max_used_idx != -1) {
+        render_cmd.copyQueryPoolResults(current_visibility_buffer->query_pool, 0,
+            visibility_max_used_idx + 1, current_visibility_buffer->gpu_buffer,
+            current_visibility_buffer->buffer_offset, sizeof(uint32_t), vk::QueryResultFlagBits::eWait);
+        visibility_max_used_idx = -1;
+    }
 
     ColorSurfaceCacheInfo *surface_info = nullptr;
     if (state.features.support_memory_mapping && !state.disable_surface_sync)

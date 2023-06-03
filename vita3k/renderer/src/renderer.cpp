@@ -136,4 +136,12 @@ void set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform
     renderer::add_state_set_command(ctx, renderer::GXMState::UniformBuffer, buffer, is_vertex_uniform, block_number, bytes_to_copy_and_pad);
 }
 
+void set_visibility_buffer(State &state, Context *ctx, Ptr<uint32_t> visibility_address, uint32_t visibility_stride) {
+    renderer::add_state_set_command(ctx, renderer::GXMState::VisibilityBuffer, visibility_address, visibility_stride);
+}
+
+void set_visibility_index(State &state, Context *ctx, bool enable, uint32_t index) {
+    renderer::add_state_set_command(ctx, renderer::GXMState::VisibilityIndex, index, enable);
+}
+
 } // namespace renderer

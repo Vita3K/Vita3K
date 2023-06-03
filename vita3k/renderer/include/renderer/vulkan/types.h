@@ -97,6 +97,15 @@ struct MappedMemory {
 
 struct ColorSurfaceCacheInfo;
 
+// Use vulkan queries to implement visibility buffer
+struct VisibilityBuffer {
+    Address address;
+    vk::Buffer gpu_buffer;
+    uint64_t buffer_offset;
+    uint32_t size;
+    vk::QueryPool query_pool;
+};
+
 // request to trigger a notification after the fence has been waited for
 struct NotificationRequest {
     SceGxmNotification notifications[2];
@@ -149,6 +158,13 @@ struct VKContext : public renderer::Context {
 
     shader::RenderVertUniformBlockWithMapping current_vert_render_info;
     shader::RenderFragUniformBlockWithMapping current_frag_render_info;
+
+    // used to implement the Visibility Buffer
+    std::map<Address, VisibilityBuffer> visibility_buffers;
+    VisibilityBuffer *current_visibility_buffer = nullptr;
+    int visibility_max_used_idx = -1;
+    bool is_in_query = false;
+    int current_query_idx = -1;
 
     // descriptor pool for dynamic uniforms (allocated once for the whole game)
     vk::DescriptorPool global_descriptor_pool;

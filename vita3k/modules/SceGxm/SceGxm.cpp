@@ -1341,6 +1341,12 @@ static void gxmContextStateRestore(renderer::State &state, MemState &mem, SceGxm
     renderer::set_stencil_ref(state, context->renderer.get(), true, context->state.front_stencil.ref);
     renderer::set_stencil_ref(state, context->renderer.get(), false, context->state.back_stencil.ref);
 
+    if (state.features.support_memory_mapping) {
+        context->state.visibility_enable = false;
+        context->state.visibility_index = 0;
+        renderer::set_visibility_index(state, context->renderer.get(), false, 0);
+    }
+
     if (context->state.vertex_program) {
         renderer::set_program(state, context->renderer.get(), context->state.vertex_program, false);
 
@@ -3736,17 +3742,38 @@ EXPORT(void, sceGxmSetFrontStencilRef, SceGxmContext *context, uint8_t sref) {
 
 EXPORT(void, sceGxmSetFrontVisibilityTestEnable, SceGxmContext *context, SceGxmVisibilityTestMode enable) {
     TRACY_FUNC(sceGxmSetFrontVisibilityTestEnable, context, enable);
-    UNIMPLEMENTED();
+
+    if (!emuenv.renderer->features.support_memory_mapping) {
+        UNIMPLEMENTED();
+        return;
+    }
+
+    context->state.visibility_enable = enable != SCE_GXM_VISIBILITY_TEST_DISABLED;
+    renderer::set_visibility_index(*emuenv.renderer, context->renderer.get(), context->state.visibility_enable, context->state.visibility_index);
 }
 
 EXPORT(void, sceGxmSetFrontVisibilityTestIndex, SceGxmContext *context, uint32_t index) {
     TRACY_FUNC(sceGxmSetFrontVisibilityTestIndex, context, index);
-    UNIMPLEMENTED();
+
+    if (!emuenv.renderer->features.support_memory_mapping) {
+        UNIMPLEMENTED();
+        return;
+    }
+
+    context->state.visibility_index = index;
+    renderer::set_visibility_index(*emuenv.renderer, context->renderer.get(), context->state.visibility_enable, context->state.visibility_index);
 }
 
 EXPORT(void, sceGxmSetFrontVisibilityTestOp, SceGxmContext *context, SceGxmVisibilityTestOp op) {
     TRACY_FUNC(sceGxmSetFrontVisibilityTestOp, context, op);
-    UNIMPLEMENTED();
+
+    if (!emuenv.renderer->features.support_memory_mapping) {
+        UNIMPLEMENTED();
+        return;
+    }
+
+    if (op != SCE_GXM_VISIBILITY_TEST_OP_SET)
+        STUBBED("SCE_GXM_VISIBILITY_TEST_OP_INCREMENT not supported");
 }
 
 EXPORT(void, sceGxmSetPrecomputedFragmentState, SceGxmContext *context, Ptr<SceGxmPrecomputedFragmentState> state) {
@@ -4068,9 +4095,12 @@ EXPORT(int, sceGxmSetVisibilityBuffer, SceGxmContext *immediateContext, Ptr<void
     if (bufferBase.address() & (SCE_GXM_VISIBILITY_ALIGNMENT - 1))
         return RET_ERROR(SCE_GXM_ERROR_INVALID_ALIGNMENT);
 
-    STUBBED("Set all visible");
-
-    memset(bufferBase.get(emuenv.mem), 0xFF, SCE_GXM_GPU_CORE_COUNT * stridePerCore);
+    if (emuenv.renderer->features.support_memory_mapping) {
+        renderer::set_visibility_buffer(*emuenv.renderer, immediateContext->renderer.get(), bufferBase.cast<uint32_t>(), stridePerCore);
+    } else {
+        STUBBED("Set all visible");
+        memset(bufferBase.get(emuenv.mem), 0xFF, SCE_GXM_GPU_CORE_COUNT * stridePerCore);
+    }
 
     return 0;
 }

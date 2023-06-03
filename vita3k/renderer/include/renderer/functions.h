@@ -77,6 +77,8 @@ void set_region_clip(State &state, Context *ctx, SceGxmRegionClipMode mode, unsi
 void set_two_sided_enable(State &state, Context *ctx, SceGxmTwoSidedMode mode);
 void set_side_fragment_program_enable(State &state, Context *ctx, const bool is_front, SceGxmFragmentProgramMode mode);
 void set_uniform_buffer(State &state, Context *ctx, const bool is_vertex_uniform, const int block_num, const std::uint16_t buffer_size, const Ptr<const void> buffer);
+void set_visibility_buffer(State &state, Context *ctx, Ptr<uint32_t> visibility_address, uint32_t visibility_stride);
+void set_visibility_index(State &state, Context *ctx, bool enable, uint32_t index);
 
 void set_context(State &state, Context *ctx, RenderTarget *target, SceGxmColorSurface *color_surface, SceGxmDepthStencilSurface *depth_stencil_surface);
 void set_vertex_stream(State &state, Context *ctx, const std::size_t index, const std::size_t data_len, const Ptr<const void> stream);
