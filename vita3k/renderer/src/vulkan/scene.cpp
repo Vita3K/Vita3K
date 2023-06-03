@@ -351,6 +351,17 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     constexpr bool replaced_indices = false;
 #endif
 
+    if (context.current_query_idx != -1 && !context.is_in_query) {
+        if (context.visibility_max_used_idx == -1) {
+            // for the first time, reset the visibility buffer in the prerender command
+            context.prerender_cmd.resetQueryPool(context.current_visibility_buffer->query_pool, 0, context.current_visibility_buffer->size);
+        }
+        context.visibility_max_used_idx = std::max(context.visibility_max_used_idx, context.current_query_idx);
+
+        context.render_cmd.beginQuery(context.current_visibility_buffer->query_pool, context.current_query_idx, vk::QueryControlFlags());
+        context.is_in_query = true;
+    }
+
     // do we need to check for a pipeline change?
     if (context.refresh_pipeline || !context.in_renderpass || type != context.last_primitive) {
         context.refresh_pipeline = false;

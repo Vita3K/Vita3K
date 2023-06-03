@@ -52,6 +52,8 @@ void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTe
 void sync_viewport_flat(VKContext &context);
 void sync_viewport_real(VKContext &context, const float xOffset, const float yOffset, const float zOffset,
     const float xScale, const float yScale, const float zScale);
+void sync_visibility_buffer(VKContext &context, Ptr<uint32_t> buffer, uint32_t stride);
+void sync_visibility_index(VKContext &context, bool enable, uint32_t index);
 
 void refresh_pipeline(VKContext &context);
 

@@ -80,6 +80,8 @@ enum class GXMState : std::uint16_t {
     CullMode,
     UniformBuffer,
     FragmentProgramEnable,
+    VisibilityBuffer,
+    VisibilityIndex,
     TotalState
 };
 

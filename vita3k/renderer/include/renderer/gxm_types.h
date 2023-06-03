@@ -229,6 +229,10 @@ struct GxmContextState {
     Ptr<SceGxmDeferredContextCallback> vdm_memory_callback;
     Ptr<void> memory_callback_userdata;
 
+    // Visibility buffer
+    bool visibility_enable = false;
+    uint32_t visibility_index;
+
     bool active = false;
 };
 
