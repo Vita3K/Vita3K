@@ -50,8 +50,13 @@ static bool operator<(const SDL_JoystickGUID &a, const SDL_JoystickGUID &b) {
 
 void refresh_controllers(CtrlState &state) {
     // Remove disconnected controllers
+    bool found_gyro = false;
+    bool found_accel = false;
     for (ControllerList::iterator controller = state.controllers.begin(); controller != state.controllers.end();) {
         if (SDL_GameControllerGetAttached(controller->second.controller.get())) {
+            found_accel |= controller->second.has_accel;
+            found_gyro |= controller->second.has_gyro;
+
             ++controller;
         } else {
             state.free_ports[controller->second.port - 1] = true;
@@ -73,12 +78,25 @@ void refresh_controllers(CtrlState &state) {
                 const GameControllerPtr controller(SDL_GameControllerOpen(joystick_index), SDL_GameControllerClose);
                 new_controller.controller = controller;
                 new_controller.port = reserve_port(state);
+
+                new_controller.has_gyro = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_GYRO);
+                if (new_controller.has_gyro)
+                    SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_GYRO, SDL_TRUE);
+                new_controller.has_accel = SDL_GameControllerHasSensor(controller.get(), SDL_SENSOR_ACCEL);
+                if (new_controller.has_accel)
+                    SDL_GameControllerSetSensorEnabled(controller.get(), SDL_SENSOR_ACCEL, SDL_TRUE);
+
+                found_gyro |= new_controller.has_gyro;
+                found_accel |= new_controller.has_accel;
+
                 state.controllers.emplace(guid, new_controller);
                 state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
                 state.controllers_num++;
             }
         }
     }
+
+    state.has_motion_support = found_gyro && found_accel;
 }
 
 static float keys_to_axis(const uint8_t *keys, SDL_Scancode code1, SDL_Scancode code2) {
@@ -195,6 +213,8 @@ static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameControlle
 }
 
 static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool negative, bool from_ext_function, SceUInt32 &buttons, SceUInt8 &lx, SceUInt8 &ly, SceUInt8 &rx, SceUInt8 &ry) {
+    std::lock_guard<std::mutex> guard(emuenv.ctrl.mutex);
+
     if (port == 0) {
         port++;
     }

@@ -4,26 +4,25 @@
 
 #pragma once
 
-#include <array>
-#include "util/types.h"
 #include "util/quaternion.h"
+#include "util/types.h"
 #include "util/vector_math.h"
+#include <array>
 
 class MotionInput {
 public:
     explicit MotionInput();
 
-    MotionInput(const MotionInput&) = default;
-    MotionInput& operator=(const MotionInput&) = default;
+    MotionInput(const MotionInput &) = default;
+    MotionInput &operator=(const MotionInput &) = default;
 
-    MotionInput(MotionInput&&) = default;
-    MotionInput& operator=(MotionInput&&) = default;
+    MotionInput(MotionInput &&) = default;
+    MotionInput &operator=(MotionInput &&) = default;
 
     void SetPID(SceFloat new_kp, SceFloat new_ki, SceFloat new_kd);
     void SetAcceleration(const Util::Vec3f &acceleration);
     void SetGyroscope(const Util::Vec3f &gyroscope);
     void SetQuaternion(const Util::Quaternion<SceFloat> &quaternion);
-    void SetGyroBias(const Util::Vec3f &bias);
     void SetGyroThreshold(SceFloat threshold);
 
     void EnableGyroBias(bool enable);
@@ -33,12 +32,10 @@ public:
     void UpdateRotation(SceULong64 elapsed_time);
     void UpdateOrientation(SceULong64 elapsed_time);
 
-    [[nodiscard]] std::array<Util::Vec3f, 3> GetOrientation() const;
+    [[nodiscard]] Util::Quaternion<SceFloat> GetOrientation() const;
     [[nodiscard]] Util::Vec3f GetAcceleration() const;
     [[nodiscard]] Util::Vec3f GetGyroscope() const;
-    [[nodiscard]] Util::Vec3f GetGyroscopeBias() const;
     [[nodiscard]] Util::Vec3f GetRotations() const;
-    [[nodiscard]] Util::Quaternion<SceFloat> GetQuaternion() const;
 
     [[nodiscard]] bool IsMoving(SceFloat sensitivity) const;
     [[nodiscard]] bool IsCalibrated(SceFloat sensitivity) const;
@@ -59,7 +56,7 @@ private:
     Util::Vec3f derivative_error;
 
     // Quaternion containing the device orientation
-    Util::Quaternion<SceFloat> quat{ { 0.0f, 0.0f, -1.0f }, 0.0f };
+    Util::Quaternion<SceFloat> quat{ { 0.0f, 0.0f, 1.0f }, 0.0f };
 
     // Number of full rotations in each axis
     Util::Vec3f rotations;

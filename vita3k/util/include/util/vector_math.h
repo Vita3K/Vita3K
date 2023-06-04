@@ -207,30 +207,6 @@ public:
     [[nodiscard]] constexpr const T& q() const {
         return z;
     }
-
-// swizzlers - create a subvector of specific components
-// e.g. Vec2 uv() { return Vec2(x,y); }
-// _DEFINE_SWIZZLER2 defines a single such function, DEFINE_SWIZZLER2 defines all of them for all
-// component names (x<->r) and permutations (xy<->yx)
-#define _DEFINE_SWIZZLER2(a, b, name)                                                              \
-    [[nodiscard]] constexpr Vec2<T> name() const {                                                 \
-        return Vec2<T>(a, b);                                                                      \
-    }
-#define DEFINE_SWIZZLER2(a, b, a2, b2, a3, b3, a4, b4)                                             \
-    _DEFINE_SWIZZLER2(a, b, a##b);                                                                 \
-    _DEFINE_SWIZZLER2(a, b, a2##b2);                                                               \
-    _DEFINE_SWIZZLER2(a, b, a3##b3);                                                               \
-    _DEFINE_SWIZZLER2(a, b, a4##b4);                                                               \
-    _DEFINE_SWIZZLER2(b, a, b##a);                                                                 \
-    _DEFINE_SWIZZLER2(b, a, b2##a2);                                                               \
-    _DEFINE_SWIZZLER2(b, a, b3##a3);                                                               \
-    _DEFINE_SWIZZLER2(b, a, b4##a4)
-
-    DEFINE_SWIZZLER2(x, y, r, g, u, v, s, t);
-    DEFINE_SWIZZLER2(x, z, r, b, u, w, s, q);
-    DEFINE_SWIZZLER2(y, z, g, b, v, w, t, q);
-#undef DEFINE_SWIZZLER2
-#undef _DEFINE_SWIZZLER2
 };
 
 template <typename T, typename V>

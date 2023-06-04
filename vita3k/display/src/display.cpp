@@ -24,6 +24,7 @@
 #include <renderer/state.h>
 
 #include <chrono>
+#include <motion/functions.h>
 #include <touch/functions.h>
 #include <util/find.h>
 
@@ -54,6 +55,7 @@ static void vblank_sync_thread(EmuEnvState &emuenv) {
 
             // maybe we should also use a mutex for this part, but it shouldn't be an issue
             touch_vsync_update(emuenv);
+            refresh_motion(emuenv.motion, emuenv.ctrl);
 
             // Notify Vblank callback in each VBLANK start
             for (auto &cb : display.vblank_callbacks)

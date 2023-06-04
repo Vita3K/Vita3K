@@ -52,6 +52,11 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
         }
     } else
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", lang["not_connected"].c_str());
+
+    if (emuenv.ctrl.has_motion_support) {
+        ImGui::Spacing();
+        ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Gamepad has motion support");
+    }
     ImGui::End();
 }
 
