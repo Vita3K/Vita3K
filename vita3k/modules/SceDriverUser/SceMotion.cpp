@@ -17,6 +17,7 @@
 
 #include "SceMotion.h"
 
+#include <ctrl/state.h>
 #include <motion/functions.h>
 #include <motion/motion.h>
 
@@ -33,11 +34,20 @@ EXPORT(int, sceMotionGetBasicOrientation, SceFVector3 *basicOrientation) {
     if (!basicOrientation)
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
 
-    STUBBED("set default value");
-    const SceFVector3 current_acceleration = get_acceleration(host.motion);
-    basicOrientation->x = current_acceleration.x;
-    basicOrientation->y = current_acceleration.y;
-    basicOrientation->z = current_acceleration.z;
+    std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
+    Util::Quaternion quat = get_orientation(emuenv.motion);
+
+    *basicOrientation = { 0.f, 0.f, 0.f };
+    // get the basic orientation, only one component is not zero and will be 1 or -1
+    // TODO: this is probably wrong
+    float max_val = std::max({ std::abs(quat.xyz.x), std::abs(quat.xyz.y), std::abs(quat.xyz.z) });
+    if (max_val == std::abs(quat.xyz.x)) {
+        basicOrientation->x = quat.xyz.x > 0.0f ? 1.0f : -1.0f;
+    } else if (max_val == std::abs(quat.xyz.y)) {
+        basicOrientation->y = quat.xyz.y > 0.0f ? 1.0f : -1.0f;
+    } else {
+        basicOrientation->z = quat.xyz.z > 0.0f ? 1.0f : -1.0f;
+    }
 
     return 0;
 }
@@ -59,7 +69,7 @@ EXPORT(int, sceMotionGetDeviceLocation, SceMotionDeviceLocation *devLocation) {
 
 EXPORT(SceBool, sceMotionGetGyroBiasCorrection) {
     TRACY_FUNC(sceMotionGetGyroBiasCorrection);
-    return get_gyro_bias_correction(host.motion);
+    return get_gyro_bias_correction(emuenv.motion);
 }
 
 EXPORT(SceBool, sceMotionGetMagnetometerState) {
@@ -69,7 +79,35 @@ EXPORT(SceBool, sceMotionGetMagnetometerState) {
 
 EXPORT(int, sceMotionGetSensorState, SceMotionSensorState *sensorState, int numRecords) {
     TRACY_FUNC(sceMotionGetSensorState, sensorState, numRecords);
-    return UNIMPLEMENTED();
+    if (!sensorState)
+        return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
+
+    if (emuenv.ctrl.has_motion_support) {
+        std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
+        sensorState->accelerometer = get_acceleration(emuenv.motion);
+        sensorState->gyro = get_gyroscope(emuenv.motion);
+
+        sensorState->timestamp = emuenv.motion.last_accel_timestamp;
+        sensorState->counter = emuenv.motion.last_counter;
+        sensorState->hostTimestamp = sensorState->timestamp;
+        sensorState->dataInfo = 0;
+    } else {
+        // some default values
+        memset(sensorState, 0, sizeof(sensorState));
+        sensorState->accelerometer.z = -1.0;
+
+        std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
+        uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
+        sensorState->timestamp = timestamp;
+        sensorState->hostTimestamp = timestamp;
+
+        sensorState->counter = emuenv.motion.last_counter++;
+    }
+
+    for (int i = 1; i < numRecords; i++)
+        sensorState[i] = sensorState[0];
+
+    return 0;
 }
 
 EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
@@ -77,15 +115,45 @@ EXPORT(int, sceMotionGetState, SceMotionState *motionState) {
     if (!motionState)
         return RET_ERROR(SCE_MOTION_ERROR_NULL_PARAMETER);
 
-    STUBBED("Set value to zero");
+    if (emuenv.ctrl.has_motion_support) {
+        std::lock_guard<std::mutex> guard(emuenv.motion.mutex);
+        motionState->timestamp = emuenv.motion.last_accel_timestamp;
 
-    // Set 0 to all values of motionState struct
-    memset(motionState, 0, sizeof(SceMotionState));
+        motionState->acceleration = get_acceleration(emuenv.motion);
+        motionState->angularVelocity = get_gyroscope(emuenv.motion);
 
-    // Set default position to devicePosition
-    motionState->deviceQuat.z = 1;
+        Util::Quaternion dev_quat = get_orientation(emuenv.motion);
 
-    return UNIMPLEMENTED();
+        static_assert(sizeof(motionState->deviceQuat) == sizeof(dev_quat));
+        memcpy(&motionState->deviceQuat, &dev_quat, sizeof(motionState->deviceQuat));
+
+        *reinterpret_cast<decltype(dev_quat.ToMatrix()) *>(&motionState->rotationMatrix) = dev_quat.ToMatrix();
+        // not right, but we can't do better without a magnetometer
+        memcpy(&motionState->nedMatrix, &motionState->rotationMatrix, sizeof(motionState->nedMatrix));
+
+        motionState->hostTimestamp = motionState->timestamp;
+        // set it as unstable because we don't have one
+        motionState->magnFieldStability = SCE_MOTION_MAGNETIC_FIELD_UNSTABLE;
+        motionState->dataInfo = 0;
+    } else {
+        // put some default values
+        memset(motionState, 0, sizeof(SceMotionState));
+
+        std::chrono::time_point<std::chrono::steady_clock> ts = std::chrono::steady_clock::now();
+        uint64_t timestamp = std::chrono::duration_cast<std::chrono::microseconds>(ts.time_since_epoch()).count();
+        motionState->timestamp = timestamp;
+        motionState->hostTimestamp = timestamp;
+
+        motionState->acceleration.z = -1.0;
+        motionState->deviceQuat.z = 1;
+        for (int i = 0; i < 4; i++) {
+            // identity matrices
+            reinterpret_cast<float *>(&motionState->rotationMatrix.x.x)[i * 4 + i] = 1;
+            reinterpret_cast<float *>(&motionState->nedMatrix.x.x)[i * 4 + i] = 1;
+        }
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceMotionGetStateExt) {
@@ -155,7 +223,7 @@ EXPORT(int, sceMotionSetDeadbandExt) {
 
 EXPORT(int, sceMotionSetGyroBiasCorrection, SceBool setValue) {
     TRACY_FUNC(sceMotionSetGyroBiasCorrection, setValue);
-    set_gyro_bias_correction(host.motion, setValue);
+    set_gyro_bias_correction(emuenv.motion, setValue);
 
     return 0;
 }
@@ -172,7 +240,9 @@ EXPORT(int, sceMotionSetTiltCorrectionExt) {
 
 EXPORT(int, sceMotionStartSampling) {
     TRACY_FUNC(sceMotionStartSampling);
-    return UNIMPLEMENTED();
+    emuenv.motion.is_sampling = true;
+
+    return 0;
 }
 
 EXPORT(int, sceMotionStartSamplingExt) {
@@ -182,7 +252,9 @@ EXPORT(int, sceMotionStartSamplingExt) {
 
 EXPORT(int, sceMotionStopSampling) {
     TRACY_FUNC(sceMotionStopSampling);
-    return UNIMPLEMENTED();
+    emuenv.motion.is_sampling = false;
+
+    return 0;
 }
 
 EXPORT(int, sceMotionStopSamplingExt) {

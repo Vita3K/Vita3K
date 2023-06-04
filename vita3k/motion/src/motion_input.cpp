@@ -2,8 +2,10 @@
 // Licensed under GPLv2 or any later version
 // Refer to the license.txt file included
 
-//#include "common/math_util.h"
 #include "motion/motion_input.h"
+
+// for M_PI constant
+#include <SDL_stdinc.h>
 
 MotionInput::MotionInput() {
     // Initialize PID constants with default values
@@ -41,10 +43,6 @@ void MotionInput::SetGyroscope(const Util::Vec3f &gyroscope) {
 
 void MotionInput::SetQuaternion(const Util::Quaternion<SceFloat> &quaternion) {
     quat = quaternion;
-}
-
-void MotionInput::SetGyroBias(const Util::Vec3f &bias) {
-    gyro_bias = bias;
 }
 
 void MotionInput::SetGyroThreshold(SceFloat threshold) {
@@ -182,16 +180,8 @@ void MotionInput::UpdateOrientation(SceULong64 elapsed_time) {
     quat = quat.Normalized();
 }
 
-std::array<Util::Vec3f, 3> MotionInput::GetOrientation() const {
-    const Util::Quaternion<float> quad{
-        { -quat.xyz[1], -quat.xyz[0], -quat.w },
-        -quat.xyz[2],
-    };
-    const std::array<float, 16> matrix4x4 = quad.ToMatrix();
-
-    return {Util::Vec3f(matrix4x4[0], matrix4x4[1], -matrix4x4[2]),
-            Util::Vec3f(matrix4x4[4], matrix4x4[5], -matrix4x4[6]),
-            Util::Vec3f(-matrix4x4[8], -matrix4x4[9], matrix4x4[10])};
+Util::Quaternion<float> MotionInput::GetOrientation() const {
+    return quat;
 }
 
 Util::Vec3f MotionInput::GetAcceleration() const {
@@ -200,14 +190,6 @@ Util::Vec3f MotionInput::GetAcceleration() const {
 
 Util::Vec3f MotionInput::GetGyroscope() const {
     return gyro;
-}
-
-Util::Vec3f MotionInput::GetGyroscopeBias() const {
-    return gyro_bias;
-}
-
-Util::Quaternion<SceFloat> MotionInput::GetQuaternion() const {
-    return quat;
 }
 
 Util::Vec3f MotionInput::GetRotations() const {

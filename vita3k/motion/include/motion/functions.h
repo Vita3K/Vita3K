@@ -17,17 +17,13 @@
 
 #pragma once
 
-#include <util/types.h>
-#include <util/quaternion.h>
 #include <emuenv/state.h>
 #include <motion/state.h>
 
 SceFVector3 get_acceleration(const MotionState &state);
 SceFVector3 get_gyroscope(const MotionState &state);
-SceFVector3 get_gyro_bias(const MotionState &state);
-Util::Quaternion<SceFloat> get_quaternion(const MotionState &state);
+Util::Quaternion<SceFloat> get_orientation(const MotionState &state);
 SceBool get_gyro_bias_correction(const MotionState &state);
+void set_gyro_bias_correction(MotionState &state, SceBool setValue);
 
-SceFVector3 set_gyro_bias_correction(MotionState &state, SceBool setValue);
-
-void refresh_motion(MotionState &state);
+void refresh_motion(MotionState &state, CtrlState &ctrl_state);

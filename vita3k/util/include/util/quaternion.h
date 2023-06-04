@@ -6,6 +6,8 @@
 
 #include "util/vector_math.h"
 
+#include <array>
+
 namespace Util {
 
 template <typename T>

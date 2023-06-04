@@ -471,6 +471,8 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, EmuEnvState &emuenv,
         LOG_INFO("{} Controllers Connected", emuenv.ctrl.controllers_num);
         for (auto i = 0; i < emuenv.ctrl.controllers_num; i++)
             LOG_INFO("Controller {}: {}", i, emuenv.ctrl.controllers_name[i]);
+        if (emuenv.ctrl.has_motion_support)
+            LOG_INFO("Controller has motion support");
     }
     LOG_INFO("modules mode: {}", config_modules_mode[emuenv.cfg.current_config.modules_mode][ModulesModeType::MODE]);
     if ((emuenv.cfg.current_config.modules_mode != ModulesMode::AUTOMATIC) && !emuenv.cfg.current_config.lle_modules.empty()) {
