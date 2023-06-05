@@ -1117,7 +1117,11 @@ EXPORT(int, sceKernelChangeCurrentThreadAttr) {
 
 EXPORT(int, sceKernelCheckThreadStack) {
     TRACY_FUNC(sceKernelCheckThreadStack);
-    return UNIMPLEMENTED();
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    int stack_size = read_sp(*thread->cpu) - (thread->stack.get());
+    if (stack_size < 0 || stack_size > thread->stack_size)
+        stack_size = 0;
+    return stack_size;
 }
 
 EXPORT(int, sceKernelCloseModule) {

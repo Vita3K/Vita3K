@@ -4380,9 +4380,12 @@ EXPORT(Ptr<const SceGxmProgram>, sceGxmShaderPatcherGetProgramFromId, SceGxmShad
     return programId.get(emuenv.mem)->program;
 }
 
-EXPORT(int, sceGxmShaderPatcherGetUserData) {
-    TRACY_FUNC(sceGxmShaderPatcherGetUserData);
-    return UNIMPLEMENTED();
+EXPORT(Ptr<void>, sceGxmShaderPatcherGetUserData, const SceGxmShaderPatcher *shaderPatcher) {
+    TRACY_FUNC(sceGxmShaderPatcherGetUserData, shaderPatcher);
+    if (!shaderPatcher) {
+        return Ptr<void>(0);
+    }
+    return shaderPatcher->params.userData;
 }
 
 EXPORT(int, sceGxmShaderPatcherGetVertexProgramRefCount, const SceGxmShaderPatcher *shaderPatcher, const SceGxmVertexProgram *vertexProgram, uint32_t *refCount) {
