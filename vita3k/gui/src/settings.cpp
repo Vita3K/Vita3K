@@ -207,7 +207,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
     const auto SIZE_MINI_PACKAGE = ImVec2(170.f * SCALE.x, 96.f * SCALE.y);
     const auto POPUP_SIZE = ImVec2(756.0f * SCALE.x, 436.0f * SCALE.y);
 
-    const auto is_background = gui.apps_background.find("NPXS10015") != gui.apps_background.end();
+    const auto is_background = gui.apps_background.contains("NPXS10015");
     auto common = emuenv.common_dialog.lang.common;
 
     ImGui::SetNextWindowPos(ImVec2(0, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
@@ -819,13 +819,13 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                                 });
                                 init_app.detach();
                             }
-                            const auto live_area_state = get_app_open_list_index(gui, "NPXS10015") != gui.apps_list_opened.end();
-                            gui.apps_list_opened.clear();
+                            const auto live_area_state = get_live_area_current_open_apps_list_index(gui, "NPXS10015") != gui.live_area_current_open_apps_list.end();
+                            gui.live_area_current_open_apps_list.clear();
                             gui.live_area_contents.clear();
                             gui.live_items.clear();
                             init_notice_info(gui, emuenv);
                             if (live_area_state) {
-                                update_apps_list_opened(gui, emuenv, "NPXS10015");
+                                update_live_area_current_open_apps_list(gui, emuenv, "NPXS10015");
                                 init_live_area(gui, emuenv, "NPXS10015");
                             }
                         }
@@ -960,17 +960,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                 popup.clear();
             else
                 settings_menu = SELECT;
-        } else {
-            if (emuenv.app_path == "NPXS10026") {
-                gui.vita_area.content_manager = true;
-            } else {
-                if (!gui.apps_list_opened.empty() && gui.apps_list_opened[gui.current_app_selected] == "NPXS10015")
-                    gui.vita_area.live_area_screen = true;
-                else
-                    gui.vita_area.home_screen = true;
-            }
-            gui.vita_area.settings = false;
-        }
+        } else
+            close_system_app(gui, emuenv);
     }
 
     if ((settings_menu == THEME_BACKGROUND) && !selected.empty() && (selected != "default")) {

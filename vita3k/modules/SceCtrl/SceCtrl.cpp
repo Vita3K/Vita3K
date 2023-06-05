@@ -74,7 +74,6 @@ EXPORT(int, sceCtrlGetButtonIntercept) {
 EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
     TRACY_FUNC(sceCtrlGetControllerPortInfo, info);
     CtrlState &state = emuenv.ctrl;
-    refresh_controllers(state);
     info->port[0] = emuenv.cfg.current_config.pstv_mode ? SCE_CTRL_TYPE_VIRT : SCE_CTRL_TYPE_PHY;
     for (int i = 0; i < SCE_CTRL_MAX_WIRELESS_NUM; i++) {
         info->port[i + 1] = (emuenv.cfg.current_config.pstv_mode && !emuenv.ctrl.free_ports[i]) ? get_type_of_controller(i) : SCE_CTRL_TYPE_UNPAIRED;
@@ -110,7 +109,6 @@ EXPORT(int, sceCtrlGetWirelessControllerInfo, SceCtrlWirelessControllerInfo *pIn
     memset(pInfo->connected, SCE_CTRL_WIRELESS_INFO_NOT_CONNECTED, sizeof(pInfo->connected));
     if (emuenv.cfg.current_config.pstv_mode) {
         CtrlState &state = emuenv.ctrl;
-        refresh_controllers(state);
         for (auto i = 0; i < state.controllers_num; i++)
             pInfo->connected[i] = SCE_CTRL_WIRELESS_INFO_CONNECTED;
     }
@@ -200,8 +198,6 @@ EXPORT(int, sceCtrlSetActuator, int port, const SceCtrlActuator *pState) {
     }
 
     CtrlState &state = emuenv.ctrl;
-    refresh_controllers(state);
-
     for (const auto &controller : state.controllers) {
         if (controller.second.port == port) {
             SDL_GameControllerRumble(controller.second.controller.get(), pState->small * 655.35f, pState->large * 655.35f, SDL_HAPTIC_INFINITY);

@@ -295,8 +295,11 @@ int main(int argc, char *argv[]) {
                 return QuitRequested;
             }
 
-            if (!emuenv.io.app_path.empty())
+            if (!emuenv.io.app_path.empty()) {
                 run_type = app::AppRunType::Extracted;
+                gui.vita_area.home_screen = false;
+                gui.vita_area.live_area_screen = false;
+            }
         }
     }
 
@@ -419,7 +422,7 @@ int main(int argc, char *argv[]) {
         gui::set_shaders_compiled_display(gui, emuenv);
 
         gui::draw_begin(gui, emuenv);
-        if (!gui.vita_area.live_area_screen)
+        if (!gui.vita_area.home_screen && !gui.vita_area.live_area_screen)
             gui::draw_common_dialog(gui, emuenv);
         gui::draw_vita_area(gui, emuenv);
 
