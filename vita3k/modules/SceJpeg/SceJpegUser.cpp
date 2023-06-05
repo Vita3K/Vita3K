@@ -181,8 +181,8 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
     } else {
         switch (output->color_space) {
         case SCE_JPEG_COLORSPACE_GRAYSCALE:
-			output->output_size = size.width * size.height;
-			break;
+            output->output_size = size.width * size.height;
+            break;
         case SCE_JPEG_COLORSPACE_YUV444:
             output->output_size = size.width * size.height * 3;
             break;
@@ -190,8 +190,8 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
             output->output_size = size.width * size.height * 2;
             break;
         case SCE_JPEG_COLORSPACE_YUV420:
-			output->output_size = size.width * size.height * 3 / 2;
-			break;
+            output->output_size = size.width * size.height * 3 / 2;
+            break;
         }
     }
 
@@ -199,7 +199,7 @@ EXPORT(int, sceJpegGetOutputInfo, const uint8_t *jpeg_data, uint32_t jpeg_size,
     if (mode & 0x70) {
         return STUBBED("The handling of image downscaling in this function is not yet implemented.");
     }
-    
+
     return 0;
 }
 

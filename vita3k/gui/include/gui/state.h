@@ -323,8 +323,11 @@ struct GuiState {
 
     ImGuiTextFilter app_search_bar;
 
-    std::vector<std::string> apps_list_opened;
-    int32_t current_app_selected = -1;
+    bool is_nav_button = false;
+    bool is_key_locked = false;
+
+    std::vector<std::string> live_area_current_open_apps_list;
+    int32_t live_area_app_current_open = -1;
 
     std::map<std::string, std::vector<TimeApp>> time_apps;
 

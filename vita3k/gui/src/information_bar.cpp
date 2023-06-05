@@ -522,8 +522,8 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(0.f, 0.f), ImVec2(display_size.x, INFORMATION_BAR_HEIGHT), is_theme_color ? bar_color : DEFAULT_BAR_COLOR, 0.f, ImDrawFlags_RoundCornersAll);
 
     if (gui.vita_area.home_screen || gui.vita_area.live_area_screen) {
-        const auto HOME_ICON_POS_CENTER = (display_size.x / 2.f) - (32.f * ((float(gui.apps_list_opened.size())) / 2.f)) * SCALE.x;
-        const auto APP_IS_OPEN = gui.current_app_selected >= 0;
+        const auto HOME_ICON_POS_CENTER = (display_size.x / 2.f) - (32.f * ((float(gui.live_area_current_open_apps_list.size())) / 2.f)) * SCALE.x;
+        const auto APP_IS_OPEN = gui.live_area_app_current_open >= 0;
 
         // Draw Home Icon
         const std::vector<ImVec2> HOME_UP_POS = { ImVec2(HOME_ICON_POS_CENTER - (13.f * SCALE.x), 16.f * SCALE.y), ImVec2(HOME_ICON_POS_CENTER, 6.f * SCALE.y), ImVec2(HOME_ICON_POS_CENTER + (13.f * SCALE.x), 16.f * SCALE.y) };
@@ -539,14 +539,14 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::GetForegroundDrawList()->AddRectFilled(ImVec2(HOME_ICON_POS_CENTER - (3.f * SCALE.x), 18.5f * SCALE.y), ImVec2(HOME_ICON_POS_CENTER + (3.f * SCALE.x), 26.f * SCALE.y), bar_color);
 
         // Draw App Icon
-        const float decal_app_icon_pos = 34.f * ((float(gui.apps_list_opened.size()) - 2) / 2.f);
+        const float decal_app_icon_pos = 34.f * ((float(gui.live_area_current_open_apps_list.size()) - 2) / 2.f);
         const auto ICON_SIZE_SCALE = 28.f * SCALE.x;
 
-        for (auto a = 0; a < gui.apps_list_opened.size(); a++) {
+        for (auto a = 0; a < gui.live_area_current_open_apps_list.size(); a++) {
             const auto ICON_POS_MINI_SCALE = ImVec2((display_size.x / 2.f) - (14.f * SCALE.x) - (decal_app_icon_pos * SCALE.x) + (a * (34 * SCALE.x)), 2.f * SCALE.y);
             const auto ICON_POS_MAX_SCALE = ImVec2(ICON_POS_MINI_SCALE.x + ICON_SIZE_SCALE, ICON_POS_MINI_SCALE.y + ICON_SIZE_SCALE);
             const auto ICON_CENTER_POS = ImVec2(ICON_POS_MINI_SCALE.x + (ICON_SIZE_SCALE / 2.f), ICON_POS_MINI_SCALE.y + (ICON_SIZE_SCALE / 2.f));
-            const auto APPS_OPENED = gui.apps_list_opened[a];
+            const auto APPS_OPENED = gui.live_area_current_open_apps_list[a];
             auto &APP_ICON_TYPE = APPS_OPENED.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
 
             // Check if icon exist
@@ -556,7 +556,7 @@ void draw_information_bar(GuiState &gui, EmuEnvState &emuenv) {
                 ImGui::GetForegroundDrawList()->AddCircleFilled(ICON_CENTER_POS, ICON_SIZE_SCALE / 2.f, IM_COL32_WHITE);
 
             // hide Icon no opened
-            if (!APP_IS_OPEN || (gui.apps_list_opened[gui.current_app_selected] != APPS_OPENED))
+            if (!APP_IS_OPEN || (gui.live_area_current_open_apps_list[gui.live_area_app_current_open] != APPS_OPENED))
                 ImGui::GetForegroundDrawList()->AddCircleFilled(ICON_CENTER_POS, ICON_SIZE_SCALE / 2.f, IM_COL32(0.f, 0.f, 0.f, 140.f));
         }
     }

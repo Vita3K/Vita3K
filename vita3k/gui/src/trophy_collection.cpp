@@ -752,13 +752,8 @@ void draw_trophy_collection(GuiState &gui, EmuEnvState &emuenv) {
                 scroll_type = "np_com";
                 set_scroll_pos = true;
             }
-        } else {
-            if (!gui.apps_list_opened.empty() && (gui.current_app_selected >= 0))
-                gui.vita_area.live_area_screen = true;
-            else
-                gui.vita_area.home_screen = true;
-            gui.vita_area.trophy_collection = false;
-        }
+        } else
+            close_system_app(gui, emuenv);
     }
     if (trophy_id_selected.empty() && !detail_np_com_id && (np_com_id_selected.empty() || !group_id_selected.empty())) {
         ImGui::SetCursorPos(ImVec2(display_size.x - (70.f * SCALE.x), display_size.y - (84.f * SCALE.y)));

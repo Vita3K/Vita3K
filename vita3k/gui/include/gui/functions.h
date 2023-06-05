@@ -36,12 +36,19 @@ enum GenericDialogState {
     CANCEL_STATE
 };
 
+void browse_home_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t button);
+void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t button);
+void browse_pages_manual(GuiState &gui, EmuEnvState &emuenv, const uint32_t button);
+void browse_users_management(GuiState &gui, EmuEnvState &emuenv, const uint32_t button);
+void close_and_run_new_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
+void close_live_area_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
+void close_system_app(GuiState &gui, EmuEnvState &emuenv);
 void delete_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void get_app_info(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 size_t get_app_size(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &app_path);
 std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &app_path);
-std::vector<std::string>::iterator get_app_open_list_index(GuiState &gui, const std::string &app_path);
+std::vector<std::string>::iterator get_live_area_current_open_apps_list_index(GuiState &gui, const std::string &app_path);
 std::map<DateTime, std::string> get_date_time(GuiState &gui, EmuEnvState &emuenv, const tm &date_time);
 std::string get_unit_size(const size_t size);
 void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
@@ -95,8 +102,8 @@ void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id);
 void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void set_shaders_compiled_display(GuiState &gui, EmuEnvState &emuenv);
 void update_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
-void update_apps_list_opened(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void update_last_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app);
+void update_live_area_current_open_apps_list(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 void update_notice_info(GuiState &gui, EmuEnvState &emuenv, const std::string &type);
 void update_time_app_used(GuiState &gui, EmuEnvState &emuenv, const std::string &app);
 void save_notice_list(EmuEnvState &emuenv);

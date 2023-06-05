@@ -17,7 +17,7 @@
 
 #include "private.h"
 
-#include <ctrl/functions.h>
+#include <ctrl/state.h>
 
 namespace gui {
 
@@ -26,7 +26,6 @@ void draw_controllers_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
     ImGui::Begin(lang["title"].c_str(), &gui.controls_menu.controllers_dialog, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
     auto &ctrl = emuenv.ctrl;
-    refresh_controllers(ctrl);
     if (ctrl.controllers_num) {
         const auto connected_str = fmt::format(fmt::runtime(lang["connected"].c_str()), ctrl.controllers_num);
         ImGui::TextColored(GUI_COLOR_TEXT_MENUBAR, "%s", connected_str.c_str());

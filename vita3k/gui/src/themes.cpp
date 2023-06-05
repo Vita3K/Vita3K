@@ -503,6 +503,8 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     if ((ImGui::IsWindowHovered(ImGuiFocusedFlags_RootWindow) && ImGui::IsMouseClicked(0)) || ImGui::IsKeyPressed(emuenv.cfg.keyboard_button_circle)) {
         gui.vita_area.start_screen = false;
         gui.vita_area.home_screen = true;
+        if (emuenv.cfg.show_info_bar)
+            gui.vita_area.information_bar = true;
     }
 
     ImGui::End();
