@@ -239,9 +239,28 @@ EXPORT(SceInt32, sceFiberFinalize, SceFiber *fiber) {
     return 0;
 }
 
-EXPORT(int, sceFiberGetInfo) {
-    TRACY_FUNC(sceFiberGetInfo);
-    return UNIMPLEMENTED();
+struct SceFiberInfo {
+    Ptr<SceFiberEntry> entry;
+    SceUInt32 argOnInitialize;
+    Ptr<void> addrContext;
+    SceUInt32 sizeContext;
+    char name[32];
+    SceUInt32 sizeContextMargin;
+};
+
+EXPORT(int, sceFiberGetInfo, SceFiber *fiber, SceFiberInfo *fiberInfo) {
+    TRACY_FUNC(sceFiberGetInfo, fiber, fiberInfo);
+    if (!fiber || !fiberInfo) {
+        return RET_ERROR(SCE_FIBER_ERROR_NULL);
+    }
+    fiberInfo->entry = fiber->entry;
+    fiberInfo->argOnInitialize = fiber->argOnInitialize;
+    fiberInfo->addrContext = fiber->addrContext;
+    fiberInfo->sizeContext = fiber->sizeContext;
+    memcpy(fiberInfo->name, fiber->name, sizeof(fiberInfo->name));
+    STUBBED("sizeContextMargin is stubbed");
+    fiberInfo->sizeContextMargin = -1;
+    return 0;
 }
 
 EXPORT(SceUInt32, sceFiberGetSelf, Ptr<SceFiber> *fiber) {
