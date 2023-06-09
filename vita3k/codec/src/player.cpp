@@ -225,7 +225,7 @@ std::vector<uint8_t> PlayerState::receive_video() {
 
         data.resize(H264DecoderState::buffer_size(
             { { static_cast<uint32_t>(video_context->width), static_cast<uint32_t>(video_context->height) } }));
-        copy_yuv_data_from_frame(frame, data.data());
+        copy_yuv_data_from_frame(frame, data.data(), frame->width, frame->height);
 
         break;
     }

@@ -203,8 +203,8 @@ EXPORT(int, sceAvcdecDecode, SceAvcdecCtrl *decoder, const SceAvcdecAu *au, SceA
     // TODO: decoding can be done async I think
     decoder_info->configure(&options);
     const auto send = decoder_info->send(reinterpret_cast<uint8_t *>(au->es.pBuf.get(emuenv.mem)), au->es.size);
+    decoder_info->set_res(pPicture->frame.frameWidth, pPicture->frame.frameHeight);
     if (send && decoder_info->receive(output)) {
-        decoder_info->get_res(pPicture->frame.frameWidth, pPicture->frame.frameHeight);
         decoder_info->get_res(pPicture->frame.horizontalSize, pPicture->frame.verticalSize);
         decoder_info->get_pts(pPicture->info.pts.upper, pPicture->info.pts.lower);
         picture->numOfOutput++;
@@ -305,13 +305,7 @@ EXPORT(int, sceAvcdecDecodeStop, SceAvcdecCtrl *decoder, SceAvcdecArrayPicture *
         SceAvcdecPicture *pPicture = picture->pPicture.get(emuenv.mem)[0].get(emuenv.mem);
         uint8_t *output = pPicture->frame.pPicture[0].cast<uint8_t>().get(emuenv.mem);
 
-        // the ps vita expects us to be able to return one frame, however ffmpeg does not allow it,so return a black frame instead
-        DecoderSize size;
-        size.width = decoder_info->get(DecoderQuery::WIDTH);
-        size.height = decoder_info->get(DecoderQuery::HEIGHT);
-        memset(output, 0, H264DecoderState::buffer_size(size));
         // we get the values from the last frame, maybe we should slightly increase the pts value?
-        decoder_info->get_res(pPicture->frame.frameWidth, pPicture->frame.frameHeight);
         decoder_info->get_res(pPicture->frame.horizontalSize, pPicture->frame.verticalSize);
         decoder_info->get_pts(pPicture->info.pts.upper, pPicture->info.pts.lower);
 

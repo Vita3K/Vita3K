@@ -90,6 +90,9 @@ struct H264DecoderOptions {
 struct H264DecoderState : public DecoderState {
     AVCodecParserContext *parser{};
 
+    uint32_t width_in = 0;
+    uint32_t height_in = 0;
+
     uint32_t width_out = 0;
     uint32_t height_out = 0;
 
@@ -106,6 +109,7 @@ struct H264DecoderState : public DecoderState {
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size = nullptr) override;
     void configure(void *options);
+    void set_res(const uint32_t width, const uint32_t height);
     void get_res(uint32_t &width, uint32_t &height);
     void get_pts(uint32_t &upper, uint32_t &lower);
 
@@ -257,5 +261,5 @@ struct PlayerState {
 void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const DecoderColorSpace color_space, int32_t inPitch);
 void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint32_t height, const DecoderColorSpace color_space);
 int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint32_t height, uint32_t max_size, const DecoderColorSpace color_space);
-void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest);
+void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest, const uint32_t width, const uint32_t height);
 std::string codec_error_name(int error);

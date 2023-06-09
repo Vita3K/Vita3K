@@ -25,18 +25,18 @@ extern "C" {
 
 #include <cassert>
 
-void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest) {
-    for (int32_t a = 0; a < frame->height; a++) {
-        memcpy(dest, &frame->data[0][frame->linesize[0] * a], frame->width);
-        dest += frame->width;
+void copy_yuv_data_from_frame(AVFrame *frame, uint8_t *dest, const uint32_t width, const uint32_t height) {
+    for (uint32_t a = 0; a < height; a++) {
+        memcpy(dest, &frame->data[0][frame->linesize[0] * a], width);
+        dest += width;
     }
-    for (int32_t a = 0; a < frame->height / 2; a++) {
-        memcpy(dest, &frame->data[1][frame->linesize[1] * a], frame->width / 2);
-        dest += frame->width / 2;
+    for (uint32_t a = 0; a < height / 2; a++) {
+        memcpy(dest, &frame->data[1][frame->linesize[1] * a], width / 2);
+        dest += width / 2;
     }
-    for (int32_t a = 0; a < frame->height / 2; a++) {
-        memcpy(dest, &frame->data[2][frame->linesize[2] * a], frame->width / 2);
-        dest += frame->width / 2;
+    for (uint32_t a = 0; a < height / 2; a++) {
+        memcpy(dest, &frame->data[2][frame->linesize[2] * a], width / 2);
+        dest += width / 2;
     }
 }
 
@@ -104,7 +104,7 @@ bool H264DecoderState::receive(uint8_t *data, DecoderSize *size) {
     }
 
     if (data) {
-        copy_yuv_data_from_frame(frame, data);
+        copy_yuv_data_from_frame(frame, data, width_in, height_in);
     }
 
     if (size) {
@@ -125,6 +125,11 @@ void H264DecoderState::configure(void *options) {
 
     pts = static_cast<uint64_t>(opt->pts_upper) << 32u | static_cast<uint64_t>(opt->pts_lower);
     dts = static_cast<uint64_t>(opt->dts_upper) << 32u | static_cast<uint64_t>(opt->dts_lower);
+}
+
+void H264DecoderState::set_res(const uint32_t width, const uint32_t height) {
+    width_in = width;
+    height_in = height;
 }
 
 void H264DecoderState::get_res(uint32_t &width, uint32_t &height) {
