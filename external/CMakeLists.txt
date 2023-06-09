@@ -348,7 +348,7 @@ if(NOT OPENSSL_FOUND)
 				WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/openssl")
 		endif()
 
-		set(OPENSSL_ROOT_DIR "${CMAKE_BINARY_DIR}/external/openssl/openssl-3/x64")
+		set(OPENSSL_ROOT_DIR "${CMAKE_BINARY_DIR}/external/openssl/openssl-3.0/x64")
 	endif()
 
 	find_package(OpenSSL REQUIRED)
