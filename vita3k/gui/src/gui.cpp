@@ -189,7 +189,16 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
         0x2200, 0x22FF, // Math operators
         0x2460, 0x24FF, // Enclosed Alphanumerics
         0x25A0, 0x26FF, // Miscellaneous symbols
-        0x4E00, 0x9FFF, // Unified ideograms CJC
+        0x4EB0, 0x4EB0, // CJK Unified ideograph
+        0x5618, 0x5618, // CJK Unified ideograph
+        0x5F77, 0x5FA8, // CJK Unified ideograph
+        0x6FE4, 0x6FE4, // CJK Unified ideograph
+        0x7940, 0x7940, // CJK Unified ideograph
+        0x7E5A, 0x7E5A, // CJK Unified ideograph
+        0x8587, 0x8594, // CJK Unified ideograph
+        0x8B5A, 0x8B5A, // CJK Unified ideograph
+        0x9AD4, 0x9AD4, // CJK Unified ideograph
+        0xF900,	0xFAFF, // CJK Compatibility ideograph
         0,
     };
 
