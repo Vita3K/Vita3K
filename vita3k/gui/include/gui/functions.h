@@ -46,6 +46,7 @@ std::map<DateTime, std::string> get_date_time(GuiState &gui, EmuEnvState &emuenv
 std::string get_unit_size(const size_t size);
 void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
 std::string get_cpu_backend(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path);
+void get_firmware_file(EmuEnvState &emuenv);
 void get_modules_list(GuiState &gui, EmuEnvState &emuenv);
 void get_notice_list(EmuEnvState &emuenv);
 std::string get_theme_title_from_buffer(const vfs::FileBuffer &buffer);

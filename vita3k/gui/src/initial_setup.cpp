@@ -37,6 +37,49 @@ enum InitialSetup {
 static InitialSetup setup = SELECT_LANGUAGE;
 static std::string title_str;
 
+void get_firmware_file(EmuEnvState &emuenv) {
+    if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_JAPANESE)
+        open_path("https://www.playstation.com/ja-jp/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_ENGLISH_US)
+        open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_FRENCH)
+        open_path("https://www.playstation.com/fr-fr/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_SPANISH)
+        open_path("https://www.playstation.com/es-es/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_GERMAN)
+        open_path("https://www.playstation.com/de-de/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_ITALIAN)
+        open_path("https://www.playstation.com/it-it/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_DUTCH)
+        open_path("https://www.playstation.com/nl-nl/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_PORTUGUESE_PT)
+        open_path("https://www.playstation.com/pt-pt/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_RUSSIAN)
+        open_path("https://www.playstation.com/ru-ru/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_KOREAN)
+        open_path("https://www.playstation.com/ko-kr/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_T)
+        open_path("https://www.playstation.com/zh-hant-hk/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_CHINESE_S)
+        open_path("https://www.playstation.com/zh-hans-cn/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_FINNISH)
+        open_path("https://www.playstation.com/fi-fi/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_SWEDISH)
+        open_path("https://www.playstation.com/sv-sv/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_DANISH)
+        open_path("https://www.playstation.com/da-dk/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_NORWEGIAN)
+        open_path("https://www.playstation.com/no-no/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_POLISH)
+        open_path("https://www.playstation.com/pl-pl/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_PORTUGUESE_BR)
+        open_path("https://www.playstation.com/pt-br/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_ENGLISH_GB)
+        open_path("https://www.playstation.com/en-gb/support/hardware/psvita/system-software");
+    else if (emuenv.cfg.sys_lang == SCE_SYSTEM_PARAM_LANG_TURKISH)
+        open_path("https://www.playstation.com/tr-tr/support/hardware/psvita/system-software");
+}
+
 void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_size = ImGui::GetIO().DisplaySize;
     const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
@@ -146,7 +189,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", lang["install_highly_recommended"].c_str());
         ImGui::Spacing();
         if (ImGui::Button(lang["download_firmware"].c_str(), BIG_BUTTON_SIZE))
-            open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
+            get_firmware_file(emuenv);
         ImGui::SameLine(0, 20.f * SCALE.x);
         ImGui::Text("%s %s", lang["installed"].c_str(), FW_INSTALLED ? "V" : "X");
         ImGui::Spacing();
@@ -176,7 +219,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::Checkbox("Grid Mode", &emuenv.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to set the app list to grid mode like of PsVita.");
+            ImGui::SetTooltip("Check the box to set the app list to grid mode like of PS Vita.");
         if (!emuenv.cfg.apps_list_grid) {
             ImGui::Spacing();
             ImGui::SliderInt("App Icon Size", &emuenv.cfg.icon_size, 64, 128);
