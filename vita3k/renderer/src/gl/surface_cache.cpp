@@ -142,6 +142,8 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
             invalidated = true;
         } else if (surface_stat_changed) {
             // Remake locally to avoid making changes to framebuffer array
+            uint16_t prev_width = info.width;
+            uint16_t prev_height = info.height;
             info.width = width;
             info.height = height;
             info.original_width = original_width;
@@ -153,21 +155,51 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
 
             bool store_rawly = false;
 
-            auto remake_and_apply_filters_to_current_binded = [&]() {
-                glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, width, height, 0, surface_upload_format, surface_data_type, nullptr);
+            auto remake_and_apply_filters = [&](GLuint bind_texture_id) {
+                if (prev_width <= info.width && prev_height <= info.height && surface_extent_changed) {
+                    GLuint temp_texture;
+                    glGenTextures(1, &temp_texture);
+                    glBindTexture(GL_TEXTURE_2D, temp_texture);
+                    glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, prev_width, prev_height, 0, surface_upload_format, surface_data_type, nullptr);
 
-                if (!store_rawly) {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    if (!store_rawly) {
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    } else {
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    }
+                    glCopyImageSubData(bind_texture_id, GL_TEXTURE_2D, 0, 0, 0, 0, temp_texture, GL_TEXTURE_2D, 0, 0, 0, 0, prev_width, prev_height, 1);
+
+                    glBindTexture(GL_TEXTURE_2D, bind_texture_id);
+                    glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, width, height, 0, surface_upload_format, surface_data_type, nullptr);
+
+                    if (!store_rawly) {
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    } else {
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    }
+                    glCopyImageSubData(temp_texture, GL_TEXTURE_2D, 0, 0, 0, 0, bind_texture_id, GL_TEXTURE_2D, 0, 0, 0, 0, prev_width, prev_height, 1);
+
+                    glDeleteTextures(1, &temp_texture);
                 } else {
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-                    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    glBindTexture(GL_TEXTURE_2D, bind_texture_id);
+                    glTexImage2D(GL_TEXTURE_2D, 0, surface_internal_format, width, height, 0, surface_upload_format, surface_data_type, nullptr);
+
+                    if (!store_rawly) {
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+                    } else {
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+                        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+                    }
                 }
             };
 
             if (info.gl_expected_read_texture_view[0]) {
-                glBindTexture(GL_TEXTURE_2D, info.gl_ping_pong_texture[0]);
-                remake_and_apply_filters_to_current_binded();
+                remake_and_apply_filters(info.gl_ping_pong_texture[0]);
             }
 
             if (state.features.preserve_f16_nan_as_u16 && color::is_write_surface_stored_rawly(base_format)) {
@@ -179,12 +211,10 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
             }
 
             // This handles some situation where game may stores texture in a larger texture then rebind it
-            glBindTexture(GL_TEXTURE_2D, info.gl_texture[0]);
-            remake_and_apply_filters_to_current_binded();
+            remake_and_apply_filters(info.gl_texture[0]);
 
             if (info.gl_ping_pong_texture[0]) {
-                glBindTexture(GL_TEXTURE_2D, info.gl_ping_pong_texture[0]);
-                remake_and_apply_filters_to_current_binded();
+                remake_and_apply_filters(info.gl_ping_pong_texture[0]);
             }
 
             info.casted_textures.clear();
