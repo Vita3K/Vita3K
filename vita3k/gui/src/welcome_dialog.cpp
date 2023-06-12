@@ -45,7 +45,7 @@ void draw_welcome_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::Spacing();
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["line_fourth"].c_str());
     if (ImGui::Button(lang["download_firmware"].c_str()))
-        open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
+        get_firmware_file(emuenv);
     ImGui::SameLine();
     if (ImGui::Button(gui.lang.install_dialog.firmware_install["download_firmware_font_package"].c_str()))
         open_path("https://bit.ly/2P2rb0r");

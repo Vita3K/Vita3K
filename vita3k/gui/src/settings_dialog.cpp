@@ -465,7 +465,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         } else {
             ImGui::TextColored(GUI_COLOR_TEXT, "No modules present.\nPlease download and install the last PS Vita firmware.");
             if (ImGui::Button("Download Firmware"))
-                open_path("https://www.playstation.com/en-us/support/hardware/psvita/system-software/");
+                get_firmware_file(emuenv);
         }
         if (ImGui::Button("Refresh List"))
             get_modules_list(gui, emuenv);

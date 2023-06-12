@@ -280,7 +280,7 @@
 		<r3_button>R3键</r3_button>
 		<gui>图形用户界面</gui>
 		<full_screen>全屏</full_screen>
-		<toggle_touch>切换触碰</toggle_touch>
+		<toggle_touch>切换触摸</toggle_touch>
 		<toggle_touch_note>在背触和前触之间切换。</toggle_touch_note>
 		<toggle_gui_visibility>切换图形用户界面可见性</toggle_gui_visibility>
 		<toggle_gui_visibility_note>在应用程序运行时，在屏幕顶部显示和隐藏图形用户界面之间切换。</toggle_gui_visibility_note>
