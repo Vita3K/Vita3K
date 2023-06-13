@@ -71,10 +71,7 @@ EXPORT(int, sceJpegEncoderCsc, SceJpegEncoderContext *context, Ptr<uint8_t> outB
         return STUBBED("Only RGBA8888 to YCbCr is implemented.");
     }
 
-    int32_t width = inPitch;
-    int32_t height = context->inHeight * inPitch / context->inWidth;
-
-    convert_rgb_to_yuv(inBufferData, outBufferData, context->inWidth, context->inHeight, color_space);
+    convert_rgb_to_yuv(inBufferData, outBufferData, context->inWidth, context->inHeight, color_space, inPitch);
 
     return 0;
 }
