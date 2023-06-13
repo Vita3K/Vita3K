@@ -84,11 +84,11 @@ EXPORT(int, sceSharedFbCreate, int smth) {
             .base1 = data,
             .memsize = alloc_size,
             .base2 = data + alloc_size / 2,
-            .curbuf = 1,
             .pitch = 960,
             .width = 960,
             .height = 544,
-            .color_format = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR
+            .color_format = SCE_GXM_COLOR_FORMAT_U8U8U8U8_ABGR,
+            .curbuf = 1,
         };
     }
     return 1;
