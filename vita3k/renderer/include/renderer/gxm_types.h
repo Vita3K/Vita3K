@@ -232,6 +232,7 @@ struct GxmContextState {
     // Visibility buffer
     bool visibility_enable = false;
     uint32_t visibility_index;
+    bool visibility_is_increment = false;
 
     bool active = false;
 };

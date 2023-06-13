@@ -236,12 +236,22 @@ void sync_visibility_buffer(VKContext &context, Ptr<uint32_t> buffer, uint32_t s
         ite = context.visibility_buffers.find(buffer.address());
 
         std::tie(ite->second.gpu_buffer, ite->second.buffer_offset) = context.state.get_matching_mapping(buffer.cast<void>());
+        // the + 1 is to make computing the ranges easier in context.cpp
+        ite->second.queries_used.resize(ite->second.size + 1, false);
     }
 
     context.current_visibility_buffer = &ite->second;
 }
 
-void sync_visibility_index(VKContext &context, bool enable, uint32_t index) {
+void sync_visibility_index(VKContext &context, bool enable, uint32_t index, bool is_increment) {
+    if (index >= context.current_visibility_buffer->size) {
+        static bool has_happened = false;
+        LOG_WARN_IF(!has_happened, "Using visibility index {} which is too big for the buffer");
+        has_happened = true;
+
+        index = 0;
+    }
+
     if (!enable) {
         if (context.is_in_query) {
             context.render_cmd.endQuery(context.current_visibility_buffer->query_pool, context.current_query_idx);
@@ -258,6 +268,7 @@ void sync_visibility_index(VKContext &context, bool enable, uint32_t index) {
         context.is_in_query = false;
     }
     context.current_query_idx = index;
+    context.is_query_op_increment = is_increment;
 }
 
 void refresh_pipeline(VKContext &context) {

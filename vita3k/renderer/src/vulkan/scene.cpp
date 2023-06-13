@@ -352,13 +352,18 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
 #endif
 
     if (context.current_query_idx != -1 && !context.is_in_query) {
-        if (context.visibility_max_used_idx == -1) {
-            // for the first time, reset the visibility buffer in the prerender command
-            context.prerender_cmd.resetQueryPool(context.current_visibility_buffer->query_pool, 0, context.current_visibility_buffer->size);
+        if (context.current_visibility_buffer->queries_used[context.current_query_idx]) {
+            static bool has_happened = false;
+            LOG_WARN_IF(!has_happened, "Visibility buffer entry is used more than once in a scene");
+            has_happened = true;
+            // still let this happen, this is a validation error but I think most GPUs should be fine with it
         }
+        context.current_visibility_buffer->queries_used[context.current_query_idx] = true;
+
         context.visibility_max_used_idx = std::max(context.visibility_max_used_idx, context.current_query_idx);
 
-        context.render_cmd.beginQuery(context.current_visibility_buffer->query_pool, context.current_query_idx, vk::QueryControlFlags());
+        const vk::QueryControlFlags control_flags = (context.is_query_op_increment && context.state.physical_device_features.occlusionQueryPrecise) ? vk::QueryControlFlagBits::ePrecise : vk::QueryControlFlags();
+        context.render_cmd.beginQuery(context.current_visibility_buffer->query_pool, context.current_query_idx, control_flags);
         context.is_in_query = true;
     }
 

@@ -313,10 +313,39 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         stop_render_pass();
 
     if (visibility_max_used_idx != -1) {
-        render_cmd.copyQueryPoolResults(current_visibility_buffer->query_pool, 0,
-            visibility_max_used_idx + 1, current_visibility_buffer->gpu_buffer,
-            current_visibility_buffer->buffer_offset, sizeof(uint32_t), vk::QueryResultFlagBits::eWait);
+        // get all the entry ranges that were used
+        struct VisibilityRange {
+            uint32_t offset;
+            uint32_t size;
+        };
+        std::vector<VisibilityRange> ranges;
+        bool in_range = false;
+        uint32_t range_start = 0;
+        for (uint32_t entry = 0; entry <= visibility_max_used_idx + 1; entry++) {
+            if (current_visibility_buffer->queries_used[entry] == in_range)
+                continue;
+
+            if (in_range) {
+                ranges.push_back({ range_start, entry - range_start });
+                in_range = false;
+            } else {
+                range_start = entry;
+                in_range = true;
+            }
+        }
+
+        for (auto &range : ranges) {
+            // reset before the beginning of the render pass
+            prerender_cmd.resetQueryPool(current_visibility_buffer->query_pool, range.offset, range.size);
+
+            // wait for the range at the end
+            // TODO: this will be wrong with upscaling enabled and precise mode set
+            render_cmd.copyQueryPoolResults(current_visibility_buffer->query_pool, range.offset, range.size,
+                current_visibility_buffer->gpu_buffer, current_visibility_buffer->buffer_offset + range.offset * sizeof(uint32_t),
+                sizeof(uint32_t), vk::QueryResultFlagBits::eWait);
+        }
         visibility_max_used_idx = -1;
+        current_visibility_buffer->queries_used.assign(current_visibility_buffer->size, false);
     }
 
     ColorSurfaceCacheInfo *surface_info = nullptr;

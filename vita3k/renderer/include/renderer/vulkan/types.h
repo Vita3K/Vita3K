@@ -104,6 +104,7 @@ struct VisibilityBuffer {
     uint64_t buffer_offset;
     uint32_t size;
     vk::QueryPool query_pool;
+    std::vector<bool> queries_used; // the queries that were used in the current scene
 };
 
 // request to trigger a notification after the fence has been waited for
@@ -165,6 +166,7 @@ struct VKContext : public renderer::Context {
     int visibility_max_used_idx = -1;
     bool is_in_query = false;
     int current_query_idx = -1;
+    bool is_query_op_increment = false;
 
     // descriptor pool for dynamic uniforms (allocated once for the whole game)
     vk::DescriptorPool global_descriptor_pool;
