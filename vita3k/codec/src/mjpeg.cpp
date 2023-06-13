@@ -78,7 +78,7 @@ void convert_yuv_to_rgb(const uint8_t *yuv, uint8_t *rgba, uint32_t width, uint3
     sws_freeContext(context);
 }
 
-void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const DecoderColorSpace color_space) {
+void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint32_t height, const DecoderColorSpace color_space, int32_t inPitch) {
     AVPixelFormat format;
     int strides_divisor = 1;
     int slice_position = 8;
@@ -110,7 +110,7 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
     };
 
     int strides[] = {
-        static_cast<int>(width * 4),
+        static_cast<int>(inPitch * 4),
     };
 
     uint8_t *dst_slices[] = {
