@@ -140,8 +140,8 @@ void set_visibility_buffer(State &state, Context *ctx, Ptr<uint32_t> visibility_
     renderer::add_state_set_command(ctx, renderer::GXMState::VisibilityBuffer, visibility_address, visibility_stride);
 }
 
-void set_visibility_index(State &state, Context *ctx, bool enable, uint32_t index) {
-    renderer::add_state_set_command(ctx, renderer::GXMState::VisibilityIndex, index, enable);
+void set_visibility_index(State &state, Context *ctx, bool enable, uint32_t index, bool is_increment) {
+    renderer::add_state_set_command(ctx, renderer::GXMState::VisibilityIndex, index, enable, is_increment);
 }
 
 } // namespace renderer

@@ -1344,7 +1344,8 @@ static void gxmContextStateRestore(renderer::State &state, MemState &mem, SceGxm
     if (state.features.support_memory_mapping) {
         context->state.visibility_enable = false;
         context->state.visibility_index = 0;
-        renderer::set_visibility_index(state, context->renderer.get(), false, 0);
+        context->state.visibility_is_increment = true;
+        renderer::set_visibility_index(state, context->renderer.get(), false, 0, true);
     }
 
     if (context->state.vertex_program) {
@@ -3749,7 +3750,7 @@ EXPORT(void, sceGxmSetFrontVisibilityTestEnable, SceGxmContext *context, SceGxmV
     }
 
     context->state.visibility_enable = enable != SCE_GXM_VISIBILITY_TEST_DISABLED;
-    renderer::set_visibility_index(*emuenv.renderer, context->renderer.get(), context->state.visibility_enable, context->state.visibility_index);
+    renderer::set_visibility_index(*emuenv.renderer, context->renderer.get(), context->state.visibility_enable, context->state.visibility_index, context->state.visibility_is_increment);
 }
 
 EXPORT(void, sceGxmSetFrontVisibilityTestIndex, SceGxmContext *context, uint32_t index) {
@@ -3761,7 +3762,7 @@ EXPORT(void, sceGxmSetFrontVisibilityTestIndex, SceGxmContext *context, uint32_t
     }
 
     context->state.visibility_index = index;
-    renderer::set_visibility_index(*emuenv.renderer, context->renderer.get(), context->state.visibility_enable, context->state.visibility_index);
+    renderer::set_visibility_index(*emuenv.renderer, context->renderer.get(), context->state.visibility_enable, context->state.visibility_index, context->state.visibility_is_increment);
 }
 
 EXPORT(void, sceGxmSetFrontVisibilityTestOp, SceGxmContext *context, SceGxmVisibilityTestOp op) {
@@ -3772,8 +3773,8 @@ EXPORT(void, sceGxmSetFrontVisibilityTestOp, SceGxmContext *context, SceGxmVisib
         return;
     }
 
-    if (op != SCE_GXM_VISIBILITY_TEST_OP_SET)
-        STUBBED("SCE_GXM_VISIBILITY_TEST_OP_INCREMENT not supported");
+    context->state.visibility_is_increment = (op == SCE_GXM_VISIBILITY_TEST_OP_INCREMENT);
+    renderer::set_visibility_index(*emuenv.renderer, context->renderer.get(), context->state.visibility_enable, context->state.visibility_index, context->state.visibility_is_increment);
 }
 
 EXPORT(void, sceGxmSetPrecomputedFragmentState, SceGxmContext *context, Ptr<SceGxmPrecomputedFragmentState> state) {

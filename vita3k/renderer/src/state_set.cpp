@@ -525,9 +525,10 @@ COMMAND_SET_STATE(visibility_index) {
     TRACY_FUNC_COMMANDS_SET_STATE(visibility_index);
     const uint32_t index = helper.pop<uint32_t>();
     const bool enable = helper.pop<bool>();
+    const bool is_increment = helper.pop<bool>();
 
     if (renderer.current_backend == Backend::Vulkan) {
-        vulkan::sync_visibility_index(*reinterpret_cast<vulkan::VKContext *>(render_context), enable, index);
+        vulkan::sync_visibility_index(*reinterpret_cast<vulkan::VKContext *>(render_context), enable, index, is_increment);
     }
 }
 

@@ -345,7 +345,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .fillModeNonSolid = physical_device_features.fillModeNonSolid,
             .wideLines = physical_device_features.wideLines,
             .samplerAnisotropy = physical_device_features.samplerAnisotropy,
-            .shaderInt16 = physical_device_features.shaderInt16
+            .occlusionQueryPrecise = physical_device_features.occlusionQueryPrecise,
+            .shaderInt16 = physical_device_features.shaderInt16,
         };
 
         // look for optional extensions
