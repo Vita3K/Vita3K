@@ -125,6 +125,13 @@ static void log_import_call(char emulation_level, uint32_t nid, SceUID thread_id
 }
 
 void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id) {
+    if (nid == 0xF3917021) {
+        static Ptr<char> rep = Ptr<char>(alloc(emuenv.mem, 0x10, "ip_field"));
+        strcpy(rep.get(emuenv.mem), "127.0.0.1");
+        write_reg(cpu, 0, rep.address());
+        return;
+    }
+
     Address export_pc = resolve_export(emuenv.kernel, nid);
 
     if (!export_pc) {

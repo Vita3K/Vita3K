@@ -17,6 +17,8 @@
 
 #include "SceVshBridge.h"
 
+#include "../SceDisplay/SceDisplay.h"
+
 EXPORT(int, _vshAppMgrAcInstGetAcdirParam) {
     return UNIMPLEMENTED();
 }
@@ -421,8 +423,8 @@ EXPORT(int, vshCtrlUnregisterNotifyCallBack) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, vshDisplayRegisterFrameBufCallback) {
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, vshDisplayRegisterFrameBufCallback, SceUID uid) {
+    return CALL_EXPORT(sceDisplayRegisterVblankStartCallback, uid);
 }
 
 EXPORT(int, vshDisplaySetInvertColors) {
@@ -746,7 +748,8 @@ EXPORT(int, vshSblSsIsDevelopmentMode) {
 }
 
 EXPORT(int, vshSblUtMgrHasComTestFlag) {
-    return UNIMPLEMENTED();
+    STUBBED("");
+    return 1;
 }
 
 EXPORT(int, vshSblUtMgrHasNpTestFlag) {
