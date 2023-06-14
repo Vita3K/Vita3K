@@ -15,32 +15,9 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include "SceError.h"
+#pragma once
 
-TRACY_MODULE_NAME(SceError);
+#include <module/module.h>
+#include <util/tracy.h>
 
-EXPORT(SceInt32, _sceErrorGetExternalString, char *result, int err) {
-    TRACY_FUNC(_sceErrorGetExternalString, result, err);
-    sprintf(result, "0x%08X", err);
-    return 0;
-}
-
-EXPORT(int, _sceErrorHistoryClearError) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _sceErrorHistoryGetError) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _sceErrorHistoryPostError) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _sceErrorHistorySetDefaultFormat) {
-    return UNIMPLEMENTED();
-}
-
-EXPORT(int, _sceErrorHistoryUpdateSequenceInfo) {
-    return UNIMPLEMENTED();
-}
+DECL_EXPORT(SceInt32, _sceErrorGetExternalString, char *result, int err);
