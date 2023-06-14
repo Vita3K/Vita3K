@@ -748,7 +748,8 @@ EXPORT(int, vshSblSsIsDevelopmentMode) {
 }
 
 EXPORT(int, vshSblUtMgrHasComTestFlag) {
-    return UNIMPLEMENTED();
+    STUBBED("");
+    return 1;
 }
 
 EXPORT(int, vshSblUtMgrHasNpTestFlag) {
