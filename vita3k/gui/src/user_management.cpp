@@ -196,14 +196,30 @@ void save_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
         LOG_ERROR("Fail save xml for user id: {}, name: {}, in path: {}", user.id, user.name, user_path.string());
 }
 
+enum UserMenu {
+    CREATE,
+    SELECT,
+    EDIT,
+    DELETE_USER,
+    CONFIRM,
+};
+
 static uint32_t current_user_id_selected = 0;
+static UserMenu menu_selected = SELECT, menu = SELECT;
 
 void init_user_management(GuiState &gui, EmuEnvState &emuenv) {
     init_app_background(gui, emuenv, "NPXS10013");
     gui.vita_area.home_screen = false;
     gui.vita_area.information_bar = false;
     gui.vita_area.user_management = true;
-    current_user_id_selected = std::stoi(emuenv.cfg.user_id);
+    if (!emuenv.cfg.user_id.empty())
+        current_user_id_selected = std::stoi(emuenv.cfg.user_id);
+    else if (!gui.users.empty())
+        current_user_id_selected = std::stoi(gui.users.begin()->first);
+    else
+        menu_selected = CREATE;
+
+    gui.is_nav_button = true;
 }
 
 void init_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
@@ -243,17 +259,8 @@ static auto get_users_index(GuiState &gui, const std::string &user_name) {
     return profils_index;
 }
 
-enum UserMenu {
-    CREATE,
-    SELECT,
-    EDIT,
-    DELETE_USER,
-    CONFIRM,
-};
-
 static std::string del_menu, title, user_id_selected;
 static User temp;
-static UserMenu menu_selected = SELECT, menu = SELECT;
 static std::vector<uint32_t> users_list_available;
 
 static void create_temp_user(GuiState &gui, EmuEnvState &emuenv) {
