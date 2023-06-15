@@ -457,7 +457,7 @@ void browse_home_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t bu
             if (filtered_index >= 4)
                 current_selected_app_index = apps_list_filtered[filtered_index - 4];
         } else
-            current_selected_app_index = next_filtered_index;
+            current_selected_app_index = prev_filtered_index;
         break;
     case SCE_CTRL_RIGHT:
         if (emuenv.cfg.apps_list_grid) {
