@@ -135,6 +135,28 @@ void init_live_area(GuiState &gui, EmuEnvState &emuenv, const std::string &app_p
         items_pos["psmobile"]["frame3"]["size"] = ImVec2(440.f, 34.f);
         items_pos["psmobile"]["frame4"]["pos"] = ImVec2(865.f, 39.f);
         items_pos["psmobile"]["frame4"]["size"] = ImVec2(440.f, 34.f);
+        // browser
+        items_pos["browser"]["gate"]["pos"] = ImVec2(381.f, 395.f);
+        items_pos["browser"]["frame1"]["pos"] = ImVec2(890.f, 405.f);
+        items_pos["browser"]["frame1"]["size"] = ImVec2(472.f, 50.f);
+        items_pos["browser"]["frame2"]["pos"] = ImVec2(890.f, 355.f);
+        items_pos["browser"]["frame2"]["size"] = ImVec2(472.f, 50.f);
+        items_pos["browser"]["frame3"]["pos"] = ImVec2(890.f, 305.f);
+        items_pos["browser"]["frame3"]["size"] = ImVec2(472.f, 50.f);
+        items_pos["browser"]["frame4"]["pos"] = ImVec2(890.f, 255.f);
+        items_pos["browser"]["frame4"]["size"] = ImVec2(472.f, 50.f);
+        items_pos["browser"]["frame5"]["pos"] = ImVec2(890.f, 205.f);
+        items_pos["browser"]["frame5"]["size"] = ImVec2(472.f, 50.f);
+        items_pos["browser"]["frame6"]["pos"] = ImVec2(890.f, 155.f);
+        items_pos["browser"]["frame6"]["size"] = ImVec2(472.f, 50.f);
+        items_pos["browser"]["frame7"]["pos"] = ImVec2(890.f, 105.f);
+        items_pos["browser"]["frame7"]["size"] = ImVec2(472.f, 50.f);
+        items_pos["browser"]["frame8"]["pos"] = ImVec2(890.f, 55.f);
+        items_pos["browser"]["frame8"]["size"] = ImVec2(472.f, 50.f);
+        items_pos["browser"]["frame9"]["pos"] = ImVec2(381.f, 223.f);
+        items_pos["browser"]["frame9"]["size"] = ImVec2(282.f, 108.f);
+        items_pos["browser"]["frame10"]["pos"] = ImVec2(381.f, 115.f);
+        items_pos["browser"]["frame10"]["size"] = ImVec2(282.f, 108.f);
     }
 
     const auto live_area_lang = gui.lang.user_lang[LIVE_AREA];
