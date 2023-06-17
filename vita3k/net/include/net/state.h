@@ -35,6 +35,7 @@ struct NetState {
     int next_epoll_id = 0;
     NetEpolls epolls;
     int state = -1;
+    int resolver_id = 0;
 };
 
 struct NetCtlState {
