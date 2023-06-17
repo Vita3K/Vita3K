@@ -190,7 +190,10 @@ EXPORT(int, sceNetEpollControl, int eid, SceNetEpollControlFlag op, int id, SceN
     if (!epoll) {
         return RET_ERROR(SCE_NET_ERROR_EBADF);
     }
-
+    if (id == emuenv.net.resolver_id) {
+        STUBBED("Async DNS resolve is not supported");
+        return 0;
+    }
     auto sock = lock_and_find(id, emuenv.net.socks, emuenv.kernel.mutex);
     if (!sock) {
         return RET_ERROR(SCE_NET_ERROR_EBADF);
@@ -379,6 +382,7 @@ EXPORT(int, sceNetInit, SceNetInitParam *param) {
 #endif
     emuenv.net.state = 0;
     emuenv.net.inited = true;
+    emuenv.net.resolver_id = ++emuenv.net.next_id;
     return 0;
 }
 
@@ -436,7 +440,8 @@ EXPORT(int, sceNetResolverAbort) {
 
 EXPORT(int, sceNetResolverCreate, const char *name, void *param, int flags) {
     TRACY_FUNC(sceNetResolverCreate, name, param, flags);
-    return UNIMPLEMENTED();
+    STUBBED("Fake id");
+    return emuenv.net.resolver_id;
 }
 
 EXPORT(int, sceNetResolverDestroy, int rid) {
