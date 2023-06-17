@@ -186,15 +186,15 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
         // 5. the surface is a gbuffer and we are currently trying to read the 2nd component, in this case key == ite->first + 4
         const bool addr_in_range_of_cache = ((key + total_surface_size) <= (ite->first + info.total_bytes + 4));
         const bool cache_probably_freed = ((ite->first != key) && addr_in_range_of_cache && (purpose == SurfaceTextureRetrievePurpose::WRITING));
-        const bool surface_extent_changed = (info.width < width) || (info.height < height);
+        const bool surface_extent_changed = (info.height < height);
         bool surface_stat_changed = false;
 
         if (ite->first == key) {
             if (purpose == SurfaceTextureRetrievePurpose::WRITING) {
-                surface_stat_changed = surface_extent_changed || (base_format != info.format);
+                surface_stat_changed = surface_extent_changed || info.width < width || base_format != info.format;
             } else {
                 // If the extent changed but format is not the same, then the probability of it being a cast is high
-                surface_stat_changed = surface_extent_changed && (base_format == info.format);
+                surface_stat_changed = (surface_extent_changed || info.pixel_stride < pixel_stride) && base_format == info.format;
             }
         }
 
@@ -258,7 +258,7 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
 
                 const vk::ImageView color_handle_view = reinterpret_cast<VKContext *>(state.context)->current_color_attachment->view;
                 const bool is_same_image = (color_handle_view == info.texture.view) || (info.sampled_image && color_handle_view == info.sampled_image->view);
-                // TODO: we can read an srgb image as linear (or the opposite) without having to do a copy
+
                 if (is_same_image || (start_sourced_line != 0) || (start_x != 0) || (info.width != width) || (info.height != height) || (info.format != base_format)) {
                     uint64_t current_time = std::chrono::duration_cast<std::chrono::seconds>(
                         std::chrono::steady_clock::now().time_since_epoch())
