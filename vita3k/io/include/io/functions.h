@@ -64,7 +64,7 @@ bool copy_directories(const fs::path &src_path, const fs::path &dst_path);
  * @return true Success
  * @return false Error
  */
-bool copy_path(const fs::path src_path, std::wstring pref_path, std::string app_title_id, std::string app_category);
+bool copy_path(const fs::path &src_path, const std::wstring &pref_path, const std::string &app_title_id, const std::string &app_category);
 
 SceUID open_file(IOState &io, const char *path, const int flags, const std::wstring &pref_path, const char *export_name);
 int read_file(void *data, IOState &io, SceUID fd, SceSize size, const char *export_name);

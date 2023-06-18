@@ -117,4 +117,5 @@ inline SysmodulePaths init_sysmodule_paths() {
 const SysmodulePaths sysmodule_paths = init_sysmodule_paths();
 
 bool is_lle_module(SceSysmoduleModuleId module_id, EmuEnvState &emuenv);
+bool is_lle_module(const std::string &module_name, EmuEnvState &emuenv);
 bool is_module_loaded(KernelState &kernel, SceSysmoduleModuleId module_id);

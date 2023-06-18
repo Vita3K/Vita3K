@@ -167,7 +167,7 @@ int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &arg
 
 void ThreadState::exit(KernelState &kernel, SceInt32 status) {
     if (kernel.thread_event_end) {
-        int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
+        int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
         if (ret != 0)
             LOG_WARN("Thread end event handler returned {}", log_hex(ret));
     }
@@ -179,7 +179,7 @@ void ThreadState::exit(KernelState &kernel, SceInt32 status) {
 
 void ThreadState::exit_delete(KernelState &kernel, bool exit) {
     if (exit && kernel.thread_event_end) {
-        int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
+        int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
         if (ret != 0)
             LOG_WARN("Thread end event handler returned {}", log_hex(ret));
     }
@@ -309,13 +309,12 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     return returned_value;
 }
 
-uint32_t ThreadState::run_guest_function(KernelState &kernel, Address callback_address, uint32_t arg) {
+uint32_t ThreadState::run_guest_function(KernelState &kernel, Address callback_address, SceSize args, const Ptr<void> argp) {
     // save the previous entry point, just in case
     const auto old_entry_point = entry_point;
     entry_point = callback_address;
 
-    // this puts arg in the first register
-    start(kernel, arg, Ptr<void>(0));
+    start(kernel, args, argp);
     {
         // wait for the function to return
         std::unique_lock<std::mutex> lock(mutex);

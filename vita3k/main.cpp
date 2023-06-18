@@ -340,7 +340,7 @@ int main(int argc, char *argv[]) {
     gui::init_app_background(gui, emuenv, emuenv.io.app_path);
     gui::update_last_time_app_used(gui, emuenv, emuenv.io.app_path);
 
-    const auto draw_app_background = [&](GuiState &gui, EmuEnvState &emuenv) {
+    const auto draw_app_background = [](GuiState &gui, EmuEnvState &emuenv) {
         const auto pos_min = ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
         const auto pos_max = ImVec2(pos_min.x + emuenv.viewport_size.x, pos_min.y + emuenv.viewport_size.y);
 
@@ -352,10 +352,12 @@ int main(int argc, char *argv[]) {
             gui::draw_background(gui, emuenv);
     };
 
-    Ptr<const void> entry_point;
-    if (const auto err = load_app(entry_point, emuenv, string_utils::utf_to_wide(emuenv.io.app_path)) != Success)
-        return err;
-
+    int32_t main_module_id;
+    {
+        const auto err = load_app(main_module_id, emuenv, string_utils::utf_to_wide(emuenv.io.app_path));
+        if (err != Success)
+            return err;
+    }
     gui.vita_area.information_bar = false;
 
     // Pre-Compile Shaders
@@ -376,10 +378,11 @@ int main(int argc, char *argv[]) {
             emuenv.renderer->swap_window(emuenv.window.get());
         }
     }
-
-    if (const auto err = run_app(emuenv, entry_point) != Success)
-        return err;
-
+    {
+        const auto err = run_app(emuenv, main_module_id);
+        if (err != Success)
+            return err;
+    }
     SDL_SetWindowTitle(emuenv.window.get(), fmt::format("{} | {} ({}) | Please wait, loading...", window_title, emuenv.current_app_title, emuenv.io.title_id).c_str());
 
     while (handle_events(emuenv, gui) && (emuenv.frame_count == 0) && !emuenv.load_exec) {

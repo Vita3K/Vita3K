@@ -114,8 +114,8 @@ struct ThreadState {
 
     // this function is called from another thread when this one is dormant
     // it is only used for module loading and gxm display queue right now
-    // support one argument
-    uint32_t run_guest_function(KernelState &kernel, Address callback_address, uint32_t arg = 0);
+    // args and argp are passed to thread->start as is
+    uint32_t run_guest_function(KernelState &kernel, Address callback_address, SceSize args = 0, const Ptr<void> argp = Ptr<void>{});
 
     void suspend();
     void resume(bool step = false);
