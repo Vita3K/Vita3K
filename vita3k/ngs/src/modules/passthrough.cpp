@@ -15,18 +15,18 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules/passthrough.h>
+#include <ngs/modules.h>
 #include <util/log.h>
 
-namespace ngs::passthrough {
-Module::Module()
-    : ngs::Module(ngs::BussType::BUSS_REVERB) {}
+namespace ngs {
+PassthroughModule::PassthroughModule()
+    : Module(BussType::BUSS_REVERB) {}
 
-std::size_t Module::get_buffer_parameter_size() const {
+uint32_t PassthroughModule::get_buffer_parameter_size() const {
     return default_passthrough_parameter_size;
 }
 
-bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+bool PassthroughModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     if (data.parent->inputs.inputs.empty()) {
         return false;
     }

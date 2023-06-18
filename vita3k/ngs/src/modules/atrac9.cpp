@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules/atrac9.h>
+#include <ngs/modules.h>
 #include <util/bytes.h>
 #include <util/log.h>
 
@@ -23,35 +23,35 @@ extern "C" {
 #include <libswresample/swresample.h>
 }
 
-namespace ngs::atrac9 {
+namespace ngs {
 
-SwrContext *Module::swr_mono_to_stereo = nullptr;
-SwrContext *Module::swr_stereo = nullptr;
+SwrContext *Atrac9Module::swr_mono_to_stereo = nullptr;
+SwrContext *Atrac9Module::swr_stereo = nullptr;
 
-Module::Module()
-    : ngs::Module(ngs::BussType::BUSS_ATRAC9)
+Atrac9Module::Atrac9Module()
+    : Module(BussType::BUSS_ATRAC9)
     , last_config(0) {}
 
-void get_buffer_parameter(const std::uint32_t start_sample, const std::uint32_t num_samples, const std::uint32_t info, SkipBufferInfo &parameter) {
-    const std::uint8_t sample_rate_index = ((info & (0b1111 << 12)) >> 12);
-    const std::uint8_t block_rate_index = ((info & (0b111 << 9)) >> 9);
-    const std::uint16_t frame_bytes = ((((info & 0xFF0000) >> 16) << 3) | ((info & (0b111 << 29)) >> 29)) + 1;
-    const std::uint8_t superframe_index = (info & (0b11 << 27)) >> 27;
+void atrac9_get_buffer_parameter(const uint32_t start_sample, const uint32_t num_samples, const uint32_t info, SceNgsAT9SkipBufferInfo &parameter) {
+    const uint8_t sample_rate_index = ((info & (0b1111 << 12)) >> 12);
+    const uint8_t block_rate_index = ((info & (0b111 << 9)) >> 9);
+    const uint16_t frame_bytes = ((((info & 0xFF0000) >> 16) << 3) | ((info & (0b111 << 29)) >> 29)) + 1;
+    const uint8_t superframe_index = (info & (0b11 << 27)) >> 27;
 
     // Calculate bytes per superframe.
-    const std::uint32_t frame_per_superframe = 1 << superframe_index;
-    const std::uint32_t bytes_per_superframe = frame_bytes * frame_per_superframe;
+    const uint32_t frame_per_superframe = 1 << superframe_index;
+    const uint32_t bytes_per_superframe = frame_bytes * frame_per_superframe;
 
     // Calculate total superframe
-    static const std::int8_t sample_rate_index_to_frame_sample_power[] = {
+    static const int8_t sample_rate_index_to_frame_sample_power[] = {
         6, 6, 7, 7, 7, 8, 8, 8, 6, 6, 7, 7, 7, 8, 8, 8
     };
 
-    const std::uint32_t samples_per_frame = 1 << sample_rate_index_to_frame_sample_power[sample_rate_index];
-    const std::uint32_t samples_per_superframe = samples_per_frame * frame_per_superframe;
+    const uint32_t samples_per_frame = 1 << sample_rate_index_to_frame_sample_power[sample_rate_index];
+    const uint32_t samples_per_superframe = samples_per_frame * frame_per_superframe;
 
-    const std::uint32_t start_superframe = (start_sample / samples_per_superframe);
-    const std::uint32_t num_superframe = (start_sample + num_samples + samples_per_superframe - 1) / samples_per_superframe - start_superframe;
+    const uint32_t start_superframe = (start_sample / samples_per_superframe);
+    const uint32_t num_superframe = (start_sample + num_samples + samples_per_superframe - 1) / samples_per_superframe - start_superframe;
 
     parameter.num_bytes = num_superframe * bytes_per_superframe;
     parameter.is_super_packet = (frame_per_superframe == 1) ? 0 : 1;
@@ -60,12 +60,12 @@ void get_buffer_parameter(const std::uint32_t start_sample, const std::uint32_t 
     parameter.end_skip = (start_superframe + num_superframe) * samples_per_superframe - (start_sample + num_samples);
 }
 
-std::size_t Module::get_buffer_parameter_size() const {
-    return sizeof(Parameters);
+uint32_t Atrac9Module::get_buffer_parameter_size() const {
+    return sizeof(SceNgsAT9Params);
 }
 
-void Module::on_state_change(ModuleData &data, const VoiceState previous) {
-    State *state = data.get_state<State>();
+void Atrac9Module::on_state_change(ModuleData &data, const VoiceState previous) {
+    SceNgsAT9States *state = data.get_state<SceNgsAT9States>();
     if (data.parent->state == VOICE_STATE_AVAILABLE) {
         state->current_byte_position_in_buffer = 0;
         state->current_loop_count = 0;
@@ -76,10 +76,10 @@ void Module::on_state_change(ModuleData &data, const VoiceState previous) {
     }
 }
 
-void Module::on_param_change(const MemState &mem, ModuleData &data) {
-    State *state = data.get_state<State>();
-    const Parameters *old_params = reinterpret_cast<Parameters *>(data.last_info.data());
-    const Parameters *new_params = reinterpret_cast<Parameters *>(data.info.data.get(mem));
+void Atrac9Module::on_param_change(const MemState &mem, ModuleData &data) {
+    SceNgsAT9States *state = data.get_state<SceNgsAT9States>();
+    const SceNgsAT9Params *old_params = reinterpret_cast<SceNgsAT9Params *>(data.last_info.data());
+    const SceNgsAT9Params *new_params = reinterpret_cast<SceNgsAT9Params *>(data.info.data.get(mem));
 
     // if playback scaling changed, reset the resampler
     if (state->swr && (old_params->playback_frequency != new_params->playback_frequency || old_params->playback_scalar != new_params->playback_scalar)) {
@@ -87,9 +87,9 @@ void Module::on_param_change(const MemState &mem, ModuleData &data) {
     }
 }
 
-bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, const Parameters *params, State *state, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, const SceNgsAT9Params *params, SceNgsAT9States *state, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     int current_buffer = state->current_buffer;
-    const BufferParameters &bufparam = params->buffer_params[current_buffer];
+    const SceNgsAT9BufferParams &bufparam = params->buffer_params[current_buffer];
 
     if (!data.extra_storage.empty()) {
         data.extra_storage.erase(data.extra_storage.begin(), data.extra_storage.begin() + state->decoded_passed * sizeof(float) * 2);
@@ -341,9 +341,9 @@ bool Module::decode_more_data(KernelState &kern, const MemState &mem, const SceU
     return true;
 }
 
-bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
-    const Parameters *params = data.get_parameters<Parameters>(mem);
-    State *state = data.get_state<State>();
+bool Atrac9Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+    const SceNgsAT9Params *params = data.get_parameters<SceNgsAT9Params>(mem);
+    SceNgsAT9States *state = data.get_state<SceNgsAT9States>();
     assert(state);
 
     if ((state->current_buffer == -1) || (params->buffer_params[state->current_buffer].buffer.address() == 0)) {
@@ -385,4 +385,4 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
     return false;
 }
-} // namespace ngs::atrac9
+} // namespace ngs

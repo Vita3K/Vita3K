@@ -15,18 +15,18 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules/equalizer.h>
+#include <ngs/modules.h>
 #include <util/log.h>
 
-namespace ngs::equalizer {
-Module::Module()
-    : ngs::Module(ngs::BussType::BUSS_EQUALIZATION) {}
+namespace ngs {
+EqualizerModule::EqualizerModule()
+    : Module(BussType::BUSS_EQUALIZATION) {}
 
-std::size_t Module::get_buffer_parameter_size() const {
+uint32_t EqualizerModule::get_buffer_parameter_size() const {
     return default_normal_parameter_size;
 }
 
-bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+bool EqualizerModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     if (!data.is_bypassed) {
         // TODO: Proper implement it, for now just lower volume lol
         float *product_before = reinterpret_cast<float *>(data.parent->products[0].data);
@@ -45,4 +45,4 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
     return false;
 }
-} // namespace ngs::equalizer
+} // namespace ngs

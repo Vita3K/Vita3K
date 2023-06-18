@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules/atrac9.h>
+#include <ngs/modules.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/log.h>
@@ -90,7 +90,7 @@ enum SceNgsVoiceInitFlag {
 
 static constexpr uint32_t SCE_NGS_SAMPLE_OFFSET_FROM_AT9_HEADER = 1 << 31;
 
-EXPORT(int, sceNgsAT9GetSectionDetails, uint32_t samples_start, const uint32_t num_samples, const uint32_t config_data, ngs::atrac9::SkipBufferInfo *info) {
+EXPORT(int, sceNgsAT9GetSectionDetails, uint32_t samples_start, const uint32_t num_samples, const uint32_t config_data, SceNgsAT9SkipBufferInfo *info) {
     TRACY_FUNC(sceNgsAT9GetSectionDetails, samples_start, num_samples, config_data, info);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return -1;
@@ -104,7 +104,7 @@ EXPORT(int, sceNgsAT9GetSectionDetails, uint32_t samples_start, const uint32_t n
     }
     samples_start &= ~SCE_NGS_SAMPLE_OFFSET_FROM_AT9_HEADER;
 
-    ngs::atrac9::get_buffer_parameter(samples_start, num_samples, config_data, *info);
+    ngs::atrac9_get_buffer_parameter(samples_start, num_samples, config_data, *info);
     return 0;
 }
 
@@ -118,7 +118,7 @@ EXPORT(int, sceNgsModuleGetPreset) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsPatchCreateRouting, ngs::PatchSetupInfo *patch_info, Ptr<ngs::Patch> *handle) {
+EXPORT(int, sceNgsPatchCreateRouting, SceNgsPatchSetupInfo *patch_info, Ptr<ngs::Patch> *handle) {
     TRACY_FUNC(sceNgsPatchCreateRouting, patch_info, handle);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -192,7 +192,7 @@ EXPORT(int, sceNgsPatchRemoveRouting, Ptr<ngs::Patch> patch) {
     return 0;
 }
 
-EXPORT(int, sceNgsRackGetRequiredMemorySize, ngs::System *system, ngs::RackDescription *description, uint32_t *size) {
+EXPORT(int, sceNgsRackGetRequiredMemorySize, ngs::System *system, SceNgsRackDescription *description, uint32_t *size) {
     TRACY_FUNC(sceNgsRackGetRequiredMemorySize, system, description, size);
     if (!emuenv.cfg.current_config.ngs_enable) {
         *size = 1;
@@ -203,7 +203,7 @@ EXPORT(int, sceNgsRackGetRequiredMemorySize, ngs::System *system, ngs::RackDescr
     return 0;
 }
 
-EXPORT(SceUInt32, sceNgsRackGetVoiceHandle, ngs::Rack* rack, const uint32_t index, Ptr<ngs::Voice> *voice) {
+EXPORT(SceUInt32, sceNgsRackGetVoiceHandle, ngs::Rack *rack, const uint32_t index, Ptr<ngs::Voice> *voice) {
     TRACY_FUNC(sceNgsRackGetVoiceHandle, rack, index, voice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -221,7 +221,7 @@ EXPORT(SceUInt32, sceNgsRackGetVoiceHandle, ngs::Rack* rack, const uint32_t inde
     return SCE_NGS_OK;
 }
 
-EXPORT(SceUInt32, sceNgsRackInit, ngs::System* system, ngs::BufferParamsInfo *info, const ngs::RackDescription *description, Ptr<ngs::Rack> *rack) {
+EXPORT(SceUInt32, sceNgsRackInit, ngs::System *system, SceNgsBufferInfo *info, const SceNgsRackDescription *description, Ptr<ngs::Rack> *rack) {
     TRACY_FUNC(sceNgsRackInit, system, info, description, rack);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -237,7 +237,7 @@ EXPORT(SceUInt32, sceNgsRackInit, ngs::System* system, ngs::BufferParamsInfo *in
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsRackRelease, ngs::Rack* rack, Ptr<void> callback) {
+EXPORT(SceInt32, sceNgsRackRelease, ngs::Rack *rack, Ptr<void> callback) {
     TRACY_FUNC(sceNgsRackRelease, rack, callback);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
@@ -277,7 +277,7 @@ EXPORT(int, sceNgsRackSetParamErrorCallback) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceNgsSystemGetRequiredMemorySize, ngs::SystemInitParameters *params, uint32_t *size) {
+EXPORT(int, sceNgsSystemGetRequiredMemorySize, SceNgsSystemInitParams *params, uint32_t *size) {
     TRACY_FUNC(sceNgsSystemGetRequiredMemorySize, params, size);
     if (!emuenv.cfg.current_config.ngs_enable) {
         *size = 1;
@@ -288,7 +288,7 @@ EXPORT(int, sceNgsSystemGetRequiredMemorySize, ngs::SystemInitParameters *params
     return 0;
 }
 
-EXPORT(SceUInt32, sceNgsSystemInit, Ptr<void> memspace, const uint32_t memspace_size, ngs::SystemInitParameters *params,
+EXPORT(SceUInt32, sceNgsSystemInit, Ptr<void> memspace, const uint32_t memspace_size, SceNgsSystemInitParams *params,
     Ptr<ngs::System> *system) {
     TRACY_FUNC(sceNgsSystemInit, memspace, memspace_size, params, system);
     if (!emuenv.cfg.current_config.ngs_enable) {
@@ -308,7 +308,7 @@ EXPORT(int, sceNgsSystemLock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, sceNgsSystemRelease, ngs::System* system) {
+EXPORT(SceInt32, sceNgsSystemRelease, ngs::System *system) {
     TRACY_FUNC(sceNgsSystemRelease, system);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
@@ -347,7 +347,7 @@ EXPORT(int, sceNgsSystemUnlock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceUInt32, sceNgsSystemUpdate, ngs::System* system) {
+EXPORT(SceUInt32, sceNgsSystemUpdate, ngs::System *system) {
     TRACY_FUNC(sceNgsSystemUpdate, system);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -358,7 +358,7 @@ EXPORT(SceUInt32, sceNgsSystemUpdate, ngs::System* system) {
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoiceBypassModule, ngs::Voice* voice, const SceUInt32 module, const SceUInt32 bypass_flag) {
+EXPORT(SceInt32, sceNgsVoiceBypassModule, ngs::Voice *voice, const SceUInt32 module, const SceUInt32 bypass_flag) {
     TRACY_FUNC(sceNgsVoiceBypassModule, voice, module, bypass_flag);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -576,7 +576,7 @@ static SceUInt32 ngsVoiceStateFromHLEState(const ngs::Voice *voice) {
     return state;
 }
 
-EXPORT(SceInt32, sceNgsVoiceGetInfo, ngs::Voice* voice, SceNgsVoiceInfo *info) {
+EXPORT(SceInt32, sceNgsVoiceGetInfo, ngs::Voice *voice, SceNgsVoiceInfo *info) {
     TRACY_FUNC(sceNgsVoiceGetInfo, voice, info);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
@@ -597,7 +597,7 @@ EXPORT(SceInt32, sceNgsVoiceGetInfo, ngs::Voice* voice, SceNgsVoiceInfo *info) {
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoiceGetModuleBypass, ngs::Voice* voice, const SceUInt32 module, SceUInt32 *bypass_flag) {
+EXPORT(SceInt32, sceNgsVoiceGetModuleBypass, ngs::Voice *voice, const SceUInt32 module, SceUInt32 *bypass_flag) {
     TRACY_FUNC(sceNgsVoiceGetModuleBypass, voice, module, bypass_flag);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
@@ -623,7 +623,7 @@ EXPORT(int, sceNgsVoiceGetModuleType) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, sceNgsVoiceGetOutputPatch, ngs::Voice* voice, const SceInt32 output_index, const SceInt32 output_subindex, Ptr<ngs::Patch> *patch) {
+EXPORT(SceInt32, sceNgsVoiceGetOutputPatch, ngs::Voice *voice, const SceInt32 output_index, const SceInt32 output_subindex, Ptr<ngs::Patch> *patch) {
     TRACY_FUNC(sceNgsVoiceGetOutputPatch, voice, output_index, output_subindex, patch);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -655,7 +655,7 @@ EXPORT(int, sceNgsVoiceGetParamsOutOfRange) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(SceInt32, sceNgsVoiceGetStateData, ngs::Voice* voice, const SceUInt32 module, void *mem, const SceUInt32 mem_size) {
+EXPORT(SceInt32, sceNgsVoiceGetStateData, ngs::Voice *voice, const SceUInt32 module, void *mem, const SceUInt32 mem_size) {
     TRACY_FUNC(sceNgsVoiceGetStateData, voice, module, mem, mem_size);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -674,7 +674,7 @@ EXPORT(SceInt32, sceNgsVoiceGetStateData, ngs::Voice* voice, const SceUInt32 mod
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoiceInit, ngs::Voice* voice, const ngs::VoicePreset *preset, const SceUInt32 init_flags) {
+EXPORT(SceInt32, sceNgsVoiceInit, ngs::Voice *voice, const SceNgsVoicePreset *preset, const SceUInt32 init_flags) {
     TRACY_FUNC(sceNgsVoiceInit, voice, preset, init_flags);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -720,7 +720,7 @@ EXPORT(SceInt32, sceNgsVoiceInit, ngs::Voice* voice, const ngs::VoicePreset *pre
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoiceKeyOff, ngs::Voice* voice) {
+EXPORT(SceInt32, sceNgsVoiceKeyOff, ngs::Voice *voice) {
     TRACY_FUNC(sceNgsVoiceKeyOff, voice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return SCE_NGS_OK;
@@ -741,7 +741,7 @@ EXPORT(SceInt32, sceNgsVoiceKeyOff, ngs::Voice* voice) {
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsVoiceKill, ngs::Voice* voice) {
+EXPORT(int, sceNgsVoiceKill, ngs::Voice *voice) {
     TRACY_FUNC(sceNgsVoiceKill, voice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -756,13 +756,13 @@ EXPORT(int, sceNgsVoiceKill, ngs::Voice* voice) {
     return 0;
 }
 
-EXPORT(SceUInt32, sceNgsVoiceLockParams, ngs::Voice* voice, SceUInt32 module, SceUInt32 unk2, Ptr<ngs::BufferParamsInfo> buf) {
+EXPORT(SceUInt32, sceNgsVoiceLockParams, ngs::Voice *voice, SceUInt32 module, SceUInt32 unk2, SceNgsBufferInfo *buf) {
     TRACY_FUNC(sceNgsVoiceLockParams, voice, module, unk2, buf);
     if (!emuenv.cfg.current_config.ngs_enable) {
-        auto *buffer_info = buf.get(emuenv.mem);
+        *buf = {
+            Ptr<void>(alloc(emuenv.mem, 10, "SceNgs buffer stub")), 10
+        };
 
-        buffer_info->data = alloc(emuenv.mem, 10, "SceNgs buffer stub");
-        buffer_info->size = 10;
         return 0;
     }
 
@@ -775,16 +775,16 @@ EXPORT(SceUInt32, sceNgsVoiceLockParams, ngs::Voice* voice, SceUInt32 module, Sc
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    ngs::BufferParamsInfo *info = data->lock_params(emuenv.mem);
+    SceNgsBufferInfo *info = data->lock_params(emuenv.mem);
     if (!info) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
 
-    *(buf.get(emuenv.mem)) = *info;
+    *buf = *info;
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoicePatchSetVolume, ngs::Patch* patch, const SceInt32 output_channel, const SceInt32 input_channel, const SceFloat32 vol) {
+EXPORT(SceInt32, sceNgsVoicePatchSetVolume, ngs::Patch *patch, const SceInt32 output_channel, const SceInt32 input_channel, const SceFloat32 vol) {
     TRACY_FUNC(sceNgsVoicePatchSetVolume, patch, output_channel, input_channel, vol);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
@@ -797,7 +797,7 @@ EXPORT(SceInt32, sceNgsVoicePatchSetVolume, ngs::Patch* patch, const SceInt32 ou
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoicePatchSetVolumes, ngs::Patch* patch, const SceInt32 output_channel, const SceFloat32 *volumes, const SceInt32 vols) {
+EXPORT(SceInt32, sceNgsVoicePatchSetVolumes, ngs::Patch *patch, const SceInt32 output_channel, const SceFloat32 *volumes, const SceInt32 vols) {
     TRACY_FUNC(sceNgsVoicePatchSetVolumes, patch, output_channel, volumes, vols);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
@@ -811,7 +811,7 @@ EXPORT(SceInt32, sceNgsVoicePatchSetVolumes, ngs::Patch* patch, const SceInt32 o
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoicePatchSetVolumesMatrix, ngs::Patch* patch, const SceNgsVolumeMatrix *matrix) {
+EXPORT(SceInt32, sceNgsVoicePatchSetVolumesMatrix, ngs::Patch *patch, const SceNgsVolumeMatrix *matrix) {
     TRACY_FUNC(sceNgsVoicePatchSetVolumesMatrix, patch, matrix);
     if (!emuenv.cfg.current_config.ngs_enable)
         return 0;
@@ -827,7 +827,7 @@ EXPORT(SceInt32, sceNgsVoicePatchSetVolumesMatrix, ngs::Patch* patch, const SceN
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsVoicePause, ngs::Voice* voice) {
+EXPORT(int, sceNgsVoicePause, ngs::Voice *voice) {
     TRACY_FUNC(sceNgsVoicePause, voice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -847,7 +847,7 @@ EXPORT(int, sceNgsVoicePause, ngs::Voice* voice) {
     return SCE_NGS_OK;
 }
 
-EXPORT(SceUInt32, sceNgsVoicePlay, ngs::Voice* voice) {
+EXPORT(SceUInt32, sceNgsVoicePlay, ngs::Voice *voice) {
     TRACY_FUNC(sceNgsVoicePlay, voice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -866,7 +866,7 @@ EXPORT(SceUInt32, sceNgsVoicePlay, ngs::Voice* voice) {
     return SCE_NGS_OK;
 }
 
-EXPORT(int, sceNgsVoiceResume, ngs::Voice* voice) {
+EXPORT(int, sceNgsVoiceResume, ngs::Voice *voice) {
     TRACY_FUNC(sceNgsVoiceResume, voice);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -886,7 +886,7 @@ EXPORT(int, sceNgsVoiceResume, ngs::Voice* voice) {
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoiceSetFinishedCallback, ngs::Voice* voice, Ptr<void> callback, Ptr<void> user_data) {
+EXPORT(SceInt32, sceNgsVoiceSetFinishedCallback, ngs::Voice *voice, Ptr<void> callback, Ptr<void> user_data) {
     TRACY_FUNC(sceNgsVoiceSetFinishedCallback, voice, callback, user_data);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -901,7 +901,7 @@ EXPORT(SceInt32, sceNgsVoiceSetFinishedCallback, ngs::Voice* voice, Ptr<void> ca
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoiceSetModuleCallback, ngs::Voice* voice, const SceUInt32 module, Ptr<void> callback, Ptr<void> user_data) {
+EXPORT(SceInt32, sceNgsVoiceSetModuleCallback, ngs::Voice *voice, const SceUInt32 module, Ptr<void> callback, Ptr<void> user_data) {
     TRACY_FUNC(sceNgsVoiceSetModuleCallback, voice, module, callback, user_data);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
@@ -921,7 +921,7 @@ EXPORT(SceInt32, sceNgsVoiceSetModuleCallback, ngs::Voice* voice, const SceUInt3
     return 0;
 }
 
-EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, ngs::Voice* voice, const ngs::ModuleParameterHeader *header,
+EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, ngs::Voice *voice, const SceNgsModuleParamHeader *header,
     const SceUInt32 size, SceInt32 *num_error) {
     TRACY_FUNC(sceNgsVoiceSetParamsBlock, voice, header, size, num_error);
     if (!emuenv.cfg.current_config.ngs_enable)
@@ -940,7 +940,7 @@ EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, ngs::Voice* voice, const ngs::Module
         return RET_ERROR(SCE_NGS_ERROR);
 }
 
-EXPORT(SceInt32, sceNgsVoiceSetPreset, ngs::Voice* voice, const ngs::VoicePreset *preset) {
+EXPORT(SceInt32, sceNgsVoiceSetPreset, ngs::Voice *voice, const SceNgsVoicePreset *preset) {
     TRACY_FUNC(sceNgsVoiceSetPreset, voice, preset);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
@@ -955,7 +955,7 @@ EXPORT(SceInt32, sceNgsVoiceSetPreset, ngs::Voice* voice, const ngs::VoicePreset
     return SCE_NGS_OK;
 }
 
-EXPORT(SceInt32, sceNgsVoiceUnlockParams, ngs::Voice* voice, const SceUInt32 module_index) {
+EXPORT(SceInt32, sceNgsVoiceUnlockParams, ngs::Voice *voice, const SceUInt32 module_index) {
     TRACY_FUNC(sceNgsVoiceUnlockParams, voice, module_index);
     if (!emuenv.cfg.current_config.ngs_enable) {
         return 0;
