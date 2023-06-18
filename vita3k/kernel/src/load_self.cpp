@@ -211,18 +211,24 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
     return true;
 }
 
-static bool load_func_exports(Ptr<const void> &entry_point, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel) {
+static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
 
         if (nid == NID_MODULE_START) {
-            entry_point = entry;
+            kernel_module_info->start_entry = entry;
             continue;
         }
 
-        if (nid == NID_MODULE_STOP || nid == NID_MODULE_EXIT)
+        if (nid == NID_MODULE_STOP) {
+            kernel_module_info->stop_entry = entry;
             continue;
+        }
+        if (nid == NID_MODULE_EXIT) {
+            kernel_module_info->exit_entry = entry;
+            continue;
+        }
 
         {
             const std::unique_lock<std::shared_mutex> lock(kernel.export_nids_mutex);
@@ -330,7 +336,7 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
     return true;
 }
 
-static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, MemState &mem) {
+static bool load_exports(SceKernelModuleInfo *kernel_module_info, const sce_module_info_raw &module, Ptr<const void> segment_address, KernelState &kernel, MemState &mem) {
     const uint8_t *const base = segment_address.cast<const uint8_t>().get(mem);
     const sce_module_exports_raw *const exports_begin = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_top);
     const sce_module_exports_raw *const exports_end = reinterpret_cast<const sce_module_exports_raw *>(base + module.export_end);
@@ -344,7 +350,7 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
 
         const uint32_t *const nids = Ptr<const uint32_t>(exports->nid_table).get(mem);
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(exports->entry_table).get(mem);
-        if (!load_func_exports(entry_point, nids, entries, exports->num_syms_funcs, kernel)) {
+        if (!load_func_exports(kernel_module_info, nids, entries, exports->num_syms_funcs, kernel)) {
             return false;
         }
 
@@ -365,7 +371,7 @@ static bool load_exports(Ptr<const void> &entry_point, const sce_module_info_raw
 /**
  * \return Negative on failure
  */
-SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &mem, const void *self, const std::string &self_path) {
+SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std::string &self_path) {
     // TODO: use raw I/O from path when io becomes less bad
     const uint8_t *const self_bytes = static_cast<const uint8_t *>(self);
     const SCE_header &self_header = *static_cast<const SCE_header *>(self);
@@ -463,8 +469,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     SegmentInfosForReloc segment_reloc_info;
 
     auto free_all_segments = [](MemState &mem, SegmentInfosForReloc &segs_info) {
-        for (auto _seg : segs_info) {
-            const SegmentInfoForReloc &segment = _seg.second;
+        for (auto &[_, segment] : segs_info) {
             free(mem, segment.addr);
         }
     };
@@ -593,21 +598,15 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
     strncpy(sceKernelModuleInfo->module_name, module_info->name, 28);
     // unk28
     if (module_info->module_start != 0xffffffff && module_info->module_start != 0)
-        entry_point = module_info_segment_address + module_info->module_start;
-    else
-        entry_point = Ptr<const void>(0);
+        sceKernelModuleInfo->start_entry = module_info_segment_address + module_info->module_start;
     // unk30
     if (module_info->module_stop != 0xffffffff && module_info->module_stop != 0)
         sceKernelModuleInfo->stop_entry = module_info_segment_address + module_info->module_stop;
 
-    const Ptr<const void> exidx_top = Ptr<const void>(module_info->exidx_top);
-    sceKernelModuleInfo->exidx_top = exidx_top;
-    const Ptr<const void> exidx_btm = Ptr<const void>(module_info->exidx_end);
-    sceKernelModuleInfo->exidx_btm = exidx_btm;
-    const Ptr<const void> extab_top = Ptr<const void>(module_info->extab_top);
-    sceKernelModuleInfo->extab_top = extab_top;
-    const Ptr<const void> extab_end = Ptr<const void>(module_info->extab_end);
-    sceKernelModuleInfo->extab_btm = extab_end;
+    sceKernelModuleInfo->exidx_top = Ptr<const void>(module_info->exidx_top);
+    sceKernelModuleInfo->exidx_btm = Ptr<const void>(module_info->exidx_end);
+    sceKernelModuleInfo->extab_top = Ptr<const void>(module_info->extab_top);
+    sceKernelModuleInfo->extab_btm = Ptr<const void>(module_info->extab_end);
 
     sceKernelModuleInfo->tlsInit = Ptr<const void>((!module_info->tls_start ? 0 : (module_info_segment_address.address() + module_info->tls_start)));
     sceKernelModuleInfo->tlsInitSize = module_info->tls_filesz;
@@ -643,16 +642,13 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
 
     LOG_INFO("Linking SELF {}...", self_path);
 
-    if (!load_exports(entry_point, *module_info, module_info_segment_address, kernel, mem)) {
+    if (!load_exports(sceKernelModuleInfo.get(), *module_info, module_info_segment_address, kernel, mem)) {
         return -1;
     }
 
     if (!load_imports(*module_info, module_info_segment_address, segment_reloc_info, kernel, mem)) {
         return -1;
     }
-
-    sceKernelModuleInfo->start_entry = entry_point;
-    // TODO: module_stop
 
     const SceUID uid = kernel.get_next_uid();
     sceKernelModuleInfo->modid = uid;

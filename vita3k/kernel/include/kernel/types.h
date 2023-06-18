@@ -39,6 +39,7 @@
 
 #define SCE_KERNEL_STACK_SIZE_USER_MAIN KiB(256)
 #define SCE_KERNEL_STACK_SIZE_USER_DEFAULT KiB(4)
+#define SCE_KERNEL_THREAD_STACK_SIZE_MAX MiB(32)
 
 #define SCE_KERNEL_ATTR_TH_FIFO 0x00000000U
 #define SCE_KERNEL_ATTR_TH_PRIO 0x00002000U
@@ -589,6 +590,8 @@ struct SceKernelModuleInfo {
     SceKernelSegmentInfo segments[MODULE_INFO_NUM_SEGMENTS];
     SceUInt state; //!< see:SceKernelModuleState
 };
+
+typedef std::shared_ptr<SceKernelModuleInfo> SceKernelModuleInfoPtr;
 
 struct SceKernelStartModuleOpt {
     SceSize size;

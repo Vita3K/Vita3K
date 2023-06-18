@@ -26,71 +26,6 @@
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceModulemgr);
 
-/**
- * \brief Loads a dynamic module into memory if it wasn't already loaded. If it was, find it and return it. First 3 arguments are outputs.
- * \param mod_id UID of the loaded module object
- * \param entry_point Entry point (module_start) of the loaded module
- * \param module Module info
- * \param emuenv PlayStation Vita emulated environment
- * \param export_name
- * \param path File name of module file
- * \param error_val Error value on failure
- * \return True on success, false on failure
- */
-static bool load_module(SceUID &mod_id, Ptr<const void> &entry_point, SceKernelModuleInfoPtr &module, EmuEnvState &emuenv, const char *export_name, const char *path, int &error_val) {
-    const auto &loaded_modules = emuenv.kernel.loaded_modules;
-
-    auto module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [path](const auto &p) {
-        return std::string(p.second->path) == path;
-    });
-
-    if (module_iter == loaded_modules.end()) {
-        // module is not loaded, load it here
-
-        const auto file = open_file(emuenv.io, path, SCE_O_RDONLY, emuenv.pref_path, export_name);
-        if (file < 0) {
-            error_val = RET_ERROR(file);
-            return false;
-        }
-        const auto size = seek_file(file, 0, SCE_SEEK_END, emuenv.io, export_name);
-        if (size < 0) {
-            error_val = RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
-            return false;
-        }
-
-        if (seek_file(file, 0, SCE_SEEK_SET, emuenv.io, export_name) < 0) {
-            error_val = RET_ERROR(static_cast<int>(size));
-            return false;
-        }
-
-        std::vector<char> data(static_cast<int>(size) + 1); // null-terminated char array
-        if (read_file(data.data(), emuenv.io, file, SceSize(size), export_name) < 0) {
-            data.clear();
-            error_val = RET_ERROR(static_cast<int>(size));
-            return false;
-        }
-
-        mod_id = load_self(entry_point, emuenv.kernel, emuenv.mem, data.data(), path);
-
-        close_file(emuenv.io, file, export_name);
-        data.clear();
-        if (mod_id < 0) {
-            error_val = RET_ERROR(mod_id);
-            return false;
-        }
-
-        module_iter = loaded_modules.find(mod_id);
-        module = module_iter->second;
-    } else {
-        // module is already loaded
-        module = module_iter->second;
-
-        mod_id = module_iter->first;
-        entry_point = module->start_entry;
-    }
-    return true;
-}
-
 EXPORT(int, _sceKernelCloseModule) {
     TRACY_FUNC(_sceKernelCloseModule);
     return UNIMPLEMENTED();
@@ -98,25 +33,16 @@ EXPORT(int, _sceKernelCloseModule) {
 
 EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *option) {
     TRACY_FUNC(_sceKernelLoadModule, path, flags, option);
-    SceUID mod_id;
-    Ptr<const void> entry_point;
-    SceKernelModuleInfoPtr module;
-
-    int error_val;
-    if (!load_module(mod_id, entry_point, module, emuenv, export_name, path, error_val))
-        return error_val;
-
-    return mod_id;
+    return load_module(emuenv, path);
 }
 
-static SceUID start_module(KernelState &kernel, SceUID thread_id, const SceKernelModuleInfoPtr &module, SceSize args, const Ptr<void> argp, int *pRes) {
-    const auto thread = kernel.get_thread(thread_id);
-    uint32_t result = 0;
-    if (module->start_entry)
-        result = thread->run_callback(module->start_entry.address(), { args, argp.address() });
-
-    LOG_INFO("Module {} (at \"{}\") module_start returned {}", module->module_name, module->path, log_hex(result));
-
+static SceUID start_module(EmuEnvState &emuenv, SceUID module_id, SceSize args, const Ptr<void> argp, int *pRes) {
+    const SceKernelModuleInfoPtr module = lock_and_find(module_id, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
+    if (!module) {
+        const char *export_name = __FUNCTION__;
+        return RET_ERROR(SCE_KERNEL_ERROR_MODULEMGR_NO_MOD);
+    }
+    auto result = start_module(emuenv, module, args, argp);
     if (pRes)
         *pRes = result;
 
@@ -131,15 +57,10 @@ EXPORT(SceUID, _sceKernelLoadStartModule, const char *moduleFileName, SceSize ar
         return SCE_KERNEL_ERROR_MODULEMGR_INVALID_TYPE;
     }
 
-    SceUID mod_id;
-    Ptr<const void> entry_point;
-    SceKernelModuleInfoPtr module;
-
-    int error_val;
-    if (!load_module(mod_id, entry_point, module, emuenv, export_name, moduleFileName, error_val))
-        return error_val;
-
-    return start_module(emuenv.kernel, thread_id, module, args, argp, pRes);
+    SceUID module_id = load_module(emuenv, moduleFileName);
+    if (module_id < 0)
+        return module_id;
+    return start_module(emuenv, module_id, args, argp, pRes);
 }
 
 EXPORT(int, _sceKernelOpenModule) {
@@ -149,9 +70,8 @@ EXPORT(int, _sceKernelOpenModule) {
 
 EXPORT(int, _sceKernelStartModule, SceUID uid, SceSize args, const Ptr<void> argp, SceUInt32 flags, const Ptr<SceKernelStartModuleOpt> pOpt, int *pRes) {
     TRACY_FUNC(_sceKernelStartModule, uid, args, argp, flags, pOpt, pRes);
-    const SceKernelModuleInfoPtr module = lock_and_find(uid, emuenv.kernel.loaded_modules, emuenv.kernel.mutex);
 
-    return start_module(emuenv.kernel, thread_id, module, args, argp, pRes);
+    return start_module(emuenv, uid, args, argp, pRes);
 }
 
 EXPORT(int, _sceKernelStopModule) {
@@ -215,11 +135,11 @@ EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
     // for Maidump main module should be the last module
     int i = 0;
     SceUID main_module_id = 0;
-    for (SceKernelModuleInfoPtrs::iterator module = emuenv.kernel.loaded_modules.begin(); module != emuenv.kernel.loaded_modules.end(); ++module) {
-        if (module->second->path == "app0:" + emuenv.self_path) {
-            main_module_id = module->first;
+    for (auto [module_id, module] : emuenv.kernel.loaded_modules) {
+        if (module->path == "app0:" + emuenv.self_path) {
+            main_module_id = module_id;
         } else {
-            modids[i] = module->first;
+            modids[i] = module_id;
             i++;
         }
     }

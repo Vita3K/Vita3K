@@ -15,11 +15,15 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include "io/functions.h"
+#include "io/io.h"
+
 #include <modules/module_parent.h>
 
 #include <cpu/functions.h>
 #include <emuenv/state.h>
 #include <io/device.h>
+#include <io/state.h>
 #include <io/vfs.h>
 #include <kernel/load_self.h>
 #include <kernel/state.h>
@@ -151,43 +155,86 @@ void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread
     }
 }
 
+SceUID load_module(EmuEnvState &emuenv, const std::string &module_path) {
+    // Check if module is already loaded
+    const auto &loaded_modules = emuenv.kernel.loaded_modules;
+    auto module_iter = std::find_if(loaded_modules.begin(), loaded_modules.end(), [&](const auto &p) {
+        return std::string(p.second->path) == module_path;
+    });
+
+    if (module_iter != loaded_modules.end()) {
+        return module_iter->first;
+    }
+    LOG_INFO("Loading module \"{}\"", module_path);
+    vfs::FileBuffer module_buffer;
+    bool res;
+    VitaIoDevice device = device::get_device(module_path);
+    auto translated_module_path = translate_path(module_path.c_str(), device, emuenv.io.device_paths);
+    if (device == VitaIoDevice::app0)
+        res = vfs::read_app_file(module_buffer, emuenv.pref_path, emuenv.io.app_path, translated_module_path);
+    else
+        res = vfs::read_file(device, module_buffer, emuenv.pref_path, translated_module_path);
+    if (!res) {
+        LOG_ERROR("Failed to read module file {}", module_path);
+        return SCE_ERROR_ERRNO_ENOENT;
+    }
+    SceUID module_id = load_self(emuenv.kernel, emuenv.mem, module_buffer.data(), module_path);
+    if (module_id >= 0) {
+        const auto module = emuenv.kernel.loaded_modules[module_id];
+        LOG_INFO("Module {} (at \"{}\") loaded", module->module_name, module_path);
+    } else {
+        LOG_ERROR("Failed to load module {}", module_path);
+    }
+    return module_id;
+}
+
+uint32_t start_module(EmuEnvState &emuenv, const std::shared_ptr<SceKernelModuleInfo> &module, SceSize args, const Ptr<void> argp) {
+    const auto module_start = module->start_entry;
+    if (module_start) {
+        const auto module_name = module->module_name;
+
+        LOG_DEBUG("Running module_start of library: {} at address {}", module_name, log_hex(module_start.address()));
+        SceInt32 priority = SCE_KERNEL_DEFAULT_PRIORITY_USER;
+        SceInt32 stack_size = SCE_KERNEL_STACK_SIZE_USER_MAIN;
+        SceInt32 affinity = SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT;
+        // module_start is always called from new thread
+        const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_start, priority, affinity, stack_size, nullptr);
+
+        const auto ret = module_thread->run_guest_function(emuenv.kernel, module_start.address(), args, argp);
+        module_thread->exit_delete(emuenv.kernel);
+
+        LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
+        return ret;
+    }
+    return 0;
+}
+
 /**
  * \return False on failure, true on success
  */
-bool load_module(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleModuleId module_id) {
-    LOG_INFO("Loading module ID: {}", log_hex(module_id));
-
-    const auto module_paths = sysmodule_paths[module_id];
-
-    for (std::string module_path : module_paths) {
-        module_path = "sys/external/" + module_path + ".suprx";
-
-        vfs::FileBuffer module_buffer;
-        Ptr<const void> lib_entry_point;
-
-        if (vfs::read_file(VitaIoDevice::vs0, module_buffer, emuenv.pref_path, module_path)) {
-            SceUID loaded_module_uid = load_self(lib_entry_point, emuenv.kernel, emuenv.mem, module_buffer.data(), module_path);
-            if (loaded_module_uid < 0) {
-                LOG_ERROR("Error when loading module at \"{}\"", module_path);
-                return false;
-            }
-            const auto module = emuenv.kernel.loaded_modules[loaded_module_uid];
-            const auto module_name = module->module_name;
-            LOG_INFO("Module {} (at \"{}\") loaded", module_name, module_path);
-
-            if (lib_entry_point) {
-                LOG_DEBUG("Running module_start of module: {}", module_name);
-
-                Ptr<void> argp = Ptr<void>();
-                const auto thread = emuenv.kernel.get_thread(thread_id);
-                const auto ret = thread->run_callback(lib_entry_point.address(), { 0, argp.address() });
-                LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
-            }
-
+bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id) {
+    const auto &module_paths = sysmodule_paths[module_id];
+    for (const auto module_filename : module_paths) {
+        std::string module_path;
+        if (module_id == SCE_SYSMODULE_SMART || module_id == SCE_SYSMODULE_FACE || module_id == SCE_SYSMODULE_ULT) {
+            module_path = fmt::format("app0:sce_module/{}.suprx", module_filename);
         } else {
-            LOG_ERROR("Module at \"{}\" not present", module_path);
-            // ignore and assume it was loaded
+            module_path = fmt::format("vs0:sys/external/{}.suprx", module_filename);
         }
+
+        auto loaded_module_uid = load_module(emuenv, module_path);
+
+        if (loaded_module_uid < 0) {
+            if (module_id == SCE_SYSMODULE_ULT && loaded_module_uid == SCE_ERROR_ERRNO_ENOENT) {
+                module_path = fmt::format("vs0:sys/external/{}.suprx", module_filename);
+                loaded_module_uid = load_module(emuenv, module_path);
+                if (loaded_module_uid < 0)
+                    return false;
+            } else
+                return false;
+        }
+        const auto module = emuenv.kernel.loaded_modules[loaded_module_uid];
+        start_module(emuenv, module);
     }
 
     emuenv.kernel.loaded_sysmodules.push_back(module_id);

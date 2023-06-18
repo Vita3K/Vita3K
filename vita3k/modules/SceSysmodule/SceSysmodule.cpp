@@ -185,9 +185,9 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
     TRACY_FUNC(sceSysmoduleLoadModule, module_id);
     if (module_id < 0 || module_id > SYSMODULE_COUNT)
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
-
+    LOG_INFO("Loading module ID: {}", to_debug_str(emuenv.mem, module_id));
     if (is_modules_enable(emuenv, module_id)) {
-        if (load_module(emuenv, thread_id, module_id))
+        if (load_sys_module(emuenv, module_id))
             return SCE_SYSMODULE_LOADED;
         else
             return RET_ERROR(SCE_SYSMODULE_ERROR_FATAL);

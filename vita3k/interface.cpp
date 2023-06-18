@@ -17,6 +17,8 @@
 
 #include "interface.h"
 
+#include "module/load_module.h"
+
 #include <config/state.h>
 #include <ctrl/functions.h>
 #include <ctrl/state.h>
@@ -413,36 +415,7 @@ uint32_t install_contents(EmuEnvState &emuenv, GuiState *gui, const fs::path &pa
     return installed;
 }
 
-static auto pre_load_module(EmuEnvState &emuenv, const std::vector<std::string> &lib_load_list, const VitaIoDevice &device) {
-    for (const auto &module_path : lib_load_list) {
-        vfs::FileBuffer module_buffer;
-        Ptr<const void> lib_entry_point;
-        bool res;
-        const auto MODULE_PATH_ABS = fmt::format("{}:{}", device._to_string(), module_path);
-
-        if (device == VitaIoDevice::app0)
-            res = vfs::read_app_file(module_buffer, emuenv.pref_path, emuenv.io.app_path, module_path);
-        else
-            res = vfs::read_file(device, module_buffer, emuenv.pref_path, module_path);
-
-        if (res) {
-            SceUID module_id = load_self(lib_entry_point, emuenv.kernel, emuenv.mem, module_buffer.data(), MODULE_PATH_ABS);
-            if (module_id >= 0) {
-                const auto module = emuenv.kernel.loaded_modules[module_id];
-
-                LOG_INFO("Pre-load module {} (at \"{}\") loaded", module->module_name, module_path);
-            } else
-                return FileNotFound;
-        } else {
-            LOG_DEBUG("Pre-load module at \"{}\" not present", module_path);
-            return FileNotFound;
-        }
-    }
-
-    return Success;
-}
-
-static ExitCode load_app_impl(Ptr<const void> &entry_point, EmuEnvState &emuenv, const std::wstring &path) {
+static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const std::wstring &path) {
     if (path.empty())
         return InvalidApplicationPath;
 
@@ -490,63 +463,59 @@ static ExitCode load_app_impl(Ptr<const void> &entry_point, EmuEnvState &emuenv,
     init_device_paths(emuenv.io);
     init_savedata_app_path(emuenv.io, emuenv.pref_path);
 
+    // todo: VAR_NID(__sce_libcparam, 0xDF084DFA) is loaded wrong
     for (const auto &var : get_var_exports()) {
         auto addr = var.factory(emuenv);
         emuenv.kernel.export_nids.emplace(var.nid, addr);
     }
 
-    // FIXME: The application EBOOT should be the first module ever loaded in the address space!
-
-    // Load pre-loaded libraries
-    const auto module_app_path{ fs::path(emuenv.pref_path) / "ux0/app" / emuenv.io.app_path / "sce_module" };
-    const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);
-    if (is_app) {
-        // Load application module
-        const std::vector<std::string> lib_load_list = {
-            "sce_module/libc.suprx",
-            "sce_module/libfios2.suprx",
-            "sce_module/libult.suprx",
-        };
-
-        pre_load_module(emuenv, lib_load_list, VitaIoDevice::app0);
-    }
-
-    // Load pre-loaded font fw libraries
-    std::vector<std::string> lib_load_list = {
-        "sys/external/libSceFt2.suprx",
-        "sys/external/libpvf.suprx",
-    };
-
-    if (!is_app) {
-        // Load pre-loaded fw libraries if app libraries not exist
-        const std::vector<std::string> lib_load_list_to_add = {
-            "sys/external/libc.suprx",
-            "sys/external/libfios2.suprx",
-            "sys/external/libult.suprx"
-        };
-
-        lib_load_list.insert(lib_load_list.begin(), lib_load_list_to_add.begin(), lib_load_list_to_add.end());
-    }
-
-    pre_load_module(emuenv, lib_load_list, VitaIoDevice::vs0);
-
     // Load main executable
     emuenv.self_path = !emuenv.cfg.self_path.empty() ? emuenv.cfg.self_path : EBOOT_PATH;
-    vfs::FileBuffer eboot_buffer;
-    if (vfs::read_app_file(eboot_buffer, emuenv.pref_path, emuenv.io.app_path, emuenv.self_path)) {
-        SceUID module_id = load_self(entry_point, emuenv.kernel, emuenv.mem, eboot_buffer.data(), "app0:" + emuenv.self_path);
-        if (module_id >= 0) {
-            const auto module = emuenv.kernel.loaded_modules[module_id];
-
-            LOG_INFO("Main executable {} ({}) loaded", module->module_name, emuenv.self_path);
-        } else
-            return FileNotFound;
+    main_module_id = load_module(emuenv, "app0:" + emuenv.self_path);
+    if (main_module_id >= 0) {
+        const auto module = emuenv.kernel.loaded_modules[main_module_id];
+        LOG_INFO("Main executable {} ({}) loaded", module->module_name, emuenv.self_path);
     } else
         return FileNotFound;
-
     // Set self name from self path, can contain folder, get file name only
     emuenv.self_name = fs::path(emuenv.self_path).filename().string();
 
+    // get list of preload modules
+    SceUInt32 process_preload_disabled = 0;
+    auto process_param = emuenv.kernel.process_param.get(emuenv.mem);
+    if (process_param) {
+        auto preload_disabled_ptr = Ptr<SceUInt32>(process_param->process_preload_disabled);
+        if (preload_disabled_ptr) {
+            process_preload_disabled = *preload_disabled_ptr.get(emuenv.mem);
+        }
+    }
+    const auto module_app_path{ fs::path(emuenv.pref_path) / "ux0/app" / emuenv.io.app_path / "sce_module" };
+    const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);
+    std::vector<std::string> lib_load_list = {};
+    // todo: check if module is imported
+    auto add_preload_module = [&](uint32_t code, const std::string &name, bool load_from_app) {
+        if ((process_preload_disabled & code) == 0 && is_lle_module(name, emuenv)) {
+            if (load_from_app)
+                lib_load_list.emplace_back(fmt::format("app0:sce_module/{}.suprx", name));
+            else
+                lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}.suprx", name));
+        }
+    };
+    add_preload_module(0x00010000, "libc", is_app);
+    add_preload_module(0x00020000, "libdbg", false);
+    add_preload_module(0x00080000, "libshellsvc", false);
+    add_preload_module(0x00100000, "libcdlg", false);
+    add_preload_module(0x00200000, "libfios2", is_app);
+    add_preload_module(0x00400000, "apputil", false);
+    add_preload_module(0x00800000, "libSceFt2", false);
+    add_preload_module(0x01000000, "libpvf", false);
+    add_preload_module(0x02000000, "libperf", false); // if DEVELOPMENT_MODE dipsw is set
+
+    for (const auto &module_path : lib_load_list) {
+        auto res = load_module(emuenv, module_path);
+        if (res < 0)
+            return FileNotFound;
+    }
     return Success;
 }
 
@@ -818,8 +787,8 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
     return true;
 }
 
-ExitCode load_app(Ptr<const void> &entry_point, EmuEnvState &emuenv, const std::wstring &path) {
-    if (load_app_impl(entry_point, emuenv, path) != Success) {
+ExitCode load_app(int32_t &main_module_id, EmuEnvState &emuenv, const std::wstring &path) {
+    if (load_app_impl(main_module_id, emuenv, path) != Success) {
         std::string message = "Failed to load \"";
         message += string_utils::wide_to_utf(path);
         message += "\"";
@@ -852,36 +821,41 @@ static std::vector<std::string> split(const std::string &input, const std::strin
     return { first, last };
 }
 
-ExitCode run_app(EmuEnvState &emuenv, Ptr<const void> &entry_point) {
-    const ThreadStatePtr thread = emuenv.kernel.create_thread(emuenv.mem, emuenv.io.title_id.c_str(), entry_point, SCE_KERNEL_DEFAULT_PRIORITY_USER, SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT, static_cast<int>(SCE_KERNEL_STACK_SIZE_USER_MAIN), nullptr);
-    if (!thread) {
+ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id) {
+    auto entry_point = emuenv.kernel.loaded_modules[main_module_id]->start_entry;
+    auto process_param = emuenv.kernel.process_param.get(emuenv.mem);
+
+    SceInt32 priority = SCE_KERNEL_DEFAULT_PRIORITY_USER;
+    SceInt32 stack_size = SCE_KERNEL_STACK_SIZE_USER_MAIN;
+    SceInt32 affinity = SCE_KERNEL_THREAD_CPU_AFFINITY_MASK_DEFAULT;
+    if (process_param) {
+        auto priority_ptr = Ptr<int32_t>(process_param->main_thread_priority);
+        if (priority_ptr) {
+            priority = *priority_ptr.get(emuenv.mem);
+        }
+
+        auto stack_size_ptr = Ptr<int32_t>(process_param->main_thread_stacksize);
+        if (stack_size_ptr) {
+            stack_size = *stack_size_ptr.get(emuenv.mem);
+        }
+
+        auto affinity_ptr = Ptr<SceInt32>(process_param->main_thread_cpu_affinity_mask);
+        if (affinity_ptr) {
+            affinity = *affinity_ptr.get(emuenv.mem);
+        }
+    }
+    const ThreadStatePtr main_thread = emuenv.kernel.create_thread(emuenv.mem, emuenv.io.title_id.c_str(), entry_point, priority, affinity, stack_size, nullptr);
+    if (!main_thread) {
         app::error_dialog("Failed to init main thread.", emuenv.window.get());
         return InitThreadFailed;
     }
-    const SceUID main_thread_id = thread->id;
-
-    const ThreadStatePtr main_thread = util::find(main_thread_id, emuenv.kernel.threads);
+    emuenv.main_thread_id = main_thread->id;
 
     // Run `module_start` export (entry point) of loaded libraries
-    for (auto &mod : emuenv.kernel.loaded_modules) {
-        const auto module = mod.second;
-        const auto module_start = module->start_entry;
-        const auto module_name = module->module_name;
-
-        if (!module_start || (std::string(module->path) == "app0:" + emuenv.self_path))
-            continue;
-
-        LOG_DEBUG("Running module_start of library: {} at address {}", module_name, log_hex(module_start.address()));
-
-        // TODO: why does fios need separate thread its stack freed anyways?
-        const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name);
-        const auto ret = module_thread->run_guest_function(emuenv.kernel, module_start.address());
-        module_thread->exit_delete(emuenv.kernel);
-
-        LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
+    for (auto &[_, module] : emuenv.kernel.loaded_modules) {
+        if (module->modid != main_module_id)
+            start_module(emuenv, module);
     }
-
-    emuenv.main_thread_id = main_thread_id;
 
     SceKernelThreadOptParam param{ 0, 0 };
     if (!emuenv.cfg.app_args.empty()) {

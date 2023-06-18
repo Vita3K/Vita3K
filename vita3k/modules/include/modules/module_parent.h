@@ -27,7 +27,25 @@ struct KernelState;
 
 void init_libraries(EmuEnvState &emuenv);
 void call_import(EmuEnvState &emuenv, CPUState &cpu, uint32_t nid, SceUID thread_id);
-bool load_module(EmuEnvState &emuenv, SceUID thread_id, SceSysmoduleModuleId module_id);
+
+/**
+ * \brief Loads a dynamic module into memory if it wasn't already loaded. If it was, find it and return it.
+ * \param emuenv PlayStation Vita emulated environment
+ * \param module_path Full path of module file (with device)
+ * \return UID of the loaded module object or SCE_ERROR on failure
+ */
+SceUID load_module(EmuEnvState &emuenv, const std::string &module_path);
+
+uint32_t start_module(EmuEnvState &emuenv, const std::shared_ptr<SceKernelModuleInfo> &module, SceSize args = 0, const Ptr<void> argp = Ptr<void>{});
+
+/**
+ * \brief Loads and run a system module
+ * \param emuenv PlayStation Vita emulated environment
+ * \param module_id System Module ID of the module to load
+ * \return False on failure, true on success
+ */
+bool load_sys_module(EmuEnvState &emuenv, SceSysmoduleModuleId module_id);
+
 Address resolve_export(KernelState &kernel, uint32_t nid);
 uint32_t resolve_nid(KernelState &kernel, Address addr);
 
