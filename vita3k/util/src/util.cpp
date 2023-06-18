@@ -549,14 +549,23 @@ void parseResponse(std::string res, SceRequestResponse &reqres) {
         ptr = strtok(NULL, "\r\n");
     }
 
-    auto length_it = reqres.headers.find("Content-Length");
-    if (length_it == reqres.headers.end()) {
-        LOG_WARN("Response has no Content-Length");
+    bool hasContLen = false;
+    int contLenVal = 0;
+    for (auto &header : reqres.headers) {
+        const std::string key = header.first;
+        const std::string upperKey = string_utils::toupper(key);
+        if (upperKey == "CONTENT-LENGTH") {
+            hasContLen = true;
+            contLenVal = std::stoi(header.second);
+            break;
+        }
+    }
+    if (!hasContLen) {
+        reqres.contentLength = 0;
         return;
     }
 
-    SceULong64 length = std::stoi(length_it->second);
-    reqres.contentLength = length;
+    reqres.contentLength = contLenVal;
 }
 
 bool socketSetBlocking(int sockfd, bool blocking) {

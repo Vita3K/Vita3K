@@ -235,8 +235,8 @@ struct SceRequestResponse {
     SceSize responseRead = 0;
 
     // No need to store the headers as raw as everything is already parsed
-    char *responseRaw = nullptr;
-    char *body = nullptr;
+    uint8_t *responseRaw = nullptr;
+    uint8_t *body = nullptr;
 };
 
 struct SceRequest {

@@ -16,6 +16,9 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceHttp.h"
+#include <algorithm>
+#include <cctype>
+#include <cstdlib>
 
 #ifdef WIN32 // windows moment
 #include <io.h>
@@ -37,6 +40,7 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 #include <util/net_utils.h>
+#include <util/string_utils.h>
 #include <util/tracy.h>
 
 #include <string>
@@ -952,204 +956,45 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     // TODO: Also support file scheme, doesn't really require any connections, not sure how it handles headers and such
 
+    if (req->second.method == SCE_HTTP_METHOD_TRACE || req->second.method == SCE_HTTP_METHOD_CONNECT) {
+        if (req->second.method < 0 || req->second.method >= SCE_HTTP_METHOD_INVALID) { // Outside any known method
+            LOG_ERROR("Invalid method {}", req->second.method);
+            return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_METHOD);
+        } else { // its a known method but its not implemented
+            LOG_WARN("Unimplemented method {}, report to devs", req->second.method);
+        }
+        return 0;
+    }
+
     /* TODO:
         TRACE
         CONNECT
      */
     int bytes, sent, received, total;
-    switch (req->second.method) {
-    case SCE_HTTP_METHOD_GET:
-    case SCE_HTTP_METHOD_HEAD:
-    case SCE_HTTP_METHOD_OPTIONS:
-    case SCE_HTTP_METHOD_DELETE: {
-        auto headers = net_utils::constructHeaders(req->second.headers);
+    auto headers = net_utils::constructHeaders(req->second.headers);
 
-        req->second.message = req->second.requestLine + "\r\n" + headers + "\r\n";
+    req->second.message = req->second.requestLine + "\r\n" + headers + "\r\n";
 
-        total = req->second.message.length();
-        sent = 0;
-        do {
-            if (conn->second.isSecure)
-                bytes = SSL_write((SSL *)tmpl->second.ssl, req->second.message.c_str() + sent, total - sent);
-            else
-                bytes = write(conn->second.sockfd, req->second.message.c_str() + sent, total - sent);
+    total = req->second.message.length();
+    sent = 0;
+    do {
+        if (conn->second.isSecure)
+            bytes = SSL_write((SSL *)tmpl->second.ssl, req->second.message.c_str() + sent, total - sent);
+        else
+            bytes = write(conn->second.sockfd, req->second.message.c_str() + sent, total - sent);
 
-            if (bytes < 0) {
-                LOG_ERROR("ERROR writing GET message to socket");
-                assert(false);
-                return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
-            }
-            LOG_TRACE("Sent {} bytes to {}", bytes, req->second.url);
-            if (bytes == 0)
-                break;
-            sent += bytes;
-        } while (sent < total);
-
-        // Make sockets non blocking only for the response
-        // as we can run out of data to read so it blocks like a whole minute
-        if (!net_utils::socketSetBlocking(conn->second.sockfd, false)) {
-            LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, false);
+        if (bytes < 0) {
+            LOG_ERROR("ERROR writing GET message to socket");
             assert(false);
+            return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
         }
+        LOG_TRACE("Sent {} bytes to {}", bytes, req->second.url);
+        if (bytes == 0)
+            break;
+        sent += bytes;
+    } while (sent < total);
 
-        /* receive the response */
-        int attempts = 1;
-        auto reqResponse = new char[emuenv.http.defaultResponseHeaderSize]();
-        total = emuenv.http.defaultResponseHeaderSize - 1;
-        received = 0;
-        do {
-            if (conn->second.isSecure)
-                bytes = SSL_read((SSL *)tmpl->second.ssl, reqResponse + received, total - received);
-            else
-                bytes = read(conn->second.sockfd, reqResponse + received, total - received);
-            if (bytes < 0) {
-                if (bytes == -1) {
-                    if (errno == EWOULDBLOCK) {
-                        if (attempts > emuenv.cfg.http_read_end_attempts)
-                            break; // we can assume there is no more data to read
-                        LOG_TRACE("No data available. Sleep for {}. Attempt {}", emuenv.cfg.http_read_end_sleep_ms, attempts);
-                        std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
-                        attempts++;
-                        continue;
-                    } else {
-                        LOG_ERROR("ERROR reading GET response");
-                        assert(false);
-                        delete[] reqResponse;
-                        return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
-                    }
-                }
-            }
-            LOG_TRACE("Received {} bytes from {}", bytes, req->second.url);
-            if (bytes == 0) {
-                if (strcmp(reqResponse, "") == 0) {
-                    if (attempts > emuenv.cfg.http_timeout_attempts)
-                        break; // Give up
-                    LOG_TRACE("Response is null. Sleep for {}. Attempt {}", emuenv.cfg.http_timeout_sleep_ms, attempts);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
-                    attempts++;
-                    continue;
-                }
-                break; // we have  2 line ends, meaning that its the end of the headers
-            }
-
-            received += bytes;
-        } while (received < total);
-
-        LOG_TRACE("Finished reading data");
-
-        if (!net_utils::socketSetBlocking(conn->second.sockfd, true)) {
-            LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, true);
-            assert(false);
-        }
-        /*
-         * if the number of received bytes is the total size of the
-         * array then we have run out of space to store the response
-         * and it hasn't all arrived yet - so that's a BAD thing
-         */
-        if (received == total) {
-            LOG_ERROR("ERROR storing complete GET response");
-            assert(false);
-            delete[] reqResponse;
-            return RET_ERROR(SCE_HTTP_ERROR_TOO_LARGE_RESPONSE_HEADER);
-        }
-
-        if (strcmp(reqResponse, "") == 0) {
-            LOG_ERROR("Received empty GET response. Probably due to unknown protocol");
-            assert(false);
-            delete[] reqResponse;
-            return RET_ERROR(SCE_HTTP_ERROR_BAD_RESPONSE);
-        }
-
-        // we need to separate the body and the headers
-        std::string reqResponseHeaders;
-        std::string reqResponseStr = std::string(reqResponse);
-        auto headerEndPos = reqResponseStr.find("\r\n\r\n");
-        char *ptr;
-        ptr = strtok(reqResponseStr.data(), "\r\n");
-        // use while loop to check ptr is not null
-        while (ptr != nullptr) {
-            reqResponseHeaders.append(ptr);
-            reqResponseHeaders.append("\r\n");
-
-            auto headerLen = reqResponseHeaders.length();
-            // -2 because its the length of the remaining \r\n on the last header
-            if (headerLen - 2 == headerEndPos)
-                break;
-
-            ptr = strtok(NULL, "\r\n");
-        };
-
-        req->second.res.responseRaw = reqResponse;
-        req->second.res.body = reqResponse + reqResponseHeaders.length() + 2;
-
-        // partialResponse is now the contents of the headers, we should parse them
-        net_utils::parseResponse(reqResponseHeaders, req->second.res);
-
-        break;
-    }
-    // PUT and POST are equal
-    case SCE_HTTP_METHOD_PUT:
-    case SCE_HTTP_METHOD_POST: {
-        // If there is a length header, use that header as length
-        // else
-        // size and predefined length are equal?
-        // if they are then we ok, use that
-        // else use the predefined one
-
-        // Priority: Header > Predefined > size
-
-        if (req->second.headers.find("Content-Length") != req->second.headers.end()) {
-            // There is a content length header, probably by the game, use it
-            auto contHeader = req->second.headers.find("Content-Length");
-            SceSize contLen = std::stoi(contHeader->second);
-
-            // Its ok to have the content length be less or equal than size,
-            // but not the other way around. It would be sending undefined data leading to undefined behavior
-            if (contLen > size)
-                LOG_WARN("POST/PUT request Header: ContentLength > size.");
-
-            // Set size to contLen to not send extra stuff the server will ignore
-            size = contLen;
-        } else {
-            // No Content-Length header
-
-            // if size and predefined aren't equal, we will use predefined
-            if (req->second.contentLength != size) {
-                LOG_WARN("POST/PUT request Header: predefined != size.");
-                size = req->second.contentLength;
-            }
-
-            auto contLen = std::to_string(size);
-            auto ret = CALL_EXPORT(sceHttpAddRequestHeader, reqId, "Content-Length", contLen.c_str(), SCE_HTTP_HEADER_ADD);
-            if (ret < 0) {
-                LOG_WARN("huh?");
-                assert(false);
-            }
-        }
-
-        auto headers = net_utils::constructHeaders(req->second.headers);
-
-        req->second.message = req->second.requestLine + "\r\n" + headers + "\r\n";
-
-        total = req->second.message.length();
-        sent = 0;
-        do {
-            if (conn->second.isSecure)
-                bytes = SSL_write((SSL *)tmpl->second.ssl, req->second.message.c_str() + sent, total - sent);
-            else
-                bytes = write(conn->second.sockfd, req->second.message.c_str() + sent, total - sent);
-
-            if (bytes < 0) {
-                LOG_ERROR("ERROR writing POST message to socket");
-                assert(false);
-                return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
-            }
-            LOG_TRACE("Sent {} bytes to {}", bytes, req->second.url);
-            if (bytes == 0)
-                break;
-            sent += bytes;
-        } while (sent < total);
-
+    if (req->second.method == SCE_HTTP_METHOD_POST || req->second.method == SCE_HTTP_METHOD_PUT) {
         //  Once we send the request we need to send the actual data
         SceSize dataSent = 0;
         auto dataBytes = 0;
@@ -1169,115 +1014,181 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
                 break;
             dataSent += dataBytes;
         } while (dataSent < size);
+    }
 
-        if (!net_utils::socketSetBlocking(conn->second.sockfd, false)) {
-            LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, false);
-            assert(false);
-        }
-        /* receive the response */
-        int attempts = 1;
-        auto reqResponse = new char[emuenv.http.defaultResponseHeaderSize]();
-        total = emuenv.http.defaultResponseHeaderSize - 1;
-        received = 0;
-        do {
-            if (conn->second.isSecure)
-                bytes = SSL_read((SSL *)tmpl->second.ssl, reqResponse + received, total - received);
-            else
-                bytes = read(conn->second.sockfd, reqResponse + received, total - received);
-            if (bytes < 0) {
-                if (bytes == -1) {
-                    if (errno == EWOULDBLOCK) {
-                        if (attempts > emuenv.cfg.http_read_end_attempts)
-                            break; // we can assume there is no more data to read
-                        LOG_TRACE("No data available. Sleep for {}. Attempt {}", emuenv.cfg.http_read_end_sleep_ms, attempts);
-                        std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
-                        attempts++;
-                        continue;
-                    } else {
-                        LOG_ERROR("ERROR reading POST response");
-                        assert(false);
-                        delete[] reqResponse;
-                        return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
-                    }
-                }
-            }
-            LOG_TRACE("Received {} bytes from {}", bytes, req->second.url);
-            if (bytes == 0) {
-                if (strcmp(reqResponse, "") == 0) {
-                    if (attempts > emuenv.cfg.http_timeout_attempts)
-                        break; // Give up
-                    LOG_TRACE("Response is null. Sleep for {}. Attempt {}", emuenv.cfg.http_timeout_sleep_ms, attempts);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
+    // Make sockets non blocking only for the response
+    // as we can run out of data to read so it blocks like a whole minute
+    if (!net_utils::socketSetBlocking(conn->second.sockfd, false)) {
+        LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, false);
+        assert(false);
+    }
+
+    /* receive the response */
+    int attempts = 1;
+    total = emuenv.http.defaultResponseHeaderSize - 1;
+    received = 0;
+
+    auto resHeaders = new char[emuenv.http.defaultResponseHeaderSize]();
+    auto resHeadersMaxSize = emuenv.http.defaultResponseHeaderSize;
+    int totalReceived = 0;
+    do {
+        if (conn->second.isSecure)
+            bytes = SSL_read((SSL *)tmpl->second.ssl, resHeaders + totalReceived, resHeadersMaxSize - totalReceived);
+        else
+            bytes = read(conn->second.sockfd, resHeaders + totalReceived, resHeadersMaxSize - totalReceived);
+        if (bytes < 0) {
+            if (bytes == -1) {
+                if (errno == EWOULDBLOCK) {
+                    if (attempts > emuenv.cfg.http_read_end_attempts)
+                        break; // we can assume there is no more data to read
+                    LOG_TRACE("No data available. Sleep for {}. Attempt {}", emuenv.cfg.http_read_end_sleep_ms, attempts);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
                     attempts++;
                     continue;
+                } else {
+                    LOG_ERROR("ERROR reading GET response headers");
+                    assert(false);
+                    delete[] resHeaders;
+                    return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
                 }
-                break; // we have  2 line ends, meaning that its the end of the headers
             }
-            received += bytes;
-        } while (received < total);
-
-        LOG_TRACE("Finished reading data");
-
-        if (!net_utils::socketSetBlocking(conn->second.sockfd, true)) {
-            LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, true);
-            assert(false);
+        }
+        LOG_TRACE("Received {} bytes from {}", bytes, req->second.url);
+        if (bytes == 0) {
+            if (strcmp(resHeaders, "") == 0) {
+                if (attempts > emuenv.cfg.http_timeout_attempts)
+                    break; // Give up
+                LOG_TRACE("Response is null. Sleep for {}. Attempt {}", emuenv.cfg.http_timeout_sleep_ms, attempts);
+                std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
+                attempts++;
+                continue;
+            }
+            break;
         }
 
-        /*
-         * if the number of received bytes is the total size of the
-         * array then we have run out of space to store the response
-         * and it hasn't all arrived yet - so that's a BAD thing
-         */
-        if (received == total) {
-            LOG_ERROR("ERROR storing complete POST response from socket");
-            assert(false);
-            delete[] reqResponse;
-            return RET_ERROR(SCE_HTTP_ERROR_TOO_LARGE_RESPONSE_HEADER);
-        }
+        totalReceived += bytes;
+    } while (std::string(resHeaders).find("\r\n\r\n") == std::string::npos || totalReceived == resHeadersMaxSize); // receive headers until we start receiving body
 
-        if (strcmp(reqResponse, "") == 0) {
-            LOG_ERROR("Received empty GET response");
-            assert(false);
-            delete[] reqResponse;
-            return RET_ERROR(SCE_HTTP_ERROR_BAD_RESPONSE);
-        }
+    LOG_CRITICAL("finished reading headers");
 
-        // we need to separate the body and the headers
-        std::string reqResponseHeaders;
-        std::string reqResponseStr = std::string(reqResponse);
-        auto headerEndPos = reqResponseStr.find("\r\n\r\n");
+    if (totalReceived != resHeadersMaxSize && std::string(resHeaders).find("\r\n\r\n") == std::string::npos) {
+        delete[] resHeaders;
+        return RET_ERROR(SCE_HTTP_ERROR_TIMEOUT);
+    }
+
+    // Headers are too big
+    if (totalReceived == resHeadersMaxSize && std::string(resHeaders).find("\r\n\r\n") == std::string::npos) {
+        delete[] resHeaders;
+        return RET_ERROR(SCE_HTTP_ERROR_TOO_LARGE_RESPONSE_HEADER);
+    }
+
+    // we need to separate the body and the headers
+    std::string reqResponseHeadersOnly;
+    std::string reqResponseStr = std::string(resHeaders);
+    auto headerEndPos = reqResponseStr.find("\r\n\r\n");
+    {
         char *ptr;
         ptr = strtok(reqResponseStr.data(), "\r\n");
         // use while loop to check ptr is not null
-        while (ptr != NULL) {
-            reqResponseHeaders.append(ptr);
-            reqResponseHeaders.append("\r\n");
+        while (ptr != nullptr) {
+            reqResponseHeadersOnly.append(ptr);
+            reqResponseHeadersOnly.append("\r\n");
 
-            auto headerLen = reqResponseHeaders.length();
+            auto headerLen = reqResponseHeadersOnly.length();
             // -2 because its the length of the remaining \r\n on the last header
             if (headerLen - 2 == headerEndPos)
                 break;
 
             ptr = strtok(NULL, "\r\n");
         };
-
-        req->second.res.responseRaw = reqResponse;
-        req->second.res.body = reqResponse + reqResponseHeaders.length() + 2;
-
-        // partialResponse is now the contents of the headers, we should parse them
-        net_utils::parseResponse(reqResponseHeaders, req->second.res);
-
-        break;
     }
-    default: {
-        if (req->second.method < 0 || req->second.method >= SCE_HTTP_METHOD_INVALID) { // Outside any known method
-            LOG_ERROR("Invalid method {}", req->second.method);
-            return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_METHOD);
-        } else { // its a known method but its not implemented
-            LOG_WARN("Unimplemented method {}, report to devs", req->second.method);
+    // Now reqReponseHeaders is headers ONLY
+    net_utils::parseResponse(reqResponseHeadersOnly, req->second.res);
+    bool hasContLen = false;
+    int contLenVal = 0;
+    for (auto &header : req->second.res.headers) {
+        const std::string key = header.first;
+        const std::string upperKey = string_utils::toupper(key);
+        if (upperKey == "CONTENT-LENGTH") {
+            hasContLen = true;
+            contLenVal = std::stoi(header.second);
+            break;
         }
     }
+
+    if (!hasContLen) {
+        delete[] resHeaders;
+        return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
     }
+
+    // Now we get the body or the rest of the body
+    attempts = 1; // Reset attempts
+    // This is the entire response, including headers and everything
+    const int responseLength = (headerEndPos + strlen("\r\n\r\n")) + contLenVal;
+    auto reqResponse = (uint8_t *)realloc(resHeaders, responseLength);
+    // init the rest of the new block to 0.
+    memset(reqResponse + emuenv.http.defaultResponseHeaderSize, 0, responseLength - emuenv.http.defaultResponseHeaderSize);
+    int remainingToRead = responseLength - totalReceived;
+
+    LOG_CRITICAL("start reading rest of body");
+    do {
+        if (conn->second.isSecure)
+            bytes = SSL_read((SSL *)tmpl->second.ssl, reqResponse + totalReceived, remainingToRead);
+        else
+            bytes = read(conn->second.sockfd, reqResponse + totalReceived, remainingToRead);
+        if (bytes < 0) {
+            if (bytes == -1) {
+                if (errno == EWOULDBLOCK) {
+                    if (attempts > emuenv.cfg.http_read_end_attempts)
+                        break; // we can assume there is no more data to read
+                    LOG_TRACE("No data available. Sleep for {}. Attempt {}", emuenv.cfg.http_read_end_sleep_ms, attempts);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
+                    attempts++;
+                    continue;
+                } else {
+                    LOG_ERROR("ERROR reading GET response");
+                    assert(false);
+                    delete[] reqResponse;
+                    return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
+                }
+            }
+        }
+        LOG_TRACE("Received {} bytes from {}", bytes, req->second.url);
+        if (bytes == 0) {
+            if (attempts > emuenv.cfg.http_timeout_attempts)
+                break; // Give up
+            LOG_TRACE("Response is null. Sleep for {}. Attempt {}", emuenv.cfg.http_timeout_sleep_ms, attempts);
+            std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
+            attempts++;
+            continue;
+        }
+
+        totalReceived += bytes;
+        remainingToRead -= bytes;
+    } while (remainingToRead != 0);
+
+    LOG_CRITICAL("Finished reading body");
+
+    if (remainingToRead != 0) {
+        LOG_WARN("Could not read entire body length");
+        delete[] reqResponse;
+        return RET_ERROR(SCE_HTTP_ERROR_TIMEOUT);
+    }
+
+    if (!net_utils::socketSetBlocking(conn->second.sockfd, true)) {
+        LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, true);
+        assert(false);
+    }
+
+    if (*reqResponse == 0) {
+        LOG_ERROR("Received empty GET response. Probably due to unknown protocol");
+        assert(false);
+        delete[] reqResponse;
+        return RET_ERROR(SCE_HTTP_ERROR_BAD_RESPONSE);
+    }
+
+    req->second.res.responseRaw = reqResponse;
+    req->second.res.body = reqResponse + reqResponseHeadersOnly.length() + 2;
 
     return 0;
 }
