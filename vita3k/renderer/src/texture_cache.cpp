@@ -94,6 +94,7 @@ bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt, bool 
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8
@@ -289,6 +290,29 @@ static void convert_x8u24_to_f32(void *dest, const void *data, const uint32_t wi
             const uint32_t src_value = src[col];
             const uint32_t d24 = (src_value >> shift_amount) & ((1U << 24) - 1);
             *dst++ = static_cast<float>(d24) / ((1U << 24) - 1);
+        }
+
+        src += row_length_in_pixels;
+    }
+}
+
+static void convert_U8U3U3U2_to_U8U8U8U8(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels) {
+    auto dst = static_cast<uint32_t *>(dest);
+    auto src = static_cast<const uint16_t *>(data);
+
+    for (uint32_t row = 0; row < height; ++row) {
+        for (uint32_t col = 0; col < width; ++col) {
+            const uint32_t src_value = src[col];
+
+            const uint8_t alpha = (src_value & 0xFF00) >> 8;
+            const uint8_t red = (src_value & 0x00E0) >> 5;
+            const uint8_t green = (src_value & 0x001C) >> 2;
+            const uint8_t blue = (src_value & 0x0003);
+
+            const uint32_t value = (alpha << 24) | (blue << 22) | (blue << 20) | (blue << 18) | (blue << 16) | (green << 13) | (green << 10) | ((green & 0b110) << 7) | (red << 5) | (red << 2) | (red >> 1);
+
+            *dst = value;
+            dst++;
         }
 
         src += row_length_in_pixels;
@@ -559,6 +583,14 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
         case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
+            break;
+        case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
+            // Convert U8U3U3U2 to U8U8U8U8
+            texture_data_decompressed.resize(width * height * 4);
+            convert_U8U3U3U2_to_U8U8U8U8(texture_data_decompressed.data(), pixels, width, height, pixels_per_stride);
+            pixels = texture_data_decompressed.data();
+            upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
+            bpp = 32;
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
             // this format is supported on all GPUs with vulkan

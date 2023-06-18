@@ -391,8 +391,7 @@ GLenum translate_type(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
         return GL_UNSIGNED_SHORT_4_4_4_4_REV;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
-        LOG_WARN("Unhandled base format SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2");
-        return GL_UNSIGNED_SHORT_4_4_4_4_REV;
+        return GL_UNSIGNED_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
         return GL_UNSIGNED_SHORT_1_5_5_5_REV;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U5U6U5:
@@ -411,7 +410,7 @@ GLenum translate_type(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16:
         return GL_HALF_FLOAT;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8:
-        return GL_UNSIGNED_INT_8_8_8_8_REV;
+        return GL_UNSIGNED_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8S8:
         return GL_BYTE;
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
