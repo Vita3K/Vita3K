@@ -108,10 +108,13 @@ struct VisibilityBuffer {
     std::vector<bool> queries_used; // the queries that were used in the current scene
 };
 
-// request to trigger a notification after the fence has been waited for
+struct FenceWaitRequest {
+    vk::Fence fence;
+};
+
+// request to trigger a notification after the previous fences have been waited for
 struct NotificationRequest {
     SceGxmNotification notifications[2];
-    vk::Fence fence;
 };
 
 struct FrameDoneRequest {
@@ -125,7 +128,7 @@ struct PostSurfaceSyncRequest {
 // A parallel thread is handling these request and telling other waiting threads
 // when they are done
 // only used if memory mapping is enabled
-typedef std::variant<NotificationRequest, FrameDoneRequest, PostSurfaceSyncRequest> WaitThreadRequest;
+typedef std::variant<FenceWaitRequest, NotificationRequest, FrameDoneRequest, PostSurfaceSyncRequest> WaitThreadRequest;
 
 struct VKContext : public renderer::Context {
     // GXM Context Info

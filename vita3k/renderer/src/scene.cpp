@@ -94,9 +94,16 @@ COMMAND(handle_sync_surface_data) {
 
     const SceGxmNotification vertex_notification = helper.pop<SceGxmNotification>();
     const SceGxmNotification fragment_notification = helper.pop<SceGxmNotification>();
+    // with memory mapping, notifications are signaled another way
+    // also don't try to signal if there are no notifications
+    bool were_notifications_signaled = renderer.features.support_memory_mapping
+        || (!vertex_notification.address && !fragment_notification.address);
 
-    if ((vertex_notification.address || fragment_notification.address)
-        && !renderer.features.support_memory_mapping) {
+    auto signal_notifications = [&]() {
+        if (were_notifications_signaled)
+            return;
+
+        were_notifications_signaled = true;
         // signal the notification now
         std::unique_lock<std::mutex> lock(renderer.notification_mutex);
 
@@ -108,7 +115,11 @@ COMMAND(handle_sync_surface_data) {
         // unlocking before a notify should be faster
         lock.unlock();
         renderer.notification_ready.notify_all();
-    }
+    };
+
+    if (renderer.disable_surface_sync)
+        // do it as soon as possible
+        signal_notifications();
 
     if (renderer.current_backend == Backend::Vulkan) {
         // TODO: put this in a function
@@ -121,14 +132,17 @@ COMMAND(handle_sync_surface_data) {
     if (helper.cmd->status) {
         surface = helper.pop<SceGxmColorSurface *>();
         if (!surface) {
+            signal_notifications();
             complete_command(renderer, helper, 1);
             return;
         }
     }
 
     if (renderer.disable_surface_sync || renderer.current_backend == Backend::Vulkan) {
-        if (helper.cmd->status)
+        if (helper.cmd->status) {
             complete_command(renderer, helper, 0);
+        }
+        signal_notifications();
         return;
     }
 
@@ -186,6 +200,8 @@ COMMAND(handle_sync_surface_data) {
     if (helper.cmd->status) {
         complete_command(renderer, helper, 0);
     }
+
+    signal_notifications();
 }
 
 COMMAND(handle_draw) {
