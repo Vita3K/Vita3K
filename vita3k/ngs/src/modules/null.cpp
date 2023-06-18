@@ -15,17 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules/null.h>
+#include <ngs/modules.h>
 
-namespace ngs::null {
-Module::Module()
-    : ngs::Module(ngs::BussType::BUSS_MASTER) {}
+namespace ngs {
+NullModule::NullModule()
+    : Module(BussType::BUSS_MASTER) {}
 
-std::size_t Module::get_buffer_parameter_size() const {
-    return 0;
-}
-
-bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+bool NullModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     return false;
 }
-} // namespace ngs::null
+} // namespace ngs

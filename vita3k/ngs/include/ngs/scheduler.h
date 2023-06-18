@@ -31,8 +31,9 @@
 struct MemState;
 struct KernelState;
 
+struct SceNgsPatchSetupInfo;
+
 namespace ngs {
-struct PatchSetupInfo;
 struct Voice;
 struct Patch;
 struct Rack;
@@ -85,6 +86,6 @@ public:
 
     void update(KernelState &kern, const MemState &mem, const SceUID thread_id);
 
-    Ptr<Patch> patch(const MemState &mem, PatchSetupInfo *info);
+    Ptr<Patch> patch(const MemState &mem, SceNgsPatchSetupInfo *info);
 };
 } // namespace ngs

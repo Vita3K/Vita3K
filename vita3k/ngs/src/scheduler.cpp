@@ -69,11 +69,11 @@ void VoiceScheduler::deque_insert(const MemState &mem, Voice *voice) {
 }
 
 bool VoiceScheduler::play(const MemState &mem, Voice *voice) {
-    if (voice->state != ngs::VOICE_STATE_AVAILABLE)
+    if (voice->state != VOICE_STATE_AVAILABLE)
         return false;
 
     // Transition
-    voice->transition(ngs::VOICE_STATE_ACTIVE);
+    voice->transition(VOICE_STATE_ACTIVE);
 
     // Should Enqueue
     if (!voice->is_paused)
@@ -87,7 +87,7 @@ bool VoiceScheduler::pause(Voice *voice) {
         voice->is_paused = true;
 
         // Remove from the list
-        if (voice->state == ngs::VOICE_STATE_ACTIVE || voice->state == ngs::VOICE_STATE_FINALIZING)
+        if (voice->state == VOICE_STATE_ACTIVE || voice->state == VOICE_STATE_FINALIZING)
             deque_voice(voice);
         return true;
     }
@@ -102,17 +102,17 @@ bool VoiceScheduler::resume(const MemState &mem, Voice *voice) {
 
     voice->is_paused = false;
 
-    if (voice->state == ngs::VOICE_STATE_ACTIVE || voice->state == ngs::VOICE_STATE_FINALIZING)
+    if (voice->state == VOICE_STATE_ACTIVE || voice->state == VOICE_STATE_FINALIZING)
         deque_insert(mem, voice);
 
     return true;
 }
 
 bool VoiceScheduler::stop(Voice *voice) {
-    if (voice->state != ngs::VOICE_STATE_ACTIVE && voice->state != ngs::VOICE_STATE_FINALIZING)
+    if (voice->state != VOICE_STATE_ACTIVE && voice->state != VOICE_STATE_FINALIZING)
         return false;
 
-    voice->transition(ngs::VOICE_STATE_AVAILABLE);
+    voice->transition(VOICE_STATE_AVAILABLE);
     if (!voice->is_paused)
         deque_voice(voice);
 
@@ -120,10 +120,10 @@ bool VoiceScheduler::stop(Voice *voice) {
 }
 
 bool VoiceScheduler::off(Voice *voice) {
-    if (voice->state != ngs::VOICE_STATE_ACTIVE)
+    if (voice->state != VOICE_STATE_ACTIVE)
         return false;
 
-    voice->transition(ngs::VOICE_STATE_FINALIZING);
+    voice->transition(VOICE_STATE_FINALIZING);
 
     return true;
 }
@@ -143,7 +143,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
     for (ngs::Voice *voice : queue_copy) {
         // Modify the state, in peace....
         std::unique_lock<std::mutex> voice_lock(*voice->voice_mutex);
-        std::memset(voice->products, 0, sizeof(voice->products));
+        memset(voice->products, 0, sizeof(voice->products));
 
         bool finished = false;
         uint32_t finished_module = 0;
@@ -158,7 +158,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         }
         if (finished) {
             voice->is_keyed_off = true;
-            voice->transition(VoiceState::VOICE_STATE_FINALIZING);
+            voice->transition(VOICE_STATE_FINALIZING);
             if (voice->finished_callback) {
                 voice_lock.unlock();
                 scheduler_lock.unlock();
@@ -224,7 +224,7 @@ bool VoiceScheduler::resort_to_respect_dependencies(const MemState &mem, Voice *
             }
 
             Voice *dest = patch.get(mem)->dest;
-            const std::int32_t dest_pos = get_position(dest);
+            const int32_t dest_pos = get_position(dest);
 
             if (position == -1) {
                 // Maybe not scheduled yet. Continue
@@ -247,7 +247,7 @@ bool VoiceScheduler::resort_to_respect_dependencies(const MemState &mem, Voice *
     return true;
 }
 
-Ptr<Patch> VoiceScheduler::patch(const MemState &mem, PatchSetupInfo *info) {
+Ptr<Patch> VoiceScheduler::patch(const MemState &mem, SceNgsPatchSetupInfo *info) {
     // First, check if these two voices are scheduled yet
     Voice *source = info->source.get(mem);
     Voice *dest = info->dest.get(mem);
@@ -258,8 +258,8 @@ Ptr<Patch> VoiceScheduler::patch(const MemState &mem, PatchSetupInfo *info) {
         return patch;
     }
 
-    const std::int32_t source_pos = get_position(source);
-    const std::int32_t dest_pos = get_position(dest);
+    const int32_t source_pos = get_position(source);
+    const int32_t dest_pos = get_position(dest);
 
     if (source_pos == -1 || dest_pos == -1) {
         // Later

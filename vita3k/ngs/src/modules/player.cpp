@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules/player.h>
+#include <ngs/modules.h>
 #include <util/log.h>
 
 extern "C" {
@@ -25,16 +25,16 @@ extern "C" {
 #include <cassert>
 #include <cstring>
 
-namespace ngs::player {
-Module::Module()
-    : ngs::Module(ngs::BussType::BUSS_NORMAL_PLAYER) {}
+namespace ngs {
+PlayerModule::PlayerModule()
+    : Module(BussType::BUSS_NORMAL_PLAYER) {}
 
-std::size_t Module::get_buffer_parameter_size() const {
-    return sizeof(Parameters);
+uint32_t PlayerModule::get_buffer_parameter_size() const {
+    return sizeof(SceNgsPlayerParams);
 }
 
-void Module::on_state_change(ModuleData &data, const VoiceState previous) {
-    State *state = data.get_state<State>();
+void PlayerModule::on_state_change(ModuleData &data, const VoiceState previous) {
+    SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
     if (data.parent->state == VOICE_STATE_AVAILABLE) {
         state->current_byte_position_in_buffer = 0;
         state->current_loop_count = 0;
@@ -44,29 +44,29 @@ void Module::on_state_change(ModuleData &data, const VoiceState previous) {
         state->bytes_consumed_since_key_on = 0;
 
         ADPCMHistory hist_empty{};
-        std::fill_n(state->adpcm_history, MAX_PCM_CHANNELS, hist_empty);
+        std::fill_n(state->adpcm_history, SCE_NGS_PLAYER_MAX_PCM_CHANNELS, hist_empty);
 
         state->reset_swr = true;
     }
 }
 
-void Module::on_param_change(const MemState &mem, ModuleData &data) {
-    State *state = data.get_state<State>();
-    const Parameters *old_params = reinterpret_cast<Parameters *>(data.last_info.data());
-    const Parameters *new_params = reinterpret_cast<Parameters *>(data.info.data.get(mem));
+void PlayerModule::on_param_change(const MemState &mem, ModuleData &data) {
+    SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
+    const SceNgsPlayerParams *old_params = reinterpret_cast<SceNgsPlayerParams *>(data.last_info.data());
+    const SceNgsPlayerParams *new_params = reinterpret_cast<SceNgsPlayerParams *>(data.info.data.get(mem));
 
     // if playback scaling changed, reset the resampler
     if (old_params->playback_frequency != new_params->playback_frequency || old_params->playback_scalar != new_params->playback_scalar) {
         ADPCMHistory hist_empty{};
-        std::fill_n(state->adpcm_history, MAX_PCM_CHANNELS, hist_empty);
+        std::fill_n(state->adpcm_history, SCE_NGS_PLAYER_MAX_PCM_CHANNELS, hist_empty);
 
         state->reset_swr = true;
     }
 }
 
-bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
-    Parameters *params = data.get_parameters<Parameters>(mem);
-    State *state = data.get_state<State>();
+bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+    SceNgsPlayerParams *params = data.get_parameters<SceNgsPlayerParams>(mem);
+    SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
     bool finished = false;
 
     const int32_t sample_rate = data.parent->rack->system->sample_rate;
@@ -83,7 +83,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
     }
 
     // If the amount of samples already processed and pending to be passed is smaller than the amount of samples of the audio buffer
-    if (static_cast<std::int32_t>(state->decoded_samples_pending) < granularity) {
+    if (static_cast<int>(state->decoded_samples_pending) < granularity) {
         // Memory cleaning check
         if (!data.extra_storage.empty()) {
             // Delete data from previous processing if memory isn't empty
@@ -93,7 +93,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         // Reset the passed samples count to 0
         state->decoded_samples_passed = 0;
 
-        while (static_cast<std::int32_t>(state->decoded_samples_pending) < granularity) {
+        while (static_cast<int>(state->decoded_samples_pending) < granularity) {
             // Ran out of data, supply new
             // Decode new data and deliver them
             // Let's open our context
@@ -109,7 +109,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                     bool has_data = false;
                     SceInt32 buffer_test = state->current_buffer;
 
-                    for (int i = 0; buffer_test != -1 && i < MAX_BUFFER_PARAMS; i++) {
+                    for (int i = 0; buffer_test != -1 && i < SCE_NGS_PLAYER_MAX_BUFFERS; i++) {
                         if (params->buffer_params[buffer_test].bytes_count != 0) {
                             has_data = true;
                             break;
@@ -124,7 +124,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                     }
                 }
 
-                const std::int32_t prev_index = state->current_buffer;
+                const int32_t prev_index = state->current_buffer;
 
                 // Enable looping over the buffer if needed
                 if (params->buffer_params[state->current_buffer].loop_count != -1) {
@@ -260,7 +260,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                     assert(scaled_samples_amount > 0);
 
                     // Get current size of audio queue for processed samples in memory
-                    const std::size_t current_count = state->decoded_samples_pending * sizeof(float) * 2;
+                    const uint32_t current_count = state->decoded_samples_pending * sizeof(float) * 2;
 
                     // Allocate memory to accommodate the result of the scaling process into the queue for the final audio buffer
                     data.extra_storage.resize(current_count + scaled_samples_amount * sizeof(float) * 2);
@@ -270,7 +270,7 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
 
                 } else {
                     // Get current size of audio buffer for processed samples in memory
-                    const std::size_t current_count = state->decoded_samples_pending * sizeof(float) * 2;
+                    const uint32_t current_count = state->decoded_samples_pending * sizeof(float) * 2;
 
                     // Increase the size the audio buffer for processed samples to accommodate the new about-to-be-received samples
                     data.extra_storage.resize(current_count + samples_count.samples * sizeof(float) * 2);
@@ -280,8 +280,8 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
                 }
             }
 
-            std::uint32_t bytes_left_in_buffer = data.extra_storage.size();
-            std::uint32_t samples_to_take_per_channel = bytes_left_in_buffer / sizeof(float) / 2;
+            uint32_t bytes_left_in_buffer = data.extra_storage.size();
+            uint32_t samples_to_take_per_channel = bytes_left_in_buffer / sizeof(float) / 2;
 
             state->decoded_samples_pending = samples_to_take_per_channel;
         }
@@ -308,11 +308,11 @@ bool Module::process(KernelState &kern, const MemState &mem, const SceUID thread
         state->bytes_consumed_since_key_on = 0;
 
         ADPCMHistory hist_empty{};
-        std::fill_n(state->adpcm_history, MAX_PCM_CHANNELS, hist_empty);
+        std::fill_n(state->adpcm_history, SCE_NGS_PLAYER_MAX_PCM_CHANNELS, hist_empty);
 
         state->reset_swr = true;
     }
 
     return finished;
 }
-} // namespace ngs::player
+} // namespace ngs

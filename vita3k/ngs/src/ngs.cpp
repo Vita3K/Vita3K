@@ -17,16 +17,8 @@
 
 #include <kernel/state.h>
 
-#include <ngs/definitions/atrac9.h>
-#include <ngs/definitions/master.h>
-#include <ngs/definitions/passthrough.h>
-#include <ngs/definitions/player.h>
-#include <ngs/definitions/scream.h>
-#include <ngs/definitions/simple.h>
-#include <ngs/modules/atrac9.h>
-#include <ngs/modules/master.h>
-#include <ngs/modules/passthrough.h>
-#include <ngs/modules/player.h>
+#include <ngs/definitions.h>
+#include <ngs/modules.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/lock_and_find.h>
@@ -98,7 +90,7 @@ ModuleData::ModuleData()
     , flags(0) {
 }
 
-BufferParamsInfo *ModuleData::lock_params(const MemState &mem) {
+SceNgsBufferInfo *ModuleData::lock_params(const MemState &mem) {
     const std::lock_guard<std::mutex> guard(*parent->voice_mutex);
 
     // Save a copy of previous set of data
@@ -256,7 +248,7 @@ void Voice::transition(const VoiceState new_state) {
     }
 }
 
-bool Voice::parse_params(const MemState &mem, const ModuleParameterHeader *header) {
+bool Voice::parse_params(const MemState &mem, const SceNgsModuleParamHeader *header) {
     ModuleData *storage = module_storage(header->module_id);
 
     if (!storage)
@@ -265,7 +257,7 @@ bool Voice::parse_params(const MemState &mem, const ModuleParameterHeader *heade
     if (storage->flags & ModuleData::PARAMS_LOCK)
         return false;
 
-    const auto *descr = reinterpret_cast<const ParametersDescriptor *>(header + 1);
+    const auto *descr = reinterpret_cast<const SceNgsParamsDescriptor *>(header + 1);
     if (descr->size > storage->info.size)
         return false;
 
@@ -274,7 +266,7 @@ bool Voice::parse_params(const MemState &mem, const ModuleParameterHeader *heade
     return true;
 }
 
-SceInt32 Voice::parse_params_block(const MemState &mem, const ModuleParameterHeader *header, const SceUInt32 size) {
+SceInt32 Voice::parse_params_block(const MemState &mem, const SceNgsModuleParamHeader *header, const SceUInt32 size) {
     const SceUInt8 *data = reinterpret_cast<const SceUInt8 *>(header);
     const SceUInt8 *data_end = reinterpret_cast<const SceUInt8 *>(data + size);
 
@@ -286,21 +278,21 @@ SceInt32 Voice::parse_params_block(const MemState &mem, const ModuleParameterHea
             num_error++;
 
         // increment by the size of the header alone + the descriptor size
-        data += sizeof(ModuleParameterHeader) + reinterpret_cast<const ParametersDescriptor *>(header + 1)->size;
+        data += sizeof(SceNgsModuleParamHeader) + reinterpret_cast<const SceNgsParamsDescriptor *>(header + 1)->size;
 
         // set new header for next module
-        header = reinterpret_cast<const ngs::ModuleParameterHeader *>(data);
+        header = reinterpret_cast<const SceNgsModuleParamHeader *>(data);
     }
 
     return num_error;
 }
 
-bool Voice::set_preset(const MemState &mem, const VoicePreset *preset) {
+bool Voice::set_preset(const MemState &mem, const SceNgsVoicePreset *preset) {
     // we ignore the name for now
     const uint8_t *data_origin = reinterpret_cast<const uint8_t *>(preset);
 
     if (preset->preset_data_offset) {
-        const auto *preset_data = reinterpret_cast<const ModuleParameterHeader *>(data_origin + preset->preset_data_offset);
+        const auto *preset_data = reinterpret_cast<const SceNgsModuleParamHeader *>(data_origin + preset->preset_data_offset);
         auto nb_errors = parse_params_block(mem, preset_data, preset->preset_data_size);
         if (nb_errors > 0)
             return false;
@@ -329,9 +321,9 @@ void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceU
     }
 
     const ThreadStatePtr thread = lock_and_find(thread_id, kernel.threads, kernel.mutex);
-    const Address callback_info_addr = stack_alloc(*thread->cpu, sizeof(CallbackInfo));
+    const Address callback_info_addr = stack_alloc(*thread->cpu, sizeof(SceNgsCallbackInfo));
 
-    CallbackInfo *info = Ptr<CallbackInfo>(callback_info_addr).get(mem);
+    SceNgsCallbackInfo *info = Ptr<SceNgsCallbackInfo>(callback_info_addr).get(mem);
     info->rack_handle = Ptr<void>(rack, mem);
     info->voice_handle = Ptr<void>(this, mem);
     info->module_id = module_id;
@@ -341,14 +333,14 @@ void Voice::invoke_callback(KernelState &kernel, const MemState &mem, const SceU
     info->userdata = user_data;
 
     thread->run_callback(callback.address(), { callback_info_addr });
-    stack_free(*thread->cpu, sizeof(CallbackInfo));
+    stack_free(*thread->cpu, sizeof(SceNgsCallbackInfo));
 }
 
-std::uint32_t System::get_required_memspace_size(SystemInitParameters *parameters) {
+std::uint32_t System::get_required_memspace_size(SceNgsSystemInitParams *parameters) {
     return sizeof(System);
 }
 
-std::uint32_t Rack::get_required_memspace_size(MemState &mem, RackDescription *description) {
+std::uint32_t Rack::get_required_memspace_size(MemState &mem, SceNgsRackDescription *description) {
     uint32_t buffer_size = 0;
     if (description->definition)
         buffer_size = static_cast<std::uint32_t>(description->definition.get(mem)->get_total_buffer_parameter_size() * description->voice_count);
@@ -357,23 +349,23 @@ std::uint32_t Rack::get_required_memspace_size(MemState &mem, RackDescription *d
 }
 
 bool init(State &ngs, MemState &mem) {
-    static constexpr std::uint32_t SIZE_OF_VOICE_DEFS = sizeof(ngs::atrac9::VoiceDefinition) * 50;
-    static constexpr std::uint32_t SIZE_OF_GLOBAL_MEMSPACE = SIZE_OF_VOICE_DEFS;
+    constexpr uint32_t voice_defs_size = sizeof(VoiceDefinition) * 18;
+    constexpr uint32_t ngs_memspace_size = voice_defs_size;
 
     // Alloc the space for voice definition
-    ngs.memspace = alloc(mem, SIZE_OF_GLOBAL_MEMSPACE, "NGS voice definitions");
+    ngs.memspace = alloc(mem, ngs_memspace_size, "NGS voice definitions");
 
     if (!ngs.memspace) {
         LOG_ERROR("Can't alloc global memspace for NGS!");
         return false;
     }
 
-    ngs.allocator.init(SIZE_OF_GLOBAL_MEMSPACE);
+    ngs.allocator.init(ngs_memspace_size);
 
     return true;
 }
 
-bool init_system(State &ngs, const MemState &mem, SystemInitParameters *parameters, Ptr<void> memspace, const std::uint32_t memspace_size) {
+bool init_system(State &ngs, const MemState &mem, SceNgsSystemInitParams *parameters, Ptr<void> memspace, const uint32_t memspace_size) {
     // Reserve first memory allocation for our System struct
     System *sys = memspace.cast<System>().get(mem);
     sys = new (sys) System(memspace, memspace_size);
@@ -407,7 +399,7 @@ void release_system(State &ngs, const MemState &mem, System *system) {
     system->~System();
 }
 
-bool init_rack(State &ngs, const MemState &mem, System *system, BufferParamsInfo *init_info, const RackDescription *description) {
+bool init_rack(State &ngs, const MemState &mem, System *system, SceNgsBufferInfo *init_info, const SceNgsRackDescription *description) {
     Rack *rack = init_info->data.cast<Rack>().get(mem);
     rack = new (rack) Rack(system, init_info->data, init_info->size);
 
@@ -484,23 +476,23 @@ void release_rack(State &ngs, const MemState &mem, System *system, Rack *rack) {
 
 Ptr<VoiceDefinition> create_voice_definition(State &ngs, MemState &mem, ngs::BussType type) {
     switch (type) {
-    case ngs::BussType::BUSS_ATRAC9:
-        return ngs.alloc_and_init<ngs::atrac9::VoiceDefinition>(mem);
-    case ngs::BussType::BUSS_NORMAL_PLAYER:
-        return ngs.alloc_and_init<ngs::player::VoiceDefinition>(mem);
-    case ngs::BussType::BUSS_MASTER:
-        return ngs.alloc_and_init<ngs::master::VoiceDefinition>(mem);
-    case ngs::BussType::BUSS_SIMPLE_ATRAC9:
-        return ngs.alloc_and_init<ngs::simple::Atrac9VoiceDefinition>(mem);
-    case ngs::BussType::BUSS_SIMPLE:
-        return ngs.alloc_and_init<ngs::simple::PlayerVoiceDefinition>(mem);
-    case ngs::BussType::BUSS_SCREAM_ATRAC9:
-        return ngs.alloc_and_init<ngs::scream::Atrac9VoiceDefinition>(mem);
-    case ngs::BussType::BUSS_SCREAM:
-        return ngs.alloc_and_init<ngs::scream::PlayerVoiceDefinition>(mem);
+    case BussType::BUSS_ATRAC9:
+        return ngs.alloc_and_init<Atrac9VoiceDefinition>(mem);
+    case BussType::BUSS_NORMAL_PLAYER:
+        return ngs.alloc_and_init<PlayerVoiceDefinition>(mem);
+    case BussType::BUSS_MASTER:
+        return ngs.alloc_and_init<MasterVoiceDefinition>(mem);
+    case BussType::BUSS_SIMPLE_ATRAC9:
+        return ngs.alloc_and_init<SimpleAtrac9VoiceDefinition>(mem);
+    case BussType::BUSS_SIMPLE:
+        return ngs.alloc_and_init<SimplePlayerVoiceDefinition>(mem);
+    case BussType::BUSS_SCREAM_ATRAC9:
+        return ngs.alloc_and_init<ScreamAtrac9VoiceDefinition>(mem);
+    case BussType::BUSS_SCREAM:
+        return ngs.alloc_and_init<ScreamPlayerVoiceDefinition>(mem);
     default:
         LOG_WARN("Missing voice definition for Buss Type {}, using passthrough.", static_cast<uint32_t>(type));
-        return ngs.alloc_and_init<ngs::passthrough::VoiceDefinition>(mem);
+        return ngs.alloc_and_init<PassthroughVoiceDefinition>(mem);
     }
 }
 
