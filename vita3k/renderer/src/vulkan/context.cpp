@@ -52,9 +52,10 @@ void VKContext::wait_thread_function(const MemState &mem) {
             break;
 
         std::visit(overloaded{
-                       [&](NotificationRequest &request) {
+                       [&](FenceWaitRequest &request) {
                            fences.push_back(request.fence);
-
+                       },
+                       [&](NotificationRequest &request) {
                            if (request.notifications[0].address || request.notifications[1].address) {
                                wait_for_fences();
 
@@ -420,15 +421,17 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
 
     if (state.features.support_memory_mapping) {
         // send it to the wait queue
-        NotificationRequest request = {
-            .notifications = { notif1, notif2 },
-            .fence = fence
-        };
-        request_queue.push(request);
+        request_queue.push(FenceWaitRequest{ fence });
 
         if (surface_info) {
             request_queue.push(PostSurfaceSyncRequest{ surface_info });
         }
+
+        // the notification must be the last thing sent
+        NotificationRequest request = {
+            .notifications = { notif1, notif2 },
+        };
+        request_queue.push(request);
     }
 }
 
