@@ -16,9 +16,6 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include "SceHttp.h"
-#include <algorithm>
-#include <cctype>
-#include <cstdlib>
 
 #ifdef WIN32 // windows moment
 #include <io.h>
@@ -955,14 +952,8 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     LOG_DEBUG("Sending {} request to {}", net_utils::int_method_to_char(req->second.method), req->second.url);
 
     // TODO: Also support file scheme, doesn't really require any connections, not sure how it handles headers and such
-
     if (req->second.method == SCE_HTTP_METHOD_TRACE || req->second.method == SCE_HTTP_METHOD_CONNECT) {
-        if (req->second.method < 0 || req->second.method >= SCE_HTTP_METHOD_INVALID) { // Outside any known method
-            LOG_ERROR("Invalid method {}", req->second.method);
-            return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_METHOD);
-        } else { // its a known method but its not implemented
-            LOG_WARN("Unimplemented method {}, report to devs", req->second.method);
-        }
+        LOG_WARN("Unimplemented method {}, report to devs", req->second.method);
         return 0;
     }
 
@@ -971,6 +962,38 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         CONNECT
      */
     int bytes, sent, received, total;
+
+    if (req->second.method == SCE_HTTP_METHOD_POST || req->second.method == SCE_HTTP_METHOD_PUT) {
+        if (req->second.headers.find("Content-Length") != req->second.headers.end()) {
+            // There is a content length header, probably by the game, use it
+            auto contHeader = req->second.headers.find("Content-Length");
+            SceSize contLen = std::stoi(contHeader->second);
+
+            // Its ok to have the content length be less or equal than size,
+            // but not the other way around. It would be sending undefined data leading to undefined behavior
+            if (contLen > size)
+                LOG_WARN("POST/PUT request Header: ContentLength > size.");
+
+            // Set size to contLen to not send extra stuff the server will ignore
+            size = contLen;
+        } else {
+            // No Content-Length header
+
+            // if size and predefined aren't equal, we will use predefined
+            if (req->second.contentLength != size) {
+                LOG_WARN("POST/PUT request Header: predefined != size.");
+                size = req->second.contentLength;
+            }
+
+            auto contLen = std::to_string(size);
+            auto ret = CALL_EXPORT(sceHttpAddRequestHeader, reqId, "Content-Length", contLen.c_str(), SCE_HTTP_HEADER_ADD);
+            if (ret < 0) {
+                LOG_WARN("huh?");
+                assert(false);
+            }
+        }
+    }
+
     auto headers = net_utils::constructHeaders(req->second.headers);
 
     req->second.message = req->second.requestLine + "\r\n" + headers + "\r\n";
@@ -1104,19 +1127,11 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     }
     // Now reqReponseHeaders is headers ONLY
     net_utils::parseResponse(reqResponseHeadersOnly, req->second.res);
-    bool hasContLen = false;
-    int contLenVal = 0;
-    for (auto &header : req->second.res.headers) {
-        const std::string key = header.first;
-        const std::string upperKey = string_utils::toupper(key);
-        if (upperKey == "CONTENT-LENGTH") {
-            hasContLen = true;
-            contLenVal = std::stoi(header.second);
-            break;
-        }
-    }
 
-    if (!hasContLen) {
+    int contLenVal = 0;
+    if (req->second.res.headers.find("content-length") != req->second.headers.end()) {
+        contLenVal = std::stoi(req->second.res.headers.find("content-length")->second);
+    } else {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
     }
@@ -1125,9 +1140,11 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     attempts = 1; // Reset attempts
     // This is the entire response, including headers and everything
     const int responseLength = (headerEndPos + strlen("\r\n\r\n")) + contLenVal;
-    auto reqResponse = (uint8_t *)realloc(resHeaders, responseLength);
+
+    auto reqResponse = new uint8_t[responseLength]();
+    memcpy(reqResponse, resHeaders, emuenv.http.defaultResponseHeaderSize);
+
     // init the rest of the new block to 0.
-    memset(reqResponse + emuenv.http.defaultResponseHeaderSize, 0, responseLength - emuenv.http.defaultResponseHeaderSize);
     int remainingToRead = responseLength - totalReceived;
 
     LOG_CRITICAL("start reading rest of body");

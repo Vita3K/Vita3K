@@ -33,7 +33,7 @@ struct parsedUrl {
 SceHttpErrorCode parse_url(std::string url, parsedUrl &out);
 const char *int_method_to_char(const int n);
 int char_method_to_int(const char *srcUrl);
-std::string constructHeaders(std::map<std::string, std::string> &headers);
+std::string constructHeaders(std::map<std::string, std::string, CaseInsensitiveComparator> &headers);
 
 void parseResponse(std::string response, SceRequestResponse &reqres);
 

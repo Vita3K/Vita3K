@@ -516,7 +516,7 @@ const char *int_method_to_char(const int n) {
     }
 }
 
-std::string constructHeaders(std::map<std::string, std::string> &headers) {
+std::string constructHeaders(std::map<std::string, std::string, CaseInsensitiveComparator> &headers) {
     std::string headersString;
     for (auto head : headers) {
         headersString.append(head.first);
