@@ -339,7 +339,8 @@ EXPORT(SceInt, sceHttpCreateConnection, SceInt tmplId, const char *hostname, con
     if (!scheme)
         return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_SCHEME);
 
-    if (strcmp(scheme, "http") != 0 || strcmp(scheme, "https") != 0) {
+    const std::string schemeStr = std::string(scheme);
+    if (schemeStr != "http" && schemeStr != "https") {
         LOG_WARN("SCHEME IS: {}", scheme);
         return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_SCHEME);
     }
@@ -799,21 +800,31 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
     if (!statusLine)
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
+
+    if (httpMajorVer == 0 || httpMinorVer == 0 || responseCode == 0 || reasonPhrase == 0 || phraseLen == 0)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+
+    *httpMajorVer = 0;
+    *httpMinorVer = 0;
+
+    if (lineLen < 8)
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
     STUBBED("Ignore lineLen");
 
     // TODO: test
-
     auto line = std::string(statusLine);
-
     auto cleanLine = line.substr(0, line.find("\r\n"));
     // even if there is no \r\n, the result will still be the whole string
 
-    auto httpString = cleanLine.substr(0, cleanLine.find(' '));
-    auto version = httpString.substr(httpString.find('/') + 1);
-    auto majorVer = version.substr(0, 1);
-    *httpMajorVer = std::stoi(majorVer);
+    std::string version;
+    int code;
+    std::string reason;
+    if (!net_utils::parseStatusLine(cleanLine, version, code, reason))
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
+
+    *httpMajorVer = std::stoi(version.substr(0, version.find(".")));
     if (version.find('.') != std::string::npos) {
         auto minorVer = version.substr(version.find('.') + 1);
         *httpMinorVer = std::stoi(minorVer);
@@ -822,11 +833,7 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
     }
 
     auto statusCodeLine = cleanLine.substr(cleanLine.find(' ') + 1, 3);
-    *responseCode = std::stoi(statusCodeLine);
-
-    auto codeAndPhrase = cleanLine.substr(cleanLine.find(' ') + 1); // 200 OK
-
-    auto reason = codeAndPhrase.substr(codeAndPhrase.find(' ') + 1); // OK
+    *responseCode = code;
 
     auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "reasonPhrase"));
     memcpy(h.get(emuenv.mem), reason.data(), reason.length() + 1);

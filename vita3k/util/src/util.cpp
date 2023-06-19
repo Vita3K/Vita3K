@@ -528,10 +528,49 @@ std::string constructHeaders(std::map<std::string, std::string, CaseInsensitiveC
     return headersString;
 }
 
+bool parseStatusLine(std::string line, std::string &httpVer, int &statusCode, std::string &reason) {
+    auto lineClean = line.substr(0, line.find("\r\n"));
+
+    // do this check just in case the server is drunk or retarded, would be nice to do more checks with some regex
+    if (!lineClean.starts_with("HTTP/"))
+        return false; // what
+
+    const auto firstSpace = lineClean.find(" ");
+    if (firstSpace == std::string::npos)
+        return false;
+
+    const std::string fullHttpVerStr = lineClean.substr(0, firstSpace);
+    const std::string httpVerStr = fullHttpVerStr.substr(strlen("HTTP/"));
+
+    if (!std::isdigit(httpVerStr[0]))
+        return false;
+
+    if (lineClean.length() < fullHttpVerStr.length() + strlen(" XXX"))
+        return false; // the rest of the line is less than 3 characters in length, what the fuck happened also abort
+
+    const auto codeAndReason = lineClean.substr(firstSpace + 1);
+    const auto statusCodeStr = codeAndReason.substr(0, 3);
+    if (!std::isdigit(statusCodeStr[0]) || !std::isdigit(statusCodeStr[1]) || !std::isdigit(statusCodeStr[2]))
+        return false; // status code contains non digit characters, abort
+
+    const int statusCodeInt = std::stoi(statusCodeStr);
+
+    std::string reasonStr = "";
+    bool hasReason = codeAndReason.find(" ") != std::string::npos;
+    if (hasReason) // standard says that reasons CAN be empty, we have to take this edge case into account
+        reasonStr = codeAndReason.substr(4);
+
+    httpVer = httpVerStr;
+    statusCode = statusCodeInt;
+    reason = reasonStr;
+
+    return true;
+}
+
 /*
     CANNOT have ANYTHING after the last \r\n or \r\n\r\n else it will be treated as a header
 */
-bool parseHeaders(std::string &headersRaw, std::map<std::string, std::string, CaseInsensitiveComparator>& headersOut) {
+bool parseHeaders(std::string &headersRaw, std::map<std::string, std::string, CaseInsensitiveComparator> &headersOut) {
     char *ptr;
     ptr = strtok(headersRaw.data(), "\r\n");
     // use while loop to check ptr is not null
@@ -557,17 +596,10 @@ bool parseHeaders(std::string &headersRaw, std::map<std::string, std::string, Ca
 
 bool parseResponse(std::string res, SceRequestResponse &reqres) {
     auto statusLine = res.substr(0, res.find("\r\n"));
+    if (!parseStatusLine(statusLine, reqres.httpVer, reqres.statusCode, reqres.reasonPhrase))
+        return false;
 
-    // do this check just in case the server is drunk or retarded, would be nice to do more checks with some regex
-    if (!statusLine.starts_with("HTTP/"))
-        return false; // what
-
-    reqres.httpVer = statusLine.substr(0, 8);
-    SceInt statusCode = std::stoi(statusLine.substr(9, 3));
-    reqres.statusCode = statusCode;
-    reqres.reasonPhrase = statusLine.substr(13);
-
-    auto headersRaw = res.substr(res.find("\r\n") + strlen("\r\n"));
+    auto headersRaw = res.substr(res.find("\r\n") + strlen("\r\n"), res.find("\r\n\r\n"));
 
     if (!parseHeaders(headersRaw, reqres.headers))
         return false;
