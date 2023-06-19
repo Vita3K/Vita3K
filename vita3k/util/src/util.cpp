@@ -529,7 +529,7 @@ std::string constructHeaders(std::map<std::string, std::string, CaseInsensitiveC
 }
 
 /*
-    CANNOT have ANYTHING after the last \r\n or \r\n\r\n
+    CANNOT have ANYTHING after the last \r\n or \r\n\r\n else it will be treated as a header
 */
 bool parseHeaders(std::string &headersRaw, std::map<std::string, std::string, CaseInsensitiveComparator>& headersOut) {
     char *ptr;

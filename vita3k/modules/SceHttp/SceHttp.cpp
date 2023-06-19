@@ -1081,8 +1081,6 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         totalReceived += bytes;
     } while (std::string(resHeaders).find("\r\n\r\n") == std::string::npos || totalReceived == resHeadersMaxSize); // receive headers until we start receiving body
 
-    LOG_CRITICAL("finished reading headers");
-
     if (totalReceived != resHeadersMaxSize && std::string(resHeaders).find("\r\n\r\n") == std::string::npos) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_TIMEOUT);
@@ -1111,6 +1109,8 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
     }
 
+    LOG_TRACE("Request replied with status code {}", req->second.res.statusCode);
+
     // Now we get the body or the rest of the body
     attempts = 1; // Reset attempts
     // This is the entire response, including headers and everything
@@ -1122,7 +1122,6 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     int remainingToRead = responseLength - totalReceived;
 
-    LOG_CRITICAL("start reading rest of body");
     do {
         if (remainingToRead == 0) // We already have body from the headers read from before, we can skin this entire block
             break; // WHY IS THIS NEEDED??? I THOUGHT THE WHILE CONDITION EXECUTED BEFORE THE ACTUAL CODE UUUOOOOOHHHHHH
@@ -1160,8 +1159,6 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         totalReceived += bytes;
         remainingToRead -= bytes;
     } while (remainingToRead != 0);
-
-    LOG_CRITICAL("Finished reading body");
 
     if (!net_utils::socketSetBlocking(conn->second.sockfd, true)) {
         LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, true);
