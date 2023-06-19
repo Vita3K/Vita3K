@@ -315,7 +315,7 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
             int sslErr = SSL_get_error((SSL *)tmpl->second.ssl, err);
             LOG_ERROR("SSL_connect(...) = {}, SSLERR = {}", err, sslErr);
             if (sslErr == SSL_ERROR_SSL)
-                return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN);
+                return RET_ERROR(SCE_HTTP_ERROR_SSL);
         }
 
         long verify_flag = SSL_get_verify_result((SSL *)tmpl->second.ssl);
@@ -1101,10 +1101,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         }
     }
 
-    int contLenVal = 0;
-    if (req->second.res.headers.find("content-length") != req->second.headers.end()) {
-        contLenVal = std::stoi(req->second.res.headers.find("content-length")->second);
-    } else {
+    if (req->second.res.headers.find("content-length") == req->second.headers.end()) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
     }
@@ -1114,7 +1111,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     // Now we get the body or the rest of the body
     attempts = 1; // Reset attempts
     // This is the entire response, including headers and everything
-    const int responseLength = (std::string(resHeaders).find("\r\n\r\n") + strlen("\r\n\r\n")) + contLenVal;
+    const int responseLength = (std::string(resHeaders).find("\r\n\r\n") + strlen("\r\n\r\n")) + req->second.res.contentLength;
 
     auto reqResponse = new uint8_t[responseLength]();
     memcpy(reqResponse, resHeaders, emuenv.http.defaultResponseHeaderSize);
@@ -1180,6 +1177,8 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     req->second.res.responseRaw = reqResponse;
     req->second.res.body = reqResponse + std::string((char *)reqResponse).find("\r\n\r\n") + strlen("\r\n\r\n");
+
+    LOG_TRACE("Request finished nicely");
 
     return 0;
 }
