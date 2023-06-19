@@ -528,44 +528,61 @@ std::string constructHeaders(std::map<std::string, std::string, CaseInsensitiveC
     return headersString;
 }
 
-void parseResponse(std::string res, SceRequestResponse &reqres) {
+/*
+    CANNOT have ANYTHING after the last \r\n or \r\n\r\n
+*/
+bool parseHeaders(std::string &headersRaw, std::map<std::string, std::string, CaseInsensitiveComparator>& headersOut) {
+    char *ptr;
+    ptr = strtok(headersRaw.data(), "\r\n");
+    // use while loop to check ptr is not null
+    while (ptr != NULL) {
+        auto line = std::string(ptr);
+
+        if (line.find(':') == std::string::npos)
+            return false; // separator is missing, the header is invalid
+
+        auto name = line.substr(0, line.find(':'));
+        int valueStart = name.length() + 1;
+        if (line.find(": "))
+            // Theres a space between semicolon and value, trim it
+            valueStart++;
+
+        auto value = line.substr(valueStart);
+
+        headersOut.insert({ name, value });
+        ptr = strtok(NULL, "\r\n");
+    }
+    return true;
+}
+
+bool parseResponse(std::string res, SceRequestResponse &reqres) {
     auto statusLine = res.substr(0, res.find("\r\n"));
+
+    // do this check just in case the server is drunk or retarded, would be nice to do more checks with some regex
+    if (!statusLine.starts_with("HTTP/"))
+        return false; // what
 
     reqres.httpVer = statusLine.substr(0, 8);
     SceInt statusCode = std::stoi(statusLine.substr(9, 3));
     reqres.statusCode = statusCode;
     reqres.reasonPhrase = statusLine.substr(13);
 
-    auto headersRaw = res.substr(res.find("\r\n") + 2);
-    char *ptr;
-    ptr = strtok(headersRaw.data(), "\r\n");
-    // use while loop to check ptr is not null
-    while (ptr != NULL) {
-        auto line = std::string(ptr);
-        auto name = line.substr(0, line.find(':'));
-        auto value = line.substr(line.find(' ') + 1);
+    auto headersRaw = res.substr(res.find("\r\n") + strlen("\r\n"));
 
-        reqres.headers.insert({ name, value });
-        ptr = strtok(NULL, "\r\n");
-    }
+    if (!parseHeaders(headersRaw, reqres.headers))
+        return false;
 
     bool hasContLen = false;
     int contLenVal = 0;
-    for (auto &header : reqres.headers) {
-        const std::string key = header.first;
-        const std::string upperKey = string_utils::toupper(key);
-        if (upperKey == "CONTENT-LENGTH") {
-            hasContLen = true;
-            contLenVal = std::stoi(header.second);
-            break;
-        }
-    }
-    if (!hasContLen) {
+
+    auto contLenIt = reqres.headers.find("Content-Length");
+    if (contLenIt == reqres.headers.end()) {
         reqres.contentLength = 0;
-        return;
+    } else {
+        reqres.contentLength = std::stoi(contLenIt->second);
     }
 
-    reqres.contentLength = contLenVal;
+    return true;
 }
 
 bool socketSetBlocking(int sockfd, bool blocking) {

@@ -773,33 +773,22 @@ EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize head
     *valueLen = 0; // reset to 0 to check after
 
     std::string headerStr = std::string(headers.get(emuenv.mem));
-    char *ptr;
-    ptr = strtok(headerStr.data(), "\r\n");
-    // use while loop to check ptr is not null
-    while (ptr != NULL) {
-        auto line = std::string(ptr);
-        auto name = line.substr(0, line.find(':'));
-        auto value = line.substr(line.find(' ') + 1);
+    std::map<std::string, std::string, CaseInsensitiveComparator> parsedHeaders;
+    if (!net_utils::parseHeaders(headerStr, parsedHeaders))
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
-        if (strcmp(name.c_str(), fieldStr) == 0) { // found header
+    auto foundIt = parsedHeaders.find(fieldStr);
 
-            // is alloc name ok?
-            auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "fieldValue")); // Allocate on guest mem
-            memcpy(h.get(emuenv.mem), value.data(), value.length() + 1); // Put header data on guest mem
-            emuenv.http.guestPointers.push_back(h); // Save the pointer to free it later
-            *fieldValue = h; // make header point to the guest address where headers are located
-
-            *valueLen = value.length() + 1;
-            break;
-        }
-
-        ptr = strtok(NULL, "\r\n");
-    }
-
-    if (*valueLen == 0) {
-        LOG_TRACE("Asked Header doesn't exists");
+    if (foundIt == parsedHeaders.end())
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
-    }
+
+    // is alloc name ok?
+    auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "fieldValue")); // Allocate on guest mem
+    memcpy(h.get(emuenv.mem), foundIt->second.data(), foundIt->second.length() + 1); // Put header data on guest mem
+    emuenv.http.guestPointers.push_back(h); // Save the pointer to free it later
+    *fieldValue = h; // make header point to the guest address where headers are located
+
+    *valueLen = foundIt->second.length() + 1;
 
     return 0;
 }
@@ -1105,28 +1094,14 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         return RET_ERROR(SCE_HTTP_ERROR_TOO_LARGE_RESPONSE_HEADER);
     }
 
-    // we need to separate the body and the headers
-    std::string reqResponseHeadersOnly;
-    std::string reqResponseStr = std::string(resHeaders);
-    auto headerEndPos = reqResponseStr.find("\r\n\r\n");
     {
-        char *ptr;
-        ptr = strtok(reqResponseStr.data(), "\r\n");
-        // use while loop to check ptr is not null
-        while (ptr != nullptr) {
-            reqResponseHeadersOnly.append(ptr);
-            reqResponseHeadersOnly.append("\r\n");
-
-            auto headerLen = reqResponseHeadersOnly.length();
-            // -2 because its the length of the remaining \r\n on the last header
-            if (headerLen - 2 == headerEndPos)
-                break;
-
-            ptr = strtok(NULL, "\r\n");
-        };
+        const auto resHeadersStr = std::string(resHeaders);
+        const auto resHeadersOnly = resHeadersStr.substr(0, resHeadersStr.find("\r\n\r\n"));
+        if (!net_utils::parseResponse(resHeadersOnly, req->second.res)) {
+            delete[] resHeaders;
+            return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
+        }
     }
-    // Now reqReponseHeaders is headers ONLY
-    net_utils::parseResponse(reqResponseHeadersOnly, req->second.res);
 
     int contLenVal = 0;
     if (req->second.res.headers.find("content-length") != req->second.headers.end()) {
@@ -1139,7 +1114,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     // Now we get the body or the rest of the body
     attempts = 1; // Reset attempts
     // This is the entire response, including headers and everything
-    const int responseLength = (headerEndPos + strlen("\r\n\r\n")) + contLenVal;
+    const int responseLength = (std::string(resHeaders).find("\r\n\r\n") + strlen("\r\n\r\n")) + contLenVal;
 
     auto reqResponse = new uint8_t[responseLength]();
     memcpy(reqResponse, resHeaders, emuenv.http.defaultResponseHeaderSize);
@@ -1149,6 +1124,8 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     LOG_CRITICAL("start reading rest of body");
     do {
+        if (remainingToRead == 0)
+            break; // WHY IS THIS NEEDED??? I THOUGHT THE WHILE CONDITION EXECUTED BEFORE THE ACTUAL CODE UUUOOOOOHHHHHH
         if (conn->second.isSecure)
             bytes = SSL_read((SSL *)tmpl->second.ssl, reqResponse + totalReceived, remainingToRead);
         else
@@ -1186,15 +1163,15 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     LOG_CRITICAL("Finished reading body");
 
+    if (!net_utils::socketSetBlocking(conn->second.sockfd, true)) {
+        LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, true);
+        assert(false);
+    }
+
     if (remainingToRead != 0) {
         LOG_WARN("Could not read entire body length");
         delete[] reqResponse;
         return RET_ERROR(SCE_HTTP_ERROR_TIMEOUT);
-    }
-
-    if (!net_utils::socketSetBlocking(conn->second.sockfd, true)) {
-        LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, true);
-        assert(false);
     }
 
     if (*reqResponse == 0) {
@@ -1205,7 +1182,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     }
 
     req->second.res.responseRaw = reqResponse;
-    req->second.res.body = reqResponse + reqResponseHeadersOnly.length() + 2;
+    req->second.res.body = reqResponse + std::string((char *)reqResponse).find("\r\n\r\n") + strlen("\r\n\r\n");
 
     return 0;
 }

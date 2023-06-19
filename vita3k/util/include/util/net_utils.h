@@ -34,8 +34,8 @@ SceHttpErrorCode parse_url(std::string url, parsedUrl &out);
 const char *int_method_to_char(const int n);
 int char_method_to_int(const char *srcUrl);
 std::string constructHeaders(std::map<std::string, std::string, CaseInsensitiveComparator> &headers);
-
-void parseResponse(std::string response, SceRequestResponse &reqres);
+bool parseHeaders(std::string &headersRaw, std::map<std::string, std::string, CaseInsensitiveComparator> &headersOut);
+bool parseResponse(std::string response, SceRequestResponse &reqres);
 
 bool socketSetBlocking(int sockfd, bool blocking);
 
