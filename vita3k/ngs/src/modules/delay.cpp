@@ -15,24 +15,21 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules.h>
+#include <ngs/modules/delay.h>
 #include <util/log.h>
 
 namespace ngs {
-PassthroughModule::PassthroughModule()
-    : Module(BussType::BUSS_REVERB) {}
 
-uint32_t PassthroughModule::get_buffer_parameter_size() const {
-    return default_passthrough_parameter_size;
-}
-
-bool PassthroughModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
-    if (data.parent->inputs.inputs.empty()) {
-        return false;
+bool DelayModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+    if (!data.is_bypassed) {
+        const SceNgsParamsDescriptor *desc = data.get_parameters<SceNgsParamsDescriptor>(mem);
+        if (desc->id == SCE_NGS_DELAY_PARAMS_STRUCT_ID) {
+            static bool has_happened = false;
+            LOG_WARN_IF(!has_happened, "Game is using unimplemented delay audio module");
+            has_happened = true;
+        }
     }
 
-    assert(data.parent->inputs.inputs.size() == 1);
-    data.parent->products[0].data = data.parent->inputs.inputs[0].data();
     return false;
 }
-} // namespace ngs::passthrough
+} // namespace ngs

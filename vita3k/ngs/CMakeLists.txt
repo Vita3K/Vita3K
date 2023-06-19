@@ -2,11 +2,19 @@ add_library(
 	ngs
 	STATIC
 	src/modules/atrac9.cpp
+	src/modules/compressor.cpp
+	src/modules/delay.cpp
+	src/modules/distortion.cpp
+	src/modules/envelope.cpp
 	src/modules/equalizer.cpp
-	src/modules/master.cpp
-	src/modules/null.cpp
+	src/modules/filter.cpp
+	src/modules/generator.cpp
+	src/modules/mixer.cpp
+	src/modules/output.cpp
+	src/modules/pauser.cpp
+	src/modules/pitchshift.cpp
 	src/modules/player.cpp
-	src/modules/passthrough.cpp
+	src/modules/reverb.cpp
 	src/definitions.cpp
 	src/ngs.cpp
 	src/route.cpp

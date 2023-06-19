@@ -1,4 +1,3 @@
-// Vita3K emulator project
 // Copyright (C) 2023 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -15,31 +14,32 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/system.h>
+#pragma once
 
-#include <codec/state.h>
-#include <util/log.h>
+#include <ngs/system.h>
+#include <ngs/types.h>
+
+#define SCE_NGS_PAUSER_PARAMS_STRUCT_ID 0x01015CE5
+
+struct SceNgsPauserParams {
+    SceNgsParamsDescriptor desc;
+    SceUInt32 uPauseLeadIn;
+    SceUInt32 uPauseLeadOut;
+};
 
 namespace ngs {
-bool deliver_data(const MemState &mem, Voice *source, const uint8_t output_port,
-    const VoiceProduct &data_to_deliver) {
-    if (!data_to_deliver.data) {
-        return false;
+
+class PauserModule : public Module {
+public:
+    bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) override;
+    uint32_t module_id() const override { return 0x5CE5; }
+
+    static constexpr uint32_t get_max_parameter_size() {
+        return sizeof(SceNgsPauserParams);
     }
-
-    for (size_t i = 0; i < source->patches[output_port].size(); i++) {
-        Patch *patch = source->patches[output_port][i].get(mem);
-
-        if (!patch || patch->output_sub_index == -1) {
-            continue;
-        }
-
-        {
-            const std::lock_guard<std::mutex> guard(*patch->dest->voice_mutex);
-            patch->dest->inputs.receive(patch, data_to_deliver);
-        }
+    uint32_t get_buffer_parameter_size() const override {
+        return get_max_parameter_size();
     }
+};
 
-    return true;
-}
 } // namespace ngs

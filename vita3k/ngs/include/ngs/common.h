@@ -21,7 +21,7 @@
 #include <vector>
 
 namespace ngs {
-enum class BussType {
+enum class BussType : uint32_t {
     BUSS_MASTER = 0,
     BUSS_COMPRESSOR = 1,
     BUSS_SIDE_CHAIN_COMPRESSOR = 2,
@@ -39,7 +39,8 @@ enum class BussType {
     BUSS_SIMPLE_ATRAC9 = 14,
     BUSS_SCREAM = 15,
     BUSS_SCREAM_ATRAC9 = 16,
-    BUSS_NORMAL_PLAYER = 17
+    BUSS_NORMAL_PLAYER = 17,
+    BUSS_MAX = 18
 };
 
 static constexpr std::uint32_t MAX_OUTPUT_PORT = 4;

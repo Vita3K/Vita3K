@@ -31,8 +31,8 @@ namespace ngs {
 struct VoiceDefinition;
 struct System;
 
-struct State : public MempoolObject {
-    std::map<BussType, Ptr<VoiceDefinition>> definitions;
+struct State {
+    Ptr<VoiceDefinition> definitions;
     std::vector<System *> systems;
 };
 

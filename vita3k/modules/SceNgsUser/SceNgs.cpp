@@ -15,15 +15,13 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules.h>
+#include <modules/module_parent.h>
 #include <ngs/state.h>
 #include <ngs/system.h>
 #include <util/log.h>
 #include <util/tracy.h>
 
 #include "SceNgs.h"
-
-#define SCE_NGS_MAX_SYSTEM_CHANNELS 2
 
 TRACY_MODULE_NAME(SceNgs);
 
@@ -590,7 +588,7 @@ EXPORT(SceInt32, sceNgsVoiceGetInfo, ngs::Voice *voice, SceNgsVoiceInfo *info) {
     info->voice_state = ngsVoiceStateFromHLEState(voice);
     info->num_modules = static_cast<SceUInt32>(voice->datas.size());
     info->num_inputs = static_cast<SceUInt32>(voice->inputs.inputs.size());
-    info->num_outputs = voice->rack->vdef->output_count();
+    info->num_outputs = voice->rack->vdef->output_count;
     info->num_patches_per_output = static_cast<SceUInt32>(voice->rack->patches_per_output);
     info->update_passed = voice->frame_count;
 
@@ -637,7 +635,7 @@ EXPORT(SceInt32, sceNgsVoiceGetOutputPatch, ngs::Voice *voice, const SceInt32 ou
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
-    if ((output_index >= static_cast<SceInt32>(voice->rack->vdef->output_count())) || (output_subindex >= voice->rack->patches_per_output)) {
+    if ((output_index >= static_cast<SceInt32>(voice->rack->vdef->output_count)) || (output_subindex >= voice->rack->patches_per_output)) {
         return RET_ERROR(SCE_NGS_ERROR_INVALID_ARG);
     }
 
@@ -756,8 +754,8 @@ EXPORT(int, sceNgsVoiceKill, ngs::Voice *voice) {
     return 0;
 }
 
-EXPORT(SceUInt32, sceNgsVoiceLockParams, ngs::Voice *voice, SceUInt32 module, SceUInt32 unk2, SceNgsBufferInfo *buf) {
-    TRACY_FUNC(sceNgsVoiceLockParams, voice, module, unk2, buf);
+EXPORT(SceUInt32, sceNgsVoiceLockParams, ngs::Voice *voice, SceUInt32 module, SceUInt32 param_interface_id, SceNgsBufferInfo *buf) {
+    TRACY_FUNC(sceNgsVoiceLockParams, voice, module, param_interface_id, buf);
     if (!emuenv.cfg.current_config.ngs_enable) {
         *buf = {
             Ptr<void>(alloc(emuenv.mem, 10, "SceNgs buffer stub")), 10
@@ -779,6 +777,8 @@ EXPORT(SceUInt32, sceNgsVoiceLockParams, ngs::Voice *voice, SceUInt32 module, Sc
     if (!info) {
         return RET_ERROR(SCE_NGS_ERROR);
     }
+
+    info->data.cast<SceNgsParamsDescriptor>().get(emuenv.mem)->id = param_interface_id;
 
     *buf = *info;
     return SCE_NGS_OK;

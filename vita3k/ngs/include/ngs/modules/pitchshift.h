@@ -1,4 +1,3 @@
-// Vita3K emulator project
 // Copyright (C) 2023 Vita3K team
 //
 // This program is free software; you can redistribute it and/or modify
@@ -15,13 +14,31 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules.h>
+#pragma once
+
+#include <ngs/system.h>
+#include <ngs/types.h>
+
+#define SCE_NGS_PITCHSHIFT_PARAMS_STRUCT_ID 0x01015CEA
+
+struct SceNgsPitchShiftParams {
+    SceNgsParamsDescriptor desc;
+    SceFloat32 fPitchOffsetInCents;
+};
 
 namespace ngs {
-NullModule::NullModule()
-    : Module(BussType::BUSS_MASTER) {}
 
-bool NullModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
-    return false;
-}
+class PitchShiftModule : public Module {
+public:
+    bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) override;
+    uint32_t module_id() const override { return 0x5CEA; }
+
+    static constexpr uint32_t get_max_parameter_size() {
+        return sizeof(SceNgsPitchShiftParams);
+    }
+    uint32_t get_buffer_parameter_size() const override {
+        return get_max_parameter_size();
+    }
+};
+
 } // namespace ngs

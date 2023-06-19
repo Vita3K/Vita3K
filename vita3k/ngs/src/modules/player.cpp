@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules.h>
+#include <ngs/modules/player.h>
 #include <util/log.h>
 
 extern "C" {
@@ -26,12 +26,6 @@ extern "C" {
 #include <cstring>
 
 namespace ngs {
-PlayerModule::PlayerModule()
-    : Module(BussType::BUSS_NORMAL_PLAYER) {}
-
-uint32_t PlayerModule::get_buffer_parameter_size() const {
-    return sizeof(SceNgsPlayerParams);
-}
 
 void PlayerModule::on_state_change(ModuleData &data, const VoiceState previous) {
     SceNgsPlayerStates *state = data.get_state<SceNgsPlayerStates>();
@@ -226,7 +220,7 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                     LOG_PLAYBACK_SCALING = false;
 
                     // Received decoded samples from decoder
-                    std::vector<std::uint8_t> decoded_data(samples_count.samples * sizeof(float) * 2, 0);
+                    std::vector<uint8_t> decoded_data(samples_count.samples * sizeof(float) * 2, 0);
 
                     // Receive the samples processed by the decoder
                     decoder->receive(decoded_data.data(), nullptr);
@@ -252,7 +246,7 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
                         state->reset_swr = false;
                     }
                     int scaled_samples_amount = swr_get_out_samples(state->swr, samples_count.samples);
-                    std::vector<std::uint8_t> scaled_data(scaled_samples_amount * sizeof(float) * 2, 0);
+                    std::vector<uint8_t> scaled_data(scaled_samples_amount * sizeof(float) * 2, 0);
 
                     uint8_t *scaled_dest_data = scaled_data.data();
                     const uint8_t *scaled_src_data = decoded_data.data();
@@ -287,13 +281,13 @@ bool PlayerModule::process(KernelState &kern, const MemState &mem, const SceUID 
         }
     }
 
-    std::uint32_t samples_to_be_passed = std::min<std::uint32_t>(state->decoded_samples_pending, granularity);
+    uint32_t samples_to_be_passed = std::min<uint32_t>(state->decoded_samples_pending, granularity);
 
     auto const new_size = 2 * sizeof(float) * (state->decoded_samples_passed + granularity);
     if (data.extra_storage.size() < new_size) {
         data.extra_storage.resize(new_size);
     }
-    std::uint8_t *data_ptr = data.extra_storage.data();
+    uint8_t *data_ptr = data.extra_storage.data();
     data_ptr += 2 * sizeof(float) * state->decoded_samples_passed;
 
     data.parent->products[0].data = data_ptr;
