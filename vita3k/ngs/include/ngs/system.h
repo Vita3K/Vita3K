@@ -110,11 +110,8 @@ struct ModuleData {
     bool unlock_params(const MemState &mem);
 };
 
-struct Module {
-    BussType buss_type;
-
-    explicit Module(BussType buss_type)
-        : buss_type(buss_type) {}
+class Module {
+public:
     virtual ~Module() = default;
 
     virtual bool process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) = 0;
@@ -124,12 +121,11 @@ struct Module {
     virtual void on_param_change(const MemState &mem, ModuleData &data) {}
 };
 
-static constexpr uint32_t MAX_VOICE_OUTPUT = 8;
+static constexpr uint32_t MAX_VOICE_OUTPUT = 4;
 
 struct VoiceDefinition {
-    virtual void new_modules(std::vector<std::unique_ptr<Module>> &mods) = 0;
-    virtual uint32_t get_total_buffer_parameter_size() const = 0;
-    virtual uint32_t output_count() const = 0;
+    BussType type;
+    uint32_t output_count;
 };
 
 struct VoiceProduct {
@@ -227,5 +223,10 @@ void release_system(State &ngs, const MemState &mem, System *system);
 bool init_rack(State &ngs, const MemState &mem, System *system, SceNgsBufferInfo *init_info, const SceNgsRackDescription *description);
 void release_rack(State &ngs, const MemState &mem, System *system, Rack *rack);
 
+void voice_definition_init(State &ngs, MemState &mem);
 Ptr<VoiceDefinition> get_voice_definition(State &ngs, MemState &mem, ngs::BussType type);
+void apply_voice_definition(VoiceDefinition *definition, std::vector<std::unique_ptr<ngs::Module>> &mods);
+uint32_t get_voice_definition_size(VoiceDefinition *definition);
+
+void atrac9_get_buffer_parameter(uint32_t start_sample, uint32_t num_samples, uint32_t info, SceNgsAT9SkipBufferInfo &parameter);
 } // namespace ngs

@@ -15,7 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules.h>
+#include <ngs/modules/atrac9.h>
 #include <util/bytes.h>
 #include <util/log.h>
 
@@ -27,10 +27,6 @@ namespace ngs {
 
 SwrContext *Atrac9Module::swr_mono_to_stereo = nullptr;
 SwrContext *Atrac9Module::swr_stereo = nullptr;
-
-Atrac9Module::Atrac9Module()
-    : Module(BussType::BUSS_ATRAC9)
-    , last_config(0) {}
 
 void atrac9_get_buffer_parameter(const uint32_t start_sample, const uint32_t num_samples, const uint32_t info, SceNgsAT9SkipBufferInfo &parameter) {
     const uint8_t sample_rate_index = ((info & (0b1111 << 12)) >> 12);
@@ -58,10 +54,6 @@ void atrac9_get_buffer_parameter(const uint32_t start_sample, const uint32_t num
     parameter.start_byte_offset = start_superframe * bytes_per_superframe;
     parameter.start_skip = (start_sample - (start_superframe * samples_per_superframe));
     parameter.end_skip = (start_superframe + num_superframe) * samples_per_superframe - (start_sample + num_samples);
-}
-
-uint32_t Atrac9Module::get_buffer_parameter_size() const {
-    return sizeof(SceNgsAT9Params);
 }
 
 void Atrac9Module::on_state_change(ModuleData &data, const VoiceState previous) {
@@ -97,7 +89,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
     }
 
     if (state->current_byte_position_in_buffer >= bufparam.bytes_count) {
-        const std::int32_t prev_index = state->current_buffer;
+        const int32_t prev_index = state->current_buffer;
 
         voice_lock.unlock();
         scheduler_lock.unlock();
@@ -170,7 +162,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         input = temp_buffer.data();
     }
 
-    std::size_t curr_pos = state->decoded_samples_pending * sizeof(float) * 2;
+    size_t curr_pos = state->decoded_samples_pending * sizeof(float) * 2;
 
     const uint32_t samples_per_frame = decoder->get(DecoderQuery::AT9_SAMPLE_PER_FRAME);
     const uint32_t samples_per_superframe = decoder->get(DecoderQuery::AT9_SAMPLE_PER_SUPERFRAME);
@@ -296,7 +288,7 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         }
         // assume the skipped samples happen before the scaling
         int scaled_samples_amount = swr_get_out_samples(state->swr, decoded_size);
-        std::vector<std::uint8_t> scaled_data(scaled_samples_amount * sizeof(float) * 2, 0);
+        std::vector<uint8_t> scaled_data(scaled_samples_amount * sizeof(float) * 2, 0);
 
         uint8_t *scaled_dest_data = scaled_data.data();
         const uint8_t *scaled_src_data = decoded_superframe_samples.data() + decoded_start_offset * sizeof(float) * 2;
@@ -357,7 +349,7 @@ bool Atrac9Module::process(KernelState &kern, const MemState &mem, const SceUID 
     }
 
     // call decode more data until we either have an error or reached end of data
-    while (static_cast<std::int32_t>(state->decoded_samples_pending) < data.parent->rack->system->granularity) {
+    while (static_cast<int32_t>(state->decoded_samples_pending) < data.parent->rack->system->granularity) {
         if (!decode_more_data(kern, mem, thread_id, data, params, state, scheduler_lock, voice_lock)) {
             state->is_finished = true;
             break;
@@ -367,8 +359,8 @@ bool Atrac9Module::process(KernelState &kern, const MemState &mem, const SceUID 
     // make sure the buffer is big enough
     data.fill_to_fit_granularity();
 
-    std::uint8_t *data_ptr = data.extra_storage.data() + 2 * sizeof(float) * state->decoded_passed;
-    std::uint32_t samples_to_be_passed = data.parent->rack->system->granularity;
+    uint8_t *data_ptr = data.extra_storage.data() + 2 * sizeof(float) * state->decoded_passed;
+    uint32_t samples_to_be_passed = data.parent->rack->system->granularity;
 
     data.parent->products[0].data = data_ptr;
 

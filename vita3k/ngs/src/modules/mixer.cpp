@@ -15,25 +15,26 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules/equalizer.h>
+#include <ngs/modules/mixer.h>
 #include <util/log.h>
 
 namespace ngs {
 
-bool EqualizerModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+bool InputMixerModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+    data.parent->products[0].data = data.parent->inputs.inputs[0].data();
+
+    return false;
+}
+
+bool MixerModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     if (!data.is_bypassed) {
         const SceNgsParamsDescriptor *desc = data.get_parameters<SceNgsParamsDescriptor>(mem);
-        if (desc->id == SCE_NGS_PARAM_EQ_COEFF_STRUCT_ID || desc->id == SCE_NGS_PARAM_EQ_STRUCT_ID) {
+        if (desc->id == SCE_NGS_MIXER_PARAMS_STRUCT_ID) {
             static bool has_happened = false;
-            LOG_WARN_IF(!has_happened, "Game is using unimplemented equalizer audio module");
+            LOG_WARN_IF(!has_happened, "Game is using unimplemented mixer audio module");
             has_happened = true;
         }
     }
-
-    // Definitions with equalizers can have up to 4 outputs
-    data.parent->products[1] = data.parent->products[0];
-    data.parent->products[2] = data.parent->products[0];
-    data.parent->products[3] = data.parent->products[0];
 
     return false;
 }

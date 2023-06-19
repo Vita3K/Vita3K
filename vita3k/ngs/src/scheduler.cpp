@@ -44,23 +44,23 @@ bool VoiceScheduler::deque_voice(Voice *voice) {
 }
 
 void VoiceScheduler::deque_insert(const MemState &mem, Voice *voice) {
-    int32_t lowest_dest_pos = static_cast<std::int32_t>(queue.size());
+    int32_t lowest_dest_pos = static_cast<int32_t>(queue.size());
 
     // Check its dependencies position
-    for (std::size_t i = 0; i < voice->patches.size(); i++) {
+    for (size_t i = 0; i < voice->patches.size(); i++) {
         for (const auto &patch : voice->patches[i]) {
             if (!patch) {
                 continue;
             }
 
             Voice *dest = patch.get(mem)->dest;
-            const std::int32_t pos = get_position(dest);
+            const int32_t pos = get_position(dest);
 
             if (pos == -1) {
                 continue;
             }
 
-            lowest_dest_pos = std::min<std::int32_t>(lowest_dest_pos, pos);
+            lowest_dest_pos = std::min<int32_t>(lowest_dest_pos, pos);
         }
     }
 
@@ -148,7 +148,7 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
         bool finished = false;
         uint32_t finished_module = 0;
 
-        for (std::size_t i = 0; i < voice->rack->modules.size(); i++) {
+        for (size_t i = 0; i < voice->rack->modules.size(); i++) {
             if (voice->rack->modules[i]) {
                 if (voice->rack->modules[i]->process(kern, mem, thread_id, voice->datas[i], scheduler_lock, voice_lock)) {
                     finished = true;
@@ -171,9 +171,9 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
             stop(voice);
         }
 
-        for (std::size_t i = 0; i < voice->rack->vdef->output_count(); i++) {
+        for (size_t i = 0; i < voice->rack->vdef->output_count; i++) {
             if (voice->products[i].data)
-                deliver_data(mem, voice, static_cast<std::uint8_t>(i), voice->products[i]);
+                deliver_data(mem, voice, static_cast<uint8_t>(i), voice->products[i]);
         }
 
         voice->frame_count++;
@@ -197,12 +197,12 @@ void VoiceScheduler::update(KernelState &kern, const MemState &mem, const SceUID
     condvar.notify_all();
 }
 
-std::int32_t VoiceScheduler::get_position(Voice *v) {
+int32_t VoiceScheduler::get_position(Voice *v) {
     const std::lock_guard<std::recursive_mutex> guard(mutex);
     auto result = std::find(queue.begin(), queue.end(), v);
 
     if (result != queue.end()) {
-        return static_cast<std::int32_t>(std::distance(queue.begin(), result));
+        return static_cast<int32_t>(std::distance(queue.begin(), result));
     }
 
     return -1;
@@ -210,7 +210,7 @@ std::int32_t VoiceScheduler::get_position(Voice *v) {
 
 bool VoiceScheduler::resort_to_respect_dependencies(const MemState &mem, Voice *source) {
     // Get my position
-    std::int32_t position = get_position(source);
+    int32_t position = get_position(source);
 
     if (position == -1) {
         return false;

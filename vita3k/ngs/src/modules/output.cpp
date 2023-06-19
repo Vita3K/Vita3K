@@ -15,18 +15,14 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#include <ngs/modules.h>
+#include <ngs/modules/output.h>
 #include <util/log.h>
 
 #include <algorithm>
 #include <fstream>
 
 namespace ngs {
-MasterModule::MasterModule()
-    : Module(BussType::BUSS_MASTER) {
-}
-
-bool MasterModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
+bool OutputModule::process(KernelState &kern, const MemState &mem, const SceUID thread_id, ModuleData &data, std::unique_lock<std::recursive_mutex> &scheduler_lock, std::unique_lock<std::mutex> &voice_lock) {
     // Merge all voices. This buss manually outputs 2 channels
     if (data.voice_state_data.empty()) {
         data.voice_state_data.resize(data.parent->rack->system->granularity * sizeof(std::uint16_t) * 2);
