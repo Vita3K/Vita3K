@@ -824,7 +824,7 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
     if (!net_utils::parseStatusLine(cleanLine, version, code, reason))
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
-    *httpMajorVer = std::stoi(version.substr(0, version.find(".")));
+    *httpMajorVer = std::stoi(version.substr(0, version.find("."))); // we know this wont fail because parseStatusLine returned true :)
     if (version.find('.') != std::string::npos) {
         auto minorVer = version.substr(version.find('.') + 1);
         *httpMinorVer = std::stoi(minorVer);
