@@ -1119,7 +1119,6 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     auto reqResponse = new uint8_t[responseLength]();
     memcpy(reqResponse, resHeaders, emuenv.http.defaultResponseHeaderSize);
 
-    // init the rest of the new block to 0.
     int remainingToRead = responseLength - totalReceived;
 
     LOG_CRITICAL("start reading rest of body");
