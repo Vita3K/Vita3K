@@ -149,6 +149,8 @@ struct SceHttpUriElement {
     SceUChar8 reserved[10];
 };
 
+static_assert(sizeof(SceHttpUriElement) == 44, "SceHttpUriElement has incorrect size");
+
 enum SceHttpAddHeaderMode : SceUInt32 {
     SCE_HTTP_HEADER_OVERWRITE,
     SCE_HTTP_HEADER_ADD
@@ -264,7 +266,7 @@ struct SceRequest {
 struct HTTPState {
     bool inited = false;
     bool sslInited = false;
-    SceSize defaultResponseHeaderSize = SCE_HTTP_DEFAULT_RESPONSE_HEADER_MAX;
+    SceInt defaultResponseHeaderSize = SCE_HTTP_DEFAULT_RESPONSE_HEADER_MAX;
     SceInt next_temp = 0;
     SceInt next_conn = 0;
     SceInt next_req = 0;

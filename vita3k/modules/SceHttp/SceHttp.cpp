@@ -710,6 +710,9 @@ EXPORT(SceInt, sceHttpGetResponseContentLength, SceInt reqId, SceULong64 *conten
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
+    if (!contentLength)
+        return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
+
     if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
@@ -957,7 +960,6 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         TRACE
         CONNECT
      */
-    int bytes, sent, received, total;
 
     if (req->second.method == SCE_HTTP_METHOD_POST || req->second.method == SCE_HTTP_METHOD_PUT) {
         if (req->second.headers.find("Content-Length") != req->second.headers.end()) {
@@ -994,13 +996,14 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     req->second.message = req->second.requestLine + "\r\n" + headers + "\r\n";
 
-    total = req->second.message.length();
-    sent = 0;
+    int msgLength = req->second.message.length();
+    int reqBytesSent = 0;
     do {
+        int bytes = 0;
         if (conn->second.isSecure)
-            bytes = SSL_write((SSL *)tmpl->second.ssl, req->second.message.c_str() + sent, total - sent);
+            bytes = SSL_write((SSL *)tmpl->second.ssl, req->second.message.c_str() + reqBytesSent, msgLength - reqBytesSent);
         else
-            bytes = write(conn->second.sockfd, req->second.message.c_str() + sent, total - sent);
+            bytes = write(conn->second.sockfd, req->second.message.c_str() + reqBytesSent, msgLength - reqBytesSent);
 
         if (bytes < 0) {
             LOG_ERROR("ERROR writing GET message to socket");
@@ -1010,8 +1013,8 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         LOG_TRACE("Sent {} bytes to {}", bytes, req->second.url);
         if (bytes == 0)
             break;
-        sent += bytes;
-    } while (sent < total);
+        reqBytesSent += bytes;
+    } while (reqBytesSent < msgLength);
 
     if (req->second.method == SCE_HTTP_METHOD_POST || req->second.method == SCE_HTTP_METHOD_PUT) {
         //  Once we send the request we need to send the actual data
@@ -1044,13 +1047,12 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     /* receive the response */
     int attempts = 1;
-    total = emuenv.http.defaultResponseHeaderSize - 1;
-    received = 0;
 
     auto resHeaders = new char[emuenv.http.defaultResponseHeaderSize]();
     auto resHeadersMaxSize = emuenv.http.defaultResponseHeaderSize;
     int totalReceived = 0;
     do {
+        int bytes = 0;
         if (conn->second.isSecure)
             bytes = SSL_read((SSL *)tmpl->second.ssl, resHeaders + totalReceived, resHeadersMaxSize - totalReceived);
         else
@@ -1108,6 +1110,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         }
     }
 
+    // TODO: does a HEAD request need content-length to exist?
     if (req->second.res.headers.find("content-length") == req->second.headers.end()) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
@@ -1119,14 +1122,17 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     attempts = 1; // Reset attempts
     // This is the entire response, including headers and everything
     const int responseLength = (std::string(resHeaders).find("\r\n\r\n") + strlen("\r\n\r\n")) + req->second.res.contentLength;
+    if (req->second.method == SCE_HTTP_METHOD_HEAD || req->second.method == SCE_HTTP_METHOD_OPTIONS) // even if we have content-length, there will be no body
+        const int responseLength = (std::string(resHeaders).find("\r\n\r\n") + strlen("\r\n\r\n"));
 
     auto reqResponse = new uint8_t[responseLength]();
-    memcpy(reqResponse, resHeaders, emuenv.http.defaultResponseHeaderSize);
+    memcpy(reqResponse, resHeaders, std::min(emuenv.http.defaultResponseHeaderSize, responseLength));
     delete[] resHeaders;
 
     int remainingToRead = responseLength - totalReceived;
 
     do {
+        int bytes = 0;
         if (remainingToRead == 0) // We already have body from the headers read from before, we can skin this entire block
             break; // WHY IS THIS NEEDED??? I THOUGHT THE WHILE CONDITION EXECUTED BEFORE THE ACTUAL CODE UUUOOOOOHHHHHH
         if (conn->second.isSecure)
@@ -1491,44 +1497,42 @@ EXPORT(SceInt, sceHttpUriSweepPath, char *dst, const char *src, SceSize srcSize)
     // i have NO IDEA what this actually does, this is just my best efforts into translating decompiled code into somewhat readable c++ code, trust me this was way worse.
     // the memcpy functions below were the safe variants, in case theres an error with the output of this functions memcpy_s should be implemented for linux too using a wrapper of memcpy.
     // so if the code below is translated properly, this functions is 100% accurate to what happens in an actual vita AFAIK (hopefully).
-    if (srcSize != 0) {
-        uint srcStrLen = srcSize - 1;
-        if (srcStr[0] == '/') {
-            *dst = '/';
-            dst[1] = 0;
-            uint i = 1;
-            char *iterableDst = dst;
-            if (srcStrLen > 1) {
-                do {
-                    if ((srcStr.substr(i, strlen("../")) == "../")) {
-                        if (iterableDst != dst) {
-                            *iterableDst = 0;
-                            iterableDst = strrchr(dst, L'/');
-                            if (iterableDst != 0)
-                                iterableDst[1] = 0;
-                        }
-                        i += strlen("../");
-                    } else if (srcStr.substr(i, 2) == "./") {
-                        i += strlen("./");
-                    } else {
-                        std::string sStr = srcStr.substr(i);
-                        auto slashPos = sStr.find('/');
-                        size_t remainderStrLen = (srcSize - i) - 1;
-                        size_t len_00 = remainderStrLen;
-                        if ((slashPos != std::string::npos) && (len_00 = slashPos + 1, remainderStrLen < len_00))
-                            len_00 = remainderStrLen;
-                        memcpy(iterableDst + 1, sStr.c_str(), len_00);
-                        iterableDst = iterableDst + len_00;
-                        iterableDst[1] = 0;
-                        i += len_00;
+    unsigned int srcStrLen = srcSize - 1;
+    if (srcStr[0] == '/') {
+        *dst = '/';
+        dst[1] = 0;
+        unsigned int i = 1;
+        char *iterableDst = dst;
+        if (srcStrLen > 1) {
+            do {
+                if ((srcStr.substr(i, strlen("../")) == "../")) {
+                    if (iterableDst != dst) {
+                        *iterableDst = 0;
+                        iterableDst = strrchr(dst, L'/');
+                        if (iterableDst != 0)
+                            iterableDst[1] = 0;
                     }
-                } while (i < srcStrLen);
-            }
-        } else {
-            // Nicely copy the contents of src into dst
-            memcpy(dst, src, srcStrLen);
-            dst[srcSize - 1] = 0;
+                    i += strlen("../");
+                } else if (srcStr.substr(i, 2) == "./") {
+                    i += strlen("./");
+                } else {
+                    std::string sStr = srcStr.substr(i);
+                    auto slashPos = sStr.find('/');
+                    size_t remainderStrLen = (srcSize - i) - 1;
+                    size_t len_00 = remainderStrLen;
+                    if ((slashPos != std::string::npos) && (len_00 = slashPos + 1, remainderStrLen < len_00))
+                        len_00 = remainderStrLen;
+                    memcpy(iterableDst + 1, sStr.c_str(), len_00);
+                    iterableDst = iterableDst + len_00;
+                    iterableDst[1] = 0;
+                    i += len_00;
+                }
+            } while (i < srcStrLen);
         }
+    } else {
+        // Nicely copy the contents of src into dst
+        memcpy(dst, src, srcStrLen);
+        dst[srcSize - 1] = 0;
     }
 
     return 0;
