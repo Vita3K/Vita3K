@@ -218,8 +218,6 @@ void init_user_management(GuiState &gui, EmuEnvState &emuenv) {
         current_user_id_selected = std::stoi(gui.users.begin()->first);
     else
         menu_selected = CREATE;
-
-    gui.is_nav_button = true;
 }
 
 void init_user(GuiState &gui, EmuEnvState &emuenv, const std::string &user_id) {
@@ -299,6 +297,7 @@ static void create_and_save_user(GuiState &gui, EmuEnvState &emuenv) {
     gui.users_avatar[user_id_selected] = std::move(gui.users_avatar["temp"]);
     gui.users[user_id_selected] = temp;
     users_avatar_infos[user_id_selected] = users_avatar_infos["temp"];
+    current_user_id_selected = std::stoi(user_id_selected);
     save_user(gui, emuenv, user_id_selected);
     if (menu == CREATE)
         menu = CONFIRM;
@@ -342,7 +341,7 @@ void browse_users_management(GuiState &gui, EmuEnvState &emuenv, const uint32_t 
     if (!gui.is_nav_button) {
         gui.is_nav_button = true;
 
-        if (menu_selected & SELECT) {
+        if (menu_selected == SELECT) {
             if (gui.users.empty())
                 menu_selected = CREATE;
             else if (users_list_available_index == users_list_available.end())
@@ -458,7 +457,7 @@ void browse_users_management(GuiState &gui, EmuEnvState &emuenv, const uint32_t 
             break;
         case CONFIRM:
             clear_user_temp(gui);
-            menu = SELECT;
+            menu = menu_selected = SELECT;
             break;
         default:
             break;
@@ -504,7 +503,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetCursorPos(ImVec2(54.f * SCALE.x, (32.f * SCALE.y) - calc_title));
     ImGui::TextColored(GUI_COLOR_TEXT, "%s", title.c_str());
 
-    const auto SIZE_USER = ImVec2(WINDOW_SIZE.x, 408.f * SCALE.y);
+    const auto SIZE_USER = ImVec2(WINDOW_SIZE.x, 410.f * SCALE.y);
     const auto POS_SEPARATOR = 66.f * SCALE.y;
     const auto SPACE_AVATAR = MED_AVATAR_SIZE.x + (20.f * SCALE.x);
 
@@ -514,7 +513,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     if (menu == SELECT)
         ImGui::SetNextWindowContentSize(ImVec2(SIZE_USER.x + (!gui.users.empty() ? ((gui.users.size() + 1) * SPACE_AVATAR) : 0.f), 0.0f));
     ImGui::SetNextWindowPos(ImVec2(WINDOW_POS.x, WINDOW_POS.y + (68.f * SCALE.y)), ImGuiCond_Always);
-    auto flags = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+    auto flags = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
     if (gui.is_nav_button)
         flags |= ImGuiWindowFlags_NoMouseInputs;
     ImGui::BeginChild("##user_child", SIZE_USER, false, flags);
@@ -566,13 +565,15 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetWindowFontScale(1.6f);
         draw_user_bg(MEDIUM, CREATE_USER_POS);
         ImGui::SetCursorPos(CREATE_USER_POS);
-        if (ImGui::Selectable("+", gui.is_nav_button && (menu_selected == CREATE), ImGuiSelectableFlags_None, SELECTABLE_USER_SIZE))
-            create_temp_user(gui, emuenv);
-        if (gui.is_nav_button && (menu_selected == CREATE)) {
-            const auto create_user_item_rect_half = ImGui::GetItemRectMax().x - (MED_AVATAR_SIZE.x / 2.f);
-            if (create_user_item_rect_half < HALF_SIZE_USER)
-                ImGui::SetScrollHereX(0.5f);
+        if (ImGui::Selectable("+", gui.is_nav_button && (menu_selected == CREATE), ImGuiSelectableFlags_None, SELECTABLE_USER_SIZE)) {
+            if (menu_selected == CREATE)
+                create_temp_user(gui, emuenv);
+            else
+                menu_selected = CREATE;
         }
+        const auto create_user_item_rect_half = ImGui::GetItemRectMax().x - (MED_AVATAR_SIZE.x / 2.f);
+        if ((menu_selected == CREATE) && (create_user_item_rect_half < HALF_SIZE_USER))
+            ImGui::SetScrollHereX(0.5f);
         ImGui::SetWindowFontScale(0.7f);
         const auto CREATE_USER_SIZE_STR = (MED_AVATAR_SIZE.x / 2.f) - (ImGui::CalcTextSize(lang["create_user"].c_str(), 0, false, TEXT_USER_PADDING).x / 2.f);
         ImGui::PushTextWrapPos(CREATE_USER_POS.x + TEXT_USER_PADDING);
@@ -582,7 +583,9 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + SPACE_AVATAR, AVATAR_POS.y));
         for (const auto &user : gui.users) {
             ImGui::PushID(user.first.c_str());
-            users_list_available.push_back(std::stoi(user.first));
+            const auto user_id = std::stoi(user.first);
+            const auto is_current_user_id_selected = user_id == current_user_id_selected && ((menu_selected == SELECT) || (menu_selected == EDIT));
+            users_list_available.push_back(user_id);
             const auto USER_POS = ImGui::GetCursorPos();
             const auto EDIT_USER_STR_SIZE = ImGui::CalcTextSize(lang["edit_user"].c_str(), 0, false, MED_AVATAR_SIZE.x - (ImGui::GetStyle().FramePadding.x * 2.f));
             const auto EDIT_USER_STR_POS = ImVec2(USER_POS.x + (MED_AVATAR_SIZE.x / 2.f) - (EDIT_USER_STR_SIZE.x / 2.f), USER_POS.y - EDIT_USER_STR_SIZE.y - ImGui::GetStyle().FramePadding.y);
@@ -593,18 +596,26 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             const auto EDIT_USER_POS_SEL = ImVec2(USER_POS.x + ImGui::GetStyle().FramePadding.x, USER_POS.y - EDIT_USER_STR_SIZE.y - ImGui::GetStyle().FramePadding.y);
             ImGui::SetCursorPos(EDIT_USER_POS_SEL);
             if (ImGui::Selectable("##edit_user", gui.is_nav_button && (menu_selected == EDIT) && (current_user_id_selected == std::stoi(user.first)), ImGuiSelectableFlags_None, ImVec2(MED_AVATAR_SIZE.x - (ImGui::GetStyle().FramePadding.x * 2.f), EDIT_USER_STR_SIZE.y))) {
-                user_id_selected = user.first;
-                init_avatar(gui, emuenv, "temp", gui.users[user.first].avatar);
-                temp = gui.users[user.first];
-                menu = EDIT;
+                current_user_id_selected = user_id;
+                menu_selected = EDIT;
+                if (is_current_user_id_selected) {
+                    user_id_selected = user.first;
+                    init_avatar(gui, emuenv, "temp", gui.users[user.first].avatar);
+                    temp = gui.users[user.first];
+                    menu = EDIT;
+                }
             }
             draw_avatar(user.first, MEDIUM, USER_POS);
             ImGui::SetCursorPos(USER_POS);
             ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_TITLE);
-            if (ImGui::Selectable("##avatar", gui.is_nav_button && (menu_selected == SELECT) && (current_user_id_selected == std::stoi(user.first)), ImGuiSelectableFlags_None, SELECTABLE_USER_SIZE))
-                select_and_open_user(gui, emuenv, user.first);
+            if (ImGui::Selectable("##avatar", gui.is_nav_button && (menu_selected == SELECT) && is_current_user_id_selected, ImGuiSelectableFlags_None, SELECTABLE_USER_SIZE)) {
+                current_user_id_selected = user_id;
+                menu_selected = SELECT;
+                if (is_current_user_id_selected)
+                    select_and_open_user(gui, emuenv, user.first);
+            }
             ImGui::PopStyleColor();
-            if (gui.is_nav_button && ((menu_selected == SELECT) || (menu_selected == EDIT)) && (current_user_id_selected == std::stoi(user.first))) {
+            if (((menu_selected == SELECT) || (menu_selected == EDIT)) && (current_user_id_selected == user_id)) {
                 const auto user_item_rect_half = ImGui::GetItemRectMax().x - (MED_AVATAR_SIZE.x / 2.f);
                 if ((user_item_rect_half > HALF_SIZE_USER) || (user_item_rect_half < HALF_SIZE_USER))
                     ImGui::SetScrollHereX(0.5f);
@@ -625,13 +636,15 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             draw_user_bg(MEDIUM, DELETE_USER_POS);
             ImGui::SetCursorPos(DELETE_USER_POS);
             ImGui::SetWindowFontScale(1.6f);
-            if (ImGui::Selectable("-", gui.is_nav_button && (menu_selected == DELETE_USER), ImGuiSelectableFlags_None, SELECTABLE_USER_SIZE))
-                menu = DELETE_USER;
-            if (gui.is_nav_button && (menu_selected == DELETE_USER)) {
-                const auto delete_user_item_rect_half = ImGui::GetItemRectMax().x - (MED_AVATAR_SIZE.x / 2.f);
-                if (delete_user_item_rect_half > HALF_SIZE_USER)
-                    ImGui::SetScrollHereX(0.5f);
+            if (ImGui::Selectable("-", gui.is_nav_button && (menu_selected == DELETE_USER), ImGuiSelectableFlags_None, SELECTABLE_USER_SIZE)) {
+                if (menu_selected == DELETE_USER)
+                    menu = DELETE_USER;
+                else
+                    menu_selected = DELETE_USER;
             }
+            const auto delete_user_item_rect_half = ImGui::GetItemRectMax().x - (MED_AVATAR_SIZE.x / 2.f);
+            if ((menu_selected == DELETE_USER) && (delete_user_item_rect_half > HALF_SIZE_USER))
+                ImGui::SetScrollHereX(0.5f);
             ImGui::PopStyleVar();
             ImGui::SetWindowFontScale(0.7f);
             ImGui::PushTextWrapPos(DELETE_USER_POS.x + TEXT_USER_PADDING);
@@ -704,7 +717,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(BUTTON_POS);
         if (ImGui::Button(common["ok"].c_str(), BUTTON_SIZE)) {
             clear_user_temp(gui);
-            menu = SELECT;
+            menu = menu_selected = SELECT;
         }
         break;
     }
@@ -717,8 +730,12 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             const auto SELECT_SIZE = ImVec2(674.f * SCALE.x, 46.f * SCALE.y);
             ImGui::TextColored(GUI_COLOR_TEXT, "%s", lang["user_delete"].c_str());
             ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, 0.f);
-            ImGui::SetNextWindowPos(ImVec2(WINDOW_SIZE.x / 2.f, (168.f * SCALE.y)), ImGuiCond_Always, ImVec2(0.5f, 0.f));
-            ImGui::BeginChild("##delete_user_child", CHILD_DELETE_USER_SIZE, false, flags);
+            const auto CHILD_DELETE_USER_POS = ImVec2(WINDOW_SIZE.x / 2.f, (168.f * SCALE.y));
+            ImGui::SetNextWindowPos(CHILD_DELETE_USER_POS, ImGuiCond_Always, ImVec2(0.5f, 0.f));
+            auto delete_flags = ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoSavedSettings;
+            if (gui.is_nav_button)
+                delete_flags |= ImGuiWindowFlags_NoMouseInputs;
+            ImGui::BeginChild("##delete_user_child", CHILD_DELETE_USER_SIZE, false, delete_flags);
             ImGui::SetWindowFontScale(RES_SCALE.x);
             ImGui::Columns(2, nullptr, false);
             ImGui::SetColumnWidth(0, SMALL_AVATAR_SIZE.x + (10.f * SCALE.x));
@@ -731,11 +748,9 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
                 if (ImGui::Selectable(user.second.name.c_str(), gui.is_nav_button && (current_user_id_selected == std::stoi(user.first)), ImGuiSelectableFlags_SpanAllColumns, SELECT_SIZE))
                     user_id_selected = user.first;
                 if (gui.is_nav_button && (current_user_id_selected == std::stoi(user.first))) {
-                    const auto delete_item_rect_min = ImGui::GetItemRectMin().y;
-                    const auto delete_item_rect_max = ImGui::GetItemRectMax().y;
-                    if (delete_item_rect_min < ImGui::GetWindowPos().y)
+                    if (ImGui::GetItemRectMin().y < CHILD_DELETE_USER_POS.y)
                         ImGui::SetScrollHereY(0.f);
-                    else if (delete_item_rect_min > SIZE_USER.y)
+                    else if (ImGui::GetItemRectMax().y > (CHILD_DELETE_USER_POS.y + CHILD_DELETE_USER_SIZE.y))
                         ImGui::SetScrollHereY(1.f);
                 }
                 ImGui::Separator();
