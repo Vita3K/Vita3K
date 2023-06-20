@@ -459,6 +459,11 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
         } else if (used_iterator != last_use_color_surface_index.end()) {
             last_use_color_surface_index.erase(used_iterator);
         }
+
+        if (surface_stat_changed && purpose == SurfaceTextureRetrievePurpose::READING) {
+            // The surface was changed, so let the texture cache handle it
+            return nullptr;
+        }
     }
 
     VKContext *context = reinterpret_cast<VKContext *>(state.context);

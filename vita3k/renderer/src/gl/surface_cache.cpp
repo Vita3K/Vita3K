@@ -406,6 +406,11 @@ GLuint GLSurfaceCache::retrieve_color_surface_texture_handle(const State &state,
         } else if (used_iterator != last_use_color_surface_index.end()) {
             last_use_color_surface_index.erase(used_iterator);
         }
+
+        if (surface_stat_changed && purpose == SurfaceTextureRetrievePurpose::READING) {
+            // The surface was changed, so let the texture cache handle it
+            return 0;
+        }
     }
 
     std::unique_ptr<GLColorSurfaceCacheInfo> info_added = std::make_unique<GLColorSurfaceCacheInfo>();
