@@ -1480,55 +1480,56 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<
 
 EXPORT(SceInt, sceHttpUriSweepPath, char *dst, const char *src, SceSize srcSize) {
     TRACY_FUNC(sceHttpUriSweepPath, dst, src, srcSize);
-    if (!emuenv.http.inited)
-        return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
-
-    if (!dst)
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
-
-    if (!src)
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_URL);
-
     if (srcSize == 0)
+        return 0;
+
+    if (!dst || !src)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
-    net_utils::parsedUrl parsed;
-    auto parseRet = net_utils::parse_url(src, parsed);
-    if (parseRet != 0) {
-        switch (parseRet) {
-        case SCE_HTTP_ERROR_UNKNOWN_SCHEME: {
-            LOG_WARN("SCHEME IS: {}", parsed.scheme);
-            return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_SCHEME);
-        }
-        case SCE_HTTP_ERROR_OUT_OF_SIZE: return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_SIZE);
-        default:
-            LOG_WARN("Returning missing case of parse_url {}", (int)parseRet);
-            assert(false);
-            return parseRet;
+    auto srcStr = std::string(src);
+
+    // i have NO IDEA what this actually does, this is just my best efforts into translating decompiled code into somewhat readable c++ code, trust me this was way worse.
+    // the memcpy functions below were the safe variants, in case theres an error with the output of this functions memcpy_s should be implemented for linux too using a wrapper of memcpy.
+    // so if the code below is translated properly, this functions is 100% accurate to what happens in an actual vita AFAIK (hopefully).
+    if (srcSize != 0) {
+        uint srcStrLen = srcSize - 1;
+        if (srcStr[0] == '/') {
+            *dst = '/';
+            dst[1] = 0;
+            uint i = 1;
+            char *iterableDst = dst;
+            if (srcStrLen > 1) {
+                do {
+                    if ((srcStr.substr(i, strlen("../")) == "../")) {
+                        if (iterableDst != dst) {
+                            *iterableDst = 0;
+                            iterableDst = strrchr(dst, L'/');
+                            if (iterableDst != 0)
+                                iterableDst[1] = 0;
+                        }
+                        i += strlen("../");
+                    } else if (srcStr.substr(i, 2) == "./") {
+                        i += strlen("./");
+                    } else {
+                        std::string sStr = srcStr.substr(i);
+                        auto slashPos = sStr.find('/');
+                        size_t remainderStrLen = (srcSize - i) - 1;
+                        size_t len_00 = remainderStrLen;
+                        if ((slashPos != std::string::npos) && (len_00 = slashPos + 1, remainderStrLen < len_00))
+                            len_00 = remainderStrLen;
+                        memcpy(iterableDst + 1, sStr.c_str(), len_00);
+                        iterableDst = iterableDst + len_00;
+                        iterableDst[1] = 0;
+                        i += len_00;
+                    }
+                } while (i < srcStrLen);
+            }
+        } else {
+            // Nicely copy the contents of src into dst
+            memcpy(dst, src, srcStrLen);
+            dst[srcSize - 1] = 0;
         }
     }
-
-    if (parsed.invalid)
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_URL);
-
-    std::string credentials = "";
-    if (!parsed.username.empty()) { // we have credentials
-        credentials.append(parsed.username);
-        if (!parsed.password.empty()) {
-            credentials.append(":");
-            credentials.append(parsed.password);
-        }
-        credentials.append("@");
-    }
-    std::string port; // 65535
-    if (!parsed.port.empty()) {
-        port.append(":");
-        port.append(parsed.port);
-    }
-
-    auto result = parsed.scheme + "://" + credentials + parsed.hostname + port;
-
-    memcpy(dst, result.data(), result.length() + 1);
 
     return 0;
 }
