@@ -1110,7 +1110,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         }
     }
 
-    // TODO: does a HEAD request need content-length to exist?
+    // TODO: does a HEAD/OPTIONS request need content-length to exist?
     if (req->second.res.headers.find("content-length") == req->second.headers.end()) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
@@ -1120,11 +1120,11 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     // Now we get the body or the rest of the body
     attempts = 1; // Reset attempts
-    // This is the entire response, including headers and everything
     const int responseLength = (std::string(resHeaders).find("\r\n\r\n") + strlen("\r\n\r\n")) + req->second.res.contentLength;
     if (req->second.method == SCE_HTTP_METHOD_HEAD || req->second.method == SCE_HTTP_METHOD_OPTIONS) // even if we have content-length, there will be no body
         const int responseLength = (std::string(resHeaders).find("\r\n\r\n") + strlen("\r\n\r\n"));
 
+    // This is the entire response, including headers and everything
     auto reqResponse = new uint8_t[responseLength]();
     memcpy(reqResponse, resHeaders, std::min(emuenv.http.defaultResponseHeaderSize, responseLength));
     delete[] resHeaders;
