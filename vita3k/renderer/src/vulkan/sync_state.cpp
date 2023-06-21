@@ -244,6 +244,12 @@ void sync_visibility_buffer(VKContext &context, Ptr<uint32_t> buffer, uint32_t s
 }
 
 void sync_visibility_index(VKContext &context, bool enable, uint32_t index, bool is_increment) {
+    if (context.current_visibility_buffer == nullptr) {
+        context.current_query_idx = enable ? index : -1;
+        context.is_query_op_increment = is_increment;
+        return;
+    }
+
     if (index >= context.current_visibility_buffer->size) {
         static bool has_happened = false;
         LOG_WARN_IF(!has_happened, "Using visibility index {} which is too big for the buffer");

@@ -351,7 +351,7 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     constexpr bool replaced_indices = false;
 #endif
 
-    if (context.current_query_idx != -1 && !context.is_in_query) {
+    if (context.current_visibility_buffer != nullptr && context.current_query_idx != -1 && !context.is_in_query) {
         if (context.current_visibility_buffer->queries_used[context.current_query_idx]) {
             static bool has_happened = false;
             LOG_WARN_IF(!has_happened, "Visibility buffer entry is used more than once in a scene");
