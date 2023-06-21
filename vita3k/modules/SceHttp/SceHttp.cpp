@@ -768,11 +768,14 @@ EXPORT(SceInt, sceHttpInit, SceSize poolSize) {
 
 EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize headersLen, const char *fieldStr, Ptr<char> *fieldValue, SceSize *valueLen) {
     TRACY_FUNC(sceHttpParseResponseHeader, headers, headersLen, fieldStr, fieldValue, valueLen);
-    if (!emuenv.http.inited)
-        return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
+    if (!headers.valid(emuenv.mem))
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
-    if (!headers.valid(emuenv.mem) || headersLen == 0)
+    if (!fieldStr || !fieldValue || valueLen == 0)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+
+    if (headersLen == 0)
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_NOT_FOUND);
 
     *valueLen = 0; // reset to 0 to check after
 

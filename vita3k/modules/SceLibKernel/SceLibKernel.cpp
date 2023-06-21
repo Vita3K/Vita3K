@@ -204,6 +204,9 @@ EXPORT(Ptr<void>, sceClibMspaceCreate, Ptr<void> base, uint32_t capacity) {
     TRACY_FUNC(sceClibMspaceCreate, base, capacity);
     const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
 
+    if (capacity < 625 || capacity > 0xfffefd8f)
+        return Ptr<void>(0);
+
     mspace space = create_mspace_with_base(base.get(emuenv.mem), capacity, 0);
     return Ptr<void>(space, emuenv.mem);
 }
