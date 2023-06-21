@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <string_view>
 #include <util/arm.h>
 #include <util/bytes.h>
 #include <util/log.h>
@@ -516,7 +517,7 @@ const char *int_method_to_char(const int n) {
     }
 }
 
-std::string constructHeaders(std::map<std::string, std::string, CaseInsensitiveComparator> &headers) {
+std::string constructHeaders(std::map<std::string, std::string, boost::algorithm::is_iless> &headers) {
     std::string headersString;
     for (auto head : headers) {
         headersString.append(head.first);
@@ -570,12 +571,12 @@ bool parseStatusLine(std::string line, std::string &httpVer, int &statusCode, st
 /*
     CANNOT have ANYTHING after the last \r\n or \r\n\r\n else it will be treated as a header
 */
-bool parseHeaders(std::string &headersRaw, std::map<std::string, std::string, CaseInsensitiveComparator> &headersOut) {
+bool parseHeaders(std::string &headersRaw, std::map<std::string, std::string, boost::algorithm::is_iless> &headersOut) {
     char *ptr;
     ptr = strtok(headersRaw.data(), "\r\n");
     // use while loop to check ptr is not null
     while (ptr != NULL) {
-        auto line = std::string(ptr);
+        auto line = std::string_view(ptr);
 
         if (line.find(':') == std::string::npos)
             return false; // separator is missing, the header is invalid
@@ -588,7 +589,7 @@ bool parseHeaders(std::string &headersRaw, std::map<std::string, std::string, Ca
 
         auto value = line.substr(valueStart);
 
-        headersOut.insert({ name, value });
+        headersOut.insert({ std::string(name), std::string(value) });
         ptr = strtok(NULL, "\r\n");
     }
     return true;

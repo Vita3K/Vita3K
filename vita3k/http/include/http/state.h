@@ -19,6 +19,8 @@
 
 #include <mem/ptr.h>
 
+#include <boost/algorithm/string/compare.hpp>
+
 #include <map>
 #include <string>
 #include <util/types.h>
@@ -227,21 +229,11 @@ struct SceConnection {
     int sockfd;
 };
 
-struct CaseInsensitiveComparator {
-    bool operator()(const std::string &s1, const std::string &s2) const {
-        std::string str1(s1.length(), ' ');
-        std::string str2(s2.length(), ' ');
-        std::transform(s1.begin(), s1.end(), str1.begin(), tolower);
-        std::transform(s2.begin(), s2.end(), str2.begin(), tolower);
-        return str1 < str2;
-    }
-};
-
 struct SceRequestResponse {
     std::string httpVer;
     SceInt statusCode = 0;
     std::string reasonPhrase;
-    std::map<std::string, std::string, CaseInsensitiveComparator> headers;
+    std::map<std::string, std::string, boost::algorithm::is_iless> headers;
 
     SceULong64 contentLength = 0;
     SceSize responseRead = 0;
@@ -258,7 +250,7 @@ struct SceRequest {
     std::string message;
     std::string requestLine;
     SceULong64 contentLength;
-    std::map<std::string, std::string, CaseInsensitiveComparator> headers;
+    std::map<std::string, std::string, boost::algorithm::is_iless> headers;
     SceRequestResponse res;
     std::vector<Ptr<void>> guestPointers;
 };

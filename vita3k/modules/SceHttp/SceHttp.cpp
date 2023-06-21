@@ -149,7 +149,7 @@ EXPORT(SceInt, sceHttpAddRequestHeader, SceInt reqId, const char *name, const ch
     auto &req = emuenv.http.requests.find(reqId)->second;
 
     if (mode == SCE_HTTP_HEADER_OVERWRITE) {
-        if (req.headers.find(std::string(name)) != req.headers.end()) {
+        if (req.headers.find(name) != req.headers.end()) {
             // Entry already exists
             req.headers.find(name)->second = std::string(value);
         } else {
@@ -339,7 +339,7 @@ EXPORT(SceInt, sceHttpCreateConnection, SceInt tmplId, const char *hostname, con
     if (!scheme)
         return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_SCHEME);
 
-    const std::string schemeStr = std::string(scheme);
+    const auto schemeStr = std::string_view(scheme);
     if (schemeStr != "http" && schemeStr != "https") {
         LOG_WARN("SCHEME IS: {}", scheme);
         return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_SCHEME);
@@ -626,7 +626,7 @@ EXPORT(SceInt, sceHttpGetAllResponseHeaders, SceInt reqId, Ptr<char> *header, Sc
     auto headers = net_utils::constructHeaders(req->second.res.headers);
 
     // is alloc name ok?
-    auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "header")); // Allocate on guest mem
+    auto h = Ptr<char>(alloc(emuenv.mem, headers.length() + 1, "header")); // Allocate on guest mem
     memcpy(h.get(emuenv.mem), headers.data(), headers.length() + 1); // Put header data on guest mem
     req->second.guestPointers.push_back(h); // Save the pointer to free it later
     *header = h; // make header point to the guest address where headers are located
@@ -768,7 +768,7 @@ EXPORT(SceInt, sceHttpInit, SceSize poolSize) {
 
 EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize headersLen, const char *fieldStr, Ptr<char> *fieldValue, SceSize *valueLen) {
     TRACY_FUNC(sceHttpParseResponseHeader, headers, headersLen, fieldStr, fieldValue, valueLen);
-    if (!headers.valid(emuenv.mem))
+    if (!headers)
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
     if (!fieldStr || !fieldValue || valueLen == 0)
@@ -780,7 +780,7 @@ EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize head
     *valueLen = 0; // reset to 0 to check after
 
     std::string headerStr = std::string(headers.get(emuenv.mem));
-    std::map<std::string, std::string, CaseInsensitiveComparator> parsedHeaders;
+    std::map<std::string, std::string, boost::algorithm::is_iless> parsedHeaders;
     if (!net_utils::parseHeaders(headerStr, parsedHeaders))
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
@@ -790,7 +790,7 @@ EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize head
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
     // is alloc name ok?
-    auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "fieldValue")); // Allocate on guest mem
+    auto h = Ptr<char>(alloc(emuenv.mem, foundIt->second.length() + 1, "fieldValue")); // Allocate on guest mem
     memcpy(h.get(emuenv.mem), foundIt->second.data(), foundIt->second.length() + 1); // Put header data on guest mem
     emuenv.http.guestPointers.push_back(h); // Save the pointer to free it later
     *fieldValue = h; // make header point to the guest address where headers are located
@@ -1091,26 +1091,24 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         }
 
         totalReceived += bytes;
-    } while (std::string(resHeaders).find("\r\n\r\n") == std::string::npos || totalReceived == resHeadersMaxSize); // receive headers until we start receiving body
+    } while (std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos || totalReceived == resHeadersMaxSize); // receive headers until we start receiving body
 
-    if (totalReceived != resHeadersMaxSize && std::string(resHeaders).find("\r\n\r\n") == std::string::npos) {
+    if (totalReceived != resHeadersMaxSize && std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_TIMEOUT);
     }
 
     // Headers are too big
-    if (totalReceived == resHeadersMaxSize && std::string(resHeaders).find("\r\n\r\n") == std::string::npos) {
+    if (totalReceived == resHeadersMaxSize && std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos) {
         delete[] resHeaders;
         return RET_ERROR(SCE_HTTP_ERROR_TOO_LARGE_RESPONSE_HEADER);
     }
 
-    {
-        const auto resHeadersStr = std::string(resHeaders);
-        const auto resHeadersOnly = resHeadersStr.substr(0, resHeadersStr.find("\r\n\r\n"));
-        if (!net_utils::parseResponse(resHeadersOnly, req->second.res)) {
-            delete[] resHeaders;
-            return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
-        }
+    const auto resHeadersStr = std::string(resHeaders);
+    const auto resHeadersOnly = resHeadersStr.substr(0, resHeadersStr.find("\r\n\r\n"));
+    if (!net_utils::parseResponse(resHeadersOnly, req->second.res)) {
+        delete[] resHeaders;
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
     }
 
     // TODO: does a HEAD/OPTIONS request need content-length to exist?
@@ -1123,9 +1121,9 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     // Now we get the body or the rest of the body
     attempts = 1; // Reset attempts
-    const int responseLength = (std::string(resHeaders).find("\r\n\r\n") + strlen("\r\n\r\n")) + req->second.res.contentLength;
+    const int responseLength = resHeadersStr.find("\r\n\r\n") + strlen("\r\n\r\n") + req->second.res.contentLength;
     if (req->second.method == SCE_HTTP_METHOD_HEAD || req->second.method == SCE_HTTP_METHOD_OPTIONS) // even if we have content-length, there will be no body
-        const int responseLength = (std::string(resHeaders).find("\r\n\r\n") + strlen("\r\n\r\n"));
+        const int responseLength = resHeadersStr.find("\r\n\r\n") + strlen("\r\n\r\n");
 
     // This is the entire response, including headers and everything
     auto reqResponse = new uint8_t[responseLength]();
@@ -1134,7 +1132,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     int remainingToRead = responseLength - totalReceived;
 
-    do {
+    while (remainingToRead != 0) {
         int bytes = 0;
         if (remainingToRead == 0) // We already have body from the headers read from before, we can skin this entire block
             break; // WHY IS THIS NEEDED??? I THOUGHT THE WHILE CONDITION EXECUTED BEFORE THE ACTUAL CODE UUUOOOOOHHHHHH
@@ -1171,7 +1169,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
         totalReceived += bytes;
         remainingToRead -= bytes;
-    } while (remainingToRead != 0);
+    }
 
     if (!net_utils::socketSetBlocking(conn->second.sockfd, true)) {
         LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, true);
@@ -1192,7 +1190,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     }
 
     req->second.res.responseRaw = reqResponse;
-    req->second.res.body = reqResponse + std::string((char *)reqResponse).find("\r\n\r\n") + strlen("\r\n\r\n");
+    req->second.res.body = reqResponse + resHeadersOnly.length() + strlen("\r\n\r\n");
 
     LOG_TRACE("Request finished nicely");
 
