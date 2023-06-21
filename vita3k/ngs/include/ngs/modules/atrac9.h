@@ -20,6 +20,8 @@
 #include <ngs/system.h>
 #include <ngs/types.h>
 
+#include <codec/state.h>
+
 enum {
     SCE_NGS_AT9_END_OF_DATA = 0,
     SCE_NGS_AT9_SWAPPED_BUFFER = 1,
@@ -64,11 +66,14 @@ struct SceNgsAT9States {
     // INTERNAL
     uint32_t decoded_samples_pending = 0;
     uint32_t decoded_passed = 0;
+    uint32_t nb_channels = 0;
     // used if the input must be resampled
     SwrContext *swr = nullptr;
     int8_t current_loop_count = 0;
     // set to true if all the input has been read but not all data has been processed
     bool is_finished = false;
+    // necessary if the decoder is using multiple states
+    Atrac9DecoderSavedState saved_state{};
 };
 
 namespace ngs {
@@ -77,6 +82,7 @@ private:
     std::unique_ptr<Atrac9DecoderState> decoder;
     uint32_t last_config = 0;
     std::vector<uint8_t> temp_buffer;
+    SceNgsAT9States *last_state = nullptr;
 
     static SwrContext *swr_mono_to_stereo;
     static SwrContext *swr_stereo;

@@ -123,6 +123,10 @@ struct MjpegDecoderState : public DecoderState {
     MjpegDecoderState();
 };
 
+struct Atrac9DecoderSavedState {
+    double prev_values[2][256]{};
+};
+
 struct Atrac9DecoderState : public DecoderState {
     uint32_t config_data;
     void *decoder_handle;
@@ -138,6 +142,9 @@ struct Atrac9DecoderState : public DecoderState {
     bool send(const uint8_t *data, uint32_t size) override;
     bool receive(uint8_t *data, DecoderSize *size) override;
     void flush() override;
+
+    void export_state(Atrac9DecoderSavedState *dest);
+    void load_state(const Atrac9DecoderSavedState *src);
 
     explicit Atrac9DecoderState(uint32_t config_data);
     ~Atrac9DecoderState() override;
