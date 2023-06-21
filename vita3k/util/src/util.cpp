@@ -517,7 +517,7 @@ const char *int_method_to_char(const int n) {
     }
 }
 
-std::string constructHeaders(std::map<std::string, std::string, boost::algorithm::is_iless> &headers) {
+std::string constructHeaders(HeadersMapType &headers) {
     std::string headersString;
     for (auto head : headers) {
         headersString.append(head.first);
@@ -571,7 +571,7 @@ bool parseStatusLine(std::string line, std::string &httpVer, int &statusCode, st
 /*
     CANNOT have ANYTHING after the last \r\n or \r\n\r\n else it will be treated as a header
 */
-bool parseHeaders(std::string &headersRaw, std::map<std::string, std::string, boost::algorithm::is_iless> &headersOut) {
+bool parseHeaders(std::string &headersRaw, HeadersMapType &headersOut) {
     char *ptr;
     ptr = strtok(headersRaw.data(), "\r\n");
     // use while loop to check ptr is not null

@@ -17,6 +17,8 @@
 
 #include "SceHttp.h"
 
+#include <http/state.h>
+
 #ifdef WIN32 // windows moment
 #include <io.h>
 #include <winsock2.h>
@@ -27,8 +29,6 @@
 #include <netdb.h>
 #include <sys/socket.h>
 #endif
-
-#include <http/state.h>
 
 #include <kernel/state.h>
 #include <net/state.h>
@@ -149,9 +149,10 @@ EXPORT(SceInt, sceHttpAddRequestHeader, SceInt reqId, const char *name, const ch
     auto &req = emuenv.http.requests.find(reqId)->second;
 
     if (mode == SCE_HTTP_HEADER_OVERWRITE) {
-        if (req.headers.find(name) != req.headers.end()) {
+        auto foundIt = req.headers.find(name);
+        if (foundIt != req.headers.end()) {
             // Entry already exists
-            req.headers.find(name)->second = std::string(value);
+            foundIt->second = std::string(value);
         } else {
             // entry doesn't exists, we can insert it
             req.headers.insert({ name, value });
@@ -780,7 +781,7 @@ EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize head
     *valueLen = 0; // reset to 0 to check after
 
     std::string headerStr = std::string(headers.get(emuenv.mem));
-    std::map<std::string, std::string, boost::algorithm::is_iless> parsedHeaders;
+    HeadersMapType parsedHeaders;
     if (!net_utils::parseHeaders(headerStr, parsedHeaders))
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
