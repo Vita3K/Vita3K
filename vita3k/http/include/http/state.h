@@ -19,8 +19,6 @@
 
 #include <mem/ptr.h>
 
-#include <boost/algorithm/string/compare.hpp>
-
 #include <map>
 #include <string>
 #include <util/types.h>
@@ -32,18 +30,16 @@
 
 typedef int (*SceHttpsCallback)(unsigned int verifyEsrr, Ptr<void> const sslCert[], int certNum, Ptr<void> userArg);
 
+#include <boost/algorithm/string/predicate.hpp>
 
-struct CaseInsensitiveComparator {
-    bool operator()(const std::string &s1, const std::string &s2) const {
-        std::string str1(s1.length(), ' ');
-        std::string str2(s2.length(), ' ');
-        std::transform(s1.begin(), s1.end(), str1.begin(), tolower);
-        std::transform(s2.begin(), s2.end(), str2.begin(), tolower);
-        return str1 < str2;
+struct ci_compare {
+    bool operator()(std::string_view const &a,
+        std::string_view const &b) const {
+        return boost::ilexicographical_compare(a, b);
     }
 };
 
-typedef std::map<std::string, std::string, boost::algorithm::is_iless> HeadersMapType;
+typedef std::map<std::string, std::string, ci_compare> HeadersMapType;
 
 enum SceHttpsErrorCode {
     SCE_HTTPS_ERROR_CERT = 0x80435060,
