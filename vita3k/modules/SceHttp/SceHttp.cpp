@@ -1135,8 +1135,6 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
 
     while (remainingToRead != 0) {
         int bytes = 0;
-        if (remainingToRead == 0) // We already have body from the headers read from before, we can skin this entire block
-            break; // WHY IS THIS NEEDED??? I THOUGHT THE WHILE CONDITION EXECUTED BEFORE THE ACTUAL CODE UUUOOOOOHHHHHH
         if (conn->second.isSecure)
             bytes = SSL_read((SSL *)tmpl->second.ssl, reqResponse + totalReceived, remainingToRead);
         else
