@@ -472,7 +472,7 @@ EXPORT(SceInt, sceHttpCreateRequest, SceInt connId, SceHttpMethods method, const
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (method >= SCE_HTTP_METHOD_INVALID || method < 0)
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+        return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_METHOD);
 
     if (!path)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
