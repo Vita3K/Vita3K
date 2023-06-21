@@ -88,6 +88,23 @@ bool Atrac9Module::decode_more_data(KernelState &kern, const MemState &mem, cons
         state->decoded_passed = 0;
     }
 
+    if (decoder && last_state != nullptr && last_state != state) {
+        // we changed voices, need to export the previous data
+        decoder->export_state(&last_state->saved_state);
+    }
+
+    // re-create the decoder if necessary
+    if (!decoder || params->config_data != last_config) {
+        decoder = std::make_unique<Atrac9DecoderState>(params->config_data);
+        last_config = params->config_data;
+    }
+
+    if (last_state != state) {
+        // we changed voices, need to import the new decoder state
+        decoder->load_state(&state->saved_state);
+        last_state = state;
+    }
+
     if (state->current_byte_position_in_buffer >= bufparam.bytes_count) {
         const int32_t prev_index = state->current_buffer;
 
@@ -340,12 +357,6 @@ bool Atrac9Module::process(KernelState &kern, const MemState &mem, const SceUID 
 
     if ((state->current_buffer == -1) || (params->buffer_params[state->current_buffer].buffer.address() == 0)) {
         return true;
-    }
-
-    // making this maybe too early...
-    if (!decoder || (params->config_data != last_config)) {
-        decoder = std::make_unique<Atrac9DecoderState>(params->config_data);
-        last_config = params->config_data;
     }
 
     // call decode more data until we either have an error or reached end of data

@@ -61,8 +61,28 @@ void Atrac9DecoderState::flush() {
     superframe_frame_idx = 0;
     superframe_data_left = info->superframeSize;
 
-    // hopefully this is enough
-    reinterpret_cast<Atrac9Handle *>(decoder_handle)->Frame.IndexInSuperframe = 0;
+    Frame &frame = reinterpret_cast<Atrac9Handle *>(decoder_handle)->Frame;
+    frame.IndexInSuperframe = 0;
+    if (frame.Channels[0])
+        std::fill_n(frame.Channels[0]->Mdct.ImdctPrevious, 256, 0.0);
+    if (frame.Channels[1])
+        std::fill_n(frame.Channels[1]->Mdct.ImdctPrevious, 256, 0.0);
+}
+
+void Atrac9DecoderState::export_state(Atrac9DecoderSavedState *dest) {
+    Frame &frame = reinterpret_cast<Atrac9Handle *>(decoder_handle)->Frame;
+    if (frame.Channels[0])
+        std::copy_n(frame.Channels[0]->Mdct.ImdctPrevious, 256, dest->prev_values[0]);
+    if (frame.Channels[1])
+        std::copy_n(frame.Channels[1]->Mdct.ImdctPrevious, 256, dest->prev_values[1]);
+}
+
+void Atrac9DecoderState::load_state(const Atrac9DecoderSavedState *src) {
+    Frame &frame = reinterpret_cast<Atrac9Handle *>(decoder_handle)->Frame;
+    if (frame.Channels[0])
+        std::copy_n(src->prev_values[0], 256, frame.Channels[0]->Mdct.ImdctPrevious);
+    if (frame.Channels[1])
+        std::copy_n(src->prev_values[1], 256, frame.Channels[1]->Mdct.ImdctPrevious);
 }
 
 bool Atrac9DecoderState::send(const uint8_t *data, uint32_t size) {
