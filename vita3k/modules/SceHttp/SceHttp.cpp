@@ -423,9 +423,8 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceHttpMethods method
     req.url = urlStr;
     req.contentLength = contentLength;
 
+    req.headers.insert({ "Host", parsed.hostname });
     req.headers.insert({ "User-Agent", tmpl->second.userAgent });
-    if (tmpl->second.httpVersion == SCE_HTTP_VERSION_1_1)
-        req.headers.insert({ "Host", parsed.hostname });
 
     if (tmpl->second.httpVersion == SCE_HTTP_VERSION_1_1 && conn->second.keepAlive)
         req.headers.insert({ "Connection", "Keep-Alive" });
