@@ -110,6 +110,8 @@ void VKSurfaceCache::destroy_surface(DepthStencilSurfaceCacheInfo &info) {
 VKSurfaceCache::VKSurfaceCache(VKState &state)
     : state(state) {
     for (int i = 0; i < MAX_CACHE_SIZE_PER_CONTAINER; i++) {
+        depth_stencil_textures[i].surface.depthData = -1;
+        depth_stencil_textures[i].surface.stencilData = -1;
         depth_stencil_textures[i].flags = SurfaceCacheInfo::FLAG_FREE;
     }
 }
