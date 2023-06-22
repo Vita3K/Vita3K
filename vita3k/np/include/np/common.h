@@ -57,6 +57,8 @@ struct CommunicationConfig {
     Ptr<void> unk1;
 };
 
+#define SCE_NP_TROPHY_INVALID_TROPHY_ID -1
+
 enum class NpTrophyError {
     TROPHY_ERROR_NONE = 0,
     TROPHY_CONTEXT_EXIST = 1,

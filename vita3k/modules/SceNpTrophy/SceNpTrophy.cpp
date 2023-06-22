@@ -469,13 +469,12 @@ EXPORT(int, sceNpTrophyUnlockTrophy, np::trophy::ContextHandle context_handle, S
         }
     }
 
-    *platinum_id = -1; // SCE_NP_TROPHY_INVALID_TROPHY_ID
-
-    if ((context->platinum_trophy_id >= 0) && (context->total_trophy_unlocked() == context->trophy_count)) {
+    if ((context->platinum_trophy_id != SCE_NP_TROPHY_INVALID_TROPHY_ID) && (context->total_trophy_unlocked() == (context->trophy_count - 1))) {
         // Force unlock platinum trophy
         context->unlock_trophy(context->platinum_trophy_id, &error, true);
         *platinum_id = context->platinum_trophy_id;
-    }
+    } else
+        *platinum_id = SCE_NP_TROPHY_INVALID_TROPHY_ID;
 
     const int err = do_trophy_callback(emuenv, context, trophy_id);
 
@@ -483,7 +482,7 @@ EXPORT(int, sceNpTrophyUnlockTrophy, np::trophy::ContextHandle context_handle, S
         return err;
     }
 
-    if (*platinum_id != -1) {
+    if (*platinum_id != SCE_NP_TROPHY_INVALID_TROPHY_ID) {
         // Do trophy callback for platinum too! But this time, ignore the error
         do_trophy_callback(emuenv, context, context->platinum_trophy_id);
     }
