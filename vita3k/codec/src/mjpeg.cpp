@@ -16,9 +16,11 @@
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 #include <codec/state.h>
+#include <codec/types.h>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
+#include <libavcodec/bsf.h>
 #include <libavutil/imgutils.h>
 #include <libswscale/swscale.h>
 }
@@ -130,7 +132,7 @@ void convert_rgb_to_yuv(const uint8_t *rgba, uint8_t *yuv, uint32_t width, uint3
     assert(error == height);
 }
 
-int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint32_t height, uint32_t max_size, const DecoderColorSpace color_space) {
+int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint32_t height, uint32_t max_size, const DecoderColorSpace color_space, int32_t compress_ratio) {
     AVPixelFormat format = AV_PIX_FMT_YUV444P;
     int strides_divisor = 1;
     int slice_position = 8;
@@ -158,6 +160,9 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
     context->pix_fmt = format;
     context->time_base.num = 1;
     context->time_base.den = 25;
+    context->flags |= AV_CODEC_FLAG_QSCALE;
+
+    context->qmin = 1;
 
     int ret = avcodec_open2(context, codec, NULL);
     assert(ret >= 0);
@@ -168,6 +173,7 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
     frame->format = context->pix_fmt;
     frame->width = context->width;
     frame->height = context->height;
+    frame->quality = FF_QP2LAMBDA * ((compress_ratio) * (16 - 1) / 255 + 1);
 
     ret = av_image_fill_arrays(frame->data, frame->linesize, yuv, context->pix_fmt, context->width, context->height, 1);
     assert(ret >= 0);
@@ -178,15 +184,55 @@ int convert_yuv_to_jpeg(const uint8_t *yuv, uint8_t *jpeg, uint32_t width, uint3
     assert(ret >= 0);
 
     ret = avcodec_receive_packet(context, pkt);
+    if (ret < 0) {
+        av_packet_unref(pkt);
+        av_frame_free(&frame);
+        avcodec_free_context(&context);
+        return ret;
+    }
+
+    const AVBitStreamFilter *bsf = av_bsf_get_by_name("mjpeg2jpeg");
+
+    AVBSFContext *bsf_ctx = NULL;
+    ret = av_bsf_alloc(bsf, &bsf_ctx);
+    if (ret < 0) {
+        av_packet_unref(pkt);
+        av_frame_free(&frame);
+        avcodec_free_context(&context);
+        return ret;
+    }
+
+    bsf_ctx->par_in->codec_id = context->codec_id;
+    ret = av_bsf_init(bsf_ctx);
+    if (ret < 0) {
+        av_bsf_free(&bsf_ctx);
+        av_packet_unref(pkt);
+        av_frame_free(&frame);
+        avcodec_free_context(&context);
+        return ret;
+    }
+
+    ret = av_bsf_send_packet(bsf_ctx, pkt);
+    if (ret < 0) {
+        av_bsf_free(&bsf_ctx);
+        av_packet_unref(pkt);
+        av_frame_free(&frame);
+        avcodec_free_context(&context);
+        return ret;
+    }
+
+    ret = av_bsf_receive_packet(bsf_ctx, pkt);
+
     uint32_t size = pkt->size;
     if (ret == 0 && size <= max_size) {
         memcpy(jpeg, pkt->data, pkt->size);
     }
 
+    av_bsf_free(&bsf_ctx);
     av_packet_unref(pkt);
     av_frame_free(&frame);
     avcodec_free_context(&context);
-    if (size > max_size) {
+    if (size > max_size || ret < 0) {
         return -1;
     }
     return size;
