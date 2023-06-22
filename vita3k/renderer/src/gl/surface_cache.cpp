@@ -538,11 +538,13 @@ GLuint GLSurfaceCache::retrieve_depth_stencil_texture_handle(const State &state,
         force_height = target->height;
     }
 
+    const bool is_stencil_only = surface.depthData.address() == 0;
     std::size_t found_index = static_cast<std::size_t>(-1);
 
     // The whole depth stencil struct is reserved for future use
     for (std::size_t i = 0; i < depth_stencil_textures.size(); i++) {
-        if (depth_stencil_textures[i].surface.depthData == surface.depthData) {
+        if ((!is_stencil_only && depth_stencil_textures[i].surface.depthData == surface.depthData)
+            || (is_stencil_only && depth_stencil_textures[i].surface.stencilData == surface.stencilData)) {
             found_index = i;
             break;
         }
