@@ -311,6 +311,9 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
 
         SSL_set_fd((SSL *)tmpl->second.ssl, sockfd);
 
+        // This is needed as some servers are using handshake protocols older than the person writing this code
+        SSL_set_security_level((SSL *)tmpl->second.ssl, 0);
+
         int err = SSL_connect((SSL *)tmpl->second.ssl);
         if (err != 1) {
             int sslErr = SSL_get_error((SSL *)tmpl->second.ssl, err);
@@ -537,7 +540,7 @@ EXPORT(SceInt, sceHttpCreateTemplate, const char *userAgent, SceHttpVersion http
     if (emuenv.http.sslInited)
         ssl_ctx = emuenv.http.ssl_ctx;
     else
-        ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+        ssl_ctx = SSL_CTX_new(TLS_method());
 
     SSL_set_mode((SSL *)ssl_ctx, SSL_MODE_AUTO_RETRY);
 
@@ -760,7 +763,7 @@ EXPORT(SceInt, sceHttpInit, SceSize poolSize) {
     STUBBED("ignore poolSize");
 
     if (emuenv.http.sslInited)
-        emuenv.http.ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+        emuenv.http.ssl_ctx = SSL_CTX_new(TLS_method());
 
     emuenv.http.inited = true;
 

@@ -95,7 +95,7 @@ EXPORT(SceInt32, sceSslInit, SceSize poolSize) {
     SSL_load_error_strings();
 
     if (emuenv.http.inited && !emuenv.http.ssl_ctx)
-        emuenv.http.ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+        emuenv.http.ssl_ctx = SSL_CTX_new(TLS_method());
 
     emuenv.http.sslInited = true;
 
