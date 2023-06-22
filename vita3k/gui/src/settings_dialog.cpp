@@ -629,7 +629,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             config.anisotropic_filtering = 1 << current_aniso_filter_log;
         ImGui::PopItemWidth();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are slopped relative to the viewer.\nIt has no drawback but can impact performance.");
+            ImGui::SetTooltip("Anisotropic filtering is a technique to enhance the image quality of surfaces which are sloped relative to the viewer.\nIt has no drawback but can impact performance.");
         ImGui::SameLine(0, 5 * SCALE.x);
         if (current_aniso_filter_log == max_aniso_filter_log)
             ImGui::BeginDisabled();
