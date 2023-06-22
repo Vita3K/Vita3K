@@ -43,7 +43,7 @@ int sceJpegEncoderInitImpl(SceJpegEncoderContext *context, int32_t inWidth, int3
     context->outSize = outSize;
     context->option = option;
 
-    context->compressRatio = 255;
+    context->compressRatio = 64;
     context->headerMode = SCE_JPEGENC_HEADER_MODE_JPEG;
 
     return 0;
@@ -98,7 +98,7 @@ EXPORT(int, sceJpegEncoderEncode, SceJpegEncoderContext *context, Ptr<uint8_t> i
         return SCE_JPEGENC_ERROR_INVALID_PIXELFORMAT;
     }
 
-    uint32_t size = convert_yuv_to_jpeg(inBufferData, outBufferData, width, height, context->outSize, color_space);
+    uint32_t size = convert_yuv_to_jpeg(inBufferData, outBufferData, width, height, context->outSize, color_space, context->compressRatio);
 
     if (size == -1) {
         return SCE_JPEGENC_ERROR_INSUFFICIENT_BUFFER;
@@ -127,7 +127,6 @@ EXPORT(int, sceJpegEncoderInitWithParam, SceJpegEncoderContext *context, SceJpeg
     return sceJpegEncoderInitImpl(context, initParam->inWidth, initParam->inHeight, initParam->pixelFormat, initParam->outBuffer, initParam->outSize, initParam->option);
 }
 
-// TODO: CompressionRatio is ignored for the time being.
 EXPORT(int, sceJpegEncoderSetCompressionRatio, SceJpegEncoderContext *context, int32_t ratio) {
     TRACY_FUNC(sceJpegEncoderSetCompressionRatio, context, ratio);
     if (ratio < 0 || ratio > 255) {
