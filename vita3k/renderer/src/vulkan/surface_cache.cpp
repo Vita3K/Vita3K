@@ -587,11 +587,14 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
         height *= state.res_multiplier;
     }
 
+    const bool is_stencil_only = surface.depthData.address() == 0;
     size_t found_index = -1;
 
     // The whole depth stencil struct is reserved for future use
     for (size_t i = 0; i < depth_stencil_textures.size(); i++) {
-        if ((depth_stencil_textures[i].surface.depthData == surface.depthData) || (is_reading && !packed_ds && surface.depthData == depth_stencil_textures[i].surface.stencilData)) {
+        if ((!is_stencil_only && depth_stencil_textures[i].surface.depthData == surface.depthData)
+            || (is_stencil_only && depth_stencil_textures[i].surface.stencilData == surface.stencilData)
+            || (is_reading && !packed_ds && surface.depthData == depth_stencil_textures[i].surface.stencilData)) {
             found_index = i;
             break;
         }
