@@ -63,7 +63,7 @@ struct Context {
     std::array<uint64_t, MAX_TROPHIES> unlock_timestamps;
     std::array<SceNpTrophyGrade, MAX_TROPHIES> trophy_kinds;
 
-    int32_t platinum_trophy_id{ -1 };
+    int32_t platinum_trophy_id{ SCE_NP_TROPHY_INVALID_TROPHY_ID };
 
     std::string trophy_progress_output_file_path;
     std::string trophy_detail_xml;

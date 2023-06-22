@@ -116,7 +116,7 @@ bool Context::init_info_from_trp() {
     std::fill(trophy_count_by_group.begin(), trophy_count_by_group.end(), 0);
     std::fill(unlock_timestamps.begin(), unlock_timestamps.end(), 0);
     std::fill(trophy_kinds.begin(), trophy_kinds.end(), SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_UNKNOWN);
-    platinum_trophy_id = -1;
+    platinum_trophy_id = SCE_NP_TROPHY_INVALID_TROPHY_ID;
 
     group_count = 0;
     trophy_count = 0;
