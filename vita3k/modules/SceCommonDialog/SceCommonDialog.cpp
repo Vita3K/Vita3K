@@ -837,7 +837,7 @@ static void check_empty_param(EmuEnvState &emuenv, const SceAppUtilSaveDataSlotE
 static void check_save_file(SceUID fd, std::vector<SceAppUtilSaveDataSlotParam> slot_param, int index, EmuEnvState &emuenv, const char *export_name) {
     vfs::FileBuffer thumbnail_buffer;
     if (fd < 0) {
-        auto empty_param = emuenv.common_dialog.savedata.list_empty_param;
+        auto empty_param = emuenv.common_dialog.savedata.list_empty_param[index];
         check_empty_param(emuenv, empty_param, index);
     } else {
         read_file(&slot_param[index], emuenv.io, fd, sizeof(SceAppUtilSaveDataSlotParam), export_name);
@@ -1220,6 +1220,7 @@ static void initialize_savedata_vectors(EmuEnvState &emuenv, unsigned int size) 
     emuenv.common_dialog.savedata.date.resize(size);
     emuenv.common_dialog.savedata.icon_buffer.resize(size);
     emuenv.common_dialog.savedata.slot_id.resize(size);
+    emuenv.common_dialog.savedata.list_empty_param.resize(size);
 }
 
 EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
@@ -1311,7 +1312,7 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
         for (SceUInt i = 0; i < list_param->slotListSize; i++) {
             slot_list[i] = list_param->slotList.get(emuenv.mem)[i];
             emuenv.common_dialog.savedata.slot_id[i] = slot_list[i].id;
-            emuenv.common_dialog.savedata.list_empty_param = slot_list[0].emptyParam.get(emuenv.mem);
+            emuenv.common_dialog.savedata.list_empty_param[i] = slot_list[i].emptyParam.get(emuenv.mem);
             fd = open_file(emuenv.io, construct_slotparam_path(slot_list[i].id).c_str(), SCE_O_RDONLY, emuenv.pref_path, export_name);
             check_save_file(fd, slot_param, i, emuenv, export_name);
         }
