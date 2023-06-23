@@ -215,17 +215,19 @@ static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float 
     char info_button_buffer[32];
     sprintf(selectable_buffer, "###New Saved Data %d", loop_index);
 
-    ImGui::SetCursorPos(ImVec2(15 * SCALE.x, (save_index * THUMBNAIL_SIZE.y) + 2 * SCALE.y));
-    if (ImGui::Selectable(selectable_buffer, false, ImGuiSelectableFlags_None, ImVec2(WINDOW_SIZE.x - 120 * SCALE.x, THUMBNAIL_SIZE.y - 5 * SCALE.y))) {
+    const ImVec2 save_pos = ImVec2(15 * SCALE.x, save_index * THUMBNAIL_SIZE.y);
+    const auto text_width_pos = save_pos.x + THUMBNAIL_SIZE.x;
+
+    ImGui::SetCursorPos(save_pos);
+    if (ImGui::Selectable(selectable_buffer, false, ImGuiSelectableFlags_None, ImVec2(WINDOW_SIZE.x - (120 * SCALE.x), THUMBNAIL_SIZE.y - (5 * SCALE.y)))) {
         emuenv.common_dialog.savedata.selected_save = loop_index;
         emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
         emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
         emuenv.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
     }
-    ImGui::SameLine();
     ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
     if (!emuenv.common_dialog.savedata.title[loop_index].empty()) {
-        ImGui::SetCursorPosX(THUMBNAIL_SIZE.x + 15 * SCALE.x);
+        ImGui::SetCursorPos(ImVec2(text_width_pos, save_pos.y));
         ImGui::Text("%s", emuenv.common_dialog.savedata.title[loop_index].c_str());
     }
     ImGui::SetWindowFontScale(1.f * FONT_SCALE);
@@ -233,33 +235,32 @@ static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float 
     switch (emuenv.common_dialog.savedata.list_style) {
     case SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_DATE_SUBTITLE:
         if (emuenv.common_dialog.savedata.has_date[loop_index]) {
-            ImGui::SetCursorPos(ImVec2(THUMBNAIL_SIZE.x + 15 * SCALE.x, (save_index * THUMBNAIL_SIZE.y) + 28 * SCALE.y));
+            ImGui::SetCursorPos(ImVec2(text_width_pos, save_pos.y + (28 * SCALE.y)));
             ImGui::Text("%s", get_save_date_time(sys_date_format, emuenv.common_dialog.savedata.date[loop_index]).c_str());
         }
         if (!emuenv.common_dialog.savedata.subtitle[loop_index].empty()) {
-            ImGui::SetCursorPos(ImVec2(THUMBNAIL_SIZE.x + 15 * SCALE.x, (save_index * THUMBNAIL_SIZE.y) + 50 * SCALE.y));
+            ImGui::SetCursorPos(ImVec2(text_width_pos, save_pos.y + (50 * SCALE.y)));
             ImGui::Text("%s", emuenv.common_dialog.savedata.subtitle[loop_index].c_str());
         }
         break;
     case SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_SUBTITLE_DATE:
         if (!emuenv.common_dialog.savedata.subtitle[loop_index].empty()) {
-            ImGui::SetCursorPos(ImVec2(THUMBNAIL_SIZE.x + 15 * SCALE.x, (save_index * THUMBNAIL_SIZE.y) + 28 * SCALE.y));
+            ImGui::SetCursorPos(ImVec2(text_width_pos, save_pos.y + (28 * SCALE.y)));
             ImGui::Text("%s", emuenv.common_dialog.savedata.subtitle[loop_index].c_str());
         }
         if (emuenv.common_dialog.savedata.has_date[loop_index]) {
-            ImGui::SetCursorPos(ImVec2(THUMBNAIL_SIZE.x + 15 * SCALE.x, (save_index * THUMBNAIL_SIZE.y) + 50 * SCALE.y));
+            ImGui::SetCursorPos(ImVec2(text_width_pos, save_pos.y + (50 * SCALE.y)));
             ImGui::Text("%s", get_save_date_time(sys_date_format, emuenv.common_dialog.savedata.date[loop_index]).c_str());
         }
         break;
     case SCE_SAVEDATA_DIALOG_LIST_ITEM_STYLE_TITLE_DATE:
         if (emuenv.common_dialog.savedata.has_date[loop_index]) {
-            ImGui::SetCursorPos(ImVec2(THUMBNAIL_SIZE.x + 15 * SCALE.x, (save_index * THUMBNAIL_SIZE.y) + 28 * SCALE.y));
+            ImGui::SetCursorPos(ImVec2(text_width_pos, save_pos.y + (28 * SCALE.y)));
             ImGui::Text("%s", get_save_date_time(sys_date_format, emuenv.common_dialog.savedata.date[loop_index]).c_str());
         }
         break;
     }
     ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
-    ImGui::SameLine();
     if (emuenv.common_dialog.savedata.icon_loaded[loop_index]) {
         thumbnails_textures[loop_index] = load_image(gui, (const char *)emuenv.common_dialog.savedata.icon_buffer[loop_index].data(),
             static_cast<int>(emuenv.common_dialog.savedata.icon_buffer[loop_index].size()));
@@ -269,7 +270,6 @@ static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float 
         ImGui::SetCursorPos(ImVec2(10 * SCALE.x, save_index * THUMBNAIL_SIZE.y));
         ImGui::Image(thumbnails_textures[loop_index], THUMBNAIL_SIZE);
     }
-    ImGui::SameLine();
     if (emuenv.common_dialog.savedata.slot_info[loop_index].isExist == 1) {
         sprintf(info_button_buffer, "##info %d", loop_index);
         ImGui::SetCursorPos(ImVec2(WINDOW_SIZE.x - 74 * SCALE.x, (save_index * THUMBNAIL_SIZE.y) + 25 * SCALE.y));
@@ -286,17 +286,17 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
     const ImVec2 BUTTON_SIZE = ImVec2(200.f * SCALE.x, 35.f * SCALE.y);
     const ImVec2 THUMBNAIL_SIZE = ImVec2(160.f * SCALE.x, 90.f * SCALE.y);
     const ImVec2 PROGRESS_BAR_SIZE = ImVec2(300.f * SCALE.x, 7.f * SCALE.y);
-    const ImVec2 WINDOW_SIZE = ImVec2(ImGui::GetIO().DisplaySize.x / 1.7f, ImGui::GetIO().DisplaySize.y / 1.5f);
+    const ImVec2 WINDOW_SIZE = ImVec2(emuenv.viewport_size.x / 1.7f, emuenv.viewport_size.y / 1.5f);
 
     int existing_saves_count = 0;
     static std::vector<ImTextureID> thumbnails_textures{ nullptr };
 
     switch (emuenv.common_dialog.savedata.mode_to_display) {
     case SCE_SAVEDATA_DIALOG_MODE_LIST:
-        ImGui::SetNextWindowPos(ImVec2(ImGui::GetIO().DisplaySize.x / 2.f, ImGui::GetIO().DisplaySize.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+        ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (emuenv.viewport_size.x / 2) - (WINDOW_SIZE.x / 2.f), emuenv.viewport_pos.y + (emuenv.viewport_size.y / 2.f) - (WINDOW_SIZE.y / 2.f)), ImGuiCond_Always);
         ImGui::SetNextWindowSize(WINDOW_SIZE);
         ImGui::PushStyleColor(ImGuiCol_WindowBg, GUI_COMMON_DIALOG_BG);
-        ImGui::Begin("##Savedata Dialog", nullptr, ImGuiWindowFlags_NoDecoration);
+        ImGui::Begin("##Savedata Dialog", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
         ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
         if (ImGui::Button("X", ImVec2(40 * SCALE.x, 30 * SCALE.y))) {
             emuenv.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
@@ -307,10 +307,10 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
         ImGui::SetCursorPosX(WINDOW_SIZE.x / 2 - ImGui::CalcTextSize(emuenv.common_dialog.savedata.list_title.c_str()).x / 2);
         ImGui::Text("%s", emuenv.common_dialog.savedata.list_title.c_str());
         ImGui::SetWindowFontScale(0.9f);
-        ImGui::SetNextWindowBgAlpha(0.f);
-        ImGui::BeginChild("##Selectables", ImVec2(0, 0), false, ImGuiWindowFlags_NoDecoration);
+        ImGui::BeginChild("##Selectables", ImVec2(0, 0), false, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoSavedSettings);
         thumbnails_textures.resize(emuenv.common_dialog.savedata.slot_list_size);
         for (std::uint32_t i = 0; i < emuenv.common_dialog.savedata.slot_list_size; i++) {
+            ImGui::PushID(i);
             switch (emuenv.common_dialog.savedata.display_type) {
             case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
                 draw_savedata_dialog_list(gui, emuenv, FONT_SCALE, SCALE, WINDOW_SIZE, THUMBNAIL_SIZE, i, i, thumbnails_textures);
@@ -323,6 +323,7 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
                 }
                 break;
             }
+            ImGui::PopID();
         }
         if (emuenv.common_dialog.savedata.draw_info_window) {
             draw_save_info(gui, emuenv, FONT_SCALE, SCALE, emuenv.common_dialog.savedata.selected_save, thumbnails_textures[emuenv.common_dialog.savedata.selected_save]);
@@ -414,7 +415,7 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
 
 void draw_common_dialog(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PushFont(gui.vita_font);
-    const auto RES_SCALE = ImVec2(ImGui::GetIO().DisplaySize.x / emuenv.res_width_dpi_scale, ImGui::GetIO().DisplaySize.y / emuenv.res_height_dpi_scale);
+    const auto RES_SCALE = ImVec2(emuenv.viewport_size.x / emuenv.res_width_dpi_scale, emuenv.viewport_size.y / emuenv.res_height_dpi_scale);
     const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
     if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         switch (emuenv.common_dialog.type) {

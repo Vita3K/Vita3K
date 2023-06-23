@@ -84,7 +84,7 @@ struct SavedataState {
     uint32_t bar_percent = 0;
     bool has_progress_bar = false;
 
-    SceAppUtilSaveDataSlotEmptyParam *list_empty_param = nullptr;
+    std::vector<SceAppUtilSaveDataSlotEmptyParam *> list_empty_param = { nullptr };
     uint32_t slot_list_size = 0;
     uint32_t list_style;
     std::string list_title;
