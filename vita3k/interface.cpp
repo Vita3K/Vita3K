@@ -599,6 +599,16 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             gui.vita_area.app_close = false;
     };
 
+    const auto browse_common_dialog = [&gui, &emuenv](const uint32_t button) {
+        switch (emuenv.common_dialog.type) {
+        case SAVEDATA_DIALOG:
+            gui::browse_save_data_dialog(gui, emuenv, button);
+            break;
+        default:
+            break;
+        }
+    };
+
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
         ImGui_ImplSdl_ProcessEvent(gui.imgui_state.get(), &event);
@@ -681,6 +691,8 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     gui::browse_home_apps_list(gui, emuenv, sce_ctrl_btn);
                 else if (gui.vita_area.live_area_screen)
                     gui::browse_live_area_apps_list(gui, emuenv, sce_ctrl_btn);
+                else if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING)
+                    browse_common_dialog(sce_ctrl_btn);
 
                 switch (sce_ctrl_btn) {
                 case SCE_CTRL_CROSS:
@@ -721,6 +733,9 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                         gui::browse_home_apps_list(gui, emuenv, binding.button);
                     else if (gui.vita_area.live_area_screen)
                         gui::browse_live_area_apps_list(gui, emuenv, binding.button);
+                    else if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
+                        browse_common_dialog(binding.button);
+                    }
                     break;
                 }
             }
