@@ -480,6 +480,8 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
     ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
     ImGui::SetNextWindowBgAlpha(0.f);
     ImGui::Begin("##user_management", &gui.vita_area.user_management, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
@@ -836,7 +838,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::TextColored(GUI_COLOR_TEXT, "%s", gui.users[emuenv.cfg.user_id].name.c_str());
     }
     ImGui::End();
-    ImGui::PopStyleVar();
+    ImGui::PopStyleVar(3);
 }
 
 } // namespace gui
