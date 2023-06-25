@@ -187,7 +187,7 @@ VKRenderTarget::VKRenderTarget(VKState &state, const SceGxmRenderTargetParams &p
     {
         color.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
 
-        vk::ClearColorValue clear_color{ std::array<float, 4>({ 0.968627450f, 0.776470588f, 0.0f, 0.0f }) };
+        vk::ClearColorValue clear_color{ std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 0.0f }) };
         cmd_buffer.clearColorImage(color.image, vk::ImageLayout::eTransferDstOptimal, clear_color, vkutil::color_subresource_range);
         color.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
     }
