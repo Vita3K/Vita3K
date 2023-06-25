@@ -81,11 +81,15 @@ void PipelineCache::init() {
     }
 
     {
-        // layout for the mask, color attachment as input
+        // layout for the mask, color attachment as input, being an input attachment or a storage image
+        // depending on whether or not we are using shader interlock
         std::array<vk::DescriptorSetLayoutBinding, 2> layout_binding;
+        const vk::DescriptorType intput_image_descriptor = state.features.support_shader_interlock
+            ? vk::DescriptorType::eStorageImage
+            : vk::DescriptorType::eInputAttachment;
         layout_binding[0] = vk::DescriptorSetLayoutBinding{
             .binding = 0,
-            .descriptorType = vk::DescriptorType::eInputAttachment,
+            .descriptorType = intput_image_descriptor,
             .descriptorCount = 1,
             .stageFlags = vk::ShaderStageFlagBits::eFragment
         };
@@ -294,11 +298,11 @@ vk::PipelineLayout PipelineCache::retrieve_pipeline_layout(const uint16_t vert_t
     return pipeline_layouts[vert_texture_count][frag_texture_count];
 }
 
-vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, uint32_t zls_control) {
+vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, uint32_t zls_control, bool no_color) {
     bool force_loaded = (zls_control & SCE_GXM_DEPTH_STENCIL_FORCE_LOAD_ENABLED) != 0;
     bool force_stored = (zls_control & SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED) != 0;
 
-    auto &render_passes_map = render_passes[force_loaded][force_stored];
+    auto &render_passes_map = no_color ? shader_interlock_pass : render_passes[force_loaded][force_stored];
 
     auto it = render_passes_map.find(format);
 
@@ -312,23 +316,23 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, uint32_t z
         .layout = vk::ImageLayout::eGeneral
     };
     vk::AttachmentReference ds_ref{
-        .attachment = 1,
+        .attachment = no_color ? 0U : 1U,
         .layout = vk::ImageLayout::eDepthStencilAttachmentOptimal
     };
     vk::SubpassDescription subpass{
         .pipelineBindPoint = vk::PipelineBindPoint::eGraphics
     };
-    subpass.setColorAttachments(color_ref);
     subpass.setPDepthStencilAttachment(&ds_ref);
-    subpass.setInputAttachments(color_ref);
+    if (!no_color) {
+        subpass.setColorAttachments(color_ref);
+        subpass.setInputAttachments(color_ref);
+    }
 
     vk::AttachmentDescription color_attachment{
         .format = format,
         .samples = vk::SampleCountFlagBits::e1,
         .loadOp = vk::AttachmentLoadOp::eLoad,
         .storeOp = vk::AttachmentStoreOp::eStore,
-        .stencilLoadOp = vk::AttachmentLoadOp::eDontCare,
-        .stencilStoreOp = vk::AttachmentStoreOp::eDontCare,
         .initialLayout = vk::ImageLayout::eGeneral,
         .finalLayout = vk::ImageLayout::eGeneral
     };
@@ -359,6 +363,12 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, uint32_t z
         .dstAccessMask = vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eDepthStencilAttachmentRead
     };
 
+    if (state.features.support_shader_interlock && no_color) {
+        // we must wait for the previous shaders to be done
+        dependencies[1].dstStageMask = vk::PipelineStageFlagBits::eFragmentShader;
+        dependencies[1].dstAccessMask = vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite;
+    }
+
     // if an attachment is sampled from, we want it to be done before the next render pass fragment shader
     dependencies[1] = {
         .srcSubpass = VK_SUBPASS_EXTERNAL,
@@ -368,6 +378,11 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, uint32_t z
         .srcAccessMask = vk::AccessFlagBits::eShaderRead,
         .dstAccessMask = vk::AccessFlagBits::eColorAttachmentWrite | vk::AccessFlagBits::eDepthStencilAttachmentWrite
     };
+
+    if (state.features.support_shader_interlock && !no_color) {
+        // we must wait for the shader interlock shader to be done
+        dependencies[1].srcAccessMask |= vk::AccessFlagBits::eShaderWrite;
+    }
 
     // self-dependency
     // this allows us to use a pipeline barrier in the render pass for programmable blending
@@ -386,6 +401,13 @@ vk::RenderPass PipelineCache::retrieve_render_pass(vk::Format format, uint32_t z
     pass_info.setAttachments(attachments);
     pass_info.setSubpasses(subpass);
     pass_info.setDependencies(dependencies);
+    if (no_color) {
+        // only add the ds attachment
+        pass_info.pAttachments = &attachments[1];
+        pass_info.attachmentCount = 1;
+        // no need for the self-dependency
+        pass_info.setDependencyCount(2);
+    }
 
     render_passes_map[format] = state.device.createRenderPass(pass_info);
 
@@ -527,12 +549,13 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
 
     const VertexProgram &vertex_program = *reinterpret_cast<VertexProgram *>(
         vertex_program_gxm.renderer_data.get());
+    const SceGxmProgram *gxm_fragment_shader = fragment_program_gxm.program.get(mem);
 
     // the vertex input state must be computed before shader are retrieved in case symbols are stripped
     const vk::PipelineVertexInputStateCreateInfo vertex_input = get_vertex_input_state(mem);
 
     const vk::PipelineShaderStageCreateInfo vertex_shader = retrieve_shader(vertex_program_gxm.program.get(mem), vertex_program.hash, true, fragment_program_gxm.is_maskupdate, mem, &vertex_program_gxm.attributes);
-    const vk::PipelineShaderStageCreateInfo fragment_shader = retrieve_shader(fragment_program_gxm.program.get(mem), fragment_program.hash, false, fragment_program_gxm.is_maskupdate, mem, nullptr);
+    const vk::PipelineShaderStageCreateInfo fragment_shader = retrieve_shader(gxm_fragment_shader, fragment_program.hash, false, fragment_program_gxm.is_maskupdate, mem, nullptr);
     const vk::PipelineShaderStageCreateInfo shader_stages[] = { vertex_shader, fragment_shader };
     // disable the fragment shader if gxm asks us to
     const bool is_fragment_disabled = record.front_side_fragment_program_mode == SCE_GXM_FRAGMENT_PROGRAM_DISABLED;
@@ -543,6 +566,8 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     };
 
     const bool two_sided = (record.two_sided == SCE_GXM_TWO_SIDED_ENABLED);
+
+    const bool use_shader_interlock = state.features.support_shader_interlock && gxm_fragment_shader->is_frag_color_used();
 
     const vk::PipelineRasterizationStateCreateInfo rasterizer{
         .polygonMode = translate_polygon_mode(record.front_polygon_mode),
@@ -567,7 +592,7 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
     };
 
     vk::PipelineColorBlendStateCreateInfo color_blending{};
-    if (is_fragment_disabled) {
+    if (is_fragment_disabled || use_shader_interlock) {
         // The write mask must be empty as the lack of a fragment shader results in undefined values
         static const vk::PipelineColorBlendAttachmentState blending = {
             .blendEnable = VK_FALSE,
@@ -601,6 +626,7 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
         .scissorCount = 1
     };
 
+    const vk::RenderPass render_pass = use_shader_interlock ? context.current_shader_interlock_pass : context.current_render_pass;
     vk::GraphicsPipelineCreateInfo pipeline_info{
         .stageCount = shader_stage_count,
         .pStages = shader_stages,
@@ -613,7 +639,7 @@ vk::Pipeline PipelineCache::retrieve_pipeline(VKContext &context, SceGxmPrimitiv
         .pColorBlendState = &color_blending,
         .pDynamicState = &dynamic_info,
         .layout = pipeline_layout,
-        .renderPass = context.current_render_pass,
+        .renderPass = render_pass,
         .subpass = 0
     };
 

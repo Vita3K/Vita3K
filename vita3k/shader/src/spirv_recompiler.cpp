@@ -740,11 +740,11 @@ static void create_fragment_inputs(spv::Builder &b, SpirvShaderParameters &param
         } else if (features.support_shader_interlock || features.support_texture_barrier) {
             // Create a global sampler, which is our color attachment
             spv::Id color_attachment = create_builtin_sampler(b, features, translation_state, "f_colorAttachment");
+            b.addDecoration(color_attachment, spv::DecorationCoherent);
             spv::Id color_attachment_raw = spv::NoResult;
 
             if (translation_state.is_vulkan) {
-                // this can happen only with shader interlock as a color attachment texture can be sampled only as an attachment in vulkan
-                b.addDecoration(color_attachment, spv::DecorationBinding, 1);
+                b.addDecoration(color_attachment, spv::DecorationBinding, 0);
                 b.addDecoration(color_attachment, spv::DecorationDescriptorSet, 1);
             } else {
                 b.addDecoration(color_attachment, spv::DecorationBinding, COLOR_ATTACHMENT_TEXTURE_SLOT_IMAGE);
@@ -1287,7 +1287,7 @@ static spv::Function *make_frag_finalize_function(spv::Builder &b, const SpirvSh
     if (!is_float_data_type(color_val_operand.type))
         color = utils::convert_to_float(b, color, color_val_operand.type, true);
 
-    if (program.is_frag_color_used() && features.should_use_shader_interlock() && translate_state.is_target_glsl) {
+    if (program.is_frag_color_used() && features.should_use_shader_interlock()) {
         spv::Id signed_i32 = b.makeIntType(32);
         spv::Id coord_id = b.createLoad(translate_state.frag_coord_id, spv::NoPrecision);
         spv::Id translated_id = b.createUnaryOp(spv::OpConvertFToS, b.makeVectorType(signed_i32, 4), coord_id);
@@ -1676,9 +1676,10 @@ static SpirvCode convert_gxp_to_spirv_impl(const SceGxmProgram &program, const s
             b.addExecutionMode(spv_func_main, spv::ExecutionModeOriginLowerLeft);
 
         if (program.is_frag_color_used() && features.should_use_shader_interlock()) {
-            b.addExecutionMode(spv_func_main, spv::ExecutionModePixelInterlockOrderedEXT);
+            b.addExecutionMode(spv_func_main, spv::ExecutionModeSampleInterlockOrderedEXT);
+            b.addExecutionMode(spv_func_main, spv::ExecutionModeEarlyFragmentTests);
             b.addExtension("SPV_EXT_fragment_shader_interlock");
-            b.addCapability(spv::CapabilityFragmentShaderPixelInterlockEXT);
+            b.addCapability(spv::CapabilityFragmentShaderSampleInterlockEXT);
 
             b.createNoResultOp(spv::OpBeginInvocationInterlockEXT);
         }
@@ -1780,9 +1781,6 @@ static std::string convert_spirv_to_glsl(const std::string &shader_name, SpirvCo
         glsl.set_remapped_variable_state(translation_state.frag_coord_id, true);
     }
     if (features.support_shader_interlock) {
-        if (translation_state.is_fragment && is_frag_color_used) {
-            glsl.add_header_line("layout(early_fragment_tests) in;\n");
-        }
         glsl.require_extension("GL_ARB_fragment_shader_interlock");
     }
     // Compile to GLSL, ready to give to GL driver.

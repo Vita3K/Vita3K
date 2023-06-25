@@ -138,16 +138,30 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
 
     context.start_recording();
 
-    context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, context.record.depth_stencil_surface.zlsControl);
+    uint32_t zls_control = context.record.depth_stencil_surface.zlsControl;
+    if (context.state.features.support_shader_interlock)
+        // we must always store the depth stencil
+        zls_control |= SCE_GXM_DEPTH_STENCIL_FORCE_STORE_ENABLED;
+    context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, zls_control);
+    if (context.state.features.support_shader_interlock)
+        // also retrieve / create the shader interlock pass
+        context.current_shader_interlock_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, ~0, true);
 
-    context.current_framebuffer = state.surface_cache.retrieve_framebuffer_handle(
-        mem, color_surface_fin, ds_surface_fin, context.current_render_pass, &context.current_color_attachment, &context.current_ds_attachment,
+    Framebuffer &framebuffer = state.surface_cache.retrieve_framebuffer_handle(
+        mem, color_surface_fin, ds_surface_fin, context.current_render_pass, context.current_shader_interlock_pass,
+        &context.current_color_attachment, &context.current_ds_attachment,
         &context.current_framebuffer_height, rt->width, rt->height);
+    context.current_framebuffer = framebuffer.standard;
+    context.current_shader_interlock_framebuffer = framebuffer.shader_interlock;
 
     if (state.features.use_mask_bit)
         sync_mask(context, mem);
 
     context.start_render_pass();
+
+    if (context.state.features.support_shader_interlock)
+        // update the render pass to load and store the depth and stencil
+        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, ~0U);
 }
 
 void VKContext::start_recording() {
@@ -229,21 +243,25 @@ void VKContext::start_render_pass() {
         fragment_textures[i].sampler = nullptr;
     }
 
-    vk::RenderPassBeginInfo pass_info{
+    curr_renderpass_info = {
         .renderPass = current_render_pass,
         .framebuffer = current_framebuffer,
         .renderArea = {
             .offset = { 0, 0 },
             .extent = { render_target->width, render_target->height } }
     };
-    std::array<vk::ClearValue, 2> clear_values{};
     // only the depth-stencil attachment may be clear if not force loaded
-    clear_values[1].depthStencil = vk::ClearDepthStencilValue{
+    std::array<vk::ClearValue, 2> curr_clear_values{};
+    curr_clear_values[1].depthStencil = vk::ClearDepthStencilValue{
         .depth = record.depth_stencil_surface.backgroundDepth,
         .stencil = record.depth_stencil_surface.control.content & SceGxmDepthStencilControl::stencil_bits
     };
-    pass_info.setClearValues(clear_values);
-    render_cmd.beginRenderPass(pass_info, vk::SubpassContents::eInline);
+    curr_renderpass_info.setClearValues(curr_clear_values);
+    render_cmd.beginRenderPass(curr_renderpass_info, vk::SubpassContents::eInline);
+
+    // set the renderpass info ready in case we need to switch between classic and framebuffer fetch usage
+    curr_renderpass_info.setClearValues(nullptr);
+    last_draw_was_framebuffer_fetch = false;
 
     // create and update the rendertarget descriptor set
     vk::DescriptorSetAllocateInfo descr_set_info{
@@ -254,23 +272,24 @@ void VKContext::start_render_pass() {
 
     // creat descriptor set for the whole scene with the mask and the color attachment
     // the mask will only be used if state.features.use_mask_bit is true
-    vk::DescriptorImageInfo descr_mask_info{
-        .sampler = nullptr,
-        .imageView = render_target->mask.view,
-        .imageLayout = vk::ImageLayout::eGeneral,
-    };
     vk::DescriptorImageInfo descr_color_info{
         .sampler = nullptr,
         .imageView = current_color_attachment->view,
         .imageLayout = vk::ImageLayout::eGeneral,
     };
+    vk::DescriptorImageInfo descr_mask_info{
+        .sampler = nullptr,
+        .imageView = render_target->mask.view,
+        .imageLayout = vk::ImageLayout::eGeneral,
+    };
     std::array<vk::WriteDescriptorSet, 2> write_descr;
 
+    const vk::DescriptorType input_type = state.features.support_shader_interlock ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eInputAttachment;
     write_descr[0] = {
         .dstSet = rendertarget_set,
         .dstBinding = 0,
         .dstArrayElement = 0,
-        .descriptorType = vk::DescriptorType::eInputAttachment,
+        .descriptorType = input_type,
     };
     write_descr[0].setImageInfo(descr_color_info);
     write_descr[1] = {
