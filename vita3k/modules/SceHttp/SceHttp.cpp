@@ -1507,7 +1507,8 @@ EXPORT(SceInt, sceHttpUriSweepPath, char *dst, const char *src, SceSize srcSize)
     unsigned int srcStrLen = srcSize - 1;
     if (srcStr[0] == '/') {
         auto lex = std::filesystem::path(src).lexically_normal();
-        strcpy(dst, lex.c_str());
+        const char *lexStr = lex.c_str();
+        strcpy(dst, lexStr);
     } else {
         // Nicely copy the contents of src into dst
         memcpy(dst, src, srcStrLen);
