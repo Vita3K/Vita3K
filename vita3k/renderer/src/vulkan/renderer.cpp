@@ -43,13 +43,26 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
     VkDebugUtilsMessageTypeFlagsEXT message_type,
     const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
     void *pUserData) {
+
+    static const char *ignored_errors[] = {
+        "VUID-vkCmdDrawIndexed-None-02721", // using r8g8b8a8 with non-multiple of 4 stride
+        "VUID-VkImageViewCreateInfo-usage-02275", // srgb does not support the storage format
+        "VUID-VkImageCreateInfo-imageCreateMaxMipLevels-02251", // srgb does not support the storage format
+    };
+
     if (message_severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT
         // for now we are not interested by performance warnings
         && (message_type & ~VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT)) {
         std::string_view message = callback_data->pMessage;
-        // ignore this message for now
-        if (message.find("VUID-vkCmdDrawIndexed-None-02721") == std::string_view::npos
-            && message.find("VUID-VkMemoryAllocateInfo-flags-03331") == std::string_view::npos)
+        bool log_error = true;
+        for (auto ignored_error : ignored_errors) {
+            if (message.find(ignored_error) != std::string_view::npos) {
+                log_error = false;
+                break;
+            }
+        }
+
+        if (log_error)
             LOG_ERROR("Validation layer: {}", callback_data->pMessage);
     }
     return VK_FALSE;
@@ -346,6 +359,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .wideLines = physical_device_features.wideLines,
             .samplerAnisotropy = physical_device_features.samplerAnisotropy,
             .occlusionQueryPrecise = physical_device_features.occlusionQueryPrecise,
+            .fragmentStoresAndAtomics = physical_device_features.fragmentStoresAndAtomics,
             .shaderInt16 = physical_device_features.shaderInt16,
         };
 
@@ -356,6 +370,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         bool support_buffer_device_address = false;
         bool support_standard_layout = false;
         bool support_external_memory = false;
+        bool support_shader_interlock = false;
         const std::map<std::string_view, bool *> optional_extensions = {
             { VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME, &temp_bool },
             // can be used by vma to improve performance
@@ -374,6 +389,8 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             { VK_KHR_UNIFORM_BUFFER_STANDARD_LAYOUT_EXTENSION_NAME, &support_standard_layout },
             // needed for FSR
             { VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME, &support_fsr },
+            // used for accurate programmable blending on desktop GPUs
+            { VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME, &support_shader_interlock },
 #ifdef __APPLE__
             // Needed to create the MoltenVK device
             { VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME, &temp_bool },
@@ -403,7 +420,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
         features.support_memory_mapping &= support_standard_layout;
 
 #ifdef __APPLE__
-        // we need to make a copy of the vertex buffer for moltenvk, so disable memory mapping
+        //  we need to make a copy of the vertex buffer for moltenvk, so disable memory mapping
         features.support_memory_mapping = false;
 #endif
 
@@ -447,13 +464,25 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             support_fsr = static_cast<bool>(props.get<vk::PhysicalDeviceShaderFloat16Int8Features>().shaderFloat16);
         }
 
-        // We use subpass input to get something similar to direct fragcolor access (there is no difference for the shader)
-        features.direct_fragcolor = true;
+        support_shader_interlock &= static_cast<bool>(physical_device_features.fragmentStoresAndAtomics);
+        if (support_shader_interlock) {
+            auto props = physical_device.getFeatures2KHR<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
+            support_shader_interlock = static_cast<bool>(props.get<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>().fragmentShaderSampleInterlock);
+        }
+
+        if (support_shader_interlock) {
+            features.support_shader_interlock = true;
+            LOG_INFO("Using shader interlock for accurate framebuffer fetch emulation");
+        } else {
+            // We use subpass input to get something similar to direct fragcolor access (there is no difference for the shader)
+            features.direct_fragcolor = true;
+        }
 
         vk::StructureChain<vk::DeviceCreateInfo,
             vk::PhysicalDeviceBufferDeviceAddressFeatures,
             vk::PhysicalDeviceUniformBufferStandardLayoutFeatures,
-            vk::PhysicalDeviceShaderFloat16Int8Features>
+            vk::PhysicalDeviceShaderFloat16Int8Features,
+            vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>
             device_info{
                 vk::DeviceCreateInfo{
                     .pEnabledFeatures = &enabled_features },
@@ -463,7 +492,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
                     .uniformBufferStandardLayout = VK_TRUE },
                 vk::PhysicalDeviceShaderFloat16Int8Features{
                     // FSR uses float16
-                    .shaderFloat16 = VK_TRUE }
+                    .shaderFloat16 = VK_TRUE },
+                vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT{
+                    .fragmentShaderSampleInterlock = VK_TRUE }
             };
         device_info.get().setQueueCreateInfos(queue_infos);
         device_info.get().setPEnabledExtensionNames(device_extensions);
@@ -475,6 +506,9 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
 
         if (!support_fsr)
             device_info.unlink<vk::PhysicalDeviceShaderFloat16Int8Features>();
+
+        if (!support_shader_interlock)
+            device_info.unlink<vk::PhysicalDeviceFragmentShaderInterlockFeaturesEXT>();
 
         try {
             device = physical_device.createDevice(device_info.get());
@@ -550,7 +584,7 @@ bool VKState::create(SDL_Window *window, std::unique_ptr<renderer::State> &state
             .float32 = std::array<float, 4>{ 1.0f, 1.0f, 1.0f, 1.0f }
         };
         cmd_buffer.clearColorImage(default_image.image, vk::ImageLayout::eTransferDstOptimal, white, vkutil::color_subresource_range);
-        default_image.transition_to(cmd_buffer, vkutil::ImageLayout::SampledImage);
+        default_image.transition_to(cmd_buffer, vkutil::ImageLayout::StorageImage);
         vkutil::end_single_time_command(device, general_queue, general_command_pool, cmd_buffer);
 
         // create the default sampler

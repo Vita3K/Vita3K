@@ -39,6 +39,13 @@ struct SurfaceCacheInfo {
     vkutil::Image texture;
 };
 
+struct Framebuffer {
+    // standard framebuffer, used most of the time
+    vk::Framebuffer standard;
+    // framenuffer used with shader interlock
+    vk::Framebuffer shader_interlock;
+};
+
 struct CastedTexture {
     vkutil::Image texture;
     // only used if an image to image copy is not possible
@@ -112,7 +119,7 @@ private:
 
     std::map<Address, ColorSurfaceCacheInfo> color_surface_textures;
     std::array<DepthStencilSurfaceCacheInfo, MAX_CACHE_SIZE_PER_CONTAINER> depth_stencil_textures;
-    std::map<std::pair<vk::ImageView, vk::ImageView>, vk::Framebuffer> framebuffer_array;
+    std::map<std::pair<vk::ImageView, vk::ImageView>, Framebuffer> framebuffer_array;
 
     std::vector<Address> last_use_color_surface_index;
     std::vector<size_t> last_use_depth_stencil_surface_index;
@@ -146,8 +153,8 @@ public:
     vkutil::Image *retrieve_depth_stencil_texture_handle(const MemState &mem, const SceGxmDepthStencilSurface &surface, int32_t width,
         int32_t height, const bool is_reading = false);
 
-    vk::Framebuffer retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
-        vk::RenderPass render_pass, vkutil::Image **color_texture_handle, vkutil::Image **ds_texture_handle,
+    Framebuffer &retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
+        vk::RenderPass standard_render_pass, vk::RenderPass interlock_render_pass, vkutil::Image **color_texture_handle, vkutil::Image **ds_texture_handle,
         uint16_t *stored_height, const uint32_t width, const uint32_t height);
 
     // If non-null, the return value must be sent as a PostSurfaceSyncRequest

@@ -187,9 +187,11 @@ struct VKContext : public renderer::Context {
     SceGxmPrimitiveType last_primitive;
 
     vk::RenderPass current_render_pass;
+    vk::RenderPass current_shader_interlock_pass = nullptr;
     vk::Pipeline current_pipeline;
 
     vk::Framebuffer current_framebuffer;
+    vk::Framebuffer current_shader_interlock_framebuffer = nullptr;
     uint16_t current_framebuffer_height;
     vkutil::Image *current_color_attachment;
     vkutil::Image *current_ds_attachment;
@@ -202,6 +204,11 @@ struct VKContext : public renderer::Context {
     // command buffer used for commands that need to be executed before render_cmd (mostly because they can't be done during a render pass)
     vk::CommandBuffer prerender_cmd{};
     VKRenderTarget *cmd_target = nullptr;
+
+    // used if necessary to restart easily the render pass
+    vk::RenderPassBeginInfo curr_renderpass_info;
+    // only useful if shader interlock is enabled, to know if we need to transition
+    bool last_draw_was_framebuffer_fetch;
 
     // only used if memory mapping is enabled
     std::mutex new_frame_mutex;

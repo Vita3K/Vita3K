@@ -66,10 +66,12 @@ ColorSurfaceCacheInfo::~ColorSurfaceCacheInfo() {
 }
 
 void VKSurfaceCache::destroy_framebuffers(vk::ImageView view) {
+    vkutil::DestroyQueue &destroy_queue = reinterpret_cast<VKContext *>(state.context)->frame().destroy_queue;
     for (auto it = framebuffer_array.begin(); it != framebuffer_array.end();) {
         // if the color of depth-stencil match the one of the render_target, this won't be used anymore
         if (it->first.first == view || it->first.second == view) {
-            reinterpret_cast<VKContext *>(state.context)->frame().destroy_queue.add(it->second);
+            destroy_queue.add(it->second.standard);
+            destroy_queue.add(it->second.shader_interlock);
             it = framebuffer_array.erase(it);
         } else {
             it = std::next(it);
@@ -502,7 +504,11 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
         };
         image_info_pNext = &image_info_formats;
     }
-    image.init_image(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment, vkutil::default_comp_mapping, image_create_flags, image_info_pNext);
+
+    vk::ImageUsageFlags surface_usages = vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eSampled | vk::ImageUsageFlagBits::eInputAttachment;
+    if (state.features.support_shader_interlock)
+        surface_usages |= vk::ImageUsageFlagBits::eStorage;
+    image.init_image(surface_usages, vkutil::default_comp_mapping, image_create_flags, image_info_pNext);
 
     // do it in the prerender if we read from this texture in the same scene (although this would be useless)
     vk::CommandBuffer cmd_buffer = context->prerender_cmd;
@@ -771,24 +777,28 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
     return &image;
 }
 
-vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
-    vk::RenderPass render_pass, vkutil::Image **color_texture_handle, vkutil::Image **ds_texture_handle,
+static Framebuffer empty_framebuffer{};
+Framebuffer& VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
+    vk::RenderPass standard_render_pass, vk::RenderPass interlock_render_pass, vkutil::Image **color_texture_handle, vkutil::Image **ds_texture_handle,
     uint16_t *stored_height, const uint32_t width, const uint32_t height) {
     if (!target) {
         LOG_ERROR("Unable to retrieve framebuffer with no active render target!");
-        return {};
+        return empty_framebuffer;
     }
 
     if (!color && !depth_stencil) {
         LOG_ERROR("Depth stencil and color surface are both null!");
-        return {};
+        return empty_framebuffer;
     }
 
     // First retrieve separately the color surface and ds surface
     vkutil::Image *color_handle;
     vkutil::Image *ds_handle;
 
-    if (color && color->data) {
+    if (!color_texture_handle) {
+        // used when getting a shader interlock framebuffer
+        color_handle = nullptr;
+    } else if (color && color->data) {
         const SceGxmColorBaseFormat color_base_format = gxm::get_base_format(color->colorFormat);
         vk::ComponentMapping swizzle = color::translate_swizzle(color->colorFormat);
         color_handle = retrieve_color_surface_texture_handle(mem, color->width,
@@ -813,27 +823,34 @@ vk::Framebuffer VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGx
         *ds_texture_handle = ds_handle;
     }
 
-    std::pair<vk::ImageView, vk::ImageView> key = { color_handle->view, ds_handle->view };
+    std::pair<vk::ImageView, vk::ImageView> key = { color_handle ? color_handle->view : nullptr, ds_handle->view };
     auto it = framebuffer_array.find(key);
 
     if (it != framebuffer_array.end()) {
         // we already created a framebuffer for this pair
-
         return it->second;
     }
 
     vk::FramebufferCreateInfo fb_info{
-        .renderPass = render_pass,
+        .renderPass = standard_render_pass,
         .width = width,
         .height = height,
         .layers = 1
     };
     vk::ImageView attachments[] = { color_handle->view, ds_handle->view };
     fb_info.setAttachments(attachments);
-    vk::Framebuffer fb = state.device.createFramebuffer(fb_info);
+    vk::Framebuffer fb_standard = state.device.createFramebuffer(fb_info);
 
-    framebuffer_array[key] = fb;
-    return fb;
+    vk::Framebuffer fb_interlock = nullptr;
+    if (state.features.support_shader_interlock) {
+        // we also need to create the framebuffer for shader interlock
+        fb_info.renderPass = interlock_render_pass;
+        fb_info.pAttachments = &attachments[1];
+        fb_info.attachmentCount = 1;
+        fb_interlock = state.device.createFramebuffer(fb_info);
+    }
+
+    return (framebuffer_array[key] = { fb_standard, fb_interlock });
 }
 
 ColorSurfaceCacheInfo *VKSurfaceCache::perform_surface_sync() {

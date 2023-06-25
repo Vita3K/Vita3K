@@ -192,7 +192,7 @@ static void draw_bind_descriptors(VKContext &context, MemState &mem) {
     vk::DescriptorImageInfo default_image_info{
         .sampler = context.state.default_image.sampler,
         .imageView = context.state.default_image.view,
-        .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal
+        .imageLayout = vk::ImageLayout::eGeneral
     };
 
     // vertex
@@ -351,6 +351,39 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     constexpr bool replaced_indices = false;
 #endif
 
+    const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
+    const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
+    if (context.state.features.direct_fragcolor && fragment_program_gxp.is_frag_color_used()) {
+        // the fragment shader is using programmable blending with a subpass input
+        vk::ImageMemoryBarrier barrier{
+            .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
+            .dstAccessMask = vk::AccessFlagBits::eInputAttachmentRead,
+            .oldLayout = vk::ImageLayout::eGeneral,
+            .newLayout = vk::ImageLayout::eGeneral,
+            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+            .image = context.current_color_attachment->image,
+            .subresourceRange = vkutil::color_subresource_range
+        };
+        context.render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
+            vk::DependencyFlagBits::eByRegion, {}, {}, barrier);
+    } else if (context.state.features.support_shader_interlock
+        && fragment_program_gxp.is_frag_color_used() != context.last_draw_was_framebuffer_fetch) {
+        // restart the render pass to act as a barrier
+        context.render_cmd.endRenderPass();
+
+        if (fragment_program_gxp.is_frag_color_used()) {
+            context.curr_renderpass_info.framebuffer = context.current_shader_interlock_framebuffer;
+            context.curr_renderpass_info.renderPass = context.current_shader_interlock_pass;
+        } else {
+            context.curr_renderpass_info.framebuffer = context.current_framebuffer;
+            context.curr_renderpass_info.renderPass = context.current_render_pass;
+        }
+
+        context.render_cmd.beginRenderPass(context.curr_renderpass_info, vk::SubpassContents::eInline);
+        context.last_draw_was_framebuffer_fetch = fragment_program_gxp.is_frag_color_used();
+    }
+
     if (context.current_visibility_buffer != nullptr && context.current_query_idx != -1 && !context.is_in_query) {
         if (context.current_visibility_buffer->queries_used[context.current_query_idx]) {
             static bool has_happened = false;
@@ -368,36 +401,15 @@ void draw(VKContext &context, SceGxmPrimitiveType type, SceGxmIndexFormat format
     }
 
     // do we need to check for a pipeline change?
-    if (context.refresh_pipeline || !context.in_renderpass || type != context.last_primitive) {
+    if (context.refresh_pipeline || type != context.last_primitive) {
         context.refresh_pipeline = false;
         context.last_primitive = type;
         vk::Pipeline new_pipeline = context.state.pipeline_cache.retrieve_pipeline(context, type, mem);
 
-        if (!context.in_renderpass || new_pipeline != context.current_pipeline) {
+        if (new_pipeline != context.current_pipeline) {
             context.current_pipeline = new_pipeline;
-            if (!context.in_renderpass)
-                context.start_render_pass();
-
             context.render_cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, context.current_pipeline);
         }
-    }
-
-    const SceGxmFragmentProgram &gxm_fragment_program = *context.record.fragment_program.get(mem);
-    const SceGxmProgram &fragment_program_gxp = *gxm_fragment_program.program.get(mem);
-    if (fragment_program_gxp.is_frag_color_used()) {
-        // the fragment shader is using programmable blending
-        vk::ImageMemoryBarrier barrier{
-            .srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite,
-            .dstAccessMask = vk::AccessFlagBits::eInputAttachmentRead,
-            .oldLayout = vk::ImageLayout::eGeneral,
-            .newLayout = vk::ImageLayout::eGeneral,
-            .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = context.current_color_attachment->image,
-            .subresourceRange = vkutil::color_subresource_range
-        };
-        context.render_cmd.pipelineBarrier(vk::PipelineStageFlagBits::eColorAttachmentOutput, vk::PipelineStageFlagBits::eFragmentShader,
-            vk::DependencyFlagBits::eByRegion, {}, {}, barrier);
     }
 
     if (config.log_active_shaders) {
