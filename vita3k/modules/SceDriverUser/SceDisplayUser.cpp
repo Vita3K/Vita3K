@@ -23,7 +23,8 @@ TRACY_MODULE_NAME(SceDisplayUser);
 
 EXPORT(SceInt32, sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
     TRACY_FUNC(sceDisplayGetFrameBuf, pFrameBuf, sync);
-    return CALL_EXPORT(_sceDisplayGetFrameBuf, pFrameBuf, sync);
+    uint32_t pFrameBuf_size = pFrameBuf->size;
+    return CALL_EXPORT(_sceDisplayGetFrameBuf, pFrameBuf, sync, &pFrameBuf_size);
 }
 
 EXPORT(int, sceDisplayGetFrameBufInternal) {
@@ -43,7 +44,8 @@ EXPORT(int, sceDisplayGetResolutionInfoInternal) {
 
 EXPORT(SceInt32, sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
     TRACY_FUNC(sceDisplaySetFrameBuf, pFrameBuf, sync);
-    return CALL_EXPORT(_sceDisplaySetFrameBuf, pFrameBuf, sync);
+    uint32_t pFrameBuf_size = pFrameBuf->size;
+    return CALL_EXPORT(_sceDisplaySetFrameBuf, pFrameBuf, sync, &pFrameBuf_size);
 }
 
 EXPORT(int, sceDisplaySetFrameBufForCompat) {

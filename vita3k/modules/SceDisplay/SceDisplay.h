@@ -60,8 +60,14 @@ struct SceDisplayFrameBuf {
     SceUInt32 height = 0;
 };
 
-EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync);
-EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync);
+// Only BigSky uses this version of the structure
+struct SceDisplayFrameBuf2 : public SceDisplayFrameBuf {
+    // BigSky uses this field and sets it to a value between 0 and 5, in practice always 1
+    SceUInt32 unkn = 0;
+};
+
+EXPORT(SceInt32, _sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync, uint32_t *pFrameBuf_size);
+EXPORT(SceInt32, _sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync, uint32_t *pFrameBuf_size);
 
 BRIDGE_DECL(_sceDisplayGetFrameBuf)
 BRIDGE_DECL(_sceDisplayGetFrameBufInternal)
