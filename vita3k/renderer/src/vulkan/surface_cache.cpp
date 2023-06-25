@@ -509,7 +509,7 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
     // must do a first transition to draw the placeholder color
     image.transition_to(cmd_buffer, vkutil::ImageLayout::TransferDst);
 
-    vk::ClearColorValue clear_color{ std::array<float, 4>({ 0.968627450f, 0.776470588f, 0.0f, 0.0f }) };
+    vk::ClearColorValue clear_color{ std::array<float, 4>({ 0.0f, 0.0f, 0.0f, 0.0f }) };
     cmd_buffer.clearColorImage(image.image, vk::ImageLayout::eTransferDstOptimal, clear_color, vkutil::color_subresource_range);
     image.transition_to(cmd_buffer, vkutil::ImageLayout::ColorAttachmentReadWrite);
 
