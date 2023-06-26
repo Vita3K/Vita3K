@@ -646,6 +646,13 @@ static void register_access_violation_handler(AccessViolationHandler handler) {
     if (sigaction(SIGSEGV, &sa, NULL) == -1) {
         LOG_CRITICAL("Failed to register an exception handler");
     }
+#ifdef __APPLE__
+    // When accessing memory region which is PROT_NONE on macOS, it is raising SIGBUS not SIGSEGV.
+    // So apply same signal handler to SIGBUS
+    if (sigaction(SIGBUS, &sa, NULL) == -1) {
+        LOG_CRITICAL("Failed to register an exception handler to SIGBUS");
+    }
+#endif
 }
 
 #endif
