@@ -183,41 +183,57 @@ void browse_save_data_dialog(GuiState &gui, EmuEnvState &emuenv, const uint32_t 
         return;
     }
 
-    const auto save_data_slot_list_size = static_cast<int32_t>(save_data_slot_list.size() - 1);
+    switch (emuenv.common_dialog.savedata.mode_to_display) {
+    case SCE_SAVEDATA_DIALOG_MODE_FIXED:
+        switch (button) {
+        case SCE_CTRL_RIGHT:
+            current_save_data_dialog_button_id = std::min(current_save_data_dialog_button_id + 1, static_cast<int32_t>(emuenv.common_dialog.savedata.btn_num - 1));
+            break;
+        case SCE_CTRL_LEFT:
+            current_save_data_dialog_button_id = std::max(current_save_data_dialog_button_id - 1, 0);
+            break;
+        case SCE_CTRL_CROSS:
+            emuenv.common_dialog.savedata.button_id = emuenv.common_dialog.savedata.btn_val[current_save_data_dialog_button_id];
+            emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
+            emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+            current_save_data_dialog_button_id = 0;
+            break;
+        default: break;
+        }
+        break;
+    case SCE_SAVEDATA_DIALOG_MODE_LIST: {
+        const auto save_data_slot_list_size = static_cast<int32_t>(save_data_slot_list.size() - 1);
 
-    // Find current selected save data slot in save data slot list
-    const auto save_data_slot_list_index = std::find(save_data_slot_list.begin(), save_data_slot_list.end(), current_selected_save_data_slot);
-    if (!emuenv.common_dialog.savedata.draw_info_window && (emuenv.common_dialog.savedata.mode_to_display == SCE_SAVEDATA_DIALOG_MODE_LIST) && (save_data_slot_list_index == save_data_slot_list.end())) {
-        if (save_data_slot_list.empty()) {
-            switch (button) {
-            case SCE_CTRL_CROSS:
-            case SCE_CTRL_CIRCLE:
-                emuenv.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
-                emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
-                emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
-                break;
-            }
-        } else 
-            current_selected_save_data_slot = first_visible_save_data_slot;
-        return;
-    }
+        // Find current selected save data slot in save data slot list
+        const auto save_data_slot_list_index = std::find(save_data_slot_list.begin(), save_data_slot_list.end(), current_selected_save_data_slot);
+        if (!emuenv.common_dialog.savedata.draw_info_window && (save_data_slot_list_index == save_data_slot_list.end())) {
+            if (save_data_slot_list.empty()) {
+                switch (button) {
+                case SCE_CTRL_CROSS:
+                case SCE_CTRL_CIRCLE:
+                    emuenv.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
+                    emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_USER_CANCELED;
+                    emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
+                    break;
+                }
+            } else
+                current_selected_save_data_slot = first_visible_save_data_slot;
+            return;
+        }
 
-    const auto list_index = static_cast<int32_t>(std::distance(save_data_slot_list.begin(), save_data_slot_list_index));
-    const auto prev_save_data_slot = save_data_slot_list[std::max(list_index - 1, 0)];
-    const auto next_save_data_slot = save_data_slot_list[std::min(list_index + 1, save_data_slot_list_size)];
-    const auto is_save_exist = emuenv.common_dialog.savedata.slot_info[current_selected_save_data_slot].isExist == 1;
+        const auto list_index = static_cast<int32_t>(std::distance(save_data_slot_list.begin(), save_data_slot_list_index));
+        const auto prev_save_data_slot = save_data_slot_list[std::max(list_index - 1, 0)];
+        const auto next_save_data_slot = save_data_slot_list[std::min(list_index + 1, save_data_slot_list_size)];
+        const auto is_save_exist = emuenv.common_dialog.savedata.slot_info[current_selected_save_data_slot].isExist == 1;
 
-    switch (button) {
-    case SCE_CTRL_UP:
-        if (emuenv.common_dialog.savedata.mode_to_display == SCE_SAVEDATA_DIALOG_MODE_LIST) {
+        switch (button) {
+        case SCE_CTRL_UP:
             if ((emuenv.common_dialog.savedata.draw_info_window || (save_data_slot_list.front() == current_selected_save_data_slot)))
                 save_data_list_type_selected = CANCEL;
             else
                 current_selected_save_data_slot = prev_save_data_slot;
-        }
-        break;
-    case SCE_CTRL_DOWN:
-        if (emuenv.common_dialog.savedata.mode_to_display == SCE_SAVEDATA_DIALOG_MODE_LIST) {
+            break;
+        case SCE_CTRL_DOWN:
             if (save_data_list_type_selected == CANCEL) {
                 if (emuenv.common_dialog.savedata.draw_info_window)
                     save_data_list_type_selected = BACK;
@@ -227,34 +243,16 @@ void browse_save_data_dialog(GuiState &gui, EmuEnvState &emuenv, const uint32_t 
                 }
             } else
                 current_selected_save_data_slot = next_save_data_slot;
-        }
-        break;
-    case SCE_CTRL_LEFT:
-        switch (emuenv.common_dialog.savedata.mode_to_display) {
-        case SCE_SAVEDATA_DIALOG_MODE_FIXED:
-            current_save_data_dialog_button_id = std::max(current_save_data_dialog_button_id - 1, 0);
             break;
-        case SCE_SAVEDATA_DIALOG_MODE_LIST:
+        case SCE_CTRL_LEFT:
             if (!emuenv.common_dialog.savedata.draw_info_window)
                 save_data_list_type_selected = static_cast<SaveDataListType>(std::max(static_cast<int32_t>(save_data_list_type_selected) - 1, 0));
             break;
-        default: break;
-        }
-        break;
-    case SCE_CTRL_RIGHT:
-        switch (emuenv.common_dialog.savedata.mode_to_display) {
-        case SCE_SAVEDATA_DIALOG_MODE_FIXED:
-            current_save_data_dialog_button_id = std::min(current_save_data_dialog_button_id + 1, static_cast<int32_t>(emuenv.common_dialog.savedata.btn_num - 1));
-            break;
-        case SCE_SAVEDATA_DIALOG_MODE_LIST:
+        case SCE_CTRL_RIGHT:
             if (!emuenv.common_dialog.savedata.draw_info_window && (save_data_list_type_selected == CANCEL) || ((save_data_list_type_selected == SLOT) && is_save_exist))
                 save_data_list_type_selected = static_cast<SaveDataListType>(std::min(static_cast<int32_t>(save_data_list_type_selected) + 1, 2));
             break;
-        default: break;
-        }
-        break;
-    case SCE_CTRL_CIRCLE:
-        if (emuenv.common_dialog.savedata.mode_to_display == SCE_SAVEDATA_DIALOG_MODE_LIST) {
+        case SCE_CTRL_CIRCLE:
             if (emuenv.common_dialog.savedata.draw_info_window) {
                 save_data_list_type_selected = INFO;
                 emuenv.common_dialog.savedata.draw_info_window = false;
@@ -264,17 +262,8 @@ void browse_save_data_dialog(GuiState &gui, EmuEnvState &emuenv, const uint32_t 
                 emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
                 save_data_list_type_selected = SLOT;
             }
-        }
-        break;
-    case SCE_CTRL_CROSS:
-        switch (emuenv.common_dialog.savedata.mode_to_display) {
-        case SCE_SAVEDATA_DIALOG_MODE_FIXED:
-            emuenv.common_dialog.savedata.button_id = emuenv.common_dialog.savedata.btn_val[current_save_data_dialog_button_id];
-            emuenv.common_dialog.result = SCE_COMMON_DIALOG_RESULT_OK;
-            emuenv.common_dialog.substatus = SCE_COMMON_DIALOG_STATUS_FINISHED;
-            current_save_data_dialog_button_id = 0;
             break;
-        case SCE_SAVEDATA_DIALOG_MODE_LIST:
+        case SCE_CTRL_CROSS:
             switch (save_data_list_type_selected) {
             case CANCEL:
                 emuenv.common_dialog.savedata.button_id = SCE_SAVEDATA_DIALOG_BUTTON_ID_INVALID;
@@ -298,23 +287,35 @@ void browse_save_data_dialog(GuiState &gui, EmuEnvState &emuenv, const uint32_t 
                 save_data_list_type_selected = INFO;
                 emuenv.common_dialog.savedata.draw_info_window = false;
                 break;
+            default: break;
             }
             break;
         default: break;
         }
         break;
+    }
     default: break;
     }
 }
 
-static void draw_save_info(GuiState &gui, EmuEnvState &emuenv, const ImVec2 WINDOW_SIZE, float FONT_SCALE, ImVec2 SCALE, int flags, int loop_index, const ImTextureID &texture) {
+static ImTextureID check_and_init_icon_texture(GuiState &gui, EmuEnvState &emuenv, const uint32_t index) {
+    auto &icon_texture = emuenv.common_dialog.savedata.icon_texture[index];
+    if (!icon_texture && !emuenv.common_dialog.savedata.icon_buffer[index].empty()) {
+        icon_texture = load_image(gui, (const char *)emuenv.common_dialog.savedata.icon_buffer[index].data(),
+            static_cast<int>(emuenv.common_dialog.savedata.icon_buffer[index].size()));
+    }
+
+    return icon_texture;
+}
+
+static void draw_save_info(GuiState &gui, EmuEnvState &emuenv, const ImVec2 WINDOW_SIZE, float FONT_SCALE, ImVec2 SCALE, int flags, int loop_index, const ImTextureID icon_texture) {
     const ImVec2 THUMBNAIL_SIZE = ImVec2(160.f * SCALE.x, 90.f * SCALE.y);
     auto lang = emuenv.common_dialog.lang.save_data.info;
 
     const ImVec2 ICON_POS(100.f * SCALE.x, 16.f * SCALE.y);
-    if (!emuenv.common_dialog.savedata.icon_buffer[loop_index].empty()) {
+    if (icon_texture) {
         ImGui::SetCursorPos(ICON_POS);
-        ImGui::Image(texture, THUMBNAIL_SIZE);
+        ImGui::Image(icon_texture, THUMBNAIL_SIZE);
     }
 
     ImGui::SetWindowFontScale(1.5f * FONT_SCALE);
@@ -342,7 +343,7 @@ static void draw_save_info(GuiState &gui, EmuEnvState &emuenv, const ImVec2 WIND
     }
 }
 
-static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float FONT_SCALE, ImVec2 SCALE, ImVec2 WINDOW_SIZE, ImVec2 THUMBNAIL_SIZE, int loop_index, int save_index, std::vector<ImTextureID> &thumbnails_textures) {
+static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float FONT_SCALE, ImVec2 SCALE, ImVec2 WINDOW_SIZE, ImVec2 THUMBNAIL_SIZE, int loop_index, int save_index) {
     const ImVec2 save_pos = ImVec2((150.f * SCALE.x) + THUMBNAIL_SIZE.x + (20 * SCALE.x), (save_index * THUMBNAIL_SIZE.y) + (save_index * (1.f * SCALE.y)));
     const auto SELECT_PADDING = 4.f * SCALE.x;
     const ImVec2 selectable_pos = ImVec2(30.f * SCALE.x, save_pos.y + (SELECT_PADDING / 2.f));
@@ -386,7 +387,7 @@ static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float 
     }
 
     ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
-    ImGui::SetCursorPos(ImVec2(save_pos.x, save_pos.y + (is_save_exist ? 10.f : 30.f) * SCALE.y));
+    ImGui::SetCursorPos(ImVec2(save_pos.x, save_pos.y + (is_save_exist ? 10.f * SCALE.y : (THUMBNAIL_SIZE.y / 2.f) - (ImGui::GetFontSize() / 2.f))));
     ImGui::BeginGroup();
     if (!emuenv.common_dialog.savedata.title[loop_index].empty())
         ImGui::Text("%s", emuenv.common_dialog.savedata.title[loop_index].c_str());
@@ -412,15 +413,11 @@ static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float 
     }
     ImGui::EndGroup();
     ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
-    if (emuenv.common_dialog.savedata.icon_loaded[loop_index]) {
-        thumbnails_textures[loop_index] = load_image(gui, (const char *)emuenv.common_dialog.savedata.icon_buffer[loop_index].data(),
-            static_cast<int>(emuenv.common_dialog.savedata.icon_buffer[loop_index].size()));
-        emuenv.common_dialog.savedata.icon_loaded[loop_index] = false;
-    }
     const ImVec2 THUMBNAIL_POS(150.f * SCALE.x, save_pos.y);
-    if (!emuenv.common_dialog.savedata.icon_buffer[loop_index].empty()) {
+    const auto icon_texture = check_and_init_icon_texture(gui, emuenv, loop_index);
+    if (icon_texture) {
         ImGui::SetCursorPos(THUMBNAIL_POS);
-        ImGui::Image(thumbnails_textures[loop_index], THUMBNAIL_SIZE);
+        ImGui::Image(icon_texture, THUMBNAIL_SIZE);
     }
     ImGui::SetCursorPos(ImVec2(THUMBNAIL_POS.x, THUMBNAIL_POS.y + THUMBNAIL_SIZE.y));
     ImGui::Separator();
@@ -446,7 +443,6 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
     const ImVec2 VIEWPORT_POS = ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
 
     int existing_saves_count = 0;
-    static std::vector<ImTextureID> thumbnails_textures{ nullptr };
     auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings;
     if (gui.is_nav_button)
         flags |= ImGuiWindowFlags_NoMouseInputs;
@@ -490,20 +486,19 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
         ImGui::SetNextWindowBgAlpha(0.f);
         ImGui::BeginChild("##selectables", WINDOW_SIZE, false, flags);
         if (emuenv.common_dialog.savedata.draw_info_window)
-            draw_save_info(gui, emuenv, WINDOW_SIZE, FONT_SCALE, SCALE, flags, emuenv.common_dialog.savedata.selected_save, thumbnails_textures[emuenv.common_dialog.savedata.selected_save]);
+            draw_save_info(gui, emuenv, WINDOW_SIZE, FONT_SCALE, SCALE, flags, emuenv.common_dialog.savedata.selected_save, emuenv.common_dialog.savedata.icon_texture[emuenv.common_dialog.savedata.selected_save]);
         else {
-            thumbnails_textures.resize(emuenv.common_dialog.savedata.slot_list_size);
             for (std::uint32_t i = 0; i < emuenv.common_dialog.savedata.slot_list_size; i++) {
                 ImGui::PushID(i);
                 switch (emuenv.common_dialog.savedata.display_type) {
                 case SCE_SAVEDATA_DIALOG_TYPE_SAVE:
-                    draw_savedata_dialog_list(gui, emuenv, FONT_SCALE, SCALE, WINDOW_SIZE, THUMBNAIL_SIZE, i, i, thumbnails_textures);
+                    draw_savedata_dialog_list(gui, emuenv, FONT_SCALE, SCALE, WINDOW_SIZE, THUMBNAIL_SIZE, i, i);
                     save_data_slot_list.push_back(i);
                     break;
                 case SCE_SAVEDATA_DIALOG_TYPE_LOAD:
                 case SCE_SAVEDATA_DIALOG_TYPE_DELETE:
                     if (emuenv.common_dialog.savedata.slot_info[i].isExist == 1) {
-                        draw_savedata_dialog_list(gui, emuenv, FONT_SCALE, SCALE, WINDOW_SIZE, THUMBNAIL_SIZE, i, existing_saves_count, thumbnails_textures);
+                        draw_savedata_dialog_list(gui, emuenv, FONT_SCALE, SCALE, WINDOW_SIZE, THUMBNAIL_SIZE, i, existing_saves_count);
                         existing_saves_count++;
                         save_data_slot_list.push_back(i);
                     }
@@ -540,18 +535,20 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
         ImGui::BeginChild("##save_data_fixed_dialog", WINDOW_SIZE, true, flags);
         ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
 
-        static ImTextureID THUMBNAIL_TEXTURE = nullptr;
-        if (emuenv.common_dialog.savedata.icon_loaded[emuenv.common_dialog.savedata.selected_save]) {
-            THUMBNAIL_TEXTURE = load_image(gui, (const char *)emuenv.common_dialog.savedata.icon_buffer[emuenv.common_dialog.savedata.selected_save].data(),
-                static_cast<int>(emuenv.common_dialog.savedata.icon_buffer[emuenv.common_dialog.savedata.selected_save].size()));
-            emuenv.common_dialog.savedata.icon_loaded[emuenv.common_dialog.savedata.selected_save] = false;
-        }
-        if (!emuenv.common_dialog.savedata.icon_buffer[emuenv.common_dialog.savedata.selected_save].empty()) {
+        const ImVec2 ICON_POS(48 * SCALE.x, 34 * SCALE.y);
+
+        // Draw the save data icon
+        const auto icon_texture = check_and_init_icon_texture(gui, emuenv, emuenv.common_dialog.savedata.selected_save);
+        if (icon_texture) {
             ImGui::SetCursorPos(ImVec2(48 * SCALE.x, 34 * SCALE.y));
-            ImGui::Image(THUMBNAIL_TEXTURE, THUMBNAIL_SIZE);
+            ImGui::Image(icon_texture, THUMBNAIL_SIZE);
         }
+
+        const auto is_save_exist = emuenv.common_dialog.savedata.slot_info[emuenv.common_dialog.savedata.selected_save].isExist == 1;
+
+        // Draw the save data icon, title and date time
         ImGui::SameLine(0, 20 * SCALE.x);
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (10.f * SCALE.x));
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() + (is_save_exist ? (10.f * SCALE.x) : (THUMBNAIL_SIZE.y / 2.f) - (ImGui::GetFontSize() / 2.f)));
         ImGui::BeginGroup();
         if (!emuenv.common_dialog.savedata.title[emuenv.common_dialog.savedata.selected_save].empty()) {
             ImGui::Text("%s", emuenv.common_dialog.savedata.title[emuenv.common_dialog.savedata.selected_save].c_str());
@@ -564,9 +561,12 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
             ImGui::Text("%s", emuenv.common_dialog.savedata.subtitle[emuenv.common_dialog.savedata.selected_save].c_str());
         }
         ImGui::EndGroup();
-        ImGui::SetWindowFontScale(1.2f * FONT_SCALE);
+
+        ImGui::SetCursorPosY(ICON_POS.y + THUMBNAIL_SIZE.y + (10.f * SCALE.y));
+        ImGui::Separator();
+        ImGui::SetWindowFontScale(1.25f * FONT_SCALE);
         ImGui::PushTextWrapPos(WINDOW_SIZE.x - 50.f * SCALE.x);
-        ImGui::SetCursorPos(ImVec2(HALF_WINDOW_SIZE.x - ImGui::CalcTextSize(emuenv.common_dialog.savedata.msg.c_str(), 0, false, WINDOW_SIZE.x - 100.f).x / 2, WINDOW_SIZE.y / 2 + 10));
+        ImGui::SetCursorPos(ImVec2(HALF_WINDOW_SIZE.x - ImGui::CalcTextSize(emuenv.common_dialog.savedata.msg.c_str(), 0, false, WINDOW_SIZE.x - 100.f).x / 2, (WINDOW_SIZE.y / 2.f) + (20.f * SCALE.y)));
         ImGui::Text("%s", emuenv.common_dialog.savedata.msg.c_str());
         ImGui::PopTextWrapPos();
         if (emuenv.common_dialog.savedata.has_progress_bar) {
@@ -610,7 +610,7 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
         ImGui::PopStyleColor();
         ImGui::PopStyleVar();
         break;
-    } break;
+    }
     }
     ImGui::End();
     ImGui::PopStyleVar(3);
