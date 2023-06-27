@@ -4344,7 +4344,34 @@ EXPORT(int, sceGxmShaderPatcherForceUnregisterProgram, SceGxmShaderPatcher *shad
     if (!shaderPatcher || !programId) {
         return RET_ERROR(SCE_GXM_ERROR_INVALID_POINTER);
     }
-    return UNIMPLEMENTED();
+
+    SceGxmRegisteredProgram *rp = programId.get(emuenv.mem);
+
+    // look for existing programs and free them
+    if (rp->program.get(emuenv.mem)->is_vertex()) {
+        for (auto it = shaderPatcher->vertex_program_cache.begin(); it != shaderPatcher->vertex_program_cache.end();) {
+            if (it->first.vertex_program.program == rp->program) {
+                free_callbacked(emuenv, thread_id, shaderPatcher, it->second.address());
+                it = shaderPatcher->vertex_program_cache.erase(it);
+            } else {
+                it++;
+            }
+        }
+    } else {
+        for (auto it = shaderPatcher->fragment_program_cache.begin(); it != shaderPatcher->fragment_program_cache.end();) {
+            if (it->first.fragment_program.program == rp->program) {
+                free_callbacked(emuenv, thread_id, shaderPatcher, it->second.address());
+                it = shaderPatcher->fragment_program_cache.erase(it);
+            } else {
+                it++;
+            }
+        }
+    }
+
+    rp->program.reset();
+    free_callbacked(emuenv, thread_id, shaderPatcher, programId);
+
+    return 0;
 }
 
 EXPORT(uint32_t, sceGxmShaderPatcherGetBufferMemAllocated, const SceGxmShaderPatcher *shaderPatcher) {
