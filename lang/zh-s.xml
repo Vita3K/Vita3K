@@ -59,7 +59,7 @@
 		<history_version>{}版本</history_version>
 		<information>信息</information>
 		<app_delete>删除此应用程序及所有相关数据，包括保存数据。</app_delete>
-		<app_delete_note>删除应用程序可能需要一段时间。
+		<app_delete_note>删除应用程序可能需要一段时间，
 取决于它的大小和您的硬件。</app_delete_note>
 		<addcont_delete>要删除此追加内容吗？</addcont_delete>
 		<license_delete>要删除此授权吗？</license_delete>
@@ -220,6 +220,18 @@
 			<state id = "6">可玩</state>
 		</states>
 	</compatibility>
+
+	<compat_db>
+		<get_failed>无法获取当前兼容性数据库，请检查防火墙/互联网连接后再重试。</get_failed>
+		<download_failed>无法下载更新于{}的应用程序兼容性数据库，请稍后重试。</download_failed>
+		<load_failed>无法读取已下载更新于{}的应用程序兼容性数据库。</load_failed>
+		<new_app_listed>兼容性数据库已成功从{}更新至{}。&#xA;
+已列出{}个新的应用程序，使总数达到{}个！</new_app_listed>
+		<app_listed>兼容性数据库已成功从{}更新至{}。&#xA;
+已列出{}个应用程序！</app_listed>
+		<download_app_listed>已成功下载并加载{}更新的兼容性数据库。&#xA;
+已列出{}个应用程序！</download_app_listed>
+	</compat_db>
 
 	<compile_shaders>
 		<compiling_shaders>正在编译着色器</compiling_shaders>
