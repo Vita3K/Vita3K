@@ -156,7 +156,7 @@ struct LangState {
         { "history_version", "Version {}" },
         { "information", "Information" },
         { "app_delete", "This application and all related data, including saved data, will be deleted." },
-        { "app_delete_note", "Deleting an application may take a while\ndepending on its size and your hardware." },
+        { "app_delete_note", "Deleting an application may take a while,\ndepending on its size and your hardware." },
         { "addcont_delete", "Do you want to delete this add-on data?" },
         { "license_delete", "Do you want to delete this license?" },
         { "save_delete", "Do you want to delete this saved data?" },
@@ -188,6 +188,14 @@ struct LangState {
         };
     };
     Compatibility compatibility;
+    std::map<std::string, std::string> compat_db = {
+        { "get_failed", "Failed to get current compatibility database, check firewall/internet access, try again later." },
+        { "download_failed", "Failed to download Applications compatibility database updated at: {}" },
+        { "load_failed", "Failed to load Applications compatibility database downloaded updated at: {}" },
+        { "new_app_listed", "The compatibility database was successfully updated from {} to {}.\n\n{} new application(s) are listed!" },
+        { "app_listed", "The compatibility database was successfully updated from {} to {}.\n\n{} applications are listed!" },
+        { "download_app_listed", "The compatibility database updated at {} has been successfully downloaded and loaded.\n\n{} applications are listed!" }
+    };
     std::map<std::string, std::string> compile_shaders = {
         { "compiling_shaders", "Compiling Shaders" },
         { "shaders_compiled", "{} shaders compiled" }

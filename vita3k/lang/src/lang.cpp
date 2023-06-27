@@ -163,6 +163,9 @@ void init_lang(LangState &lang, EmuEnvState &emuenv) {
                     }
                 }
 
+                // Compatibility Database
+                set_lang_string(lang.compat_db, lang_child.child("compat_db"));
+
                 // Compile Shaders
                 set_lang_string(lang.compile_shaders, lang_child.child("compile_shaders"));
 

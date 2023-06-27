@@ -59,7 +59,7 @@
 		<history_version>{} 版本</history_version>
 		<information>資訊</information>
 		<app_delete>刪除此應用程式及所有相關資料（包括保存資料）。</app_delete>
-		<app_delete_note>刪除應用程式可能需要一段時間
+		<app_delete_note>刪除應用程式可能需要一段時間，
 取決於它的大小和您的硬件。</app_delete_note>
 		<addcont_delete>確定要刪除此追加內容嗎？</addcont_delete>
 		<license_delete>確定要刪除此授權嗎？</license_delete>
@@ -220,6 +220,18 @@
 			<state id = "6">可遊玩</state>
 		</states>
 	</compatibility>
+
+	<compat_db>
+		<get_failed>無法獲取當前相容性資料庫，請檢查防火墻/互聯網接入后再重試。</get_failed>
+		<download_failed>無法下載更新於{}的應用程式相容性資料庫，請稍後重試。</download_failed>
+		<load_failed>無法讀取已下載更新於{}的應用程式相容性資料庫。</load_failed>
+		<new_app_listed>相容性資料庫已成功從{}更新至{}。&#xA;
+已列出{}个新的應用程式，使總數達到{}个！</new_app_listed>
+		<app_listed>相容性資料庫已成功從{}更新至{}。&#xA;
+已列出{}个應用程式！</app_listed>
+		<download_app_listed>已成功下載並加載{}更新的相容性資料庫。&#xA;
+已列出{}个應用程式！</download_app_listed>
+	</compat_db>
 
 	<compile_shaders>
 		<compiling_shaders>正在編譯著色器</compiling_shaders>

@@ -59,7 +59,7 @@
 		<history_version>Version {}</history_version>
 		<information>Information</information>
 		<app_delete>This application and all related data, including saved data, will be deleted.</app_delete>
-		<app_delete_note>Deleting an application may take a while
+		<app_delete_note>Deleting an application may take a while,
 depending on its size and your hardware.</app_delete_note>
 		<addcont_delete>Do you want to delete this add-on data?</addcont_delete>
 		<license_delete>Do you want to delete this license?</license_delete>
@@ -221,6 +221,18 @@ Error code: {}</an_error_occurred>
 			<state id = "6">Playable</state>
 		</states>
 	</compatibility>
+
+	<compat_db>
+		<get_failed>Failed to get current compatibility database, check firewall/internet access, try again later.</get_failed>
+		<download_failed>Failed to download Applications compatibility database updated at: {}, try again later.</download_failed>
+		<load_failed>Failed to load Applications compatibility database downloaded updated at: {}.</load_failed>
+		<new_app_listed>The compatibility database was successfully updated from {} to {}.&#xA;
+{} new application(s) are listed, bringing the total to {}!</new_app_listed>
+		<app_listed>The compatibility database was successfully updated from {} to {}.&#xA;
+{} applications are listed!</app_listed>
+		<download_app_listed>The compatibility database updated at {} has been successfully downloaded and loaded.&#xA;
+{} applications are listed!</download_app_listed>
+	</compat_db>
 
 	<compile_shaders>
 		<compiling_shaders>Compiling Shaders</compiling_shaders>
