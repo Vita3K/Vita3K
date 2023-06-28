@@ -124,7 +124,7 @@ static bool set_notice_info(GuiState &gui, EmuEnvState &emuenv, const NoticeList
         auto common = gui.lang.common.main;
         switch (static_cast<np::trophy::SceNpTrophyGrade>(std::stoi(info.group))) {
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
-            name = fmt::format("({}) ", common["platinium"]);
+            name = fmt::format("({}) ", common["platinum"]);
             break;
         case np::trophy::SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_GOLD:
             name = fmt::format("({}) ", common["gold"]);
