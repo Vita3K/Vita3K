@@ -410,10 +410,12 @@ std::string ThreadState::log_stack_traceback() const {
     std::stringstream ss;
     const Address sp = read_sp(*cpu);
     for (Address addr = sp - START_OFFSET; addr <= sp + END_OFFSET; addr += 4) {
-        const Address value = *Ptr<uint32_t>(addr).get(mem);
-        const auto mod = kernel.find_module_by_addr(value);
-        if (mod)
-            ss << fmt::format("{} (module: {})\n", log_hex(value), mod->module_name);
+        if (Ptr<uint32_t>(addr).valid(mem)) {
+            const Address value = *Ptr<uint32_t>(addr).get(mem);
+            const auto mod = kernel.find_module_by_addr(value);
+            if (mod)
+                ss << fmt::format("{} (module: {})\n", log_hex(value), mod->module_name);
+        }
     }
     return ss.str();
 }

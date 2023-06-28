@@ -197,6 +197,7 @@ EXPORT(int, sceAudioOutSetAdopt_forUser) {
 
 EXPORT(int, sceAudioOutSetAlcMode, SceAudioOutAlcMode mode) {
     TRACY_FUNC(sceAudioOutSetAlcMode, mode);
+    LOG_DEBUG("mode: {}", (int)mode);
     return UNIMPLEMENTED();
 }
 

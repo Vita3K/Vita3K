@@ -539,8 +539,37 @@ EXPORT(int, vshIoUmount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, vshKernelCheckModelCapability) {
-    return UNIMPLEMENTED();
+EXPORT(int, vshKernelCheckModelCapability, int flag) {
+    // LOG_DEBUG("unk: {}", unk);
+    STUBBED("Return");
+
+    switch (flag) {
+    case 0:
+        return SCE_FALSE;
+    case 1:
+        return SCE_FALSE;
+    case 2:
+        return SCE_FALSE;
+    case 4:
+        return SCE_FALSE;
+    case 5:
+        return SCE_FALSE;
+    case 6:
+        return SCE_FALSE;
+    case 7:
+        return SCE_TRUE;
+    case 8:
+        return SCE_FALSE;
+    case 9:
+        return SCE_FALSE;
+    case 10:
+        return SCE_FALSE;
+    default:
+        LOG_WARN("Unknown flag: {}", flag);
+        break;
+    }
+
+    return SCE_FALSE;
 }
 
 EXPORT(int, vshKernelDisableAutoClockDown) {
@@ -644,7 +673,8 @@ EXPORT(int, vshSblACMgrHasCapability) {
 }
 
 EXPORT(int, vshSblAimgrIsCEX) {
-    return UNIMPLEMENTED();
+    STUBBED("return true");
+    return SCE_TRUE;
 }
 
 EXPORT(int, vshSblAimgrIsDEX) {
@@ -652,7 +682,7 @@ EXPORT(int, vshSblAimgrIsDEX) {
 }
 
 EXPORT(int, vshSblAimgrIsDolce) {
-    return UNIMPLEMENTED();
+    return emuenv.cfg.current_config.pstv_mode ? 1 : 0;
 }
 
 EXPORT(int, vshSblAimgrIsGenuineDolce) {

@@ -17,6 +17,10 @@
 
 #include "SceRegMgrService.h"
 
+#include <regmgr/functions.h>
+
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceRegMgrSrv);
 EXPORT(int, sceRegMgrSrvCnvRegionInt) {
     return UNIMPLEMENTED();
 }
@@ -33,8 +37,12 @@ EXPORT(int, sceRegMgrSrvGetRegion) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceRegMgrSrvGetRegionStr) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRegMgrSrvGetRegionStr, char *buf, int bufSize) {
+    TRACY_FUNC(sceRegMgrSrvGetRegionStr, buf, bufSize);
+    // Todo ??
+    strncpy(buf, regmgr::get_str_value(emuenv.regmgr, "CONFIG/NP/", "country").c_str(), bufSize);
+
+    return 1;
 }
 
 BRIDGE_IMPL(sceRegMgrSrvCnvRegionInt)

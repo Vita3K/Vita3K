@@ -49,7 +49,8 @@ EXPORT(int, sceGxmInitializedInternal) {
 }
 
 EXPORT(int, sceGxmIsInitializationInternal) {
-    return UNIMPLEMENTED();
+    STUBBED("call");
+    return 1;
 }
 
 EXPORT(int, sceGxmMapFragmentUsseMemoryInternal) {
@@ -61,7 +62,8 @@ EXPORT(int, sceGxmMapVertexUsseMemoryInternal) {
 }
 
 EXPORT(int, sceGxmRenderingContextIsWithinSceneInternal) {
-    return UNIMPLEMENTED();
+    STUBBED("call");
+    return 1;
 }
 
 EXPORT(int, sceGxmSetCallbackInternal) {

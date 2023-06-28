@@ -192,6 +192,11 @@ EXPORT(int, sceMotionTermLibraryExt) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, SceMotion_A408BC69) {
+    TRACY_FUNC(SceMotion_A408BC69);
+    return UNIMPLEMENTED();
+}
+
 BRIDGE_IMPL(sceMotionGetAngleThreshold)
 BRIDGE_IMPL(sceMotionGetBasicOrientation)
 BRIDGE_IMPL(sceMotionGetDeadband)
@@ -222,3 +227,4 @@ BRIDGE_IMPL(sceMotionStartSamplingExt)
 BRIDGE_IMPL(sceMotionStopSampling)
 BRIDGE_IMPL(sceMotionStopSamplingExt)
 BRIDGE_IMPL(sceMotionTermLibraryExt)
+BRIDGE_IMPL(SceMotion_A408BC69)

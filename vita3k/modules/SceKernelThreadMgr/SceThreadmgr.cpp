@@ -968,7 +968,7 @@ EXPORT(int, sceKernelCloseEventFlag, SceUID evfId) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCloseMsgPipe) {
+EXPORT(int, sceKernelCloseMsgPipe, SceUID msgPipeId) {
     TRACY_FUNC(sceKernelCloseMsgPipe);
     return UNIMPLEMENTED();
 }
@@ -988,8 +988,8 @@ EXPORT(int, sceKernelCloseRWLock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelCloseSema) {
-    TRACY_FUNC(sceKernelCloseSema);
+EXPORT(int, sceKernelCloseSema, SceUID semaId) {
+    TRACY_FUNC(sceKernelCloseSema, semaId);
     return UNIMPLEMENTED();
 }
 
@@ -1010,6 +1010,7 @@ EXPORT(SceUID, sceKernelCreateCallback, char *name, SceUInt32 attr, Ptr<SceKerne
 
     ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
     std::string cb_name = name;
+    LOG_DEBUG("cb name: {}", cb_name);
     auto cb = std::make_shared<Callback>(thread_id, thread, cb_name, callbackFunc, pCommon);
     std::lock_guard lock(emuenv.kernel.mutex);
     SceUID cb_uid = emuenv.kernel.get_next_uid();
@@ -1161,8 +1162,9 @@ EXPORT(SceInt32, sceKernelGetCallbackCount, SceUID callbackId) {
     return cb->get_num_notifications();
 }
 
-EXPORT(int, sceKernelGetMsgPipeCreatorId) {
+EXPORT(int, sceKernelGetMsgPipeCreatorId, const char *name) {
     TRACY_FUNC(sceKernelGetMsgPipeCreatorId);
+    // LOG_DEBUG("name: {}", name);
     return UNIMPLEMENTED();
 }
 

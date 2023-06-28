@@ -17,6 +17,7 @@
 
 #include "SceAppMgr.h"
 
+#include <io/device.h>
 #include <io/state.h>
 #include <kernel/state.h>
 #include <packages/sfo.h>
@@ -75,11 +76,27 @@ EXPORT(int, _sceAppMgrAppParamGetInt) {
 EXPORT(SceInt32, _sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
     TRACY_FUNC(_sceAppMgrAppParamGetString, pid, param, string, length);
     std::string res;
-    if (!sfo::get_data_by_id(res, emuenv.sfo_handle, param))
-        return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
-    else {
-        res.copy(string, length);
-        return 0;
+    LOG_DEBUG("pid: {}, param: {}", pid, log_hex(param));
+    if (emuenv.io.app_path == "NPXS19999") {
+        switch (param) {
+        case 0xc:
+            res = "NPXS19999";
+            break;
+        default: break;
+        }
+        if (res.empty())
+            return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
+        else {
+            res.copy(string, length);
+            return 0;
+        }
+    } else {
+        if (!sfo::get_data_by_id(res, emuenv.sfo_handle, param))
+            return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
+        else {
+            res.copy(string, length);
+            return 0;
+        }
     }
 }
 
@@ -389,17 +406,14 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
         return RET_ERROR(SCE_APPMGR_ERROR_INVALID);
 
     // Create exec path
-    auto exec_path = static_cast<std::string>(appPath);
-    if (exec_path.find("app0:/") != std::string::npos)
-        exec_path.erase(0, 6);
-    else
-        exec_path.erase(0, 5);
+    const auto app_device = device::get_device(appPath);
+    const auto exec_path = device::remove_device_from_path(appPath, app_device);
 
     LOG_INFO("sceAppMgrLoadExec run self: {}", appPath);
 
     // Load exec executable
     vfs::FileBuffer exec_buffer;
-    if (vfs::read_app_file(exec_buffer, emuenv.pref_path, emuenv.io.app_path, exec_path)) {
+    if (vfs::read_file(app_device, exec_buffer, emuenv.pref_path, exec_path)) {
         if (argv && argv->get(emuenv.mem)) {
             size_t args = 0;
             emuenv.load_exec_argv = "\"";
@@ -418,6 +432,7 @@ EXPORT(SceInt32, _sceAppMgrLoadExec, const char *appPath, Ptr<char> const argv[]
 
         emuenv.kernel.exit_delete_all_threads();
 
+        emuenv.load_app_device = app_device._to_string();
         emuenv.load_app_path = emuenv.io.app_path;
         emuenv.load_exec_path = exec_path;
         emuenv.load_exec = true;
@@ -728,7 +743,8 @@ EXPORT(int, sceAppMgrAcquireBgmPortForMusicPlayer) {
 
 EXPORT(int, sceAppMgrAcquireBgmPortWithPriority) {
     TRACY_FUNC(sceAppMgrAcquireBgmPortWithPriority);
-    return UNIMPLEMENTED();
+    STUBBED("return 0");
+    return 0;
 }
 
 EXPORT(int, sceAppMgrAcquireBtrm) {
@@ -746,8 +762,9 @@ EXPORT(int, sceAppMgrAcquireSoundOutExclusive2) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrActivateApp) {
+EXPORT(int, sceAppMgrActivateApp, SceUID appId) {
     TRACY_FUNC(sceAppMgrActivateApp);
+    LOG_DEBUG("appId: {}", appId);
     return UNIMPLEMENTED();
 }
 
@@ -761,8 +778,10 @@ EXPORT(int, sceAppMgrDeclareSystemChatApp) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrDestroyAppByAppId) {
+EXPORT(int, sceAppMgrDestroyAppByAppId, int id) {
     TRACY_FUNC(sceAppMgrDestroyAppByAppId);
+    LOG_DEBUG("id: {}", id);
+
     return UNIMPLEMENTED();
 }
 
@@ -866,8 +885,9 @@ EXPORT(int, sceAppMgrIsOtherAppPresent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrIsPidShellAndCrashed) {
+EXPORT(int, sceAppMgrIsPidShellAndCrashed, int pid) {
     TRACY_FUNC(sceAppMgrIsPidShellAndCrashed);
+    // LOG_DEBUG("pid: {}", pid);
     return UNIMPLEMENTED();
 }
 
@@ -906,8 +926,9 @@ EXPORT(int, sceAppMgrReceiveShellEventNum) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrReleaseBgmPort) {
+EXPORT(int, sceAppMgrReleaseBgmPort, int port) {
     TRACY_FUNC(sceAppMgrReleaseBgmPort);
+    LOG_DEBUG("port: {}", port);
     return UNIMPLEMENTED();
 }
 

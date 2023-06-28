@@ -208,7 +208,7 @@ static uint32_t current_user_id_selected = 0;
 static UserMenu menu_selected = SELECT, menu = SELECT;
 
 void init_user_management(GuiState &gui, EmuEnvState &emuenv) {
-    init_app_background(gui, emuenv, "NPXS10013");
+    init_app_background(gui, emuenv, "vs0", "NPXS10013");
     gui.vita_area.home_screen = false;
     gui.vita_area.information_bar = false;
     gui.vita_area.user_management = true;

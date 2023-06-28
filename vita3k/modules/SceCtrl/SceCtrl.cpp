@@ -66,9 +66,11 @@ EXPORT(int, sceCtrlGetBatteryInfo) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceCtrlGetButtonIntercept) {
+EXPORT(int, sceCtrlGetButtonIntercept, int *intercept) {
     TRACY_FUNC(sceCtrlGetButtonIntercept);
-    return UNIMPLEMENTED();
+    LOG_DEBUG("intercept: {}", *intercept);
+    *intercept = 1;
+    return 0;
 }
 
 EXPORT(int, sceCtrlGetControllerPortInfo, SceCtrlPortInfo *info) {
@@ -219,9 +221,10 @@ EXPORT(int, sceCtrlSetAnalogStickCheckTarget) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceCtrlSetButtonIntercept) {
+EXPORT(int, sceCtrlSetButtonIntercept, int intercept) {
     TRACY_FUNC(sceCtrlSetButtonIntercept);
-    return UNIMPLEMENTED();
+    LOG_DEBUG("intercept: {}", intercept);
+    return 0;
 }
 
 EXPORT(int, sceCtrlSetButtonRemappingInfo) {

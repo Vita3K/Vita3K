@@ -74,7 +74,9 @@ EXPORT(int, sceRegMgrGetKeys, const char *category, Keys *keys, const SceUInt32 
 
 EXPORT(int, sceRegMgrGetKeysInfo, const char *category, Keys *keys, const SceInt32 elementsNumber) {
     TRACY_FUNC(sceRegMgrGetKeysInfo, category, keys, elementsNumber);
+    LOG_DEBUG("size: {}/{}", keys->size, sizeof(Keys));
     for (auto i = 0; i < elementsNumber; i++) {
+        LOG_DEBUG("key: {}/{}", category, keys[i].name.get(emuenv.mem), sizeof(Keys));
         keys[i].type = 0;
     }
 

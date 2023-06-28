@@ -230,6 +230,10 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
             continue;
         }
 
+        if (nid == 0xA9F2277C) {
+            continue;
+        }
+
         {
             const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
             kernel.export_nids.emplace(nid, entry.address());

@@ -819,7 +819,7 @@ static void check_empty_param(EmuEnvState &emuenv, const SceAppUtilSaveDataSlotE
         vfs::FileBuffer thumbnail_buffer;
         if (iconPath) {
             auto device = device::get_device(empty_param->iconPath.get(emuenv.mem));
-            auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io.device_paths);
+            auto thumbnail_path = translate_path(empty_param->iconPath.get(emuenv.mem), device, emuenv.io);
             vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
             emuenv.common_dialog.savedata.icon_buffer[idx] = thumbnail_buffer;
         } else if (iconBuf && iconBufSize != 0) {
@@ -847,7 +847,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
         emuenv.common_dialog.savedata.date[index] = slot_param.modifiedTime;
         emuenv.common_dialog.savedata.has_date[index] = true;
         auto device = device::get_device(slot_param.iconPath);
-        auto thumbnail_path = translate_path(slot_param.iconPath, device, emuenv.io.device_paths);
+        auto thumbnail_path = translate_path(slot_param.iconPath, device, emuenv.io);
         vfs::read_file(device, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
         emuenv.common_dialog.savedata.icon_buffer[index] = thumbnail_buffer;
         emuenv.common_dialog.savedata.icon_texture[index] = {};

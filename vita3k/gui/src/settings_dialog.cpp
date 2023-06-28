@@ -367,6 +367,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
     // If backend render or resolution multiplier is changed when app run, reboot emu and app
     if (!emuenv.io.title_id.empty() && ((emuenv.renderer->current_backend != emuenv.backend_renderer) || (emuenv.renderer->res_multiplier != emuenv.cfg.current_config.resolution_multiplier))) {
         emuenv.load_exec = true;
+        emuenv.load_app_device = emuenv.io.app_device;
         emuenv.load_app_path = emuenv.io.app_path;
         emuenv.load_exec_path = emuenv.self_path;
         if (!emuenv.cfg.app_args.empty())

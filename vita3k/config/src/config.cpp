@@ -139,11 +139,12 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     // Positional options
     app.add_option("content-path", command_line.content_path, "Path of app in .vpk/.zip or folder of content to install & run")
         ->default_str({});
-
     // Grouped options
     auto input = app.add_option_group("Input", "Special options for Vita3K");
     input->add_option("--console,-z", command_line.console, "Starts the emulator in fullscreen mode.")
        ->default_val(false)->group("Input");
+    input->add_option("--app-device,-D", command_line.app_device, "App device")
+        ->default_val("ux0")->group("Input");
     input->add_option("--app-args,-Z", command_line.app_args, "Argument for app, use ', ' to separate arguments.")
         ->default_str("")->group("Input");
     input->add_option("--load-app-list,-a", command_line.load_app_list, "Starts the emulator with load app list.")
@@ -151,7 +152,7 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
     input->add_option("--self,-S", command_line.self_path, "Path to the self to run inside Title ID")
         ->default_str("eboot.bin")->group("Input");
     input->add_option("--installed-path,-r", command_line.run_app_path, "Path of installed app to run")
-        ->default_str({})->check(CLI::IsMember(get_file_set(fs::path(cfg.pref_path) / "ux0/app")))->group("Input");
+            ->default_str({})->group("Input");
     input->add_option("--recompile-shader,-s", command_line.recompile_shader_path, "Recompile the given PS Vita shader (GXP format) to SPIR_V / GLSL and quit")
         ->default_str({})->group("Input");
     input->add_option("--deleted-id,-d", command_line.delete_title_id, "Title ID of installed app to delete")
@@ -209,6 +210,22 @@ ExitCode init_config(Config &cfg, int argc, char **argv, const Root &root_paths)
         return QuitRequested;
     }
 
+    if (command_line.run_app_path.has_value()) {
+        const std::string app_path = command_line.run_app_path.value();
+        if ((app_path != "NPXS10062") && (app_path != "NPXS19999")) {
+            std::set<std::string> exist_apps = get_file_set(fs::path(cfg.pref_path) / command_line.app_device / "app");
+            if (exist_apps.find(app_path) == exist_apps.end()) {
+                std::cout << "--installed-path: " << app_path << " no in {";
+                for (auto &app : exist_apps) {
+                    std::cout << app;
+                    if (app != *exist_apps.rbegin())
+                        std::cout << ", ";
+                }
+                std::cout << "}\n";
+                return InitConfigFailed;
+            }
+        }
+    }
     if (command_line.recompile_shader_path.has_value()) {
         cfg.recompile_shader_path = std::move(command_line.recompile_shader_path);
         return QuitRequested;

@@ -17,6 +17,15 @@
 
 #include "SceHid.h"
 
+#include <SDL.h>
+#include <SDL_keyboard.h>
+
+#include <kernel/callback.h>
+#include <kernel/state.h>
+#include <util/lock_and_find.h>
+
+#include "../SceKernelThreadMgr/SceThreadmgr.h"
+
 EXPORT(int, sceHidConsumerControlEnumerate) {
     return UNIMPLEMENTED();
 }
@@ -85,24 +94,81 @@ EXPORT(int, sceHidKeyboardRead) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceHidKeyboardRegisterEnumHintCallback) {
-    return UNIMPLEMENTED();
+int hid_thread_id = 0;
+std::map<SceUID, CallbackPtr> hid_callbacks{};
+
+static int SDLCALL thread_function(EmuEnvState &emuenv) {
+    while (true) {
+        int x, y;
+        /* Uint32 buttons = SDL_GetMouseState(&x, &y);
+        if ((buttons & SDL_BUTTON(SDL_BUTTON_LEFT)) != 0) {
+            LOG_DEBUG("click detected");
+            for (auto& cb : hid_callbacks) {
+                cb.second->direct_notify(0);
+                        }
+                }*/
+        // const uint8_t *keys = SDL_GetKeyboardState(nullptr);
+        /*if (keys[emuenv.cfg.keyboard_button_cross]) {
+            for (auto &cb : hid_callbacks) {
+                cb.second->direct_notify(0);
+            }
+            SDL_GetMouseState()
+        }*/
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
+    }
 }
 
-EXPORT(int, sceHidKeyboardRegisterReadHintCallback) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceHidKeyboardRegisterEnumHintCallback, SceUID cbid) {
+    LOG_DEBUG("dbid: {}", cbid);
+    const auto cb = lock_and_find(cbid, emuenv.kernel.callbacks, emuenv.kernel.mutex);
+    if (!cb)
+        return RET_ERROR(-1);
+    hid_callbacks[cbid] = cb;
+    LOG_DEBUG("name:{}, owner_thread_id:{}", cb->get_name(), cb->get_owner_thread_id());
+    auto hid_thread = std::thread(thread_function, std::ref(emuenv));
+    hid_thread.detach();
+    return 0;
+}
+
+EXPORT(int, sceHidKeyboardRegisterReadHintCallback, SceUID cbid) {
+    LOG_DEBUG("dbid: {}", cbid);
+    const auto cb = lock_and_find(cbid, emuenv.kernel.callbacks, emuenv.kernel.mutex);
+    if (!cb)
+        return RET_ERROR(-1);
+    LOG_DEBUG("name:{}, owner_thread_id:{}", cb->get_name(), cb->get_owner_thread_id());
+    hid_callbacks[cbid] = cb;
+    auto hid_thread = std::thread(thread_function, std::ref(emuenv));
+    hid_thread.detach();
+    return 0;
 }
 
 EXPORT(int, sceHidKeyboardSetIntercept) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceHidKeyboardUnregisterEnumHintCallback) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceHidKeyboardUnregisterEnumHintCallback, SceUID cbid) {
+    LOG_DEBUG("dbid: {}", cbid);
+    const auto cb = lock_and_find(cbid, emuenv.kernel.callbacks, emuenv.kernel.mutex);
+    if (!cb)
+        return RET_ERROR(-1);
+    LOG_DEBUG("name:{}, owner_thread_id:{}", cb->get_name(), cb->get_owner_thread_id());
+    hid_callbacks[cbid] = cb;
+    auto hid_thread = std::thread(thread_function, std::ref(emuenv));
+    hid_thread.detach();
+    return 0;
 }
 
-EXPORT(int, sceHidKeyboardUnregisterReadHintCallback) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceHidKeyboardUnregisterReadHintCallback, SceUID cbid) {
+    LOG_DEBUG("dbid: {}", cbid);
+    const auto cb = lock_and_find(cbid, emuenv.kernel.callbacks, emuenv.kernel.mutex);
+    if (!cb)
+        return RET_ERROR(-1);
+    LOG_TRACE("name:{}, owner_thread_id:{}", cb->get_name(), cb->get_owner_thread_id());
+    hid_callbacks[cbid] = cb;
+    // SDL_CreateThread(&thread_function, "SceGxmDisplayQueue",(void*)emuenv*);
+    auto hid_thread = std::thread(thread_function, std::ref(emuenv));
+    hid_thread.detach();
+    return 0;
 }
 
 EXPORT(int, sceHidMouseEnumerate) {

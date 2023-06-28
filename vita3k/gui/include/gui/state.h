@@ -65,6 +65,7 @@ enum SortType {
 };
 
 struct App {
+    std::string device;
     std::string app_ver;
     std::string category;
     std::string content_id;
@@ -326,7 +327,7 @@ struct GuiState {
     bool is_nav_button = false;
     bool is_key_locked = false;
 
-    std::vector<std::string> live_area_current_open_apps_list;
+    std::vector<std::pair<std::string, std::string>> live_area_current_open_apps_list;
     int32_t live_area_app_current_open = -1;
 
     std::map<std::string, std::vector<TimeApp>> time_apps;

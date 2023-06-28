@@ -76,6 +76,7 @@ private:
         load_config = rhs.load_config;
         fullscreen = rhs.fullscreen;
         console = rhs.console;
+        app_device = rhs.app_device;
         app_args = rhs.app_args;
         load_app_list = rhs.load_app_list;
         self_path = rhs.self_path;
@@ -92,6 +93,7 @@ public:
 
     // Setting not present in the YAML file
     fs::path config_path = {};
+    std::string app_device;
     std::string app_args;
     std::string self_path;
     bool overwrite_config = true;

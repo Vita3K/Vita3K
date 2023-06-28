@@ -155,6 +155,26 @@ EXPORT(int, sceNpUnregisterServiceStateCallback) {
     return 0;
 }
 
+EXPORT(int, SceNpManager_B24FC028) {
+    TRACY_FUNC(SceNpManager_B24FC028);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, SceNpManager_CFAEB050) {
+    TRACY_FUNC(SceNpManager_CFAEB050);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, SceNpManager_E45E4003) {
+    TRACY_FUNC(SceNpManager_E45E4003);
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, SceNpCommon_A385C8CD) {
+    TRACY_FUNC(SceNpCommon_A385C8CD);
+    return UNIMPLEMENTED();
+}
+
 BRIDGE_IMPL(sceNpAuthAbortOAuthRequest)
 BRIDGE_IMPL(sceNpAuthCreateOAuthRequest)
 BRIDGE_IMPL(sceNpAuthDeleteOAuthRequest)
@@ -170,3 +190,7 @@ BRIDGE_IMPL(sceNpManagerGetNpId)
 BRIDGE_IMPL(sceNpRegisterServiceStateCallback)
 BRIDGE_IMPL(sceNpTerm)
 BRIDGE_IMPL(sceNpUnregisterServiceStateCallback)
+BRIDGE_IMPL(SceNpManager_B24FC028)
+BRIDGE_IMPL(SceNpManager_CFAEB050)
+BRIDGE_IMPL(SceNpManager_E45E4003)
+BRIDGE_IMPL(SceNpCommon_A385C8CD)

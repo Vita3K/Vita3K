@@ -565,6 +565,10 @@ EXPORT(int, sceIoGetstatByFd, const SceUID fd, SceIoStat *stat) {
 
 EXPORT(int, sceIoIoctl, SceUID fd, int cmd, const void *argp, SceSize arglen, void *bufp, SceSize buflen) {
     TRACY_FUNC(sceIoIoctl, fd, cmd, argp, arglen, bufp, buflen);
+    LOG_DEBUG("fd: {}, cmd: {}, argp: {}, arglen: {}, bufp: {}, buflen: {}", fd, cmd, argp, arglen, bufp, buflen);
+    if (!argp || !bufp)
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+
     return UNIMPLEMENTED();
 }
 
@@ -693,8 +697,9 @@ EXPORT(int, sceIoRmdirAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoSync) {
+EXPORT(int, sceIoSync, const char *devname, int flag) {
     TRACY_FUNC(sceIoSync);
+    LOG_DEBUG("devname: {}, flag: {}", devname, flag);
     return UNIMPLEMENTED();
 }
 
@@ -1194,6 +1199,7 @@ EXPORT(int, sceKernelCreateMutex, const char *name, SceUInt attr, int init_count
     if (auto error = mutex_create(&uid, emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr, init_count, Ptr<SceKernelLwMutexWork>(0), SyncWeight::Heavy)) {
         return error;
     }
+
     return uid;
 }
 

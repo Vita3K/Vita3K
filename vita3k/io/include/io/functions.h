@@ -41,7 +41,7 @@ bool find_case_isens_path(IOState &io, VitaIoDevice &device, const fs::path &tra
 fs::path find_in_cache(IOState &io, const std::string &system_path);
 
 std::string expand_path(IOState &io, const char *path, const std::wstring &pref_path);
-std::string translate_path(const char *path, VitaIoDevice &device, const IOState::DevicePaths &device_paths);
+std::string translate_path(const char *path, VitaIoDevice &device, const IOState &io);
 
 /**
  * @brief Copy all directories and files from one location into another

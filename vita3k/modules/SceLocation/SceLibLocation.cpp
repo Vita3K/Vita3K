@@ -105,6 +105,10 @@ EXPORT(int, sceLocationTerm) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, SceLocation_EFC9BD25) {
+    return UNIMPLEMENTED();
+}
+
 BRIDGE_IMPL(sceLocationCancelGetLocation)
 BRIDGE_IMPL(sceLocationClose)
 BRIDGE_IMPL(sceLocationConfirm)
@@ -127,3 +131,4 @@ BRIDGE_IMPL(sceLocationStartLocationCallback)
 BRIDGE_IMPL(sceLocationStopHeadingCallback)
 BRIDGE_IMPL(sceLocationStopLocationCallback)
 BRIDGE_IMPL(sceLocationTerm)
+BRIDGE_IMPL(SceLocation_EFC9BD25)

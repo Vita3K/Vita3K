@@ -21,8 +21,10 @@ EXPORT(int, sceSblPmMgrAuthEtoI) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSblPmMgrGetCurrentMode) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceSblPmMgrGetCurrentMode, int *result) {
+    *result = 0;
+
+    return STUBBED("Result to 0");
 }
 
 EXPORT(int, sceSblPmMgrGetProductModeForUser) {

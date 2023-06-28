@@ -326,7 +326,7 @@ void draw_content_manager(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Separator();
         ImGui::SetWindowFontScale(1.2f);
         if (ImGui::Selectable(lang.main["theme"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT)))
-            pre_run_app(gui, emuenv, "NPXS10015");
+            pre_run_app(gui, emuenv, "vs0", "NPXS10015");
         ImGui::NextColumn();
         ImGui::SetWindowFontScale(0.8f);
         ImGui::Selectable(space["themes"].c_str(), false, ImGuiSelectableFlags_SpanAllColumns, ImVec2(0.f, SIZE_SELECT));

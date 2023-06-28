@@ -108,9 +108,20 @@ EXPORT(int, sceAppMgrAppDataMount, int mountId, char *mountPoint) {
     return 0;
 }
 
-EXPORT(int, sceAppMgrAppDataMountById) {
+EXPORT(int, sceAppMgrAppDataMountById, int id, const char *titleid, char *mount_point) {
     TRACY_FUNC(sceAppMgrAppDataMountById);
-    return UNIMPLEMENTED();
+    LOG_DEBUG("id: {}, title id: {}", log_hex(id), titleid);
+    switch (id) {
+    case 0x6E: // appmeta/titleid
+        emuenv.io.device_paths.appmeta0 = fmt::format("appmeta/{}", titleid);
+        strcpy(mount_point, "appmeta0:");
+        break;
+    default:
+        LOG_WARN("Unknown id {}", log_hex(id));
+        break;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceAppMgrAppMount) {
@@ -118,9 +129,18 @@ EXPORT(int, sceAppMgrAppMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrAppParamGetInt) {
+EXPORT(int, sceAppMgrAppParamGetInt, int pid, int param, int *value) {
     TRACY_FUNC(sceAppMgrAppParamGetInt);
-    return UNIMPLEMENTED();
+    LOG_DEBUG("pid: {}, param: {}", pid, log_hex(param));
+    switch (param) {
+    case 0x10:
+        *value = 1;
+        break;
+    default:
+        LOG_WARN("Unknown param {}", log_hex(param));
+        break;
+    }
+    return STUBBED("");
 }
 
 EXPORT(SceInt32, sceAppMgrAppParamGetString, int pid, int param, char *string, int length) {
@@ -153,8 +173,9 @@ EXPORT(int, sceAppMgrCaptureFrameBufIFTUByAppId) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrCheckRifGD) {
+EXPORT(int, sceAppMgrCheckRifGD, const char *unk) {
     TRACY_FUNC(sceAppMgrCheckRifGD);
+    LOG_DEBUG("unk: {}", unk);
     return UNIMPLEMENTED();
 }
 
@@ -175,13 +196,23 @@ EXPORT(int, sceAppMgrConvertVs0UserDrivePath, char *source_path, char *dest_path
     return 0;
 }
 
-EXPORT(int, sceAppMgrDeclareShellProcess2) {
+EXPORT(int, sceAppMgrDeclareShellProcess2, const char *name) {
     TRACY_FUNC(sceAppMgrDeclareShellProcess2);
+    LOG_DEBUG("name: {}", name);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrDestroyAppByName) {
-    TRACY_FUNC(sceAppMgrDestroyAppByName);
+EXPORT(int, sceAppMgrDestroyAppByName, const char *name) {
+    TRACY_FUNC(sceAppMgrDestroyAppByName, name);
+    LOG_DEBUG("name:{}, current app: {}", to_debug_str(emuenv.mem, name), emuenv.io.app_path);
+    // Todo: Implement multi process
+    if (emuenv.io.app_path == "NPXS10062") {
+        // Exit the initial setup to Shell
+        STUBBED("Reload shell");
+        emuenv.io.app_path = "NPXS19999";
+        return CALL_EXPORT(_sceAppMgrLoadExec, "vs0:vsh/shell/shell.self", nullptr, nullptr);
+    }
+
     return UNIMPLEMENTED();
 }
 
@@ -202,14 +233,14 @@ EXPORT(int, sceAppMgrForceUmount) {
 
 EXPORT(int, sceAppMgrGameDataMount, const char *app_path, const char *patch_path, const char *rif_path, char *mount_point) {
     TRACY_FUNC(sceAppMgrGameDataMount, app_path, patch_path, rif_path, mount_point);
-    if (strlen(app_path) > 0)
+    if (app_path && strlen(app_path) > 0) {
         emuenv.io.device_paths.gamedata0 = app_path;
-    else if (strlen(patch_path) > 0)
-        emuenv.io.device_paths.gamedata0 = patch_path;
-    else if (strlen(rif_path) > 0)
-        emuenv.io.device_paths.gamedata0 = rif_path;
+        strcpy(mount_point, "gamedata0:");
+    }
 
-    strcpy(mount_point, "gamedata0:");
+    if (patch_path || rif_path) {
+        LOG_WARN("Patch and rif mounting is not yet implemented");
+    }
 
     return 0;
 }
@@ -255,8 +286,22 @@ EXPORT(int, sceAppMgrGetCurrentBgmState) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGetCurrentBgmState2) {
+struct BgmState {
+    uint32_t unk_0;
+    uint32_t unk2;
+    int unk3;
+    int unk4;
+    int unk5;
+    int unk6;
+    int unk7;
+    int unk8;
+};
+
+EXPORT(int, sceAppMgrGetCurrentBgmState2, BgmState *state) {
     TRACY_FUNC(sceAppMgrGetCurrentBgmState2);
+    memset(state, 0, sizeof(BgmState));
+    state->unk_0 = 130;
+    // state->unk2 = 130;
     return UNIMPLEMENTED();
 }
 
@@ -363,8 +408,55 @@ EXPORT(int, sceAppMgrGetSaveDataInfoForSpecialExport) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGetStatusByAppId) {
+struct SceAppMgrAppStatus { // size is 0x80
+    SceUInt32 unk_0; // 0x0
+    SceUInt32 launchMode; // 0x4
+    SceUInt32 bgm_priority_or_status; // 0x8
+    char appName[32]; // 0xC
+    SceUInt32 unk_2c; // 0x2C
+    SceUID appId; // 0x30 - Application ID
+    SceUID processId; // 0x34 - Process ID
+    SceUInt32 status_related_1; // 0x38
+    SceUInt32 status_related_2; // 0x3C
+    SceUInt32 unk_40;
+    SceUInt32 unk_44;
+    SceUInt32 unk_48;
+    SceUInt32 unk_4c;
+    char name_02[32];
+    char unk_70;
+    uint8_t unk_71;
+    char unk_72;
+    char unk_73;
+    uint32_t unk_74;
+    uint32_t unk_78;
+    uint32_t unk_7c;
+};
+
+EXPORT(int, sceAppMgrGetStatusByAppId, int id, SceAppMgrAppStatus *appStatus) {
     TRACY_FUNC(sceAppMgrGetStatusByAppId);
+    LOG_DEBUG("id: {}", id);
+    if (appStatus) {
+        memset(appStatus, 0, sizeof(SceAppMgrAppStatus));
+        appStatus->unk_71 = 2;
+        appStatus->unk_74 = 1;
+        appStatus->status_related_1 = 2;
+
+        appStatus->launchMode = 2;
+        appStatus->unk_0 = 2;
+        appStatus->unk_2c = 2;
+        appStatus->bgm_priority_or_status = 1;
+        strncpy(appStatus->appName, emuenv.io.title_id.c_str(), sizeof(appStatus->appName));
+        appStatus->status_related_2 = 2;
+        appStatus->unk_40 = 2;
+        appStatus->unk_44 = 2;
+        appStatus->unk_48 = 2;
+        appStatus->unk_4c = 2;
+        strncpy(appStatus->name_02, emuenv.io.title_id.c_str(), sizeof(appStatus->name_02));
+        appStatus->unk_70 = 1;
+        appStatus->unk_78 = 2;
+        appStatus->unk_7c = 2;
+    }
+
     return UNIMPLEMENTED();
 }
 
@@ -373,9 +465,33 @@ EXPORT(int, sceAppMgrGetStatusById) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGetStatusByName) {
+EXPORT(int, sceAppMgrGetStatusByName, const char *appName, SceAppMgrAppStatus *appStatus) {
     TRACY_FUNC(sceAppMgrGetStatusByName);
-    return UNIMPLEMENTED();
+    LOG_DEBUG_IF(appName, "name: {}", appName);
+    // LOG_DEBUG("Called");
+    if (appStatus) {
+        memset(appStatus, 0, sizeof(SceAppMgrAppStatus));
+        appStatus->unk_71 = 2;
+        appStatus->unk_74 = 1;
+        appStatus->status_related_1 = 2;
+
+        appStatus->launchMode = 2;
+        appStatus->unk_0 = 2;
+        appStatus->unk_2c = 2;
+        appStatus->bgm_priority_or_status = 1;
+        strncpy(appStatus->appName, emuenv.io.title_id.c_str(), sizeof(appStatus->appName));
+        appStatus->status_related_2 = 2;
+        appStatus->unk_40 = 2;
+        appStatus->unk_44 = 2;
+        appStatus->unk_48 = 2;
+        appStatus->unk_4c = 2;
+        strncpy(appStatus->name_02, emuenv.io.title_id.c_str(), sizeof(appStatus->name_02));
+        appStatus->unk_70 = 1;
+        appStatus->unk_78 = 2;
+        appStatus->unk_7c = 2;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceAppMgrGetSystemDataFilePlayReady) {
@@ -421,9 +537,11 @@ EXPORT(int, sceAppMgrIsCameraActive) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrLaunchAppByName) {
+EXPORT(int, sceAppMgrLaunchAppByName, int flags, const char *name, const char *param) {
     TRACY_FUNC(sceAppMgrLaunchAppByName);
-    return UNIMPLEMENTED();
+    LOG_DEBUG("flags: {}, name: {}, param: {}", log_hex(flags), name, param ? param : "null");
+
+    return -1; // load_app_by_path(emuenv, "vs0:app/" + std::string(name) + "/eboot.bin", name, param);
 }
 
 EXPORT(int, sceAppMgrLaunchAppByName2) {
@@ -441,18 +559,24 @@ EXPORT(int, sceAppMgrLaunchAppByName2ndStage) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrLaunchAppByNameForShell) {
+EXPORT(int, sceAppMgrLaunchAppByNameForShell, const int flags, const char *name, const char *param) {
     TRACY_FUNC(sceAppMgrLaunchAppByNameForShell);
+    LOG_DEBUG("flags: {}, name: {}, param: {}", log_hex(flags), name, param ? param : "null");
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrLaunchAppByPath4) {
+EXPORT(int, sceAppMgrLaunchAppByPath4, const char *path, const char *titleid, int a3, Ptr<char> const app_param[], int a5, void *opt) {
     TRACY_FUNC(sceAppMgrLaunchAppByPath4);
-    return UNIMPLEMENTED();
+    LOG_DEBUG("path: {}, titleid: {}, a3: {}, app param: {}, a5: {}", path, titleid, a3, app_param ? app_param->get(emuenv.mem) : "null", a5);
+    emuenv.io.app_path = titleid;
+    return CALL_EXPORT(_sceAppMgrLoadExec, path, app_param, nullptr);
+    // Todo: Implement multi process
+    // return load_app_by_path(emuenv, path, titleid, app_param);
 }
 
-EXPORT(int, sceAppMgrLaunchAppByUri) {
+EXPORT(int, sceAppMgrLaunchAppByUri, int flags, const char *uri) {
     TRACY_FUNC(sceAppMgrLaunchAppByUri);
+    LOG_DEBUG("flags: {}, uri: {}", log_hex(flags), uri);
     return UNIMPLEMENTED();
 }
 
@@ -481,14 +605,29 @@ EXPORT(int, sceAppMgrLoopBackFormat) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrLoopBackMount) {
+EXPORT(int, sceAppMgrLoopBackMount, const char *mountpoint, char *mounted) {
     TRACY_FUNC(sceAppMgrLoopBackMount);
+    // LOG_DEBUG("mountpmoint: {}, mounted: {}", mountpoint, mounted);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrMmsMount) {
-    TRACY_FUNC(sceAppMgrMmsMount);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrMmsMount, int id, char *mount_point) {
+    TRACY_FUNC(sceAppMgrMmsMount, id, mount_point);
+    switch (id) {
+    case 0x190:
+        strcpy(mount_point, "ux0:mms/photo/");
+        break;
+    case 0x191:
+        strcpy(mount_point, "ux0:mms/music");
+        break;
+    case 0x192:
+        strcpy(mount_point, "ux0:mms/video");
+        break;
+    default:
+        LOG_WARN("Unknown id: {}", log_hex(id));
+        break;
+    }
+    return STUBBED("using strcpy");
 }
 
 EXPORT(int, sceAppMgrOverwriteLaunchParamForShell) {
@@ -526,8 +665,9 @@ EXPORT(int, sceAppMgrPspSaveDataRootMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrReceiveEvent) {
-    TRACY_FUNC(sceAppMgrReceiveEvent);
+EXPORT(int, sceAppMgrReceiveEvent, SceAppMgrEvent *mgrEvent) {
+    TRACY_FUNC(sceAppMgrReceiveEvent, mgrEvent);
+    mgrEvent->mgrEvent = SCE_APPMGR_EVENT_ON_RESUME;
     return UNIMPLEMENTED();
 }
 
@@ -540,13 +680,23 @@ EXPORT(int, sceAppMgrReceiveEventNum, SceUInt32 *eventNum) {
     return STUBBED("Set eventNum to 0");
 }
 
-EXPORT(int, sceAppMgrReceiveNotificationRequestForShell) {
+struct NotifForShell {
+    SceUInt32 size;
+    char msg[32];
+};
+
+EXPORT(int, sceAppMgrReceiveNotificationRequestForShell, NotifForShell *notif) {
     TRACY_FUNC(sceAppMgrReceiveNotificationRequestForShell);
-    return UNIMPLEMENTED();
+    // LOG_DEBUG("size: {}", notif->size);
+    // memset(notif, 0, sizeof(NotifForShell));
+    // strcpy(notif->msg, "Vita3K forever <3");
+    return 0x80802024;
 }
 
-EXPORT(int, sceAppMgrReceiveShellEvent) {
-    TRACY_FUNC(sceAppMgrReceiveShellEvent);
+EXPORT(int, sceAppMgrReceiveShellEvent, SceAppMgrEvent *mgrEvent) {
+    TRACY_FUNC(sceAppMgrReceiveShellEvent, mgrEvent);
+    // mgrEvent->mgrEvent = SCE_APPMGR_EVENT_ON_RESUME;
+    LOG_DEBUG("call shell event");
     return UNIMPLEMENTED();
 }
 
@@ -686,8 +836,10 @@ EXPORT(int, sceAppMgrSaveDataUmount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrSendNotificationRequest) {
+EXPORT(int, sceAppMgrSendNotificationRequest, NotifForShell *notif) {
     TRACY_FUNC(sceAppMgrSendNotificationRequest);
+    // if (notif)
+    //     LOG_DEBUG("Notif: {}", notif->msg);
     return UNIMPLEMENTED();
 }
 
@@ -782,7 +934,13 @@ EXPORT(int, sceAppMgrUmount, const char *mount_point) {
         emuenv.io.device_paths.gamedata0.clear();
 
         return 0;
+    } else if (std::string(mount_point) == "appmeta0:") {
+        emuenv.io.device_paths.appmeta0.clear();
+
+        return 0;
     }
+
+    LOG_DEBUG("Unknown mount point: {}", mount_point);
 
     return UNIMPLEMENTED();
 }
@@ -824,9 +982,18 @@ EXPORT(int, sceAppMgrWorkDirMount, int mountId, char *mountPoint) {
     return 0;
 }
 
-EXPORT(int, sceAppMgrWorkDirMountById) {
+EXPORT(int, sceAppMgrWorkDirMountById, const int mountId, char *mount_point) {
     TRACY_FUNC(sceAppMgrWorkDirMountById);
-    return UNIMPLEMENTED();
+    LOG_DEBUG("mountId: {}", log_hex(mountId));
+    switch (mountId) {
+    case 0xCD:
+        strcpy(mount_point, "ux0:cache");
+        break;
+    default:
+        LOG_WARN("Unknown mount id: {}", log_hex(mountId));
+        break;
+    }
+    return 0;
 }
 
 BRIDGE_IMPL(_sceAppMgrGetAppState)

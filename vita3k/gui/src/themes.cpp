@@ -228,7 +228,8 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
         { "NPXS10003", {} },
         { "NPXS10008", {} },
         { "NPXS10015", {} },
-        { "NPXS10026", {} }
+        { "NPXS10026", {} },
+        { "NPXS19999", {} }
     };
 
     gui.app_selector.sys_apps_icon.clear();
@@ -259,6 +260,8 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
                     theme_icon_name["NPXS10015"] = home_property.child("m_settings").child("m_iconFilePath").text().as_string();
                 if (!home_property.child("m_hostCollabo").child("m_iconFilePath").text().empty())
                     theme_icon_name["NPXS10026"] = home_property.child("m_hostCollabo").child("m_iconFilePath").text().as_string();
+                if (!home_property.child("m_power").child("m_iconFilePath").text().empty())
+                    theme_icon_name["NPXS19999"] = home_property.child("m_power").child("m_iconFilePath").text().as_string();
 
                 // Home
                 for (const auto &param : home_property.child("m_bgParam")) {
@@ -339,9 +342,10 @@ bool init_theme(GuiState &gui, EmuEnvState &emuenv, const std::string &content_i
 
         const auto title_id = icon.first;
         const auto name = icon.second;
-        if (name.empty())
-            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + title_id + "/sce_sys/icon0.png");
-        else
+        if (name.empty()) {
+            const auto icon_path = title_id == "NPXS19999" ? fs::path("data/internal/icon/power.png") : fs::path("app") / title_id / "sce_sys/icon0.png";
+            vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, icon_path);
+        } else
             vfs::read_file(VitaIoDevice::ux0, buffer, emuenv.pref_path, fs::path("theme") / content_id_wstr / name);
 
         if (buffer.empty()) {

@@ -25,6 +25,8 @@
 #include <util/lock_and_find.h>
 #include <util/types.h>
 
+#include "io/state.h"
+
 #include <util/tracy.h>
 TRACY_MODULE_NAME(SceDisplay);
 
@@ -83,9 +85,32 @@ EXPORT(int, _sceDisplayGetFrameBufInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceDisplayGetMaximumFrameBufResolution) {
-    TRACY_FUNC(_sceDisplayGetMaximumFrameBufResolution);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceDisplayGetMaximumFrameBufResolution, int *width, int *height) {
+    TRACY_FUNC(_sceDisplayGetMaximumFrameBufResolution, width, height);
+    if (!width || !height)
+        return 0;
+    if (emuenv.cfg.pstv_mode) {
+        *width = 1920;
+        *height = 1088;
+    } else {
+        auto &title_id = emuenv.io.title_id;
+        bool cond = title_id == "PCSG80001"
+            || title_id == "PCSG80007"
+            || title_id == "PCSG00318"
+            || title_id == "PCSG00319"
+            || title_id == "PCSG00320"
+            || title_id == "PCSG00321"
+            || title_id == "PCSH00059";
+        if (cond) {
+            *width = 960;
+            *height = 544;
+
+        } else {
+            *width = 1280;
+            *height = 725;
+        }
+    }
+    return 0;
 }
 
 EXPORT(int, _sceDisplayGetResolutionInfoInternal) {

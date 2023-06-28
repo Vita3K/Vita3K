@@ -144,6 +144,11 @@ EXPORT(int, sceNpSetPlatformType) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, SceNpCommon_650D111B) {
+    TRACY_FUNC(SceNpCommon_650D111B);
+    return UNIMPLEMENTED();
+}
+
 BRIDGE_IMPL(sceNpAuthAbortRequest)
 BRIDGE_IMPL(sceNpAuthCreateStartRequest)
 BRIDGE_IMPL(sceNpAuthDestroyRequest)
@@ -164,3 +169,4 @@ BRIDGE_IMPL(sceNpCommonGetSystemSwVersion)
 BRIDGE_IMPL(sceNpCommonMallocNpServerName)
 BRIDGE_IMPL(sceNpGetPlatformType)
 BRIDGE_IMPL(sceNpSetPlatformType)
+BRIDGE_IMPL(SceNpCommon_650D111B)

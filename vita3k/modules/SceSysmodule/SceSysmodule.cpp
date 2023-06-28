@@ -170,6 +170,7 @@ EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId module_id) {
     if (module_id < 0 || module_id > SYSMODULE_COUNT)
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
 
+    LOG_DEBUG("module: {}", to_debug_str(emuenv.mem, module_id));
     if (is_module_loaded(emuenv.kernel, module_id))
         return SCE_SYSMODULE_LOADED;
     else
@@ -190,10 +191,22 @@ EXPORT(int, sceSysmoduleIsLoadedInternal, SceSysmoduleInternalModuleId module_id
         return RET_ERROR(SCE_SYSMODULE_ERROR_UNLOADED);
 }
 
+bool paf_loaded = false;
 EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
     TRACY_FUNC(sceSysmoduleLoadModule, module_id);
     if (module_id < 0 || module_id > SYSMODULE_COUNT)
         return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
+    LOG_DEBUG("sceSysmoduleLoadModule(module_id:{})", to_debug_str(emuenv.mem, module_id));
+
+    /*if (!paf_loaded) {
+        std::vector<uint8_t> bufPaf;
+        std::string arg_paf = "0x74cf9c";
+        bufPaf.insert(bufPaf.end(), arg_paf.c_str(), arg_paf.c_str() + arg_paf.size() + 1);
+        auto arr = Ptr<uint8_t>(alloc(emuenv.mem, static_cast<uint32_t>(bufPaf.size()), "argpaf"));
+        memcpy(arr.get(emuenv.mem), bufPaf.data(), bufPaf.size());
+
+        paf_loaded = load_sys_module_internal_with_arg(emuenv, thread_id, SCE_SYSMODULE_INTERNAL_PAF, 24, arr, 0);
+    }*/
 
     LOG_INFO("Loading module ID: {}", to_debug_str(emuenv.mem, module_id));
     if (is_modules_enable(emuenv, module_id)) {
@@ -209,7 +222,7 @@ EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
 
 EXPORT(int, sceSysmoduleLoadModuleInternal, SceSysmoduleInternalModuleId module_id) {
     TRACY_FUNC(sceSysmoduleLoadModuleInternal, module_id);
-    LOG_TRACE("sceSysmoduleLoadModuleInternal(module_id:{})", to_debug_str(emuenv.mem, module_id));
+    LOG_DEBUG("sceSysmoduleLoadModuleInternal(module_id:{})", to_debug_str(emuenv.mem, module_id));
 
     if (static_cast<int>(module_id) >= 0) {
         // apparently you can load non-internal modules with this function
@@ -222,7 +235,7 @@ EXPORT(int, sceSysmoduleLoadModuleInternal, SceSysmoduleInternalModuleId module_
 
 EXPORT(int, sceSysmoduleLoadModuleInternalWithArg, SceSysmoduleInternalModuleId module_id, SceSize args, Ptr<void> argp, const SceSysmoduleOpt *option) {
     TRACY_FUNC(sceSysmoduleLoadModuleInternalWithArg, module_id, args, argp, option);
-    LOG_TRACE("sceSysmoduleLoadModuleInternalWithArg(module_id:{}, args:{}, argp:{},option:{})", to_debug_str(emuenv.mem, module_id),
+    LOG_DEBUG("sceSysmoduleLoadModuleInternalWithArg(module_id:{}, args:{}, argp:{}, option:{})", to_debug_str(emuenv.mem, module_id),
         to_debug_str(emuenv.mem, args), to_debug_str(emuenv.mem, argp), to_debug_str(emuenv.mem, option));
 
     const bool loaded = load_sys_module_internal_with_arg(emuenv, thread_id, module_id, args, argp, option ? option->result.get(emuenv.mem) : nullptr);

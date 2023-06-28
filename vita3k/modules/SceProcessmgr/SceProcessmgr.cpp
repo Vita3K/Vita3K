@@ -267,7 +267,7 @@ EXPORT(VitaTime, sceKernelLibcTime, VitaTime *time) {
     return static_cast<VitaTime>(secs);
 }
 
-EXPORT(int, sceKernelPowerLock) {
+EXPORT(int, sceKernelPowerLock, int unk) {
     TRACY_FUNC(sceKernelPowerLock);
     return UNIMPLEMENTED();
 }
@@ -277,7 +277,7 @@ EXPORT(int, sceKernelPowerTick, SceKernelPowerTickType type) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelPowerUnlock) {
+EXPORT(int, sceKernelPowerUnlock, int unk) {
     TRACY_FUNC(sceKernelPowerUnlock);
     return UNIMPLEMENTED();
 }
@@ -298,6 +298,7 @@ EXPORT(int, sceKernelGetMainModuleSdkVersion) {
     if (process_param && (process_param->magic == '2PSP') && (process_param->version != 0)) {
         return process_param->fw_version;
     } else {
+        LOG_DEBUG("return 0");
         return 0;
     }
 }

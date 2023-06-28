@@ -65,7 +65,8 @@ inline std::string get_device_string(const VitaIoDevice dev, const bool with_col
 inline bool is_valid_output_path(const VitaIoDevice device) {
     return !(device == VitaIoDevice::savedata0 || device == VitaIoDevice::savedata1 || device == VitaIoDevice::app0
         || device == VitaIoDevice::_INVALID || device == VitaIoDevice::addcont0 || device == VitaIoDevice::tty0
-        || device == VitaIoDevice::tty1 || device == VitaIoDevice::gamedata0);
+        || device == VitaIoDevice::tty1 || device == VitaIoDevice::gamedata0 || device == VitaIoDevice::cache0
+        || device == VitaIoDevice::appmeta0);
 }
 
 /**
@@ -76,7 +77,8 @@ inline bool is_valid_output_path(const VitaIoDevice device) {
 inline bool is_valid_output_path(const std::string &device) {
     return !(device == (+VitaIoDevice::savedata0)._to_string() || device == (+VitaIoDevice::savedata1)._to_string() || device == (+VitaIoDevice::app0)._to_string()
         || device == (+VitaIoDevice::_INVALID)._to_string() || device == (+VitaIoDevice::addcont0)._to_string() || device == (+VitaIoDevice::tty0)._to_string()
-        || device == (+VitaIoDevice::tty1)._to_string() || device == (+VitaIoDevice::gamedata0)._to_string());
+        || device == (+VitaIoDevice::tty1)._to_string() || device == (+VitaIoDevice::gamedata0)._to_string() || device == (+VitaIoDevice::cache0)._to_string()
+        || device == (+VitaIoDevice::appmeta0)._to_string());
 }
 
 /**

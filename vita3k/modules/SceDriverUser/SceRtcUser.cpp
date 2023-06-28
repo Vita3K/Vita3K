@@ -188,9 +188,10 @@ EXPORT(int, sceRtcGetCurrentClockLocalTime, SceDateTime *datePtr) {
     return CALL_EXPORT(_sceRtcGetCurrentClockLocalTime, datePtr);
 }
 
-EXPORT(int, sceRtcGetCurrentAdNetworkTick) {
-    TRACY_FUNC(sceRtcGetCurrentAdNetworkTick);
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcGetCurrentAdNetworkTick, SceRtcTick *tick) {
+    TRACY_FUNC(sceRtcGetCurrentAdNetworkTick, tick);
+    STUBBED("stubbed with _sceRtcGetCurrentNetworkTick");
+    return CALL_EXPORT(_sceRtcGetCurrentNetworkTick, tick);
 }
 
 EXPORT(int, sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
@@ -198,9 +199,10 @@ EXPORT(int, sceRtcGetCurrentNetworkTick, SceRtcTick *tick) {
     return CALL_EXPORT(_sceRtcGetCurrentNetworkTick, tick);
 }
 
-EXPORT(int, sceRtcGetCurrentDebugNetworkTick) {
-    TRACY_FUNC(sceRtcGetCurrentDebugNetworkTick);
-    return UNIMPLEMENTED();
+EXPORT(int, sceRtcGetCurrentDebugNetworkTick, SceRtcTick *tick) {
+    TRACY_FUNC(sceRtcGetCurrentDebugNetworkTick, tick);
+    STUBBED("stubbed with _sceRtcGetCurrentNetworkTick");
+    return CALL_EXPORT(_sceRtcGetCurrentNetworkTick, tick);
 }
 
 EXPORT(int, sceRtcGetCurrentTick, SceRtcTick *tick) {

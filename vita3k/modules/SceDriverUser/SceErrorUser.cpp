@@ -17,7 +17,7 @@
 
 #include "SceErrorUser.h"
 
-EXPORT(int, sceErrorGetExternalString, char* result, int err) {
+EXPORT(int, sceErrorGetExternalString, char *result, int err) {
     sprintf(result, "0x%08X", err);
     return 0;
 }

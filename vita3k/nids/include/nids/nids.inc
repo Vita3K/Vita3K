@@ -977,6 +977,7 @@ NID(sceCompatWaitIntr, 0xC1E14CF5)
 NID(sceCompatWaitSpecialRequest, 0x714F7ED6)
 NID(sceCompatWriteShared32, 0x1CD51530)
 NID(sceCompatWriteSharedCtrl, 0x2306FFED)
+NID(sceCompatVshGetPspSystemSoftwareVersion, 0x9C107CC9)
 // Module "SceCoredump"
 // Library "SceCoredump"
 NID(sceCoredumpRegisterCoredumpHandler, 0x031DC61E)
@@ -1238,6 +1239,7 @@ NID(sceMotionStartSamplingExt, 0x833FD8DC)
 NID(sceMotionStopSampling, 0xAF32CB1D)
 NID(sceMotionStopSamplingExt, 0x09338B80)
 NID(sceMotionTermLibraryExt, 0x452F92F7)
+NID(SceMotion_A408BC69, 0xA408BC69)
 // Library "SceRtcUser"
 NID(sceRtcCheckValid, 0xD7622935)
 NID(sceRtcCompareTick, 0xC7385158)
@@ -2112,6 +2114,7 @@ NID(sceIoSyncByFd, 0x16512F59)
 NID(sceIoSyncByFdAsync, 0x7E1367CB)
 NID(sceIoWrite, 0x34EFD876)
 NID(sceIoWriteAsync, 0xE0D63D2A)
+NID(SceIofilemgrForDriver_673D2FCD, 0x673D2FCD)
 // Module "SceJpeg"
 // Library "SceJpegUser"
 NID(sceJpegCreateSplitDecoder, 0x123B4734)
@@ -4850,6 +4853,7 @@ NID(sceLocationStartLocationCallback, 0x12D1F0EA)
 NID(sceLocationStopHeadingCallback, 0x92E53F94)
 NID(sceLocationStopLocationCallback, 0xED378700)
 NID(sceLocationTerm, 0x1E80199A)
+NID(SceLocation_EFC9BD25, 0xEFC9BD25)
 // Module "SceLocationExtension"
 // Library "SceLibLocationExtension"
 NID(sceLocationCancelQueryLocationWifiHistory, 0x46D2F044)
@@ -4872,6 +4876,11 @@ NID(sceLsdbGetStitle, 0x3B064DF5)
 NID(sceLsdbGetSystemVersion, 0x9AE94B9F)
 NID(sceLsdbGetTitle, 0x4141EBCD)
 NID(sceLsdbGetType, 0xDEC358E4)
+// Module "SceMgVideo"
+// Library "SceMgVideo"
+NID(SceMgVideo_D6EE7B53, 0xD6EE7B53)
+NID(SceMgVideo_18D553EB, 0x18D553EB)
+NID(SceMgVideo_C62CA5A7, 0xC62CA5A7)
 // Module "SceMotionDev"
 // Library "SceMotionDev"
 NID(sceMotionDevGetAccCalibData, 0xAF014866)
@@ -5071,6 +5080,17 @@ NID(sceNetTerm, 0xEA3CC286)
 // Library "SceNetInternal"
 NID(sceNetInternalIcmConnect, 0x93F2FF08)
 NID(sceNetInternalInetPton, 0x916EA798)
+NID(sceNetInternal_EE1985D9, 0xEE1985D9)
+NID(SceNetInternal_DF815D48, 0xDF815D48)
+NID(SceNetInternal_333F9CB3, 0x333F9CB3)
+NID(SceNetInternal_694F8996, 0x694F8996)
+NID(SceNetInternal_8157DE3E, 0x8157DE3E)
+NID(SceNetInternal_E03F6A77, 0xE03F6A77)
+NID(SceNetInternal_EAC33599, 0xEAC33599)
+NID(SceNetInternal_EDAA3453, 0xEDAA3453)
+NID(SceNetInternal_235DE96C, 0x235DE96C)
+NID(SceNetInternal_04E6136D, 0x04E6136D)
+NID(SceNetInternal_A9F2277C, 0xA9F2277C)
 // Module "SceNetAdhocMatching"
 // Library "SceNetAdhocMatching"
 NID(sceNetAdhocMatchingAbortSendData, 0xFE77831E)
@@ -5107,6 +5127,11 @@ NID(sceNetCtlInetRegisterCallback, 0xEAEE6185)
 NID(sceNetCtlInetUnregisterCallback, 0xD0C3BF3F)
 NID(sceNetCtlInit, 0x495CA1DB)
 NID(sceNetCtlTerm, 0xCD188648)
+NID(SceNetCtl_229EAA64, 0x229EAA64)
+NID(SceNetCtl_AC326DB7, 0xAC326DB7)
+NID(SceNetCtl_C61F3E96, 0xC61F3E96)
+NID(SceNetCtl_C33D7374, 0xC33D7374)
+NID(SceNetCtl_85C9CC02, 0x85C9CC02)
 // Module "SceNetPs"
 // Library "SceNetPsForSyscalls"
 NID(sceNetSyscallAccept, 0x45EAAD89)
@@ -5368,6 +5393,7 @@ NID(sceNpCommerce2ShowPsStoreIcon, 0x84E56A6D)
 NID(sceNpCommerce2StartEmptyStoreCheck, 0x7132EAA5)
 NID(sceNpCommerce2StopEmptyStoreCheck, 0x84C336C6)
 NID(sceNpCommerce2Term, 0xB99958AE)
+NID(SceNpCommerce2_AA090F5E, 0xAA090F5E)
 // Module "SceNpCommon"
 // Library "SceNpCommon"
 NID(sceNpAuthAbortRequest, 0xE2582575)
@@ -5390,6 +5416,8 @@ NID(sceNpCommonGetSystemSwVersion, 0x775D0177)
 NID(sceNpCommonMallocNpServerName, 0x95EFA15C)
 NID(sceNpGetPlatformType, 0xE9A003DE)
 NID(sceNpSetPlatformType, 0xE807D0BC)
+NID(SceNpCommon_A385C8CD, 0xA385C8CD)
+NID(SceNpCommon_650D111B, 0x650D111B)
 // Module "SceNpDrm"
 // Library "SceNpDrm"
 NID(_sceNpDrmCheckActData, 0xFEEBCD62)
@@ -5437,6 +5465,9 @@ NID(sceNpManagerGetNpId, 0x3C94B4B4)
 NID(sceNpRegisterServiceStateCallback, 0x44239C35)
 NID(sceNpTerm, 0x19E40AE1)
 NID(sceNpUnregisterServiceStateCallback, 0xD9E6E56C)
+NID(SceNpManager_B24FC028, 0xB24FC028)
+NID(SceNpManager_CFAEB050, 0xCFAEB050)
+NID(SceNpManager_E45E4003, 0xE45E4003)
 // Module "SceNpMatching2"
 // Library "SceNpMatching2"
 NID(sceNpMatching2AbortContextStart, 0xF2847E3B)
@@ -6511,12 +6542,17 @@ NID(sceShaccCgSetDefaultAllocator, 0x6F01D573)
 // Module "SceShellSvc"
 // Library "SceShellSvc"
 NID(sceShellSvcGetSvcObj, 0xB31E7F1C)
+NID(SceShellSvc_7CBF442B, 0x7CBF442B)
+NID(SceShellSvc_D943CE15, 0xD943CE15)
 // Library "SceShellUtil"
 NID(sceShellUtilInitEvents, 0xE8AD11EC)
 NID(sceShellUtilLock, 0xA9537233)
 NID(sceShellUtilRegisterEventHandler, 0x7B5EDFE7)
 NID(sceShellUtilRequestLaunchApp, 0xFD521712)
 NID(sceShellUtilUnlock, 0x21A6CF54)
+NID(SceShellUtil_EC5881A5, 0xEC5881A5)
+NID(SceShellUtil_CE35B2B8, 0xCE35B2B8)
+NID(SceShellUtil_9B0EE918, 0x9B0EE918)
 // Library "SceShellUtilLaunchApp"
 NID(sceShellUtilLaunchAppRequestLaunchApp, 0x5372EEDB)
 // Library "SceIpmi"
@@ -6538,6 +6574,10 @@ NID(_ZN4IPMI6Client7connectEPKvjPi, 0xA22C3E01)
 NID(_ZN4IPMI6Client7destroyEv, 0x101C93F8)
 NID(_ZN4IPMI6Client9tryGetMsgEjPvPmm, 0x60EFADE7)
 NID(_ZN4IPMI6ClientD1Ev, 0xA5AA193C)
+NID(SceIpmi_296D44D4, 0x296D44D4)
+NID(SceIpmi_BC3A3031, 0xBC3A3031)
+NID(SceIpmi_2C6DB642, 0x2C6DB642)
+NID(SceIpmi_006EFA9D, 0x006EFA9D)
 // Module "SceShutterSound"
 // Library "SceShutterSound"
 NID(sceShutterSoundPlay, 0x7FFB6D79)

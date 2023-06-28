@@ -155,7 +155,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     ImGuiIO &io = ImGui::GetIO();
 
     ImFontConfig mono_font_config{};
-    mono_font_config.SizePixels = 13.f;
+    mono_font_config.SizePixels = 14.f;
 
 #ifdef _WIN32
     const auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
@@ -286,13 +286,13 @@ vfs::FileBuffer init_default_icon(GuiState &gui, EmuEnvState &emuenv) {
     return buffer;
 }
 
-static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
     IconData image;
     vfs::FileBuffer buffer;
 
     const auto APP_INDEX = get_app_index(gui, app_path);
 
-    if (!vfs::read_app_file(buffer, emuenv.pref_path, app_path, "sce_sys/icon0.png")) {
+    if (!vfs::read_app_file(buffer, emuenv.pref_path, app_device, app_path, "sce_sys/icon0.png")) {
         buffer = init_default_icon(gui, emuenv);
         if (buffer.empty()) {
             LOG_WARN("Default icon not found for title {}, [{}] in path {}.",
@@ -313,8 +313,8 @@ static IconData load_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::str
     return image;
 }
 
-void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    IconData data = load_app_icon(gui, emuenv, app_path);
+void init_app_icon(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
+    IconData data = load_app_icon(gui, emuenv, app_device, app_path);
     if (data.data) {
         gui.app_selector.user_apps_icon[app_path].init(gui.imgui_state.get(), data.data.get(), data.width, data.height);
     }
@@ -336,28 +336,19 @@ void IconAsyncLoader::commit(GuiState &gui) {
 }
 
 IconAsyncLoader::IconAsyncLoader(GuiState &gui, EmuEnvState &emuenv, const std::vector<gui::App> &app_list) {
-    // I don't feel comfortable passing app_list down to be iterated by thread.
-    // Methods like delete_app might mutate it, so I'd like to copy what I need now.
-    auto paths = [&app_list]() {
-        std::vector<std::string> copy(app_list.size());
-        std::transform(app_list.begin(), app_list.end(), copy.begin(), [](const auto &a) { return a.path; });
-
-        return copy;
-    };
-
     quit = false;
-    thread = std::thread([&, paths = paths()]() {
-        for (const auto &path : paths) {
+    thread = std::thread([&, app_list]() {
+        for (const auto &app : app_list) {
             if (quit)
                 return;
 
             // load the actual texture
-            IconData data = load_app_icon(gui, emuenv, path);
+            IconData data = load_app_icon(gui, emuenv, app.device, app.path);
 
             // Duplicate code here from init_app_icon
             {
                 std::lock_guard<std::mutex> lock(mutex);
-                icon_data[path] = std::move(data);
+                icon_data[app.path] = std::move(data);
             }
         }
     });
@@ -372,7 +363,7 @@ void init_apps_icon(GuiState &gui, EmuEnvState &emuenv, const std::vector<gui::A
     gui.app_selector.icon_async_loader.emplace(gui, emuenv, app_list);
 }
 
-void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
     if (gui.apps_background.contains(app_path))
         return;
 
@@ -381,11 +372,7 @@ void init_app_background(GuiState &gui, EmuEnvState &emuenv, const std::string &
     int32_t height = 0;
     vfs::FileBuffer buffer;
 
-    const auto is_sys = app_path.find("NPXS") != std::string::npos;
-    if (is_sys)
-        vfs::read_file(VitaIoDevice::vs0, buffer, emuenv.pref_path, "app/" + app_path + "/sce_sys/pic0.png");
-    else
-        vfs::read_app_file(buffer, emuenv.pref_path, app_path, "sce_sys/pic0.png");
+    vfs::read_app_file(buffer, emuenv.pref_path, app_device, app_path, "sce_sys/pic0.png");
 
     if (buffer.empty()) {
         LOG_WARN("Background not found for application {} [{}].", APP_INDEX->title, app_path);
@@ -421,7 +408,7 @@ static bool get_user_apps(GuiState &gui, EmuEnvState &emuenv) {
         // Check version of cache
         uint32_t versionInFile;
         apps_cache.read((char *)&versionInFile, sizeof(uint32_t));
-        if (versionInFile != 1) {
+        if (versionInFile != 2) {
             LOG_WARN("Current version of cache: {}, is outdated, recreate it.", versionInFile);
             return false;
         }
@@ -448,6 +435,7 @@ static bool get_user_apps(GuiState &gui, EmuEnvState &emuenv) {
 
             App app;
 
+            app.device = read();
             app.app_ver = read();
             app.category = read();
             app.content_id = read();
@@ -481,7 +469,7 @@ void save_apps_cache(GuiState &gui, EmuEnvState &emuenv) {
         apps_cache.write((char *)&size, sizeof(size));
 
         // Write version of cache
-        const uint32_t versionInFile = 1;
+        const uint32_t versionInFile = 2;
         apps_cache.write((char *)&versionInFile, sizeof(uint32_t));
 
         // Write language of cache
@@ -497,6 +485,7 @@ void save_apps_cache(GuiState &gui, EmuEnvState &emuenv) {
                 apps_cache.write(i.c_str(), size);
             };
 
+            write(app.device);
             write(app.app_ver);
             write(app.category);
             write(app.content_id);
@@ -518,7 +507,7 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
             init_user_apps(gui, emuenv);
     }
 
-    init_app_background(gui, emuenv, "NPXS10015");
+    init_app_background(gui, emuenv, "vs0", "NPXS10015");
 
     regmgr::init_regmgr(emuenv.regmgr, emuenv.pref_path);
 
@@ -533,16 +522,16 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
         init_user_management(gui, emuenv);
 }
 
-void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
-    const auto APP_INDEX = get_app_index(gui, app_path);
+void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
+    const auto APP_INDEX = get_user_app_index(gui, app_path);
     if (APP_INDEX != gui.app_selector.user_apps.end()) {
         gui.app_selector.user_apps.erase(APP_INDEX);
         if (gui.app_selector.user_apps_icon.find(app_path) != gui.app_selector.user_apps_icon.end())
             gui.app_selector.user_apps_icon.erase(app_path);
     }
 
-    get_app_param(gui, emuenv, app_path);
-    init_app_icon(gui, emuenv, app_path);
+    get_app_param(gui, emuenv, app_device, app_path);
+    init_app_icon(gui, emuenv, app_device, app_path);
 
     const auto TIME_APP_INDEX = get_time_app_index(gui, emuenv, app_path);
     if (TIME_APP_INDEX != gui.time_apps[emuenv.io.user_id].end())
@@ -552,7 +541,7 @@ void init_user_app(GuiState &gui, EmuEnvState &emuenv, const std::string &app_pa
 }
 
 std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui, const std::string &app_path) {
-    const auto &app_type = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
+    const auto &app_type = (app_path.find("NPXS") != std::string::npos) && (app_path != "NPXS10007") ? gui.app_selector.sys_apps_icon : gui.app_selector.user_apps_icon;
     const auto app_icon = std::find_if(app_type.begin(), app_type.end(), [&](const auto &i) {
         return i.first == app_path;
     });
@@ -561,7 +550,7 @@ std::map<std::string, ImGui_Texture>::const_iterator get_app_icon(GuiState &gui,
 }
 
 std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &app_path) {
-    auto &app_type = app_path.find("NPXS") != std::string::npos ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
+    auto &app_type = (app_path.find("NPXS") != std::string::npos) && (app_path != "NPXS10007") ? gui.app_selector.sys_apps : gui.app_selector.user_apps;
     const auto app_index = std::find_if(app_type.begin(), app_type.end(), [&](const App &a) {
         return a.path == app_path;
     });
@@ -569,29 +558,39 @@ std::vector<App>::iterator get_app_index(GuiState &gui, const std::string &app_p
     return app_index;
 }
 
-void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+std::vector<App>::iterator get_user_app_index(GuiState &gui, const std::string &app_path) {
+    const auto app_index = std::find_if(gui.app_selector.user_apps.begin(), gui.app_selector.user_apps.end(), [&](const App &a) {
+        return a.path == app_path;
+    });
+
+    return app_index;
+}
+
+void get_app_param(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
     emuenv.app_path = app_path;
     vfs::FileBuffer param;
-    if (vfs::read_app_file(param, emuenv.pref_path, app_path, "sce_sys/param.sfo")) {
+    if (vfs::read_app_file(param, emuenv.pref_path, app_device, app_path, "sce_sys/param.sfo")) {
         sfo::get_param_info(emuenv.app_info, param, emuenv.cfg.sys_lang);
     } else {
         emuenv.app_info.app_addcont = emuenv.app_info.app_savedata = emuenv.app_info.app_short_title = emuenv.app_info.app_title = emuenv.app_info.app_title_id = emuenv.app_path; // Use app path as TitleID, addcont, Savedata, Short title and Title
         emuenv.app_info.app_version = emuenv.app_info.app_category = emuenv.app_info.app_parental_level = "N/A";
     }
-    gui.app_selector.user_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, emuenv.app_info.app_content_id, emuenv.app_info.app_addcont, emuenv.app_info.app_savedata, emuenv.app_info.app_parental_level, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, emuenv.app_path });
+    gui.app_selector.user_apps.push_back({ app_device, emuenv.app_info.app_version, emuenv.app_info.app_category, emuenv.app_info.app_content_id, emuenv.app_info.app_addcont, emuenv.app_info.app_savedata, emuenv.app_info.app_parental_level, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, emuenv.app_path });
 }
 
 void get_user_apps_title(GuiState &gui, EmuEnvState &emuenv) {
-    const fs::path app_path{ fs::path{ emuenv.pref_path } / "ux0/app" };
-    if (!fs::exists(app_path))
-        return;
+    const std::array<std::string, 2> devices{ "pd0", "ux0" };
+    for (const auto &device : devices) {
+        const fs::path app_path{ fs::path{ emuenv.pref_path } / device / "app" };
+        if (!fs::exists(app_path))
+            continue;
 
-    gui.app_selector.user_apps.clear();
-    for (const auto &app : fs::directory_iterator(app_path)) {
-        if (!app.path().empty() && fs::is_directory(app.path())
-            && !app.path().filename_is_dot() && !app.path().filename_is_dot_dot()) {
-            const auto app_path = app.path().stem().generic_string();
-            get_app_param(gui, emuenv, app_path);
+        for (const auto &app : fs::directory_iterator(app_path)) {
+            if (!app.path().empty() && fs::is_directory(app.path())
+                && !app.path().filename_is_dot() && !app.path().filename_is_dot_dot()) {
+                const auto app_path = app.path().stem().generic_string();
+                get_app_param(gui, emuenv, device, app_path);
+            }
         }
     }
 
@@ -600,10 +599,10 @@ void get_user_apps_title(GuiState &gui, EmuEnvState &emuenv) {
 
 void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
     gui.app_selector.sys_apps.clear();
-    const std::array<std::string, 4> sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026" };
+    const std::array<std::string, 5> sys_apps_list = { "NPXS10003", "NPXS10008", "NPXS10015", "NPXS10026", "NPXS19999" };
     for (const auto &app : sys_apps_list) {
         vfs::FileBuffer params;
-        if (vfs::read_file(VitaIoDevice::vs0, params, emuenv.pref_path, "app/" + app + "/sce_sys/param.sfo")) {
+        if ((app != "NPXS19999") && vfs::read_file(VitaIoDevice::vs0, params, emuenv.pref_path, "app/" + app + "/sce_sys/param.sfo")) {
             SfoFile sfo_handle;
             sfo::load(sfo_handle, params);
             sfo::get_data_by_key(emuenv.app_info.app_version, sfo_handle, "APP_VER");
@@ -626,10 +625,14 @@ void get_sys_apps_title(GuiState &gui, EmuEnvState &emuenv) {
                 emuenv.app_info.app_title = "Trophy Collection";
             } else if (app == "NPXS10015")
                 emuenv.app_info.app_short_title = emuenv.app_info.app_title = "Settings";
-            else
+            else if (app == "NPXS10026")
                 emuenv.app_info.app_short_title = emuenv.app_info.app_title = "Content Manager";
+            else {
+                emuenv.app_info.app_short_title = "PS Vita OS";
+                emuenv.app_info.app_title = "PlayStation Vita OS";
+            }
         }
-        gui.app_selector.sys_apps.push_back({ emuenv.app_info.app_version, emuenv.app_info.app_category, {}, {}, {}, {}, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, app });
+        gui.app_selector.sys_apps.push_back({ "vs0", emuenv.app_info.app_version, emuenv.app_info.app_category, {}, {}, {}, {}, emuenv.app_info.app_short_title, emuenv.app_info.app_title, emuenv.app_info.app_title_id, app });
     }
 
     std::sort(gui.app_selector.sys_apps.begin(), gui.app_selector.sys_apps.end(), [](const App &lhs, const App &rhs) {

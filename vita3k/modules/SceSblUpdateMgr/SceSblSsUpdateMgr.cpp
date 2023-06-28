@@ -37,8 +37,18 @@ EXPORT(int, sceSblUsGetExtractSpackage) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceSblUsGetSpkgInfo) {
-    return UNIMPLEMENTED();
+struct SceSblUsSpkgInfo { // Size is 0x10 on FW 0.931-0.990
+    SceSize size; // size of this structure
+    int version;
+    int reserved1;
+    int reserved2;
+};
+
+EXPORT(int, sceSblUsGetSpkgInfo, int package_type, SceSblUsSpkgInfo *pInfo) {
+    LOG_DEBUG("package type: {}", package_type);
+    pInfo->version = 0x3000011;
+
+    return STUBBED("Set to 3.00");
 }
 
 EXPORT(int, sceSblUsGetStatus) {

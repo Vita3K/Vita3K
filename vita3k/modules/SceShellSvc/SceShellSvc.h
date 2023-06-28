@@ -20,3 +20,5 @@
 #include <module/module.h>
 
 BRIDGE_DECL(sceShellSvcGetSvcObj)
+BRIDGE_DECL(SceShellSvc_7CBF442B)
+BRIDGE_DECL(SceShellSvc_D943CE15)

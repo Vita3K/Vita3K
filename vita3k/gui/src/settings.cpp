@@ -825,8 +825,8 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                             gui.live_items.clear();
                             init_notice_info(gui, emuenv);
                             if (live_area_state) {
-                                update_live_area_current_open_apps_list(gui, emuenv, "NPXS10015");
-                                init_live_area(gui, emuenv, "NPXS10015");
+                                update_live_area_current_open_apps_list(gui, emuenv, "vs0", "NPXS10015");
+                                init_live_area(gui, emuenv, "vs0", "NPXS10015");
                             }
                         }
                         popup.clear();

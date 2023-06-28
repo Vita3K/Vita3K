@@ -253,7 +253,7 @@ void draw_archive_install_dialog(GuiState &gui, EmuEnvState &emuenv) {
                             if (emuenv.app_info.app_category != "theme")
                                 update_notice_info(gui, emuenv, "content");
                             if (content.category == "gd") {
-                                init_user_app(gui, emuenv, content.title_id);
+                                init_user_app(gui, emuenv, "ux0", content.title_id);
                                 save_apps_cache(gui, emuenv);
                             }
                         }

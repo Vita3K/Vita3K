@@ -109,7 +109,7 @@ EXPORT(int, sceSharedFbEnd) {
         .width = 960,
         .height = 544
     };
-    return CALL_EXPORT(_sceDisplaySetFrameBuf, &frame_buf, SCE_DISPLAY_SETBUF_NEXTFRAME);
+    return CALL_EXPORT(_sceDisplaySetFrameBuf, &frame_buf, SCE_DISPLAY_SETBUF_NEXTFRAME, nullptr);
 }
 
 EXPORT(int, sceSharedFbGetInfo, int id, SceSharedFbInfo *info) {

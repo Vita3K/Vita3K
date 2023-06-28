@@ -325,6 +325,11 @@ EXPORT(int, sceIoWriteAsync) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, SceIofilemgrForDriver_673D2FCD) {
+    TRACY_FUNC(SceIofilemgrForDriver_673D2FCD);
+    return UNIMPLEMENTED();
+}
+
 BRIDGE_IMPL(_sceIoChstat)
 BRIDGE_IMPL(_sceIoChstatAsync)
 BRIDGE_IMPL(_sceIoChstatByFd)
@@ -384,3 +389,4 @@ BRIDGE_IMPL(sceIoSyncByFd)
 BRIDGE_IMPL(sceIoSyncByFdAsync)
 BRIDGE_IMPL(sceIoWrite)
 BRIDGE_IMPL(sceIoWriteAsync)
+BRIDGE_IMPL(SceIofilemgrForDriver_673D2FCD)

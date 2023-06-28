@@ -96,6 +96,7 @@ set(SOURCE_LIST
 	SceLocation/SceLibLocation.cpp SceLocation/SceLibLocation.h
 	SceLocationExtension/SceLibLocationExtension.cpp SceLocationExtension/SceLibLocationExtension.h
 	SceLsdb/SceLsdb.cpp SceLsdb/SceLsdb.h
+	SceMgVideo/SceMgVideo.cpp SceMgVideo/SceMgVideo.h
 	SceMotionDev/SceMotionDev.cpp SceMotionDev/SceMotionDev.h
 	SceMp4/SceMp4.cpp SceMp4/SceMp4.h
 	SceMtpIfDriver/SceMtpIf.cpp SceMtpIfDriver/SceMtpIf.h

@@ -37,9 +37,9 @@ EXPORT(int, sceDisplayGetFrameBufInternal) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceDisplayGetMaximumFrameBufResolution) {
-    TRACY_FUNC(sceDisplayGetMaximumFrameBufResolution);
-    return UNIMPLEMENTED();
+EXPORT(int, sceDisplayGetMaximumFrameBufResolution, int *width, int *height) {
+    TRACY_FUNC(sceDisplayGetMaximumFrameBufResolution, width, height);
+    return CALL_EXPORT(_sceDisplayGetMaximumFrameBufResolution, width, height);
 }
 
 EXPORT(int, sceDisplayGetResolutionInfoInternal) {
@@ -66,8 +66,9 @@ EXPORT(int, sceDisplaySetFrameBufInternal, uint32_t maybe_buffer_idx, uint32_t u
     if (maybe_buffer_idx != 0)
         return 0;
     // size does not match (is 4 bytes larger)
-    pFrameBuf->size = 0x18;
-    return CALL_EXPORT(_sceDisplaySetFrameBuf, pFrameBuf, sync);
+    if (pFrameBuf)
+        pFrameBuf->size = 0x18;
+    return CALL_EXPORT(_sceDisplaySetFrameBuf, pFrameBuf, sync, nullptr);
 }
 
 BRIDGE_IMPL(sceDisplayGetFrameBuf)

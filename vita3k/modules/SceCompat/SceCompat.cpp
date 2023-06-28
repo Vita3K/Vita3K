@@ -153,6 +153,11 @@ EXPORT(int, sceCompatWriteSharedCtrl) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, sceCompatVshGetPspSystemSoftwareVersion) {
+    STUBBED("return 661");
+    return 661;
+}
+
 BRIDGE_IMPL(sceCompatAllocCdramWithHole)
 BRIDGE_IMPL(sceCompatAvailableColorSpaceSetting)
 BRIDGE_IMPL(sceCompatCache)
@@ -187,3 +192,4 @@ BRIDGE_IMPL(sceCompatWaitIntr)
 BRIDGE_IMPL(sceCompatWaitSpecialRequest)
 BRIDGE_IMPL(sceCompatWriteShared32)
 BRIDGE_IMPL(sceCompatWriteSharedCtrl)
+BRIDGE_IMPL(sceCompatVshGetPspSystemSoftwareVersion)

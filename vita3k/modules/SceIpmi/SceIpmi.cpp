@@ -29,7 +29,16 @@ EXPORT(int, _ZN4IPMI6Client11getUserDataEv) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _ZN4IPMI6Client12tryGetResultEjPiPvPmm) {
+struct BufferInfo {
+    Ptr<void> pBuffer;
+    SceSize bufferSize;
+    SceSize bufferWrittenSize; // size written by method
+};
+
+EXPORT(int, _ZN4IPMI6Client12tryGetResultEjPiPvPmm, unsigned int a1, int *a2, void *a3, unsigned long *a4, unsigned long a5) {
+    //    LOG_DEBUG("a1: {}, a2: {}, a4: {}, a5: {}", a1, *a2, *a4, a5);
+    //*a2 = 1000;
+
     return UNIMPLEMENTED();
 }
 
@@ -98,6 +107,7 @@ EXPORT(int, _ZN4IPMI6Client6createEPPS0_PKNS0_6ConfigEPvS6_, Ptr<void> *client, 
 
     *client_memory.cast<Ptr<void>>().get(emuenv.mem) = client_vtable;
     *client = client_memory;
+    LOG_DEBUG("Stubed");
     return 0;
 }
 
@@ -105,7 +115,7 @@ EXPORT(int, _ZN4IPMI6Client6getMsgEjPvPjjS2_) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _ZN4IPMI6Client7connectEPKvjPi, void* client, void const* params, SceSize params_size, SceInt32* error) {
+EXPORT(int, _ZN4IPMI6Client7connectEPKvjPi, void *client, void const *params, SceSize params_size, SceInt32 *error) {
     *error = 0;
     return UNIMPLEMENTED();
 }
@@ -119,6 +129,22 @@ EXPORT(int, _ZN4IPMI6Client9tryGetMsgEjPvPmm) {
 }
 
 EXPORT(int, _ZN4IPMI6ClientD1Ev) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, SceIpmi_296D44D4) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, SceIpmi_BC3A3031) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, SceIpmi_2C6DB642) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, SceIpmi_006EFA9D) {
     return UNIMPLEMENTED();
 }
 
@@ -140,3 +166,7 @@ BRIDGE_IMPL(_ZN4IPMI6Client7connectEPKvjPi)
 BRIDGE_IMPL(_ZN4IPMI6Client7destroyEv)
 BRIDGE_IMPL(_ZN4IPMI6Client9tryGetMsgEjPvPmm)
 BRIDGE_IMPL(_ZN4IPMI6ClientD1Ev)
+BRIDGE_IMPL(SceIpmi_296D44D4)
+BRIDGE_IMPL(SceIpmi_BC3A3031)
+BRIDGE_IMPL(SceIpmi_2C6DB642)
+BRIDGE_IMPL(SceIpmi_006EFA9D)

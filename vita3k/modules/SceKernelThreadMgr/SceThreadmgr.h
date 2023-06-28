@@ -76,6 +76,7 @@ EXPORT(int, _sceKernelSetThreadContextForVM, SceUID threadId, Ptr<SceKernelThrea
 EXPORT(int, _sceKernelGetThreadContextForVM, SceUID threadId, Ptr<SceKernelThreadCpuRegisterInfo> pCpuRegisterInfo, Ptr<SceKernelThreadVfpRegisterInfo> pVfpRegisterInfo);
 EXPORT(int, sceKernelResumeThreadForVM, SceUID threadId);
 EXPORT(int, sceKernelSuspendThreadForVM, SceUID threadId);
+EXPORT(SceInt32, sceKernelNotifyCallback, SceUID callbackId, SceInt32 notifyArg);
 
 BRIDGE_DECL(__sceKernelCreateLwMutex)
 BRIDGE_DECL(_sceKernelCancelEvent)

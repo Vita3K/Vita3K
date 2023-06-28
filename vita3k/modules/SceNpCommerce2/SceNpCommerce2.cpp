@@ -185,6 +185,10 @@ EXPORT(int, sceNpCommerce2Term) {
     return UNIMPLEMENTED();
 }
 
+EXPORT(int, SceNpCommerce2_AA090F5E) {
+    return UNIMPLEMENTED();
+}
+
 BRIDGE_IMPL(sceNpCommerce2AbortReq)
 BRIDGE_IMPL(sceNpCommerce2CreateCtx)
 BRIDGE_IMPL(sceNpCommerce2CreateSessionCreateReq)
@@ -227,3 +231,4 @@ BRIDGE_IMPL(sceNpCommerce2ShowPsStoreIcon)
 BRIDGE_IMPL(sceNpCommerce2StartEmptyStoreCheck)
 BRIDGE_IMPL(sceNpCommerce2StopEmptyStoreCheck)
 BRIDGE_IMPL(sceNpCommerce2Term)
+BRIDGE_IMPL(SceNpCommerce2_AA090F5E)

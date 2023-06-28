@@ -282,11 +282,11 @@ void open_path(const std::string &path) {
 
 static std::string context_dialog;
 
-void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path) {
+void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string &app_device, const std::string &app_path) {
     const auto APP_INDEX = get_app_index(gui, app_path);
     const auto title_id = APP_INDEX->title_id;
 
-    const auto APP_PATH{ fs::path(emuenv.pref_path) / "ux0/app" / app_path };
+    const auto APP_PATH{ fs::path(emuenv.pref_path) / app_device / "app" / app_path };
     const auto CUSTOM_CONFIG_PATH{ fs::path(emuenv.base_path) / "config" / fmt::format("config_{}.xml", app_path) };
     const auto ADDCONT_PATH{ fs::path(emuenv.pref_path) / "ux0/addcont" / APP_INDEX->addcont };
     const auto LICENSE_PATH{ fs::path(emuenv.pref_path) / "ux0/license" / title_id };
@@ -318,7 +318,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         ImGui::SetWindowFontScale(1.1f);
         const auto START_STR = app_path == emuenv.io.app_path ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
         if (ImGui::MenuItem(START_STR.c_str()))
-            pre_run_app(gui, emuenv, app_path);
+            pre_run_app(gui, emuenv, app_device, app_path);
         if (app_path.find("NPXS") == std::string::npos) {
             if (ImGui::BeginMenu(lang_compat.name.c_str())) {
                 if (!is_commercial_app || !gui.compat.compat_db_loaded) {
@@ -467,13 +467,13 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
             }
             if (!emuenv.cfg.show_live_area_screen && ImGui::BeginMenu("Live Area")) {
                 if (ImGui::MenuItem("Live Area", nullptr, &gui.vita_area.live_area_screen))
-                    open_live_area(gui, emuenv, app_path);
+                    open_live_area(gui, emuenv, app_device, app_path);
                 if (ImGui::MenuItem("Search", nullptr))
                     open_search(APP_INDEX->title);
                 if (fs::exists(MANUAL_PATH) && !fs::is_empty(MANUAL_PATH) && ImGui::MenuItem("Manual", nullptr))
-                    open_manual(gui, emuenv, app_path);
+                    open_manual(gui, emuenv, app_device, app_path);
                 if (ImGui::MenuItem("Update"))
-                    update_app(gui, emuenv, app_path);
+                    update_app(gui, emuenv, app_device, app_path);
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu(common["delete"].c_str())) {

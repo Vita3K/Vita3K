@@ -17,6 +17,8 @@
 
 #include "SceAVConfig.h"
 
+#include <audio/state.h>
+
 EXPORT(int, sceAVConfigChangeReg) {
     return UNIMPLEMENTED();
 }
@@ -45,20 +47,26 @@ EXPORT(int, sceAVConfigGetDisplayMaxBrightness) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAVConfigGetMasterVol) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAVConfigGetMasterVol, int *vol) {
+    LOG_DEBUG("Call");
+    *vol = 30;
+    return 0;
 }
 
 EXPORT(int, sceAVConfigGetShutterVol) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAVConfigGetSystemVol) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAVConfigGetSystemVol, int *vol) {
+    STUBBED("");
+    *vol = 100;
+    return 0;
 }
 
-EXPORT(int, sceAVConfigGetVolCtrlEnable) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAVConfigGetVolCtrlEnable, int *vol) {
+    STUBBED("");
+    *vol = 100;
+    return 0;
 }
 
 EXPORT(int, sceAVConfigHdmiCecCmdOneTouchPlay) {
@@ -133,8 +141,16 @@ EXPORT(int, sceAVConfigSetDisplayColorSpaceMode) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAVConfigSetMasterVol) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceAVConfigSetMasterVol, int vol) {
+    LOG_DEBUG("vol: {}", vol);
+    float volume = static_cast<float>(vol) / 30.0f; // Conversion de 0-30 en 0.0-1.0
+
+    for (const auto &audio : emuenv.audio.out_ports) {
+        audio.second->volume = volume;
+        emuenv.audio.adapter->set_volume(*audio.second, volume);
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceAVConfigSetSystemVol) {
@@ -146,7 +162,8 @@ EXPORT(int, sceAVConfigUnRegisterCallback) {
 }
 
 EXPORT(int, sceAVConfigWriteMasterVol) {
-    return UNIMPLEMENTED();
+    LOG_DEBUG("Call");
+    return 10;
 }
 
 EXPORT(int, sceAVConfigWriteRegSystemVol) {

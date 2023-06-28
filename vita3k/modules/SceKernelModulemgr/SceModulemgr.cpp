@@ -151,9 +151,21 @@ EXPORT(int, sceKernelGetModuleList, int flags, SceUID *modids, int *num) {
     return SCE_KERNEL_OK;
 }
 
-EXPORT(int, sceKernelGetSystemSwVersion) {
+typedef struct SceKernelSystemSwVersion {
+    SceSize size;
+    char versionString[0x1C];
+    SceUInt version;
+    SceUInt unk_24;
+} SceKernelSystemSwVersion;
+
+EXPORT(int, sceKernelGetSystemSwVersion, SceKernelSystemSwVersion *version) {
     TRACY_FUNC(sceKernelGetSystemSwVersion);
-    return UNIMPLEMENTED();
+    version->size = sizeof(SceKernelSystemSwVersion);
+    strncpy(version->versionString, "3.74", strlen("3.74") + 1);
+    version->version = 0x03740010;
+    STUBBED("using 3.74");
+
+    return 0;
 }
 
 EXPORT(int, sceKernelInhibitLoadingModule) {

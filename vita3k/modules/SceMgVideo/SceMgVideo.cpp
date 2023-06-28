@@ -15,24 +15,20 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-#pragma once
+#include "SceMgVideo.h"
 
-#include <util/fs.h>
-#include <util/types.h>
+EXPORT(int, SceMgVideo_D6EE7B53) {
+    return UNIMPLEMENTED();
+}
 
-class VitaIoDevice;
+EXPORT(int, SceMgVideo_18D553EB) {
+    return UNIMPLEMENTED();
+}
 
-namespace vfs {
+EXPORT(int, SceMgVideo_C62CA5A7) {
+    return UNIMPLEMENTED();
+}
 
-struct SpaceInfo {
-    unsigned long long max_capacity;
-    unsigned long long used;
-    unsigned long long free;
-};
-
-using FileBuffer = std::vector<SceUInt8>;
-
-bool read_file(VitaIoDevice device, FileBuffer &buf, const std::wstring &pref_path, const fs::path &vfs_file_path);
-bool read_app_file(FileBuffer &buf, const std::wstring &pref_path, const std::string &app_device, const std::string &app_path, const fs::path &vfs_file_path);
-SpaceInfo get_space_info(const VitaIoDevice device, const std::string &vfs_path, const std::wstring &pref_path);
-} // namespace vfs
+BRIDGE_IMPL(SceMgVideo_D6EE7B53)
+BRIDGE_IMPL(SceMgVideo_18D553EB)
+BRIDGE_IMPL(SceMgVideo_C62CA5A7)

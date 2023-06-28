@@ -17,11 +17,31 @@
 
 #include "SceShellUtil.h"
 
+enum SceShellUtilLockType {
+    SCE_SHELL_UTIL_LOCK_TYPE_PS_BTN = 0x1,
+    SCE_SHELL_UTIL_LOCK_TYPE_QUICK_MENU = 0x2,
+    SCE_SHELL_UTIL_LOCK_TYPE_POWEROFF_MENU = 0x4,
+    SCE_SHELL_UTIL_LOCK_TYPE_UNK8 = 0x8,
+    SCE_SHELL_UTIL_LOCK_TYPE_USB_CONNECTION = 0x10,
+    SCE_SHELL_UTIL_LOCK_TYPE_MC_INSERTED = 0x20,
+    SCE_SHELL_UTIL_LOCK_TYPE_MC_REMOVED = 0x40,
+    SCE_SHELL_UTIL_LOCK_TYPE_UNK80 = 0x80,
+    SCE_SHELL_UTIL_LOCK_TYPE_UNK100 = 0x100,
+    SCE_SHELL_UTIL_LOCK_TYPE_UNK200 = 0x200,
+    SCE_SHELL_UTIL_LOCK_TYPE_MUSIC_PLAYER = 0x400,
+    SCE_SHELL_UTIL_LOCK_TYPE_PS_BTN_2 = 0x800 //! without the stop symbol
+};
+
+struct SceShellUtilLaunchAppParam {
+    const char *cmd;
+};
+
 EXPORT(int, sceShellUtilInitEvents) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceShellUtilLock) {
+EXPORT(int, sceShellUtilLock, const SceShellUtilLockType type) {
+    LOG_DEBUG("type: {}", log_hex(type));
     return UNIMPLEMENTED();
 }
 
@@ -29,11 +49,25 @@ EXPORT(int, sceShellUtilRegisterEventHandler) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceShellUtilRequestLaunchApp) {
+EXPORT(int, sceShellUtilRequestLaunchApp, SceShellUtilLaunchAppParam *param) {
+    LOG_DEBUG("cmd: {}", param->cmd);
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceShellUtilUnlock) {
+EXPORT(int, sceShellUtilUnlock, const SceShellUtilLockType type) {
+    LOG_DEBUG("type: {}", log_hex(type));
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, SceShellUtil_EC5881A5) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, SceShellUtil_CE35B2B8) {
+    return UNIMPLEMENTED();
+}
+
+EXPORT(int, SceShellUtil_9B0EE918) {
     return UNIMPLEMENTED();
 }
 
@@ -42,3 +76,6 @@ BRIDGE_IMPL(sceShellUtilLock)
 BRIDGE_IMPL(sceShellUtilRegisterEventHandler)
 BRIDGE_IMPL(sceShellUtilRequestLaunchApp)
 BRIDGE_IMPL(sceShellUtilUnlock)
+BRIDGE_IMPL(SceShellUtil_EC5881A5)
+BRIDGE_IMPL(SceShellUtil_CE35B2B8)
+BRIDGE_IMPL(SceShellUtil_9B0EE918)
