@@ -467,19 +467,27 @@ bool USSETranslatorVisitor::i32mad(
         src2_mask = 0b10;
     }
 
-    spv::Id vsrc0 = load(inst.opr.src0, src0_mask, 0);
-    spv::Id vsrc1 = load(inst.opr.src1, src1_mask, 0);
-    spv::Id vsrc2 = load(inst.opr.src2, src2_mask, 0);
+    set_repeat_multiplier(1, 1, 1, 1);
+
+    BEGIN_REPEAT(repeat_count);
+    GET_REPEAT(inst, RepeatMode::SLMSI);
+
+    LOG_DISASM("{:016x}: {}{} {} {} {} {}", m_instr, disasm::s_predicate_str(pred), "IMAD2", disasm::operand_to_str(inst.opr.dest, 0b1, dest_repeat_offset),
+        disasm::operand_to_str(inst.opr.src0, 0b1, src0_repeat_offset), disasm::operand_to_str(inst.opr.src1, 0b1, src1_repeat_offset), disasm::operand_to_str(inst.opr.src2, 0b1, src2_repeat_offset));
+
+    spv::Id vsrc0 = load(inst.opr.src0, src0_mask, src0_repeat_offset);
+    spv::Id vsrc1 = load(inst.opr.src1, src1_mask, src1_repeat_offset);
+    spv::Id vsrc2 = load(inst.opr.src2, src2_mask, src2_repeat_offset);
 
     auto mul_result = m_b.createBinOp(spv::OpIMul, m_b.getTypeId(vsrc0), vsrc0, vsrc1);
     auto add_result = m_b.createBinOp(spv::OpIAdd, m_b.getTypeId(mul_result), mul_result, vsrc2);
 
-    if (add_result != spv::NoResult) {
-        store(inst.opr.dest, add_result, 0b1, 0);
-    }
+    store(inst.opr.dest, add_result, 0b1, dest_repeat_offset);
 
-    LOG_DISASM("{:016x}: {}{} {} {} {} {}", m_instr, disasm::s_predicate_str(pred), "IMAD2", disasm::operand_to_str(inst.opr.dest, 0b1),
-        disasm::operand_to_str(inst.opr.src0, 0b1), disasm::operand_to_str(inst.opr.src1, 0b1), disasm::operand_to_str(inst.opr.src2, 0b1));
+    END_REPEAT();
+
+    reset_repeat_multiplier();
+
     return true;
 }
 
