@@ -438,7 +438,6 @@ static void draw_savedata_dialog_list(GuiState &gui, EmuEnvState &emuenv, float 
 
 static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_SCALE, ImVec2 SCALE) {
     const ImVec2 THUMBNAIL_SIZE = ImVec2(160.f * SCALE.x, 90.f * SCALE.y);
-    const ImVec2 PROGRESS_BAR_SIZE = ImVec2(300.f * SCALE.x, 7.f * SCALE.y);
     const ImVec2 VIEWPORT_SIZE = ImVec2(emuenv.viewport_size.x, emuenv.viewport_size.y);
     const ImVec2 VIEWPORT_POS = ImVec2(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
 
@@ -571,13 +570,16 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
         ImGui::PopTextWrapPos();
         if (emuenv.common_dialog.savedata.has_progress_bar) {
             ImGui::Spacing();
+            const ImVec2 PROGRESS_BAR_SIZE = ImVec2(660.f * SCALE.x, 12.f * SCALE.y);  
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
             ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_PROGRESS_BAR_BG);
+            ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.f * SCALE.x);
             ImGui::SetCursorPosX(HALF_WINDOW_SIZE.x - (PROGRESS_BAR_SIZE.x / 2));
-            ImGui::ProgressBar(emuenv.common_dialog.savedata.bar_percent / 100.f, PROGRESS_BAR_SIZE);
+            ImGui::ProgressBar(emuenv.common_dialog.savedata.bar_percent / 100.f, PROGRESS_BAR_SIZE, "");
             ImGui::PopStyleColor(2);
-            std::string progress = std::to_string(static_cast<int>(emuenv.common_dialog.savedata.bar_percent)).append("%");
-            ImGui::SetCursorPosX(HALF_WINDOW_SIZE.x - ImGui::CalcTextSize(progress.c_str()).x / 2);
+            ImGui::PopStyleVar();
+            const std::string progress = std::to_string(static_cast<int>(emuenv.common_dialog.savedata.bar_percent)).append("%");
+            ImGui::SetCursorPosX(HALF_WINDOW_SIZE.x - (ImGui::CalcTextSize(progress.c_str()).x / 2.f));
             ImGui::Text("%s", progress.c_str());
         }
 
