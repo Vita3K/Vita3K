@@ -848,7 +848,7 @@ static void check_save_file(const uint32_t index, EmuEnvState &emuenv, const cha
         emuenv.common_dialog.savedata.has_date[index] = true;
         auto device = device::get_device(slot_param.iconPath);
         auto thumbnail_path = translate_path(slot_param.iconPath, device, emuenv.io.device_paths);
-        vfs::read_file(VitaIoDevice::ux0, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
+        vfs::read_file(device, thumbnail_buffer, emuenv.pref_path, thumbnail_path);
         emuenv.common_dialog.savedata.icon_buffer[index] = thumbnail_buffer;
         emuenv.common_dialog.savedata.icon_texture[index] = {};
     }
@@ -1224,7 +1224,6 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
     SceSaveDataDialogUserMessageParam *user_message;
     SceSaveDataDialogSystemMessageParam *sys_message;
     SceSaveDataDialogProgressBarParam *progress_bar;
-    SceAppUtilSaveDataSlotEmptyParam *empty_param;
     std::vector<SceAppUtilSaveDataSlot> slot_list;
 
     emuenv.common_dialog.savedata = {};
@@ -1292,22 +1291,20 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
         initialize_savedata_vectors(emuenv, 1);
         emuenv.common_dialog.savedata.slot_id[0] = sys_message->targetSlot.id;
         emuenv.common_dialog.savedata.mode_to_display = SCE_SAVEDATA_DIALOG_MODE_FIXED;
-        if (!emuenv.common_dialog.savedata.slot_info[0].isExist) {
-            auto empty_param = sys_message->targetSlot.emptyParam.get(emuenv.mem);
-            check_empty_param(emuenv, empty_param, 0);
-        }
+        emuenv.common_dialog.savedata.list_empty_param[0] = sys_message->targetSlot.emptyParam.get(emuenv.mem);
+        check_save_file(0, emuenv, export_name);
+
         handle_sys_message(sys_message, emuenv);
         break;
     case SCE_SAVEDATA_DIALOG_MODE_PROGRESS_BAR:
-        // Stub using continue code
-        emuenv.common_dialog.savedata.btn_num = 0;
         progress_bar = p->progressBarParam.get(emuenv.mem);
-        emuenv.common_dialog.savedata.slot_id[emuenv.common_dialog.savedata.selected_save] = progress_bar->targetSlot.id;
+        initialize_savedata_vectors(emuenv, 1);
+        emuenv.common_dialog.savedata.btn_num = 0;
+        emuenv.common_dialog.savedata.slot_id[0] = progress_bar->targetSlot.id;
         emuenv.common_dialog.savedata.has_progress_bar = true;
-        if (!emuenv.common_dialog.savedata.slot_info[emuenv.common_dialog.savedata.selected_save].isExist) {
-            empty_param = progress_bar->targetSlot.emptyParam.get(emuenv.mem);
-            check_empty_param(emuenv, empty_param, emuenv.common_dialog.savedata.selected_save);
-        }
+        emuenv.common_dialog.savedata.list_empty_param[0] = progress_bar->targetSlot.emptyParam.get(emuenv.mem);
+        check_save_file(0, emuenv, export_name);
+ 
         if (progress_bar->msg.get(emuenv.mem) != nullptr) {
             emuenv.common_dialog.savedata.msg = reinterpret_cast<const char *>(progress_bar->msg.get(emuenv.mem));
         } else {
