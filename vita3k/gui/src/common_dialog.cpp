@@ -570,7 +570,7 @@ static void draw_savedata_dialog(GuiState &gui, EmuEnvState &emuenv, float FONT_
         ImGui::PopTextWrapPos();
         if (emuenv.common_dialog.savedata.has_progress_bar) {
             ImGui::Spacing();
-            const ImVec2 PROGRESS_BAR_SIZE = ImVec2(660.f * SCALE.x, 12.f * SCALE.y);  
+            const ImVec2 PROGRESS_BAR_SIZE = ImVec2(660.f * SCALE.x, 12.f * SCALE.y);
             ImGui::PushStyleColor(ImGuiCol_PlotHistogram, GUI_PROGRESS_BAR);
             ImGui::PushStyleColor(ImGuiCol_FrameBg, GUI_PROGRESS_BAR_BG);
             ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 12.f * SCALE.x);

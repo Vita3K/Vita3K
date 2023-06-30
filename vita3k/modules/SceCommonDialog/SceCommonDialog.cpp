@@ -1304,7 +1304,7 @@ EXPORT(int, sceSaveDataDialogInit, const Ptr<SceSaveDataDialogParam> param) {
         emuenv.common_dialog.savedata.has_progress_bar = true;
         emuenv.common_dialog.savedata.list_empty_param[0] = progress_bar->targetSlot.emptyParam.get(emuenv.mem);
         check_save_file(0, emuenv, export_name);
- 
+
         if (progress_bar->msg.get(emuenv.mem) != nullptr) {
             emuenv.common_dialog.savedata.msg = reinterpret_cast<const char *>(progress_bar->msg.get(emuenv.mem));
         } else {

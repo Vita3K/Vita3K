@@ -75,9 +75,37 @@ EXPORT(int, sceAppMgrAddContMount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrAppDataMount) {
-    TRACY_FUNC(sceAppMgrAppDataMount);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrAppDataMount, int mountId, char *mountPoint) {
+    TRACY_FUNC(sceAppMgrAppDataMount, mountId, mountPoint);
+    STUBBED("Using strcpy");
+    switch (mountId) {
+    case 0x64: // photo0:
+        strcpy(mountPoint, "ux0:picture");
+        break;
+    case 0x65: // psnfriend
+        fmt::format_to(mountPoint, "ur0:user/{}/psnfriend{}", emuenv.io.user_id, '\0');
+        break;
+    case 0x66: // psnmsg
+        fmt::format_to(mountPoint, "ur0:user/{}/psnmsg{}", emuenv.io.user_id, '\0');
+        break;
+    case 0x67: // near
+        fmt::format_to(mountPoint, "ur0:user/{}/near{}", emuenv.io.user_id, '\0');
+        break;
+    case 0x69: // music0:
+        strcpy(mountPoint, "ux0:music");
+        break;
+    case 0x6C: // calendar
+        strcpy(mountPoint, "ux0:calendar");
+        break;
+    case 0x6D: // video0:
+        strcpy(mountPoint, "ux0:video");
+        break;
+    default:
+        LOG_WARN("Unknown mountId {}", log_hex(mountId));
+        break;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceAppMgrAppDataMountById) {
@@ -289,9 +317,11 @@ EXPORT(int, sceAppMgrGetPidListForShell) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGetRawPath) {
-    TRACY_FUNC(sceAppMgrGetRawPath);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrGetRawPath, char *path, char *resolved_path, int resolved_path_size) {
+    TRACY_FUNC(sceAppMgrGetRawPath, resolved_path, path, resolved_path_size);
+    STUBBED("Using strncpy");
+    strncpy(resolved_path, path, resolved_path_size);
+    return 0;
 }
 
 EXPORT(int, sceAppMgrGetRawPathOfApp0ByAppIdForShell) {
@@ -344,9 +374,12 @@ EXPORT(int, sceAppMgrGetSystemDataFilePlayReady) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGetUserDirPath) {
-    TRACY_FUNC(sceAppMgrGetUserDirPath);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrGetUserDirPath, int partition_id, char *userDirPath, SceSize path_maxlen) {
+    TRACY_FUNC(sceAppMgrGetUserDirPath, partition_id, userDirPath, path_maxlen);
+    STUBBED("Using strncpy");
+    const auto partition = partition_id == 1 ? "ur0:" : "ux0:";
+    fmt::format_to_n(userDirPath, path_maxlen, "{}user/{}{}", partition, emuenv.io.user_id, '\0');
+    return 0;
 }
 
 EXPORT(int, sceAppMgrGetUserDirPathById) {
@@ -745,9 +778,31 @@ EXPORT(int, sceAppMgrUpdateSaveDataParam) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrWorkDirMount) {
-    TRACY_FUNC(sceAppMgrWorkDirMount);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrWorkDirMount, int mountId, char *mountPoint) {
+    TRACY_FUNC(sceAppMgrWorkDirMount, mountId, mountPoint);
+    STUBBED("using strcpy");
+    switch (mountId) {
+    case 0xC8:
+        strcpy(mountPoint, "ur0:temp/sqlite");
+        break;
+    case 0xC9:
+        strcpy(mountPoint, "ur0:temp/attach");
+        break;
+    case 0xCA:
+        strcpy(mountPoint, "ux0:pspemu");
+        break;
+    case 0xCC:
+        strcpy(mountPoint, "ur0:temp/checkout");
+        break;
+    case 0xCE:
+        strcpy(mountPoint, "ur0:temp/webbrowser");
+        break;
+    default:
+        LOG_WARN("Unknown mount id: {}", log_hex(mountId));
+        break;
+    }
+
+    return 0;
 }
 
 EXPORT(int, sceAppMgrWorkDirMountById) {
