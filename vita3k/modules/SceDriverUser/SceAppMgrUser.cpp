@@ -783,19 +783,19 @@ EXPORT(int, sceAppMgrWorkDirMount, int mountId, char *mountPoint) {
     STUBBED("using strcpy");
     switch (mountId) {
     case 0xC8:
-        strcpy(mountPoint, "ur0:temp/sqlite");
+        strcpy(mountPoint, "ur0:temp/sqlite/");
         break;
     case 0xC9:
-        strcpy(mountPoint, "ur0:temp/attach");
+        strcpy(mountPoint, "ur0:temp/attach/");
         break;
     case 0xCA:
-        strcpy(mountPoint, "ux0:pspemu");
+        strcpy(mountPoint, "ux0:pspemu/");
         break;
     case 0xCC:
-        strcpy(mountPoint, "ur0:temp/checkout");
+        strcpy(mountPoint, "ur0:temp/checkout/");
         break;
     case 0xCE:
-        strcpy(mountPoint, "ur0:temp/webbrowser");
+        strcpy(mountPoint, "ur0:temp/webbrowser/");
         break;
     default:
         LOG_WARN("Unknown mount id: {}", log_hex(mountId));
