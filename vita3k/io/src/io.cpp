@@ -304,6 +304,11 @@ SceUID open_file(IOState &io, const char *path, const int flags, const std::wstr
     }
 
     auto system_path = device::construct_emulated_path(device, translated_path, pref_path, io.redirect_stdio);
+    if (fs::is_directory(system_path)) {
+        LOG_ERROR("Cannot open directory: {}", system_path.string(), path);
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+
     // Do not allow any new files if they do not have a write flag.
     if (!fs::exists(system_path)) {
         if (!(flags & SCE_O_CREAT)) {
