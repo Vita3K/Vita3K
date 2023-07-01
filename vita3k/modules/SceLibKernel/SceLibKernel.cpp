@@ -666,9 +666,13 @@ EXPORT(int, sceIoRemoveAsync) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceIoRename) {
-    TRACY_FUNC(sceIoRename);
-    return UNIMPLEMENTED();
+EXPORT(int, sceIoRename, const char *oldname, const char *newname) {
+    TRACY_FUNC(sceIoRename, oldname, newname);
+    if (!oldname || !newname)
+        return RET_ERROR(SCE_ERROR_ERRNO_EINVAL);
+
+    LOG_INFO("Renaming: {} to {}", oldname, newname);
+    return rename(emuenv.io, oldname, newname, emuenv.pref_path, export_name);
 }
 
 EXPORT(int, sceIoRenameAsync) {

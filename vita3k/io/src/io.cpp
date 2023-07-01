@@ -619,6 +619,47 @@ int remove_file(IOState &io, const char *file, const std::wstring &pref_path, co
     return 0;
 }
 
+int rename(IOState &io, const char *old_name, const char *new_name, const std::wstring &pref_path, const char *export_name) {
+    auto device = device::get_device(old_name);
+    if (device == VitaIoDevice::_INVALID) {
+        LOG_ERROR("Cannot find device for path: {}", old_name);
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+
+    const auto translated_old_path = translate_path(old_name, device, io.device_paths);
+    if (translated_old_path.empty()) {
+        LOG_ERROR("Cannot translate path: {}", translated_old_path);
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+
+    const auto translated_new_path = translate_path(new_name, device, io.device_paths);
+    if (translated_new_path.empty()) {
+        LOG_ERROR("Cannot translate path: {}", translated_new_path);
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+
+    const auto emulated_old_path = device::construct_emulated_path(device, translated_old_path, pref_path, io.redirect_stdio);
+    if (!fs::exists(emulated_old_path)) {
+        LOG_ERROR("File does not exist at path: {} (target path: {})", emulated_old_path.string(), old_name);
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+
+    const auto emulated_new_path = device::construct_emulated_path(device, translated_new_path, pref_path, io.redirect_stdio);
+
+    LOG_TRACE_IF(log_file_op, "{}: Renaming file {} to {} ({} to {})", export_name, old_name, new_name, emulated_old_path.string(), emulated_new_path.string());
+
+    boost::system::error_code error_code{};
+    fs::rename(emulated_old_path, emulated_new_path, error_code);
+
+    if (error_code.value()) {
+        LOG_ERROR("Cannot rename file: {} to {} ({} to {})", old_name, new_name, emulated_old_path.string(), emulated_new_path.string());
+        LOG_ERROR("Error code: {} ({})", error_code.value(), error_code.message());
+        return IO_ERROR(SCE_ERROR_ERRNO_ENOENT);
+    }
+
+    return 0;
+}
+
 SceUID open_dir(IOState &io, const char *path, const std::wstring &pref_path, const char *export_name) {
     auto device = device::get_device(path);
     auto device_for_icase = device;

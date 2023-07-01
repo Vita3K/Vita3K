@@ -76,6 +76,7 @@ int stat_file(IOState &io, const char *file, SceIoStat *statp, const std::wstrin
 int stat_file_by_fd(IOState &io, const SceUID fd, SceIoStat *statp, const std::wstring &pref_path, const char *export_name);
 int close_file(IOState &io, SceUID fd, const char *export_name);
 int remove_file(IOState &io, const char *file, const std::wstring &pref_path, const char *export_name);
+int rename(IOState &io, const char *old_name, const char *new_name, const std::wstring &pref_path, const char *export_name);
 
 SceUID open_dir(IOState &io, const char *path, const std::wstring &pref_path, const char *export_name);
 SceUID read_dir(IOState &io, SceUID fd, SceIoDirent *dent, const std::wstring &pref_path, const char *export_name);
