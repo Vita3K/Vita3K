@@ -37,6 +37,14 @@ enum ScePowerErrorCode {
     SCE_POWER_ERROR_DETECTING = 0x802B0101
 };
 
+enum ScePowerBatteryRemainLevel {
+    SCE_POWER_BATTERY_REMAIN_LEVEL_INVALID = 0,
+    SCE_POWER_BATTERY_REMAIN_LEVEL_0_25_PERCENTS = 1,
+    SCE_POWER_BATTERY_REMAIN_LEVEL_25_50_PERCENTS = 2,
+    SCE_POWER_BATTERY_REMAIN_LEVEL_50_75_PERCENTS = 3,
+    SCE_POWER_BATTERY_REMAIN_LEVEL_75_100_PERCENTS = 4
+};
+
 EXPORT(int, scePowerBatteryUpdateInfo) {
     TRACY_FUNC(scePowerBatteryUpdateInfo);
     return UNIMPLEMENTED();
@@ -99,12 +107,23 @@ EXPORT(int, scePowerGetBatteryRemainCapacity) {
 
 EXPORT(int, scePowerGetBatteryRemainLevel) {
     TRACY_FUNC(scePowerGetBatteryRemainLevel);
-    return UNIMPLEMENTED();
+    int res;
+    SDL_GetPowerInfo(NULL, &res);
+    if (res >= 0) {
+        if (res <= 25)
+            return SCE_POWER_BATTERY_REMAIN_LEVEL_0_25_PERCENTS;
+        else if (res <= 50)
+            return SCE_POWER_BATTERY_REMAIN_LEVEL_25_50_PERCENTS;
+        else if (res <= 75)
+            return SCE_POWER_BATTERY_REMAIN_LEVEL_50_75_PERCENTS;
+    }
+
+    return SCE_POWER_BATTERY_REMAIN_LEVEL_75_100_PERCENTS;
 }
 
 EXPORT(int, scePowerGetBatteryRemainMaxLevel) {
     TRACY_FUNC(scePowerGetBatteryRemainMaxLevel);
-    return UNIMPLEMENTED();
+    return SCE_POWER_BATTERY_REMAIN_LEVEL_75_100_PERCENTS;
 }
 
 EXPORT(int, scePowerGetBatterySOH) {
