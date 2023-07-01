@@ -27,6 +27,9 @@ TRACY_MODULE_NAME(SceAudiodecUser);
 
 enum {
     SCE_AUDIODEC_ERROR_API_FAIL = 0x807F0000,
+    SCE_AUDIODEC_ERROR_NOT_INITIALIZED = 0x807F0005,
+    SCE_AUDIODEC_ERROR_INVALID_HANDLE = 0x807F0009,
+    SCE_AUDIODEC_ERROR_NOT_HANDLE_IN_USE = 0x807F000A,
     SCE_AUDIODEC_MP3_ERROR_INVALID_MPEG_VERSION = 0x807F2801,
 };
 
@@ -118,9 +121,20 @@ LIBRARY_INIT_REGISTER(SceAudiodec)
 EXPORT(int, sceAudiodecClearContext, SceAudiodecCtrl *ctrl) {
     TRACY_FUNC(sceAudiodecClearContext, ctrl)
     const auto state = emuenv.kernel.obj_store.get<AudiodecState>();
+    if (!state->codecs.size()) {
+        return SCE_AUDIODEC_ERROR_NOT_INITIALIZED;
+    }
+    if (!ctrl->handle) {
+        return SCE_AUDIODEC_ERROR_INVALID_HANDLE;
+    }
+
     const DecoderPtr &decoder = lock_and_find(ctrl->handle, state->decoders, state->mutex);
 
-    decoder->flush();
+    if (decoder) {
+        decoder->flush();
+    } else {
+        return SCE_AUDIODEC_ERROR_NOT_HANDLE_IN_USE;
+    }
 
     return 0;
 }
