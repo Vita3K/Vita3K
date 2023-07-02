@@ -741,6 +741,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox("Texture Cache", &emuenv.cfg.texture_cache);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to disable texture cache.");
+        ImGui::SameLine();
+        ImGui::Checkbox("Show Compile Shaders", &emuenv.cfg.show_compile_shaders);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Uncheck the box to disable the display of the compile shaders dialog.");
         ImGui::Separator();
         const auto perfomance_overley_size = ImGui::CalcTextSize("Performance overlay").x;
         ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (perfomance_overley_size / 2.f));

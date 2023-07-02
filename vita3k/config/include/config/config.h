@@ -69,6 +69,7 @@ enum PerfomanceOverleyPosition {
     code(bool, "v-sync", true, v_sync)                                                                  \
     code(int, "anisotropic-filtering", 1, anisotropic_filtering)                                        \
     code(bool, "texture-cache", true, texture_cache)                                                    \
+    code(bool, "show-compile-shaders", true, show_compile_shaders)                                      \
     code(bool, "hashless-texture-cache", false, hashless_texture_cache)                                 \
     code(bool, "boot-apps-full-screen", false, boot_apps_full_screen)                                   \
     code(std::string, "audio-backend", "SDL", audio_backend)                                            \
