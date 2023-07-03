@@ -522,9 +522,13 @@ EXPORT(int, sceAppMgrReceiveEvent) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrReceiveEventNum) {
-    TRACY_FUNC(sceAppMgrReceiveEventNum);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrReceiveEventNum, SceUInt32 *eventNum) {
+    TRACY_FUNC(sceAppMgrReceiveEventNum, eventNum);
+
+    // Vita3K does not yet manage events
+    *eventNum = 0;
+
+    return STUBBED("Set eventNum to 0");
 }
 
 EXPORT(int, sceAppMgrReceiveNotificationRequestForShell) {
