@@ -463,6 +463,8 @@ EXPORT(SceInt32, _sceKernelGetThreadCpuAffinityMask, SceUID thid) {
 
     if (!thread)
         return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    if (thread->affinity_mask == 0)
+        return SCE_KERNEL_CPU_MASK_USER_ALL;
 
     return thread->affinity_mask;
 }
