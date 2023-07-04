@@ -922,8 +922,8 @@ EXPORT(SceInt32, sceNgsVoiceSetModuleCallback, ngs::Voice *voice, const SceUInt3
 }
 
 EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, ngs::Voice *voice, const SceNgsModuleParamHeader *header,
-    const SceUInt32 size, SceInt32 *num_error) {
-    TRACY_FUNC(sceNgsVoiceSetParamsBlock, voice, header, size, num_error);
+    const SceUInt32 size, SceInt32 *pNumErrors) {
+    TRACY_FUNC(sceNgsVoiceSetParamsBlock, voice, header, size, pNumErrors);
     if (!emuenv.cfg.current_config.ngs_enable)
         return SCE_NGS_OK;
 
@@ -932,9 +932,12 @@ EXPORT(SceInt32, sceNgsVoiceSetParamsBlock, ngs::Voice *voice, const SceNgsModul
 
     const std::lock_guard<std::mutex> guard(*voice->voice_mutex);
 
-    *num_error = voice->parse_params_block(emuenv.mem, header, size);
+    const SceInt32 num_errors = voice->parse_params_block(emuenv.mem, header, size);
+    if (pNumErrors != nullptr) {
+        *pNumErrors = num_errors;
+    }
 
-    if (*num_error == 0)
+    if (num_errors == 0)
         return SCE_NGS_OK;
     else
         return RET_ERROR(SCE_NGS_ERROR);
