@@ -211,9 +211,10 @@ EXPORT(int, sceTouchPeek2, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs)
     return touch_get(thread_id, emuenv, port, pData, nBufs, true);
 }
 
-EXPORT(int, sceTouchPeekRegion) {
-    TRACY_FUNC(sceTouchPeekRegion);
-    return UNIMPLEMENTED();
+EXPORT(int, sceTouchPeekRegion, SceUInt32 port, SceTouchData *pData, SceUInt32 nBufs, int region) {
+    TRACY_FUNC(sceTouchPeekRegion, port, pData, nBufs, region);
+    STUBBED("Ignore region");
+    return CALL_EXPORT(sceTouchPeek, port, pData, nBufs);
 }
 
 EXPORT(int, sceTouchPeekRegionExt) {
