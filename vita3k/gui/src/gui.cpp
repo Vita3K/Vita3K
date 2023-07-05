@@ -31,6 +31,7 @@
 #include <io/vfs.h>
 #include <lang/functions.h>
 #include <packages/sfo.h>
+#include <regmgr/functions.h>
 #include <util/fs.h>
 #include <util/log.h>
 #include <util/string_utils.h>
@@ -711,6 +712,7 @@ void init(GuiState &gui, EmuEnvState &emuenv) {
     get_sys_apps_title(gui, emuenv);
 
     init_home(gui, emuenv);
+    regmgr::init_regmgr(emuenv.regmgr, emuenv.pref_path);
 
     // Initialize trophy callback
     emuenv.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {

@@ -17,28 +17,57 @@
 
 #include "SceRegMgrForSDK.h"
 
-EXPORT(int, sceRegMgrUtilityGetBin) {
-    return UNIMPLEMENTED();
+#include <regmgr/functions.h>
+
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceRegMgrForSdk);
+
+EXPORT(int, sceRegMgrUtilityGetBin, const int id, void *buf, const SceSize bufSize) {
+    TRACY_FUNC(sceRegMgrUtilityGetBin, id, buf, bufSize);
+    const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
+    memcpy(buf, regmgr::get_str_value(emuenv.regmgr, category, name).c_str(), bufSize);
+
+    return 0;
 }
 
-EXPORT(int, sceRegMgrUtilityGetInt) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRegMgrUtilityGetInt, const int id, SceInt32 *buf) {
+    TRACY_FUNC(sceRegMgrUtilityGetInt, id, buf);
+    const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
+    *buf = regmgr::get_int_value(emuenv.regmgr, category, name);
+
+    return 0;
 }
 
-EXPORT(int, sceRegMgrUtilityGetStr) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRegMgrUtilityGetStr, const int id, char *buf, const SceSize bufSize) {
+    TRACY_FUNC(sceRegMgrUtilityGetStr, id, buf, bufSize);
+    const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
+    strncpy(buf, regmgr::get_str_value(emuenv.regmgr, category, name).c_str(), bufSize);
+
+    return 0;
 }
 
-EXPORT(int, sceRegMgrUtilitySetBin) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRegMgrUtilitySetBin, const int id, const void *buf, const SceSize bufSize) {
+    TRACY_FUNC(sceRegMgrUtilitySetBin, id, buf, bufSize);
+    const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
+    regmgr::set_bin_value(emuenv.regmgr, emuenv.pref_path, category, name, buf, bufSize);
+
+    return 0;
 }
 
-EXPORT(int, sceRegMgrUtilitySetInt) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRegMgrUtilitySetInt, const int id, SceInt32 buf) {
+    TRACY_FUNC(sceRegMgrUtilitySetInt, id, buf);
+    const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
+    regmgr::set_int_value(emuenv.regmgr, emuenv.pref_path, category, name, buf);
+
+    return 0;
 }
 
-EXPORT(int, sceRegMgrUtilitySetStr) {
-    return UNIMPLEMENTED();
+EXPORT(int, sceRegMgrUtilitySetStr, const int id, const char *buf, const SceSize bufSize) {
+    TRACY_FUNC(sceRegMgrUtilitySetStr, id, buf, bufSize);
+    const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
+    regmgr::set_str_value(emuenv.regmgr, emuenv.pref_path, category, name, buf);
+
+    return 0;
 }
 
 BRIDGE_IMPL(sceRegMgrUtilityGetBin)

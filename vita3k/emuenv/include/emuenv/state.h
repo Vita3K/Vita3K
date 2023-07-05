@@ -53,6 +53,7 @@ struct NpState;
 struct DisplayState;
 struct DialogState;
 struct Ime;
+struct RegMgrState;
 struct SfoFile;
 struct GDBState;
 struct HTTPState;
@@ -96,6 +97,7 @@ private:
     std::unique_ptr<DisplayState> _display;
     std::unique_ptr<DialogState> _common_dialog;
     std::unique_ptr<Ime> _ime;
+    std::unique_ptr<RegMgrState> _regmgr;
     std::unique_ptr<SfoFile> _sfo_handle;
     std::unique_ptr<GDBState> _gdb;
     std::unique_ptr<HTTPState> _http;
@@ -151,6 +153,7 @@ public:
     DisplayState &display;
     DialogState &common_dialog;
     Ime &ime;
+    RegMgrState &regmgr;
     SfoFile &sfo_handle;
     NIDSet missing_nids;
     float dpi_scale = 1.f;

@@ -750,7 +750,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto display_app = [&](const std::vector<gui::App> &apps_list, std::map<std::string, ImGui_Texture> &apps_icon) {
         for (const auto &app : apps_list) {
             bool selected = false;
-            const auto is_not_sys_app = app.title_id.find("NPXS") == std::string::npos;
+            const auto is_not_sys_app = app.path.find("NPXS") == std::string::npos;
 
             if (is_not_sys_app) {
                 // Filter app by region and type

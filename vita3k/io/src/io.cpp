@@ -110,8 +110,13 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path, boo
     const fs::path ux0_data{ ux0 / "data" };
     const fs::path uma0_data{ uma0 / "data" };
     const fs::path ux0_app{ ux0 / "app" };
+    const fs::path ux0_picture{ ux0 / "picture" };
     const fs::path ux0_theme{ ux0 / "theme" };
+    const fs::path ux0_video{ ux0 / "video" };
     const fs::path ux0_user{ ux0 / "user" };
+    const fs::path vd0{ pref_path / (+VitaIoDevice::vd0)._to_string() };
+    const fs::path vd0_registry{ vd0 / "registry" };
+    const fs::path vd0_network{ vd0 / "network" };
 
     if (!fs::exists(ux0))
         fs::create_directories(ux0);
@@ -119,14 +124,22 @@ bool init(IOState &io, const fs::path &base_path, const fs::path &pref_path, boo
         fs::create_directory(ux0_data);
     if (!fs::exists(ux0_app))
         fs::create_directory(ux0_app);
+    if (!fs::exists(ux0_picture))
+        fs::create_directory(ux0_picture);
     if (!fs::exists(ux0_theme))
         fs::create_directory(ux0_theme);
+    if (!fs::exists(ux0_video))
+        fs::create_directory(ux0_video);
     if (!fs::exists(ux0_user))
         fs::create_directory(ux0_user);
     if (!fs::exists(uma0))
         fs::create_directory(uma0);
     if (!fs::exists(uma0_data))
         fs::create_directory(uma0_data);
+    if (!fs::exists(vd0_registry))
+        fs::create_directories(vd0_registry);
+    if (!fs::exists(vd0_network))
+        fs::create_directories(vd0_network);
 
     fs::create_directories(base_path / "cache/shaders");
     fs::create_directory(base_path / "shaderlog");
