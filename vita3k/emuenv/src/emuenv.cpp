@@ -34,6 +34,7 @@
 #include <nids/types.h>
 #include <np/state.h>
 #include <packages/sfo.h>
+#include <regmgr/state.h>
 #include <renderer/state.h>
 #include <touch/state.h>
 
@@ -76,6 +77,8 @@ EmuEnvState::EmuEnvState()
     , common_dialog(*_common_dialog)
     , _ime(new Ime)
     , ime(*_ime)
+    , _regmgr(new RegMgrState)
+    , regmgr(*_regmgr)
     , _sfo_handle(new SfoFile)
     , sfo_handle(*_sfo_handle)
     , _gdb(new GDBState)

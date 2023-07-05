@@ -778,7 +778,7 @@ vkutil::Image *VKSurfaceCache::retrieve_depth_stencil_texture_handle(const MemSt
 }
 
 static Framebuffer empty_framebuffer{};
-Framebuffer& VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
+Framebuffer &VKSurfaceCache::retrieve_framebuffer_handle(MemState &mem, SceGxmColorSurface *color, SceGxmDepthStencilSurface *depth_stencil,
     vk::RenderPass standard_render_pass, vk::RenderPass interlock_render_pass, vkutil::Image **color_texture_handle, vkutil::Image **ds_texture_handle,
     uint16_t *stored_height, const uint32_t width, const uint32_t height) {
     if (!target) {
