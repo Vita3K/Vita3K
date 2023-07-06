@@ -77,6 +77,9 @@ struct State {
         const GxmState &gxm, MemState &mem)
         = 0;
     virtual void swap_window(SDL_Window *window) = 0;
+    virtual uint32_t get_device_id() {
+        return 0;
+    }
     // return a bitmask with the Filter enum values of the supported enum filters
     virtual int get_supported_filters() = 0;
     virtual void set_screen_filter(const std::string_view &filter) = 0;
