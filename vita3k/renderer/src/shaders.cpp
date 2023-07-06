@@ -36,48 +36,51 @@ bool get_shaders_cache_hashs(State &renderer) {
     const auto shaders_path{ fs::path(renderer.base_path) / "cache/shaders" / renderer.title_id / renderer.self_name };
     const std::string hash_file_name = fmt::format("hashs-{}.dat", (renderer.current_backend == Backend::OpenGL) ? "gl" : "vk");
 
+    fs::ifstream shaders_hashs(shaders_path / hash_file_name, std::ios::in | std::ios::binary);
+    if (!shaders_hashs.is_open())
+        return false;
+
+    renderer.shaders_cache_hashs.clear();
+    // Read size of hashes list
+    size_t size;
+    shaders_hashs.read((char *)&size, sizeof(size));
+
+    // Check version of cache and device id
+    uint32_t versionInFile;
+    shaders_hashs.read((char *)&versionInFile, sizeof(uint32_t));
+    uint32_t deviceId;
+    shaders_hashs.read((char *)&deviceId, sizeof(uint32_t));
+    if (versionInFile != shader::CURRENT_VERSION || deviceId != renderer.get_device_id()) {
+        shaders_hashs.close();
+        fs::remove_all(shaders_path);
+        fs::remove_all(fs::path(renderer.base_path) / "shaderlog" / renderer.title_id / renderer.self_name);
+        LOG_WARN("Current version of cache: {}, is outdated, recreate it.", versionInFile);
+        return false;
+    }
+
     if (renderer.current_backend == Backend::Vulkan) {
-        // try to read pipeline cache
+        // Read the pipeline cache
         dynamic_cast<vulkan::VKState &>(renderer).pipeline_cache.read_pipeline_cache();
     }
 
-    fs::ifstream shaders_hashs(shaders_path / hash_file_name, std::ios::in | std::ios::binary);
-    if (shaders_hashs.is_open()) {
-        renderer.shaders_cache_hashs.clear();
-        // Read size of hashes list
-        size_t size;
-        shaders_hashs.read((char *)&size, sizeof(size));
+    // Read Hashs info value
+    for (size_t a = 0; a < size; a++) {
+        auto read = [&shaders_hashs]() {
+            Sha256Hash hash;
 
-        // Check version of cache
-        uint32_t versionInFile;
-        shaders_hashs.read((char *)&versionInFile, sizeof(uint32_t));
-        if (versionInFile != shader::CURRENT_VERSION) {
-            shaders_hashs.close();
-            fs::remove_all(shaders_path);
-            fs::remove_all(fs::path(renderer.base_path) / "shaderlog" / renderer.title_id / renderer.self_name);
-            LOG_WARN("Current version of cache: {}, is outdated, recreate it.", versionInFile);
-            return false;
-        }
+            shaders_hashs.read(reinterpret_cast<char *>(hash.data()), sizeof(Sha256Hash));
 
-        // Read Hashs info value
-        for (size_t a = 0; a < size; a++) {
-            auto read = [&shaders_hashs]() {
-                Sha256Hash hash;
+            return hash;
+        };
 
-                shaders_hashs.read(reinterpret_cast<char *>(hash.data()), sizeof(Sha256Hash));
+        ShadersHash hash;
+        hash.frag = read();
+        hash.vert = read();
 
-                return hash;
-            };
-
-            ShadersHash hash;
-            hash.frag = read();
-            hash.vert = read();
-
-            renderer.shaders_cache_hashs.push_back({ hash.frag, hash.vert });
-        }
-
-        shaders_hashs.close();
+        renderer.shaders_cache_hashs.push_back({ hash.frag, hash.vert });
     }
+
+    shaders_hashs.close();
 
     return !renderer.shaders_cache_hashs.empty();
 }
@@ -97,6 +100,8 @@ void save_shaders_cache_hashs(State &renderer, std::vector<ShadersHash> &shaders
         // Write version of cache
         const uint32_t versionInFile = shader::CURRENT_VERSION;
         shaders_hashs.write((char *)&versionInFile, sizeof(uint32_t));
+        const uint32_t deviceId = renderer.get_device_id();
+        shaders_hashs.write((char *)&deviceId, sizeof(uint32_t));
 
         // Write shader hash list
         for (const auto &hash : shaders_cache_hashs) {

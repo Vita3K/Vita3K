@@ -43,7 +43,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
     VkDebugUtilsMessageTypeFlagsEXT message_type,
     const VkDebugUtilsMessengerCallbackDataEXT *callback_data,
     void *pUserData) {
-
     static const char *ignored_errors[] = {
         "VUID-vkCmdDrawIndexed-None-02721", // using r8g8b8a8 with non-multiple of 4 stride
         "VUID-VkImageViewCreateInfo-usage-02275", // srgb does not support the storage format
@@ -705,6 +704,10 @@ void VKState::swap_window(SDL_Window *window) {
 
         pipeline_cache.next_pipeline_cache_save = std::numeric_limits<uint64_t>::max();
     }
+}
+
+uint32_t VKState::get_device_id() {
+    return physical_device_properties.deviceID;
 }
 
 int VKState::get_supported_filters() {

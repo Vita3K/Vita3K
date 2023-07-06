@@ -89,6 +89,7 @@ struct VKState : public renderer::State {
     void render_frame(const SceFVector2 &viewport_pos, const SceFVector2 &viewport_size, const DisplayState &display,
         const GxmState &gxm, MemState &mem) override;
     void swap_window(SDL_Window *window) override;
+    uint32_t get_device_id() override;
     int get_supported_filters() override;
     void set_screen_filter(const std::string_view &filter) override;
     int get_max_anisotropic_filtering() override;
