@@ -547,8 +547,10 @@ void free(MemState &state, Address address) {
     const BOOL ret = VirtualFree(memory, page.size * state.page_size, MEM_DECOMMIT);
     LOG_CRITICAL_IF(!ret, "VirtualFree failed: {}", get_error_msg());
 #else
-    const int ret = mprotect(memory, page.size * state.page_size, PROT_NONE);
+    int ret = mprotect(memory, page.size * state.page_size, PROT_NONE);
     LOG_CRITICAL_IF(ret == -1, "mprotect failed: {}", get_error_msg());
+    ret = madvise(memory, page.size * state.page_size, MADV_DONTNEED);
+    LOG_CRITICAL_IF(ret == -1, "madvise failed: {}", get_error_msg());
 #endif
 }
 
