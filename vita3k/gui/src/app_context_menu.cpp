@@ -56,15 +56,27 @@ static bool get_update_history(GuiState &gui, EmuEnvState &emuenv, const std::st
         if (update.second.find_first_of('\n') != std::string::npos)
             update.second.erase(update.second.begin() + update.second.find_first_of('\n'));
 
-        while (update.second.find("</li> <li>") != std::string::npos)
-            if (update.second.find("</li> <li>") != std::string::npos)
-                update.second.replace(update.second.find("</li> <li>"), update.second.find(endpos) + 2 - update.second.find(startpos), "\n");
+        while (update.second.find("</li>") != std::string::npos)
+            if (update.second.find("</li>") != std::string::npos)
+                update.second.replace(update.second.find("</li>"), 5, "\n");
+        while (update.second.find("<br>") != std::string::npos)
+            if (update.second.find("<br>") != std::string::npos)
+                update.second.replace(update.second.find("<br>"), 4, "\n");
+        while (update.second.find("<br/>") != std::string::npos)
+            if (update.second.find("<br/>") != std::string::npos)
+                update.second.replace(update.second.find("<br/>"), 5, "\n");
         while (update.second.find("<li>") != std::string::npos)
             if (update.second.find("<li>") != std::string::npos)
-                update.second.replace(update.second.find("<li>"), update.second.find(endpos) + 1 - update.second.find(startpos), ". ");
+                update.second.replace(update.second.find("<li>"), 4, reinterpret_cast<const char *>(u8"\u30FB")); // 00B7 or 2022 or 30FB or FF65
         while (update.second.find(startpos) != std::string::npos)
             if (update.second.find(">") + 1 != std::string::npos)
                 update.second.erase(update.second.find(startpos), update.second.find(endpos) + 1 - update.second.find(startpos));
+        while (update.second.find("&nbsp;") != std::string::npos)
+            if (update.second.find("&nbsp;") != std::string::npos)
+                update.second.replace(update.second.find("&nbsp;"), 6, " ");
+        while (update.second.find("&reg;") != std::string::npos)
+            if (update.second.find("&reg;") != std::string::npos)
+                update.second.replace(update.second.find("&reg;"), 5, reinterpret_cast<const char *>(u8"\u00AE"));
 
         bool found_space = false;
         auto end{ std::remove_if(update.second.begin(), update.second.end(), [&found_space](unsigned ch) {
