@@ -2342,8 +2342,13 @@ EXPORT(int, sceGxmExecuteCommandList, SceGxmContext *context, SceGxmCommandList 
     // Since only one immediate context exists per process, direct linking like this should be fine! (I hope)
     renderer::CommandList &imm_cmds = context->renderer->command_list;
 
-    imm_cmds.last->next = commandList->list->first;
-    imm_cmds.last = commandList->list->last;
+    if (imm_cmds.last) {
+        imm_cmds.last->next = commandList->list->first;
+        imm_cmds.last = commandList->list->last;
+    } else {
+        imm_cmds.first = commandList->list->first;
+        imm_cmds.last = commandList->list->last;
+    }
 
     // Restore back our GXM state
     gxmContextStateRestore(*emuenv.renderer, emuenv.mem, context, true);
