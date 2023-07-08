@@ -42,7 +42,7 @@ struct SurfaceCacheInfo {
 struct Framebuffer {
     // standard framebuffer, used most of the time
     vk::Framebuffer standard;
-    // framenuffer used with shader interlock
+    // framebuffer used with shader interlock
     vk::Framebuffer shader_interlock;
 };
 
