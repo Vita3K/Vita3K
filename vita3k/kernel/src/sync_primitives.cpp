@@ -154,7 +154,8 @@ SceUID simple_event_create(KernelState &kernel, MemState &mem, const char *expor
 SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 wait_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait) {
     const SimpleEventPtr event = lock_and_find(event_id, kernel.simple_events, kernel.mutex);
     if (!event) {
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+        // this may also be a timer event
+        return timer_waitorpoll(kernel, export_name, thread_id, event_id, wait_pattern, result_pattern, user_data, timeout, is_wait);
     }
 
     if (LOG_SYNC_PRIMITIVES) {
@@ -267,7 +268,8 @@ SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, S
 SceInt32 simple_event_clear(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 clear_pattern) {
     const SimpleEventPtr event = lock_and_find(event_id, kernel.simple_events, kernel.mutex);
     if (!event) {
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+        // this may also be a timer event
+        return timer_clear(kernel, export_name, thread_id, event_id, clear_pattern);
     }
 
     if (LOG_SYNC_PRIMITIVES) {
@@ -302,6 +304,218 @@ SceInt32 simple_event_delete(KernelState &kernel, const char *export_name, SceUI
     }
 
     return SCE_KERNEL_OK;
+}
+
+// *********
+// * Timer *
+// *********
+
+inline uint64_t get_current_time() {
+    return std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::high_resolution_clock::now().time_since_epoch())
+        .count();
+}
+
+SceUID timer_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr) {
+    if ((strlen(name) > 31) && ((attr & 0x80) == 0x80)) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+    }
+
+    const SceUID uid = kernel.get_next_uid();
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {}",
+            export_name, uid, thread_id, name, attr);
+    }
+
+    const TimerPtr timer = std::make_shared<Timer>();
+    timer->uid = uid;
+    timer->next_event = std::numeric_limits<uint64_t>::max();
+    std::copy(name, name + KERNELOBJECT_MAX_NAME_LENGTH, timer->name);
+    timer->attr = attr;
+    if (attr & SCE_KERNEL_ATTR_TH_PRIO) {
+        timer->waiting_threads = std::make_unique<PriorityThreadDataQueue<WaitingThreadData>>();
+    } else {
+        timer->waiting_threads = std::make_unique<FIFOThreadDataQueue<WaitingThreadData>>();
+    }
+
+    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+    kernel.timers.emplace(uid, timer);
+
+    return uid;
+}
+
+static void timer_schedule_event(TimerPtr &timer) {
+    uint64_t curr_time = get_current_time();
+    timer->next_event = curr_time + timer->event_interval;
+
+    timer->condvar.notify_all();
+}
+
+SceInt32 timer_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle, SceUID type, SceKernelSysClock *interval, SceInt32 repeats) {
+    TimerPtr timer = lock_and_find(timer_handle, kernel.timers, kernel.mutex);
+    if (!timer)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+
+    if (!interval)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} type: {} interval: {} repeats: {}"
+                  " waiting_threads: {}",
+            export_name, timer->uid, thread_id, timer->name, timer->attr, type, *interval,
+            repeats, timer->waiting_threads->size());
+    }
+
+    const std::lock_guard<std::mutex> timer_lock(timer->mutex);
+    timer->is_pulse = type != 0;
+    timer->is_repeat = repeats != 0;
+    timer->event_interval = *interval;
+
+    if (timer->is_started)
+        timer_schedule_event(timer);
+
+    return SCE_KERNEL_OK;
+}
+
+// this function is actually only called by simple_event_waitorpoll
+// as the only way to wait for a timer is using the event function (a timer is an event)
+SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait) {
+    TimerPtr timer = lock_and_find(event_id, kernel.timers, kernel.mutex);
+    if (!timer) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} timeout: {}"
+                  " waiting_threads: {}",
+            export_name, timer->uid, thread_id, timer->name, timer->attr, timeout ? *timeout : 0,
+            timer->waiting_threads->size());
+    }
+
+    if (timeout) {
+        static bool has_happened = false;
+        LOG_WARN_IF(!has_happened, "Ignoring timeout");
+        has_happened = true;
+    }
+
+    const ThreadStatePtr thread = kernel.get_thread(thread_id);
+
+    std::unique_lock<std::mutex> lock(timer->mutex);
+
+    if (result_pattern)
+        *result_pattern = SCE_KERNEL_EVENT_TIMER;
+    if (user_data)
+        *user_data = 0;
+
+    uint64_t current_time = get_current_time();
+    auto set_next_event = [&]() {
+        if (timer->is_repeat) {
+            // the event repeats every timer->event_interval, go to the next one after current_time
+            timer->next_event += ((current_time - timer->next_event - 1) / timer->event_interval + 1) * timer->event_interval;
+        } else {
+            timer->next_event = std::numeric_limits<uint64_t>::max();
+        }
+    };
+
+    if (timer->next_event < current_time) {
+        if (!timer->is_pulse) {
+            // we can reach pulse event only by waiting
+            timer->event_set = true;
+        }
+
+        set_next_event();
+    }
+
+    if (timer->event_set) {
+        if (timer->attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET) {
+            timer->event_set = false;
+        }
+
+        return SCE_KERNEL_OK;
+    } else if (is_wait) {
+        thread->update_status(ThreadStatus::wait, ThreadStatus::run);
+
+        WaitingThreadData data;
+        data.thread = thread;
+        data.result_pattern = result_pattern;
+        data.user_data = user_data;
+        data.priority = thread->priority;
+
+        const auto data_it = timer->waiting_threads->push(data);
+
+        bool got_event = false;
+        while (!got_event) {
+            uint64_t wait_time = timer->next_event - current_time;
+            // wait before we got an event and we are the first thread in the waiting list
+            timer->condvar.wait_for(lock, std::chrono::microseconds(wait_time), [&] {
+                return (*timer->waiting_threads->begin()).thread->id == thread_id;
+            });
+            current_time = get_current_time();
+            got_event = timer->event_set || current_time > timer->next_event;
+        }
+
+        timer->waiting_threads->pop();
+        thread->update_status(ThreadStatus::run, ThreadStatus::wait);
+
+        timer->event_set = !timer->is_pulse && !(timer->attr & SCE_KERNEL_EVENT_ATTR_AUTO_RESET);
+        set_next_event();
+        // notify the other waiting threads
+        timer->condvar.notify_all();
+
+        return SCE_KERNEL_OK;
+    } else {
+        return SCE_KERNEL_ERROR_EVENT_COND;
+    }
+}
+
+// this function is actually only called by simple_event_clear
+SceInt32 timer_clear(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 clear_pattern) {
+    TimerPtr timer = lock_and_find(event_id, kernel.timers, kernel.mutex);
+    if (!timer) {
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_EVENT_ID);
+    }
+
+    if (LOG_SYNC_PRIMITIVES) {
+        LOG_DEBUG("{}: uid: {} thread_id: {}",
+            export_name, event_id, thread_id);
+    }
+
+    std::lock_guard<std::mutex> guard(timer->mutex);
+    timer->event_set = false;
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 timer_start(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle) {
+    TimerPtr timer = lock_and_find(timer_handle, kernel.timers, kernel.mutex);
+    if (!timer)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+
+    if (timer->is_started)
+        return 1;
+
+    const std::lock_guard<std::mutex> guard(timer->mutex);
+    timer->is_started = true;
+    timer->time = get_current_time();
+
+    if (timer->event_interval != 0)
+        timer_schedule_event(timer);
+
+    return SCE_KERNEL_OK;
+}
+
+SceInt32 timer_stop(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle) {
+    const TimerPtr timer = lock_and_find(timer_handle, kernel.timers, kernel.mutex);
+    if (!timer)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
+
+    const std::lock_guard<std::mutex> timer_lock(timer->mutex);
+    bool was_stopped = !timer->is_started;
+    timer->is_started = false;
+    timer->time = get_current_time();
+    timer->next_event = std::numeric_limits<uint64_t>::max();
+
+    return static_cast<int>(was_stopped);
 }
 
 // *********

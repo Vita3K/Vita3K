@@ -1245,39 +1245,9 @@ EXPORT(SceUID, sceKernelCreateThread, const char *name, SceKernelThreadEntry ent
     return res;
 }
 
-EXPORT(SceUID, sceKernelCreateTimer, const char *name, uint32_t flags, const uint32_t *opt_params) {
-    TRACY_FUNC(sceKernelCreateTimer, name, flags, opt_params);
-    // opt_params is not used by the firmware but if it is not null,
-    // the firmware checks if its first field (its size) is at most 4.
-    if (opt_params && opt_params[0] > 4)
-        return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_SIZE);
-
-    SceUID handle = emuenv.kernel.get_next_uid();
-
-    emuenv.kernel.timers[handle] = std::make_shared<TimerState>();
-    TimerPtr &timer_info = emuenv.kernel.timers[handle];
-
-    timer_info->name = name;
-
-    if (flags & static_cast<uint32_t>(TimerFlags::PRIORITY_THREAD))
-        timer_info->thread_behaviour = TimerState::ThreadBehaviour::PRIORITY;
-    else
-        timer_info->thread_behaviour = TimerState::ThreadBehaviour::FIFO;
-
-    if (flags & static_cast<uint32_t>(TimerFlags::AUTOMATIC_RESET))
-        timer_info->reset_behaviour = TimerState::ResetBehaviour::AUTOMATIC;
-    else
-        timer_info->reset_behaviour = TimerState::ResetBehaviour::MANUAL;
-
-    if (flags & static_cast<uint32_t>(TimerFlags::WAKE_ONLY_NOTIFY))
-        timer_info->notify_behaviour = TimerState::NotifyBehaviour::ONLY_WAKE;
-    else
-        timer_info->notify_behaviour = TimerState::NotifyBehaviour::ALL;
-
-    if (flags & static_cast<uint32_t>(TimerFlags::OPENABLE))
-        timer_info->openable = true;
-
-    return handle;
+EXPORT(SceUID, sceKernelCreateTimer, const char *name, SceUInt32 attr, const uint32_t *opt_params) {
+    TRACY_FUNC(sceKernelCreateTimer, name, attr, opt_params);
+    return CALL_EXPORT(_sceKernelCreateTimer, name, attr, opt_params);
 }
 
 EXPORT(int, sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea) {
@@ -1683,20 +1653,10 @@ EXPORT(int, sceKernelSetThreadContextForVM, SceUID threadId, Ptr<SceKernelThread
     return CALL_EXPORT(_sceKernelSetThreadContextForVM, threadId, pCpuRegisterInfo, pVfpRegisterInfo);
 }
 
-EXPORT(int, sceKernelSetTimerEvent, SceUID timer_handle, int32_t type, SceKernelSysClock *clock, int32_t repeats) {
-    TRACY_FUNC(sceKernelSetTimerEvent, timer_handle, type, clock, repeats);
-    STUBBED("Type not implemented.");
+EXPORT(int, sceKernelSetTimerEvent, SceUID timer_handle, SceInt32 type, SceKernelSysClock *interval, SceInt32 repeats) {
+    TRACY_FUNC(sceKernelSetTimerEvent, timer_handle, type, interval, repeats);
 
-    const TimerPtr timer_info = lock_and_find(timer_handle, emuenv.kernel.timers, emuenv.kernel.mutex);
-
-    if (!timer_info)
-        return SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID;
-
-    // TODO: Timer values for type.
-
-    timer_info->repeats = repeats;
-
-    return SCE_KERNEL_OK;
+    return timer_set(emuenv.kernel, export_name, thread_id, timer_handle, type, interval, repeats);
 }
 
 EXPORT(int, sceKernelSetTimerTime) {
