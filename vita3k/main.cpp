@@ -136,14 +136,14 @@ int main(int argc, char *argv[]) {
             }
             if (cfg.delete_title_id.has_value()) {
                 LOG_INFO("Deleting title id {}", *cfg.delete_title_id);
-                fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/app" / *cfg.delete_title_id);
-                fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/addcont" / *cfg.delete_title_id);
-                fs::remove_all(fs::path(root_paths.get_pref_path()) / "ux0/user/00/savedata" / *cfg.delete_title_id);
+                fs::remove_all(fs::path(cfg.pref_path) / "ux0/app" / *cfg.delete_title_id);
+                fs::remove_all(fs::path(cfg.pref_path) / "ux0/addcont" / *cfg.delete_title_id);
+                fs::remove_all(fs::path(cfg.pref_path) / "ux0/user/00/savedata" / *cfg.delete_title_id);
                 fs::remove_all(fs::path(root_paths.get_base_path()) / "cache/shaders" / *cfg.delete_title_id);
             }
             if (cfg.pkg_path.has_value() && cfg.pkg_zrif.has_value()) {
                 LOG_INFO("Installing pkg from {} ", *cfg.pkg_path);
-                emuenv.pref_path = string_utils::utf_to_wide(root_paths.get_pref_path_string());
+                emuenv.pref_path = string_utils::utf_to_wide(cfg.pref_path);
                 install_pkg(*cfg.pkg_path, emuenv, *cfg.pkg_zrif, [](float) {});
                 return Success;
             }
