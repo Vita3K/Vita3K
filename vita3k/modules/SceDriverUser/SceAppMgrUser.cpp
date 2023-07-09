@@ -200,9 +200,18 @@ EXPORT(int, sceAppMgrForceUmount) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrGameDataMount) {
-    TRACY_FUNC(sceAppMgrGameDataMount);
-    return UNIMPLEMENTED();
+EXPORT(int, sceAppMgrGameDataMount, const char *app_path, const char *patch_path, const char *rif_path, char *mount_point) {
+    TRACY_FUNC(sceAppMgrGameDataMount, app_path, patch_path, rif_path, mount_point);
+    if (strlen(app_path) > 0)
+        emuenv.io.device_paths.gamedata0 = app_path;
+    else if (strlen(patch_path) > 0)
+        emuenv.io.device_paths.gamedata0 = patch_path;
+    else if (strlen(rif_path) > 0)
+        emuenv.io.device_paths.gamedata0 = rif_path;
+
+    strcpy(mount_point, "gamedata0:");
+
+    return 0;
 }
 
 EXPORT(int, sceAppMgrGetAppInfo) {
@@ -767,8 +776,14 @@ EXPORT(int, sceAppMgrTrophyMountById) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceAppMgrUmount) {
-    TRACY_FUNC(sceAppMgrUmount);
+EXPORT(int, sceAppMgrUmount, const char *mount_point) {
+    TRACY_FUNC(sceAppMgrUmount, mount_point);
+    if (std::string(mount_point) == "gamedata0:") {
+        emuenv.io.device_paths.gamedata0.clear();
+
+        return 0;
+    }
+
     return UNIMPLEMENTED();
 }
 

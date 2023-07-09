@@ -240,6 +240,12 @@ std::string translate_path(const char *path, VitaIoDevice &device, const IOState
         device = VitaIoDevice::ux0;
         break;
     }
+    case +VitaIoDevice::gamedata0: { // Redirect gamedata0
+        relative_path = device::remove_device_from_path(relative_path, device, device_paths.gamedata0);
+        device = device::get_device(relative_path);
+        relative_path = device::remove_device_from_path(relative_path, device);
+        break;
+    }
     case +VitaIoDevice::host0:
     case +VitaIoDevice::gro0:
     case +VitaIoDevice::grw0:

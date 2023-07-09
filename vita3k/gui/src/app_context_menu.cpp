@@ -307,7 +307,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
     auto common = emuenv.common_dialog.lang.common;
     auto lang_compat = gui.lang.compatibility;
 
-    const auto is_commercial_app = title_id.find("PCS") != std::string::npos;
+    const auto is_commercial_app = app_path.find("PCS") != std::string::npos;
     const auto has_state_report = gui.compat.compat_db_loaded ? gui.compat.app_compat_db.contains(title_id) : false;
     const auto compat_state = has_state_report ? gui.compat.app_compat_db[title_id].state : compat::UNKNOWN;
     const auto compat_state_color = gui.compat.compat_color[compat_state];
@@ -319,7 +319,7 @@ void draw_app_context_menu(GuiState &gui, EmuEnvState &emuenv, const std::string
         const auto START_STR = app_path == emuenv.io.app_path ? gui.lang.live_area.main["continue"] : gui.lang.live_area.main["start"];
         if (ImGui::MenuItem(START_STR.c_str()))
             pre_run_app(gui, emuenv, app_path);
-        if (title_id.find("NPXS") == std::string::npos) {
+        if (app_path.find("NPXS") == std::string::npos) {
             if (ImGui::BeginMenu(lang_compat.name.c_str())) {
                 if (!is_commercial_app || !gui.compat.compat_db_loaded) {
                     if (ImGui::MenuItem(lang["check_app_state"].c_str())) {
