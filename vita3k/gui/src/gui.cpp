@@ -155,7 +155,7 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     ImGuiIO &io = ImGui::GetIO();
 
     ImFontConfig mono_font_config{};
-    mono_font_config.SizePixels = 24.f;
+    mono_font_config.SizePixels = 21.f;
 
 #ifdef _WIN32
     const auto monospaced_font_path = "C:\\Windows\\Fonts\\msyh.ttc";
