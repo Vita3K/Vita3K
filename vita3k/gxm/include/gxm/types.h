@@ -329,6 +329,12 @@ enum SceGxmMultisampleMode : uint16_t {
     SCE_GXM_MULTISAMPLE_4X
 };
 
+enum SceGxmRenderTargetFlags : uint32_t {
+    SCE_GXM_RENDER_TARGET_CUSTOM_MULTISAMPLE_LOCATIONS = 0x00000001U,
+    SCE_GXM_RENDER_TARGET_MACROTILE_SYNC = 0x00000002U,
+    SCE_GXM_RENDER_TARGET_USE_DISPLAY_QUEUE_PARAMS = 0x00000010U
+};
+
 struct SceGxmRenderTargetParams {
     uint32_t flags;
     uint16_t width;

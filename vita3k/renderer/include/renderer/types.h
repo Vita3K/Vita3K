@@ -214,6 +214,9 @@ struct ShadersHash {
 struct RenderTarget {
     int holder;
     SceGxmMultisampleMode multisample_mode;
+    bool has_macroblock_sync;
+    uint16_t macroblock_width;
+    uint16_t macroblock_height;
     virtual ~RenderTarget() = default;
 };
 

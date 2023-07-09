@@ -100,6 +100,7 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     }
 
     context.scene_timestamp++;
+    context.state.texture_cache.current_scene_timestamp = context.scene_timestamp;
 
     SceGxmColorSurface *color_surface_fin = &context.record.color_surface;
     // set these values for the pipeline cache
@@ -157,11 +158,18 @@ void set_context(VKContext &context, MemState &mem, VKRenderTarget *rt, const Fe
     if (state.features.use_mask_bit)
         sync_mask(context, mem);
 
-    context.start_render_pass();
+    // make sure we are not keeping any texture from the previous pass
+    // (textures can be still bound even though they are not used)
+    context.last_vert_texture_count = ~0;
+    context.last_frag_texture_count = ~0;
+    for (int i = 0; i < 16; i++) {
+        context.vertex_textures[i].sampler = nullptr;
+        context.fragment_textures[i].sampler = nullptr;
+    }
 
-    if (context.state.features.support_shader_interlock)
-        // update the render pass to load and store the depth and stencil
-        context.current_render_pass = context.state.pipeline_cache.retrieve_render_pass(vk_format, ~0U);
+    context.is_first_scene_draw = true;
+    context.last_macroblock_x = ~0;
+    context.last_macroblock_y = ~0;
 }
 
 void VKContext::start_recording() {
@@ -225,7 +233,7 @@ void VKContext::start_recording() {
     }
 }
 
-void VKContext::start_render_pass() {
+void VKContext::start_render_pass(bool create_descriptor_set) {
     if (in_renderpass) {
         LOG_ERROR("Starting render pass while already in render pass");
         return;
@@ -234,22 +242,26 @@ void VKContext::start_render_pass() {
     if (!is_recording)
         start_recording();
 
-    // make sure we are not keeping any texture from the previous pass
-    // (textures can be still bound even though they are not used)
-    last_vert_texture_count = ~0;
-    last_frag_texture_count = ~0;
-    for (int i = 0; i < 16; i++) {
-        vertex_textures[i].sampler = nullptr;
-        fragment_textures[i].sampler = nullptr;
-    }
-
     curr_renderpass_info = {
         .renderPass = current_render_pass,
-        .framebuffer = current_framebuffer,
-        .renderArea = {
-            .offset = { 0, 0 },
-            .extent = { render_target->width, render_target->height } }
+        .framebuffer = current_framebuffer
     };
+
+    if (render_target->has_macroblock_sync) {
+        // set the render area to the correct macroblock
+        curr_renderpass_info.renderArea = {
+            .offset = {
+                last_macroblock_x * render_target->macroblock_width,
+                last_macroblock_y * render_target->macroblock_height },
+            .extent = { render_target->macroblock_width, render_target->macroblock_height }
+        };
+    } else {
+        curr_renderpass_info.renderArea = {
+            .offset = { 0, 0 },
+            .extent = { render_target->width, render_target->height }
+        };
+    }
+
     // only the depth-stencil attachment may be clear if not force loaded
     std::array<vk::ClearValue, 2> curr_clear_values{};
     curr_clear_values[1].depthStencil = vk::ClearDepthStencilValue{
@@ -262,6 +274,13 @@ void VKContext::start_render_pass() {
     // set the renderpass info ready in case we need to switch between classic and framebuffer fetch usage
     curr_renderpass_info.setClearValues(nullptr);
     last_draw_was_framebuffer_fetch = false;
+
+    refresh_pipeline = true;
+    current_pipeline = nullptr;
+    in_renderpass = true;
+
+    if (!create_descriptor_set)
+        return;
 
     // create and update the rendertarget descriptor set
     vk::DescriptorSetAllocateInfo descr_set_info{
@@ -300,10 +319,6 @@ void VKContext::start_render_pass() {
     };
     write_descr[1].setImageInfo(descr_mask_info);
     state.device.updateDescriptorSets(state.features.use_mask_bit ? 2 : 1, write_descr.data(), 0, nullptr);
-
-    refresh_pipeline = true;
-    current_pipeline = nullptr;
-    in_renderpass = true;
 }
 
 void VKContext::stop_render_pass() {
@@ -316,7 +331,7 @@ void VKContext::stop_render_pass() {
     in_renderpass = false;
 }
 
-void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2) {
+void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2, bool submit) {
     if (!is_recording) {
         LOG_ERROR("Stopping recording while not recording");
         return;
@@ -374,17 +389,33 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
     prerender_cmd.end();
     render_cmd.end();
 
+    // the prerender cmd must be submitted before the render cmd, the pipeline barriers do the rest
+    cmdbuffers_to_submit.push_back(prerender_cmd);
+    cmdbuffers_to_submit.push_back(render_cmd);
+
+    render_cmd = nullptr;
+    prerender_cmd = nullptr;
+    is_recording = false;
+
+    if (!submit)
+        return;
+
+    if (render_target->multisample_mode && !record.color_surface.downscale) {
+        // revert changes made in set_context
+        render_target->width /= 2;
+        render_target->height /= 2;
+    }
+
     vk::Fence fence = render_target->fences[render_target->fence_idx];
     render_target->fence_idx++;
     if (render_target->fence_idx == render_target->fences.size())
         render_target->fence_idx = 0;
 
     vk::SubmitInfo submit_info{};
-    // the prerender cmd must be submitted before the render cmd, the pipeline barriers do the rest
-    std::array<vk::CommandBuffer, 2> cmd_buffers = { prerender_cmd, render_cmd };
-    submit_info.setCommandBuffers(cmd_buffers);
+    submit_info.setCommandBuffers(cmdbuffers_to_submit);
 
     state.general_queue.submit(submit_info, fence);
+    cmdbuffers_to_submit.clear();
     frame().rendered_fences.push_back(fence);
 
     if (state.features.support_memory_mapping) {
@@ -399,16 +430,28 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
             request_queue.push(PostSurfaceSyncRequest{ surface_info });
         }
     }
+}
 
-    if (render_target->multisample_mode && !record.color_surface.downscale) {
-        // revert changes made in set_context
-        render_target->width /= 2;
-        render_target->height /= 2;
+void VKContext::check_for_macroblock_change() {
+    if (!render_target->has_macroblock_sync)
+        return;
+
+    // use the scissor to know in which macroblock we are
+    uint16_t curr_macroblock_x = scissor.offset.x / render_target->macroblock_width;
+    uint16_t curr_macroblock_y = scissor.offset.y / render_target->macroblock_height;
+
+    if (curr_macroblock_x != last_macroblock_x || curr_macroblock_y != last_macroblock_y) {
+        // we changed the current macroblock, restart the renderpass
+        last_macroblock_x = curr_macroblock_x;
+        last_macroblock_y = curr_macroblock_y;
+
+        if (in_renderpass) {
+            SceGxmNotification empty_notification{};
+            stop_recording(empty_notification, empty_notification, false);
+            start_recording();
+            scene_timestamp++;
+        }
     }
-
-    render_cmd = nullptr;
-    prerender_cmd = nullptr;
-    is_recording = false;
 }
 
 } // namespace renderer::vulkan
