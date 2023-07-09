@@ -953,10 +953,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Spacing();
         ImGui::SliderInt("HTTP Timeout Attempts", &emuenv.cfg.http_timeout_attempts, 0, 100);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("How many attempts to do when the server doesn't respond. Could be useful if you have very unstable or VERY SLOW internet.");
+            ImGui::SetTooltip("How many attempts to do when the server doesn't respond.\nCould be useful if you have very unstable or VERY SLOW internet.");
         ImGui::SliderInt("HTTP Timeout Sleep", &emuenv.cfg.http_timeout_sleep_ms, 50, 3000);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer. Could be useful if you have very unstable or VERY SLOW internet.");
+            ImGui::SetTooltip("Attempt sleep time when the server doesn't answer.\nCould be useful if you have very unstable or VERY SLOW internet.");
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::Spacing();
