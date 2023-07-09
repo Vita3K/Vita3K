@@ -211,7 +211,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
         ImGui::Checkbox("Info Bar Visible", &emuenv.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to show info bar inside app selector.\nInfo bar is clock, battery level and notification center");
+            ImGui::SetTooltip("Check the box to show info bar inside app selector.\nInfo bar is clock, battery level and notification center.");
         ImGui::SameLine();
         ImGui::Checkbox("Live Area App Screen", &emuenv.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())
