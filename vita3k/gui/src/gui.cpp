@@ -155,11 +155,11 @@ static void init_font(GuiState &gui, EmuEnvState &emuenv) {
     ImGuiIO &io = ImGui::GetIO();
 
     ImFontConfig mono_font_config{};
-    mono_font_config.SizePixels = 13.f;
+    mono_font_config.SizePixels = 24.f;
 
 #ifdef _WIN32
-    const auto monospaced_font_path = "C:\\Windows\\Fonts\\consola.ttf";
-    gui.monospaced_font = io.Fonts->AddFontFromFileTTF(monospaced_font_path, mono_font_config.SizePixels, &mono_font_config, io.Fonts->GetGlyphRangesJapanese());
+    const auto monospaced_font_path = "C:\\Windows\\Fonts\\msyh.ttc";
+    gui.monospaced_font = io.Fonts->AddFontFromFileTTF(monospaced_font_path, mono_font_config.SizePixels, &mono_font_config, io.Fonts->GetGlyphRangesChineseFull());
 #else
     gui.monospaced_font = io.Fonts->AddFontDefault(&mono_font_config);
 #endif
