@@ -54,6 +54,7 @@ struct VKTextureCacheState : public renderer::TextureCacheState {
     TextureStagingBuffer staging_buffers[NB_TEXTURE_STAGING_BUFFERS];
     uint32_t staging_idx = 0;
     uint64_t last_waited_scene = 0;
+    uint64_t current_scene_timestamp;
 
     std::array<TextureCacheEntry, TextureCacheSize> textures;
 
@@ -137,6 +138,7 @@ struct VKContext : public renderer::Context {
     int current_frame_idx = 1;
     uint64_t frame_timestamp = 1;
     uint64_t scene_timestamp = 1;
+    std::vector<vk::CommandBuffer> cmdbuffers_to_submit = {};
 
     vkutil::HostRingBuffer vertex_stream_ring_buffer;
     vkutil::HostRingBuffer index_stream_ring_buffer;
@@ -199,11 +201,16 @@ struct VKContext : public renderer::Context {
     bool is_recording = false;
     bool in_renderpass = false;
     bool refresh_pipeline = false;
+    bool is_first_scene_draw = false;
     // command buffer used to record the current scene
     vk::CommandBuffer render_cmd{};
     // command buffer used for commands that need to be executed before render_cmd (mostly because they can't be done during a render pass)
     vk::CommandBuffer prerender_cmd{};
     VKRenderTarget *cmd_target = nullptr;
+
+    // used for macroblock sync emulation
+    uint16_t last_macroblock_x = ~0;
+    uint16_t last_macroblock_y = ~0;
 
     // used if necessary to restart easily the render pass
     vk::RenderPassBeginInfo curr_renderpass_info;
@@ -227,9 +234,12 @@ struct VKContext : public renderer::Context {
     ~VKContext() override = default;
 
     void start_recording();
-    void start_render_pass();
+    void start_render_pass(bool create_descriptor_set = true);
     void stop_render_pass();
-    void stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2);
+    void stop_recording(const SceGxmNotification &notif1, const SceGxmNotification &notif2, bool submit = true);
+
+    // check (when the render target has macroblock set) if we are drawing to another block
+    void check_for_macroblock_change();
 
 private:
     void wait_thread_function(const MemState &mem);

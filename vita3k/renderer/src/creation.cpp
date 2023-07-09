@@ -116,6 +116,16 @@ COMMAND(handle_create_render_target) {
         break;
     }
     (*render_target)->multisample_mode = params->multisampleMode;
+    (*render_target)->has_macroblock_sync = (params->flags & SCE_GXM_RENDER_TARGET_MACROTILE_SYNC);
+    if ((*render_target)->has_macroblock_sync) {
+        // there are between 1 and 4 macroblocks in the x and y direction
+        uint16_t nb_macroblocks_x = (params->flags >> 8) & 0b111;
+        uint16_t nb_macroblocks_y = (params->flags >> 12) & 0b111;
+
+        // the width and height should be multiple of 128
+        (*render_target)->macroblock_width = (params->width / nb_macroblocks_x) * renderer.res_multiplier;
+        (*render_target)->macroblock_height = (params->height / nb_macroblocks_y) * renderer.res_multiplier;
+    }
 
     complete_command(renderer, helper, result);
 }

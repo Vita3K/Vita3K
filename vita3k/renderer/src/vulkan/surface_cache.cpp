@@ -243,7 +243,6 @@ vkutil::Image *VKSurfaceCache::retrieve_color_surface_texture_handle(MemState &m
 
                 if (!castable) {
                     static bool has_happened = false;
-                    LOG_ERROR_IF(!has_happened, "Two surface formats requested=0x{:X} and inStore=0x{:X} are not castable!", base_format, info.format);
                     has_happened = true;
                     return nullptr;
                 }

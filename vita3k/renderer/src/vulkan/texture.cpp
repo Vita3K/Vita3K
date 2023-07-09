@@ -32,6 +32,13 @@ VKTextureCacheState::VKTextureCacheState(VKState &state)
 
 void sync_texture(VKContext &context, MemState &mem, std::size_t index, SceGxmTexture texture, const Config &config,
     const std::string &base_path, const std::string &title_id) {
+    // why are we doing this here?
+    // well textures are synced right before the draw
+    // in particular, we know that the scissor is the correct one for the upcoming draw
+    // and the texture copy needs to be in the correct prerender command for it to render fine
+    // so start a new recording right now if the macroblock has changed
+    context.check_for_macroblock_change();
+
     Address data_addr = texture.data_addr << 2;
     bool is_vertex = index >= SCE_GXM_MAX_TEXTURE_UNITS;
 
@@ -136,7 +143,7 @@ void VKTextureCacheState::prepare_staging_buffer(bool is_configure) {
     // some textures must be 16-bytes aligned, and staging_buffer->buffer.size is 16-bytes aligned
     staging_buffer->used_so_far = align(staging_buffer->used_so_far, 16);
     // we can keep using the same buffer as before if we are in the same scene and there is enough memory left
-    bool use_previous_buffer = (context->scene_timestamp == staging_buffer->scene_timestamp) && (staging_buffer->buffer.size - staging_buffer->used_so_far) >= current_texture->memory_needed;
+    bool use_previous_buffer = (current_scene_timestamp == staging_buffer->scene_timestamp) && (staging_buffer->buffer.size - staging_buffer->used_so_far) >= current_texture->memory_needed;
 
     if (!use_previous_buffer) {
         staging_idx = (staging_idx + 1) % NB_TEXTURE_STAGING_BUFFERS;
@@ -152,14 +159,18 @@ void VKTextureCacheState::prepare_staging_buffer(bool is_configure) {
     const vk::Fence current_fence = context->render_target->fences[context->render_target->fence_idx];
 
     if (need_wait) {
-        if (staging_buffer->scene_timestamp == context->scene_timestamp) {
+        if (staging_buffer->scene_timestamp == current_scene_timestamp) {
             assert(current_fence == staging_buffer->waiting_fence);
             // special case, all the staging buffer are occupied by the current scene
             // submit the command buffer and wait for it
             context->prerender_cmd.end();
+            context->cmdbuffers_to_submit.push_back(context->prerender_cmd);
+
             vk::SubmitInfo submit_info{};
-            submit_info.setCommandBuffers(context->prerender_cmd);
+            submit_info.setCommandBuffers(context->cmdbuffers_to_submit);
             state.general_queue.submit(submit_info, current_fence);
+            context->cmdbuffers_to_submit.clear();
+
             auto result = state.device.waitForFences(current_fence, VK_TRUE, std::numeric_limits<uint64_t>::max());
             if (result != vk::Result::eSuccess) {
                 LOG_ERROR("Could not wait for fences.");
@@ -194,7 +205,7 @@ void VKTextureCacheState::prepare_staging_buffer(bool is_configure) {
     // then we can use the buffer
     cmd_buffer = context->prerender_cmd;
     if (!use_previous_buffer) {
-        staging_buffer->scene_timestamp = context->scene_timestamp;
+        staging_buffer->scene_timestamp = current_scene_timestamp;
         staging_buffer->frame_timestamp = context->frame_timestamp;
         staging_buffer->waiting_fence = current_fence;
         staging_buffer->used_so_far = 0;
