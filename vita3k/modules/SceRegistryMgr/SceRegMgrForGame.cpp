@@ -29,7 +29,7 @@ EXPORT(int, sceRegMgrSystemIsBlueScreen) {
 EXPORT(int, sceRegMgrSystemParamGetBin, const int id, void *buf, SceSize bufSize) {
     TRACY_FUNC(sceRegMgrSystemParamGetBin, id, buf, bufSize);
     const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
-    memcpy(buf, regmgr::get_str_value(emuenv.regmgr, category, name).c_str(), bufSize);
+    regmgr::get_bin_value(emuenv.regmgr, category, name, buf, bufSize);
 
     return 0;
 }
@@ -69,7 +69,7 @@ EXPORT(int, sceRegMgrSystemParamSetInt, const int id, const SceInt32 buf) {
 EXPORT(int, sceRegMgrSystemParamSetStr, const int id, const char *buf, const SceSize bufSize) {
     TRACY_FUNC(sceRegMgrSystemParamSetStr, id, buf, bufSize);
     const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
-    regmgr::set_str_value(emuenv.regmgr, emuenv.pref_path, category, name, buf);
+    regmgr::set_str_value(emuenv.regmgr, emuenv.pref_path, category, name, buf, bufSize);
 
     return 0;
 }

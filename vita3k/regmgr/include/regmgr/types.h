@@ -21,8 +21,8 @@
 #include <util/types.h>
 
 struct Keys {
-    int size; // sizeof(this)
+    SceUInt32 size; // sizeof(this)
     Ptr<const char> name;
-    int type; // todo
+    SceUInt32 type; // request confirmation
     SceInt32 value;
 };

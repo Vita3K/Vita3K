@@ -44,7 +44,7 @@ EXPORT(int, sceRegMgrGetInitVals) {
 
 EXPORT(int, sceRegMgrGetKeyBin, const char *category, const char *name, void *buf, SceSize bufSize) {
     TRACY_FUNC(sceRegMgrGetKeyBin, category, name, buf, bufSize);
-    memcpy(buf, regmgr::get_str_value(emuenv.regmgr, category, name).c_str(), bufSize);
+    regmgr::get_bin_value(emuenv.regmgr, category, name, buf, bufSize);
 
     return 0;
 }
@@ -72,9 +72,13 @@ EXPORT(int, sceRegMgrGetKeys, const char *category, Keys *keys, const SceUInt32 
     return 0;
 }
 
-EXPORT(int, sceRegMgrGetKeysInfo) {
-    TRACY_FUNC(sceRegMgrGetKeysInfo);
-    return UNIMPLEMENTED();
+EXPORT(int, sceRegMgrGetKeysInfo, const char *category, Keys *keys, const SceInt32 elementsNumber) {
+    TRACY_FUNC(sceRegMgrGetKeysInfo, category, keys, elementsNumber);
+    for (auto i = 0; i < elementsNumber; i++) {
+        keys[i].type = 0;
+    }
+
+    return STUBBED("Return 0 to type");
 }
 
 EXPORT(int, sceRegMgrGetRegVersion) {
@@ -118,7 +122,7 @@ EXPORT(int, sceRegMgrSetKeyInt, const char *category, const char *name, const Sc
 
 EXPORT(int, sceRegMgrSetKeyStr, const char *category, const char *name, char *buf, const SceSize bufSize) {
     TRACY_FUNC(sceRegMgrSetKeyStr, category, name, buf, bufSize);
-    regmgr::set_str_value(emuenv.regmgr, emuenv.pref_path, category, name, buf);
+    regmgr::set_str_value(emuenv.regmgr, emuenv.pref_path, category, name, buf, bufSize);
 
     return 0;
 }

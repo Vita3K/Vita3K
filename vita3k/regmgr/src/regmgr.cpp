@@ -135,8 +135,8 @@ void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
     }
 }
 
+static constexpr uint32_t spaceSize = 32;
 static uint32_t get_space_size(const uint32_t str_size) {
-    const uint32_t spaceSize = 32;
     const uint32_t line = 16;
 
     return spaceSize > str_size ? spaceSize - str_size : ((str_size / line) + 1) * line - str_size;
@@ -149,7 +149,7 @@ static bool load_system_dreg(RegMgrState &regmgr, const std::wstring &pref_path)
         char buf = 0;
 
         // Skip the space
-        for (uint32_t i = 0; i < 33; i++) {
+        for (uint32_t i = 0; i < (spaceSize + 1); i++) {
             file.read(&buf, 1);
         }
 
@@ -189,10 +189,9 @@ static bool load_system_dreg(RegMgrState &regmgr, const std::wstring &pref_path)
 
                 // Read the value
                 const uint32_t value_size = entry.size;
-                std::vector<char> value(value_size);
+                auto &value = regmgr.system_dreg[reg.first][entry.name];
+                value.resize(value_size);
                 file.read(value.data(), value_size);
-                const auto value_str = std::string(value.begin(), value.end());
-                regmgr.system_dreg[reg.first][entry.name] = value_str;
 
                 // Skip the space
                 const auto diff_value = get_space_size(value_size);
@@ -203,8 +202,7 @@ static bool load_system_dreg(RegMgrState &regmgr, const std::wstring &pref_path)
         }
 
         file.close();
-    } else
-        LOG_WARN("Registry file not found: {}, attempting to create it", system_dreg_path.string());
+    }
 
     return !regmgr.system_dreg.empty();
 }
@@ -216,7 +214,7 @@ static void save_system_dreg(RegMgrState &regmgr, const std::wstring pref_path) 
         const char buf = 0;
 
         // Write the space
-        for (uint32_t i = 0; i < 33; i++) {
+        for (uint32_t i = 0; i < (spaceSize + 1); i++) {
             file.write(&buf, 1);
         }
 
@@ -250,9 +248,7 @@ static void save_system_dreg(RegMgrState &regmgr, const std::wstring pref_path) 
 
                 // Write the value
                 const uint32_t value_size = entry.size;
-                std::vector<char> value(value_size);
-                regmgr.system_dreg[reg.first][entry.name].copy(value.data(), value_size);
-                file.write(value.data(), value_size);
+                file.write(regmgr.system_dreg[reg.first][entry.name].data(), value_size);
 
                 // Write the space
                 const auto diff_value = get_space_size(value_size);
@@ -271,23 +267,31 @@ static void init_system_dreg(RegMgrState &regmgr, const std::wstring pref_path) 
 
     for (const auto &reg : reg_template) {
         for (const auto &entry : reg.second) {
-            regmgr.system_dreg[reg.first][entry.name] = entry.value;
+            auto &value = regmgr.system_dreg[reg.first][entry.name];
+            value.resize(entry.size);
+            value.assign(entry.value.begin(), entry.value.end());
         }
     }
 
     save_system_dreg(regmgr, pref_path);
 }
 
-static std::string fix_category(const std::string& category) {
+static std::string fix_category(const std::string &category) {
     return category.back() == '/' ? category : category + '/';
 }
 
-void set_bin_value(RegMgrState &regmgr, const std::wstring &pref_path, const std::string &category, const std::string &name, const void *buf, const uint32_t size) {
+void get_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, void *buf, uint32_t bufSize) {
+    std::lock_guard<std::mutex> lock(regmgr.mutex);
+    const auto &sys = regmgr.system_dreg[fix_category(category)][name];
+
+    memcpy(buf, sys.data(), bufSize);
+}
+
+void set_bin_value(RegMgrState &regmgr, const std::wstring &pref_path, const std::string &category, const std::string &name, const void *buf, const uint32_t bufSize) {
     std::lock_guard<std::mutex> lock(regmgr.mutex);
 
-    const char *data = reinterpret_cast<const char *>(buf); 
-    const std::vector<char> bin(data, data + size);    
-    regmgr.system_dreg[fix_category(category)][name] = std::string(bin.begin(), bin.end());
+    const char *data = reinterpret_cast<const char *>(buf);
+    regmgr.system_dreg[fix_category(category)][name].assign(data, data + bufSize);
 
     save_system_dreg(regmgr, pref_path);
 }
@@ -295,25 +299,31 @@ void set_bin_value(RegMgrState &regmgr, const std::wstring &pref_path, const std
 int32_t get_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name) {
     std::lock_guard<std::mutex> lock(regmgr.mutex);
 
-    return std::stoi(regmgr.system_dreg[fix_category(category)][name]);
+    const auto &sys = regmgr.system_dreg[fix_category(category)][name];
+    const auto value_str = std::string(sys.begin(), sys.end());
+
+    return std::stoi(value_str);
 }
 
 void set_int_value(RegMgrState &regmgr, const std::wstring &pref_path, const std::string &category, const std::string &name, int32_t value) {
     std::lock_guard<std::mutex> lock(regmgr.mutex);
-    regmgr.system_dreg[fix_category(category)][name] = std::to_string(value);
+
+    const auto str_value = std::to_string(value);
+    regmgr.system_dreg[fix_category(category)][name].assign(str_value.begin(), str_value.end());
 
     save_system_dreg(regmgr, pref_path);
 }
 
 std::string get_str_value(RegMgrState &regmgr, const std::string &category, const std::string &name) {
     std::lock_guard<std::mutex> lock(regmgr.mutex);
+    const auto &sys = regmgr.system_dreg[fix_category(category)][name];
 
-    return regmgr.system_dreg[fix_category(category)][name];
+    return std::string(sys.begin(), sys.end());
 }
 
-void set_str_value(RegMgrState &regmgr, const std::wstring &pref_path, const std::string &category, const std::string &name, const std::string &value) {
+void set_str_value(RegMgrState &regmgr, const std::wstring &pref_path, const std::string &category, const std::string &name, const char *value, const uint32_t bufSize) {
     std::lock_guard<std::mutex> lock(regmgr.mutex);
-    regmgr.system_dreg[fix_category(category)][name] = value;
+    regmgr.system_dreg[fix_category(category)][name].assign(value, value + bufSize);
 
     save_system_dreg(regmgr, pref_path);
 }
@@ -329,6 +339,7 @@ void init_regmgr(RegMgrState &regmgr, const std::wstring &pref_path) {
 
     // Initialize the system.dreg
     if (!load_system_dreg(regmgr, pref_path)) {
+        LOG_WARN("Failed to load system.dreg, attempting to create it");
         init_system_dreg(regmgr, pref_path);
     }
 }
