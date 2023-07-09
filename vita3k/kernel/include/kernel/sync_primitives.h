@@ -96,19 +96,32 @@ struct SimpleEvent : SyncPrimitive {
 
     bool auto_reset;
     bool cb_wakeup_only;
-
-    ~SimpleEvent() override = default;
 };
 
 typedef std::shared_ptr<SimpleEvent> SimpleEventPtr;
 typedef std::map<SceUID, SimpleEventPtr> SimpleEventPtrs;
+
+struct Timer : SyncPrimitive {
+    WaitingThreadQueuePtr waiting_threads;
+    std::condition_variable condvar;
+
+    bool is_started = false;
+    bool is_repeat = false;
+    bool is_pulse = false;
+    bool event_set = false;
+    uint64_t time = 0;
+    uint64_t next_event;
+    uint64_t event_interval = 0;
+};
+
+typedef std::shared_ptr<Timer> TimerPtr;
+typedef std::map<SceUID, TimerPtr> TimerPtrs;
 
 struct Semaphore : SyncPrimitive {
     WaitingThreadQueuePtr waiting_threads;
     int max;
     int val;
     int init_val;
-    ~Semaphore() override = default;
 };
 
 typedef std::shared_ptr<Semaphore> SemaphorePtr;
@@ -120,8 +133,6 @@ struct Mutex : SyncPrimitive {
     ThreadStatePtr owner;
     WaitingThreadQueuePtr waiting_threads;
     Ptr<SceKernelLwMutexWork> workarea;
-
-    ~Mutex() override = default;
 };
 
 typedef std::shared_ptr<Mutex> MutexPtr;
@@ -140,8 +151,6 @@ struct RWLock : SyncPrimitive {
     RWLockState state;
     RWLockOwners owners;
     WaitingThreadQueuePtr waiting_threads;
-
-    ~RWLock() override = default;
 };
 
 typedef std::shared_ptr<RWLock> RWLockPtr;
@@ -150,8 +159,6 @@ typedef std::map<SceUID, RWLockPtr> RWLockPtrs;
 struct EventFlag : SyncPrimitive {
     WaitingThreadQueuePtr waiting_threads;
     int flags;
-
-    ~EventFlag() override = default;
 };
 
 typedef std::shared_ptr<EventFlag> EventFlagPtr;
@@ -177,8 +184,6 @@ struct Condvar : SyncPrimitive {
 
     WaitingThreadQueuePtr waiting_threads;
     MutexPtr associated_mutex;
-
-    ~Condvar() override = default;
 };
 typedef std::shared_ptr<Condvar> CondvarPtr;
 typedef std::map<SceUID, CondvarPtr> CondvarPtrs;
@@ -193,8 +198,6 @@ struct MsgPipe : SyncPrimitive {
 
     bool beingDeleted = false;
     std::atomic<std::size_t> remainingThreads = 0;
-
-    ~MsgPipe() override = default;
 };
 
 typedef std::shared_ptr<MsgPipe> MsgPipePtr;
@@ -211,6 +214,14 @@ SceInt32 simple_event_waitorpoll(KernelState &kernel, const char *export_name, S
 SceInt32 simple_event_setorpulse(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 pattern, SceUInt64 user_data, bool is_set);
 SceInt32 simple_event_clear(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 clear_pattern);
 SceInt32 simple_event_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id);
+
+// Timer
+SceUID timer_create(KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt32 attr);
+SceInt32 timer_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 bit_pattern, SceUInt32 *result_pattern, SceUInt64 *user_data, SceUInt32 *timeout, bool is_wait);
+SceInt32 timer_clear(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, SceUInt32 clear_pattern);
+SceInt32 timer_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle, SceUID type, SceKernelSysClock *interval, SceInt32 repeats);
+SceInt32 timer_start(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle);
+SceInt32 timer_stop(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID timer_handle);
 
 // Mutex
 SceUID mutex_create(SceUID *uid_out, KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, int init_count, Ptr<SceKernelLwMutexWork> workarea, SyncWeight weight);

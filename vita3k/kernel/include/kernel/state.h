@@ -69,37 +69,6 @@ struct CodecEngineBlock {
     int32_t vaddr;
 };
 
-struct TimerState {
-    std::string name;
-
-    enum class ThreadBehaviour {
-        FIFO,
-        PRIORITY,
-    };
-
-    enum class NotifyBehaviour {
-        ALL,
-        ONLY_WAKE
-    };
-
-    enum class ResetBehaviour {
-        MANUAL,
-        AUTOMATIC,
-    };
-
-    bool openable = false;
-    ThreadBehaviour thread_behaviour = ThreadBehaviour::FIFO;
-    NotifyBehaviour notify_behaviour = NotifyBehaviour::ALL;
-    ResetBehaviour reset_behaviour = ResetBehaviour::MANUAL;
-
-    bool is_started = false;
-    bool repeats = false;
-    uint64_t time = 0;
-};
-
-typedef std::shared_ptr<TimerState> TimerPtr;
-typedef std::map<SceUID, TimerPtr> TimerStates;
-
 using LoadedSysmodules = std::vector<SceSysmoduleModuleId>;
 
 struct CorenumAllocator {
@@ -133,6 +102,7 @@ struct KernelState {
     unsigned int tls_msize = 0;
 
     SimpleEventPtrs simple_events;
+    TimerPtrs timers;
     SemaphorePtrs semaphores;
     CondvarPtrs condvars;
     CondvarPtrs lwcondvars;
@@ -162,7 +132,6 @@ struct KernelState {
 
     uint64_t start_tick;
     SceRtcTick base_tick;
-    TimerStates timers;
     Ptr<SceProcessParam> process_param;
 
     Debugger debugger;

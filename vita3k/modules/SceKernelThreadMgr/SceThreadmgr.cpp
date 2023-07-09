@@ -146,9 +146,9 @@ EXPORT(SceUID, _sceKernelCreateSimpleEvent, const char *name, SceUInt32 attr, Sc
     return simple_event_create(emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr, init_pattern);
 }
 
-EXPORT(int, _sceKernelCreateTimer) {
-    TRACY_FUNC(_sceKernelCreateTimer);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelCreateTimer, const char *name, SceUInt32 attr, const uint32_t *opt_params) {
+    TRACY_FUNC(_sceKernelCreateTimer, name, attr, opt_params);
+    return timer_create(emuenv.kernel, emuenv.mem, export_name, name, thread_id, attr);
 }
 
 EXPORT(int, _sceKernelDeleteLwCond, Ptr<SceKernelLwCondWork> workarea) {
@@ -1118,6 +1118,7 @@ EXPORT(int, sceKernelDeleteThread, SceUID thid) {
 
 EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
     TRACY_FUNC(sceKernelDeleteTimer, timer_handle);
+    std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
     emuenv.kernel.timers.erase(timer_handle);
 
     return 0;
@@ -1182,7 +1183,7 @@ EXPORT(uint64_t, sceKernelGetTimerBaseWide, SceUID timer_handle) {
     const TimerPtr timer_info = lock_and_find(timer_handle, emuenv.kernel.timers, emuenv.kernel.mutex);
 
     if (!timer_info)
-        return -1;
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
     return timer_info->time;
 }
@@ -1192,7 +1193,7 @@ EXPORT(uint64_t, sceKernelGetTimerTimeWide, SceUID timer_handle) {
     const TimerPtr timer_info = lock_and_find(timer_handle, emuenv.kernel.timers, emuenv.kernel.mutex);
 
     if (!timer_info)
-        return -1;
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
     return get_current_time() - timer_info->time;
 }
@@ -1255,7 +1256,7 @@ EXPORT(SceUID, sceKernelOpenTimer, const char *name) {
     SceUID timer_handle = -1;
     TimerPtr timer_info;
 
-    emuenv.kernel.mutex.lock();
+    const std::lock_guard<std::mutex> guard(emuenv.kernel.mutex);
     for (const auto &timer : emuenv.kernel.timers) {
         if (timer.second->name == name) {
             timer_handle = timer.first;
@@ -1330,10 +1331,9 @@ EXPORT(SceInt32, sceKernelSetEventFlag, SceUID evfId, SceUInt32 bitPattern) {
 
 EXPORT(int, sceKernelSetTimerTimeWide, SceUID timer_handle, SceUInt64 time) {
     TRACY_FUNC(sceKernelSetTimerTimeWide, timer_handle, time);
-    if (!emuenv.kernel.timers.contains(timer_handle))
-        return RET_ERROR(-1);
-
-    const TimerPtr &timer_info = emuenv.kernel.timers[timer_handle];
+    const TimerPtr timer_info = lock_and_find(timer_handle, emuenv.kernel.timers, emuenv.kernel.mutex);
+    if (!timer_info)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
 
     auto oldTime = timer_info->time;
     timer_info->time = time;
@@ -1366,34 +1366,12 @@ EXPORT(int, sceKernelSignalSema, SceUID semaid, int signal) {
 
 EXPORT(int, sceKernelStartTimer, SceUID timer_handle) {
     TRACY_FUNC(sceKernelStartTimer, timer_handle);
-    if (!emuenv.kernel.timers.contains(timer_handle))
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
-
-    const TimerPtr &timer_info = emuenv.kernel.timers[timer_handle];
-
-    if (timer_info->is_started)
-        return RET_ERROR(SCE_KERNEL_ERROR_TIMER_COUNTING);
-
-    timer_info->is_started = true;
-    timer_info->time = get_current_time();
-
-    return 0;
+    return timer_start(emuenv.kernel, export_name, thread_id, timer_handle);
 }
 
 EXPORT(int, sceKernelStopTimer, SceUID timer_handle) {
     TRACY_FUNC(sceKernelStopTimer, timer_handle);
-    if (!emuenv.kernel.timers.contains(timer_handle))
-        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_TIMER_ID);
-
-    const TimerPtr timer_info = lock_and_find(timer_handle, emuenv.kernel.timers, emuenv.kernel.mutex);
-
-    if (!timer_info->is_started)
-        return RET_ERROR(SCE_KERNEL_ERROR_TIMER_STOPPED);
-
-    timer_info->is_started = false;
-    timer_info->time = get_current_time();
-
-    return 0;
+    return timer_stop(emuenv.kernel, export_name, thread_id, timer_handle);
 }
 
 EXPORT(int, sceKernelSuspendThreadForVM, SceUID threadId) {
