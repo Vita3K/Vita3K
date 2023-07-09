@@ -26,7 +26,8 @@ namespace regmgr {
 
 void init_regmgr(RegMgrState &regmgr, const std::wstring &pref_path);
 
-// Setters for binary values
+// Getters and setters for binary values
+void get_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, void *buf, uint32_t bufSize);
 void set_bin_value(RegMgrState &regmgr, const std::wstring &pref_path, const std::string &category, const std::string &name, const void *buf, uint32_t bufSize);
 
 // Geters and setters for int values
@@ -35,9 +36,9 @@ void set_int_value(RegMgrState &regmgr, const std::wstring &pref_path, const std
 
 // Getters and setters for string values
 std::string get_str_value(RegMgrState &regmgr, const std::string &category, const std::string &name);
-void set_str_value(RegMgrState &regmgr, const std::wstring &pref_path, const std::string &category, const std::string &name, const std::string &value);
+void set_str_value(RegMgrState &regmgr, const std::wstring &pref_path, const std::string &category, const std::string &name, const char *value, const uint32_t bufSize);
 
-//
+// Getters of category and name by id
 std::pair<std::string, std::string> get_category_and_name_by_id(const int id, const std::string &export_name);
 
 } // namespace regmgr

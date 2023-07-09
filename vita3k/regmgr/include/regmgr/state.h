@@ -31,5 +31,5 @@ struct RegValue {
 struct RegMgrState {
     std::mutex mutex;
 
-    std::unordered_map<std::string, std::unordered_map<std::string, std::string>> system_dreg;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<char>>> system_dreg;
 };
