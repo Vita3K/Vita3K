@@ -201,14 +201,31 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
     CtrlState &state = emuenv.ctrl;
     refresh_controllers(state);
 
+    std::array<float, 4> axes;
+    axes.fill(0);
+
+    const auto reset_axes = [&]() {
+        SceCtrlPadInputMode mode = from_ext_function ? state.input_mode_ext : state.input_mode;
+        if (mode == SCE_CTRL_MODE_DIGITAL) {
+            lx = 0x80;
+            ly = 0x80;
+            rx = 0x80;
+            ry = 0x80;
+        } else {
+            lx = float_to_byte(axes[0]);
+            ly = float_to_byte(axes[1]);
+            rx = float_to_byte(axes[2]);
+            ry = float_to_byte(axes[3]);
+        }
+    };
+
     if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         if (negative)
             buttons ^= ~0;
+        reset_axes();
         return;
     }
 
-    std::array<float, 4> axes;
-    axes.fill(0);
     if (port == 1) {
         apply_keyboard(&buttons, axes.data(), is_v2, emuenv);
     }
@@ -218,18 +235,7 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
         }
     }
 
-    SceCtrlPadInputMode mode = from_ext_function ? state.input_mode_ext : state.input_mode;
-    if (mode == SCE_CTRL_MODE_DIGITAL) {
-        lx = 0x80;
-        ly = 0x80;
-        rx = 0x80;
-        ry = 0x80;
-    } else {
-        lx = float_to_byte(axes[0]);
-        ly = float_to_byte(axes[1]);
-        rx = float_to_byte(axes[2]);
-        ry = float_to_byte(axes[3]);
-    }
+    reset_axes();
 
     if (negative)
         buttons ^= ~0;
