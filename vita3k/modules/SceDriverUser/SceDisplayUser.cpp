@@ -23,6 +23,11 @@ TRACY_MODULE_NAME(SceDisplayUser);
 
 EXPORT(SceInt32, sceDisplayGetFrameBuf, SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
     TRACY_FUNC(sceDisplayGetFrameBuf, pFrameBuf, sync);
+    if (!pFrameBuf)
+        return SCE_DISPLAY_ERROR_INVALID_ADDR;
+    if ((pFrameBuf->size & 0xfffffffb) != 0x18)
+        return SCE_DISPLAY_ERROR_INVALID_VALUE;
+
     uint32_t pFrameBuf_size = pFrameBuf->size;
     return CALL_EXPORT(_sceDisplayGetFrameBuf, pFrameBuf, sync, &pFrameBuf_size);
 }
@@ -44,7 +49,9 @@ EXPORT(int, sceDisplayGetResolutionInfoInternal) {
 
 EXPORT(SceInt32, sceDisplaySetFrameBuf, const SceDisplayFrameBuf *pFrameBuf, SceDisplaySetBufSync sync) {
     TRACY_FUNC(sceDisplaySetFrameBuf, pFrameBuf, sync);
-    uint32_t pFrameBuf_size = pFrameBuf->size;
+    uint32_t pFrameBuf_size = 0; // In the case that pFrameBuf is actually 0 _sceDisplaySetFrameBuf will handle it, we just need this to not cause a segfault
+    if (pFrameBuf)
+        pFrameBuf_size = pFrameBuf->size;
     return CALL_EXPORT(_sceDisplaySetFrameBuf, pFrameBuf, sync, &pFrameBuf_size);
 }
 
