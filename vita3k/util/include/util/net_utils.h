@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/algorithm/string/compare.hpp>
 #include <http/state.h>
 #include <map>
 #include <stdint.h>
@@ -33,9 +34,10 @@ struct parsedUrl {
 SceHttpErrorCode parse_url(std::string url, parsedUrl &out);
 const char *int_method_to_char(const int n);
 int char_method_to_int(const char *srcUrl);
-std::string constructHeaders(std::map<std::string, std::string> &headers);
-
-void parseResponse(std::string response, SceRequestResponse &reqres);
+std::string constructHeaders(HeadersMapType &headers);
+bool parseStatusLine(std::string line, std::string &httpVer, int &statusCode, std::string &reason);
+bool parseHeaders(std::string &headersRaw, HeadersMapType &headersOut);
+bool parseResponse(std::string response, SceRequestResponse &reqres);
 
 bool socketSetBlocking(int sockfd, bool blocking);
 

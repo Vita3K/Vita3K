@@ -36,12 +36,12 @@ static void draw_ime_dialog(DialogState &common_dialog, float FONT_SCALE) {
     ImGui::Spacing();
     if (common_dialog.ime.multiline) {
         ImGui::InputTextMultiline(
-            "",
+            "##ime_dialog_multiline",
             common_dialog.ime.text,
             common_dialog.ime.max_length);
     } else {
         ImGui::InputText(
-            "",
+            "##ime_dialog_singleline",
             common_dialog.ime.text,
             common_dialog.ime.max_length);
     }

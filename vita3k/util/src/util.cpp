@@ -15,6 +15,7 @@
 // with this program; if not, write to the Free Software Foundation, Inc.,
 // 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
+#include <string_view>
 #include <util/arm.h>
 #include <util/bytes.h>
 #include <util/log.h>
@@ -516,7 +517,7 @@ const char *int_method_to_char(const int n) {
     }
 }
 
-std::string constructHeaders(std::map<std::string, std::string> &headers) {
+std::string constructHeaders(HeadersMapType &headers) {
     std::string headersString;
     for (auto head : headers) {
         headersString.append(head.first);
@@ -528,35 +529,93 @@ std::string constructHeaders(std::map<std::string, std::string> &headers) {
     return headersString;
 }
 
-void parseResponse(std::string res, SceRequestResponse &reqres) {
-    auto statusLine = res.substr(0, res.find("\r\n"));
+bool parseStatusLine(std::string line, std::string &httpVer, int &statusCode, std::string &reason) {
+    auto lineClean = line.substr(0, line.find("\r\n"));
 
-    reqres.httpVer = statusLine.substr(0, 8);
-    SceInt statusCode = std::stoi(statusLine.substr(9, 3));
-    reqres.statusCode = statusCode;
-    reqres.reasonPhrase = statusLine.substr(13);
+    // do this check just in case the server is drunk or retarded, would be nice to do more checks with some regex
+    if (!lineClean.starts_with("HTTP/"))
+        return false; // what
 
-    auto headersRaw = res.substr(res.find("\r\n") + 2);
+    const auto firstSpace = lineClean.find(" ");
+    if (firstSpace == std::string::npos)
+        return false;
+
+    const std::string fullHttpVerStr = lineClean.substr(0, firstSpace);
+    const std::string httpVerStr = fullHttpVerStr.substr(strlen("HTTP/"));
+
+    if (!std::isdigit(httpVerStr[0]))
+        return false;
+
+    if (lineClean.length() < fullHttpVerStr.length() + strlen(" XXX"))
+        return false; // the rest of the line is less than 3 characters in length, what the fuck happened also abort
+
+    const auto codeAndReason = lineClean.substr(firstSpace + 1);
+    const auto statusCodeStr = codeAndReason.substr(0, 3);
+    if (!std::isdigit(statusCodeStr[0]) || !std::isdigit(statusCodeStr[1]) || !std::isdigit(statusCodeStr[2]))
+        return false; // status code contains non digit characters, abort
+
+    const int statusCodeInt = std::stoi(statusCodeStr);
+
+    std::string reasonStr = "";
+    bool hasReason = codeAndReason.find(" ") != std::string::npos;
+    if (hasReason) // standard says that reasons CAN be empty, we have to take this edge case into account
+        reasonStr = codeAndReason.substr(4);
+
+    httpVer = httpVerStr;
+    statusCode = statusCodeInt;
+    reason = reasonStr;
+
+    return true;
+}
+
+/*
+    CANNOT have ANYTHING after the last \r\n or \r\n\r\n else it will be treated as a header
+*/
+bool parseHeaders(std::string &headersRaw, HeadersMapType &headersOut) {
     char *ptr;
     ptr = strtok(headersRaw.data(), "\r\n");
     // use while loop to check ptr is not null
     while (ptr != NULL) {
-        auto line = std::string(ptr);
-        auto name = line.substr(0, line.find(':'));
-        auto value = line.substr(line.find(' ') + 1);
+        auto line = std::string_view(ptr);
 
-        reqres.headers.insert({ name, value });
+        if (line.find(':') == std::string::npos)
+            return false; // separator is missing, the header is invalid
+
+        auto name = line.substr(0, line.find(':'));
+        int valueStart = name.length() + 1;
+        if (line.find(": "))
+            // Theres a space between semicolon and value, trim it
+            valueStart++;
+
+        auto value = line.substr(valueStart);
+
+        headersOut.insert({ std::string(name), std::string(value) });
         ptr = strtok(NULL, "\r\n");
     }
+    return true;
+}
 
-    auto length_it = reqres.headers.find("Content-Length");
-    if (length_it == reqres.headers.end()) {
-        LOG_WARN("Response has no Content-Length");
-        return;
+bool parseResponse(std::string res, SceRequestResponse &reqres) {
+    auto statusLine = res.substr(0, res.find("\r\n"));
+    if (!parseStatusLine(statusLine, reqres.httpVer, reqres.statusCode, reqres.reasonPhrase))
+        return false;
+
+    auto headersRaw = res.substr(res.find("\r\n") + strlen("\r\n"), res.find("\r\n\r\n"));
+
+    if (!parseHeaders(headersRaw, reqres.headers))
+        return false;
+
+    bool hasContLen = false;
+    int contLenVal = 0;
+
+    auto contLenIt = reqres.headers.find("Content-Length");
+    if (contLenIt == reqres.headers.end()) {
+        reqres.contentLength = 0;
+    } else {
+        reqres.contentLength = std::stoi(contLenIt->second);
     }
 
-    SceULong64 length = std::stoi(length_it->second);
-    reqres.contentLength = length;
+    return true;
 }
 
 bool socketSetBlocking(int sockfd, bool blocking) {

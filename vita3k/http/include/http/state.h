@@ -30,6 +30,17 @@
 
 typedef int (*SceHttpsCallback)(unsigned int verifyEsrr, Ptr<void> const sslCert[], int certNum, Ptr<void> userArg);
 
+#include <boost/algorithm/string/predicate.hpp>
+
+struct ci_compare {
+    bool operator()(std::string_view const &a,
+        std::string_view const &b) const {
+        return boost::ilexicographical_compare(a, b);
+    }
+};
+
+typedef std::map<std::string, std::string, ci_compare> HeadersMapType;
+
 enum SceHttpsErrorCode {
     SCE_HTTPS_ERROR_CERT = 0x80435060,
     SCE_HTTPS_ERROR_HANDSHAKE = 0x80435061,
@@ -149,6 +160,8 @@ struct SceHttpUriElement {
     SceUChar8 reserved[10];
 };
 
+static_assert(sizeof(SceHttpUriElement) == 44, "SceHttpUriElement has incorrect size");
+
 enum SceHttpAddHeaderMode : SceUInt32 {
     SCE_HTTP_HEADER_OVERWRITE,
     SCE_HTTP_HEADER_ADD
@@ -229,14 +242,14 @@ struct SceRequestResponse {
     std::string httpVer;
     SceInt statusCode = 0;
     std::string reasonPhrase;
-    std::map<std::string, std::string> headers;
+    HeadersMapType headers;
 
     SceULong64 contentLength = 0;
     SceSize responseRead = 0;
 
     // No need to store the headers as raw as everything is already parsed
-    char *responseRaw = nullptr;
-    char *body = nullptr;
+    uint8_t *responseRaw = nullptr;
+    uint8_t *body = nullptr;
 };
 
 struct SceRequest {
@@ -246,7 +259,7 @@ struct SceRequest {
     std::string message;
     std::string requestLine;
     SceULong64 contentLength;
-    std::map<std::string, std::string> headers;
+    HeadersMapType headers;
     SceRequestResponse res;
     std::vector<Ptr<void>> guestPointers;
 };
@@ -254,7 +267,7 @@ struct SceRequest {
 struct HTTPState {
     bool inited = false;
     bool sslInited = false;
-    SceSize defaultResponseHeaderSize = SCE_HTTP_DEFAULT_RESPONSE_HEADER_MAX;
+    SceInt defaultResponseHeaderSize = SCE_HTTP_DEFAULT_RESPONSE_HEADER_MAX;
     SceInt next_temp = 0;
     SceInt next_conn = 0;
     SceInt next_req = 0;

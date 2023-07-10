@@ -17,6 +17,10 @@
 
 #include "SceHttp.h"
 
+#include <cstring>
+#include <filesystem>
+#include <http/state.h>
+
 #ifdef WIN32 // windows moment
 #include <io.h>
 #include <winsock2.h>
@@ -28,8 +32,6 @@
 #include <sys/socket.h>
 #endif
 
-#include <http/state.h>
-
 #include <kernel/state.h>
 #include <net/state.h>
 #include <openssl/err.h>
@@ -37,6 +39,7 @@
 #include <util/lock_and_find.h>
 #include <util/log.h>
 #include <util/net_utils.h>
+#include <util/string_utils.h>
 #include <util/tracy.h>
 
 #include <string>
@@ -139,18 +142,25 @@ EXPORT(SceInt, sceHttpAddRequestHeader, SceInt reqId, const char *name, const ch
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
+    if (mode != SCE_HTTP_HEADER_OVERWRITE && mode != SCE_HTTP_HEADER_ADD)
+        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+
+    if (mode == SCE_HTTP_HEADER_OVERWRITE && !name)
+        return RET_ERROR(SCE_HTTP_ERROR_NOT_FOUND);
+
     if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (!name || !value)
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
+        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
     auto &req = emuenv.http.requests.find(reqId)->second;
 
     if (mode == SCE_HTTP_HEADER_OVERWRITE) {
-        if (req.headers.find(std::string(name)) != req.headers.end()) {
+        auto foundIt = req.headers.find(name);
+        if (foundIt != req.headers.end()) {
             // Entry already exists
-            req.headers.find(name)->second = std::string(value);
+            foundIt->second = std::string(value);
         } else {
             // entry doesn't exists, we can insert it
             req.headers.insert({ name, value });
@@ -309,12 +319,15 @@ EXPORT(SceInt, sceHttpCreateConnectionWithURL, SceInt tmplId, const char *url, S
 
         SSL_set_fd((SSL *)tmpl->second.ssl, sockfd);
 
+        // This is needed as some servers are using handshake protocols older than the person writing this code
+        SSL_set_security_level((SSL *)tmpl->second.ssl, 0);
+
         int err = SSL_connect((SSL *)tmpl->second.ssl);
         if (err != 1) {
             int sslErr = SSL_get_error((SSL *)tmpl->second.ssl, err);
             LOG_ERROR("SSL_connect(...) = {}, SSLERR = {}", err, sslErr);
             if (sslErr == SSL_ERROR_SSL)
-                return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN);
+                return RET_ERROR(SCE_HTTP_ERROR_SSL);
         }
 
         long verify_flag = SSL_get_verify_result((SSL *)tmpl->second.ssl);
@@ -338,7 +351,8 @@ EXPORT(SceInt, sceHttpCreateConnection, SceInt tmplId, const char *hostname, con
     if (!scheme)
         return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_SCHEME);
 
-    if (strcmp(scheme, "http") != 0 || strcmp(scheme, "https") != 0) {
+    const auto schemeStr = std::string_view(scheme);
+    if (schemeStr != "http" && schemeStr != "https") {
         LOG_WARN("SCHEME IS: {}", scheme);
         return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_SCHEME);
     }
@@ -417,9 +431,8 @@ EXPORT(SceInt, sceHttpCreateRequestWithURL, SceInt connId, SceHttpMethods method
     req.url = urlStr;
     req.contentLength = contentLength;
 
+    req.headers.insert({ "Host", parsed.hostname });
     req.headers.insert({ "User-Agent", tmpl->second.userAgent });
-    if (tmpl->second.httpVersion == SCE_HTTP_VERSION_1_1)
-        req.headers.insert({ "Host", parsed.hostname });
 
     if (tmpl->second.httpVersion == SCE_HTTP_VERSION_1_1 && conn->second.keepAlive)
         req.headers.insert({ "Connection", "Keep-Alive" });
@@ -470,7 +483,7 @@ EXPORT(SceInt, sceHttpCreateRequest, SceInt connId, SceHttpMethods method, const
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
     if (method >= SCE_HTTP_METHOD_INVALID || method < 0)
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+        return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_METHOD);
 
     if (!path)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
@@ -534,7 +547,7 @@ EXPORT(SceInt, sceHttpCreateTemplate, const char *userAgent, SceHttpVersion http
     if (emuenv.http.sslInited)
         ssl_ctx = emuenv.http.ssl_ctx;
     else
-        ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+        ssl_ctx = SSL_CTX_new(TLS_method());
 
     SSL_set_mode((SSL *)ssl_ctx, SSL_MODE_AUTO_RETRY);
 
@@ -624,7 +637,7 @@ EXPORT(SceInt, sceHttpGetAllResponseHeaders, SceInt reqId, Ptr<char> *header, Sc
     auto headers = net_utils::constructHeaders(req->second.res.headers);
 
     // is alloc name ok?
-    auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "header")); // Allocate on guest mem
+    auto h = Ptr<char>(alloc(emuenv.mem, headers.length() + 1, "header")); // Allocate on guest mem
     memcpy(h.get(emuenv.mem), headers.data(), headers.length() + 1); // Put header data on guest mem
     req->second.guestPointers.push_back(h); // Save the pointer to free it later
     *header = h; // make header point to the guest address where headers are located
@@ -708,6 +721,9 @@ EXPORT(SceInt, sceHttpGetResponseContentLength, SceInt reqId, SceULong64 *conten
     if (!emuenv.http.inited)
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
+    if (!contentLength)
+        return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
+
     if (emuenv.http.requests.find(reqId) == emuenv.http.requests.end())
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_ID);
 
@@ -754,7 +770,7 @@ EXPORT(SceInt, sceHttpInit, SceSize poolSize) {
     STUBBED("ignore poolSize");
 
     if (emuenv.http.sslInited)
-        emuenv.http.ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+        emuenv.http.ssl_ctx = SSL_CTX_new(TLS_method());
 
     emuenv.http.inited = true;
 
@@ -763,42 +779,34 @@ EXPORT(SceInt, sceHttpInit, SceSize poolSize) {
 
 EXPORT(SceInt, sceHttpParseResponseHeader, Ptr<const char> headers, SceSize headersLen, const char *fieldStr, Ptr<char> *fieldValue, SceSize *valueLen) {
     TRACY_FUNC(sceHttpParseResponseHeader, headers, headersLen, fieldStr, fieldValue, valueLen);
-    if (!emuenv.http.inited)
-        return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
+    if (!headers)
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
-    if (!headers.valid(emuenv.mem) || headersLen == 0)
+    if (!fieldStr || !fieldValue || valueLen == 0)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+
+    if (headersLen == 0)
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_NOT_FOUND);
 
     *valueLen = 0; // reset to 0 to check after
 
     std::string headerStr = std::string(headers.get(emuenv.mem));
-    char *ptr;
-    ptr = strtok(headerStr.data(), "\r\n");
-    // use while loop to check ptr is not null
-    while (ptr != NULL) {
-        auto line = std::string(ptr);
-        auto name = line.substr(0, line.find(':'));
-        auto value = line.substr(line.find(' ') + 1);
+    HeadersMapType parsedHeaders;
+    if (!net_utils::parseHeaders(headerStr, parsedHeaders))
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
-        if (strcmp(name.c_str(), fieldStr) == 0) { // found header
+    auto foundIt = parsedHeaders.find(fieldStr);
 
-            // is alloc name ok?
-            auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "fieldValue")); // Allocate on guest mem
-            memcpy(h.get(emuenv.mem), value.data(), value.length() + 1); // Put header data on guest mem
-            emuenv.http.guestPointers.push_back(h); // Save the pointer to free it later
-            *fieldValue = h; // make header point to the guest address where headers are located
-
-            *valueLen = value.length() + 1;
-            break;
-        }
-
-        ptr = strtok(NULL, "\r\n");
-    }
-
-    if (*valueLen == 0) {
-        LOG_TRACE("Asked Header doesn't exists");
+    if (foundIt == parsedHeaders.end())
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
-    }
+
+    // is alloc name ok?
+    auto h = Ptr<char>(alloc(emuenv.mem, foundIt->second.length() + 1, "fieldValue")); // Allocate on guest mem
+    memcpy(h.get(emuenv.mem), foundIt->second.data(), foundIt->second.length() + 1); // Put header data on guest mem
+    emuenv.http.guestPointers.push_back(h); // Save the pointer to free it later
+    *fieldValue = h; // make header point to the guest address where headers are located
+
+    *valueLen = foundIt->second.length() + 1;
 
     return 0;
 }
@@ -809,21 +817,31 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
         return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
 
     if (!statusLine)
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
+
+    if (httpMajorVer == 0 || httpMinorVer == 0 || responseCode == 0 || reasonPhrase == 0 || phraseLen == 0)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
+
+    *httpMajorVer = 0;
+    *httpMinorVer = 0;
+
+    if (lineLen < 8)
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
     STUBBED("Ignore lineLen");
 
     // TODO: test
-
     auto line = std::string(statusLine);
-
     auto cleanLine = line.substr(0, line.find("\r\n"));
     // even if there is no \r\n, the result will still be the whole string
 
-    auto httpString = cleanLine.substr(0, cleanLine.find(' '));
-    auto version = httpString.substr(httpString.find('/') + 1);
-    auto majorVer = version.substr(0, 1);
-    *httpMajorVer = std::stoi(majorVer);
+    std::string version;
+    int code;
+    std::string reason;
+    if (!net_utils::parseStatusLine(cleanLine, version, code, reason))
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
+
+    *httpMajorVer = std::stoi(version.substr(0, version.find("."))); // we know this wont fail because parseStatusLine returned true :)
     if (version.find('.') != std::string::npos) {
         auto minorVer = version.substr(version.find('.') + 1);
         *httpMinorVer = std::stoi(minorVer);
@@ -832,11 +850,7 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
     }
 
     auto statusCodeLine = cleanLine.substr(cleanLine.find(' ') + 1, 3);
-    *responseCode = std::stoi(statusCodeLine);
-
-    auto codeAndPhrase = cleanLine.substr(cleanLine.find(' ') + 1); // 200 OK
-
-    auto reason = codeAndPhrase.substr(codeAndPhrase.find(' ') + 1); // OK
+    *responseCode = code;
 
     auto h = Ptr<char>(alloc(emuenv.mem, sizeof(char), "reasonPhrase"));
     memcpy(h.get(emuenv.mem), reason.data(), reason.length() + 1);
@@ -951,153 +965,17 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
     LOG_DEBUG("Sending {} request to {}", net_utils::int_method_to_char(req->second.method), req->second.url);
 
     // TODO: Also support file scheme, doesn't really require any connections, not sure how it handles headers and such
+    if (req->second.method == SCE_HTTP_METHOD_TRACE || req->second.method == SCE_HTTP_METHOD_CONNECT) {
+        LOG_WARN("Unimplemented method {}, report to devs", req->second.method);
+        return 0;
+    }
 
     /* TODO:
         TRACE
         CONNECT
      */
-    int bytes, sent, received, total;
-    switch (req->second.method) {
-    case SCE_HTTP_METHOD_GET:
-    case SCE_HTTP_METHOD_HEAD:
-    case SCE_HTTP_METHOD_OPTIONS:
-    case SCE_HTTP_METHOD_DELETE: {
-        auto headers = net_utils::constructHeaders(req->second.headers);
 
-        req->second.message = req->second.requestLine + "\r\n" + headers + "\r\n";
-
-        total = req->second.message.length();
-        sent = 0;
-        do {
-            if (conn->second.isSecure)
-                bytes = SSL_write((SSL *)tmpl->second.ssl, req->second.message.c_str() + sent, total - sent);
-            else
-                bytes = write(conn->second.sockfd, req->second.message.c_str() + sent, total - sent);
-
-            if (bytes < 0) {
-                LOG_ERROR("ERROR writing GET message to socket");
-                assert(false);
-                return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
-            }
-            LOG_TRACE("Sent {} bytes to {}", bytes, req->second.url);
-            if (bytes == 0)
-                break;
-            sent += bytes;
-        } while (sent < total);
-
-        // Make sockets non blocking only for the response
-        // as we can run out of data to read so it blocks like a whole minute
-        if (!net_utils::socketSetBlocking(conn->second.sockfd, false)) {
-            LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, false);
-            assert(false);
-        }
-
-        /* receive the response */
-        int attempts = 1;
-        auto reqResponse = new char[emuenv.http.defaultResponseHeaderSize]();
-        total = emuenv.http.defaultResponseHeaderSize - 1;
-        received = 0;
-        do {
-            if (conn->second.isSecure)
-                bytes = SSL_read((SSL *)tmpl->second.ssl, reqResponse + received, total - received);
-            else
-                bytes = read(conn->second.sockfd, reqResponse + received, total - received);
-            if (bytes < 0) {
-                if (bytes == -1) {
-                    if (errno == EWOULDBLOCK) {
-                        if (attempts > emuenv.cfg.http_read_end_attempts)
-                            break; // we can assume there is no more data to read
-                        LOG_TRACE("No data available. Sleep for {}. Attempt {}", emuenv.cfg.http_read_end_sleep_ms, attempts);
-                        std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
-                        attempts++;
-                        continue;
-                    } else {
-                        LOG_ERROR("ERROR reading GET response");
-                        assert(false);
-                        delete[] reqResponse;
-                        return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
-                    }
-                }
-            }
-            LOG_TRACE("Received {} bytes from {}", bytes, req->second.url);
-            if (bytes == 0) {
-                if (strcmp(reqResponse, "") == 0) {
-                    if (attempts > emuenv.cfg.http_timeout_attempts)
-                        break; // Give up
-                    LOG_TRACE("Response is null. Sleep for {}. Attempt {}", emuenv.cfg.http_timeout_sleep_ms, attempts);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
-                    attempts++;
-                    continue;
-                }
-                break; // we have  2 line ends, meaning that its the end of the headers
-            }
-
-            received += bytes;
-        } while (received < total);
-
-        LOG_TRACE("Finished reading data");
-
-        if (!net_utils::socketSetBlocking(conn->second.sockfd, true)) {
-            LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, true);
-            assert(false);
-        }
-        /*
-         * if the number of received bytes is the total size of the
-         * array then we have run out of space to store the response
-         * and it hasn't all arrived yet - so that's a BAD thing
-         */
-        if (received == total) {
-            LOG_ERROR("ERROR storing complete GET response");
-            assert(false);
-            delete[] reqResponse;
-            return RET_ERROR(SCE_HTTP_ERROR_TOO_LARGE_RESPONSE_HEADER);
-        }
-
-        if (strcmp(reqResponse, "") == 0) {
-            LOG_ERROR("Received empty GET response. Probably due to unknown protocol");
-            assert(false);
-            delete[] reqResponse;
-            return RET_ERROR(SCE_HTTP_ERROR_BAD_RESPONSE);
-        }
-
-        // we need to separate the body and the headers
-        std::string reqResponseHeaders;
-        std::string reqResponseStr = std::string(reqResponse);
-        auto headerEndPos = reqResponseStr.find("\r\n\r\n");
-        char *ptr;
-        ptr = strtok(reqResponseStr.data(), "\r\n");
-        // use while loop to check ptr is not null
-        while (ptr != nullptr) {
-            reqResponseHeaders.append(ptr);
-            reqResponseHeaders.append("\r\n");
-
-            auto headerLen = reqResponseHeaders.length();
-            // -2 because its the length of the remaining \r\n on the last header
-            if (headerLen - 2 == headerEndPos)
-                break;
-
-            ptr = strtok(NULL, "\r\n");
-        };
-
-        req->second.res.responseRaw = reqResponse;
-        req->second.res.body = reqResponse + reqResponseHeaders.length() + 2;
-
-        // partialResponse is now the contents of the headers, we should parse them
-        net_utils::parseResponse(reqResponseHeaders, req->second.res);
-
-        break;
-    }
-    // PUT and POST are equal
-    case SCE_HTTP_METHOD_PUT:
-    case SCE_HTTP_METHOD_POST: {
-        // If there is a length header, use that header as length
-        // else
-        // size and predefined length are equal?
-        // if they are then we ok, use that
-        // else use the predefined one
-
-        // Priority: Header > Predefined > size
-
+    if (req->second.method == SCE_HTTP_METHOD_POST || req->second.method == SCE_HTTP_METHOD_PUT) {
         if (req->second.headers.find("Content-Length") != req->second.headers.end()) {
             // There is a content length header, probably by the game, use it
             auto contHeader = req->second.headers.find("Content-Length");
@@ -1126,30 +1004,33 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
                 assert(false);
             }
         }
+    }
 
-        auto headers = net_utils::constructHeaders(req->second.headers);
+    auto headers = net_utils::constructHeaders(req->second.headers);
 
-        req->second.message = req->second.requestLine + "\r\n" + headers + "\r\n";
+    req->second.message = req->second.requestLine + "\r\n" + headers + "\r\n";
 
-        total = req->second.message.length();
-        sent = 0;
-        do {
-            if (conn->second.isSecure)
-                bytes = SSL_write((SSL *)tmpl->second.ssl, req->second.message.c_str() + sent, total - sent);
-            else
-                bytes = write(conn->second.sockfd, req->second.message.c_str() + sent, total - sent);
+    int msgLength = req->second.message.length();
+    int reqBytesSent = 0;
+    do {
+        int bytes = 0;
+        if (conn->second.isSecure)
+            bytes = SSL_write((SSL *)tmpl->second.ssl, req->second.message.c_str() + reqBytesSent, msgLength - reqBytesSent);
+        else
+            bytes = write(conn->second.sockfd, req->second.message.c_str() + reqBytesSent, msgLength - reqBytesSent);
 
-            if (bytes < 0) {
-                LOG_ERROR("ERROR writing POST message to socket");
-                assert(false);
-                return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
-            }
-            LOG_TRACE("Sent {} bytes to {}", bytes, req->second.url);
-            if (bytes == 0)
-                break;
-            sent += bytes;
-        } while (sent < total);
+        if (bytes < 0) {
+            LOG_ERROR("ERROR writing GET message to socket");
+            assert(false);
+            return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
+        }
+        LOG_TRACE("Sent {} bytes to {}", bytes, req->second.url);
+        if (bytes == 0)
+            break;
+        reqBytesSent += bytes;
+    } while (reqBytesSent < msgLength);
 
+    if (req->second.method == SCE_HTTP_METHOD_POST || req->second.method == SCE_HTTP_METHOD_PUT) {
         //  Once we send the request we need to send the actual data
         SceSize dataSent = 0;
         auto dataBytes = 0;
@@ -1169,115 +1050,158 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
                 break;
             dataSent += dataBytes;
         } while (dataSent < size);
+    }
 
-        if (!net_utils::socketSetBlocking(conn->second.sockfd, false)) {
-            LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, false);
-            assert(false);
-        }
-        /* receive the response */
-        int attempts = 1;
-        auto reqResponse = new char[emuenv.http.defaultResponseHeaderSize]();
-        total = emuenv.http.defaultResponseHeaderSize - 1;
-        received = 0;
-        do {
-            if (conn->second.isSecure)
-                bytes = SSL_read((SSL *)tmpl->second.ssl, reqResponse + received, total - received);
-            else
-                bytes = read(conn->second.sockfd, reqResponse + received, total - received);
-            if (bytes < 0) {
-                if (bytes == -1) {
-                    if (errno == EWOULDBLOCK) {
-                        if (attempts > emuenv.cfg.http_read_end_attempts)
-                            break; // we can assume there is no more data to read
-                        LOG_TRACE("No data available. Sleep for {}. Attempt {}", emuenv.cfg.http_read_end_sleep_ms, attempts);
-                        std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
-                        attempts++;
-                        continue;
-                    } else {
-                        LOG_ERROR("ERROR reading POST response");
-                        assert(false);
-                        delete[] reqResponse;
-                        return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
-                    }
-                }
-            }
-            LOG_TRACE("Received {} bytes from {}", bytes, req->second.url);
-            if (bytes == 0) {
-                if (strcmp(reqResponse, "") == 0) {
-                    if (attempts > emuenv.cfg.http_timeout_attempts)
-                        break; // Give up
-                    LOG_TRACE("Response is null. Sleep for {}. Attempt {}", emuenv.cfg.http_timeout_sleep_ms, attempts);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
+    // Make sockets non blocking only for the response
+    // as we can run out of data to read so it blocks like a whole minute
+    if (!net_utils::socketSetBlocking(conn->second.sockfd, false)) {
+        LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, false);
+        assert(false);
+    }
+
+    /* receive the response */
+    int attempts = 1;
+
+    auto resHeaders = new char[emuenv.http.defaultResponseHeaderSize]();
+    auto resHeadersMaxSize = emuenv.http.defaultResponseHeaderSize;
+    int totalReceived = 0;
+    do {
+        int bytes = 0;
+        if (conn->second.isSecure)
+            bytes = SSL_read((SSL *)tmpl->second.ssl, resHeaders + totalReceived, resHeadersMaxSize - totalReceived);
+        else
+            bytes = read(conn->second.sockfd, resHeaders + totalReceived, resHeadersMaxSize - totalReceived);
+        if (bytes < 0) {
+            if (bytes == -1) {
+                if (errno == EWOULDBLOCK) {
+                    if (attempts > emuenv.cfg.http_read_end_attempts)
+                        break; // we can assume there is no more data to read
+                    LOG_TRACE("No data available. Sleep for {}. Attempt {}", emuenv.cfg.http_read_end_sleep_ms, attempts);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
                     attempts++;
                     continue;
+                } else {
+                    LOG_ERROR("ERROR reading GET response headers");
+                    assert(false);
+                    delete[] resHeaders;
+                    return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
                 }
-                break; // we have  2 line ends, meaning that its the end of the headers
             }
-            received += bytes;
-        } while (received < total);
-
-        LOG_TRACE("Finished reading data");
-
-        if (!net_utils::socketSetBlocking(conn->second.sockfd, true)) {
-            LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, true);
-            assert(false);
+        }
+        LOG_TRACE("Received {} bytes from {}", bytes, req->second.url);
+        if (bytes == 0) {
+            if (strcmp(resHeaders, "") == 0) {
+                if (attempts > emuenv.cfg.http_timeout_attempts)
+                    break; // Give up
+                LOG_TRACE("Response is null. Sleep for {}. Attempt {}", emuenv.cfg.http_timeout_sleep_ms, attempts);
+                std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
+                attempts++;
+                continue;
+            }
+            break;
         }
 
-        /*
-         * if the number of received bytes is the total size of the
-         * array then we have run out of space to store the response
-         * and it hasn't all arrived yet - so that's a BAD thing
-         */
-        if (received == total) {
-            LOG_ERROR("ERROR storing complete POST response from socket");
-            assert(false);
-            delete[] reqResponse;
-            return RET_ERROR(SCE_HTTP_ERROR_TOO_LARGE_RESPONSE_HEADER);
-        }
+        totalReceived += bytes;
+    } while (std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos || totalReceived == resHeadersMaxSize); // receive headers until we start receiving body
 
-        if (strcmp(reqResponse, "") == 0) {
-            LOG_ERROR("Received empty GET response");
-            assert(false);
-            delete[] reqResponse;
-            return RET_ERROR(SCE_HTTP_ERROR_BAD_RESPONSE);
-        }
-
-        // we need to separate the body and the headers
-        std::string reqResponseHeaders;
-        std::string reqResponseStr = std::string(reqResponse);
-        auto headerEndPos = reqResponseStr.find("\r\n\r\n");
-        char *ptr;
-        ptr = strtok(reqResponseStr.data(), "\r\n");
-        // use while loop to check ptr is not null
-        while (ptr != NULL) {
-            reqResponseHeaders.append(ptr);
-            reqResponseHeaders.append("\r\n");
-
-            auto headerLen = reqResponseHeaders.length();
-            // -2 because its the length of the remaining \r\n on the last header
-            if (headerLen - 2 == headerEndPos)
-                break;
-
-            ptr = strtok(NULL, "\r\n");
-        };
-
-        req->second.res.responseRaw = reqResponse;
-        req->second.res.body = reqResponse + reqResponseHeaders.length() + 2;
-
-        // partialResponse is now the contents of the headers, we should parse them
-        net_utils::parseResponse(reqResponseHeaders, req->second.res);
-
-        break;
+    if (totalReceived != resHeadersMaxSize && std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos) {
+        delete[] resHeaders;
+        return RET_ERROR(SCE_HTTP_ERROR_TIMEOUT);
     }
-    default: {
-        if (req->second.method < 0 || req->second.method >= SCE_HTTP_METHOD_INVALID) { // Outside any known method
-            LOG_ERROR("Invalid method {}", req->second.method);
-            return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_METHOD);
-        } else { // its a known method but its not implemented
-            LOG_WARN("Unimplemented method {}, report to devs", req->second.method);
+
+    // Headers are too big
+    if (totalReceived == resHeadersMaxSize && std::string_view(resHeaders).find("\r\n\r\n") == std::string::npos) {
+        delete[] resHeaders;
+        return RET_ERROR(SCE_HTTP_ERROR_TOO_LARGE_RESPONSE_HEADER);
+    }
+
+    const auto resHeadersStr = std::string(resHeaders);
+    const auto resHeadersOnly = resHeadersStr.substr(0, resHeadersStr.find("\r\n\r\n"));
+    if (!net_utils::parseResponse(resHeadersOnly, req->second.res)) {
+        delete[] resHeaders;
+        return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
+    }
+
+    // TODO: does a HEAD/OPTIONS request need content-length to exist?
+    if (req->second.res.headers.find("content-length") == req->second.headers.end()) {
+        delete[] resHeaders;
+        return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
+    }
+
+    LOG_TRACE("Request replied with status code {}", req->second.res.statusCode);
+
+    // Now we get the body or the rest of the body
+    attempts = 1; // Reset attempts
+    const int responseLength = resHeadersStr.find("\r\n\r\n") + strlen("\r\n\r\n") + req->second.res.contentLength;
+    if (req->second.method == SCE_HTTP_METHOD_HEAD || req->second.method == SCE_HTTP_METHOD_OPTIONS) // even if we have content-length, there will be no body
+        const int responseLength = resHeadersStr.find("\r\n\r\n") + strlen("\r\n\r\n");
+
+    // This is the entire response, including headers and everything
+    auto reqResponse = new uint8_t[responseLength]();
+    memcpy(reqResponse, resHeaders, std::min(emuenv.http.defaultResponseHeaderSize, responseLength));
+    delete[] resHeaders;
+
+    int remainingToRead = responseLength - totalReceived;
+
+    while (remainingToRead != 0) {
+        int bytes = 0;
+        if (conn->second.isSecure)
+            bytes = SSL_read((SSL *)tmpl->second.ssl, reqResponse + totalReceived, remainingToRead);
+        else
+            bytes = read(conn->second.sockfd, reqResponse + totalReceived, remainingToRead);
+        if (bytes < 0) {
+            if (bytes == -1) {
+                if (errno == EWOULDBLOCK) {
+                    if (attempts > emuenv.cfg.http_read_end_attempts)
+                        break; // we can assume there is no more data to read
+                    LOG_TRACE("No data available. Sleep for {}. Attempt {}", emuenv.cfg.http_read_end_sleep_ms, attempts);
+                    std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_read_end_sleep_ms));
+                    attempts++;
+                    continue;
+                } else {
+                    LOG_ERROR("ERROR reading GET response");
+                    assert(false);
+                    delete[] reqResponse;
+                    return RET_ERROR(SCE_HTTP_ERROR_NETWORK);
+                }
+            }
         }
+        LOG_TRACE("Received {} bytes from {}", bytes, req->second.url);
+        if (bytes == 0) {
+            if (attempts > emuenv.cfg.http_timeout_attempts)
+                break; // Give up
+            LOG_TRACE("Response is null. Sleep for {}. Attempt {}", emuenv.cfg.http_timeout_sleep_ms, attempts);
+            std::this_thread::sleep_for(std::chrono::milliseconds(emuenv.cfg.http_timeout_sleep_ms));
+            attempts++;
+            continue;
+        }
+
+        totalReceived += bytes;
+        remainingToRead -= bytes;
     }
+
+    if (!net_utils::socketSetBlocking(conn->second.sockfd, true)) {
+        LOG_WARN("Failed to change blocking, socket={}, blocking={}", conn->second.sockfd, true);
+        assert(false);
     }
+
+    if (remainingToRead != 0) {
+        LOG_WARN("Could not read entire body length");
+        delete[] reqResponse;
+        return RET_ERROR(SCE_HTTP_ERROR_TIMEOUT);
+    }
+
+    if (*reqResponse == 0) {
+        LOG_ERROR("Received empty GET response. Probably due to unknown protocol");
+        assert(false);
+        delete[] reqResponse;
+        return RET_ERROR(SCE_HTTP_ERROR_BAD_RESPONSE);
+    }
+
+    req->second.res.responseRaw = reqResponse;
+    req->second.res.body = reqResponse + resHeadersOnly.length() + strlen("\r\n\r\n");
+
+    LOG_TRACE("Request finished nicely");
 
     return 0;
 }
@@ -1572,55 +1496,25 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<
 
 EXPORT(SceInt, sceHttpUriSweepPath, char *dst, const char *src, SceSize srcSize) {
     TRACY_FUNC(sceHttpUriSweepPath, dst, src, srcSize);
-    if (!emuenv.http.inited)
-        return RET_ERROR(SCE_HTTP_ERROR_BEFORE_INIT);
-
-    if (!dst)
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
-
-    if (!src)
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_URL);
-
     if (srcSize == 0)
+        return 0;
+
+    if (!dst || !src)
         return RET_ERROR(SCE_HTTP_ERROR_INVALID_VALUE);
 
-    net_utils::parsedUrl parsed;
-    auto parseRet = net_utils::parse_url(src, parsed);
-    if (parseRet != 0) {
-        switch (parseRet) {
-        case SCE_HTTP_ERROR_UNKNOWN_SCHEME: {
-            LOG_WARN("SCHEME IS: {}", parsed.scheme);
-            return RET_ERROR(SCE_HTTP_ERROR_UNKNOWN_SCHEME);
-        }
-        case SCE_HTTP_ERROR_OUT_OF_SIZE: return RET_ERROR(SCE_HTTP_ERROR_OUT_OF_SIZE);
-        default:
-            LOG_WARN("Returning missing case of parse_url {}", (int)parseRet);
-            assert(false);
-            return parseRet;
-        }
+    auto srcStr = std::string(src);
+
+    unsigned int srcStrLen = srcSize - 1;
+    if (srcStr[0] == '/') {
+        auto lex = std::filesystem::path(src).lexically_normal();
+        const std::string lexStr = lex.string();
+        const char *realPath = lexStr.c_str();
+        strcpy(dst, realPath);
+    } else {
+        // Nicely copy the contents of src into dst
+        memcpy(dst, src, srcStrLen);
+        dst[srcSize - 1] = 0;
     }
-
-    if (parsed.invalid)
-        return RET_ERROR(SCE_HTTP_ERROR_INVALID_URL);
-
-    std::string credentials = "";
-    if (!parsed.username.empty()) { // we have credentials
-        credentials.append(parsed.username);
-        if (!parsed.password.empty()) {
-            credentials.append(":");
-            credentials.append(parsed.password);
-        }
-        credentials.append("@");
-    }
-    std::string port; // 65535
-    if (!parsed.port.empty()) {
-        port.append(":");
-        port.append(parsed.port);
-    }
-
-    auto result = parsed.scheme + "://" + credentials + parsed.hostname + port;
-
-    memcpy(dst, result.data(), result.length() + 1);
 
     return 0;
 }
