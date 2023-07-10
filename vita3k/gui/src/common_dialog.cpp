@@ -34,16 +34,20 @@ static void draw_ime_dialog(DialogState &common_dialog, float FONT_SCALE) {
     ImGui::SetCursorPosX((ImGui::GetWindowWidth() / 2.f) - (ImGui::CalcTextSize(common_dialog.ime.title).x / 2.f));
     ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "%s", common_dialog.ime.title);
     ImGui::Spacing();
+    // TODO: setting the bufsize to max_length + 1 is not correct (except when using only 1-byte UTF-8 caracters)
+    // the reason being that the max_length is the number of caracters allowed but the parameter given to ImGui::InputTextMultiline/ImGui::InputText
+    // is the size of the buffer, which includes the ending 0 (+1). However, as caracters can have a variable size using UTF-8,
+    // this will not necessarily match the max_length (but be at most it)
     if (common_dialog.ime.multiline) {
         ImGui::InputTextMultiline(
             "",
             common_dialog.ime.text,
-            common_dialog.ime.max_length);
+            common_dialog.ime.max_length + 1);
     } else {
         ImGui::InputText(
             "",
             common_dialog.ime.text,
-            common_dialog.ime.max_length);
+            common_dialog.ime.max_length + 1);
     }
     ImGui::SameLine();
     if (ImGui::Button(common_dialog.lang.common["submit"].c_str())) {
