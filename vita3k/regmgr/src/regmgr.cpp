@@ -346,7 +346,7 @@ void init_regmgr(RegMgrState &regmgr, const std::wstring &pref_path) {
 
 std::pair<std::string, std::string> get_category_and_name_by_id(const int id, const std::string &export_name) {
     switch (id) {
-    case 0x00023fc2:
+    case 0x00023FC2:
         return { "/CONFIG/ACCESSIBILITY/", "large_text" };
     case 0x00037502:
         return { "/CONFIG/SYSTEM/", "language" };
@@ -358,6 +358,8 @@ std::pair<std::string, std::string> get_category_and_name_by_id(const int id, co
         return { "/CONFIG/SYSTEM/", "button_assign" };
     case 0x00450F32:
         return { "/CONFIG/NP/", "account_id" };
+    case 0x00563BFE:
+        return { "/CONFIG/NET/", "ssl_cert_ignorable" };
     case 0x00598438:
         return { "/CONFIG/SYSTEM/", "username" };
     case 0x00611DC9:
