@@ -48,7 +48,7 @@ static bool operator<(const SDL_JoystickGUID &a, const SDL_JoystickGUID &b) {
     return memcmp(&a, &b, sizeof(a)) < 0;
 }
 
-void refresh_controllers(CtrlState &state) {
+void refresh_controllers(CtrlState &state, EmuEnvState &emuenv) {
     // Remove disconnected controllers
     for (ControllerList::iterator controller = state.controllers.begin(); controller != state.controllers.end();) {
         if (SDL_GameControllerGetAttached(controller->second.controller.get())) {
@@ -76,6 +76,9 @@ void refresh_controllers(CtrlState &state) {
                 state.controllers.emplace(guid, new_controller);
                 state.controllers_name[joystick_index] = SDL_GameControllerNameForIndex(joystick_index);
                 state.controllers_num++;
+            }
+            if (emuenv.cfg.controller_binds.empty()){
+                emuenv.cfg.controller_binds = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14};
             }
         }
     }
@@ -144,7 +147,7 @@ static void apply_keyboard(uint32_t *buttons, float axes[4], bool ext, EmuEnvSta
 }
 
 static float axis_to_axis(int16_t axis) {
-    const float unsigned_axis = static_cast<float>(axis - INT16_MIN);
+    const auto unsigned_axis = static_cast<float>(axis - INT16_MIN);
     assert(unsigned_axis >= 0);
     assert(unsigned_axis <= UINT16_MAX);
 
@@ -169,8 +172,8 @@ static uint8_t float_to_byte(float f) {
 static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameController *controller, bool ext) {
     if (ext) {
         for (const auto &binding : controller_bindings_ext) {
-            if (SDL_GameControllerGetButton(controller, binding.controller)) {
-                *buttons |= binding.button;
+            if (SDL_GameControllerGetButton(controller, binding.controllerButton)) {
+                *buttons |= binding.vitaButton;
             }
         }
 
@@ -182,8 +185,8 @@ static void apply_controller(uint32_t *buttons, float axes[4], SDL_GameControlle
         }
     } else {
         for (const auto &binding : controller_bindings) {
-            if (SDL_GameControllerGetButton(controller, binding.controller)) {
-                *buttons |= binding.button;
+            if (SDL_GameControllerGetButton(controller, binding.controllerButton)) {
+                *buttons |= binding.vitaButton;
             }
         }
     }
@@ -199,7 +202,7 @@ static void retrieve_ctrl_data(EmuEnvState &emuenv, int port, bool is_v2, bool n
         port++;
     }
     CtrlState &state = emuenv.ctrl;
-    refresh_controllers(state);
+    refresh_controllers(state, emuenv);
 
     if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
         if (negative)

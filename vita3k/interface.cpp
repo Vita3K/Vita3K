@@ -229,7 +229,7 @@ bool install_archive_content(EmuEnvState &emuenv, GuiState *gui, const fs::path 
 
     update_progress();
 
-    LOG_INFO("{} [{}] installed succesfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
+    LOG_INFO("{} [{}] installed successfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
 
     if (!gui->file_menu.archive_install_dialog && (emuenv.app_info.app_category != "theme")) {
         gui::update_notice_info(*gui, emuenv, "content");
@@ -381,7 +381,7 @@ static bool install_content(EmuEnvState &emuenv, GuiState *gui, const fs::path &
     if (!copy_path(dst_path, emuenv.pref_path, emuenv.app_info.app_title_id, emuenv.app_info.app_category))
         return false;
 
-    LOG_INFO("{} [{}] installed succesfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
+    LOG_INFO("{} [{}] installed successfully!", emuenv.app_info.app_title, emuenv.app_info.app_title_id);
 
     if ((emuenv.app_info.app_category.find("gd") != std::string::npos) || (emuenv.app_info.app_category.find("gp") != std::string::npos)) {
         gui::init_user_app(*gui, emuenv, emuenv.app_info.app_title_id);
@@ -407,7 +407,7 @@ uint32_t install_contents(EmuEnvState &emuenv, GuiState *gui, const fs::path &pa
 
     if (installed) {
         gui::save_apps_cache(*gui, emuenv);
-        LOG_INFO("Succesfully installed {} content!", installed);
+        LOG_INFO("Successfully installed {} content!", installed);
     }
 
     return installed;
@@ -570,7 +570,7 @@ static void switch_full_screen(EmuEnvState &emuenv) {
 }
 
 bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
-    refresh_controllers(emuenv.ctrl);
+    refresh_controllers(emuenv.ctrl, emuenv);
     const auto allow_switch_state = !emuenv.io.title_id.empty() && !gui.vita_area.app_close && !gui.vita_area.user_management && !gui.configuration_menu.custom_settings_dialog && !gui.configuration_menu.settings_dialog && !gui.controls_menu.controls_dialog && gui::get_sys_apps_state(gui);
     const auto switch_live_area_state = [](EmuEnvState &emuenv, GuiState &gui) {
         // Show/Hide Live Area during app running
@@ -722,19 +722,19 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                 continue;
 
             for (const auto &binding : controller_bindings_ext) {
-                if (event.cbutton.button == binding.controller) {
+                if (emuenv.cfg.controller_binds[event.cbutton.button] == binding.controllerButton) {    // use the SDL_ControllerButton as an index into binds config
                     if (gui.vita_area.user_management)
-                        gui::browse_users_management(gui, emuenv, binding.button);
+                        gui::browse_users_management(gui, emuenv, binding.vitaButton);
                     else if (gui.vita_area.app_close)
-                        close_and_run_new_app(binding.button);
+                        close_and_run_new_app(binding.vitaButton);
                     else if (gui.vita_area.manual)
-                        gui::browse_pages_manual(gui, emuenv, binding.button);
+                        gui::browse_pages_manual(gui, emuenv, binding.vitaButton);
                     else if (gui.vita_area.home_screen)
-                        gui::browse_home_apps_list(gui, emuenv, binding.button);
+                        gui::browse_home_apps_list(gui, emuenv, binding.vitaButton);
                     else if (gui.vita_area.live_area_screen)
-                        gui::browse_live_area_apps_list(gui, emuenv, binding.button);
+                        gui::browse_live_area_apps_list(gui, emuenv, binding.vitaButton);
                     else if (emuenv.common_dialog.status == SCE_COMMON_DIALOG_STATUS_RUNNING) {
-                        browse_common_dialog(binding.button);
+                        browse_common_dialog(binding.vitaButton);
                     }
                     break;
                 }
@@ -790,7 +790,7 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             else if (drop_file.filename() == "theme.xml")
                 install_content(emuenv, &gui, drop_file.parent_path());
             else
-                LOG_ERROR("File droped: [{}] is not supported.", drop_file.filename().string());
+                LOG_ERROR("File dropped: [{}] is not supported.", drop_file.filename().string());
             SDL_free(event.drop.file);
             break;
         }

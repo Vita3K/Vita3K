@@ -22,4 +22,4 @@
 
 SceCtrlExternalInputMode get_type_of_controller(const int idx);
 int ctrl_get(const SceUID thread_id, EmuEnvState &emuenv, int port, SceCtrlData2 *pData, SceUInt32 count, bool negative, bool is_peek, bool is_v2, bool from_ext);
-void refresh_controllers(CtrlState &state);
+void refresh_controllers(CtrlState &state, EmuEnvState &emuenv);
