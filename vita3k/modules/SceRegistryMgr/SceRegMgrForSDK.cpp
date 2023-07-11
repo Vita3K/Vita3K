@@ -49,7 +49,7 @@ EXPORT(int, sceRegMgrUtilityGetStr, const int id, char *buf, const SceSize bufSi
 EXPORT(int, sceRegMgrUtilitySetBin, const int id, const void *buf, const SceSize bufSize) {
     TRACY_FUNC(sceRegMgrUtilitySetBin, id, buf, bufSize);
     const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
-    regmgr::set_bin_value(emuenv.regmgr, emuenv.pref_path, category, name, buf, bufSize);
+    regmgr::set_bin_value(emuenv.regmgr, category, name, buf, bufSize);
 
     return 0;
 }
@@ -57,7 +57,7 @@ EXPORT(int, sceRegMgrUtilitySetBin, const int id, const void *buf, const SceSize
 EXPORT(int, sceRegMgrUtilitySetInt, const int id, SceInt32 buf) {
     TRACY_FUNC(sceRegMgrUtilitySetInt, id, buf);
     const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
-    regmgr::set_int_value(emuenv.regmgr, emuenv.pref_path, category, name, buf);
+    regmgr::set_int_value(emuenv.regmgr, category, name, buf);
 
     return 0;
 }
@@ -65,7 +65,7 @@ EXPORT(int, sceRegMgrUtilitySetInt, const int id, SceInt32 buf) {
 EXPORT(int, sceRegMgrUtilitySetStr, const int id, const char *buf, const SceSize bufSize) {
     TRACY_FUNC(sceRegMgrUtilitySetStr, id, buf, bufSize);
     const auto [category, name] = regmgr::get_category_and_name_by_id(id, export_name);
-    regmgr::set_str_value(emuenv.regmgr, emuenv.pref_path, category, name, buf, bufSize);
+    regmgr::set_str_value(emuenv.regmgr, category, name, buf, bufSize);
 
     return 0;
 }
