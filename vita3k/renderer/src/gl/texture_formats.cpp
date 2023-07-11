@@ -243,9 +243,6 @@ GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
         return GL_R11F_G11F_B10F;
 
-    case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
-        return GL_RGB16F;
-
     // 4 components.
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U8U3U3U2:
@@ -256,6 +253,7 @@ GLenum translate_internal_format(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U16U16U16U16:
     case SCE_GXM_TEXTURE_BASE_FORMAT_S16S16S16S16:
+    case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT2BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
@@ -434,7 +432,7 @@ GLenum translate_type(SceGxmTextureBaseFormat base_format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_S32:
         return GL_INT;
     case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
-        return GL_HALF_FLOAT;
+        return GL_UNSIGNED_INT_5_9_9_9_REV;
     case SCE_GXM_TEXTURE_BASE_FORMAT_F11F11F10:
         return GL_UNSIGNED_INT_10F_11F_11F_REV;
     case SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16:

@@ -105,6 +105,9 @@ GLenum translate_internal_format(SceGxmColorBaseFormat base_format) {
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
         return GL_RGBA8;
 
+    case SCE_GXM_COLOR_BASE_FORMAT_U5U6U5:
+        return GL_RGBA8;
+
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
         return GL_RGBA8_SNORM;
 
@@ -128,6 +131,9 @@ GLenum translate_internal_format(SceGxmColorBaseFormat base_format) {
 
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8:
         return GL_RG8;
+
+    case SCE_GXM_COLOR_BASE_FORMAT_SE5M9M9M9:
+        return GL_RGBA8;
 
     default:
         LOG_ERROR("Unknown base format {}", log_hex(base_format));

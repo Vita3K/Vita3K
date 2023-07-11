@@ -100,7 +100,7 @@ bool can_texture_be_unswizzled_without_decode(SceGxmTextureBaseFormat fmt, bool 
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_S8S8S8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8
         || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_F16F16F16F16
-        || (is_vulkan && fmt == SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9);
+        || fmt == SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9;
 }
 
 static bool is_block_compressed_format(SceGxmTextureBaseFormat fmt) {
@@ -234,31 +234,6 @@ static size_t decompress_compressed_swizz_texture(SceGxmTextureBaseFormat fmt, v
     }
 
     return 0;
-}
-
-/**
- * \brief Try to decompress texture to 16-bit RGB floating point color.
- *
- * \param fmt    Texture base format.
- * \param dest   Destination texture data. Size must be sufficient enough of align(width, 4) * height * 4 (bytes).
- * \param data   Source data to decompress.
- * \param width  Texture width.
- * \param height Texture height.
- *
- * \return Void.
- */
-static void decompress_packed_float_e5m9m9m9(SceGxmTextureBaseFormat fmt, void *dest, const void *data, const uint32_t width, const uint32_t height) {
-    const uint32_t *in = reinterpret_cast<const uint32_t *>(data);
-    uint16_t *out = reinterpret_cast<uint16_t *>(dest);
-
-    for (uint32_t in_offset = 0, out_offset = 0; in_offset < width * height; ++in_offset) {
-        const uint32_t packed = in[in_offset];
-        const uint16_t exponent = static_cast<uint16_t>(packed >> 17);
-
-        out[out_offset++] = exponent | ((packed & (0x1FF << 18)) >> 17);
-        out[out_offset++] = exponent | ((packed & (0x1FF << 9)) >> 8);
-        out[out_offset++] = exponent | ((packed & 0x1FF) << 1);
-    }
 }
 
 static void convert_x8u24_to_u24x8(void *dest, const void *data, const uint32_t width, const uint32_t height, const size_t row_length_in_pixels) {
@@ -591,14 +566,6 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
             pixels = texture_data_decompressed.data();
             upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
             bpp = 32;
-            break;
-        case SCE_GXM_TEXTURE_BASE_FORMAT_SE5M9M9M9:
-            // this format is supported on all GPUs with vulkan
-            if (is_vulkan)
-                break;
-            texture_data_decompressed.resize(width * height * 6);
-            decompress_packed_float_e5m9m9m9(base_format, texture_data_decompressed.data(), pixels, width, height);
-            pixels = texture_data_decompressed.data();
             break;
         case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
             // don't change what openGL is doing (which is completely wrong)

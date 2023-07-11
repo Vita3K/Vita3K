@@ -454,8 +454,6 @@ static std::map<SceGxmColorFormat, std::pair<GLenum, GLenum>> GXM_COLOR_FORMAT_T
     { SCE_GXM_COLOR_FORMAT_F32_R, { GL_RED, GL_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F32F32_GR, { GL_RG, GL_FLOAT } },
     { SCE_GXM_COLOR_FORMAT_F11F11F10_RGB, { GL_RGB, GL_UNSIGNED_INT_10F_11F_11F_REV } },
-    { SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR, { GL_RGB, GL_HALF_FLOAT } },
-    { SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB, { GL_BGR, GL_HALF_FLOAT } }
 };
 
 static bool format_need_temp_storage(const GLState &state, SceGxmColorSurface &surface, std::vector<std::uint8_t> &storage, const std::uint32_t width, const std::uint32_t height) {
@@ -465,11 +463,6 @@ static bool format_need_temp_storage(const GLState &state, SceGxmColorSurface &s
     } else {
         // width and height is already upscaled
         needed_pixels = width * height;
-    }
-
-    if ((surface.colorFormat == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR) || (surface.colorFormat == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB)) {
-        storage.resize(needed_pixels * 3 * 2); // RGB and half float
-        return true;
     }
 
     if (state.res_multiplier > 1) {
@@ -486,31 +479,21 @@ static void post_process_pixels_data(GLState &renderer, std::uint32_t *pixels, s
     uint8_t *curr_output = reinterpret_cast<uint8_t *>(pixels);
 
     const bool is_U8U8U8_RGBA = surface.colorFormat == SCE_GXM_COLOR_FORMAT_U8U8U8U8_RGBA;
-    const bool is_SE5M9M9M9 = (surface.colorFormat == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_RGB) || (surface.colorFormat == SCE_GXM_COLOR_FORMAT_SE5M9M9M9_BGR);
 
     const int multiplier = renderer.res_multiplier;
-    if (multiplier > 1 || is_U8U8U8_RGBA || is_SE5M9M9M9) {
+    if (multiplier > 1 || is_U8U8U8_RGBA) {
         // TODO: do this on the GPU instead (using texture blitting?)
         const int bytes_per_output_pixel = (gxm::bits_per_pixel(gxm::get_base_format(surface.colorFormat)) + 7) >> 3;
-        const int bytes_per_input_pixel = is_SE5M9M9M9 ? 6 : bytes_per_output_pixel;
+        const int bytes_per_input_pixel = bytes_per_output_pixel;
 
         const uint32_t end_stride_bytes = bytes_per_output_pixel * (surface.strideInPixels - surface.width);
         for (uint32_t row = 0; row < surface.height; row++) {
             for (uint32_t col = 0; col < surface.width; col++) {
-                if (!is_SE5M9M9M9) {
-                    memcpy(curr_output, curr_input, bytes_per_input_pixel);
+                memcpy(curr_output, curr_input, bytes_per_input_pixel);
 
-                    if (is_U8U8U8_RGBA) {
-                        std::swap(curr_input[0], curr_input[3]);
-                        std::swap(curr_input[1], curr_input[2]);
-                    }
-                } else {
-                    const uint16_t *temp_bytes = reinterpret_cast<uint16_t *>(curr_input);
-                    uint32_t pixel = 0;
-                    pixel |= (uint32_t(temp_bytes[0] << 17) & (0x3FFFF << 18)); // Exp + 9 bits
-                    pixel |= (uint32_t(temp_bytes[1] << 8) & (0x1FF << 9));
-                    pixel |= (uint32_t(temp_bytes[2] >> 1) & (0x1FF << 0));
-                    *reinterpret_cast<uint32_t *>(curr_output) = pixel;
+                if (is_U8U8U8_RGBA) {
+                    std::swap(curr_input[0], curr_input[3]);
+                    std::swap(curr_input[1], curr_input[2]);
                 }
 
                 curr_output += bytes_per_output_pixel;
