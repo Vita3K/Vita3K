@@ -393,13 +393,14 @@ vk::ComponentMapping translate_swizzle(SceGxmColorFormat format) {
     case SCE_GXM_COLOR_BASE_FORMAT_U8U8U8U8:
     case SCE_GXM_COLOR_BASE_FORMAT_S8S8S8S8:
     case SCE_GXM_COLOR_BASE_FORMAT_F16F16F16F16:
-    // TODO: the swizzle for the following 2 formats is not fully supported
-    case SCE_GXM_COLOR_BASE_FORMAT_U1U5U5U5:
+    // TODO: the swizzle for the following format is not fully supported
     case SCE_GXM_COLOR_BASE_FORMAT_U2U10U10U10:
     case SCE_GXM_COLOR_BASE_FORMAT_U2F10F10F10:
         return translate_swizzle4(static_cast<SceGxmColorSwizzle4Mode>(swizzle));
 
     case SCE_GXM_COLOR_BASE_FORMAT_U4U4U4U4:
+    // TODO: the swizzle for the following format is not fully supported
+    case SCE_GXM_COLOR_BASE_FORMAT_U1U5U5U5:
         return translate_swizzle4_abgr(static_cast<SceGxmColorSwizzle4Mode>(swizzle));
 
     default:
@@ -682,8 +683,7 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRT4BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII2BPP:
     case SCE_GXM_TEXTURE_BASE_FORMAT_PVRTII4BPP:
-    // TODO: the following 2 are not fully supported
-    case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
+    // TODO: the following is not fully supported
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2U10U10U10:
     case SCE_GXM_TEXTURE_BASE_FORMAT_U2F10F10F10:
     case SCE_GXM_TEXTURE_BASE_FORMAT_UBC1:
@@ -693,6 +693,8 @@ vk::ComponentMapping translate_swizzle(SceGxmTextureFormat format) {
         return translate_swizzle4(static_cast<SceGxmTextureSwizzle4Mode>(swizzle));
 
     case SCE_GXM_TEXTURE_BASE_FORMAT_U4U4U4U4:
+    // TODO: the following is not fully supported
+    case SCE_GXM_TEXTURE_BASE_FORMAT_U1U5U5U5:
         return translate_swizzle4_abgr(static_cast<SceGxmTextureSwizzle4Mode>(swizzle));
 
     // YUV420.
