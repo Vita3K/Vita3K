@@ -56,8 +56,8 @@ static const GLint swizzle_rgba[4] = { GL_ALPHA, GL_BLUE, GL_GREEN, GL_RED };
 static const GLint swizzle_bgra[4] = { GL_GREEN, GL_BLUE, GL_ALPHA, GL_RED };
 static const GLint swizzle_1bgr[4] = { GL_RED, GL_GREEN, GL_BLUE, GL_ONE };
 static const GLint swizzle_1rgb[4] = { GL_BLUE, GL_GREEN, GL_RED, GL_ONE };
-static const GLint swizzle_rgb1[4] = { GL_ONE, GL_BLUE, GL_GREEN, GL_RED };
-static const GLint swizzle_bgr1[4] = { GL_ONE, GL_RED, GL_GREEN, GL_BLUE };
+static const GLint swizzle_1gba[4] = { GL_ALPHA, GL_BLUE, GL_GREEN, GL_ONE };
+static const GLint swizzle_1abg[4] = { GL_GREEN, GL_BLUE, GL_ALPHA, GL_ONE };
 
 // SceGxmTextureSwizzleYUV420Mode
 // TODO I don't know what these should be.
@@ -158,9 +158,9 @@ static const GLint *translate_swizzle(SceGxmTextureSwizzle4Mode mode) {
     case SCE_GXM_TEXTURE_SWIZZLE4_1RGB:
         return swizzle_1rgb;
     case SCE_GXM_TEXTURE_SWIZZLE4_RGB1:
-        return swizzle_rgb1;
+        return swizzle_1gba;
     case SCE_GXM_TEXTURE_SWIZZLE4_BGR1:
-        return swizzle_bgr1;
+        return swizzle_1abg;
     }
 
     return swizzle_abgr;
