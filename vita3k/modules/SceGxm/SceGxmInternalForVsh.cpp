@@ -17,8 +17,18 @@
 
 #include "SceGxmInternalForVsh.h"
 
-EXPORT(int, sceGxmVshInitialize) {
-    return UNIMPLEMENTED();
+#include "SceGxm.h"
+
+#include <util/tracy.h>
+TRACY_MODULE_NAME(SceGxmInternalForVsh);
+
+EXPORT(int, sceGxmVshInitialize, SceGxmInitializeParams *params) {
+    TRACY_FUNC(sceGxmVshInitialize, params);
+
+    STUBBED("sceGxmInitialize");
+    // the flags for sceGxmVshInitialize are not the same compared to sceGxmInitialize
+    *reinterpret_cast<uint32_t *>(params) = 0;
+    return CALL_EXPORT(sceGxmInitialize, params);
 }
 
 EXPORT(int, sceGxmVshSyncObjectClose) {

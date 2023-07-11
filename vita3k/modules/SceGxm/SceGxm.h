@@ -19,6 +19,9 @@
 
 #include <module/module.h>
 
+struct SceGxmInitializeParams;
+EXPORT(int, sceGxmInitialize, const SceGxmInitializeParams *params);
+
 BRIDGE_DECL(_sceGxmBeginScene)
 BRIDGE_DECL(_sceGxmMidSceneFlush)
 BRIDGE_DECL(_sceGxmProgramFindParameterBySemantic)
