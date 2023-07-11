@@ -17,19 +17,14 @@
 
 #pragma once
 
+#include <map>
 #include <mutex>
 #include <string>
-#include <unordered_map>
 #include <vector>
-
-struct RegValue {
-    std::string name;
-    uint32_t size;
-    std::string value;
-};
 
 struct RegMgrState {
     std::mutex mutex;
+    std::wstring system_dreg_path;
 
-    std::unordered_map<std::string, std::unordered_map<std::string, std::vector<char>>> system_dreg;
+    std::map<std::string, std::map<std::string, std::vector<char>>> system_dreg;
 };

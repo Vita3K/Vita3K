@@ -519,6 +519,8 @@ void init_home(GuiState &gui, EmuEnvState &emuenv) {
 
     init_app_background(gui, emuenv, "NPXS10015");
 
+    regmgr::init_regmgr(emuenv.regmgr, emuenv.pref_path);
+
     const auto is_cmd = emuenv.cfg.run_app_path || emuenv.cfg.content_path;
     if (!gui.users.empty() && (gui.users.find(emuenv.cfg.user_id) != gui.users.end()) && (is_cmd || emuenv.cfg.auto_user_login)) {
         init_user(gui, emuenv, emuenv.cfg.user_id);
@@ -712,7 +714,6 @@ void init(GuiState &gui, EmuEnvState &emuenv) {
     get_sys_apps_title(gui, emuenv);
 
     init_home(gui, emuenv);
-    regmgr::init_regmgr(emuenv.regmgr, emuenv.pref_path);
 
     // Initialize trophy callback
     emuenv.np.trophy_state.trophy_unlock_callback = [&gui](NpTrophyUnlockCallbackData &callback_data) {
