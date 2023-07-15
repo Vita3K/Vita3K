@@ -17,20 +17,21 @@
 
 #pragma once
 
-#include <mem/ptr.h>
+#include <module/module.h>
 
-struct CPUState;
-
-void write_return_value(CPUState &cpu, int32_t ret);
-void write_return_value(CPUState &cpu, int64_t ret);
-void write_return_value(CPUState &cpu, uint32_t ret);
-void write_return_value(CPUState &cpu, uint64_t ret);
-void write_return_value(CPUState &cpu, std::div_t ret);
-void write_return_value(CPUState &cpu, std::lldiv_t ret);
-void write_return_value(CPUState &cpu, bool ret);
-void write_return_value(CPUState &cpu, float ret);
-
-template <typename Pointee>
-void write_return_value(CPUState &cpu, const Ptr<Pointee> &ret) {
-    write_return_value(cpu, ret.address());
-}
+BRIDGE_DECL(__rtabi_lcmp)
+BRIDGE_DECL(__rtabi_lmul)
+BRIDGE_DECL(__rtabi_lasr)
+BRIDGE_DECL(__rtabi_ulcmp)
+BRIDGE_DECL(__rtabi_idiv)
+BRIDGE_DECL(__rtabi_d2lz)
+BRIDGE_DECL(__rtabi_f2ulz)
+BRIDGE_DECL(__rtabi_idivmod)
+BRIDGE_DECL(__rtabi_d2ulz)
+BRIDGE_DECL(__rtabi_ldivmod)
+BRIDGE_DECL(__rtabi_llsl)
+BRIDGE_DECL(__rtabi_f2lz)
+BRIDGE_DECL(__rtabi_uidivmod)
+BRIDGE_DECL(__rtabi_llsr)
+BRIDGE_DECL(__rtabi_uldivmod)
+BRIDGE_DECL(__rtabi_uidiv)

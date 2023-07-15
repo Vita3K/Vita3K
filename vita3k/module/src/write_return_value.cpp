@@ -37,6 +37,18 @@ void write_return_value(CPUState &cpu, uint64_t ret) {
     write_reg(cpu, 1, ret >> 32);
 }
 
+void write_return_value(CPUState &cpu, std::div_t ret) {
+    write_reg(cpu, 0, ret.quot);
+    write_reg(cpu, 1, ret.rem);
+}
+
+void write_return_value(CPUState &cpu, std::lldiv_t ret) {
+    write_reg(cpu, 0, ret.quot & UINT32_MAX);
+    write_reg(cpu, 1, ret.quot >> 32);
+    write_reg(cpu, 2, ret.rem & UINT32_MAX);
+    write_reg(cpu, 3, ret.rem >> 32);
+}
+
 void write_return_value(CPUState &cpu, bool ret) {
     write_reg(cpu, 0, ret);
 }
