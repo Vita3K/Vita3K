@@ -4249,6 +4249,23 @@ NID(sceSblGcAuthMgrSclkSetData2, 0xE088B0D0)
 NID(sceKernelGetRandomNumber, 0xB2700165)
 // Library "SceLibSsp"
 NID(sceLibSspStackChkFail, 0x39AD080B)
+// Library "SceRtabi"
+NID(__rtabi_lcmp, 0x0D4F0635)
+NID(__rtabi_lmul, 0x141BC4CE)
+NID(__rtabi_lasr, 0x21FF67B9)
+NID(__rtabi_ulcmp, 0x317B3774)
+NID(__rtabi_idiv, 0x38D62D60)
+NID(__rtabi_d2lz, 0x5024AB91)
+NID(__rtabi_f2ulz, 0x609CA961)
+NID(__rtabi_idivmod, 0x67104054)
+NID(__rtabi_d2ulz, 0x6BB838EF)
+NID(__rtabi_ldivmod, 0x6CBB0E84)
+NID(__rtabi_llsl, 0xA5DB3A86)
+NID(__rtabi_f2lz, 0xAA1F1B50)
+NID(__rtabi_uidivmod, 0xC33391D1)
+NID(__rtabi_llsr, 0xCBDA815C)
+NID(__rtabi_uldivmod, 0xCDF7708E)
+NID(__rtabi_uidiv, 0xFB311F87)
 // Module "SceLibMono"
 // Library "SceLibMono"
 NID(mono_security_enable_core_clr, 0x02A867BC)
