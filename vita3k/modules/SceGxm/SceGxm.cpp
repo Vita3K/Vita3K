@@ -1069,9 +1069,9 @@ struct SceGxmContext {
             return nullptr;
         }
 
-        // allocate 8 bytes in the vdm memory to make it look like the vdm buffer is getting used
+        // allocate 4 bytes in the vdm memory to make it look like the vdm buffer is getting used
         // otherwise we would never know when to free our command lists
-        constexpr uint32_t allocated_on_vdm = 8;
+        constexpr uint32_t allocated_on_vdm = 4;
 
         if (alloc_space + allocated_on_vdm > alloc_space_end) {
             if (!make_new_alloc_space(kern, mem, thread_id, true)) {
