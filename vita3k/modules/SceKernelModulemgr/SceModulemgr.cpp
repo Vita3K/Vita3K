@@ -111,7 +111,9 @@ EXPORT(SceUID, _sceKernelLoadModule, char *path, int flags, SceKernelLMOption *o
 
 static SceUID start_module(KernelState &kernel, SceUID thread_id, const SceKernelModuleInfoPtr &module, SceSize args, const Ptr<void> argp, int *pRes) {
     const auto thread = kernel.get_thread(thread_id);
-    uint32_t result = thread->run_callback(module->start_entry.address(), { args, argp.address() });
+    uint32_t result = 0;
+    if (module->start_entry)
+        result = thread->run_callback(module->start_entry.address(), { args, argp.address() });
 
     LOG_INFO("Module {} (at \"{}\") module_start returned {}", module->module_name, module->path, log_hex(result));
 
