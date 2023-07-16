@@ -486,7 +486,7 @@ SceUID load_self(Ptr<const void> &entry_point, KernelState &kernel, MemState &me
         } else if (seg_header.p_type == PT_LOAD) {
             if (seg_header.p_memsz != 0) {
                 Address segment_address = 0;
-                auto alloc_name = fmt::format("{}:seg%d", self_path, seg_index);
+                auto alloc_name = fmt::format("{}:seg{}", self_path, seg_index);
 
                 // TODO: when the virtual process bringup is fixed, uncomment this
                 // Try allocating at image base for RELEXEC to avoid having to relocate the main module
