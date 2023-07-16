@@ -34,5 +34,6 @@ void replace(std::string &str, const std::string &in, const std::string &out);
 std::basic_string<uint8_t> string_to_byte_array(std::string string);
 std::string toupper(const std::string &s);
 std::string tolower(const std::string &s);
+int stoi_def(const std::string &str, int default_value = 0, const char *name = "value");
 
 } // namespace string_utils

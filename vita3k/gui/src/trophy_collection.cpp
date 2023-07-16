@@ -21,6 +21,7 @@
 
 #include <util/log.h>
 #include <util/safe_time.h>
+#include <util/string_utils.h>
 
 #include <config/state.h>
 #include <io/device.h>
@@ -332,7 +333,7 @@ static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::strin
         stbi_image_free(data);
 
         auto common = gui.lang.common.main;
-        const auto trophy_type = np_com_id_info[np_com_id].context.trophy_kinds[std::stoi(trophy_id)];
+        const auto trophy_type = np_com_id_info[np_com_id].context.trophy_kinds[string_utils::stoi_def(trophy_id, 0, "trophy id")];
         switch (trophy_type) {
         case SceNpTrophyGrade::SCE_NP_TROPHY_GRADE_PLATINUM:
             trophy_info[trophy_id].type["detail"] = common["platinum"];
@@ -351,14 +352,14 @@ static void get_trophy_list(GuiState &gui, EmuEnvState &emuenv, const std::strin
             break;
         }
 
-        const auto unlocked = (time_t)np_com_id_info[np_com_id].context.unlock_timestamps[std::stoi(trophy_id)];
+        const auto unlocked = (time_t)np_com_id_info[np_com_id].context.unlock_timestamps[string_utils::stoi_def(trophy_id, 0, "trophy id")];
         // Check earned trophy and set time
-        if (np_com_id_info[np_com_id].context.is_trophy_unlocked(std::stoi(trophy.first))) {
+        if (np_com_id_info[np_com_id].context.is_trophy_unlocked(string_utils::stoi_def(trophy.first, 0, "trophy id"))) {
             trophy_info[trophy_id].earned = true;
             SAFE_LOCALTIME(&unlocked, &trophy_info[trophy_id].unlocked_time);
         }
 
-        const auto grade = uint32_t(np_com_id_info[np_com_id].context.trophy_kinds[std::stoi(trophy.first)]);
+        const auto grade = uint32_t(np_com_id_info[np_com_id].context.trophy_kinds[string_utils::stoi_def(trophy.first, 0, "trophy id")]);
 
         trophy_list.push_back({ trophy_id, unlocked, grade, trophy_info[trophy_id].name });
 

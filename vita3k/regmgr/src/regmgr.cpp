@@ -19,6 +19,7 @@
 #include <regmgr/functions.h>
 
 #include <util/log.h>
+#include <util/string_utils.h>
 
 namespace regmgr {
 
@@ -87,7 +88,7 @@ void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
 
                 size_t pos = line.find('=');
                 if (pos != std::string::npos) {
-                    const auto num = std::stoi(line.substr(0, pos));
+                    const auto num = string_utils::stoi_def(line.substr(0, pos));
                     const auto name = line.substr(pos + 1);
                     reg_map[num] = name;
                 }
@@ -110,7 +111,7 @@ void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
                     std::string s;
                     while (std::getline(f, s, '/')) {
                         if (!s.empty())
-                            name += reg_map[std::stoi(s)];
+                            name += reg_map[string_utils::stoi_def(s)];
                     }
 
                     const auto last_slash_pos = name.find_last_of('/') + 1;
@@ -129,13 +130,13 @@ void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
                             reg_category_template.push_back(category);
                     };
 
-                    const auto valueSize = static_cast<uint32_t>(std::stoi(values[1]));
+                    const auto valueSize = static_cast<uint32_t>(string_utils::stoi_def(values[1]));
                     const std::regex categoryRangePattern(R"((.*\/)([0-9]{2})-([0-9]{2})(\/.*))");
                     std::smatch matches;
                     if (std::regex_search(category, matches, categoryRangePattern)) {
                         const auto cat_begin = matches[1].str();
-                        const auto firstNum = std::stoi(matches[2].str());
-                        const auto secondNum = std::stoi(matches[3].str());
+                        const auto firstNum = string_utils::stoi_def(matches[2].str());
+                        const auto secondNum = string_utils::stoi_def(matches[3].str());
                         const auto cat_end = matches[4].str();
 
                         for (int i = firstNum; i <= secondNum; i++) {
@@ -362,7 +363,7 @@ int32_t get_int_value(RegMgrState &regmgr, const std::string &category, const st
             return 0;
     }
 
-    return std::stoi(value_str);
+    return string_utils::stoi_def(value_str);
 }
 
 void set_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name, int32_t value) {

@@ -213,9 +213,9 @@ void init_user_management(GuiState &gui, EmuEnvState &emuenv) {
     gui.vita_area.information_bar = false;
     gui.vita_area.user_management = true;
     if (!emuenv.cfg.user_id.empty())
-        current_user_id_selected = std::stoi(emuenv.cfg.user_id);
+        current_user_id_selected = string_utils::stoi_def(emuenv.cfg.user_id, 0, "cfg user id");
     else if (!gui.users.empty())
-        current_user_id_selected = std::stoi(gui.users.begin()->first);
+        current_user_id_selected = string_utils::stoi_def(gui.users.begin()->first, 0, "gui user id");
     else
         menu_selected = CREATE;
 }
@@ -265,7 +265,7 @@ static void create_temp_user(GuiState &gui, EmuEnvState &emuenv) {
     menu = CREATE;
     auto id = 0;
     for (const auto &user : gui.users) {
-        if (id != std::stoi(user.first))
+        if (id != string_utils::stoi_def(user.first, 0, "gui user id"))
             break;
         else
             ++id;
@@ -297,7 +297,7 @@ static void create_and_save_user(GuiState &gui, EmuEnvState &emuenv) {
     gui.users_avatar[user_id_selected] = std::move(gui.users_avatar["temp"]);
     gui.users[user_id_selected] = temp;
     users_avatar_infos[user_id_selected] = users_avatar_infos["temp"];
-    current_user_id_selected = std::stoi(user_id_selected);
+    current_user_id_selected = string_utils::stoi_def(user_id_selected, 0, "selected user id");
     save_user(gui, emuenv, user_id_selected);
     if (menu == CREATE)
         menu = CONFIRM;
@@ -583,7 +583,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::SetCursorPos(ImVec2(AVATAR_POS.x + SPACE_AVATAR, AVATAR_POS.y));
         for (const auto &user : gui.users) {
             ImGui::PushID(user.first.c_str());
-            const auto user_id = std::stoi(user.first);
+            const auto user_id = string_utils::stoi_def(user.first, 0, "gui user id");
             const auto is_current_user_id_selected = user_id == current_user_id_selected && ((menu_selected == SELECT) || (menu_selected == EDIT));
             users_list_available.push_back(user_id);
             const auto USER_POS = ImGui::GetCursorPos();
@@ -595,7 +595,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::PopTextWrapPos();
             const auto EDIT_USER_POS_SEL = ImVec2(USER_POS.x + ImGui::GetStyle().FramePadding.x, USER_POS.y - EDIT_USER_STR_SIZE.y - ImGui::GetStyle().FramePadding.y);
             ImGui::SetCursorPos(EDIT_USER_POS_SEL);
-            if (ImGui::Selectable("##edit_user", gui.is_nav_button && (menu_selected == EDIT) && (current_user_id_selected == std::stoi(user.first)), ImGuiSelectableFlags_None, ImVec2(MED_AVATAR_SIZE.x - (ImGui::GetStyle().FramePadding.x * 2.f), EDIT_USER_STR_SIZE.y))) {
+            if (ImGui::Selectable("##edit_user", gui.is_nav_button && (menu_selected == EDIT) && (current_user_id_selected == string_utils::stoi_def(user.first, 0, "gui user id")), ImGuiSelectableFlags_None, ImVec2(MED_AVATAR_SIZE.x - (ImGui::GetStyle().FramePadding.x * 2.f), EDIT_USER_STR_SIZE.y))) {
                 current_user_id_selected = user_id;
                 menu_selected = EDIT;
                 if (is_current_user_id_selected) {
@@ -741,13 +741,13 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::SetColumnWidth(0, SMALL_AVATAR_SIZE.x + (10.f * SCALE.x));
             ImGui::Separator();
             for (const auto &user : gui.users) {
-                users_list_available.push_back(std::stoi(user.first));
+                users_list_available.push_back(string_utils::stoi_def(user.first, 0, "gui user id"));
                 draw_avatar(user.first, SMALL, ImVec2(ImGui::GetCursorPosX(), ImGui::GetCursorPosY() + (SELECT_SIZE.y / 2.f) - (SMALL_AVATAR_SIZE.y / 2.f)));
                 ImGui::NextColumn();
                 ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, ImVec2(0.0f, 0.5f));
-                if (ImGui::Selectable(user.second.name.c_str(), gui.is_nav_button && (current_user_id_selected == std::stoi(user.first)), ImGuiSelectableFlags_SpanAllColumns, SELECT_SIZE))
+                if (ImGui::Selectable(user.second.name.c_str(), gui.is_nav_button && (current_user_id_selected == string_utils::stoi_def(user.first, 0, "gui user id")), ImGuiSelectableFlags_SpanAllColumns, SELECT_SIZE))
                     user_id_selected = user.first;
-                if (gui.is_nav_button && (current_user_id_selected == std::stoi(user.first))) {
+                if (gui.is_nav_button && (current_user_id_selected == string_utils::stoi_def(user.first, 0, "gui user id"))) {
                     if (ImGui::GetItemRectMin().y < CHILD_DELETE_USER_POS.y)
                         ImGui::SetScrollHereY(0.f);
                     else if (ImGui::GetItemRectMax().y > (CHILD_DELETE_USER_POS.y + CHILD_DELETE_USER_SIZE.y))

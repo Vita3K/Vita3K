@@ -892,7 +892,7 @@ void draw_settings(GuiState &gui, EmuEnvState &emuenv) {
                     }
                     ImGui::Columns(1);
                 } else {
-                    const auto lang_select = SceImeLanguage(std::stoi(selected));
+                    SceImeLanguage lang_select = SceImeLanguage(string_utils::stoi_def(selected, 0, "language"));
                     title = get_ime_lang_index(emuenv.ime, lang_select)->second;
                     ImGui::SetWindowFontScale(1.2f);
                     ImGui::Columns(2, nullptr, false);
