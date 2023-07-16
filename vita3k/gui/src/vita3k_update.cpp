@@ -24,6 +24,7 @@
 
 #include <gui/functions.h>
 #include <https/functions.h>
+#include <util/string_utils.h>
 
 #include <SDL.h>
 
@@ -65,7 +66,7 @@ bool init_vita3k_update(GuiState &gui) {
     // Get Build number of latest release
     const auto version = https::get_web_regex_result(latest_link, std::regex("Vita3K Build: (\\d+)"));
     if (!version.empty() && std::all_of(version.begin(), version.end(), ::isdigit))
-        git_version = std::stoi(version);
+        git_version = string_utils::stoi_def(version, 0, "git version");
     else {
         LOG_WARN("Failed to get current git version, try again later\n{}", version);
         gui.help_menu.vita3k_update = false;

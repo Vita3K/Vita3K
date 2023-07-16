@@ -737,7 +737,7 @@ EXPORT(SceInt, sceHttpGetResponseContentLength, SceInt reqId, SceULong64 *conten
     if (length_it == req->second.res.headers.end())
         return RET_ERROR(SCE_HTTP_ERROR_NO_CONTENT_LENGTH);
 
-    SceULong64 length = std::stoi(length_it->second);
+    SceULong64 length = string_utils::stoi_def(length_it->second);
     *contentLength = length;
 
     req->second.res.contentLength = length;
@@ -841,10 +841,10 @@ EXPORT(SceInt, sceHttpParseStatusLine, const char *statusLine, SceSize lineLen, 
     if (!net_utils::parseStatusLine(cleanLine, version, code, reason))
         return RET_ERROR(SCE_HTTP_ERROR_PARSE_HTTP_INVALID_RESPONSE);
 
-    *httpMajorVer = std::stoi(version.substr(0, version.find("."))); // we know this wont fail because parseStatusLine returned true :)
+    *httpMajorVer = string_utils::stoi_def(version.substr(0, version.find("."))); // we know this wont fail because parseStatusLine returned true :)
     if (version.find('.') != std::string::npos) {
         auto minorVer = version.substr(version.find('.') + 1);
-        *httpMinorVer = std::stoi(minorVer);
+        *httpMinorVer = string_utils::stoi_def(minorVer);
     } else {
         *httpMinorVer = 0;
     }
@@ -979,7 +979,7 @@ EXPORT(SceInt, sceHttpSendRequest, SceInt reqId, const char *postData, SceSize s
         if (req->second.headers.find("Content-Length") != req->second.headers.end()) {
             // There is a content length header, probably by the game, use it
             auto contHeader = req->second.headers.find("Content-Length");
-            SceSize contLen = std::stoi(contHeader->second);
+            SceSize contLen = string_utils::stoi_def(contHeader->second);
 
             // Its ok to have the content length be less or equal than size,
             // but not the other way around. It would be sending undefined data leading to undefined behavior
@@ -1487,7 +1487,7 @@ EXPORT(SceInt, sceHttpUriParse, SceHttpUriElement *out, const char *srcUrl, Ptr<
         set_str_value(out->path, parsed.path);
         set_str_value(out->query, parsed.query);
         set_str_value(out->fragment, parsed.fragment);
-        SceUShort16 port = std::stoi(parsed.port);
+        SceUShort16 port = string_utils::stoi_def(parsed.port);
         out->port = port;
     }
 

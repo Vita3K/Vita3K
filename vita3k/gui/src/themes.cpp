@@ -490,7 +490,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     auto CLOCK_POS = ImVec2(display_size.x - (start_param.clock_pos.x * SCALE.x), display_size.y - (start_param.clock_pos.y * SCALE.y));
     if (start_param.date_layout == DateLayout::RIGHT_DOWN)
         CLOCK_POS.x -= (CLOCK_SIZE.x * RES_SCALE.x) + (DAY_MOMENT_SIZE.x * RES_SCALE.x);
-    else if (std::stoi(DATE_TIME[DateTime::HOUR]) < 10)
+    else if (string_utils::stoi_def(DATE_TIME[DateTime::HOUR], 0, "hour") < 10)
         CLOCK_POS.x += ImGui::CalcTextSize("0").x * RES_SCALE.x;
 
     ImGui::GetBackgroundDrawList()->AddText(gui.large_font, LARGE_FONT_SIZE * RES_SCALE.x, CLOCK_POS, start_param.date_color, CLOCK_STR.c_str());

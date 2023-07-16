@@ -327,6 +327,17 @@ std::string tolower(const std::string &s) {
     return r;
 }
 
+int stoi_def(const std::string &str, int default_value, const char *name) {
+    try {
+        return std::stoi(str);
+    } catch (std::invalid_argument &e) {
+        LOG_ERROR("Invalid {}: \"{}\"", name, str);
+    } catch (std::out_of_range &e) {
+        LOG_ERROR("Out of range {}: \"{}\"", name, str);
+    }
+    return default_value;
+}
+
 } // namespace string_utils
 
 namespace net_utils {
