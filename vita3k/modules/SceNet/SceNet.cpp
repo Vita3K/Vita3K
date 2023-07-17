@@ -17,6 +17,7 @@
 
 #include "SceNet.h"
 
+#include <cstdio>
 #include <kernel/state.h>
 #include <net/functions.h>
 #include <net/state.h>
@@ -258,14 +259,31 @@ EXPORT(Ptr<int>, sceNetErrnoLoc) {
     return addr.cast<int>();
 }
 
-EXPORT(int, sceNetEtherNtostr) {
-    TRACY_FUNC(sceNetEtherNtostr);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetEtherNtostr, SceNetEtherAddr *n, char *str, unsigned int len) {
+    TRACY_FUNC(sceNetEtherNtostr, n, str, len);
+    if (!emuenv.net.inited)
+        return RET_ERROR(SCE_NET_ERROR_ENOTINIT);
+
+    if (!n || !str || len <= 0x11)
+        return RET_ERROR(SCE_NET_ERROR_EINVAL);
+
+    snprintf(str, len, "%02x:%02x:%02x:%02x:%02x:%02x",
+        n->data[0], n->data[1], n->data[2], n->data[3], n->data[4], n->data[5]);
+    return 0;
 }
 
-EXPORT(int, sceNetEtherStrton) {
-    TRACY_FUNC(sceNetEtherStrton);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetEtherStrton, const char *str, SceNetEtherAddr *n) {
+    TRACY_FUNC(sceNetEtherStrton, str, n);
+    if (!emuenv.net.inited)
+        return RET_ERROR(SCE_NET_ERROR_ENOTINIT);
+
+    if (!str || !n)
+        return RET_ERROR(SCE_NET_ERROR_EINVAL);
+
+    sscanf(str, "%02hhx:%02hhx:%02hhx:%02hhx:%02hhx:%02hhx",
+        &n->data[0], &n->data[1], &n->data[2], &n->data[3], &n->data[4], &n->data[5]);
+
+    return 0;
 }
 
 EXPORT(int, sceNetGetMacAddress, SceNetEtherAddr *addr, int flags) {
@@ -332,9 +350,9 @@ EXPORT(unsigned int, sceNetHtonl, unsigned int n) {
     return htonl(n);
 }
 
-EXPORT(int, sceNetHtonll) {
-    TRACY_FUNC(sceNetHtonll);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetHtonll, SceUInt64 n) {
+    TRACY_FUNC(sceNetHtonll, n);
+    return HTONLL(n);
 }
 
 EXPORT(unsigned short int, sceNetHtons, unsigned short int n) {
@@ -372,9 +390,12 @@ EXPORT(int, sceNetInetPton, int af, const char *src, void *dst) {
 
 EXPORT(int, sceNetInit, SceNetInitParam *param) {
     TRACY_FUNC(sceNetInit, param);
-    if (emuenv.net.inited) {
+    if (emuenv.net.inited)
         return RET_ERROR(SCE_NET_ERROR_EBUSY);
-    }
+
+    if (!param || !param->memory.address() || param->size < 0x4000 || param->flags != 0)
+        return RET_ERROR(SCE_NET_ERROR_EINVAL);
+
 #ifdef WIN32
     WORD versionWanted = MAKEWORD(2, 2);
     WSADATA wsaData;
@@ -400,9 +421,9 @@ EXPORT(unsigned int, sceNetNtohl, unsigned int n) {
     return ntohl(n);
 }
 
-EXPORT(int, sceNetNtohll) {
-    TRACY_FUNC(sceNetNtohll);
-    return UNIMPLEMENTED();
+EXPORT(int, sceNetNtohll, SceUInt64 n) {
+    TRACY_FUNC(sceNetNtohll, n);
+    return NTOHLL(n);
 }
 
 EXPORT(unsigned short int, sceNetNtohs, unsigned short int n) {
