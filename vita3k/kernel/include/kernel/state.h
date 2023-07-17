@@ -101,6 +101,11 @@ struct KernelState {
     unsigned int tls_psize = 0;
     unsigned int tls_msize = 0;
 
+    Ptr<const void> thread_event_start = Ptr<const void>(0);
+    Address thread_event_start_arg = 0;
+    Ptr<const void> thread_event_end = Ptr<const void>(0);
+    Address thread_event_end_arg = 0;
+
     SimpleEventPtrs simple_events;
     TimerPtrs timers;
     SemaphorePtrs semaphores;

@@ -607,9 +607,28 @@ EXPORT(int, _sceKernelReceiveMsgPipeVectorCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, _sceKernelRegisterThreadEventHandler) {
-    TRACY_FUNC(_sceKernelRegisterThreadEventHandler);
-    return UNIMPLEMENTED();
+EXPORT(int, _sceKernelRegisterThreadEventHandler, const char *name, SceUID thread_mask, SceUInt32 mask, sceKernelRegisterThreadEventHandlerOpt *opt) {
+    TRACY_FUNC(_sceKernelRegisterThreadEventHandler, name, thread_mask, mask, opt);
+    if (!opt)
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+
+    if (mask & SCE_KERNEL_THREAD_EVENT_TYPE_START) {
+        if (emuenv.kernel.thread_event_start)
+            LOG_WARN("Multiple thread handlers are not supported");
+
+        emuenv.kernel.thread_event_start = opt->handler;
+        emuenv.kernel.thread_event_start_arg = opt->common;
+    }
+
+    if (mask & SCE_KERNEL_THREAD_EVENT_TYPE_END) {
+        if (emuenv.kernel.thread_event_end)
+            LOG_WARN("Multiple thread handlers are not supported");
+
+        emuenv.kernel.thread_event_end = opt->handler;
+        emuenv.kernel.thread_event_end_arg = opt->common;
+    }
+
+    return SCE_KERNEL_OK;
 }
 
 EXPORT(int, _sceKernelSendMsgPipeVector) {
@@ -1112,7 +1131,7 @@ EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     if (!thread || thread->status != ThreadStatus::dormant) {
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     }
-    thread->exit_delete();
+    thread->exit_delete(emuenv.kernel, false);
     return 0;
 }
 
@@ -1127,7 +1146,7 @@ EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
 EXPORT(int, sceKernelExitDeleteThread, int status) {
     TRACY_FUNC(sceKernelExitDeleteThread, status);
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
-    thread->exit_delete();
+    thread->exit_delete(emuenv.kernel);
 
     return status;
 }

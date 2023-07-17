@@ -1610,9 +1610,13 @@ EXPORT(int, sceKernelReceiveMsgPipeVectorCB) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelRegisterThreadEventHandler) {
-    TRACY_FUNC(sceKernelRegisterThreadEventHandler);
-    return UNIMPLEMENTED();
+EXPORT(int, sceKernelRegisterThreadEventHandler, const char *name, SceUID thread_mask, SceUInt32 mask, Ptr<const void> handler, Address common) {
+    TRACY_FUNC(sceKernelRegisterThreadEventHandler, name, thread_mask, mask, handler, common);
+    sceKernelRegisterThreadEventHandlerOpt handler_opt = {
+        .handler = handler,
+        .common = common
+    };
+    return CALL_EXPORT(_sceKernelRegisterThreadEventHandler, name, thread_mask, mask, &handler_opt);
 }
 
 EXPORT(SceInt32, sceKernelSendMsgPipe, SceUID msgPipeId, const void *pSendBuf, SceSize sendSize, SceUInt32 waitMode, SceSize *pResult, SceUInt32 *pTimeout) {

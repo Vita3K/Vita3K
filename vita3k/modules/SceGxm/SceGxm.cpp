@@ -4553,7 +4553,7 @@ EXPORT(int, sceGxmTerminate) {
     emuenv.gxm.display_queue.abort();
     SDL_WaitThread(emuenv.gxm.sdl_thread, nullptr);
     emuenv.gxm.sdl_thread = nullptr;
-    emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread)->exit_delete();
+    emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread)->exit_delete(emuenv.kernel);
     return 0;
 }
 
