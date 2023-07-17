@@ -576,6 +576,20 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, MemState &mem, const c
     return SCE_KERNEL_OK;
 }
 
+SceUID mutex_find(KernelState &kernel, const char *export_name, const char *name) {
+    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+
+    // TODO use another map
+    const auto it = std::find_if(kernel.mutexes.begin(), kernel.mutexes.end(), [=](auto it) {
+        return strncmp(it.second->name, name, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    });
+
+    if (it != kernel.mutexes.end())
+        return it->first;
+
+    return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+}
+
 inline int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, int lock_count, MutexPtr &mutex, SyncWeight weight, SceUInt *timeout, bool only_try) {
     if (LOG_SYNC_PRIMITIVES) {
         LOG_DEBUG("{}: uid: {} thread_id: {} name: \"{}\" attr: {} lock_count: {} timeout: {} waiting_threads: {}",
@@ -969,6 +983,20 @@ SceUID semaphore_create(KernelState &kernel, const char *export_name, const char
     kernel.semaphores.emplace(uid, semaphore);
 
     return uid;
+}
+
+SceUID semaphore_find(KernelState &kernel, const char *export_name, const char *name) {
+    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+
+    // TODO use another map
+    const auto it = std::find_if(kernel.semaphores.begin(), kernel.semaphores.end(), [=](auto it) {
+        return strncmp(it.second->name, name, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    });
+
+    if (it != kernel.semaphores.end())
+        return it->first;
+
+    return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
 }
 
 SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
@@ -1579,7 +1607,7 @@ SceUID msgpipe_find(KernelState &kernel, const char *export_name, const char *na
 
     // TODO use another map
     const auto it = std::find_if(kernel.msgpipes.begin(), kernel.msgpipes.end(), [=](auto it) {
-        return strcmp(it.second->name, name) == 0;
+        return strncmp(it.second->name, name, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
     });
 
     if (it != kernel.msgpipes.end()) {
@@ -1802,7 +1830,7 @@ SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread
     }
 }
 
-SceUID msgpipe_delete(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUID msgpipe_id) {
+SceInt32 msgpipe_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgpipe_id) {
     assert(msgpipe_id >= 0);
 
     const MsgPipePtr msgpipe = lock_and_find(msgpipe_id, kernel.msgpipes, kernel.mutex);

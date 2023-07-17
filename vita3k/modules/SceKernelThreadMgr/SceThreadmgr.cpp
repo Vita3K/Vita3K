@@ -1081,9 +1081,9 @@ EXPORT(int, sceKernelDeleteEventFlag, SceUID event_id) {
     return eventflag_delete(emuenv.kernel, export_name, thread_id, event_id);
 }
 
-EXPORT(int, sceKernelDeleteMsgPipe) {
-    TRACY_FUNC(sceKernelDeleteMsgPipe);
-    return UNIMPLEMENTED();
+EXPORT(SceInt32, sceKernelDeleteMsgPipe, SceUID msgPipeId) {
+    TRACY_FUNC(sceKernelDeleteMsgPipe, msgPipeId);
+    return msgpipe_delete(emuenv.kernel, export_name, thread_id, msgPipeId);
 }
 
 EXPORT(int, sceKernelDeleteMutex, SceUID mutexid) {
@@ -1224,9 +1224,9 @@ EXPORT(int, sceKernelOpenMsgPipe, const char *name) {
     return msgpipe_find(emuenv.kernel, export_name, name);
 }
 
-EXPORT(int, sceKernelOpenMutex) {
-    TRACY_FUNC(sceKernelOpenMutex);
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceKernelOpenMutex, const char *pName) {
+    TRACY_FUNC(sceKernelOpenMutex, pName);
+    return mutex_find(emuenv.kernel, export_name, pName);
 }
 
 EXPORT(int, sceKernelOpenMutex_089) {
@@ -1239,9 +1239,9 @@ EXPORT(int, sceKernelOpenRWLock) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelOpenSema) {
-    TRACY_FUNC(sceKernelOpenSema);
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceKernelOpenSema, const char *pName) {
+    TRACY_FUNC(sceKernelOpenSema, pName);
+    return semaphore_find(emuenv.kernel, export_name, pName);
 }
 
 EXPORT(int, sceKernelOpenSimpleEvent) {
