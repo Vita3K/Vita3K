@@ -99,8 +99,8 @@ struct ThreadState {
 
     int init(KernelState &kernel, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
     int start(KernelState &kernel, SceSize arglen, const Ptr<void> &argp);
-    void exit(SceInt32 status);
-    void exit_delete();
+    void exit(KernelState &kernel, SceInt32 status);
+    void exit_delete(KernelState &kernel, bool exit = true);
 
     void update_status(ThreadStatus status, std::optional<ThreadStatus> expected = std::nullopt);
     Address stack_top() const;

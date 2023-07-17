@@ -156,16 +156,34 @@ int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &arg
     }
     something_to_do.notify_one();
 
+    if (kernel.thread_event_start) {
+        int ret = run_callback(kernel.thread_event_start.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_start_arg });
+        if (ret != 0)
+            LOG_WARN("Thread start event handler returned {}", log_hex(ret));
+    }
+
     return SCE_KERNEL_OK;
 }
 
-void ThreadState::exit(SceInt32 status) {
+void ThreadState::exit(KernelState &kernel, SceInt32 status) {
+    if (kernel.thread_event_end) {
+        int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
+        if (ret != 0)
+            LOG_WARN("Thread end event handler returned {}", log_hex(ret));
+    }
+
     std::lock_guard<std::mutex> guard(mutex);
     call_level = 0;
     returned_value = static_cast<uint32_t>(status);
 }
 
-void ThreadState::exit_delete() {
+void ThreadState::exit_delete(KernelState &kernel, bool exit) {
+    if (exit && kernel.thread_event_end) {
+        int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
+        if (ret != 0)
+            LOG_WARN("Thread end event handler returned {}", log_hex(ret));
+    }
+
     stop_loop();
 }
 
