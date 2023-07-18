@@ -55,8 +55,12 @@ struct SceKernelFreeMemorySizeInfo {
     int size_phycont; //!< Free memory size for USER_MAIN_PHYCONT_*_RW memory
 };
 
-typedef std::shared_ptr<SceKernelMemBlockInfo> SceKernelMemBlockInfoPtr;
-typedef std::map<SceUID, SceKernelMemBlockInfoPtr> Blocks;
+struct KernelMemBlock : SceKernelMemBlockInfo {
+    char name[KERNELOBJECT_MAX_NAME_LENGTH + 1];
+};
+
+typedef std::shared_ptr<KernelMemBlock> KernelMemBlockPtr;
+typedef std::map<SceUID, KernelMemBlockPtr> Blocks;
 
 struct SysmemState {
     std::mutex mutex;
@@ -76,12 +80,12 @@ LIBRARY_INIT_REGISTER(SceSysmem)
 
 constexpr SceUInt32 SCE_KERNEL_ALLOC_MEMBLOCK_ATTR_HAS_ALIGNMENT = 4;
 
-EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOpt *optp) {
-    TRACY_FUNC(sceKernelAllocMemBlock, name, type, size, optp);
+EXPORT(SceUID, sceKernelAllocMemBlock, const char *pName, SceKernelMemBlockType type, SceSize size, SceKernelAllocMemBlockOpt *optp) {
+    TRACY_FUNC(sceKernelAllocMemBlock, pName, type, size, optp);
     MemState &mem = emuenv.mem;
     assert(type != 0);
 
-    if (!name || !size) {
+    if (!pName || !size) {
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
 
@@ -119,7 +123,7 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
-    Ptr<void> address = Ptr<void>(alloc(mem, size, name, alignment));
+    Ptr<void> address = Ptr<void>(alloc(mem, size, pName, alignment));
 
     if (!address) {
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
@@ -127,41 +131,43 @@ EXPORT(SceUID, sceKernelAllocMemBlock, const char *name, SceKernelMemBlockType t
 
     const SceUID uid = state->get_next_uid();
 
-    const SceKernelMemBlockInfoPtr sceKernelMemBlockInfo = std::make_shared<SceKernelMemBlockInfo>();
-    sceKernelMemBlockInfo->type = type;
-    sceKernelMemBlockInfo->mappedBase = address;
-    sceKernelMemBlockInfo->mappedSize = size;
-    sceKernelMemBlockInfo->size = sizeof(SceKernelMemBlockInfo);
-    state->blocks.emplace(uid, sceKernelMemBlockInfo);
+    const KernelMemBlockPtr sceKernelMemBlock = std::make_shared<KernelMemBlock>();
+    sceKernelMemBlock->type = type;
+    sceKernelMemBlock->mappedBase = address;
+    sceKernelMemBlock->mappedSize = size;
+    sceKernelMemBlock->size = sizeof(SceKernelMemBlockInfo);
+    std::strncpy(sceKernelMemBlock->name, pName, KERNELOBJECT_MAX_NAME_LENGTH);
+    state->blocks.emplace(uid, sceKernelMemBlock);
 
     return uid;
 }
 
-EXPORT(int, sceKernelAllocMemBlockForVM, const char *name, SceSize size) {
-    TRACY_FUNC(sceKernelAllocMemBlockForVM, name, size);
+EXPORT(int, sceKernelAllocMemBlockForVM, const char *pName, SceSize size) {
+    TRACY_FUNC(sceKernelAllocMemBlockForVM, pName, size);
     const auto state = emuenv.kernel.obj_store.get<SysmemState>();
     const auto guard = std::lock_guard<std::mutex>(state->mutex);
 
     MemState &mem = emuenv.mem;
-    assert(name != nullptr);
+    assert(pName != nullptr);
 
     if (size < 0x1000 || (size & 0xFFF) != 0) {
         return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
     }
 
-    const Ptr<void> address(alloc(mem, size, name));
+    const Ptr<void> address(alloc(mem, size, pName));
     if (!address) {
         return RET_ERROR(SCE_KERNEL_ERROR_NO_MEMORY);
     }
 
     const SceUID uid = state->get_next_uid();
 
-    const SceKernelMemBlockInfoPtr sceKernelMemBlockInfo = std::make_shared<SceKernelMemBlockInfo>();
-    sceKernelMemBlockInfo->mappedBase = address;
-    sceKernelMemBlockInfo->mappedSize = size;
-    sceKernelMemBlockInfo->size = sizeof(SceKernelMemBlockInfo);
-    state->blocks.emplace(uid, sceKernelMemBlockInfo);
-    state->vm_blocks.emplace(uid, sceKernelMemBlockInfo);
+    const KernelMemBlockPtr sceKernelMemBlock = std::make_shared<KernelMemBlock>();
+    sceKernelMemBlock->mappedBase = address;
+    sceKernelMemBlock->mappedSize = size;
+    sceKernelMemBlock->size = sizeof(SceKernelMemBlockInfo);
+    std::strncpy(sceKernelMemBlock->name, pName, KERNELOBJECT_MAX_NAME_LENGTH);
+    state->blocks.emplace(uid, sceKernelMemBlock);
+    state->vm_blocks.emplace(uid, sceKernelMemBlock);
 
     return uid;
 }
@@ -301,9 +307,19 @@ EXPORT(bool, sceKernelIsPSVitaTV) {
     return emuenv.cfg.current_config.pstv_mode;
 }
 
-EXPORT(int, sceKernelOpenMemBlock) {
-    TRACY_FUNC(sceKernelOpenMemBlock);
-    return UNIMPLEMENTED();
+EXPORT(SceUID, sceKernelOpenMemBlock, const char *pName, int flags) {
+    TRACY_FUNC(sceKernelOpenMemBlock, pName, flags);
+    const auto state = emuenv.kernel.obj_store.get<SysmemState>();
+    const std::lock_guard<std::mutex> memblock_lock(state->mutex);
+
+    const auto it = std::find_if(state->blocks.begin(), state->blocks.end(), [=](const auto &block) {
+        return strncmp(block.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    });
+
+    if (it != state->blocks.end())
+        return it->first;
+
+    return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
 
 EXPORT(int, sceKernelOpenVMDomain) {
