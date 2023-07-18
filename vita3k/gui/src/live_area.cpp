@@ -573,6 +573,22 @@ void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32
 
     const auto live_area_current_open_apps_list_size = static_cast<int32_t>(gui.live_area_current_open_apps_list.size() - 1);
 
+    const auto cancel = [&]() {
+        close_live_area_app(gui, emuenv, gui.live_area_current_open_apps_list[gui.live_area_app_current_open]);
+    };
+    const auto confirm = [&]() {
+        switch (live_area_type_selected) {
+        case GATE:
+            pre_run_app(gui, emuenv, gui.live_area_current_open_apps_list[gui.live_area_app_current_open]);
+            break;
+        case MANUAL:
+            open_manual(gui, emuenv, gui.live_area_current_open_apps_list[gui.live_area_app_current_open]);
+            break;
+        default:
+            break;
+        }
+    };
+
     switch (button) {
     case SCE_CTRL_UP: {
         if (manual_found)
@@ -596,19 +612,16 @@ void browse_live_area_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32
         live_area_type_selected = GATE;
         break;
     case SCE_CTRL_CIRCLE:
-        close_live_area_app(gui, emuenv, gui.live_area_current_open_apps_list[gui.live_area_app_current_open]);
+        if (emuenv.cfg.sys_button == 1)
+            cancel();
+        else
+            confirm();
         break;
     case SCE_CTRL_CROSS:
-        switch (live_area_type_selected) {
-        case GATE:
-            pre_run_app(gui, emuenv, gui.live_area_current_open_apps_list[gui.live_area_app_current_open]);
-            break;
-        case MANUAL:
-            open_manual(gui, emuenv, gui.live_area_current_open_apps_list[gui.live_area_app_current_open]);
-            break;
-        default:
-            break;
-        }
+        if (emuenv.cfg.sys_button == 1)
+            confirm();
+        else
+            cancel();
         break;
     default:
         break;
