@@ -1214,14 +1214,14 @@ EXPORT(int, sceKernelOpenCond) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(int, sceKernelOpenEventFlag, const char *pName) {
+EXPORT(SceUID, sceKernelOpenEventFlag, const char *pName) {
     TRACY_FUNC(sceKernelOpenEventFlag, pName);
-    return UNIMPLEMENTED();
+    return eventflag_find(emuenv.kernel, export_name, pName);
 }
 
-EXPORT(int, sceKernelOpenMsgPipe, const char *name) {
-    TRACY_FUNC(sceKernelOpenMsgPipe, name);
-    return msgpipe_find(emuenv.kernel, export_name, name);
+EXPORT(SceUID, sceKernelOpenMsgPipe, const char *pName) {
+    TRACY_FUNC(sceKernelOpenMsgPipe, pName);
+    return msgpipe_find(emuenv.kernel, export_name, pName);
 }
 
 EXPORT(SceUID, sceKernelOpenMutex, const char *pName) {

@@ -576,18 +576,23 @@ SceUID mutex_create(SceUID *uid_out, KernelState &kernel, MemState &mem, const c
     return SCE_KERNEL_OK;
 }
 
-SceUID mutex_find(KernelState &kernel, const char *export_name, const char *name) {
+SceUID mutex_find(KernelState &kernel, const char *export_name, const char *pName) {
+    if (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+
+    if (LOG_SYNC_PRIMITIVES)
+        LOG_DEBUG("{}: name: \"{}\"", export_name, pName);
+
     const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
 
-    // TODO use another map
-    const auto it = std::find_if(kernel.mutexes.begin(), kernel.mutexes.end(), [=](auto it) {
-        return strncmp(it.second->name, name, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    const auto it = std::find_if(kernel.mutexes.begin(), kernel.mutexes.end(), [=](const auto &mutex) {
+        return strncmp(mutex.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
     });
 
     if (it != kernel.mutexes.end())
         return it->first;
 
-    return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MUTEX_ID);
+    return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
 
 inline int mutex_lock_impl(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, int lock_count, MutexPtr &mutex, SyncWeight weight, SceUInt *timeout, bool only_try) {
@@ -985,18 +990,23 @@ SceUID semaphore_create(KernelState &kernel, const char *export_name, const char
     return uid;
 }
 
-SceUID semaphore_find(KernelState &kernel, const char *export_name, const char *name) {
+SceUID semaphore_find(KernelState &kernel, const char *export_name, const char *pName) {
+    if (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+
+    if (LOG_SYNC_PRIMITIVES)
+        LOG_DEBUG("{}: name: \"{}\"", export_name, pName);
+
     const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
 
-    // TODO use another map
-    const auto it = std::find_if(kernel.semaphores.begin(), kernel.semaphores.end(), [=](auto it) {
-        return strncmp(it.second->name, name, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    const auto it = std::find_if(kernel.semaphores.begin(), kernel.semaphores.end(), [=](const auto &sema) {
+        return strncmp(sema.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
     });
 
     if (it != kernel.semaphores.end())
         return it->first;
 
-    return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_SEMA_ID);
+    return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
 
 SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout) {
@@ -1330,7 +1340,7 @@ SceUID eventflag_clear(KernelState &kernel, const char *export_name, SceUID evfI
 }
 
 SceUID eventflag_create(KernelState &kernel, const char *export_name, SceUID thread_id, const char *pName, SceUInt32 attr, SceUInt32 initPattern) {
-    if ((strlen(pName) > 31) && ((attr & 0x80) == 0x80)) {
+    if ((strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH) && ((attr & 0x80) == 0x80)) {
         return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
     }
 
@@ -1356,6 +1366,25 @@ SceUID eventflag_create(KernelState &kernel, const char *export_name, SceUID thr
     kernel.eventflags.emplace(uid, event);
 
     return uid;
+}
+
+SceUID eventflag_find(KernelState &kernel, const char *export_name, const char *pName) {
+    if (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+
+    if (LOG_SYNC_PRIMITIVES)
+        LOG_DEBUG("{}: name: \"{}\"", export_name, pName);
+
+    const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
+
+    const auto it = std::find_if(kernel.eventflags.begin(), kernel.eventflags.end(), [=](const auto &evf) {
+        return strncmp(evf.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    });
+
+    if (it != kernel.eventflags.end())
+        return it->first;
+
+    return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
 
 static int eventflag_waitorpoll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID event_id, unsigned int flags, unsigned int wait, unsigned int *outBits, SceUInt *timeout, bool dowait) {
@@ -1602,19 +1631,23 @@ SceUID msgpipe_create(KernelState &kernel, const char *export_name, const char *
     return uid;
 }
 
-SceUID msgpipe_find(KernelState &kernel, const char *export_name, const char *name) {
+SceUID msgpipe_find(KernelState &kernel, const char *export_name, const char *pName) {
+    if (strlen(pName) > KERNELOBJECT_MAX_NAME_LENGTH)
+        return RET_ERROR(SCE_KERNEL_ERROR_UID_NAME_TOO_LONG);
+
+    if (LOG_SYNC_PRIMITIVES)
+        LOG_DEBUG("{}: name: \"{}\"", export_name, pName);
+
     const std::lock_guard<std::mutex> kernel_lock(kernel.mutex);
 
-    // TODO use another map
-    const auto it = std::find_if(kernel.msgpipes.begin(), kernel.msgpipes.end(), [=](auto it) {
-        return strncmp(it.second->name, name, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
+    const auto it = std::find_if(kernel.msgpipes.begin(), kernel.msgpipes.end(), [=](const auto &msg_pipe) {
+        return strncmp(msg_pipe.second->name, pName, KERNELOBJECT_MAX_NAME_LENGTH) == 0;
     });
 
-    if (it != kernel.msgpipes.end()) {
+    if (it != kernel.msgpipes.end())
         return it->first;
-    }
 
-    return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_MSG_PIPE_ID);
+    return RET_ERROR(SCE_KERNEL_ERROR_UID_CANNOT_FIND_BY_NAME);
 }
 
 SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgPipeId, SceUInt32 waitMode, void *pRecvBuf, SceSize recvSize, SceUInt32 *pTimeout) {
