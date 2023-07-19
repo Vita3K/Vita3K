@@ -225,7 +225,7 @@ SceInt32 timer_stop(KernelState &kernel, const char *export_name, SceUID thread_
 
 // Mutex
 SceUID mutex_create(SceUID *uid_out, KernelState &kernel, MemState &mem, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, int init_count, Ptr<SceKernelLwMutexWork> workarea, SyncWeight weight);
-SceUID mutex_find(KernelState &kernel, const char *export_name, const char *name);
+SceUID mutex_find(KernelState &kernel, const char *export_name, const char *pName);
 int mutex_lock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, unsigned int *timeout, SyncWeight weight);
 int mutex_try_lock(KernelState &kernel, MemState &mem, const char *export_name, SceUID thread_id, SceUID mutexid, int lock_count, SyncWeight weight);
 int mutex_unlock(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID mutexid, int unlock_count, SyncWeight weight);
@@ -240,7 +240,7 @@ SceInt32 rwlock_delete(KernelState &kernel, MemState &mem, const char *export_na
 
 // Semaphore
 SceUID semaphore_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, int initVal, int maxVal);
-SceUID semaphore_find(KernelState &kernel, const char *export_name, const char *name);
+SceUID semaphore_find(KernelState &kernel, const char *export_name, const char *pName);
 SceInt32 semaphore_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaId, SceInt32 needCount, SceUInt32 *pTimeout);
 int semaphore_signal(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid, int signal);
 int semaphore_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID semaid);
@@ -255,6 +255,7 @@ int condvar_delete(KernelState &kernel, const char *export_name, SceUID thread_i
 // Event Flag
 SceUID eventflag_clear(KernelState &kernel, const char *export_name, SceUID evfId, SceUInt32 bitPattern);
 SceUID eventflag_create(KernelState &kernel, const char *export_name, SceUID thread_id, const char *pName, SceUInt32 attr, SceUInt32 initPattern);
+SceUID eventflag_find(KernelState &kernel, const char *export_name, const char *pName);
 SceInt32 eventflag_wait(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID evfId, SceUInt32 bitPattern, SceUInt32 waitMode, SceUInt32 *pResultPat, SceUInt32 *pTimeout);
 int eventflag_poll(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID eventflagid, unsigned int flags, unsigned int wait, unsigned int *outBits);
 SceInt32 eventflag_set(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID evfId, SceUInt32 bitPattern);
@@ -263,7 +264,7 @@ int eventflag_delete(KernelState &kernel, const char *export_name, SceUID thread
 
 // Message Pipe
 SceUID msgpipe_create(KernelState &kernel, const char *export_name, const char *name, SceUID thread_id, SceUInt attr, SceSize bufSize);
-SceUID msgpipe_find(KernelState &kernel, const char *export_name, const char *name);
+SceUID msgpipe_find(KernelState &kernel, const char *export_name, const char *pName);
 SceSize msgpipe_recv(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgPipeId, SceUInt32 waitMode, void *pRecvBuf, SceSize recvSize, SceUInt32 *pTimeout);
 SceSize msgpipe_send(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgPipeId, SceUInt32 waitMode, const void *pSendBuf, SceSize sendSize, SceUInt32 *pTimeout);
 SceInt32 msgpipe_delete(KernelState &kernel, const char *export_name, SceUID thread_id, SceUID msgpipe_id);
