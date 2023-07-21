@@ -806,7 +806,7 @@ EXPORT(int, vshSysconIsDownLoaderMode) {
 }
 
 EXPORT(int, vshSysconIsIduMode) {
-    return UNIMPLEMENTED();
+    return emuenv.cfg.demo_mode ? 1 : 0;
 }
 
 EXPORT(int, vshSysconIsMCEmuCapable) {
@@ -814,7 +814,7 @@ EXPORT(int, vshSysconIsMCEmuCapable) {
 }
 
 EXPORT(int, vshSysconIsShowMode) {
-    return UNIMPLEMENTED();
+    return emuenv.cfg.show_mode ? 1 : 0;
 }
 
 EXPORT(int, vshSysconLoadConfigstorageScript) {
