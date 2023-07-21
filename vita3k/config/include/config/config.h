@@ -55,6 +55,8 @@ enum PerfomanceOverleyPosition {
     code(bool, "log-uniforms", false, log_uniforms)                                                     \
     code(bool, "validation-layer", true, validation_layer)                                              \
     code(bool, "pstv-mode", false, pstv_mode)                                                           \
+    code(bool, "show-mode", false, show_mode)                                                           \
+    code(bool, "demo-mode", false, demo_mode)                                                           \
     code(bool, "show-gui", false, show_gui)                                                             \
     code(bool, "show-info-bar", false, show_info_bar)                                                   \
     code(bool, "apps-list-grid", false, apps_list_grid)                                                 \

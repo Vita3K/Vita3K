@@ -694,6 +694,14 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::Checkbox("PS TV Mode", &config.pstv_mode);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enable PS TV Emulated mode.");
+        ImGui::SameLine();
+        ImGui::Checkbox("Show Mode", &emuenv.cfg.show_mode);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Check the box to enable Show mode.");
+        ImGui::SameLine();
+        ImGui::Checkbox("Demo Mode", &emuenv.cfg.demo_mode);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Check the box to enable Demo mode.");
         ImGui::EndTabItem();
     } else
         ImGui::PopStyleColor();
