@@ -61,7 +61,7 @@ int Epoll::wait(SceNetEpollEvent *events, int maxevents, int timeout_microsecond
     timeval timeout;
     timeout.tv_sec = timeout_microseconds / 1000000;
     timeout.tv_usec = timeout_microseconds % 1000000;
-    auto ret = select(maxFd, &readFds, &writeFds, &exceptFds, &timeout);
+    auto ret = select(maxFd + 1, &readFds, &writeFds, &exceptFds, &timeout);
     if (ret < 0) {
         // TODO: translate error code
         return -1;
