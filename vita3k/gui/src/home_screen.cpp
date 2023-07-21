@@ -490,7 +490,7 @@ void browse_home_apps_list(GuiState &gui, EmuEnvState &emuenv, const uint32_t bu
             pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, selected_app.path);
         }
         break;
-    case SCE_CTRL_CROSS: 
+    case SCE_CTRL_CROSS:
         if (emuenv.cfg.sys_button == 1) {
             const auto &selected_app = current_selected_app_index < 0 ? gui.app_selector.sys_apps[current_selected_app_index + 4] : gui.app_selector.user_apps[current_selected_app_index];
             pre_load_app(gui, emuenv, emuenv.cfg.show_live_area_screen, selected_app.path);

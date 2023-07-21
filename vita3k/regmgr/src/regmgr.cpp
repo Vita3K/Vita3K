@@ -164,12 +164,11 @@ static uint32_t get_space_size(const uint32_t str_size) {
 static bool load_system_dreg(RegMgrState &regmgr) {
     fs::ifstream file(regmgr.system_dreg_path, std::ios::in | std::ios::binary);
     if (file.is_open()) {
-        char buf = 0;
+        // Initialize the space buffer
+        std::vector<char> space(spaceSize + 1);
 
         // Skip the space
-        for (uint32_t i = 0; i < (spaceSize + 1); i++) {
-            file.read(&buf, 1);
-        }
+        file.read(space.data(), spaceSize + 1);
 
         for (const auto &cat : reg_category_template) {
             // Read the category
@@ -184,9 +183,8 @@ static bool load_system_dreg(RegMgrState &regmgr) {
 
             // Skip the space
             const auto diff_cat = get_space_size(cat_size);
-            for (uint32_t i = 0; i < diff_cat; i++) {
-                file.read(&buf, 1);
-            }
+            space.resize(diff_cat);
+            file.read(space.data(), diff_cat);
 
             for (const auto &entry : reg_template[cat]) {
                 // Read the name
@@ -200,10 +198,9 @@ static bool load_system_dreg(RegMgrState &regmgr) {
                 }
 
                 // Skip the space
-                const auto diff_name = get_space_size(name_size + 1);
-                for (uint32_t i = 0; i < diff_name; i++) {
-                    file.read(&buf, 1);
-                }
+                const auto diff_name = get_space_size(name_size) - 1;
+                space.resize(diff_name);
+                file.read(space.data(), diff_name);
 
                 // Read the value
                 const uint32_t value_size = entry.size;
@@ -212,10 +209,9 @@ static bool load_system_dreg(RegMgrState &regmgr) {
                 file.read(value.data(), value_size);
 
                 // Skip the space
-                const auto diff_value = get_space_size(value_size);
-                for (uint32_t i = 0; i < (diff_value + 1); i++) {
-                    file.read(&buf, 1);
-                }
+                const auto diff_value = get_space_size(value_size) + 1;
+                space.resize(diff_value);
+                file.read(space.data(), diff_value);
             }
         }
 
@@ -228,12 +224,11 @@ static bool load_system_dreg(RegMgrState &regmgr) {
 static void save_system_dreg(RegMgrState &regmgr) {
     fs::ofstream file(regmgr.system_dreg_path, std::ios::out | std::ios::binary);
     if (file.is_open()) {
-        const char buf = 0;
+        // Initialize the space buffer
+        std::vector<char> space(spaceSize + 1);
 
         // Write the space
-        for (uint32_t i = 0; i < (spaceSize + 1); i++) {
-            file.write(&buf, 1);
-        }
+        file.write(space.data(), spaceSize + 1);
 
         // Write each category
         for (const auto &cat : reg_category_template) {
@@ -245,9 +240,8 @@ static void save_system_dreg(RegMgrState &regmgr) {
 
             // Write the space
             const auto diff_cat = get_space_size(cat_size);
-            for (uint32_t i = 0; i < diff_cat; i++) {
-                file.write(&buf, 1);
-            }
+            space.resize(diff_cat);
+            file.write(space.data(), diff_cat);
 
             // Write each entry
             for (const auto &entry : reg_template[cat]) {
@@ -258,20 +252,18 @@ static void save_system_dreg(RegMgrState &regmgr) {
                 file.write(name.data(), name_size);
 
                 // Write the space
-                const auto diff_name = get_space_size(name_size + 1);
-                for (uint32_t i = 0; i < diff_name; i++) {
-                    file.write(&buf, 1);
-                }
+                const auto diff_name = get_space_size(name_size) - 1;
+                space.resize(diff_name);
+                file.write(space.data(), diff_name);
 
                 // Write the value
                 const uint32_t value_size = entry.size;
                 file.write(regmgr.system_dreg[cat][entry.name].data(), value_size);
 
                 // Write the space
-                const auto diff_value = get_space_size(value_size);
-                for (uint32_t i = 0; i < (diff_value + 1); i++) {
-                    file.write(&buf, 1);
-                }
+                const auto diff_value = get_space_size(value_size) + 1;
+                space.resize(diff_value);
+                file.write(space.data(), diff_value);
             }
         }
 
@@ -292,8 +284,8 @@ static void init_system_dreg(RegMgrState &regmgr) {
     save_system_dreg(regmgr);
 }
 
-static bool category_or_name_is_empty(const std::string &category, const std::string &name) {
-    return category.empty() || name.empty();
+static bool reg_category_or_name_is_empty(const std::string &category, const std::string &name) {
+    return reg_template.empty() || category.empty() || name.empty();
 }
 
 static std::string fix_category(const std::string &category) {
@@ -301,7 +293,7 @@ static std::string fix_category(const std::string &category) {
 }
 
 static std::string set_default_value(RegMgrState &regmgr, const std::string &category, const std::string &name) {
-    if (category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(category, name))
         return {};
 
     const auto &reg = std::find_if(reg_template[category].begin(), reg_template[category].end(), [&](const auto &n) {
@@ -326,7 +318,7 @@ static std::string set_default_value(RegMgrState &regmgr, const std::string &cat
 }
 
 void get_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, void *buf, uint32_t bufSize) {
-    if (category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(category, name))
         return;
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
@@ -336,7 +328,7 @@ void get_bin_value(RegMgrState &regmgr, const std::string &category, const std::
 }
 
 void set_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, const void *buf, const uint32_t bufSize) {
-    if (category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(category, name))
         return;
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
@@ -348,7 +340,7 @@ void set_bin_value(RegMgrState &regmgr, const std::string &category, const std::
 }
 
 int32_t get_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name) {
-    if (category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(category, name))
         return 0;
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
@@ -367,7 +359,7 @@ int32_t get_int_value(RegMgrState &regmgr, const std::string &category, const st
 }
 
 void set_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name, int32_t value) {
-    if (category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(category, name))
         return;
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
@@ -379,7 +371,7 @@ void set_int_value(RegMgrState &regmgr, const std::string &category, const std::
 }
 
 std::string get_str_value(RegMgrState &regmgr, const std::string &category, const std::string &name) {
-    if (category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(category, name))
         return {};
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
@@ -389,7 +381,7 @@ std::string get_str_value(RegMgrState &regmgr, const std::string &category, cons
 }
 
 void set_str_value(RegMgrState &regmgr, const std::string &category, const std::string &name, const char *value, const uint32_t bufSize) {
-    if (category_or_name_is_empty(category, name))
+    if (reg_category_or_name_is_empty(category, name))
         return;
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
