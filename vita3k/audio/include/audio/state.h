@@ -42,6 +42,12 @@ struct AudioOutPort {
     // length of the buffer for each call
     int len_bytes = 0;
 
+    // current config
+    int type = 0;
+    int len = 0;
+    int freq = 0;
+    int mode = 0;
+
     std::mutex mutex;
     // stream to get the data
     AudioStreamPtr stream;

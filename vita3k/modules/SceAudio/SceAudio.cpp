@@ -127,6 +127,12 @@ EXPORT(int, sceAudioOutOpenPort, SceAudioOutPortType type, int len, int freq, Sc
     if (!port)
         return RET_ERROR(SCE_AUDIO_OUT_ERROR_NOT_OPENED);
 
+    // Save the port configuration
+    port->type = type;
+    port->len = len;
+    port->freq = freq;
+    port->mode = mode;
+
     const std::lock_guard<std::mutex> lock(emuenv.audio.mutex);
     const int port_id = emuenv.audio.next_port_id++;
     emuenv.audio.out_ports.emplace(port_id, port);
@@ -201,7 +207,44 @@ EXPORT(int, sceAudioOutSetCompress) {
 
 EXPORT(int, sceAudioOutSetConfig, int port, SceSize len, int freq, SceAudioOutMode mode) {
     TRACY_FUNC(sceAudioOutSetConfig, port, len, freq, mode);
-    return UNIMPLEMENTED();
+    if (len == 0)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_SIZE);
+
+    if ((mode >= 0) && (mode != SCE_AUDIO_OUT_MODE_MONO) && (mode != SCE_AUDIO_OUT_MODE_STEREO))
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_FORMAT);
+
+    AudioOutPortPtr prt = lock_and_find(port, emuenv.audio.out_ports, emuenv.audio.mutex);
+    if (!prt)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+
+    if ((freq >= 0) && (prt->type == SCE_AUDIO_OUT_PORT_TYPE_MAIN) && (freq != 48000))
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_SAMPLE_FREQ);
+
+    const auto set_len = len > 0 ? len : prt->len;
+    const auto set_freq = freq >= 0 ? freq : prt->freq;
+    const auto set_mode = mode >= 0 ? mode : prt->mode;
+
+    if ((set_len == prt->len) && (set_freq == prt->freq) && (set_mode == prt->mode))
+        return 0;
+
+    if (CALL_EXPORT(sceAudioOutReleasePort, port) != 0)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_INVALID_PORT);
+
+    const auto channels = (set_mode == SCE_AUDIO_OUT_MODE_MONO) ? 1 : 2;
+
+    prt = emuenv.audio.open_port(channels, set_freq, set_len);
+    if (!prt)
+        return RET_ERROR(SCE_AUDIO_OUT_ERROR_NOT_OPENED);
+
+    // Save the port configuration
+    prt->freq = set_freq;
+    prt->len = set_len;
+    prt->mode = set_mode;
+
+    const std::lock_guard<std::mutex> lock(emuenv.audio.mutex);
+    emuenv.audio.out_ports.emplace(port, prt);
+
+    return 0;
 }
 
 EXPORT(int, sceAudioOutSetEffectType) {
