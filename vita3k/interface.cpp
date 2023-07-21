@@ -591,12 +591,30 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
             app::switch_state(emuenv, !emuenv.kernel.is_threads_paused());
         }
     };
+
     const auto close_and_run_new_app = [&gui, &emuenv](const uint32_t button) {
-        if (button == SCE_CTRL_CROSS) {
+        const auto cancel = [&]() {
+            gui.vita_area.app_close = false;
+        };
+        const auto confirm = [&]() {
             const auto app_path = gui.vita_area.live_area_screen ? gui.live_area_current_open_apps_list[gui.live_area_app_current_open] : emuenv.app_path;
             gui::close_and_run_new_app(gui, emuenv, app_path);
-        } else if (button == SCE_CTRL_CIRCLE)
-            gui.vita_area.app_close = false;
+        };
+        switch (button) {
+        case SCE_CTRL_CIRCLE:
+            if (emuenv.cfg.sys_button == 1)
+                cancel();
+            else
+                confirm();
+            break;
+        case SCE_CTRL_CROSS:
+            if (emuenv.cfg.sys_button == 1)
+                confirm();
+            else
+                cancel();
+            break;
+        default: break;
+        }
     };
 
     const auto browse_common_dialog = [&gui, &emuenv](const uint32_t button) {
