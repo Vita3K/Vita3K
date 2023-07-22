@@ -18,6 +18,7 @@
 #include <regex>
 #include <regmgr/functions.h>
 
+#include <util/bytes.h>
 #include <util/log.h>
 #include <util/string_utils.h>
 
@@ -58,10 +59,17 @@ static std::string decryptRegistryFile(const fs::path reg_path) {
     return res;
 }
 
+enum RegType {
+    REG_TYPE_INT,
+    REG_TYPE_STR,
+    REG_TYPE_BIN,
+};
+
 struct RegValue {
     std::string name;
+    RegType type;
     uint32_t size;
-    std::string value;
+    std::vector<char> init_value;
 };
 
 static std::vector<std::string> reg_category_template;
@@ -130,7 +138,24 @@ void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
                             reg_category_template.push_back(category);
                     };
 
+                    const auto valueType = static_cast<RegType>(string_utils::stoi_def(values[0]));
                     const auto valueSize = static_cast<uint32_t>(string_utils::stoi_def(values[1]));
+                    const auto valueDefault = values.back();
+
+                    // Init the value depending on the type
+                    std::vector<char> initValueData(valueSize);
+                    switch (valueType) {
+                    case REG_TYPE_INT:
+                        *reinterpret_cast<int32_t *>(initValueData.data()) = byte_swap(string_utils::stoi_def(valueDefault, 0));
+                        break;
+                    case REG_TYPE_STR:
+                    case REG_TYPE_BIN:
+                        if (valueDefault != "0")
+                            initValueData.assign(valueDefault.begin(), valueDefault.end());
+                        break;
+                    default: break;
+                    }
+
                     const std::regex categoryRangePattern(R"((.*\/)([0-9]{2})-([0-9]{2})(\/.*))");
                     std::smatch matches;
                     if (std::regex_search(category, matches, categoryRangePattern)) {
@@ -141,11 +166,11 @@ void init_reg_template(RegMgrState &regmgr, const std::string &reg) {
 
                         for (int i = firstNum; i <= secondNum; i++) {
                             const std::string categoryName = fmt::format("{}{:0>2d}{}", cat_begin, i, cat_end);
-                            reg_template[categoryName].push_back({ valueName, valueSize, values.back() });
+                            reg_template[categoryName].push_back({ valueName, valueType, valueSize, initValueData });
                             add_category_template(categoryName);
                         }
                     } else {
-                        reg_template[category].push_back({ valueName, valueSize, values.back() });
+                        reg_template[category].push_back({ valueName, valueType, valueSize, initValueData });
                         add_category_template(category);
                     }
                 }
@@ -198,7 +223,7 @@ static bool load_system_dreg(RegMgrState &regmgr) {
                 }
 
                 // Skip the space
-                const auto diff_name = get_space_size(name_size) - 1;
+                const auto diff_name = (entry.type == REG_TYPE_INT ? spaceSize - name_size - entry.size : get_space_size(name_size)) - 1;
                 space.resize(diff_name);
                 file.read(space.data(), diff_name);
 
@@ -209,7 +234,7 @@ static bool load_system_dreg(RegMgrState &regmgr) {
                 file.read(value.data(), value_size);
 
                 // Skip the space
-                const auto diff_value = get_space_size(value_size) + 1;
+                const auto diff_value = (entry.type == REG_TYPE_INT) ? 1 : get_space_size(value_size) + 1;
                 space.resize(diff_value);
                 file.read(space.data(), diff_value);
             }
@@ -252,7 +277,7 @@ static void save_system_dreg(RegMgrState &regmgr) {
                 file.write(name.data(), name_size);
 
                 // Write the space
-                const auto diff_name = get_space_size(name_size) - 1;
+                const auto diff_name = (entry.type == REG_TYPE_INT ? spaceSize - name_size - entry.size : get_space_size(name_size)) - 1;
                 space.resize(diff_name);
                 file.write(space.data(), diff_name);
 
@@ -261,7 +286,7 @@ static void save_system_dreg(RegMgrState &regmgr) {
                 file.write(regmgr.system_dreg[cat][entry.name].data(), value_size);
 
                 // Write the space
-                const auto diff_value = get_space_size(value_size) + 1;
+                const auto diff_value = (entry.type == REG_TYPE_INT) ? 1 : get_space_size(value_size) + 1;
                 space.resize(diff_value);
                 file.write(space.data(), diff_value);
             }
@@ -277,7 +302,7 @@ static void init_system_dreg(RegMgrState &regmgr) {
         for (const auto &entry : reg.second) {
             auto &value = regmgr.system_dreg[reg.first][entry.name];
             value.resize(entry.size);
-            value.assign(entry.value.begin(), entry.value.end());
+            value = entry.init_value;
         }
     }
 
@@ -308,13 +333,13 @@ static std::string set_default_value(RegMgrState &regmgr, const std::string &cat
     auto &sys = regmgr.system_dreg[category][name];
     sys.clear();
     sys.resize(reg->size);
-    sys.assign(reg->value.begin(), reg->value.end());
+    sys = reg->init_value;
 
     LOG_INFO("Successfully set default value for {}{}", category, name);
 
     save_system_dreg(regmgr);
 
-    return reg->value;
+    return std::string(reg->init_value.begin(), reg->init_value.end());
 }
 
 void get_bin_value(RegMgrState &regmgr, const std::string &category, const std::string &name, void *buf, uint32_t bufSize) {
@@ -346,26 +371,17 @@ int32_t get_int_value(RegMgrState &regmgr, const std::string &category, const st
     std::lock_guard<std::mutex> lock(regmgr.mutex);
 
     const auto cat = fix_category(category);
-    const auto &sys = regmgr.system_dreg[cat][name];
-    auto value_str = std::string(sys.begin(), sys.end());
-    if (!std::all_of(value_str.begin(), value_str.end(), [](unsigned char c) { return std::isdigit(c) || (c == '\0'); })) {
-        LOG_ERROR("Invalid value for {}{}: {}, attempt using default value!", cat, name, value_str);
-        value_str = set_default_value(regmgr, cat, name);
-        if (value_str.empty())
-            return 0;
-    }
 
-    return string_utils::stoi_def(value_str);
+    return byte_swap(*reinterpret_cast<const uint32_t *>(regmgr.system_dreg[cat][name].data()));
 }
 
-void set_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name, int32_t value) {
+void set_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name, const int32_t value) {
     if (reg_category_or_name_is_empty(category, name))
         return;
 
     std::lock_guard<std::mutex> lock(regmgr.mutex);
 
-    const auto str_value = std::to_string(value);
-    regmgr.system_dreg[fix_category(category)][name].assign(str_value.begin(), str_value.end());
+    *reinterpret_cast<int32_t *>(regmgr.system_dreg[fix_category(category)][name].data()) = byte_swap(value);
 
     save_system_dreg(regmgr);
 }
