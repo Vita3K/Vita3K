@@ -32,7 +32,7 @@ void set_bin_value(RegMgrState &regmgr, const std::string &category, const std::
 
 // Geters and setters for int values
 int32_t get_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name);
-void set_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name, int32_t value);
+void set_int_value(RegMgrState &regmgr, const std::string &category, const std::string &name, const int32_t value);
 
 // Getters and setters for string values
 std::string get_str_value(RegMgrState &regmgr, const std::string &category, const std::string &name);
