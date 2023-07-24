@@ -1266,8 +1266,6 @@ EXPORT(SceUID, sceKernelOpenTimer, const char *name) {
     }
     emuenv.kernel.mutex.unlock();
 
-    assert(timer_info && timer_info->openable);
-
     return timer_handle;
 }
 
