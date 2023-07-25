@@ -493,23 +493,28 @@ static ExitCode load_app_impl(SceUID &main_module_id, EmuEnvState &emuenv, const
     const auto is_app = fs::exists(module_app_path) && !fs::is_empty(module_app_path);
     std::vector<std::string> lib_load_list = {};
     // todo: check if module is imported
-    auto add_preload_module = [&](uint32_t code, const std::string &name, bool load_from_app) {
-        if ((process_preload_disabled & code) == 0 && is_lle_module(name, emuenv)) {
-            if (load_from_app)
-                lib_load_list.emplace_back(fmt::format("app0:sce_module/{}.suprx", name));
-            else
-                lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}.suprx", name));
+    auto add_preload_module = [&](uint32_t code, SceSysmoduleModuleId module_id, const std::string &name, bool load_from_app) {
+        if ((process_preload_disabled & code) == 0) {
+            if (is_lle_module(name, emuenv)) {
+                if (load_from_app)
+                    lib_load_list.emplace_back(fmt::format("app0:sce_module/{}.suprx", name));
+                else
+                    lib_load_list.emplace_back(fmt::format("vs0:sys/external/{}.suprx", name));
+            }
+
+            if (module_id != SCE_SYSMODULE_INVALID)
+                emuenv.kernel.loaded_sysmodules.push_back(module_id);
         }
     };
-    add_preload_module(0x00010000, "libc", is_app);
-    add_preload_module(0x00020000, "libdbg", false);
-    add_preload_module(0x00080000, "libshellsvc", false);
-    add_preload_module(0x00100000, "libcdlg", false);
-    add_preload_module(0x00200000, "libfios2", is_app);
-    add_preload_module(0x00400000, "apputil", false);
-    add_preload_module(0x00800000, "libSceFt2", false);
-    add_preload_module(0x01000000, "libpvf", false);
-    add_preload_module(0x02000000, "libperf", false); // if DEVELOPMENT_MODE dipsw is set
+    add_preload_module(0x00010000, SCE_SYSMODULE_INVALID, "libc", is_app);
+    add_preload_module(0x00020000, SCE_SYSMODULE_DBG, "libdbg", false);
+    add_preload_module(0x00080000, SCE_SYSMODULE_INVALID, "libshellsvc", false);
+    add_preload_module(0x00100000, SCE_SYSMODULE_INVALID, "libcdlg", false);
+    add_preload_module(0x00200000, SCE_SYSMODULE_FIOS2, "libfios2", is_app);
+    add_preload_module(0x00400000, SCE_SYSMODULE_APPUTIL, "apputil", false);
+    add_preload_module(0x00800000, SCE_SYSMODULE_INVALID, "libSceFt2", false);
+    add_preload_module(0x01000000, SCE_SYSMODULE_INVALID, "libpvf", false);
+    add_preload_module(0x02000000, SCE_SYSMODULE_PERF, "libperf", false); // if DEVELOPMENT_MODE dipsw is set
 
     for (const auto &module_path : lib_load_list) {
         auto res = load_module(emuenv, module_path);
@@ -869,7 +874,7 @@ ExitCode run_app(EmuEnvState &emuenv, int32_t main_module_id) {
         param.size = SceSize(buf.size());
         param.attr = arr.address();
     }
-    if (main_thread->start(emuenv.kernel, param.size, Ptr<void>(param.attr)) < 0) {
+    if (main_thread->start(param.size, Ptr<void>(param.attr), true) < 0) {
         app::error_dialog("Failed to run main thread.", emuenv.window.get());
         return RunThreadFailed;
     }
