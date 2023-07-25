@@ -2531,7 +2531,7 @@ static int SDLCALL thread_function(void *data) {
         // Now run callback
         const ThreadStatePtr display_thread = params.kernel->get_thread(params.thid);
         if (display_thread) {
-            display_thread->run_guest_function(*params.kernel, display_callback->pc, display_callback->data);
+            display_thread->run_guest_function(display_callback->pc, display_callback->data);
         } else {
             LOG_ERROR("display_thread not found. thid:{} display_callback function: {}", params.thid, log_hex(display_callback->pc));
         }
@@ -4553,7 +4553,7 @@ EXPORT(int, sceGxmTerminate) {
     emuenv.gxm.display_queue.abort();
     SDL_WaitThread(emuenv.gxm.sdl_thread, nullptr);
     emuenv.gxm.sdl_thread = nullptr;
-    emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread)->exit_delete(emuenv.kernel);
+    emuenv.kernel.get_thread(emuenv.gxm.display_queue_thread)->exit_delete();
     return 0;
 }
 

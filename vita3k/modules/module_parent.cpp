@@ -200,8 +200,8 @@ uint32_t start_module(EmuEnvState &emuenv, const std::shared_ptr<SceKernelModule
         // module_start is always called from new thread
         const ThreadStatePtr module_thread = emuenv.kernel.create_thread(emuenv.mem, module_name, module_start, priority, affinity, stack_size, nullptr);
 
-        const auto ret = module_thread->run_guest_function(emuenv.kernel, module_start.address(), args, argp);
-        module_thread->exit_delete(emuenv.kernel);
+        const auto ret = module_thread->run_guest_function(module_start.address(), args, argp);
+        module_thread->exit_delete(false);
 
         LOG_INFO("Module {} (at \"{}\") module_start returned {}", module_name, module->path, log_hex(ret));
         return ret;

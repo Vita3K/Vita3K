@@ -26,7 +26,6 @@
 #include <util/find.h>
 #include <util/lock_and_find.h>
 
-#include <spdlog/fmt/fmt.h>
 #include <util/log.h>
 
 #include <cassert>
@@ -50,7 +49,7 @@ bool ThreadSignal::send() {
     return true;
 }
 
-int ThreadState::init(KernelState &kernel, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option = nullptr) {
+int ThreadState::init(const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option = nullptr) {
     constexpr size_t KERNEL_TLS_SIZE = 0x800;
 
     this->name = name;
@@ -124,11 +123,12 @@ void ThreadState::raise_waiting_threads() {
     waiting_threads.clear();
 }
 
-int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &argp) {
+int ThreadState::start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback) {
     if (status == ThreadStatus::run || call_level > 0)
         return SCE_KERNEL_ERROR_RUNNING;
     std::unique_lock<std::mutex> thread_lock(mutex);
 
+    run_start_callback = run_entry_callback;
     call_level = 1;
     load_context(*cpu, init_cpu_ctx);
     write_pc(*cpu, entry_point);
@@ -156,52 +156,73 @@ int ThreadState::start(KernelState &kernel, SceSize arglen, const Ptr<void> &arg
     }
     something_to_do.notify_one();
 
-    if (kernel.thread_event_start) {
-        int ret = run_callback(kernel.thread_event_start.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_start_arg });
-        if (ret != 0)
-            LOG_WARN("Thread start event handler returned {}", log_hex(ret));
-    }
-
     return SCE_KERNEL_OK;
 }
 
-void ThreadState::exit(KernelState &kernel, SceInt32 status) {
-    if (kernel.thread_event_end) {
-        int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
-        if (ret != 0)
-            LOG_WARN("Thread end event handler returned {}", log_hex(ret));
-    }
-
+void ThreadState::exit(SceInt32 status) {
     std::lock_guard<std::mutex> guard(mutex);
+    run_end_callback = true;
     call_level = 0;
     returned_value = static_cast<uint32_t>(status);
 }
 
-void ThreadState::exit_delete(KernelState &kernel, bool exit) {
-    if (exit && kernel.thread_event_end) {
-        int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_END, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
-        if (ret != 0)
-            LOG_WARN("Thread end event handler returned {}", log_hex(ret));
-    }
+void ThreadState::exit_delete(bool exit) {
+    std::lock_guard<std::mutex> lock(mutex);
 
-    stop_loop();
+    run_end_callback = exit;
+
+    const ThreadToDo last_to_do = to_do;
+    to_do = ThreadToDo::remove;
+    if (last_to_do == ThreadToDo::wait) {
+        something_to_do.notify_one();
+    } else {
+        stop(*cpu);
+    }
 }
 
 bool ThreadState::run_loop() {
     int res = 0;
     int run_level = std::max(call_level, 1);
     std::unique_lock<std::mutex> lock(mutex);
+
+    auto run_thread_end_callback = [&]() {
+        if (!run_end_callback)
+            return;
+        run_end_callback = false;
+
+        if (!kernel.thread_event_end)
+            return;
+
+        ThreadToDo old_to_do = to_do;
+        to_do = ThreadToDo::run;
+        int old_call_level = call_level;
+        call_level = 1;
+
+        lock.unlock();
+        int ret = run_callback(kernel.thread_event_end.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_end_arg });
+        if (ret != 0)
+            LOG_WARN("Thread start event handler returned {}", log_hex(ret));
+        lock.lock();
+
+        to_do = old_to_do;
+        call_level = old_call_level;
+    };
+
     while (true) {
         switch (to_do) {
         case ThreadToDo::remove:
-            if (run_level == 1)
+            if (run_level == 1) {
+                run_thread_end_callback();
                 update_status(ThreadStatus::dormant);
+            }
 
             return true;
         case ThreadToDo::run:
         case ThreadToDo::step:
 
             if (call_level == 0) {
+                run_thread_end_callback();
+
                 // nothing to do
                 update_status(ThreadStatus::dormant);
                 to_do = ThreadToDo::wait;
@@ -210,8 +231,19 @@ bool ThreadState::run_loop() {
 
             update_status(ThreadStatus::run);
 
-            // Run the cpu
             lock.unlock();
+
+            if (run_start_callback) {
+                run_start_callback = false;
+
+                if (kernel.thread_event_start) {
+                    int ret = run_callback(kernel.thread_event_start.address(), { SCE_KERNEL_THREAD_EVENT_TYPE_START, static_cast<uint32_t>(id), 0, kernel.thread_event_start_arg });
+                    if (ret != 0)
+                        LOG_WARN("Thread start event handler returned {}", log_hex(ret));
+                }
+            }
+
+            // Run the cpu
             if (to_do == ThreadToDo::step) {
                 res = step(*cpu);
                 to_do = ThreadToDo::suspend;
@@ -281,6 +313,11 @@ void ThreadState::push_arguments(Address callback_address, const std::vector<uin
 }
 
 uint32_t ThreadState::run_callback(Address callback_address, const std::vector<uint32_t> &args) {
+    if (call_level == 0) {
+        LOG_ERROR("run_callback should not be called as the first thread entry");
+        return 0;
+    }
+
     // first save the current context
     const CPUContext previous_ctx = save_context(*cpu);
     const uint32_t previous_tpidruro = read_tpidruro(*cpu);
@@ -309,12 +346,12 @@ uint32_t ThreadState::run_callback(Address callback_address, const std::vector<u
     return returned_value;
 }
 
-uint32_t ThreadState::run_guest_function(KernelState &kernel, Address callback_address, SceSize args, const Ptr<void> argp) {
+uint32_t ThreadState::run_guest_function(Address callback_address, SceSize args, const Ptr<void> argp) {
     // save the previous entry point, just in case
     const auto old_entry_point = entry_point;
     entry_point = callback_address;
 
-    start(kernel, args, argp);
+    start(args, argp);
     {
         // wait for the function to return
         std::unique_lock<std::mutex> lock(mutex);
@@ -329,19 +366,9 @@ uint32_t ThreadState::run_guest_function(KernelState &kernel, Address callback_a
     return returned_value;
 }
 
-void ThreadState::stop_loop() {
-    std::lock_guard<std::mutex> lock(mutex);
-    const ThreadToDo last_to_do = to_do;
-    to_do = ThreadToDo::remove;
-    if (last_to_do == ThreadToDo::wait) {
-        something_to_do.notify_one();
-    } else {
-        stop(*cpu);
-    }
-}
-
-ThreadState::ThreadState(SceUID id, MemState &mem)
+ThreadState::ThreadState(SceUID id, KernelState &kernel, MemState &mem)
     : id(id)
+    , kernel(kernel)
     , mem(mem) {
 }
 
@@ -377,7 +404,7 @@ void ThreadState::resume(bool step) {
     something_to_do.notify_one();
 }
 
-std::string ThreadState::log_stack_traceback(KernelState &kernel) const {
+std::string ThreadState::log_stack_traceback() const {
     constexpr Address START_OFFSET = 0;
     constexpr Address END_OFFSET = 1024;
     std::stringstream ss;

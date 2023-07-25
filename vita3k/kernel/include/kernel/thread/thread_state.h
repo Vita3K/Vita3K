@@ -95,18 +95,17 @@ struct ThreadState {
     uint32_t returned_value = 0;
 
     ThreadState() = delete;
-    explicit ThreadState(SceUID id, MemState &mem);
+    explicit ThreadState(SceUID id, KernelState &kernel, MemState &mem);
 
-    int init(KernelState &kernel, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
-    int start(KernelState &kernel, SceSize arglen, const Ptr<void> &argp);
-    void exit(KernelState &kernel, SceInt32 status);
-    void exit_delete(KernelState &kernel, bool exit = true);
+    int init(const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option);
+    int start(SceSize arglen, const Ptr<void> argp, bool run_entry_callback = false);
+    void exit(SceInt32 status);
+    void exit_delete(bool exit = true);
 
     void update_status(ThreadStatus status, std::optional<ThreadStatus> expected = std::nullopt);
     Address stack_top() const;
 
     bool run_loop();
-    void stop_loop();
     void raise_waiting_threads();
 
     // this function must be called from the thread itself (inside a svc call)
@@ -115,14 +114,16 @@ struct ThreadState {
     // this function is called from another thread when this one is dormant
     // it is only used for module loading and gxm display queue right now
     // args and argp are passed to thread->start as is
-    uint32_t run_guest_function(KernelState &kernel, Address callback_address, SceSize args = 0, const Ptr<void> argp = Ptr<void>{});
+    uint32_t run_guest_function(Address callback_address, SceSize args = 0, const Ptr<void> argp = Ptr<void>{});
 
     void suspend();
     void resume(bool step = false);
-    std::string log_stack_traceback(KernelState &kernel) const;
+    std::string log_stack_traceback() const;
 
 private:
     void push_arguments(Address callback_address, const std::vector<uint32_t> &args);
+
+    KernelState &kernel;
 
     CPUContext init_cpu_ctx;
     ThreadToDo to_do = ThreadToDo::wait;
@@ -134,6 +135,11 @@ private:
     // if running a callback inside a callback (possible for exemple by allocating
     // gxm callbacked memory inside a kernel callback), call_level is 2
     int call_level = 0;
+
+    // when calling sceKernelStartThread
+    bool run_start_callback = false;
+    // when calling sceKernelExitThread or sceKernelExitDeleteThread
+    bool run_end_callback = false;
 
     MemState &mem;
 };
