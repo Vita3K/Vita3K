@@ -139,8 +139,8 @@ ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<c
 }
 
 ThreadStatePtr KernelState::create_thread(MemState &mem, const char *name, Ptr<const void> entry_point, int init_priority, SceInt32 affinity_mask, int stack_size, const SceKernelThreadOptParam *option) {
-    ThreadStatePtr thread = std::make_shared<ThreadState>(get_next_uid(), mem);
-    if (thread->init(*this, name, entry_point, init_priority, affinity_mask, stack_size, option) < 0)
+    ThreadStatePtr thread = std::make_shared<ThreadState>(get_next_uid(), *this, mem);
+    if (thread->init(name, entry_point, init_priority, affinity_mask, stack_size, option) < 0)
         return nullptr;
     const auto lock = std::lock_guard(mutex);
     threads.emplace(thread->id, thread);
@@ -169,7 +169,7 @@ Ptr<Ptr<void>> KernelState::get_thread_tls_addr(MemState &mem, SceUID thread_id,
 void KernelState::exit_delete_all_threads() {
     const std::lock_guard<std::mutex> lock(mutex);
     for (auto [_, thread] : threads) {
-        thread->exit_delete(*this);
+        thread->exit_delete();
     }
 }
 

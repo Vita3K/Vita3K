@@ -491,7 +491,7 @@ static std::string cmd_continue(EmuEnvState &state, PacketCommand &command) {
                 auto thread = state.kernel.get_thread(state.gdb.inferior_thread);
                 LOG_INFO("GDB Breakpoint trigger (thread name: {}, thread_id: {})", thread->name, thread->id);
                 LOG_INFO("PC: {} LR: {}", read_pc(*thread->cpu), read_lr(*thread->cpu));
-                LOG_INFO("{}", thread->log_stack_traceback(state.kernel));
+                LOG_INFO("{}", thread->log_stack_traceback());
 
                 // stop the world
                 {

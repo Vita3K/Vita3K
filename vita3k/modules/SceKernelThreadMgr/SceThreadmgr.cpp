@@ -713,7 +713,7 @@ EXPORT(int, _sceKernelStartThread, SceUID thid, SceSize arglen, Ptr<void> argp) 
         return SCE_KERNEL_ERROR_RUNNING;
     }
 
-    const int res = thread->start(emuenv.kernel, arglen, argp);
+    const int res = thread->start(arglen, argp, true);
     if (res < 0) {
         return RET_ERROR(res);
     }
@@ -1131,7 +1131,7 @@ EXPORT(int, sceKernelDeleteThread, SceUID thid) {
     if (!thread || thread->status != ThreadStatus::dormant) {
         return SCE_KERNEL_ERROR_NOT_DORMANT;
     }
-    thread->exit_delete(emuenv.kernel, false);
+    thread->exit_delete(false);
     return 0;
 }
 
@@ -1146,7 +1146,7 @@ EXPORT(int, sceKernelDeleteTimer, SceUID timer_handle) {
 EXPORT(int, sceKernelExitDeleteThread, int status) {
     TRACY_FUNC(sceKernelExitDeleteThread, status);
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
-    thread->exit_delete(emuenv.kernel);
+    thread->exit_delete();
 
     return status;
 }
