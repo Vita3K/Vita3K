@@ -234,17 +234,7 @@ public:
     }
 
     void InterpreterFallback(Dynarmic::A32::VAddr addr, size_t num_insts) override {
-        if (cpu->is_thumb_mode())
-            addr |= 1;
-
-        CPUContext context = cpu->save_context();
-        context.set_pc(addr);
-        cpu->fallback.load_context(context);
-        cpu->fallback.execute_instructions_no_check(static_cast<int>(num_insts));
-        context = cpu->fallback.save_context();
-        context.cpsr = cpu->get_cpsr();
-        context.fpscr = cpu->get_fpscr();
-        cpu->load_context(context);
+        LOG_ERROR("Unimplemented instruction at address {}:\n{}", log_hex(addr), save_context(*parent).description());
     }
 
     void ExceptionRaised(uint32_t pc, Dynarmic::A32::Exception exception) override {
@@ -325,8 +315,7 @@ std::unique_ptr<Dynarmic::A32::Jit> DynarmicCPU::make_jit() {
 }
 
 DynarmicCPU::DynarmicCPU(CPUState *state, std::size_t processor_id, Dynarmic::ExclusiveMonitor *monitor, bool cpu_opt)
-    : fallback(state)
-    , parent(state)
+    : parent(state)
     , cb(std::make_unique<ArmDynarmicCallback>(*state, *this))
     , cp15(std::make_shared<ArmDynarmicCP15>())
     , monitor(monitor)
@@ -416,7 +405,6 @@ uint32_t DynarmicCPU::get_tpidruro() {
 
 void DynarmicCPU::set_tpidruro(uint32_t val) {
     cp15->set_tpidruro(val);
-    fallback.set_tpidruro(val);
 }
 
 void DynarmicCPU::set_pc(uint32_t val) {
