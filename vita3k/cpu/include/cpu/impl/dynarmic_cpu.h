@@ -34,7 +34,6 @@ class ArmDynarmicCP15;
 class DynarmicCPU : public CPUInterface {
     friend class ArmDynarmicCallback;
 
-    UnicornCPU fallback;
     CPUState *parent;
 
     std::unique_ptr<Dynarmic::A32::Jit> jit;
