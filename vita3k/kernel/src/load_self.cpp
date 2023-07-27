@@ -75,7 +75,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
         const char *const name = import_name(nid);
         Address export_address;
         {
-            const std::unique_lock<std::shared_mutex> lock_exclusive(kernel.export_nids_mutex);
+            const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
             const ExportNids::iterator export_address_it = kernel.export_nids.find(nid);
             if (export_address_it != kernel.export_nids.end()) {
                 export_address = export_address_it->second;
@@ -231,7 +231,7 @@ static bool load_func_exports(SceKernelModuleInfo *kernel_module_info, const uin
         }
 
         {
-            const std::unique_lock<std::shared_mutex> lock(kernel.export_nids_mutex);
+            const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
             kernel.export_nids.emplace(nid, entry.address());
         }
 
@@ -274,7 +274,7 @@ static bool load_var_exports(const uint32_t *nids, const Ptr<uint32_t> *entries,
             LOG_DEBUG("\tNID {} ({}) at {}", log_hex(nid), name, log_hex(entry.address()));
         }
         {
-            const std::unique_lock<std::shared_mutex> lock(kernel.export_nids_mutex);
+            const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
 
             if (!kernel.late_binding_infos.contains(nid)) {
                 kernel.export_nids.emplace(nid, entry.address());
@@ -657,7 +657,7 @@ SceUID load_self(KernelState &kernel, MemState &mem, const void *self, const std
         kernel.loaded_modules.emplace(uid, sceKernelModuleInfo);
     }
     {
-        const std::lock_guard<std::shared_mutex> lock(kernel.export_nids_mutex);
+        const std::lock_guard<std::mutex> guard(kernel.export_nids_mutex);
         kernel.module_uid_by_nid.emplace(module_info->module_nid, uid);
     }
     return uid;
