@@ -39,6 +39,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <boost/version.hpp>
+
 struct ThreadState;
 
 struct Breakpoint;
@@ -59,7 +61,16 @@ typedef std::shared_ptr<SDL_Thread> ThreadPtr;
 typedef std::map<SceUID, ThreadPtr> ThreadPtrs;
 typedef std::map<SceUID, SceKernelModuleInfoPtr> SceKernelModuleInfoPtrs;
 typedef std::map<SceUID, CallbackPtr> CallbackPtrs;
+
+#if BOOST_VERSION >= 108100
+#include <boost/unordered/unordered_flat_map.hpp>
+// use a boost unordered_flat_map as performance really matters for this field
+typedef boost::unordered::unordered_flat_map<uint32_t, Address> ExportNids;
+#else
+// fallback in case someone is using an old boost version
 typedef std::unordered_map<uint32_t, Address> ExportNids;
+#endif
+
 typedef std::map<Address, uint32_t> NotFoundVars;
 typedef std::unique_ptr<CPUProtocol> CPUProtocolPtr;
 
@@ -122,7 +133,7 @@ struct KernelState {
     SceKernelModuleInfoPtrs loaded_modules;
     LoadedSysmodules loaded_sysmodules;
     ExportNids export_nids;
-    std::shared_mutex export_nids_mutex;
+    std::mutex export_nids_mutex;
     VarLateBindingInfos late_binding_infos;
     ModuleUidByNid module_uid_by_nid;
 
