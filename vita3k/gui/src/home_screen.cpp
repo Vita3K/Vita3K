@@ -649,11 +649,11 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
         }
     }
     if (ImGui::BeginPopup("app_filter")) {
-        ImGui::SetWindowFontScale(1.1f * VIEWPORT_RES_SCALE.x);
         ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT);
         if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_region == ALL && app_compat_state == ALL_COMPAT_STATE))
             app_region = AppRegion::ALL, app_compat_state = ALL_COMPAT_STATE;
         if (ImGui::BeginMenu(lang["by_region"].c_str())) {
+            ImGui::SetWindowFontScale(1.1f * VIEWPORT_RES_SCALE.x);
             if (ImGui::MenuItem(lang["usa"].c_str(), nullptr, app_region == USA))
                 app_region = USA;
             if (ImGui::MenuItem(lang["europe"].c_str(), nullptr, app_region == EURO))
@@ -665,6 +665,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu(lang["by_type"].c_str())) {
+            ImGui::SetWindowFontScale(1.1f * VIEWPORT_RES_SCALE.x);
             if (ImGui::MenuItem(lang["commercial"].c_str(), nullptr, app_region == COMMERCIAL))
                 app_region = COMMERCIAL;
             if (ImGui::MenuItem(lang["homebrew"].c_str(), nullptr, app_region == HOMEBREW))
@@ -672,6 +673,7 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu(lang["by_compatibility_state"].c_str())) {
+            ImGui::SetWindowFontScale(1.1f * VIEWPORT_RES_SCALE.x);
             if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_compat_state == ALL_COMPAT_STATE))
                 app_compat_state = ALL_COMPAT_STATE;
             auto lang_compat = gui.lang.compatibility.states;

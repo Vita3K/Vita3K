@@ -89,7 +89,7 @@ void draw_perf_overlay(GuiState &gui, EmuEnvState &emuenv) {
     ImGui::PopStyleVar();
     ImGui::PopStyleColor();
     if (emuenv.cfg.performance_overlay_detail == PerfomanceOverleyDetail::MAXIMUM) {
-        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (5.f * SCALE.y));
+        ImGui::SetCursorPosY(ImGui::GetCursorPosY() - (3.f * SCALE.y));
         ImGui::PlotLines("##fps_graphic", emuenv.fps_values, IM_ARRAYSIZE(emuenv.fps_values), emuenv.current_fps_offset, nullptr, 0.f, float(emuenv.max_fps), WINDOW_SIZE);
     }
     ImGui::End();

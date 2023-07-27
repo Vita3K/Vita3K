@@ -811,7 +811,7 @@ void draw_user_management(GuiState &gui, EmuEnvState &emuenv) {
     const auto USER_ALREADY_INIT = !gui.users.empty() && !emuenv.io.user_id.empty() && (emuenv.cfg.user_id == emuenv.io.user_id);
     if ((menu == SELECT && USER_ALREADY_INIT) || ((menu != SELECT) && (menu != CONFIRM) && del_menu.empty())) {
         ImGui::SetCursorPos(ImVec2(54.f * SCALE.x, ImGui::GetCursorPosY() + (10.f * SCALE.y)));
-        if (ImGui::Button(common["cancel"].c_str(), ImVec2(80.f * SCALE.x, 40.f * SCALE.y))) {
+        if (ImGui::Button(common["cancel"].c_str(), ImVec2(110.f * SCALE.x, 40.f * SCALE.y))) {
             if (menu != SELECT) {
                 if ((menu == CREATE) || (menu == EDIT))
                     clear_user_temp(gui);
