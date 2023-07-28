@@ -179,6 +179,7 @@ public:
         std::string screen_filter = "Bilinear";
         bool v_sync = true;
         int anisotropic_filtering = 1;
+        bool stretch_the_display_area = false;
         int psn_status = SCE_NP_SERVICE_STATE_UNKNOWN;
     };
 

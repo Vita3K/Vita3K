@@ -49,6 +49,7 @@ struct State {
     FeatureState features;
     int res_multiplier;
     bool disable_surface_sync;
+    bool stretch_the_display_area;
 
     Context *context;
 
@@ -87,6 +88,9 @@ struct State {
     virtual void set_anisotropic_filtering(int anisotropic_filtering) = 0;
     void set_surface_sync_state(bool disable) {
         disable_surface_sync = disable;
+    }
+    void set_stretch_display(bool disable) {
+        stretch_the_display_area = disable;
     }
     virtual bool map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         return true;

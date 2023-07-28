@@ -60,6 +60,7 @@ enum PerfomanceOverleyPosition {
     code(bool, "show-gui", false, show_gui)                                                             \
     code(bool, "show-info-bar", false, show_info_bar)                                                   \
     code(bool, "apps-list-grid", false, apps_list_grid)                                                 \
+    code(bool, "stretch_the_display_area", false, stretch_the_display_area)                             \
     code(bool, "show-live-area-screen", true, show_live_area_screen)                                    \
     code(int, "icon-size", 64, icon_size)                                                               \
     code(bool, "archive-log", false, archive_log)                                                       \
