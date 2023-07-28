@@ -934,13 +934,20 @@ struct SceGxmContext {
 
     std::unique_ptr<renderer::Context> renderer;
 
-    std::mutex lock;
     std::mutex &callback_lock;
 
     uint8_t *alloc_space = nullptr;
     uint8_t *alloc_space_end = nullptr;
 
-    BitmapAllocator command_allocator;
+    // for immediate context only
+    // we use the fact that everything is done in an ordered manner
+    // (i.e if command a is allocated before b, then it is freed before b)
+    // the real positions are these ones modulo command_allocator_size
+    size_t command_next_free_pos;
+    // this one is atomic as it is read from one thread and written to by another
+    std::atomic<size_t> command_last_free_pos;
+    size_t command_allocator_size = 0;
+
     bool last_precomputed = false;
 
     // this is used for deferred contexts
@@ -966,7 +973,6 @@ struct SceGxmContext {
         renderer::Command *cmd = command_list->list->first;
         while (cmd != command_list->list->last) {
             renderer::Command *next = cmd->next;
-            memset(cmd, 0, sizeof(renderer::Command));
             free(cmd);
             cmd = next;
         }
@@ -1039,14 +1045,15 @@ struct SceGxmContext {
             actual_size = state.vdm_buffer_size;
 
             if (state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
-                command_allocator.reset();
-                command_allocator.set_maximum(state.vdm_buffer_size / sizeof(renderer::Command));
+                command_allocator_size = state.vdm_buffer_size / sizeof(renderer::Command);
+                command_next_free_pos = 0;
+                command_last_free_pos = command_allocator_size - 1;
             } else {
                 // setting the vdm buffer size to 0 means we are using it
                 state.vdm_buffer_size = 0;
             }
         } else {
-            static constexpr std::uint32_t DEFAULT_SIZE = 1024;
+            constexpr uint32_t DEFAULT_SIZE = 1024;
 
             Ptr<void> space = gxmRunDeferredMemoryCallback(kern, mem, callback_lock, actual_size, state.vdm_memory_callback,
                 state.memory_callback_userdata, DEFAULT_SIZE, thread_id);
@@ -1091,20 +1098,17 @@ struct SceGxmContext {
     }
 
     renderer::Command *allocate_new_command(KernelState &kern, const MemState &mem, SceUID current_thread_id) {
-        const std::lock_guard<std::mutex> guard(lock);
         renderer::Command *new_command = nullptr;
 
         if (state.type == SCE_GXM_CONTEXT_TYPE_IMMEDIATE) {
-            int size = 1;
-
-            int offset = command_allocator.allocate_from(0, size);
-
-            if (offset < 0) {
-                new_command = new renderer::Command;
-                new_command->flags |= renderer::Command::FLAG_FROM_HOST;
-            } else {
+            if (command_allocator_size > 0 && command_next_free_pos <= command_last_free_pos) {
+                size_t offset = command_next_free_pos % command_allocator_size;
+                command_next_free_pos++;
                 new_command = reinterpret_cast<renderer::Command *>(alloc_space) + offset;
                 new (new_command) renderer::Command;
+            } else {
+                new_command = new renderer::Command;
+                new_command->flags |= renderer::Command::FLAG_FROM_HOST;
             }
         } else {
             new_command = linearly_allocate<renderer::Command>(kern, mem, current_thread_id);
@@ -1121,10 +1125,7 @@ struct SceGxmContext {
             if (cmd->flags & renderer::Command::FLAG_FROM_HOST) {
                 delete cmd;
             } else {
-                const std::lock_guard<std::mutex> guard(lock);
-
-                const std::uint32_t offset = static_cast<std::uint32_t>(cmd - reinterpret_cast<renderer::Command *>(alloc_space));
-                command_allocator.free(offset, 1);
+                command_last_free_pos++;
             }
         }
     }
