@@ -360,6 +360,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
+        emuenv.cfg.current_config.stretch_the_display_area = emuenv.cfg.stretch_the_display_area;
         emuenv.cfg.current_config.psn_status = emuenv.cfg.psn_status;
     }
 
@@ -381,6 +382,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
 
     emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
     emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
+    emuenv.renderer->set_stretch_display(emuenv.cfg.current_config.stretch_the_display_area);
 
     // No change it if app already running
     if (emuenv.io.title_id.empty()) {
@@ -836,6 +838,10 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to display info message in log only.");
         ImGui::Spacing();
+        ImGui::Checkbox("Stretch The Display Area", &emuenv.cfg.stretch_the_display_area);
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Check the box to enlarge the display area to fit the screen size.");
+        ImGui::SameLine();
         ImGui::Checkbox("Grid Mode", &emuenv.cfg.apps_list_grid);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to set the app list to grid mode.");

@@ -279,7 +279,13 @@ void SinglePassScreenFilter::render(bool is_pre_renderpass, vk::ImageView src_im
         // compute viewport now
         const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
         const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-        if (window_aspect > vita_aspect) {
+        if (screen.state.stretch_the_display_area) {
+            // Match the aspect ratio to the screen size.
+            viewport.width = static_cast<float>(screen.extent.width);
+            viewport.height = static_cast<float>(screen.extent.height);
+            viewport.x = 0.0f;
+            viewport.y = 0.0f;
+        } else if (window_aspect > vita_aspect) {
             // Window is wide. Pin top and bottom.
             viewport.width = screen.extent.height * vita_aspect;
             viewport.height = static_cast<float>(screen.extent.height);
@@ -502,7 +508,13 @@ void FSRScreenFilter::on_resize() {
     // compute the extent
     const float window_aspect = static_cast<float>(screen.extent.width) / screen.extent.height;
     const float vita_aspect = static_cast<float>(DEFAULT_RES_WIDTH) / DEFAULT_RES_HEIGHT;
-    if (window_aspect > vita_aspect) {
+    if (screen.state.stretch_the_display_area) {
+        // Match the aspect ratio to the screen size.
+        output_size.width = static_cast<float>(screen.extent.width);
+        output_size.height = static_cast<float>(screen.extent.height);
+        output_offset.width = 0.0f;
+        output_offset.height = 0.0f;
+    } else if (window_aspect > vita_aspect) {
         // Window is wide. Pin top and bottom.
         output_size.width = static_cast<uint32_t>(std::round(screen.extent.height * vita_aspect));
         output_size.height = screen.extent.height;
