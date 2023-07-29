@@ -178,7 +178,16 @@ EXPORT(int, sceSysmoduleIsLoaded, SceSysmoduleModuleId module_id) {
 
 EXPORT(int, sceSysmoduleIsLoadedInternal, SceSysmoduleInternalModuleId module_id) {
     TRACY_FUNC(sceSysmoduleIsLoadedInternal, module_id);
-    return UNIMPLEMENTED();
+    if (static_cast<int>(module_id) >= 0)
+        return CALL_EXPORT(sceSysmoduleIsLoaded, static_cast<SceSysmoduleModuleId>(module_id));
+
+    if (((module_id & 0xFFFF) == 0) || ((module_id & 0xFFFF) > 0x29))
+        return RET_ERROR(SCE_SYSMODULE_ERROR_INVALID_VALUE);
+
+    if (std::find(emuenv.kernel.loaded_internal_sysmodules.begin(), emuenv.kernel.loaded_internal_sysmodules.end(), module_id) != emuenv.kernel.loaded_internal_sysmodules.end())
+        return SCE_SYSMODULE_LOADED;
+    else
+        return RET_ERROR(SCE_SYSMODULE_ERROR_UNLOADED);
 }
 
 EXPORT(int, sceSysmoduleLoadModule, SceSysmoduleModuleId module_id) {
