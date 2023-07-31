@@ -156,7 +156,7 @@ void VKTextureCacheState::prepare_staging_buffer(bool is_configure) {
         && staging_buffer->frame_timestamp != ~0
         && staging_buffer->frame_timestamp > context->frame_timestamp - MAX_FRAMES_RENDERING
         && staging_buffer->scene_timestamp > last_waited_scene;
-    const vk::Fence current_fence = context->render_target->fences[context->render_target->fence_idx];
+    const vk::Fence current_fence = context->next_fence;
 
     if (need_wait) {
         if (staging_buffer->scene_timestamp == current_scene_timestamp) {
@@ -212,7 +212,7 @@ void VKTextureCacheState::prepare_staging_buffer(bool is_configure) {
 
         if (staging_buffer->buffer.size < current_texture->memory_needed) {
             // we need to create a bigger buffer
-            // destroy the previous one if there is, no need to defer destroy it as we now it is no longer being used
+            // destroy the previous one if there is, no need to defer destroy it as we know it is no longer being used
             staging_buffer->buffer.destroy();
 
             staging_buffer->buffer.size = current_texture->memory_needed;

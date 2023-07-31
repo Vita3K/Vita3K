@@ -206,6 +206,8 @@ struct VKContext : public renderer::Context {
     vk::CommandBuffer render_cmd{};
     // command buffer used for commands that need to be executed before render_cmd (mostly because they can't be done during a render pass)
     vk::CommandBuffer prerender_cmd{};
+    // next fence to be used to wait for the current scene
+    vk::Fence next_fence{};
     VKRenderTarget *cmd_target = nullptr;
 
     // used for macroblock sync emulation

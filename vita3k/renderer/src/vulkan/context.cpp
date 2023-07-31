@@ -210,6 +210,12 @@ void VKContext::start_recording() {
         render_target->fences.insert(render_target->fences.begin() + render_target->fence_idx, state.device.createFence(fence_info));
     }
 
+    if (next_fence == nullptr) {
+        next_fence = render_target->fences[render_target->fence_idx];
+        // only increase the fence index if we used the previous one
+        render_target->fence_idx = (render_target->fence_idx + 1) % render_target->fences.size();
+    }
+
     render_cmd = render_target->cmd_buffers[current_frame_idx][render_target->cmd_buffer_idx];
     prerender_cmd = render_target->pre_cmd_buffers[current_frame_idx][render_target->cmd_buffer_idx];
     render_target->cmd_buffer_idx++;
@@ -406,10 +412,8 @@ void VKContext::stop_recording(const SceGxmNotification &notif1, const SceGxmNot
         render_target->height /= 2;
     }
 
-    vk::Fence fence = render_target->fences[render_target->fence_idx];
-    render_target->fence_idx++;
-    if (render_target->fence_idx == render_target->fences.size())
-        render_target->fence_idx = 0;
+    vk::Fence fence = next_fence;
+    next_fence = nullptr;
 
     vk::SubmitInfo submit_info{};
     submit_info.setCommandBuffers(cmdbuffers_to_submit);
