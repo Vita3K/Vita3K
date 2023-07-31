@@ -44,7 +44,7 @@ SwsContext *get_sws_context(size_t width, size_t height) {
             sws_freeContext(s_render_sws_context);
             s_render_sws_context = nullptr;
         }
-        s_render_sws_context = sws_getContext(width, height, AV_PIX_FMT_YUV420P, width, height, AV_PIX_FMT_RGB24,
+        s_render_sws_context = sws_getContext(width, height, AV_PIX_FMT_YUV420P, width, height, AV_PIX_FMT_RGB0,
             0, nullptr, nullptr, nullptr);
     }
     return s_render_sws_context;
@@ -71,7 +71,7 @@ void yuv420_texture_to_rgb(uint8_t *dst, const uint8_t *src, size_t width, size_
     };
 
     const int dst_strides[] = {
-        static_cast<int>(width * 3),
+        static_cast<int>(width * 4),
     };
 
     int error = sws_scale(context, slices, strides, 0, height, dst_slices, dst_strides);

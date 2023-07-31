@@ -693,13 +693,13 @@ void upload_bound_texture(const TextureCacheState &cache, const SceGxmTexture &g
             case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC0:
             case SCE_GXM_TEXTURE_FORMAT_YUV420P3_CSC1:
             case SCE_GXM_TEXTURE_FORMAT_YVU420P3_CSC1: {
-                yuv_texture_pixels.resize(width * height * 3);
+                yuv_texture_pixels.resize(width * height * 4);
                 renderer::texture::yuv420_texture_to_rgb(yuv_texture_pixels.data(),
                     reinterpret_cast<const uint8_t *>(pixels), width, height);
                 pixels = yuv_texture_pixels.data();
                 pixels_per_stride = width;
-                bpp = 24;
-                upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8;
+                bpp = 32;
+                upload_format = SCE_GXM_TEXTURE_BASE_FORMAT_U8U8U8U8;
                 break;
             }
 
