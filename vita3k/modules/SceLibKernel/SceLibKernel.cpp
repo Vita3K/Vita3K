@@ -41,6 +41,7 @@
 #include <util/tracy.h>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 
 enum class TimerFlags : uint32_t {
@@ -93,6 +94,8 @@ EXPORT(int, __stack_chk_fail) {
     const ThreadStatePtr thread = lock_and_find(thread_id, emuenv.kernel.threads, emuenv.kernel.mutex);
     auto ctx = save_context(*thread->cpu);
     LOG_ERROR("{}", ctx.description());
+
+    assert(false); // if this triggers then something is seriously wrong somewhere else
 
     return UNIMPLEMENTED();
 }
@@ -164,9 +167,30 @@ EXPORT(int, sceClibMemcpyChk) {
     return UNIMPLEMENTED();
 }
 
-EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> dst, const void *src, SceSize len) {
+EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> dst, const Ptr<void> src, SceSize len) {
     TRACY_FUNC(sceClibMemcpy_safe, dst, src, len);
-    memcpy(dst.get(emuenv.mem), src, len);
+    /*
+    should be 1:1 to real hw, asserts are in the same position as decompiled code,
+    still call memcpy when the breakpoint happens just like in real hw, should practically
+    be the same as just calling memcpy, but with a bit more checks for the developers,
+    asserts do get annoying if the game is tend to do memcpy on overlapping pointers, which is weird,
+    if they in fact do get annoying very easily they can just be deleted, we still have the log_error
+    */
+    if (len == 0)
+        return dst;
+
+    if (dst.address() == src.address()) {
+        LOG_ERROR("sceClibMemcpy({},{},{}) src == dst", log_hex_full(src.address()), log_hex_full(dst.address()), len);
+        assert(false);
+        CALL_EXPORT(sceClibMemcpy, dst, src.get(emuenv.mem), len);
+        return dst;
+    }
+    const auto diff = std::abs((int)(src.address() - dst.address()));
+    if (len > diff) {
+        LOG_ERROR("sceClibMemcpy({},{},{}) src/dst overlap", log_hex_full(src.address()), log_hex_full(dst.address()), len);
+        assert(false);
+    }
+    CALL_EXPORT(sceClibMemcpy, dst, src.get(emuenv.mem), len);
     return dst;
 }
 
