@@ -677,22 +677,13 @@ void draw_home_screen(GuiState &gui, EmuEnvState &emuenv) {
             if (ImGui::MenuItem(lang["all"].c_str(), nullptr, app_compat_state == ALL_COMPAT_STATE))
                 app_compat_state = ALL_COMPAT_STATE;
             auto lang_compat = gui.lang.compatibility.states;
-            if (ImGui::MenuItem(lang_compat[compat::UNKNOWN].c_str(), nullptr, app_compat_state == compat::UNKNOWN))
-                app_compat_state = compat::UNKNOWN;
-            if (ImGui::MenuItem(lang_compat[compat::NOTHING].c_str(), nullptr, app_compat_state == compat::NOTHING))
-                app_compat_state = compat::NOTHING;
-            if (ImGui::MenuItem(lang_compat[compat::BOOTABLE].c_str(), nullptr, app_compat_state == compat::BOOTABLE))
-                app_compat_state = compat::BOOTABLE;
-            if (ImGui::MenuItem(lang_compat[compat::INTRO].c_str(), nullptr, app_compat_state == compat::INTRO))
-                app_compat_state = compat::INTRO;
-            if (ImGui::MenuItem(lang_compat[compat::MENU].c_str(), nullptr, app_compat_state == compat::MENU))
-                app_compat_state = compat::MENU;
-            if (ImGui::MenuItem(lang_compat[compat::INGAME_LESS].c_str(), nullptr, app_compat_state == compat::INGAME_LESS))
-                app_compat_state = compat::INGAME_LESS;
-            if (ImGui::MenuItem(lang_compat[compat::INGAME_MORE].c_str(), nullptr, app_compat_state == compat::INGAME_MORE))
-                app_compat_state = compat::INGAME_MORE;
-            if (ImGui::MenuItem(lang_compat[compat::PLAYABLE].c_str(), nullptr, app_compat_state == compat::PLAYABLE))
-                app_compat_state = compat::PLAYABLE;
+            for (int32_t i = compat::UNKNOWN; i <= compat::PLAYABLE; i++) {
+                const auto compat_state = static_cast<compat::CompatibilityState>(i);
+                ImGui::PushStyleColor(ImGuiCol_Text, gui.compat.compat_color[compat_state]);
+                if (ImGui::MenuItem(lang_compat[compat_state].c_str(), nullptr, app_compat_state == compat_state))
+                    app_compat_state = compat_state;
+                ImGui::PopStyleColor();
+            }
 
             ImGui::EndMenu();
         }

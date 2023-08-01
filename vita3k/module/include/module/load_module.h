@@ -133,7 +133,7 @@ inline SysmoduleInternalPaths init_sysmodule_internal_paths() {
     p[SCE_SYSMODULE_INTERNAL_IME_DIALOG] = { "libcdlg_ime" };
     p[SCE_SYSMODULE_INTERNAL_COMMON_DIALOG_MAIN] = { "libcdlg_main" };
     p[SCE_SYSMODULE_INTERNAL_DB_RECOVERY_UTILITY] = { "dbrecovery_utility" };
-    p[SCE_SYSMODULE_INTERNAL_DRM_PSM_KDC] = { "psmkdc" }; 
+    p[SCE_SYSMODULE_INTERNAL_DRM_PSM_KDC] = { "psmkdc" };
     p[SCE_SYSMODULE_INTERNAL_LOCATION_INTERNAL] = { "liblocation_internal" };
 
     return p;
