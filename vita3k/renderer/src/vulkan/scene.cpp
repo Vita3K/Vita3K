@@ -121,7 +121,7 @@ void new_frame(VKContext &context) {
 #ifdef __APPLE__
 // restride vertex attribute binding strides to multiple of 4
 // needed for metal because it only allows multiples of 4.
-void restride_stream(const uint8_t *&stream, uint32_t size, uint32_t stride) {
+void restride_stream(const uint8_t *&stream, uint32_t &size, uint32_t stride) {
     const uint32_t new_stride = align(stride, 4);
     const uint32_t nb_vertex_input = ((size + stride - 1) / stride);
 
