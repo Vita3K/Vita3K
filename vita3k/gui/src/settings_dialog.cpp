@@ -765,7 +765,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
             ImGui::Combo("Detail", &emuenv.cfg.performance_overlay_detail, "Minimum\0Low\0Medium\0Maximum\0");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred performance overlay detail.");
-            ImGui::Combo("Position", &emuenv.cfg.performance_overlay_position, "Top Left\0Top Center\0Top Right\0Botttom Left\0Botttom Center\0Botttom Right\0");
+            ImGui::Combo("Position", &emuenv.cfg.performance_overlay_position, "Top Left\0Top Center\0Top Right\0Bottom Left\0Bottom Center\0Bottom Right\0");
             if (ImGui::IsItemHovered())
                 ImGui::SetTooltip("Select your preferred performance overlay position.");
         }

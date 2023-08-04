@@ -379,12 +379,14 @@ Do not power off the system or close the application.</warning_saving>
 		<completed_setup>You have now completed initial setup.
 Your Vita3K system is ready!</completed_setup>
 		<select_language>Select a language.</select_language>
+		<select_pref_path>Select a pref path.</select_pref_path>
 		<install_firmware>Install Firmware.</install_firmware>
 		<install_highly_recommended>Installing both firmware files is highly recommended.</install_highly_recommended>
 		<installed>Installed:</installed>
 		<download_firmware>Download Firmware</download_firmware>
 		<download_font_package>Download Font Package</download_font_package>
 		<install_firmware_file>Install Firmware File</install_firmware_file>
+		<select_interface_settings>Select interface settings.</select_interface_settings>
 		<completed>Completed.</completed>
 		<next>Next</next>
 	</initial_setup>

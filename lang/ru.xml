@@ -524,6 +524,7 @@
 	</settings>
 
 	<settings_dialog>
+		<close>Закрыть</close>
 		<save>Сохранить</save>
 	</settings_dialog>
 
