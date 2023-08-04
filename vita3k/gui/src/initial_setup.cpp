@@ -157,7 +157,7 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         ImGui::PopStyleVar();
         break;
     case SELECT_PREF_PATH:
-        title_str = "Select a pref path.";
+        title_str = lang["select_pref_path"];
         ImGui::SetCursorPos(ImVec2((WINDOW_SIZE.x / 2.f) - (ImGui::CalcTextSize("Current emulator folder").x / 2.f), (WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize()));
         ImGui::TextColored(GUI_COLOR_TEXT_TITLE, "Current emulator path");
         ImGui::Spacing();
@@ -207,11 +207,11 @@ void draw_initial_setup(GuiState &gui, EmuEnvState &emuenv) {
         }
         break;
     case SELECT_INTERFACE_SETTINGS:
-        title_str = "Select interface settings.";
+        title_str = lang["select_interface_settings"];
         ImGui::SetCursorPosY((WINDOW_SIZE.y / 2.f) - ImGui::GetFontSize());
         ImGui::Checkbox("Info Bar Visible", &emuenv.cfg.show_info_bar);
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Check the box to show info bar inside app selector.\nInfo bar is clock, battery level and notification center");
+            ImGui::SetTooltip("Check the box to show info bar inside app selector.\nInfo bar is clock, battery level and notification center.");
         ImGui::SameLine();
         ImGui::Checkbox("Live Area App Screen", &emuenv.cfg.show_live_area_screen);
         if (ImGui::IsItemHovered())

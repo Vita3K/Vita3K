@@ -303,12 +303,14 @@ struct LangState {
         { "back", "Back" },
         { "completed_setup", "You have now completed initial setup.\nYour Vita3K system is ready!" },
         { "select_language", "Select a language" },
+        { "select_pref_path", "Select a pref path." },
         { "install_firmware", "Install Firmware." },
         { "install_highly_recommended", "Installing both firmware files is highly recommended." },
         { "installed", "Installed:" },
         { "download_firmware", "Download Firmware" },
         { "download_font_package", "Download Font Package" },
         { "install_firmware_file", "Install Firmware File" },
+        { "select_interface_settings", "Select interface settings." },
         { "completed", "Completed." },
         { "next", "Next" }
     };
