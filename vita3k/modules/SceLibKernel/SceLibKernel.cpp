@@ -173,7 +173,7 @@ EXPORT(Ptr<void>, sceClibMemcpy_safe, Ptr<void> dst, const Ptr<void> src, SceSiz
     should be 1:1 to real hw, asserts are in the same position as decompiled code,
     still call memcpy when the breakpoint happens just like in real hw, should practically
     be the same as just calling memcpy, but with a bit more checks for the developers,
-    asserts do get annoying if the game is tend to do memcpy on overlapping pointers, which is weird,
+    asserts do get annoying if the game tends to do memcpy on overlapping pointers, which is weird,
     if they in fact do get annoying very easily they can just be deleted, we still have the log_error
     */
     if (len == 0)
