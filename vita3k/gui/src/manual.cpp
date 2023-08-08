@@ -42,6 +42,7 @@ void open_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 
 static int32_t current_page;
 static float scroll = 0.f, max_scroll = 0.f;
+static auto hidden_button = false;
 
 void browse_pages_manual(GuiState &gui, EmuEnvState &emuenv, const uint32_t button) {
     const auto RES_HEIGHT_SCALE = emuenv.viewport_size.y / emuenv.res_height_dpi_scale;
@@ -63,6 +64,9 @@ void browse_pages_manual(GuiState &gui, EmuEnvState &emuenv, const uint32_t butt
         break;
     case SCE_CTRL_DOWN:
         scroll += std::min(40.f * SCALE, max_scroll - scroll);
+        break;
+    case SCE_CTRL_TRIANGLE:
+        hidden_button = !hidden_button;
         break;
     default:
         break;
@@ -122,8 +126,6 @@ bool init_manual(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
 
     return !gui.manuals.empty();
 }
-
-static auto hidden_button = false;
 
 void draw_manual(GuiState &gui, EmuEnvState &emuenv) {
     // Set settings and begin window for manual

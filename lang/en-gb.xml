@@ -461,7 +461,7 @@ Please check work.bin/rif file or zRIF key.</failed_install_license>
 			<browse_page>Browse page</browse_page>
 			<browse_page_control>D-pad, Left Stick, Wheel in Up/Down or using Slider, Click on &lt;/&gt;</browse_page_control>
 			<hide_show>Hide/Show button</hide_show>
-			<hide_show_control>Right Click</hide_show_control>
+			<hide_show_control>Left Click or Press on Triangle</hide_show_control>
 			<exit_manual>Exit Manual</exit_manual>
 			<exit_manual_control>Click on Esc or Press on PS</exit_manual_control>
 		</help>

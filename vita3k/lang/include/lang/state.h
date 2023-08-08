@@ -302,7 +302,7 @@ struct LangState {
     std::map<std::string, std::string> initial_setup = {
         { "back", "Back" },
         { "completed_setup", "You have now completed initial setup.\nYour Vita3K system is ready!" },
-        { "select_language", "Select a language" },
+        { "select_language", "Select a language." },
         { "select_pref_path", "Select a pref path." },
         { "install_firmware", "Install Firmware." },
         { "install_highly_recommended", "Installing both firmware files is highly recommended." },
@@ -383,7 +383,7 @@ struct LangState {
             { "browse_page", "Browse page" },
             { "browse_page_control", "D-pad, Left Stick, Wheel in Up/Down or using Slider, Click on </>" },
             { "hide_show", "Hide/Show button" },
-            { "hide_show_control", "Right Click" },
+            { "hide_show_control", "Left Click or Press on Triangle" },
             { "exit_manual", "Exit Manual" },
             { "exit_manual_control", "Click on Esc or Press on PS" }
         };

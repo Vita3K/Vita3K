@@ -448,7 +448,7 @@
 			<browse_page_control>D-pad, л. стик влево/вправо, колёсико вверх/вниз 
 либо нажав &lt;/&gt;</browse_page_control>
 			<hide_show>Скрыть/показать кнопки</hide_show>
-			<hide_show_control>Правая кнопка мышки</hide_show_control>
+			<hide_show_control>Левая кнопка мышки или нажать треугольник</hide_show_control>
 			<exit_manual>Закрыть мануал</exit_manual>
 			<exit_manual_control>Нажать на Esc или PS</exit_manual_control>
 		</help>

@@ -633,6 +633,8 @@ bool handle_events(EmuEnvState &emuenv, GuiState &gui) {
                     return SCE_CTRL_L1;
                 else if (scancode == emuenv.cfg.keyboard_button_r1)
                     return SCE_CTRL_R1;
+                else if (scancode == emuenv.cfg.keyboard_button_triangle)
+                    return SCE_CTRL_TRIANGLE;
                 else if (scancode == emuenv.cfg.keyboard_button_circle)
                     return SCE_CTRL_CIRCLE;
                 else if (scancode == emuenv.cfg.keyboard_button_cross)
