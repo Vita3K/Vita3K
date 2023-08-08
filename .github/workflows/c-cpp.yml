@@ -150,6 +150,83 @@ jobs:
     outputs:
       BuildTag: ${{ env.build_variable }}
 
+  macos_universal_build:
+    needs: [format-check]
+    runs-on: macos-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config: [Release]
+        include:
+          - cache_path: |
+              ~/Library/Caches/ccache
+              build/arm64-homebrew
+            extra_cmake_args: -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DMACOS_UNIVERSAL_BUILD=ON
+            cmake_preset: macos-ninja
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - uses: actions/cache@v3
+        with:
+          path: ${{ matrix.cache_path }}
+          key: cache-macos-universal-${{ matrix.config }}-${{ github.sha }}
+          restore-keys: |
+            cache-macos-universal-${{ matrix.config }}-
+
+      - name: Set up build environment
+        run: |
+          brew install ccache ninja create-dmg
+          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
+          ccache --set-config=compiler_check=content
+          
+      - name: Ccache setup
+        run: ccache -z
+
+      - name: CMake
+        run: |
+          zsh gen-macos-universal.sh ninja
+          cmake --build build/${{ matrix.cmake_preset }} --config ${{ matrix.config }}
+
+      - name: CTest
+        working-directory: build/${{ matrix.cmake_preset }}
+        run: ctest --build-config ${{ matrix.config }} --output-on-failure
+
+      - name: Compute git short sha
+        shell: bash
+        run: echo "git_short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+        
+      - name: Ccache statistics
+        run: ccache -s
+
+      - name: Create DMG
+        run: |
+          cd build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
+          create-dmg \
+            --volname "Vita3K Installer" \
+            --volicon Vita3K.app/Contents/Resources/Vita3K.icns \
+            --window-size 500 300 \
+            --icon-size 100 \
+            --icon Vita3K.app 120 115 \
+            --app-drop-link 360 115 \
+            vita3k-${{ env.git_short_sha }}-${{ matrix.os }}.dmg \
+            Vita3K.app
+          rm -rf Vita3K.app
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: vita3k-${{ env.git_short_sha }}-macos-universal
+          # path is set up to be <binary_dir>/bin/<config_type> since that's how multi-config
+          # generators work on CMake
+          path: build/${{ matrix.cmake_preset }}/bin/${{ matrix.config }}
+
+    outputs:
+      BuildTag: ${{ env.build_variable }}
+
   create-release:
     needs: [build]
     runs-on: "ubuntu-20.04"

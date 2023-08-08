@@ -5,6 +5,9 @@ project(Vita3K)
 include(ProcessorCount)
 ProcessorCount(CPU_COUNT)
 
+# Define the Architecture variable, right now it should only contain "x86_64" or "arm64"
+include("external/dynarmic/CMakeModules/DetectArchitecture.cmake")
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -12,6 +15,7 @@ set(CMAKE_OSX_DEPLOYMENT_TARGET 11.0)
 
 option(USE_DISCORD_RICH_PRESENCE "Build Vita3K with Discord Rich Presence" ON)
 option(USE_VITA3K_UPDATE "Build Vita3K with updater." ON)
+option(MACOS_UNIVERSAL_BUILD "" OFF)
 
 if("${CMAKE_CXX_COMPILER_LAUNCHER}" STREQUAL "")
     find_program(CCACHE_PROGRAM ccache)

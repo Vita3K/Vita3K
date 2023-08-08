@@ -147,7 +147,15 @@ if(MSVC)
 endif()
 
 set(UNICORN_ARCH "arm")
-add_subdirectory(unicorn EXCLUDE_FROM_ALL)
+if (MACOS_UNIVERSAL_BUILD)
+	add_library(unicorn INTERFACE)
+	target_include_directories(unicorn INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/unicorn/include")
+	target_link_libraries(unicorn INTERFACE "${PROJECT_SOURCE_DIR}/external/unicorn/libarm-softmmu.a"
+											"${PROJECT_SOURCE_DIR}/external/unicorn/libunicorn-common.a"
+											"${PROJECT_SOURCE_DIR}/external/unicorn/libunicorn.a")
+else ()
+	add_subdirectory(unicorn EXCLUDE_FROM_ALL)
+endif()
 
 add_library(vita-toolchain INTERFACE)
 target_include_directories(vita-toolchain INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/vita-toolchain/src")
@@ -192,8 +200,12 @@ if(USE_DISCORD_RICH_PRESENCE)
 	if(APPLE)
 		if(ARCHITECTURE STREQUAL "x86_64")
 			target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dylib")
-		else()
+		elseif(ARCHITECTURE STREQUAL "arm64")
 			target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/aarch64/discord_game_sdk.dylib")
+		else() # Universal build
+			execute_process(COMMAND lipo -create -output discord_game_sdk.dylib x86_64/discord_game_sdk.dylib aarch64/discord_game_sdk.dylib
+			WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib")
+			target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/discord_game_sdk.dylib")
 		endif()
 	elseif(WIN32)
 		target_link_libraries(discord-rpc PUBLIC "${CMAKE_BINARY_DIR}/external/discord_game_sdk/lib/x86_64/discord_game_sdk.dll.lib")
@@ -236,7 +248,29 @@ target_include_directories(CLI11 INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/cli11")
 add_library(vulkan INTERFACE)
 target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/Vulkan-Headers/include")
 if(APPLE)
-	target_include_directories(vulkan INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/MoltenVK")
+	# Get latest version tag of MoltenVK
+	execute_process(
+		COMMAND ${GIT_EXECUTABLE} ls-remote -t
+		"https://github.com/KhronosGroup/MoltenVK"
+		RESULT_VARIABLE result
+		OUTPUT_VARIABLE output
+	)
+	string(REGEX MATCHALL "v[0-9]+.[0-9]+.[0-9]+" tag_list "${output}")
+	list(GET tag_list -1 latest_version)
+	# Download latest MoltenVK if file not exist
+	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar")
+		message(STATUS "Downloading MoltenVK...")
+		file(DOWNLOAD https://github.com/KhronosGroup/MoltenVK/releases/download/${latest_version}/MoltenVK-macos.tar
+			"${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar" SHOW_PROGRESS)
+	endif()
+
+	if(NOT EXISTS "${CMAKE_BINARY_DIR}/external/MoltenVK")
+		file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/external/MoltenVK")
+		execute_process(COMMAND ${CMAKE_COMMAND} -E tar xf "${CMAKE_BINARY_DIR}/external/MoltenVK-macos.tar"
+			WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/external")
+	endif()
+
+	target_include_directories(vulkan INTERFACE "${CMAKE_BINARY_DIR}/external/MoltenVK/MoltenVK/include/MoltenVK")
 endif()
 
 add_library(vma INTERFACE)
@@ -248,6 +282,7 @@ add_subdirectory(ffmpeg)
 
 add_subdirectory(psvpfstools)
 
+# openssl
 if(APPLE)
  	execute_process(
  		COMMAND brew --prefix openssl
@@ -290,7 +325,13 @@ message("OpenSSL include dir: ${OPENSSL_INCLUDE_DIR}")
 message("OpenSSL libraries: ${OPENSSL_LIBRARIES}")
 
 add_library(ssl INTERFACE)
-target_link_libraries(ssl INTERFACE OpenSSL::SSL)
+if (MACOS_UNIVERSAL_BUILD)
+	target_link_libraries(ssl INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../build/fat-homebrew-lib/openssl@3/lib/libssl.a"
+										"${CMAKE_CURRENT_SOURCE_DIR}/../build/fat-homebrew-lib/openssl@3/lib/libcrypto.a")
+	target_include_directories(ssl INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}/../build/fat-homebrew-lib/openssl@3/include")
+else()
+	target_link_libraries(ssl INTERFACE OpenSSL::SSL)
+endif()
 
 file(GLOB LIBATRAC9_SOURCES
 	LibAtrac9/C/src/*.c
@@ -300,10 +341,21 @@ add_library(libatrac9 STATIC ${LIBATRAC9_SOURCES})
 
 target_include_directories(libatrac9 PUBLIC LibAtrac9/C/src)
 
-option(BUILD_SHARED_LIBS "Build shared library" OFF)
-option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
-set(DISPATCH 1)
-add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)
+# xxHash
+if (MACOS_UNIVERSAL_BUILD)
+	add_library(xxhash INTERFACE)
+	target_include_directories(xxhash
+		INTERFACE
+		$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/external/xxHash>
+		$<INSTALL_INTERFACE:include/>)
+	target_link_libraries(xxhash INTERFACE "${PROJECT_SOURCE_DIR}/external/xxHash/libxxhash.a")
+	add_library(xxHash::xxhash ALIAS xxhash)
+else()
+	option(BUILD_SHARED_LIBS "Build shared library" OFF)
+	option(XXHASH_BUILD_XXHSUM "Build the xxhsum binary" OFF)
+	set(DISPATCH 1)
+	add_subdirectory(xxHash/cmake_unofficial EXCLUDE_FROM_ALL)
+endif()
 
 # Tracy
 option(TRACY_ENABLE_ON_CORE_COMPONENTS
