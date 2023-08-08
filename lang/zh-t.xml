@@ -290,7 +290,7 @@
 		<r2_button>R2按鈕</r2_button>
 		<l3_button>L3按鈕</l3_button>
 		<r3_button>R3按鈕</r3_button>
-		<gui>圖形化使用者介面</gui>
+		<gui>GUI（圖形化使用者介面）</gui>
 		<full_screen>全螢幕</full_screen>
 		<toggle_touch>切換觸摸</toggle_touch>
 		<toggle_touch_note>在背觸和前觸之間切換。</toggle_touch_note>
@@ -443,7 +443,7 @@
 			<browse_page>瀏覽頁面</browse_page>
 			<browse_page_control>方向鍵、左操作桿、滾輪上/下或使用滾動條、按下&lt;/&gt;</browse_page_control>
 			<hide_show>隱藏/顯示按鈕</hide_show>
-			<hide_show_control>按下右鍵</hide_show_control>
+			<hide_show_control>按下左鍵或按三角按鈕</hide_show_control>
 			<exit_manual>解除說明書</exit_manual>
 			<exit_manual_control>按下Esc或按PS按鈕</exit_manual_control>
 		</help>

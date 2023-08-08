@@ -420,17 +420,18 @@ Vita3Kをお楽しみください。</completed_setup>
 			<firmware_not_detected>ファームウェアが検出されませんでした。インストールを強くお勧めします</firmware_not_detected>
 			<firmware_font_not_detected>フォントのファームウェアが検出されませんでした。Liveareaのフォントのために、インストールを推奨します</firmware_font_not_detected>
 			<browse_app>アプリリストの閲覧</browse_app>
-			<browse_app_control>方向キー、左ステック、ホイールの上下またはスライダー</browse_app_control>
+			<browse_app_control>方向キー、左ステック、ホイールの上下または
+スライダー</browse_app_control>
 			<start_app>アプリの開始</start_app>
-			<start_app_control>はじめるを押すか、×ボタンを押す</start_app_control>
+			<start_app_control>はじめるを押すか、バツボタンを押す</start_app_control>
 			<show_hide>アプリの起動中にLiveareaの表示/非表示を切り替える</show_hide>
 			<show_hide_control>PSボタンを押す</show_hide_control>
 			<exit_livearea>Liveareaを閉じる</exit_livearea>
-			<exit_livearea_control>Escを押すか〇ボタンを押す</exit_livearea_control>
+			<exit_livearea_control>Escを押すか丸ボタンを押す</exit_livearea_control>
 			<browse_page>ページの閲覧</browse_page>
 			<browse_page_control>方向キー、左ステック、ホイールの上下またはスライダーまたは&lt;/&gt;</browse_page_control>
 			<hide_show>ボタンの表示/非表示</hide_show>
-			<hide_show_control>右クリック</hide_show_control>
+			<hide_show_control>左クリックまたは三角ボタンを押す</hide_show_control>
 			<exit_manual>マニュアルを閉じる</exit_manual>
 			<exit_manual_control>Escを押すかPSボタンを押す</exit_manual_control>
 		</help>
