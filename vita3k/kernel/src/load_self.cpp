@@ -51,14 +51,14 @@
 
 static constexpr bool LOG_MODULE_LOADING = false;
 
-static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, uint32_t module_id) {
-    struct VarImportsHeader {
-        uint32_t unk : 4; // Must be zero
-        uint32_t reloc_data_size : 24; // Size of Relocation data in bytes, includes this header.
-        uint32_t unk2 : 4; // Must be zero
-    };
-    static_assert(sizeof(VarImportsHeader) == sizeof(uint32_t));
+struct VarImportsHeader {
+    uint32_t unk : 4; // Must be zero
+    uint32_t reloc_data_size : 24; // Size of Relocation data in bytes, includes this header.
+    uint32_t unk2 : 4; // Must be zero
+};
+static_assert(sizeof(VarImportsHeader) == sizeof(uint32_t));
 
+static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, MemState &mem, uint32_t module_id) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -107,7 +107,7 @@ static bool load_var_imports(const uint32_t *nids, const Ptr<uint32_t> *entries,
     return true;
 }
 
-static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, KernelState &kernel, const MemState &mem) {
+static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries, size_t count, const SegmentInfosForReloc &segments, KernelState &kernel, const MemState &mem) {
     for (size_t i = 0; i < count; ++i) {
         const uint32_t nid = nids[i];
         const Ptr<uint32_t> entry = entries[i];
@@ -145,6 +145,16 @@ static bool load_func_imports(const uint32_t *nids, const Ptr<uint32_t> *entries
             stub[0] = encode_arm_inst(INSTRUCTION_MOVW, (uint16_t)func_address, 12);
             stub[1] = encode_arm_inst(INSTRUCTION_MOVT, (uint16_t)(func_address >> 16), 12);
             stub[2] = encode_arm_inst(INSTRUCTION_BRANCH, 0, 12);
+        }
+        if (stub[3]) { // if function's associated reftable exists
+            VarImportsHeader *const var_reloc_header = Ptr<VarImportsHeader>(stub[3]).get(mem);
+            const auto var_reloc_entries = static_cast<void *>(var_reloc_header + 1);
+            const uint32_t reloc_size = (var_reloc_header->reloc_data_size > sizeof(VarImportsHeader)) ? (var_reloc_header->reloc_data_size - sizeof(VarImportsHeader)) : 0;
+            if (reloc_size) {
+                if (!relocate(var_reloc_entries, reloc_size, segments, mem, true, entry.address())) {
+                    return false;
+                }
+            }
         }
     }
     return true;
@@ -190,7 +200,7 @@ static bool load_imports(const sce_module_info_raw &module, Ptr<const void> segm
         const Ptr<uint32_t> *const entries = Ptr<Ptr<uint32_t>>(func_entry_table).get(mem);
 
         const size_t num_syms_funcs = imports->num_syms_funcs;
-        if (!load_func_imports(nids, entries, num_syms_funcs, kernel, mem)) {
+        if (!load_func_imports(nids, entries, num_syms_funcs, segments, kernel, mem)) {
             return false;
         }
 
