@@ -41,7 +41,8 @@ enum Code {
     MovwAbsNc = 43,
     MovtAbs = 44,
     ThumbMovwAbsNc = 47,
-    ThumbMovtAbs = 48
+    ThumbMovtAbs = 48,
+    RBase = 255
 };
 
 // Common type so we can static_cast between unknown/known formats
@@ -249,6 +250,7 @@ static bool relocate_entry(void *data, uint32_t code, uint32_t symval, uint32_t 
     switch (code) {
     case None:
     case V4BX: // Untested.
+    case RBase:
         return true;
 
     case Abs32:
