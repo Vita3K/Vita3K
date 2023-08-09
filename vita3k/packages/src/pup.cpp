@@ -30,6 +30,7 @@
 
 #include <fmt/xchar.h>
 
+#include <algorithm>
 #include <fstream>
 
 // Credits to TeamMolecule for their original work on this https://github.com/TeamMolecule/sceutils
