@@ -433,22 +433,35 @@ void draw_background(GuiState &gui, EmuEnvState &emuenv) {
 }
 
 void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
-    const auto display_size = ImGui::GetIO().DisplaySize;
-    const auto RES_SCALE = ImVec2(display_size.x / emuenv.res_width_dpi_scale, display_size.y / emuenv.res_height_dpi_scale);
-    const auto SCALE = ImVec2(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
-    const auto INFORMATION_BAR_HEIGHT = 32.f * SCALE.y;
+    const ImVec2 VIEWPORT_SIZE(emuenv.viewport_size.x, emuenv.viewport_size.y);
+    const ImVec2 VIEWPORT_POS(emuenv.viewport_pos.x, emuenv.viewport_pos.y);
+    const ImVec2 RES_SCALE(VIEWPORT_SIZE.x / emuenv.res_width_dpi_scale, VIEWPORT_SIZE.y / emuenv.res_height_dpi_scale);
+    const ImVec2 SCALE(RES_SCALE.x * emuenv.dpi_scale, RES_SCALE.y * emuenv.dpi_scale);
 
-    ImGui::SetNextWindowPos(ImVec2(0.f, INFORMATION_BAR_HEIGHT), ImGuiCond_Always);
-    ImGui::SetNextWindowSize(display_size, ImGuiCond_Always);
+    const auto INFO_BAR_HEIGHT = 32.f * SCALE.y;
+
+    const ImVec2 WINDOW_POS(VIEWPORT_POS.x, VIEWPORT_POS.y + INFO_BAR_HEIGHT);
+    const ImVec2 WINDOW_POS_MAX(WINDOW_POS.x + VIEWPORT_SIZE.x, VIEWPORT_POS.y + VIEWPORT_SIZE.y);
+    const ImVec2 WINDOW_SIZE(VIEWPORT_SIZE.x, VIEWPORT_SIZE.y - INFO_BAR_HEIGHT);
+
+    const auto draw_list = ImGui::GetBackgroundDrawList();
+
+    // Draw black background for full screens
+    draw_list->AddRectFilled(ImVec2(0.f, 0.f), ImGui::GetIO().DisplaySize, IM_COL32(0.f, 0.f, 0.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
+
+    ImGui::SetNextWindowPos(WINDOW_POS, ImGuiCond_Always);
+    ImGui::SetNextWindowSize(WINDOW_SIZE, ImGuiCond_Always);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.f, 0.f));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.f);
     ImGui::Begin("##start_screen", &gui.vita_area.start_screen, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings);
 
     if (gui.start_background)
-        ImGui::GetBackgroundDrawList()->AddImage(gui.start_background, ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size);
+        draw_list->AddImage(gui.start_background, WINDOW_POS, WINDOW_POS_MAX);
     else
-        ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2(0.f, INFORMATION_BAR_HEIGHT), display_size, IM_COL32(43.f, 44.f, 47.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
+        draw_list->AddRectFilled(WINDOW_POS, WINDOW_POS_MAX, IM_COL32(43.f, 44.f, 47.f, 255.f), 0.f, ImDrawFlags_RoundCornersAll);
 
-    ImGui::GetBackgroundDrawList()->AddRect(ImVec2(32.f * SCALE.x, 64.f * SCALE.y), ImVec2(display_size.x - (32.f * SCALE.x), display_size.y - (32.f * SCALE.y)), IM_COL32(255.f, 255.f, 255.f, 255.f), 20.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
+    draw_list->AddRect(ImVec2(WINDOW_POS.x + (32.f * SCALE.x), WINDOW_POS.y + (32.f * SCALE.y)), ImVec2(WINDOW_POS_MAX.x - (32.f * SCALE.x), WINDOW_POS_MAX.y - (32.f * SCALE.y)), IM_COL32(255.f, 255.f, 255.f, 255.f), 20.0f * SCALE.x, ImDrawFlags_RoundCornersAll);
 
     const auto is_12_hour_format = emuenv.cfg.sys_time_format == SCE_SYSTEM_PARAM_TIME_FORMAT_12HOUR;
     const auto now = std::chrono::system_clock::now();
@@ -458,9 +471,9 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     SAFE_LOCALTIME(&tt, &local);
 
     ImGui::PushFont(gui.vita_font);
-    const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * emuenv.dpi_scale);
+    const auto DEFAULT_FONT_SCALE = ImGui::GetFontSize() / (19.2f * SCALE.x);
     const auto SCAL_PIX_DATE_FONT = 34.f / 28.f;
-    const auto DATE_FONT_SIZE = (34.f * emuenv.dpi_scale) * DEFAULT_FONT_SCALE;
+    const auto DATE_FONT_SIZE = (34.f * SCALE.x) * DEFAULT_FONT_SCALE;
     const auto SCAL_DATE_FONT_SIZE = DATE_FONT_SIZE / ImGui::GetFontSize();
 
     auto DATE_TIME = get_date_time(gui, emuenv, const_cast<tm &>(local));
@@ -468,14 +481,14 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     const auto CALC_DATE_SIZE = ImGui::CalcTextSize(DATE_STR.c_str());
     const auto DATE_INIT_SCALE = ImVec2(start_param.date_pos.x * SCALE.x, start_param.date_pos.y * SCALE.y);
     const auto DATE_SIZE = ImVec2(CALC_DATE_SIZE.x * SCAL_DATE_FONT_SIZE, CALC_DATE_SIZE.y * SCAL_DATE_FONT_SIZE * SCAL_PIX_DATE_FONT);
-    const auto DATE_POS = ImVec2(display_size.x - (start_param.date_layout == DateLayout::RIGHT_DOWN ? DATE_INIT_SCALE.x + (DATE_SIZE.x * RES_SCALE.x) : DATE_INIT_SCALE.x), display_size.y - DATE_INIT_SCALE.y);
-    ImGui::GetBackgroundDrawList()->AddText(gui.vita_font, DATE_FONT_SIZE * RES_SCALE.x, DATE_POS, start_param.date_color, DATE_STR.c_str());
+    const auto DATE_POS = ImVec2(WINDOW_POS_MAX.x - (start_param.date_layout == DateLayout::RIGHT_DOWN ? DATE_INIT_SCALE.x + (DATE_SIZE.x * RES_SCALE.x) : DATE_INIT_SCALE.x), WINDOW_POS_MAX.y - DATE_INIT_SCALE.y);
+    draw_list->AddText(gui.vita_font, DATE_FONT_SIZE * RES_SCALE.x, DATE_POS, start_param.date_color, DATE_STR.c_str());
     ImGui::PopFont();
 
     ImGui::PushFont(gui.large_font);
-    const auto DEFAULT_LARGE_FONT_SCALE = ImGui::GetFontSize() / (116.f * emuenv.dpi_scale);
-    const auto LARGE_FONT_SIZE = (116.f * emuenv.dpi_scale) * DEFAULT_FONT_SCALE;
-    const auto PIX_LARGE_FONT_SCALE = (96.f * emuenv.dpi_scale) / ImGui::GetFontSize();
+    const auto DEFAULT_LARGE_FONT_SCALE = ImGui::GetFontSize() / (116.f * SCALE.x);
+    const auto LARGE_FONT_SIZE = (116.f * SCALE.x) * DEFAULT_FONT_SCALE;
+    const auto PIX_LARGE_FONT_SCALE = (96.f * SCALE.x) / ImGui::GetFontSize();
 
     const auto CLOCK_STR = DATE_TIME[DateTime::CLOCK];
     const auto CALC_CLOCK_SIZE = ImGui::CalcTextSize(CLOCK_STR.c_str());
@@ -483,20 +496,20 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
 
     const auto DAY_MOMENT_STR = DATE_TIME[DateTime::DAY_MOMENT];
     const auto CALC_DAY_MOMENT_SIZE = ImGui::CalcTextSize(DAY_MOMENT_STR.c_str());
-    const auto DAY_MOMENT_LARGE_FONT_SIZE = (56.f * emuenv.dpi_scale) * DEFAULT_LARGE_FONT_SCALE;
+    const auto DAY_MOMENT_LARGE_FONT_SIZE = (56.f * SCALE.x) * DEFAULT_LARGE_FONT_SCALE;
     const auto LARGE_FONT_DAY_MOMENT_SCALE = DAY_MOMENT_LARGE_FONT_SIZE / ImGui::GetFontSize();
     const auto DAY_MOMENT_SIZE = is_12_hour_format ? ImVec2(CALC_DAY_MOMENT_SIZE.x * LARGE_FONT_DAY_MOMENT_SCALE, CALC_DAY_MOMENT_SIZE.y * LARGE_FONT_DAY_MOMENT_SCALE * PIX_LARGE_FONT_SCALE) : ImVec2(0.f, 0.f);
 
-    auto CLOCK_POS = ImVec2(display_size.x - (start_param.clock_pos.x * SCALE.x), display_size.y - (start_param.clock_pos.y * SCALE.y));
+    auto CLOCK_POS = ImVec2(WINDOW_POS_MAX.x - (start_param.clock_pos.x * SCALE.x), WINDOW_POS_MAX.y - (start_param.clock_pos.y * SCALE.y));
     if (start_param.date_layout == DateLayout::RIGHT_DOWN)
         CLOCK_POS.x -= (CLOCK_SIZE.x * RES_SCALE.x) + (DAY_MOMENT_SIZE.x * RES_SCALE.x);
     else if (string_utils::stoi_def(DATE_TIME[DateTime::HOUR], 0, "hour") < 10)
         CLOCK_POS.x += ImGui::CalcTextSize("0").x * RES_SCALE.x;
 
-    ImGui::GetBackgroundDrawList()->AddText(gui.large_font, LARGE_FONT_SIZE * RES_SCALE.x, CLOCK_POS, start_param.date_color, CLOCK_STR.c_str());
+    draw_list->AddText(gui.large_font, LARGE_FONT_SIZE * RES_SCALE.x, CLOCK_POS, start_param.date_color, CLOCK_STR.c_str());
     if (is_12_hour_format) {
         const auto DAY_MOMENT_POS = ImVec2(CLOCK_POS.x + ((CLOCK_SIZE.x + (6.f * SCALE.x)) * RES_SCALE.x), CLOCK_POS.y + ((CLOCK_SIZE.y - DAY_MOMENT_SIZE.y) * RES_SCALE.y));
-        ImGui::GetBackgroundDrawList()->AddText(gui.large_font, DAY_MOMENT_LARGE_FONT_SIZE * RES_SCALE.x, DAY_MOMENT_POS, start_param.date_color, DAY_MOMENT_STR.c_str());
+        draw_list->AddText(gui.large_font, DAY_MOMENT_LARGE_FONT_SIZE * RES_SCALE.x, DAY_MOMENT_POS, start_param.date_color, DAY_MOMENT_STR.c_str());
     }
     ImGui::PopFont();
 
@@ -508,7 +521,7 @@ void draw_start_screen(GuiState &gui, EmuEnvState &emuenv) {
     }
 
     ImGui::End();
-    ImGui::PopStyleVar();
+    ImGui::PopStyleVar(3);
 }
 
 } // namespace gui
