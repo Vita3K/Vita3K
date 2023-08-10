@@ -254,7 +254,7 @@ EXPORT(int, sceNetEpollWaitCB) {
 EXPORT(Ptr<int>, sceNetErrnoLoc) {
     TRACY_FUNC(sceNetErrnoLoc);
     // TLS id was taken from disasm source
-    auto addr = emuenv.kernel.get_thread_tls_addr(emuenv.mem, thread_id, 0x40);
+    auto addr = emuenv.kernel.get_thread_tls_addr(emuenv.mem, thread_id, TLS_NET_ERRNO);
     return addr.cast<int>();
 }
 
