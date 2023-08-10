@@ -89,8 +89,8 @@ struct State {
     void set_surface_sync_state(bool disable) {
         disable_surface_sync = disable;
     }
-    void set_stretch_display(bool disable) {
-        stretch_the_display_area = disable;
+    void set_stretch_display(bool enable) {
+        stretch_the_display_area = enable;
     }
     virtual bool map_memory(MemState &mem, Ptr<void> address, uint32_t size) {
         return true;
