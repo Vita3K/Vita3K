@@ -18,6 +18,7 @@
 #include "imgui.h"
 #include "private.h"
 
+#include <app/functions.h>
 #include <audio/state.h>
 #include <config/functions.h>
 #include <config/state.h>
@@ -228,6 +229,8 @@ void init_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path
         config.ngs_enable = emuenv.cfg.ngs_enable;
         config.psn_status = emuenv.cfg.psn_status;
     }
+    get_modules_list(gui, emuenv);
+    config.stretch_the_display_area = emuenv.cfg.stretch_the_display_area;
     config_cpu_backend = set_cpu_backend(config.cpu_backend);
     current_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(config.anisotropic_filtering)));
     max_aniso_filter_log = static_cast<int>(log2f(static_cast<float>(emuenv.renderer->get_max_anisotropic_filtering())));
@@ -311,6 +314,12 @@ static void save_config(GuiState &gui, EmuEnvState &emuenv) {
         emuenv.cfg.ngs_enable = config.ngs_enable;
         emuenv.cfg.psn_status = config.psn_status;
     }
+
+    if (emuenv.cfg.stretch_the_display_area != config.stretch_the_display_area) {
+        emuenv.cfg.stretch_the_display_area = config.stretch_the_display_area;
+        app::update_viewport(emuenv);
+    }
+
     config::serialize_config(emuenv.cfg, emuenv.cfg.config_path);
 }
 
@@ -360,7 +369,6 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
         emuenv.cfg.current_config.v_sync = emuenv.cfg.v_sync;
         emuenv.cfg.current_config.anisotropic_filtering = emuenv.cfg.anisotropic_filtering;
         emuenv.cfg.current_config.ngs_enable = emuenv.cfg.ngs_enable;
-        emuenv.cfg.current_config.stretch_the_display_area = emuenv.cfg.stretch_the_display_area;
         emuenv.cfg.current_config.psn_status = emuenv.cfg.psn_status;
     }
 
@@ -382,7 +390,7 @@ void set_config(GuiState &gui, EmuEnvState &emuenv, const std::string &app_path)
 
     emuenv.renderer->res_multiplier = emuenv.cfg.current_config.resolution_multiplier;
     emuenv.renderer->set_anisotropic_filtering(emuenv.cfg.current_config.anisotropic_filtering);
-    emuenv.renderer->set_stretch_display(emuenv.cfg.current_config.stretch_the_display_area);
+    emuenv.renderer->set_stretch_display(emuenv.cfg.stretch_the_display_area);
 
     // No change it if app already running
     if (emuenv.io.title_id.empty()) {
@@ -400,7 +408,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
     auto &lang = gui.lang.settings_dialog;
 
     ImGui::PushStyleColor(ImGuiCol_Text, GUI_COLOR_TEXT_MENUBAR);
-    ImGui::SetNextWindowPos(ImVec2(display_size.x / 2.f, display_size.y / 2.f), ImGuiCond_Always, ImVec2(0.5f, 0.48f));
+    ImGui::SetNextWindowPos(ImVec2(emuenv.viewport_pos.x + (display_size.x / 2.f), emuenv.viewport_pos.y + (display_size.y / 2.f)), ImGuiCond_Always, ImVec2(0.5f, 0.48f));
     const auto is_custom_config = gui.configuration_menu.custom_settings_dialog;
     auto &settings_dialog = is_custom_config ? gui.configuration_menu.custom_settings_dialog : gui.configuration_menu.settings_dialog;
     ImGui::Begin("##settings", &settings_dialog, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings);
@@ -838,7 +846,7 @@ void draw_settings_dialog(GuiState &gui, EmuEnvState &emuenv) {
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Uncheck the box to display info message in log only.");
         ImGui::Spacing();
-        ImGui::Checkbox("Stretch The Display Area", &emuenv.cfg.stretch_the_display_area);
+        ImGui::Checkbox("Stretch The Display Area", &config.stretch_the_display_area);
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("Check the box to enlarge the display area to fit the screen size.");
         ImGui::SameLine();
