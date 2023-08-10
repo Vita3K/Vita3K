@@ -902,6 +902,7 @@ EXPORT(SceInt32, sceKernelChangeThreadCpuAffinityMask, SceUID thid, SceInt32 aff
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_CPU_AFFINITY_MASK);
 
     thread->affinity_mask = affinity_mask;
+    thread->tls.get_ptr<int>().get(emuenv.mem)[TLS_CPU_AFFINITY_MASK] = affinity_mask;
     return old_affinity;
 }
 
@@ -926,6 +927,7 @@ EXPORT(SceInt32, sceKernelChangeThreadPriority2, SceUID thid, SceInt32 priority)
         return RET_ERROR(SCE_KERNEL_ERROR_ILLEGAL_PRIORITY);
 
     thread->priority = priority;
+    thread->tls.get_ptr<int>().get(emuenv.mem)[TLS_CURRENT_PRIORITY] = priority;
 
     return old_priority;
 }
@@ -941,7 +943,17 @@ EXPORT(SceInt32, sceKernelChangeThreadPriority, SceUID thid, SceInt32 priority) 
 
 EXPORT(int, sceKernelChangeThreadVfpException, SceInt32 clearMask, SceInt32 setMask) {
     TRACY_FUNC(sceKernelChangeThreadVfpException, clearMask, setMask);
-    return UNIMPLEMENTED();
+    if (((clearMask | setMask) & 0xf7ffff60) != 0 || (clearMask & setMask) != 0) {
+        return RET_ERROR(SCE_KERNEL_ERROR_INVALID_ARGUMENT);
+    }
+    const ThreadStatePtr thread = emuenv.kernel.get_thread(thread_id);
+    if (!thread)
+        return RET_ERROR(SCE_KERNEL_ERROR_UNKNOWN_THREAD_ID);
+    int &vfp_exception = thread->tls.get_ptr<int>().get(emuenv.mem)[TLS_VFP_EXCEPTION];
+    int old_exception = vfp_exception;
+    vfp_exception = setMask | (vfp_exception & ~clearMask);
+    STUBBED("");
+    return old_exception;
 }
 
 EXPORT(SceInt32, sceKernelCheckCallback) {

@@ -548,6 +548,22 @@ enum SceSysmoduleInternalModuleId : uint32_t {
     SCE_SYSMODULE_INTERNAL_LOCATION_FACTORY = 0x80000029 //!< Location Factory module
 };
 
+// Indexes in thread local storage (TLS) for system data. It is used mostly by libkernel.
+enum TlsItems {
+    TLS_PROCESS_ID = 0,
+    TLS_THREAD_ID = 1,
+    TLS_SP_TOP = 2,
+    TLS_SP_BOTTOM = 3,
+    TLS_VFP_EXCEPTION = 4,
+    TLS_RESERVED_5,
+    TLS_RESERVED_6, // libc reserved longjump addr
+    TLS_RESERVED_7, // libc reserved some memory address mask
+    TLS_CURRENT_PRIORITY = 8,
+    TLS_CPU_AFFINITY_MASK = 9,
+    TLS_NET_ERRNO = 0x40,
+    TLS_LIBC_ERRNO = 0x88,
+};
+
 struct SceSysmoduleOpt {
     int flags;
     Ptr<int> result;
